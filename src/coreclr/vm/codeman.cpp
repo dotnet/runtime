@@ -1542,6 +1542,7 @@ void EEJitManager::SetCpuInfo()
                                     if ((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 256))
                                     {
                                         // We allow 256-bit Vector<T> by default
+                                        CPUCompileFlags.Clear(InstructionSet_VectorT128);
                                         CPUCompileFlags.Set(InstructionSet_VectorT256);
                                     }
 
@@ -1551,11 +1552,8 @@ void EEJitManager::SetCpuInfo()
                                         {
                                             CPUCompileFlags.Set(InstructionSet_AVX512F);
 
-                                            if (maxVectorTBitWidth >= 512)
-                                            {
-                                                // We require opt-in for 512-bit Vector<T>
-                                                CPUCompileFlags.Set(InstructionSet_VectorT512);
-                                            }
+                                            // TODO-XArch: Add support for 512-bit Vector<T>
+                                            assert(!CPUCompileFlags.IsSet(InstructionSet_VectorT512));
 
                                             bool isAVX512_VLSupported = false;
                                             if ((cpuidInfo[CPUID_EBX] & (1 << 31)) != 0)                  // AVX512VL

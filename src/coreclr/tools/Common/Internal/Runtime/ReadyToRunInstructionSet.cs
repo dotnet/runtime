@@ -50,6 +50,9 @@ namespace Internal.ReadyToRunConstants
         Avx512DQ_VL=36,
         Avx512Vbmi=37,
         Avx512Vbmi_VL=38,
+        VectorT128=39,
+        VectorT256=40,
+        VectorT512=41,
 
     }
 }

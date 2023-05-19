@@ -8650,8 +8650,12 @@ private:
         CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_XARCH)
+        // TODO-XArch: Add support for 512-bit Vector<T>
+        assert(!compIsaSupportedDebugOnly(InstructionSet_VectorT512));
+
         if (compExactlyDependsOn(InstructionSet_VectorT256))
         {
+            assert(!compIsaSupportedDebugOnly(InstructionSet_VectorT128));
             return YMM_REGSIZE_BYTES;
         }
         else if (compExactlyDependsOn(InstructionSet_VectorT128))

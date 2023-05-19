@@ -96,12 +96,16 @@ namespace ILCompiler
         {
             if ((_targetArchitecture == TargetArchitecture.X64) || (_targetArchitecture == TargetArchitecture.X86))
             {
-                Debug.Assert(InstructionSet.X64_VectorT512 == InstructionSet.X86_VectorT512);
-                Debug.Assert(InstructionSet.X64_VectorT256 == InstructionSet.X86_VectorT256);
                 Debug.Assert(InstructionSet.X64_VectorT128 == InstructionSet.X86_VectorT128);
+                Debug.Assert(InstructionSet.X64_VectorT256 == InstructionSet.X86_VectorT256);
+                Debug.Assert(InstructionSet.X64_VectorT512 == InstructionSet.X86_VectorT512);
+
+                // TODO-XArch: Add support for 512-bit Vector<T>
+                Debug.Assert(!IsInstructionSetSupported(InstructionSet.X64_VectorT512));
 
                 if (IsInstructionSetSupported(InstructionSet.X64_VectorT256))
                 {
+                    Debug.Assert(!IsInstructionSetSupported(InstructionSet.X64_VectorT128));
                     return SimdVectorLength.Vector256Bit;
                 }
                 else if (IsInstructionSetSupported(InstructionSet.X64_VectorT128))
@@ -318,14 +322,18 @@ namespace ILCompiler
                 case TargetArchitecture.X64:
                 case TargetArchitecture.X86:
                 {
-                    Debug.Assert(InstructionSet.X86_AVX512F == InstructionSet.X64_AVX512F);
-                    Debug.Assert(InstructionSet.X86_AVX2 == InstructionSet.X64_AVX2);
                     Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
+                    Debug.Assert(InstructionSet.X86_AVX2 == InstructionSet.X64_AVX2);
+                    Debug.Assert(InstructionSet.X86_AVX512F == InstructionSet.X64_AVX512F);
 
-                    Debug.Assert(InstructionSet.X86_VectorT512 == InstructionSet.X64_VectorT512);
-                    Debug.Assert(InstructionSet.X86_VectorT256 == InstructionSet.X64_VectorT256);
                     Debug.Assert(InstructionSet.X86_VectorT128 == InstructionSet.X64_VectorT128);
+                    Debug.Assert(InstructionSet.X86_VectorT256 == InstructionSet.X64_VectorT256);
+                    Debug.Assert(InstructionSet.X86_VectorT512 == InstructionSet.X64_VectorT512);
 
+                    // We only want one size supported for Vector<T> and we want the other sizes explicitly
+                    // unsupported to ensure we throw away the given methods if runtime picks a larger size
+
+                    Debug.Assert(supportedInstructionSets.HasInstructionSet(InstructionSet.X86_SSE2));
                     Debug.Assert((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 128));
                     supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT128);
 
@@ -333,16 +341,14 @@ namespace ILCompiler
                     {
                         if ((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 256))
                         {
+                            supportedInstructionSets.RemoveInstructionSet(InstructionSet.X86_VectorT128);
                             supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT256);
+
+                            unsupportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT128);
+                            unsupportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT512);
                         }
 
-                        if (supportedInstructionSets.HasInstructionSet(InstructionSet.X86_AVX512F))
-                        {
-                            if ((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 512))
-                            {
-                                supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT512);
-                            }
-                        }
+                        // TODO-XArch: Add support for 512-bit Vector<T>
                     }
                     break;
                 }
@@ -355,7 +361,6 @@ namespace ILCompiler
                     break;
                 }
             }
-
 
             return true;
         }
