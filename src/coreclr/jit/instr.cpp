@@ -853,14 +853,14 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                             assert(scalar->isContained());
                             if (scalar->OperIs(GT_LCL_VAR, GT_IND))
                             {
-                                // This handles the case: 
+                                // This handles the case:
                                 // BroadcastScalarToVector* -> LCL_VAR/IND.
                                 assert(scalar->isContained());
                                 return genOperandDesc(scalar);
                             }
                             else
                             {
-                                // This handles the case: 
+                                // This handles the case:
                                 // BroadcastScalarToVector* -> CNS_INT.
                                 ssize_t        scalarValue = scalar->AsIntCon()->IconValue();
                                 UNATIVE_OFFSET cnum = emit->emitDataConst(&scalarValue, genTypeSize(simdBaseType),
@@ -876,15 +876,15 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                             assert(hwintrinsic->Op(1)->OperIs(GT_HWINTRINSIC, GT_IND));
                             GenTree* scalar = hwintrinsic->Op(1);
                             assert(scalar->isContained());
-                            if(scalar->OperIs(GT_HWINTRINSIC))
+                            if (scalar->OperIs(GT_HWINTRINSIC))
                             {
-                                // This handles the case: 
+                                // This handles the case:
                                 // BroadcastScalarToVector* -> CreateScalarUnsafe -> LCL_VAR/CNS_DBL
-                                return genOperandDesc(scalar->AsHWIntrinsic()->Op(1)); 
+                                return genOperandDesc(scalar->AsHWIntrinsic()->Op(1));
                             }
                             else
                             {
-                                // This handles the case: 
+                                // This handles the case:
                                 // BroadcastScalarToVector* -> IND
                                 return genOperandDesc(scalar);
                             }

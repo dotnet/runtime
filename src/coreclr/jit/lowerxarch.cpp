@@ -7411,7 +7411,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
 #if defined(TARGET_AMD64)
                         case TYP_LONG:
                         case TYP_ULONG:
-#endif  // TARGET_AMD64
+#endif // TARGET_AMD64
                         {
                             uint64_t firstElement = static_cast<uint64_t>(vecCon->gtSimdVal.u64[0]);
                             for (int i = 1; i < elementCount; i++)
@@ -7481,7 +7481,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                                 constScalar     = comp->gtNewIconNode(scalar, TYP_LONG);
                                 break;
                             }
-#endif  // TARGET_AMD64
+#endif // TARGET_AMD64
                             default:
                                 unreached();
                         }
@@ -7644,7 +7644,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 {
                     case GT_HWINTRINSIC:
                     {
-                        if(createScalar->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe)
+                        if (createScalar->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe)
                         {
                             // Handle the case for:
                             // BroadcastScalarTovector -> CreateScalarUnsafe -> LCL_VAR/CNS_DBL.
@@ -7679,10 +7679,11 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     }
                     case GT_LCL_VAR:
                     {
-                        // if the operand of the CreateScalarUnsafe node is in Integer type, CreateScalarUnsafe node will be
+                        // if the operand of the CreateScalarUnsafe node is in Integer type, CreateScalarUnsafe node
+                        // will be
                         // fold, we need to specially handle this case.
                         assert(createScalar->TypeIs(TYP_INT) || createScalar->TypeIs(TYP_UINT) ||
-                            createScalar->TypeIs(TYP_LONG) || createScalar->TypeIs(TYP_ULONG));
+                               createScalar->TypeIs(TYP_LONG) || createScalar->TypeIs(TYP_ULONG));
                         const unsigned opLclNum = createScalar->AsLclVar()->GetLclNum();
                         comp->lvaSetVarDoNotEnregister(opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
                         MakeSrcContained(childNode, createScalar);
@@ -7692,7 +7693,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     case GT_IND:
                     {
                         // For CNS_INT, similar to the GT_LVL_VAR case.
-                        // If the operand of the CreateScalarUnsafe node is in Integer type, CreateScalarUnsafe node will be
+                        // If the operand of the CreateScalarUnsafe node is in Integer type, CreateScalarUnsafe node
+                        // will be
                         // fold, we need to specially handle this case.
 
                         // For IND, handle the case for Avx2.BroadcastScalarToVector*(T*)
