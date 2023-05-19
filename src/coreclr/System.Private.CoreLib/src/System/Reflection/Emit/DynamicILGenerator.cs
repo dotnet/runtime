@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace System.Reflection.Emit
 {
-    internal sealed class DynamicILGenerator : ILGenerator
+    internal sealed class DynamicILGenerator : RuntimeILGenerator
     {
         internal DynamicScope m_scope;
         private readonly int m_methodSigToken;

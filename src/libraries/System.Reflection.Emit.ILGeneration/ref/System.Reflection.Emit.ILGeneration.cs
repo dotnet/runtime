@@ -13,9 +13,9 @@ namespace System.Reflection.Emit
         public CustomAttributeBuilder(System.Reflection.ConstructorInfo con, object?[] constructorArgs, System.Reflection.PropertyInfo[] namedProperties, object?[] propertyValues) { }
         public CustomAttributeBuilder(System.Reflection.ConstructorInfo con, object?[] constructorArgs, System.Reflection.PropertyInfo[] namedProperties, object?[] propertyValues, System.Reflection.FieldInfo[] namedFields, object?[] fieldValues) { }
     }
-    public partial class ILGenerator
+    public abstract class ILGenerator
     {
-        internal ILGenerator() { }
+        protected ILGenerator() { }
         public virtual int ILOffset { get { throw null; } }
         public virtual void BeginCatchBlock(System.Type? exceptionType) { }
         public virtual void BeginExceptFilterBlock() { }
