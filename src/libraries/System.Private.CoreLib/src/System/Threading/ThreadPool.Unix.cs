@@ -9,6 +9,15 @@ namespace System.Threading
 {
     public static partial class ThreadPool
     {
+#if CORECLR
+        private static readonly bool IsWorkerTrackingEnabledInConfig = GetEnableWorkerTracking();
+#elif NATIVEAOT
+        private const bool IsWorkerTrackingEnabledInConfig = false;
+#else 
+        private static readonly bool IsWorkerTrackingEnabledInConfig =
+            AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", false);
+#endif    
+        
         internal static bool EnsureConfigInitialized() => EnsureConfigInitializedCore();
 
         internal static object GetOrCreateThreadLocalCompletionCountObject() =>

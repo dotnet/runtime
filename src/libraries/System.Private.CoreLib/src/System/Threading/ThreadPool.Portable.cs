@@ -18,14 +18,6 @@ namespace System.Threading
         internal static bool YieldFromDispatchLoop => false;
 #endif
 
-#if NATIVEAOT
-        private const bool IsWorkerTrackingEnabledInConfig = false;
-#else
-        private static readonly bool IsWorkerTrackingEnabledInConfig =
-            AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", false);
-#endif
-
-
         private static bool EnsureConfigInitializedCore() => true;
 
 #pragma warning disable IDE0060

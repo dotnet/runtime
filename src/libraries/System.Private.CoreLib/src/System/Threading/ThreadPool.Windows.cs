@@ -13,6 +13,17 @@ namespace System.Threading
         internal static bool UseWindowsThreadPool { get; } =
             AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.UseWindowsThreadPool", "DOTNET_ThreadPool_UseWindowsThreadPool");
 
+#if CORECLR
+        // consider using internal const bool
+        private static readonly bool IsWorkerTrackingEnabledInConfig =
+            UseWindowsThreadPool ? false : GetEnableWorkerTracking();
+#elif NATIVEAOT
+        private const bool IsWorkerTrackingEnabledInConfig = false;
+#else
+        private static readonly bool IsWorkerTrackingEnabledInConfig =
+            AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", false);
+#endif
+
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
         public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped) =>

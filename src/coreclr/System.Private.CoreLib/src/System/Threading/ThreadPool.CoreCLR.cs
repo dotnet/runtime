@@ -32,8 +32,6 @@ namespace System.Threading
         // the runtime may use the thread for processing other work
         internal static bool YieldFromDispatchLoop => false;
 
-        private static readonly bool IsWorkerTrackingEnabledInConfig = GetEnableWorkerTracking();
-
         private static unsafe bool InitializeConfig()
         {
             int configVariableIndex = 1;
