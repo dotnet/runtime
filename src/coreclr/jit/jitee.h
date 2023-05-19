@@ -212,6 +212,6 @@ public:
     }
 
 private:
-    uint64_t                    m_jitFlags;
+    unsigned __int64            m_jitFlags;
     CORINFO_InstructionSetFlags m_instructionSetFlags;
 };

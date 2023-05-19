@@ -1520,10 +1520,7 @@ void EEJitManager::SetCpuInfo()
                         CPUCompileFlags.Set(InstructionSet_POPCNT);
                     }
 
-                    const int requiredAvxEcxFlags = (1 << 27)                                             // OSXSAVE
-                                                  | (1 << 28);                                            // AVX
-
-                    if ((cpuidInfo[CPUID_ECX] & requiredAvxEcxFlags) == requiredAvxEcxFlags)
+                    if (((cpuidInfo[CPUID_ECX] & (1 << 27)) != 0) && ((cpuidInfo[CPUID_ECX] & (1 << 28)) != 0)) // OSXSAVE & AVX
                     {
                         if(DoesOSSupportAVX() && (xmmYmmStateSupport() == 1))                             // XGETBV == 11
                         {
@@ -1986,41 +1983,6 @@ void EEJitManager::SetCpuInfo()
 #endif // TARGET_X86 || TARGET_AMD64
 
     m_CPUCompileFlags = CPUCompileFlags;
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    if (xarchCpuInfo.IsGenuineIntel)
-    {
-        // Some architectures can experience frequency throttling when executing
-        // executing 512-bit width instructions. To account for this we set the
-        // default preferred vector width to 256-bits in some scenarios. Power
-        // users can override this with `DOTNET_PreferredVectorBitWith=512` to
-        // allow using such instructions where hardware support is available.
-
-        if (xarchCpuInfo.FamilyId == 0x06)
-        {
-            if (xarchCpuInfo.ExtendedModelId == 0x05)
-            {
-                if (xarchCpuInfo.Model == 0x05)
-                {
-                    // * Skylake (Server)
-                    // * Cascade Lake
-                    // * Cooper Lake
-
-                    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_VECTOR512_THROTTLING);
-                }
-            }
-            else if (xarchCpuInfo.ExtendedModelId == 0x06)
-            {
-                if (xarchCpuInfo.Model == 0x06)
-                {
-                    // * Cannon Lake
-
-                    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_VECTOR512_THROTTLING);
-                }
-            }
-        }
-    }
-#endif // TARGET_X86 || TARGET_AMD64
 }
 
 // Define some data that we can use to get a better idea of what happened when we get a Watson dump that indicates the JIT failed to load.

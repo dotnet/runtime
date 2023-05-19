@@ -8332,7 +8332,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     CORINFO_SIG_INFO sig;
                     info.compCompHnd->getMethodSig(method, &sig);
 
-                    result = SimdAsHWIntrinsicInfo::lookupId(this, &sig, className, methodName, enclosingClassName);
+                    int sizeOfVectorT = getSIMDVectorRegisterByteLength();
+
+                    result = SimdAsHWIntrinsicInfo::lookupId(this, &sig, className, methodName, enclosingClassName,
+                                                             sizeOfVectorT);
 #endif // FEATURE_HW_INTRINSICS
 
                     if (result == NI_Illegal)

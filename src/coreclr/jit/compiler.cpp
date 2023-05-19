@@ -2281,16 +2281,21 @@ void Compiler::compSetProcessor()
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
     }
 
-    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F))
+    // x86-64-v4 feature level supports AVX512F, AVX512BW, AVX512CD, AVX512DQ, AVX512VL
+    // These have been shipped together historically and at the time of this writing
+    // there exists no hardware which doesn't support the entire feature set. To simplify
+    // the overall JIT implementation, we currently require the entire set of ISAs to be
+    // supported and disable AVX512 support otherwise.
+
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW_VL) &&
+        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD_VL) &&
+        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ_VL))
     {
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ));
         assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F));
         assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW_VL));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD_VL));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ_VL));
 
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
 
@@ -2304,6 +2309,32 @@ void Compiler::compSetProcessor()
 
             preferredVectorByteLength = 256;
         }
+    }
+    else
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI_VL);
+
+#ifdef TARGET_AMD64
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI_VL_X64);
+#endif // TARGET_AMD64
     }
 
     opts.preferredVectorByteLength = preferredVectorByteLength;

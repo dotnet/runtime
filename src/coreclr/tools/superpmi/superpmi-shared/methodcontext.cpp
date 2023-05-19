@@ -6341,10 +6341,12 @@ void MethodContext::recGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HAN
     GetLoongArch64PassStructInRegisterFlags->Add(key, value);
     DEBUG_REC(dmpGetLoongArch64PassStructInRegisterFlags(key, value));
 }
+
 void MethodContext::dmpGetLoongArch64PassStructInRegisterFlags(DWORDLONG key, DWORD value)
 {
     printf("GetLoongArch64PassStructInRegisterFlags key %016" PRIX64 " value-%08X", key, value);
 }
+
 DWORD MethodContext::repGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
 {
     DWORDLONG key = CastHandle(structHnd);
@@ -6364,10 +6366,12 @@ void MethodContext::recGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE 
     GetRISCV64PassStructInRegisterFlags->Add(key, value);
     DEBUG_REC(dmpGetRISCV64PassStructInRegisterFlags(key, value));
 }
+
 void MethodContext::dmpGetRISCV64PassStructInRegisterFlags(DWORDLONG key, DWORD value)
 {
     printf("GetRISCV64PassStructInRegisterFlags key %016" PRIX64 " value-%08X", key, value);
 }
+
 DWORD MethodContext::repGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
 {
     DWORDLONG key = CastHandle(structHnd);

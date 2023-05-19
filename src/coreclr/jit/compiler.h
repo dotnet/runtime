@@ -8642,7 +8642,7 @@ private:
 
     // Get the number of bytes in a System.Numeric.Vector<T> for the current compilation.
     // Note - cannot be used for System.Runtime.Intrinsic
-    unsigned getVectorTByteLength()
+    unsigned getSIMDVectorRegisterByteLength()
     {
         // We need to report the ISA dependency to the VM so that scenarios
         // such as R2R work correctly for larger vector sizes, so we always
@@ -8672,7 +8672,7 @@ private:
             return 0;
         }
 #else
-        assert(!"getVectorTByteLength() unimplemented on target arch");
+        assert(!"getSIMDVectorRegisterByteLength() unimplemented on target arch");
         unreached();
 #endif
     }
@@ -8717,11 +8717,7 @@ private:
     //------------------------------------------------------------------------
     // getPreferredVectorByteLength: Gets the preferred length, in bytes, to use for vectorization
     //
-<<<<<<< HEAD
-    unsigned int getPreferredVectorByteLength() const
-=======
     uint32_t getPreferredVectorByteLength() const
->>>>>>> dotnet/main
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         uint32_t preferredVectorByteLength = opts.preferredVectorByteLength;
@@ -8753,11 +8749,7 @@ private:
     uint32_t roundUpSIMDSize(unsigned size)
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-<<<<<<< HEAD
-        unsigned maxSize = getPreferredVectorByteLength();
-=======
         uint32_t maxSize = getPreferredVectorByteLength();
->>>>>>> dotnet/main
         assert(maxSize <= ZMM_REGSIZE_BYTES);
 
         if ((size <= XMM_REGSIZE_BYTES) && (maxSize > XMM_REGSIZE_BYTES))
@@ -8795,11 +8787,7 @@ private:
     uint32_t roundDownSIMDSize(unsigned size)
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-<<<<<<< HEAD
-        unsigned maxSize = getPreferredVectorByteLength();
-=======
         uint32_t maxSize = getPreferredVectorByteLength();
->>>>>>> dotnet/main
         assert(maxSize <= ZMM_REGSIZE_BYTES);
 
         if (size >= maxSize)
@@ -8825,11 +8813,7 @@ private:
 #endif
     }
 
-<<<<<<< HEAD
-    unsigned int getMinVectorByteLength()
-=======
     uint32_t getMinVectorByteLength()
->>>>>>> dotnet/main
     {
         return emitTypeSize(TYP_SIMD8);
     }
@@ -9275,8 +9259,7 @@ public:
 
     struct Options
     {
-        // all flags passed from the EE
-        JitFlags* jitFlags;
+        JitFlags* jitFlags; // all flags passed from the EE
 
         // The instruction sets that the compiler is allowed to emit.
         CORINFO_InstructionSetFlags compSupportsISA;

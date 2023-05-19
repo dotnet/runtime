@@ -91,7 +91,7 @@ public:
         CORJIT_FLAG_VECTOR512_THROTTLING    = 43, // On Xarch, 512-bit vector usage may incur CPU frequency throttling
 #else
         CORJIT_FLAG_UNUSED16                = 43,
-#endif
+#endif // !defined(TARGET_ARM)
 
         CORJIT_FLAG_UNUSED17                = 44,
         CORJIT_FLAG_UNUSED18                = 45,

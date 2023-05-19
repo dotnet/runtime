@@ -1800,7 +1800,7 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isG
     }
 
     assert(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
-
+    
     EE_TO_JIT_TRANSITION();
     return typeIndex;
 }
@@ -1820,7 +1820,6 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     pInfo->tlsIndex.accessType = IAT_VALUE;
 
     pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
-
     if (isGCType)
     {
         pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_GCThreadStaticBlocks);
@@ -1831,9 +1830,9 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
         pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_NonGCThreadStaticBlocks);
         pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_NonGCMaxThreadStaticBlocks);
     }
-
+    
     pInfo->offsetOfGCDataPointer = static_cast<uint32_t>(PtrArray::GetDataOffset());
-
+    
     JIT_TO_EE_TRANSITION_LEAF();
 }
 #else
@@ -1865,7 +1864,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     pInfo->offsetOfThreadStaticBlocks = 0;
     pInfo->offsetOfMaxThreadStaticBlocks = 0;
     pInfo->offsetOfGCDataPointer = 0;
-
+    
     JIT_TO_EE_TRANSITION_LEAF();
 }
 #endif // HOST_WINDOWS
@@ -2571,6 +2570,7 @@ unsigned CEEInfo::getClassNumInstanceFields (CORINFO_CLASS_HANDLE clsHnd)
 
     return result;
 }
+
 
 CorInfoType CEEInfo::asCorInfoType (CORINFO_CLASS_HANDLE clsHnd)
 {
@@ -13295,7 +13295,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
 
             DefineFullyQualifiedNameForClass();
             printf("Type %s: expected size 0x%08x, actual size 0x%08x\n",
-                   GetFullyQualifiedNameForClass(pMT), dwExpectedSize, dwActualSize);
+                GetFullyQualifiedNameForClass(pMT), dwExpectedSize, dwActualSize);
         }
         else
         {

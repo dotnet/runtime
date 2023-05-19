@@ -9,7 +9,6 @@ enum class SimdAsHWIntrinsicClassId
     Unknown,
     Plane,
     Quaternion,
-    Vector,
     Vector2,
     Vector3,
     Vector4,
@@ -78,10 +77,11 @@ struct SimdAsHWIntrinsicInfo
                                    CORINFO_SIG_INFO* sig,
                                    const char*       className,
                                    const char*       methodName,
-                                   const char*       enclosingClassName);
-    static SimdAsHWIntrinsicClassId lookupClassId(Compiler*   comp,
-                                                  const char* className,
-                                                  const char* enclosingClassName);
+                                   const char*       enclosingClassName,
+                                   int               sizeOfVectorT);
+    static SimdAsHWIntrinsicClassId lookupClassId(const char* className,
+                                                  const char* enclosingClassName,
+                                                  int         sizeOfVectorT);
 
     // Member lookup
 
