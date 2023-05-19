@@ -166,30 +166,43 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         CodeBuilder builder = new();
         AppendAliasMap(builder, aliasMap);
 
-        builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
+        builder.AppendLine("XUnitWrapperLibrary.TestFilter filter;");
+        builder.AppendLine("XUnitWrapperLibrary.TestSummary summary;");
+        builder.AppendLine("System.Diagnostics.Stopwatch stopwatch;");
+        builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder;");
         builder.AppendLine();
 
-        builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.tempLog.xml""))");
+        builder.AppendLine("void Initialize()");
         using (builder.NewBracesScope())
         {
-            builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.tempLog.xml"");");
-        }
-        builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.testStats.csv""))");
-        using (builder.NewBracesScope())
-        {
-            builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.testStats.csv"");");
+            builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
+            builder.AppendLine();
+
+            builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.tempLog.xml""))");
+            using (builder.NewBracesScope())
+            {
+                builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.tempLog.xml"");");
+            }
+            builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.testStats.csv""))");
+            using (builder.NewBracesScope())
+            {
+                builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.testStats.csv"");");
+            }
+            builder.AppendLine();
+
+            builder.AppendLine("filter = new (args, testExclusionList);");
+            builder.AppendLine("summary = new();");
+            builder.AppendLine("stopwatch = System.Diagnostics.Stopwatch.StartNew();");
+            builder.AppendLine("outputRecorder = new(System.Console.Out);");
+            builder.AppendLine("System.Console.SetOut(outputRecorder);");
         }
         builder.AppendLine();
 
-        builder.AppendLine("XUnitWrapperLibrary.TestFilter filter = new (args, testExclusionList);");
-        builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
-        builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();");
-        builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
-        builder.AppendLine("System.Console.SetOut(outputRecorder);");
-        builder.AppendLine();
+        builder.AppendLine("Initialize();");
 
+        // Open the stream writer for the temp log.
         builder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.tempLog.xml""))");
-        builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv"")){{");
+        builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv""))");
         CodeBuilder testExecutorBuilder = new();
         int totalTestsEmitted = 0;
 
@@ -209,9 +222,14 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
             if (testInfos.Length > 0)
             {
-                // Break tests into groups of 50 so that we don't create an unreasonably large main method
-                // Excessively large methods are known to take a long time to compile, and use excessive stack
-                // leading to test failures.
+                // This code breaks the tests into groups called by helper methods.
+                //
+                // Reasonably large methods are known to take a long time to compile, and use excessive stack
+                // leading to test failures. Groups of 50 were sufficient to avoid this problem.
+                //
+                // However, large methods also appear to causes problems when the tests are run in gcstress
+                // modes. Groups of 1 appear to help with this. It hasn't been directly measured but
+                // experimentally has improved gcstress testing.
                 foreach (ITestInfo test in testInfos)
                 {
                     if (testsLeftInCurrentTestExecutor == 0)
@@ -224,12 +242,14 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         }
 
                         currentTestExecutor++;
-                        testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}(System.IO.StreamWriter tempLogSw, System.IO.StreamWriter statsCsvSw)");
+                        testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}("
+                                                       + "System.IO.StreamWriter tempLogSw, "
+                                                       + "System.IO.StreamWriter statsCsvSw)");
                         testExecutorBuilder.AppendLine("{");
                         testExecutorBuilder.PushIndent();
 
                         builder.AppendLine($"TestExecutor{currentTestExecutor}(tempLogSw, statsCsvSw);");
-                        testsLeftInCurrentTestExecutor = 50; // Break test executors into groups of 50, which empirically seems to work well
+                        testsLeftInCurrentTestExecutor = 1; // Break test executors into groups of 1, which empirically seems to work well
                     }
                     else
                     {
@@ -246,21 +266,27 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 testExecutorBuilder.AppendLine();
             }
 
-            testExecutorBuilder.AppendLine("}");
-            builder.AppendLine("tempLogSw.WriteLine(\"</assembly>\");");
+            builder.AppendLine("summary.WriteFooterToTempLog(tempLogSw);");
         }
         builder.AppendLine();
 
-        builder.AppendLine($@"string testResults = summary.GetTestResultOutput(""{assemblyName}"");");
-        builder.AppendLine($@"string workitemUploadRoot = System.Environment.GetEnvironmentVariable(""HELIX_WORKITEM_UPLOAD_ROOT"");");
-        builder.AppendLine($@"if (workitemUploadRoot != null)");
+        builder.AppendLine("void Finish()");
         using (builder.NewBracesScope())
         {
-            builder.AppendLine($@"System.IO.File.WriteAllText(System.IO.Path.Combine(workitemUploadRoot, ""{assemblyName}.testResults.xml.txt""), testResults);");
-        }
-        builder.AppendLine();
+            builder.AppendLine($@"string testResults = summary.GetTestResultOutput(""{assemblyName}"");");
+            builder.AppendLine($@"string workitemUploadRoot = System.Environment.GetEnvironmentVariable(""HELIX_WORKITEM_UPLOAD_ROOT"");");
+            builder.AppendLine($@"if (workitemUploadRoot != null)");
+            using (builder.NewBracesScope())
+            {
+                builder.AppendLine($@"System.IO.File.WriteAllText(System.IO.Path.Combine(workitemUploadRoot, ""{assemblyName}.testResults.xml.txt""), testResults);");
+            }
+            builder.AppendLine();
 
-        builder.AppendLine($@"System.IO.File.WriteAllText(""{assemblyName}.testResults.xml"", testResults);");
+            builder.AppendLine($@"System.IO.File.WriteAllText(""{assemblyName}.testResults.xml"", testResults);");
+        }
+
+        builder.AppendLine();
+        builder.AppendLine("Finish();");
         builder.AppendLine("return 100;");
         builder.AppendLine();
 
@@ -275,12 +301,15 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         CodeBuilder builder = new();
         AppendAliasMap(builder, aliasMap);
 
-        builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
+        builder.AppendLine("XUnitWrapperLibrary.TestSummary summary;");
+        builder.AppendLine("System.Diagnostics.Stopwatch stopwatch;");
+        builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder;");
         builder.AppendLine();
 
         builder.AppendLine("try");
         using (builder.NewBracesScope())
         {
+            builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
             builder.AppendLine($@"return await XHarnessRunnerLibrary.RunnerEntryPoint.RunTests(RunTests, ""{assemblyName}"", args.Length != 0 ? args[0] : null, testExclusionList);");
         }
         builder.AppendLine("catch(System.Exception ex)");
@@ -291,15 +320,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         }
         builder.AppendLine();
 
-        builder.AppendLine("static XUnitWrapperLibrary.TestSummary RunTests(XUnitWrapperLibrary.TestFilter filter)");
+        builder.AppendLine("void Initialize()");
         using (builder.NewBracesScope())
         {
-            builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
-            builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = new();");
-            builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
-            builder.AppendLine("System.Console.SetOut(outputRecorder);");
-            builder.AppendLine();
-
             builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.tempLog.xml""))");
             using (builder.NewBracesScope())
             {
@@ -312,24 +335,43 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             }
             builder.AppendLine();
 
-            ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
+            builder.AppendLine("summary = new();");
+            builder.AppendLine("stopwatch = new();");
+            builder.AppendLine("outputRecorder = new(System.Console.Out);");
+            builder.AppendLine("System.Console.SetOut(outputRecorder);");
+        }
+        builder.AppendLine();
 
-            CodeBuilder testExecutorBuilder = new();
-            int testsLeftInCurrentTestExecutor = 0;
-            int currentTestExecutor = 0;
+        builder.AppendLine("XUnitWrapperLibrary.TestSummary RunTests(XUnitWrapperLibrary.TestFilter filter)");
+        using (builder.NewBracesScope())
+        {
+            builder.AppendLine("Initialize();");
 
             // Open the stream writer for the temp log.
             builder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.templog.xml""))");
             builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv""))");
+            CodeBuilder testExecutorBuilder = new();
+
             using (builder.NewBracesScope())
             {
                 builder.AppendLine($"statsCsvSw.WriteLine(\"{testInfos.Length},0,0,0\");");
 
+                ITestReporterWrapper reporter =
+                    new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
+
+                int testsLeftInCurrentTestExecutor = 0;
+                int currentTestExecutor = 0;
+
                 if (testInfos.Length > 0)
                 {
-                    // Break tests into groups of 50 so that we don't create an unreasonably large main method
-                    // Excessively large methods are known to take a long time to compile, and use excessive stack
-                    // leading to test failures.
+                    // This code breaks the tests into groups called by helper methods.
+                    //
+                    // Reasonably large methods are known to take a long time to compile, and use excessive stack
+                    // leading to test failures. Groups of 50 were sufficient to avoid this problem.
+                    //
+                    // However, large methods also appear to causes problems when the tests are run in gcstress
+                    // modes. Groups of 1 appear to help with this. It hasn't been directly measured but
+                    // experimentally has improved gcstress testing.
                     foreach (ITestInfo test in testInfos)
                     {
                         if (testsLeftInCurrentTestExecutor == 0)
@@ -342,18 +384,15 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                             }
 
                             currentTestExecutor++;
-                            testExecutorBuilder.AppendLine($"static void TestExecutor{currentTestExecutor}("
-                                                           + "XUnitWrapperLibrary.TestSummary summary, "
+                            testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}("
                                                            + "XUnitWrapperLibrary.TestFilter filter, "
-                                                           + "XUnitWrapperLibrary.TestOutputRecorder outputRecorder, "
-                                                           + "System.Diagnostics.Stopwatch stopwatch, "
                                                            + "System.IO.StreamWriter tempLogSw, "
                                                            + "System.IO.StreamWriter statsCsvSw)");
                             testExecutorBuilder.AppendLine("{");
                             testExecutorBuilder.PushIndent();
 
-                            builder.AppendLine($"TestExecutor{currentTestExecutor}(summary, filter, outputRecorder, stopwatch, tempLogSw, statsCsvSw);");
-                            testsLeftInCurrentTestExecutor = 50; // Break test executors into groups of 50, which empirically seems to work well
+                            builder.AppendLine($"TestExecutor{currentTestExecutor}(filter, tempLogSw, statsCsvSw);");
+                            testsLeftInCurrentTestExecutor = 1; // Break test executors into groups of 1, which empirically seems to work well
                         }
                         else
                         {

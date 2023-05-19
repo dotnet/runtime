@@ -1,9 +1,6 @@
 parameters:
   archType: ''
   buildConfig: ''
-  # compilerName specifies the compiler to use to do the builds. This can either be 'gcc' or left
-  # unset to use the default (clang on Linux/Mac, Visual C++ on Windows).
-  compilerName: ''
   condition: true
   container: ''
   crossBuild: false
@@ -42,25 +39,18 @@ jobs:
     pgoType: ${{ parameters.pgoType }}
 
     # Compute job name from template parameters
-    ${{ if and(ne(parameters.testGroup, 'clrTools'), eq(parameters.compilerName, 'gcc')) }}:
-      name: ${{ format('coreclr_{0}_product_build_{1}{1}_{3}_{4}', parameters.compilerName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      displayName: ${{ format('GCC Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    ${{ if and(ne(parameters.testGroup, 'clrTools'), ne(parameters.compilerName, 'gcc')) }}:
-      name: ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}{5}',
-        parameters.runtimeVariant,
-        parameters.osGroup,
-        parameters.osSubgroup,
-        parameters.archType,
-        parameters.buildConfig,
-        parameters.pgoType) }}
-      displayName: ${{ format('CoreCLR {0} Product Build {1}{2} {3} {4} {5}',
-        parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup,
-        parameters.archType,
-        parameters.buildConfig,
-        parameters.pgoType) }}
-    ${{ if eq(parameters.testGroup, 'clrTools') }}:
-      name: ${{ format('coreclr_{0}_tools_unittests_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      displayName: ${{ format('CoreCLR {0} Tools Unit Tests {1}{2} {3} {4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    name: ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}{5}',
+      parameters.runtimeVariant,
+      parameters.osGroup,
+      parameters.osSubgroup,
+      parameters.archType,
+      parameters.buildConfig,
+      parameters.pgoType) }}
+    displayName: ${{ format('CoreCLR {0} Product Build {1}{2} {3} {4} {5}',
+      parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup,
+      parameters.archType,
+      parameters.buildConfig,
+      parameters.pgoType) }}
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
@@ -80,14 +70,6 @@ jobs:
       value: ''
     - name: publishLogsArtifactPrefix
       value: 'BuildLogs_CoreCLR'
-    - ${{ if eq(parameters.testGroup, 'clrTools') }}:
-      - name: publishLogsArtifactPrefix
-        value: 'BuildLogs_CoreCLR_ToolsUnitTests'
-    - ${{ if eq(parameters.compilerName, 'gcc') }}:
-      - name: compilerArg
-        value: '-gcc'
-      - name: publishLogsArtifactPrefix
-        value: 'BuildLogs_CoreCLR_GCC'
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       # Variables used to publish packages to blob feed
       - name: dotnetfeedUrl
@@ -216,22 +198,10 @@ jobs:
       - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
         displayName: Build managed product components and packages
 
-    # Run CoreCLR Tools unit tests
-    - ${{ if eq(parameters.testGroup, 'clrTools') }}:
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset libs $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci
-        displayName: Build libs
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.toolstests $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci -test
-        displayName: Run CoreCLR Tools unit tests
-
     # Build native test components
     - ${{ if and(ne(parameters.isOfficialBuild, true), ne(parameters.disableClrTest, true)) }}:
       - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
         displayName: Build native test components
-
-    # Build libs.native, host.native and mono with gcc
-    - ${{ if eq(parameters.compilerName, 'gcc') }}:
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) libs.native+host.native+mono $(compilerArg) $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
-        displayName: Build libs.native+host.native+mono
 
     # Sign and add entitlements to these MacOS binaries
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
@@ -262,8 +232,7 @@ jobs:
           isOfficialBuild: ${{ parameters.signBinaries }}
           timeoutInMinutes: 30
 
-    # Builds using gcc are not tested, and clrTools unitests do not publish the build artifacts
-    - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools'), ne(parameters.disableClrTest, true)) }}:
+    - ${{ if ne(parameters.disableClrTest, true) }}:
       # Publish product output directory for consumption by tests.
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
@@ -275,7 +244,7 @@ jobs:
           artifactName: $(buildProductArtifactName)
           displayName: 'product build'
 
-    - ${{ if and(in(parameters.osGroup, 'windows', 'linux'), ne(parameters.archType, 'x86'), ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools'), eq(parameters.pgoType, '')) }}:
+    - ${{ if and(in(parameters.osGroup, 'windows', 'linux'), ne(parameters.archType, 'x86'), eq(parameters.pgoType, '')) }}:
         - template: /eng/pipelines/coreclr/templates/crossdac-build.yml
           parameters:
             archType: ${{ parameters.archType }}
@@ -287,7 +256,7 @@ jobs:
             ${{ else }}:
               hostArchType: x64
 
-    - ${{ if and(in(parameters.osGroup, 'windows'), eq(parameters.archType, 'x86'), ne(parameters.testGroup, 'clrTools'), eq(parameters.pgoType, '')) }}:
+    - ${{ if and(in(parameters.osGroup, 'windows'), eq(parameters.archType, 'x86'), eq(parameters.pgoType, '')) }}:
         - template: /eng/pipelines/coreclr/templates/crossdac-build.yml
           parameters:
             archType: arm
@@ -296,7 +265,7 @@ jobs:
             isOfficialBuild: ${{ parameters.signBinaries }}
             hostArchType: x86
 
-    - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, ''), ne(parameters.testGroup, 'clrTools'), ne(parameters.disableClrTest, true)) }}:
+    - ${{ if and(ne(parameters.testGroup, ''), ne(parameters.disableClrTest, true)) }}:
       # Publish test native components for consumption by test execution.
       - ${{ if and(ne(parameters.isOfficialBuild, true), eq(parameters.pgoType, '')) }}:
         - template: /eng/pipelines/common/upload-artifact-step.yml
@@ -318,21 +287,10 @@ jobs:
           SecretsFilter: 'dotnetfeed-storage-access-key-1,microsoft-symbol-server-pat,symweb-symbol-server-pat'
 
     # Save packages using the prepare-signed-artifacts format.
-    - ${{ if and(eq(parameters.isOfficialBuild, true), ne(parameters.testGroup, 'clrTools'), eq(parameters.pgoType, '')) }}:
+    - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.pgoType, '')) }}:
       - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         parameters:
           name: ${{ parameters.platform }}
-
-    # Publish unit tests results if executing unit tests
-    - ${{ if eq(parameters.testGroup, 'clrTools') }}:
-      - task: PublishTestResults@2
-        inputs:
-          testResultsFormat: 'xUnit'
-          testResultsFiles: '*.xml'
-          testRunTitle: CoreCLR-Tools-Unittests-$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)
-          searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)'
-        continueOnError: true
-        condition: always()
 
     # Publish Logs
     - task: PublishPipelineArtifact@1

@@ -5352,10 +5352,16 @@ MONO_RESTORE_WARNING
 				for (j = 0; j < decoded_args->named_args_num; ++j) {
 					if (decoded_args->named_args_info [j].field && !strcmp (decoded_args->named_args_info [j].field->name, "EntryPoint")) {
 						named = (const char *)decoded_args->named_args[j]->value.primitive;
-						slen = mono_metadata_decode_value (named, &named) + (int)strlen(acfg->user_symbol_prefix);
-						export_name = (char *)g_malloc (slen + 1);
-						sprintf (export_name, "%s%s", acfg->user_symbol_prefix, named);
-						export_name [slen] = 0;
+						slen = mono_metadata_decode_value (named, &named);
+						
+						int prefix_len = (int)strlen (acfg->user_symbol_prefix);
+						g_assert (prefix_len < 2);
+						
+						export_name = (char *)g_malloc (prefix_len + slen + 1);
+						if (prefix_len == 1)
+							export_name[0] = *acfg->user_symbol_prefix;
+						memcpy (export_name + prefix_len, named, slen);
+						export_name [prefix_len + slen] = '\0';
 
 						g_ptr_array_add (acfg->exported_methods, method);
 					}

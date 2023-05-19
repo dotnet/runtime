@@ -42,17 +42,17 @@
   -->
 
   <PropertyGroup>
-    <!-- To use a specific version, set ChromeUseLatestVersion=false,
+    <!-- To use a specific version, set ChromeFindLatestAvailableVersion=false,
          and set the version, and revisions in the propertygroup below -->
-    <ChromeUseLatestVersion>false</ChromeUseLatestVersion>
+    <ChromeFindLatestAvailableVersion>true</ChromeFindLatestAvailableVersion>
   </PropertyGroup>
 
-  <PropertyGroup Label="Use specific version of chrome" Condition="'$(ChromeUseLatestVersion)' != 'true' and $([MSBuild]::IsOSPlatform('linux'))">
+  <PropertyGroup Label="Use specific version of chrome" Condition="'$(ChromeFindLatestAvailableVersion)' != 'true' and $([MSBuild]::IsOSPlatform('linux'))">
     <ChromeVersion>113.0.5672.63</ChromeVersion>
     <ChromeRevision>1121455</ChromeRevision>
     <_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1121461</_ChromeBaseSnapshotUrl>
   </PropertyGroup>
-  <PropertyGroup Label="Use specific version of chrome" Condition="'$(ChromeUseLatestVersion)' != 'true' and $([MSBuild]::IsOSPlatform('windows'))">
+  <PropertyGroup Label="Use specific version of chrome" Condition="'$(ChromeFindLatestAvailableVersion)' != 'true' and $([MSBuild]::IsOSPlatform('windows'))">
     <ChromeVersion>113.0.5672.64</ChromeVersion>
     <ChromeRevision>1121455</ChromeRevision>
     <_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/1121477</_ChromeBaseSnapshotUrl>

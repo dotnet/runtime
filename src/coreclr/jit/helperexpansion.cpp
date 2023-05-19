@@ -817,22 +817,17 @@ PhaseStatus Compiler::fgExpandStaticInit()
         return result;
     }
 
-    if (opts.OptimizationDisabled())
+    // Always expand for NativeAOT, see
+    // https://github.com/dotnet/runtime/issues/68278#issuecomment-1543322819
+    const bool isNativeAOT = IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+
+    if (!isNativeAOT && opts.OptimizationDisabled())
     {
         JITDUMP("Optimizations aren't allowed - bail out.\n")
         return result;
     }
 
-    // TODO: Replace with opts.compCodeOpt once it's fixed
-    const bool preferSize = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
-    if (preferSize)
-    {
-        // The optimization comes with a codegen size increase
-        JITDUMP("Optimized for size - bail out.\n")
-        return result;
-    }
-
-    return fgExpandHelper<&Compiler::fgExpandStaticInitForCall>(true);
+    return fgExpandHelper<&Compiler::fgExpandStaticInitForCall>(/*skipRarelyRunBlocks*/ !isNativeAOT);
 }
 
 //------------------------------------------------------------------------------
