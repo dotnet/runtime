@@ -80,6 +80,45 @@ namespace System.Threading
             return new ThreadPoolBoundHandle(handle);
         }
 
+        /// <summary>
+        ///     Returns a <see cref="ThreadPoolBoundHandle"/> for the specific handle,
+        ///     which is bound to the system thread pool.
+        /// </summary>
+        /// <param name="handle">
+        ///     A <see cref="SafeHandle"/> object that holds the operating system handle. The
+        ///     handle must have been opened for overlapped I/O on the unmanaged side.
+        /// </param>
+        /// <returns>
+        ///     <see cref="ThreadPoolBoundHandle"/> for <paramref name="handle"/>, which
+        ///     is bound to the system thread pool.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///     <paramref name="handle"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///     <paramref name="handle"/> has been disposed.
+        ///     <para>
+        ///         -or-
+        ///     </para>
+        ///     <paramref name="handle"/> does not refer to a valid I/O handle.
+        ///     <para>
+        ///         -or-
+        ///     </para>
+        ///     <paramref name="handle"/> refers to a handle that has not been opened
+        ///     for overlapped I/O.
+        ///     <para>
+        ///         -or-
+        ///     </para>
+        ///     <paramref name="handle"/> refers to a handle that has already been bound.
+        /// </exception>
+        /// <remarks>
+        ///     This method should be called once per handle.
+        ///     <para>
+        ///         -or-
+        ///     </para>
+        ///     <see cref="ThreadPoolBoundHandle"/> does not take ownership of <paramref name="handle"/>,
+        ///     it remains the responsibility of the caller to call <see cref="SafeHandle.Dispose()"/>.
+        /// </remarks>
         public static unsafe ThreadPoolBoundHandle BindHandle(SafeHandle handle) =>
             ThreadPool.UseWindowsThreadPool ? BindHandleWindowsThreadPool(handle) : BindHandlePortableCore(handle);
 
