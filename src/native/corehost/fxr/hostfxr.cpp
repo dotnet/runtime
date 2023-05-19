@@ -693,7 +693,6 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_delegate(
         return StatusCode::InvalidArgFailure;
 
     const host_context_t *context;
-    host_context_t *context_from_handle = nullptr;
     if (host_context_handle == nullptr)
     {
         context = fx_muxer_t::get_active_host_context();
@@ -705,25 +704,21 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_delegate(
     }
     else
     {
-        context_from_handle = host_context_t::from_handle(host_context_handle);
+        host_context_t *context_from_handle = host_context_t::from_handle(host_context_handle);
         if (context_from_handle == nullptr)
             return StatusCode::InvalidArgFailure;
+
+        if (context_from_handle->type != host_context_type::secondary)
+        {
+            int rc = fx_muxer_t::load_runtime(context_from_handle);
+            if (rc != StatusCode::Success)
+                return rc;
+        }
 
         context = context_from_handle;
     }
 
-    int rc = fx_muxer_t::get_runtime_delegate(context, delegate_type, delegate);
-    if (rc != StatusCode::Success)
-        return rc;
-    
-    if (context_from_handle == nullptr && context_from_handle->type != host_context_type::secondary)
-    {
-        rc = fx_muxer_t::load_runtime(context_from_handle);
-        if (rc != StatusCode::Success)
-            return rc;
-    }
-
-    return StatusCode::Success;
+    return fx_muxer_t::get_runtime_delegate(context, delegate_type, delegate);
 }
 
 SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_property_value(
