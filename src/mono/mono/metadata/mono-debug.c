@@ -27,6 +27,7 @@
 #include <mono/metadata/exception-internals.h>
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/metadata-update.h>
+#include <mono/metadata/webcil-loader.h>
 #include <string.h>
 
 #if NO_UNALIGNED_ACCESS
@@ -1106,6 +1107,13 @@ bsymfile_match (BundledSymfile *bsymfile, const char *assembly_name)
 	const char *p = strstr (assembly_name, ".webcil");
 	/* if assembly_name ends with .webcil, check if aname matches, with a .dll extension instead */
 	if (p && *(p + strlen(".webcil")) == 0) {
+		size_t n = p - assembly_name;
+		if (!strncmp (bsymfile->aname, assembly_name, n)
+			&& !strcmp (bsymfile->aname + n, ".dll"))
+			return TRUE;
+	}
+	p = strstr (assembly_name, MONO_WEBCIL_IN_WASM_EXTENSION);
+	if (p && *(p + strlen(MONO_WEBCIL_IN_WASM_EXTENSION)) == 0) {
 		size_t n = p - assembly_name;
 		if (!strncmp (bsymfile->aname, assembly_name, n)
 			&& !strcmp (bsymfile->aname + n, ".dll"))

@@ -30,12 +30,14 @@ parameters:
   shouldContinueOnError: false
 
 steps:
-  - ${{ if eq(parameters.osGroup, 'windows') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(crossArg) ci ${{ parameters.archType }} $(buildConfigUpper) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) /p:LibrariesConfiguration=${{ coalesce(parameters.liveLibrariesBuildConfig, parameters.buildConfig) }}
-      displayName: Build Tests
-  - ${{ if ne(parameters.osGroup, 'windows') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(crossArg) ci os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) /p:LibrariesConfiguration=${{ coalesce(parameters.liveLibrariesBuildConfig, parameters.buildConfig) }}
-      displayName: Build Tests
+  - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
+    parameters:
+      osGroup: ${{ parameters.osGroup }}
+      osSubgroup: ${{ parameters.osSubgroup }}
+      archType: ${{ parameters.archType }}
+      buildConfig: ${{ parameters.buildConfig }}
+      liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
+      testBuildArgs: ${{ parameters.testBuildArgs }}
 
   # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
   - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), or(eq(parameters.runtimeVariant, 'llvmaot'), eq(parameters.runtimeVariant, 'llvmfullaot'))) }}:

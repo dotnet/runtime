@@ -39,10 +39,7 @@ namespace System.Text.Json.Reflection
 
         public const string CreateRangeMethodName = "CreateRange";
 
-        public static Type? GetCompatibleGenericBaseClass(
-            this Type type,
-            Type? baseType,
-            bool sourceGenType = false)
+        public static Type? GetCompatibleGenericBaseClass(this Type type, Type? baseType)
         {
             if (baseType is null)
             {
@@ -60,8 +57,7 @@ namespace System.Text.Json.Reflection
                 if (baseTypeToCheck.IsGenericType)
                 {
                     Type genericTypeToCheck = baseTypeToCheck.GetGenericTypeDefinition();
-                    if (genericTypeToCheck == baseType ||
-                        (sourceGenType && (OpenGenericTypesHaveSamePrefix(baseType, genericTypeToCheck))))
+                    if (genericTypeToCheck == baseType)
                     {
                         return baseTypeToCheck;
                     }
@@ -118,14 +114,14 @@ namespace System.Text.Json.Reflection
             return null;
         }
 
-        public static bool IsImmutableDictionaryType(this Type type, bool sourceGenType = false)
+        public static bool IsImmutableDictionaryType(this Type type)
         {
             if (!type.IsGenericType || !type.Assembly.FullName!.StartsWith("System.Collections.Immutable", StringComparison.Ordinal))
             {
                 return false;
             }
 
-            switch (GetBaseNameFromGenericType(type, sourceGenType))
+            switch (GetBaseNameFromGenericType(type))
             {
                 case ImmutableDictionaryGenericTypeName:
                 case ImmutableDictionaryGenericInterfaceTypeName:
@@ -136,14 +132,14 @@ namespace System.Text.Json.Reflection
             }
         }
 
-        public static bool IsImmutableEnumerableType(this Type type, bool sourceGenType = false)
+        public static bool IsImmutableEnumerableType(this Type type)
         {
             if (!type.IsGenericType || !type.Assembly.FullName!.StartsWith("System.Collections.Immutable", StringComparison.Ordinal))
             {
                 return false;
             }
 
-            switch (GetBaseNameFromGenericType(type, sourceGenType))
+            switch (GetBaseNameFromGenericType(type))
             {
                 case ImmutableArrayGenericTypeName:
                 case ImmutableListGenericTypeName:
@@ -161,14 +157,14 @@ namespace System.Text.Json.Reflection
             }
         }
 
-        public static string? GetImmutableDictionaryConstructingTypeName(this Type type, bool sourceGenType = false)
+        public static string? GetImmutableDictionaryConstructingTypeName(this Type type)
         {
-            Debug.Assert(type.IsImmutableDictionaryType(sourceGenType));
+            Debug.Assert(type.IsImmutableDictionaryType());
 
             // Use the generic type definition of the immutable collection to determine
             // an appropriate constructing type, i.e. a type that we can invoke the
             // `CreateRange<T>` method on, which returns the desired immutable collection.
-            switch (GetBaseNameFromGenericType(type, sourceGenType))
+            switch (GetBaseNameFromGenericType(type))
             {
                 case ImmutableDictionaryGenericTypeName:
                 case ImmutableDictionaryGenericInterfaceTypeName:
@@ -182,14 +178,14 @@ namespace System.Text.Json.Reflection
             }
         }
 
-        public static string? GetImmutableEnumerableConstructingTypeName(this Type type, bool sourceGenType = false)
+        public static string? GetImmutableEnumerableConstructingTypeName(this Type type)
         {
-            Debug.Assert(type.IsImmutableEnumerableType(sourceGenType));
+            Debug.Assert(type.IsImmutableEnumerableType());
 
             // Use the generic type definition of the immutable collection to determine
             // an appropriate constructing type, i.e. a type that we can invoke the
             // `CreateRange<T>` method on, which returns the desired immutable collection.
-            switch (GetBaseNameFromGenericType(type, sourceGenType))
+            switch (GetBaseNameFromGenericType(type))
             {
                 case ImmutableArrayGenericTypeName:
                     return ImmutableArrayTypeName;
@@ -214,27 +210,15 @@ namespace System.Text.Json.Reflection
             }
         }
 
-        private static bool OpenGenericTypesHaveSamePrefix(Type t1, Type t2)
-            => t1.FullName == GetBaseNameFromGenericTypeDef(t2);
-
-        private static string GetBaseNameFromGenericType(Type genericType, bool sourceGenType)
+        private static string GetBaseNameFromGenericType(Type genericType)
         {
             Type genericTypeDef = genericType.GetGenericTypeDefinition();
-            return sourceGenType ? GetBaseNameFromGenericTypeDef(genericTypeDef) : genericTypeDef.FullName!;
+            return genericTypeDef.FullName!;
         }
 
-        private static string GetBaseNameFromGenericTypeDef(Type genericTypeDef)
+        public static bool IsVirtual(this PropertyInfo propertyInfo)
         {
-            Debug.Assert(genericTypeDef.IsGenericType);
-            string fullName = genericTypeDef.FullName!;
-            int length = fullName.IndexOf('`') + 2;
-            return fullName.Substring(0, length);
-        }
-
-        public static bool IsVirtual(this MemberInfo memberInfo)
-        {
-            Debug.Assert(memberInfo is FieldInfo or PropertyInfo);
-            return memberInfo is PropertyInfo p && (p.GetMethod?.IsVirtual == true || p.SetMethod?.IsVirtual == true);
+            return propertyInfo.GetMethod?.IsVirtual == true || propertyInfo.SetMethod?.IsVirtual == true;
         }
 
         public static bool IsKeyValuePair(this Type type, Type? keyValuePairType = null)
@@ -252,9 +236,7 @@ namespace System.Text.Json.Reflection
         }
 
         public static bool TryGetDeserializationConstructor(
-#if !BUILDING_SOURCE_GENERATOR
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-#endif
             this Type type,
             bool useDefaultCtorInAnnotatedStructs,
             out ConstructorInfo? deserializationCtor)
@@ -333,7 +315,6 @@ namespace System.Text.Json.Reflection
                 return null;
             }
 
-#if !BUILDING_SOURCE_GENERATOR
             // Default values of enums or nullable enums are represented using the underlying type and need to be cast explicitly
             // cf. https://github.com/dotnet/runtime/issues/68647
             if (parameterType.IsEnum)
@@ -345,7 +326,6 @@ namespace System.Text.Json.Reflection
             {
                 return Enum.ToObject(underlyingType, defaultValue);
             }
-#endif
 
             return defaultValue;
         }
@@ -354,11 +334,8 @@ namespace System.Text.Json.Reflection
         /// Returns the type hierarchy for the given type, starting from the current type up to the base type(s) in the hierarchy.
         /// Interface hierarchies with multiple inheritance will return results using topological sorting.
         /// </summary>
-        public static Type[] GetSortedTypeHierarchy(
-#if !BUILDING_SOURCE_GENERATOR
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-#endif
-            this Type type)
+        [RequiresUnreferencedCode("Should only be used by the reflection-based serializer.")]
+        public static Type[] GetSortedTypeHierarchy(this Type type)
         {
             if (!type.IsInterface)
             {
@@ -374,86 +351,11 @@ namespace System.Text.Json.Reflection
             }
             else
             {
-                // Interface hierarchies support multiple inheritance,
-                // query the entire list and sort them topologically.
-                Type[] interfaces = type.GetInterfaces();
-                {
-                    // include the current type into the list of interfaces
-                    Type[] newArray = new Type[interfaces.Length + 1];
-                    newArray[0] = type;
-                    interfaces.CopyTo(newArray, 1);
-                    interfaces = newArray;
-                }
-
-                TopologicalSort(interfaces, static (t1, t2) => t1.IsAssignableFrom(t2));
-                return interfaces;
+                // Interface hierarchies support multiple inheritance.
+                // For consistency with class hierarchy resolution order,
+                // sort topologically from most derived to least derived.
+                return JsonHelpers.TraverseGraphWithTopologicalSort(type, static t => t.GetInterfaces());
             }
-        }
-
-        private static void TopologicalSort<T>(T[] inputs, Func<T, T, bool> isLessThan)
-            where T : notnull
-        {
-            // Standard implementation of in-place topological sorting using Kahn's algorithm.
-
-            if (inputs.Length < 2)
-            {
-                return;
-            }
-
-            var graph = new Dictionary<T, HashSet<T>>();
-            var next = new Queue<T>();
-
-            // Step 1: construct the dependency graph.
-            for (int i = 0; i < inputs.Length; i++)
-            {
-                T current = inputs[i];
-                HashSet<T>? dependencies = null;
-
-                for (int j = 0; j < inputs.Length; j++)
-                {
-                    if (i != j && isLessThan(current, inputs[j]))
-                    {
-                        (dependencies ??= new()).Add(inputs[j]);
-                    }
-                }
-
-                if (dependencies is null)
-                {
-                    next.Enqueue(current);
-                }
-                else
-                {
-                    graph.Add(current, dependencies);
-                }
-            }
-
-            Debug.Assert(next.Count > 0, "Input graph must be a DAG.");
-            int index = 0;
-
-            // Step 2: Walk the dependency graph starting with nodes that have no dependencies.
-            do
-            {
-                T nextTopLevelDependency = next.Dequeue();
-
-                foreach (KeyValuePair<T, HashSet<T>> kvp in graph)
-                {
-                    HashSet<T> dependencies = kvp.Value;
-                    if (dependencies.Count > 0)
-                    {
-                        dependencies.Remove(nextTopLevelDependency);
-
-                        if (dependencies.Count == 0)
-                        {
-                            next.Enqueue(kvp.Key);
-                        }
-                    }
-                }
-
-                inputs[index++] = nextTopLevelDependency;
-            }
-            while (next.Count > 0);
-
-            Debug.Assert(index == inputs.Length);
         }
     }
 }

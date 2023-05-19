@@ -2646,9 +2646,9 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
             {
                 // Check if the divisor is not -1 branch to 'sdivLabel'
-                emit->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SCRATCH, REG_R0, -1);
+                emit->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_R21, REG_R0, -1);
                 BasicBlock* sdivLabel = genCreateTempLabel(); // can optimize for loongarch64.
-                emit->emitIns_J_cond_la(INS_bne, sdivLabel, REG_SCRATCH, divisorReg);
+                emit->emitIns_J_cond_la(INS_bne, sdivLabel, REG_R21, divisorReg);
 
                 // If control flow continues past here the 'divisorReg' is known to be -1
                 regNumber dividendReg = tree->gtGetOp1()->GetRegNum();
@@ -2660,15 +2660,15 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                 if (size == EA_4BYTE)
                 {
                     // MinInt=0x80000000
-                    emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, REG_SCRATCH, REG_SCRATCH, 31);
+                    emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, REG_R21, REG_R21, 31);
                 }
                 else
                 {
                     assert(size == EA_8BYTE);
                     // MinInt=0x8000000000000000
-                    emit->emitIns_R_R_I(INS_slli_d, EA_8BYTE, REG_SCRATCH, REG_SCRATCH, 63);
+                    emit->emitIns_R_R_I(INS_slli_d, EA_8BYTE, REG_R21, REG_R21, 63);
                 }
-                genJumpToThrowHlpBlk_la(SCK_ARITH_EXCPN, INS_beq, REG_SCRATCH, nullptr, dividendReg);
+                genJumpToThrowHlpBlk_la(SCK_ARITH_EXCPN, INS_beq, REG_R21, nullptr, dividendReg);
                 genDefineTempLabel(sdivLabel);
             }
 

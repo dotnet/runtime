@@ -3,141 +3,109 @@
 #include "common.h"
 #ifndef DACCESS_COMPILE
 #include "CommonTypes.h"
-#include "daccess.h"
 #include "CommonMacros.h"
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
-#include "rhassert.h"
-#include "slist.h"
-#include "gcrhinterface.h"
-#include "varint.h"
-#include "regdisplay.h"
-#include "StackFrameIterator.h"
-#include "thread.h"
 #include "holder.h"
-#include "Crst.h"
-#include "event.h"
-#include "threadstore.h"
-#include "RuntimeInstance.h"
-#include "shash.h"
 #include "RhConfig.h"
 
 #include <string.h>
 
-bool RhConfig::ReadConfigValue(_In_z_ const TCHAR *wszName, uint64_t* pValue, bool decimal)
+bool RhConfig::ReadConfigValue(_In_z_ const char *name, uint64_t* pValue, bool decimal)
 {
-    TCHAR wszBuffer[CONFIG_VAL_MAXLEN + 1]; // hex digits plus a nul terminator.
-    const uint32_t cchBuffer = sizeof(wszBuffer) / sizeof(wszBuffer[0]);
+    TCHAR buffer[CONFIG_VAL_MAXLEN + 1]; // hex digits plus a nul terminator.
+    const uint32_t cchBuffer = ARRAY_SIZE(buffer);
 
     uint32_t cchResult = 0;
-
-#ifdef FEATURE_ENVIRONMENT_VARIABLE_CONFIG
-    TCHAR wszVariableName[64] = _T("DOTNET_");
-    assert(_tcslen(wszVariableName) + _tcslen(wszName) < sizeof(wszVariableName) / sizeof(wszVariableName[0]));
-    _tcscat(wszVariableName, wszName);
-    cchResult = PalGetEnvironmentVariable(wszVariableName, wszBuffer, cchBuffer);
-#endif // FEATURE_ENVIRONMENT_VARIABLE_CONFIG
-
-#ifdef FEATURE_EMBEDDED_CONFIG
-    // if the config key wasn't found in the ini file
-    if ((cchResult == 0) || (cchResult >= cchBuffer))
-        cchResult = GetEmbeddedVariable(wszName, wszBuffer, cchBuffer);
-#endif // FEATURE_EMBEDDED_CONFIG
-
-    if ((cchResult == 0) || (cchResult >= cchBuffer))
-        return false; // not found
-
-    uint64_t uiResult = 0;
-
-    for (uint32_t i = 0; i < cchResult; i++)
+    TCHAR variableName[64] = _T("DOTNET_");
+    assert(ARRAY_SIZE("DOTNET_") - 1 + strlen(name) < ARRAY_SIZE(variableName));
+#ifdef TARGET_WINDOWS
+    for (size_t i = 0; i < strlen(name); i++)
     {
-        TCHAR ch = wszBuffer[i];
+        variableName[ARRAY_SIZE("DOTNET_") - 1 + i] = name[i];
+    }
+#else
+    strcat(variableName, name);
+#endif
 
-        if (decimal)
+    cchResult = PalGetEnvironmentVariable(variableName, buffer, cchBuffer);
+    if (cchResult != 0 && cchResult < cchBuffer)
+    {
+        // Environment variable was set. Convert it to an integer.
+        uint64_t uiResult = 0;
+        for (uint32_t i = 0; i < cchResult; i++)
         {
-            uiResult *= 10;
+            TCHAR ch = buffer[i];
 
-            if ((ch >= _T('0')) && (ch <= _T('9')))
-                uiResult += ch - _T('0');
-            else
-                return false; // parse error
-        }
-        else
-        {
-            uiResult *= 16;
+            if (decimal)
+            {
+                uiResult *= 10;
 
-            if ((ch >= _T('0')) && (ch <= _T('9')))
-                uiResult += ch - _T('0');
-            else if ((ch >= _T('a')) && (ch <= _T('f')))
-                uiResult += (ch - _T('a')) + 10;
-            else if ((ch >= _T('A')) && (ch <= _T('F')))
-                uiResult += (ch - _T('A')) + 10;
+                if ((ch >= '0') && (ch <= '9'))
+                    uiResult += ch - '0';
+                else
+                    return false; // parse error
+            }
             else
-                return false; // parse error
+            {
+                uiResult *= 16;
+
+                if ((ch >= '0') && (ch <= '9'))
+                    uiResult += ch - '0';
+                else if ((ch >= 'a') && (ch <= 'f'))
+                    uiResult += (ch - 'a') + 10;
+                else if ((ch >= 'A') && (ch <= 'F'))
+                    uiResult += (ch - 'A') + 10;
+                else
+                    return false; // parse error
+            }
         }
+
+        *pValue = uiResult;
+        return true;
     }
 
-    *pValue = uiResult;
-    return true;
+    // Check the embedded configuration
+    const char *embeddedValue = nullptr;
+    if (GetEmbeddedVariable(name, &embeddedValue))
+    {
+        *pValue = strtoull(embeddedValue, NULL, decimal ? 10 : 16);
+        return true;
+    }
+
+    return false;
 }
 
-#ifdef FEATURE_EMBEDDED_CONFIG
-uint32_t RhConfig::GetEmbeddedVariable(_In_z_ const TCHAR* configName, _Out_writes_all_(cchOutputBuffer) TCHAR* outputBuffer, _In_ uint32_t cchOutputBuffer)
+bool RhConfig::GetEmbeddedVariable(_In_z_ const char* configName, _Out_ const char** configValue)
 {
-    //the buffer needs to be big enough to read the value buffer + null terminator
-    if (cchOutputBuffer < CONFIG_VAL_MAXLEN + 1)
-    {
-        return 0;
-    }
-
-    //if we haven't read the config yet try to read
+    // Read the config if we haven't yet
     if (g_embeddedSettings == NULL)
     {
         ReadEmbeddedSettings();
     }
 
-    //if the config wasn't read or reading failed return 0 immediately
+    // Config wasn't read or reading failed
     if (g_embeddedSettings == CONFIG_INI_NOT_AVAIL)
     {
-        return 0;
+        return false;
     }
 
-    return GetConfigVariable(configName, (ConfigPair*)g_embeddedSettings, outputBuffer, cchOutputBuffer);
-}
-#endif // FEATURE_EMBEDDED_CONFIG
+    const ConfigPair* configPairs = (const ConfigPair*)g_embeddedSettings;
 
-uint32_t RhConfig::GetConfigVariable(_In_z_ const TCHAR* configName, const ConfigPair* configPairs, _Out_writes_all_(cchOutputBuffer) TCHAR* outputBuffer, _In_ uint32_t cchOutputBuffer)
-{
-    //find the first name which matches (case insensitive to be compat with environment variable counterpart)
+    // Find the first name which matches (case insensitive to be compat with environment variable counterpart)
     for (int iSettings = 0; iSettings < RCV_Count; iSettings++)
     {
-        if (_tcsicmp(configName, configPairs[iSettings].Key) == 0)
+        if (_stricmp(configName, configPairs[iSettings].Key) == 0)
         {
-            bool nullTerm = FALSE;
-
-            uint32_t iValue;
-
-            for (iValue = 0; (iValue < CONFIG_VAL_MAXLEN + 1) && (iValue < cchOutputBuffer); iValue++)
-            {
-                outputBuffer[iValue] = configPairs[iSettings].Value[iValue];
-
-                if (outputBuffer[iValue] == '\0')
-                {
-                    nullTerm = true;
-                    break;
-                }
-            }
-
-            //return the length of the config value if null terminated else return zero
-            return nullTerm ? iValue : 0;
+            *configValue = configPairs[iSettings].Value;
+            return true;
         }
     }
 
-    //if the config key was not found return 0
-    return 0;
+    // Config key was not found
+    return false;
 }
 
-#ifdef FEATURE_EMBEDDED_CONFIG
 struct CompilerEmbeddedSettingsBlob
 {
     uint32_t Size;
@@ -210,7 +178,6 @@ void RhConfig::ReadEmbeddedSettings()
 
     return;
 }
-#endif // FEATURE_EMBEDDED_CONFIG
 
 //Parses one line of config and populates values in the passed in configPair
 //returns: true if the parsing was successful, false if the parsing failed.
