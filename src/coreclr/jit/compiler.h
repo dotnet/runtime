@@ -8642,7 +8642,7 @@ private:
 
     // Get the number of bytes in a System.Numeric.Vector<T> for the current compilation.
     // Note - cannot be used for System.Runtime.Intrinsic
-    unsigned getSIMDVectorRegisterByteLength()
+    uint32_t getSIMDVectorRegisterByteLength()
     {
 #if defined(TARGET_XARCH)
         if (compExactlyDependsOn(InstructionSet_AVX2))
