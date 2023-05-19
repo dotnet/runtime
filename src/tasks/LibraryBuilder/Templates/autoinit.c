@@ -18,7 +18,7 @@
 
 #include "library-builder.h"
 
-%EXTERN_RUNTIMECONFIG_SYMBOLS%
+%EXTERN_BUNDLED_RESOURCES_SYMBOLS%
 
 static void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)

@@ -289,16 +289,16 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
         var addPreallocatedResources = new StringBuilder();
         if (assembliesCount != 0) {
-            preallocatedResources.AppendLine($"MonoBundledResource *bundledAssemblyResources[] = {{\n{string.Join(",\n", preallocatedAssemblies)}\n}};");
-            addPreallocatedResources.AppendLine($"    mono_bundled_resources_add (bundledAssemblyResources, {assembliesCount});");
+            preallocatedResources.AppendLine($"MonoBundledResource *{bundleRegistrationFunctionName}bundledAssemblyResources[] = {{\n{string.Join(",\n", preallocatedAssemblies)}\n}};");
+            addPreallocatedResources.AppendLine($"    mono_bundled_resources_add ({bundleRegistrationFunctionName}bundledAssemblyResources, {assembliesCount});");
         }
         if (satelliteAssembliesCount != 0) {
-            preallocatedResources.AppendLine($"MonoBundledResource *bundledSatelliteAssemblyResources[] = {{\n{string.Join(",\n", preallocatedSatelliteAssemblies)}\n}};");
-            addPreallocatedResources.AppendLine($"    mono_bundled_resources_add (bundledSatelliteAssemblyResources, {satelliteAssembliesCount});");
+            preallocatedResources.AppendLine($"MonoBundledResource *{bundleRegistrationFunctionName}bundledSatelliteAssemblyResources[] = {{\n{string.Join(",\n", preallocatedSatelliteAssemblies)}\n}};");
+            addPreallocatedResources.AppendLine($"    mono_bundled_resources_add ({bundleRegistrationFunctionName}bundledSatelliteAssemblyResources, {satelliteAssembliesCount});");
         }
         if (dataCount != 0) {
-            preallocatedResources.AppendLine($"MonoBundledResource *bundledDataResources[] = {{\n{string.Join(",\n", preallocatedData)}\n}};");
-            addPreallocatedResources.AppendLine($"    mono_bundled_resources_add (bundledDataResources, {dataCount});");
+            preallocatedResources.AppendLine($"MonoBundledResource *{bundleRegistrationFunctionName}bundledDataResources[] = {{\n{string.Join(",\n", preallocatedData)}\n}};");
+            addPreallocatedResources.AppendLine($"    mono_bundled_resources_add ({bundleRegistrationFunctionName}bundledDataResources, {dataCount});");
         }
 
         outputUtf8Writer.Write(Utils.GetEmbeddedResource("mono-bundled-resource-preallocation-and-registration.template")

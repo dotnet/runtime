@@ -37,6 +37,7 @@
     <LibraryBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'LibraryBuilder', 'Debug', '$(_NetCoreAppToolCurrent)'))</LibraryBuilderDir>
     <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', 'Debug', '$(_NetCoreAppToolCurrent)'))</MonoAOTCompilerDir>
     <MonoTargetsTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoTargetsTasks', 'Debug', '$(_NetCoreAppToolCurrent)'))</MonoTargetsTasksDir>
+    <EmitBundleDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'EmitBundle', 'Debug', '$(NetCoreAppToolCurrent)'))</EmitBundleDir>
 
     <MonoArtifactsPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'mono', '$(TargetOS).$(TargetArchitecture).$(RuntimeConfig)'))</MonoArtifactsPath>
     <MonoAotCrossDir>$([MSBuild]::NormalizePath($(MonoArtifactsPath), 'cross', '$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())'))</MonoAotCrossDir>
@@ -54,6 +55,7 @@
     <MonoTargetsTasksDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'MonoTargetsTasks'))</MonoTargetsTasksDir>
     <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'AppleAppBuilder'))</AppleAppBuilderDir>
     <LibraryBuilderDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'LibraryBuilder'))</LibraryBuilderDir>
+    <EmitBundleDir>$([MSBuild]::NormalizeDirectory('$(BuildBaseDir)', 'EmitBundle'))</EmitBundleDir>
 
     <MonoAotCrossDir>$([MSBuild]::NormalizePath($(BuildBaseDir), 'cross'))</MonoAotCrossDir>
     <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
@@ -71,6 +73,7 @@
     <LibraryBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(LibraryBuilderDir)', 'LibraryBuilder.dll'))</LibraryBuilderTasksAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
     <MonoTargetsTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoTargetsTasksDir)', 'MonoTargetsTasks.dll'))</MonoTargetsTasksAssemblyPath>
+    <EmitBundleTasksAssemblyPath>$([MSBuild]::NormalizePath('$(EmitBundleDir)', 'EmitBundle.dll'))</EmitBundleTasksAssemblyPath>
   </PropertyGroup>
 
 </Project>

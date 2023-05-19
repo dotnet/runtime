@@ -1080,13 +1080,13 @@ mono_register_symfile_for_assembly (const char *assembly_name, const mono_byte *
 		assembly_resource->resource.type = MONO_BUNDLED_ASSEMBLY;
 		assembly_resource->resource.id = assembly_name;
 		assembly_resource->resource.free_bundled_resource_func = &mono_bundled_resources_free_bundled_resource_func;
+		mono_bundled_resources_add ((MonoBundledResource **)&assembly_resource, 1);
 	} else {
 		// Ensure the MonoBundledSymbolData has not been initialized
 		g_assert (!assembly_resource->symbol_data.data && assembly_resource->symbol_data.size == 0);
 	}
 	assembly_resource->symbol_data.data = (const uint8_t *)raw_contents;
 	assembly_resource->symbol_data.size = (uint32_t)size;
-	mono_bundled_resources_add ((MonoBundledResource **)&assembly_resource, 1);
 }
 
 static MonoDebugHandle *

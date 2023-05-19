@@ -3161,6 +3161,7 @@ mono_register_bundled_assemblies (const MonoBundledAssembly **assemblies)
 			assembly_resource->resource.type = MONO_BUNDLED_ASSEMBLY;
 			assembly_resource->resource.id = assembly->name;
 			assembly_resource->resource.free_bundled_resource_func = mono_bundled_resources_free_bundled_resource_func;
+			mono_bundled_resources_add ((MonoBundledResource **)&assembly_resource, 1);
 		} else {
 			// Ensure the MonoBundledAssemblyData has not been initialized
 			g_assert (!assembly_resource->assembly.name && !assembly_resource->assembly.data && assembly_resource->assembly.size == 0);
@@ -3168,7 +3169,6 @@ mono_register_bundled_assemblies (const MonoBundledAssembly **assemblies)
 		assembly_resource->assembly.name = assembly->name;
 		assembly_resource->assembly.data = (const uint8_t *)assembly->data;
 		assembly_resource->assembly.size = (uint32_t)assembly->size;
-		mono_bundled_resources_add ((MonoBundledResource **)&assembly_resource, 1);
 	}
 }
 

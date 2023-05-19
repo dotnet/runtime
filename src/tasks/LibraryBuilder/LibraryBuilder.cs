@@ -294,7 +294,7 @@ public class LibraryBuilderTask : AppBuilderTask
         {
             string dataSymbol = "NULL";
             string dataLenSymbol = "0";
-            StringBuilder externRuntimeConfigSymbols = new ("#if defined(BUNDLED_RESOURCES)\nextern void mono_register_resources_bundle (void);");
+            StringBuilder externBundledResourcesSymbols = new ("#if defined(BUNDLED_RESOURCES)\nextern void mono_register_resources_bundle (void);");
             if (BundledRuntimeConfig?.ItemSpec != null)
             {
                 dataSymbol = BundledRuntimeConfig.GetMetadata("DataSymbol");
@@ -307,14 +307,14 @@ public class LibraryBuilderTask : AppBuilderTask
                 {
                     throw new LogAsErrorException($"'{nameof(BundledRuntimeConfig)}' does not contain 'DataLenSymbol' metadata.");
                 }
-                externRuntimeConfigSymbols.AppendLine($"extern uint8_t {dataSymbol}[];");
-                externRuntimeConfigSymbols.AppendLine($"extern const uint32_t {dataLenSymbol};");
+                externBundledResourcesSymbols.AppendLine($"extern uint8_t {dataSymbol}[];");
+                externBundledResourcesSymbols.AppendLine($"extern const uint32_t {dataLenSymbol};");
             }
 
-            externRuntimeConfigSymbols.AppendLine("#endif");
+            externBundledResourcesSymbols.AppendLine("#endif");
 
             autoInitialization = autoInitialization
-                .Replace("%EXTERN_RUNTIMECONFIG_SYMBOLS%", externRuntimeConfigSymbols.ToString())
+                .Replace("%EXTERN_BUNDLED_RESOURCES_SYMBOLS%", externBundledResourcesSymbols.ToString())
                 .Replace("%RUNTIME_CONFIG_DATA%", dataSymbol)
                 .Replace("%RUNTIME_CONFIG_DATA_LEN%", dataLenSymbol);
         }
