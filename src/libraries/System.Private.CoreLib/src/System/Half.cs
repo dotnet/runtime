@@ -616,35 +616,75 @@ namespace System
         public static explicit operator Half(float value)
         {
             // TODO: Detailed explanation of this branchless conversion algorithm here
-            const uint MinExp = 0x3880_0000u; // Minimum exponent for rounding
-            const uint Exponent112 = 0x3800_0000u; // Exponent displacement #1
-            const uint SingleBiasedExponentMask = float.BiasedExponentMask; // Exponent mask
-            const uint Exponent13 = 0x0680_0000u; // Exponent displacement #2
-            const float MaxHalfValueBelowInfinity = 65520.0f;     // Maximum value that is not Infinity in Half
+            #region Explanation of this algorithm
+            // This algorithm converts a single-precision floating-point number to a half-precision floating-point number by multiplying it as a floating-point number and rearranging the bit sequence.
+            // However, it introduces some tricks to implement rounding correctly, to avoid multiplying denormalized numbers and to deal with exceptions such as infinity and NaN without using branch instructions.
+            // 
+            // The bit sequence of a half-precision floating-point number is as follows
+            // seee_eeff_ffff_ffff
+            // The bit sequence of a single-precision floating-point number is as follows
+            // seee_eeee_efff_ffff_ffff_ffff_ffff_ffff
+            // In both cases, "_" is the hexadecimal separator, "s" is the sign, "e" is the exponent part, and "f" is the mantissa part.
+            // In half-precision, the exponent part is 5 bits and the mantissa part is 10 bits. In single precision, the exponent is 8 bits and the mantissa is 23 bits.
+            // Both formats use an offset binary representation for the exponent part: the exponent part for 1.0 is half of the maximum value for either precision, i.e., 127 for single-precision and 15 for half-precision.
+            // The mantissa part is normalized when the exponent part is nonzero, since in binary numbers, 1 appears as the most significant digit for any nonzero number.
+            //
+            //
+            #endregion
+            // Minimum exponent for rounding
+            const uint MinExp = 0x3880_0000u;
+            // Exponent displacement #1
+            const uint Exponent112 = 0x3800_0000u;
+            // Exponent mask
+            const uint SingleBiasedExponentMask = float.BiasedExponentMask;
+            // Exponent displacement #2
+            const uint Exponent13 = 0x0680_0000u;
+            // Maximum value that is not Infinity in Half
+            const float MaxHalfValueBelowInfinity = 65520.0f;
             uint bitValue = BitConverter.SingleToUInt32Bits(value);
-            uint sign = bitValue & float.SignMask;       // Extract sign bit
-            value = float.Abs(value);  // Clear sign bit
+            // Extract sign bit
+            uint sign = bitValue & float.SignMask;
+            // Clear sign bit
+            value = float.Abs(value);
             // Rectify values that are Infinity in Half. (float.Min now emits vminps instruction if one of two arguments is a constant)
+
             value = float.Min(MaxHalfValueBelowInfinity, value);
             bitValue = BitConverter.SingleToUInt32Bits(value);
-            uint realMask = (uint)(Unsafe.BitCast<bool, sbyte>(float.IsNaN(value)) - 1);   // Detecting NaN (~0u if a is not NaN)
+            // Detecting NaN (~0u if a is not NaN)
+            uint realMask = (uint)(Unsafe.BitCast<bool, sbyte>(float.IsNaN(value)) - 1);
             uint underflowMask = (uint)-Unsafe.BitCast<bool, byte>(MinExp > bitValue);
-            uint exponentOffset0 = (MinExp & underflowMask) | (~underflowMask & bitValue); // Rectify lower exponent
-            exponentOffset0 &= SingleBiasedExponentMask;        // Extract exponent
-            exponentOffset0 += Exponent13;        // Add exponent by 13
-            uint exponentOffset1 = exponentOffset0 - Exponent112; // Subtract exponent from y by 112
-            exponentOffset1 &= realMask;         // Zero whole z if value is NaN
-            value += BitConverter.UInt32BitsToSingle(exponentOffset0);                       // Round Single into Half's precision (NaN also gets modified here, just setting the MSB of fraction)
-            value = BitConverter.UInt32BitsToSingle(BitConverter.SingleToUInt32Bits(value) - Exponent112);   // Subtract exponent by 112
-            value -= BitConverter.UInt32BitsToSingle(exponentOffset1);                       // Clear Extra leading 1 set in rounding
-            bitValue = BitConverter.SingleToUInt32Bits(value) >> 13;    // Now internal representation is the absolute value represented in Half, shifted 13 bits left, with some exceptions like NaN having strange exponents
-            sign >>>= 16;                                  // Match the position of sign bit
-            uint maskedHalfExponentForNaN = ~realMask & 0x7C00u;       // Only exponent bits will be modified if NaN
-            bitValue &= 0x7fffu;       // Clear the upper unnecessary bits
-            uint signAndMaskedExponent = maskedHalfExponentForNaN | sign;   // Merge sign bit with possible NaN exponent
-            bitValue &= ~maskedHalfExponentForNaN;           // Clear exponents if value is NaN
-            bitValue |= signAndMaskedExponent;            // Merge sign bit and possible NaN exponent
-            return BitConverter.UInt16BitsToHalf((ushort)bitValue);    // The final result
+            // Rectify lower exponent
+            uint exponentOffset0 = (MinExp & underflowMask) | (~underflowMask & bitValue);
+            // Extract exponent
+            exponentOffset0 &= SingleBiasedExponentMask;
+            // Add exponent by 13
+            exponentOffset0 += Exponent13;
+            // Subtract exponent from exponentOffset0 by 112
+            uint exponentOffset1 = exponentOffset0 - Exponent112;
+            // Zero whole exponentOffset1 if value is NaN
+            exponentOffset1 &= realMask;
+            // Round Single into Half's precision (NaN also gets modified here, just setting the MSB of fraction)
+            value += BitConverter.UInt32BitsToSingle(exponentOffset0);
+            // Subtract exponent by 112
+            value = BitConverter.UInt32BitsToSingle(BitConverter.SingleToUInt32Bits(value) - Exponent112);
+            // Clear Extra leading 1 set in rounding
+            value -= BitConverter.UInt32BitsToSingle(exponentOffset1);
+            // Now internal representation is the absolute value represented in Half, shifted 13 bits left, with some exceptions like NaN having strange exponents
+            bitValue = BitConverter.SingleToUInt32Bits(value) >> 13;
+            // Match the position of sign bit
+            sign >>>= 16;
+            // Only exponent bits will be modified if NaN
+            uint maskedHalfExponentForNaN = ~realMask & 0x7C00u;
+            // Clear the upper unnecessary bits
+            bitValue &= 0x7fffu;
+            // Merge sign bit with possible NaN exponent
+            uint signAndMaskedExponent = maskedHalfExponentForNaN | sign;
+            // Clear exponents if value is NaN
+            bitValue &= ~maskedHalfExponentForNaN;
+            // Merge sign bit and possible NaN exponent
+            bitValue |= signAndMaskedExponent;
+            // The final result
+            return BitConverter.UInt16BitsToHalf((ushort)bitValue);
         }
 
         /// <summary>Explicitly converts a <see cref="ushort" /> value to its nearest representable half-precision floating-point value.</summary>
@@ -891,24 +931,74 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator float(Half value)
         {
-            // TODO: Detailed explanation of this branchless conversion algorithm here
-            const uint ExponentLowerBound = 0x3880_0000u;   // The smallest positive normal number in Half, converted to Single
-            const uint ExponentOffset = 0x3800_0000u;       // BitConverter.SingleToUInt32Bits(1.0f) - ((uint)BitConverter.HalfToUInt16Bits((Half)1.0f) << 13)
-            const uint FloatSignMask = 0x8000_0000u;        // Mask for sign bit in Single
-            short valueInInt16Bits = BitConverter.HalfToInt16Bits(value);    // Extract the internal representation of value
-            uint bitValueInProcess = (uint)(int)valueInInt16Bits;   // Copy sign bit to upper bits
-            uint offsetExponent = bitValueInProcess & 0x7c00u;    // Extract exponent bits of value (BiasedExponent is not for here as it performs unnecessary shift)
-            uint subnormalMask = (uint)-Unsafe.BitCast<bool, byte>(offsetExponent == 0u);   // ~0u when value is subnormal, 0 otherwise
-            uint infinityOrNaNMask = (uint)-Unsafe.BitCast<bool, byte>(offsetExponent == 0x7c00u);   // ~0u when value is either Infinity or NaN, 0 otherwise
-            uint maskedExponentLowerBound = subnormalMask & ExponentLowerBound;    // n is 0x3880_0000u if c is true, 0 otherwise
-            uint offsetMaskedExponentLowerBound = ExponentOffset | maskedExponentLowerBound;         // j is now 0x3880_0000u if value is subnormal, 0x3800_0000u otherwise
-            bitValueInProcess <<= 13;                           // Match the position of the boundary of exponent bits and fraction bits with IEEE 754 Binary32(Single)
-            offsetMaskedExponentLowerBound += offsetMaskedExponentLowerBound & infinityOrNaNMask;                        // Double the j if value is either Infinity or NaN
-            uint sign = bitValueInProcess & FloatSignMask;          // Extract sign bit of value
-            bitValueInProcess &= 0x0FFF_E000;                   // Extract exponent bits and fraction bits of value
-            bitValueInProcess += offsetMaskedExponentLowerBound;                             // Adjust exponent to match the range of exponent
-            uint absoluteValue = BitConverter.SingleToUInt32Bits(BitConverter.UInt32BitsToSingle(bitValueInProcess) - BitConverter.UInt32BitsToSingle(maskedExponentLowerBound));   // If value is subnormal, remove unnecessary 1 on top of fraction bits.
-            return BitConverter.UInt32BitsToSingle(absoluteValue | sign);  // Merge sign bit with rest
+            #region Explanation of this algorithm
+            // This algorithm converts a half-precision floating-point number to a single-precision floating-point number by rearranging the bit sequence and multiplying it as a floating-point number.
+            // However, it introduces some tricks to avoid multiplying denormalized numbers and to deal with exceptions such as infinity and NaN without using branch instructions.
+            // 
+            // The bit sequence of a half-precision floating-point number is as follows
+            // seee_eeff_ffff_ffff
+            // The bit sequence of a single-precision floating-point number is as follows
+            // seee_eeee_efff_ffff_ffff_ffff_ffff_ffff
+            // In both cases, "_" is the hexadecimal separator, "s" is the sign, "e" is the exponent part, and "f" is the mantissa part.
+            // In half-precision, the exponent part is 5 bits and the mantissa part is 10 bits. In single precision, the exponent is 8 bits and the mantissa is 23 bits.
+            // Both formats use an offset binary representation for the exponent part: the exponent part for 1.0 is half of the maximum value for either precision, i.e., 127 for single-precision and 15 for half-precision.
+            // The mantissa part is normalized when the exponent part is nonzero, since in binary numbers, 1 appears as the most significant digit for any nonzero number.
+            // 
+            // This conversion algorithm takes advantage of the similarity between the two formats.
+            // By isolating the sign part from the half-precision bitstring and shifting it 13 bits to the left, the boundary between the exponent and mantissa parts matches with that of single-precision.
+            // In other words, 
+            //    0eeeeeffffffffff              is rearranged to 
+            // 0000eeeeeffffffffff0000000000000
+            // which matches the boundary between the exponent and mantissa parts of single-precision floating-point number:
+            // seeeeeeeefffffffffffffffffffffff
+            // 
+            // After rearrangement, this bit sequence is multiplied by the constant 5.192297E+33f in the floating-point number multiplication unit.
+            // However, most hardware cannot efficiently handle the multiplication of denormalized numbers.
+            // Denormalized numbers are more common in half-precision than in single-precision, so they cannot be ignored.
+            // 
+            // First, if the value is a denormalized number, the constant 0x3880_0000u is added beforehand in the integer addition unit to make it behave as a normalized number.
+            // For Infinity or NaN, the constant 0x7000_0000u is added beforehand in the integer adder.
+            // These numbers are then converted to single-precision floating-point numbers as per the IEEE754 specification by the following operations.
+            // Next, regardless of whether the value is a denormalized number or not, add the constant 0x3800_0000u to this bit string in the integer addition unit. The constant is chosen to add 112 to the exponent part; 112 is 127 subtracted by 15.
+            // Then, if the value is a denormalized number, the constant 6.1035156E-05f is subtracted in the floating-point number subtraction unit.
+            // The above operation produces the same result as if the rearranged bit sequence were multiplied by the constant 5.192297E+33f.
+            // Finally, merging the isolated sign bits completes the conversion.
+            #endregion
+
+            // The smallest positive normal number in Half, converted to Single
+            const uint ExponentLowerBound = 0x3880_0000u;
+            // BitConverter.SingleToUInt32Bits(1.0f) - ((uint)BitConverter.HalfToUInt16Bits((Half)1.0f) << 13)
+            const uint ExponentOffset = 0x3800_0000u;
+            // Mask for sign bit in Single
+            const uint FloatSignMask = float.SignMask;
+            // Extract the internal representation of value
+            short valueInInt16Bits = BitConverter.HalfToInt16Bits(value);
+            // Copy sign bit to upper bits
+            uint bitValueInProcess = (uint)(int)valueInInt16Bits;
+            // Extract exponent bits of value (BiasedExponent is not for here as it performs unnecessary shift)
+            uint offsetExponent = bitValueInProcess & 0x7c00u;
+            // ~0u when value is subnormal, 0 otherwise
+            uint subnormalMask = (uint)-Unsafe.BitCast<bool, byte>(offsetExponent == 0u);
+            // ~0u when value is either Infinity or NaN, 0 otherwise
+            int infinityOrNaNMask = Unsafe.BitCast<bool, byte>(offsetExponent == 0x7c00u);
+            // 0x3880_0000u if value is subnormal, 0 otherwise
+            uint maskedExponentLowerBound = subnormalMask & ExponentLowerBound;
+            // 0x3880_0000u if value is subnormal, 0x3800_0000u otherwise
+            uint offsetMaskedExponentLowerBound = ExponentOffset | maskedExponentLowerBound;
+            // Match the position of the boundary of exponent bits and fraction bits with IEEE 754 Binary32(Single)
+            bitValueInProcess <<= 13;
+            // Double the offsetMaskedExponentLowerBound if value is either Infinity or NaN
+            offsetMaskedExponentLowerBound <<= infinityOrNaNMask;
+            // Extract sign bit of value
+            uint sign = bitValueInProcess & FloatSignMask;
+            // Extract exponent bits and fraction bits of value
+            bitValueInProcess &= 0x0FFF_E000;
+            // Adjust exponent to match the range of exponent
+            bitValueInProcess += offsetMaskedExponentLowerBound;
+            // If value is subnormal, remove unnecessary 1 on top of fraction bits.
+            uint absoluteValue = BitConverter.SingleToUInt32Bits(BitConverter.UInt32BitsToSingle(bitValueInProcess) - BitConverter.UInt32BitsToSingle(maskedExponentLowerBound));
+            // Merge sign bit with rest
+            return BitConverter.UInt32BitsToSingle(absoluteValue | sign);
         }
 
         // IEEE 754 specifies NaNs to be propagated
