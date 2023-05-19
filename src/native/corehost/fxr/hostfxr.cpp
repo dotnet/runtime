@@ -692,18 +692,38 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_delegate(
     if (delegate_type == coreclr_delegate_type::invalid)
         return StatusCode::InvalidArgFailure;
 
+    const host_context_t *context;
+    host_context_t *context_from_handle = nullptr;
     if (host_context_handle == nullptr)
     {
-        return fx_muxer_t::get_runtime_delegate(nullptr, delegate_type, delegate);
+        context = fx_muxer_t::get_active_host_context();
+        if (context == nullptr)
+        {
+            trace::error(_X("Hosting components context has not been initialized. Cannot get runtime properties."));
+            return StatusCode::HostInvalidState;
+        }
     }
     else
     {
-        host_context_t *context = host_context_t::from_handle(host_context_handle);
-        if (context == nullptr)
+        context_from_handle = host_context_t::from_handle(host_context_handle);
+        if (context_from_handle == nullptr)
             return StatusCode::InvalidArgFailure;
 
-        return fx_muxer_t::get_runtime_delegate(context, delegate_type, delegate);
+        context = context_from_handle;
     }
+
+    int rc = fx_muxer_t::get_runtime_delegate(context, delegate_type, delegate);
+    if (rc != StatusCode::Success)
+        return rc;
+    
+    if (context_from_handle == nullptr && context_from_handle->type != host_context_type::secondary)
+    {
+        rc = fx_muxer_t::load_runtime(context_from_handle);
+        if (rc != StatusCode::Success)
+            return rc;
+    }
+
+    return StatusCode::Success;
 }
 
 SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_property_value(

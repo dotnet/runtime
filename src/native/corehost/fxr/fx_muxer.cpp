@@ -833,30 +833,27 @@ int fx_muxer_t::initialize_for_runtime_config(
     return rc;
 }
 
-namespace
+int fx_muxer_t::load_runtime(host_context_t *context)
 {
-    int load_runtime(host_context_t *context)
+    assert(context->type == host_context_type::initialized || context->type == host_context_type::active);
+    if (context->type == host_context_type::active)
+        return StatusCode::Success;
+
+    const corehost_context_contract &contract = context->hostpolicy_context_contract;
+    int rc = contract.load_runtime();
+
+    // Mark the context as active or invalid
+    context->type = rc == StatusCode::Success ? host_context_type::active : host_context_type::invalid;
+
     {
-        assert(context->type == host_context_type::initialized || context->type == host_context_type::active);
-        if (context->type == host_context_type::active)
-            return StatusCode::Success;
-
-        const corehost_context_contract &contract = context->hostpolicy_context_contract;
-        int rc = contract.load_runtime();
-
-        // Mark the context as active or invalid
-        context->type = rc == StatusCode::Success ? host_context_type::active : host_context_type::invalid;
-
-        {
-            std::lock_guard<std::mutex> lock{ g_context_lock };
-            assert(g_active_host_context == nullptr);
-            g_active_host_context.reset(context);
-            g_context_initializing.store(false);
-        }
-
-        g_context_initializing_cv.notify_all();
-        return rc;
+        std::lock_guard<std::mutex> lock{ g_context_lock };
+        assert(g_active_host_context == nullptr);
+        g_active_host_context.reset(context);
+        g_context_initializing.store(false);
     }
+
+    g_context_initializing_cv.notify_all();
+    return rc;
 }
 
 int fx_muxer_t::run_app(host_context_t *context)
@@ -874,7 +871,7 @@ int fx_muxer_t::run_app(host_context_t *context)
     {
         propagate_error_writer_t propagate_error_writer_to_corehost(context->hostpolicy_contract.set_error_writer);
 
-        int rc = load_runtime(context);
+        int rc = fx_muxer_t::load_runtime(context);
         if (rc != StatusCode::Success)
             return rc;
 
@@ -882,16 +879,8 @@ int fx_muxer_t::run_app(host_context_t *context)
     }
 }
 
-int fx_muxer_t::get_runtime_delegate(host_context_t *context, coreclr_delegate_type type, void **delegate)
+int fx_muxer_t::get_runtime_delegate(const host_context_t *context, coreclr_delegate_type type, void **delegate)
 {
-    const host_context_t* context_local = context == nullptr ? get_active_host_context() : context;
-
-    if (context_local == nullptr)
-    {
-        trace::error(_X("Hosting components context has not been initialized. Cannot get runtime delegate."));
-        return StatusCode::HostInvalidState;
-    }
-
     switch (type)
     {
     case coreclr_delegate_type::com_activation:
@@ -899,7 +888,7 @@ int fx_muxer_t::get_runtime_delegate(host_context_t *context, coreclr_delegate_t
     case coreclr_delegate_type::winrt_activation:
     case coreclr_delegate_type::com_register:
     case coreclr_delegate_type::com_unregister:
-        if (context_local->is_app)
+        if (context->is_app)
             return StatusCode::HostApiUnsupportedScenario;
         break;
     default:
@@ -911,22 +900,15 @@ int fx_muxer_t::get_runtime_delegate(host_context_t *context, coreclr_delegate_t
     // But when get_runtime_delegate was originally implemented in 3.0,
     // it supported up to load_assembly_and_get_function_pointer so we check that first.
     if (type > coreclr_delegate_type::load_assembly_and_get_function_pointer
-        && (size_t)type > context_local->hostpolicy_context_contract.last_known_delegate_type)
+        && (size_t)type > context->hostpolicy_context_contract.last_known_delegate_type)
     {
         trace::error(_X("The requested delegate type is not available in the target framework."));
         return StatusCode::HostApiUnsupportedVersion;
     }
 
-    const corehost_context_contract &contract = context_local->hostpolicy_context_contract;
+    const corehost_context_contract &contract = context->hostpolicy_context_contract;
     {
-        propagate_error_writer_t propagate_error_writer_to_corehost(context_local->hostpolicy_contract.set_error_writer);
-
-        if (context_local->type != host_context_type::secondary)
-        {
-            int rc = load_runtime(context);
-            if (rc != StatusCode::Success)
-                return rc;
-        }
+        propagate_error_writer_t propagate_error_writer_to_corehost(context->hostpolicy_contract.set_error_writer);
 
         return contract.get_runtime_delegate(type, delegate);
     }
