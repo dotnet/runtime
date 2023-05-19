@@ -154,7 +154,7 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Fact]
-        public async Task UnmanagedTypeInterfaceWithComImportType_NoDiagnostic(UnmanagedType unmanagedType)
+        public async Task UnmanagedTypeInterfaceWithComImportType_NoDiagnostic()
         {
             string source = $$"""
                 using System.Runtime.InteropServices;
