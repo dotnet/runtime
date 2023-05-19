@@ -105,7 +105,10 @@ NamedIntrinsic SimdAsHWIntrinsicInfo::lookupId(Compiler*         comp,
 
         classId = lookupClassId(comp, argClassName, nullptr);
 
-        assert(classId != SimdAsHWIntrinsicClassId::Unknown);
+        if (classId == SimdAsHWIntrinsicClassId::Unknown)
+        {
+            return NI_Illegal;
+        }
         assert(classId != SimdAsHWIntrinsicClassId::Vector);
     }
 
@@ -155,9 +158,7 @@ SimdAsHWIntrinsicClassId SimdAsHWIntrinsicInfo::lookupClassId(Compiler*   comp,
                                                               const char* className,
                                                               const char* enclosingClassName)
 {
-    assert(className != nullptr);
-
-    if (enclosingClassName != nullptr)
+    if ((className == nullptr) || (enclosingClassName != nullptr))
     {
         return SimdAsHWIntrinsicClassId::Unknown;
     }
