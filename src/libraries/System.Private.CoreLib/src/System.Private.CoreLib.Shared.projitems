@@ -2559,10 +2559,19 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Windows.cs" Condition="'$(TargetsWindows)' == 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Portable.Core.cs" Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(FeatureWasmThreads)' == 'true'" />
+<<<<<<< Updated upstream
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Windows.cs" Condition="'$(TargetsWindows)' == 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Portable.cs" Condition="'$(TargetsWindows)' != 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Portable.Core.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Portable.cs" />
+=======
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.cs" Condition="'$(TargetsWindows)' == 'true'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Unix.cs" Condition="'$(TargetsWindows)' != 'true'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Portable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.cs" Condition="'$(TargetsWindows)' == 'true'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Portable.cs" Condition="'$(TargetsWindows)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Portable.Core.cs" />
+>>>>>>> Stashed changes
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphoreBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
