@@ -1631,27 +1631,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             LowerFusedMultiplyAdd(node);
             break;
 
-        case NI_AVX_BroadcastScalarToVector256:
-        case NI_AVX_BroadcastScalarToVector128:
-        {
-            // there can be 2 cases hitting AVX_BroadcastScalarToVector*
-            // 1. pass the address as LCL_ADDR to AVX.BroadcastScalarToVector256() API
-            // 2. pass the address as LCL_VAR  to AVX.BroadcastScalarToVector256() API
-            LIR::Use use;
-            bool     foundUse = BlockRange().TryGetUse(node, &use);
-            if (foundUse && use.User()->OperIs(GT_HWINTRINSIC) &&
-                use.User()->AsHWIntrinsic()->OperIsEmbBroadcastCompatible())
-            {
-                GenTree* op = node->Op(1);
-                assert(op->OperIs(GT_LCL_ADDR, GT_LCL_VAR));
-                if (node == use.User()->AsHWIntrinsic()->Op(1))
-                {
-                    std::swap(use.User()->AsHWIntrinsic()->Op(1), use.User()->AsHWIntrinsic()->Op(2));
-                }
-            }
-            break;
-        }
-
         default:
             break;
     }
@@ -7647,6 +7626,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_AVX2_BroadcastScalarToVector256:
         case NI_AVX512F_BroadcastScalarToVector512:
         {
+            // make the broadcast node containable when embedded broadcast can be enabled.
             if (intrinsicId == NI_SSE3_MoveAndDuplicate)
             {
                 // NI_SSE3_MoveAndDuplicate is for Vector128<double> only.
@@ -7656,51 +7636,67 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 parentNode->OperIsEmbBroadcastCompatible())
             {
                 GenTree* createScalar = childNode->AsHWIntrinsic()->Op(1);
-                if (createScalar->OperIs(GT_HWINTRINSIC) &&
-                    createScalar->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe)
+                switch (createScalar->OperGet())
                 {
-                    GenTree* scalar = createScalar->AsHWIntrinsic()->Op(1);
-                    if (scalar->OperIs(GT_LCL_VAR))
+                    case GT_HWINTRINSIC:
                     {
-                        switch (scalar->TypeGet())
+                        if(createScalar->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe)
                         {
-                            case TYP_FLOAT:
-                            case TYP_DOUBLE:
+                            // Handle the case for:
+                            // BroadcastScalarTovector -> CreateScalarUnsafe -> LCL_VAR/CNS_DBL.
+                            GenTree* scalar = createScalar->AsHWIntrinsic()->Op(1);
+                            if (scalar->OperIs(GT_LCL_VAR))
                             {
-                                const unsigned opLclNum = scalar->AsLclVar()->GetLclNum();
-                                comp->lvaSetVarDoNotEnregister(
-                                    opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+                                switch (scalar->TypeGet())
+                                {
+                                    case TYP_FLOAT:
+                                    case TYP_DOUBLE:
+                                    {
+                                        const unsigned opLclNum = scalar->AsLclVar()->GetLclNum();
+                                        comp->lvaSetVarDoNotEnregister(
+                                            opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+                                        MakeSrcContained(createScalar, scalar);
+                                        MakeSrcContained(childNode, createScalar);
+                                        return true;
+                                    }
+
+                                    default:
+                                        return false;
+                                }
+                            }
+                            else if (scalar->OperIs(GT_CNS_DBL))
+                            {
                                 MakeSrcContained(createScalar, scalar);
                                 MakeSrcContained(childNode, createScalar);
                                 return true;
                             }
-
-                            default:
-                                return false;
                         }
+                        break;
                     }
-                    else if (scalar->OperIs(GT_CNS_DBL))
+                    case GT_LCL_VAR:
                     {
-                        MakeSrcContained(createScalar, scalar);
+                        // if the operand of the CreateScalarUnsafe node is in Integer type, CreateScalarUnsafe node will be
+                        // fold, we need to specially handle this case.
+                        assert(createScalar->TypeIs(TYP_INT) || createScalar->TypeIs(TYP_UINT) ||
+                            createScalar->TypeIs(TYP_LONG) || createScalar->TypeIs(TYP_ULONG));
+                        const unsigned opLclNum = createScalar->AsLclVar()->GetLclNum();
+                        comp->lvaSetVarDoNotEnregister(opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
                         MakeSrcContained(childNode, createScalar);
                         return true;
                     }
-                }
-                else if (createScalar->OperIs(GT_LCL_VAR))
-                {
-                    // if the operand of the CreateScalarUnsafe node is in Integer type, CreateScalarUnsafe node will be
-                    // fold, we need to specially handle this case.
-                    assert(createScalar->TypeIs(TYP_INT) || createScalar->TypeIs(TYP_UINT) ||
-                           createScalar->TypeIs(TYP_LONG) || createScalar->TypeIs(TYP_ULONG));
-                    const unsigned opLclNum = createScalar->AsLclVar()->GetLclNum();
-                    comp->lvaSetVarDoNotEnregister(opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
-                    MakeSrcContained(childNode, createScalar);
-                    return true;
-                }
-                else if (createScalar->OperIs(GT_CNS_INT))
-                {
-                    MakeSrcContained(childNode, createScalar);
-                    return true;
+                    case GT_CNS_INT:
+                    case GT_IND:
+                    {
+                        // For CNS_INT, similar to the GT_LVL_VAR case.
+                        // If the operand of the CreateScalarUnsafe node is in Integer type, CreateScalarUnsafe node will be
+                        // fold, we need to specially handle this case.
+
+                        // For IND, handle the case for Avx2.BroadcastScalarToVector*(T*)
+                        MakeSrcContained(childNode, createScalar);
+                        return true;
+                    }
+                    default:
+                        break;
                 }
             }
             return false;

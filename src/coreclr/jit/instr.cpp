@@ -848,15 +848,20 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                             // a special case is when the operand of CreateScalarUnsafe is in integer type,
                             // CreateScalarUnsafe node will be fold, so we directly match a pattern of
                             // broadcast -> LCL_VAR(TYP_(U)INT)
-                            assert(hwintrinsic->Op(1)->OperIs(GT_LCL_VAR, GT_CNS_INT));
+                            assert(hwintrinsic->Op(1)->OperIs(GT_LCL_VAR, GT_CNS_INT, GT_IND));
                             GenTree* scalar = hwintrinsic->Op(1);
-                            if (hwintrinsic->Op(1)->OperIs(GT_LCL_VAR))
+                            assert(scalar->isContained());
+                            if (scalar->OperIs(GT_LCL_VAR, GT_IND))
                             {
+                                // This handles the case: 
+                                // BroadcastScalarToVector* -> LCL_VAR/IND.
                                 assert(scalar->isContained());
                                 return genOperandDesc(scalar);
                             }
                             else
                             {
+                                // This handles the case: 
+                                // BroadcastScalarToVector* -> CNS_INT.
                                 ssize_t        scalarValue = scalar->AsIntCon()->IconValue();
                                 UNATIVE_OFFSET cnum = emit->emitDataConst(&scalarValue, genTypeSize(simdBaseType),
                                                                           genTypeSize(simdBaseType), simdBaseType);
@@ -867,11 +872,22 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                         case TYP_FLOAT:
                         case TYP_DOUBLE:
                         {
-                            assert(hwintrinsic->Op(1)->OperIs(GT_HWINTRINSIC));
-                            op = hwintrinsic->Op(1);
-                            assert(op->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe);
-                            assert(op->isContained());
-                            return genOperandDesc(op->AsHWIntrinsic()->Op(1));
+                            assert(hwintrinsic->isContained());
+                            assert(hwintrinsic->Op(1)->OperIs(GT_HWINTRINSIC, GT_IND));
+                            GenTree* scalar = hwintrinsic->Op(1);
+                            assert(scalar->isContained());
+                            if(scalar->OperIs(GT_HWINTRINSIC))
+                            {
+                                // This handles the case: 
+                                // BroadcastScalarToVector* -> CreateScalarUnsafe -> LCL_VAR/CNS_DBL
+                                return genOperandDesc(scalar->AsHWIntrinsic()->Op(1)); 
+                            }
+                            else
+                            {
+                                // This handles the case: 
+                                // BroadcastScalarToVector* -> IND
+                                return genOperandDesc(scalar);
+                            }
                         }
 
                         default:
