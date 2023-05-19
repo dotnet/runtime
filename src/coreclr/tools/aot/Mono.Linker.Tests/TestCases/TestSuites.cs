@@ -43,6 +43,7 @@ namespace Mono.Linker.Tests.TestCases
 		{
 			switch (t) {
 			case "TypeHierarchyReflectionWarnings":
+			case "ParametersUsedViaReflection":
 				Run (t);
 				break;
 			default:

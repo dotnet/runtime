@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { mono_wasm_new_external_root } from "../roots";
-import {MonoString } from "../types";
+import { MonoString } from "../types/internal";
 import { Int32Ptr } from "../types/emscripten";
 import { js_string_to_mono_string_root } from "../strings";
 

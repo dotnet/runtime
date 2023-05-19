@@ -262,7 +262,7 @@ namespace Internal.Runtime
 #endif
         }
 
-        internal ushort GenericArgumentCount
+        internal ushort GenericParameterCount
         {
             get
             {
@@ -294,6 +294,7 @@ namespace Internal.Runtime
 
         internal ushort ExtendedFlags
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 return HasComponentSize ? (ushort)0 : (ushort)_uFlags;
@@ -523,36 +524,10 @@ namespace Internal.Runtime
 #endif
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        private readonly struct GenericComposition
-        {
-            public readonly ushort Arity;
-
-            private readonly EETypeRef _genericArgument1;
-            public EETypeRef* GenericArguments
-            {
-                get
-                {
-                    return (EETypeRef*)Unsafe.AsPointer(ref Unsafe.AsRef(in _genericArgument1));
-                }
-            }
-
-            public GenericVariance* GenericVariance
-            {
-                get
-                {
-                    // Generic variance directly follows the last generic argument
-                    return (GenericVariance*)(GenericArguments + Arity);
-                }
-            }
-        }
-
 #if TYPE_LOADER_IMPLEMENTATION
-        internal static int GetGenericCompositionSize(int numArguments, bool hasVariance)
+        internal static int GetGenericCompositionSize(int numArguments)
         {
-            return IntPtr.Size
-                + numArguments * IntPtr.Size
-                + (hasVariance ? numArguments * sizeof(GenericVariance) : 0);
+            return numArguments * IntPtr.Size;
         }
 
         internal void SetGenericComposition(IntPtr data)
@@ -571,31 +546,34 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(IsGeneric);
-                if (IsDynamicType || !SupportsRelativePointers)
-                    return GetField<Pointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->Arity;
-
-                return GetField<RelativePointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->Arity;
+                return GenericDefinition->GenericParameterCount;
             }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                Debug.Assert(IsDynamicType);
-                // GenericComposition is a readonly struct, so we just blit the bytes over. Asserts guard changes to the layout.
-                *((ushort*)GetField<Pointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value) = checked((ushort)value);
-                Debug.Assert(GenericArity == (ushort)value);
-            }
-#endif
         }
 
-        internal EETypeRef* GenericArguments
+        internal MethodTableList GenericArguments
         {
             get
             {
                 Debug.Assert(IsGeneric);
-                if (IsDynamicType || !SupportsRelativePointers)
-                    return GetField<Pointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->GenericArguments;
 
-                return GetField<RelativePointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->GenericArguments;
+                void* pField = (byte*)Unsafe.AsPointer(ref this) + GetFieldOffset(EETypeField.ETF_GenericComposition);
+                uint arity = GenericArity;
+
+                // If arity is 1, the field value is the component. For arity > 1, components are stored out-of-line
+                // and are shared.
+                if (IsDynamicType || !SupportsRelativePointers)
+                {
+                    // This is a full pointer [that points to a list of full pointers]
+                    MethodTable* pListStart = arity == 1 ? (MethodTable*)pField : *(MethodTable**)pField;
+                    return new MethodTableList(pListStart);
+                }
+                else
+                {
+                    // This is a relative pointer [that points to a list of relative pointers]
+                    RelativePointer<MethodTable>* pListStart = arity == 1 ?
+                        (RelativePointer<MethodTable>*)pField : (RelativePointer<MethodTable>*)((RelativePointer*)pField)->Value;
+                    return new MethodTableList(pListStart);
+                }
             }
         }
 
@@ -608,10 +586,13 @@ namespace Internal.Runtime
                 if (!HasGenericVariance)
                     return null;
 
-                if (IsDynamicType || !SupportsRelativePointers)
-                    return GetField<Pointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->GenericVariance;
+                if (IsGeneric)
+                    return GenericDefinition->GenericVariance;
 
-                return GetField<RelativePointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->GenericVariance;
+                if (IsDynamicType || !SupportsRelativePointers)
+                    return GetField<Pointer<GenericVariance>>(EETypeField.ETF_GenericComposition).Value;
+
+                return GetField<RelativePointer<GenericVariance>>(EETypeField.ETF_GenericComposition).Value;
             }
         }
 
@@ -636,14 +617,6 @@ namespace Internal.Runtime
             get
             {
                 return ElementType == EETypeElementType.Interface;
-            }
-        }
-
-        internal bool IsAbstract
-        {
-            get
-            {
-                return IsInterface || (RareFlags & EETypeRareFlags.IsAbstractClassFlag) != 0;
             }
         }
 
@@ -773,7 +746,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return ((_uFlags & (uint)EETypeFlags.IDynamicInterfaceCastableFlag) != 0);
+                return ((ExtendedFlags & (ushort)EETypeFlagsEx.IDynamicInterfaceCastableFlag) != 0);
             }
         }
 
@@ -791,6 +764,14 @@ namespace Internal.Runtime
             get
             {
                 return ElementType < EETypeElementType.ValueType;
+            }
+        }
+
+        internal bool HasSealedVTableEntries
+        {
+            get
+            {
+                return (_uFlags & (uint)EETypeFlags.HasSealedVTableEntriesFlag) != 0;
             }
         }
 
@@ -865,6 +846,7 @@ namespace Internal.Runtime
 
         internal MethodTable** InterfaceMap
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 // interface info table starts after the vtable and has _usNumInterfaces entries
@@ -876,22 +858,7 @@ namespace Internal.Runtime
         {
             get
             {
-                if (NumInterfaces == 0)
-                    return false;
-                byte* optionalFields = OptionalFieldsPtr;
-
-                const uint NoDispatchMap = 0xffffffff;
-                uint idxDispatchMap = NoDispatchMap;
-                if (optionalFields != null)
-                    idxDispatchMap = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.DispatchMap, NoDispatchMap);
-
-                if (idxDispatchMap == NoDispatchMap)
-                {
-                    if (IsDynamicType)
-                        return DynamicTemplateType->HasDispatchMap;
-                    return false;
-                }
-                return true;
+                return (_uFlags & (uint)EETypeFlags.HasDispatchMap) != 0;
             }
         }
 
@@ -899,25 +866,23 @@ namespace Internal.Runtime
         {
             get
             {
-                if (NumInterfaces == 0)
+                if (!HasDispatchMap)
                     return null;
-                byte* optionalFields = OptionalFieldsPtr;
-                const uint NoDispatchMap = 0xffffffff;
-                uint idxDispatchMap = NoDispatchMap;
-                if (optionalFields != null)
-                    idxDispatchMap = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.DispatchMap, NoDispatchMap);
-                if (idxDispatchMap == NoDispatchMap)
-                {
-                    if (IsDynamicType)
-                        return DynamicTemplateType->DispatchMap;
-                    return null;
-                }
 
-                if (SupportsRelativePointers)
-                    return (DispatchMap*)FollowRelativePointer((int*)TypeManager.DispatchMap + idxDispatchMap);
-                else
-                    return ((DispatchMap**)TypeManager.DispatchMap)[idxDispatchMap];
+                if (IsDynamicType || !SupportsRelativePointers)
+                    return GetField<Pointer<DispatchMap>>(EETypeField.ETF_DispatchMap).Value;
+
+                return GetField<RelativePointer<DispatchMap>>(EETypeField.ETF_DispatchMap).Value;
             }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert(IsDynamicType && HasDispatchMap);
+
+                fixed (MethodTable* pThis = &this)
+                    *(DispatchMap**)((byte*)pThis + GetFieldOffset(EETypeField.ETF_DispatchMap)) = value;
+            }
+#endif
         }
 
         // Get the address of the finalizer method for finalizable types.
@@ -973,29 +938,9 @@ namespace Internal.Runtime
         {
             get
             {
-                Debug.Assert(!IsArray, "array type not supported in BaseType");
-                Debug.Assert(IsCanonical, "we expect canonical types here");
-                return _relatedType._pBaseType;
-            }
-        }
-
-        // TODO rename?
-        internal MethodTable* NonClonedNonArrayBaseType
-        {
-            get
-            {
                 Debug.Assert(!IsArray, "array type not supported in NonArrayBaseType");
-                Debug.Assert(IsCanonical || IsGenericTypeDefinition, "we expect canonical types here");
-                return _relatedType._pBaseType;
-            }
-        }
-
-        internal MethodTable* RawBaseType
-        {
-            get
-            {
-                Debug.Assert(!IsParameterizedType, "array type not supported in NonArrayBaseType");
-                Debug.Assert(IsCanonical, "we expect canonical types here");
+                Debug.Assert(IsCanonical || IsGenericTypeDefinition, "we expect type definitions here");
+                Debug.Assert(!IsGenericTypeDefinition || _relatedType._pBaseType == null, "callers assume this would be null for a generic definition");
                 return _relatedType._pBaseType;
             }
         }
@@ -1006,7 +951,7 @@ namespace Internal.Runtime
             {
                 Debug.Assert(IsNullable);
                 Debug.Assert(GenericArity == 1);
-                return GenericArguments[0].Value;
+                return GenericArguments[0];
             }
         }
 
@@ -1074,7 +1019,7 @@ namespace Internal.Runtime
 #endif
         void* GetSealedVirtualTable()
         {
-            Debug.Assert((RareFlags & EETypeRareFlags.HasSealedVTableEntriesFlag) != 0);
+            Debug.Assert(HasSealedVTableEntries);
 
             uint cbSealedVirtualSlotsTypeOffset = GetFieldOffset(EETypeField.ETF_SealedVirtualSlots);
             byte* pThis = (byte*)Unsafe.AsPointer(ref this);
@@ -1263,7 +1208,7 @@ namespace Internal.Runtime
         /// The purpose of the segment is controlled by the class library. The runtime doesn't
         /// use this memory for any purpose.
         /// </summary>
-        internal IntPtr WritableData
+        internal void* WritableData
         {
             get
             {
@@ -1272,9 +1217,9 @@ namespace Internal.Runtime
                 uint offset = GetFieldOffset(EETypeField.ETF_WritableData);
 
                 if (!IsDynamicType)
-                    return GetField<RelativePointer>(offset).Value;
+                    return (void*)GetField<RelativePointer>(offset).Value;
                 else
-                    return GetField<Pointer>(offset).Value;
+                    return (void*)GetField<Pointer>(offset).Value;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
@@ -1282,7 +1227,7 @@ namespace Internal.Runtime
                 Debug.Assert(IsDynamicType && SupportsWritableData);
 
                 uint cbOffset = GetFieldOffset(EETypeField.ETF_WritableData);
-                *(IntPtr*)((byte*)Unsafe.AsPointer(ref this) + cbOffset) = value;
+                *(void**)((byte*)Unsafe.AsPointer(ref this) + cbOffset) = value;
             }
 #endif
         }
@@ -1343,17 +1288,14 @@ namespace Internal.Runtime
             }
         }
 
+        // This method is always called with a known constant and there's a lot of benefit in inlining it.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint GetFieldOffset(EETypeField eField)
         {
             // First part of MethodTable consists of the fixed portion followed by the vtable.
             uint cbOffset = (uint)(sizeof(MethodTable) + (IntPtr.Size * _usNumVtableSlots));
 
-            // Then we have the interface map.
-            if (eField == EETypeField.ETF_InterfaceMap)
-            {
-                Debug.Assert(NumInterfaces > 0);
-                return cbOffset;
-            }
+            // Followed by list of implemented interfaces
             cbOffset += (uint)(sizeof(MethodTable*) * NumInterfaces);
 
             uint relativeOrFullPointerOffset = (IsDynamicType || !SupportsRelativePointers ? (uint)IntPtr.Size : 4);
@@ -1374,6 +1316,15 @@ namespace Internal.Runtime
                 }
                 cbOffset += relativeOrFullPointerOffset;
             }
+
+            // Followed by pointer to the dispatch map
+            if (eField == EETypeField.ETF_DispatchMap)
+            {
+                Debug.Assert(HasDispatchMap);
+                return cbOffset;
+            }
+            if (HasDispatchMap)
+                cbOffset += relativeOrFullPointerOffset;
 
             // Followed by the pointer to the finalizer method.
             if (eField == EETypeField.ETF_Finalizer)
@@ -1397,10 +1348,8 @@ namespace Internal.Runtime
             if (eField == EETypeField.ETF_SealedVirtualSlots)
                 return cbOffset;
 
-            EETypeRareFlags rareFlags = RareFlags;
-
             // in the case of sealed vtable entries on static types, we have a UInt sized relative pointer
-            if ((rareFlags & EETypeRareFlags.HasSealedVTableEntriesFlag) != 0)
+            if (HasSealedVTableEntries)
                 cbOffset += relativeOrFullPointerOffset;
 
             if (eField == EETypeField.ETF_GenericDefinition)
@@ -1441,6 +1390,7 @@ namespace Internal.Runtime
             if (IsDynamicType)
                 cbOffset += (uint)IntPtr.Size;
 
+            EETypeRareFlags rareFlags = RareFlags;
             if (eField == EETypeField.ETF_DynamicGcStatics)
             {
                 Debug.Assert((rareFlags & EETypeRareFlags.IsDynamicTypeWithGcStatics) != 0);
@@ -1481,6 +1431,7 @@ namespace Internal.Runtime
         internal static uint GetSizeofEEType(
             ushort cVirtuals,
             ushort cInterfaces,
+            bool fHasDispatchMap,
             bool fHasFinalizer,
             bool fRequiresOptionalFields,
             bool fHasSealedVirtuals,
@@ -1495,6 +1446,7 @@ namespace Internal.Runtime
                 (sizeof(MethodTable*) * cInterfaces) +
                 sizeof(IntPtr) + // TypeManager
                 (SupportsWritableData ? sizeof(IntPtr) : 0) + // WritableData
+                (fHasDispatchMap ? sizeof(UIntPtr) : 0) +
                 (fHasFinalizer ? sizeof(UIntPtr) : 0) +
                 (fRequiresOptionalFields ? sizeof(IntPtr) : 0) +
                 (fHasSealedVirtuals ? sizeof(IntPtr) : 0) +
@@ -1505,29 +1457,6 @@ namespace Internal.Runtime
                 (fHasThreadStatics ? sizeof(IntPtr) : 0)); // threadstatic index cell
         }
 #endif
-    }
-
-    // Wrapper around MethodTable pointers that may be indirected through the IAT if their low bit is set.
-    [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct EETypeRef
-    {
-        private byte* _value;
-
-        public MethodTable* Value
-        {
-            get
-            {
-                if (((int)_value & IndirectionConstants.IndirectionCellPointer) == 0)
-                    return (MethodTable*)_value;
-                return *(MethodTable**)(_value - IndirectionConstants.IndirectionCellPointer);
-            }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                _value = (byte*)value;
-            }
-#endif
-        }
     }
 
     // Wrapper around pointers
@@ -1659,7 +1588,7 @@ namespace Internal.Runtime
                 if (((nint)_pFirst & IsRelative) != 0)
                     return (((RelativePointer<MethodTable>*)((nint)_pFirst - IsRelative)) + index)->Value;
 
-                return *(MethodTable**)_pFirst + index;
+                return *((MethodTable**)_pFirst + index);
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set

@@ -4,7 +4,7 @@
 import { setU16 } from "../memory";
 import { mono_wasm_new_external_root } from "../roots";
 import { conv_string_root } from "../strings";
-import { MonoString, MonoStringRef } from "../types";
+import { MonoString, MonoStringRef } from "../types/internal";
 import { Int32Ptr } from "../types/emscripten";
 import { pass_exception_details } from "./common";
 

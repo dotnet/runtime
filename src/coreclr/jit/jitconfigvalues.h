@@ -38,7 +38,6 @@ CONFIG_INTEGER(JitBreakEmitOutputInstr, W("JitBreakEmitOutputInstr"), -1)
 CONFIG_INTEGER(JitBreakMorphTree, W("JitBreakMorphTree"), 0xffffffff)
 CONFIG_INTEGER(JitBreakOnBadCode, W("JitBreakOnBadCode"), 0)
 CONFIG_INTEGER(JitBreakOnMinOpts, W("JITBreakOnMinOpts"), 0) // Halt if jit switches to MinOpts
-CONFIG_INTEGER(JitBreakOnUnsafeCode, W("JitBreakOnUnsafeCode"), 0)
 CONFIG_INTEGER(JitCloneLoops, W("JitCloneLoops"), 1) // If 0, don't clone. Otherwise clone loops for optimizations.
 CONFIG_INTEGER(JitCloneLoopsWithGdvTests, W("JitCloneLoopsWithGdvTests"), 1) // If 0, don't clone loops based on
                                                                              // invariant type/method address tests
@@ -203,7 +202,6 @@ CONFIG_METHODSET(JitForceProcedureSplitting, W("JitForceProcedureSplitting"))
 CONFIG_METHODSET(JitGCDump, W("JitGCDump"))
 CONFIG_METHODSET(JitDebugDump, W("JitDebugDump"))
 CONFIG_METHODSET(JitHalt, W("JitHalt")) // Emits break instruction into jitted code
-CONFIG_METHODSET(JitImportBreak, W("JitImportBreak"))
 CONFIG_METHODSET(JitInclude, W("JitInclude"))
 CONFIG_METHODSET(JitLateDisasm, W("JitLateDisasm"))
 CONFIG_METHODSET(JitMinOptsName, W("JITMinOptsName"))                   // Forces MinOpts for a named function
@@ -271,15 +269,6 @@ CONFIG_INTEGER(RichDebugInfo, W("RichDebugInfo"), 0) // If 1, keep rich debug in
 CONFIG_STRING(WriteRichDebugInfoFile, W("WriteRichDebugInfoFile")) // Write rich debug info in JSON format to this file
 #endif
 
-CONFIG_INTEGER(JitEarlyExpandMDArrays, W("JitEarlyExpandMDArrays"), 1) // Enable early expansion of multi-dimensional
-                                                                       // array access
-
-#ifdef DEBUG
-CONFIG_METHODSET(JitEarlyExpandMDArraysFilter, W("JitEarlyExpandMDArraysFilter")) // Filter functions with early
-                                                                                  // expansion of multi-dimensional
-                                                                                  // array access
-#endif
-
 #if FEATURE_LOOP_ALIGN
 CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 1) // If set, align inner loops
 #else
@@ -308,10 +297,18 @@ CONFIG_INTEGER(JitStressEvexEncoding, W("JitStressEvexEncoding"), 0) // Enable E
 
 // clang-format off
 
+CONFIG_INTEGER(PreferredVectorBitWidth,     W("PreferredVectorBitWidth"),   0) // The preferred width, in bits, to use for any implicit vectorization emitted. A value less than 128 is treated as the system default.
+
 //
 // Hardware Intrinsic ISAs; keep in sync with clrconfigvalues.h
 //
-CONFIG_INTEGER(EnableHWIntrinsic,  W("EnableHWIntrinsic"),  1) // Allows Base+ hardware intrinsics to be disabled
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+//TODO: should implement LoongArch64's features.
+//TODO-RISCV64-CQ: should implement RISCV64's features.
+CONFIG_INTEGER(EnableHWIntrinsic,           W("EnableHWIntrinsic"),         0) // Allows Base+ hardware intrinsics to be disabled
+#else
+CONFIG_INTEGER(EnableHWIntrinsic,           W("EnableHWIntrinsic"),         1) // Allows Base+ hardware intrinsics to be disabled
+#endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 CONFIG_INTEGER(EnableAES,                   W("EnableAES"),                 1) // Allows AES+ hardware intrinsics to be disabled

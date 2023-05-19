@@ -13,8 +13,8 @@ namespace System.Globalization
     {
         // Characters which require special handling are those in [0x00, 0x1F] and [0x7F, 0xFFFF] except \t\v\f
         // Matches HighCharTable below.
-        private static readonly IndexOfAnyValues<char> s_nonSpecialAsciiChars =
-            IndexOfAnyValues.Create("\t\v\f !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
+        private static readonly SearchValues<char> s_nonSpecialAsciiChars =
+            SearchValues.Create("\t\v\f !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
 
         [NonSerialized]
         private bool _isAsciiEqualityOrdinal;
@@ -185,6 +185,17 @@ namespace System.Globalization
                 return -1;
 
             InteropCall:
+#if TARGET_BROWSER
+                if (GlobalizationMode.Hybrid)
+                {
+                    int result = Interop.JsGlobalization.IndexOf(out string exceptionMessage, m_name, b, target.Length, a, source.Length, options, fromBeginning);
+                    if (!string.IsNullOrEmpty(exceptionMessage))
+                    {
+                        throw new Exception(exceptionMessage);
+                    }
+                    return result;
+                }
+#endif
                 if (fromBeginning)
                     return Interop.Globalization.IndexOf(_sortHandle, b, target.Length, a, source.Length, options, matchLengthPtr);
                 else
@@ -275,6 +286,10 @@ namespace System.Globalization
                 return -1;
 
             InteropCall:
+#if TARGET_BROWSER
+                if (GlobalizationMode.Hybrid)
+                    return Interop.JsGlobalization.IndexOf(out string exceptionMessage, m_name, b, target.Length, a, source.Length, options, fromBeginning);
+#endif
                 if (fromBeginning)
                     return Interop.Globalization.IndexOf(_sortHandle, b, target.Length, a, source.Length, options, matchLengthPtr);
                 else

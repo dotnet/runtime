@@ -25,6 +25,7 @@
 #include <mono/arch/arm64/arm64-codegen.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-memory-model.h>
+#include <mono/utils/mono-hwcap.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/tokentype.h>
 #include "llvm-intrinsics-types.h"
@@ -3823,6 +3824,40 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				g_assert_not_reached ();
 			}
 			break;
+		case OP_XOP_OVR_X_X_X: {
+			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
+			switch (iid) {
+			case INTRINS_AARCH64_ADV_SIMD_TBL1:
+				arm_neon_tbl1_16b (code, dreg, sreg1, sreg2);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
+		case OP_XOP_OVR_X_X_X_X: {
+			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
+			g_assert (dreg == sreg1);
+			g_assert (mono_class_value_size (ins->klass, NULL) == 16);
+			switch (iid) {
+			case INTRINS_AARCH64_ADV_SIMD_SDOT:
+				arm_neon_sdot_4s (code, dreg, sreg2, sreg3);
+				break;
+			case INTRINS_AARCH64_ADV_SIMD_UDOT:
+				arm_neon_udot_4s (code, dreg, sreg2, sreg3);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
+		case OP_ARM64_BROADCAST_ELEM:
+			arm_neon_smov (code, TYPE_I32, ARMREG_IP0, sreg1, ins->inst_c0);
+			arm_neon_dup_g_4s (code, dreg, ARMREG_IP0);
+			break;
+
 		case OP_XZERO:
 			arm_neon_eor_16b (code, dreg, dreg, dreg);
 			break;
@@ -3944,10 +3979,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			}
 
-			if (dreg != sreg1)
-				arm_neon_mov (code, dreg, sreg1);
-			
-			arm_neon_ins_e(code, t, dreg, sreg2, ins->inst_c0, 0);
+			if (dreg != sreg1) {
+				if (dreg != sreg2) {
+					arm_neon_mov (code, dreg, sreg1);
+					arm_neon_ins_e(code, t, dreg, sreg2, ins->inst_c0, 0);
+				} else {
+					arm_neon_mov (code, NEON_TMP_REG, sreg1);
+					arm_neon_ins_e(code, t, NEON_TMP_REG, sreg2, ins->inst_c0, 0);
+					arm_neon_mov (code, dreg, NEON_TMP_REG);
+				}
+			} else {
+				g_assert (dreg != sreg2);
+				arm_neon_ins_e(code, t, dreg, sreg2, ins->inst_c0, 0);
+			}
 			break;
 		}
 		case OP_ARM64_XTN:
@@ -4041,7 +4085,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
-		// Enable this when adding support for Narrow and enable support for Create at the same time
+		// This requires Vector64 SIMD support
 		// case OP_XCONCAT:
 		// 	arm_neon_ext_16b(code, dreg, sreg1, sreg2, 8);
 		// 	break;
@@ -5328,6 +5372,85 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					arm_strx (code, i, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, regs) + i * sizeof (target_mgreg_t));
 			break;
 
+		/**** Arm.ArmBase ****/
+		case OP_LZCNT32:
+			arm_clzw (code, dreg, sreg1);
+			break;
+
+		case OP_LSCNT32:
+			arm_clsw (code, dreg, sreg1);
+			break;
+
+		case OP_LZCNT64:
+			arm_clzx (code, dreg, sreg1);
+			break;
+
+		case OP_LSCNT64:
+			arm_clsx (code, dreg, sreg1);
+			break;
+
+		case OP_ARM64_SMULH:
+			arm_smulh (code, dreg, sreg1, sreg2);
+			break;
+
+		case OP_ARM64_UMULH:
+			arm_umulh (code, dreg, sreg1, sreg2);
+			break;
+
+		case OP_XOP_I8_I8:
+			g_assert (ins->inst_c0 == INTRINS_BITREVERSE_I64);
+			arm_rbitx (code, dreg, sreg1);
+			break;
+
+		case OP_XOP_I4_I4:
+			g_assert (ins->inst_c0 == INTRINS_BITREVERSE_I32);
+			arm_rbitw (code, dreg, sreg1);
+			break;
+		case OP_XOP_I4_I4_I4: {
+			switch (ins->inst_c0) {
+			case INTRINS_AARCH64_CRC32B:
+				arm_crc32b (code, dreg, sreg1, sreg2);
+				break;
+			case INTRINS_AARCH64_CRC32H:
+				arm_crc32h (code, dreg, sreg1, sreg2);
+				break;
+			case INTRINS_AARCH64_CRC32W:
+				arm_crc32w (code, dreg, sreg1, sreg2);
+				break;
+			case INTRINS_AARCH64_CRC32CB:
+				arm_crc32cb (code, dreg, sreg1, sreg2);
+				break;
+			case INTRINS_AARCH64_CRC32CH:
+				arm_crc32ch (code, dreg, sreg1, sreg2);
+				break;
+			case INTRINS_AARCH64_CRC32CW:
+				arm_crc32cw (code, dreg, sreg1, sreg2);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
+		case OP_XOP_I4_I4_I8: {
+			switch (ins->inst_c0) {
+			case INTRINS_AARCH64_CRC32X:
+				arm_crc32x (code, dreg, sreg1, sreg2);
+				break;
+			case INTRINS_AARCH64_CRC32CX:
+				arm_crc32cx (code, dreg, sreg1, sreg2);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
+		case OP_ARM64_HINT:
+			g_assert (ins->inst_c0 <= ARMHINT_SEVL);
+			arm_hint (code, ins->inst_c0);
+			break;
+
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();
@@ -6320,4 +6443,21 @@ guint8*
 mono_arm_emit_brx (guint8 *code, int reg)
 {
 	return emit_brx (code, reg);
+}
+
+MonoCPUFeatures
+mono_arch_get_cpu_features (void)
+{
+	guint64 features = MONO_CPU_INITED;
+
+	if (mono_hwcap_arm64_has_crc32)
+		features |= MONO_CPU_ARM64_CRC;
+	if (mono_hwcap_arm64_has_dot)
+		features |= MONO_CPU_ARM64_DP;
+	if (mono_hwcap_arm64_has_rdm)
+		features |= MONO_CPU_ARM64_RDM;
+	if (mono_hwcap_arm64_has_sha1 && mono_hwcap_arm64_has_sha256 && mono_hwcap_arm64_has_aes)
+		features |= MONO_CPU_ARM64_CRYPTO;
+
+	return features;
 }

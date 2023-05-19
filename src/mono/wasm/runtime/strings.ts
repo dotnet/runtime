@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { mono_wasm_new_root_buffer } from "./roots";
-import { MonoString, MonoStringNull, is_nullish, WasmRoot, WasmRootBuffer } from "./types";
-import { Module } from "./imports";
+import { MonoString, MonoStringNull, is_nullish, WasmRoot, WasmRootBuffer } from "./types/internal";
+import { Module } from "./globals";
 import cwraps from "./cwraps";
 import { mono_wasm_new_root } from "./roots";
 import { getI32, getU32 } from "./memory";

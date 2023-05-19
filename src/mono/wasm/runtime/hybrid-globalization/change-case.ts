@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "../imports";
+import { Module } from "../globals";
 import { setU16 } from "../memory";
 import { mono_wasm_new_external_root } from "../roots";
 import { conv_string_root } from "../strings";
-import { MonoString, MonoStringRef } from "../types";
+import { MonoString, MonoStringRef } from "../types/internal";
 import { Int32Ptr } from "../types/emscripten";
 import { pass_exception_details } from "./common";
 

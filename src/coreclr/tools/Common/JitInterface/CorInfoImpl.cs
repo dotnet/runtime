@@ -149,9 +149,6 @@ namespace Internal.JitInterface
             ref CORINFO_METHOD_INFO info, uint flags, out IntPtr nativeEntry, out uint codeSize);
 
         [DllImport(JitSupportLibrary)]
-        private static extern uint GetMaxIntrinsicSIMDVectorLength(IntPtr jit, CORJIT_FLAGS* flags);
-
-        [DllImport(JitSupportLibrary)]
         private static extern IntPtr AllocException([MarshalAs(UnmanagedType.LPWStr)]string message, int messageLength);
 
         [DllImport(JitSupportLibrary)]
@@ -2571,8 +2568,6 @@ namespace Internal.JitInterface
 
         private bool canCast(CORINFO_CLASS_STRUCT_* child, CORINFO_CLASS_STRUCT_* parent)
         { throw new NotImplementedException("canCast"); }
-        private bool areTypesEquivalent(CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
-        { throw new NotImplementedException("areTypesEquivalent"); }
 
         private TypeCompareState compareTypesForCast(CORINFO_CLASS_STRUCT_* fromClass, CORINFO_CLASS_STRUCT_* toClass)
         {
@@ -2861,7 +2856,7 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private uint getThreadLocalFieldInfo(CORINFO_FIELD_STRUCT_* fld)
+        private uint getThreadLocalFieldInfo(CORINFO_FIELD_STRUCT_* fld, bool isGCType)
 #pragma warning restore CA1822 // Mark members as static
         {
             // Implemented for JIT only for now.
@@ -2870,7 +2865,7 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+        private void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
 #pragma warning restore CA1822 // Mark members as static
         {
             // Implemented for JIT only for now.
@@ -3045,21 +3040,6 @@ namespace Internal.JitInterface
             };
         }
 
-        private HRESULT GetErrorHRESULT(_EXCEPTION_POINTERS* pExceptionPointers)
-        { throw new NotImplementedException("GetErrorHRESULT"); }
-        private uint GetErrorMessage(char* buffer, uint bufferLength)
-        { throw new NotImplementedException("GetErrorMessage"); }
-
-#pragma warning disable CA1822 // Mark members as static
-        private int FilterException(_EXCEPTION_POINTERS* pExceptionPointers)
-#pragma warning restore CA1822 // Mark members as static
-        {
-            // This method is completely handled by the C++ wrapper to the JIT-EE interface,
-            // and should never reach the managed implementation.
-            Debug.Fail("CorInfoImpl.FilterException should not be called");
-            throw new NotSupportedException("FilterException");
-        }
-
 #pragma warning disable CA1822 // Mark members as static
         private bool runWithErrorTrap(void* function, void* parameter)
 #pragma warning restore CA1822 // Mark members as static
@@ -3079,11 +3059,6 @@ namespace Internal.JitInterface
             Debug.Fail("CorInfoImpl.runWithSPMIErrorTrap should not be called");
             throw new NotSupportedException("runWithSPMIErrorTrap");
         }
-
-        private void ThrowExceptionForJitResult(HRESULT result)
-        { throw new NotImplementedException("ThrowExceptionForJitResult"); }
-        private void ThrowExceptionForHelper(ref CORINFO_HELPER_DESC throwHelper)
-        { throw new NotImplementedException("ThrowExceptionForHelper"); }
 
         public static CORINFO_OS TargetToOs(TargetDetails target)
         {
@@ -3912,7 +3887,6 @@ namespace Internal.JitInterface
             flags.InstructionSetFlags.Add(_compilation.InstructionSetSupport.OptimisticFlags);
 
             // Set the rest of the flags that don't make sense to expose publicly.
-            flags.Set(CorJitFlag.CORJIT_FLAG_SKIP_VERIFICATION);
             flags.Set(CorJitFlag.CORJIT_FLAG_READYTORUN);
             flags.Set(CorJitFlag.CORJIT_FLAG_RELOC);
             flags.Set(CorJitFlag.CORJIT_FLAG_PREJIT);

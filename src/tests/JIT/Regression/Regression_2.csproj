@@ -1,10 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <MergedWrapperProjectReference Include="JitBlue/Runtime_*/**/*.??proj" />
-    <MergedWrapperProjectReference Remove="*/**/*_d.??proj" />
-    <MergedWrapperProjectReference Remove="*/**/*_do.??proj" />
-    <MergedWrapperProjectReference Remove="*/**/*_r.??proj" />
-    <MergedWrapperProjectReference Remove="*/**/*_ro.??proj" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />

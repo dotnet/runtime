@@ -1125,6 +1125,10 @@ namespace System.Globalization
         private unsafe int IndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning) =>
             GlobalizationMode.UseNls ?
                 NlsIndexOfCore(source, target, options, matchLengthPtr, fromBeginning) :
+#if TARGET_BROWSER
+            GlobalizationMode.Hybrid ?
+                JsIndexOfCore(source, target, options, matchLengthPtr, fromBeginning) :
+#endif
                 IcuIndexOfCore(source, target, options, matchLengthPtr, fromBeginning);
 
         /// <summary>
@@ -1631,6 +1635,12 @@ namespace System.Globalization
                     }
                     else
                     {
+#if TARGET_BROWSER
+                if (GlobalizationMode.Hybrid)
+                {
+                    throw new PlatformNotSupportedException(GetPNSEText("SortVersion"));
+                }
+#endif
                         m_SortVersion = GlobalizationMode.UseNls ? NlsGetSortVersion() : IcuGetSortVersion();
                     }
                 }

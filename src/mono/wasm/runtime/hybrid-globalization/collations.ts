@@ -3,7 +3,7 @@
 
 import { mono_wasm_new_external_root } from "../roots";
 import { conv_string_root, string_decoder } from "../strings";
-import { MonoString, MonoStringRef } from "../types";
+import { MonoString, MonoStringRef } from "../types/internal";
 import { Int32Ptr } from "../types/emscripten";
 import { pass_exception_details } from "./common";
 
@@ -15,10 +15,7 @@ export function mono_wasm_compare_string(exceptionMessage: Int32Ptr, culture: Mo
         const string2 = string_decoder.decode(<any>str2, <any>(str2 + 2*str2Length));
         const casePicker = (options & 0x1f);
         const locale = cultureName ? cultureName : undefined;
-        const result = compare_strings(string1, string2, locale, casePicker);
-        if (result == -2)
-            throw new Error("$Invalid comparison option.");
-        return result;
+        return compare_strings(string1, string2, locale, casePicker);
     }
     catch (ex: any) {
         pass_exception_details(ex, exceptionMessage);
@@ -33,12 +30,12 @@ export function mono_wasm_starts_with(exceptionMessage: Int32Ptr, culture: MonoS
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
     try{
         const cultureName = conv_string_root(cultureRoot);
-        const prefix = get_clean_string(str2, str2Length);
+        const prefix = decode_to_clean_string(str2, str2Length);
         // no need to look for an empty string
         if (prefix.length == 0)
             return 1; // true
 
-        const source = get_clean_string(str1, str1Length);
+        const source = decode_to_clean_string(str1, str1Length);
         if (source.length < prefix.length)
             return 0; //false
         const sourceOfPrefixLength = source.slice(0, prefix.length);
@@ -46,8 +43,6 @@ export function mono_wasm_starts_with(exceptionMessage: Int32Ptr, culture: MonoS
         const casePicker = (options & 0x1f);
         const locale = cultureName ? cultureName : undefined;
         const result = compare_strings(sourceOfPrefixLength, prefix, locale, casePicker);
-        if (result == -2)
-            throw new Error("$Invalid comparison option.");
         return result === 0 ? 1 : 0; // equals ? true : false
     }
     catch (ex: any) {
@@ -63,11 +58,11 @@ export function mono_wasm_ends_with(exceptionMessage: Int32Ptr, culture: MonoStr
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
     try{
         const cultureName = conv_string_root(cultureRoot);
-        const suffix = get_clean_string(str2, str2Length);
+        const suffix = decode_to_clean_string(str2, str2Length);
         if (suffix.length == 0)
             return 1; // true
 
-        const source = get_clean_string(str1, str1Length);
+        const source = decode_to_clean_string(str1, str1Length);
         const diff = source.length - suffix.length;
         if (diff < 0)
             return 0; //false
@@ -76,8 +71,6 @@ export function mono_wasm_ends_with(exceptionMessage: Int32Ptr, culture: MonoStr
         const casePicker = (options & 0x1f);
         const locale = cultureName ? cultureName : undefined;
         const result = compare_strings(sourceOfSuffixLength, suffix, locale, casePicker);
-        if (result == -2)
-            throw new Error("$Invalid comparison option.");
         return result === 0 ? 1 : 0; // equals ? true : false
     }
     catch (ex: any) {
@@ -89,11 +82,90 @@ export function mono_wasm_ends_with(exceptionMessage: Int32Ptr, culture: MonoStr
     }
 }
 
-function get_clean_string(strPtr: number, strLen: number)
-{
-    const str = string_decoder.decode(<any>strPtr, <any>(strPtr + 2*strLen));
-    const nStr = str.normalize();
-    return nStr.replace(/[\u200B-\u200D\uFEFF\0]/g, "");
+export function mono_wasm_index_of(exceptionMessage: Int32Ptr, culture: MonoStringRef, needlePtr: number, needleLength: number, srcPtr: number, srcLength: number, options: number, fromBeginning: number): number{
+    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
+    try {
+        const needle = string_decoder.decode(<any>needlePtr, <any>(needlePtr + 2*needleLength));
+        // no need to look for an empty string
+        if (clean_string(needle).length == 0)
+            return fromBeginning ? 0 : srcLength;
+
+        const source = string_decoder.decode(<any>srcPtr, <any>(srcPtr + 2*srcLength));
+        // no need to look in an empty string
+        if (clean_string(source).length == 0)
+            return fromBeginning ? 0 : srcLength;
+        const cultureName = conv_string_root(cultureRoot);
+        const locale = cultureName ? cultureName : undefined;
+        const casePicker = (options & 0x1f);
+
+        const segmenter = new Intl.Segmenter(locale, { granularity: "grapheme" });
+        const needleSegments = Array.from(segmenter.segment(needle)).map(s => s.segment);
+        let i = 0;
+        let stop = false;
+        let result = -1;
+        let segmentWidth = 0;
+        let index = 0;
+        let nextIndex = 0;
+        while (!stop)
+        {
+            // we need to restart the iterator in this outer loop because we have shifted it in the inner loop
+            const iteratorSrc = segmenter.segment(source.slice(i, source.length))[Symbol.iterator]();
+            let srcNext = iteratorSrc.next();
+
+            if (srcNext.done)
+                break;
+
+            let matchFound = check_match_found(srcNext.value.segment, needleSegments[0], locale, casePicker);
+            index = nextIndex;
+            srcNext = iteratorSrc.next();
+            if (srcNext.done)
+            {
+                result = matchFound ? index : result;
+                break;
+            }
+            segmentWidth = srcNext.value.index;
+            nextIndex = index + segmentWidth;
+            if (matchFound)
+            {
+                for(let j=1; j<needleSegments.length; j++)
+                {
+                    if (srcNext.done)
+                    {
+                        stop = true;
+                        break;
+                    }
+                    matchFound = check_match_found(srcNext.value.segment, needleSegments[j], locale, casePicker);
+                    if (!matchFound)
+                        break;
+
+                    srcNext = iteratorSrc.next();
+                }
+                if (stop)
+                    break;
+            }
+
+            if (matchFound)
+            {
+                result = index;
+                if (fromBeginning)
+                    break;
+            }
+            i = nextIndex;
+        }
+        return result;
+    }
+    catch (ex: any) {
+        pass_exception_details(ex, exceptionMessage);
+        return -1;
+    }
+    finally {
+        cultureRoot.release();
+    }
+
+    function check_match_found(str1: string, str2: string, locale: string | undefined, casePicker: number) : boolean
+    {
+        return compare_strings(str1, str2, locale, casePicker) === 0;
+    }
 }
 
 export function compare_strings(string1: string, string2: string, locale: string | undefined, casePicker: number) : number{
@@ -101,7 +173,7 @@ export function compare_strings(string1: string, string2: string, locale: string
     {
         case 0:
             // 0: None - default algorithm for the platform OR
-            //    StringSort - since .Net 5 StringSort gives the same result as None, even for hyphen etc.
+            //    StringSort - for ICU it gives the same result as None, see: https://github.com/dotnet/dotnet-api-docs/issues
             //    does not work for "ja"
             if (locale && locale.split("-")[0] === "ja")
                 return -2;
@@ -137,7 +209,7 @@ export function compare_strings(string1: string, string2: string, locale: string
             return string1.localeCompare(string2, locale, { sensitivity: "base" }); // a ≠ b, a = á, a = A
         case 13:
             // 13: IgnoreKanaType | IgnoreCase | IgnoreSymbols
-            return string1.localeCompare(string2, locale, { sensitivity: "accent", ignorePunctuation: true });  // a ≠ b, a ≠ á, a = A
+            return string1.localeCompare(string2, locale, { sensitivity: "accent", ignorePunctuation: true }); // a ≠ b, a ≠ á, a = A
         case 14:
             // 14: IgnoreKanaType | IgnoreSymbols | IgnoreNonSpace
             return string1.localeCompare(string2, locale, { sensitivity: "case", ignorePunctuation: true });// a ≠ b, a = á, a ≠ A
@@ -185,6 +257,18 @@ export function compare_strings(string1: string, string2: string, locale: string
             // 29: IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreCase
             // 30: IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreNonSpace
             // 31: IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreNonSpace | IgnoreCase
-            return -2;
+            throw new Error(`Invalid comparison option. Option=${casePicker}`);
     }
+}
+
+function decode_to_clean_string(strPtr: number, strLen: number)
+{
+    const str = string_decoder.decode(<any>strPtr, <any>(strPtr + 2*strLen));
+    return clean_string(str);
+}
+
+function clean_string(str: string)
+{
+    const nStr = str.normalize();
+    return nStr.replace(/[\u200B-\u200D\uFEFF\0]/g, "");
 }

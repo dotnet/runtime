@@ -3867,17 +3867,11 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
 	if ((res = mono_marshal_find_in_cache (cache, sig)))
 	    return res;
 
-#if 0
-	fprintf (stderr, "generating wrapper for signature %s\n", mono_signature_full_name (sig));
-#endif
-
-	/* FIXME: better wrapper name */
-	char * name = g_strdup_printf ("wrapper_native_indirect_%p", sig);
+	char *name = mono_signature_to_name (sig, "wrapper_native_indirect");
 	MonoMethodBuilder *mb = mono_mb_new (caller_class, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 	mb->method->save_lmf = 1;
 
 	WrapperInfo *info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT);
-	//info->d.managed_to_native.method = NULL;
 	info->d.native_func.klass = caller_class;
 	info->d.native_func.sig = sig;
 
@@ -3889,6 +3883,7 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
 	mono_marshal_emit_native_wrapper (image, mb, sig, piinfo, mspecs, /*func*/NULL, flags);
 	g_free (mspecs);
 
+	/* Add an extra argument which the caller will use to pass in the ftnptr to call */
 	MonoMethodSignature *csig = mono_metadata_signature_dup_add_this (image, sig, mono_defaults.int_class);
 	csig->pinvoke = 0;
 

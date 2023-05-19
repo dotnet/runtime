@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-class ImprovedType
+public class ImprovedType
 {
     // Jit should inline this method and then devirtualize ToString()
     static void Print(object o)
@@ -11,7 +12,8 @@ class ImprovedType
         Console.WriteLine(o.ToString());
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Print("hello, world!");
         return 100;

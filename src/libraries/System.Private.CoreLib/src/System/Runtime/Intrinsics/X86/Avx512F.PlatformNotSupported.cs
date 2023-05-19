@@ -34,6 +34,48 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<ulong> Abs(Vector256<long> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// __m128i _mm_alignr_epi32 (__m128i a, __m128i b, const int count)
+            ///   VALIGND xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<int> AlignRight32(Vector128<int> left, Vector128<int> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_alignr_epi32 (__m128i a, __m128i b, const int count)
+            ///   VALIGND xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<uint> AlignRight32(Vector128<uint> left, Vector128<uint> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_alignr_epi32 (__m256i a, __m256i b, const int count)
+            ///   VALIGND ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<int> AlignRight32(Vector256<int> left, Vector256<int> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_alignr_epi32 (__m256i a, __m256i b, const int count)
+            ///   VALIGND ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<uint> AlignRight32(Vector256<uint> left, Vector256<uint> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128i _mm_alignr_epi64 (__m128i a, __m128i b, const int count)
+            ///   VALIGNQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<long> AlignRight64(Vector128<long> left, Vector128<long> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_alignr_epi64 (__m128i a, __m128i b, const int count)
+            ///   VALIGNQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<ulong> AlignRight64(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_alignr_epi64 (__m256i a, __m256i b, const int count)
+            ///   VALIGNQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<long> AlignRight64(Vector256<long> left, Vector256<long> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_alignr_epi64 (__m256i a, __m256i b, const int count)
+            ///   VALIGNQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<ulong> AlignRight64(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// __m128i _mm_cvtepi32_epi8 (__m128i a)
             ///   VPMOVDB xmm1/m32 {k1}{z}, xmm2
             /// </summary>
@@ -403,6 +445,69 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<uint> ConvertToVector256UInt32WithTruncation(Vector256<float> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// __m128 _mm_fixupimm_ps(__m128 a, __m128 b, __m128i tbl, int imm);
+            ///   VFIXUPIMMPS xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<float> Fixup(Vector128<float> left, Vector128<float> right, Vector128<int> table, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128d _mm_fixupimm_pd(__m128d a, __m128d b, __m128i tbl, int imm);
+            ///   VFIXUPIMMPD xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<double> Fixup(Vector128<double> left, Vector128<double> right, Vector128<long> table, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256 _mm256_fixupimm_ps(__m256 a, __m256 b, __m256i tbl, int imm);
+            ///   VFIXUPIMMPS ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<float> Fixup(Vector256<float> left, Vector256<float> right, Vector256<int> table, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256d _mm256_fixupimm_pd(__m256d a, __m256d b, __m256i tbl, int imm);
+            ///   VFIXUPIMMPD ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<double> Fixup(Vector256<double> left, Vector256<double> right, Vector256<long> table, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128 _mm_getexp_ps (__m128 a)
+            ///   VGETEXPPS xmm1 {k1}{z}, xmm2/m128/m32bcst
+            /// </summary>
+            public static Vector128<float> GetExponent(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128d _mm_getexp_pd (__m128d a)
+            ///   VGETEXPPD xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<double> GetExponent(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256 _mm256_getexp_ps (__m256 a)
+            ///   VGETEXPPS ymm1 {k1}{z}, ymm2/m256/m32bcst
+            /// </summary>
+            public static Vector256<float> GetExponent(Vector256<float> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256d _mm256_getexp_pd (__m256d a)
+            ///   VGETEXPPD ymm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> GetExponent(Vector256<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128 _mm_getmant_ps (__m128 a)
+            ///   VGETMANTPS xmm1 {k1}{z}, xmm2/m128/m32bcst
+            /// </summary>
+            public static Vector128<float> GetMantissa(Vector128<float> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128d _mm_getmant_pd (__m128d a)
+            ///   VGETMANTPD xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<double> GetMantissa(Vector128<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256 _mm256_getmant_ps (__m256 a)
+            ///   VGETMANTPS ymm1 {k1}{z}, ymm2/m256/m32bcst
+            /// </summary>
+            public static Vector256<float> GetMantissa(Vector256<float> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256d _mm256_getmant_pd (__m256d a)
+            ///   VGETMANTPD ymm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> GetMantissa(Vector256<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// __m128i _mm_max_epi64 (__m128i a, __m128i b)
             ///   VPMAXSQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
             /// </summary>
@@ -445,6 +550,44 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<ulong> Min(Vector256<ulong> left, Vector256<ulong> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// __m128i _mm_permutex2var_epi64 (__m128i a, __m128i idx, __m128i b)
+            ///   VPERMI2Q xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            ///   VPERMT2Q xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<long> PermuteVar2x64x2(Vector128<long> lower, Vector128<long> indices, Vector128<long> upper) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_permutex2var_epi64 (__m128i a, __m128i idx, __m128i b)
+            ///   VPERMI2Q xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            ///   VPERMT2Q xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<ulong> PermuteVar2x64x2(Vector128<ulong> lower, Vector128<ulong> indices, Vector128<ulong> upper) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128d _mm_permutex2var_pd (__m128d a, __m128i idx, __m128i b)
+            ///   VPERMI2PD xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            ///   VPERMT2PD xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<double> PermuteVar2x64x2(Vector128<double> lower, Vector128<long> indices, Vector128<double> upper) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128i _mm_permutex2var_epi32 (__m128i a, __m128i idx, __m128i b)
+            ///   VPERMI2D xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            ///   VPERMT2D xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            /// </summary>
+            public static Vector128<int> PermuteVar4x32x2(Vector128<int> lower, Vector128<int> indices, Vector128<int> upper) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_permutex2var_epi32 (__m128i a, __m128i idx, __m128i b)
+            ///   VPERMI2D xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            ///   VPERMT2D xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            /// </summary>
+            public static Vector128<uint> PermuteVar4x32x2(Vector128<uint> lower, Vector128<uint> indices, Vector128<uint> upper) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128 _mm_permutex2var_ps (__m128 a, __m128i idx, __m128i b)
+            ///   VPERMI2PS xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            ///   VPERMT2PS xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            /// </summary>
+            public static Vector128<float> PermuteVar4x32x2(Vector128<float> lower, Vector128<int> indices, Vector128<float> upper) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// __m256i _mm256_permute4x64_epi64 (__m256i a, __m256i b)
             ///   VPERMQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
             /// </summary>
@@ -459,6 +602,292 @@ namespace System.Runtime.Intrinsics.X86
             ///   VPERMPD ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
             /// </summary>
             public static Vector256<double> PermuteVar4x64(Vector256<double> value, Vector256<long> control) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m256i _mm256_permutex2var_epi64 (__m256i a, __m256i idx, __m256i b)
+            ///   VPERMI2Q ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            ///   VPERMT2Q ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<long> PermuteVar4x64x2(Vector256<long> lower, Vector256<long> indices, Vector256<long> upper) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_permutex2var_epi64 (__m256i a, __m256i idx, __m256i b)
+            ///   VPERMI2Q ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            ///   VPERMT2Q ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<ulong> PermuteVar4x64x2(Vector256<ulong> lower, Vector256<ulong> indices, Vector256<ulong> upper) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256d _mm256_permutex2var_pd (__m256d a, __m256i idx, __m256i b)
+            ///   VPERMI2PD ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            ///   VPERMT2PD ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> PermuteVar4x64x2(Vector256<double> lower, Vector256<long> indices, Vector256<double> upper) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m256i _mm256_permutex2var_epi32 (__m256i a, __m256i idx, __m256i b)
+            ///   VPERMI2D ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            ///   VPERMT2D ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            /// </summary>
+            public static Vector256<int> PermuteVar8x32x2(Vector256<int> lower, Vector256<int> indices, Vector256<int> upper) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_permutex2var_epi32 (__m256i a, __m256i idx, __m256i b)
+            ///   VPERMI2D ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            ///   VPERMT2D ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            /// </summary>
+            public static Vector256<uint> PermuteVar8x32x2(Vector256<uint> lower, Vector256<uint> indices, Vector256<uint> upper) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256 _mm256_permutex2var_ps (__m256 a, __m256i idx, __m256i b)
+            ///   VPERMI2PS ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            ///   VPERMT2PS ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            /// </summary>
+            public static Vector256<float> PermuteVar8x32x2(Vector256<float> lower, Vector256<int> indices, Vector256<float> upper) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128 _mm_rcp14_ps (__m128 a, __m128 b)
+            ///   VRCP14PS xmm1 {k1}{z}, xmm2/m128/m32bcst
+            /// </summary>
+            public static Vector128<float> Reciprocal14(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128d _mm_rcp14_pd (__m128d a, __m128d b)
+            ///   VRCP14PD xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<double> Reciprocal14(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256 _mm256_rcp14_ps (__m256 a, __m256 b)
+            ///   VRCP14PS ymm1 {k1}{z}, ymm2/m256/m32bcst
+            /// </summary>
+            public static Vector256<float> Reciprocal14(Vector256<float> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256d _mm256_rcp14_pd (__m256d a, __m256d b)
+            ///   VRCP14PD ymm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> Reciprocal14(Vector256<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128 _mm_rsqrt14_ps (__m128 a, __m128 b)
+            ///   VRSQRT14PS xmm1 {k1}{z}, xmm2/m128/m32bcst
+            /// </summary>
+            public static Vector128<float> ReciprocalSqrt14(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128d _mm_rsqrt14_pd (__m128d a, __m128d b)
+            ///   VRSQRT14PD xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<double> ReciprocalSqrt14(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256 _mm256_rsqrt14_ps (__m256 a, __m256 b)
+            ///   VRSQRT14PS ymm1 {k1}{z}, ymm2/m256/m32bcst
+            /// </summary>
+            public static Vector256<float> ReciprocalSqrt14(Vector256<float> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256d _mm256_rsqrt14_pd (__m256d a, __m256d b)
+            ///   VRSQRT14PD ymm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> ReciprocalSqrt14(Vector256<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128i _mm_rol_epi32 (__m128i a, int imm8)
+            ///   VPROLD xmm1 {k1}{z}, xmm2/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<int> RotateLeft(Vector128<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_rol_epi32 (__m128i a, int imm8)
+            ///   VPROLD xmm1 {k1}{z}, xmm2/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<uint> RotateLeft(Vector128<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_rol_epi64 (__m128i a, int imm8)
+            ///   VPROLQ xmm1 {k1}{z}, xmm2/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<long> RotateLeft(Vector128<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_rol_epi64 (__m128i a, int imm8)
+            ///   VPROLQ xmm1 {k1}{z}, xmm2/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<ulong> RotateLeft(Vector128<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rol_epi32 (__m256i a, int imm8)
+            ///   VPROLD ymm1 {k1}{z}, ymm2/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<int> RotateLeft(Vector256<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rol_epi32 (__m256i a, int imm8)
+            ///   VPROLD ymm1 {k1}{z}, ymm2/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<uint> RotateLeft(Vector256<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rol_epi64 (__m256i a, int imm8)
+            ///   VPROLQ ymm1 {k1}{z}, ymm2/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<long> RotateLeft(Vector256<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rol_epi64 (__m256i a, int imm8)
+            ///   VPROLQ ymm1 {k1}{z}, ymm2/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<ulong> RotateLeft(Vector256<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128i _mm_rolv_epi32 (__m128i a, __m128i b)
+            ///   VPROLDV xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            /// </summary>
+            public static Vector128<int> RotateLeftVariable(Vector128<int> value, Vector128<uint> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_rolv_epi32 (__m128i a, __m128i b)
+            ///   VPROLDV xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            /// </summary>
+            public static Vector128<uint> RotateLeftVariable(Vector128<uint> value, Vector128<uint> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_rolv_epi64 (__m128i a, __m128i b)
+            ///   VPROLQV xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<long> RotateLeftVariable(Vector128<long> value, Vector128<ulong> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_rolv_epi64 (__m128i a, __m128i b)
+            ///   VPROLQV xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<ulong> RotateLeftVariable(Vector128<ulong> value, Vector128<ulong> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rolv_epi32 (__m256i a, __m256i b)
+            ///   VPROLDV ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            /// </summary>
+            public static Vector256<int> RotateLeftVariable(Vector256<int> value, Vector256<uint> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rolv_epi32 (__m256i a, __m256i b)
+            ///   VPROLDV ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            /// </summary>
+            public static Vector256<uint> RotateLeftVariable(Vector256<uint> value, Vector256<uint> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rolv_epi64 (__m256i a, __m256i b)
+            ///   VPROLQV ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<long> RotateLeftVariable(Vector256<long> value, Vector256<ulong> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rolv_epi64 (__m256i a, __m256i b)
+            ///   VPROLQV ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<ulong> RotateLeftVariable(Vector256<ulong> value, Vector256<ulong> count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128i _mm_ror_epi32 (__m128i a, int imm8)
+            ///   VPRORD xmm1 {k1}{z}, xmm2/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<int> RotateRight(Vector128<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_ror_epi32 (__m128i a, int imm8)
+            ///   VPRORD xmm1 {k1}{z}, xmm2/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<uint> RotateRight(Vector128<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_ror_epi64 (__m128i a, int imm8)
+            ///   VPRORQ xmm1 {k1}{z}, xmm2/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<long> RotateRight(Vector128<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_ror_epi64 (__m128i a, int imm8)
+            ///   VPRORQ xmm1 {k1}{z}, xmm2/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<ulong> RotateRight(Vector128<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_ror_epi32 (__m256i a, int imm8)
+            ///   VPRORD ymm1 {k1}{z}, ymm2/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<int> RotateRight(Vector256<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_ror_epi32 (__m256i a, int imm8)
+            ///   VPRORD ymm1 {k1}{z}, ymm2/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<uint> RotateRight(Vector256<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_ror_epi64 (__m256i a, int imm8)
+            ///   VPRORQ ymm1 {k1}{z}, ymm2/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<long> RotateRight(Vector256<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_ror_epi64 (__m256i a, int imm8)
+            ///   VPRORQ ymm1 {k1}{z}, ymm2/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<ulong> RotateRight(Vector256<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128i _mm_rorv_epi32 (__m128i a, __m128i b)
+            ///   VPRORDV xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            /// </summary>
+            public static Vector128<int> RotateRightVariable(Vector128<int> value, Vector128<uint> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_rorv_epi32 (__m128i a, __m128i b)
+            ///   VPRORDV xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            /// </summary>
+            public static Vector128<uint> RotateRightVariable(Vector128<uint> value, Vector128<uint> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_rorv_epi64 (__m128i a, __m128i b)
+            ///   VPRORQV xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<long> RotateRightVariable(Vector128<long> value, Vector128<ulong> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_rorv_epi64 (__m128i a, __m128i b)
+            ///   VPRORQV xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<ulong> RotateRightVariable(Vector128<ulong> value, Vector128<ulong> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rorv_epi32 (__m256i a, __m256i b)
+            ///   VPRORDV ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            /// </summary>
+            public static Vector256<int> RotateRightVariable(Vector256<int> value, Vector256<uint> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rorv_epi32 (__m256i a, __m256i b)
+            ///   VPRORDV ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            /// </summary>
+            public static Vector256<uint> RotateRightVariable(Vector256<uint> value, Vector256<uint> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rorv_epi64 (__m256i a, __m256i b)
+            ///   VPRORQV ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<long> RotateRightVariable(Vector256<long> value, Vector256<ulong> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rorv_epi64 (__m256i a, __m256i b)
+            ///   VPRORQV ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<ulong> RotateRightVariable(Vector256<ulong> value, Vector256<ulong> count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128 _mm_roundscale_ps (__m128 a, int imm)
+            ///   VRNDSCALEPS xmm1 {k1}{z}, xmm2/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<float> RoundScale(Vector128<float> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128d _mm_roundscale_pd (__m128d a, int imm)
+            ///   VRNDSCALEPD xmm1 {k1}{z}, xmm2/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<double> RoundScale(Vector128<double> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256 _mm256_roundscale_ps (__m256 a, int imm)
+            ///   VRNDSCALEPS ymm1 {k1}{z}, ymm2/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<float> RoundScale(Vector256<float> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256d _mm256_roundscale_pd (__m256d a, int imm)
+            ///   VRNDSCALEPD ymm1 {k1}{z}, ymm2/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<double> RoundScale(Vector256<double> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128 _mm_scalef_ps (__m128 a, int imm)
+            ///   VSCALEFPS xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            /// </summary>
+            public static Vector128<float> Scale(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128d _mm_scalef_pd (__m128d a, int imm)
+            ///   VSCALEFPD xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<double> Scale(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256 _mm256_scalef_ps (__m256 a, int imm)
+            ///   VSCALEFPS ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            /// </summary>
+            public static Vector256<float> Scale(Vector256<float> left, Vector256<float> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256d _mm256_scalef_pd (__m256d a, int imm)
+            ///   VSCALEFPD ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> Scale(Vector256<double> left, Vector256<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// __m128i _mm_sra_epi64 (__m128i a, __m128i count)
@@ -492,6 +921,150 @@ namespace System.Runtime.Intrinsics.X86
             ///   VPSRAVQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
             /// </summary>
             public static Vector256<long> ShiftRightArithmeticVariable(Vector256<long> value, Vector256<ulong> count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m256d _mm256_shuffle_f64x2 (__m256d a, __m256d b, const int imm8)
+            ///   VSHUFF64x2 ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<double> Shuffle2x128(Vector256<double> left, Vector256<double> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_shuffle_i32x4 (__m256i a, __m256i b, const int imm8)
+            ///   VSHUFI32x4 ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<int> Shuffle2x128(Vector256<int> left, Vector256<int> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_shuffle_i64x2 (__m256i a, __m256i b, const int imm8)
+            ///   VSHUFI64x2 ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<long> Shuffle2x128(Vector256<long> left, Vector256<long> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256 _mm256_shuffle_f32x4 (__m256 a, __m256 b, const int imm8)
+            ///   VSHUFF32x4 ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<float> Shuffle2x128(Vector256<float> left, Vector256<float> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_shuffle_i32x4 (__m256i a, __m256i b, const int imm8)
+            ///   VSHUFI32x4 ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<uint> Shuffle2x128(Vector256<uint> left, Vector256<uint> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_shuffle_i64x2 (__m256i a, __m256i b, const int imm8)
+            ///   VSHUFI64x2 ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<ulong> Shuffle2x128(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128i _mm_ternarylogic_si128 (__m128i a, __m128i b, __m128i c, byte imm)
+            ///   VPTERNLOGD xmm1 {k1}{z}, xmm2, xmm3/m128, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector128<sbyte> TernaryLogic(Vector128<sbyte> a, Vector128<sbyte> b, Vector128<sbyte> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_ternarylogic_si128 (__m128i a, __m128i b, __m128i c, byte imm)
+            ///   VPTERNLOGD xmm1 {k1}{z}, xmm2, xmm3/m128, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector128<byte> TernaryLogic(Vector128<byte> a, Vector128<byte> b, Vector128<byte> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_ternarylogic_si128 (__m128i a, __m128i b, __m128i c, short imm)
+            ///   VPTERNLOGD xmm1 {k1}{z}, xmm2, xmm3/m128, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector128<short> TernaryLogic(Vector128<short> a, Vector128<short> b, Vector128<short> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_ternarylogic_si128 (__m128i a, __m128i b, __m128i c, short imm)
+            ///   VPTERNLOGD xmm1 {k1}{z}, xmm2, xmm3/m128, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector128<ushort> TernaryLogic(Vector128<ushort> a, Vector128<ushort> b, Vector128<ushort> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_ternarylogic_epi32 (__m128i a, __m128i b, __m128i c, int imm)
+            ///   VPTERNLOGD xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<int> TernaryLogic(Vector128<int> a, Vector128<int> b, Vector128<int> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_ternarylogic_epi32 (__m128i a, __m128i b, __m128i c, int imm)
+            ///   VPTERNLOGD xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<uint> TernaryLogic(Vector128<uint> a, Vector128<uint> b, Vector128<uint> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_ternarylogic_epi64 (__m128i a, __m128i b, __m128i c, int imm)
+            ///   VPTERNLOGQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<long> TernaryLogic(Vector128<long> a, Vector128<long> b, Vector128<long> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_ternarylogic_epi64 (__m128i a, __m128i b, __m128i c, int imm)
+            ///   VPTERNLOGQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<ulong> TernaryLogic(Vector128<ulong> a, Vector128<ulong> b, Vector128<ulong> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128 _mm_ternarylogic_ps (__m128 a, __m128 b, __m128 c, int imm)
+            ///   VPTERNLOGD xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector128<float> TernaryLogic(Vector128<float> a, Vector128<float> b, Vector128<float> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128d _mm_ternarylogic_pd (__m128d a, __m128d b, __m128d c, int imm)
+            ///   VPTERNLOGQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector128<double> TernaryLogic(Vector128<double> a, Vector128<double> b, Vector128<double> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_si256 (__m256i a, __m256i b, __m256i c, byte imm)
+            ///   VPTERNLOGD ymm1 {k1}{z}, ymm2, ymm3/m256, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector256<sbyte> TernaryLogic(Vector256<sbyte> a, Vector256<sbyte> b, Vector256<sbyte> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_si256 (__m256i a, __m256i b, __m256i c, byte imm)
+            ///   VPTERNLOGD ymm1 {k1}{z}, ymm2, ymm3/m256, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector256<byte> TernaryLogic(Vector256<byte> a, Vector256<byte> b, Vector256<byte> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_si256 (__m256i a, __m256i b, __m256i c, short imm)
+            ///   VPTERNLOGD ymm1 {k1}{z}, ymm2, ymm3/m256, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector256<short> TernaryLogic(Vector256<short> a, Vector256<short> b, Vector256<short> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_si256 (__m256i a, __m256i b, __m256i c, short imm)
+            ///   VPTERNLOGD ymm1 {k1}{z}, ymm2, ymm3/m256, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector256<ushort> TernaryLogic(Vector256<ushort> a, Vector256<ushort> b, Vector256<ushort> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_epi32 (__m256i a, __m256i b, __m256i c, int imm)
+            ///   VPTERNLOGD ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<int> TernaryLogic(Vector256<int> a, Vector256<int> b, Vector256<int> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_epi32 (__m256i a, __m256i b, __m256i c, int imm)
+            ///   VPTERNLOGD ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<uint> TernaryLogic(Vector256<uint> a, Vector256<uint> b, Vector256<uint> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_epi64 (__m256i a, __m256i b, __m256i c, int imm)
+            ///   VPTERNLOGQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<long> TernaryLogic(Vector256<long> a, Vector256<long> b, Vector256<long> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_epi64 (__m256i a, __m256i b, __m256i c, int imm)
+            ///   VPTERNLOGQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<ulong> TernaryLogic(Vector256<ulong> a, Vector256<ulong> b, Vector256<ulong> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256 _mm256_ternarylogic_ps (__m256 a, __m256 b, __m256 c, int imm)
+            ///   VPTERNLOGD ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector256<float> TernaryLogic(Vector256<float> a, Vector256<float> b, Vector256<float> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256d _mm256_ternarylogic_pd (__m256d a, __m256d b, __m256d c, int imm)
+            ///   VPTERNLOGQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector256<double> TernaryLogic(Vector256<double> a, Vector256<double> b, Vector256<double> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         }
 
         public new abstract class X64 : Avx2.X64
@@ -581,6 +1154,28 @@ namespace System.Runtime.Intrinsics.X86
         ///   VADDPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{er}
         /// </summary>
         public static Vector512<float> Add(Vector512<float> left, Vector512<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_alignr_epi32 (__m512i a, __m512i b, const int count)
+        ///   VALIGND zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<int> AlignRight32(Vector512<int> left, Vector512<int> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_alignr_epi32 (__m512i a, __m512i b, const int count)
+        ///   VALIGND zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<uint> AlignRight32(Vector512<uint> left, Vector512<uint> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_alignr_epi64 (__m512i a, __m512i b, const int count)
+        ///   VALIGNQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<long> AlignRight64(Vector512<long> left, Vector512<long> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_alignr_epi64 (__m512i a, __m512i b, const int count)
+        ///   VALIGNQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<ulong> AlignRight64(Vector512<ulong> left, Vector512<ulong> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m512i _mm512_and_si512 (__m512i a, __m512i b)
@@ -1220,6 +1815,28 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<double> ExtractVector256(Vector512<double> value, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m512 _mm512_fixupimm_ps(__m512 a, __m512 b, __m512i tbl, int imm);
+        ///   VFIXUPIMMPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<float> Fixup(Vector512<float> left, Vector512<float> right, Vector512<int> table, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_fixupimm_pd(__m512d a, __m512d b, __m512i tbl, int imm);
+        ///   VFIXUPIMMPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<double> Fixup(Vector512<double> left, Vector512<double> right, Vector512<long> table, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128 _mm_fixupimm_ss(__m128 a, __m128 b, __m128i tbl, int imm);
+        ///   VFIXUPIMMSS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}, imm8
+        /// </summary>
+        public static Vector128<float> FixupScalar(Vector128<float> left, Vector128<float> right, Vector128<int> table, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_fixupimm_sd(__m128d a, __m128d b, __m128i tbl, int imm);
+        ///   VFIXUPIMMSD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}, imm8
+        /// </summary>
+        public static Vector128<double> FixupScalar(Vector128<double> left, Vector128<double> right, Vector128<long> table, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m512 _mm512_fmadd_ps (__m512 a, __m512 b, __m512 c)
         ///   VFMADDPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
         /// </summary>
@@ -1284,6 +1901,74 @@ namespace System.Runtime.Intrinsics.X86
         ///   VFNMSUBPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
         /// </summary>
         public static Vector512<double> FusedMultiplySubtractNegated(Vector512<double> a, Vector512<double> b, Vector512<double> c) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512 _mm512_getexp_ps (__m512 a)
+        ///   VGETEXPPS zmm1 {k1}{z}, zmm2/m512/m32bcst{sae}
+        /// </summary>
+        public static Vector512<float> GetExponent(Vector512<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_getexp_pd (__m512d a)
+        ///   VGETEXPPD zmm1 {k1}{z}, zmm2/m512/m64bcst{sae}
+        /// </summary>
+        public static Vector512<double> GetExponent(Vector512<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128 _mm_getexp_ss (__m128 a)
+        ///   VGETEXPSS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}
+        /// </summary>
+        public static Vector128<float> GetExponentScalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_getexp_sd (__m128d a)
+        ///   VGETEXPSD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}
+        /// </summary>
+        public static Vector128<double> GetExponentScalar(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128 _mm_getexp_ss (__m128 a, __m128 b)
+        ///   VGETEXPSS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<float> GetExponentScalar(Vector128<float> upper, Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_getexp_sd (__m128d a, __m128d b)
+        ///   VGETEXPSD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<double> GetExponentScalar(Vector128<double> upper, Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512 _mm512_getmant_ps (__m512 a)
+        ///   VGETMANTPS zmm1 {k1}{z}, zmm2/m512/m32bcst{sae}
+        /// </summary>
+        public static Vector512<float> GetMantissa(Vector512<float> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_getmant_pd (__m512d a)
+        ///   VGETMANTPD zmm1 {k1}{z}, zmm2/m512/m64bcst{sae}
+        /// </summary>
+        public static Vector512<double> GetMantissa(Vector512<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128 _mm_getmant_ss (__m128 a)
+        ///   VGETMANTSS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}
+        /// </summary>
+        public static Vector128<float> GetMantissaScalar(Vector128<float> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_getmant_sd (__m128d a)
+        ///   VGETMANTSD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}
+        /// </summary>
+        public static Vector128<double> GetMantissaScalar(Vector128<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128 _mm_getmant_ss (__m128 a, __m128 b)
+        ///   VGETMANTSS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<float> GetMantissaScalar(Vector128<float> upper, Vector128<float> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_getmant_sd (__m128d a, __m128d b)
+        ///   VGETMANTSD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<double> GetMantissaScalar(Vector128<double> upper, Vector128<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m512i _mm512_inserti128_si512 (__m512i a, __m128i b, const int imm8)
@@ -1722,6 +2407,25 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<double> PermuteVar8x64(Vector512<double> value, Vector512<long> control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m512i _mm512_permutex2var_epi64 (__m512i a, __m512i idx, __m512i b)
+        ///   VPERMI2Q zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        ///   VPERMT2Q zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> PermuteVar8x64x2(Vector512<long> lower, Vector512<long> indices, Vector512<long> upper) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_permutex2var_epi64 (__m512i a, __m512i idx, __m512i b)
+        ///   VPERMI2Q zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        ///   VPERMT2Q zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> PermuteVar8x64x2(Vector512<ulong> lower, Vector512<ulong> indices, Vector512<ulong> upper) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_permutex2var_pd (__m512d a, __m512i idx, __m512i b)
+        ///   VPERMI2PD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        ///   VPERMT2PD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> PermuteVar8x64x2(Vector512<double> lower, Vector512<long> indices, Vector512<double> upper) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m512i _mm512_permutevar16x32_epi32 (__m512i a, __m512i b)
         ///   VPERMD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
         /// </summary>
@@ -1736,6 +2440,233 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPERMPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
         /// </summary>
         public static Vector512<float> PermuteVar16x32(Vector512<float> left, Vector512<int> control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_permutex2var_epi32 (__m512i a, __m512i idx, __m512i b)
+        ///   VPERMI2D zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        ///   VPERMT2D zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> PermuteVar16x32x2(Vector512<int> lower, Vector512<int> indices, Vector512<int> upper) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_permutex2var_epi32 (__m512i a, __m512i idx, __m512i b)
+        ///   VPERMI2D zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        ///   VPERMT2D zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<uint> PermuteVar16x32x2(Vector512<uint> lower, Vector512<uint> indices, Vector512<uint> upper) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_permutex2var_ps (__m512 a, __m512i idx, __m512i b)
+        ///   VPERMI2PS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        ///   VPERMT2PS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> PermuteVar16x32x2(Vector512<float> lower, Vector512<int> indices, Vector512<float> upper) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512 _mm512_rcp14_ps (__m512 a, __m512 b)
+        ///   VRCP14PS zmm1 {k1}{z}, zmm2/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> Reciprocal14(Vector512<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_rcp14_pd (__m512d a, __m512d b)
+        ///   VRCP14PD zmm1 {k1}{z}, zmm2/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> Reciprocal14(Vector512<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128 _mm_rcp14_ss (__m128 a)
+        ///   VRCP14SS xmm1 {k1}{z}, xmm2, xmm3/m32
+        /// </summary>
+        public static Vector128<float> Reciprocal14Scalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_rcp14_sd (__m128d a)
+        ///   VRCP14SD xmm1 {k1}{z}, xmm2, xmm3/m64
+        /// </summary>
+        public static Vector128<double> Reciprocal14Scalar(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128 _mm_rcp14_ss (__m128 a, __m128 b)
+        ///   VRCP14SS xmm1 {k1}{z}, xmm2, xmm3/m32
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<float> Reciprocal14Scalar(Vector128<float> upper, Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_rcp14_sd (__m128d a, __m128d b)
+        ///   VRCP14SD xmm1 {k1}{z}, xmm2, xmm3/m64
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<double> Reciprocal14Scalar(Vector128<double> upper, Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512 _mm512_rsqrt14_ps (__m512 a, __m512 b)
+        ///   VRSQRT14PS zmm1 {k1}{z}, zmm2/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> ReciprocalSqrt14(Vector512<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_rsqrt14_pd (__m512d a, __m512d b)
+        ///   VRSQRT14PD zmm1 {k1}{z}, zmm2/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> ReciprocalSqrt14(Vector512<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128 _mm_rsqrt14_ss (__m128 a)
+        ///   VRSQRT14SS xmm1 {k1}{z}, xmm2, xmm3/m32
+        /// </summary>
+        public static Vector128<float> ReciprocalSqrt14Scalar(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_rsqrt14_sd (__m128d a)
+        ///   VRSQRT14SD xmm1 {k1}{z}, xmm2, xmm3/m64
+        /// </summary>
+        public static Vector128<double> ReciprocalSqrt14Scalar(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128 _mm_rsqrt14_ss (__m128 a, __m128 b)
+        ///   VRSQRT14SS xmm1 {k1}{z}, xmm2, xmm3/m32
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<float> ReciprocalSqrt14Scalar(Vector128<float> upper, Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_rsqrt14_sd (__m128d a, __m128d b)
+        ///   VRSQRT14SD xmm1 {k1}{z}, xmm2, xmm3/m64
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<double> ReciprocalSqrt14Scalar(Vector128<double> upper, Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_rol_epi32 (__m512i a, int imm8)
+        ///   VPROLD zmm1 {k1}{z}, zmm2/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<int> RotateLeft(Vector512<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_rol_epi32 (__m512i a, int imm8)
+        ///   VPROLD zmm1 {k1}{z}, zmm2/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<uint> RotateLeft(Vector512<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_rol_epi64 (__m512i a, int imm8)
+        ///   VPROLQ zmm1 {k1}{z}, zmm2/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<long> RotateLeft(Vector512<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_rol_epi64 (__m512i a, int imm8)
+        ///   VPROLQ zmm1 {k1}{z}, zmm2/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<ulong> RotateLeft(Vector512<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_rolv_epi32 (__m512i a, __m512i b)
+        ///   VPROLDV zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> RotateLeftVariable(Vector512<int> value, Vector512<uint> count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_rolv_epi32 (__m512i a, __m512i b)
+        ///   VPROLDV zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<uint> RotateLeftVariable(Vector512<uint> value, Vector512<uint> count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_rolv_epi64 (__m512i a, __m512i b)
+        ///   VPROLQV zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> RotateLeftVariable(Vector512<long> value, Vector512<ulong> count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_rolv_epi64 (__m512i a, __m512i b)
+        ///   VPROLQV zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> RotateLeftVariable(Vector512<ulong> value, Vector512<ulong> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_ror_epi32 (__m512i a, int imm8)
+        ///   VPRORD zmm1 {k1}{z}, zmm2/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<int> RotateRight(Vector512<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_ror_epi32 (__m512i a, int imm8)
+        ///   VPRORD zmm1 {k1}{z}, zmm2/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<uint> RotateRight(Vector512<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_ror_epi64 (__m512i a, int imm8)
+        ///   VPRORQ zmm1 {k1}{z}, zmm2/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<long> RotateRight(Vector512<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_ror_epi64 (__m512i a, int imm8)
+        ///   VPRORQ zmm1 {k1}{z}, zmm2/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<ulong> RotateRight(Vector512<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_rorv_epi32 (__m512i a, __m512i b)
+        ///   VPRORDV zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> RotateRightVariable(Vector512<int> value, Vector512<uint> count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_rorv_epi32 (__m512i a, __m512i b)
+        ///   VPRORDV zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<uint> RotateRightVariable(Vector512<uint> value, Vector512<uint> count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_rorv_epi64 (__m512i a, __m512i b)
+        ///   VPRORQV zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> RotateRightVariable(Vector512<long> value, Vector512<ulong> count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_rorv_epi64 (__m512i a, __m512i b)
+        ///   VPRORQV zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> RotateRightVariable(Vector512<ulong> value, Vector512<ulong> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512 _mm512_roundscale_ps (__m512 a, int imm)
+        ///   VRNDSCALEPS zmm1 {k1}{z}, zmm2/m512/m32bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<float> RoundScale(Vector512<float> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_roundscale_pd (__m512d a, int imm)
+        ///   VRNDSCALEPD zmm1 {k1}{z}, zmm2/m512/m64bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<double> RoundScale(Vector512<double> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128 _mm_roundscale_ss (__m128 a, int imm)
+        ///   VRNDSCALESS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}, imm8
+        /// </summary>
+        public static Vector128<float> RoundScaleScalar(Vector128<float> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_roundscale_sd (__m128d a, int imm)
+        ///   VRNDSCALESD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}, imm8
+        /// </summary>
+        public static Vector128<double> RoundScaleScalar(Vector128<double> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128 _mm_roundscale_ss (__m128 a, __m128 b, int imm)
+        ///   VRNDSCALESS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<float> RoundScaleScalar(Vector128<float> upper, Vector128<float> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_roundscale_sd (__m128d a, __m128d b, int imm)
+        ///   VRNDSCALESD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<double> RoundScaleScalar(Vector128<double> upper, Vector128<double> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512 _mm512_scalef_ps (__m512 a, __m512 b)
+        ///   VSCALEFPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{er}
+        /// </summary>
+        public static Vector512<float> Scale(Vector512<float> left, Vector512<float> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_scalef_pd (__m512d a, __m512d b)
+        ///   VSCALEFPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
+        /// </summary>
+        public static Vector512<double> Scale(Vector512<double> left, Vector512<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128 _mm_scalef_ss (__m128 a, __m128 b)
+        ///   VSCALEFSS xmm1 {k1}{z}, xmm2, xmm3/m32{er}
+        /// </summary>
+        public static Vector128<float> ScaleScalar(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_scalef_sd (__m128d a, __m128d b)
+        ///   VSCALEFSD xmm1 {k1}{z}, xmm2, xmm3/m64{er}
+        /// </summary>
+        public static Vector128<double> ScaleScalar(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m512i _mm512_sll_epi32 (__m512i a, __m128i count)
@@ -1917,6 +2848,37 @@ namespace System.Runtime.Intrinsics.X86
         ///   VSHUFPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
         /// </summary>
         public static Vector512<double> Shuffle(Vector512<double> value, Vector512<double> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512d _mm512_shuffle_f64x2 (__m512d a, __m512d b, const int imm8)
+        ///   VSHUFF64x2 zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<double> Shuffle4x128(Vector512<double> left, Vector512<double> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_shuffle_i32x4 (__m512i a, __m512i b, const int imm8)
+        ///   VSHUFI32x4 zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<int> Shuffle4x128(Vector512<int> left, Vector512<int> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_shuffle_i64x2 (__m512i a, __m512i b, const int imm8)
+        ///   VSHUFI64x2 zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<long> Shuffle4x128(Vector512<long> left, Vector512<long> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_shuffle_f32x4 (__m512 a, __m512 b, const int imm8)
+        ///   VSHUFF32x4 zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<float> Shuffle4x128(Vector512<float> left, Vector512<float> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_shuffle_i32x4 (__m512i a, __m512i b, const int imm8)
+        ///   VSHUFI32x4 zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<uint> Shuffle4x128(Vector512<uint> left, Vector512<uint> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_shuffle_i64x2 (__m512i a, __m512i b, const int imm8)
+        ///   VSHUFI64x2 zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<ulong> Shuffle4x128(Vector512<ulong> left, Vector512<ulong> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m512 _mm512_sqrt_ps (__m512 a)
@@ -2112,6 +3074,63 @@ namespace System.Runtime.Intrinsics.X86
         ///   VSUBPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
         /// </summary>
         public static Vector512<double> Subtract(Vector512<double> left, Vector512<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_si512 (__m512i a, __m512i b, __m512i c, int imm)
+        ///   VPTERNLOGD zmm1 {k1}{z}, zmm2, zmm3/m512, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+        /// </summary>
+        public static Vector512<sbyte> TernaryLogic(Vector512<sbyte> a, Vector512<sbyte> b, Vector512<sbyte> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_si512 (__m512i a, __m512i b, __m512i c, byte imm)
+        ///   VPTERNLOGD zmm1 {k1}{z}, zmm2, zmm3/m512, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+        /// </summary>
+        public static Vector512<byte> TernaryLogic(Vector512<byte> a, Vector512<byte> b, Vector512<byte> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_si512 (__m512i a, __m512i b, __m512i c, short imm)
+        ///   VPTERNLOGD zmm1 {k1}{z}, zmm2, zmm3/m512, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+        /// </summary>
+        public static Vector512<short> TernaryLogic(Vector512<short> a, Vector512<short> b, Vector512<short> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_si512 (__m512i a, __m512i b, __m512i c, short imm)
+        ///   VPTERNLOGD zmm1 {k1}{z}, zmm2, zmm3/m512, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+        /// </summary>
+        public static Vector512<ushort> TernaryLogic(Vector512<ushort> a, Vector512<ushort> b, Vector512<ushort> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_epi32 (__m512i a, __m512i b, __m512i c, int imm)
+        ///   VPTERNLOGD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<int> TernaryLogic(Vector512<int> a, Vector512<int> b, Vector512<int> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_epi32 (__m512i a, __m512i b, __m512i c, int imm)
+        ///   VPTERNLOGD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<uint> TernaryLogic(Vector512<uint> a, Vector512<uint> b, Vector512<uint> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_epi64 (__m512i a, __m512i b, __m512i c, int imm)
+        ///   VPTERNLOGQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<long> TernaryLogic(Vector512<long> a, Vector512<long> b, Vector512<long> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_epi64 (__m512i a, __m512i b, __m512i c, int imm)
+        ///   VPTERNLOGQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<ulong> TernaryLogic(Vector512<ulong> a, Vector512<ulong> b, Vector512<ulong> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_ternarylogic_ps (__m512 a, __m512 b, __m512 c, int imm)
+        ///   VPTERNLOGD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+        /// </summary>
+        public static Vector512<float> TernaryLogic(Vector512<float> a, Vector512<float> b, Vector512<float> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_ternarylogic_pd (__m512d a, __m512d b, __m512d c, int imm)
+        ///   VPTERNLOGQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+        /// </summary>
+        public static Vector512<double> TernaryLogic(Vector512<double> a, Vector512<double> b, Vector512<double> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m512i _mm512_unpackhi_epi32 (__m512i a, __m512i b)
