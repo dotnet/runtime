@@ -20,7 +20,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 	[SetupLinkerAction ("link", "library")]
 	/// <summary>
 	///	Regression test for issue: https://github.com/dotnet/runtime/issues/86242
-	///	OverridesStaticInterfaceMethods.Method() (and Property.set/get) has an entry in .overrides pointing to ISataticAbstractMethods.Method.
+	///	OverridesStaticInterfaceMethods.Method() (and Property.set/get) has an entry in .overrides pointing to IStaticAbstractMethods.Method.
 	///	IStaticAbstractMethods.Method() isn't referenced anywhere else and isn't otherwise needed.
 	///	Usually the interface method could be removed, and the pointer to it in the .overrides metadata would be removed
 	///	However, since OverridesStaticInterfaceMethods is in a 'save' assembly, the .overrides metadata isn't swept. If we remove the method from the interface,
