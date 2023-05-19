@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace JitInliningTest
 {
-    internal class Args1
+    public class Args1
     {
         private static string f1a(bool a) { return a.ToString(); }
         private static string f1c(ref bool a) { return a.ToString(); }
@@ -65,7 +66,8 @@ namespace JitInliningTest
 
 
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             f1a(true);
             f2a('A');

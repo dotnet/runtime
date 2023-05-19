@@ -8,7 +8,7 @@
 }
 
 .assembly extern mscorlib { }
-.assembly 'typedref' { }
+.assembly ASSEMBLY_NAME { }
 .assembly extern xunit.core {}
 .namespace BoxTest_typedref_il
 {

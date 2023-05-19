@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import monoWasmThreads from "consts:monoWasmThreads";
-import { mono_assert, MemOffset, NumberOrPointer } from "./types";
+import { MemOffset, NumberOrPointer } from "./types/internal";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 import cwraps, { I52Error } from "./cwraps";
 import { Module, runtimeHelpers } from "./globals";

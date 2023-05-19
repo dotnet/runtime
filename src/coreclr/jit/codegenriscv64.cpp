@@ -4693,14 +4693,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genTableBasedSwitch(treeNode);
             break;
 
-        case GT_ARR_INDEX:
-            genCodeForArrIndex(treeNode->AsArrIndex());
-            break;
-
-        case GT_ARR_OFFSET:
-            genCodeForArrOffset(treeNode->AsArrOffs());
-            break;
-
         case GT_IL_OFFSET:
             // Do nothing; these nodes are simply markers for debug info.
             break;
@@ -5149,8 +5141,15 @@ void CodeGen::genPutArgReg(GenTreeOp* tree)
     GenTree* op1 = tree->gtOp1;
     genConsumeReg(op1);
 
+    if (varTypeIsFloating(tree) && emitter::isGeneralRegister(targetReg))
+    {
+        // Pass the float args by integer register
+        targetType = emitActualTypeSize(targetType) == EA_4BYTE ? TYP_INT : TYP_LONG;
+    }
+
     // If child node is not already in the register we need, move it
-    GetEmitter()->emitIns_Mov(ins_Copy(targetType), emitActualTypeSize(targetType), targetReg, op1->GetRegNum(), true);
+    GetEmitter()->emitIns_Mov(ins_Copy(op1->GetRegNum(), targetType), emitActualTypeSize(targetType), targetReg,
+                              op1->GetRegNum(), true);
     genProduceReg(tree);
 }
 
@@ -5430,42 +5429,6 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
     genConsumeRegs(tree->gtOp1);
 
     GetEmitter()->emitInsLoadStoreOp(ins_Load(tree->TypeGet()), emitActualTypeSize(tree), REG_R0, tree);
-}
-
-//------------------------------------------------------------------------
-// genCodeForArrIndex: Generates code to bounds check the index for one dimension of an array reference,
-//                     producing the effective index by subtracting the lower bound.
-//
-// Arguments:
-//    arrIndex - the node for which we're generating code
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
-{
-    NYI_RISCV64("genCodeForArrIndex-----unimplemented/unused on RISCV64 yet----");
-}
-
-//------------------------------------------------------------------------
-// genCodeForArrOffset: Generates code to compute the flattened array offset for
-//    one dimension of an array reference:
-//        result = (prevDimOffset * dimSize) + effectiveIndex
-//    where dimSize is obtained from the arrObj operand
-//
-// Arguments:
-//    arrOffset - the node for which we're generating code
-//
-// Return Value:
-//    None.
-//
-// Notes:
-//    dimSize and effectiveIndex are always non-negative, the former by design,
-//    and the latter because it has been normalized to be zero-based.
-
-void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
-{
-    NYI_RISCV64("genCodeForArrOffset-----unimplemented/unused on RISCV64 yet----");
 }
 
 //------------------------------------------------------------------------

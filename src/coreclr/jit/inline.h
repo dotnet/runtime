@@ -663,12 +663,12 @@ struct InlArgInfo
 
 struct InlLclVarInfo
 {
-    typeInfo  lclVerTypeInfo;
-    var_types lclTypeInfo;
-    unsigned  lclHasLdlocaOp : 1;        // Is there LDLOCA(s) operation on this local?
-    unsigned  lclHasStlocOp : 1;         // Is there a STLOC on this local?
-    unsigned  lclHasMultipleStlocOp : 1; // Is there more than one STLOC on this local
-    unsigned  lclIsPinned : 1;
+    CORINFO_CLASS_HANDLE lclTypeHandle;             // Type handle from the signature. Available for structs and REFs.
+    var_types            lclTypeInfo;               // Type from the signature.
+    unsigned char        lclHasLdlocaOp : 1;        // Is there LDLOCA(s) operation on this local?
+    unsigned char        lclHasStlocOp : 1;         // Is there a STLOC on this local?
+    unsigned char        lclHasMultipleStlocOp : 1; // Is there more than one STLOC on this local
+    unsigned char        lclIsPinned : 1;
 };
 
 // InlineInfo provides detailed information about a particular inline candidate.

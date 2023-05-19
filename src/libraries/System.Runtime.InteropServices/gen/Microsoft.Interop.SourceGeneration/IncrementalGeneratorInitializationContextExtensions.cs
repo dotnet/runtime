@@ -39,7 +39,7 @@ namespace Microsoft.Interop
 
         public static void RegisterDiagnostics(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<Diagnostic> diagnostics)
         {
-            context.RegisterSourceOutput(diagnostics, (context, diagnostic) =>
+            context.RegisterSourceOutput(diagnostics.Where(diag => diag is not null), (context, diagnostic) =>
             {
                 context.ReportDiagnostic(diagnostic);
             });

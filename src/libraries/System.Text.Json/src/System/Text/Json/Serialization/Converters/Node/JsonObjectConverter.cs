@@ -7,7 +7,7 @@ using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonObjectConverter : JsonConverter<JsonObject>
+    internal sealed class JsonObjectConverter : JsonConverter<JsonObject?>
     {
         internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
         {
@@ -33,9 +33,14 @@ namespace System.Text.Json.Serialization.Converters
             jObject[propertyName] = jNodeValue;
         }
 
-        public override void Write(Utf8JsonWriter writer, JsonObject value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, JsonObject? value, JsonSerializerOptions options)
         {
-            Debug.Assert(value != null);
+            if (value is null)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
             value.WriteTo(writer, options);
         }
 

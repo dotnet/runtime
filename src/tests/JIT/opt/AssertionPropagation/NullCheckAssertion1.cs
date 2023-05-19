@@ -4,8 +4,9 @@
 //Unit test for null check assertion.
 
 using System;
+using Xunit;
 
-internal class Sample3
+public class Sample3
 {
     [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
     private static void func(object o)
@@ -15,7 +16,8 @@ internal class Sample3
         o.GetType();
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

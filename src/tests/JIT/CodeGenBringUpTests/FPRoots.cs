@@ -5,13 +5,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_FPRoots
 {
     const int Pass = 100;
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static void FPRoots(float a, float b, float c, ref float r1, ref float r2) 
+    internal static void FPRoots(float a, float b, float c, ref float r1, ref float r2) 
     { 
        r1 = (-b + (float)Math.Sqrt((double)(b*b - 4*a*c)))/(2*a);
        r2  = (-b - (float)Math.Sqrt((double)(b*b - 4*a*c)))/(2*a);
@@ -20,7 +21,8 @@ public class BringUpTest_FPRoots
        return ; 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         float x1 = 0;
         float x2 = 0;

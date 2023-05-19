@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
 
@@ -29,60 +27,58 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             byte[] documentedImage = CompilationHelper.CreateAssemblyImage(documentedCompilation);
 
             // Main source for current compilation.
-            string source = @"
-            using System.Collections.Generic;
-            using System.Text.Json.Serialization;
-            using ReferencedAssembly;
+            string source = """
+                using System.Collections.Generic;
+                using System.Text.Json.Serialization;
+                using ReferencedAssembly;
 
-            namespace JsonSourceGenerator
-            {
-                /// <summary>
-                /// Documentation
-                /// </summary>
-                [JsonSerializable(typeof(DocumentedModel))]
-                [JsonSerializable(typeof(DocumentedModel2<string>))]
-                public partial class JsonContext : JsonSerializerContext
-                {
-                }
-
-                /// <summary>
-                /// Documentation
-                /// </summary>
-                public class DocumentedModel2<T>
+                namespace JsonSourceGenerator
                 {
                     /// <summary>
                     /// Documentation
                     /// </summary>
-                    public List<Model> Models { get; set; }
-                    /// documentation
-                    public T Prop { get; set; }
-                }
+                    [JsonSerializable(typeof(DocumentedModel))]
+                    [JsonSerializable(typeof(DocumentedModel2<string>))]
+                    public partial class JsonContext : JsonSerializerContext
+                    {
+                    }
 
-                /// <summary>
-                /// Documentation
-                /// </summary>
-                public class DocumentedModel
-                {
                     /// <summary>
                     /// Documentation
                     /// </summary>
-                    public List<Model> Models { get; set; }
+                    public class DocumentedModel2<T>
+                    {
+                        /// <summary>
+                        /// Documentation
+                        /// </summary>
+                        public List<Model> Models { get; set; }
+                        /// documentation
+                        public T Prop { get; set; }
+                    }
+
+                    /// <summary>
+                    /// Documentation
+                    /// </summary>
+                    public class DocumentedModel
+                    {
+                        /// <summary>
+                        /// Documentation
+                        /// </summary>
+                        public List<Model> Models { get; set; }
+                    }
                 }
-            }";
+                """;
 
             MetadataReference[] additionalReferences = {
                 MetadataReference.CreateFromImage(documentedImage),
             };
 
             Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences, configureParseOptions: options => options.WithDocumentationMode(DocumentationMode.Diagnose));
-
-            JsonSourceGenerator generator = new JsonSourceGenerator();
-
-            compilation = CompilationHelper.RunGenerators(compilation, out var _, generator);
+            JsonSourceGeneratorResult sourceGenResult = CompilationHelper.RunJsonSourceGenerator(compilation);
 
             using var emitStream = new MemoryStream();
             using var xmlStream = new MemoryStream();
-            var result = compilation.Emit(emitStream, xmlDocumentationStream: xmlStream);
+            var result = sourceGenResult.NewCompilation.Emit(emitStream, xmlDocumentationStream: xmlStream);
             var diagnostics = result.Diagnostics;
 
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, diagnostics, Array.Empty<(Location, string)>());
@@ -102,26 +98,27 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             byte[] eventImage = CompilationHelper.CreateAssemblyImage(eventCompilation);
 
             // Main source for current compilation.
-            string source = @"
-            using System.Collections.Generic;
-            using System.Text.Json.Serialization;
-            using ReferencedAssembly;
+            string source = """
+                using System.Collections.Generic;
+                using System.Text.Json.Serialization;
+                using ReferencedAssembly;
 
-            namespace JsonSourceGenerator
-            {
-                [JsonSerializable(typeof(JsonSourceGenerator.IndexViewModel)]
-                public partial class JsonContext : JsonSerializerContext
+                namespace JsonSourceGenerator
                 {
-                }
+                    [JsonSerializable(typeof(JsonSourceGenerator.IndexViewModel)]
+                    public partial class JsonContext : JsonSerializerContext
+                    {
+                    }
 
-                public class IndexViewModel
-                {
-                    public List<ActiveOrUpcomingEvent> ActiveOrUpcomingEvents { get; set; }
-                    public CampaignSummaryViewModel FeaturedCampaign { get; set; }
-                    public bool IsNewAccount { get; set; }
-                    public bool HasFeaturedCampaign => FeaturedCampaign != null;
+                    public class IndexViewModel
+                    {
+                        public List<ActiveOrUpcomingEvent> ActiveOrUpcomingEvents { get; set; }
+                        public CampaignSummaryViewModel FeaturedCampaign { get; set; }
+                        public bool IsNewAccount { get; set; }
+                        public bool HasFeaturedCampaign => FeaturedCampaign != null;
+                    }
                 }
-            }";
+                """;
 
             MetadataReference[] additionalReferences = {
                 MetadataReference.CreateFromImage(campaignImage),
@@ -130,13 +127,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
 
-            JsonSourceGenerator generator = new JsonSourceGenerator();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
-            CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
-
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
         }
 
         [Fact]
@@ -155,27 +150,28 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 string optionalAttribute = explicitRef ? "[JsonSerializable(typeof(ActiveOrUpcomingEvent[,])]" : null;
 
                 // Main source for current compilation.
-                string source = @$"
-            using System.Collections.Generic;
-            using System.Text.Json.Serialization;
-            using ReferencedAssembly;
+                string source = $$"""
+                    using System.Collections.Generic;
+                    using System.Text.Json.Serialization;
+                    using ReferencedAssembly;
 
-            namespace JsonSourceGenerator
-            {{
-                {optionalAttribute}
-                [JsonSerializable(typeof(JsonSourceGenerator.IndexViewModel)]
-                public partial class JsonContext : JsonSerializerContext
-                {{
-                }}
+                    namespace JsonSourceGenerator
+                    {
+                        {{optionalAttribute}}
+                        [JsonSerializable(typeof(JsonSourceGenerator.IndexViewModel)]
+                        public partial class JsonContext : JsonSerializerContext
+                        {
+                        }
 
-                public class IndexViewModel
-                {{
-                    public ActiveOrUpcomingEvent[,] ActiveOrUpcomingEvents {{ get; set; }}
-                    public CampaignSummaryViewModel FeaturedCampaign {{ get; set; }}
-                    public bool IsNewAccount {{ get; set; }}
-                    public bool HasFeaturedCampaign => FeaturedCampaign != null;
-                }}
-            }}";
+                        public class IndexViewModel
+                        {
+                            public ActiveOrUpcomingEvent[,] ActiveOrUpcomingEvents { get; set; }
+                            public CampaignSummaryViewModel FeaturedCampaign { get; set; }
+                            public bool IsNewAccount { get; set; }
+                            public bool HasFeaturedCampaign => FeaturedCampaign != null;
+                        }
+                    }
+                    """;
 
                 MetadataReference[] additionalReferences = {
                 MetadataReference.CreateFromImage(campaignImage),
@@ -184,8 +180,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
                 Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
 
-                JsonSourceGenerator generator = new JsonSourceGenerator();
-                CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+                JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
                 Location location;
                 if (explicitRef)
@@ -202,9 +197,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     location = compilation.GetSymbolsWithName("JsonContext").First().Locations[0];
                 }
 
-                CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-                CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-                CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+                CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());
+                CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, Array.Empty<(Location, string)>());
+                CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
             }
 
             RunTest(explicitRef: true);
@@ -216,8 +211,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         {
             // Without resolution.
             Compilation compilation = CompilationHelper.CreateRepeatedLocationsCompilation();
-            JsonSourceGenerator generator = new JsonSourceGenerator();
-            CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
             INamedTypeSymbol symbol = (INamedTypeSymbol)compilation.GetSymbolsWithName("JsonContext").FirstOrDefault();
             SyntaxReference syntaxReference = new List<AttributeData>(symbol.GetAttributes())[1].ApplicationSyntaxReference;
@@ -229,128 +223,123 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 (location, "There are multiple types named Location. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.")
             };
 
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, expectedWarningDiagnostics);
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, expectedWarningDiagnostics);
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
 
             // With resolution.
             compilation = CompilationHelper.CreateRepeatedLocationsWithResolutionCompilation();
-            generator = new JsonSourceGenerator();
-            CompilationHelper.RunGenerators(compilation, out generatorDiags, generator);
+            result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
         }
 
         [Fact]
         public void ProgramsThatDontUseGeneratorCompile()
         {
             // No STJ usage.
-            string source = @"using System;
+            string source = """
+                using System;
 
-        public class Program
-        {
-            public static void Main()
-            {
-                Console.WriteLine(""Hello World"");
-            }
-        }
-        ";
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        Console.WriteLine(""Hello World"");
+                    }
+                }
+                """;
+
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            JsonSourceGenerator generator = new JsonSourceGenerator();
-            CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
 
             // With STJ usage.
-            source = @"using System.Text.Json;
+            source = """
+                using System.Text.Json;
 
-        public class Program
-        {
-            public static void Main()
-            {
-                JsonSerializer.Serialize(""Hello World"");
-            }
-        }
-        ";
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        JsonSerializer.Serialize(""Hello World"");
+                    }
+                }
+                """;
+
             compilation = CompilationHelper.CreateCompilation(source);
-            generator = new JsonSourceGenerator();
-            CompilationHelper.RunGenerators(compilation, out generatorDiags, generator);
+            result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
         }
 
         [Fact]
         public void DoNotWarnOnClassesWithInitOnlyProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithInitOnlyProperties();
-            JsonSourceGenerator generator = new JsonSourceGenerator();
-            CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
         }
 
         [Fact]
         public void DoNotWarnOnClassesWithConstructorInitOnlyProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithConstructorInitOnlyProperties();
-            JsonSourceGenerator generator = new JsonSourceGenerator();
-            CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
         }
         
         [Fact]
         public void DoNotWarnOnClassesWithMixedInitOnlyProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithMixedInitOnlyProperties();
-            JsonSourceGenerator generator = new JsonSourceGenerator();
-            CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
         }
 
         [Fact]
         public void DoNotWarnOnRecordsWithInitOnlyPositionalParameters()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithRecordPositionalParameters();
-            JsonSourceGenerator generator = new JsonSourceGenerator();
-            CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
         }
 
         [Fact]
         public void DoNotWarnOnClassesWithRequiredProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithRequiredProperties();
-            JsonSourceGenerator generator = new JsonSourceGenerator();
-            Compilation newCompilation = CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
         }
 
         [Fact]
         public void WarnOnClassesWithInaccessibleJsonIncludeProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithInaccessibleJsonIncludeProperties();
-            JsonSourceGenerator generator = new JsonSourceGenerator();
-            CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
             Location idLocation = compilation.GetSymbolsWithName("Id").First().Locations[0];
             Location address2Location = compilation.GetSymbolsWithName("Address2").First().Locations[0];
@@ -363,9 +352,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 (countryLocation, "The member 'Location.Country' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.")
             };
 
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, expectedWarningDiagnostics, sort: false);
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, expectedWarningDiagnostics, sort: false);
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
         }
     }
 }
