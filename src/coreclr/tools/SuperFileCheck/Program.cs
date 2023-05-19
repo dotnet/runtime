@@ -100,13 +100,13 @@ namespace SuperFileCheck
         /// </summary>
         static async Task<FileCheckResult> RunLLVMFileCheckAsync(string[] args)
         {
-            var startInfo = new ProcessStartInfo(FileCheckPath, args)
-            {
-                CreateNoWindow = true,
-                WindowStyle = ProcessWindowStyle.Hidden,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
+            var startInfo = new ProcessStartInfo();
+            startInfo.FileName = FileCheckPath;
+            startInfo.Arguments = String.Join(' ', args);
+            startInfo.CreateNoWindow = true;
+            startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            startInfo.RedirectStandardOutput = true;
+            startInfo.RedirectStandardError = true;
 
             try
             {

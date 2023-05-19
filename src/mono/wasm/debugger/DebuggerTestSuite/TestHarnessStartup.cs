@@ -181,12 +181,14 @@ namespace DebuggerTests
                 Logger.LogTrace($"Doing the nodejs: {options.NodeApp}");
                 var nodeFullPath = Path.GetFullPath(options.NodeApp);
                 Logger.LogTrace(nodeFullPath);
-                var psi = new ProcessStartInfo("node", new[] { "--inspect-brk=localhost:0", nodeFullPath })
-                {
-                    UseShellExecute = false,
-                    RedirectStandardError = true,
-                    RedirectStandardOutput = true
-                };
+                var psi = new ProcessStartInfo();
+
+                psi.UseShellExecute = false;
+                psi.RedirectStandardError = true;
+                psi.RedirectStandardOutput = true;
+
+                psi.Arguments = $"--inspect-brk=localhost:0 {nodeFullPath}";
+                psi.FileName = "node";
 
                 app.UseRouter(router =>
                 {

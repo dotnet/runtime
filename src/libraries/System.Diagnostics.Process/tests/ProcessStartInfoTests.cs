@@ -1258,7 +1258,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         public void InitializeWithArgumentList_Add()
-        {   
+        {
             ProcessStartInfo psi = new ProcessStartInfo("filename");
 
             string[] args = new[] { "arg1", "arg2", " arg3", "arg4 ", "arg 5", $"arg{Environment.NewLine}6" };
