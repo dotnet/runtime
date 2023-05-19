@@ -345,8 +345,8 @@ namespace Microsoft.Interop
                             IdentifierName(ShapeMemberNames.LinearCollection.Stateless.AllocateContainerForManagedElementsFinally)),
                         ArgumentList(SeparatedList(new ArgumentSyntax[]
                         {
-                       Argument(IdentifierName(nativeIdentifier)),
-                       Argument(IdentifierName(numElementsIdentifier))
+                            Argument(IdentifierName(nativeIdentifier)),
+                            Argument(IdentifierName(numElementsIdentifier))
                         })))));
         }
 
@@ -373,9 +373,9 @@ namespace Microsoft.Interop
                                 IdentifierName(ShapeMemberNames.LinearCollection.Stateless.AllocateContainerForUnmanagedElements)),
                             ArgumentList(SeparatedList(new ArgumentSyntax[]
                             {
-                           Argument(IdentifierName(managedIdentifier)),
-                           Argument(IdentifierName(numElementsIdentifier))
-                               .WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword))
+                                Argument(IdentifierName(managedIdentifier)),
+                                Argument(IdentifierName(numElementsIdentifier))
+                                    .WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword))
                             })))));
             }
         }
@@ -432,8 +432,8 @@ namespace Microsoft.Interop
                             IdentifierName(ShapeMemberNames.LinearCollection.Stateless.AllocateContainerForManagedElements)),
                         ArgumentList(SeparatedList(new ArgumentSyntax[]
                         {
-                       Argument(IdentifierName(nativeIdentifier)),
-                       Argument(IdentifierName(numElementsIdentifier))
+                            Argument(IdentifierName(nativeIdentifier)),
+                            Argument(IdentifierName(numElementsIdentifier))
                         })))));
         }
 

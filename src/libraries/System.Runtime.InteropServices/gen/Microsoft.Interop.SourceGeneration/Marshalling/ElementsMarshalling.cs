@@ -326,11 +326,11 @@ namespace Microsoft.Interop
                 managedValuesDeclaration,
                 unmanagedValuesDeclaration,
                 GenerateContentsMarshallingStatement(
-                        info,
-                        context,
-                        IdentifierName(numElementsIdentifier),
-                        StubCodeContext.Stage.UnmarshalCapture,
-                        StubCodeContext.Stage.Unmarshal));
+                    info,
+                    context,
+                    IdentifierName(numElementsIdentifier),
+                    StubCodeContext.Stage.UnmarshalCapture,
+                    StubCodeContext.Stage.Unmarshal));
         }
 
         public StatementSyntax GenerateElementCleanupStatement(TypePositionInfo info, StubCodeContext context)

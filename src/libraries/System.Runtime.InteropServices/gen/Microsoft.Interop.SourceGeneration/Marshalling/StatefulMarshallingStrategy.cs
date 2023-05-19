@@ -341,7 +341,7 @@ namespace Microsoft.Interop
                 MemberAccessExpression(
                     SyntaxKind.SimpleMemberAccessExpression,
                     IdentifierName(marshaller),
-                    IdentifierName(ShapeMemberNames.LinearCollection.Stateless.GetManagedValuesDestination)),
+                    IdentifierName(ShapeMemberNames.LinearCollection.Stateful.GetManagedValuesDestination)),
                 ArgumentList(SingletonSeparatedList(
                     Argument(IdentifierName(numElementsIdentifier)))));
         }
