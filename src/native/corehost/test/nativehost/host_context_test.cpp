@@ -689,7 +689,7 @@ namespace
         return success && rcClose == StatusCode::Success;
     }
 
-    bool get_runtime_delegate_test(
+    bool get_runtime_delegate_for_active_context_test(
         const hostfxr_exports &hostfxr,
         const pal::char_t *config_path,
         hostfxr_delegate_type delegate_type1,
@@ -1029,12 +1029,12 @@ bool host_context_test::app_get_function_pointer(
     return app_get_function_pointer_test(hostfxr, argc, argv, config_log_prefix, test_output);
 }
 
-bool host_context_test::get_runtime_delegate(
+bool host_context_test::get_runtime_delegate_for_active_context(
     const pal::string_t &hostfxr_path,
     const pal::char_t *config_path,
     pal::stringstream_t &test_output)
 {
     hostfxr_exports hostfxr{ hostfxr_path };
 
-    return get_runtime_delegate_test(hostfxr, config_path, first_delegate_type, secondary_delegate_type, config_log_prefix, test_output);
+    return get_runtime_delegate_for_active_context_test(hostfxr, config_path, first_delegate_type, secondary_delegate_type, config_log_prefix, test_output);
 }

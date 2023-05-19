@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             public const string Mixed = "mixed";
             public const string NonContextMixedAppHost = "non_context_mixed_apphost";
             public const string NonContextMixedDotnet = "non_context_mixed_dotnet";
-            public const string GetRuntimeDelegate = "get_runtime_delegate";
+            public const string GetRuntimeDelegateForActiveContext = "get_runtime_delegate_for_active_context";
         }
 
         public class CheckProperties
@@ -239,13 +239,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
-        public void GetDelegate_Active()
+        public void GetDelegate_ActiveContext()
         {
             string newPropertyName = "HOST_TEST_PROPERTY";
             string[] args =
             {
                 HostContextArg,
-                Scenario.GetRuntimeDelegate,
+                Scenario.GetRuntimeDelegateForActiveContext,
                 CheckProperties.None,
                 sharedState.HostFxrPath,
                 sharedState.RuntimeConfigPath,
