@@ -155,13 +155,17 @@ namespace System.Threading
         private static void DispatchCallback(IntPtr instance, IntPtr context, IntPtr work)
         {
             // PR-Comment: Assuming this is no longer necessary, might be wrong about this
-            // var wrapper = ThreadPoolCallbackWrapper.Enter();
+#if NATIVEAOT
+            var wrapper = ThreadPoolCallbackWrapper.Enter();
+#endif
             Debug.Assert(s_work == work);
             Interlocked.Increment(ref s_workingThreadCounter.Count);
             ThreadPoolWorkQueue.Dispatch();
             Interlocked.Decrement(ref s_workingThreadCounter.Count);
             // We reset the thread after executing each callback
-            // wrapper.Exit(resetThread: false);
+#if NATIVEAOT
+            wrapper.Exit(resetThread: false);
+#endif
         }
 
         internal static unsafe void RequestWorkerThread()
