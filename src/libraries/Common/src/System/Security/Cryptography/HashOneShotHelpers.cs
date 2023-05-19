@@ -22,7 +22,7 @@ namespace System.Security.Cryptography
                 HashAlgorithmNames.SHA3_384 => SHA3_384.HashData(source),
                 HashAlgorithmNames.SHA3_512 => SHA3_512.HashData(source),
                 HashAlgorithmNames.MD5 when Helpers.HasMD5 => MD5.HashData(source),
-                _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name))
+                _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name)),
             };
         }
 
@@ -42,7 +42,7 @@ namespace System.Security.Cryptography
                 HashAlgorithmNames.SHA3_384 => SHA3_384.TryHashData(source, destination, out bytesWritten),
                 HashAlgorithmNames.SHA3_512 => SHA3_512.TryHashData(source, destination, out bytesWritten),
                 HashAlgorithmNames.MD5 when Helpers.HasMD5 => MD5.TryHashData(source, destination, out bytesWritten),
-                _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name))
+                _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name)),
             };
         }
 
@@ -58,7 +58,7 @@ namespace System.Security.Cryptography
                 HashAlgorithmNames.SHA3_384 => SHA3_384.HashData(source),
                 HashAlgorithmNames.SHA3_512 => SHA3_512.HashData(source),
                 HashAlgorithmNames.MD5 when Helpers.HasMD5 => MD5.HashData(source),
-                _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name))
+                _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name)),
             };
         }
 
@@ -78,7 +78,7 @@ namespace System.Security.Cryptography
                 HashAlgorithmNames.SHA3_384 => HMACSHA3_384.HashData(key, source, destination),
                 HashAlgorithmNames.SHA3_512 => HMACSHA3_512.HashData(key, source, destination),
                 HashAlgorithmNames.MD5 when Helpers.HasMD5 => HMACMD5.HashData(key, source, destination),
-                _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name))
+                _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name)),
             };
         }
     }
