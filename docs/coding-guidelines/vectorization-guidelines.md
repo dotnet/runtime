@@ -499,7 +499,7 @@ unsafe int UnmanagedPointersSum(Span<int> buffer)
 
 Currently .NET exposes only one API for allocating unmanaged aligned memory: [NativeMemory.AlignedAlloc](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.nativememory.alignedalloc). In the future, we might provide [a dedicated API](https://github.com/dotnet/runtime/issues/27146) for allocating managed, aligned and hence pinned memory buffers.
 
-The alternative to creating aligned buffers (we don't always have the control over input) is to pin the buffer, find first aligned address, handle non-aligned elements, then start aligned loop and afterwards handle the remainder. Adding such complexity to our code is hardly ever worth it and needs to be proved with proper benchmarking on various hardware.
+The alternative to creating aligned buffers (we don't always have the control over input) is to pin the buffer, find first aligned address, handle non-aligned elements, then start aligned loop and afterwards handle the remainder. Adding such complexity to our code may not always be worth it and needs to be proved with proper benchmarking on various hardware.
 
 The fourth method expects only a managed reference (`ref T source`). We don't need to pin the buffer (GC is tracking managed references and updates them if memory gets moved), but it still requires us to properly handle managed pointer arithmetic:
 
@@ -912,6 +912,7 @@ public static Vector128<T> LessThanOrEqual<T>(Vector128<T> left, Vector128<T> ri
 
 ```csharp
 public static Vector128<T> ConditionalSelect<T>(Vector128<T> condition, Vector128<T> left, Vector128<T> right)
+    => (left & condition) | (right & ~condition);
 ```
 
 This method deserves a self-describing example:
@@ -1144,5 +1145,5 @@ The main goal of the new `Vector128` and `Vector256` APIs is to make writing fas
 6. Prefer `LoadUnsafe(ref T, nuint elementOffset)` and `StoreUnsafe(this Vector128<T> source, ref T destination, nuint elementOffset)` over other methods for loading and storing vectors as they avoid pinning and the need of doing pointer arithmetic. Be aware of unsigned integer overflow!
 7. Always handle the vectorized loop remainder.
 8. When storing values in memory, be aware of a potential buffer overlap.
-9. When writing a vectorized algorithm, start with writing the tests for edge cases, then implement a scalar solution and afterwards try to express what the scalar code is doing with Vector128/256 APIs. Over time, you may gain enough experience to skip the scalar step.
+9. When writing a vectorized algorithm, start with writing the tests for edge cases, then implement a scalar solution and afterwards try to express what the scalar code is doing with Vector128/256 APIs.
 10. Vector types provide APIs for creating, loading, storing, comparing, converting, reinterpreting, widening, narrowing and shuffling vectors. It's also possible to perform equality checks, various bit and math operations. Don't try to memorize all the details, treat these APIs as a cookbook that you come back to when needed.
