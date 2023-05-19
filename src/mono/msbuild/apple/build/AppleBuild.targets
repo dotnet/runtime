@@ -219,7 +219,7 @@
         OutputDir="$(_MobileIntermediateOutputPath)"
         OutputType="AsmOnly"
         UseAotDataFile="$(_UseAotDataFile)"
-        UseLLVM="false">
+        UseLLVM="$(MonoEnableLLVM)">
         <Output TaskParameter="CompiledAssemblies" ItemName="_AssembliesToBundleInternal" />
     </MonoAOTCompiler>
 
