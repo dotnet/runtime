@@ -251,7 +251,7 @@ unsafe class Program
         Check("Avx512Vbmi.X64", ExpectedAvx512Vbmi, &Avx512VbmiX64IsSupported, Avx512Vbmi.X64.IsSupported, null);
 
         Check("X86Serialize", ExpectedX86Serialize, &X86SerializeIsSupported, X86Serialize.IsSupported, () => { X86Serialize.Serialize(); return true; } );
-        Check("X86Serialize.X64", ExpectedX86Serialize, &X86SerializeX64IsSupported, X86Serialize.X64.IsSupported, () => null);
+        Check("X86Serialize.X64", ExpectedX86Serialize, &X86SerializeX64IsSupported, X86Serialize.X64.IsSupported, null);
 
         return s_success ? 100 : 1;
     }
