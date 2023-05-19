@@ -701,12 +701,27 @@ namespace
         if (!init_for_config(hostfxr, config_path, &handle, log_prefix, test_output))
             return false;
 
-        void *delegate1;
-        bool success = get_runtime_delegate(hostfxr, handle, delegate_type1, &delegate1, log_prefix, test_output);
+        void *delegate1 = nullptr;
+        // Check that using get_runtime_delegate with the active host context will fail
+        // due to the runtime not being loaded yet.
+        bool success = get_runtime_delegate(hostfxr, nullptr, delegate_type1, &delegate1, log_prefix, test_output);
+        if (success)
+        {
+            test_output << log_prefix << _X("get_runtime_delegate with active context succeeded unexpectedly.") << std::endl;
+            return false;
+        }
+        if (nullptr != delegate1)
+        {
+            test_output << log_prefix << _X("Unexpectedly got a runtime delegate when get_runtime_delegate failed.") << std::endl;
+            return false;
+        }
+
+        // Successfully get first delegate with a defined handle.
+        success = get_runtime_delegate(hostfxr, handle, delegate_type1, &delegate1, log_prefix, test_output);
 
         // Testing that using the active host context works for get_runtime_delegate
         // by passing nullptr for handle parameter. The runtime must be loaded for this to succeed;
-        // the first call to get_runtime_delegate with a defined handle ensures that it is loaded.
+        // the first successful call to get_runtime_delegate with a defined handle ensures that it is loaded.
         void *delegate2;
         success &= get_runtime_delegate(hostfxr, nullptr, delegate_type2, &delegate2, log_prefix, test_output);
 
