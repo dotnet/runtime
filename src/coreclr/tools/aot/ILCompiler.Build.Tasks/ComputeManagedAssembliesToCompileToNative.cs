@@ -13,7 +13,7 @@ using System.Reflection.PortableExecutable;
 
 namespace Build.Tasks
 {
-    public class ComputeManagedAssembliesToCompileToNative : DesktopCompatibleTask
+    public class ComputeManagedAssembliesToCompileToNative : Task
     {
         [Required]
         public ITaskItem[] Assemblies

@@ -42,7 +42,7 @@ typedef struct
 	int local;
 	/* The offset from the execution stack start where this is stored. Used by the fast offset allocator */
 	int offset;
-	/* Saves how much stack this is using. It is a multiple of MINT_VT_ALIGNMENT */
+	/* Saves how much stack this is using. It is a multiple of MINT_STACK_SLOT_SIZE*/
 	int size;
 } StackInfo;
 

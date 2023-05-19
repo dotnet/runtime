@@ -67,6 +67,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 #if NETCOREAPP
                 MetadataReference.CreateFromFile(typeof(LinkedList<>).Assembly.Location),
                 MetadataReference.CreateFromFile(systemRuntimeAssembly.Location),
+#else
+                MetadataReference.CreateFromFile(typeof(System.Runtime.CompilerServices.Unsafe).Assembly.Location),
 #endif
             };
 

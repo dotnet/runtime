@@ -325,7 +325,6 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
     });
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function marshal_exception_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);

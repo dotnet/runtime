@@ -2,11 +2,6 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en" target-language="ko" original="../Strings.resx">
     <body>
-      <trans-unit id="AbstractOrInterfaceNotSupported">
-        <source>Abstract or interface types are not supported: '{0}'.</source>
-        <target state="translated">추상 또는 인터페이스 유형은 지원되지 않습니다: '{0}'.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="CollectionNotSupported">
         <source>The collection type is not supported: '{0}'.</source>
         <target state="translated">컬렉션 유형이 지원되지 않습니다: '{0}'.</target>

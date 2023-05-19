@@ -1366,17 +1366,8 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* 
         return true;
     }
 
-#ifdef UNICODE
-    size_t keyLength = strlen(privateKey) + 1;
-    TCHAR* pKey = (TCHAR*)_alloca(sizeof(TCHAR) * keyLength);
-    for (size_t i = 0; i < keyLength; i++)
-        pKey[i] = privateKey[i];
-#else
-    const TCHAR* pKey = privateKey;
-#endif
-
     uint64_t uiValue;
-    if (!g_pRhConfig->ReadConfigValue(pKey, &uiValue))
+    if (!g_pRhConfig->ReadConfigValue(privateKey, &uiValue))
         return false;
 
     *value = uiValue != 0;
@@ -1385,17 +1376,8 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* 
 
 bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publicKey, int64_t* value)
 {
-#ifdef UNICODE
-    size_t keyLength = strlen(privateKey) + 1;
-    TCHAR* pKey = (TCHAR*)_alloca(sizeof(TCHAR) * keyLength);
-    for (size_t i = 0; i < keyLength; i++)
-        pKey[i] = privateKey[i];
-#else
-    const TCHAR* pKey = privateKey;
-#endif
-
     uint64_t uiValue;
-    if (!g_pRhConfig->ReadConfigValue(pKey, &uiValue))
+    if (!g_pRhConfig->ReadConfigValue(privateKey, &uiValue))
         return false;
 
     *value = uiValue;

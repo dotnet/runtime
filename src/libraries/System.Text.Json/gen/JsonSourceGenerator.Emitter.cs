@@ -215,7 +215,7 @@ namespace {{@namespace}}
 
                 switch (typeGenerationSpec.ClassType)
                 {
-                    case ClassType.KnownType:
+                    case ClassType.BuiltInSupportType:
                         {
                             source = GenerateForTypeWithKnownConverter(typeGenerationSpec);
                         }
@@ -254,7 +254,7 @@ namespace {{@namespace}}
                             source = GenerateForObject(typeGenerationSpec);
                         }
                         break;
-                    case ClassType.KnownUnsupportedType:
+                    case ClassType.UnsupportedType:
                         {
                             source = GenerateForUnsupportedType(typeGenerationSpec);
                         }
@@ -380,6 +380,10 @@ namespace {{@namespace}}
                 {
                     objectCreatorValue = $"() => new {typeGenerationSpec.RuntimeTypeRef}()";
                 }
+                else if (typeGenerationSpec.IsValueTuple)
+                {
+                    objectCreatorValue = $"() => default({typeRef})";
+                }
                 else
                 {
                     objectCreatorValue = typeGenerationSpec.ConstructionStrategy == ObjectConstructionStrategy.ParameterlessConstructor
@@ -403,7 +407,7 @@ namespace {{@namespace}}
 
                 string dictInfoCreationPrefix = $"{collectionInfoCreationPrefix}{typeRef}, {keyTypeCompilableName!}, {valueTypeCompilableName}>({OptionsLocalVariableName}, {InfoVarName}";
                 string enumerableInfoCreationPrefix = $"{collectionInfoCreationPrefix}{typeRef}, {valueTypeCompilableName}>({OptionsLocalVariableName}, {InfoVarName}";
-                string immutableCollectionCreationSuffix = $"createRangeFunc: {typeGenerationSpec.ImmutableCollectionBuilderName}";
+                string immutableCollectionCreationSuffix = $"createRangeFunc: {typeGenerationSpec.ImmutableCollectionFactoryMethod}";
 
                 string collectionTypeInfoValue;
 
@@ -551,9 +555,13 @@ namespace {{@namespace}}
                 string typeFriendlyName = typeMetadata.TypeInfoPropertyName;
                 ObjectConstructionStrategy constructionStrategy = typeMetadata.ConstructionStrategy;
 
-                string creatorInvocation = constructionStrategy == ObjectConstructionStrategy.ParameterlessConstructor
-                    ? $"static () => new {typeMetadata.TypeRef.FullyQualifiedName}()"
-                    : "null";
+                string creatorInvocation = (typeMetadata.IsValueTuple, constructionStrategy) switch
+                {
+                    (true, _) => $"static () => default({typeMetadata.TypeRef.FullyQualifiedName})",
+                    (false, ObjectConstructionStrategy.ParameterlessConstructor) => $"static () => new {typeMetadata.TypeRef.FullyQualifiedName}()",
+                    _ => "null",
+                };
+
 
                 string parameterizedCreatorInvocation = constructionStrategy == ObjectConstructionStrategy.ParameterizedConstructor
                     ? GetParameterizedCtorInvocationFunc(typeMetadata)
@@ -657,7 +665,7 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerO
                     string getterValue = memberMetadata switch
                     {
                         { DefaultIgnoreCondition: JsonIgnoreCondition.Always } => "null",
-                        { CanUseGetter: true } => $"static (obj) => (({declaringTypeCompilableName})obj).{nameSpecifiedInSourceCode}{(memberMetadata.PropertyType.CanContainNullableReferenceAnnotations ? "!" : "")}",
+                        { CanUseGetter: true } => $"static (obj) => (({declaringTypeCompilableName})obj).{nameSpecifiedInSourceCode}",
                         { CanUseGetter: false, HasJsonInclude: true }
                             => @$"static (obj) => throw new {InvalidOperationExceptionTypeRef}(""{string.Format(ExceptionMessages.InaccessibleJsonIncludePropertiesNotSupported, typeGenerationSpec.TypeRef.Name, nameSpecifiedInSourceCode)}"")",
                         _ => "null"
@@ -1032,15 +1040,13 @@ private void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {val
 
             private string GetSerializeLogicForNonPrimitiveType(TypeGenerationSpec typeGenerationSpec, string valueExpr)
             {
-                string valueExprSuffix = typeGenerationSpec.TypeRef.CanContainNullableReferenceAnnotations ? "!" : "";
-
                 if (ShouldGenerateSerializationLogic(typeGenerationSpec))
                 {
-                    return $"{typeGenerationSpec.TypeInfoPropertyName}{SerializeHandlerPropName}({WriterVarName}, {valueExpr}{valueExprSuffix});";
+                    return $"{typeGenerationSpec.TypeInfoPropertyName}{SerializeHandlerPropName}({WriterVarName}, {valueExpr});";
                 }
 
                 string typeInfoRef = $"{_currentContext.ContextType.FullyQualifiedName}.Default.{typeGenerationSpec.TypeInfoPropertyName}!";
-                return $"{JsonSerializerTypeRef}.Serialize({WriterVarName}, {valueExpr}{valueExprSuffix}, {typeInfoRef});";
+                return $"{JsonSerializerTypeRef}.Serialize({WriterVarName}, {valueExpr}, {typeInfoRef});";
             }
 
             private enum DefaultCheckType

@@ -5141,8 +5141,15 @@ void CodeGen::genPutArgReg(GenTreeOp* tree)
     GenTree* op1 = tree->gtOp1;
     genConsumeReg(op1);
 
+    if (varTypeIsFloating(tree) && emitter::isGeneralRegister(targetReg))
+    {
+        // Pass the float args by integer register
+        targetType = emitActualTypeSize(targetType) == EA_4BYTE ? TYP_INT : TYP_LONG;
+    }
+
     // If child node is not already in the register we need, move it
-    GetEmitter()->emitIns_Mov(ins_Copy(targetType), emitActualTypeSize(targetType), targetReg, op1->GetRegNum(), true);
+    GetEmitter()->emitIns_Mov(ins_Copy(op1->GetRegNum(), targetType), emitActualTypeSize(targetType), targetReg,
+                              op1->GetRegNum(), true);
     genProduceReg(tree);
 }
 

@@ -862,6 +862,10 @@ MINI_OP(OP_WASM_EXTMUL_UPPER_U, "wasm_extmul_upper_u", XREG, XREG, XREG)
 MINI_OP(OP_WASM_SIMD_CONV_R8_TO_R4, "wasm_simd_conv_r8_to_r4", XREG, XREG, NONE)
 MINI_OP(OP_WASM_SIMD_CONV_R8_TO_I4_ZERO, "wasm_simd_conv_r8_to_i4_zero", XREG, XREG, NONE)
 MINI_OP(OP_WASM_SIMD_CONV_U4_TO_R8_LOW, "wasm_simd_conv_u4_to_r8_low", XREG, XREG, NONE)
+MINI_OP(OP_WASM_SIMD_SEXT_LOWER, "wasm_simd_ext_lower_s", XREG, XREG, NONE)
+MINI_OP(OP_WASM_SIMD_SEXT_UPPER, "wasm_simd_ext_upper_s", XREG, XREG, NONE)
+MINI_OP(OP_WASM_SIMD_ZEXT_LOWER, "wasm_simd_ext_lower_u", XREG, XREG, NONE)
+MINI_OP(OP_WASM_SIMD_ZEXT_UPPER, "wasm_simd_ext_upper_u", XREG, XREG, NONE)
 #endif
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
@@ -1718,6 +1722,8 @@ MINI_OP(OP_ARM64_SQXTUN2, "arm64_sqxtun2", XREG, XREG, XREG)
 
 MINI_OP(OP_ARM64_SELECT_SCALAR, "arm64_select_scalar", XREG, XREG, IREG)
 MINI_OP(OP_ARM64_SELECT_QUAD, "arm64_select_quad", XREG, XREG, IREG)
+/* Take a word elem of sreg1 identified by inst_c0 and broadcast it to all elements of dreg */
+MINI_OP(OP_ARM64_BROADCAST_ELEM, "arm64_broadcast_elem", XREG, XREG, NONE)
 
 MINI_OP(OP_ARM64_FCVTN, "arm64_fcvtn", XREG, XREG, NONE)
 MINI_OP(OP_ARM64_FCVTN2, "arm64_fcvtn2", XREG, XREG, XREG)

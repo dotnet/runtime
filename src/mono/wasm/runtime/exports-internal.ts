@@ -18,12 +18,12 @@ import { mono_wasm_gc_lock, mono_wasm_gc_unlock } from "./gc-lock";
 export function export_internal(): any {
     return {
         // tests
-        mono_wasm_exit: (exit_code: number) => { Module.err("MONO_WASM: early exit " + exit_code); },
+        mono_wasm_exit: (exit_code: number) => { Module.err("early exit " + exit_code); },
         mono_wasm_enable_on_demand_gc: cwraps.mono_wasm_enable_on_demand_gc,
         mono_wasm_profiler_init_aot: cwraps.mono_wasm_profiler_init_aot,
         mono_wasm_profiler_init_browser: cwraps.mono_wasm_profiler_init_browser,
         mono_wasm_exec_regression: cwraps.mono_wasm_exec_regression,
-        mono_intern_string,// MarshalTests.cs
+        mono_intern_string, // MarshalTests.cs
 
         // with mono_wasm_debugger_log and mono_wasm_trace_logger
         logging: undefined,
@@ -87,7 +87,6 @@ export function export_internal(): any {
     };
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function cwraps_internal(internal: any): void {
     Object.assign(internal, {
         mono_wasm_exit: cwraps.mono_wasm_exit,

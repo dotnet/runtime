@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_FPNeg
 {
     const int Pass = 100;
@@ -13,7 +14,8 @@ public class BringUpTest_FPNeg
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static float FPNeg(float x) { return -x; }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         float y = FPNeg(-1f);
         Console.WriteLine(y);
