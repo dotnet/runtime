@@ -40,7 +40,7 @@ namespace ILLink.Shared.TrimAnalysis
 		public bool RequiresGenericArgumentDataFlowAnalysis (GenericParameter genericParameter) =>
 			GetGenericParameterAnnotation (genericParameter) != DynamicallyAccessedMemberTypes.None;
 
-		public DynamicallyAccessedMemberTypes GetParameterAnnotation (ParameterProxy param)
+		internal DynamicallyAccessedMemberTypes GetParameterAnnotation (ParameterProxy param)
 		{
 			if (GetAnnotations (param.Method.Method.DeclaringType).TryGetAnnotation (param.Method.Method, out var annotation) &&
 				annotation.ParameterAnnotations != null)
@@ -227,8 +227,6 @@ namespace ILLink.Shared.TrimAnalysis
 						_context.LogWarning (method, DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnMethods);
 					}
 
-					// We convert indices from metadata space to IL space here.
-					// IL space assigns index 0 to the `this` parameter on instance methods.
 					foreach (var param in method.GetParameters ()) {
 						DynamicallyAccessedMemberTypes pa = GetMemberTypesForDynamicallyAccessedMembersAttribute (method, param.GetCustomAttributeProvider ());
 						if (pa == DynamicallyAccessedMemberTypes.None)
@@ -357,7 +355,6 @@ namespace ILLink.Shared.TrimAnalysis
 						if (getterAnnotation?.ReturnParameterAnnotation is not (null or DynamicallyAccessedMemberTypes.None)) {
 							_context.LogWarning (getMethod, DiagnosticId.DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessor, property.GetDisplayName (), getMethod.GetDisplayName ());
 						} else {
-							int offset = getMethod.HasImplicitThis () ? 1 : 0;
 							if (getterAnnotation is not null)
 								annotatedMethods.Remove (getterAnnotation.Value);
 
