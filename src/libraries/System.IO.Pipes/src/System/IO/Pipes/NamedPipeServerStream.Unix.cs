@@ -256,6 +256,7 @@ namespace System.IO.Pipes
                 lock (s_servers)
                 {
                     SharedServer? server;
+                    bool isFirstPipeInstance = (pipeOptions & PipeOptions.FirstPipeInstance) != 0;
                     if (s_servers.TryGetValue(path, out server))
                     {
                         // On Windows, if a subsequent server stream is created for the same pipe and with a different
@@ -267,7 +268,7 @@ namespace System.IO.Pipes
                         {
                             throw new IOException(SR.IO_AllPipeInstancesAreBusy);
                         }
-                        else if (server._currentCount == maxCount)
+                        else if (server._currentCount == maxCount || isFirstPipeInstance)
                         {
                             throw new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, path));
                         }
@@ -275,7 +276,7 @@ namespace System.IO.Pipes
                     else
                     {
                         // No instance exists yet for this path. Create one a new.
-                        server = new SharedServer(path, maxCount, pipeOptions);
+                        server = new SharedServer(path, maxCount, isFirstPipeInstance);
                         s_servers.Add(path, server);
                     }
 
@@ -310,19 +311,14 @@ namespace System.IO.Pipes
                 }
             }
 
-            private SharedServer(string path, int maxCount, PipeOptions pipeOptions)
+            private SharedServer(string path, int maxCount, bool isFirstPipeInstance)
             {
-                bool firstPipeInstance = (pipeOptions & PipeOptions.FirstPipeInstance) != 0;
-                if (!firstPipeInstance)
+                if (!isFirstPipeInstance)
                 {
                     // Binding to an existing path fails, so we need to remove anything left over at this location.
                     // There's of course a race condition here, where it could be recreated by someone else between this
                     // deletion and the bind below, in which case we'll simply let the bind fail and throw.
                     Interop.Sys.Unlink(path); // ignore any failures
-                }
-                else
-                {
-                    throw new ArgumentException();
                 }
 
                 // Start listening for connections on the path.
@@ -331,6 +327,11 @@ namespace System.IO.Pipes
                 {
                     socket.Bind(new UnixDomainSocketEndPoint(path));
                     socket.Listen(int.MaxValue);
+                }
+                catch (SocketException) when (isFirstPipeInstance)
+                {
+                    socket.Dispose();
+                    throw new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, path));
                 }
                 catch
                 {
