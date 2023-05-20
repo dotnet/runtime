@@ -128,6 +128,7 @@ namespace ILCompiler
             // Initialize type system context
             //
             _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, versionBubbleIncludesCoreLib,
+                instructionSetSupport,
                 oldTypeSystemContext: null,
                 enableGenericCycleDetection: Get(_command.EnableGenericCycleDetection),
                 genericCycleDepthCutoff: Get(_command.GenericCycleDepthCutoff),
@@ -273,7 +274,9 @@ namespace ILCompiler
                     {
                         bool singleCompilationVersionBubbleIncludesCoreLib = versionBubbleIncludesCoreLib || (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0);
 
-                        typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib, _typeSystemContext,
+                        typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib,
+                            _typeSystemContext.InstructionSetSupport,
+                            _typeSystemContext,
                             enableGenericCycleDetection: Get(_command.EnableGenericCycleDetection),
                             genericCycleDepthCutoff: Get(_command.GenericCycleDepthCutoff),
                             genericCycleBreadthCutoff: Get(_command.GenericCycleBreadthCutoff));
