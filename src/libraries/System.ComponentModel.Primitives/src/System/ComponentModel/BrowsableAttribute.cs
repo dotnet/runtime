@@ -42,7 +42,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a value indicating whether an object is browsable.
         /// </summary>
-        public bool Browsable { get; }
+        public bool Browsable { get; set; }
 
         public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is BrowsableAttribute other && other.Browsable == Browsable;
