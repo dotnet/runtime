@@ -619,7 +619,7 @@ namespace System
             #region Explanation of this algorithm
             // This algorithm converts a single-precision floating-point number to a half-precision floating-point number by multiplying it as a floating-point number and rearranging the bit sequence.
             // However, it introduces some tricks to implement rounding correctly, to avoid multiplying denormalized numbers and to deal with exceptions such as infinity and NaN without using branch instructions.
-            // 
+            //
             // The bit sequence of a half-precision floating-point number is as follows
             // seee_eeff_ffff_ffff
             // The bit sequence of a single-precision floating-point number is as follows
@@ -934,7 +934,7 @@ namespace System
             #region Explanation of this algorithm
             // This algorithm converts a half-precision floating-point number to a single-precision floating-point number by rearranging the bit sequence and multiplying it as a floating-point number.
             // However, it introduces some tricks to avoid multiplying denormalized numbers and to deal with exceptions such as infinity and NaN without using branch instructions.
-            // 
+            //
             // The bit sequence of a half-precision floating-point number is as follows
             // seee_eeff_ffff_ffff
             // The bit sequence of a single-precision floating-point number is as follows
@@ -943,19 +943,19 @@ namespace System
             // In half-precision, the exponent part is 5 bits and the mantissa part is 10 bits. In single precision, the exponent is 8 bits and the mantissa is 23 bits.
             // Both formats use an offset binary representation for the exponent part: the exponent part for 1.0 is half of the maximum value for either precision, i.e., 127 for single-precision and 15 for half-precision.
             // The mantissa part is normalized when the exponent part is nonzero, since in binary numbers, 1 appears as the most significant digit for any nonzero number.
-            // 
+            //
             // This conversion algorithm takes advantage of the similarity between the two formats.
             // By isolating the sign part from the half-precision bitstring and shifting it 13 bits to the left, the boundary between the exponent and mantissa parts matches with that of single-precision.
-            // In other words, 
-            //    0eeeeeffffffffff              is rearranged to 
+            // In other words,
+            //    0eeeeeffffffffff              is rearranged to
             // 0000eeeeeffffffffff0000000000000
             // which matches the boundary between the exponent and mantissa parts of single-precision floating-point number:
             // seeeeeeeefffffffffffffffffffffff
-            // 
+            //
             // After rearrangement, this bit sequence is multiplied by the constant 5.192297E+33f in the floating-point number multiplication unit.
             // However, most hardware cannot efficiently handle the multiplication of denormalized numbers.
             // Denormalized numbers are more common in half-precision than in single-precision, so they cannot be ignored.
-            // 
+            //
             // First, if the value is a denormalized number, the constant 0x3880_0000u is added beforehand in the integer addition unit to make it behave as a normalized number.
             // For Infinity or NaN, the constant 0x7000_0000u is added beforehand in the integer adder.
             // These numbers are then converted to single-precision floating-point numbers as per the IEEE754 specification by the following operations.
