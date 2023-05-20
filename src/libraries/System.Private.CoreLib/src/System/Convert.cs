@@ -2960,6 +2960,18 @@ namespace System
             return result;
         }
 
+        /// <summary>
+        /// Converts the string, which encodes binary data as hex characters, to an equivalent 8-bit unsigned integer span.
+        /// </summary>
+        /// <param name="source">The string to convert.</param>
+        /// <param name="destination">
+        /// The span in which to write the converted 8-bit unsigned integers. When this method returns false,
+        /// either the span remains unmodified or contains an incomplete conversion of <paramref name="source"/>,
+        /// up to the last valid character.
+        /// </param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in <paramref name="destination"/>.</param>
+        /// <returns>true if the conversion was successful; otherwise, false.</returns>
+        /// <exception cref="ArgumentNullException">Passed string <paramref name="source"/> is null.</exception>
         public static bool TryFromHexString(string source, Span<byte> destination, out int bytesWritten)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -2967,6 +2979,17 @@ namespace System
             return TryFromHexString(source.AsSpan(), destination, out bytesWritten);
         }
 
+        /// <summary>
+        /// Converts the span of chars, which encodes binary data as hex characters, to an equivalent 8-bit unsigned integer span.
+        /// </summary>
+        /// <param name="source">The span to convert.</param>
+        /// <param name="destination">
+        /// The span in which to write the converted 8-bit unsigned integers. When this method returns false,
+        /// either the span remains unmodified or contains an incomplete conversion of <paramref name="source"/>,
+        /// up to the last valid character.
+        /// </param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in <paramref name="destination"/>.</param>
+        /// <returns>true if the conversion was successful; otherwise, false.</returns>
         public static bool TryFromHexString(ReadOnlySpan<char> source, Span<byte> destination, out int bytesWritten)
         {
             var length = source.Length;
@@ -3048,6 +3071,14 @@ namespace System
             return HexConverter.ToString(bytes, HexConverter.Casing.Upper);
         }
 
+
+        /// <summary>
+        /// Converts a span of 8-bit unsigned integers to its equivalent span representation that is encoded with uppercase hex characters.
+        /// </summary>
+        /// <param name="source">A span of 8-bit unsigned integers.</param>
+        /// <param name="destination">The span representation in hex of the elements in <paramref name="source"/>.</param>
+        /// <param name="charsWritten">When this method returns, contains the number of chars that were written in <paramref name="destination"/>.</param>
+        /// <returns>true if the conversion was successful; otherwise, false.</returns>
         public static bool TryToHexString(ReadOnlySpan<byte> source, Span<char> destination, out int charsWritten)
         {
             var length = source.Length;
