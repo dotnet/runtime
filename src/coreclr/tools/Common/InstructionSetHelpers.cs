@@ -103,10 +103,13 @@ namespace System.CommandLine
                 Debug.Assert(InstructionSet.X64_AVX == InstructionSet.X86_AVX);
                 if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX))
                 {
+                    // TODO: Enable optimistic usage of AVX2 once we validate it doesn't break Vector<T> usage
+                    // optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx2");
+                    // optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni");
+
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("fma");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi2");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni");
                 }
             }
             else if (targetArchitecture == TargetArchitecture.ARM64)
