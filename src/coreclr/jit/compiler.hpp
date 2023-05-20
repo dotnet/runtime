@@ -317,14 +317,26 @@ static BasicBlockVisit VisitEHSuccessors(Compiler* comp, BasicBlock* block, TFun
 {
     EHblkDsc* eh = comp->ehGetBlockExnFlowDsc(block);
     if (eh == nullptr)
+    {
         return BasicBlockVisit::Continue;
+    }
 
     while (true)
     {
-        RETURN_ON_ABORT(func(eh->ExFlowBlock()));
+        // If the original block whose EH successors we're iterating over
+        // is a BBJ_CALLFINALLY, that finally clause's first block
+        // will be yielded as a normal successor.  Don't also yield as
+        // an exceptional successor.
+        BasicBlock* flowBlock = eh->ExFlowBlock();
+        if (!block->KindIs(BBJ_CALLFINALLY) || (block->bbJumpDest != flowBlock))
+        {
+            RETURN_ON_ABORT(func(flowBlock));
+        }
 
         if (eh->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+        {
             break;
+        }
 
         eh = comp->ehGetDsc(eh->ebdEnclosingTryIndex);
     }
@@ -354,7 +366,9 @@ static BasicBlockVisit VisitSuccessorEHSuccessors(Compiler* comp, BasicBlock* bl
         RETURN_ON_ABORT(func(eh->ExFlowBlock()));
 
         if (eh->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+        {
             break;
+        }
 
         eh = comp->ehGetDsc(eh->ebdEnclosingTryIndex);
     } while (eh->ebdTryBeg == succ);
