@@ -3050,7 +3050,6 @@ namespace System
 
         public static bool TryToHexString(ReadOnlySpan<byte> source, Span<char> destination, out int charsWritten)
         {
-            charsWritten = 0;
             var length = source.Length;
 
             if (length > int.MaxValue / 2)
@@ -3072,7 +3071,7 @@ namespace System
             return true;
 
             FalseResult:
-                bytesWritten = 0;
+                charsWritten = 0;
                 return false;
         }
     }  // class Convert
