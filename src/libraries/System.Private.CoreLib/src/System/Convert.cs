@@ -2980,15 +2980,15 @@ namespace System
                 return true;
             }
 
-            var twicedLength = length * 2;
+            var halfLength = length / 2;
 
-            if (destination.Length < twicedLength)
+            if (destination.Length < halfLength)
                 goto FalseResult;
 
             if (!HexConverter.TryDecodeFromUtf16(source, destination))
                 goto FalseResult;
 
-            bytesWritten = twicedLength;
+            bytesWritten = halfLength;
             return true;
 
             FalseResult:
@@ -3053,17 +3053,27 @@ namespace System
             charsWritten = 0;
             var length = source.Length;
 
-            if (length == 0 || length > int.MaxValue / 2)
-                return false;
+            if (length > int.MaxValue / 2)
+                goto FalseResult;
+
+            if (length == 0)
+            {
+                charsWritten = 0;
+                return true;
+            }
 
             int twicedLength = length * 2;
 
             if (destination.Length < twicedLength)
-                return false;
+                goto FalseResult;
 
             HexConverter.EncodeToUtf16(source, destination);
             charsWritten = twicedLength;
             return true;
+
+            FalseResult:
+                bytesWritten = 0;
+                return false;
         }
     }  // class Convert
 }  // namespace
