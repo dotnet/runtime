@@ -1351,7 +1351,7 @@ DONE_CALL:
                 GenTreeRetExpr* retExpr = gtNewInlineCandidateReturnExpr(call->AsCall(), genActualType(callRetTyp));
 
                 // Link the retExpr to the call so if necessary we can manipulate it later.
-                origCall->gtInlineCandidateInfo->retExpr = retExpr;
+                origCall->GetInlineCandidateInfo()->retExpr = retExpr;
 
                 // Propagate retExpr as the placeholder for the call.
                 call = retExpr;
@@ -6059,7 +6059,6 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
             classHandle != NO_CLASS_HANDLE ? "class" : "method",
             classHandle != NO_CLASS_HANDLE ? eeGetClassName(classHandle) : eeGetMethodFullName(methodHandle));
     setMethodHasGuardedDevirtualization();
-    call->SetGuardedDevirtualizationCandidate();
 
     // Spill off any GT_RET_EXPR subtrees so we can clone the call.
     //
@@ -6069,7 +6068,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
     // Gather some information for later. Note we actually allocate InlineCandidateInfo
     // here, as the devirtualized half of this call will likely become an inline candidate.
     //
-    GuardedDevirtualizationCandidateInfo* pInfo = new (this, CMK_Inlining) InlineCandidateInfo;
+    InlineCandidateInfo* pInfo = new (this, CMK_Inlining) InlineCandidateInfo;
 
     pInfo->guardedMethodHandle             = methodHandle;
     pInfo->guardedMethodUnboxedEntryHandle = nullptr;
@@ -6094,7 +6093,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
         }
     }
 
-    call->gtGuardedDevirtualizationCandidateInfo = pInfo;
+    call->AddGDVCandidateInfo(pInfo);
 }
 
 //------------------------------------------------------------------------
@@ -6270,13 +6269,13 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     if (call->IsGuardedDevirtualizationCandidate())
     {
-        if (call->gtGuardedDevirtualizationCandidateInfo->guardedMethodUnboxedEntryHandle != nullptr)
+        if (call->GetGDVCandidateInfo()->guardedMethodUnboxedEntryHandle != nullptr)
         {
-            fncHandle = call->gtGuardedDevirtualizationCandidateInfo->guardedMethodUnboxedEntryHandle;
+            fncHandle = call->GetGDVCandidateInfo()->guardedMethodUnboxedEntryHandle;
         }
         else
         {
-            fncHandle = call->gtGuardedDevirtualizationCandidateInfo->guardedMethodHandle;
+            fncHandle = call->GetGDVCandidateInfo()->guardedMethodHandle;
         }
         methAttr = info.compCompHnd->getMethodAttribs(fncHandle);
     }
@@ -6377,13 +6376,13 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     }
 
     // The old value should be null OR this call should be a guarded devirtualization candidate.
-    assert((call->gtInlineCandidateInfo == nullptr) || call->IsGuardedDevirtualizationCandidate());
+    assert((call->GetInlineCandidateInfo() == nullptr) || call->IsGuardedDevirtualizationCandidate());
 
     // The new value should not be null.
     assert(inlineCandidateInfo != nullptr);
     inlineCandidateInfo->exactContextNeedsRuntimeLookup = exactContextNeedsRuntimeLookup;
     inlineCandidateInfo->ilOffset                       = ilOffset;
-    call->gtInlineCandidateInfo                         = inlineCandidateInfo;
+    call->SetSingleInlineCadidateInfo(inlineCandidateInfo);
 
     // If we're in an inlinee compiler, and have a return spill temp, and this inline candidate
     // is also a tail call candidate, it can use the same return spill temp.
@@ -6395,9 +6394,6 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         JITDUMP("Inline candidate [%06u] can share spill temp V%02u\n", dspTreeID(call),
                 inlineCandidateInfo->preexistingSpillTemp);
     }
-
-    // Mark the call node as inline candidate.
-    call->gtFlags |= GTF_CALL_INLINE_CANDIDATE;
 
     // Let the strategy know there's another candidate.
     impInlineRoot()->m_inlineStrategy->NoteCandidate();
@@ -6895,7 +6891,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // Clear the inline candidate info (may be non-null since
     // it's a union field used for other things by virtual
     // stubs)
-    call->gtInlineCandidateInfo = nullptr;
+    call->ClearInlineInfo();
     call->gtCallMoreFlags &= ~GTF_CALL_M_HAS_LATE_DEVIRT_INFO;
 
 #if defined(DEBUG)
@@ -7675,7 +7671,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 
             if (pParam->call->IsGuardedDevirtualizationCandidate())
             {
-                pInfo = pParam->call->gtInlineCandidateInfo;
+                pInfo = pParam->call->GetInlineCandidateInfo();
             }
             else
             {
