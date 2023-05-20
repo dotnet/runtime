@@ -13461,7 +13461,7 @@ namespace System.Runtime.InteropServices.Marshalling
         ElementRef = 8,
         ElementOut = 9
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Delegate)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Delegate)]
     public sealed partial class NativeMarshallingAttribute : System.Attribute
     {
         public NativeMarshallingAttribute(System.Type nativeType) { }
