@@ -7823,61 +7823,61 @@ void EvaluateSimdWithElement(ValueNumStore* vns, var_types baseType, TSimd* arg0
     {
         case TYP_FLOAT:
         {
-            assert(arg1 < sizeof(TSimd) / sizeof(float));
+            assert(static_cast<uint32_t>(arg1) < sizeof(TSimd) / sizeof(float));
             arg0->f32[arg1] = vns->GetConstantSingle(arg2VN);
             break;
         }
         case TYP_DOUBLE:
         {
-            assert(arg1 < sizeof(TSimd) / sizeof(double));
+            assert(static_cast<uint32_t>(arg1) < sizeof(TSimd) / sizeof(double));
             arg0->f64[arg1] = vns->GetConstantDouble(arg2VN);
             break;
         }
         case TYP_BYTE:
         {
-            assert(arg1 < sizeof(TSimd) / sizeof(int8_t));
+            assert(static_cast<uint32_t>(arg1) < sizeof(TSimd) / sizeof(int8_t));
             arg0->i8[arg1] = vns->CoercedConstantValue<int8_t>(arg2VN);
             break;
         }
         case TYP_SHORT:
         {
-            assert(arg1 < sizeof(TSimd) / sizeof(int16_t));
+            assert(static_cast<uint32_t>(arg1) < sizeof(TSimd) / sizeof(int16_t));
             arg0->i16[arg1] = vns->CoercedConstantValue<int16_t>(arg2VN);
             break;
         }
         case TYP_INT:
         {
-            assert(arg1 < sizeof(TSimd) / sizeof(int));
+            assert(static_cast<uint32_t>(arg1) < sizeof(TSimd) / sizeof(int));
             arg0->i32[arg1] = vns->GetConstantInt32(arg2VN);
             break;
         }
         case TYP_LONG:
         {
-            assert(arg1 < sizeof(TSimd) / sizeof(INT64));
+            assert(static_cast<uint32_t>(arg1) < sizeof(TSimd) / sizeof(INT64));
             arg0->i64[arg1] = vns->GetConstantInt64(arg2VN);
             break;
         }
         case TYP_UBYTE:
         {
-            assert(arg1 < sizeof(TSimd) / sizeof(uint8_t));
+            assert(static_cast<uint32_t>(arg1) < sizeof(TSimd) / sizeof(uint8_t));
             arg0->u8[arg1] = vns->CoercedConstantValue<uint8_t>(arg2VN);
             break;
         }
         case TYP_USHORT:
         {
-            assert(arg1 < sizeof(TSimd) / sizeof(uint16_t));
+            assert(static_cast<uint32_t>(arg1) < sizeof(TSimd) / sizeof(uint16_t));
             arg0->u16[arg1] = vns->CoercedConstantValue<uint16_t>(arg2VN);
             break;
         }
         case TYP_UINT:
         {
-            assert(arg1 < sizeof(TSimd) / sizeof(uint32_t));
+            assert(static_cast<uint32_t>(arg1) < sizeof(TSimd) / sizeof(uint32_t));
             arg0->u32[arg1] = vns->GetConstantInt32(arg2VN);
             break;
         }
         case TYP_ULONG:
         {
-            assert(arg1 < sizeof(TSimd) / sizeof(uint64_t));
+            assert(static_cast<uint32_t>(arg1) < sizeof(TSimd) / sizeof(uint64_t));
             arg0->u64[arg1] = vns->GetConstantInt64(arg2VN);
             break;
         }
