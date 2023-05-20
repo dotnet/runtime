@@ -326,6 +326,16 @@ enum end_no_gc_region_status
     end_no_gc_alloc_exceeded = 3
 };
 
+// !!!!!!!!!!!!!!!!!!!!!!!
+// make sure you change the def in bcl\system\gc.cs
+// if you change this!
+enum refresh_memory_limit_status
+{
+    refresh_success = 0,
+    refresh_hard_limit_too_low = 1,
+    refresh_hard_limit_invalid = 2
+};
+
 enum gc_kind
 {
     gc_kind_any = 0,           // any of the following kind
@@ -569,10 +579,6 @@ enum class GCConfigurationType
 };
 
 using ConfigurationValueFunc = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);
-
-const int REFRESH_MEMORY_SUCCEED = 0;
-const int REFRESH_MEMORY_HARD_LIMIT_TOO_LOW = 1;
-const int REFRESH_MEMORY_HARD_LIMIT_INVALID = 2;
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.
 class IGCHeap {
