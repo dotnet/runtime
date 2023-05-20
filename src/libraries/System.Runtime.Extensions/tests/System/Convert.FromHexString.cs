@@ -34,73 +34,50 @@ namespace System.Tests
 
         private static void TestSequence(byte[] expected, string actual)
         {
-            Assert.Equal(expected, Convert.FromHexString(actual));
+            byte[] fromResult = Convert.FromHexString(actual);
+            Assert.Equal(expected, fromResult);
+
+            Span<byte> tryResult = stackalloc byte[actual.Length / 2];
+            Assert.True(Convert.TryFromHexString(actual, tryResult, out int written));
+            Assert.Equal(fromResult.Length, written);
+            AssertExtensions.SequenceEqual(expected, tryResult);
+
         }
 
         [Fact]
         public static void InvalidInputString_Null()
         {
             AssertExtensions.Throws<ArgumentNullException>("s", () => Convert.FromHexString(null));
+            Assert.False(Convert.TryFromHexString(null, default, out _));
         }
 
-        [Fact]
-        public static void InvalidInputString_HalfByte()
+        [Theory]
+        [InlineData("01-02-FD-FE-FF")]
+        [InlineData("00 01 02FD FE FF")]
+        [InlineData("000102FDFEFF  ")]
+        [InlineData("  000102FDFEFF")]
+        [InlineData("\u200B 000102FDFEFF")]
+        [InlineData("0\u0308")]
+        [InlineData("0x")]
+        [InlineData("x0")]
+        [InlineData("ABC")] // HalfByte
+        public static void InvalidInputString_FormatException_Or_FalseResult(string invalidInput)
         {
-            Assert.Throws<FormatException>(() => Convert.FromHexString("ABC"));
-        }
+            Assert.Throws<FormatException>(() => Convert.FromHexString(invalidInput));
 
-        [Fact]
-        public static void InvalidInputString_BadFirstCharacter()
-        {
-            Assert.Throws<FormatException>(() => Convert.FromHexString("x0"));
-        }
-
-        [Fact]
-        public static void InvalidInputString_BadSecondCharacter()
-        {
-            Assert.Throws<FormatException>(() => Convert.FromHexString("0x"));
-        }
-
-        [Fact]
-        public static void InvalidInputString_NonAsciiCharacter()
-        {
-            Assert.Throws<FormatException>(() => Convert.FromHexString("0\u0308"));
-        }
-
-        [Fact]
-        public static void InvalidInputString_ZeroWidthSpace()
-        {
-            Assert.Throws<FormatException>(() => Convert.FromHexString("\u200B 000102FDFEFF"));
-        }
-
-        [Fact]
-        public static void InvalidInputString_LeadingWhiteSpace()
-        {
-            Assert.Throws<FormatException>(() => Convert.FromHexString("  000102FDFEFF"));
-        }
-
-        [Fact]
-        public static void InvalidInputString_TrailingWhiteSpace()
-        {
-            Assert.Throws<FormatException>(() => Convert.FromHexString("000102FDFEFF  "));
-        }
-
-        [Fact]
-        public static void InvalidInputString_WhiteSpace()
-        {
-            Assert.Throws<FormatException>(() => Convert.FromHexString("00 01 02FD FE FF"));
-        }
-
-        [Fact]
-        public static void InvalidInputString_Dash()
-        {
-            Assert.Throws<FormatException>(() => Convert.FromHexString("01-02-FD-FE-FF"));
+            Span<byte> buffer = stackalloc byte[invalidInput.Length / 2];
+            Assert.False(Convert.TryFromHexString(invalidInput.AsSpan(), buffer, out _));
         }
 
         [Fact]
         public static void ZeroLength()
         {
             Assert.Same(Array.Empty<byte>(), Convert.FromHexString(string.Empty));
+
+            bool tryResult = Convert.TryFromHexString(string.Empty, Span<byte>.Empty, out int written);
+
+            Assert.True(tryResult);
+            Assert.Equal(0, written);
         }
 
         [Fact]
