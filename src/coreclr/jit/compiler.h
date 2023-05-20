@@ -8645,8 +8645,13 @@ private:
 
     // Get the number of bytes in a System.Numeric.Vector<T> for the current compilation.
     // Note - cannot be used for System.Runtime.Intrinsic
-    unsigned getSIMDVectorRegisterByteLength()
+    unsigned getVectorTByteLength()
     {
+        // We need to report the ISA dependency to the VM so that scenarios
+        // such as R2R work correctly for larger vector sizes, so we always
+        // do `compExactlyDependsOn` for such cases.
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
 #if defined(TARGET_XARCH)
         if (compExactlyDependsOn(InstructionSet_AVX2))
         {
@@ -8660,7 +8665,7 @@ private:
 #elif defined(TARGET_ARM64)
         return FP_REGSIZE_BYTES;
 #else
-        assert(!"getSIMDVectorRegisterByteLength() unimplemented on target arch");
+        assert(!"getVectorTByteLength() unimplemented on target arch");
         unreached();
 #endif
     }
