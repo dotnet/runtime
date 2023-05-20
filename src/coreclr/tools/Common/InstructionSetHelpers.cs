@@ -101,10 +101,11 @@ namespace System.CommandLine
                 {
                     // TODO: Enable optimistic usage of AVX2 once we validate it doesn't break Vector<T> usage
                     // optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx2");
+                    // optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni");
+
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("fma");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi2");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni");
                 }
 
                 Debug.Assert(InstructionSet.X64_AVX512F == InstructionSet.X86_AVX512F);
