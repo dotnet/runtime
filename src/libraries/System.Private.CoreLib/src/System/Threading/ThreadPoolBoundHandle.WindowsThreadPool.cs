@@ -144,7 +144,6 @@ namespace System.Threading
         [UnmanagedCallersOnly]
         private static unsafe void OnNativeIOCompleted(IntPtr instance, IntPtr context, IntPtr overlappedPtr, uint ioResult, nuint numberOfBytesTransferred, IntPtr ioPtr)
         {
-            // Enabling for NativeAot first
 #if NATIVEAOT
             var wrapper = ThreadPoolCallbackWrapper.Enter();
 #endif

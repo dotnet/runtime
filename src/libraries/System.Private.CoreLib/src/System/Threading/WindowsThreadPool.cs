@@ -13,7 +13,6 @@ namespace System.Threading
     //
     // Windows-specific implementation of ThreadPool
     //
-    // PR-Comment: Making it internal just to make it build
     internal static class WindowsThreadPool
     {
         /// <summary>
@@ -144,7 +143,6 @@ namespace System.Threading
         [UnmanagedCallersOnly]
         private static void DispatchCallback(IntPtr instance, IntPtr context, IntPtr work)
         {
-            // PR-Comment: Assuming this is no longer necessary, might be wrong about this
 #if NATIVEAOT
             var wrapper = ThreadPoolCallbackWrapper.Enter();
 #endif
