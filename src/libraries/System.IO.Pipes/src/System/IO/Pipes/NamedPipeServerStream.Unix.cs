@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -38,19 +37,12 @@ namespace System.IO.Pipes
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_MessageTransmissionMode);
             }
 
-#pragma warning disable CA1416
-            if ((options & PipeOptions.FirstPipeInstance) != 0)
-#pragma warning restore CA1416
-            {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_PipeOptions_FirstPipeInstance);
-            }
-
             // We don't have a good way to enforce maxNumberOfServerInstances across processes; we only factor it in
             // for streams created in this process.  Between processes, we behave similarly to maxNumberOfServerInstances == 1,
             // in that the second process to come along and create a stream will find the pipe already in existence and will fail.
             _instance = SharedServer.Get(
                 GetPipePath(".", pipeName),
-                (maxNumberOfServerInstances == MaxAllowedServerInstances) ? int.MaxValue : maxNumberOfServerInstances);
+                (maxNumberOfServerInstances == MaxAllowedServerInstances) ? int.MaxValue : maxNumberOfServerInstances, options);
 
             _direction = direction;
             _options = options;
@@ -256,7 +248,7 @@ namespace System.IO.Pipes
             /// <summary>The concurrent number of concurrent streams using this instance.</summary>
             private int _currentCount;
 
-            internal static SharedServer Get(string path, int maxCount)
+            internal static SharedServer Get(string path, int maxCount, PipeOptions pipeOptions)
             {
                 Debug.Assert(!string.IsNullOrEmpty(path));
                 Debug.Assert(maxCount >= 1);
@@ -283,7 +275,7 @@ namespace System.IO.Pipes
                     else
                     {
                         // No instance exists yet for this path. Create one a new.
-                        server = new SharedServer(path, maxCount);
+                        server = new SharedServer(path, maxCount, pipeOptions);
                         s_servers.Add(path, server);
                     }
 
@@ -318,12 +310,20 @@ namespace System.IO.Pipes
                 }
             }
 
-            private SharedServer(string path, int maxCount)
+            private SharedServer(string path, int maxCount, PipeOptions pipeOptions)
             {
-                // Binding to an existing path fails, so we need to remove anything left over at this location.
-                // There's of course a race condition here, where it could be recreated by someone else between this
-                // deletion and the bind below, in which case we'll simply let the bind fail and throw.
-                Interop.Sys.Unlink(path); // ignore any failures
+                bool firstPipeInstance = (pipeOptions & PipeOptions.FirstPipeInstance) != 0;
+                if (!firstPipeInstance)
+                {
+                    // Binding to an existing path fails, so we need to remove anything left over at this location.
+                    // There's of course a race condition here, where it could be recreated by someone else between this
+                    // deletion and the bind below, in which case we'll simply let the bind fail and throw.
+                    Interop.Sys.Unlink(path); // ignore any failures
+                }
+                else
+                {
+                    throw new ArgumentException();
+                }
 
                 // Start listening for connections on the path.
                 var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);

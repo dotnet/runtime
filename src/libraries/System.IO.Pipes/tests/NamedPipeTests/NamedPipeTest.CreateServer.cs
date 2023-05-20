@@ -257,15 +257,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public static void Unix_PipeOptions_FirstPipeInstance_ThrowsPlatformNotSupportedException()
-        {
-            Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeServerStream(PipeStreamConformanceTests.GetUniquePipeName(), PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.FirstPipeInstance));
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public static void Windows_PipeOptions_FirstPipeInstanceWithSameNameReuse_Throws_UnauthorizedAccessException()
+        public static void PipeOptions_FirstPipeInstanceWithSameNameReuse_Throws_UnauthorizedAccessException()
         {
             string uniqueServerName = PipeStreamConformanceTests.GetUniquePipeName();
             using (NamedPipeServerStream server = new NamedPipeServerStream(uniqueServerName, PipeDirection.In, 2, PipeTransmissionMode.Byte, PipeOptions.FirstPipeInstance))
