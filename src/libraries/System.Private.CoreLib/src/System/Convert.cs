@@ -2969,25 +2969,31 @@ namespace System
 
         public static bool TryFromHexString(ReadOnlySpan<char> source, Span<byte> destination, out int bytesWritten)
         {
-            bytesWritten = 0;
             var length = source.Length;
 
             if (length % 2 != 0)
-                return false;
+                goto FalseResult;
 
             if (length == 0)
+            {
+                bytesWritten = 0;
                 return true;
+            }
 
             var twicedLength = length * 2;
 
             if (destination.Length < twicedLength)
-                return false;
+                goto FalseResult;
 
             if (!HexConverter.TryDecodeFromUtf16(source, destination))
-                return false;
+                goto FalseResult;
 
             bytesWritten = twicedLength;
             return true;
+
+            FalseResult:
+                bytesWritten = 0;
+                return false;
         }
 
         /// <summary>
