@@ -3057,9 +3057,9 @@ function emit_simd(
         case MintOpcode.MINT_SIMD_V128_LDC: {
             if (builder.options.enableSimd && getIsWasmSimdSupported()) {
                 builder.local("pLocals");
-                builder.appendSimd(WasmSimdOpcode.v128_const);
-                const view = Module.HEAPU8.slice(<any>ip + 4, <any>ip + 4 + sizeOfV128);
-                builder.appendBytes(view);
+                builder.v128_const(
+                    Module.HEAPU8.slice(<any>ip + 4, <any>ip + 4 + sizeOfV128)
+                );
                 append_simd_store(builder, ip);
             } else {
                 // dest
@@ -3178,8 +3178,7 @@ function emit_simd_2(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
             const tableEntry = createScalarTable[index];
             builder.local("pLocals");
             // Make a zero vector
-            builder.i52_const(0);
-            builder.appendSimd(WasmSimdOpcode.i64x2_splat);
+            builder.v128_const(0);
             // Load the scalar value
             append_ldloc(builder, getArgU16(ip, 2), tableEntry[0]);
             // Replace the first lane
@@ -3267,13 +3266,11 @@ function emit_shuffle(builder: WasmBuilder, ip: MintOpcodePtr, elementCount: num
     // There's no direct narrowing opcode for i32 -> i8, so we have to do two steps :(
     if (elementCount === 4) {
         // i32{lane0 ... lane3} -> i16{lane0 ... lane3, 0 ...}
-        builder.i52_const(0);
-        builder.appendSimd(WasmSimdOpcode.i64x2_splat);
+        builder.v128_const(0);
         builder.appendSimd(WasmSimdOpcode.i16x8_narrow_i32x4_u);
     }
     // Load a zero vector (narrow takes two vectors)
-    builder.i52_const(0);
-    builder.appendSimd(WasmSimdOpcode.i64x2_splat);
+    builder.v128_const(0);
     // i16{lane0 ... lane7} -> i8{lane0 ... lane7, 0 ...}
     builder.appendSimd(WasmSimdOpcode.i8x16_narrow_i16x8_u);
     // i8{0, 1, 2, 3 ...} -> i8{0, 0, 1, 1, 2, 2, 3, 3 ...}

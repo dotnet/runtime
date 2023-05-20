@@ -4052,6 +4052,12 @@
   <data name="InvalidOperationException_NoGCRegionNotInProgress" xml:space="preserve">
     <value>NoGCRegion mode must be set.</value>
   </data>
+  <data name="InvalidOperationException_HardLimitTooLow" xml:space="preserve">
+    <value>RefreshMemoryLimit failed with too low hard limit.</value>
+  </data>
+  <data name="InvalidOperationException_HardLimitInvalid" xml:space="preserve">
+    <value>RefreshMemoryLimit failed with invalid hard limit.</value>
+  </data>
   <data name="PlatformNotSupported_ReflectionEmit" xml:space="preserve">
     <value>Dynamic code generation is not supported on this platform.</value>
   </data>

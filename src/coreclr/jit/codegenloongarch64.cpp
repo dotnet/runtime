@@ -2295,9 +2295,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     if (compiler->lvaOutgoingArgSpaceSize > 0)
     {
         unsigned outgoingArgSpaceAligned = roundUp(compiler->lvaOutgoingArgSpaceSize, STACK_ALIGN);
-        // assert((compiler->lvaOutgoingArgSpaceSize % STACK_ALIGN) == 0); // This must be true for the stack to remain
-        //                                                                // aligned
-        genInstrWithConstant(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, outgoingArgSpaceAligned, rsGetRsvdReg());
+        genInstrWithConstant(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, outgoingArgSpaceAligned, REG_RA);
         stackAdjustment += outgoingArgSpaceAligned;
     }
 
@@ -2350,8 +2348,8 @@ void CodeGen::genLclHeap(GenTree* tree)
             }
             else
             {
-                emit->emitIns_I_la(EA_PTRSIZE, rsGetRsvdReg(), amount);
-                emit->emitIns_R_R_R(INS_sub_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, rsGetRsvdReg());
+                emit->emitIns_I_la(EA_PTRSIZE, REG_RA, amount);
+                emit->emitIns_R_R_R(INS_sub_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, REG_RA);
             }
 
             goto ALLOC_DONE;
@@ -2483,7 +2481,7 @@ ALLOC_DONE:
         assert((stackAdjustment % STACK_ALIGN) == 0); // This must be true for the stack to remain aligned
         assert((lastTouchDelta == ILLEGAL_LAST_TOUCH_DELTA) || (lastTouchDelta >= 0));
 
-        const regNumber tmpReg = rsGetRsvdReg();
+        const regNumber tmpReg = REG_RA;
 
         if ((lastTouchDelta == ILLEGAL_LAST_TOUCH_DELTA) ||
             (stackAdjustment + (unsigned)lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES >
@@ -4110,7 +4108,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                     {
                         imm = static_cast<uint32_t>(imm);
 
-                        regNumber tmpRegOp1 = rsGetRsvdReg();
+                        regNumber tmpRegOp1 = REG_R21;
                         assert(regOp1 != tmpRegOp1);
                         emit->emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, tmpRegOp1, regOp1, 31, 0);
                         regOp1 = tmpRegOp1;
@@ -4247,7 +4245,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             if (cmpSize == EA_4BYTE)
             {
                 regNumber tmpRegOp1 = REG_RA;
-                regNumber tmpRegOp2 = rsGetRsvdReg();
+                regNumber tmpRegOp2 = REG_R21;
                 assert(regOp1 != tmpRegOp2);
                 assert(regOp2 != tmpRegOp2);
 
@@ -4345,7 +4343,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
             {
                 case EA_4BYTE:
                 {
-                    regNumber tmpRegOp1 = rsGetRsvdReg();
+                    regNumber tmpRegOp1 = REG_R21;
                     assert(regOp1 != tmpRegOp1);
                     if (cond.IsUnsigned())
                     {
@@ -4421,7 +4419,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
         if (cmpSize == EA_4BYTE)
         {
             regNumber tmpRegOp1 = REG_RA;
-            regNumber tmpRegOp2 = rsGetRsvdReg();
+            regNumber tmpRegOp2 = REG_R21;
             assert(regOp1 != tmpRegOp2);
             assert(regOp2 != tmpRegOp2);
 
@@ -7167,7 +7165,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 
         case GenIntCastDesc::CHECK_INT_RANGE:
         {
-            const regNumber tempReg = rsGetRsvdReg();
+            const regNumber tempReg = REG_R21;
             assert(tempReg != reg);
             GetEmitter()->emitIns_I_la(EA_8BYTE, tempReg, INT32_MAX);
             genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, tempReg, nullptr, reg);

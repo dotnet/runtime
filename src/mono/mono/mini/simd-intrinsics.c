@@ -2129,17 +2129,17 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			// Read back.
 			// TODO: on x86, use a LEA
 			MonoInst* scratch = emit_xzero (cfg, args [0]->klass);
-			MonoInst* scratcha;
+			MonoInst* scratcha, *ins;
 			NEW_VARLOADA_VREG (cfg, scratcha, scratch->dreg, fsig->params [0]);
 			MONO_ADD_INS (cfg->cbb, scratcha);
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, mono_type_to_store_membase (cfg, fsig->params [0]), scratcha->dreg, 0, args [0]->dreg);
+			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, fsig->params [0], scratcha->dreg, 0, args [0]->dreg);
 
 			int offset_reg = alloc_lreg (cfg);
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, offset_reg, args [1]->dreg, type_to_width_log2 (arg0_type));
 			int addr_reg = alloc_preg (cfg);
 			MONO_EMIT_NEW_BIALU(cfg, OP_PADD, addr_reg, scratcha->dreg, offset_reg);
 
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, mono_type_to_store_membase (cfg, fsig->params [2]), addr_reg, 0, args [2]->dreg);
+			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, fsig->params [2], addr_reg, 0, args [2]->dreg);
 
 			MonoInst* ret;
 			NEW_LOAD_MEMBASE (cfg, ret, mono_type_to_load_membase (cfg, fsig->ret), scratch->dreg, scratcha->dreg, 0);
@@ -2586,8 +2586,10 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		ins->sreg3 = args [1]->dreg;
 		ins->inst_c1 = MONO_TYPE_R4;
 		ins->dreg = dreg;
-		if (indirect)
+		if (indirect) {
 			EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, args [0]->dreg, 0, dreg);
+			ins->klass = klass;
+		}
 
 		return ins;
 	}
@@ -5695,7 +5697,7 @@ decompose_vtype_opt_load_arg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *in
 {
 	guint32 *sreg = (guint32*)sreg_int32;
 	MonoInst *src_var = get_vreg_to_inst (cfg, *sreg);
-	if (src_var && src_var->opcode == OP_ARG && src_var->klass && MONO_CLASS_IS_SIMD (cfg, src_var->klass)) {
+	if (src_var && src_var->opcode == OP_ARG && src_var->klass && mini_class_is_simd (cfg, src_var->klass)) {
 		MonoInst *varload_ins, *load_ins;
 		NEW_VARLOADA (cfg, varload_ins, src_var, src_var->inst_vtype);
 		mono_bblock_insert_before_ins (bb, ins, varload_ins);
@@ -5714,7 +5716,7 @@ decompose_vtype_opt_store_arg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *i
 {
 	guint32 *dreg = (guint32*)dreg_int32;
 	MonoInst *dest_var = get_vreg_to_inst (cfg, *dreg);
-	if (dest_var && dest_var->opcode == OP_ARG && dest_var->klass && MONO_CLASS_IS_SIMD (cfg, dest_var->klass)) {
+	if (dest_var && dest_var->opcode == OP_ARG && dest_var->klass && mini_class_is_simd (cfg, dest_var->klass)) {
 		MonoInst *varload_ins, *store_ins;
 		*dreg = alloc_xreg (cfg);
 		NEW_VARLOADA (cfg, varload_ins, dest_var, dest_var->inst_vtype);
