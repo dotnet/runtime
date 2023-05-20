@@ -306,6 +306,217 @@ inline EHblkDsc* Compiler::ehGetBlockHndDsc(BasicBlock* block)
     return ehGetDsc(block->getHndIndex());
 }
 
+#define RETURN_ON_ABORT(expr)                                                                                          \
+    if (expr == BasicBlockVisit::Abort)                                                                                \
+    {                                                                                                                  \
+        return BasicBlockVisit::Abort;                                                                                 \
+    }
+
+template <typename TFunc>
+static BasicBlockVisit VisitEHSuccessors(Compiler* comp, BasicBlock* block, TFunc func)
+{
+    EHblkDsc* eh = comp->ehGetBlockExnFlowDsc(block);
+    if (eh == nullptr)
+        return BasicBlockVisit::Continue;
+
+    while (true)
+    {
+        RETURN_ON_ABORT(func(eh->ExFlowBlock()));
+
+        if (eh->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+            break;
+
+        eh = comp->ehGetDsc(eh->ebdEnclosingTryIndex);
+    }
+
+    return BasicBlockVisit::Continue;
+}
+
+template <typename TFunc>
+static BasicBlockVisit VisitSuccessorEHSuccessors(Compiler* comp, BasicBlock* block, BasicBlock* succ, TFunc func)
+{
+    if (!comp->bbIsTryBeg(succ))
+    {
+        return BasicBlockVisit::Continue;
+    }
+
+    unsigned tryIndex = succ->getTryIndex();
+    if (comp->bbInExnFlowRegions(tryIndex, block))
+    {
+        // Already yielded as an EH successor of block itself
+        return BasicBlockVisit::Continue;
+    }
+
+    EHblkDsc* eh = comp->ehGetDsc(tryIndex);
+
+    do
+    {
+        RETURN_ON_ABORT(func(eh->ExFlowBlock()));
+
+        if (eh->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+            break;
+
+        eh = comp->ehGetDsc(eh->ebdEnclosingTryIndex);
+    } while (eh->ebdTryBeg == succ);
+
+    return BasicBlockVisit::Continue;
+}
+
+template <typename VisitRegularSucc>
+static BasicBlockVisit VisitSuccsInternal(Compiler* comp, BasicBlock* bb, VisitRegularSucc func)
+{
+    switch (bb->bbJumpKind)
+    {
+        case BBJ_EHFILTERRET:
+            RETURN_ON_ABORT(func(bb->bbJumpDest));
+            RETURN_ON_ABORT(VisitEHSuccessors(comp, bb, func));
+            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, bb, bb->bbJumpDest, func));
+            break;
+
+        case BBJ_EHFINALLYRET:
+        {
+            EHblkDsc* ehDsc = comp->ehGetDsc(bb->getHndIndex());
+            assert(ehDsc->HasFinallyHandler());
+
+            BasicBlock* begBlk;
+            BasicBlock* endBlk;
+            comp->ehGetCallFinallyBlockRange(bb->getHndIndex(), &begBlk, &endBlk);
+
+            BasicBlock* finBeg = ehDsc->ebdHndBeg;
+
+            unsigned numSuccs = 0;
+            for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
+            {
+                if ((bcall->bbJumpKind != BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
+                {
+                    continue;
+                }
+
+                assert(bcall->isBBCallAlwaysPair());
+
+                RETURN_ON_ABORT(func(bcall->bbNext));
+                numSuccs++;
+            }
+
+            RETURN_ON_ABORT(VisitEHSuccessors(comp, bb, func));
+
+            for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
+            {
+                if ((bcall->bbJumpKind != BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
+                {
+                    continue;
+                }
+
+                assert(bcall->isBBCallAlwaysPair());
+                RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, bb, bcall->bbNext, func));
+            }
+
+            break;
+        }
+
+        case BBJ_CALLFINALLY:
+        case BBJ_EHCATCHRET:
+        case BBJ_LEAVE:
+            RETURN_ON_ABORT(func(bb->bbJumpDest));
+            RETURN_ON_ABORT(VisitEHSuccessors(comp, bb, func));
+            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, bb, bb->bbJumpDest, func));
+            break;
+
+        case BBJ_ALWAYS:
+            RETURN_ON_ABORT(func(bb->bbJumpDest));
+
+            // If "bb" is a "leave helper" block (the empty BBJ_ALWAYS block
+            // that pairs with a preceding BBJ_CALLFINALLY block to implement a
+            // "leave" IL instruction), then no exceptions can occur within it
+            // and we skip its normal EH successors.
+            if (!bb->isBBCallAlwaysPairTail())
+            {
+                RETURN_ON_ABORT(VisitEHSuccessors(comp, bb, func));
+            }
+            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, bb, bb->bbJumpDest, func));
+            break;
+
+        case BBJ_NONE:
+            RETURN_ON_ABORT(func(bb->bbNext));
+            RETURN_ON_ABORT(VisitEHSuccessors(comp, bb, func));
+            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, bb, bb->bbNext, func));
+            break;
+
+        case BBJ_COND:
+            RETURN_ON_ABORT(func(bb->bbNext));
+            RETURN_ON_ABORT(func(bb->bbJumpDest));
+            RETURN_ON_ABORT(VisitEHSuccessors(comp, bb, func));
+            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, bb, bb->bbNext, func));
+            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, bb, bb->bbJumpDest, func));
+            break;
+
+        case BBJ_SWITCH:
+        {
+            Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(bb);
+            for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
+            {
+                RETURN_ON_ABORT(func(sd.nonDuplicates[i]));
+            }
+
+            RETURN_ON_ABORT(VisitEHSuccessors(comp, bb, func));
+
+            for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
+            {
+                RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, bb, sd.nonDuplicates[i], func));
+            }
+
+            break;
+        }
+
+        case BBJ_THROW:
+        case BBJ_RETURN:
+        case BBJ_EHFAULTRET:
+            RETURN_ON_ABORT(VisitEHSuccessors(comp, bb, func));
+            break;
+
+        default:
+            unreached();
+    }
+
+    return BasicBlockVisit::Continue;
+}
+
+template <typename TFunc>
+BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
+{
+#ifdef DEBUG
+    BasicBlock* succs[64];
+    unsigned    index = 0;
+
+    VisitSuccsInternal(comp, this, [&succs, &index](BasicBlock* succ) {
+        if (index < ArrLen(succs))
+        {
+            succs[index] = succ;
+        }
+
+        index++;
+        return BasicBlockVisit::Continue;
+    });
+
+    unsigned index2 = 0;
+    for (BasicBlock* succ : GetAllSuccs(comp))
+    {
+        if (index2 < ArrLen(succs))
+        {
+            assert(succs[index2] == succ);
+        }
+
+        index2++;
+    }
+
+    assert(index == index2);
+#endif
+
+    return VisitSuccsInternal(comp, this, func);
+}
+
+#undef RETURN_ON_ABORT
+
 #if defined(FEATURE_EH_FUNCLETS)
 
 /*****************************************************************************
