@@ -40,46 +40,6 @@ namespace System.Threading
         /// </value>
         public SafeHandle Handle => _handle;
 
-        private static ThreadPoolBoundHandle BindHandlePortableCore(SafeHandle handle)
-        {
-            ArgumentNullException.ThrowIfNull(handle);
-
-            if (handle.IsClosed || handle.IsInvalid)
-                throw new ArgumentException(SR.Argument_InvalidHandle, nameof(handle));
-
-            return BindHandleWindowsCore(handle);
-        }
-
-        private static ThreadPoolBoundHandle BindHandleWindowsCore(SafeHandle handle)
-        {
-            Debug.Assert(handle != null);
-            Debug.Assert(!handle.IsClosed);
-            Debug.Assert(!handle.IsInvalid);
-
-            try
-            {
-                Debug.Assert(OperatingSystem.IsWindows());
-                // ThreadPool.BindHandle will always return true, otherwise, it throws.
-                bool succeeded = ThreadPool.BindHandle(handle);
-                Debug.Assert(succeeded);
-            }
-            catch (Exception ex)
-            {   // BindHandle throws ApplicationException on full CLR and Exception on CoreCLR.
-                // We do not let either of these leak and convert them to ArgumentException to
-                // indicate that the specified handles are invalid.
-
-                if (ex.HResult == HResults.E_HANDLE)         // Bad handle
-                    throw new ArgumentException(SR.Argument_InvalidHandle, nameof(handle));
-
-                if (ex.HResult == HResults.E_INVALIDARG)     // Handle already bound or sync handle
-                    throw new ArgumentException(SR.Argument_AlreadyBoundOrSyncHandle, nameof(handle));
-
-                throw;
-            }
-
-            return new ThreadPoolBoundHandle(handle);
-        }
-
         /// <summary>
         ///     Returns a <see cref="ThreadPoolBoundHandle"/> for the specific handle,
         ///     which is bound to the system thread pool.
