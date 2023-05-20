@@ -136,10 +136,8 @@ namespace System.Threading
 
         ~ThreadPoolBoundHandle()
         {
-            if (ThreadPool.UseWindowsThreadPool)
-            {
-                FinalizeWindowsThreadPool();
-            }
+            Debug.Assert(ThreadPool.UseWindowsThreadPool);
+            FinalizeWindowsThreadPool();
         }
 
         void IDeferredDisposable.OnFinalRelease(bool disposed)
