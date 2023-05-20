@@ -23,38 +23,38 @@
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">
-        <source>Source-generated P/Invokes will ignore any configuration that is not supported.</source>
-        <target state="translated">Kaynak tarafından oluşturulan P/Invokes desteklenmeyen yapılandırmaları yok sayar.</target>
+        <source>Source-generated COM will ignore any configuration that is not supported.</source>
+        <target state="needs-review-translation">Kaynak tarafından oluşturulan P/Invokes desteklenmeyen yapılandırmaları yok sayar.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessage">
-        <source>The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead.</source>
-        <target state="translated">'{0}' yapılandırması, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor. Belirtilen yapılandırma gerekli ise, bunun yerine normal bir 'DllImport' kullanın.</target>
+        <source>The '{0}' configuration is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
+        <target state="needs-review-translation">'{0}' yapılandırması, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor. Belirtilen yapılandırma gerekli ise, bunun yerine normal bir 'DllImport' kullanın.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageMarshallingInfo">
-        <source>The specified marshalling configuration is not supported by source-generated P/Invokes. {0}.</source>
-        <target state="translated">Belirtilen sıralama yapılandırması, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor. {0}.</target>
+        <source>The specified marshalling configuration is not supported by source-generated COM. {0}.</source>
+        <target state="needs-review-translation">Belirtilen sıralama yapılandırması, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor. {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageParameter">
-        <source>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead.</source>
-        <target state="translated">'{1}' parametresi için belirtilen '{0}' yapılandırması, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor. Belirtilen yapılandırma gerekli ise, bunun yerine normal bir 'DllImport' kullanın.</target>
+        <source>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
+        <target state="needs-review-translation">'{1}' parametresi için belirtilen '{0}' yapılandırması, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor. Belirtilen yapılandırma gerekli ise, bunun yerine normal bir 'DllImport' kullanın.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageReturn">
-        <source>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead.</source>
-        <target state="translated">'{1}' metodunun dönüş değeri için belirtilen '{0}' yapılandırması, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor. Belirtilen yapılandırma gerekli ise, bunun yerine normal bir 'DllImport' kullanın.</target>
+        <source>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
+        <target state="needs-review-translation">'{1}' metodunun dönüş değeri için belirtilen '{0}' yapılandırması, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor. Belirtilen yapılandırma gerekli ise, bunun yerine normal bir 'DllImport' kullanın.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageValue">
-        <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead.</source>
-        <target state="translated">'{1}' için belirtilen '{0}' değeri, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor. Belirtilen yapılandırma gerekli ise, bunun yerine normal bir 'DllImport' kullanın.</target>
+        <source>The specified value '{0}' for '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
+        <target state="needs-review-translation">'{1}' için belirtilen '{0}' değeri, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor. Belirtilen yapılandırma gerekli ise, bunun yerine normal bir 'DllImport' kullanın.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedTitle">
-        <source>Specified configuration is not supported by source-generated P/Invokes.</source>
-        <target state="translated">Belirtilen yapılandırma, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor.</target>
+        <source>Specified configuration is not supported by source-generated COM.</source>
+        <target state="needs-review-translation">Belirtilen yapılandırma, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="InterfaceTypeNotSupportedMessage">
@@ -68,8 +68,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">
-        <source>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. P/Invoke source generation will ignore method '{0}'.</source>
-        <target state="translated">'{0}'metodu, 'partial' olarak işaretlenmemiş olan bir '{1}' türünün içinde yer alıyor. P/Invoke kaynak oluşturma işlemi, '{0}' metodunu yok sayacak.</target>
+        <source>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. COM source generation will ignore method '{0}'.</source>
+        <target state="needs-review-translation">'{0}'metodu, 'partial' olarak işaretlenmemiş olan bir '{1}' türünün içinde yer alıyor. P/Invoke kaynak oluşturma işlemi, '{0}' metodunu yok sayacak.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttributeMessage">
@@ -78,13 +78,13 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodDescription">
-        <source>Methods marked with 'LibraryImportAttribute' should be 'static', 'partial', and non-generic. P/Invoke source generation will ignore methods that are non-'static', non-'partial', or generic.</source>
-        <target state="translated">'LibraryImportAttribute' ile işaretlenmiş metotlar 'static', 'partial' ve genel olmayan özellikte olmalıdır. P/Invoke kaynak oluşturma 'static', 'partial' ve genel olmayan özellikteki metotlar dışında kalan metotları yok sayar.</target>
+        <source>Methods on interfaces marked with 'GeneratedComInterfaceAttribute' should be non-generic. COM source generation will ignore methods that are generic.</source>
+        <target state="needs-review-translation">'LibraryImportAttribute' ile işaretlenmiş metotlar 'static', 'partial' ve genel olmayan özellikte olmalıdır. P/Invoke kaynak oluşturma 'static', 'partial' ve genel olmayan özellikteki metotlar dışında kalan metotları yok sayar.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodSignatureMessage">
-        <source>Method '{0}' should be 'static', 'partial', and non-generic when marked with 'LibraryImportAttribute'. P/Invoke source generation will ignore method '{0}'.</source>
-        <target state="translated">'LibraryImportAttribute' ile işaretlendiğinde '{0}' metodu 'static', 'partial' ve genel olmayan özellikte olmalıdır. P/Invoke kaynak oluşturma '{0}' metodunu yok sayar.</target>
+        <source>Method '{0}' should be non-generic when on interfaces marked with the 'GeneratedComInterfaceAttribute'. COM source generation will ignore method '{0}'.</source>
+        <target state="needs-review-translation">'LibraryImportAttribute' ile işaretlendiğinde '{0}' metodu 'static', 'partial' ve genel olmayan özellikte olmalıdır. P/Invoke kaynak oluşturma '{0}' metodunu yok sayar.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidExceptionMarshallingConfigurationDescription">
@@ -188,13 +188,13 @@
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">
-        <source>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</source>
-        <target state="translated">Kaynak tarafından oluşturulan P/Invokes tarafından desteklenmeyen türler için, elde edilen P/Invoke, belirtilen türü sıralamak için temel alınan çalışma zamanını kullanır.</target>
+        <source>For types that are not supported by source-generated COM, the resulting function pointer will rely on the underlying runtime to marshal the specified type.</source>
+        <target state="needs-review-translation">Kaynak tarafından oluşturulan P/Invokes tarafından desteklenmeyen türler için, elde edilen P/Invoke, belirtilen türü sıralamak için temel alınan çalışma zamanını kullanır.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageParameter">
-        <source>The type '{0}' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of parameter '{1}'.</source>
-        <target state="translated">'{0}' türü, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor. Oluşturulan kaynak, '{1}' parametresinin sıralamasını işlemez.</target>
+        <source>The type '{0}' is not supported by source-generated COM. The generated source will not handle marshalling of parameter '{1}'.</source>
+        <target state="needs-review-translation">'{0}' türü, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor. Oluşturulan kaynak, '{1}' parametresinin sıralamasını işlemez.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageParameterWithDetails">
@@ -204,8 +204,8 @@
 {1} is the name of the parameter</note>
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageReturn">
-        <source>The type '{0}' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of the return value of method '{1}'.</source>
-        <target state="translated">'{0}' türü, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor. Oluşturulan kaynak, '{1}' metodunun dönüş değerinin sıralamasını işlemez.</target>
+        <source>The type '{0}' is not supported by source-generated COM. The generated source will not handle marshalling of the return value of method '{1}'.</source>
+        <target state="needs-review-translation">'{0}' türü, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor. Oluşturulan kaynak, '{1}' metodunun dönüş değerinin sıralamasını işlemez.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageReturnWithDetails">
@@ -215,8 +215,8 @@
 {1} is the name of the method</note>
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitle">
-        <source>Specified type is not supported by source-generated P/Invokes</source>
-        <target state="translated">Belirtilen tür, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor</target>
+        <source>Specified type is not supported by source-generated COM</source>
+        <target state="needs-review-translation">Belirtilen tür, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor</target>
         <note />
       </trans-unit>
     </body>
