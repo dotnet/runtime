@@ -15,7 +15,7 @@ namespace System.Threading
     //
     public sealed partial class RegisteredWaitHandle : MarshalByRefObject
     {
-#pragma warning disable IDE0060
+#pragma warning disable IDE0060 // Remove unused parameter
         [UnmanagedCallersOnly]
         internal static void RegisteredWaitCallback(IntPtr instance, IntPtr context, IntPtr wait, uint waitResult)
         {

@@ -72,7 +72,7 @@ namespace System.Threading
             return threadLocalCompletionCountObject;
         }
 
-#pragma warning disable IDE0060
+#pragma warning disable IDE0060 // Remove unused parameter
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
         {
             // Not supported at present
@@ -88,7 +88,7 @@ namespace System.Threading
             completionPortThreads = MaxThreadCount;
         }
 
-#pragma warning disable IDE0060
+#pragma warning disable IDE0060 // Remove unused parameter
         public static bool SetMinThreads(int workerThreads, int completionPortThreads)
         {
             // Not supported at present
@@ -213,7 +213,7 @@ namespace System.Threading
             throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
         }
 
-#pragma warning disable IDE0060
+#pragma warning disable IDE0060 // Remove unused parameter
         [SupportedOSPlatform("windows")]
         public static bool BindHandle(SafeHandle osHandle)
         {
