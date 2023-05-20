@@ -29,7 +29,10 @@ namespace System.Threading
 
         private ThreadPoolBoundHandle(SafeHandle handle)
         {
+            Debug.Assert(!ThreadPool.UseWindowsThreadPool);
+
             _handle = handle;
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
