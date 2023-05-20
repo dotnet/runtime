@@ -620,30 +620,13 @@ private:
 
         if (user->IsCall())
         {
-            GenTreeCall* call     = user->AsCall();
-            unsigned     argIndex = 0;
-            for (CallArg& arg : call->gtArgs.Args())
+            for (CallArg& arg : user->AsCall()->gtArgs.Args())
             {
-                if (arg.GetNode() != lcl)
+                if (arg.GetNode() == lcl)
                 {
-                    argIndex++;
-                    continue;
+                    flags |= AccessKindFlags::IsCallArg;
+                    break;
                 }
-
-                flags |= AccessKindFlags::IsCallArg;
-
-                // TODO-Review: dead code?
-                unsigned argSize = 0;
-                if (arg.GetSignatureType() != TYP_STRUCT)
-                {
-                    argSize = genTypeSize(arg.GetSignatureType());
-                }
-                else
-                {
-                    argSize = m_compiler->typGetObjLayout(arg.GetSignatureClassHandle())->GetSize();
-                }
-
-                break;
             }
         }
 
