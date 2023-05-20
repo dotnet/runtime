@@ -375,6 +375,26 @@ export class WasmBuilder {
         this.appendLeb(value);
     }
 
+    v128_const(value: 0 | Uint8Array) {
+        if (value === 0) {
+            // This encoding is much smaller than a v128_const
+            // But v8 doesn't optimize it :-((((((
+            /*
+                this.i52_const(0);
+                this.appendSimd(WasmSimdOpcode.i64x2_splat);
+            */
+            this.appendSimd(WasmSimdOpcode.v128_const);
+            for (let i = 0; i < 16; i++)
+                this.appendU8(0);
+        } else if (typeof (value) === "object") {
+            mono_assert(value.byteLength === 16, "Expected v128_const arg to be 16 bytes in size");
+            this.appendSimd(WasmSimdOpcode.v128_const);
+            this.appendBytes(value);
+        } else {
+            throw new Error("Expected v128_const arg to be 0 or a Uint8Array");
+        }
+    }
+
     defineType(
         name: string, parameters: { [name: string]: WasmValtype }, returnType: WasmValtype,
         permanent: boolean
@@ -1502,11 +1522,28 @@ export function try_append_memset_fast(builder: WasmBuilder, localOffset: number
     if (count >= maxMemsetSize)
         return false;
 
+    // FIXME
+    if (value !== 0)
+        return false;
+
     const destLocal = destOnStack ? "math_lhs32" : "pLocals";
     if (destOnStack)
         builder.local("math_lhs32", WasmOpcode.set_local);
 
     let offset = destOnStack ? 0 : localOffset;
+
+    if (builder.options.enableSimd) {
+        const sizeofV128 = 16;
+        while (count >= sizeofV128) {
+            builder.local(destLocal);
+            builder.v128_const(0);
+            builder.appendSimd(WasmSimdOpcode.v128_store);
+            builder.appendMemarg(offset, 0);
+            offset += sizeofV128;
+            count -= sizeofV128;
+        }
+    }
+
     // Do blocks of 8-byte sets first for smaller/faster code
     while (count >= 8) {
         builder.local(destLocal);
@@ -1586,6 +1623,21 @@ export function try_append_memmove_fast(
 
     let destOffset = addressesOnStack ? 0 : destLocalOffset,
         srcOffset = addressesOnStack ? 0 : srcLocalOffset;
+
+    if (builder.options.enableSimd) {
+        const sizeofV128 = 16;
+        while (count >= sizeofV128) {
+            builder.local(destLocal);
+            builder.local(srcLocal);
+            builder.appendSimd(WasmSimdOpcode.v128_load);
+            builder.appendMemarg(srcOffset, 0);
+            builder.appendSimd(WasmSimdOpcode.v128_store);
+            builder.appendMemarg(destOffset, 0);
+            destOffset += sizeofV128;
+            srcOffset += sizeofV128;
+            count -= sizeofV128;
+        }
+    }
 
     // Do blocks of 8-byte copies first for smaller/faster code
     while (count >= 8) {

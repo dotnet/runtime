@@ -1211,6 +1211,7 @@ void GCInterface::EnumerateConfigurationValues(void* configurationContext, Enume
 }
 
 GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
+bool g_gcHeapHardLimitInfoSpecified = false;
 
 extern "C" int QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo)
 {
@@ -1220,6 +1221,7 @@ extern "C" int QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapHardLimitInfo heap
 
     BEGIN_QCALL;
     g_gcHeapHardLimitInfo = heapHardLimitInfo;
+    g_gcHeapHardLimitInfoSpecified = true;
     result = GCInterface::RefreshMemoryLimit();
     END_QCALL;
 

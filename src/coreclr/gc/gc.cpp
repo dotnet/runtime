@@ -49693,6 +49693,7 @@ bool gc_heap::compute_hard_limit()
 
 bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uint32_t nhp_from_config, size_t& seg_size_from_config, size_t new_current_total_committed)
 {
+#ifdef HOST_64BIT
     // If the hard limit is specified, the user is saying even if the process is already
     // running in a container, use this limit for the GC heap.
     if (!hard_limit_config_p)
@@ -49716,6 +49717,7 @@ bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uin
     {
         return false;
     }
+#endif //HOST_64BIT
 
 #ifdef USE_REGIONS
     {
@@ -49786,11 +49788,11 @@ bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uin
 
 int gc_heap::refresh_memory_limit()
 {
-    int status = REFRESH_MEMORY_SUCCEED;
+    refresh_memory_limit_status status = refresh_success;
 
     if (GCConfig::GetGCTotalPhysicalMemory() != 0)
     {
-        return status;
+        return (int)status;
     }
 
     GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
@@ -49925,7 +49927,7 @@ int gc_heap::refresh_memory_limit()
     if (!compute_hard_limit())
     {
         succeed = false;
-        status = REFRESH_MEMORY_HARD_LIMIT_INVALID;
+        status = refresh_hard_limit_invalid;
     }
     hard_limit_config_p = heap_hard_limit != 0;
 #else
@@ -49935,7 +49937,7 @@ int gc_heap::refresh_memory_limit()
     if (succeed && !compute_memory_settings(false, nhp, nhp_from_config, seg_size_from_config, new_current_total_committed))
     {
         succeed = false;
-        status = REFRESH_MEMORY_HARD_LIMIT_TOO_LOW;
+        status = refresh_hard_limit_too_low;
     }
 
     if (!succeed)
@@ -49967,7 +49969,7 @@ int gc_heap::refresh_memory_limit()
 #ifdef COMMITTED_BYTES_SHADOW
             assert (new_committed_by_oh[i] == committed_by_oh[i]);
 #else
-            new_committed_by_oh[i] = committed_by_oh[i];
+            committed_by_oh[i] = new_committed_by_oh[i];
 #endif
         }
 #ifdef MULTIPLE_HEAPS
@@ -49996,7 +49998,7 @@ int gc_heap::refresh_memory_limit()
 #endif
     GCToEEInterface::RestartEE(TRUE);
 
-    return status;
+    return (int)status;
 }
 
 #ifdef USE_REGIONS
