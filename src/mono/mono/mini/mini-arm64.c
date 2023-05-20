@@ -2539,7 +2539,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		/* Allocate a local to hold the result, the epilog will copy it to the correct place */
 		MonoType *ret_type = mini_get_underlying_type (sig->ret);
 		MonoClass *klass = mono_class_from_mono_type_internal (ret_type);
-		if (MONO_CLASS_IS_SIMD (cfg, klass)) {
+		if (mini_class_is_simd (cfg, klass)) {
 			int align_simd = mono_type_size (m_class_get_byval_arg (klass), NULL);
 			offset = ALIGN_TO (offset, align_simd);
 		}
@@ -2814,7 +2814,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			 */
 			if ((t->type == MONO_TYPE_GENERICINST) && !cfg->full_aot && !sig->pinvoke) {
 				MonoClass *klass = mono_class_from_mono_type_internal (t);
-				if (MONO_CLASS_IS_SIMD (cfg, klass)) {
+				if (mini_class_is_simd (cfg, klass)) {
 					lainfo->storage = LLVMArgVtypeInSIMDReg;
 					break;
 				}
@@ -3869,10 +3869,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_xextract (code, VREG_FULL, ins->inst_c0, dreg, sreg1);
 			break;
 		case OP_STOREX_MEMBASE:
-			code = emit_strfpq (code, sreg1, dreg, ins->inst_offset);
+			if (ins->klass && mono_class_value_size (ins->klass, NULL) == 8)
+				code = emit_strfpx (code, sreg1, dreg, ins->inst_offset);
+			else
+				code = emit_strfpq (code, sreg1, dreg, ins->inst_offset);
 			break;
 		case OP_LOADX_MEMBASE:
-			code = emit_ldrfpq (code, dreg, sreg1, ins->inst_offset);
+			if (ins->klass && mono_class_value_size (ins->klass, NULL) == 8)
+				code = emit_ldrfpx (code, dreg, sreg1, ins->inst_offset);
+			else
+				code = emit_ldrfpq (code, dreg, sreg1, ins->inst_offset);
 			break;
 		case OP_XMOVE:
 			if(dreg != sreg1)

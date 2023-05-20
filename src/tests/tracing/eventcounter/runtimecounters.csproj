@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Tracing tests routinely time out with jitstress and gcstress -->
     <GCStressIncompatible>true</GCStressIncompatible>
-    <JitOptimizationSensitive>true</JitOptimizationSensitive>
+    <JitOptimizationSensitive Condition="'$(TestBuildMode)' != 'nativeaot'">true</JitOptimizationSensitive>
     <!-- This test has a secondary thread with an infinite loop -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <EventSourceSupport Condition="'$(TestBuildMode)' == 'nativeaot'">true</EventSourceSupport>

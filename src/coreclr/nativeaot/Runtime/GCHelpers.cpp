@@ -313,6 +313,17 @@ EXTERN_C NATIVEAOT_API void __cdecl RhEnumerateConfigurationValues(void* configu
     pHeap->EnumerateConfigurationValues(configurationContext, callback);
 }
 
+GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
+bool g_gcHeapHardLimitInfoSpecified = false;
+
+EXTERN_C NATIVEAOT_API void __cdecl RhRefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo)
+{
+    IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
+    g_gcHeapHardLimitInfo = heapHardLimitInfo;
+    g_gcHeapHardLimitInfoSpecified = true;
+    pHeap->RefreshMemoryLimit();
+}
+
 EXTERN_C NATIVEAOT_API int64_t __cdecl RhGetTotalAllocatedBytesPrecise()
 {
     int64_t allocated;

@@ -130,10 +130,12 @@
                                               @(DocumentationProjectOutputGroupOutput)" />
       <TfmSpecificPackageFile Include="@(TfmRuntimeSpecificPackageFile)"
                               PackagePath="runtimes\$(_packageTargetRuntime)\$(BuildOutputTargetFolder)\$(_targetFrameworkWithoutSuffix)\" />
-      <TfmSpecificDebugSymbolsFile Include="$(RuntimeSymbolPath)"
-                                   TargetPath="/runtimes/$(_packageTargetRuntime)/$(BuildOutputTargetFolder)/$(_targetFrameworkWithoutSuffix)/%(Filename)%(Extension)"
+      <!-- Create the item and use its metadata separately to avoid MSB4120. See https://aka.ms/msbuild/metadata-self-ref for more info. -->
+      <_RuntimeSymbolPath Include="$(RuntimeSymbolPath)" />
+      <TfmSpecificDebugSymbolsFile Include="@(_RuntimeSymbolPath)"
+                                   TargetPath="/runtimes/$(_packageTargetRuntime)/$(BuildOutputTargetFolder)/$(_targetFrameworkWithoutSuffix)/%(_RuntimeSymbolPath.Filename)%(_RuntimeSymbolPath.Extension)"
                                    TargetFramework="$(_targetFrameworkWithoutSuffix)"
-                                   Condition="'$(IncludeSymbols)' == 'true' and Exists('$(RuntimeSymbolPath)')" />
+                                   Condition="'$(IncludeSymbols)' == 'true' and Exists('%(_RuntimeSymbolPath.Identity)')" />
     </ItemGroup>
   </Target>
 

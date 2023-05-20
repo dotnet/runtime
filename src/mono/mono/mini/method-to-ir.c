@@ -345,13 +345,13 @@ handle_enum:
 			type = mono_class_enum_basetype_internal (type->data.klass);
 			goto handle_enum;
 		}
-		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (type)))
+		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_XMOVE;
 		return OP_VMOVE;
 	case MONO_TYPE_TYPEDBYREF:
 		return OP_VMOVE;
 	case MONO_TYPE_GENERICINST:
-		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (type)))
+		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_XMOVE;
 		type = m_class_get_byval_arg (type->data.generic_class->container_class);
 		goto handle_enum;
@@ -6109,7 +6109,7 @@ emit_setret (MonoCompile *cfg, MonoInst *val)
 			EMIT_NEW_RETLOADA (cfg, ret_addr);
 
 			MonoClass *ret_class = mono_class_from_mono_type_internal (ret_type);
-			if (MONO_CLASS_IS_SIMD (cfg, ret_class))
+			if (mini_class_is_simd (cfg, ret_class))
 				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, ret_addr->dreg, 0, val->dreg);
 			else
 				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREV_MEMBASE, ret_addr->dreg, 0, val->dreg);
@@ -13310,6 +13310,8 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 							/* printf ("INS: "); mono_print_ins (ins); */
 							/* Create a store instruction */
 							NEW_STORE_MEMBASE (cfg, store_ins, store_opcode, var->inst_basereg, var->inst_offset, ins->dreg);
+							if (store_ins->opcode == OP_STOREX_MEMBASE)
+								mini_type_to_eval_stack_type (cfg, var->inst_vtype, store_ins);
 
 							/* Insert it after the instruction */
 							mono_bblock_insert_after_ins (bb, ins, store_ins);
@@ -13455,6 +13457,8 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 							g_assert (load_opcode != OP_LOADI8_MEMBASE);
 #endif
 							NEW_LOAD_MEMBASE (cfg, load_ins, load_opcode, sreg, var->inst_basereg, var->inst_offset);
+							if (load_ins->opcode == OP_LOADX_MEMBASE)
+								mini_type_to_eval_stack_type (cfg, var->inst_vtype, load_ins);
 							mono_bblock_insert_before_ins (bb, ins, load_ins);
 							use_ins = load_ins;
 						}

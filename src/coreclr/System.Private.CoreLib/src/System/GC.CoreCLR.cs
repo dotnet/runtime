@@ -783,7 +783,42 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EnumerateConfigurationValues")]
         internal static unsafe partial void _EnumerateConfigurationValues(void* configurationDictionary, delegate* unmanaged<void*, void*, void*, GCConfigurationType, long, void> callback);
 
-        private static int _RefreshMemoryLimit()
+        internal enum RefreshMemoryStatus
+        {
+            Succeeded = 0,
+            HardLimitTooLow = 1,
+            HardLimitInvalid = 2,
+        }
+
+        /// <summary>
+        ///
+        /// Instructs the Garbage Collector to reconfigure itself by detecting the various memory limits on the system.
+        ///
+        /// In addition to actual physical memory limit and container limit settings, these configuration settings can be overwritten:
+        ///
+        /// - GCHeapHardLimit
+        /// - GCHeapHardLimitPercent
+        /// - GCHeapHardLimitSOH
+        /// - GCHeapHardLimitLOH
+        /// - GCHeapHardLimitPOH
+        /// - GCHeapHardLimitSOHPercent
+        /// - GCHeapHardLimitLOHPercent
+        /// - GCHeapHardLimitPOHPercent
+        ///
+        /// Instead of updating the environment variable (which will not be read), these are overridden setting a ulong value in the AppContext.
+        ///
+        /// For example, you can use AppContext.SetData("GCHeapHardLimit", (ulong) 100 * 1024 * 1024) to override the GCHeapHardLimit to a 100M.
+        ///
+        /// This API will only handle configs that could be handled when the runtime is loaded, for example, for configs that don't have any effects on 32-bit systems (like the GCHeapHardLimit* ones), this API will not handle it.
+        ///
+        /// As of now, this API is feature preview only and subject to changes as necessary.
+        ///
+        /// <exception cref="InvalidOperationException">If the hard limit is too low. This can happen if the heap hard limit that the refresh will set, either because of new AppData settings or implied by the container memory limit changes, is lower than what is already committed.</exception>"
+        /// <exception cref="InvalidOperationException">If the hard limit is invalid. This can happen, for example, with negative heap hard limit percentages.</exception>"
+        ///
+        /// </summary>
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("RefreshMemoryLimit is in preview.")]
+        public static void RefreshMemoryLimit()
         {
             ulong heapHardLimit = (AppContext.GetData("GCHeapHardLimit") as ulong?) ?? ulong.MaxValue;
             ulong heapHardLimitPercent = (AppContext.GetData("GCHeapHardLimitPercent") as ulong?) ?? ulong.MaxValue;
@@ -804,11 +839,19 @@ namespace System
                 HeapHardLimitLOHPercent = heapHardLimitLOHPercent,
                 HeapHardLimitPOHPercent = heapHardLimitPOHPercent,
             };
-            return RefreshMemoryLimit(heapHardLimitInfo);
+            RefreshMemoryStatus status = (RefreshMemoryStatus)_RefreshMemoryLimit(heapHardLimitInfo);
+            switch (status)
+            {
+                case RefreshMemoryStatus.HardLimitTooLow:
+                    throw new InvalidOperationException(SR.InvalidOperationException_HardLimitTooLow);
+                case RefreshMemoryStatus.HardLimitInvalid:
+                    throw new InvalidOperationException(SR.InvalidOperationException_HardLimitInvalid);
+            }
+            Debug.Assert(status == RefreshMemoryStatus.Succeeded);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RefreshMemoryLimit")]
-        internal static partial int RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo);
+        internal static partial int _RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo);
 
         internal struct GCHeapHardLimitInfo
         {

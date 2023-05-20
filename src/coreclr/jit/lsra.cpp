@@ -2716,7 +2716,7 @@ void LinearScan::setFrameType()
 
     compiler->rpFrameType = frameType;
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
     // Determine whether we need to reserve a register for large lclVar offsets.
     if (compiler->compRsvdRegCheck(Compiler::REGALLOC_FRAME_LAYOUT))
     {
@@ -2726,7 +2726,7 @@ void LinearScan::setFrameType()
         JITDUMP("  Reserved REG_OPT_RSVD (%s) due to large frame\n", getRegName(REG_OPT_RSVD));
         removeMask |= RBM_OPT_RSVD;
     }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_ARMARCH || TARGET_RISCV64
 
     if ((removeMask != RBM_NONE) && ((availableIntRegs & removeMask) != 0))
     {

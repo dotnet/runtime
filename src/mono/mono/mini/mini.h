@@ -303,8 +303,6 @@ enum {
 #define MONO_IS_REAL_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_XMOVE) || ((ins)->opcode == OP_RMOVE))
 #define MONO_IS_ZERO(ins) (((ins)->opcode == OP_VZERO) || ((ins)->opcode == OP_XZERO))
 
-#define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && m_class_is_simd_type (klass) && (COMPILE_LLVM (cfg) || mono_type_size (m_class_get_byval_arg (klass), NULL) == 16))
-
 #else
 
 #define MONO_IS_PHI(ins) (((ins)->opcode == OP_PHI) || ((ins)->opcode == OP_FPHI) || ((ins)->opcode == OP_VPHI))
@@ -313,8 +311,6 @@ enum {
 /*A real MOVE is one that isn't decomposed such as a VMOVE or LMOVE*/
 #define MONO_IS_REAL_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_RMOVE))
 #define MONO_IS_ZERO(ins) ((ins)->opcode == OP_VZERO)
-
-#define MONO_CLASS_IS_SIMD(cfg, klass) (0)
 
 #endif
 
@@ -2968,6 +2964,26 @@ mini_safepoints_enabled (void)
 #else
 	return TRUE;
 #endif
+}
+
+static inline gboolean
+mini_class_is_simd (MonoCompile *cfg, MonoClass *klass)
+{
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+	if (!(((cfg)->opt & MONO_OPT_SIMD) && m_class_is_simd_type (klass)))
+		return FALSE;
+	if (COMPILE_LLVM (cfg))
+		return TRUE;
+	int size = mono_type_size (m_class_get_byval_arg (klass), NULL);
+#ifdef TARGET_ARM64
+	if (size == 8 || size == 16)
+		return TRUE;
+#else
+	if (size == 16)
+		return TRUE;
+#endif
+#endif
+	return FALSE;
 }
 
 gpointer
