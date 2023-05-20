@@ -2971,8 +2971,12 @@ namespace System
         {
             bytesWritten = 0;
             var length = source.Length;
-            if (length == 0 || length % 2 != 0)
+
+            if (length % 2 != 0)
                 return false;
+
+            if (length == 0)
+                return true;
 
             var twicedLength = length * 2;
 
