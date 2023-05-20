@@ -97,19 +97,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly List<HeaderItem> _items = new List<HeaderItem>();
         private readonly ReadyToRunFlags _flags;
-        private readonly Task<bool> _shouldAddSkipTypeValidationFlag;
-        private readonly TypeValidationChecker _typeValidationChecker = new TypeValidationChecker();
+        private readonly Task<(bool canSkipValidation, string[] reasons)> _shouldAddSkipTypeValidationFlag;
 
         public HeaderNode(ReadyToRunFlags flags, EcmaModule moduleToCheckForSkipTypeValidation)
         {
 
             if (moduleToCheckForSkipTypeValidation != null)
             {
-                _shouldAddSkipTypeValidationFlag = _typeValidationChecker.CanSkipValidation(moduleToCheckForSkipTypeValidation);
+                _shouldAddSkipTypeValidationFlag = TypeValidationChecker.CanSkipValidation(moduleToCheckForSkipTypeValidation);
             }
             else
             {
-                _shouldAddSkipTypeValidationFlag = Task.FromResult(false);
+                _shouldAddSkipTypeValidationFlag = Task.FromResult((false, new string[0]));
             }
             _flags = flags;
         }
@@ -152,14 +151,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // ReadyToRunHeader.Flags
             int flagsInt = (int)_flags;
-            if (_shouldAddSkipTypeValidationFlag.Result)
+            if (_shouldAddSkipTypeValidationFlag.Result.canSkipValidation)
             {
                 flagsInt |= (int)ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
             }
             else
             {
 //#if DIAGNOSE_TYPE_VALIDATION_RULES
-                _typeValidationChecker.LogErrors(System.Console.WriteLine);
+//                foreach (string reason in _shouldAddSkipTypeValidationFlag.Result.reasons)
+//                    System.Console.WriteLine(reason);
 //#endif
             }
             builder.EmitInt(flagsInt);

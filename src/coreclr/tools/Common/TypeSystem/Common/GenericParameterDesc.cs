@@ -88,6 +88,12 @@ namespace Internal.TypeSystem
         public abstract int Index { get; }
 
         /// <summary>
+        /// The associated type or method which defines this Generic Parameter
+        /// </summary>
+        public abstract TypeSystemEntity AssociatedTypeOrMethod { get; }
+
+
+        /// <summary>
         /// Gets a value indicating the variance of this generic parameter.
         /// </summary>
         public virtual GenericVariance Variance

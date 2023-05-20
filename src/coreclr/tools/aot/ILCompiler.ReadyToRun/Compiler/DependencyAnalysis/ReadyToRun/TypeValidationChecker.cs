@@ -16,9 +16,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     internal class TypeValidationChecker
     {
-        ConcurrentBag<(TypeDesc type, string reason)> _typeLoadValidationErrors = new ConcurrentBag<(TypeDesc type, string reason)>();
+        private ConcurrentBag<(TypeDesc type, string reason)> _typeLoadValidationErrors = new ConcurrentBag<(TypeDesc type, string reason)>();
+        private ConcurrentDictionary<TypeDesc, Task<bool>> _firstStageValidationChecks = new ConcurrentDictionary<TypeDesc, Task<bool>>();
+        private ConcurrentDictionary<TypeDesc, (TypeDesc dependendOnType, string reason)[]> _crossTypeValidationDependencies = new ConcurrentDictionary<TypeDesc, (TypeDesc dependendOnType, string reason)[]>();
+        private ConcurrentQueue<Task<bool>> _tasksThatMustFinish = new ConcurrentQueue<Task<bool>>();
 
-        public void LogErrors(Action<string> loggingFunction)
+        private TypeValidationChecker() { }
+
+        private void LogErrors(Action<string> loggingFunction)
         {
             var typeLoadValidationErrors = _typeLoadValidationErrors.ToArray();
             Array.Sort(typeLoadValidationErrors, (ValueTuple<TypeDesc, string> left, ValueTuple<TypeDesc, string> right) =>
@@ -39,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _typeLoadValidationErrors.Add((type, error));
         }
 
-        public async Task<bool> CanSkipValidation(EcmaModule module)
+        private async Task<bool> CanSkipValidationInstance(EcmaModule module)
         {
             // The system module can always skip type validation
 #if !DEBUG
@@ -47,110 +52,46 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return true;
 #endif
 
-            List<Task<bool>> typesInModuleSkipValidationChecking = new List<Task<bool>>();
             foreach (var type in module.GetAllTypes())
             {
                 if (type is EcmaType ecmaType)
-                    typesInModuleSkipValidationChecking.Add(CanSkipValidation(ecmaType));
+                    _tasksThatMustFinish.Enqueue(ValidateType(this, ecmaType));
             }
-            typesInModuleSkipValidationChecking.Add(CanSkipValidation((EcmaType)module.GetGlobalModuleType()));
+            _tasksThatMustFinish.Enqueue(ValidateType(this, (EcmaType)module.GetGlobalModuleType()));
 
-            await Task.WhenAll(typesInModuleSkipValidationChecking);
-            foreach (var type in typesInModuleSkipValidationChecking)
+            bool failAtEnd = false;
+            while (_tasksThatMustFinish.TryDequeue(out var taskToComplete))
             {
-                if (!type.Result)
-                    return false;
+                if (!await taskToComplete)
+                    failAtEnd = true;
             }
-            return true;
+
+            return !failAtEnd;
         }
 
-        private ConcurrentDictionary<TypeDesc, Task<bool>> _skipValidationDict = new ConcurrentDictionary<TypeDesc, Task<bool>>();
-        private Task<bool> CanSkipValidation(EcmaType type)
+        public static async Task<(bool canSkipValidation, string[] reasonsWhyItFailed)> CanSkipValidation(EcmaModule module)
         {
-            if (_skipValidationDict.TryGetValue(type, out var result)) return result;
-            Task<bool> skipValidatorForType = Task.Run(() => CanSkipValidationWorker(type));
-            _skipValidationDict.TryAdd(type, skipValidatorForType);
+            TypeValidationChecker checker = new TypeValidationChecker();
+            bool canSkipValidation = await checker.CanSkipValidationInstance(module);
+            List<string> reasons = new List<string>();
+            checker.LogErrors(reasons.Add);
+            return (canSkipValidation, reasons.ToArray());
+        }
+
+        private static Task<bool> ValidateType(TypeValidationChecker checker, EcmaType type)
+        {
+            if (checker._firstStageValidationChecks.TryGetValue(type, out var result)) return result;
+            Task<bool> skipValidatorForType = Task.Run(() => checker.ValidateTypeWorker(type));
+            checker._firstStageValidationChecks.TryAdd(type, skipValidatorForType);
             return skipValidatorForType;
         }
 
-        public Task<bool> CanSkipValidation(TypeDesc type)
+
+        private async Task<bool> ValidateTypeWorker(EcmaType type)
         {
-            if (type == null)
-                return Task.FromResult(true);
-
-            if (type is EcmaType ecmaType)
-                return CanSkipValidation(ecmaType);
-            else if (type is InstantiatedType instantiatedType)
-                return CanSkipValidation(instantiatedType);
-            else if (type is ParameterizedType parameterizedType)
-                return CanSkipValidation(parameterizedType.ParameterType);
-            else if (type is FunctionPointerType functionPointerType)
-                return CanSkipValidation(functionPointerType);
-            return Task.FromResult(true);
-        }
-
-        private Task<bool> CanSkipValidation(InstantiatedType instantiatedType)
-        {
-            try
+            Task<bool> ValidateTypeWorkerHelper(TypeDesc typeToCheckForSkipValidation)
             {
-                // Constraints should be satisfied
-                if (!instantiatedType.CheckConstraints())
-                {
-                    AddTypeValidationError(instantiatedType, "Constraint check failed");
-                    return Task.FromResult(false);
-                }
-
-                return CanSkipValidation(instantiatedType.GetTypeDefinition());
-            }
-            catch (Exception ex)
-            {
-                AddTypeValidationError(instantiatedType, $"due to exception '{ex}'");
-                return Task.FromResult(false);
-            }
-/*
-            if (_skipValidationDict.TryGetValue(instantiatedType, out var result)) return result;
-            Task<bool> skipValidatorForType = Task.Run(() => CanSkipValidationWorker(instantiatedType));
-            _skipValidationDict.TryAdd(instantiatedType, skipValidatorForType);
-            return skipValidatorForType;*/
-        }
-
-        private async Task<bool> CanSkipValidationWorker(InstantiatedType instantiatedType)
-        {
-            try
-            {
-                // Constraints should be satisfied
-                if (!instantiatedType.CheckConstraints())
-                {
-                    AddTypeValidationError(instantiatedType, "Constraint check failed");
-                    return false;
-                }
-
-                return await CanSkipValidation(instantiatedType.GetTypeDefinition());
-            }
-            catch (Exception ex)
-            {
-                AddTypeValidationError(instantiatedType, $"due to exception '{ex}'");
-                return false;
-            }
-        }
-
-        private async Task<bool> CanSkipValidation(FunctionPointerType functionPointerType)
-        {
-            if (!await CanSkipValidation(functionPointerType.Signature.ReturnType))
-                return false;
-            foreach (var type in functionPointerType.Signature)
-            {
-                if (!await CanSkipValidation(type))
-                    return false;
-            }
-            return true;
-        }
-
-        private async Task<bool> CanSkipValidationWorker(EcmaType type)
-        {
-            Task<bool> CanSkipValidationWorkerHelper(TypeDesc typeToCheckForSkipValidation)
-            {
-                return CanSkipValidation(typeToCheckForSkipValidation.InstantiateSignature(type.Instantiation, new Instantiation()));
+                return ValidateTypeHelper(typeToCheckForSkipValidation.InstantiateSignature(type.Instantiation, new Instantiation()));
             }
             // The runtime has a number of checks in the type loader which it will skip running if the SkipValidation flag is set
             // This function attempts to document all of them, and implement *some* of them.
@@ -164,7 +105,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Validate that the base type is loadable
                 if (type.BaseType != null)
                 {
-                    if (!await CanSkipValidationWorkerHelper(type.BaseType))
+                    if (!await ValidateTypeWorkerHelper(type.BaseType))
                     {
                         AddTypeValidationError(type, "BaseType failed validation");
                         return false;
@@ -176,7 +117,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 foreach (var interfaceType in type.RuntimeInterfaces)
                 {
                     // Validate that the all referenced interface types are loadable
-                    if (!await CanSkipValidationWorkerHelper(interfaceType))
+                    if (!await ValidateTypeWorkerHelper(interfaceType))
                     {
                         AddTypeValidationError(type, $"Interface type {interfaceType} failed validation");
                         return false;
@@ -184,13 +125,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
 
                 // Validate that each interface type explicitly implemented on this type is accessible to this type -- UNIMPLEMENTED
-
                 foreach (var field in type.GetFields())
                 {
                     // Validate that all fields on the type are both loadable
-                    if (!await CanSkipValidationWorkerHelper(field.FieldType))
+                    if (!await ValidateTypeWorkerHelper(field.FieldType))
                     {
-                        _typeLoadValidationErrors.Add((type, $"Field {field.Name}'s type failed validation"));
+                        AddTypeValidationError(type, $"Field {field.Name}'s type failed validation");
                         return false;
                     }
 
@@ -407,48 +347,42 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Validate that all virtual instance methods are actually implemented if the type is not abstract
                 if (!type.IsAbstract)
                 {
-                var virtualMethodAlgorithm = type.Context.GetVirtualMethodAlgorithmForType(type);
-                foreach (var interfaceImplemented in type.RuntimeInterfaces)
-                {
-                    foreach (var interfaceMethod in interfaceImplemented.GetVirtualMethods())
+                    var virtualMethodAlgorithm = type.Context.GetVirtualMethodAlgorithmForType(type);
+                    foreach (var interfaceImplemented in type.RuntimeInterfaces)
                     {
+                        foreach (var interfaceMethod in interfaceImplemented.GetVirtualMethods())
+                        {
                             MethodDesc resolvedMethod;
                             bool staticInteraceMethod = interfaceMethod.Signature.IsStatic;
                             if (staticInteraceMethod)
-                            if (null == resolvedMethod || resolvedMethod.IsAbstract)
                             {
-                                if (virtualMethodAlgorithm.ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, type, out var impl) != DefaultInterfaceMethodResolution.DefaultImplementation || impl.IsAbstract)
-                                {
                                 resolvedMethod = virtualMethodAlgorithm.ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod, type);
-                                    return false;
-                                }
                             }
-                        }
-                        else
-                        {
+                            else
+                            {
                                 resolvedMethod = type.ResolveInterfaceMethodTarget(interfaceMethod);
                             }
 
                             if (null == resolvedMethod || (staticInteraceMethod && resolvedMethod.IsAbstract))
                             {
                                 if (virtualMethodAlgorithm.ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, type, out var impl) != DefaultInterfaceMethodResolution.DefaultImplementation || impl.IsAbstract)
-                            {
+                                {
                                     AddTypeValidationError(type, $"Interface method '{interfaceMethod}' does not have implementation");
-                                return false;
+                                    return false;
+                                }
                             }
                         }
                     }
-                }
 
-                foreach (var virtualMethod in type.GetAllVirtualMethods())
-                {
-                    var implementationMethod = virtualMethodAlgorithm.FindVirtualFunctionTargetMethodOnObjectType(virtualMethod, type);
-                        if (implementationMethod == null || implementationMethod.IsAbstract)
+                    foreach (var virtualMethod in type.GetAllVirtualMethods())
                     {
+                        var implementationMethod = virtualMethodAlgorithm.FindVirtualFunctionTargetMethodOnObjectType(virtualMethod, type);
+                        if (implementationMethod == null || implementationMethod.IsAbstract)
+                        {
                             AddTypeValidationError(type, $"Interface method '{virtualMethod}' does not have implementation");
-                        return false;
+                            return false;
+                        }
                     }
-                }
                 }
 
                 return true;
@@ -458,6 +392,58 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // If we throw an exception, clearly type validation skipping was not to be
                 AddTypeValidationError(type, $"due to exception '{ex.ToString()}'");
                 return false;
+            }
+
+            Task<bool> ValidateTypeHelper(TypeDesc typeDesc)
+            {
+                if (typeDesc == null)
+                    return Task.FromResult(true);
+
+                if (typeDesc is EcmaType ecmaType)
+                {
+                    // Trigger the ecmaType to have its type checked, but do not check the task immediately. Unfortunately this can be recursive.
+                    _tasksThatMustFinish.Enqueue(ValidateType(this, ecmaType));
+                    return Task.FromResult(true);
+                }
+                else if (typeDesc is InstantiatedType instantiatedType)
+                    return ValidateTypeHelperInstantiatedType(instantiatedType);
+                else if (typeDesc is ParameterizedType parameterizedType)
+                    return ValidateTypeHelper(parameterizedType.ParameterType);
+                else if (typeDesc is FunctionPointerType functionPointerType)
+                    return ValidateTypeHelperFunctionPointerType(functionPointerType);
+                return Task.FromResult(true);
+            }
+
+            Task<bool> ValidateTypeHelperInstantiatedType(InstantiatedType instantiatedType)
+            {
+                try
+                {
+                    // Constraints should be satisfied
+                    if (!instantiatedType.CheckConstraints())
+                    {
+                        AddTypeValidationError(type, $"Constraint check failed validating {instantiatedType}");
+                        return Task.FromResult(false);
+                    }
+
+                    return ValidateTypeHelper(instantiatedType.GetTypeDefinition());
+                }
+                catch (Exception ex)
+                {
+                    AddTypeValidationError(instantiatedType, $"due to exception '{ex}'");
+                    return Task.FromResult(false);
+                }
+            }
+
+            async Task<bool> ValidateTypeHelperFunctionPointerType(FunctionPointerType functionPointerType)
+            {
+                if (!await ValidateTypeHelper(functionPointerType.Signature.ReturnType))
+                    return false;
+                foreach (var type in functionPointerType.Signature)
+                {
+                    if (!await ValidateTypeHelper(type))
+                        return false;
+                }
+                return true;
             }
         }
     }

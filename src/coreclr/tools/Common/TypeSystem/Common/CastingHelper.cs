@@ -195,9 +195,19 @@ namespace Internal.TypeSystem
                 return true;
             }
 
+            InstantiationContext context;
+            if (thisType.AssociatedTypeOrMethod is MethodDesc method)
+            {
+                context = new InstantiationContext(method.OwningType.Instantiation, method.Instantiation);
+            }
+            else
+            {
+                context = new InstantiationContext(((TypeDesc)thisType.AssociatedTypeOrMethod).Instantiation, default(Instantiation));
+            }
             foreach (var typeConstraint in thisType.TypeConstraints)
             {
-                if (typeConstraint.CanCastToInternal(otherType, protect))
+                TypeDesc instantiatedConstraint = typeConstraint.InstantiateSignature(context.TypeInstantiation, context.MethodInstantiation);
+                if (instantiatedConstraint.CanCastToInternal(otherType, protect))
                 {
                     return true;
                 }
