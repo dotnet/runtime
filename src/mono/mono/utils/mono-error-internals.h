@@ -319,6 +319,28 @@ mono_error_set_specific (MonoError *error, int error_code, const char *missing_m
 void
 mono_error_set_first_argument (MonoError *oerror, const char *first_argument);
 
+/**
+ * TypeLoadFailureCallback:
+ * @param klass: Class in which the failure was detected.
+ * @param fmt: printf-style error message string.
+ *
+ * The callback is responsible for processing the failure information provided by the @klass parameter and the error message format string @fmt.
+ * If a deferred failure occurs, the callback should return FALSE to let the AOT compiler proceed with the class layout setup.
+ * Otherwise, if the callback returns TRUE, it indicates that the failure should be reported.
+ *
+ * @returns: TRUE if the failure is handled and the runtime should not proceed with class setup, FALSE if the failure should be deferred for runtime class setup.
+ * 
+ */
+typedef gboolean (*TypeLoadFailureCallback)(MonoClass *klass, const char * fmt, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
+
+gboolean
+mono_class_set_type_load_deferred_failure (MonoClass *klass, const char * fmt, ...);
+
+gboolean
+mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...);
+
+TypeLoadFailureCallback type_load_failure_callback;
+
 #if HOST_WIN32
 #if HOST_X86 || HOST_AMD64
 
