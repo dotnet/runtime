@@ -1989,6 +1989,8 @@ emit_delegate_end_invoke_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig)
 		mono_mb_emit_restore_result (mb, sig->ret);
 }
 
+#define MONO_TYPE_IS_PRIMITIVE(t) ((!m_type_is_byref ((t)) && ((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
+
 static void
 emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodSignature *invoke_sig, MonoMethodSignature *target_method_sig, gboolean static_method_with_first_arg_bound, gboolean callvirt, gboolean closed_over_null, MonoMethod *method, MonoMethod *target_method, MonoGenericContext *ctx, MonoGenericContainer *container)
 {
@@ -2090,10 +2092,10 @@ emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature 
 		if (!closed_over_null) {
 			for (i = 1; i <= sig->param_count; ++i) {
 				mono_mb_emit_ldarg (mb, i);
-				if (i == 1 && MONO_TYPE_ISSTRUCT (sig->params [0]))
+				if (i == 1 && (MONO_TYPE_ISSTRUCT (sig->params [0]) || MONO_TYPE_IS_PRIMITIVE (sig->params [0])))
 					mono_mb_emit_op (mb, CEE_BOX, mono_class_from_mono_type_internal (sig->params [0]));
 			}
-			if (MONO_TYPE_ISSTRUCT (sig->params [0]))
+			if (MONO_TYPE_ISSTRUCT (sig->params [0]) || MONO_TYPE_IS_PRIMITIVE (sig->params [0]))
 				mono_mb_emit_ldarg_addr (mb, 1);
 			else
 				mono_mb_emit_ldarg (mb, 1);
