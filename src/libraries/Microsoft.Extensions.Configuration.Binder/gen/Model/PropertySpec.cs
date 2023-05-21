@@ -7,13 +7,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     internal sealed record PropertySpec
     {
-        public string Name { get; }
-        public bool IsStatic { get; }
-        public bool CanGet { get; }
-        public bool CanSet { get; }
-        public required TypeSpec? Type { get; init; }
-        public required string ConfigurationKeyName { get; init; }
-
         public PropertySpec(IPropertySymbol property)
         {
             Name = property.Name;
@@ -21,6 +14,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             CanGet = property.GetMethod is IMethodSymbol { DeclaredAccessibility: Accessibility.Public, IsInitOnly: false };
             CanSet = property.SetMethod is IMethodSymbol { DeclaredAccessibility: Accessibility.Public, IsInitOnly: false };
         }
+
+        public string Name { get; }
+
+        public bool IsStatic { get; }
+
+        public bool CanGet { get; }
+
+        public bool CanSet { get; }
+
+        public required TypeSpec? Type { get; init; }
+
+        public required string ConfigurationKeyName { get; init; }
 
         public bool ShouldBind() =>
             (CanGet || CanSet) &&

@@ -6,14 +6,14 @@ using System.Collections.Generic;
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     internal sealed record SourceGenerationSpec(
-        Dictionary<MethodSpecifier, HashSet<TypeSpec>> RootConfigTypes,
-        MethodSpecifier MethodsToGen,
+        Dictionary<BinderMethodSpecifier, HashSet<TypeSpec>> RootConfigTypes,
+        BinderMethodSpecifier MethodsToGen,
         HashSet<ParsableFromStringTypeSpec> PrimitivesForHelperGen,
         HashSet<string> Namespaces)
     {
         public bool HasRootMethods() =>
-            ShouldEmitMethods(MethodSpecifier.GetMethods | MethodSpecifier.BindMethods | MethodSpecifier.Configure | MethodSpecifier.GetValueMethods);
+            ShouldEmitMethods(BinderMethodSpecifier.Get | BinderMethodSpecifier.Bind | BinderMethodSpecifier.Configure | BinderMethodSpecifier.GetValue);
 
-        public bool ShouldEmitMethods(MethodSpecifier methods) => (MethodsToGen & methods) != 0;
+        public bool ShouldEmitMethods(BinderMethodSpecifier methods) => (MethodsToGen & methods) != 0;
     }
 }

@@ -2572,12 +2572,7 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
     regNumber src  = genConsumeReg(srcIndir->Addr());
     unsigned  size = tree->Size();
 
-    unsigned simdSize = compiler->roundDownSIMDSize(size);
-    if (size <= ZMM_RECOMMENDED_THRESHOLD)
-    {
-        // Only use ZMM for large data due to possible CPU throttle issues
-        simdSize = min(YMM_REGSIZE_BYTES, simdSize);
-    }
+    const unsigned simdSize = compiler->roundDownSIMDSize(size);
     if ((size >= simdSize) && (simdSize > 0))
     {
         // Number of SIMD regs needed to save the whole src to regs.
@@ -3150,12 +3145,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     {
         regNumber srcXmmReg = node->GetSingleTempReg(RBM_ALLFLOAT);
         unsigned  regSize   = compiler->roundDownSIMDSize(size);
-        if (size < ZMM_RECOMMENDED_THRESHOLD)
-        {
-            // Involve ZMM only for large data due to possible downclocking.
-            regSize = min(regSize, YMM_REGSIZE_BYTES);
-        }
-        var_types loadType = compiler->getSIMDTypeForSize(regSize);
+        var_types loadType  = compiler->getSIMDTypeForSize(regSize);
         simd_t    vecCon;
         memset(&vecCon, (uint8_t)src->AsIntCon()->IconValue(), sizeof(simd_t));
         genSetRegToConst(srcXmmReg, loadType, &vecCon);
@@ -3413,11 +3403,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
         // Get the largest SIMD register available if the size is large enough
         unsigned regSize = compiler->roundDownSIMDSize(size);
-        if (size < ZMM_RECOMMENDED_THRESHOLD)
-        {
-            // Involve ZMM only for large data due to possible downclocking.
-            regSize = min(regSize, YMM_REGSIZE_BYTES);
-        }
 
         auto emitSimdMovs = [&]() {
             if (srcLclNum != BAD_VAR_NUM)

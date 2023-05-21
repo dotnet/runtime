@@ -323,7 +323,7 @@ public class Program
             Action<ImmutableArray<Diagnostic>>? assessDiagnostics = null)
         {
             string baseline = LineEndingsHelper.Normalize(await File.ReadAllTextAsync(Path.Combine("Baselines", filename)).ConfigureAwait(false));
-            string[] expectedLines = baseline.Replace("%VERSION%", typeof(ConfigurationBindingSourceGenerator).Assembly.GetName().Version?.ToString())
+            string[] expectedLines = baseline.Replace("%VERSION%", typeof(ConfigurationBindingGenerator).Assembly.GetName().Version?.ToString())
                                              .Split(Environment.NewLine);
 
             var (d, r) = await RunGenerator(testSourceCode, languageVersion);
@@ -338,7 +338,7 @@ public class Program
             string testSourceCode,
             LanguageVersion langVersion = LanguageVersion.CSharp11) =>
             await RoslynTestUtils.RunGenerator(
-                new ConfigurationBindingSourceGenerator(),
+                new ConfigurationBindingGenerator(),
                 new[] {
                     typeof(ConfigurationBinder).Assembly,
                     typeof(CultureInfo).Assembly,

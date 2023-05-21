@@ -143,6 +143,16 @@ namespace Internal.IL
                 {
                     _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MonitorEnterStatic), reason);
                     _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MonitorExitStatic), reason);
+
+                    MethodDesc method = _methodIL.OwningMethod;
+                    if (method.OwningType.IsRuntimeDeterminedSubtype)
+                    {
+                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.NecessaryTypeHandle, method.OwningType), reason);
+                    }
+                    else
+                    {
+                        _dependencies.Add(_factory.NecessaryTypeSymbol(method.OwningType), reason);
+                    }
                 }
                 else
                 {

@@ -1756,8 +1756,8 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     structPromotionInfo = lvaStructPromotionInfo(typeHnd);
 
 #if defined(FEATURE_SIMD)
-    // maxSIMDStructBytes() represents the size of the largest primitive type that we can struct promote.
-    const unsigned maxSize = MAX_NumOfFieldsInPromotableStruct * compiler->maxSIMDStructBytes();
+    // getMaxVectorByteLength() represents the size of the largest primitive type that we can struct promote.
+    const unsigned maxSize = MAX_NumOfFieldsInPromotableStruct * compiler->getMaxVectorByteLength();
 #else  // !FEATURE_SIMD
     // sizeof(double) represents the size of the largest primitive type that we can struct promote.
     const unsigned maxSize = MAX_NumOfFieldsInPromotableStruct * sizeof(double);
@@ -3564,6 +3564,7 @@ void Compiler::lvaSortByRefCount()
 
         // Start by assuming that the variable will be tracked.
         varDsc->lvTracked = 1;
+        INDEBUG(varDsc->lvTrackedWithoutIndex = 0);
 
         if (varDsc->lvRefCnt(lvaRefCountState) == 0)
         {
