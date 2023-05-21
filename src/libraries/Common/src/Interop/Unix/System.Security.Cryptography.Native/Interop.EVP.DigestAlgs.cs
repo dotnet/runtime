@@ -116,5 +116,26 @@ internal static partial class Interop
                     throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
             };
         }
+
+        internal static bool HashAlgorithmSupported(string hashAlgorithmId)
+        {
+            switch (hashAlgorithmId)
+            {
+                case HashAlgorithmNames.SHA1:
+                case HashAlgorithmNames.SHA256:
+                case HashAlgorithmNames.SHA384:
+                case HashAlgorithmNames.SHA512:
+                case HashAlgorithmNames.MD5:
+                    return true;
+                case HashAlgorithmNames.SHA3_256:
+                    return EvpSha3_256() != 0;
+                case HashAlgorithmNames.SHA3_384:
+                    return EvpSha3_384() != 0;
+                case HashAlgorithmNames.SHA3_512:
+                    return EvpSha3_512() != 0;
+                default:
+                    throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
+            }
+        }
     }
 }

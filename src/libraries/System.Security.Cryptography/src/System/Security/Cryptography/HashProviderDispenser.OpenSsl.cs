@@ -24,7 +24,7 @@ namespace System.Security.Cryptography
 
         internal static bool HashSupported(string hashAlgorithmId)
         {
-            return Interop.Crypto.HashAlgorithmToEvp(hashAlgorithmId) != IntPtr.Zero;
+            return Interop.Crypto.HashAlgorithmSupported(hashAlgorithmId);
         }
 
         internal static bool MacSupported(string hashAlgorithmId) => HashSupported(hashAlgorithmId);
