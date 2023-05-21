@@ -2717,6 +2717,7 @@ size_t gc_heap::interesting_data_per_gc[max_idp_count];
 #endif //MULTIPLE_HEAPS
 
 no_gc_region_info gc_heap::current_no_gc_region_info;
+FinalizerWorkItem* gc_heap::finalizer_work;
 BOOL gc_heap::proceed_with_gc_p = FALSE;
 GCSpinLock gc_heap::gc_lock;
 
@@ -11472,7 +11473,16 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
             region = free_regions[huge_free_region].unlink_smallest_region (size);
             if (region == nullptr)
             {
-                ASSERT_HOLDING_SPIN_LOCK(&gc_lock);
+                if (settings.pause_mode == pause_no_gc)
+                {
+                    // In case of no-gc-region, the gc lock is being held by the thread
+                    // triggering the GC.
+                    assert (gc_lock.holding_thread != (Thread*)-1);
+                }
+                else
+                {
+                    ASSERT_HOLDING_SPIN_LOCK(&gc_lock);
+                }
 
                 // get it from the global list of huge free regions
                 region = global_free_huge_regions.unlink_smallest_region (size);
@@ -21228,11 +21238,41 @@ BOOL gc_heap::should_proceed_with_gc()
     {
         if (current_no_gc_region_info.started)
         {
-            // The no_gc mode was already in progress yet we triggered another GC,
-            // this effectively exits the no_gc mode.
-            restore_data_for_no_gc();
+            if (current_no_gc_region_info.soh_withheld_budget != 0)
+            {
+                dprintf(1, ("[no_gc_callback] allocation budget exhausted with withheld, time to trigger callback\n"));
+#ifdef MULTIPLE_HEAPS
+                for (int i = 0; i < gc_heap::n_heaps; i++)
+                {
+                    gc_heap* hp = gc_heap::g_heaps [i];
+#else
+                {
+                    gc_heap* hp = pGenGCHeap;
+#endif
+                    dd_new_allocation (hp->dynamic_data_of (soh_gen0)) += current_no_gc_region_info.soh_withheld_budget;
+                    dd_new_allocation (hp->dynamic_data_of (loh_generation)) += current_no_gc_region_info.loh_withheld_budget;
+                }
+                current_no_gc_region_info.soh_withheld_budget = 0;
+                current_no_gc_region_info.loh_withheld_budget = 0;
 
-            memset (&current_no_gc_region_info, 0, sizeof (current_no_gc_region_info));
+                // Trigger the callback
+                schedule_no_gc_callback (false);
+                current_no_gc_region_info.callback = nullptr;
+                return FALSE;
+            }
+            else
+            {
+                dprintf(1, ("[no_gc_callback] GC triggered while in no_gc mode. Exiting no_gc mode.\n"));
+                // The no_gc mode was already in progress yet we triggered another GC,
+                // this effectively exits the no_gc mode.
+                restore_data_for_no_gc();
+                if (current_no_gc_region_info.callback != nullptr)
+                {
+                    dprintf (1, ("[no_gc_callback] detaching callback on exit"));
+                    schedule_no_gc_callback (true);
+                }
+                memset (&current_no_gc_region_info, 0, sizeof (current_no_gc_region_info));
+            }
         }
         else
             return should_proceed_for_no_gc();
@@ -22345,12 +22385,48 @@ end_no_gc_region_status gc_heap::end_no_gc_region()
         status = end_no_gc_alloc_exceeded;
 
     if (settings.pause_mode == pause_no_gc)
+    {
         restore_data_for_no_gc();
+        if (current_no_gc_region_info.callback != nullptr)
+        {
+            dprintf (1, ("[no_gc_callback] detaching callback on exit"));
+            schedule_no_gc_callback (true);
+        }
+    }
 
     // sets current_no_gc_region_info.started to FALSE here.
     memset (&current_no_gc_region_info, 0, sizeof (current_no_gc_region_info));
 
     return status;
+}
+
+void gc_heap::schedule_no_gc_callback (bool abandoned)
+{
+    // We still want to schedule the work even when the no-gc callback is abandoned
+    // so that we can free the memory associated with it.
+    current_no_gc_region_info.callback->abandoned = abandoned;
+
+    if (!current_no_gc_region_info.callback->scheduled)
+    {
+        current_no_gc_region_info.callback->scheduled = true;
+        schedule_finalizer_work(current_no_gc_region_info.callback);
+    }
+}
+
+void gc_heap::schedule_finalizer_work (FinalizerWorkItem* callback)
+{
+    FinalizerWorkItem* prev;
+    do
+    {
+        prev = finalizer_work;
+        callback->next = prev;
+    }
+    while (Interlocked::CompareExchangePointer (&finalizer_work, callback, prev) != prev);
+
+    if (prev == nullptr)
+    {
+        GCToEEInterface::EnableFinalization(true);
+    }
 }
 
 //update counters
@@ -44395,6 +44471,103 @@ public:
     }
 };
 
+enable_no_gc_region_callback_status gc_heap::enable_no_gc_callback(NoGCRegionCallbackFinalizerWorkItem* callback, uint64_t callback_threshold)
+{
+    dprintf(1, ("[no_gc_callback] calling enable_no_gc_callback with callback_threshold = %llu\n", callback_threshold));
+    enable_no_gc_region_callback_status status = enable_no_gc_region_callback_status::succeed;
+    suspend_EE();
+    {
+        if (!current_no_gc_region_info.started)
+        {
+            status = enable_no_gc_region_callback_status::not_started;
+        }
+        else if (current_no_gc_region_info.callback != nullptr)
+        {
+            status = enable_no_gc_region_callback_status::already_registered;
+        }
+        else
+        {
+            uint64_t total_original_soh_budget = 0;
+            uint64_t total_original_loh_budget = 0;
+#ifdef MULTIPLE_HEAPS
+            for (int i = 0; i < gc_heap::n_heaps; i++)
+            {
+                gc_heap* hp = gc_heap::g_heaps [i];
+#else
+            {
+                gc_heap* hp = pGenGCHeap;
+#endif
+                total_original_soh_budget += hp->soh_allocation_no_gc;
+                total_original_loh_budget += hp->loh_allocation_no_gc;
+            }
+            uint64_t total_original_budget = total_original_soh_budget + total_original_loh_budget;
+            if (total_original_budget >= callback_threshold)
+            {
+                uint64_t total_withheld = total_original_budget - callback_threshold;
+
+                float soh_ratio = ((float)total_original_soh_budget)/total_original_budget;
+                float loh_ratio = ((float)total_original_loh_budget)/total_original_budget;
+
+                size_t soh_withheld_budget = (size_t)(soh_ratio * total_withheld);
+                size_t loh_withheld_budget = (size_t)(loh_ratio * total_withheld);
+
+#ifdef MULTIPLE_HEAPS
+                soh_withheld_budget = soh_withheld_budget / gc_heap::n_heaps;
+                loh_withheld_budget = loh_withheld_budget / gc_heap::n_heaps;
+#endif
+                soh_withheld_budget = max(soh_withheld_budget, 1);
+                soh_withheld_budget = Align(soh_withheld_budget, get_alignment_constant (TRUE));
+                loh_withheld_budget = Align(loh_withheld_budget, get_alignment_constant (FALSE));
+#ifdef MULTIPLE_HEAPS
+                for (int i = 0; i < gc_heap::n_heaps; i++)
+                {
+                    gc_heap* hp = gc_heap::g_heaps [i];
+#else
+                {
+                    gc_heap* hp = pGenGCHeap;
+#endif
+                    if (dd_new_allocation (hp->dynamic_data_of (soh_gen0)) <= (ptrdiff_t)soh_withheld_budget)
+                    {
+                        dprintf(1, ("[no_gc_callback] failed because of running out of soh budget= %llu\n", soh_withheld_budget));
+                        status = insufficient_budget;
+                    }
+                    if (dd_new_allocation (hp->dynamic_data_of (loh_generation)) <= (ptrdiff_t)loh_withheld_budget)
+                    {
+                        dprintf(1, ("[no_gc_callback] failed because of running out of loh budget= %llu\n", loh_withheld_budget));
+                        status = insufficient_budget;
+                    }
+                }
+
+                if (status == enable_no_gc_region_callback_status::succeed)
+                {
+                    dprintf(1, ("[no_gc_callback] enabling succeed\n"));
+#ifdef MULTIPLE_HEAPS
+                    for (int i = 0; i < gc_heap::n_heaps; i++)
+                    {
+                        gc_heap* hp = gc_heap::g_heaps [i];
+#else
+                    {
+                        gc_heap* hp = pGenGCHeap;
+#endif
+                        dd_new_allocation (hp->dynamic_data_of (soh_gen0)) -= soh_withheld_budget;
+                        dd_new_allocation (hp->dynamic_data_of (loh_generation)) -= loh_withheld_budget;
+                    }
+                    current_no_gc_region_info.soh_withheld_budget = soh_withheld_budget;
+                    current_no_gc_region_info.loh_withheld_budget = loh_withheld_budget;
+                    current_no_gc_region_info.callback = callback;
+                }
+            }
+            else
+            {
+                status = enable_no_gc_region_callback_status::insufficient_budget;
+            }
+        }
+    }
+    restart_EE();
+
+    return status;
+}
+
 // An explanation of locking for finalization:
 //
 // Multiple threads allocate objects.  During the allocation, they are serialized by
@@ -46133,6 +46306,16 @@ unsigned int GCHeap::WhichGeneration (Object* object)
     unsigned int g = hp->object_gennum (o);
     dprintf (3, ("%zx is in gen %d", (size_t)object, g));
     return g;
+}
+
+enable_no_gc_region_callback_status GCHeap::EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, uint64_t callback_threshold)
+{
+    return gc_heap::enable_no_gc_callback(callback, callback_threshold);
+}
+
+FinalizerWorkItem* GCHeap::GetExtraWorkForFinalization()
+{
+    return Interlocked::ExchangePointer(&gc_heap::finalizer_work, nullptr);
 }
 
 unsigned int GCHeap::GetGenerationWithRange (Object* object, uint8_t** ppStart, uint8_t** ppAllocated, uint8_t** ppReserved)

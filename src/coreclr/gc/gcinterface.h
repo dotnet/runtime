@@ -123,6 +123,18 @@ struct WriteBarrierParameters
     bool region_use_bitwise_write_barrier;
 };
 
+struct FinalizerWorkItem
+{
+    FinalizerWorkItem* next;
+    void (*callback)(FinalizerWorkItem*);
+};
+
+struct NoGCRegionCallbackFinalizerWorkItem : public FinalizerWorkItem
+{
+    bool scheduled;
+    bool abandoned;
+};
+
 struct EtwGCSettingsInfo
 {
     size_t heap_hard_limit;
@@ -334,6 +346,17 @@ enum refresh_memory_limit_status
     refresh_success = 0,
     refresh_hard_limit_too_low = 1,
     refresh_hard_limit_invalid = 2
+};
+
+// !!!!!!!!!!!!!!!!!!!!!!!
+// make sure you change the def in bcl\system\gc.cs
+// if you change this!
+enum enable_no_gc_region_callback_status
+{
+    succeed,
+    not_started,
+    insufficient_budget,
+    already_registered,
 };
 
 enum gc_kind
@@ -987,6 +1010,12 @@ public:
 
     // Refresh the memory limit
     virtual int RefreshMemoryLimit() PURE_VIRTUAL
+
+    // Enable NoGCRegionCallback
+    virtual enable_no_gc_region_callback_status EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, uint64_t callback_threshold) PURE_VIRTUAL
+
+    // Get extra work for the finalizer
+    virtual FinalizerWorkItem* GetExtraWorkForFinalization() PURE_VIRTUAL
 };
 
 #ifdef WRITE_BARRIER_CHECK
