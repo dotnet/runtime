@@ -1169,8 +1169,8 @@
 
         <!-- Requires Debug build -->
         <ExcludeList Include="$(XunitTestBinBase)/JIT\Directed\debugging\poisoning\poison\poison\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT\Methodical\eh\finallyexec\nestedfinallycall_d\*" /> <!-- probably RyuJIT bug -->
-        <ExcludeList Include="$(XunitTestBinBase)/JIT\Methodical\eh\finallyexec\nestedfinallycall_r\*" /> <!-- probably RyuJIT bug -->
+        <ExcludeList Include="$(XunitTestBinBase)/JIT\Methodical\eh\finallyexec\nestedfinallycall_d\*" /> <!-- probably RyuJIT bug: https://github.com/dotnet/runtime/issues/86561 -->
+        <ExcludeList Include="$(XunitTestBinBase)/JIT\Methodical\eh\finallyexec\nestedfinallycall_r\*" /> <!-- probably RyuJIT bug: https://github.com/dotnet/runtime/issues/86561 -->
     </ItemGroup>
 
     <!-- run.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
