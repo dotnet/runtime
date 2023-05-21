@@ -3092,13 +3092,13 @@ namespace System
                 return true;
             }
 
-            int twicedLength = length * 2;
+            int twiceLength = length * 2;
 
-            if (destination.Length < twicedLength)
+            if (destination.Length < twiceLength)
                 goto FalseResult;
 
             HexConverter.EncodeToUtf16(source, destination);
-            charsWritten = twicedLength;
+            charsWritten = twiceLength;
             return true;
 
             FalseResult:
