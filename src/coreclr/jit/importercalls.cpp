@@ -1352,7 +1352,7 @@ DONE_CALL:
 
                 for (UINT8 i = 0; i < origCall->GetInlineCandidatesCount(); i++)
                 {
-                    // Save link to retExpr to all gdv candidates just in case.
+                    // Link the retExpr to the call so if necessary we can manipulate it later.
                     origCall->GetGDVCandidateInfo(i)->retExpr = retExpr;
                 }
 
@@ -6457,7 +6457,7 @@ bool Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     }
 
     // The old value should be null OR this call should be a guarded devirtualization candidate.
-    assert((call->GetInlineCandidateInfo() == nullptr) || call->IsGuardedDevirtualizationCandidate());
+    assert(call->IsGuardedDevirtualizationCandidate() || (call->GetInlineCandidateInfo() == nullptr));
 
     // The new value should not be null.
     assert(inlineCandidateInfo != nullptr);
@@ -6467,7 +6467,7 @@ bool Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     if (call->IsGuardedDevirtualizationCandidate())
     {
         assert(call->GetGDVCandidateInfo(candidateIndex) != nullptr);
-        call->UpdateGDVCandateInfo(candidateIndex, inlineCandidateInfo);
+        *call->GetGDVCandidateInfo(candidateIndex) = *inlineCandidateInfo;
         call->gtFlags |= GTF_CALL_INLINE_CANDIDATE;
     }
     else

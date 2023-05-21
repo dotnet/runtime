@@ -442,7 +442,7 @@ private:
     {
     public:
         GuardedDevirtualizationTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
-            : Transformer(compiler, block, stmt), returnTemp(BAD_VAR_NUM)
+            : Transformer(compiler, block, stmt), devirualizeFallback(false), returnTemp(BAD_VAR_NUM)
         {
         }
 
@@ -475,6 +475,8 @@ private:
             {
                 JITDUMP("Expansion will chain to the previous GDV\n");
             }
+
+            devirualizeFallback = origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT;
 
             Transform();
 
@@ -908,7 +910,7 @@ private:
             elseBlock = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
             elseBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
 
-            if (origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT)
+            if (devirualizeFallback)
             {
                 // Use the 2nd inline candidate to devirtualize/inline the fallback call.
                 assert(origCall->GetInlineCandidatesCount() == 2);
@@ -916,6 +918,8 @@ private:
             }
             else
             {
+                assert(origCall->GetInlineCandidatesCount() == 1);
+
                 GenTreeCall* call    = origCall;
                 Statement*   newStmt = compiler->gtNewStmt(call, stmt->GetDebugInfo());
 
@@ -1152,6 +1156,7 @@ private:
         }
 
     private:
+        bool       devirualizeFallback;
         unsigned   returnTemp;
         Statement* lastStmt;
 

@@ -5442,8 +5442,6 @@ struct GenTreeCall final : public GenTree
 
     void SetSingleInlineCadidateInfo(InlineCandidateInfo* candidateInfo);
 
-    void UpdateGDVCandateInfo(uint8_t index, InlineCandidateInfo* newInfo);
-
     InlineCandidateInfo* GetGDVCandidateInfo(uint8_t index);
 
     void AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candidateInfo);

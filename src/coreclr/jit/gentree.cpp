@@ -2189,8 +2189,8 @@ void GenTreeCall::SetSingleInlineCadidateInfo(InlineCandidateInfo* candidateInfo
 {
     if (candidateInfo != nullptr)
     {
-        gtInlineInfoCount = 1;
         gtFlags |= GTF_CALL_INLINE_CANDIDATE;
+        gtInlineInfoCount = 1;
     }
     else
     {
@@ -2199,12 +2199,6 @@ void GenTreeCall::SetSingleInlineCadidateInfo(InlineCandidateInfo* candidateInfo
     }
     gtInlineCandidateInfo = candidateInfo;
     ClearGuardedDevirtualizationCandidate();
-}
-
-void GenTreeCall::UpdateGDVCandateInfo(uint8_t index, InlineCandidateInfo* newInfo)
-{
-    assert(index < gtInlineInfoCount);
-    gtInlineCandidateInfo[index] = *newInfo;
 }
 
 //-------------------------------------------------------------------------
