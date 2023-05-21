@@ -3555,7 +3555,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                 }
 
                 JITDUMP("Success! Optimizing to STORE_LCL_VAR<struct>(0).");
-                unsigned structTempNum = lvaGrabTemp(true DEBUGARG("folding static RO field empty struct"));
+                unsigned structTempNum = lvaGrabTemp(true DEBUGARG("folding static readonly field empty struct"));
                 lvaSetStruct(structTempNum, fieldClsHnd, false);
 
                 impStoreTemp(structTempNum, gtNewIconNode(0), CHECK_SPILL_NONE);
@@ -3599,7 +3599,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
             return nullptr;
         }
 
-        unsigned structTempNum = lvaGrabTemp(true DEBUGARG("folding static ro fld struct"));
+        unsigned structTempNum = lvaGrabTemp(true DEBUGARG("folding static readonly field struct"));
         lvaSetStruct(structTempNum, fieldClsHnd, false);
 
         GenTree* constValTree = impImportCnsTreeFromBuffer(buffer, fieldVarType);
@@ -3608,7 +3608,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
         GenTree* fieldStoreTree = gtNewStoreLclFldNode(structTempNum, fieldVarType, fldOffset, constValTree);
         impAppendTree(fieldStoreTree, CHECK_SPILL_NONE, impCurStmtDI);
 
-        JITDUMP("Folding 'static readonly %s' field to an STORE_LCL_FLD(CNS) node\n", eeGetClassName(fieldClsHnd));
+        JITDUMP("Folding 'static readonly %s' field to a STORE_LCL_FLD(CNS) node\n", eeGetClassName(fieldClsHnd));
 
         return impCreateLocalNode(structTempNum DEBUGARG(0));
     }
@@ -3712,7 +3712,7 @@ GenTree* Compiler::impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueTy
 }
 
 //------------------------------------------------------------------------
-// impImportStaticFieldAccess: Generate an address of a static field
+// impImportStaticFieldAddress: Generate an address of a static field
 //
 // Arguments:
 //   pResolvedToken - resolved token for the static field to access
