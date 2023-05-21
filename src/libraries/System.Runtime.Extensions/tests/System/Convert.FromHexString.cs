@@ -83,18 +83,31 @@ namespace System.Tests
         [Fact]
         public static void ToHexFromHexRoundtrip()
         {
-            for (int i = 1; i < 50; i++)
+            const int LoopCount = 50;
+            Span<char> buffer = stackalloc char[LoopCount * 2];
+            for (int i = 1; i < LoopCount; i++)
             {
-                byte[] data = System.Security.Cryptography.RandomNumberGenerator.GetBytes(i);
+                byte[] data = Security.Cryptography.RandomNumberGenerator.GetBytes(i);
                 string hex = Convert.ToHexString(data);
-                Assert.Equal(data, Convert.FromHexString(hex.ToLowerInvariant()));
-                Assert.Equal(data, Convert.FromHexString(hex.ToUpperInvariant()));
+
+                Span<char> currentBuffer = buffer.Slice(0, i);
+                bool tryHex = Convert.TryToHexString(data, currentBuffer, out int written);
+                Assert.True(tryHex);
+                AssertExtensions.SequenceEqual(hex.AsSpan(), currentBuffer);
+                Assert.Equal(hex.Length, written);
+
+                TestSequence(data, hex);
+                TestSequence(data, hex.ToLowerInvariant());
+                TestSequence(data, hex.ToUpperInvariant());
+
                 string mixedCase1 = hex.Substring(0, hex.Length / 2).ToUpperInvariant() +
                                     hex.Substring(hex.Length / 2).ToLowerInvariant();
                 string mixedCase2 = hex.Substring(0, hex.Length / 2).ToLowerInvariant() +
                                     hex.Substring(hex.Length / 2).ToUpperInvariant();
-                Assert.Equal(data, Convert.FromHexString(mixedCase1));
-                Assert.Equal(data, Convert.FromHexString(mixedCase2));
+
+                TestSequence(data, mixedCase1);
+                TestSequence(data, mixedCase2);
+
                 Assert.Throws<FormatException>(() => Convert.FromHexString(hex + "  "));
                 Assert.Throws<FormatException>(() => Convert.FromHexString("\uAAAA" + hex));
             }
