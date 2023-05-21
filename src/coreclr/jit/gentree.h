@@ -4049,6 +4049,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_DEVIRTUALIZED           = 0x00040000, // this call was devirtualized
     GTF_CALL_M_UNBOXED                 = 0x00080000, // this call was optimized to use the unboxed entry point
     GTF_CALL_M_GUARDED_DEVIRT          = 0x00100000, // this call is a candidate for guarded devirtualization
+    GTF_CALL_M_GUARDED_DEVIRT_EXACT    = 0x80000000, // this call is a candidate for guarded devirtualization where no fallback is needed
     GTF_CALL_M_GUARDED_DEVIRT_CHAIN    = 0x00200000, // this call is a candidate for chained guarded devirtualization
     GTF_CALL_M_GUARDED                 = 0x00400000, // this call was transformed by guarded devirtualization
     GTF_CALL_M_ALLOC_SIDE_EFFECTS      = 0x00800000, // this is a call to an allocator with side effects
@@ -5371,7 +5372,8 @@ struct GenTreeCall final : public GenTree
 
     void ClearGuardedDevirtualizationCandidate()
     {
-        gtCallMoreFlags &= ~GTF_CALL_M_GUARDED_DEVIRT;
+        gtCallMoreFlags &=
+            ~(GTF_CALL_M_GUARDED_DEVIRT | GTF_CALL_M_GUARDED_DEVIRT_CHAIN | GTF_CALL_M_GUARDED_DEVIRT_EXACT);
     }
 
     void SetIsGuarded()
@@ -5431,18 +5433,29 @@ struct GenTreeCall final : public GenTree
 
     InlineCandidateInfo* GetInlineCandidateInfo()
     {
+        if (gtInlineInfoCount > 1)
+        {
+            assert(!"Call has multiple inline candidates - use GetGDVCandidateInfo instead");
+        }
         return gtInlineCandidateInfo;
     }
 
     void SetSingleInlineCadidateInfo(InlineCandidateInfo* candidateInfo);
 
-    InlineCandidateInfo* GetGDVCandidateInfo(uint8_t index = 0);
+    void UpdateGDVCandateInfo(uint8_t index, InlineCandidateInfo* newInfo);
 
-    void AddGDVCandidateInfo(InlineCandidateInfo* candidateInfo);
+    InlineCandidateInfo* GetGDVCandidateInfo(uint8_t index);
+
+    void AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candidateInfo);
 
     void ClearInlineInfo()
     {
         SetSingleInlineCadidateInfo(nullptr);
+    }
+
+    uint8_t GetInlineCandidatesCount()
+    {
+        return gtInlineInfoCount;
     }
 
     //-----------------------------------------------------------------------------------------

@@ -465,7 +465,7 @@ private:
                 return;
             }
 
-            likelihood = origCall->GetGDVCandidateInfo()->likelihood;
+            likelihood = origCall->GetGDVCandidateInfo(0)->likelihood;
             assert((likelihood >= 0) && (likelihood <= 100));
             JITDUMP("Likelihood of correct guess is %u\n", likelihood);
 
@@ -574,7 +574,7 @@ private:
             //
             lastStmt = checkBlock->lastStmt();
 
-            InlineCandidateInfo* guardedInfo = origCall->GetGDVCandidateInfo();
+            InlineCandidateInfo* guardedInfo = origCall->GetGDVCandidateInfo(0);
 
             // Create comparison. On success we will jump to do the indirect call.
             GenTree* compare;
@@ -655,7 +655,7 @@ private:
             //
             // Note implicit by-ref returns should have already been converted
             // so any struct copy we induce here should be cheap.
-            InlineCandidateInfo* const inlineInfo = origCall->GetInlineCandidateInfo();
+            InlineCandidateInfo* const inlineInfo = origCall->GetGDVCandidateInfo(0);
 
             if (!origCall->TypeIs(TYP_VOID))
             {
@@ -730,13 +730,11 @@ private:
         }
 
         //------------------------------------------------------------------------
-        // CreateThen: create then block with direct call to method
+        // Devirtualize origCall using the given inline candidate
         //
-        virtual void CreateThen()
+        void DevirtualizeCall(BasicBlock* block, uint8_t candidateId)
         {
-            thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
-            thenBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
-            InlineCandidateInfo* inlineInfo = origCall->GetInlineCandidateInfo();
+            InlineCandidateInfo* inlineInfo = origCall->GetGDVCandidateInfo(candidateId);
             CORINFO_CLASS_HANDLE clsHnd     = inlineInfo->guardedClassHandle;
 
             //
@@ -771,7 +769,7 @@ private:
                                       compiler->info.compCompHnd->getMethodClass(inlineInfo->guardedMethodHandle));
             }
 
-            compiler->fgNewStmtAtEnd(thenBlock, assign);
+            compiler->fgNewStmtAtEnd(block, assign);
 
             // Clone call for the devirtualized case. Note we must use the
             // special candidate helper and we need to use the new 'this'.
@@ -779,7 +777,7 @@ private:
             call->gtArgs.GetThisArg()->SetEarlyNode(compiler->gtNewLclvNode(thisTemp, TYP_REF));
             call->SetIsGuarded();
 
-            JITDUMP("Direct call [%06u] in block " FMT_BB "\n", compiler->dspTreeID(call), thenBlock->bbNum);
+            JITDUMP("Direct call [%06u] in block " FMT_BB "\n", compiler->dspTreeID(call), block->bbNum);
 
             CORINFO_METHOD_HANDLE  methodHnd = call->gtCallMethHnd;
             CORINFO_CONTEXT_HANDLE context   = inlineInfo->exactContextHnd;
@@ -845,18 +843,18 @@ private:
                 if (returnTemp != BAD_VAR_NUM)
                 {
                     GenTree* const assign = compiler->gtNewTempAssign(returnTemp, call);
-                    compiler->fgNewStmtAtEnd(thenBlock, assign);
+                    compiler->fgNewStmtAtEnd(block, assign);
                 }
                 else
                 {
-                    compiler->fgNewStmtAtEnd(thenBlock, call, stmt->GetDebugInfo());
+                    compiler->fgNewStmtAtEnd(block, call, stmt->GetDebugInfo());
                 }
             }
             else
             {
                 // Add the call.
                 //
-                compiler->fgNewStmtAtEnd(thenBlock, call, stmt->GetDebugInfo());
+                compiler->fgNewStmtAtEnd(block, call, stmt->GetDebugInfo());
 
                 // Re-establish this call as an inline candidate.
                 //
@@ -886,9 +884,20 @@ private:
                         // We should always have a return temp if we return results by value
                         assert(origCall->TypeGet() == TYP_VOID);
                     }
-                    compiler->fgNewStmtAtEnd(thenBlock, newRetExpr);
+                    compiler->fgNewStmtAtEnd(block, newRetExpr);
                 }
             }
+        }
+
+        //------------------------------------------------------------------------
+        // CreateThen: create then block with direct call to method
+        //
+        virtual void CreateThen()
+        {
+            thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
+            thenBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
+
+            DevirtualizeCall(thenBlock, 0);
         }
 
         //------------------------------------------------------------------------
@@ -898,21 +907,32 @@ private:
         {
             elseBlock = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
             elseBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
-            GenTreeCall* call    = origCall;
-            Statement*   newStmt = compiler->gtNewStmt(call, stmt->GetDebugInfo());
 
-            call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
-            call->SetIsGuarded();
-
-            JITDUMP("Residual call [%06u] moved to block " FMT_BB "\n", compiler->dspTreeID(call), elseBlock->bbNum);
-
-            if (returnTemp != BAD_VAR_NUM)
+            if (origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT)
             {
-                GenTree* assign = compiler->gtNewTempAssign(returnTemp, call);
-                newStmt->SetRootNode(assign);
+                // Use the 2nd inline candidate to devirtualize/inline the fallback call.
+                assert(origCall->GetInlineCandidatesCount() == 2);
+                DevirtualizeCall(elseBlock, 1);
             }
+            else
+            {
+                GenTreeCall* call    = origCall;
+                Statement*   newStmt = compiler->gtNewStmt(call, stmt->GetDebugInfo());
 
-            compiler->fgInsertStmtAtEnd(elseBlock, newStmt);
+                call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
+                call->SetIsGuarded();
+
+                JITDUMP("Residual call [%06u] moved to block " FMT_BB "\n", compiler->dspTreeID(call),
+                        elseBlock->bbNum);
+
+                if (returnTemp != BAD_VAR_NUM)
+                {
+                    GenTree* assign = compiler->gtNewTempAssign(returnTemp, call);
+                    newStmt->SetRootNode(assign);
+                }
+
+                compiler->fgInsertStmtAtEnd(elseBlock, newStmt);
+            }
 
             // Set the original statement to a nop.
             //
@@ -1092,10 +1112,10 @@ private:
                     GenTreeCall* const call = root->AsCall();
 
                     if (call->IsGuardedDevirtualizationCandidate() &&
-                        (call->GetGDVCandidateInfo()->likelihood >= gdvChainLikelihood))
+                        (call->GetGDVCandidateInfo(0)->likelihood >= gdvChainLikelihood))
                     {
                         JITDUMP("GDV call at [%06u] has likelihood %u >= %u; chaining (%u stmts, %u nodes to dup).\n",
-                                compiler->dspTreeID(call), call->GetGDVCandidateInfo()->likelihood, gdvChainLikelihood,
+                                compiler->dspTreeID(call), call->GetGDVCandidateInfo(0)->likelihood, gdvChainLikelihood,
                                 chainStatementDup, chainNodeDup);
 
                         call->gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT_CHAIN;

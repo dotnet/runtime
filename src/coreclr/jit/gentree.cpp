@@ -2189,16 +2189,22 @@ void GenTreeCall::SetSingleInlineCadidateInfo(InlineCandidateInfo* candidateInfo
 {
     if (candidateInfo != nullptr)
     {
-        gtFlags |= GTF_CALL_INLINE_CANDIDATE;
         gtInlineInfoCount = 1;
+        gtFlags |= GTF_CALL_INLINE_CANDIDATE;
     }
     else
     {
         gtInlineInfoCount = 0;
         gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
-        gtCallMoreFlags &= ~GTF_CALL_M_GUARDED_DEVIRT;
     }
     gtInlineCandidateInfo = candidateInfo;
+    ClearGuardedDevirtualizationCandidate();
+}
+
+void GenTreeCall::UpdateGDVCandateInfo(uint8_t index, InlineCandidateInfo* newInfo)
+{
+    assert(index < gtInlineInfoCount);
+    gtInlineCandidateInfo[index] = *newInfo;
 }
 
 //-------------------------------------------------------------------------
@@ -2218,9 +2224,10 @@ InlineCandidateInfo* GenTreeCall::GetGDVCandidateInfo(uint8_t index)
 //     for this call. For now, we only support one GDV candidate per call.
 //
 // Arguments:
+//     comp          - Compiler instance
 //     candidateInfo - GDV candidate info
 //
-void GenTreeCall::AddGDVCandidateInfo(InlineCandidateInfo* candidateInfo)
+void GenTreeCall::AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candidateInfo)
 {
     assert(candidateInfo != nullptr);
     if (gtInlineInfoCount == 0)
@@ -2229,8 +2236,9 @@ void GenTreeCall::AddGDVCandidateInfo(InlineCandidateInfo* candidateInfo)
     }
     else
     {
-        // Allocate a fixed list of InlineCandidateInfo structs
-        assert(!"multiple GDV candidates are not implemented yet");
+        // We only support two candidates for now (
+        assert(gtInlineInfoCount == 1);
+        gtInlineCandidateInfo = new (comp, CMK_Inlining) InlineCandidateInfo[2]{*gtInlineCandidateInfo, *candidateInfo};
     }
 
     gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT;
