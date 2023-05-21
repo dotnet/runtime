@@ -458,10 +458,19 @@ static BasicBlockVisit VisitSuccsInternal(Compiler* comp, BasicBlock* bb, VisitR
 
         case BBJ_COND:
             RETURN_ON_ABORT(func(bb->bbNext));
-            RETURN_ON_ABORT(func(bb->bbJumpDest));
+
+            if (bb->bbJumpDest != bb->bbNext)
+            {
+                RETURN_ON_ABORT(func(bb->bbJumpDest));
+            }
+
             RETURN_ON_ABORT(VisitEHSuccessors(comp, bb, func));
             RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, bb, bb->bbNext, func));
-            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, bb, bb->bbJumpDest, func));
+
+            if (bb->bbJumpDest != bb->bbNext)
+            {
+                RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, bb, bb->bbJumpDest, func));
+            }
             break;
 
         case BBJ_SWITCH:
