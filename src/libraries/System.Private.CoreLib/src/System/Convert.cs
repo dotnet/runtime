@@ -2992,7 +2992,7 @@ namespace System
         /// <returns>true if the conversion was successful; otherwise, false.</returns>
         public static bool TryFromHexString(ReadOnlySpan<char> source, Span<byte> destination, out int bytesWritten)
         {
-            var length = source.Length;
+            int length = source.Length;
 
             if (length % 2 != 0)
                 goto FalseResult;
@@ -3003,7 +3003,7 @@ namespace System
                 return true;
             }
 
-            var requiredByteCount = length / 2;
+            int requiredByteCount = length / 2;
 
             if (destination.Length < requiredByteCount)
                 goto FalseResult;
@@ -3081,7 +3081,7 @@ namespace System
         /// <returns>true if the conversion was successful; otherwise, false.</returns>
         public static bool TryToHexString(ReadOnlySpan<byte> source, Span<char> destination, out int charsWritten)
         {
-            var length = source.Length;
+            int length = source.Length;
 
             if (length > int.MaxValue / 2)
                 goto FalseResult;
