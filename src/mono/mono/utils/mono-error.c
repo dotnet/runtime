@@ -968,3 +968,13 @@ mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...)
 
 	return TRUE;
 }
+
+void set_failure_type(FailureType failure_type) {
+    if (failure_type == DEFERRED_FAILURE) {
+        type_load_failure_callback = mono_class_set_type_load_deferred_failure;
+	} else if (failure_type == IMMEDIATE_FAILURE) {
+		type_load_failure_callback = mono_class_set_type_load_failure;
+	} else {
+		g_assert_not_reached ();
+	}
+}

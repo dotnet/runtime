@@ -1398,10 +1398,9 @@ main_thread_handler (gpointer user_data)
 	if (mono_compile_aot) {
 		int i, res;
 		MonoAssembly **assemblies;
-		type_load_failure_callback = mono_class_set_type_load_deferred_failure;
 
 		assemblies = g_new0 (MonoAssembly*, main_args->argc);
-
+		set_failure_type (DEFERRED_FAILURE);
 		/* Treat the other arguments as assemblies to compile too */
 		for (i = 0; i < main_args->argc; ++i) {
 			assembly = mono_domain_assembly_open_internal (mono_alc_get_default (), main_args->argv [i]);
@@ -1428,7 +1427,8 @@ main_thread_handler (gpointer user_data)
 			exit (1);
 		return;
 	}
-	type_load_failure_callback = mono_class_set_type_load_failure;
+
+	set_failure_type (IMMEDIATE_FAILURE);
 	assembly = mono_domain_assembly_open_internal (mono_alc_get_default (), main_args->file);
 	if (!assembly){
 		fprintf (stderr, "Can not open image %s\n", main_args->file);

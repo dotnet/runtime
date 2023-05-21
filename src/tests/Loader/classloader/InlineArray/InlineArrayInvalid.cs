@@ -23,11 +23,6 @@ unsafe class Validate
     {
         Console.WriteLine($"{nameof(Explicit_Fails)}...");
         Assert.Throws<TypeLoadException>(() => { return typeof(Explicit); });
-
-        // Assert.Throws<TypeLoadException>(() =>
-        // {
-        //     return sizeof(Explicit);
-        // });
     }
 
     [InlineArray(0)]

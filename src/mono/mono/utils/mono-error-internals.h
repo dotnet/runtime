@@ -319,6 +319,14 @@ mono_error_set_specific (MonoError *error, int error_code, const char *missing_m
 void
 mono_error_set_first_argument (MonoError *oerror, const char *first_argument);
 
+typedef enum {
+    DEFERRED_FAILURE, // Used during AOT compilation to defer failure for execution
+    IMMEDIATE_FAILURE // Used during runtime to indicate that the failure should be reported
+} FailureType;
+
+void
+set_failure_type (FailureType failure_type);
+
 /**
  * TypeLoadFailureCallback:
  * @param klass: Class in which the failure was detected.
@@ -333,13 +341,13 @@ mono_error_set_first_argument (MonoError *oerror, const char *first_argument);
  */
 typedef gboolean (*TypeLoadFailureCallback)(MonoClass *klass, const char * fmt, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
 
+TypeLoadFailureCallback type_load_failure_callback;
+
 gboolean
 mono_class_set_type_load_deferred_failure (MonoClass *klass, const char * fmt, ...);
 
 gboolean
 mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...);
-
-TypeLoadFailureCallback type_load_failure_callback;
 
 #if HOST_WIN32
 #if HOST_X86 || HOST_AMD64
