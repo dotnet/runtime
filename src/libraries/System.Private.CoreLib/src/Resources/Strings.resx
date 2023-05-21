@@ -2042,21 +2042,6 @@
   <data name="CustomMarshaler_NullReturnForGetInstance" xml:space="preserve">
     <value>A call to GetInstance() for custom marshaler '{0}' returned null, which is not allowed.</value>
   </data>
-  <data name="event_TaskCompleted" xml:space="preserve">
-    <value>Task {2} completed.</value>
-  </data>
-  <data name="event_TaskScheduled" xml:space="preserve">
-    <value>Task {2} scheduled to TaskScheduler {0}.</value>
-  </data>
-  <data name="event_TaskStarted" xml:space="preserve">
-    <value>Task {2} executing.</value>
-  </data>
-  <data name="event_TaskWaitBegin" xml:space="preserve">
-    <value>Beginning wait ({3}) on Task {2}.</value>
-  </data>
-  <data name="event_TaskWaitEnd" xml:space="preserve">
-    <value>Ending wait on Task {2}.</value>
-  </data>
   <data name="EventSource_AbstractMustNotDeclareEventMethods" xml:space="preserve">
     <value>Abstract event source must not declare event methods ({0} with ID {1}).</value>
   </data>
