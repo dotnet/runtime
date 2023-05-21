@@ -6182,8 +6182,10 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 {
     GenTreeCall* call = callNode->AsCall();
 
-    const uint8_t candidatesCount = call->GetInlineCandidatesCount();
-
+    // Call might not have an inline candidate info yet (will be set by impMarkInlineCandidateHelper)
+    // so we assume there is always a least one candidate:
+    //
+    const uint8_t candidatesCount = max(1, call->GetInlineCandidatesCount());
     for (uint8_t candidateId = 0; candidateId < candidatesCount; candidateId++)
     {
         // Do the actual evaluation
@@ -6191,9 +6193,16 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
                                                     callInfo, ilOffset);
         if (!success)
         {
-            // TODO: we should not give up if one of the candidates fails to inline while others succeed.
-            // but that requires a bit more logic here (to strip out the failing candidates from the list)
-            //
+            if (candidatesCount > 1)
+            {
+                // TODO: we should not give up if one of the candidates fails to inline while others succeed.
+                // but that requires a bit more logic here (to strip out the failing candidates from the list)
+                //
+                // Also, in that case we no longer can use the GTF_CALL_M_GUARDED_DEVIRT_EXACT trick
+                //
+                JITDUMP("We had multiple inline candidates but have to give up on them since one of them didn't pass"
+                        "inline checks")
+            }
             call->ClearGuardedDevirtualizationCandidate();
             break;
         }
@@ -7638,8 +7647,6 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                                  InlineCandidateInfo**  ppInlineCandidateInfo,
                                  InlineResult*          inlineResult)
 {
-    assert(candidateIndex < call->GetInlineCandidatesCount());
-
     // Either EE or JIT might throw exceptions below.
     // If that happens, just don't inline the method.
     //
