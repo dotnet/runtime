@@ -3003,20 +3003,20 @@ namespace System
                 return true;
             }
 
-            var halfLength = length / 2;
+            var requiredByteCount = length / 2;
 
-            if (destination.Length < halfLength)
+            if (destination.Length < requiredByteCount)
                 goto FalseResult;
 
             if (!HexConverter.TryDecodeFromUtf16(source, destination))
                 goto FalseResult;
 
-            bytesWritten = halfLength;
+            bytesWritten = requiredByteCount;
             return true;
 
-            FalseResult:
-                bytesWritten = 0;
-                return false;
+        FalseResult:
+            bytesWritten = 0;
+            return false;
         }
 
         /// <summary>
@@ -3092,18 +3092,18 @@ namespace System
                 return true;
             }
 
-            int twiceLength = length * 2;
+            int requiredCharCount = length * 2;
 
-            if (destination.Length < twiceLength)
+            if (destination.Length < requiredCharCount)
                 goto FalseResult;
 
             HexConverter.EncodeToUtf16(source, destination);
-            charsWritten = twiceLength;
+            charsWritten = requiredCharCount;
             return true;
 
-            FalseResult:
-                charsWritten = 0;
-                return false;
+        FalseResult:
+            charsWritten = 0;
+            return false;
         }
     }  // class Convert
 }  // namespace
