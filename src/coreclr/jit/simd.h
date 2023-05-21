@@ -724,68 +724,6 @@ void BroadcastConstantToSimd(TSimd* result, TBase arg0)
     }
 }
 
-template <typename TSimdDst, typename TSimdSrc>
-void CopyConstantSimd(TSimdDst* dst, TSimdSrc* src, var_types baseType)
-{
-    switch (baseType)
-    {
-        case TYP_FLOAT:
-        {
-            CopyConstantSimd<TSimdDst, TSimdSrc, float>(dst, src);
-            break;
-        }
-        case TYP_DOUBLE:
-        {
-            CopyConstantSimd<TSimdDst, TSimdSrc, double>(dst, src);
-            break;
-        }
-        case TYP_BYTE:
-        {
-            CopyConstantSimd<TSimdDst, TSimdSrc, int8_t>(dst, src);
-            break;
-        }
-        case TYP_SHORT:
-        {
-            CopyConstantSimd<TSimdDst, TSimdSrc, int16_t>(dst, src);
-            break;
-        }
-        case TYP_INT:
-        {
-            CopyConstantSimd<TSimdDst, TSimdSrc, int32_t>(dst, src);
-            break;
-        }
-        case TYP_LONG:
-        {
-            CopyConstantSimd<TSimdDst, TSimdSrc, int64_t>(dst, src);
-            break;
-        }
-        case TYP_UBYTE:
-        {
-            CopyConstantSimd<TSimdDst, TSimdSrc, uint8_t>(dst, src);
-            break;
-        }
-        case TYP_USHORT:
-        {
-            CopyConstantSimd<TSimdDst, TSimdSrc, uint16_t>(dst, src);
-            break;
-        }
-        case TYP_UINT:
-        {
-            CopyConstantSimd<TSimdDst, TSimdSrc, uint32_t>(dst, src);
-            break;
-        }
-        case TYP_ULONG:
-        {
-            CopyConstantSimd<TSimdDst, TSimdSrc, uint64_t>(dst, src);
-            break;
-        }
-        default:
-        {
-            unreached();
-        }
-    }
-}
-
 template <typename TSimdDst, typename TSimdSrc, typename TBase>
 void CopyConstantSimd(TSimdDst* dst, TSimdSrc* src)
 {
