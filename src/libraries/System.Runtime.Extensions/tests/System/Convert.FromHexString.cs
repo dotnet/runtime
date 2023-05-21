@@ -90,7 +90,7 @@ namespace System.Tests
                 byte[] data = Security.Cryptography.RandomNumberGenerator.GetBytes(i);
                 string hex = Convert.ToHexString(data);
 
-                Span<char> currentBuffer = buffer.Slice(0, i);
+                Span<char> currentBuffer = buffer.Slice(0, i * 2);
                 bool tryHex = Convert.TryToHexString(data, currentBuffer, out int written);
                 Assert.True(tryHex);
                 AssertExtensions.SequenceEqual(hex.AsSpan(), currentBuffer);
