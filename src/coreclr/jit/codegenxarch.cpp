@@ -517,7 +517,13 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             else if (val64.IsZero())
             {
-                emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg);
+                // Use VEX version because it's smaller (for zmm0-zmm15) than EVEX to zero a zmm register and still
+                // zeros the entire register:
+                //
+                //   xorps zmm0, zmm0, zmm0 (6 bytes)
+                //   xorps ymm0, ymm0, ymm0 (4 bytes)
+                //
+                emit->emitIns_SIMD_R_R_R(INS_xorps, EA_32BYTE, targetReg, targetReg, targetReg);
             }
             else
             {
