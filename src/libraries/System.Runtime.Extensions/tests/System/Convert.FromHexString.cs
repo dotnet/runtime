@@ -48,7 +48,7 @@ namespace System.Tests
         public static void InvalidInputString_Null()
         {
             AssertExtensions.Throws<ArgumentNullException>("s", () => Convert.FromHexString(null));
-            Assert.False(Convert.TryFromHexString(null, default, out _));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Convert.TryFromHexString(null, default, out _));
         }
 
         [Theory]
