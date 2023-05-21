@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Exe</OutputType>
-    <TrimMode>none</TrimMode>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="InlineArrayInvalid.cs" />
