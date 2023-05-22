@@ -340,23 +340,29 @@ ds_rt_appcontext_properties_get (dn_vector_ptr_t *props_array)
 	return Configuration::EnumerateKnobs([](const LPCWSTR& name, const LPCWSTR& value, void* context) {
 		dn_vector_ptr_t * props_array = static_cast<dn_vector_ptr_t *>(context);
 
-		const LPCWSTR infix = L"=";
+		const LPCWSTR separator = W("=");
+		size_t name_len = u16_strlen(name);
+		size_t name_size = name_len * sizeof (ep_char16_t); // no null terminator
+		size_t separator_len = u16_strlen(separator);
+		size_t separator_size = separator_len * sizeof (ep_char16_t); // no null terminator
+		size_t value_len = u16_strlen(value);
+		size_t value_size = value_len * sizeof (ep_char16_t); // no null terminator
 
 		// <name>=<value>\0
-		size_t str_len = u16_strlen(name) + u16_strlen(infix) + u16_strlen(value);
-		size_t str_size = (str_len + 1) * sizeof (ep_char16_t);
+		size_t str_size = name_size + separator_size + value_size + sizeof (ep_char16_t); // includes null terminator
 		ep_char16_t *str_entry = reinterpret_cast<ep_char16_t *>(malloc (str_size));
 		if (!str_entry)
 			return E_OUTOFMEMORY;
 
-		swprintf_s (
-			reinterpret_cast<wchar_t *>(str_entry),
-			str_len + 1,
-			L"%s%s%s",
-			name,
-			infix,
-			value);
-		
+		ep_char16_t * dst = str_entry;
+		memcpy(dst, reinterpret_cast<const ep_char16_t *>(name), name_size);
+		dst += name_len;
+		memcpy(dst, reinterpret_cast<const ep_char16_t *>(separator), separator_size);
+		dst += separator_len;
+		memcpy(dst, reinterpret_cast<const ep_char16_t *>(value), value_size);
+		dst += value_len;
+		dst[0] = (ep_char16_t)'\0';
+
 		dn_vector_ptr_push_back (props_array, str_entry);
 
 		return S_OK;
