@@ -239,7 +239,7 @@ namespace System.Reflection.Emit
         [MemberNotNullWhen(true, nameof(open_blocks))]
         private bool InExceptionBlock => open_blocks != null && open_blocks.Count > 0;
 
-        private void make_room(int nbytes)
+        protected override void EnsureCapacity(int nbytes)
         {
             if (code_len + nbytes < code.Length)
                 return;
@@ -248,14 +248,14 @@ namespace System.Reflection.Emit
             code = new_code;
         }
 
-        private void emit_int(int val)
+        protected override void WriteInt(int val)
         {
             BinaryPrimitives.WriteInt32LittleEndian(code.AsSpan(code_len), val);
             code_len += 4;
         }
 
         /* change to pass by ref to avoid copy */
-        private void ll_emit(OpCode opcode)
+        protected override void ILEmit(OpCode opcode)
         {
             /*
              * there is already enough room allocated in code.
@@ -436,12 +436,6 @@ namespace System.Reflection.Emit
         public override void BeginScope()
         { }
 
-        public override LocalBuilder DeclareLocal(Type localType)
-        {
-            return DeclareLocal(localType, false);
-        }
-
-
         public override LocalBuilder DeclareLocal(Type localType, bool pinned)
         {
             ArgumentNullException.ThrowIfNull(localType);
@@ -484,34 +478,24 @@ namespace System.Reflection.Emit
             return new Label(num_labels++);
         }
 
-        public override void Emit(OpCode opcode)
+        protected override void WriteByte(byte arg)
         {
-            make_room(2);
-            ll_emit(opcode);
-        }
-
-        public override void Emit(OpCode opcode, byte arg)
-        {
-            make_room(3);
-            ll_emit(opcode);
             code[code_len++] = arg;
         }
 
         public override void Emit(OpCode opcode, ConstructorInfo con)
         {
             int token = token_gen.GetToken(con, true);
-            make_room(6);
-            ll_emit(opcode);
-            emit_int(token);
+            EnsureCapacity(6);
+            ILEmit(opcode);
+            WriteInt(token);
 
             if (opcode.StackBehaviourPop == StackBehaviour.Varpop)
                 cur_stack -= con.GetParametersCount();
         }
 
-        public override void Emit(OpCode opcode, double arg)
+        protected override void WriteDouble(double arg)
         {
-            make_room(10);
-            ll_emit(opcode);
             BinaryPrimitives.WriteDoubleLittleEndian(code.AsSpan(code_len), arg);
             code_len += 8;
         }
@@ -519,30 +503,19 @@ namespace System.Reflection.Emit
         public override void Emit(OpCode opcode, FieldInfo field)
         {
             int token = token_gen.GetToken(field, true);
-            make_room(6);
-            ll_emit(opcode);
-            emit_int(token);
+            EnsureCapacity(6);
+            ILEmit(opcode);
+            WriteInt(token);
         }
 
-        public override void Emit(OpCode opcode, short arg)
+        protected override void WriteShort(short arg)
         {
-            make_room(4);
-            ll_emit(opcode);
             BinaryPrimitives.WriteInt16LittleEndian(code.AsSpan(code_len), arg);
             code_len += 2;
         }
 
-        public override void Emit(OpCode opcode, int arg)
+        protected override void WriteLong(long arg)
         {
-            make_room(6);
-            ll_emit(opcode);
-            emit_int(arg);
-        }
-
-        public override void Emit(OpCode opcode, long arg)
-        {
-            make_room(10);
-            ll_emit(opcode);
             BinaryPrimitives.WriteInt64LittleEndian(code.AsSpan(code_len), arg);
             code_len += 8;
         }
@@ -550,8 +523,8 @@ namespace System.Reflection.Emit
         public override void Emit(OpCode opcode, Label label)
         {
             int tlen = target_len(opcode);
-            make_room(6);
-            ll_emit(opcode);
+            EnsureCapacity(6);
+            ILEmit(opcode);
             if (cur_stack > labels![label.m_label].maxStack)
                 labels[label.m_label].maxStack = cur_stack;
 
@@ -579,14 +552,14 @@ namespace System.Reflection.Emit
 
             /* opcode needs to be switch. */
             int count = labels.Length;
-            make_room(6 + count * 4);
-            ll_emit(opcode);
+            EnsureCapacity(6 + count * 4);
+            ILEmit(opcode);
 
             for (int i = 0; i < count; ++i)
                 if (cur_stack > this.labels![labels[i].m_label].maxStack)
                     this.labels[labels[i].m_label].maxStack = cur_stack;
 
-            emit_int(count);
+            WriteInt(count);
             if (fixups == null)
             {
                 fixups = new LabelFixup[defaultFixupSize + count];
@@ -635,7 +608,7 @@ namespace System.Reflection.Emit
             bool load_addr = false;
             bool is_store = false;
             bool is_load = false;
-            make_room(6);
+            EnsureCapacity(6);
 
             /* inline the code from ll_emit () to optimize il code size */
             if (opcode.StackBehaviourPop == StackBehaviour.Pop1)
@@ -708,7 +681,7 @@ namespace System.Reflection.Emit
                 }
                 else
                 {
-                    ll_emit(opcode);
+                    ILEmit(opcode);
                 }
             }
         }
@@ -722,9 +695,9 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_InvalidOpCodeOnDynamicMethod);
 
             int token = token_gen.GetToken(meth, true);
-            make_room(6);
-            ll_emit(opcode);
-            emit_int(token);
+            EnsureCapacity(6);
+            ILEmit(opcode);
+            WriteInt(token);
             if (meth.ReturnType != typeof(void))
                 cur_stack++;
 
@@ -734,9 +707,9 @@ namespace System.Reflection.Emit
 
         private void Emit(OpCode opcode, MethodInfo method, int token)
         {
-            make_room(6);
-            ll_emit(opcode);
-            emit_int(token);
+            EnsureCapacity(6);
+            ILEmit(opcode);
+            WriteInt(token);
             if (method.ReturnType != typeof(void))
                 cur_stack++;
 
@@ -747,15 +720,13 @@ namespace System.Reflection.Emit
         public override void Emit(OpCode opcode, SignatureHelper signature)
         {
             int token = token_gen.GetToken(signature);
-            make_room(6);
-            ll_emit(opcode);
-            emit_int(token);
+            EnsureCapacity(6);
+            ILEmit(opcode);
+            WriteInt(token);
         }
 
-        public override void Emit(OpCode opcode, float arg)
+        protected override void WriteSingle(float arg)
         {
-            make_room(6);
-            ll_emit(opcode);
             BinaryPrimitives.WriteSingleLittleEndian(code.AsSpan(code_len), arg);
             code_len += 4;
         }
@@ -763,17 +734,17 @@ namespace System.Reflection.Emit
         public override void Emit(OpCode opcode, string str)
         {
             int token = token_gen.GetToken(str);
-            make_room(6);
-            ll_emit(opcode);
-            emit_int(token);
+            EnsureCapacity(6);
+            ILEmit(opcode);
+            WriteInt(token);
         }
 
         public override void Emit(OpCode opcode, Type cls)
         {
-            make_room(6);
-            ll_emit(opcode);
+            EnsureCapacity(6);
+            ILEmit(opcode);
             int token = token_gen.GetToken(cls!, opcode != OpCodes.Ldtoken);
-            emit_int(token);
+            WriteInt(token);
         }
 
         // FIXME: vararg methods are not supported
@@ -816,45 +787,6 @@ namespace System.Reflection.Emit
             Emit(opcode, helper);
         }
 
-        private const string ConsoleTypeFullName = "System.Console, System.Console";
-
-        public override void EmitWriteLine(FieldInfo fld)
-        {
-            ArgumentNullException.ThrowIfNull(fld);
-
-            // The MS implementation does not check for valuetypes here but it
-            // should. Also, it should check that if the field is not static,
-            // then it is a member of this type.
-            if (fld.IsStatic)
-                Emit(OpCodes.Ldsfld, fld);
-            else
-            {
-                Emit(OpCodes.Ldarg_0);
-                Emit(OpCodes.Ldfld, fld);
-            }
-            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
-            Emit(OpCodes.Call, consoleType.GetMethod("WriteLine", new Type[1] { fld.FieldType })!);
-        }
-
-        public override void EmitWriteLine(LocalBuilder localBuilder)
-        {
-            ArgumentNullException.ThrowIfNull(localBuilder);
-            if (localBuilder.LocalType is TypeBuilder)
-                throw new NotSupportedException(SR.NotSupported_OutputStreamUsingTypeBuilder);
-            // The MS implementation does not check for valuetypes here but it
-            // should.
-            Emit(OpCodes.Ldloc, localBuilder);
-            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
-            Emit(OpCodes.Call, consoleType.GetMethod("WriteLine", new Type[1] { localBuilder.LocalType })!);
-        }
-
-        public override void EmitWriteLine(string value)
-        {
-            Emit(OpCodes.Ldstr, value);
-            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
-            Emit(OpCodes.Call, consoleType.GetMethod("WriteLine", new Type[1] { typeof(string) })!);
-        }
-
         public override void EndExceptionBlock()
         {
             if (!InExceptionBlock)
@@ -885,18 +817,6 @@ namespace System.Reflection.Emit
                 cur_stack = labels[loc.m_label].maxStack;
         }
 
-        public override void ThrowException([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type excType)
-        {
-            ArgumentNullException.ThrowIfNull(excType);
-            if (!((excType == typeof(Exception)) ||
-                   excType.IsSubclassOf(typeof(Exception))))
-                throw new ArgumentException(SR.Argument_NotExceptionType, nameof(excType));
-            ConstructorInfo? ctor = excType.GetConstructor(Type.EmptyTypes);
-            if (ctor == null)
-                throw new ArgumentException(SR.Arg_NoDefCTorWithoutTypeName, nameof(excType));
-            Emit(OpCodes.Newobj, ctor);
-            Emit(OpCodes.Throw);
-        }
 
         // FIXME: "Not implemented"
         public override void UsingNamespace(string usingNamespace)
@@ -920,7 +840,7 @@ namespace System.Reflection.Emit
                 {
                     int old_cl = code_len;
                     code_len = fixups[i].pos;
-                    emit_int(diff);
+                    WriteInt(diff);
                     code_len = old_cl;
                 }
             }

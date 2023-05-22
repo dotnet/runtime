@@ -115,13 +115,12 @@ namespace System.Reflection.Emit
             m_RelocFixupList[m_RelocFixupCount++] = m_length;
         }
 
-        internal void InternalEmit(OpCode opcode)
+        protected override void ILEmit(OpCode opcode)
         {
             short opcodeValue = opcode.Value;
             if (opcode.Size != 1)
             {
-                BinaryPrimitives.WriteInt16BigEndian(m_ILStream.AsSpan(m_length), opcodeValue);
-                m_length += 2;
+                WriteShort(opcodeValue);
             }
             else
             {
@@ -129,6 +128,12 @@ namespace System.Reflection.Emit
             }
 
             UpdateStackSize(opcode, opcode.StackChange());
+        }
+
+        protected override void WriteShort(short arg)
+        {
+            BinaryPrimitives.WriteInt16BigEndian(m_ILStream.AsSpan(m_length), arg);
+            m_length += 2;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -177,18 +182,7 @@ namespace System.Reflection.Emit
             Type[]? parameterTypes,
             Type[]? optionalParameterTypes)
         {
-            return GetMemberRefSignature(call, returnType, parameterTypes, null, null, optionalParameterTypes);
-        }
-        internal virtual SignatureHelper GetMemberRefSignature(CallingConventions call, Type? returnType,
-            Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers, Type[]? optionalParameterTypes)
-        {
-            return GetMemberRefSignature(call, returnType, parameterTypes, requiredCustomModifiers, optionalCustomModifiers, optionalParameterTypes, 0);
-        }
-
-        private SignatureHelper GetMemberRefSignature(CallingConventions call, Type? returnType,
-            Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers, Type[]? optionalParameterTypes, int cGenericParameters)
-        {
-            return ((RuntimeModuleBuilder)m_methodBuilder.Module).GetMemberRefSignature(call, returnType, parameterTypes, requiredCustomModifiers, optionalCustomModifiers, optionalParameterTypes, cGenericParameters);
+            return ((RuntimeModuleBuilder)m_methodBuilder.Module).GetMemberRefSignature(call, returnType, parameterTypes, null, null, optionalParameterTypes, 0);
         }
 
         internal byte[]? BakeByteArray()
@@ -258,7 +252,7 @@ namespace System.Reflection.Emit
             return temp;
         }
 
-        internal void EnsureCapacity(int size)
+        protected override void EnsureCapacity(int size)
         {
             // Guarantees an array capable of holding at least size elements.
             if (m_length + size >= m_ILStream.Length)
@@ -275,7 +269,7 @@ namespace System.Reflection.Emit
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void PutInteger4(int value)
+        protected override void WriteInt(int value)
         {
             BinaryPrimitives.WriteInt32LittleEndian(m_ILStream.AsSpan(m_length), value);
             m_length += 4;
@@ -378,123 +372,17 @@ namespace System.Reflection.Emit
             Array.Copy(m_RelocFixupList!, narrowTokens, m_RelocFixupCount);
             return narrowTokens;
         }
+
+        protected override void WriteByte(byte arg)
+        {
+            m_ILStream[m_length++] = arg;
+        }
+
         #endregion
 
         #region Public Members
 
         #region Emit
-        public override void Emit(OpCode opcode)
-        {
-            EnsureCapacity(3);
-            InternalEmit(opcode);
-        }
-
-        public override void Emit(OpCode opcode, byte arg)
-        {
-            EnsureCapacity(4);
-            InternalEmit(opcode);
-            m_ILStream[m_length++] = arg;
-        }
-
-        public override void Emit(OpCode opcode, short arg)
-        {
-            // Puts opcode onto the stream of instructions followed by arg
-            EnsureCapacity(5);
-            InternalEmit(opcode);
-            BinaryPrimitives.WriteInt16LittleEndian(m_ILStream.AsSpan(m_length), arg);
-            m_length += 2;
-        }
-
-        public override void Emit(OpCode opcode, int arg)
-        {
-            // Special-case several opcodes that have shorter variants for common values.
-            if (opcode.Equals(OpCodes.Ldc_I4))
-            {
-                if (arg >= -1 && arg <= 8)
-                {
-                    opcode = arg switch
-                    {
-                        -1 => OpCodes.Ldc_I4_M1,
-                        0 => OpCodes.Ldc_I4_0,
-                        1 => OpCodes.Ldc_I4_1,
-                        2 => OpCodes.Ldc_I4_2,
-                        3 => OpCodes.Ldc_I4_3,
-                        4 => OpCodes.Ldc_I4_4,
-                        5 => OpCodes.Ldc_I4_5,
-                        6 => OpCodes.Ldc_I4_6,
-                        7 => OpCodes.Ldc_I4_7,
-                        _ => OpCodes.Ldc_I4_8,
-                    };
-                    Emit(opcode);
-                    return;
-                }
-
-                if (arg >= -128 && arg <= 127)
-                {
-                    Emit(OpCodes.Ldc_I4_S, (sbyte)arg);
-                    return;
-                }
-            }
-            else if (opcode.Equals(OpCodes.Ldarg))
-            {
-                if ((uint)arg <= 3)
-                {
-                    Emit(arg switch
-                    {
-                        0 => OpCodes.Ldarg_0,
-                        1 => OpCodes.Ldarg_1,
-                        2 => OpCodes.Ldarg_2,
-                        _ => OpCodes.Ldarg_3,
-                    });
-                    return;
-                }
-
-                if ((uint)arg <= byte.MaxValue)
-                {
-                    Emit(OpCodes.Ldarg_S, (byte)arg);
-                    return;
-                }
-
-                if ((uint)arg <= ushort.MaxValue) // this will be true except on misuse of the opcode
-                {
-                    Emit(OpCodes.Ldarg, (short)arg);
-                    return;
-                }
-            }
-            else if (opcode.Equals(OpCodes.Ldarga))
-            {
-                if ((uint)arg <= byte.MaxValue)
-                {
-                    Emit(OpCodes.Ldarga_S, (byte)arg);
-                    return;
-                }
-
-                if ((uint)arg <= ushort.MaxValue) // this will be true except on misuse of the opcode
-                {
-                    Emit(OpCodes.Ldarga, (short)arg);
-                    return;
-                }
-            }
-            else if (opcode.Equals(OpCodes.Starg))
-            {
-                if ((uint)arg <= byte.MaxValue)
-                {
-                    Emit(OpCodes.Starg_S, (byte)arg);
-                    return;
-                }
-
-                if ((uint)arg <= ushort.MaxValue) // this will be true except on misuse of the opcode
-                {
-                    Emit(OpCodes.Starg, (short)arg);
-                    return;
-                }
-            }
-
-            // For everything else, put the opcode followed by the arg onto the stream of instructions.
-            EnsureCapacity(7);
-            InternalEmit(opcode);
-            PutInteger4(arg);
-        }
 
         public override void Emit(OpCode opcode, MethodInfo meth)
         {
@@ -514,11 +402,11 @@ namespace System.Reflection.Emit
                 int tk = GetMethodToken(meth, null, useMethodDef);
 
                 EnsureCapacity(7);
-                InternalEmit(opcode);
+                ILEmit(opcode);
 
                 UpdateStackSize(opcode, 0);
                 RecordTokenFixup();
-                PutInteger4(tk);
+                WriteInt(tk);
             }
         }
 
@@ -561,7 +449,7 @@ namespace System.Reflection.Emit
             UpdateStackSize(OpCodes.Calli, stackchange);
 
             RecordTokenFixup();
-            PutInteger4(modBuilder.GetSignatureMetadataToken(sig));
+            WriteInt(modBuilder.GetSignatureMetadataToken(sig));
         }
 
         public override void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes)
@@ -604,7 +492,7 @@ namespace System.Reflection.Emit
             EnsureCapacity(7);
             Emit(OpCodes.Calli);
             RecordTokenFixup();
-            PutInteger4(modBuilder.GetSignatureMetadataToken(sig));
+            WriteInt(modBuilder.GetSignatureMetadataToken(sig));
         }
 
         public override void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
@@ -618,7 +506,7 @@ namespace System.Reflection.Emit
             int tk = GetMethodToken(methodInfo, optionalParameterTypes, false);
 
             EnsureCapacity(7);
-            InternalEmit(opcode);
+            ILEmit(opcode);
 
             // Push the return value if there is one.
             if (methodInfo.ReturnType != typeof(void))
@@ -638,7 +526,7 @@ namespace System.Reflection.Emit
             UpdateStackSize(opcode, stackchange);
 
             RecordTokenFixup();
-            PutInteger4(tk);
+            WriteInt(tk);
         }
 
         public override void Emit(OpCode opcode, SignatureHelper signature)
@@ -652,7 +540,7 @@ namespace System.Reflection.Emit
             int tempVal = sig;
 
             EnsureCapacity(7);
-            InternalEmit(opcode);
+            ILEmit(opcode);
 
             // The only IL instruction that has VarPop behaviour, that takes a
             // Signature token as a parameter is calli.  Pop the parameters and
@@ -671,7 +559,7 @@ namespace System.Reflection.Emit
             }
 
             RecordTokenFixup();
-            PutInteger4(tempVal);
+            WriteInt(tempVal);
         }
 
         public override void Emit(OpCode opcode, ConstructorInfo con)
@@ -684,7 +572,7 @@ namespace System.Reflection.Emit
             int tk = GetMethodToken(con, null, true);
 
             EnsureCapacity(7);
-            InternalEmit(opcode);
+            ILEmit(opcode);
 
             // Make a conservative estimate by assuming a return type and no
             // this parameter.
@@ -711,7 +599,7 @@ namespace System.Reflection.Emit
             UpdateStackSize(opcode, stackchange);
 
             RecordTokenFixup();
-            PutInteger4(tk);
+            WriteInt(tk);
         }
 
         public override void Emit(OpCode opcode, Type cls)
@@ -725,31 +613,25 @@ namespace System.Reflection.Emit
             int tempVal = modBuilder.GetTypeTokenInternal(cls!, getGenericDefinition);
 
             EnsureCapacity(7);
-            InternalEmit(opcode);
+            ILEmit(opcode);
             RecordTokenFixup();
-            PutInteger4(tempVal);
+            WriteInt(tempVal);
         }
 
-        public override void Emit(OpCode opcode, long arg)
+        protected override void WriteLong(long arg)
         {
-            EnsureCapacity(11);
-            InternalEmit(opcode);
             BinaryPrimitives.WriteInt64LittleEndian(m_ILStream.AsSpan(m_length), arg);
             m_length += 8;
         }
 
-        public override void Emit(OpCode opcode, float arg)
+        protected override void WriteSingle(float arg)
         {
-            EnsureCapacity(7);
-            InternalEmit(opcode);
             BinaryPrimitives.WriteInt32LittleEndian(m_ILStream.AsSpan(m_length), BitConverter.SingleToInt32Bits(arg));
             m_length += 4;
         }
 
-        public override void Emit(OpCode opcode, double arg)
+        protected override void WriteDouble(double arg)
         {
-            EnsureCapacity(11);
-            InternalEmit(opcode);
             BinaryPrimitives.WriteInt64LittleEndian(m_ILStream.AsSpan(m_length), BitConverter.DoubleToInt64Bits(arg));
             m_length += 8;
         }
@@ -768,7 +650,7 @@ namespace System.Reflection.Emit
 
             EnsureCapacity(7);
 
-            InternalEmit(opcode);
+            ILEmit(opcode);
             if (OpCodes.TakesSingleByteArgument(opcode))
             {
                 AddFixup(label, m_length++, 1);
@@ -793,8 +675,8 @@ namespace System.Reflection.Emit
             int count = labels.Length;
 
             EnsureCapacity(count * 4 + 7);
-            InternalEmit(opcode);
-            PutInteger4(count);
+            ILEmit(opcode);
+            WriteInt(count);
             for (remaining = count * 4, i = 0; remaining > 0; remaining -= 4, i++)
             {
                 AddFixup(labels[i], m_length, remaining);
@@ -807,9 +689,9 @@ namespace System.Reflection.Emit
             ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
             int tempVal = modBuilder.GetFieldMetadataToken(field);
             EnsureCapacity(7);
-            InternalEmit(opcode);
+            ILEmit(opcode);
             RecordTokenFixup();
-            PutInteger4(tempVal);
+            WriteInt(tempVal);
         }
 
         public override void Emit(OpCode opcode, string str)
@@ -821,8 +703,8 @@ namespace System.Reflection.Emit
             ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
             int tempVal = modBuilder.GetStringMetadataToken(str);
             EnsureCapacity(7);
-            InternalEmit(opcode);
-            PutInteger4(tempVal);
+            ILEmit(opcode);
+            WriteInt(tempVal);
         }
 
         public override void Emit(OpCode opcode, LocalBuilder local)
@@ -887,7 +769,7 @@ namespace System.Reflection.Emit
             }
 
             EnsureCapacity(7);
-            InternalEmit(opcode);
+            ILEmit(opcode);
 
             if (opcode.OperandType == OperandType.InlineNone)
                 return;
@@ -1171,118 +1053,7 @@ namespace System.Reflection.Emit
 
         #endregion
 
-        #region IL Macros
-        public override void ThrowException([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type excType)
-        {
-            // Emits the il to throw an exception
-
-            ArgumentNullException.ThrowIfNull(excType);
-
-            if (!excType.IsSubclassOf(typeof(Exception)) && excType != typeof(Exception))
-            {
-                throw new ArgumentException(SR.Argument_NotExceptionType, nameof(excType));
-            }
-            ConstructorInfo? con = excType.GetConstructor(Type.EmptyTypes);
-            if (con == null)
-            {
-                throw new ArgumentException(SR.Arg_NoDefCTorWithoutTypeName, nameof(excType));
-            }
-            Emit(OpCodes.Newobj, con);
-            Emit(OpCodes.Throw);
-        }
-
-        private const string ConsoleTypeFullName = "System.Console, System.Console";
-
-        public override void EmitWriteLine(string value)
-        {
-            // Emits the IL to call Console.WriteLine with a string.
-
-            Emit(OpCodes.Ldstr, value);
-            Type[] parameterTypes = new Type[1];
-            parameterTypes[0] = typeof(string);
-            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
-            MethodInfo mi = consoleType.GetMethod("WriteLine", parameterTypes)!;
-            Emit(OpCodes.Call, mi);
-        }
-
-        public override void EmitWriteLine(LocalBuilder localBuilder)
-        {
-            // Emits the IL necessary to call WriteLine with lcl.  It is
-            // an error to call EmitWriteLine with a lcl which is not of
-            // one of the types for which Console.WriteLine implements overloads. (e.g.
-            // we do *not* call ToString on the locals.
-
-            if (m_methodBuilder == null)
-            {
-                throw new ArgumentException(SR.InvalidOperation_BadILGeneratorUsage);
-            }
-
-            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
-            MethodInfo prop = consoleType.GetMethod("get_Out")!;
-            Emit(OpCodes.Call, prop);
-            Emit(OpCodes.Ldloc, localBuilder);
-            Type[] parameterTypes = new Type[1];
-            Type cls = localBuilder.LocalType;
-            if (cls is TypeBuilder || cls is EnumBuilder)
-            {
-                throw new ArgumentException(SR.NotSupported_OutputStreamUsingTypeBuilder);
-            }
-            parameterTypes[0] = cls;
-            MethodInfo? mi = typeof(System.IO.TextWriter).GetMethod("WriteLine", parameterTypes);
-            if (mi == null)
-            {
-                throw new ArgumentException(SR.Argument_EmitWriteLineType, nameof(localBuilder));
-            }
-
-            Emit(OpCodes.Callvirt, mi);
-        }
-
-        public override void EmitWriteLine(FieldInfo fld)
-        {
-            ArgumentNullException.ThrowIfNull(fld);
-
-            // Emits the IL necessary to call WriteLine with fld.  It is
-            // an error to call EmitWriteLine with a fld which is not of
-            // one of the types for which Console.WriteLine implements overloads. (e.g.
-            // we do *not* call ToString on the fields.
-
-            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
-            MethodInfo prop = consoleType.GetMethod("get_Out")!;
-            Emit(OpCodes.Call, prop);
-
-            if ((fld.Attributes & FieldAttributes.Static) != 0)
-            {
-                Emit(OpCodes.Ldsfld, fld);
-            }
-            else
-            {
-                Emit(OpCodes.Ldarg_0); // Load the this ref.
-                Emit(OpCodes.Ldfld, fld);
-            }
-            Type[] parameterTypes = new Type[1];
-            Type cls = fld.FieldType;
-            if (cls is TypeBuilder || cls is EnumBuilder)
-            {
-                throw new NotSupportedException(SR.NotSupported_OutputStreamUsingTypeBuilder);
-            }
-            parameterTypes[0] = cls;
-            MethodInfo? mi = typeof(System.IO.TextWriter).GetMethod("WriteLine", parameterTypes);
-            if (mi == null)
-            {
-                throw new ArgumentException(SR.Argument_EmitWriteLineType, nameof(fld));
-            }
-
-            Emit(OpCodes.Callvirt, mi);
-        }
-
-        #endregion
-
         #region Debug API
-        public override LocalBuilder DeclareLocal(Type localType)
-        {
-            return DeclareLocal(localType, false);
-        }
-
         public override LocalBuilder DeclareLocal(Type localType, bool pinned)
         {
             // Declare a local of type "local". The current active lexical scope

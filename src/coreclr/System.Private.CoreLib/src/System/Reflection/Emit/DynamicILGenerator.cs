@@ -85,7 +85,7 @@ namespace System.Reflection.Emit
             }
 
             EnsureCapacity(7);
-            InternalEmit(opcode);
+            ILEmit(opcode);
 
             if (opcode.StackBehaviourPush == StackBehaviour.Varpush
                 && meth.ReturnType != typeof(void))
@@ -105,8 +105,7 @@ namespace System.Reflection.Emit
             }
 
             UpdateStackSize(opcode, stackchange);
-
-            PutInteger4(token);
+            WriteInt(token);
         }
 
         public override void Emit(OpCode opcode, ConstructorInfo con)
@@ -127,12 +126,11 @@ namespace System.Reflection.Emit
                 token = GetTokenFor(rtConstructor);
 
             EnsureCapacity(7);
-            InternalEmit(opcode);
+            ILEmit(opcode);
 
             // need to sort out the stack size story
             UpdateStackSize(opcode, 1);
-
-            PutInteger4(token);
+            WriteInt(token);
         }
 
         public override void Emit(OpCode opcode, Type type)
@@ -146,8 +144,8 @@ namespace System.Reflection.Emit
 
             int token = GetTokenFor(rtType);
             EnsureCapacity(7);
-            InternalEmit(opcode);
-            PutInteger4(token);
+            ILEmit(opcode);
+            WriteInt(token);
         }
 
         public override void Emit(OpCode opcode, FieldInfo field)
@@ -165,8 +163,8 @@ namespace System.Reflection.Emit
                 token = GetTokenFor(runtimeField, runtimeField.GetRuntimeType());
 
             EnsureCapacity(7);
-            InternalEmit(opcode);
-            PutInteger4(token);
+            ILEmit(opcode);
+            WriteInt(token);
         }
 
         public override void Emit(OpCode opcode, string str)
@@ -175,8 +173,8 @@ namespace System.Reflection.Emit
 
             int tempVal = GetTokenForString(str);
             EnsureCapacity(7);
-            InternalEmit(opcode);
-            PutInteger4(tempVal);
+            ILEmit(opcode);
+            WriteInt(tempVal);
         }
 
         //
@@ -223,7 +221,7 @@ namespace System.Reflection.Emit
             UpdateStackSize(OpCodes.Calli, stackchange);
 
             int token = GetTokenForSig(sig.GetSignature(true));
-            PutInteger4(token);
+            WriteInt(token);
         }
 
         public override void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes)
@@ -251,7 +249,7 @@ namespace System.Reflection.Emit
             Emit(OpCodes.Calli);
 
             int token = GetTokenForSig(sig.GetSignature(true));
-            PutInteger4(token);
+            WriteInt(token);
         }
 
         public override void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
@@ -273,7 +271,7 @@ namespace System.Reflection.Emit
             tk = GetMemberRefToken(methodInfo, optionalParameterTypes);
 
             EnsureCapacity(7);
-            InternalEmit(opcode);
+            ILEmit(opcode);
 
             // Push the return value if there is one.
             if (methodInfo.ReturnType != typeof(void))
@@ -289,7 +287,7 @@ namespace System.Reflection.Emit
                 stackchange -= optionalParameterTypes.Length;
             UpdateStackSize(opcode, stackchange);
 
-            PutInteger4(tk);
+            WriteInt(tk);
         }
 
         public override void Emit(OpCode opcode, SignatureHelper signature)
@@ -298,7 +296,7 @@ namespace System.Reflection.Emit
 
             int stackchange = 0;
             EnsureCapacity(7);
-            InternalEmit(opcode);
+            ILEmit(opcode);
 
             // The only IL instruction that has VarPop behaviour, that takes a
             // Signature token as a parameter is calli.  Pop the parameters and
@@ -317,7 +315,7 @@ namespace System.Reflection.Emit
             }
 
             int token = GetTokenForSig(signature.GetSignature(true));
-            PutInteger4(token);
+            WriteInt(token);
         }
 
         //
