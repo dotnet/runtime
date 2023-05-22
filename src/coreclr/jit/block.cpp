@@ -69,7 +69,10 @@ unsigned SsaStressHashHelper()
 #endif
 
 EHSuccessorIterPosition::EHSuccessorIterPosition(Compiler* comp, BasicBlock* block)
-    : m_remainingRegSuccs(block->NumSucc(comp)), m_curRegSucc(nullptr), m_curTry(comp->ehGetBlockExnFlowDsc(block))
+    : m_remainingRegSuccs(block->NumSucc(comp))
+    , m_numRegSuccs(m_remainingRegSuccs)
+    , m_curRegSucc(nullptr)
+    , m_curTry(comp->ehGetBlockExnFlowDsc(block))
 {
     // If "block" is a "leave helper" block (the empty BBJ_ALWAYS block that pairs with a
     // preceding BBJ_CALLFINALLY block to implement a "leave" IL instruction), then no exceptions
@@ -96,8 +99,8 @@ void EHSuccessorIterPosition::FindNextRegSuccTry(Compiler* comp, BasicBlock* blo
     // Must now consider the next regular successor, if any.
     while (m_remainingRegSuccs > 0)
     {
+        m_curRegSucc = block->GetSucc(m_numRegSuccs - m_remainingRegSuccs, comp);
         m_remainingRegSuccs--;
-        m_curRegSucc = block->GetSucc(m_remainingRegSuccs, comp);
         if (comp->bbIsTryBeg(m_curRegSucc))
         {
             assert(m_curRegSucc->hasTryIndex()); // Since it is a try begin.
