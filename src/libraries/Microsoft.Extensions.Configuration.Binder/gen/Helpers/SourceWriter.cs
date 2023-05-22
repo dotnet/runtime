@@ -11,12 +11,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     internal sealed class SourceWriter
     {
         private readonly StringBuilder _sb = new();
-        private int _indentationLevel;
-
-        public int Length => _sb.Length;
-        public int IndentationLevel => _indentationLevel;
-
         private static readonly char[] s_newLine = Environment.NewLine.ToCharArray();
+
+        public int IndentationLevel;
 
         public void WriteBlockStart(string? declaration = null)
         {
@@ -25,19 +22,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 WriteLine(declaration);
             }
             WriteLine("{");
-            _indentationLevel++;
+            IndentationLevel++;
         }
 
         public void WriteBlockEnd(string? extra = null)
         {
-            _indentationLevel--;
-            Debug.Assert(_indentationLevel > -1);
+            IndentationLevel--;
+            Debug.Assert(IndentationLevel > -1);
             WriteLine($"}}{extra}");
         }
 
         public void WriteLine(string source)
         {
-            _sb.Append(' ', 4 * _indentationLevel);
+            _sb.Append(' ', 4 * IndentationLevel);
             _sb.AppendLine(source);
         }
 
@@ -74,7 +71,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public SourceText ToSourceText()
         {
-            Debug.Assert(_indentationLevel == 0 && _sb.Length > 0);
+            Debug.Assert(IndentationLevel == 0 && _sb.Length > 0);
             return SourceText.From(_sb.ToString(), Encoding.UTF8);
         }
 
@@ -111,7 +108,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         private unsafe void WriteLine(ReadOnlySpan<char> source)
         {
-            _sb.Append(' ', 4 * _indentationLevel);
+            _sb.Append(' ', 4 * IndentationLevel);
             fixed (char* ptr = source)
             {
                 _sb.Append(ptr, source.Length);

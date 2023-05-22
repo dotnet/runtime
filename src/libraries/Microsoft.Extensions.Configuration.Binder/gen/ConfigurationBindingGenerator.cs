@@ -31,13 +31,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         ? new CompilationData((CSharpCompilation)compilation)
                         : null);
 
-            IncrementalValuesProvider<BinderInvocationOperation> inputCalls = context.SyntaxProvider
+            IncrementalValuesProvider<BinderInvocation> inputCalls = context.SyntaxProvider
                 .CreateSyntaxProvider(
                     (node, _) => node is InvocationExpressionSyntax invocation,
-                    BinderInvocationOperation.Create)
+                    BinderInvocation.Create)
                 .Where(operation => operation is not null);
 
-            IncrementalValueProvider<(CompilationData?, ImmutableArray<BinderInvocationOperation>)> inputData = compilationData.Combine(inputCalls.Collect());
+            IncrementalValueProvider<(CompilationData?, ImmutableArray<BinderInvocation>)> inputData = compilationData.Combine(inputCalls.Collect());
 
             context.RegisterSourceOutput(inputData, (spc, source) => Execute(source.Item1, source.Item2, spc));
         }
@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         /// <summary>
         /// Generates source code to optimize binding with ConfigurationBinder.
         /// </summary>
-        private static void Execute(CompilationData compilationData, ImmutableArray<BinderInvocationOperation> inputCalls, SourceProductionContext context)
+        private static void Execute(CompilationData compilationData, ImmutableArray<BinderInvocation> inputCalls, SourceProductionContext context)
         {
             if (inputCalls.IsDefaultOrEmpty)
             {
@@ -58,11 +58,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return;
             }
 
-            Parser parser = new(context, compilationData.TypeSymbols!);
-            SourceGenerationSpec? spec = parser.GetSourceGenerationSpec(inputCalls);
-            if (spec is not null)
+            Parser parser = new(context, compilationData.TypeSymbols!, inputCalls);
+            SourceGenSpec? spec = parser.GetSourceGenerationSpec();
+
+            if (spec?.HasRootMethods() is true)
             {
-                Emitter emitter = new(context, spec);
+                Emitter emitter = new(context, spec!);
                 emitter.Emit();
             }
         }
