@@ -12,7 +12,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Microsoft.Interop
 {
-    public static class IncrementalGeneratorInitializationContextExtensions
+    public static partial class IncrementalGeneratorInitializationContextExtensions
     {
         public static IncrementalValueProvider<StubEnvironment> CreateStubEnvironmentProvider(this IncrementalGeneratorInitializationContext context)
         {
