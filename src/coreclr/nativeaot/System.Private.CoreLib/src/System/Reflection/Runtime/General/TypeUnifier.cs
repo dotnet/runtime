@@ -70,7 +70,7 @@ namespace System.Reflection.Runtime.General
                 && !(elementType is RuntimeCLSIDTypeInfo)
 #endif
                 )
-                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingArrayTypeException(elementType, isMultiDim: false, 1);
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(arrayType);
 
             return arrayType;
         }
@@ -109,7 +109,7 @@ namespace System.Reflection.Runtime.General
                         atLeastOneOpenType = true;
                 }
                 if (!atLeastOneOpenType)
-                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingConstructedGenericTypeException(genericType.GetGenericTypeDefinition(), genericTypeArguments.CloneTypeArray());
+                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(genericType);
             }
 
             return genericType;

@@ -269,15 +269,6 @@ CONFIG_INTEGER(RichDebugInfo, W("RichDebugInfo"), 0) // If 1, keep rich debug in
 CONFIG_STRING(WriteRichDebugInfoFile, W("WriteRichDebugInfoFile")) // Write rich debug info in JSON format to this file
 #endif
 
-CONFIG_INTEGER(JitEarlyExpandMDArrays, W("JitEarlyExpandMDArrays"), 1) // Enable early expansion of multi-dimensional
-                                                                       // array access
-
-#ifdef DEBUG
-CONFIG_METHODSET(JitEarlyExpandMDArraysFilter, W("JitEarlyExpandMDArraysFilter")) // Filter functions with early
-                                                                                  // expansion of multi-dimensional
-                                                                                  // array access
-#endif
-
 #if FEATURE_LOOP_ALIGN
 CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 1) // If set, align inner loops
 #else
@@ -306,10 +297,18 @@ CONFIG_INTEGER(JitStressEvexEncoding, W("JitStressEvexEncoding"), 0) // Enable E
 
 // clang-format off
 
+CONFIG_INTEGER(PreferredVectorBitWidth,     W("PreferredVectorBitWidth"),   0) // The preferred width, in bits, to use for any implicit vectorization emitted. A value less than 128 is treated as the system default.
+
 //
 // Hardware Intrinsic ISAs; keep in sync with clrconfigvalues.h
 //
-CONFIG_INTEGER(EnableHWIntrinsic,  W("EnableHWIntrinsic"),  1) // Allows Base+ hardware intrinsics to be disabled
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+//TODO: should implement LoongArch64's features.
+//TODO-RISCV64-CQ: should implement RISCV64's features.
+CONFIG_INTEGER(EnableHWIntrinsic,           W("EnableHWIntrinsic"),         0) // Allows Base+ hardware intrinsics to be disabled
+#else
+CONFIG_INTEGER(EnableHWIntrinsic,           W("EnableHWIntrinsic"),         1) // Allows Base+ hardware intrinsics to be disabled
+#endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 CONFIG_INTEGER(EnableAES,                   W("EnableAES"),                 1) // Allows AES+ hardware intrinsics to be disabled

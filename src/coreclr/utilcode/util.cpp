@@ -182,7 +182,7 @@ namespace
         if (phmodDll != nullptr)
             *phmodDll = nullptr;
 
-        bool fIsDllPathPrefix = (wszDllPath != nullptr) && (wcslen(wszDllPath) > 0) && (wszDllPath[wcslen(wszDllPath) - 1] == W('\\'));
+        bool fIsDllPathPrefix = (wszDllPath != nullptr) && (u16_strlen(wszDllPath) > 0) && (wszDllPath[u16_strlen(wszDllPath) - 1] == W('\\'));
 
         // - An empty string will be treated as NULL.
         // - A string ending will a backslash will be treated as a prefix for where to look for the DLL
@@ -2764,7 +2764,7 @@ namespace Reg
                 // terminating NULL is not a legitimate scenario for REG_SZ - this must
                 // be done using REG_MULTI_SZ - however this was tolerated in the
                 // past and so it would be a breaking change to stop doing so.
-                _ASSERTE(wcslen(wszValueBuf) <= (size / sizeof(WCHAR)) - 1);
+                _ASSERTE(u16_strlen(wszValueBuf) <= (size / sizeof(WCHAR)) - 1);
                 ssValue.CloseBuffer((COUNT_T)wcsnlen(wszValueBuf, (size_t)size));
             }
             else

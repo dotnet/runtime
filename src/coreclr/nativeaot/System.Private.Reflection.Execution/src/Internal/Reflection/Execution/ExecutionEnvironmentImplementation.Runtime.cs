@@ -115,11 +115,6 @@ namespace Internal.Reflection.Execution
             targetMethods = tMethods;
         }
 
-        public sealed override string GetLastResortString(RuntimeTypeHandle typeHandle)
-        {
-            return RuntimeAugments.GetLastResortString(typeHandle);
-        }
-
         //==============================================================================================
         // Miscellaneous
         //==============================================================================================

@@ -193,11 +193,35 @@ namespace Microsoft.Extensions
             var config = configurationBuilder.Build();
 
 #if BUILDING_SOURCE_GENERATOR_TESTS
-            Assert.Throws<NotSupportedException>(() => config.GetValue<bool?>("empty"));
+            // Ensure exception messages are in sync
+            Assert.Throws<InvalidOperationException>(() => config.GetValue<bool?>("empty"));
+            Assert.Throws<InvalidOperationException>(() => config.GetValue<int?>("empty"));
 #else
             Assert.Null(config.GetValue<bool?>("empty"));
             Assert.Null(config.GetValue<int?>("empty"));
 #endif
+        }
+
+        [Fact]
+        public void GetScalar()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Integer", "-2"},
+                {"Boolean", "TRUe"},
+                {"Nested:Integer", "11"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            Assert.True(config.GetValue<bool>("Boolean"));
+            Assert.Equal(-2, config.GetValue<int>("Integer"));
+            Assert.Equal(11, config.GetValue<int>("Nested:Integer"));
+
+            Assert.True((bool)config.GetValue(typeof(bool), "Boolean"));
+            Assert.Equal(-2, (int)config.GetValue(typeof(int), "Integer"));
+            Assert.Equal(11, (int)config.GetValue(typeof(int), "Nested:Integer"));
         }
 
         [Fact]
@@ -213,13 +237,13 @@ namespace Microsoft.Extensions
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-#if BUILDING_SOURCE_GENERATOR_TESTS
-            Assert.Throws<NotSupportedException>(() => config.GetValue<bool?>("Boolean"));
-#else
             Assert.True(config.GetValue<bool?>("Boolean"));
             Assert.Equal(-2, config.GetValue<int?>("Integer"));
             Assert.Equal(11, config.GetValue<int?>("Nested:Integer"));
-#endif
+
+            Assert.True((bool)config.GetValue(typeof(bool?), "Boolean"));
+            Assert.Equal(-2, (int)config.GetValue(typeof(int?), "Integer"));
+            Assert.Equal(11, (int)config.GetValue(typeof(int?), "Nested:Integer"));
         }
 
         [Fact]
@@ -253,17 +277,31 @@ namespace Microsoft.Extensions
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-#if BUILDING_SOURCE_GENERATOR_TESTS
-            Assert.Throws<NotSupportedException>(() => config.GetValue<bool>("Boolean"));
-            Assert.Throws<NotSupportedException>(() => config.GetValue<int>("Integer"));
-            Assert.Throws<NotSupportedException>(() => config.GetValue<int>("Nested:Integer"));
-            Assert.Throws<NotSupportedException>(() => config.GetValue<ComplexOptions>("Object"));
-#else
+            // Generic overloads.
             Assert.False(config.GetValue<bool>("Boolean"));
             Assert.Equal(0, config.GetValue<int>("Integer"));
             Assert.Equal(0, config.GetValue<int>("Nested:Integer"));
             Assert.Null(config.GetValue<ComplexOptions>("Object"));
-#endif
+
+            // Generic overloads with default value.
+            Assert.True(config.GetValue("Boolean", true));
+            Assert.Equal(1, config.GetValue("Integer", 1));
+            Assert.Equal(1, config.GetValue("Nested:Integer", 1));
+            Assert.Equal(new NestedConfig(""), config.GetValue("Object", new NestedConfig("")));
+
+            // Type overloads.
+            Assert.Null(config.GetValue(typeof(bool), "Boolean"));
+            Assert.Null(config.GetValue(typeof(int), "Integer"));
+            Assert.Null(config.GetValue(typeof(int), "Nested:Integer"));
+            Assert.Null(config.GetValue(typeof(ComplexOptions), "Object"));
+
+            // Type overloads with default value.
+            Assert.True((bool)config.GetValue(typeof(bool), "Boolean", true));
+            Assert.Equal(1, (int)config.GetValue(typeof(int), "Integer", 1));
+            Assert.Equal(1, (int)config.GetValue(typeof(int), "Nested:Integer", 1));
+            Assert.Equal(new NestedConfig(""), config.GetValue("Object", new NestedConfig("")));
+
+            // GetSection tests.
             Assert.False(config.GetSection("Boolean").Get<bool>());
             Assert.Equal(0, config.GetSection("Integer").Get<int>());
             Assert.Equal(0, config.GetSection("Nested:Integer").Get<int>());
@@ -370,7 +408,7 @@ namespace Microsoft.Extensions
             Assert.Equal(expectedMessage, ex.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for GetValue
+        [Fact]
         public void GetDefaultsWhenDataDoesNotExist()
         {
             var dic = new Dictionary<string, string>
@@ -391,7 +429,7 @@ namespace Microsoft.Extensions
             Assert.Same(config.GetValue("Object", foo), foo);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for GetValue.
+        [Fact]
         public void GetUri()
         {
             var dic = new Dictionary<string, string>
@@ -903,8 +941,8 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
-        public void ExceptionWhenTryingToBindToConstructorWithMissingConfig() // Need support for parameterized ctors.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        public void ExceptionWhenTryingToBindToConstructorWithMissingConfig()
         {
             var input = new Dictionary<string, string>
             {
@@ -923,8 +961,8 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
-        public void ExceptionWhenTryingToBindConfigToClassWhereNoMatchingParameterIsFoundInConstructor() // Need support for parameterized ctors.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        public void ExceptionWhenTryingToBindConfigToClassWhereNoMatchingParameterIsFoundInConstructor()
         {
             var input = new Dictionary<string, string>
             {
@@ -944,8 +982,8 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
-        public void BindsToClassConstructorParametersWithDefaultValues() // Need support for parameterized ctors.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        public void BindsToClassConstructorParametersWithDefaultValues()
         {
             var input = new Dictionary<string, string>
             {
@@ -1482,7 +1520,7 @@ namespace Microsoft.Extensions
             Assert.True(bound.NullableNestedStruct.Value.DeeplyNested.Boolean);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need collection support.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need property selection in sync with reflection.
         public void CanBindVirtualProperties()
         {
             ConfigurationBuilder configurationBuilder = new();
@@ -1554,7 +1592,7 @@ namespace Microsoft.Extensions
 #endif
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need collection support.
+        [Fact]
         public void EnsureCallingThePropertySetter()
         {
             var json = @"{
@@ -1578,7 +1616,58 @@ namespace Microsoft.Extensions
             Assert.Equal(2, options.ParsedBlacklist.Count); // should be initialized when calling the options.Blacklist setter.
 
             Assert.Equal(401, options.HttpStatusCode); // exists in configuration and properly sets the property
-            Assert.Equal(2, options.OtherCode); // doesn't exist in configuration. the setter sets default value '2'
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            // Setter not called if there's no matching configuration value.
+            Assert.Equal(0, options.OtherCode);
+#else
+            // doesn't exist in configuration. the setter sets default value '2'
+            Assert.Equal(2, options.OtherCode);
+#endif
+        }
+
+        [Fact]
+        public void EnsureSuccessfullyBind()
+        {
+            var json = @"{
+                ""queueConfig"": {
+                    ""Namespaces"": [
+                        {
+                            ""Namespace"": ""devnortheurope"",
+                            ""Queues"": {
+                                ""q1"": {
+                                    ""DequeueOnlyMarkedDate"": ""2022-01-20T12:49:03.395150-08:00""
+                                },
+                                ""q2"": {
+                                    ""DequeueOnlyMarkedDate"": ""2022-01-20T12:49:03.395150-08:00""
+                                }
+                            }
+                        },
+                        {
+                            ""Namespace"": ""devnortheurope2"",
+                            ""Queues"": {
+                                ""q3"": {
+                                    ""DequeueOnlyMarkedDate"": ""2022-01-20T12:49:03.395150-08:00""
+                                },
+                                ""q4"": {
+                                }
+                            }
+                        }
+                    ]
+                }
+            }";
+
+            var configuration = new ConfigurationBuilder()
+                .AddJsonStream(TestStreamHelpers.StringToStream(json))
+                .Build();
+
+            DistributedQueueConfig options = new DistributedQueueConfig();
+            configuration.GetSection("queueConfig").Bind(options);
+
+            Assert.NotNull(options);
+            Assert.Equal(2, options.Namespaces.Count);
+            Assert.Equal(2, options.Namespaces.First().Queues.Count);
+            Assert.Equal(2, options.Namespaces.Skip(1).First().Queues.Count);
+            Assert.NotNull(options.Namespaces.Skip(1).First().Queues.Last().Value);
         }
 
         [Fact]

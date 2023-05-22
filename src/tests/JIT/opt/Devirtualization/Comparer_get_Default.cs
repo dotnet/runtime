@@ -6,8 +6,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Program
+public class Program
 {
     private static int s_ReturnCode = 100;
 
@@ -88,7 +89,8 @@ class Program
         AssertEquals(expected, actual);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         long[] values = 
             {

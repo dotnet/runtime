@@ -4,11 +4,10 @@
 import { legacy_c_functions as cwraps } from "../cwraps";
 import { mono_wasm_runtime_ready } from "../debug";
 import { mono_wasm_load_icu_data } from "../icu";
-import { runtimeHelpers } from "../globals";
 import { mono_wasm_load_bytes_into_heap, setB32, setI8, setI16, setI32, setI52, setU52, setI64Big, setU8, setU16, setU32, setF32, setF64, getB32, getI8, getI16, getI32, getI52, getU52, getI64Big, getU8, getU16, getU32, getF32, getF64 } from "../memory";
 import { mono_wasm_new_root_buffer, mono_wasm_new_root, mono_wasm_new_external_root, mono_wasm_release_roots } from "../roots";
 import { mono_run_main, mono_run_main_and_exit } from "../run";
-import { mono_wasm_setenv, mono_wasm_load_config } from "../startup";
+import { mono_wasm_setenv } from "../startup";
 import { js_string_to_mono_string, conv_string, js_string_to_mono_string_root, conv_string_root } from "../strings";
 import { mono_array_to_js_array, unbox_mono_obj, unbox_mono_obj_root, mono_array_root_to_js_array } from "./cs-to-js";
 import { js_typed_array_to_array, js_to_mono_obj, js_typed_array_to_array_root, js_to_mono_obj_root } from "./js-to-cs";
@@ -17,6 +16,7 @@ import { mono_wasm_load_runtime } from "../startup";
 import { BINDINGType, MONOType } from "./export-types";
 import { mono_wasm_load_data_archive } from "../assets";
 import { mono_method_resolve } from "./method-binding";
+import { runtimeHelpers } from "../globals";
 
 export function export_mono_api(): MONOType {
     return {
@@ -26,7 +26,6 @@ export function export_mono_api(): MONOType {
         mono_wasm_load_icu_data,
         mono_wasm_runtime_ready,
         mono_wasm_load_data_archive,
-        mono_wasm_load_config,
         mono_wasm_new_root_buffer,
         mono_wasm_new_root,
         mono_wasm_new_external_root,
@@ -77,7 +76,7 @@ export function cwraps_mono_api(mono: MONOType): void {
 
 export function export_internal_api(): any {
     return {
-        mono_method_resolve,//MarshalTests.cs
+        mono_method_resolve, //MarshalTests.cs
     };
 }
 

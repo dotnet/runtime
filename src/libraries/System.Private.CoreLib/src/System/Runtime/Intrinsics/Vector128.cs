@@ -2444,6 +2444,10 @@ namespace System.Runtime.Intrinsics
         /// On hardware with <see cref="Ssse3"/> support, indices are treated as modulo 16, and if the high bit is set, the result will be set to 0 for that element.
         /// On hardware with <see cref="AdvSimd.Arm64"/> or <see cref="PackedSimd"/> support, this method behaves the same as Shuffle.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static Vector128<byte> ShuffleUnsafe(Vector128<byte> vector, Vector128<byte> indices)
         {
             if (Ssse3.IsSupported)
@@ -2717,6 +2721,24 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void StoreAlignedNonTemporal<T>(this Vector128<T> source, T* destination)
             where T : unmanaged => source.StoreAligned(destination);
+
+        /// <summary>
+        /// Stores to lower 64 bits of <paramref name="source"/> to memory destination of <paramref name="destination"/>[<paramref name="elementOffset"/>]
+        /// </summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="source">The vector that will be stored.</param>
+        /// <param name="destination">The destination to which <paramref name="elementOffset" /> will be added before the vector will be stored.</param>
+        /// <param name="elementOffset">The element offset from <paramref name="destination" /> from which the vector will be stored.</param>
+        /// <remarks>
+        /// Uses double instead of long to get a single instruction instead of storing temps on general porpose register (or stack)
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void StoreLowerUnsafe<T>(this Vector128<T> source, ref T destination, nuint elementOffset = 0)
+            where T : struct
+        {
+            ref byte address = ref Unsafe.As<T, byte>(ref Unsafe.Add(ref destination, elementOffset));
+            Unsafe.WriteUnaligned<double>(ref address, source.AsDouble().ToScalar());
+        }
 
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -3218,6 +3240,8 @@ namespace System.Runtime.Intrinsics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         internal static Vector128<byte> UnpackLow(Vector128<byte> left, Vector128<byte> right)
         {
             if (Sse2.IsSupported)
@@ -3232,6 +3256,8 @@ namespace System.Runtime.Intrinsics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         internal static Vector128<byte> UnpackHigh(Vector128<byte> left, Vector128<byte> right)
         {
             if (Sse2.IsSupported)
@@ -3248,6 +3274,8 @@ namespace System.Runtime.Intrinsics
         // TODO: Make generic versions of these public, see https://github.com/dotnet/runtime/issues/82559
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         internal static Vector128<byte> AddSaturate(Vector128<byte> left, Vector128<byte> right)
         {
             if (Sse2.IsSupported)
@@ -3262,6 +3290,8 @@ namespace System.Runtime.Intrinsics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         internal static Vector128<byte> SubtractSaturate(Vector128<byte> left, Vector128<byte> right)
         {
             if (Sse2.IsSupported)
