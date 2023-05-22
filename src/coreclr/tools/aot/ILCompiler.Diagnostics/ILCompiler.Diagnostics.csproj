@@ -21,8 +21,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
-    <ProjectReference Include="..\..\..\..\libraries\System.Runtime.InteropServices\tests\Ancillary.Interop\Ancillary.Interop.csproj" />
-    <ProjectReference Include="..\..\..\..\libraries\System.Runtime.InteropServices\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
   </ItemGroup>
 
 </Project>
