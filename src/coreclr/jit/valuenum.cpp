@@ -7815,40 +7815,41 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
 }
 
 ValueNum EvaluateSimdFloatWithElement(
-    ValueNumStore* vns, var_types type, var_types baseType, ValueNum arg0VN, int arg1, ValueNum arg2VN)
+    ValueNumStore* vns, var_types type, var_types baseType, ValueNum arg0VN, int index, float value)
 {
-    assert(vns->TypeOfVN(arg2VN) == TYP_FLOAT);
+    assert(vns->IsVNConstant(arg0VN));
+
     switch (type)
     {
         case TYP_SIMD8:
         {
-            simd8_t cnsVec   = vns->GetConstantSimd8(arg0VN);
-            cnsVec.f32[arg1] = vns->GetConstantSingle(arg2VN);
+            simd8_t cnsVec    = vns->GetConstantSimd8(arg0VN);
+            cnsVec.f32[index] = value;
             return vns->VNForSimd8Con(cnsVec);
         }
         case TYP_SIMD12:
         {
-            simd12_t cnsVec  = vns->GetConstantSimd12(arg0VN);
-            cnsVec.f32[arg1] = vns->GetConstantSingle(arg2VN);
+            simd12_t cnsVec   = vns->GetConstantSimd12(arg0VN);
+            cnsVec.f32[index] = value;
             return vns->VNForSimd12Con(cnsVec);
         }
         case TYP_SIMD16:
         {
-            simd16_t cnsVec  = vns->GetConstantSimd16(arg0VN);
-            cnsVec.f32[arg1] = vns->GetConstantSingle(arg2VN);
+            simd16_t cnsVec   = vns->GetConstantSimd16(arg0VN);
+            cnsVec.f32[index] = value;
             return vns->VNForSimd16Con(cnsVec);
         }
 #if defined TARGET_XARCH
         case TYP_SIMD32:
         {
-            simd32_t cnsVec  = vns->GetConstantSimd32(arg0VN);
-            cnsVec.f32[arg1] = vns->GetConstantSingle(arg2VN);
+            simd32_t cnsVec   = vns->GetConstantSimd32(arg0VN);
+            cnsVec.f32[index] = value;
             return vns->VNForSimd32Con(cnsVec);
         }
         case TYP_SIMD64:
         {
-            simd64_t cnsVec  = vns->GetConstantSimd64(arg0VN);
-            cnsVec.f32[arg1] = vns->GetConstantSingle(arg2VN);
+            simd64_t cnsVec   = vns->GetConstantSimd64(arg0VN);
+            cnsVec.f32[index] = value;
             return vns->VNForSimd64Con(cnsVec);
         }
 #endif // TARGET_XARCH
@@ -7979,7 +7980,9 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(var_types      type,
                     arg0VN = ExtendConstantSimdFloat(this, type, arg0VN);
                 }
 
-                return EvaluateSimdFloatWithElement(this, type, baseType, arg0VN, GetConstantInt32(arg1VN), arg2VN);
+                int   index = GetConstantInt32(arg1VN);
+                float value = GetConstantSingle(arg2VN);
+                return EvaluateSimdFloatWithElement(this, type, baseType, arg0VN, index, value);
             }
             default:
             {
