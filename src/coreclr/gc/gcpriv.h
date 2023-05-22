@@ -1315,6 +1315,9 @@ struct no_gc_region_info
     size_t saved_gen0_min_size;
     size_t saved_gen3_min_size;
     BOOL minimal_gc_p;
+    size_t soh_withheld_budget;
+    size_t loh_withheld_budget;
+    NoGCRegionCallbackFinalizerWorkItem* callback;
 };
 
 // if you change these, make sure you update them for sos (strike.cpp) as well.
@@ -2114,6 +2117,9 @@ private:
 
     PER_HEAP_METHOD void allocate_for_no_gc_after_gc();
 
+    PER_HEAP_ISOLATED_METHOD
+    enable_no_gc_region_callback_status enable_no_gc_callback(NoGCRegionCallbackFinalizerWorkItem* callback, uint64_t callback_threshold);
+
 #ifdef USE_REGIONS
     PER_HEAP_METHOD bool extend_soh_for_no_gc();
 #endif //USE_REGIONS
@@ -2131,6 +2137,10 @@ private:
     PER_HEAP_ISOLATED_METHOD start_no_gc_region_status get_start_no_gc_region_status();
 
     PER_HEAP_ISOLATED_METHOD end_no_gc_region_status end_no_gc_region();
+
+    PER_HEAP_ISOLATED_METHOD void schedule_finalizer_work(FinalizerWorkItem* callback);
+
+    PER_HEAP_ISOLATED_METHOD void schedule_no_gc_callback(bool abandoned);
 
     PER_HEAP_ISOLATED_METHOD void handle_failure_for_no_gc();
 
@@ -4038,6 +4048,7 @@ private:
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC GCEvent full_gc_end_event;
 
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC no_gc_region_info current_no_gc_region_info;
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC FinalizerWorkItem* finalizer_work;
 
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC uint64_t entry_available_physical_mem;
 

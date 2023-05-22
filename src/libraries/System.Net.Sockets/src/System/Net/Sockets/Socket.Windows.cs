@@ -266,8 +266,7 @@ namespace System.Net.Sockets
         }
 
         internal unsafe bool ConnectEx(SafeSocketHandle socketHandle,
-            IntPtr socketAddress,
-            int socketAddressSize,
+            ReadOnlySpan<byte> socketAddress,
             IntPtr buffer,
             int dataLength,
             out int bytesSent,
@@ -275,7 +274,7 @@ namespace System.Net.Sockets
         {
             ConnectExDelegate connectEx = GetDynamicWinsockMethods().GetConnectExDelegate(socketHandle);
 
-            return connectEx(socketHandle, socketAddress, socketAddressSize, buffer, dataLength, out bytesSent, overlapped);
+            return connectEx(socketHandle, socketAddress, buffer, dataLength, out bytesSent, overlapped);
         }
 
         internal unsafe SocketError WSARecvMsg(SafeSocketHandle socketHandle, IntPtr msg, out int bytesTransferred, NativeOverlapped* overlapped, IntPtr completionRoutine)

@@ -4039,7 +4039,7 @@ _SetMinOpts:
     fgCanRelocateEHRegions = true;
 }
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
 // Function compRsvdRegCheck:
 //  given a curState to use for calculating the total frame size
 //  it will return true if the REG_OPT_RSVD should be reserved so
@@ -4082,10 +4082,6 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 
     // TODO-ARM64-CQ: update this!
     JITDUMP(" Returning true (ARM64)\n\n");
-    return true; // just always assume we'll need it, for now
-
-#elif defined(TARGET_LOONGARCH64)
-    JITDUMP(" Returning true (LOONGARCH64)\n\n");
     return true; // just always assume we'll need it, for now
 
 #elif defined(TARGET_RISCV64)
@@ -4215,7 +4211,7 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     return false;
 #endif // TARGET_ARM
 }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_ARMARCH || TARGET_RISCV64
 
 //------------------------------------------------------------------------
 // compGetTieringName: get a string describing tiered compilation settings

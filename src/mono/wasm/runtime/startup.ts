@@ -645,7 +645,7 @@ export function mono_wasm_set_main_args(name: string, allRuntimeArguments: strin
 export async function configureWorkerStartup(module: DotnetModuleInternal): Promise<void> {
     // This is a good place for subsystems to attach listeners for pthreads_worker.currentWorkerThreadEvents
     pthreads_worker.currentWorkerThreadEvents.addEventListener(pthreads_worker.dotnetPthreadCreated, (ev) => {
-        mono_log_debug("pthread created 0x" + ev.pthread_self.pthread_id.toString(16));
+        mono_log_debug("pthread created 0x" + ev.pthread_self.pthreadId.toString(16));
     });
 
     // these are the only events which are called on worker
