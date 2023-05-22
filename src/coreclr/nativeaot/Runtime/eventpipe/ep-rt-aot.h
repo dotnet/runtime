@@ -48,6 +48,7 @@
 
 #ifdef TARGET_UNIX
 extern pthread_key_t eventpipe_tls_key;
+extern __thread EventPipeThreadHolder* eventpipe_tls_instance;
 #endif
 
 // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
@@ -70,7 +71,7 @@ ep_rt_lock_handle_t *
 ep_rt_aot_config_lock_get (void)
 {
     extern ep_rt_lock_handle_t _ep_rt_aot_config_lock_handle;
-	return &_ep_rt_aot_config_lock_handle;
+    return &_ep_rt_aot_config_lock_handle;
 }
 
 static
@@ -433,7 +434,7 @@ ep_rt_config_value_get_config (void)
     // (CLRConfig::INTERNAL_EventPipeConfig)
     // PalDebugBreak();
     return nullptr;
-//	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()), -1);
+//    return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()), -1);
 }
 
 static
@@ -675,28 +676,28 @@ ep_rt_create_activity_id (
     uint8_t data1[] = {0x67,0xac,0x33,0xf1,0x8d,0xed,0x41,0x01,0xb4,0x26,0xc9,0xb7,0x94,0x35,0xf7,0x8a};
     memcpy (activity_id, data1, EP_ACTIVITY_ID_SIZE);
 
-	const uint16_t version_mask = 0xF000;
-	const uint16_t random_guid_version = 0x4000;
-	const uint8_t clock_seq_hi_and_reserved_mask = 0xC0;
-	const uint8_t clock_seq_hi_and_reserved_value = 0x80;
+    const uint16_t version_mask = 0xF000;
+    const uint16_t random_guid_version = 0x4000;
+    const uint8_t clock_seq_hi_and_reserved_mask = 0xC0;
+    const uint8_t clock_seq_hi_and_reserved_value = 0x80;
 
-	// Modify bits indicating the type of the GUID
-	uint8_t *activity_id_c = activity_id + sizeof (uint32_t) + sizeof (uint16_t);
-	uint8_t *activity_id_d = activity_id + sizeof (uint32_t) + sizeof (uint16_t) + sizeof (uint16_t);
+    // Modify bits indicating the type of the GUID
+    uint8_t *activity_id_c = activity_id + sizeof (uint32_t) + sizeof (uint16_t);
+    uint8_t *activity_id_d = activity_id + sizeof (uint32_t) + sizeof (uint16_t) + sizeof (uint16_t);
 
-	uint16_t c;
-	memcpy (&c, activity_id_c, sizeof (c));
+    uint16_t c;
+    memcpy (&c, activity_id_c, sizeof (c));
 
-	uint8_t d;
-	memcpy (&d, activity_id_d, sizeof (d));
+    uint8_t d;
+    memcpy (&d, activity_id_d, sizeof (d));
 
-	// time_hi_and_version
-	c = ((c & ~version_mask) | random_guid_version);
-	// clock_seq_hi_and_reserved
-	d = ((d & ~clock_seq_hi_and_reserved_mask) | clock_seq_hi_and_reserved_value);
+    // time_hi_and_version
+    c = ((c & ~version_mask) | random_guid_version);
+    // clock_seq_hi_and_reserved
+    d = ((d & ~clock_seq_hi_and_reserved_mask) | clock_seq_hi_and_reserved_value);
 
-	memcpy (activity_id_c, &c, sizeof (c));
-	memcpy (activity_id_d, &d, sizeof (d));
+    memcpy (activity_id_c, &c, sizeof (c));
+    memcpy (activity_id_d, &d, sizeof (d));
 }
 
 static
@@ -906,54 +907,54 @@ ep_rt_system_time_get (EventPipeSystemTime *system_time)
 
     EP_ASSERT(system_time != NULL);
     ep_system_time_set (
-    	system_time,
-    	value.wYear,
-    	value.wMonth,
-    	value.wDayOfWeek,
-    	value.wDay,
-    	value.wHour,
-    	value.wMinute,
-    	value.wSecond,
-    	value.wMilliseconds);
+        system_time,
+        value.wYear,
+        value.wMonth,
+        value.wDayOfWeek,
+        value.wDay,
+        value.wHour,
+        value.wMinute,
+        value.wSecond,
+        value.wMilliseconds);
 #elif TARGET_UNIX
-	time_t tt;
-	struct tm *ut_ptr;	
+    time_t tt;
+    struct tm *ut_ptr;
     struct timeval time_val;
-	int timeofday_retval;
+    int timeofday_retval;
 
-	EP_ASSERT (system_time != NULL);
+    EP_ASSERT (system_time != NULL);
 
-	tt = time (NULL);
+    tt = time (NULL);
 
-	timeofday_retval = gettimeofday (&time_val, NULL);
+    timeofday_retval = gettimeofday (&time_val, NULL);
 
     ut_ptr = gmtime (&tt);
 
-	uint16_t milliseconds = 0;
-	if (timeofday_retval != -1) {
-		int old_seconds;
-		int new_seconds;
+    uint16_t milliseconds = 0;
+    if (timeofday_retval != -1) {
+        int old_seconds;
+        int new_seconds;
 
-		milliseconds = (uint16_t)(time_val.tv_usec / 1000);
+        milliseconds = (uint16_t)(time_val.tv_usec / 1000);
 
-		old_seconds = ut_ptr->tm_sec;
-		new_seconds = time_val.tv_sec % 60;
+        old_seconds = ut_ptr->tm_sec;
+        new_seconds = time_val.tv_sec % 60;
 
-		/* just in case we reached the next second in the interval between time () and gettimeofday () */
-		if (old_seconds != new_seconds)
-			milliseconds = 999;
-	}
+        /* just in case we reached the next second in the interval between time () and gettimeofday () */
+        if (old_seconds != new_seconds)
+            milliseconds = 999;
+    }
 
-	ep_system_time_set (
-		system_time,
-		(uint16_t)(1900 + ut_ptr->tm_year),
-		(uint16_t)ut_ptr->tm_mon + 1,
-		(uint16_t)ut_ptr->tm_wday,
-		(uint16_t)ut_ptr->tm_mday,
-		(uint16_t)ut_ptr->tm_hour,
-		(uint16_t)ut_ptr->tm_min,
-		(uint16_t)ut_ptr->tm_sec,
-		milliseconds);
+    ep_system_time_set (
+        system_time,
+        (uint16_t)(1900 + ut_ptr->tm_year),
+        (uint16_t)ut_ptr->tm_mon + 1,
+        (uint16_t)ut_ptr->tm_wday,
+        (uint16_t)ut_ptr->tm_mday,
+        (uint16_t)ut_ptr->tm_hour,
+        (uint16_t)ut_ptr->tm_min,
+        (uint16_t)ut_ptr->tm_sec,
+        milliseconds);
 #endif
 
 }
@@ -1076,8 +1077,8 @@ ep_rt_temp_path_get (
 
 #ifdef TARGET_UNIX
 
-	EP_ASSERT (buffer != NULL);
-	EP_ASSERT (buffer_len > 0);
+    EP_ASSERT (buffer != NULL);
+    EP_ASSERT (buffer_len > 0);
 
     const ep_char8_t *path = getenv ("TMPDIR");
     if (path == NULL){
@@ -1089,21 +1090,21 @@ ep_rt_temp_path_get (
         }
     }
 
-	int32_t result = snprintf (buffer, buffer_len, "%s", path);
-	if (result <= 0 || (uint32_t)result > buffer_len)
-		ep_raise_error ();
+    int32_t result;
+    if (path [strlen(path) - 1] != '/')
+        result = snprintf (buffer, buffer_len, "%s/", path);
+    else
+        result = snprintf (buffer, buffer_len, "%s", path);
+    if (result <= 0 || (uint32_t)result >= buffer_len)
+        ep_raise_error ();
 
-	if (buffer [result - 1] != '/') {
-		buffer [result++] = '/';
-		buffer [result] = '\0';
-	}
 
 ep_on_exit:
-	return result;
+    return result;
 
 ep_on_error:
-	result = 0;
-	ep_exit_error_handler ();
+    result = 0;
+    ep_exit_error_handler ();
 
 #else
     return 0;
@@ -1610,7 +1611,7 @@ inline
 EventPipeThreadHolder *
 pthread_getThreadHolder (void)
 {
-    void *value = pthread_getspecific(eventpipe_tls_key);
+    void *value = eventpipe_tls_instance;
     if (value) {
         EventPipeThreadHolder *thread_holder = static_cast<EventPipeThreadHolder*>(value);    
         return thread_holder;
@@ -1623,12 +1624,13 @@ inline
 EventPipeThreadHolder *
 pthread_createThreadHolder (void)
 {
-    void *value = pthread_getspecific(eventpipe_tls_key);
+    void *value = eventpipe_tls_instance;
     if (value) {
         // we need to do the unallocation here
         EventPipeThreadHolder *thread_holder_old = static_cast<EventPipeThreadHolder*>(value);    
         ep_thread_unregister (ep_thread_holder_get_thread (thread_holder_old));
         ep_thread_holder_free (thread_holder_old);
+        eventpipe_tls_instance = NULL;
 
         value = NULL;
     }
@@ -1637,6 +1639,7 @@ pthread_createThreadHolder (void)
         ep_thread_register (ep_thread_holder_get_thread (instance));
         // we need to let pthread know
         pthread_setspecific(eventpipe_tls_key, instance);
+        eventpipe_tls_instance = instance;
     }
     return instance;
 }

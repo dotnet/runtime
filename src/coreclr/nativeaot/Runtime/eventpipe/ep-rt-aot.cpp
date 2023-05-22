@@ -23,6 +23,7 @@
 #ifdef TARGET_UNIX
 // Per module (1 for NativeAOT), key that will be used to implement TLS in Unix
 pthread_key_t eventpipe_tls_key;
+DECLSPEC_THREAD EventPipeThreadHolder* eventpipe_tls_instance;
 #else
 thread_local EventPipeAotThreadHolderTLS EventPipeAotThreadHolderTLS::g_threadHolderTLS;
 #endif
