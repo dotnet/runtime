@@ -9268,8 +9268,8 @@ struct ValueNumberState
                 JITDUMP("     All preds complete, adding to allDone.\n");
 #endif // DEBUG_VN_VISIT
 
-                assert(!GetVisitBit(succ->bbNum, BVB_onAllDone)); // Only last completion of last succ should add to
-                // this.
+                // Only last completion of last succ should add to this.
+                assert(!GetVisitBit(succ->bbNum, BVB_onAllDone));
                 m_toDoAllPredsDone.Push(succ);
                 SetVisitBit(succ->bbNum, BVB_onAllDone);
             }
