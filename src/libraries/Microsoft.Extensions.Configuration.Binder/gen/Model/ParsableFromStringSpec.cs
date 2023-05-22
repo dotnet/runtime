@@ -6,9 +6,9 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal sealed record ParsableFromStringTypeSpec : TypeSpec
+    internal sealed record ParsableFromStringSpec : TypeSpec
     {
-        public ParsableFromStringTypeSpec(ITypeSymbol type) : base(type) { }
+        public ParsableFromStringSpec(ITypeSymbol type) : base(type) { }
 
         public override TypeSpecKind SpecKind => TypeSpecKind.ParsableFromString;
 

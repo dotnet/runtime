@@ -5,9 +5,9 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal sealed record ConfigurationSectionTypeSpec : TypeSpec
+    internal sealed record ConfigurationSectionSpec : TypeSpec
     {
-        public ConfigurationSectionTypeSpec(ITypeSymbol type) : base(type) { }
+        public ConfigurationSectionSpec(ITypeSymbol type) : base(type) { }
 
         public override TypeSpecKind SpecKind => TypeSpecKind.IConfigurationSection;
     }
