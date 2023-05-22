@@ -83,5 +83,5 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         # FIXME: Currently, tracing/eventpipe tests are only enabled on iOS platforms. It should be expanded to include all runtime tests. Tracking issue: https://github.com/dotnet/runtime/issues/84254
-        testBuildArgs: tree tracing/eventpipe
+        testBuildArgs: dir tracing
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
