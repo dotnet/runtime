@@ -48,6 +48,7 @@
     <Compile Include="..\Common\JsonUnmappedMemberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonUnmappedMemberHandling.cs" />
     <Compile Include="..\Common\ThrowHelper.cs" Link="Common\System\Text\Json\ThrowHelper.cs" />
     <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
+    <Compile Include="Helpers\DiagnosticInfo.cs" />
     <Compile Include="Helpers\ImmutableEquatableArray.cs" />
     <Compile Include="Helpers\KnownTypeSymbols.cs" />
     <Compile Include="Helpers\RoslynExtensions.cs" />

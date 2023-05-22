@@ -91,10 +91,10 @@ namespace System.Text.Json.SourceGeneration
 
             public void Emit()
             {
-                foreach (Diagnostic diagnostic in _generationSpec.Diagnostics)
+                foreach (DiagnosticInfo diagnostic in _generationSpec.Diagnostics)
                 {
                     // Report any diagnostics produced by the parser ahead of formatting source code.
-                    _sourceGenerationContext.ReportDiagnostic(diagnostic);
+                    _sourceGenerationContext.ReportDiagnostic(diagnostic.CreateDiagnostic());
                 }
 
                 foreach (ContextGenerationSpec contextGenerationSpec in _generationSpec.ContextGenerationSpecs)

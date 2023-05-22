@@ -586,6 +586,32 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
+        public static Compilation CreatePolymorphicClassOnFastPathContext()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBaseClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(MyDerivedClass), "derived")]
+                    public class MyBaseClass
+                    {
+                    }
+
+                    public class MyDerivedClass : MyBaseClass
+                    {
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
         internal static void CheckDiagnosticMessages(
             DiagnosticSeverity level,
             ImmutableArray<Diagnostic> diagnostics,
