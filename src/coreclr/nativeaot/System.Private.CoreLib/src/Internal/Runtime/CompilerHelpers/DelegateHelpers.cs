@@ -12,9 +12,33 @@ namespace Internal.Runtime.CompilerHelpers
     {
         private static object[] s_emptyObjectArray = Array.Empty<object>();
 
-        internal static object[] GetEmptyObjectArray()
+        private const int CacheLength = 16;
+        [ThreadStatic]
+        private static object[][] t_arrayCache;
+
+        internal static object[] GetObjectArray(int length)
         {
-            return s_emptyObjectArray;
+            if (length == 0)
+                return s_emptyObjectArray;
+
+            object[] result = null!;
+            if (length <= CacheLength)
+            {
+                t_arrayCache ??= new object[CacheLength][];
+                result = t_arrayCache[length - 1];
+            }
+
+            return result ?? new object[length];
+        }
+
+        internal static void ReturnObjectArray(object[] array)
+        {
+            int length = array.Length;
+            if (length <= CacheLength)
+            {
+                Array.Clear(array);
+                t_arrayCache[length - 1] = array;
+            }
         }
     }
 }

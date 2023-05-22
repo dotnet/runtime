@@ -496,7 +496,7 @@ namespace Internal.IL.Stubs
             // We will generate the following code:
             //
             // object ret;
-            // object[] args = new object[parameterCount];
+            // object[] args = DelegateHelpers.GetObjectArray(parameterCount);
             // args[0] = param0;
             // args[1] = param1;
             //  ...
@@ -518,45 +518,38 @@ namespace Internal.IL.Stubs
             bool hasReturnValue = !Signature.ReturnType.IsVoid;
 
             bool hasRefArgs = false;
-            if (Signature.Length > 0)
-            {
-                codeStream.EmitLdc(Signature.Length);
-                codeStream.Emit(ILOpcode.newarr, emitter.NewToken(objectType));
-                codeStream.EmitStLoc(argsLocal);
 
-                for (int i = 0; i < Signature.Length; i++)
+            codeStream.EmitLdc(Signature.Length);
+            MethodDesc getObjectArrayMethod = Context.GetHelperEntryPoint("DelegateHelpers", "GetObjectArray");
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(getObjectArrayMethod));
+            codeStream.EmitStLoc(argsLocal);
+
+            for (int i = 0; i < Signature.Length; i++)
+            {
+                TypeDesc paramType = Signature[i];
+                bool paramIsByRef = false;
+
+                if (paramType.IsByRef)
                 {
-                    TypeDesc paramType = Signature[i];
-                    bool paramIsByRef = false;
-
-                    if (paramType.IsByRef)
-                    {
-                        hasRefArgs |= paramType.IsByRef;
-                        paramIsByRef = true;
-                        paramType = ((ByRefType)paramType).ParameterType;
-                    }
-
                     hasRefArgs |= paramType.IsByRef;
-
-                    codeStream.EmitLdLoc(argsLocal);
-                    codeStream.EmitLdc(i);
-                    codeStream.EmitLdArg(i + 1);
-
-                    ILToken paramToken = emitter.NewToken(paramType);
-
-                    if (paramIsByRef)
-                    {
-                        codeStream.Emit(ILOpcode.ldobj, paramToken);
-                    }
-                    codeStream.Emit(ILOpcode.box, paramToken);
-                    codeStream.Emit(ILOpcode.stelem_ref);
+                    paramIsByRef = true;
+                    paramType = ((ByRefType)paramType).ParameterType;
                 }
-            }
-            else
-            {
-                MethodDesc emptyObjectArrayMethod = Context.GetHelperEntryPoint("DelegateHelpers", "GetEmptyObjectArray");
-                codeStream.Emit(ILOpcode.call, emitter.NewToken(emptyObjectArrayMethod));
-                codeStream.EmitStLoc(argsLocal);
+
+                hasRefArgs |= paramType.IsByRef;
+
+                codeStream.EmitLdLoc(argsLocal);
+                codeStream.EmitLdc(i);
+                codeStream.EmitLdArg(i + 1);
+
+                ILToken paramToken = emitter.NewToken(paramType);
+
+                if (paramIsByRef)
+                {
+                    codeStream.Emit(ILOpcode.ldobj, paramToken);
+                }
+                codeStream.Emit(ILOpcode.box, paramToken);
+                codeStream.Emit(ILOpcode.stelem_ref);
             }
 
             ILExceptionRegionBuilder tryFinallyRegion = null;
@@ -619,6 +612,13 @@ namespace Internal.IL.Stubs
                 codeStream.Emit(ILOpcode.endfinally);
                 codeStream.EndHandler(tryFinallyRegion);
                 codeStream.EmitLabel(returnLabel);
+            }
+
+            if (Signature.Length > 0)
+            {
+                codeStream.EmitLdLoc(argsLocal);
+                MethodDesc returnObjectArrayMethod = Context.GetHelperEntryPoint("DelegateHelpers", "ReturnObjectArray");
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(returnObjectArrayMethod));
             }
 
             if (hasReturnValue)
