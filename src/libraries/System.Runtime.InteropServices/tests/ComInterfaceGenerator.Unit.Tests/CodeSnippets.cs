@@ -315,7 +315,7 @@ namespace ComInterfaceGenerator.Unit.Tests
         }
 
         public string ComInterfaceParameters => BasicParametersAndModifiers("IComInterface2") + $$"""
-            {{GeneratedComInterface}}
+            {{GeneratedComInterface()}}
             partial interface IComInterface2
             {
                 void Method2();
