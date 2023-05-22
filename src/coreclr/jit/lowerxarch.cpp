@@ -3314,7 +3314,7 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
             newScale  = addrMode->GetScale();
             newOffset = addrMode->Offset();
 
-            if (op2->OperIsConst())
+            if (op2->OperIsConst() && (newOffset < (INT32_MAX - comp->maxSIMDStructBytes())))
             {
                 // op2 is a constant, so add it to the existing offset
 
