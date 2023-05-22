@@ -50,13 +50,16 @@ namespace System.Text.Json.SourceGeneration
 #pragma warning restore
             private JsonKnownNamingPolicy _currentContextNamingPolicy;
 
-            private readonly List<Diagnostic> _diagnostics = new();
+            private readonly List<DiagnosticInfo> _diagnostics = new();
 
             public void ReportDiagnostic(DiagnosticDescriptor descriptor, Location? location, params object?[]? messageArgs)
             {
-                location = location.GetTrimmedLocation();
-                Diagnostic diag = Diagnostic.Create(descriptor, location, messageArgs);
-                _diagnostics.Add(diag);
+                _diagnostics.Add(new DiagnosticInfo
+                {
+                    Descriptor = descriptor,
+                    Location = location.GetTrimmedLocation(),
+                    MessageArgs = messageArgs ?? Array.Empty<object?>(),
+                });
             }
 
             private static DiagnosticDescriptor TypeNotSupported { get; } = new DiagnosticDescriptor(
