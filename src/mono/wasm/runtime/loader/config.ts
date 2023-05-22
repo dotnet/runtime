@@ -8,6 +8,7 @@ import { exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
 import { initializeBootConfig, loadBootConfig } from "./blazor/_Integration";
 import { BootConfigResult } from "./blazor/BootConfig";
 import { BootJsonData } from "../types/blazor";
+import { mono_log_error, mono_log_debug } from "./logging";
 
 export function deep_merge_config(target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
     const providedConfig: MonoConfigInternal = { ...source };
@@ -56,7 +57,7 @@ export function normalizeConfig() {
     runtimeHelpers.waitForDebugger = config.waitForDebugger;
     config.startupMemoryCache = !!config.startupMemoryCache;
     if (config.startupMemoryCache && runtimeHelpers.waitForDebugger) {
-        if (loaderHelpers.diagnosticTracing) console.info("MONO_WASM: Disabling startupMemoryCache because waitForDebugger is set");
+        mono_log_debug("Disabling startupMemoryCache because waitForDebugger is set");
         config.startupMemoryCache = false;
     }
 
@@ -79,7 +80,7 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
         loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);
         return;
     }
-    if (loaderHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_load_config");
+    mono_log_debug("mono_wasm_load_config");
     try {
         loaderHelpers.config.applicationEnvironment = loaderHelpers.config.applicationEnvironment ?? loaderHelpers.config.startupOptions?.environment ?? "Production";
 
@@ -111,7 +112,7 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
                 normalizeConfig();
             }
             catch (err: any) {
-                console.error("MONO_WASM: onConfigLoaded() failed", err);
+                mono_log_error("onConfigLoaded() failed", err);
                 throw err;
             }
         }

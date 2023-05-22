@@ -25,7 +25,7 @@ namespace TestLibrary
         static OutOfProcessTest()
         {
             reportBase = Directory.GetCurrentDirectory();
-            testBinaryBase = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
+            testBinaryBase = AppContext.BaseDirectory;
             helixUploadRoot = Environment.GetEnvironmentVariable("HELIX_WORKITEM_UPLOAD_ROOT");
             if (!String.IsNullOrEmpty(helixUploadRoot))
             {
@@ -49,10 +49,10 @@ namespace TestLibrary
             && !OperatingSystem.IsBrowser()
             && !OperatingSystem.IsOSPlatform("Wasi");
 
-        public static void RunOutOfProcessTest(string basePath, string assemblyPath)
+        public static void RunOutOfProcessTest(string assemblyPath)
         {
             int ret = -100;
-            string baseDir = Path.GetDirectoryName(basePath);
+            string baseDir = AppContext.BaseDirectory;
             string outputDir = System.IO.Path.GetFullPath(Path.Combine(reportBase, Path.GetDirectoryName(assemblyPath)));
             string outputFile = Path.Combine(outputDir, "output.txt");
             string errorFile = Path.Combine(outputDir, "error.txt");

@@ -80,17 +80,6 @@ extern "C" DWORD xmmYmmStateSupport();
 extern "C" DWORD avx512StateSupport();
 #endif
 
-inline bool TargetHasAVXSupport()
-{
-#if (defined(TARGET_X86) || defined(TARGET_AMD64))
-    int cpuInfo[4];
-    __cpuid(cpuInfo, 0x00000001);           // All x86/AMD64 targets support cpuid.
-    const int CPUID_ECX = 2;
-    return ((cpuInfo[CPUID_ECX] & (1 << 28)) != 0); // The AVX feature is ECX bit 28.
-#endif // (defined(TARGET_X86) || defined(TARGET_AMD64))
-    return false;
-}
-
 #ifdef DACCESS_COMPILE
 
 // Used by dac/strike to make sense of non-jit/non-jit-helper call targets

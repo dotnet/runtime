@@ -3641,53 +3641,6 @@ static long total_executed_opcodes;
 #define SET_TEMP_POINTER(value) (*((MonoObject **)context->stack_start) = value)
 #endif
 
-static MONO_NEVER_INLINE int
-interp_newobj_slow_unopt (InterpFrame *frame, InterpMethod *cmethod, const guint16* ip, MonoError *error)
-{
-	char *locals = (char*)frame->stack;
-	int return_offset = ip [1];
-	int start_param_offset = ip [2];
-	guint16 param_size = ip [4];
-	guint16 ret_size = ip [5];
-	gpointer this_ptr;
-
-	// Should only be called in unoptimized code. This opcode moves the params around
-	// to compensate for the lack of use of a proper offset allocator in unoptimized code.
-	gboolean is_vt = ret_size != 0;
-	if (!is_vt)
-		ret_size = MINT_STACK_SLOT_SIZE;
-
-	MonoClass *newobj_class = cmethod->method->klass;
-
-	int call_args_offset = ALIGN_TO (return_offset + ret_size, MINT_STACK_ALIGNMENT);
-	// We allocate space on the stack for return value and for this pointer, that is passed to ctor
-	if (param_size) {
-		int param_offset;
-		if (ip [6]) // Check if first arg is simd type, which requires realigning param area
-			param_offset = ALIGN_TO (call_args_offset + MINT_STACK_SLOT_SIZE, MINT_SIMD_ALIGNMENT);
-		else
-			param_offset = call_args_offset + MINT_STACK_SLOT_SIZE;
-		memmove (locals + param_offset, locals + start_param_offset, param_size);
-	}
-
-	if (is_vt) {
-		this_ptr = locals + return_offset;
-		memset (this_ptr, 0, ret_size);
-	} else {
-		// FIXME push/pop LMF
-		MonoVTable *vtable = mono_class_vtable_checked (newobj_class, error);
-		return_val_if_nok (error, -1);
-		mono_runtime_class_init_full (vtable, error);
-		return_val_if_nok (error, -1);
-
-		this_ptr = mono_object_new_checked (newobj_class, error);
-		return_val_if_nok (error, -1);
-		LOCAL_VAR (return_offset, gpointer) = this_ptr; // return value
-	}
-	LOCAL_VAR (call_args_offset, gpointer) = this_ptr;
-	return call_args_offset;
-}
-
 /*
  * Custom C implementations of the min/max operations for float and double.
  * We cannot directly use the C stdlib functions because their semantics do not match
@@ -3849,6 +3802,10 @@ main_loop:
 			memset (locals + ip [1], 0, ip [2]);
 			ip += 3;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_NIY)
+			g_printf ("MONO interpreter: NIY encountered in method %s\n", frame->imethod->method->name);
+			g_assert_not_reached ();
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BREAK)
 			++ip;
 			SAVE_INTERP_STATE (frame);
@@ -3987,13 +3944,13 @@ main_loop:
 			ip = frame->imethod->code;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_CALL_ALIGN_STACK) {
-			int call_offset = ip [1];
-			int aligned_call_offset = call_offset + MINT_STACK_SLOT_SIZE;
-			int params_stack_size = ip [2];
+		MINT_IN_CASE(MINT_MOV_STACK_UNOPT) {
+			int src_offset = ip [1];
+			int dst_offset = src_offset + (gint16)ip [2];
+			int size = ip [3];
 
-			memmove (locals + aligned_call_offset, locals + call_offset, params_stack_size);
-			ip += 3;
+			memmove (locals + dst_offset, locals + src_offset, size);
+			ip += 4;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALL_DELEGATE) {
@@ -5741,19 +5698,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			mono_interp_error_cleanup (error); // FIXME: do not swallow the error
 			EXCEPTION_CHECKPOINT;
 			ip += 4;
-			goto call;
-		}
-		MINT_IN_CASE(MINT_NEWOBJ_SLOW_UNOPT) {
-			cmethod = (InterpMethod*)frame->imethod->data_items [ip [3]];
-			int offset = interp_newobj_slow_unopt (frame, cmethod, ip, error);
-			if (offset == -1) {
-				MonoException *exc = interp_error_convert_to_exception (frame, error, ip);
-				g_assert (exc);
-				THROW_EX (exc, ip);
-			}
-			return_offset = 0; // unused, ctor has void return
-			call_args_offset = offset;
-			ip += 7;
 			goto call;
 		}
 

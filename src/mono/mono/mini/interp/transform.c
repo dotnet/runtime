@@ -281,11 +281,14 @@ realloc_stack (TransformData *td)
 }
 
 static int
-get_stack_size (StackInfo *sp, int count)
+get_stack_size (TransformData *td, StackInfo *sp, int count)
 {
 	int result = 0;
-	for (int i = 0; i < count; i++)
+	for (int i = 0; i < count; i++) {
 		result += sp [i].size;
+		if (td->locals [sp [i].local].flags & INTERP_LOCAL_FLAG_SIMD)
+			result = ALIGN_TO (result, MINT_SIMD_ALIGNMENT);
+	}
 	return result;
 }
 
@@ -3265,6 +3268,29 @@ create_call_args (TransformData *td, int num_args)
 	call_args [num_args] = -1;
 	return call_args;
 }
+
+static void
+interp_realign_simd_params (TransformData *td, StackInfo *sp_params, int num_args, int prev_offset)
+{
+	for (int i = 1; i < num_args; i++) {
+		if (td->locals [sp_params [i].local].flags & INTERP_LOCAL_FLAG_SIMD) {
+			gint16 offset_amount;
+			// If the simd struct comes immediately after the previous argument we do upper align
+			// otherwise we should lower align to preserve call convention
+			if ((sp_params [i - 1].offset + sp_params [i - 1].size) == sp_params [i].offset)
+				offset_amount = (gint16)MINT_STACK_SLOT_SIZE;
+			else
+				offset_amount = -(gint16)MINT_STACK_SLOT_SIZE;
+
+			interp_add_ins (td, MINT_MOV_STACK_UNOPT);
+			// After previous alignment, this arg will be offset by MINT_STACK_SLOT_SIZE
+			td->last_ins->data [0] = sp_params [i].offset + prev_offset;
+			td->last_ins->data [1] = offset_amount;
+			td->last_ins->data [2] = get_stack_size (td, sp_params + i, num_args - i);
+		}
+	}
+}
+
 /* Return FALSE if error, including inline failure */
 static gboolean
 interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target_method, MonoGenericContext *generic_context, MonoClass *constrained_class, gboolean readonly, MonoError *error, gboolean check_visibility, gboolean save_last_error, gboolean tailcall)
@@ -3468,7 +3494,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 			int num_args = csignature->param_count + !!csignature->hasthis;
 			td->sp -= num_args;
-			guint32 params_stack_size = get_stack_size (td->sp, num_args);
+			guint32 params_stack_size = get_stack_size (td, td->sp, num_args);
 
 			if (is_virtual) {
 				interp_add_ins (td, MINT_CKNULL);
@@ -3574,15 +3600,49 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 	interp_emit_arg_conv (td, csignature);
 
+	int param_end_offset = 0;
+	if (!td->optimized && op == -1)
+		param_end_offset = get_tos_offset (td);
+
 	int num_args = csignature->param_count + !!csignature->hasthis;
 	td->sp -= num_args;
-	guint32 params_stack_size = get_stack_size (td->sp, num_args);
-	// Used only by unoptimized code
-	int param_offset;
-	if (num_args)
-		param_offset = td->sp [0].offset;
-	else
-		param_offset = get_tos_offset (td);
+	guint32 params_stack_size = get_stack_size (td, td->sp, num_args);
+
+	int call_offset = -1;
+
+	if (!td->optimized && op == -1) {
+		int param_offset;
+		if (num_args)
+			param_offset = td->sp [0].offset;
+		else
+			param_offset = param_end_offset = get_tos_offset (td);
+
+		if ((param_offset % MINT_STACK_ALIGNMENT) == 0) {
+			call_offset = param_offset;
+		} else if (params_stack_size) {
+			int new_param_offset = ALIGN_TO (param_offset, MINT_STACK_ALIGNMENT);
+			call_offset = new_param_offset;
+
+			// Mov all params to the new_param_offset
+			interp_add_ins (td, MINT_MOV_STACK_UNOPT);
+			td->last_ins->data [0] = param_offset;
+			td->last_ins->data [1] = MINT_STACK_SLOT_SIZE;
+			td->last_ins->data [2] = param_end_offset - param_offset;
+
+			// If we have any simd arguments, we broke their alignment. We need to find the first simd arg and realign it
+			// together with the following params. First argument can't be simd type otherwise we would have been aligned
+			// already.
+			interp_realign_simd_params (td, td->sp, num_args, MINT_STACK_SLOT_SIZE);
+
+			if (calli) {
+				// fp_sreg is at the top of the stack, make sure it is not overwritten by MINT_CALL_ALIGN_STACK
+				int offset = new_param_offset - param_offset;
+				td->locals [fp_sreg].stack_offset += offset;
+			}
+		} else {
+			call_offset = ALIGN_TO (param_offset, MINT_STACK_ALIGNMENT);
+		}
+	}
 
 	int *call_args = create_call_args (td, num_args);
 
@@ -3736,23 +3796,11 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	if (td->last_ins->flags & INTERP_INST_FLAG_CALL) {
 		td->last_ins->info.call_info->call_args = call_args;
 		if (!td->optimized) {
-			if ((param_offset % MINT_STACK_ALIGNMENT) == 0) {
-				td->last_ins->info.call_info->call_offset = param_offset;
-			} else {
-				int new_param_offset = ALIGN_TO (param_offset, MINT_STACK_ALIGNMENT);
-				td->last_ins->info.call_info->call_offset = new_param_offset;
-				if (params_stack_size) {
-					InterpInst *align_ins = interp_insert_ins_bb (td, td->cbb, interp_prev_ins (td->last_ins), MINT_CALL_ALIGN_STACK);
-					align_ins->data [0] = param_offset;
-					align_ins->data [1] = params_stack_size;
-				}
-				if (calli) {
-					// fp_sreg is at the top of the stack, make sure it is not overwritten by MINT_CALL_ALIGN_STACK
-					int offset = new_param_offset - param_offset;
-					td->locals [fp_sreg].stack_offset += offset;
-				}
-			}
+			g_assert (call_offset != -1);
+			td->last_ins->info.call_info->call_offset = call_offset;
 		}
+	} else if (!td->optimized) {
+		g_assert (call_offset == -1);
 	}
 
 	return TRUE;
@@ -6094,8 +6142,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			} else if (!td->optimized) {
 				int tos = get_tos_offset (td);
 				int param_offset, param_size;
-				if (csignature->param_count) {
-					td->sp -= csignature->param_count;
+				int param_count = csignature->param_count;
+				if (param_count) {
+					td->sp -= param_count;
 					param_offset = td->sp [0].offset;
 					param_size = tos - param_offset;
 				} else {
@@ -6103,35 +6152,73 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					param_size = 0;
 				}
 
-				td->cbb->contains_call_instruction = TRUE;
-				interp_add_ins (td, MINT_NEWOBJ_SLOW_UNOPT);
-				interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
-				init_last_ins_call (td);
-				td->last_ins->info.call_info->call_offset = param_offset;
-				td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (m));
-				td->last_ins->data [1] = param_size;
-				if (csignature->param_count > 0) {
-					// Instruct opcode to also align params if necessary
-					if (td->locals [td->sp [0].local].flags & INTERP_LOCAL_FLAG_SIMD)
-						td->last_ins->data [3] = 1;
-				}
+				// Move params types in temporary buffer
+				StackInfo *sp_params = (StackInfo*) mono_mempool_alloc (td->mempool, sizeof (StackInfo) * param_count);
+				memcpy (sp_params, td->sp, sizeof (StackInfo) * param_count);
 
 				gboolean is_vt = m_class_is_valuetype (klass);
+				int vtsize = 0;
+				// We conservatively ensure stack size with an additional 2 * MINT_STACK_SLOT_SIZE since we can do
+				// at most 2 alignments
+				const int padding = 2 * MINT_STACK_SLOT_SIZE;
 				if (is_vt) {
-					int vtsize = mono_class_value_size (klass, NULL);
+					vtsize = mono_class_value_size (klass, NULL);
 					vtsize = ALIGN_TO (vtsize, MINT_STACK_SLOT_SIZE);
-					td->last_ins->data [2] = vtsize;
-					ENSURE_STACK_SIZE(td, (int)(tos + vtsize + MINT_STACK_SLOT_SIZE));
+					ENSURE_STACK_SIZE(td, (int)(tos + vtsize + MINT_STACK_SLOT_SIZE + padding));
 					if (ret_mt == MINT_TYPE_VT)
 						push_type_vt (td, klass, vtsize);
 					else
 						push_type (td, stack_type [ret_mt], klass);
 				} else {
-					td->last_ins->data [2] = 0;
-					ENSURE_STACK_SIZE(td, (int)(tos + 2 * MINT_STACK_SLOT_SIZE));
+					ENSURE_STACK_SIZE(td, (int)(tos + 2 * MINT_STACK_SLOT_SIZE + padding));
 					push_type (td, stack_type [ret_mt], klass);
 				}
-				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+
+				int dreg = td->sp [-1].local;
+
+				int call_offset = get_tos_offset (td);
+				call_offset = ALIGN_TO (call_offset, MINT_STACK_ALIGNMENT);
+
+				if (param_count) {
+					if (td->locals [sp_params [0].local].flags & INTERP_LOCAL_FLAG_SIMD) {
+						// if first arg is simd, move all args at next aligned offset after this ptr
+						interp_add_ins (td, MINT_MOV_STACK_UNOPT);
+						td->last_ins->data [0] = param_offset;
+						td->last_ins->data [1] = call_offset + MINT_SIMD_ALIGNMENT - param_offset;
+						td->last_ins->data [2] = param_size;
+					} else {
+						int realign_offset = call_offset + MINT_STACK_SLOT_SIZE - param_offset;
+						// otherwise we move all args immediately after this ptr
+						interp_add_ins (td, MINT_MOV_STACK_UNOPT);
+						td->last_ins->data [0] = param_offset;
+						td->last_ins->data [1] = realign_offset;
+						td->last_ins->data [2] = param_size;
+
+						if ((realign_offset % MINT_SIMD_ALIGNMENT) != 0) {
+							// the argument move broke the alignment of any potential simd arguments, realign
+							interp_realign_simd_params (td, sp_params, param_count, realign_offset);
+						}
+					}
+				}
+
+				if (!mono_class_has_finalizer (klass) &&
+					!m_class_has_weak_fields (klass)) {
+					if (is_vt) {
+						interp_add_ins (td, MINT_NEWOBJ_VT);
+						td->last_ins->data [1] = GUINTPTR_TO_UINT16 (ALIGN_TO (vtsize, MINT_STACK_SLOT_SIZE));
+					} else {
+						interp_add_ins (td, MINT_NEWOBJ);
+						td->last_ins->data [1] = get_data_item_index (td, vtable);
+					}
+				} else {
+					interp_add_ins (td, MINT_NEWOBJ_SLOW);
+					g_assert (!m_class_is_valuetype (klass));
+				}
+				td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (m));
+				interp_ins_set_dreg (td->last_ins, dreg);
+				interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
+				init_last_ins_call (td);
+				td->last_ins->info.call_info->call_offset = call_offset;
 			} else {
 				td->sp -= csignature->param_count;
 
@@ -6141,6 +6228,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 				if (interp_inline_newobj (td, m, csignature, ret_mt, sp_params, is_protected))
 					break;
+				/* The constructor was not inlined, abort inlining of current method */
+				if (!td->aggressive_inlining)
+					INLINE_FAILURE;
+				td->cbb->contains_call_instruction = TRUE;
 
 				// Push the return value and `this` argument to the ctor
 				gboolean is_vt = m_class_is_valuetype (klass);
@@ -6164,36 +6255,22 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				td->sp += csignature->param_count;
 
 				if (!mono_class_has_finalizer (klass) &&
-					!m_class_has_weak_fields (klass)) {
-					InterpInst *newobj_fast;
-
+						!m_class_has_weak_fields (klass)) {
 					if (is_vt) {
-						td->cbb->contains_call_instruction = TRUE;
-						newobj_fast = interp_add_ins (td, MINT_NEWOBJ_VT);
-						interp_ins_set_dreg (newobj_fast, dreg);
-						newobj_fast->data [1] = GUINTPTR_TO_UINT16 (ALIGN_TO (vtsize, MINT_STACK_SLOT_SIZE));
+						interp_add_ins (td, MINT_NEWOBJ_VT);
+						td->last_ins->data [1] = GUINTPTR_TO_UINT16 (ALIGN_TO (vtsize, MINT_STACK_SLOT_SIZE));
 					} else {
-						td->cbb->contains_call_instruction = TRUE;
-						newobj_fast = interp_add_ins (td, MINT_NEWOBJ);
-						interp_ins_set_dreg (newobj_fast, dreg);
-						newobj_fast->data [1] = get_data_item_index (td, vtable);
+						interp_add_ins (td, MINT_NEWOBJ);
+						td->last_ins->data [1] = get_data_item_index (td, vtable);
 					}
-
-					// Inlining failed. Set the method to be executed as part of newobj instruction
-					newobj_fast->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (m));
-					/* The constructor was not inlined, abort inlining of current method */
-					if (!td->aggressive_inlining)
-						INLINE_FAILURE;
 				} else {
-					td->cbb->contains_call_instruction = TRUE;
 					interp_add_ins (td, MINT_NEWOBJ_SLOW);
 					g_assert (!m_class_is_valuetype (klass));
-					interp_ins_set_dreg (td->last_ins, dreg);
-					td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (m));
 				}
-				goto_if_nok (error, exit);
-
+				td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (m));
+				interp_ins_set_dreg (td->last_ins, dreg);
 				interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
+
 				init_last_ins_call (td);
 				if (is_protected)
 					td->last_ins->flags |= INTERP_INST_FLAG_PROTECTED_NEWOBJ;
@@ -8398,11 +8475,12 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		int num_vars = mono_interp_oplen [opcode] - 1;
 		for (int i = 0; i < num_vars; i++)
 			*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->data [i]));
-	} else if (opcode == MINT_CALL_ALIGN_STACK) {
+	} else if (opcode == MINT_MOV_STACK_UNOPT) {
 		g_assert (!td->optimized);
 		// ins->data [0] represents the stack offset of the call args (within the execution stack)
 		*ip++ = GINT_TO_UINT16 (td->param_area_offset + ins->data [0]);
 		*ip++ = GINT_TO_UINT16 (ins->data [1]);
+		*ip++ = GINT_TO_UINT16 (ins->data [2]);
 	} else {
 		if (mono_interp_op_dregs [opcode])
 			*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->dreg));

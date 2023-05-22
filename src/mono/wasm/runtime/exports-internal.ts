@@ -18,7 +18,7 @@ import { mono_wasm_gc_lock, mono_wasm_gc_unlock } from "./gc-lock";
 export function export_internal(): any {
     return {
         // tests
-        mono_wasm_exit: (exit_code: number) => { Module.err("MONO_WASM: early exit " + exit_code); },
+        mono_wasm_exit: (exit_code: number) => { Module.err("early exit " + exit_code); },
         mono_wasm_enable_on_demand_gc: cwraps.mono_wasm_enable_on_demand_gc,
         mono_wasm_profiler_init_aot: cwraps.mono_wasm_profiler_init_aot,
         mono_wasm_profiler_init_browser: cwraps.mono_wasm_profiler_init_browser,

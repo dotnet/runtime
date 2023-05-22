@@ -7,10 +7,10 @@ import { setI32_unchecked } from "./memory";
 import { conv_string_root, js_string_to_mono_string_root } from "./strings";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
-import { INTERNAL, Module, runtimeHelpers } from "./globals";
+import { INTERNAL, Module } from "./globals";
 import { bind_arg_marshal_to_js } from "./marshal-to-js";
 import { mono_wasm_new_external_root } from "./roots";
-import { mono_wasm_symbolicate_string } from "./logging";
+import { mono_log_debug, mono_wasm_symbolicate_string } from "./logging";
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
@@ -28,9 +28,8 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
         const js_function_name = conv_string_root(function_name_root)!;
         const mark = startMeasure();
         const js_module_name = conv_string_root(module_name_root)!;
-        if (runtimeHelpers.diagnosticTracing) {
-            console.debug(`MONO_WASM: Binding [JSImport] ${js_function_name} from ${js_module_name}`);
-        }
+        mono_log_debug(`Binding [JSImport] ${js_function_name} from ${js_module_name}`);
+
         const fn = mono_wasm_lookup_function(js_function_name, js_module_name);
         const args_count = get_signature_argument_count(signature);
 
@@ -249,8 +248,7 @@ export function mono_wasm_invoke_import(fn_handle: JSFnHandle, args: JSMarshaler
 
 export function mono_wasm_set_module_imports(module_name: string, moduleImports: any) {
     importedModules.set(module_name, moduleImports);
-    if (runtimeHelpers.diagnosticTracing)
-        console.debug(`MONO_WASM: added module imports '${module_name}'`);
+    mono_log_debug(`added module imports '${module_name}'`);
 }
 
 function mono_wasm_lookup_function(function_name: string, js_module_name: string): Function {
@@ -320,8 +318,7 @@ export function dynamic_import(module_name: string, module_url: string): Promise
     let promise = importedModulesPromises.get(module_name);
     const newPromise = !promise;
     if (newPromise) {
-        if (runtimeHelpers.diagnosticTracing)
-            console.debug(`MONO_WASM: importing ES6 module '${module_name}' from '${module_url}'`);
+        mono_log_debug(`importing ES6 module '${module_name}' from '${module_url}'`);
         promise = import(/* webpackIgnore: true */module_url);
         importedModulesPromises.set(module_name, promise);
     }
@@ -330,8 +327,7 @@ export function dynamic_import(module_name: string, module_url: string): Promise
         const module = await promise;
         if (newPromise) {
             importedModules.set(module_name, module);
-            if (runtimeHelpers.diagnosticTracing)
-                console.debug(`MONO_WASM: imported ES6 module '${module_name}' from '${module_url}'`);
+            mono_log_debug(`imported ES6 module '${module_name}' from '${module_url}'`);
         }
         return module;
     });

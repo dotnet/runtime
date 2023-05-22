@@ -2267,6 +2267,10 @@ void Compiler::compSetProcessor()
 // don't actually exist. The JIT is in charge of adding those and ensuring
 // the total sum of flags is still valid.
 #if defined(TARGET_XARCH)
+    // Get the preferred vector bitwidth, rounding down to the nearest multiple of 128-bits
+    uint32_t preferredVectorBitWidth   = (JitConfig.PreferredVectorBitWidth() / 128) * 128;
+    uint32_t preferredVectorByteLength = preferredVectorBitWidth / 8;
+
     if (instructionSetFlags.HasInstructionSet(InstructionSet_SSE))
     {
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
@@ -2294,6 +2298,17 @@ void Compiler::compSetProcessor()
         assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL));
 
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
+
+        if ((preferredVectorByteLength == 0) && jitFlags.IsSet(JitFlags::JIT_FLAG_VECTOR512_THROTTLING))
+        {
+            // Some architectures can experience frequency throttling when
+            // executing 512-bit width instructions. To account for this we set the
+            // default preferred vector width to 256-bits in some scenarios. Power
+            // users can override this with `DOTNET_PreferredVectorBitWidth=512` to
+            // allow using such instructions where hardware support is available.
+
+            preferredVectorByteLength = 256 / 8;
+        }
     }
     else
     {
@@ -2321,6 +2336,8 @@ void Compiler::compSetProcessor()
         instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI_VL_X64);
 #endif // TARGET_AMD64
     }
+
+    opts.preferredVectorByteLength = preferredVectorByteLength;
 #elif defined(TARGET_ARM64)
     if (instructionSetFlags.HasInstructionSet(InstructionSet_AdvSimd))
     {
@@ -4022,7 +4039,7 @@ _SetMinOpts:
     fgCanRelocateEHRegions = true;
 }
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
 // Function compRsvdRegCheck:
 //  given a curState to use for calculating the total frame size
 //  it will return true if the REG_OPT_RSVD should be reserved so
@@ -4065,10 +4082,6 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 
     // TODO-ARM64-CQ: update this!
     JITDUMP(" Returning true (ARM64)\n\n");
-    return true; // just always assume we'll need it, for now
-
-#elif defined(TARGET_LOONGARCH64)
-    JITDUMP(" Returning true (LOONGARCH64)\n\n");
     return true; // just always assume we'll need it, for now
 
 #elif defined(TARGET_RISCV64)
@@ -4198,7 +4211,7 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     return false;
 #endif // TARGET_ARM
 }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_ARMARCH || TARGET_RISCV64
 
 //------------------------------------------------------------------------
 // compGetTieringName: get a string describing tiered compilation settings

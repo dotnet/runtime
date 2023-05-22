@@ -172,7 +172,6 @@ enum TargetHandleType : BYTE
 struct BasicBlock;
 enum BasicBlockFlags : unsigned __int64;
 struct InlineCandidateInfo;
-struct GuardedDevirtualizationCandidateInfo;
 struct HandleHistogramProfileCandidateInfo;
 struct LateDevirtualizationInfo;
 
@@ -5375,11 +5374,6 @@ struct GenTreeCall final : public GenTree
         gtCallMoreFlags &= ~GTF_CALL_M_GUARDED_DEVIRT;
     }
 
-    void SetGuardedDevirtualizationCandidate()
-    {
-        gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT;
-    }
-
     void SetIsGuarded()
     {
         gtCallMoreFlags |= GTF_CALL_M_GUARDED;
@@ -5433,6 +5427,22 @@ struct GenTreeCall final : public GenTree
     bool IsOptimizingRetBufAsLocal() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_RETBUFFARG_LCLOPT) != 0;
+    }
+
+    InlineCandidateInfo* GetInlineCandidateInfo()
+    {
+        return gtInlineCandidateInfo;
+    }
+
+    void SetSingleInlineCadidateInfo(InlineCandidateInfo* candidateInfo);
+
+    InlineCandidateInfo* GetGDVCandidateInfo(uint8_t index = 0);
+
+    void AddGDVCandidateInfo(InlineCandidateInfo* candidateInfo);
+
+    void ClearInlineInfo()
+    {
+        SetSingleInlineCadidateInfo(nullptr);
     }
 
     //-----------------------------------------------------------------------------------------
@@ -5505,10 +5515,13 @@ struct GenTreeCall final : public GenTree
         return mayUseDispatcher && shouldUseDispatcher ? CFGCallKind::Dispatch : CFGCallKind::ValidateAndCall;
     }
 
-    GenTreeCallFlags     gtCallMoreFlags;  // in addition to gtFlags
-    gtCallTypes          gtCallType : 3;   // value from the gtCallTypes enumeration
-    var_types            gtReturnType : 5; // exact return type
-    CORINFO_CLASS_HANDLE gtRetClsHnd;      // The return type handle of the call if it is a struct; always available
+    GenTreeCallFlags gtCallMoreFlags;  // in addition to gtFlags
+    gtCallTypes      gtCallType : 3;   // value from the gtCallTypes enumeration
+    var_types        gtReturnType : 5; // exact return type
+
+    uint8_t gtInlineInfoCount; // number of inline candidates for the given call
+
+    CORINFO_CLASS_HANDLE gtRetClsHnd; // The return type handle of the call if it is a struct; always available
     union {
         void*                gtStubCallStubAddr; // GTF_CALL_VIRT_STUB - these are never inlined
         CORINFO_CLASS_HANDLE gtInitClsHnd;       // Used by static init helpers, represents a class they init
@@ -5518,10 +5531,9 @@ struct GenTreeCall final : public GenTree
         // only used for CALLI unmanaged calls (CT_INDIRECT)
         GenTree* gtCallCookie;
         // gtInlineCandidateInfo is only used when inlining methods
-        InlineCandidateInfo*                  gtInlineCandidateInfo;
-        GuardedDevirtualizationCandidateInfo* gtGuardedDevirtualizationCandidateInfo;
-        HandleHistogramProfileCandidateInfo*  gtHandleHistogramProfileCandidateInfo;
-        LateDevirtualizationInfo*             gtLateDevirtualizationInfo;
+        InlineCandidateInfo*                 gtInlineCandidateInfo;
+        HandleHistogramProfileCandidateInfo* gtHandleHistogramProfileCandidateInfo;
+        LateDevirtualizationInfo*            gtLateDevirtualizationInfo;
         CORINFO_GENERIC_HANDLE compileTimeHelperArgumentHandle; // Used to track type handle argument of dynamic helpers
         void*                  gtDirectCallAddress; // Used to pass direct call address between lower and codegen
     };
