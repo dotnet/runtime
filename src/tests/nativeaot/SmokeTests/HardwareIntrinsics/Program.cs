@@ -107,11 +107,11 @@ unsafe class Program
         bool? ExpectedSse42 = true;
         bool? ExpectedPopcnt = null;
         bool? ExpectedAvx = true;
-        bool? ExpectedAvx2 = null;
+        bool? ExpectedAvx2 = false; // TODO: Fix once opportunistic Avx2 is allowed
         bool? ExpectedFma = null;
         bool? ExpectedBmi1 = null;
         bool? ExpectedBmi2 = null;
-        bool? ExpectedAvxVnni = null;
+        bool? ExpectedAvxVnni = false; // TODO: Fix once opportunistic Avx2 is allowed
         bool? ExpectedAvx512F = false;
         bool? ExpectedAvx512BW = false;
         bool? ExpectedAvx512CD = false;
