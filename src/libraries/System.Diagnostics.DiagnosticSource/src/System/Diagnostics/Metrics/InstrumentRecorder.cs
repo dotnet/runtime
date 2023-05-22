@@ -4,15 +4,18 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
+using System.Threading;
 
 namespace System.Diagnostics.Metrics
 {
     /// <summary>
-    /// A helper class to record teh measurements published from <see cref="Instrument{T}"/> or <see cref="ObservableInstrument{T}"/>.
+    /// A helper class to record the measurements published from <see cref="Instrument{T}"/> or <see cref="ObservableInstrument{T}"/>.
     /// </summary>
     public sealed class InstrumentRecorder<T> : IDisposable where T : struct
     {
         private bool _isObservableInstrument;
+        private bool _disposed;
+        private Instrument? _instrument;
 
         private readonly MeterListener _meterListener;
         private readonly List<Measurement<T>> _measurements;
@@ -84,13 +87,11 @@ namespace System.Diagnostics.Metrics
                     instrument.Name == instrumentName &&
                     (instrument is ObservableInstrument<T> || instrument is Instrument<T>))
                 {
-                    if (instrument is ObservableInstrument<T>)
+                    if (Interlocked.CompareExchange(ref _instrument, instrument, null) is null)
                     {
-                        _isObservableInstrument = true;
+                        _isObservableInstrument = instrument is ObservableInstrument<T>;
+                        listener.EnableMeasurementEvents(instrument, state: null);
                     }
-
-                    listener.EnableMeasurementEvents(instrument, state: null);
-                    Instrument = instrument;
                 }
             };
 
@@ -124,13 +125,11 @@ namespace System.Diagnostics.Metrics
                 if (object.ReferenceEquals(instrument.Meter, meter) && instrument.Name == instrumentName &&
                     (instrument is ObservableInstrument<T> || instrument is Instrument<T>))
                 {
-                    if (instrument is ObservableInstrument<T>)
+                    if (Interlocked.CompareExchange(ref _instrument, instrument, null) is null)
                     {
-                        _isObservableInstrument = true;
+                        _isObservableInstrument = instrument is ObservableInstrument<T>;
+                        listener.EnableMeasurementEvents(instrument, state: null);
                     }
-
-                    listener.EnableMeasurementEvents(instrument, state: null);
-                    Instrument = instrument;
                 }
             };
 
@@ -141,7 +140,11 @@ namespace System.Diagnostics.Metrics
         /// <summary>
         /// Gets the <see cref="Instrument"/> that is being recorded.
         /// </summary>
-        public Instrument? Instrument { get; private set; }
+        public Instrument? Instrument
+        {
+            get => _instrument;
+            private set => _instrument = value;
+        }
 
         private void OnMeasurementRecorded(Instrument instrument, T measurement, ReadOnlySpan<KeyValuePair<string, object?>> tags, object? state)
         {
@@ -160,6 +163,11 @@ namespace System.Diagnostics.Metrics
         /// <returns>The measurements recorded by this <see cref="InstrumentRecorder{T}"/>.</returns>
         public IEnumerable<Measurement<T>> GetMeasurements(bool clear = false)
         {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(InstrumentRecorder<T>));
+            }
+
             if (_isObservableInstrument)
             {
                 _meterListener.RecordObservableInstruments();
@@ -179,6 +187,14 @@ namespace System.Diagnostics.Metrics
         /// <summary>
         /// Disposes the <see cref="InstrumentRecorder{T}"/> and stops recording measurements.
         /// </summary>
-        public void Dispose() => _meterListener.Dispose();
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+            _disposed = true;
+            _meterListener.Dispose();
+        }
     }
 }

@@ -4,7 +4,7 @@
 using System;
 using System.Diagnostics.Metrics;
 
-namespace Microsoft.Extensions.Metrics
+namespace Microsoft.Extensions.Diagnostics.Metrics
 {
     /// <summary>
     /// A factory for creating <see cref="Meter"/> instances.

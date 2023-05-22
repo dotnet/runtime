@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 
-namespace Microsoft.Extensions.Metrics
+namespace Microsoft.Extensions.Diagnostics.Metrics
 {
     /// <summary>
     /// Extension methods for <see cref="Meter" /> and <see cref="IMeterFactory" />.

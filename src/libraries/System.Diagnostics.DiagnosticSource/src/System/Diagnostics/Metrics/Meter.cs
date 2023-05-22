@@ -27,7 +27,7 @@ namespace System.Diagnostics.Metrics
                 throw new ArgumentNullException(nameof(options));
             }
 
-            Debug.Assert(options.Name != null);
+            Debug.Assert(options.Name is not null);
 
             Initialize(options.Name, options.Version, options.Tags, options.Scope);
 
@@ -437,7 +437,11 @@ namespace System.Diagnostics.Metrics
                 s_allMeters.Remove(this);
                 instruments = _instruments;
                 _instruments = new List<Instrument>();
-                _nonObservableInstrumentsCache = new();
+            }
+
+            lock (_nonObservableInstrumentsCache)
+            {
+                _nonObservableInstrumentsCache.Clear();
             }
 
             if (instruments is not null)
@@ -449,56 +453,19 @@ namespace System.Diagnostics.Metrics
             }
         }
 
-        private static bool CompareTags(IEnumerable<KeyValuePair<string, object?>>? tags1, IEnumerable<KeyValuePair<string, object?>>? tags2)
+        private static Instrument? GetCachedInstrument(List<Instrument> instrumentList, Type instrumentType, string? unit, string? description, IEnumerable<KeyValuePair<string, object?>>? tags)
         {
-            if (tags1 is null)
+            Debug.Assert(instrumentList is not null);
+            foreach (Instrument instrument in instrumentList)
             {
-                return tags2 is null;
-            }
-
-            if (tags2 is null)
-            {
-                return false;
-            }
-
-            if (tags1 is ICollection<KeyValuePair<string, object?>> firstCol && tags2 is ICollection<KeyValuePair<string, object?>> secondCol)
-            {
-                if (firstCol.Count != secondCol.Count)
+                if (instrument.GetType() == instrumentType && instrument.Unit == unit &&
+                    instrument.Description == description && DiagnosticsHelper.CompareTags(instrument.Tags, tags))
                 {
-                    return false;
-                }
-
-                if (firstCol is IList<KeyValuePair<string, object?>> firstList && secondCol is IList<KeyValuePair<string, object?>> secondList)
-                {
-                    int count = firstList.Count;
-                    for (int i = 0; i < count; i++)
-                    {
-                        KeyValuePair<string, object?> pair1 = firstList[i];
-                        KeyValuePair<string, object?> pair2 = secondList[i];
-                        if (pair1.Key != pair2.Key || !object.Equals(pair1.Value, pair2.Value))
-                        {
-                            return false;
-                        }
-                    }
-
-                    return true;
+                    return instrument;
                 }
             }
 
-            using (IEnumerator<KeyValuePair<string, object?>> e1 = tags1.GetEnumerator())
-            using (IEnumerator<KeyValuePair<string, object?>> e2 = tags2.GetEnumerator())
-            {
-                while (e1.MoveNext())
-                {
-                    KeyValuePair<string, object?> pair1 = e1.Current;
-                    if (!e2.MoveNext() || pair1.Key != e2.Current.Key || !object.Equals(pair1.Value, e2.Current.Value))
-                    {
-                        return false;
-                    }
-                }
-
-                return !e2.MoveNext();
-            }
+            return null;
         }
 
         // AddInstrument will be called when publishing the instrument (i.e. calling Instrument.Publish()).
@@ -515,23 +482,30 @@ namespace System.Diagnostics.Metrics
                 }
             }
 
-            Debug.Assert(instrumentList != null);
+            Debug.Assert(instrumentList is not null);
 
             lock (instrumentList)
             {
-                foreach (Instrument instrument in instrumentList)
+                // Find out if the instrument is already created.
+                Instrument? cachedInstrument = GetCachedInstrument(instrumentList, instrumentType, unit, description, tags);
+                if (cachedInstrument is not null)
                 {
-                    if (instrument.GetType() == instrumentType && instrument.Unit == unit &&
-                        instrument.Description == description && CompareTags(instrument.Tags, tags))
-                    {
-                        return instrument;
-                    }
+                    return cachedInstrument;
                 }
             }
 
             Instrument newInstrument = instrumentCreator.Invoke();
+
             lock (instrumentList)
             {
+                // It is possible GetOrCreateInstrument get called synchronously from different threads with same instrument name.
+                // we need to ensure only one instrument is added to the list.
+                Instrument? cachedInstrument = GetCachedInstrument(instrumentList, instrumentType, unit, description, tags);
+                if (cachedInstrument is not null)
+                {
+                    return cachedInstrument;
+                }
+
                 instrumentList.Add(newInstrument);
             }
 
@@ -539,6 +513,7 @@ namespace System.Diagnostics.Metrics
         }
 
         // AddInstrument will be called when publishing the instrument (i.e. calling Instrument.Publish()).
+        // This method is called inside the lock Instrument.SyncObject
         internal bool AddInstrument(Instrument instrument)
         {
             if (!_instruments.Contains(instrument))
@@ -550,6 +525,7 @@ namespace System.Diagnostics.Metrics
         }
 
         // Called from MeterListener.Start
+        // This method is called inside the lock Instrument.SyncObject
         internal static List<Instrument>? GetPublishedInstruments()
         {
             List<Instrument>? instruments = null;

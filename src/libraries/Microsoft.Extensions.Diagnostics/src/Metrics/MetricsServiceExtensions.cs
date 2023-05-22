@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System;
 
-namespace Microsoft.Extensions.Metrics
+namespace Microsoft.Extensions.Diagnostics.Metrics
 {
     /// <summary>
     /// Extension methods for setting up metrics services in an <see cref="IServiceCollection" />.
@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Metrics
         /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
         public static IServiceCollection AddMetrics(this IServiceCollection services)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }

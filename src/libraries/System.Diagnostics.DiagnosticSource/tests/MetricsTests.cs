@@ -1434,12 +1434,12 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Equal(instrument2, recorder5.Instrument);
 
                 //
-                // Test meter creating 2 instruments with same name but different unit and ensure listening to the last created one
+                // Test meter creating 2 instruments with same name but different unit and ensure listening to the first created one
                 //
 
                 Counter<long> instrument3 = meter.CreateCounter<long>("counter", "myUnit");
                 InstrumentRecorder<long> recorder6 = new InstrumentRecorder<long>(meter: meter, instrumentName: "counter");
-                Assert.Equal(instrument3, recorder6.Instrument);
+                Assert.Equal(instrument, recorder6.Instrument);
 
                 //
                 // Ensure can listen to the observable instrument

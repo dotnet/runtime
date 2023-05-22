@@ -4,7 +4,7 @@
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Metrics;
+using Microsoft.Extensions.Diagnostics.Metrics;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
