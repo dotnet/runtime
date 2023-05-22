@@ -495,9 +495,9 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         return NI_Illegal;
     }
 
-    bool isIsaSupported = comp->compSupportsHWIntrinsic(isa);
-
+    bool isIsaSupported            = comp->compSupportsHWIntrinsic(isa);
     bool isHardwareAcceleratedProp = (strcmp(methodName, "get_IsHardwareAccelerated") == 0);
+
 #ifdef TARGET_XARCH
     if (isHardwareAcceleratedProp)
     {
@@ -548,7 +548,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         // When the compiler doesn't support ISA or when it does but the target hardware does
         // not and we aren't in a scenario with support for a dynamic check, we want to return false.
 
-        if (isIsaSupported && comp->compOpportunisticallyDependsOn(isa))
+        if (isIsaSupported && comp->compSupportsHWIntrinsic(isa))
         {
             if (!comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) || comp->compExactlyDependsOn(isa))
             {
