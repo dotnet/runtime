@@ -83,7 +83,6 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Null(write.Exception);
         }
 
-
         private sealed class TestLogEntryProcessor : ILogEntryProcessor
         {
             private readonly ILogEntryProcessor _nextProcessor;
