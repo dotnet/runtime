@@ -1702,7 +1702,7 @@ bool Compiler::impSpillStackEntry(unsigned level,
         {
             JITDUMP("\n*** see V%02u = GT_RET_EXPR, noting temp\n", tnum);
             GenTree*             call = tree->AsRetExpr()->gtInlineCandidate;
-            InlineCandidateInfo* ici  = call->AsCall()->gtInlineCandidateInfo;
+            InlineCandidateInfo* ici  = call->AsCall()->GetInlineCandidateInfo();
             ici->preexistingSpillTemp = tnum;
         }
     }

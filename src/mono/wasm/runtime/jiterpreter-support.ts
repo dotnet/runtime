@@ -118,7 +118,7 @@ type ImportedFunctionInfo = {
     typeIndex: number;
     module: string;
     name: string;
-    func: Function;
+    func?: Function;
 }
 
 const compressedNameCache: { [number: number]: string } = {};
@@ -375,6 +375,26 @@ export class WasmBuilder {
         this.appendLeb(value);
     }
 
+    v128_const(value: 0 | Uint8Array) {
+        if (value === 0) {
+            // This encoding is much smaller than a v128_const
+            // But v8 doesn't optimize it :-((((((
+            /*
+                this.i52_const(0);
+                this.appendSimd(WasmSimdOpcode.i64x2_splat);
+            */
+            this.appendSimd(WasmSimdOpcode.v128_const);
+            for (let i = 0; i < 16; i++)
+                this.appendU8(0);
+        } else if (typeof (value) === "object") {
+            mono_assert(value.byteLength === 16, "Expected v128_const arg to be 16 bytes in size");
+            this.appendSimd(WasmSimdOpcode.v128_const);
+            this.appendBytes(value);
+        } else {
+            throw new Error("Expected v128_const arg to be 0 or a Uint8Array");
+        }
+    }
+
     defineType(
         name: string, parameters: { [name: string]: WasmValtype }, returnType: WasmValtype,
         permanent: boolean
@@ -483,13 +503,16 @@ export class WasmBuilder {
         return result;
     }
 
-    _generateImportSection() {
+    _generateImportSection(includeFunctionTable?: boolean) {
         const importsToEmit = this.getImportsToEmit();
         this.lockImports = true;
 
         // Import section
         this.beginSection(2);
-        this.appendULeb(2 + importsToEmit.length + this.constantSlots.length);
+        this.appendULeb(
+            1 + importsToEmit.length + this.constantSlots.length +
+            ((includeFunctionTable !== false) ? 1 : 0)
+        );
 
         // mono_log_info(`referenced ${importsToEmit.length} import(s)`);
         for (let i = 0; i < importsToEmit.length; i++) {
@@ -517,20 +540,22 @@ export class WasmBuilder {
         // Minimum size is in 64k pages, not bytes
         this.appendULeb(0x01);
 
-        this.appendName("f");
-        this.appendName("f");
-        // tabletype
-        this.appendU8(0x01);
-        // funcref
-        this.appendU8(0x70);
-        // limits = { min=0x01, max=infinity }
-        this.appendU8(0x00);
-        this.appendULeb(0x01);
+        if (includeFunctionTable !== false) {
+            this.appendName("f");
+            this.appendName("f");
+            // tabletype
+            this.appendU8(0x01);
+            // funcref
+            this.appendU8(0x70);
+            // limits = { min=0x01, max=infinity }
+            this.appendU8(0x00);
+            this.appendULeb(0x01);
+        }
     }
 
     defineImportedFunction(
         module: string, name: string, functionTypeName: string,
-        permanent: boolean, func: Function | number
+        permanent: boolean, func?: Function | number
     ): ImportedFunctionInfo {
         if (this.lockImports)
             throw new Error("Import section already generated");
@@ -545,8 +570,8 @@ export class WasmBuilder {
         const table = permanent ? this.permanentImportedFunctions : this.importedFunctions;
         if (typeof (func) === "number")
             func = getWasmFunctionTable().get(func);
-        if (typeof (func) !== "function")
-            throw new Error(`Value passed for imported function ${name} was not a function or valid function pointer`);
+        if ((typeof (func) !== "function") && (typeof (func) !== "undefined"))
+            throw new Error(`Value passed for imported function ${name} was not a function or valid function pointer or undefined`);
         const result = table[name] = {
             index: undefined,
             typeIndex,
@@ -590,7 +615,7 @@ export class WasmBuilder {
         return rec;
     }
 
-    emitImportsAndFunctions() {
+    emitImportsAndFunctions(includeFunctionTable?: boolean) {
         let exportCount = 0;
         for (let i = 0; i < this.functions.length; i++) {
             const func = this.functions[i];
@@ -603,7 +628,7 @@ export class WasmBuilder {
                 func.blob = this.endFunction(false);
         }
 
-        this._generateImportSection();
+        this._generateImportSection(includeFunctionTable);
 
         // Function section
         this.beginSection(3);
@@ -1497,11 +1522,28 @@ export function try_append_memset_fast(builder: WasmBuilder, localOffset: number
     if (count >= maxMemsetSize)
         return false;
 
+    // FIXME
+    if (value !== 0)
+        return false;
+
     const destLocal = destOnStack ? "math_lhs32" : "pLocals";
     if (destOnStack)
         builder.local("math_lhs32", WasmOpcode.set_local);
 
     let offset = destOnStack ? 0 : localOffset;
+
+    if (builder.options.enableSimd) {
+        const sizeofV128 = 16;
+        while (count >= sizeofV128) {
+            builder.local(destLocal);
+            builder.v128_const(0);
+            builder.appendSimd(WasmSimdOpcode.v128_store);
+            builder.appendMemarg(offset, 0);
+            offset += sizeofV128;
+            count -= sizeofV128;
+        }
+    }
+
     // Do blocks of 8-byte sets first for smaller/faster code
     while (count >= 8) {
         builder.local(destLocal);
@@ -1581,6 +1623,21 @@ export function try_append_memmove_fast(
 
     let destOffset = addressesOnStack ? 0 : destLocalOffset,
         srcOffset = addressesOnStack ? 0 : srcLocalOffset;
+
+    if (builder.options.enableSimd) {
+        const sizeofV128 = 16;
+        while (count >= sizeofV128) {
+            builder.local(destLocal);
+            builder.local(srcLocal);
+            builder.appendSimd(WasmSimdOpcode.v128_load);
+            builder.appendMemarg(srcOffset, 0);
+            builder.appendSimd(WasmSimdOpcode.v128_store);
+            builder.appendMemarg(destOffset, 0);
+            destOffset += sizeofV128;
+            srcOffset += sizeofV128;
+            count -= sizeofV128;
+        }
+    }
 
     // Do blocks of 8-byte copies first for smaller/faster code
     while (count >= 8) {
