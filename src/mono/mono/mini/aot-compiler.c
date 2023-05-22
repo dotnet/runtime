@@ -3922,7 +3922,6 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 				encode_klass_ref (acfg, method->klass, p, &p);
 			} else {
 				MonoMethodSignature *sig = mono_method_signature_internal (method);
-				// WrapperInfo *wrapper_info = mono_marshal_get_wrapper_info (method);
 
 				encode_value (0, p, &p);
 				if (method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE)
