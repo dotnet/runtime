@@ -216,7 +216,7 @@ namespace ComInterfaceGenerator.Tests
 
                 NativeExportsNE.UnmanagedToManagedCustomMarshalling.MultiplyWithNativeObjectData(wrapper, values, values.Length);
 
-                //Assert.Equal(expected, values);
+                Assert.Equal(expected, values);
 
                 Assert.Equal(elementFreeCalls + values.Length, IntWrapperMarshallerToIntWithFreeCounts.NumCallsToFree);
             }
