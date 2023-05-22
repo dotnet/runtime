@@ -298,9 +298,6 @@
   #define B_DIST_SMALL_MAX_NEG  (-4096)
   #define B_DIST_SMALL_MAX_POS  (+4095)
 
-  #define OFFSET_DIST_SMALL_MAX_NEG   (-1048)
-  #define OFFSET_DIST_SMALL_MAX_POS   (+1047)
-
   #define STACK_PROBE_BOUNDARY_THRESHOLD_BYTES 0
 
 // clang-format on
