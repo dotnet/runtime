@@ -1168,6 +1168,15 @@
         <ExcludeList Include="$(XunitTestBinBase)\Interop\PInvoke\Variant\VariantTestComWrappers\*">
             <Issue>https://github.com/dotnet/runtimelab/issues/306</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Invoke\thiscall\thisnull_d\*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: instance method called with null this</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Invoke\thiscall\thisnull_r\*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: instance method called with null this</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Regressions\Regression3_Regressions\*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Assembly.LoadFrom</Issue>
+        </ExcludeList>
 
         <!-- Complex constrained calls -->
         <!-- https://github.com/dotnet/runtimelab/issues/1431 -->
@@ -1229,6 +1238,11 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader\classloader\MethodImpl\CovariantReturns\UnitTest\UnitTest_GVM\*" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader\classloader\MethodImpl\CovariantReturns\UnitTest\UnitTestDelegates\*" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader\classloader\MethodImpl\CovariantReturns\UnitTest\OverrideMoreDerivedReturn\*" />
+
+        <!-- Requires Debug build -->
+        <ExcludeList Include="$(XunitTestBinBase)/JIT\Directed\debugging\poisoning\poison\poison\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT\Methodical\eh\finallyexec\nestedfinallycall_d\*" /> <!-- probably RyuJIT bug: https://github.com/dotnet/runtime/issues/86561 -->
+        <ExcludeList Include="$(XunitTestBinBase)/JIT\Methodical\eh\finallyexec\nestedfinallycall_r\*" /> <!-- probably RyuJIT bug: https://github.com/dotnet/runtime/issues/86561 -->
     </ItemGroup>
 
     <!-- run.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.

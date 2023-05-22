@@ -2180,6 +2180,64 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBloc
 }
 
 //-------------------------------------------------------------------------
+// SetSingleInlineCadidateInfo: set a single inline candidate info in the current call.
+//
+// Arguments:
+//     candidateInfo - inline candidate info
+//
+void GenTreeCall::SetSingleInlineCadidateInfo(InlineCandidateInfo* candidateInfo)
+{
+    if (candidateInfo != nullptr)
+    {
+        gtFlags |= GTF_CALL_INLINE_CANDIDATE;
+        gtInlineInfoCount = 1;
+    }
+    else
+    {
+        gtInlineInfoCount = 0;
+        gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
+        gtCallMoreFlags &= ~GTF_CALL_M_GUARDED_DEVIRT;
+    }
+    gtInlineCandidateInfo = candidateInfo;
+}
+
+//-------------------------------------------------------------------------
+// GetGDVCandidateInfo: Get GDV candidate info in the current call by index.
+//
+// Return Value:
+//     GDV candidate info
+//
+InlineCandidateInfo* GenTreeCall::GetGDVCandidateInfo(uint8_t index)
+{
+    assert(index < gtInlineInfoCount);
+    return &gtInlineCandidateInfo[index];
+}
+
+//-------------------------------------------------------------------------
+// AddGDVCandidateInfo: Record a guarded devirtualization (GDV) candidate info
+//     for this call. For now, we only support one GDV candidate per call.
+//
+// Arguments:
+//     candidateInfo - GDV candidate info
+//
+void GenTreeCall::AddGDVCandidateInfo(InlineCandidateInfo* candidateInfo)
+{
+    assert(candidateInfo != nullptr);
+    if (gtInlineInfoCount == 0)
+    {
+        gtInlineCandidateInfo = candidateInfo;
+    }
+    else
+    {
+        // Allocate a fixed list of InlineCandidateInfo structs
+        assert(!"multiple GDV candidates are not implemented yet");
+    }
+
+    gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT;
+    gtInlineInfoCount++;
+}
+
+//-------------------------------------------------------------------------
 // HasSideEffects:
 //    Returns true if this call has any side effects. All non-helpers are considered to have side-effects. Only helpers
 //    that do not mutate the heap, do not run constructors, may not throw, and are either a) pure or b) non-finalizing
@@ -7758,7 +7816,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     }
     else
     {
-        node->gtInlineCandidateInfo = nullptr;
+        node->ClearInlineInfo();
     }
     node->gtReturnType = type;
 
@@ -9409,6 +9467,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
     {
         copy->gtCallMethHnd         = tree->gtCallMethHnd;
         copy->gtInlineCandidateInfo = tree->gtInlineCandidateInfo;
+        copy->gtInlineInfoCount     = tree->gtInlineInfoCount;
     }
 
     copy->gtCallType   = tree->gtCallType;
@@ -12419,10 +12478,10 @@ void Compiler::gtDispTree(GenTree*     tree,
                 printf(" (FramesRoot last use)");
             }
 
-            if (((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0) && (call->gtInlineCandidateInfo != nullptr) &&
-                (call->gtInlineCandidateInfo->exactContextHnd != nullptr))
+            if (((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0) && (call->GetInlineCandidateInfo() != nullptr) &&
+                (call->GetInlineCandidateInfo()->exactContextHnd != nullptr))
             {
-                printf(" (exactContextHnd=0x%p)", dspPtr(call->gtInlineCandidateInfo->exactContextHnd));
+                printf(" (exactContextHnd=0x%p)", dspPtr(call->GetInlineCandidateInfo()->exactContextHnd));
             }
 
             gtDispCommonEndLine(tree);
@@ -17991,7 +18050,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 // type class handle in the inline info (for GDV candidates,
                 // this data is valid only for a correct guess, so we cannot
                 // use it).
-                InlineCandidateInfo* inlInfo = call->gtInlineCandidateInfo;
+                InlineCandidateInfo* inlInfo = call->GetInlineCandidateInfo();
                 assert(inlInfo != nullptr);
 
                 // Grab it as our first cut at a return type.
