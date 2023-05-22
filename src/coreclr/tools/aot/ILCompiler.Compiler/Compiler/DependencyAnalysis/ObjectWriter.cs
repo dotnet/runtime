@@ -960,7 +960,8 @@ namespace ILCompiler.DependencyAnalysis
 
             try
             {
-                SetIdentity(objectWriter);
+                if (factory.Target.OperatingSystem == TargetOS.Linux)
+                    SetIdentity(objectWriter);
 
                 ObjectNodeSection managedCodeSection;
                 if (factory.Target.OperatingSystem == TargetOS.Windows)
