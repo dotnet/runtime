@@ -2616,7 +2616,7 @@ void Lowering::TryLowerCselToCinvOrCneg(GenTreeOp* select, GenTree* cond)
             assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
         }
         select->SetOper(isCneg ? GT_SELECT_NEG : GT_SELECT_INV);
-        JITDUMP("Converted to: %s \n", isCneg ? "SELECT_CNEG" : "SELECT_INV");
+        JITDUMP("Converted to: %s\n", isCneg ? "SELECT_CNEG" : "SELECT_INV");
         DISPTREERANGE(BlockRange(), select);
         JITDUMP("\n");
     }

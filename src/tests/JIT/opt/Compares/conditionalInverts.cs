@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class ConditionalInvertTest
 {
@@ -73,7 +74,8 @@ public class ConditionalInvertTest
         return op1 > 49.0 ? ~op2 : op2;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (cinv_byte(72, 13) != (byte)13)
         {
