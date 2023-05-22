@@ -341,7 +341,10 @@ namespace Microsoft.Interop
                     marshallingStrategy = new FreeOwnedOriginalValueMarshalling(marshallingStrategy);
                 }
 
-                marshallingStrategy = new StatefulFreeMarshalling(marshallingStrategy);
+                if (marshallerData.Shape.HasFlag(MarshallerShape.Free))
+                {
+                    marshallingStrategy = new StatefulFreeMarshalling(marshallingStrategy);
+                }
             }
             else
             {

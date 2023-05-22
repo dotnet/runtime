@@ -327,7 +327,6 @@ namespace ComInterfaceGenerator.Unit.Tests
         [MemberData(nameof(UnmanagedToManagedCodeSnippetsToCompile), GeneratorKind.VTableIndexStubGenerator)]
         [MemberData(nameof(CustomCollectionsManagedToUnmanaged), GeneratorKind.VTableIndexStubGenerator)]
         [MemberData(nameof(CustomCollections), GeneratorKind.VTableIndexStubGenerator)]
-        [MemberData(nameof(CustomCollections), GeneratorKind.VTableIndexStubGenerator)]
         public async Task ValidateVTableIndexSnippets(string id, string source)
         {
             _ = id;
