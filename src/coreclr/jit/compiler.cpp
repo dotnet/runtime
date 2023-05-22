@@ -2849,8 +2849,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitSaveFpLrWithCalleeSavedRegisters = 0;
 #endif // defined(TARGET_ARM64)
 
-    opts.compJitEarlyExpandMDArrays = (JitConfig.JitEarlyExpandMDArrays() != 0);
-
     opts.disAsm       = false;
     opts.disDiffable  = false;
     opts.dspDiffable  = false;
@@ -2968,18 +2966,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (JitConfig.JitOptRepeat().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
         {
             opts.optRepeat = true;
-        }
-
-        // If JitEarlyExpandMDArrays is non-zero, then early MD expansion is enabled.
-        // If JitEarlyExpandMDArrays is zero, then conditionally enable it for functions specified by
-        // JitEarlyExpandMDArraysFilter.
-        if (JitConfig.JitEarlyExpandMDArrays() == 0)
-        {
-            if (JitConfig.JitEarlyExpandMDArraysFilter().contains(info.compMethodHnd, info.compClassHnd,
-                                                                  &info.compMethodInfo->args))
-            {
-                opts.compJitEarlyExpandMDArrays = true;
-            }
         }
     }
 
@@ -3149,7 +3135,25 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     // TBD: Exclude PInvoke stubs
     if (opts.compJitELTHookEnabled)
     {
-        compProfilerMethHnd           = (void*)DummyProfilerELTStub;
+#if defined(DEBUG) // We currently only know if we're running under SuperPMI in DEBUG
+        // We don't want to get spurious SuperPMI asm diffs because profile stress kicks in and we use
+        // the address of `DummyProfilerELTStub` in the JIT binary, without relocation. So just use
+        // a fixed address in this case. It's SuperPMI replay, so the generated code won't be run.
+        if (RunningSuperPmiReplay())
+        {
+#ifdef HOST_64BIT
+            static_assert_no_msg(sizeof(void*) == 8);
+            compProfilerMethHnd = (void*)0x0BADF00DBEADCAFE;
+#else
+            static_assert_no_msg(sizeof(void*) == 4);
+            compProfilerMethHnd = (void*)0x0BADF00D;
+#endif
+        }
+        else
+#endif // DEBUG
+        {
+            compProfilerMethHnd = (void*)DummyProfilerELTStub;
+        }
         compProfilerMethHndIndirected = false;
     }
 
