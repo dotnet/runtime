@@ -761,8 +761,85 @@ void Registers_REGDISPLAY::setVectorRegister(int num, libunwind::v128 value)
 
 #endif // TARGET_ARM64
 
+// the cache relies on "endless" 64bit version counter
+#if TARGET_64BIT
+struct ProcInfoCacheEntry
+{
+    PCODE pc;
+    volatile size_t version;
+    unw_proc_info_t procInfo;
+};
+
+// we use static array with 512 entries as a cache
+// that is about 45Kb  (assuming unw_proc_info_t is 9 * 8 bytes) and what we can reasonably afford.
+static const int CACHE_BITS = 9;
+static ProcInfoCacheEntry cache[1 << CACHE_BITS];
+#endif
+
+// We use a very simple caching scheme because the cost of miss is not very high.
+// If there is a desire to improve the occupancy of the cache, it is possible to
+// implement some bucketing strategy - like using the next cell in case of a collision.
+// For now we will just use direct mapping after some reshuffling of the pc bits.
+static void SetCachedProcInfo(PCODE pc, unw_proc_info_t* procInfo)
+{
+#if TARGET_64BIT
+    // randomize the addresses a bit and narrow the range to the cache size.
+    int idx = (int)((pc * 11400714819323198485llu) >> (64 - CACHE_BITS));
+
+    ProcInfoCacheEntry* pEntry = &cache[idx];
+    PCODE origPc = pEntry->pc;
+    // there is already an entry for this pc
+    if (origPc == pc)
+        return;
+
+    size_t origVersion = pEntry->version;
+    // if version is odd, someone is writing into it, will try again next time.
+    if (origVersion & 1)
+        return;
+
+    // claim the entry by making the version odd
+    if (!__atomic_compare_exchange_n(&pEntry->version, &origVersion, origVersion + 1, true, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED))
+    {
+        return;
+    }
+
+    pEntry->pc = pc;
+    pEntry->procInfo = *procInfo;
+
+    // make the version even again after filling the entry
+    __atomic_store_n(&pEntry->version, origVersion + 2, __ATOMIC_RELEASE);
+#endif
+}
+
+static bool TryGetCachedProcInfo(PCODE pc, unw_proc_info_t* procInfo)
+{
+#if TARGET_64BIT
+    // randomize the addresses a bit and narrow the range to the cache size.
+    int idx = (int)((pc * 11400714819323198485llu) >> (64 - CACHE_BITS));
+
+    ProcInfoCacheEntry* pEntry = &cache[idx];
+    // read version before reading the rest
+    size_t version = __atomic_load_n(&pEntry->version, __ATOMIC_ACQUIRE);
+    if (pc == pEntry->pc)
+    {
+        *procInfo = pEntry->procInfo;
+        // make sure all reads are done before reading the version second time
+        __atomic_thread_fence(__ATOMIC_ACQUIRE);
+
+        // if version is odd or changed between reads, the entry is inconsistent, treat it as a miss
+        if ((version & ~1) == pEntry->version)
+        {
+            return true;
+        }
+    }
+#endif
+
+    return false;
+}
+
 bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs)
 {
+
 #if defined(TARGET_AMD64)
     libunwind::UnwindCursor<LocalAddressSpace, Registers_x86_64> uc(_addressSpace);
 #elif defined(TARGET_ARM)
@@ -775,30 +852,55 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
     #error "Unwinding is not implemented for this architecture yet."
 #endif
 
-#if _LIBUNWIND_SUPPORT_DWARF_UNWIND
+    unw_proc_info_t procInfo;
     uint32_t dwarfOffsetHint = 0;
 
+#if _LIBUNWIND_SUPPORT_DWARF_UNWIND
+
 #if _LIBUNWIND_SUPPORT_COMPACT_UNWIND
+    {
+        if (TryGetCachedProcInfo(pc, &procInfo))
+        {
+            uc.setInfo(&procInfo);
+#if defined(TARGET_ARM64)
+            if ((procInfo.format & UNWIND_ARM64_MODE_MASK) != UNWIND_ARM64_MODE_DWARF) {
+                CompactUnwinder_arm64<LocalAddressSpace, Registers_REGDISPLAY> compactInst;
+                int stepRet = compactInst.stepWithCompactEncoding(procInfo.format, procInfo.start_ip, _addressSpace, *(Registers_REGDISPLAY*)regs);
+                return stepRet == UNW_STEP_SUCCESS;
+            }
+#elif defined(TARGET_AMD64)
+            if ((procInfo.format & UNWIND_X86_64_MODE_MASK) != UNWIND_X86_64_MODE_DWARF) {
+                CompactUnwinder_x86_64<LocalAddressSpace, Registers_REGDISPLAY> compactInst;
+                int stepRet = compactInst.stepWithCompactEncoding(procInfo.format, procInfo.start_ip, _addressSpace, *(Registers_REGDISPLAY*)regs);
+                return stepRet == UNW_STEP_SUCCESS;
+            }
+#endif
+            goto HAVE_DWARF_INFO;
+        }
+    }
+
     // If there is a compact unwind encoding table, look there first.
     if (uwInfoSections.compact_unwind_section != 0 && uc.getInfoFromCompactEncodingSection(pc, uwInfoSections)) {
-        unw_proc_info_t procInfo;
-        uc.getInfo(&procInfo);
+        unw_proc_info_t procInfoFromCompact;
+        uc.getInfo(&procInfoFromCompact);
 
 #if defined(TARGET_ARM64)
-        if ((procInfo.format & UNWIND_ARM64_MODE_MASK) != UNWIND_ARM64_MODE_DWARF) {
+        if ((procInfoFromCompact.format & UNWIND_ARM64_MODE_MASK) != UNWIND_ARM64_MODE_DWARF) {
+            SetCachedProcInfo(pc, &procInfoFromCompact);
             CompactUnwinder_arm64<LocalAddressSpace, Registers_REGDISPLAY> compactInst;
-            int stepRet = compactInst.stepWithCompactEncoding(procInfo.format, procInfo.start_ip, _addressSpace, *(Registers_REGDISPLAY*)regs);
+            int stepRet = compactInst.stepWithCompactEncoding(procInfoFromCompact.format, procInfoFromCompact.start_ip, _addressSpace, *(Registers_REGDISPLAY*)regs);
             return stepRet == UNW_STEP_SUCCESS;
         } else {
-            dwarfOffsetHint = procInfo.format & UNWIND_ARM64_DWARF_SECTION_OFFSET;
+            dwarfOffsetHint = procInfoFromCompact.format & UNWIND_ARM64_DWARF_SECTION_OFFSET;
         }
 #elif defined(TARGET_AMD64)
-        if ((procInfo.format & UNWIND_X86_64_MODE_MASK) != UNWIND_X86_64_MODE_DWARF) {
+        if ((procInfoFromCompact.format & UNWIND_X86_64_MODE_MASK) != UNWIND_X86_64_MODE_DWARF) {
+            SetCachedProcInfo(pc, &procInfoFromCompact);
             CompactUnwinder_x86_64<LocalAddressSpace, Registers_REGDISPLAY> compactInst;
-            int stepRet = compactInst.stepWithCompactEncoding(procInfo.format, procInfo.start_ip, _addressSpace, *(Registers_REGDISPLAY*)regs);
+            int stepRet = compactInst.stepWithCompactEncoding(procInfoFromCompact.format, procInfoFromCompact.start_ip, _addressSpace, *(Registers_REGDISPLAY*)regs);
             return stepRet == UNW_STEP_SUCCESS;
         } else {
-            dwarfOffsetHint = procInfo.format & UNWIND_X86_64_DWARF_SECTION_OFFSET;
+            dwarfOffsetHint = procInfoFromCompact.format & UNWIND_X86_64_DWARF_SECTION_OFFSET;
         }
 #else
         PORTABILITY_ASSERT("DoTheStep");
@@ -806,14 +908,26 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
     }
 #endif
 
-    bool retVal = uc.getInfoFromDwarfSection(pc, uwInfoSections, dwarfOffsetHint);
-    if (!retVal)
+    if (TryGetCachedProcInfo(pc, &procInfo))
     {
-        return false;
+        uc.setInfo(&procInfo);
+    }
+    else
+    {
+        bool retVal = uc.getInfoFromDwarfSection(pc, uwInfoSections, dwarfOffsetHint);
+        if (!retVal)
+        {
+            return false;
+        }
+
+        uc.getInfo(&procInfo);
+        SetCachedProcInfo(pc, &procInfo);
     }
 
-    unw_proc_info_t procInfo;
-    uc.getInfo(&procInfo);
+#if _LIBUNWIND_SUPPORT_COMPACT_UNWIND
+    HAVE_DWARF_INFO:
+#endif
+
     bool isSignalFrame = false;
 
 #if defined(TARGET_ARM)
@@ -871,6 +985,9 @@ bool UnwindHelpers::StepFrame(REGDISPLAY *regs)
 
 bool UnwindHelpers::GetUnwindProcInfo(PCODE pc, UnwindInfoSections &uwInfoSections, unw_proc_info_t *procInfo)
 {
+    if (TryGetCachedProcInfo(pc, procInfo))
+        return true;
+
 #if defined(TARGET_AMD64)
     libunwind::UnwindCursor<LocalAddressSpace, Registers_x86_64> uc(_addressSpace);
 #elif defined(TARGET_ARM)
@@ -893,12 +1010,14 @@ bool UnwindHelpers::GetUnwindProcInfo(PCODE pc, UnwindInfoSections &uwInfoSectio
 
 #if defined(TARGET_ARM64)
         if ((procInfo->format & UNWIND_ARM64_MODE_MASK) != UNWIND_ARM64_MODE_DWARF) {
+            SetCachedProcInfo(pc, procInfo);
             return true;
         } else {
             dwarfOffsetHint = procInfo->format & UNWIND_ARM64_DWARF_SECTION_OFFSET;
         }
 #elif defined(TARGET_AMD64)
         if ((procInfo->format & UNWIND_X86_64_MODE_MASK) != UNWIND_X86_64_MODE_DWARF) {
+            SetCachedProcInfo(pc, procInfo);
             return true;
         } else {
             dwarfOffsetHint = procInfo->format & UNWIND_X86_64_DWARF_SECTION_OFFSET;
@@ -926,5 +1045,7 @@ bool UnwindHelpers::GetUnwindProcInfo(PCODE pc, UnwindInfoSections &uwInfoSectio
 #endif
 
     uc.getInfo(procInfo);
+    SetCachedProcInfo(pc, procInfo);
+
     return true;
 }
