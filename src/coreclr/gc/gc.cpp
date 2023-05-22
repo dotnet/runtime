@@ -22517,6 +22517,7 @@ void gc_heap::merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n
     {
         gc_heap* hp = g_heaps[hn];
         generation* gen = hp->generation_of (gen_idx);
+        dynamic_data* dd = hp->dynamic_data_of (gen_idx);
         allocator* gen_allocator = generation_allocator (gen);
         gen_allocator->merge_items (hp, to_n_heaps, from_n_heaps);
 
@@ -22540,6 +22541,9 @@ void gc_heap::merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n
         assert (free_list_space_decrease <= generation_free_list_space (gen));
         generation_free_list_space (gen) -= free_list_space_decrease;
 
+        assert (free_list_space_decrease <= dd_fragmentation (dd));
+        dd_fragmentation (dd) -= free_list_space_decrease;
+
         size_t free_list_space_increase = 0;
         for (int from_hn = 0; from_hn < from_n_heaps; from_hn++)
         {
@@ -22549,6 +22553,8 @@ void gc_heap::merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n
         }
         dprintf (8888, ("heap %d gen %d %zd free list space moved from other heaps", hn, gen_idx, free_list_space_increase));
         generation_free_list_space (gen) += free_list_space_increase;
+
+        dd_fragmentation (dd) += free_list_space_increase;
     }
 
 #ifdef _DEBUG
@@ -24745,6 +24751,13 @@ void gc_heap::recommission_heap()
         dd_desired_allocation              (dd) = 0;
         dd_promoted_size                   (dd) = 0;
 
+        // this field is used to estimate the begin data size - it will be
+        // adjusted as free list items are rethreaded onto this heap
+        dd_fragmentation                   (dd) = 0;
+
+        // this value will just be incremented, not re-initialized
+        dd_gc_clock                        (dd) = dd_gc_clock (heap0_dd);
+
         // set the fields that are supposed to be set by the next GC to
         // a special value to help in debugging
         dd_gc_new_allocation               (dd) = UNINITIALIZED_VALUE;
@@ -24765,9 +24778,6 @@ void gc_heap::recommission_heap()
         dd_current_size                    (dd) = UNINITIALIZED_VALUE;
         dd_freach_previous_promotion       (dd) = UNINITIALIZED_VALUE;
 
-        dd_fragmentation                   (dd) = UNINITIALIZED_VALUE;
-
-        dd_gc_clock                        (dd) = UNINITIALIZED_VALUE;
         dd_previous_time_clock             (dd) = UNINITIALIZED_VALUE;
 
         dd_gc_elapsed_time                 (dd) = UNINITIALIZED_VALUE;
