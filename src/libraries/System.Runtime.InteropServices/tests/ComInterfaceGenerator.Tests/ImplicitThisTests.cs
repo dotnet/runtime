@@ -18,7 +18,7 @@ namespace ComInterfaceGenerator.Tests
             [UnmanagedObjectUnwrapperAttribute<VTableGCHandlePair<INativeObject>>]
             internal partial interface INativeObject : IUnmanagedInterfaceType
             {
-                private static void** s_vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(INativeObject), sizeof(void*) * 5);
+                private static void** s_vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(INativeObject), sizeof(void*) * 6);
                 static void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation
                 {
                     get

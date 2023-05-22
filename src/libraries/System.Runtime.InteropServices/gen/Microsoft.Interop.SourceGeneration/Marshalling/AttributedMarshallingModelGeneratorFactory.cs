@@ -244,19 +244,19 @@ namespace Microsoft.Interop
                 if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
                     marshallingStrategy = new StatelessCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax, marshallerData.BufferElementType.Syntax, isLinearCollectionMarshalling: false);
 
-                StatelessFreeStrategy freeStrategy = GetStatelessFreeStrategy(info, marshallerData.Shape, context);
+                FreeStrategy freeStrategy = GetFreeStrategy(info, context);
 
-                if (freeStrategy == StatelessFreeStrategy.FreeOriginal)
+                if (freeStrategy == FreeStrategy.FreeOriginal)
                 {
                     marshallingStrategy = new StatelessUnmanagedToManagedOwnershipTracking(marshallingStrategy);
                 }
 
-                if (freeStrategy != StatelessFreeStrategy.NoFree)
+                if (freeStrategy != FreeStrategy.NoFree && marshallerData.Shape.HasFlag(MarshallerShape.Free))
                 {
                     marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax);
                 }
 
-                if (freeStrategy == StatelessFreeStrategy.FreeOriginal)
+                if (freeStrategy == FreeStrategy.FreeOriginal)
                 {
                     marshallingStrategy = new FreeOwnedOriginalValueMarshalling(marshallingStrategy);
                 }
@@ -325,26 +325,39 @@ namespace Microsoft.Interop
                     marshallingStrategy = new StatefulCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerTypeSyntax, bufferElementTypeSyntax);
                 }
 
+                FreeStrategy freeStrategy = GetFreeStrategy(info, context);
                 IElementsMarshallingCollectionSource collectionSource = new StatefulLinearCollectionSource();
                 IElementsMarshalling elementsMarshalling = CreateElementsMarshalling(marshallerData, elementInfo, elementMarshaller, unmanagedElementType, collectionSource);
 
-                marshallingStrategy = new StatefulLinearCollectionMarshalling(marshallingStrategy, marshallerData.Shape, numElementsExpression, elementsMarshalling);
+                if (freeStrategy == FreeStrategy.FreeOriginal)
+                {
+                    marshallingStrategy = new StatelessUnmanagedToManagedOwnershipTracking(marshallingStrategy);
+                }
+
+                marshallingStrategy = new StatefulLinearCollectionMarshalling(marshallingStrategy, marshallerData.Shape, numElementsExpression, elementsMarshalling, freeStrategy != FreeStrategy.NoFree);
+
+                if (freeStrategy == FreeStrategy.FreeOriginal)
+                {
+                    marshallingStrategy = new FreeOwnedOriginalValueMarshalling(marshallingStrategy);
+                }
+
+                marshallingStrategy = new StatefulFreeMarshalling(marshallingStrategy);
             }
             else
             {
                 marshallingStrategy = new StatelessLinearCollectionSpaceAllocator(marshallerTypeSyntax, nativeType, marshallerData.Shape, numElementsExpression);
 
-                StatelessFreeStrategy freeStrategy = GetStatelessFreeStrategy(info, marshallerData.Shape, context);
+                FreeStrategy freeStrategy = GetFreeStrategy(info, context);
 
                 IElementsMarshallingCollectionSource collectionSource = new StatelessLinearCollectionSource(marshallerTypeSyntax);
-                if (freeStrategy == StatelessFreeStrategy.FreeOriginal)
+                if (freeStrategy == FreeStrategy.FreeOriginal)
                 {
                     marshallingStrategy = new StatelessUnmanagedToManagedOwnershipTracking(marshallingStrategy);
                 }
 
                 IElementsMarshalling elementsMarshalling = CreateElementsMarshalling(marshallerData, elementInfo, elementMarshaller, unmanagedElementType, collectionSource);
 
-                marshallingStrategy = new StatelessLinearCollectionMarshalling(marshallingStrategy, elementsMarshalling, nativeType, marshallerData.Shape, freeStrategy != StatelessFreeStrategy.NoFree);
+                marshallingStrategy = new StatelessLinearCollectionMarshalling(marshallingStrategy, elementsMarshalling, nativeType, marshallerData.Shape, freeStrategy != FreeStrategy.NoFree);
 
                 if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
                 {
@@ -355,12 +368,12 @@ namespace Microsoft.Interop
                     marshallingStrategy = new StatelessCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerTypeSyntax, bufferElementTypeSyntax, isLinearCollectionMarshalling: true);
                 }
 
-                if (freeStrategy != StatelessFreeStrategy.NoFree)
+                if (freeStrategy != FreeStrategy.NoFree && marshallerData.Shape.HasFlag(MarshallerShape.Free))
                 {
                     marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerTypeSyntax);
                 }
 
-                if (freeStrategy == StatelessFreeStrategy.FreeOriginal)
+                if (freeStrategy == FreeStrategy.FreeOriginal)
                 {
                     marshallingStrategy = new FreeOwnedOriginalValueMarshalling(marshallingStrategy);
                 }
@@ -379,7 +392,7 @@ namespace Microsoft.Interop
             return marshallingGenerator;
         }
 
-        private enum StatelessFreeStrategy
+        private enum FreeStrategy
         {
             /// <summary>
             /// Free the unmanaged value stored in the native identifier.
@@ -395,36 +408,30 @@ namespace Microsoft.Interop
             NoFree
         }
 
-        private static StatelessFreeStrategy GetStatelessFreeStrategy(TypePositionInfo info, MarshallerShape shape, StubCodeContext context)
+        private static FreeStrategy GetFreeStrategy(TypePositionInfo info, StubCodeContext context)
         {
-            // If the marshaller doesn't have the Free method, then we don't need to free anything.
-            if (!shape.HasFlag(MarshallerShape.Free))
-            {
-                return StatelessFreeStrategy.NoFree;
-            }
-
             // When marshalling from managed to unmanaged, we always own the value in the native identifier.
             if (context.Direction == MarshalDirection.ManagedToUnmanaged)
             {
-                return StatelessFreeStrategy.FreeNative;
+                return FreeStrategy.FreeNative;
             }
 
             // When we're in a case where we don't have state across stages, the parent stub context that can track the state
             // will only call our Cleanup stage when we own the value in the native identifier.
             if (!context.AdditionalTemporaryStateLivesAcrossStages)
             {
-                return StatelessFreeStrategy.FreeNative;
+                return FreeStrategy.FreeNative;
             }
 
             // In an unmanaged-to-managed stub where a value is passed by 'ref',
             // we own the original value once we replace it with the new value we're passing out to the caller.
             if (info.RefKind == RefKind.Ref)
             {
-                return StatelessFreeStrategy.FreeOriginal;
+                return FreeStrategy.FreeOriginal;
             }
 
             // In an unmanaged-to-managed stub, we don't take ownership of the value when it isn't passed by 'ref'.
-            return StatelessFreeStrategy.NoFree;
+            return FreeStrategy.NoFree;
         }
 
         private static IElementsMarshalling CreateElementsMarshalling(CustomTypeMarshallerData marshallerData, TypePositionInfo elementInfo, IMarshallingGenerator elementMarshaller, TypeSyntax unmanagedElementType, IElementsMarshallingCollectionSource collectionSource)

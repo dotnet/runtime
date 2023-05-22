@@ -210,7 +210,7 @@ namespace NativeExports
 
         [UnmanagedCallersOnly(EntryPoint = "multiply_with_native_object_data")]
         [DNNE.C99DeclCode("struct INativeObject;")]
-        public static void SumAndSetDataWithRef([DNNE.C99Type("struct INativeObject*")] NativeObjectInterface* obj, int* values, int numValues)
+        public static void MultiplyWithData([DNNE.C99Type("struct INativeObject*")] NativeObjectInterface* obj, int* values, int numValues)
         {
             obj->VTable->multiplyWithData(obj, values, numValues);
         }
