@@ -2571,6 +2571,7 @@ void Lowering::TryLowerCselToCinvOrCneg(GenTreeOp* select, GenTree* cond)
     bool     shouldReverseCondition;
     GenTree* invertedOrNegatedVal;
     GenTree* nonInvertedOrNegatedVal;
+    GenTree* nodeToRemove;
 
     GenTree*   trueVal  = select->gtOp1;
     GenTree*   falseVal = select->gtOp2;
@@ -2578,25 +2579,32 @@ void Lowering::TryLowerCselToCinvOrCneg(GenTreeOp* select, GenTree* cond)
 
     if (trueVal->OperIs(GT_NOT) || trueVal->OperIs(GT_NEG))
     {
-        if (!cond->OperIsCompare() && select->OperIs(GT_SELECT))
-        {
-            // Non-compare nodes add additional GT_NOT node after reversing.
-            // This would remove gains from this optimisation so don't proceed.
-            return;
-        }
         shouldReverseCondition  = true;
         invertedOrNegatedVal    = trueVal->gtGetOp1();
         nonInvertedOrNegatedVal = falseVal;
-        BlockRange().Remove(trueVal);
+        nodeToRemove            = trueVal;
     }
     else
     {
         shouldReverseCondition  = false;
         invertedOrNegatedVal    = falseVal->gtGetOp1();
         nonInvertedOrNegatedVal = trueVal;
-        BlockRange().Remove(falseVal);
+        nodeToRemove            = falseVal;
     }
 
+    if (!cond->OperIsCompare() && select->OperIs(GT_SELECT))
+    {
+        // Non-compare nodes add additional GT_NOT node after reversing.
+        // This would remove gains from this optimisation so don't proceed.
+        return;
+    }
+
+    if (!(IsInvariantInRange(invertedOrNegatedVal, select) && IsInvariantInRange(nonInvertedOrNegatedVal, select)))
+    {
+        return;
+    }
+
+    BlockRange().Remove(nodeToRemove);
     select->gtOp1 = nonInvertedOrNegatedVal;
     select->gtOp2 = invertedOrNegatedVal;
 
