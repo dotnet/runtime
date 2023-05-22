@@ -55,7 +55,7 @@ function typed_array_from(pinned_array: MonoArray, begin: number, end: number, b
         case 14:
             newTypedArray = new Float64Array(end - begin);
             break;
-        case 15:  // This is a special case because the typed array is also byte[]
+        case 15: // This is a special case because the typed array is also byte[]
             newTypedArray = new Uint8ClampedArray(end - begin);
             break;
         default:

@@ -589,7 +589,7 @@ public class ComputeWasmPublishAssets : Task
             }
 
             var extension = candidate.GetMetadata("Extension");
-            if (string.Equals(extension, ".dll", StringComparison.Ordinal) || string.Equals(extension, ".webcil", StringComparison.Ordinal))
+            if (string.Equals(extension, ".dll", StringComparison.Ordinal) || string.Equals (extension, Utils.WebcilInWasmExtension, StringComparison.Ordinal))
             {
                 var culture = candidate.GetMetadata("Culture");
                 var inferredCulture = candidate.GetMetadata("DestinationSubDirectory").Replace("\\", "/").Trim('/');

@@ -752,7 +752,7 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
 {
     bool inliningFailed = false;
 
-    InlineCandidateInfo* inlCandInfo = call->gtInlineCandidateInfo;
+    InlineCandidateInfo* inlCandInfo = call->GetInlineCandidateInfo();
 
     // Is this call an inline candidate?
     if (call->IsInlineCandidate())
@@ -778,7 +778,7 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
 #ifdef DEBUG
                 // In debug we always put all inline attempts into the inline tree.
                 InlineContext* ctx =
-                    m_inlineStrategy->NewContext(call->gtInlineCandidateInfo->inlinersContext, fgMorphStmt, call);
+                    m_inlineStrategy->NewContext(call->GetInlineCandidateInfo()->inlinersContext, fgMorphStmt, call);
                 ctx->SetFailed(inlineResult);
 #endif
             }
@@ -1045,7 +1045,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     inlineInfo.hasSIMDTypeArgLocalOrReturn = false;
 #endif // FEATURE_SIMD
 
-    InlineCandidateInfo* inlineCandidateInfo = call->gtInlineCandidateInfo;
+    InlineCandidateInfo* inlineCandidateInfo = call->GetInlineCandidateInfo();
     noway_assert(inlineCandidateInfo);
     // Store the link to inlineCandidateInfo into inlineInfo
     inlineInfo.inlineCandidateInfo = inlineCandidateInfo;

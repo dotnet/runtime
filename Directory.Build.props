@@ -20,6 +20,7 @@
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('NETBSD'))">netbsd</_hostOS>
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('ILLUMOS'))">illumos</_hostOS>
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('SOLARIS'))">solaris</_hostOS>
+    <_hostOS Condition="$([MSBuild]::IsOSPlatform('HAIKU'))">haiku</_hostOS>
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">windows</_hostOS>
     <HostOS>$(_hostOS)</HostOS>
     <TargetOS Condition="'$(TargetOS)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm'">browser</TargetOS>
@@ -257,6 +258,7 @@
     <TargetsFreeBSD Condition="'$(TargetOS)' == 'freebsd'">true</TargetsFreeBSD>
     <Targetsillumos Condition="'$(TargetOS)' == 'illumos'">true</Targetsillumos>
     <TargetsSolaris Condition="'$(TargetOS)' == 'solaris'">true</TargetsSolaris>
+    <TargetsHaiku Condition="'$(TargetOS)' == 'haiku'">true</TargetsHaiku>
     <TargetsLinux Condition="'$(TargetOS)' == 'linux' or '$(TargetOS)' == 'android'">true</TargetsLinux>
     <TargetsLinuxBionic Condition="'$(_portableOS)' == 'linux-bionic'">true</TargetsLinuxBionic>
     <TargetsLinuxMusl Condition="'$(_portableOS)' == 'linux-musl'">true</TargetsLinuxMusl>
@@ -271,7 +273,7 @@
     <TargetsBrowser Condition="'$(TargetOS)' == 'browser'">true</TargetsBrowser>
     <TargetsWasi Condition="'$(TargetOS)' == 'wasi'">true</TargetsWasi>
     <TargetsWindows Condition="'$(TargetOS)' == 'windows'">true</TargetsWindows>
-    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true'">true</TargetsUnix>
+    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true' or '$(TargetsHaiku)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true'">true</TargetsUnix>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -401,7 +403,7 @@
                                 '$(UsingMicrosoftNoTargetsSdk)' != 'true' and
                                 '$(UsingMicrosoftTraversalSdk)' != 'true'">true</IsSourceProject>
   </PropertyGroup>
-  
+
   <PropertyGroup Condition="'$(IsReferenceAssemblyProject)' == 'true'">
     <!-- Reference assemblies are special and don't initialize fields or have empty finalizers, etc. -->
     <RunAnalyzers>false</RunAnalyzers>

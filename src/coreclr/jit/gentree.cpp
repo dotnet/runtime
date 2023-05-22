@@ -2180,6 +2180,64 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBloc
 }
 
 //-------------------------------------------------------------------------
+// SetSingleInlineCadidateInfo: set a single inline candidate info in the current call.
+//
+// Arguments:
+//     candidateInfo - inline candidate info
+//
+void GenTreeCall::SetSingleInlineCadidateInfo(InlineCandidateInfo* candidateInfo)
+{
+    if (candidateInfo != nullptr)
+    {
+        gtFlags |= GTF_CALL_INLINE_CANDIDATE;
+        gtInlineInfoCount = 1;
+    }
+    else
+    {
+        gtInlineInfoCount = 0;
+        gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
+        gtCallMoreFlags &= ~GTF_CALL_M_GUARDED_DEVIRT;
+    }
+    gtInlineCandidateInfo = candidateInfo;
+}
+
+//-------------------------------------------------------------------------
+// GetGDVCandidateInfo: Get GDV candidate info in the current call by index.
+//
+// Return Value:
+//     GDV candidate info
+//
+InlineCandidateInfo* GenTreeCall::GetGDVCandidateInfo(uint8_t index)
+{
+    assert(index < gtInlineInfoCount);
+    return &gtInlineCandidateInfo[index];
+}
+
+//-------------------------------------------------------------------------
+// AddGDVCandidateInfo: Record a guarded devirtualization (GDV) candidate info
+//     for this call. For now, we only support one GDV candidate per call.
+//
+// Arguments:
+//     candidateInfo - GDV candidate info
+//
+void GenTreeCall::AddGDVCandidateInfo(InlineCandidateInfo* candidateInfo)
+{
+    assert(candidateInfo != nullptr);
+    if (gtInlineInfoCount == 0)
+    {
+        gtInlineCandidateInfo = candidateInfo;
+    }
+    else
+    {
+        // Allocate a fixed list of InlineCandidateInfo structs
+        assert(!"multiple GDV candidates are not implemented yet");
+    }
+
+    gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT;
+    gtInlineInfoCount++;
+}
+
+//-------------------------------------------------------------------------
 // HasSideEffects:
 //    Returns true if this call has any side effects. All non-helpers are considered to have side-effects. Only helpers
 //    that do not mutate the heap, do not run constructors, may not throw, and are either a) pure or b) non-finalizing
@@ -7758,7 +7816,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     }
     else
     {
-        node->gtInlineCandidateInfo = nullptr;
+        node->ClearInlineInfo();
     }
     node->gtReturnType = type;
 
@@ -9409,6 +9467,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
     {
         copy->gtCallMethHnd         = tree->gtCallMethHnd;
         copy->gtInlineCandidateInfo = tree->gtInlineCandidateInfo;
+        copy->gtInlineInfoCount     = tree->gtInlineInfoCount;
     }
 
     copy->gtCallType   = tree->gtCallType;
@@ -11936,7 +11995,6 @@ void Compiler::gtDispLocal(GenTreeLclVarCommon* tree, IndentStack* indentStack)
                     printf(" ");
                     fieldVarDsc->PrintVarReg();
                 }
-
                 if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone && tree->IsLastUse(index))
                 {
                     printf(" (last use)");
@@ -11946,7 +12004,8 @@ void Compiler::gtDispLocal(GenTreeLclVarCommon* tree, IndentStack* indentStack)
     }
     else // a normal not-promoted lclvar
     {
-        if (varDsc->lvTracked && fgLocalVarLivenessDone && ((tree->gtFlags & GTF_VAR_DEATH) != 0))
+        if ((varDsc->lvTracked || varDsc->lvTrackedWithoutIndex) && fgLocalVarLivenessDone &&
+            ((tree->gtFlags & GTF_VAR_DEATH) != 0))
         {
             printf(" (last use)");
         }
@@ -12419,10 +12478,10 @@ void Compiler::gtDispTree(GenTree*     tree,
                 printf(" (FramesRoot last use)");
             }
 
-            if (((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0) && (call->gtInlineCandidateInfo != nullptr) &&
-                (call->gtInlineCandidateInfo->exactContextHnd != nullptr))
+            if (((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0) && (call->GetInlineCandidateInfo() != nullptr) &&
+                (call->GetInlineCandidateInfo()->exactContextHnd != nullptr))
             {
-                printf(" (exactContextHnd=0x%p)", dspPtr(call->gtInlineCandidateInfo->exactContextHnd));
+                printf(" (exactContextHnd=0x%p)", dspPtr(call->GetInlineCandidateInfo()->exactContextHnd));
             }
 
             gtDispCommonEndLine(tree);
@@ -17991,7 +18050,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 // type class handle in the inline info (for GDV candidates,
                 // this data is valid only for a correct guess, so we cannot
                 // use it).
-                InlineCandidateInfo* inlInfo = call->gtInlineCandidateInfo;
+                InlineCandidateInfo* inlInfo = call->GetInlineCandidateInfo();
                 assert(inlInfo != nullptr);
 
                 // Grab it as our first cut at a return type.
@@ -19067,6 +19126,9 @@ bool GenTree::isContainableHWIntrinsic() const
         }
 
         case NI_Vector128_GetElement:
+        case NI_Vector128_ToScalar:
+        case NI_Vector256_ToScalar:
+        case NI_Vector512_ToScalar:
         case NI_SSE2_ConvertToInt32:
         case NI_SSE2_ConvertToUInt32:
         case NI_SSE2_X64_ConvertToInt64:
@@ -22057,27 +22119,56 @@ GenTree* Compiler::gtNewSimdGetElementNode(
     assert(varTypeIsArithmetic(simdBaseType));
 
 #if defined(TARGET_XARCH)
+    bool useToScalar = op2->IsIntegralConst(0);
+
+#if defined(TARGET_X86)
+    // We handle decomposition via GetElement for simplicity
+    useToScalar &= !varTypeIsLong(simdBaseType);
+#endif // TARGET_X86
+
+    if (useToScalar)
+    {
+        intrinsicId = NI_Vector128_ToScalar;
+
+        if (simdSize == 64)
+        {
+            intrinsicId = NI_Vector512_ToScalar;
+        }
+        else if (simdSize == 32)
+        {
+            intrinsicId = NI_Vector256_ToScalar;
+        }
+
+        return gtNewSimdHWIntrinsicNode(type, op1, intrinsicId, simdBaseJitType, simdSize);
+    }
+
     switch (simdBaseType)
     {
-        // Using software fallback if simdBaseType is not supported by hardware
         case TYP_BYTE:
         case TYP_UBYTE:
         case TYP_INT:
         case TYP_UINT:
         case TYP_LONG:
         case TYP_ULONG:
+        {
+            // Using software fallback if simdBaseType is not supported by hardware
             assert(compIsaSupportedDebugOnly(InstructionSet_SSE41));
             break;
+        }
 
         case TYP_DOUBLE:
         case TYP_FLOAT:
         case TYP_SHORT:
         case TYP_USHORT:
+        {
             assert(compIsaSupportedDebugOnly(InstructionSet_SSE2));
             break;
+        }
 
         default:
+        {
             unreached();
+        }
     }
 
     if (simdSize == 64)
@@ -22089,6 +22180,18 @@ GenTree* Compiler::gtNewSimdGetElementNode(
         intrinsicId = NI_Vector256_GetElement;
     }
 #elif defined(TARGET_ARM64)
+    if (op2->IsIntegralConst(0))
+    {
+        intrinsicId = NI_Vector128_ToScalar;
+
+        if (simdSize == 8)
+        {
+            intrinsicId = NI_Vector64_ToScalar;
+        }
+
+        return gtNewSimdHWIntrinsicNode(type, op1, intrinsicId, simdBaseJitType, simdSize);
+    }
+
     if (simdSize == 8)
     {
         intrinsicId = NI_Vector64_GetElement;
@@ -24348,7 +24451,7 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(var_types type, GenTree* op1, CorInfo
     }
 
     assert(intrinsic != NI_Illegal);
-    tmp1 = gtNewSimdHWIntrinsicNode(type, tmp1, intrinsic, simdBaseJitType, 8);
+    tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, intrinsic, simdBaseJitType, 8);
 
     if (simdSize == 8)
     {
@@ -24543,8 +24646,6 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(var_types type, GenTree* op1, CorInfo
         return gtNewSimdHWIntrinsicNode(type, op1, tmp1, NI_SSE2_UnpackHigh, simdBaseJitType, simdSize);
     }
 #elif defined(TARGET_ARM64)
-    GenTree* zero;
-
     if (simdSize == 16)
     {
         if (varTypeIsFloating(simdBaseType))
@@ -24586,7 +24687,6 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(var_types type, GenTree* op1, CorInfo
         assert(intrinsic != NI_Illegal);
 
         tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, intrinsic, simdBaseJitType, simdSize);
-        zero = gtNewZeroConNode(TYP_SIMD16);
         return gtNewSimdGetUpperNode(TYP_SIMD8, tmp1, simdBaseJitType, 16);
     }
 #else

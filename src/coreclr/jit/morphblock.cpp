@@ -830,10 +830,13 @@ void MorphCopyBlockHelper::MorphStructCases()
         // A simple heuristic when field by field copy is preferred:
         // - if fields can be enregistered;
         // - if the struct has only one field.
+        // - if the copy involves GC pointers and the destination isn't stack (backend uses a helper for these block
+        // copies)
         bool dstFldIsProfitable =
             ((m_dstVarDsc != nullptr) && (!m_dstVarDsc->lvDoNotEnregister || (m_dstVarDsc->lvFieldCnt == 1)));
-        bool srcFldIsProfitable =
-            ((m_srcVarDsc != nullptr) && (!m_srcVarDsc->lvDoNotEnregister || (m_srcVarDsc->lvFieldCnt == 1)));
+        bool srcFldIsProfitable = ((m_srcVarDsc != nullptr) && (!m_srcVarDsc->lvDoNotEnregister ||
+                                                                (m_srcVarDsc->HasGCPtr() && (m_dstVarDsc == nullptr)) ||
+                                                                (m_srcVarDsc->lvFieldCnt == 1)));
         // Are both dest and src promoted structs?
         if (m_dstDoFldAsg && m_srcDoFldAsg && (dstFldIsProfitable || srcFldIsProfitable))
         {
