@@ -16,15 +16,15 @@ typedef enum
     IgnoreCase = 1,
     IgnoreNonSpace = 2,
     IgnoreWidth = 16,
+    StringSort = 536870912,
 } CompareOptions;
-
-#define CompareOptionsMask 0x1f
 
 static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(int32_t comparisonOptions)
 {
-    int32_t supportedOptions = IgnoreCase | IgnoreNonSpace | IgnoreWidth;
+    int32_t supportedOptions = IgnoreCase | IgnoreNonSpace | IgnoreWidth | StringSort;
+    // To achieve an equivalent search behavior to the default in ICU,
+    // NSLiteralSearch is employed as the default search option.
     NSStringCompareOptions options = NSLiteralSearch;
-    comparisonOptions &= CompareOptionsMask;
 
     if ((comparisonOptions | supportedOptions) != supportedOptions)
         return 0;
