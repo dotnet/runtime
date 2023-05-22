@@ -749,7 +749,7 @@ void InlineResult::Report()
     if (IsFailure() && (m_Call != nullptr))
     {
         // compiler should have revoked candidacy on the call by now
-        assert((m_Call->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0);
+        assert(((m_Call->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0) || m_Call->IsGuardedDevirtualizationCandidate());
 
         if (m_Call->gtInlineObservation == InlineObservation::CALLEE_UNUSED_INITIAL)
         {

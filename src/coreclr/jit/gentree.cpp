@@ -7807,10 +7807,11 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     node->gtCallType    = callType;
     node->gtCallMethHnd = callHnd;
     INDEBUG(node->callSig = nullptr;)
-    node->tailCallInfo    = nullptr;
-    node->gtRetClsHnd     = nullptr;
-    node->gtControlExpr   = nullptr;
-    node->gtCallMoreFlags = GTF_CALL_M_EMPTY;
+    node->tailCallInfo      = nullptr;
+    node->gtRetClsHnd       = nullptr;
+    node->gtControlExpr     = nullptr;
+    node->gtCallMoreFlags   = GTF_CALL_M_EMPTY;
+    node->gtInlineInfoCount = 0;
 
     if (callType == CT_INDIRECT)
     {
@@ -9469,8 +9470,8 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
     {
         copy->gtCallMethHnd         = tree->gtCallMethHnd;
         copy->gtInlineCandidateInfo = tree->gtInlineCandidateInfo;
-        copy->gtInlineInfoCount     = tree->gtInlineInfoCount;
     }
+    copy->gtInlineInfoCount = tree->gtInlineInfoCount;
 
     copy->gtCallType   = tree->gtCallType;
     copy->gtReturnType = tree->gtReturnType;

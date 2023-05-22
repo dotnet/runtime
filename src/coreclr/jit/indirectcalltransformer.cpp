@@ -442,7 +442,7 @@ private:
     {
     public:
         GuardedDevirtualizationTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
-            : Transformer(compiler, block, stmt), devirualizeFallback(false), returnTemp(BAD_VAR_NUM)
+            : Transformer(compiler, block, stmt), returnTemp(BAD_VAR_NUM)
         {
         }
 
@@ -475,8 +475,6 @@ private:
             {
                 JITDUMP("Expansion will chain to the previous GDV\n");
             }
-
-            devirualizeFallback = origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT;
 
             Transform();
 
@@ -910,33 +908,21 @@ private:
             elseBlock = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
             elseBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
 
-            if (devirualizeFallback)
+            GenTreeCall* call    = origCall;
+            Statement*   newStmt = compiler->gtNewStmt(call, stmt->GetDebugInfo());
+
+            call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
+            call->SetIsGuarded();
+
+            JITDUMP("Residual call [%06u] moved to block " FMT_BB "\n", compiler->dspTreeID(call), elseBlock->bbNum);
+
+            if (returnTemp != BAD_VAR_NUM)
             {
-                // Use the 2nd inline candidate to devirtualize/inline the fallback call.
-                assert(origCall->GetInlineCandidatesCount() == 2);
-                DevirtualizeCall(elseBlock, 1);
+                GenTree* assign = compiler->gtNewTempAssign(returnTemp, call);
+                newStmt->SetRootNode(assign);
             }
-            else
-            {
-                assert(origCall->GetInlineCandidatesCount() == 1);
 
-                GenTreeCall* call    = origCall;
-                Statement*   newStmt = compiler->gtNewStmt(call, stmt->GetDebugInfo());
-
-                call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
-                call->SetIsGuarded();
-
-                JITDUMP("Residual call [%06u] moved to block " FMT_BB "\n", compiler->dspTreeID(call),
-                        elseBlock->bbNum);
-
-                if (returnTemp != BAD_VAR_NUM)
-                {
-                    GenTree* assign = compiler->gtNewTempAssign(returnTemp, call);
-                    newStmt->SetRootNode(assign);
-                }
-
-                compiler->fgInsertStmtAtEnd(elseBlock, newStmt);
-            }
+            compiler->fgInsertStmtAtEnd(elseBlock, newStmt);
 
             // Set the original statement to a nop.
             //
@@ -1156,7 +1142,6 @@ private:
         }
 
     private:
-        bool       devirualizeFallback;
         unsigned   returnTemp;
         Statement* lastStmt;
 

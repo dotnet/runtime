@@ -5915,8 +5915,6 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactMethodAttrs, clsAttrs,
                                                     likelyHood);
             }
-
-            call->gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT_EXACT;
             return;
         }
     }
@@ -6185,27 +6183,37 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
     // Call might not have an inline candidate info yet (will be set by impMarkInlineCandidateHelper)
     // so we assume there is always a least one candidate:
     //
-    const uint8_t candidatesCount = max(1, call->GetInlineCandidatesCount());
-    for (uint8_t candidateId = 0; candidateId < candidatesCount; candidateId++)
+
+    if (call->IsGuardedDevirtualizationCandidate())
     {
-        // Do the actual evaluation
-        bool success = impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, exactContextNeedsRuntimeLookup,
-                                                    callInfo, ilOffset);
-        if (!success)
+        const uint8_t candidatesCount = call->GetInlineCandidatesCount();
+        assert(candidatesCount > 0);
+        for (uint8_t candidateId = 0; candidateId < candidatesCount; candidateId++)
         {
-            if (candidatesCount > 1)
+            // Do the actual evaluation
+            bool success = impMarkInlineCandidateHelper(call, candidateId, exactContextHnd,
+                                                        exactContextNeedsRuntimeLookup, callInfo, ilOffset);
+            if (!success)
             {
-                // TODO: we should not give up if one of the candidates fails to inline while others succeed.
-                // but that requires a bit more logic here (to strip out the failing candidates from the list)
-                //
-                // Also, in that case we no longer can use the GTF_CALL_M_GUARDED_DEVIRT_EXACT trick
-                //
-                JITDUMP("We had multiple inline candidates but have to give up on them since one of them didn't pass"
+                if (candidatesCount > 1)
+                {
+                    // TODO: we should not give up if one of the candidates fails to inline while others succeed.
+                    //
+                    JITDUMP(
+                        "We had multiple inline candidates but have to give up on them since one of them didn't pass"
                         "inline checks")
+                    call->ClearInlineInfo();
+                    call->ClearGuardedDevirtualizationCandidate();
+                }
+                break;
             }
-            call->ClearGuardedDevirtualizationCandidate();
-            break;
         }
+    }
+    else
+    {
+        const uint8_t candidatesCount = call->GetInlineCandidatesCount();
+        assert(candidatesCount <= 1);
+        impMarkInlineCandidateHelper(call, 0, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, ilOffset);
     }
 
     // If this call is an inline candidate or is not a guarded devirtualization
@@ -6473,6 +6481,17 @@ bool Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     inlineCandidateInfo->exactContextNeedsRuntimeLookup = exactContextNeedsRuntimeLookup;
     inlineCandidateInfo->ilOffset                       = ilOffset;
 
+    // If we're in an inlinee compiler, and have a return spill temp, and this inline candidate
+    // is also a tail call candidate, it can use the same return spill temp.
+    //
+    if (compIsForInlining() && call->CanTailCall() &&
+        (impInlineInfo->inlineCandidateInfo->preexistingSpillTemp != BAD_VAR_NUM))
+    {
+        inlineCandidateInfo->preexistingSpillTemp = impInlineInfo->inlineCandidateInfo->preexistingSpillTemp;
+        JITDUMP("Inline candidate [%06u] can share spill temp V%02u\n", dspTreeID(call),
+                inlineCandidateInfo->preexistingSpillTemp);
+    }
+
     if (call->IsGuardedDevirtualizationCandidate())
     {
         assert(call->GetGDVCandidateInfo(candidateIndex) != nullptr);
@@ -6483,17 +6502,6 @@ bool Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     {
         assert(candidateIndex == 0);
         call->SetSingleInlineCadidateInfo(inlineCandidateInfo);
-    }
-
-    // If we're in an inlinee compiler, and have a return spill temp, and this inline candidate
-    // is also a tail call candidate, it can use the same return spill temp.
-    //
-    if (compIsForInlining() && call->CanTailCall() &&
-        (impInlineInfo->inlineCandidateInfo->preexistingSpillTemp != BAD_VAR_NUM))
-    {
-        inlineCandidateInfo->preexistingSpillTemp = impInlineInfo->inlineCandidateInfo->preexistingSpillTemp;
-        JITDUMP("Inline candidate [%06u] can share spill temp V%02u\n", dspTreeID(call),
-                inlineCandidateInfo->preexistingSpillTemp);
     }
 
     // Let the strategy know there's another candidate.
