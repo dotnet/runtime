@@ -2482,7 +2482,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                         assert(ins == INS_j || ins == INS_jal);
                         imm               = imm - 2 * 4;
                         regNumber tmpReg1 = REG_RA;
-                        ssize_t   high    = (imm >> 32) & 0xffffffff;
+                        ssize_t   high    = ((imm + 0x80000000) >> 32) & 0xffffffff;
                         code              = emitInsCode(INS_lui);
                         code |= (code_t)tmpReg1 << 7;
                         code |= ((code_t)((high + 0x800) >> 12) & 0xfffff) << 12;
@@ -2547,7 +2547,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                         imm               = imm - 2 * 4;
                         regNumber tmpReg1 = REG_RA;
-                        ssize_t   high    = (imm >> 32) & 0xffffffff;
+                        ssize_t   high    = ((imm + 0x80000000) >> 32) & 0xffffffff;
                         code              = emitInsCode(INS_lui);
                         code |= (code_t)tmpReg1 << 7;
                         code |= ((code_t)((high + 0x800) >> 12) & 0xfffff) << 12;
