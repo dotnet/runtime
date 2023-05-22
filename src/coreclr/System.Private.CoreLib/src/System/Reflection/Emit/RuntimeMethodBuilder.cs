@@ -26,7 +26,7 @@ namespace System.Reflection.Emit
         private int[]? m_mdMethodFixups;              // The location of all of the token fixups. Null means no fixups.
         private byte[]? m_localSignature;             // Local signature if set explicitly via DefineBody. Null otherwise.
         internal LocalSymInfo? m_localSymInfo;        // keep track debugging local information
-        internal RuntimeILGenerator? m_ilGenerator;          // Null if not used.
+        internal RuntimeILGenerator? m_ilGenerator;   // Null if not used.
         private byte[]? m_ubBody;                     // The IL for the method
         private ExceptionHandler[]? m_exceptions; // Exception handlers or null if there are none.
         private const int DefaultMaxStack = 16;

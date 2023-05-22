@@ -61,7 +61,7 @@ namespace System.Reflection.Emit
 
         public ILGenerator GetILGenerator(int streamSize) => GetILGeneratorInternal(streamSize);
 
-        internal RuntimeILGenerator GetILGeneratorInternal() => GetILGeneratorInternal(64);
+        internal RuntimeILGenerator GetRuntimeILGenerator() => GetILGeneratorInternal(64);
 
         private RuntimeILGenerator GetILGeneratorInternal(int streamSize) =>
             _ilGenerator ??= new RuntimeILGenerator(Module, new DynamicMethodTokenGenerator(this), streamSize);

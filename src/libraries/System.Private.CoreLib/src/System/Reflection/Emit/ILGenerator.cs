@@ -115,11 +115,6 @@ namespace System.Reflection.Emit
             // one of the types for which Console.WriteLine implements overloads. (e.g.
             // we do *not* call ToString on the locals.
 
-            /*if (m_methodBuilder == null)
-            {
-                throw new ArgumentException(SR.InvalidOperation_BadILGeneratorUsage);
-            }*/
-
             Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
             MethodInfo prop = consoleType.GetMethod("get_Out")!;
             Emit(OpCodes.Call, prop);
