@@ -1627,7 +1627,7 @@ void emitter::emitJumpDistBind()
     //  updated;
     unsigned int isLinkingEnd = emitTotalCodeSize <= 0xfff ? 2 : 0;
 
-    UNATIVE_OFFSET ssz = 0;               // relative small jump's delay-slot.
+    UNATIVE_OFFSET ssz = 0; // relative small jump's delay-slot.
     // small  jump max. neg distance
     NATIVE_OFFSET nsd = B_DIST_SMALL_MAX_NEG;
     // small  jump max. pos distance
