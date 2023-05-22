@@ -1840,7 +1840,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
                 if ((jmpDist == 0) &&
                     (opcode == CEE_LEAVE || opcode == CEE_LEAVE_S || opcode == CEE_BR || opcode == CEE_BR_S) &&
-                    opts.CanBeInstrumentedOrIsOptimized())
+                    opts.DoEarlyBlockMerging())
                 {
                     break; /* NOP */
                 }
@@ -2989,7 +2989,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
 
                 jmpDist = (sz == 1) ? getI1LittleEndian(codeAddr) : getI4LittleEndian(codeAddr);
 
-                if ((jmpDist == 0) && (opcode == CEE_BR || opcode == CEE_BR_S) && opts.CanBeInstrumentedOrIsOptimized())
+                if ((jmpDist == 0) && (opcode == CEE_BR || opcode == CEE_BR_S) && opts.DoEarlyBlockMerging())
                 {
                     continue; /* NOP */
                 }
@@ -6042,12 +6042,18 @@ bool Compiler::fgMightHaveLoop()
     {
         BitVecOps::AddElemD(&blockVecTraits, blocksSeen, block->bbNum);
 
-        for (BasicBlock* const succ : block->GetAllSuccs(this))
-        {
+        BasicBlockVisit result = block->VisitAllSuccs(this, [&](BasicBlock* succ) {
             if (BitVecOps::IsMember(&blockVecTraits, blocksSeen, succ->bbNum))
             {
-                return true;
+                return BasicBlockVisit::Abort;
             }
+
+            return BasicBlockVisit::Continue;
+        });
+
+        if (result == BasicBlockVisit::Abort)
+        {
+            return true;
         }
     }
     return false;

@@ -5796,6 +5796,11 @@ bool ValueNumStore::IsVNConstant(ValueNum vn)
     }
 }
 
+bool ValueNumStore::IsVNConstantNonHandle(ValueNum vn)
+{
+    return IsVNConstant(vn) && !IsVNHandle(vn);
+}
+
 bool ValueNumStore::IsVNInt32Constant(ValueNum vn)
 {
     if (!IsVNConstant(vn))
@@ -7123,6 +7128,17 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(var_types      type,
                 return VNForLongCon(static_cast<int64_t>(result));
             }
 #endif // TARGET_XARCH
+
+            case NI_Vector128_ToScalar:
+#ifdef TARGET_ARM64
+            case NI_Vector64_ToScalar:
+#else
+            case NI_Vector256_ToScalar:
+            case NI_Vector512_ToScalar:
+#endif
+            {
+                return EvaluateSimdGetElement(this, type, baseType, arg0VN, 0);
+            }
 
             default:
                 break;
@@ -9278,15 +9294,14 @@ struct ValueNumberState
 
         SetVisitBit(blk->bbNum, BVB_complete);
 
-        for (BasicBlock* succ : blk->GetAllSuccs(m_comp))
-        {
+        blk->VisitAllSuccs(m_comp, [&](BasicBlock* succ) {
 #ifdef DEBUG_VN_VISIT
             JITDUMP("   Succ(" FMT_BB ").\n", succ->bbNum);
 #endif // DEBUG_VN_VISIT
 
             if (GetVisitBit(succ->bbNum, BVB_complete))
             {
-                continue;
+                return BasicBlockVisit::Continue;
             }
 #ifdef DEBUG_VN_VISIT
             JITDUMP("     Not yet completed.\n");
@@ -9309,8 +9324,8 @@ struct ValueNumberState
                 JITDUMP("     All preds complete, adding to allDone.\n");
 #endif // DEBUG_VN_VISIT
 
-                assert(!GetVisitBit(succ->bbNum, BVB_onAllDone)); // Only last completion of last succ should add to
-                                                                  // this.
+                // Only last completion of last succ should add to this.
+                assert(!GetVisitBit(succ->bbNum, BVB_onAllDone));
                 m_toDoAllPredsDone.Push(succ);
                 SetVisitBit(succ->bbNum, BVB_onAllDone);
             }
@@ -9329,7 +9344,9 @@ struct ValueNumberState
                     SetVisitBit(succ->bbNum, BVB_onNotAllDone);
                 }
             }
-        }
+
+            return BasicBlockVisit::Continue;
+        });
     }
 
     bool ToDoExists()
@@ -10435,38 +10452,37 @@ static bool GetObjectHandleAndOffset(ValueNumStore*         vnStore,
                                      ssize_t*               byteOffset,
                                      CORINFO_OBJECT_HANDLE* pObj)
 {
-
     if (!tree->gtVNPair.BothEqual())
     {
         return false;
     }
 
-    ValueNum  treeVN = tree->gtVNPair.GetLiberal();
-    VNFuncApp funcApp;
-    if (vnStore->GetVNFunc(treeVN, &funcApp) && (funcApp.m_func == (VNFunc)GT_ADD))
+    ValueNum       treeVN = tree->gtVNPair.GetLiberal();
+    VNFuncApp      funcApp;
+    target_ssize_t offset = 0;
+    while (vnStore->GetVNFunc(treeVN, &funcApp) && (funcApp.m_func == (VNFunc)GT_ADD))
     {
-        // [objHandle + offset]
-        if (vnStore->IsVNObjHandle(funcApp.m_args[0]) && vnStore->IsVNConstant(funcApp.m_args[1]))
+        if (vnStore->IsVNConstantNonHandle(funcApp.m_args[0]) && (vnStore->TypeOfVN(funcApp.m_args[0]) == TYP_I_IMPL))
         {
-            *pObj       = vnStore->ConstantObjHandle(funcApp.m_args[0]);
-            *byteOffset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[1]);
-            return true;
+            offset += vnStore->ConstantValue<target_ssize_t>(funcApp.m_args[0]);
+            treeVN = funcApp.m_args[1];
         }
-
-        // [offset + objHandle]
-        // TODO: Introduce a general helper to accumulate offsets for
-        // shapes such as (((X + CNS1) + CNS2) + CNS3) etc.
-        if (vnStore->IsVNObjHandle(funcApp.m_args[1]) && vnStore->IsVNConstant(funcApp.m_args[0]))
+        else if (vnStore->IsVNConstantNonHandle(funcApp.m_args[1]) &&
+                 (vnStore->TypeOfVN(funcApp.m_args[1]) == TYP_I_IMPL))
         {
-            *pObj       = vnStore->ConstantObjHandle(funcApp.m_args[1]);
-            *byteOffset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[0]);
-            return true;
+            offset += vnStore->ConstantValue<target_ssize_t>(funcApp.m_args[1]);
+            treeVN = funcApp.m_args[0];
+        }
+        else
+        {
+            return false;
         }
     }
-    else if (vnStore->IsVNObjHandle(treeVN))
+
+    if (vnStore->IsVNObjHandle(treeVN))
     {
         *pObj       = vnStore->ConstantObjHandle(treeVN);
-        *byteOffset = 0;
+        *byteOffset = offset;
         return true;
     }
     return false;
@@ -10501,7 +10517,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     int                   size           = (int)genTypeSize(tree->TypeGet());
     const int             maxElementSize = sizeof(simd_t);
 
-    if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree) || tree->TypeIs(TYP_REF)) &&
+    if (!tree->TypeIs(TYP_BYREF, TYP_STRUCT) &&
         GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
     {
         CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
@@ -10520,7 +10536,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
             }
         }
     }
-    else if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree)) &&
+    else if (!tree->TypeIs(TYP_REF, TYP_BYREF, TYP_STRUCT) &&
              GetObjectHandleAndOffset(vnStore, tree->gtGetOp1(), &byteOffset, &obj))
     {
         // See if we can fold IND(ADD(FrozenObj, CNS)) to a constant
@@ -10530,10 +10546,32 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
             uint8_t buffer[maxElementSize] = {0};
             if (info.compCompHnd->getObjectContent(obj, buffer, size, (int)byteOffset))
             {
-                ValueNum vn = vnStore->VNForGenericCon(tree->TypeGet(), buffer);
-                assert(!vnStore->IsVNObjHandle(vn));
-                tree->gtVNPair.SetBoth(vn);
-                return true;
+                // If we have IND<size_t>(frozenObj) then it means we're reading object type
+                // so make sure we report the constant as class handle
+                if ((size == TARGET_POINTER_SIZE) && (byteOffset == 0))
+                {
+                    // In case of 64bit jit emitting 32bit codegen this handle will be 64bit
+                    // value holding 32bit handle with upper half zeroed (hence, "= NULL").
+                    // It's done to match the current crossgen/ILC behavior.
+                    CORINFO_CLASS_HANDLE rawHandle = NULL;
+                    memcpy(&rawHandle, buffer, TARGET_POINTER_SIZE);
+
+                    void* pEmbedClsHnd;
+                    void* embedClsHnd = (void*)info.compCompHnd->embedClassHandle(rawHandle, &pEmbedClsHnd);
+                    if (pEmbedClsHnd == nullptr)
+                    {
+                        // getObjectContent doesn't support reading handles for AOT (NativeAOT) yet
+                        tree->gtVNPair.SetBoth(vnStore->VNForHandle((ssize_t)embedClsHnd, GTF_ICON_CLASS_HDL));
+                        return true;
+                    }
+                }
+                else
+                {
+                    ValueNum vn = vnStore->VNForGenericCon(tree->TypeGet(), buffer);
+                    assert(!vnStore->IsVNObjHandle(vn));
+                    tree->gtVNPair.SetBoth(vn);
+                    return true;
+                }
             }
         }
     }
@@ -10810,12 +10848,18 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                 if (!returnsTypeHandle)
                 {
-                    // Indirections off of addresses for boxed statics represent bases for
-                    // the address of the static itself. Here we will use "nullptr" for the
-                    // field sequence and assume the actual static field will be appended to
-                    // it later, as part of numbering the method table pointer offset addition.
-                    if (addr->IsIconHandle(GTF_ICON_STATIC_BOX_PTR))
+                    // TYP_REF check to improve TP since we mostly target invariant loads of
+                    // frozen objects here
+                    if (addr->TypeIs(TYP_REF) && fgValueNumberConstLoad(tree->AsIndir()))
                     {
+                        // VN is assigned inside fgValueNumberConstLoad
+                    }
+                    else if (addr->IsIconHandle(GTF_ICON_STATIC_BOX_PTR))
+                    {
+                        // Indirections off of addresses for boxed statics represent bases for
+                        // the address of the static itself. Here we will use "nullptr" for the
+                        // field sequence and assume the actual static field will be appended to
+                        // it later, as part of numbering the method table pointer offset addition.
                         assert(addrNvnp.BothEqual() && (addrXvnp == vnStore->VNPForEmptyExcSet()));
                         ValueNum boxAddrVN  = addrNvnp.GetLiberal();
                         ValueNum fieldSeqVN = vnStore->VNForFieldSeq(nullptr);
@@ -12283,6 +12327,9 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
         case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
             vnf = VNF_GetsharedGcthreadstaticBaseNoctor;
+            break;
+        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            vnf = VNF_GetsharedGcthreadstaticBaseNoctorOptimized;
             break;
         case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
             vnf = VNF_GetsharedNongcthreadstaticBaseNoctor;

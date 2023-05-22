@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);INCLUDE_EXPECTATIONS;SUPPORTS_DEFAULT_INTERFACE_METHODS</DefineConstants>
@@ -12,6 +12,7 @@
   <ItemGroup>
     <Compile Remove="Attributes\OnlyKeepUsed\Dependencies\UnusedAttributeWithTypeForwarderIsRemoved_Forwarder.cs" />
     <Compile Remove="CppCLI\Dependencies\CallCppCLIFromManaged.cs" />
+    <Compile Remove="Inheritance.Interfaces\StaticInterfaceMethods\Dependencies\CustomStepSaveAssembly.cs" />
     <Compile Remove="LinkXml\Dependencies\CanPreserveAnExportedType_Forwarder.cs" />
     <Compile Remove="LinkXml\Dependencies\UsedNonRequiredExportedTypeIsKept_fwd.cs" />
     <Compile Remove="LinkXml\Dependencies\UsedNonRequiredExportedTypeIsKeptWhenRooted_fwd.cs" />

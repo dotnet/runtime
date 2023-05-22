@@ -1773,7 +1773,27 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwN
     }
     else
     {
-        srcCount += BuildOperandUses(treeNode);
+        RefPositionIterator refPositionMark   = refPositions.backPosition();
+        int                 refPositionsAdded = BuildOperandUses(treeNode);
+
+        if (rmwNode != nullptr)
+        {
+            // Check all the newly created Refpositions for delay free
+            RefPositionIterator iter = refPositionMark;
+
+            for (iter++; iter != refPositions.end(); iter++)
+            {
+                RefPosition* refPositionAdded = &(*iter);
+
+                // If we have rmwNode, determine if the refPositionAdded should be set to delay-free.
+                if ((refPositionAdded->getInterval() != rmwInterval) || (!rmwIsLastUse && !refPositionAdded->lastUse))
+                {
+                    setDelayFree(refPositionAdded);
+                }
+            }
+        }
+
+        srcCount += refPositionsAdded;
     }
 
     return srcCount;

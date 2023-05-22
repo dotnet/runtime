@@ -586,26 +586,19 @@ struct HandleHistogramProfileCandidateInfo
     unsigned  probeIndex;
 };
 
-// GuardedDevirtualizationCandidateInfo provides information about
-// a potential target of a virtual or interface call.
+// InlineCandidateInfo provides basic information about a particular
+// inline candidate.
 //
-struct GuardedDevirtualizationCandidateInfo : HandleHistogramProfileCandidateInfo
+// Calls can start out as GDV candidates and turn into inline candidates
+//
+struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
 {
     CORINFO_CLASS_HANDLE  guardedClassHandle;
     CORINFO_METHOD_HANDLE guardedMethodHandle;
     CORINFO_METHOD_HANDLE guardedMethodUnboxedEntryHandle;
     unsigned              likelihood;
     bool                  requiresInstMethodTableArg;
-};
 
-// InlineCandidateInfo provides basic information about a particular
-// inline candidate.
-//
-// It is a superset of GuardedDevirtualizationCandidateInfo: calls
-// can start out as GDv candidates and turn into inline candidates
-//
-struct InlineCandidateInfo : public GuardedDevirtualizationCandidateInfo
-{
     CORINFO_METHOD_INFO methInfo;
 
     // the logical IL caller of this inlinee.
@@ -663,12 +656,12 @@ struct InlArgInfo
 
 struct InlLclVarInfo
 {
-    typeInfo  lclVerTypeInfo;
-    var_types lclTypeInfo;
-    unsigned  lclHasLdlocaOp : 1;        // Is there LDLOCA(s) operation on this local?
-    unsigned  lclHasStlocOp : 1;         // Is there a STLOC on this local?
-    unsigned  lclHasMultipleStlocOp : 1; // Is there more than one STLOC on this local
-    unsigned  lclIsPinned : 1;
+    CORINFO_CLASS_HANDLE lclTypeHandle;             // Type handle from the signature. Available for structs and REFs.
+    var_types            lclTypeInfo;               // Type from the signature.
+    unsigned char        lclHasLdlocaOp : 1;        // Is there LDLOCA(s) operation on this local?
+    unsigned char        lclHasStlocOp : 1;         // Is there a STLOC on this local?
+    unsigned char        lclHasMultipleStlocOp : 1; // Is there more than one STLOC on this local
+    unsigned char        lclIsPinned : 1;
 };
 
 // InlineInfo provides detailed information about a particular inline candidate.

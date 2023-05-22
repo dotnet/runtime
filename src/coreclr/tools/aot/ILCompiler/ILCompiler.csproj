@@ -61,8 +61,7 @@
     <PropertyGroup>
       <CppLinker>$(_CC_LDFLAGS.SubString(0, $(_CC_LDFLAGS.IndexOf(';'))))</CppLinker>
       <_LDFLAGS>$(_CC_LDFLAGS.SubString($([MSBuild]::Add($(_CC_LDFLAGS.IndexOf(';')), 1))))</_LDFLAGS>
-      <!-- TODO: change to <LinkerFlavor>lld</LinkerFlavor> once we pick up an SDK with https://github.com/dotnet/runtime/pull/83558. -->
-      <UseLLVMLinker Condition="$(_LDFLAGS.Contains('lld'))">true</UseLLVMLinker>
+      <LinkerFlavor Condition="$(_LDFLAGS.Contains('lld'))">lld</LinkerFlavor>
     </PropertyGroup>
   </Target>
 

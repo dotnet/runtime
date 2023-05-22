@@ -283,7 +283,6 @@ export function mono_wasm_get_global_object_ref(global_name: MonoStringRef, is_e
 }
 
 // Blazor specific custom routine
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo: any, arg0: any, arg1: any, arg2: any): void | number {
     try {
         if (MonoWasmThreads) {

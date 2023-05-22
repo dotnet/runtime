@@ -3,12 +3,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class MemorySsaTests
 {
     private static int _intStatic;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return ProblemWithHandlerPhis(new int[0]) ? 101 : 100;
     }

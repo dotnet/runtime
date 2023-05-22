@@ -15,7 +15,9 @@ export async function init_polyfills(module: DotnetModuleInternal): Promise<void
     };
     loaderHelpers.downloadResource = module.downloadResource;
     loaderHelpers.fetch_like = fetch_like;
+    // eslint-disable-next-line no-console
     loaderHelpers.out = console.log;
+    // eslint-disable-next-line no-console
     loaderHelpers.err = console.error;
     loaderHelpers.getApplicationEnvironment = module.getApplicationEnvironment;
 

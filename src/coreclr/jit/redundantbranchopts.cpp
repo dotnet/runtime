@@ -2102,21 +2102,26 @@ bool Compiler::optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlo
             continue;
         }
 
-        for (BasicBlock* succ : nextBlock->GetAllSuccs(this))
-        {
+        BasicBlockVisit result = nextBlock->VisitAllSuccs(this, [this, toBlock, &stack](BasicBlock* succ) {
             if (succ == toBlock)
             {
-                return true;
+                return BasicBlockVisit::Abort;
             }
 
             if (BitVecOps::IsMember(optReachableBitVecTraits, optReachableBitVec, succ->bbNum))
             {
-                continue;
+                return BasicBlockVisit::Continue;
             }
 
             BitVecOps::AddElemD(optReachableBitVecTraits, optReachableBitVec, succ->bbNum);
 
             stack.Push(succ);
+            return BasicBlockVisit::Continue;
+        });
+
+        if (result == BasicBlockVisit::Abort)
+        {
+            return true;
         }
     }
 

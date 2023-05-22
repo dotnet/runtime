@@ -410,7 +410,8 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
 
 //------------------------------------------------------------------------------
 // fgExpandThreadLocalAccess: Inline the CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED
-//      helper. See fgExpandThreadLocalAccessForCall for details.
+//      or CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED helper. See
+//      fgExpandThreadLocalAccessForCall for details.
 //
 // Returns:
 //    PhaseStatus indicating what, if anything, was changed.
@@ -446,7 +447,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 
 //------------------------------------------------------------------------------
 // fgExpandThreadLocalAccessForCall : Expand the CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED
-//                             that access fields marked with [ThreadLocal].
+//  or CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED, that access fields marked with [ThreadLocal].
 //
 // Arguments:
 //    pBlock - Block containing the helper call to expand. If expansion is performed,
@@ -483,20 +484,31 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     assert(!"Unsupported scenario of optimizing TLS access on Arm32");
 #endif
 
-    CORINFO_THREAD_STATIC_BLOCKS_INFO threadStaticBlocksInfo;
-    info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo);
-    JITDUMP("getThreadLocalStaticBlocksInfo\n:");
-    JITDUMP("tlsIndex= %u\n", (ssize_t)threadStaticBlocksInfo.tlsIndex.addr);
-    JITDUMP("offsetOfMaxThreadStaticBlocks= %u\n", threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks);
-    JITDUMP("offsetOfThreadLocalStoragePointer= %u\n", threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer);
-    JITDUMP("offsetOfThreadStaticBlocks= %u\n", threadStaticBlocksInfo.offsetOfThreadStaticBlocks);
-
-    assert(threadStaticBlocksInfo.tlsIndex.accessType == IAT_VALUE);
-    assert(eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED);
-
     JITDUMP("Expanding thread static local access for [%06d] in " FMT_BB ":\n", dspTreeID(call), block->bbNum);
     DISPTREE(call);
     JITDUMP("\n");
+    bool isGCThreadStatic =
+        eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
+
+    CORINFO_THREAD_STATIC_BLOCKS_INFO threadStaticBlocksInfo;
+    info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo, isGCThreadStatic);
+
+    uint32_t offsetOfMaxThreadStaticBlocksVal = 0;
+    uint32_t offsetOfThreadStaticBlocksVal    = 0;
+
+    JITDUMP("getThreadLocalStaticBlocksInfo (%s)\n:", isGCThreadStatic ? "GC" : "Non-GC");
+    offsetOfMaxThreadStaticBlocksVal = threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks;
+    offsetOfThreadStaticBlocksVal    = threadStaticBlocksInfo.offsetOfThreadStaticBlocks;
+
+    JITDUMP("tlsIndex= %u\n", (ssize_t)threadStaticBlocksInfo.tlsIndex.addr);
+    JITDUMP("offsetOfThreadLocalStoragePointer= %u\n", threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer);
+    JITDUMP("offsetOfMaxThreadStaticBlocks= %u\n", offsetOfMaxThreadStaticBlocksVal);
+    JITDUMP("offsetOfThreadStaticBlocks= %u\n", offsetOfThreadStaticBlocksVal);
+    JITDUMP("offsetOfGCDataPointer= %u\n", threadStaticBlocksInfo.offsetOfGCDataPointer);
+
+    assert(threadStaticBlocksInfo.tlsIndex.accessType == IAT_VALUE);
+    assert((eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
+           (eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED));
 
     call->ClearExpTLSFieldAccess();
     assert(call->gtArgs.CountArgs() == 1);
@@ -508,6 +520,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     DebugInfo   debugInfo    = stmt->GetDebugInfo();
     block                    = fgSplitBlockBeforeTree(block, stmt, call, &newFirstStmt, &callUse);
     *pBlock                  = block;
+    var_types callType       = call->TypeGet();
     assert(prevBb != nullptr && block != nullptr);
 
     // Block ops inserted by the split need to be morphed here since we are after morph.
@@ -523,8 +536,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     // Grab a temp to store result (it's assigned from either fastPathBb or fallbackBb)
     unsigned threadStaticBlockLclNum         = lvaGrabTemp(true DEBUGARG("TLS field access"));
-    lvaTable[threadStaticBlockLclNum].lvType = TYP_I_IMPL;
-    threadStaticBlockLcl                     = gtNewLclvNode(threadStaticBlockLclNum, call->TypeGet());
+    lvaTable[threadStaticBlockLclNum].lvType = callType;
+    threadStaticBlockLcl                     = gtNewLclvNode(threadStaticBlockLclNum, callType);
 
     *callUse = gtClone(threadStaticBlockLcl);
 
@@ -564,8 +577,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     GenTree* tlsLclValueUse    = gtNewLclVarNode(tlsLclNum);
 
     // Create tree for "maxThreadStaticBlocks = tls[offsetOfMaxThreadStaticBlocks]"
-    GenTree* offsetOfMaxThreadStaticBlocks =
-        gtNewIconNode(threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks, TYP_I_IMPL);
+    GenTree* offsetOfMaxThreadStaticBlocks = gtNewIconNode(offsetOfMaxThreadStaticBlocksVal, TYP_I_IMPL);
     GenTree* maxThreadStaticBlocksRef =
         gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse), offsetOfMaxThreadStaticBlocks);
     GenTree* maxThreadStaticBlocksValue =
@@ -577,7 +589,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     maxThreadStaticBlocksCond = gtNewOperNode(GT_JTRUE, TYP_VOID, maxThreadStaticBlocksCond);
 
     // Create tree for "threadStaticBlockBase = tls[offsetOfThreadStaticBlocks]"
-    GenTree* offsetOfThreadStaticBlocks = gtNewIconNode(threadStaticBlocksInfo.offsetOfThreadStaticBlocks, TYP_I_IMPL);
+    GenTree* offsetOfThreadStaticBlocks = gtNewIconNode(offsetOfThreadStaticBlocksVal, TYP_I_IMPL);
     GenTree* threadStaticBlocksRef =
         gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse), offsetOfThreadStaticBlocks);
     GenTree* threadStaticBlocksValue =
@@ -642,6 +654,16 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         fgNewBBFromTreeAfter(BBJ_ALWAYS, threadStaticBlockNullCondBB, fallbackValueDef, debugInfo, true);
 
     // fastPathBb
+    if (isGCThreadStatic)
+    {
+        // Need to add extra indirection to access the data pointer.
+
+        threadStaticBlockBaseLclValueUse = gtNewIndir(callType, threadStaticBlockBaseLclValueUse, GTF_IND_NONFAULTING);
+        threadStaticBlockBaseLclValueUse =
+            gtNewOperNode(GT_ADD, callType, threadStaticBlockBaseLclValueUse,
+                          gtNewIconNode(threadStaticBlocksInfo.offsetOfGCDataPointer, TYP_I_IMPL));
+    }
+
     GenTree* fastPathValueDef =
         gtNewStoreLclVarNode(threadStaticBlockLclNum, gtCloneExpr(threadStaticBlockBaseLclValueUse));
     BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, true);
@@ -795,22 +817,17 @@ PhaseStatus Compiler::fgExpandStaticInit()
         return result;
     }
 
-    if (opts.OptimizationDisabled())
+    // Always expand for NativeAOT, see
+    // https://github.com/dotnet/runtime/issues/68278#issuecomment-1543322819
+    const bool isNativeAOT = IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+
+    if (!isNativeAOT && opts.OptimizationDisabled())
     {
         JITDUMP("Optimizations aren't allowed - bail out.\n")
         return result;
     }
 
-    // TODO: Replace with opts.compCodeOpt once it's fixed
-    const bool preferSize = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
-    if (preferSize)
-    {
-        // The optimization comes with a codegen size increase
-        JITDUMP("Optimized for size - bail out.\n")
-        return result;
-    }
-
-    return fgExpandHelper<&Compiler::fgExpandStaticInitForCall>(true);
+    return fgExpandHelper<&Compiler::fgExpandStaticInitForCall>(/*skipRarelyRunBlocks*/ !isNativeAOT);
 }
 
 //------------------------------------------------------------------------------

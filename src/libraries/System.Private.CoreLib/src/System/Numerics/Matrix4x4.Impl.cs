@@ -1055,6 +1055,7 @@ namespace System.Numerics
 
                 return SoftwareFallback(in matrix, out result);
 
+                [CompExactlyDependsOn(typeof(Sse))]
                 static bool SseImpl(in Impl matrix, out Impl result)
                 {
                     if (!Sse.IsSupported)

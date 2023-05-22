@@ -70,8 +70,11 @@ EXTERN_C uint32_t _tls_index;
 #endif
 
 #ifdef _MSC_VER
-__declspec(selectany) __declspec(thread) uint32_t t_maxThreadStaticBlocks;
-__declspec(selectany) __declspec(thread) void** t_threadStaticBlocks;
+__declspec(selectany) __declspec(thread) uint32_t t_NonGCMaxThreadStaticBlocks;
+__declspec(selectany) __declspec(thread) uint32_t t_GCMaxThreadStaticBlocks;
+
+__declspec(selectany) __declspec(thread) void** t_NonGCThreadStaticBlocks;
+__declspec(selectany) __declspec(thread) void** t_GCThreadStaticBlocks;
 #else
 EXTERN_C __thread uint32_t t_maxThreadStaticBlocks;
 EXTERN_C __thread void** t_threadStaticBlocks;
@@ -1570,15 +1573,19 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
 #ifdef HOST_WINDOWS
 #ifndef TARGET_ARM
-                bool canOptimizeHelper = (pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR) ||
-                    (pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE);
                 // For windows, we convert the TLS access to the optimized helper where we will store
                 // the static blocks in TLS directly and access them via inline code.
-                if (canOptimizeHelper && ((pField->GetFieldType() >= ELEMENT_TYPE_BOOLEAN) && (pField->GetFieldType() < ELEMENT_TYPE_STRING)))
+                if ((pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR) ||
+                    (pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE))
                 {
                     fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
-
                     pResult->helper = CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
+                }
+                else if ((pResult->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR) ||
+                            (pResult->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE))
+                {
+                    fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
+                    pResult->helper = CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
                 }
 #endif // !TARGET_ARM
 #endif // HOST_WINDOWS
@@ -1768,7 +1775,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 #ifdef HOST_WINDOWS
 
 /*********************************************************************/
-uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
+uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isGCType)
 {
     CONTRACTL {
         THROWS;
@@ -1783,7 +1790,14 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
     FieldDesc* fieldDesc = (FieldDesc*)field;
     _ASSERTE(fieldDesc->IsThreadStatic());
 
-    typeIndex = AppDomain::GetCurrentDomain()->GetThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
+    if (isGCType)
+    {
+        typeIndex = AppDomain::GetCurrentDomain()->GetGCThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
+    }
+    else
+    {
+        typeIndex = AppDomain::GetCurrentDomain()->GetNonGCThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
+    }
 
     assert(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
     
@@ -1792,7 +1806,7 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
 }
 
 /*********************************************************************/
-void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
 {
     CONTRACTL {
         NOTHROW;
@@ -1806,13 +1820,24 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     pInfo->tlsIndex.accessType = IAT_VALUE;
 
     pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
-    pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_threadStaticBlocks);
-    pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_maxThreadStaticBlocks);
+    if (isGCType)
+    {
+        pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_GCThreadStaticBlocks);
+        pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_GCMaxThreadStaticBlocks);
+    }
+    else
+    {
+        pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_NonGCThreadStaticBlocks);
+        pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_NonGCMaxThreadStaticBlocks);
+    }
+    
+    pInfo->offsetOfGCDataPointer = static_cast<uint32_t>(PtrArray::GetDataOffset());
     
     JIT_TO_EE_TRANSITION_LEAF();
 }
 #else
-uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
+
+uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isGCType)
 {
     CONTRACTL {
         NOTHROW;
@@ -1823,7 +1848,7 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
     return 0;
 }
 
-void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
 {
     CONTRACTL {
         NOTHROW;
@@ -1838,6 +1863,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     pInfo->offsetOfThreadLocalStoragePointer = 0;
     pInfo->offsetOfThreadStaticBlocks = 0;
     pInfo->offsetOfMaxThreadStaticBlocks = 0;
+    pInfo->offsetOfGCDataPointer = 0;
     
     JIT_TO_EE_TRANSITION_LEAF();
 }
