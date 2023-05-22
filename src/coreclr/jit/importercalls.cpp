@@ -1350,10 +1350,17 @@ DONE_CALL:
                 // TODO: Still using the widened type.
                 GenTreeRetExpr* retExpr = gtNewInlineCandidateReturnExpr(call->AsCall(), genActualType(callRetTyp));
 
-                for (UINT8 i = 0; i < origCall->GetInlineCandidatesCount(); i++)
+                // Link the retExpr to the call so if necessary we can manipulate it later.
+                if (origCall->IsGuardedDevirtualizationCandidate())
                 {
-                    // Link the retExpr to the call so if necessary we can manipulate it later.
-                    origCall->GetGDVCandidateInfo(i)->retExpr = retExpr;
+                    for (uint8_t i = 0; i < origCall->GetInlineCandidatesCount(); i++)
+                    {
+                        origCall->GetGDVCandidateInfo(i)->retExpr = retExpr;
+                    }
+                }
+                else
+                {
+                    origCall->GetSingleInlineCandidateInfo()->retExpr = retExpr;
                 }
 
                 // Propagate retExpr as the placeholder for the call.
@@ -6474,7 +6481,7 @@ bool Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     }
 
     // The old value should be null OR this call should be a guarded devirtualization candidate.
-    assert(call->IsGuardedDevirtualizationCandidate() || (call->GetInlineCandidateInfo() == nullptr));
+    assert(call->IsGuardedDevirtualizationCandidate() || (call->GetSingleInlineCandidateInfo() == nullptr));
 
     // The new value should not be null.
     assert(inlineCandidateInfo != nullptr);

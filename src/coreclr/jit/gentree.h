@@ -5429,7 +5429,7 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_RETBUFFARG_LCLOPT) != 0;
     }
 
-    InlineCandidateInfo* GetInlineCandidateInfo()
+    InlineCandidateInfo* GetSingleInlineCandidateInfo()
     {
         if (gtInlineInfoCount > 1)
         {
