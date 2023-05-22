@@ -207,7 +207,7 @@ unsafe class Program
         Check("Avx.X64", ExpectedAvx, &AvxX64IsSupported, Avx.X64.IsSupported, null);
 
         Check("Avx2", ExpectedAvx2, &Avx2IsSupported, Avx2.IsSupported, () => Avx2.Abs(Vector256<int>.Zero).Equals(Vector256<uint>.Zero));
-        Check("Avx2.X64", ExpectedAvx, &Avx2X64IsSupported, Avx2.X64.IsSupported, null);
+        Check("Avx2.X64", ExpectedAvx2, &Avx2X64IsSupported, Avx2.X64.IsSupported, null);
 
         Check("Bmi1", ExpectedBmi1, &Bmi1IsSupported, Bmi1.IsSupported, () => Bmi1.AndNot(0, 0) == 0);
         Check("Bmi1.X64", ExpectedBmi1, &Bmi1X64IsSupported, Bmi1.X64.IsSupported, () => Bmi1.X64.AndNot(0, 0) == 0);
