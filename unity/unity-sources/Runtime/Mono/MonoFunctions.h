@@ -38,8 +38,6 @@ DO_API(MonoException*, mono_unity_error_convert_to_exception, (MonoError * error
 DO_API(MonoObject*, mono_object_new, (MonoDomain * domain, MonoClass * klass))
 DO_API(void, mono_runtime_object_init, (MonoObject * this_obj))
 DO_API(MonoObject*, mono_runtime_invoke, (MonoMethod * method, void *obj, void **params, MonoException **exc))
-DO_API(void, mono_field_set_value, (MonoObject * obj, MonoClassField * field, void *value))
-DO_API(void, mono_field_get_value, (MonoObject * obj, MonoClassField * field, void *value))
 DO_API(int, mono_field_get_offset, (MonoClassField * field))
 DO_API(MonoClassField*, mono_class_get_fields, (MonoClass * klass, gpointer * iter))
 DO_API(MonoClass*, mono_class_get_nested_types, (MonoClass * klass, gpointer * iter))
@@ -199,7 +197,6 @@ DO_API(MonoMethod*, mono_method_get_last_managed, ())
 DO_API(MonoClass*, mono_get_enum_class, ())
 DO_API(MonoType*, mono_class_get_byref_type, (MonoClass * klass))
 
-DO_API(void, mono_field_static_get_value, (MonoVTable * vt, MonoClassField * field, void *value))
 DO_API(void, mono_unity_set_embeddinghostname, (const char* name))
 DO_API(void, mono_set_assemblies_path_null_separated, (const char* name))
 
