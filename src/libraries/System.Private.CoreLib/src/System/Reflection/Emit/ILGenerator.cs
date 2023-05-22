@@ -1,10 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Binary;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
@@ -15,150 +12,22 @@ namespace System.Reflection.Emit
         {
         }
 
-        protected abstract void EnsureCapacity(int size);
-        protected abstract void ILEmit(OpCode opcode);
-        protected abstract void WriteByte(byte arg);
-        protected abstract void WriteShort(short arg);
-        protected abstract void WriteInt(int arg);
-        protected abstract void WriteLong(long arg);
-        protected abstract void WriteSingle(float arg);
-        protected abstract void WriteDouble(double arg);
-
         #region Public Members
 
         #region Emit
-        public virtual void Emit(OpCode opcode)
-        {
-            EnsureCapacity(3);
-            ILEmit(opcode);
-        }
+        public abstract void Emit(OpCode opcode);
 
-        public virtual void Emit(OpCode opcode, byte arg)
-        {
-            EnsureCapacity(4);
-            ILEmit(opcode);
-            WriteByte(arg);
-        }
+        public abstract void Emit(OpCode opcode, byte arg);
 
-        public virtual void Emit(OpCode opcode, short arg)
-        {
-            // Puts opcode onto the stream of instructions followed by arg
-            EnsureCapacity(5);
-            ILEmit(opcode);
-            WriteShort(arg);
-        }
+        public abstract void Emit(OpCode opcode, short arg);
 
-        public virtual void Emit(OpCode opcode, long arg)
-        {
-            EnsureCapacity(11);
-            ILEmit(opcode);
-            WriteLong(arg);
-        }
+        public abstract void Emit(OpCode opcode, long arg);
 
-        public virtual void Emit(OpCode opcode, float arg)
-        {
-            EnsureCapacity(7);
-            ILEmit(opcode);
-            WriteSingle(arg);
-        }
+        public abstract void Emit(OpCode opcode, float arg);
 
-        public virtual void Emit(OpCode opcode, double arg)
-        {
-            EnsureCapacity(11);
-            ILEmit(opcode);
-            WriteDouble(arg);
-        }
+        public abstract void Emit(OpCode opcode, double arg);
 
-        public virtual void Emit(OpCode opcode, int arg)
-        {
-            // Special-case several opcodes that have shorter variants for common values.
-            if (opcode.Equals(OpCodes.Ldc_I4))
-            {
-                if (arg >= -1 && arg <= 8)
-                {
-                    opcode = arg switch
-                    {
-                        -1 => OpCodes.Ldc_I4_M1,
-                        0 => OpCodes.Ldc_I4_0,
-                        1 => OpCodes.Ldc_I4_1,
-                        2 => OpCodes.Ldc_I4_2,
-                        3 => OpCodes.Ldc_I4_3,
-                        4 => OpCodes.Ldc_I4_4,
-                        5 => OpCodes.Ldc_I4_5,
-                        6 => OpCodes.Ldc_I4_6,
-                        7 => OpCodes.Ldc_I4_7,
-                        _ => OpCodes.Ldc_I4_8,
-                    };
-                    Emit(opcode);
-                    return;
-                }
-
-                if (arg >= -128 && arg <= 127)
-                {
-                    Emit(OpCodes.Ldc_I4_S, (sbyte)arg);
-                    return;
-                }
-            }
-            else if (opcode.Equals(OpCodes.Ldarg))
-            {
-                if ((uint)arg <= 3)
-                {
-                    Emit(arg switch
-                    {
-                        0 => OpCodes.Ldarg_0,
-                        1 => OpCodes.Ldarg_1,
-                        2 => OpCodes.Ldarg_2,
-                        _ => OpCodes.Ldarg_3,
-                    });
-                    return;
-                }
-
-                if ((uint)arg <= byte.MaxValue)
-                {
-                    Emit(OpCodes.Ldarg_S, (byte)arg);
-                    return;
-                }
-
-                if ((uint)arg <= ushort.MaxValue) // this will be true except on misuse of the opcode
-                {
-                    Emit(OpCodes.Ldarg, (short)arg);
-                    return;
-                }
-            }
-            else if (opcode.Equals(OpCodes.Ldarga))
-            {
-                if ((uint)arg <= byte.MaxValue)
-                {
-                    Emit(OpCodes.Ldarga_S, (byte)arg);
-                    return;
-                }
-
-                if ((uint)arg <= ushort.MaxValue) // this will be true except on misuse of the opcode
-                {
-                    Emit(OpCodes.Ldarga, (short)arg);
-                    return;
-                }
-            }
-            else if (opcode.Equals(OpCodes.Starg))
-            {
-                if ((uint)arg <= byte.MaxValue)
-                {
-                    Emit(OpCodes.Starg_S, (byte)arg);
-                    return;
-                }
-
-                if ((uint)arg <= ushort.MaxValue) // this will be true except on misuse of the opcode
-                {
-                    Emit(OpCodes.Starg, (short)arg);
-                    return;
-                }
-            }
-
-            // For everything else, put the opcode followed by the arg onto the stream of instructions.
-            EnsureCapacity(7);
-            ILEmit(opcode);
-            WriteInt(arg);
-        }
+        public abstract void Emit(OpCode opcode, int arg);
 
         public abstract void Emit(OpCode opcode, MethodInfo meth);
 

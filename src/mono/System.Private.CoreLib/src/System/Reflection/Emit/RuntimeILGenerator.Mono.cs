@@ -239,7 +239,7 @@ namespace System.Reflection.Emit
         [MemberNotNullWhen(true, nameof(open_blocks))]
         private bool InExceptionBlock => open_blocks != null && open_blocks.Count > 0;
 
-        protected override void EnsureCapacity(int nbytes)
+        private void make_room(int nbytes)
         {
             if (code_len + nbytes < code.Length)
                 return;
@@ -248,14 +248,14 @@ namespace System.Reflection.Emit
             code = new_code;
         }
 
-        protected override void WriteInt(int val)
+        private void emit_int(int val)
         {
             BinaryPrimitives.WriteInt32LittleEndian(code.AsSpan(code_len), val);
             code_len += 4;
         }
 
         /* change to pass by ref to avoid copy */
-        protected override void ILEmit(OpCode opcode)
+        private void ll_emit(OpCode opcode)
         {
             /*
              * there is already enough room allocated in code.
@@ -478,24 +478,34 @@ namespace System.Reflection.Emit
             return new Label(num_labels++);
         }
 
-        protected override void WriteByte(byte arg)
+        public override void Emit(OpCode opcode)
         {
+            make_room(2);
+            ll_emit(opcode);
+        }
+
+        public override void Emit(OpCode opcode, byte arg)
+        {
+            make_room(3);
+            ll_emit(opcode);
             code[code_len++] = arg;
         }
 
         public override void Emit(OpCode opcode, ConstructorInfo con)
         {
             int token = token_gen.GetToken(con, true);
-            EnsureCapacity(6);
-            ILEmit(opcode);
-            WriteInt(token);
+            make_room(6);
+            ll_emit(opcode);
+            emit_int(token);
 
             if (opcode.StackBehaviourPop == StackBehaviour.Varpop)
                 cur_stack -= con.GetParametersCount();
         }
 
-        protected override void WriteDouble(double arg)
+        public override void Emit(OpCode opcode, double arg)
         {
+            make_room(10);
+            ll_emit(opcode);
             BinaryPrimitives.WriteDoubleLittleEndian(code.AsSpan(code_len), arg);
             code_len += 8;
         }
@@ -503,19 +513,30 @@ namespace System.Reflection.Emit
         public override void Emit(OpCode opcode, FieldInfo field)
         {
             int token = token_gen.GetToken(field, true);
-            EnsureCapacity(6);
-            ILEmit(opcode);
-            WriteInt(token);
+            make_room(6);
+            ll_emit(opcode);
+            emit_int(token);
         }
 
-        protected override void WriteShort(short arg)
+        public override void Emit(OpCode opcode, short arg)
         {
+            make_room(4);
+            ll_emit(opcode);
             BinaryPrimitives.WriteInt16LittleEndian(code.AsSpan(code_len), arg);
             code_len += 2;
         }
 
-        protected override void WriteLong(long arg)
+        public override void Emit(OpCode opcode, int arg)
         {
+            make_room(6);
+            ll_emit(opcode);
+            emit_int(arg);
+        }
+
+        public override void Emit(OpCode opcode, long arg)
+        {
+            make_room(10);
+            ll_emit(opcode);
             BinaryPrimitives.WriteInt64LittleEndian(code.AsSpan(code_len), arg);
             code_len += 8;
         }
@@ -523,8 +544,8 @@ namespace System.Reflection.Emit
         public override void Emit(OpCode opcode, Label label)
         {
             int tlen = target_len(opcode);
-            EnsureCapacity(6);
-            ILEmit(opcode);
+            make_room(6);
+            ll_emit(opcode);
             if (cur_stack > labels![label.m_label].maxStack)
                 labels[label.m_label].maxStack = cur_stack;
 
@@ -552,14 +573,14 @@ namespace System.Reflection.Emit
 
             /* opcode needs to be switch. */
             int count = labels.Length;
-            EnsureCapacity(6 + count * 4);
-            ILEmit(opcode);
+            make_room(6 + count * 4);
+            ll_emit(opcode);
 
             for (int i = 0; i < count; ++i)
                 if (cur_stack > this.labels![labels[i].m_label].maxStack)
                     this.labels[labels[i].m_label].maxStack = cur_stack;
 
-            WriteInt(count);
+            emit_int(count);
             if (fixups == null)
             {
                 fixups = new LabelFixup[defaultFixupSize + count];
@@ -608,7 +629,7 @@ namespace System.Reflection.Emit
             bool load_addr = false;
             bool is_store = false;
             bool is_load = false;
-            EnsureCapacity(6);
+            make_room(6);
 
             /* inline the code from ll_emit () to optimize il code size */
             if (opcode.StackBehaviourPop == StackBehaviour.Pop1)
@@ -681,7 +702,7 @@ namespace System.Reflection.Emit
                 }
                 else
                 {
-                    ILEmit(opcode);
+                    ll_emit(opcode);
                 }
             }
         }
@@ -695,9 +716,9 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_InvalidOpCodeOnDynamicMethod);
 
             int token = token_gen.GetToken(meth, true);
-            EnsureCapacity(6);
-            ILEmit(opcode);
-            WriteInt(token);
+            make_room(6);
+            ll_emit(opcode);
+            emit_int(token);
             if (meth.ReturnType != typeof(void))
                 cur_stack++;
 
@@ -707,9 +728,9 @@ namespace System.Reflection.Emit
 
         private void Emit(OpCode opcode, MethodInfo method, int token)
         {
-            EnsureCapacity(6);
-            ILEmit(opcode);
-            WriteInt(token);
+            make_room(6);
+            ll_emit(opcode);
+            emit_int(token);
             if (method.ReturnType != typeof(void))
                 cur_stack++;
 
@@ -720,13 +741,15 @@ namespace System.Reflection.Emit
         public override void Emit(OpCode opcode, SignatureHelper signature)
         {
             int token = token_gen.GetToken(signature);
-            EnsureCapacity(6);
-            ILEmit(opcode);
-            WriteInt(token);
+            make_room(6);
+            ll_emit(opcode);
+            emit_int(token);
         }
 
-        protected override void WriteSingle(float arg)
+        public override void Emit(OpCode opcode, float arg)
         {
+            make_room(6);
+            ll_emit(opcode);
             BinaryPrimitives.WriteSingleLittleEndian(code.AsSpan(code_len), arg);
             code_len += 4;
         }
@@ -734,17 +757,17 @@ namespace System.Reflection.Emit
         public override void Emit(OpCode opcode, string str)
         {
             int token = token_gen.GetToken(str);
-            EnsureCapacity(6);
-            ILEmit(opcode);
-            WriteInt(token);
+            make_room(6);
+            ll_emit(opcode);
+            emit_int(token);
         }
 
         public override void Emit(OpCode opcode, Type cls)
         {
-            EnsureCapacity(6);
-            ILEmit(opcode);
+            make_room(6);
+            ll_emit(opcode);
             int token = token_gen.GetToken(cls!, opcode != OpCodes.Ldtoken);
-            WriteInt(token);
+            emit_int(token);
         }
 
         // FIXME: vararg methods are not supported
@@ -840,7 +863,7 @@ namespace System.Reflection.Emit
                 {
                     int old_cl = code_len;
                     code_len = fixups[i].pos;
-                    WriteInt(diff);
+                    emit_int(diff);
                     code_len = old_cl;
                 }
             }

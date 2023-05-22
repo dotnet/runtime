@@ -16,14 +16,6 @@ namespace System.Reflection.Emit
     public abstract class ILGenerator
     {
         protected ILGenerator() { }
-        protected abstract void EnsureCapacity(int size);
-        protected abstract void ILEmit(System.Reflection.Emit.OpCode opcode);
-        protected abstract void WriteByte(byte arg);
-        protected abstract void WriteShort(short arg);
-        protected abstract void WriteInt(int arg);
-        protected abstract void WriteLong(long arg);
-        protected abstract void WriteSingle(float arg);
-        protected abstract void WriteDouble(double arg);
         public abstract int ILOffset { get; }
         public abstract void BeginCatchBlock(System.Type? exceptionType);
         public abstract void BeginExceptFilterBlock();
@@ -34,12 +26,12 @@ namespace System.Reflection.Emit
         public virtual System.Reflection.Emit.LocalBuilder DeclareLocal(System.Type localType) { throw null; }
         public abstract System.Reflection.Emit.LocalBuilder DeclareLocal(System.Type localType, bool pinned);
         public abstract System.Reflection.Emit.Label DefineLabel();
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode) { }
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode, byte arg) { }
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode, double arg) { }
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode, short arg) { }
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode, int arg) { }
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode, long arg) { }
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode);
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode, byte arg);
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode, double arg);
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode, short arg);
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode, int arg);
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode, long arg);
         public abstract void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.ConstructorInfo con);
         public abstract void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.Emit.Label label);
         public abstract void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.Emit.Label[] labels);
@@ -49,7 +41,7 @@ namespace System.Reflection.Emit
         public abstract void Emit(System.Reflection.Emit.OpCode opcode, System.Reflection.MethodInfo meth);
         [System.CLSCompliantAttribute(false)]
         public void Emit(System.Reflection.Emit.OpCode opcode, sbyte arg) { }
-        public virtual void Emit(System.Reflection.Emit.OpCode opcode, float arg) { }
+        public abstract void Emit(System.Reflection.Emit.OpCode opcode, float arg);
         public abstract void Emit(System.Reflection.Emit.OpCode opcode, string str);
         public abstract void Emit(System.Reflection.Emit.OpCode opcode, System.Type cls);
         public abstract void EmitCall(System.Reflection.Emit.OpCode opcode, System.Reflection.MethodInfo methodInfo, System.Type[]? optionalParameterTypes);
