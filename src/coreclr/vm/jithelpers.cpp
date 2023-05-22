@@ -580,7 +580,7 @@ FORCEINLINE INT64 FastDbl2Lng(double val)
 //    val  - double number to be truncated.
 //
 // Return Value:
-//    truncated number (rounded towards zero)
+//    double: truncated number (rounded towards zero)
 // 
 double TruncateDouble(double val)
 {
