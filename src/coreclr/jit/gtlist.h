@@ -245,17 +245,18 @@ GTNODE(SELECTCC         , GenTreeOpCC        ,0,GTK_BINOP|DBK_NOTHIR)
 // operands and sets the condition flags according to the result. Otherwise
 // sets the condition flags to the specified immediate value.
 GTNODE(CCMP             , GenTreeCCMP        ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
-// Maps to arm64 cinc instruction. It returns the operand incremented by one when the condition is true.
-// Otherwise returns the unchanged operand. Optimises for patterns such as, result = condition ? op1 : op1 + 1
+// Maps to arm64 csinc/cinc instruction. Computes result = condition ? op1 : op2 + 1.
+// If op2 is null, computes result = condition ? op1 + 1 : op1.
 GTNODE(SELECT_INC             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 // Variant of SELECT_INC that reuses flags computed by a previous node with the specified condition.
 GTNODE(SELECT_INCCC           , GenTreeOpCC        ,0,GTK_BINOP|DBK_NOTHIR)
-// Maps to arm64 csinv instruction. It negates the operand when the condition is true.
-// Otherwise returns the unchanged operand. Optimises for patterns such as, result = condition ? op1 : ~op2
+// Maps to arm64 csinv/cinv instruction. Computes result = condition ? op1 : ~op2.
+// If op2 is null, computes result = condition ? ~op1 : op1.
 GTNODE(SELECT_INV             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 // Variant of SELECT_INV that reuses flags computed by a previous node with the specified condition.
 GTNODE(SELECT_INVCC           , GenTreeOpCC        ,0,GTK_BINOP|DBK_NOTHIR)
-// Conditional select and negate when conditiona is false. Optimises for patterns such as, result = condition ? -op1 : op2
+// Maps to arm64 csneg/cneg instruction.. Computes result = condition ? op1 : -op2.
+// If op2 is null, computes result = condition ? -op1 : op1.
 GTNODE(SELECT_NEG             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 // Variant of SELECT_NEG that reuses flags computed by a previous node with the specified condition.
 GTNODE(SELECT_NEGCC           , GenTreeOpCC        ,0,GTK_BINOP|DBK_NOTHIR)

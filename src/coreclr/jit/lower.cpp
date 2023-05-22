@@ -3852,8 +3852,7 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     }
 
 #ifdef TARGET_ARM64
-    if ((trueVal->gtOper == GT_NOT) || (falseVal->gtOper == GT_NOT) || (trueVal->gtOper == GT_NEG) ||
-        (falseVal->gtOper == GT_NEG))
+    if (trueVal->OperIs(GT_NOT, GT_NEG) || falseVal->OperIs(GT_NOT, GT_NEG))
     {
         TryLowerCselToCinvOrCneg(select, cond);
     }

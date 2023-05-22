@@ -10126,8 +10126,15 @@ void GenTreeUseEdgeIterator::AdvanceConditional()
     switch (m_state)
     {
         case 0:
-            m_edge  = &conditional->gtOp1;
-            m_state = 1;
+            m_edge = &conditional->gtOp1;
+            if (conditional->gtOp2 == nullptr)
+            {
+                m_advance = &GenTreeUseEdgeIterator::Terminate;
+            }
+            else
+            {
+                m_state = 1;
+            }
             break;
         case 1:
             m_edge    = &conditional->gtOp2;

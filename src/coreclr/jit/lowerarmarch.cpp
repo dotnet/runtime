@@ -874,7 +874,7 @@ void Lowering::LowerModPow2(GenTree* node)
         BlockRange().InsertAfter(cnsZero, cmp);
         LowerNode(cmp);
 
-        mod->SetOper(GT_SELECT_NEGCC);
+        mod->ChangeOper(GT_SELECT_NEGCC);
         GenTreeOpCC* node = mod->AsOpCC();
         node->gtOp1       = trueExpr;
         node->gtOp2       = nullptr;
@@ -2574,19 +2574,25 @@ void Lowering::TryLowerCselToCinvOrCneg(GenTreeOp* select, GenTree* cond)
 
     GenTree*   trueVal  = select->gtOp1;
     GenTree*   falseVal = select->gtOp2;
-    const bool isCneg   = ((trueVal->gtOper == GT_NEG) || (falseVal->gtOper == GT_NEG));
+    const bool isCneg   = trueVal->OperIs(GT_NEG) || falseVal->OperIs(GT_NEG);
 
-    if ((trueVal->gtOper == GT_NOT) || (trueVal->gtOper == GT_NEG))
+    if (trueVal->OperIs(GT_NOT) || trueVal->OperIs(GT_NEG))
     {
+        if (!cond->OperIsCompare() && select->OperIs(GT_SELECT))
+        {
+            // Non-compare nodes add additional GT_NOT node after reversing.
+            // This would remove gains from this optimisation so don't proceed.
+            return;
+        }
         shouldReverseCondition  = true;
-        invertedOrNegatedVal    = trueVal->AsOp()->gtOp1;
+        invertedOrNegatedVal    = trueVal->gtGetOp1();
         nonInvertedOrNegatedVal = falseVal;
         BlockRange().Remove(trueVal);
     }
     else
     {
         shouldReverseCondition  = false;
-        invertedOrNegatedVal    = falseVal->AsOp()->gtOp1;
+        invertedOrNegatedVal    = falseVal->gtGetOp1();
         nonInvertedOrNegatedVal = trueVal;
         BlockRange().Remove(falseVal);
     }
@@ -2602,7 +2608,7 @@ void Lowering::TryLowerCselToCinvOrCneg(GenTreeOp* select, GenTree* cond)
             assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
         }
         select->SetOper(isCneg ? GT_SELECT_NEG : GT_SELECT_INV);
-        JITDUMP("Converted to: ", isCneg ? "SELECT_CNEG" : "SELECT_INV", "\n");
+        JITDUMP("Converted to: %s \n", isCneg ? "SELECT_CNEG" : "SELECT_INV");
         DISPTREERANGE(BlockRange(), select);
         JITDUMP("\n");
     }
@@ -2616,7 +2622,7 @@ void Lowering::TryLowerCselToCinvOrCneg(GenTreeOp* select, GenTree* cond)
             selectcc->gtCondition = GenCondition::Reverse(selectCond);
         }
         selectcc->SetOper(isCneg ? GT_SELECT_NEGCC : GT_SELECT_INVCC);
-        JITDUMP("Converted to: ", isCneg ? "SELECT_CNEGCC" : "SELECT_INVCC", "\n");
+        JITDUMP("Converted to: %s\n", isCneg ? "SELECT_CNEGCC" : "SELECT_INVCC");
         DISPTREERANGE(BlockRange(), selectcc);
         JITDUMP("\n");
     }
