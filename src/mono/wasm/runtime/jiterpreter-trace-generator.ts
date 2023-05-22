@@ -2342,7 +2342,6 @@ function emit_branch(
 ): boolean {
     const isSafepoint = (opcode >= MintOpcode.MINT_BRFALSE_I4_SP) &&
         (opcode <= MintOpcode.MINT_BLT_UN_I8_IMM_SP);
-    eraseInferredState();
 
     // If the branch is taken we bail out to allow the interpreter to do it.
     // So for brtrue, we want to do 'cond == 0' to produce a bailout only
