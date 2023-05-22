@@ -136,6 +136,18 @@ bool RhConfig::ReadConfigValue(_In_z_ const char *name, uint64_t* pValue, bool d
     return false;
 }
 
+bool RhConfig::ReadKnobValue(_In_z_ const char *name, uint64_t* pValue, bool decimal)
+{
+    const char *embeddedValue = nullptr;
+    if (GetEmbeddedKnob(name, &embeddedValue))
+    {
+        *pValue = strtoull(embeddedValue, NULL, decimal ? 10 : 16);
+        return true;
+    }
+
+    return false;
+}
+
 bool RhConfig::GetEmbeddedVariable(_In_z_ const char* configName, _Out_ const char** configValue)
 {
     // Read the config if we haven't yet
@@ -231,6 +243,103 @@ void RhConfig::ReadEmbeddedSettings()
         //if another thread initialized first let the first setter win
         //delete the iniBuff to avoid leaking memory
         if (PalInterlockedCompareExchangePointer(&g_embeddedSettings, iniBuff, NULL) != NULL)
+        {
+            delete[] iniBuff;
+        }
+    }
+
+    return;
+}
+
+bool RhConfig::GetEmbeddedKnob(_In_z_ const char* configName, _Out_ const char** configValue)
+{
+    // Read the config if we haven't yet
+    if (g_embeddedKnobs == NULL)
+    {
+        ReadEmbeddedKnobs();
+    }
+
+    // Config wasn't read or reading failed
+    if (g_embeddedKnobs == CONFIG_INI_NOT_AVAIL)
+    {
+        return false;
+    }
+
+    const ConfigPair* configPairs = (const ConfigPair*)g_embeddedKnobs;
+
+    // Find the first name which matches (case insensitive to be compat with environment variable counterpart)
+    for (int iSettings = 0; iSettings < RCV_Count; iSettings++)
+    {
+        if (_stricmp(configName, configPairs[iSettings].Key) == 0)
+        {
+            *configValue = configPairs[iSettings].Value;
+            return true;
+        }
+    }
+
+    // Config key was not found
+    return false;
+}
+
+extern "C" CompilerEmbeddedSettingsBlob g_compilerEmbeddedKnobsBlob;
+
+void RhConfig::ReadEmbeddedKnobs()
+{
+    if (g_embeddedKnobs == NULL)
+    {
+        //if reading the file contents failed set g_embeddedKnobs to CONFIG_INI_NOT_AVAIL
+        if (g_compilerEmbeddedKnobsBlob.Size == 0)
+        {
+            //only set if another thread hasn't initialized the buffer yet, otherwise ignore and let the first setter win
+            PalInterlockedCompareExchangePointer(&g_embeddedKnobs, CONFIG_INI_NOT_AVAIL, NULL);
+
+            return;
+        }
+
+        ConfigPair* iniBuff = new (nothrow) ConfigPair[RCV_Count];
+        if (iniBuff == NULL)
+        {
+            //only set if another thread hasn't initialized the buffer yet, otherwise ignore and let the first setter win
+            PalInterlockedCompareExchangePointer(&g_embeddedKnobs, CONFIG_INI_NOT_AVAIL, NULL);
+
+            return;
+        }
+
+        uint32_t iBuff = 0;
+        uint32_t iIniBuff = 0;
+        char* currLine;
+
+        //while we haven't reached the max number of config pairs, or the end of the file, read the next line
+        while (iIniBuff < RCV_Count && iBuff < g_compilerEmbeddedKnobsBlob.Size)
+        {
+            currLine = &g_compilerEmbeddedKnobsBlob.Data[iBuff];
+
+            //find the end of the line
+            while ((g_compilerEmbeddedKnobsBlob.Data[iBuff] != '\0') && (iBuff < g_compilerEmbeddedKnobsBlob.Size))
+                iBuff++;
+
+            //parse the line
+            //only increment iIniBuff if the parsing succeeded otherwise reuse the config struct
+            if (ParseConfigLine(&iniBuff[iIniBuff], currLine))
+            {
+                iIniBuff++;
+            }
+
+            //advance to the next line;
+            iBuff++;
+        }
+
+        //initialize the remaining config pairs to "\0"
+        while (iIniBuff < RCV_Count)
+        {
+            iniBuff[iIniBuff].Key[0] = '\0';
+            iniBuff[iIniBuff].Value[0] = '\0';
+            iIniBuff++;
+        }
+
+        //if another thread initialized first let the first setter win
+        //delete the iniBuff to avoid leaking memory
+        if (PalInterlockedCompareExchangePointer(&g_embeddedKnobs, iniBuff, NULL) != NULL)
         {
             delete[] iniBuff;
         }

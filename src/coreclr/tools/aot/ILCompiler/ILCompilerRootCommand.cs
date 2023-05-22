@@ -92,6 +92,8 @@ namespace ILCompiler
             new(new[] { "--feature" }, Array.Empty<string>, "Feature switches to apply (format: 'Namespace.Name=[true|false]'");
         public Option<string[]> RuntimeOptions { get; } =
             new(new[] { "--runtimeopt" }, Array.Empty<string>, "Runtime options to set");
+        public Option<string[]> RuntimeKnobs { get; } =
+            new(new[] { "--runtimeknobs" }, Array.Empty<string>, "Runtime knobs to set");
         public Option<int> Parallelism { get; } =
             new(new[] { "--parallelism" }, result =>
             {
@@ -205,6 +207,7 @@ namespace ILCompiler
             AddOption(AppContextSwitches);
             AddOption(FeatureSwitches);
             AddOption(RuntimeOptions);
+            AddOption(RuntimeKnobs);
             AddOption(Parallelism);
             AddOption(InstructionSet);
             AddOption(Guard);

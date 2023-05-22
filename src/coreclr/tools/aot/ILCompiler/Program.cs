@@ -209,12 +209,14 @@ namespace ILCompiler
                 }
 
                 string[] runtimeOptions = Get(_command.RuntimeOptions);
+                string[] runtimeKnobs = Get(_command.RuntimeKnobs);
                 if (nativeLib)
                 {
                     // Set owning module of generated native library startup method to compiler generated module,
                     // to ensure the startup method is included in the object file during multimodule mode build
                     compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, CreateInitializerList(typeSystemContext)));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
+                    compilationRoots.Add(new RuntimeKnobsRootProvider(runtimeKnobs));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
                     if (SplitExeInitialization)
                     {
@@ -225,6 +227,7 @@ namespace ILCompiler
                 {
                     compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext), generateLibraryAndModuleInitializers: !SplitExeInitialization));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
+                    compilationRoots.Add(new RuntimeKnobsRootProvider(runtimeKnobs));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
                     if (SplitExeInitialization)
                     {
