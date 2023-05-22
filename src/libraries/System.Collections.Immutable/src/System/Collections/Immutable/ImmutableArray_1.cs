@@ -281,6 +281,20 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
+        /// Determines whether the specified item exists in the array.
+        /// </summary>
+        /// <param name="item">The item to search for.</param>
+        /// <param name="equalityComparer">
+        /// The equality comparer to use in the search.
+        /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
+        /// </param>
+        /// <returns><c>true</c> if an equal value was found in the array; <c>false</c> otherwise.</returns>
+        public bool Contains(T item, IEqualityComparer<T>? equalityComparer)
+        {
+            return this.IndexOf(item, equalityComparer) >= 0;
+        }
+
+        /// <summary>
         /// Returns a new array with the specified value inserted at the specified position.
         /// </summary>
         /// <param name="index">The 0-based index into the array at which the new item should be added.</param>

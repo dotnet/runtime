@@ -26,6 +26,7 @@ RUN bash ./dotnet-install.sh --channel $_DOTNET_INSTALL_CHANNEL --quality daily 
 # 2. Runtime pack (microsoft.netcore.app.runtime.linux-x64)
 # 3. targetingpacks.targets, so stress test builds can target the live-built runtime instead of the one in the pre-installed SDK
 # 4. testhost
+# 5. msquic interop sources (needed for HttpStress)
 
 COPY --from=corefxbuild \
     /repo/artifacts/bin/microsoft.netcore.app.ref \
@@ -42,6 +43,10 @@ COPY --from=corefxbuild \
 COPY --from=corefxbuild \
     /repo/artifacts/bin/testhost \
     /live-runtime-artifacts/testhost
+
+COPY --from=corefxbuild \
+    /repo/src/libraries/System.Net.Quic/src/System/Net/Quic/Interop \
+    /live-runtime-artifacts/msquic-interop
 
 # Add AspNetCore bits to testhost:
 ENV _ASPNETCORE_SOURCE="/usr/share/dotnet/shared/Microsoft.AspNetCore.App/$VERSION*"

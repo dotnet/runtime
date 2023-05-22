@@ -217,7 +217,7 @@ typedef struct MonoAotOptions {
 	gboolean use_trampolines_page;
 	gboolean no_instances;
 	// We are collecting inflated methods and emitting non-inflated
-	gboolean dedup;
+	gboolean dedup_skip;
 	// The name of the assembly for which the AOT module is going to have all deduped methods moved to.
 	// When set, we are emitting inflated methods only
 	char *dedup_include;
@@ -294,6 +294,13 @@ typedef struct _UnwindInfoSectionCacheItem {
 	gboolean xdata_section_emitted;
 } UnwindInfoSectionCacheItem;
 #endif
+
+typedef enum {
+	DEDUP_NONE, // dedup is turned off
+	DEDUP_SKIP, // dedup is on, dedup assembly is not provided
+	DEDUP_COLLECT, // dedup is on, this assembly is not the dedup image, so just collect the methods
+	DEDUP_EMIT //  dedup is on, this assembly is the dedup image, emit collected methods
+} DedupPhase;
 
 typedef struct MonoAotCompile {
 	MonoImage *image;
@@ -381,7 +388,6 @@ typedef struct MonoAotCompile {
 	gboolean llvm;
 	gboolean has_jitted_code;
 	gboolean is_full_aot;
-	gboolean dedup_collect_only;
 	MonoAotFileFlags flags;
 	MonoDynamicStream blob;
 	gboolean blob_closed;
@@ -416,8 +422,8 @@ typedef struct MonoAotCompile {
 	FILE *compiled_methods_outfile;
 	int datafile_offset;
 	int gc_name_offset;
-	// In this mode, we are emitting dedupable methods that we encounter
-	gboolean dedup_emit_mode;
+
+	DedupPhase dedup_phase;
 } MonoAotCompile;
 
 typedef struct {
@@ -517,6 +523,12 @@ static gboolean
 mono_aot_mode_is_hybrid (MonoAotOptions *opts)
 {
 	return opts->mode == MONO_AOT_MODE_HYBRID;
+}
+
+static void
+dedup_change_phase (MonoAotCompile *acfg, int next_phase)
+{
+	acfg->dedup_phase = next_phase;
 }
 
 static void
@@ -3910,12 +3922,15 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 				encode_klass_ref (acfg, method->klass, p, &p);
 			} else {
 				MonoMethodSignature *sig = mono_method_signature_internal (method);
-				WrapperInfo *wrapper_info = mono_marshal_get_wrapper_info (method);
 
 				encode_value (0, p, &p);
 				if (method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE)
-					encode_value (wrapper_info ? wrapper_info->subtype : 0, p, &p);
-				encode_signature (acfg, sig, p, &p);
+					encode_value (info ? info->subtype : 0, p, &p);
+
+				if (info && info->subtype == WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL)
+					encode_klass_ref (acfg, info->d.delegate_invoke.method->klass, p, &p);
+				else
+					encode_signature (acfg, sig, p, &p);
 			}
 			break;
 		}
@@ -4300,6 +4315,22 @@ get_method_index (MonoAotCompile *acfg, MonoMethod *method)
 	return index - 1;
 }
 
+static gboolean
+collect_dedup_method (MonoAotCompile *acfg, MonoMethod *method)
+{
+	// Check if the dedup is enabled, and if the current method can be deduplicated
+	if ((acfg->dedup_phase == DEDUP_SKIP || acfg->dedup_phase == DEDUP_COLLECT) && mono_aot_can_dedup (method)) {
+		if (acfg->dedup_phase == DEDUP_SKIP)
+			return TRUE;
+		// Remember for later
+		if (acfg->dedup_phase == DEDUP_COLLECT && !g_hash_table_lookup (dedup_methods, method))
+			g_hash_table_insert (dedup_methods, method, method);
+	}
+	return FALSE;
+}
+
+
+
 static int
 add_method_full (MonoAotCompile *acfg, MonoMethod *method, gboolean extra, int depth)
 {
@@ -4389,16 +4420,8 @@ add_extra_method_full (MonoAotCompile *acfg, MonoMethod *method, gboolean prefer
 		mono_error_assert_ok (error);
 	}
 
-	if ((acfg->aot_opts.dedup || acfg->aot_opts.dedup_include) && mono_aot_can_dedup (method)) {
-		if (acfg->aot_opts.dedup) {
-			/* Don't emit instances */
-			return;
-		} else if (!acfg->dedup_emit_mode) {
-			/* Remember for later */
-			if (!g_hash_table_lookup (dedup_methods, method))
-				g_hash_table_insert (dedup_methods, method, method);
-		}
-	}
+	if (collect_dedup_method (acfg, method))
+		return;
 
 	if (acfg->aot_opts.log_generics)
 		aot_printf (acfg, "%*sAdding method %s.\n", depth, "", mono_method_get_full_name (method));
@@ -4524,6 +4547,41 @@ can_marshal_struct (MonoClass *klass)
 		return TRUE;
 
 	return can_marshal;
+}
+
+/* Create a ref shared instantiation */
+static void
+create_ref_shared_inst (MonoAotCompile *acfg, MonoMethod *method, MonoGenericContext *ctx)
+{
+	MonoGenericContext shared_context;
+	MonoType **args;
+	MonoGenericInst *inst;
+	MonoGenericContainer *container;
+
+	memset (ctx, 0, sizeof (MonoGenericContext));
+
+	if (mono_class_is_gtd (method->klass)) {
+		shared_context = mono_class_get_generic_container (method->klass)->context;
+		inst = shared_context.class_inst;
+
+		args = g_new0 (MonoType*, inst->type_argc);
+		for (guint i = 0; i < inst->type_argc; ++i)
+			args [i] = mono_get_object_type ();
+		ctx->class_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
+		g_free (args);
+	}
+	if (method->is_generic) {
+		container = mono_method_get_generic_container (method);
+		g_assert (!container->is_anonymous && container->is_method);
+		shared_context = container->context;
+		inst = shared_context.method_inst;
+
+		args = g_new0 (MonoType*, inst->type_argc);
+		for (int i = 0; i < container->type_argc; ++i)
+			args [i] = mono_get_object_type ();
+		ctx->method_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
+		g_free (args);
+	}
 }
 
 static void
@@ -4942,12 +5000,38 @@ add_full_aot_wrappers (MonoAotCompile *acfg)
 		if (!m_class_is_delegate (klass) || klass == mono_defaults.delegate_class || klass == mono_defaults.multicastdelegate_class)
 			continue;
 
+		method = mono_get_delegate_invoke_internal (klass);
+		if (mono_class_is_gtd (klass)) {
+			MonoGenericContext ctx;
+			MonoMethod *inst, *gshared;
+
+			create_ref_shared_inst (acfg, method, &ctx);
+
+			inst = mono_class_inflate_generic_method_checked (method, &ctx, error);
+			g_assert (is_ok (error)); /* FIXME don't swallow the error */
+
+			sig = mono_method_signature_internal (method);
+			if (sig->param_count && !m_class_is_byreflike (mono_class_from_mono_type_internal (sig->params [0])) && !m_type_is_byref (sig->params [0])) {
+				m = mono_marshal_get_delegate_invoke_internal (inst, TRUE, FALSE, NULL);
+
+				gshared = mini_get_shared_method_full (m, SHARE_MODE_NONE, error);
+				mono_error_assert_ok (error);
+
+				add_extra_method (acfg, gshared);
+			}
+		}
+
 		if (!mono_class_is_gtd (klass)) {
-			method = mono_get_delegate_invoke_internal (klass);
 
 			m = mono_marshal_get_delegate_invoke (method, NULL);
 
 			add_method (acfg, m);
+
+			sig = mono_method_signature_internal (method);
+			if (sig->param_count && !m_class_is_byreflike (mono_class_from_mono_type_internal (sig->params [0])) && !m_type_is_byref (sig->params [0])) {
+				m = mono_marshal_get_delegate_invoke_internal (method, TRUE, FALSE, NULL);
+				add_method (acfg, m);
+			}
 
 			method = try_get_method_nofail (klass, "BeginInvoke", -1, 0);
 			if (method)
@@ -5332,10 +5416,16 @@ MONO_RESTORE_WARNING
 				for (j = 0; j < decoded_args->named_args_num; ++j) {
 					if (decoded_args->named_args_info [j].field && !strcmp (decoded_args->named_args_info [j].field->name, "EntryPoint")) {
 						named = (const char *)decoded_args->named_args[j]->value.primitive;
-						slen = mono_metadata_decode_value (named, &named) + (int)strlen(acfg->user_symbol_prefix);
-						export_name = (char *)g_malloc (slen + 1);
-						sprintf (export_name, "%s%s", acfg->user_symbol_prefix, named);
-						export_name [slen] = 0;
+						slen = mono_metadata_decode_value (named, &named);
+						
+						int prefix_len = (int)strlen (acfg->user_symbol_prefix);
+						g_assert (prefix_len < 2);
+						
+						export_name = (char *)g_malloc (prefix_len + slen + 1);
+						if (prefix_len == 1)
+							export_name[0] = *acfg->user_symbol_prefix;
+						memcpy (export_name + prefix_len, named, slen);
+						export_name [prefix_len + slen] = '\0';
 
 						g_ptr_array_add (acfg->exported_methods, method);
 					}
@@ -6390,7 +6480,7 @@ is_direct_callable (MonoAotCompile *acfg, MonoMethod *method, MonoJumpInfo *patc
 		if (callee_cfg) {
 			gboolean direct_callable = TRUE;
 
-			if (direct_callable && (acfg->aot_opts.dedup || acfg->aot_opts.dedup_include) && mono_aot_can_dedup (patch_info->data.method))
+			if (direct_callable && acfg->dedup_phase != DEDUP_NONE && mono_aot_can_dedup (patch_info->data.method))
 				direct_callable = FALSE;
 
 			if (direct_callable && !acfg->llvm && !(!callee_cfg->has_got_slots && mono_class_is_before_field_init (callee_cfg->method->klass)))
@@ -8794,7 +8884,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		} else if (str_begins_with (arg, "internal-logfile=")) {
 			opts->logfile = g_strdup (arg + strlen ("internal-logfile="));
 		} else if (str_begins_with (arg, "dedup-skip")) {
-			opts->dedup = TRUE;
+			opts->dedup_skip = TRUE;
 		} else if (str_begins_with (arg, "dedup-include=")) {
 			opts->dedup_include = g_strdup (arg + strlen ("dedup-include="));
 		} else if (str_begins_with (arg, "mtriple=")) {
@@ -9639,6 +9729,13 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 			add_gsharedvt_wrappers (acfg, mono_method_signature_internal (cfg->method), FALSE, TRUE, TRUE);
 	}
 
+	for (GSList *l = cfg->pinvoke_calli_signatures; l; l = l->next) {
+		MonoMethodSignature *sig = mono_metadata_signature_dup ((MonoMethodSignature*)l->data);
+
+		MonoMethod *wrapper = mono_marshal_get_native_func_wrapper_indirect (cfg->method->klass, sig, TRUE);
+		add_extra_method (acfg, wrapper);
+	}
+
 	if (cfg->llvm_only)
 		acfg->stats.llvm_count ++;
 
@@ -10079,6 +10176,9 @@ append_mangled_wrapper_subtype (GString *s, WrapperSubtype subtype)
 	case WRAPPER_SUBTYPE_LLVM_FUNC:
 		label = "llvm_func";
 		break;
+	case WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT:
+		label = "native_func_indirect";
+		break;
 	default:
 		g_assert_not_reached ();
 	}
@@ -10242,6 +10342,9 @@ append_mangled_wrapper (GString *s, MonoMethod *method)
 			append_sig = FALSE;
 		} else if (info->subtype == WRAPPER_SUBTYPE_NATIVE_FUNC_AOT) {
 			success = success && append_mangled_method (s, info->d.managed_to_native.method);
+		} else if (info->subtype == WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT) {
+			append_mangled_signature (s, info->d.native_func.sig);
+			append_sig = FALSE;
 		} else {
 			g_assert (info->subtype == WRAPPER_SUBTYPE_NONE || info->subtype == WRAPPER_SUBTYPE_PINVOKE);
 			success = success && append_mangled_method (s, info->d.managed_to_native.method);
@@ -11619,11 +11722,15 @@ emit_class_name_table (MonoAotCompile *acfg)
 	name_p = name_buf = (guint8 *)g_malloc0 (name_buf_size);
 #endif
 
+	guint table_len = table->len;
+	if (table_size > 65000 || table->len > 65000) {
+		table_size = 0;
+		table_len = 0;
+	}
+
 	/* FIXME: Optimize memory usage */
-	g_assert (table_size < 65000);
 	encode_int16 (GINT_TO_UINT16 (table_size), p, &p);
-	g_assert (table->len < 65000);
-	for (guint i = 0; i < table->len; ++i) {
+	for (guint i = 0; i < table_len; ++i) {
 		entry = (ClassNameTableEntry *)g_ptr_array_index (table, i);
 		if (entry == NULL) {
 			encode_int16 (0, p, &p);
@@ -14061,6 +14168,7 @@ acfg_create (MonoAssembly *ass, guint32 jit_opts)
 	acfg->gshared_instances = g_hash_table_new (NULL, NULL);
 	acfg->prefer_instances = g_hash_table_new (NULL, NULL);
 	acfg->exported_methods = g_ptr_array_new ();
+	acfg->dedup_phase = DEDUP_NONE;
 	mono_os_mutex_init_recursive (&acfg->mutex);
 
 	init_got_info (&acfg->got_info);
@@ -14707,15 +14815,20 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 
 	acfg = acfg_create (ass, jit_opts);
 	memcpy (&acfg->aot_opts, aot_options, sizeof (MonoAotOptions));
-
-	if (acfg->aot_opts.dedup_include && ass != dedup_assembly)
-		acfg->dedup_collect_only = TRUE;
+	if (acfg->aot_opts.dedup_skip || acfg->aot_opts.dedup_include) {
+		if (acfg->aot_opts.dedup_skip)
+			dedup_change_phase (acfg, DEDUP_SKIP);
+		else if (acfg->aot_opts.dedup_include && ass != dedup_assembly)
+			dedup_change_phase (acfg, DEDUP_COLLECT);
+		else
+			dedup_change_phase (acfg, DEDUP_EMIT);
+	}
 
 	if (acfg->aot_opts.logfile) {
 		acfg->logfile = fopen (acfg->aot_opts.logfile, "a+");
 	}
 
-	if (acfg->aot_opts.compiled_methods_outfile && !acfg->dedup_collect_only) {
+	if (acfg->aot_opts.compiled_methods_outfile && acfg->dedup_phase != DEDUP_COLLECT) {
 		acfg->compiled_methods_outfile = fopen (acfg->aot_opts.compiled_methods_outfile, "w+");
 		if (!acfg->compiled_methods_outfile)
 			aot_printerrf (acfg, "Unable to open compiled-methods-outfile specified file %s\n", acfg->aot_opts.compiled_methods_outfile);
@@ -14766,14 +14879,14 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	if (acfg->jit_opts & MONO_OPT_GSHAREDVT)
 		mono_set_generic_sharing_vt_supported (TRUE);
 
-	if (!acfg->dedup_collect_only)
+	if (acfg->dedup_phase != DEDUP_COLLECT)
 		aot_printf (acfg, "Mono Ahead of Time compiler - compiling assembly %s\n", image->name);
 
 	if (!acfg->aot_opts.deterministic)
 		generate_aotid ((guint8*) &acfg->image->aotid);
 
 	char *aotid = mono_guid_to_string (acfg->image->aotid);
-	if (!acfg->dedup_collect_only && !acfg->aot_opts.deterministic)
+	if (acfg->dedup_phase != DEDUP_COLLECT && !acfg->aot_opts.deterministic)
 		aot_printf (acfg, "AOTID %s\n", aotid);
 	g_free (aotid);
 
@@ -14879,9 +14992,9 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	if (mini_safepoints_enabled ())
 		acfg->flags = (MonoAotFileFlags)(acfg->flags | MONO_AOT_FILE_FLAG_SAFEPOINTS);
 
-	// The methods in dedup-emit amodules must be available on runtime startup
+	// The methods in dedup AOT module must be available on runtime startup
 	// Note: Only one such amodule can have this attribute
-	if (ass == dedup_assembly)
+	if (acfg->dedup_phase == DEDUP_EMIT)
 		acfg->flags = (MonoAotFileFlags)(acfg->flags | MONO_AOT_FILE_FLAG_EAGER_LOAD);
 
 	if (acfg->aot_opts.instances_logfile_path) {
@@ -14973,15 +15086,13 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 			return 1;
 	}
 
-	if (ass == dedup_assembly) {
+	if (acfg->dedup_phase == DEDUP_EMIT) {
 		/* Add collected dedup-able methods */
 		aot_printf (acfg, "Adding %d dedup-ed methods.\n", g_hash_table_size (dedup_methods));
 
 		GHashTableIter iter;
 		MonoMethod *key;
 		MonoMethod *method;
-
-		acfg->dedup_emit_mode = TRUE;
 
 		g_hash_table_iter_init (&iter, dedup_methods);
 		while (g_hash_table_iter_next (&iter, (gpointer *)&key, (gpointer *)&method))
@@ -15065,7 +15176,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	TV_GETTIME (btv);
 
 	acfg->stats.jit_time = GINT64_TO_INT (TV_ELAPSED (atv, btv));
-	if (acfg->dedup_collect_only) {
+	if (acfg->dedup_phase == DEDUP_COLLECT) {
 		/* We only collected methods from this assembly */
 		acfg_free (acfg);
 		return 0;

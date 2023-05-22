@@ -35,6 +35,7 @@ private:
     FrozenObjectSegment* m_CurrentSegment;
 
     friend class ProfilerObjectEnum;
+    friend class ProfToEEInterfaceImpl;
 };
 
 class FrozenObjectSegment
@@ -72,6 +73,7 @@ private:
     INDEBUG(size_t m_ObjectsCount);
 
     friend class ProfilerObjectEnum;
+    friend class ProfToEEInterfaceImpl;
 };
 
 #endif // _FROZENOBJECTHEAP_H

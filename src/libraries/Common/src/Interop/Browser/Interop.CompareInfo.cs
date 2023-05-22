@@ -15,5 +15,8 @@ internal static partial class Interop
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern unsafe bool EndsWith(out string exceptionMessage, in string culture, char* str1, int str1Len, char* str2, int str2Len, global::System.Globalization.CompareOptions options);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern unsafe int IndexOf(out string exceptionMessage, in string culture, char* str1, int str1Len, char* str2, int str2Len, global::System.Globalization.CompareOptions options, bool fromBeginning);
     }
 }

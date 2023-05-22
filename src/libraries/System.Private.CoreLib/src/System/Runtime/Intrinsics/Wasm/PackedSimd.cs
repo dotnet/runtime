@@ -1332,6 +1332,8 @@ namespace System.Runtime.Intrinsics.Wasm
         [Intrinsic]
         public static int Bitmask(Vector128<nuint>  value) => Bitmask(value);
 
+        // Comparisons
+
         /// <summary>
         ///   i8x16.eq
         /// </summary>
@@ -1455,6 +1457,476 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<nuint>  CompareNotEqual(Vector128<nuint>  left, Vector128<nuint>  right) => CompareNotEqual(left, right);
 
         /// <summary>
+        ///   i8x16.lt_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<sbyte>  CompareLessThan(Vector128<sbyte>  left, Vector128<sbyte>  right) => CompareLessThan(left, right);
+        /// <summary>
+        ///   i8x16.lt_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<byte>   CompareLessThan(Vector128<byte>   left, Vector128<byte>   right) => CompareLessThan(left, right);
+        /// <summary>
+        ///   i16x8.lt_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<short>  CompareLessThan(Vector128<short>  left, Vector128<short>  right) => CompareLessThan(left, right);
+        /// <summary>
+        ///   i16x8.lt_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ushort> CompareLessThan(Vector128<ushort> left, Vector128<ushort> right) => CompareLessThan(left, right);
+        /// <summary>
+        ///   i32x4.lt_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>    CompareLessThan(Vector128<int>    left, Vector128<int>    right) => CompareLessThan(left, right);
+        /// <summary>
+        ///   i32x4.lt_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<uint>   CompareLessThan(Vector128<uint>   left, Vector128<uint>   right) => CompareLessThan(left, right);
+        /// <summary>
+        ///   i64x2.lt_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<long>   CompareLessThan(Vector128<long>   left, Vector128<long>   right) => CompareLessThan(left, right);
+        /// <summary>
+        ///   i64x2.lt_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ulong>  CompareLessThan(Vector128<ulong>  left, Vector128<ulong>  right) => CompareLessThan(left, right);
+        /// <summary>
+        ///   f32x4.lt
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  CompareLessThan(Vector128<float>  left, Vector128<float>  right) => CompareLessThan(left, right);
+        /// <summary>
+        ///   f64x2.lt
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> CompareLessThan(Vector128<double> left, Vector128<double> right) => CompareLessThan(left, right);
+        /// <summary>
+        ///   i32x4.lt_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<nint>   CompareLessThan(Vector128<nint>   left, Vector128<nint>   right) => CompareLessThan(left, right);
+        /// <summary>
+        ///   i32x4.lt_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<nuint>  CompareLessThan(Vector128<nuint>  left, Vector128<nuint>  right) => CompareLessThan(left, right);
+
+        /// <summary>
+        ///   i8x16.le_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<sbyte>  CompareLessThanOrEqual(Vector128<sbyte>  left, Vector128<sbyte>  right) => CompareLessThanOrEqual(left, right);
+        /// <summary>
+        ///   i8x16.le_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<byte>   CompareLessThanOrEqual(Vector128<byte>   left, Vector128<byte>   right) => CompareLessThanOrEqual(left, right);
+        /// <summary>
+        ///   i16x8.le_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<short>  CompareLessThanOrEqual(Vector128<short>  left, Vector128<short>  right) => CompareLessThanOrEqual(left, right);
+        /// <summary>
+        ///   i16x8.le_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ushort> CompareLessThanOrEqual(Vector128<ushort> left, Vector128<ushort> right) => CompareLessThanOrEqual(left, right);
+        /// <summary>
+        ///   i32x4.le_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>    CompareLessThanOrEqual(Vector128<int>    left, Vector128<int>    right) => CompareLessThanOrEqual(left, right);
+        /// <summary>
+        ///   i32x4.le_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<uint>   CompareLessThanOrEqual(Vector128<uint>   left, Vector128<uint>   right) => CompareLessThanOrEqual(left, right);
+        /// <summary>
+        ///   i64x2.le_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<long>   CompareLessThanOrEqual(Vector128<long>   left, Vector128<long>   right) => CompareLessThanOrEqual(left, right);
+        /// <summary>
+        ///   i64x2.le_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ulong>  CompareLessThanOrEqual(Vector128<ulong>  left, Vector128<ulong>  right) => CompareLessThanOrEqual(left, right);
+        /// <summary>
+        ///   f32x4.le
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  CompareLessThanOrEqual(Vector128<float>  left, Vector128<float>  right) => CompareLessThanOrEqual(left, right);
+        /// <summary>
+        ///   f64x2.le
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> CompareLessThanOrEqual(Vector128<double> left, Vector128<double> right) => CompareLessThanOrEqual(left, right);
+        /// <summary>
+        ///   i32x4.le_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<nint>   CompareLessThanOrEqual(Vector128<nint>   left, Vector128<nint>   right) => CompareLessThanOrEqual(left, right);
+        /// <summary>
+        ///   i32x4.le_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<nuint>  CompareLessThanOrEqual(Vector128<nuint>  left, Vector128<nuint>  right) => CompareLessThanOrEqual(left, right);
+
+        /// <summary>
+        ///   i8x16.gt_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<sbyte>  CompareGreaterThan(Vector128<sbyte>  left, Vector128<sbyte>  right) => CompareGreaterThan(left, right);
+        /// <summary>
+        ///   i8x16.gt_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<byte>   CompareGreaterThan(Vector128<byte>   left, Vector128<byte>   right) => CompareGreaterThan(left, right);
+        /// <summary>
+        ///   i16x8.gt_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<short>  CompareGreaterThan(Vector128<short>  left, Vector128<short>  right) => CompareGreaterThan(left, right);
+        /// <summary>
+        ///   i16x8.gt_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ushort> CompareGreaterThan(Vector128<ushort> left, Vector128<ushort> right) => CompareGreaterThan(left, right);
+        /// <summary>
+        ///   i32x4.gt_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>    CompareGreaterThan(Vector128<int>    left, Vector128<int>    right) => CompareGreaterThan(left, right);
+        /// <summary>
+        ///   i32x4.gt_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<uint>   CompareGreaterThan(Vector128<uint>   left, Vector128<uint>   right) => CompareGreaterThan(left, right);
+        /// <summary>
+        ///   i64x2.gt_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<long>   CompareGreaterThan(Vector128<long>   left, Vector128<long>   right) => CompareGreaterThan(left, right);
+        /// <summary>
+        ///   i64x2.gt_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ulong>  CompareGreaterThan(Vector128<ulong>  left, Vector128<ulong>  right) => CompareGreaterThan(left, right);
+        /// <summary>
+        ///   f32x4.gt
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  CompareGreaterThan(Vector128<float>  left, Vector128<float>  right) => CompareGreaterThan(left, right);
+        /// <summary>
+        ///   f64x2.gt
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> CompareGreaterThan(Vector128<double> left, Vector128<double> right) => CompareGreaterThan(left, right);
+        /// <summary>
+        ///   i32x4.gt_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<nint>   CompareGreaterThan(Vector128<nint>   left, Vector128<nint>   right) => CompareGreaterThan(left, right);
+        /// <summary>
+        ///   i32x4.gt_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<nuint>  CompareGreaterThan(Vector128<nuint>  left, Vector128<nuint>  right) => CompareGreaterThan(left, right);
+
+        /// <summary>
+        ///   i8x16.ge_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<sbyte>  CompareGreaterThanOrEqual(Vector128<sbyte>  left, Vector128<sbyte>  right) => CompareGreaterThanOrEqual(left, right);
+        /// <summary>
+        ///   i8x16.ge_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<byte>   CompareGreaterThanOrEqual(Vector128<byte>   left, Vector128<byte>   right) => CompareGreaterThanOrEqual(left, right);
+        /// <summary>
+        ///   i16x8.ge_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<short>  CompareGreaterThanOrEqual(Vector128<short>  left, Vector128<short>  right) => CompareGreaterThanOrEqual(left, right);
+        /// <summary>
+        ///   i16x8.ge_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ushort> CompareGreaterThanOrEqual(Vector128<ushort> left, Vector128<ushort> right) => CompareGreaterThanOrEqual(left, right);
+        /// <summary>
+        ///   i32x4.ge_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>    CompareGreaterThanOrEqual(Vector128<int>    left, Vector128<int>    right) => CompareGreaterThanOrEqual(left, right);
+        /// <summary>
+        ///   i32x4.ge_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<uint>   CompareGreaterThanOrEqual(Vector128<uint>   left, Vector128<uint>   right) => CompareGreaterThanOrEqual(left, right);
+        /// <summary>
+        ///   i32x4.ge_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<long>   CompareGreaterThanOrEqual(Vector128<long>   left, Vector128<long>   right) => CompareGreaterThanOrEqual(left, right);
+        /// <summary>
+        ///   i64x2.ge_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ulong>  CompareGreaterThanOrEqual(Vector128<ulong>  left, Vector128<ulong>  right) => CompareGreaterThanOrEqual(left, right);
+        /// <summary>
+        ///   f32x4.ge
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  CompareGreaterThanOrEqual(Vector128<float>  left, Vector128<float>  right) => CompareGreaterThanOrEqual(left, right);
+        /// <summary>
+        ///   f64x2.ge
+        /// </summary>
+        public static Vector128<double> CompareGreaterThanOrEqual(Vector128<double> left, Vector128<double> right) => CompareGreaterThanOrEqual(left, right);
+        /// <summary>
+        ///   i32x4.ge_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<nint>   CompareGreaterThanOrEqual(Vector128<nint>   left, Vector128<nint>   right) => CompareGreaterThanOrEqual(left, right);
+        /// <summary>
+        ///   i32x4.ge_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<nuint>  CompareGreaterThanOrEqual(Vector128<nuint>  left, Vector128<nuint>  right) => CompareGreaterThanOrEqual(left, right);
+
+       // Floating-point sign bit operations
+
+        /// <summary>
+        ///   f32x4.neg
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Negate(Vector128<float>  value) => Negate(value);
+        /// <summary>
+        ///   f64x2.neg
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Negate(Vector128<double> value) => Negate(value);
+
+        /// <summary>
+        ///   f32x4.abs
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Abs(Vector128<float>  value) => Abs(value);
+        /// <summary>
+        ///   f64x2.abs
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Abs(Vector128<double> value) => Abs(value);
+
+        // Floating-point min and max
+
+        /// <summary>
+        ///   f32x4.min
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Min(Vector128<float>  left, Vector128<float>  right) => Min(left, right);
+        /// <summary>
+        ///   f64x2.min
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Min(Vector128<double> left, Vector128<double> right) => Min(left, right);
+
+        /// <summary>
+        ///   f32x4.max
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Max(Vector128<float>  left, Vector128<float>  right) => Max(left, right);
+        /// <summary>
+        ///   f64x2.max
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Max(Vector128<double> left, Vector128<double> right) => Max(left, right);
+
+        /// <summary>
+        ///   f32x4.pmin
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  PseudoMin(Vector128<float>  left, Vector128<float>  right) => PseudoMin(left, right);
+        /// <summary>
+        ///   f64x2.pmin
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> PseudoMin(Vector128<double> left, Vector128<double> right) => PseudoMin(left, right);
+
+        /// <summary>
+        ///   f32x4.pmax
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  PseudoMax(Vector128<float>  left, Vector128<float>  right) => PseudoMax(left, right);
+        /// <summary>
+        ///   f64x2.pmax
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> PseudoMax(Vector128<double> left, Vector128<double> right) => PseudoMax(left, right);
+
+        // Floating-point arithmetic
+
+        /// <summary>
+        ///   f32x4.add
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Add(Vector128<float>  left, Vector128<float>  right) => Add(left, right);
+        /// <summary>
+        ///   f64x2.add
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Add(Vector128<double> left, Vector128<double> right) => Add(left, right);
+
+        /// <summary>
+        ///   f32x4.sub
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Subtract(Vector128<float>  left, Vector128<float>  right) => Subtract(left, right);
+        /// <summary>
+        ///   f64x2.sub
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Subtract(Vector128<double> left, Vector128<double> right) => Subtract(left, right);
+
+        /// <summary>
+        ///   f32x4.div
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Divide(Vector128<float>  left, Vector128<float>  right) => Divide(left, right);
+        /// <summary>
+        ///   f64x2.div
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Divide(Vector128<double> left, Vector128<double> right) => Divide(left, right);
+
+        /// <summary>
+        ///   f32x4.mul
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Multiply(Vector128<float>  left, Vector128<float>  right) => Multiply(left, right);
+        /// <summary>
+        ///   f64x2.mul
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Multiply(Vector128<double> left, Vector128<double> right) => Multiply(left, right);
+
+        /// <summary>
+        ///   f32x4.sqrt
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Sqrt(Vector128<float>  value) => Sqrt(value);
+        /// <summary>
+        ///   f64x2.sqrt
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Sqrt(Vector128<double> value) => Sqrt(value);
+
+        /// <summary>
+        ///   f32x4.ceil
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Ceiling(Vector128<float>  value) => Ceiling(value);
+        /// <summary>
+        ///   f64x2.ceil
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Ceiling(Vector128<double> value) => Ceiling(value);
+
+        /// <summary>
+        ///   f32x4.floor
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Floor(Vector128<float>  value) => Floor(value);
+        /// <summary>
+        ///   f64x2.floor
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Floor(Vector128<double> value) => Floor(value);
+
+        /// <summary>
+        ///   f32x4.trunc
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Truncate(Vector128<float>  value) => Truncate(value);
+        /// <summary>
+        ///   f64x2.trunc
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Truncate(Vector128<double> value) => Truncate(value);
+
+        /// <summary>
+        ///   f32x4.nearest
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  RoundToNearest(Vector128<float>  value) => RoundToNearest(value);
+        /// <summary>
+        ///   f64x2.nearest
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> RoundToNearest(Vector128<double> value) => RoundToNearest(value);
+
+        // Conversions
+
+        /// <summary>
+        ///   f32x4.convert_i32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float> ConvertToSingle(Vector128<int>    value) => ConvertToSingle(value);
+        /// <summary>
+        ///   f32x4.convert_i32x4_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float> ConvertToSingle(Vector128<uint>   value) => ConvertToSingle(value);
+        /// <summary>
+        /// f32x4.demote_f64x2_zero
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float> ConvertToSingle(Vector128<double> value) => ConvertToSingle(value);
+
+        /// <summary>
+        ///   f64x2.convert_low_i32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> ConvertToDoubleLower(Vector128<int>   value) => ConvertToDoubleLower(value);
+        /// <summary>
+        ///   f64x2.convert_low_i32x4_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> ConvertToDoubleLower(Vector128<uint>  value) => ConvertToDoubleLower(value);
+        /// <summary>
+        ///   f64x2.promote_low_f32x4
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> ConvertToDoubleLower(Vector128<float> value) => ConvertToDoubleLower(value);
+
+        /// <summary>
+        ///   i32x4.trunc_sat_f32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>  ConvertToInt32Saturate(Vector128<float> value) => ConvertToInt32Saturate(value);
+        /// <summary>
+        ///   i32x4.trunc_sat_f32x4_u
+        /// </summary>
+        [Intrinsic]
+        internal static Vector128<uint> ConvertToUnsignedInt32Saturate(Vector128<float> value) => ConvertToUnsignedInt32Saturate(value);
+
+        /// <summary>
+        ///   i32x4.trunc_sat_f64x2_s_zero
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>  ConvertToInt32Saturate(Vector128<double> value) => ConvertToInt32Saturate(value);
+        /// <summary>
+        ///   i32x4.trunc_sat_f64x2_u_zero
+        /// </summary>
+        [Intrinsic]
+        internal static Vector128<uint> ConvertToUnsignedInt32Saturate(Vector128<double> value) => ConvertToUnsignedInt32Saturate(value);
+
+        /// <summary>
         ///   i8x16.narrow_i16x8_s
         /// </summary>
         [Intrinsic]
@@ -1477,5 +1949,129 @@ namespace System.Runtime.Intrinsics.Wasm
         /// </summary>
         [Intrinsic]
         internal static Vector128<ushort> ConvertNarrowingUnsignedSaturate(Vector128<int>  lower, Vector128<int>   upper) => ConvertNarrowingUnsignedSaturate(lower, upper);
+
+        /// <summary>
+        ///   i16x8.extend_low_i8x16_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<short>  SignExtendWideningLower(Vector128<sbyte>  value) => SignExtendWideningLower(value);
+        /// <summary>
+        ///   i16x8.extend_low_i8x16_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ushort> SignExtendWideningLower(Vector128<byte>   value) => SignExtendWideningLower(value);
+        /// <summary>
+        ///   i32x4.extend_low_i16x8_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>    SignExtendWideningLower(Vector128<short>  value) => SignExtendWideningLower(value);
+        /// <summary>
+        ///   i32x4.extend_low_i16x8_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<uint>   SignExtendWideningLower(Vector128<ushort> value) => SignExtendWideningLower(value);
+        /// <summary>
+        ///   i64x2.extend_low_i32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<long>   SignExtendWideningLower(Vector128<int>    value) => SignExtendWideningLower(value);
+        /// <summary>
+        ///   i64x2.extend_low_i32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ulong>  SignExtendWideningLower(Vector128<uint>   value) => SignExtendWideningLower(value);
+
+        /// <summary>
+        ///   i16x8.extend_high_i8x16_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<short>  SignExtendWideningUpper(Vector128<sbyte>  value) => SignExtendWideningUpper(value);
+        /// <summary>
+        ///   i16x8.extend_high_i8x16_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ushort> SignExtendWideningUpper(Vector128<byte>   value) => SignExtendWideningUpper(value);
+        /// <summary>
+        ///   i32x4.extend_high_i16x8_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>    SignExtendWideningUpper(Vector128<short>  value) => SignExtendWideningUpper(value);
+        /// <summary>
+        ///   i32x4.extend_high_i16x8_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<uint>   SignExtendWideningUpper(Vector128<ushort> value) => SignExtendWideningUpper(value);
+        /// <summary>
+        ///   i64x2.extend_high_i32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<long>   SignExtendWideningUpper(Vector128<int>    value) => SignExtendWideningUpper(value);
+        /// <summary>
+        ///   i64x2.extend_high_i32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ulong>  SignExtendWideningUpper(Vector128<uint>   value) => SignExtendWideningUpper(value);
+
+        /// <summary>
+        ///   i16x8.extend_low_i8x16_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<short>  ZeroExtendWideningLower(Vector128<sbyte>  value) => ZeroExtendWideningLower(value);
+        /// <summary>
+        ///   i16x8.extend_low_i8x16_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ushort> ZeroExtendWideningLower(Vector128<byte>   value) => ZeroExtendWideningLower(value);
+        /// <summary>
+        ///   i32x4.extend_low_i16x8_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>    ZeroExtendWideningLower(Vector128<short>  value) => ZeroExtendWideningLower(value);
+        /// <summary>
+        ///   i32x4.extend_low_i16x8_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<uint>   ZeroExtendWideningLower(Vector128<ushort> value) => ZeroExtendWideningLower(value);
+        /// <summary>
+        ///   i64x2.extend_low_i32x4_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<long>   ZeroExtendWideningLower(Vector128<int>    value) => ZeroExtendWideningLower(value);
+        /// <summary>
+        ///   i64x2.extend_low_i32x4_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ulong>  ZeroExtendWideningLower(Vector128<uint>   value) => ZeroExtendWideningLower(value);
+
+        /// <summary>
+        ///   i16x8.extend_high_i8x16_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<short>  ZeroExtendWideningUpper(Vector128<sbyte>  value) => ZeroExtendWideningUpper(value);
+        /// <summary>
+        ///   i16x8.extend_high_i8x16_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ushort> ZeroExtendWideningUpper(Vector128<byte>   value) => ZeroExtendWideningUpper(value);
+        /// <summary>
+        ///   i32x4.extend_high_i16x8_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>    ZeroExtendWideningUpper(Vector128<short>  value) => ZeroExtendWideningUpper(value);
+        /// <summary>
+        ///   i32x4.extend_high_i16x8_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<uint>   ZeroExtendWideningUpper(Vector128<ushort> value) => ZeroExtendWideningUpper(value);
+        /// <summary>
+        ///   i64x2.extend_high_i32x4_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<long>   ZeroExtendWideningUpper(Vector128<int>    value) => ZeroExtendWideningUpper(value);
+        /// <summary>
+        ///   i64x2.extend_high_i32x4_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ulong>  ZeroExtendWideningUpper(Vector128<uint>   value) => ZeroExtendWideningUpper(value);
     }
 }

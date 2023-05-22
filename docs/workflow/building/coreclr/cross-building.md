@@ -1,7 +1,7 @@
 # Cross-Building for Different Architectures and Operating Systems
 
 * [Windows Cross-Building](#windows-cross-building)
-  * [Cross-Compiling for ARM32 and ARM64 on Windows](#cross-compiling-for-arm32-and-arm64-on-windows)
+  * [Cross-Compiling for ARM64 on Windows](#cross-compiling-for-arm64-on-windows)
   * [Cross-Compiling for x86 on Windows](#cross-compiling-for-x86-on-windows)
 * [macOS Cross-Building](#macos-cross-building)
 * [Linux Cross-Building](#linux-cross-building)
@@ -21,9 +21,9 @@ This guide will go more in-depth on how to do cross-building across multiple ope
 
 This section will go over cross-compiling on Windows. Currently, Windows allows you to cross-compile from x64 to basically any other architecture.
 
-### Cross-Compiling for ARM32 and ARM64 on Windows
+### Cross-Compiling for ARM64 on Windows
 
-To do cross-compilation for ARM32/ARM64 on Windows, first make sure you have the appropriate tools and Windows SDK installed. This is described in detail in the [Windows requirements doc](/docs/workflow/requirements/windows-requirements.md#visual-studio).
+To do cross-compilation for ARM64 on Windows, first make sure you have the appropriate tools and Windows SDK installed. This is described in detail in the [Windows requirements doc](/docs/workflow/requirements/windows-requirements.md#visual-studio).
 
 Once you have all the required dependencies, it is a straightforward process. Windows knows how to cross-build behind curtains, so all you have to do is specify which architecture you want to build for:
 
@@ -146,12 +146,17 @@ When it comes to building, Docker offers the most flexibility when it comes to t
 
 ### Cross-Compiling for ARM32 and ARM64 with Docker
 
-As mentioned in the [Linux Cross-Building section](#linux-cross-building), the _ROOTFS\_DIR_ environment variable has to be set to the _crossrootfs_ location. The prereqs Docker images already have _crossrootfs_ built, so you only need to specify it when creating the Docker container by means of the `-e` flag. These locations are specified in the [Docker Images table](/docs/workflow/building/coreclr/linux-instructions.md#docker-images).
+As mentioned in the [Linux Cross-Building section](#linux-cross-building), the `ROOTFS_DIR` environment variable has to be set to the _crossrootfs_ location. The prereqs Docker images already have _crossrootfs_ built, so you only need to specify it when creating the Docker container by means of the `-e` flag. These locations are specified in the [Docker Images table](/docs/workflow/building/coreclr/linux-instructions.md#docker-images).
 
 In addition, you also have to specify the `--cross` flag with the target architecture. For example, the following command would create a container to build CoreCLR for Linux ARM64:
 
 ```bash
-docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime -e ROOTFS_DIR=/crossrootfs/arm64 mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-arm64-20220427171722-6e40d49 ./build.sh --subset clr --cross --arch arm64 --clang9
+docker run --rm \
+  -v <RUNTIME_REPO_PATH>:/runtime \
+  -w /runtime \
+  -e ROOTFS_DIR=/crossrootfs/arm64 \
+  mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm64 \
+  ./build.sh --subset clr --cross --arch arm64
 ```
 
 ### Cross-Compiling for FreeBSD with Docker
@@ -159,5 +164,10 @@ docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime -e ROOTFS_DIR=/cross
 Using Docker to cross-build for FreeBSD is very similar to any other Docker Linux build. You only need to use the appropriate image and pass `--os` as well to specify this is not an architecture(-only) build. For example, to make a FreeBSD x64 build:
 
 ```bash
-docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime -e ROOTFS_DIR=/crossrootfs/x64 mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12-20220831130538-f13d79e ./build.sh --subset clr --cross --os freebsd
+docker run --rm \
+  -v <RUNTIME_REPO_PATH>:/runtime \
+  -w /runtime \
+  -e ROOTFS_DIR=/crossrootfs/x64 \
+  mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12 \
+  ./build.sh --subset clr --cross --os freebsd
 ```

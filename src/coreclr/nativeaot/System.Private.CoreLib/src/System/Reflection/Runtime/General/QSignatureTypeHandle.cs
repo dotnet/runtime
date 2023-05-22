@@ -13,7 +13,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Reflection.Runtime.General
 {
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public partial struct QSignatureTypeHandle
     {
@@ -60,6 +59,11 @@ namespace System.Reflection.Runtime.General
 #else
             return _handle.GetCustomModifiers((global::Internal.Metadata.NativeFormat.MetadataReader)Reader, typeContext, optional);
 #endif
+        }
+
+        internal Type GetModifiedType(TypeContext typeContext)
+        {
+            return ModifiedType.Create(Resolve(typeContext), (global::Internal.Metadata.NativeFormat.MetadataReader)Reader, _handle);
         }
     }
 }

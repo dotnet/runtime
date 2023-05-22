@@ -94,7 +94,7 @@ namespace System.Xml
         // For the HTML element, it should call this method with ns and prefix as String.Empty
         public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
-            Debug.Assert(localName != null && localName.Length != 0 && prefix != null && ns != null);
+            Debug.Assert(!string.IsNullOrEmpty(localName) && prefix != null && ns != null);
 
             _elementScope.Push((byte)_currentElementProperties);
 
@@ -285,7 +285,7 @@ namespace System.Xml
         //
         public override void WriteStartAttribute(string? prefix, string localName, string? ns)
         {
-            Debug.Assert(localName != null && localName.Length != 0 && prefix != null && ns != null);
+            Debug.Assert(!string.IsNullOrEmpty(localName) && prefix != null && ns != null);
 
             if (ns.Length == 0)
             {
@@ -353,7 +353,7 @@ namespace System.Xml
         // HTML PI's use ">" to terminate rather than "?>".
         public override void WriteProcessingInstruction(string target, string? text)
         {
-            Debug.Assert(target != null && target.Length != 0 && text != null);
+            Debug.Assert(!string.IsNullOrEmpty(target) && text != null);
 
             if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
@@ -813,7 +813,7 @@ namespace System.Xml
 
         public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
-            Debug.Assert(localName != null && localName.Length != 0 && prefix != null && ns != null);
+            Debug.Assert(!string.IsNullOrEmpty(localName) && prefix != null && ns != null);
 
             if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
@@ -877,7 +877,7 @@ namespace System.Xml
         internal override void WriteEndElement(string? prefix, string localName, string? ns)
         {
             bool isBlockWs;
-            Debug.Assert(localName != null && localName.Length != 0 && prefix != null && ns != null);
+            Debug.Assert(!string.IsNullOrEmpty(localName) && prefix != null && ns != null);
 
             _indentLevel--;
 

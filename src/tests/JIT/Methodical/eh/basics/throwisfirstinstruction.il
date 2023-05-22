@@ -10,7 +10,7 @@
 }
 .assembly extern mscorlib {}
 .assembly extern eh_common {}
-.assembly 'throwisfirstinstruction' {}
+.assembly ASSEMBLY_NAME {}
 .assembly extern xunit.core {}
 
 .namespace Test_throwisfirstinstruction_il

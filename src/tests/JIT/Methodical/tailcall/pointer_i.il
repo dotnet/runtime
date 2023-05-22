@@ -8,7 +8,7 @@
 }
 .assembly extern mscorlib { }
 .assembly extern xunit.core {}
-.assembly pointer_i { }
+.assembly ASSEMBLY_NAME { }
 .field public static int32 temp at D_00004000
 .method public static class System.String 
         rems(int32* n,
