@@ -5944,6 +5944,11 @@ void CodeGen::genRangeCheck(GenTree* oper)
         }
         else
         {
+            if (genActualType(src1->TypeGet()) == TYP_INT)
+            {
+                GetEmitter()->emitIns_R_R_I(INS_slli_w, EA_4BYTE, REG_R21, reg1, 0);
+                reg1 = REG_R21;
+            }
             reg2 = src2->GetRegNum();
         }
     }
