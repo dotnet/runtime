@@ -24751,7 +24751,8 @@ void gc_heap::recommission_heap()
         dd_desired_allocation              (dd) = 0;
         dd_promoted_size                   (dd) = 0;
 
-        // this field is used to estimate the begin data size - it will be
+        // this field is used at the beginning of a GC to decide
+        // which generation to condemn - it will be
         // adjusted as free list items are rethreaded onto this heap
         dd_fragmentation                   (dd) = 0;
 
@@ -25327,9 +25328,9 @@ bool gc_heap::change_heap_count (int new_n_heaps)
                 hp->alloc_allocated = heap_segment_allocated (hp->ephemeral_heap_segment);
             }
 
-            // establish invariants regarding the allocation segment
             for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
             {
+                // establish invariants regarding the allocation segment
                 generation* gen = hp->generation_of (gen_idx);
                 heap_segment *allocation_region = generation_allocation_segment (gen);
                 if ((allocation_region == nullptr) ||
@@ -25337,6 +25338,11 @@ bool gc_heap::change_heap_count (int new_n_heaps)
                 {
                     generation_allocation_segment (gen) = heap_segment_rw (generation_start_segment (gen));
                 }
+
+                // we shifted regions around, but we have no way to properly account for the small free spaces
+                // it's safest to set this to 0, otherwise size computations in compute_new_dynamic_data
+                // may overflow
+                generation_free_obj_space (gen) = 0;
             }
         }
     }
@@ -42990,6 +42996,10 @@ void gc_heap::compute_new_dynamic_data (int gen_number)
     size_t total_gen_size = generation_size (gen_number);
     //keep track of fragmentation
     dd_fragmentation (dd) = generation_free_list_space (gen) + generation_free_obj_space (gen);
+
+    // make sure the subtraction below doesn't overflow
+    assert (dd_fragmentation (dd) <= total_gen_size);
+
     dd_current_size (dd) = total_gen_size - dd_fragmentation (dd);
 
     gc_history_per_heap* current_gc_data_per_heap = get_gc_data_per_heap();
