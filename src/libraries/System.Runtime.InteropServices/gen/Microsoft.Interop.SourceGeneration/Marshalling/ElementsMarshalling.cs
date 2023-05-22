@@ -11,26 +11,41 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
+    internal interface IElementsMarshallingCollectionSource
+    {
+        StatementSyntax GetManagedValuesNumElementsAssignment(TypePositionInfo info, StubCodeContext context);
+        InvocationExpressionSyntax GetUnmanagedValuesDestination(TypePositionInfo info, StubCodeContext context);
+        InvocationExpressionSyntax GetManagedValuesSource(TypePositionInfo info, StubCodeContext context);
+        InvocationExpressionSyntax GetUnmanagedValuesSource(TypePositionInfo info, StubCodeContext context);
+        InvocationExpressionSyntax GetManagedValuesDestination(TypePositionInfo info, StubCodeContext context);
+    }
+
+    internal interface IElementsMarshalling
+    {
+        StatementSyntax GenerateByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context);
+        StatementSyntax GenerateMarshalStatement(TypePositionInfo info, StubCodeContext context);
+        StatementSyntax GenerateByValueOutUnmarshalStatement(TypePositionInfo info, StubCodeContext context);
+        StatementSyntax GenerateUnmarshalStatement(TypePositionInfo info, StubCodeContext context);
+        StatementSyntax GenerateElementCleanupStatement(TypePositionInfo info, StubCodeContext context);
+    }
+
     /// <summary>
     /// Support for marshalling blittable elements
     /// </summary>
-    internal abstract class BlittableElementsMarshalling
+    internal sealed class BlittableElementsMarshalling : IElementsMarshalling
     {
         private readonly TypeSyntax _managedElementType;
         private readonly TypeSyntax _unmanagedElementType;
+        private readonly IElementsMarshallingCollectionSource _collectionSource;
 
-        public BlittableElementsMarshalling(TypeSyntax managedElementType, TypeSyntax unmanagedElementType)
+        public BlittableElementsMarshalling(TypeSyntax managedElementType, TypeSyntax unmanagedElementType, IElementsMarshallingCollectionSource collectionSource)
         {
             _managedElementType = managedElementType;
             _unmanagedElementType = unmanagedElementType;
+            _collectionSource = collectionSource;
         }
 
-        protected abstract InvocationExpressionSyntax GetUnmanagedValuesDestination(TypePositionInfo info, StubCodeContext context);
-        protected abstract InvocationExpressionSyntax GetManagedValuesSource(TypePositionInfo info, StubCodeContext context);
-        protected abstract InvocationExpressionSyntax GetUnmanagedValuesSource(TypePositionInfo info, StubCodeContext context);
-        protected abstract InvocationExpressionSyntax GetManagedValuesDestination(TypePositionInfo info, StubCodeContext context);
-
-        protected StatementSyntax GenerateByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context)
+        public StatementSyntax GenerateByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context)
         {
             // If the parameter is marshalled by-value [Out], then we don't marshal the contents of the collection.
             // We do clear the span, so that if the invoke target doesn't fill it, we aren't left with undefined content.
@@ -39,28 +54,28 @@ namespace Microsoft.Interop
                 InvocationExpression(
                     MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
-                        GetUnmanagedValuesDestination(info, context),
+                        _collectionSource.GetUnmanagedValuesDestination(info, context),
                         IdentifierName("Clear"))));
         }
 
-        protected StatementSyntax GenerateMarshalStatement(TypePositionInfo info, StubCodeContext context)
+        public StatementSyntax GenerateMarshalStatement(TypePositionInfo info, StubCodeContext context)
         {
-            ExpressionSyntax destination = CastToManagedIfNecessary(GetUnmanagedValuesDestination(info, context));
+            ExpressionSyntax destination = CastToManagedIfNecessary(_collectionSource.GetUnmanagedValuesDestination(info, context));
 
             // <GetManagedValuesSource>.CopyTo(<destination>);
             return ExpressionStatement(
                 InvocationExpression(
                     MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
-                        GetManagedValuesSource(info, context),
+                        _collectionSource.GetManagedValuesSource(info, context),
                         IdentifierName("CopyTo")))
                 .AddArgumentListArguments(
                     Argument(destination)));
         }
 
-        protected StatementSyntax GenerateByValueOutUnmarshalStatement(TypePositionInfo info, StubCodeContext context)
+        public StatementSyntax GenerateByValueOutUnmarshalStatement(TypePositionInfo info, StubCodeContext context)
         {
-            ExpressionSyntax source = CastToManagedIfNecessary(GetUnmanagedValuesDestination(info, context));
+            ExpressionSyntax source = CastToManagedIfNecessary(_collectionSource.GetUnmanagedValuesDestination(info, context));
 
             // MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(<GetManagedValuesSource>), <GetManagedValuesSource>.Length)
             ExpressionSyntax destination = InvocationExpression(
@@ -77,12 +92,12 @@ namespace Microsoft.Interop
                                     ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
                                     IdentifierName("GetReference")),
                                 ArgumentList(SingletonSeparatedList(
-                                    Argument(GetManagedValuesSource(info, context))))))
+                                    Argument(_collectionSource.GetManagedValuesSource(info, context))))))
                             .WithRefKindKeyword(
                                 Token(SyntaxKind.RefKeyword)),
                         Argument(
                             MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                GetManagedValuesSource(info, context),
+                                _collectionSource.GetManagedValuesSource(info, context),
                                 IdentifierName("Length")))
                     })));
 
@@ -99,7 +114,7 @@ namespace Microsoft.Interop
 
         public StatementSyntax GenerateUnmarshalStatement(TypePositionInfo info, StubCodeContext context)
         {
-            ExpressionSyntax source = CastToManagedIfNecessary(GetUnmanagedValuesSource(info, context));
+            ExpressionSyntax source = CastToManagedIfNecessary(_collectionSource.GetUnmanagedValuesSource(info, context));
 
             // <source>.CopyTo(<GetManagedValuesDestination>);
             return ExpressionStatement(
@@ -109,7 +124,7 @@ namespace Microsoft.Interop
                         source,
                         IdentifierName("CopyTo")))
                 .AddArgumentListArguments(
-                    Argument(GetManagedValuesDestination(info, context))));
+                    Argument(_collectionSource.GetManagedValuesDestination(info, context))));
         }
 
         private ExpressionSyntax CastToManagedIfNecessary(ExpressionSyntax expression)
@@ -134,33 +149,33 @@ namespace Microsoft.Interop
                 ArgumentList(SingletonSeparatedList(
                     Argument(expression))));
         }
+
+        public StatementSyntax GenerateElementCleanupStatement(TypePositionInfo info, StubCodeContext context) => EmptyStatement();
     }
 
     /// <summary>
     /// Support for marshalling non-blittable elements
     /// </summary>
-    internal abstract class NonBlittableElementsMarshalling
+    internal sealed class NonBlittableElementsMarshalling : IElementsMarshalling
     {
         private readonly TypeSyntax _unmanagedElementType;
         private readonly IMarshallingGenerator _elementMarshaller;
         private readonly TypePositionInfo _elementInfo;
+        private readonly IElementsMarshallingCollectionSource _collectionSource;
 
         public NonBlittableElementsMarshalling(
             TypeSyntax unmanagedElementType,
             IMarshallingGenerator elementMarshaller,
-            TypePositionInfo elementInfo)
+            TypePositionInfo elementInfo,
+            IElementsMarshallingCollectionSource collectionSource)
         {
             _unmanagedElementType = unmanagedElementType;
             _elementMarshaller = elementMarshaller;
             _elementInfo = elementInfo;
+            _collectionSource = collectionSource;
         }
 
-        protected abstract InvocationExpressionSyntax GetUnmanagedValuesDestination(TypePositionInfo info, StubCodeContext context);
-        protected abstract InvocationExpressionSyntax GetManagedValuesSource(TypePositionInfo info, StubCodeContext context);
-        protected abstract InvocationExpressionSyntax GetUnmanagedValuesSource(TypePositionInfo info, StubCodeContext context);
-        protected abstract InvocationExpressionSyntax GetManagedValuesDestination(TypePositionInfo info, StubCodeContext context);
-
-        protected StatementSyntax GenerateByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context)
+        public StatementSyntax GenerateByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context)
         {
             // If the parameter is marshalled by-value [Out], then we don't marshal the contents of the collection.
             // We do clear the span, so that if the invoke target doesn't fill it, we aren't left with undefined content.
@@ -169,11 +184,11 @@ namespace Microsoft.Interop
                 InvocationExpression(
                     MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
-                        GetUnmanagedValuesDestination(info, context),
+                        _collectionSource.GetUnmanagedValuesDestination(info, context),
                         IdentifierName("Clear"))));
         }
 
-        protected StatementSyntax GenerateMarshalStatement(TypePositionInfo info, StubCodeContext context)
+        public StatementSyntax GenerateMarshalStatement(TypePositionInfo info, StubCodeContext context)
         {
             string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(info, context);
             string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(info, context);
@@ -189,7 +204,7 @@ namespace Microsoft.Interop
                     SingletonSeparatedList(
                         VariableDeclarator(Identifier(managedSpanIdentifier))
                         .WithInitializer(EqualsValueClause(
-                            GetManagedValuesSource(info, context)))))),
+                            _collectionSource.GetManagedValuesSource(info, context)))))),
                 LocalDeclarationStatement(VariableDeclaration(
                     GenericName(
                         Identifier(TypeNames.System_Span),
@@ -198,7 +213,7 @@ namespace Microsoft.Interop
                         VariableDeclarator(
                             Identifier(nativeSpanIdentifier))
                         .WithInitializer(EqualsValueClause(
-                            GetUnmanagedValuesDestination(info, context)))))),
+                            _collectionSource.GetUnmanagedValuesDestination(info, context)))))),
                 GenerateContentsMarshallingStatement(
                     info,
                     context,
@@ -226,7 +241,7 @@ namespace Microsoft.Interop
                         VariableDeclarator(
                             Identifier(nativeSpanIdentifier))
                         .WithInitializer(EqualsValueClause(
-                            GetUnmanagedValuesSource(info, context)))))),
+                            _collectionSource.GetUnmanagedValuesSource(info, context)))))),
                 LocalDeclarationStatement(VariableDeclaration(
                     GenericName(
                         Identifier(TypeNames.System_Span),
@@ -235,7 +250,7 @@ namespace Microsoft.Interop
                         VariableDeclarator(
                             Identifier(managedSpanIdentifier))
                         .WithInitializer(EqualsValueClause(
-                            GetManagedValuesDestination(info, context)))))),
+                            _collectionSource.GetManagedValuesDestination(info, context)))))),
                 GenerateContentsMarshallingStatement(
                     info,
                     context,
@@ -244,7 +259,7 @@ namespace Microsoft.Interop
                     StubCodeContext.Stage.Unmarshal));
         }
 
-        protected StatementSyntax GenerateByValueOutUnmarshalStatement(TypePositionInfo info, StubCodeContext context)
+        public StatementSyntax GenerateByValueOutUnmarshalStatement(TypePositionInfo info, StubCodeContext context)
         {
             // Use ManagedSource and NativeDestination spans for by-value marshalling since we're just marshalling back the contents,
             // not the array itself.
@@ -252,6 +267,8 @@ namespace Microsoft.Interop
             // but this is an uncommon case so we don't want to design the API around enabling just it.
             string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
             string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(info, context);
+
+            var setNumElements = _collectionSource.GetManagedValuesNumElementsAssignment(info, context);
 
             // Span<TElement> <managedSpan> = MemoryMarshal.CreateSpan(ref Unsafe.AsRef(in <GetManagedValuesSource>.GetPinnableReference(), <numElements>));
             LocalDeclarationStatementSyntax managedValuesDeclaration = LocalDeclarationStatement(VariableDeclaration(
@@ -281,7 +298,7 @@ namespace Microsoft.Interop
                                                     InvocationExpression(
                                                         MemberAccessExpression(
                                                             SyntaxKind.SimpleMemberAccessExpression,
-                                                            GetManagedValuesSource(info, context),
+                                                            _collectionSource.GetManagedValuesSource(info, context),
                                                             IdentifierName("GetPinnableReference")),
                                                             ArgumentList()))
                                                 .WithRefKindKeyword(
@@ -302,9 +319,10 @@ namespace Microsoft.Interop
                     VariableDeclarator(
                         Identifier(nativeSpanIdentifier))
                     .WithInitializer(EqualsValueClause(
-                        GetUnmanagedValuesDestination(info, context))))));
+                        _collectionSource.GetUnmanagedValuesDestination(info, context))))));
 
             return Block(
+                setNumElements,
                 managedValuesDeclaration,
                 unmanagedValuesDeclaration,
                 GenerateContentsMarshallingStatement(
@@ -315,7 +333,7 @@ namespace Microsoft.Interop
                     StubCodeContext.Stage.Unmarshal));
         }
 
-        protected StatementSyntax GenerateElementCleanupStatement(TypePositionInfo info, StubCodeContext context)
+        public StatementSyntax GenerateElementCleanupStatement(TypePositionInfo info, StubCodeContext context)
         {
             string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(info, context);
             StatementSyntax contentsCleanupStatements = GenerateContentsMarshallingStatement(info, context,
@@ -338,11 +356,11 @@ namespace Microsoft.Interop
                     VariableDeclarator(
                         Identifier(nativeSpanIdentifier))
                     .WithInitializer(EqualsValueClause(
-                        GetUnmanagedValuesDestination(info, context)))))),
+                        _collectionSource.GetUnmanagedValuesDestination(info, context)))))),
                 contentsCleanupStatements);
         }
 
-        protected StatementSyntax GenerateContentsMarshallingStatement(
+        private StatementSyntax GenerateContentsMarshallingStatement(
             TypePositionInfo info,
             StubCodeContext context,
             ExpressionSyntax lengthExpression,
