@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Extensions.Logging
 {
@@ -45,16 +46,16 @@ namespace Microsoft.Extensions.Logging
 
     public class LogEntryPipeline<TState> : Pipeline
     {
-        public LogEntryPipeline(LogEntryHandler<TState, EmptyEnrichmentPropertyValues> handler, object? userState, bool isEnabled, bool isDynamicLevelCheckRequired) :
+        public LogEntryPipeline(LogEntryHandler<TState> handler, object? userState, bool isEnabled, bool isDynamicLevelCheckRequired) :
             base(userState, isEnabled, isDynamicLevelCheckRequired)
         {
             _firstHandler = handler;
         }
 
-        private readonly LogEntryHandler<TState, EmptyEnrichmentPropertyValues> _firstHandler;
+        private readonly LogEntryHandler<TState> _firstHandler;
 
         public bool IsEnabledDynamic(LogLevel level) => _firstHandler.IsEnabled(level);
-        public void HandleLogEntry(ref LogEntry<TState, EmptyEnrichmentPropertyValues> logEntry) => _firstHandler.HandleLogEntry(ref logEntry);
+        public void HandleLogEntry(ref LogEntry<TState> logEntry) => _firstHandler.HandleLogEntry(ref logEntry);
     }
 
     public class ScopePipeline<TState> : Pipeline where TState : notnull

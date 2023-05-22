@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.Logging
     }
     public partial interface ILogEntryProcessor
     {
-        Microsoft.Extensions.Logging.LogEntryHandler<TState, TEnrichmentProperties> GetLogEntryHandler<TState, TEnrichmentProperties>(Microsoft.Extensions.Logging.ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired);
+        Microsoft.Extensions.Logging.LogEntryHandler<TState> GetLogEntryHandler<TState>(Microsoft.Extensions.Logging.ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired);
         Microsoft.Extensions.Logging.ScopeHandler<TState> GetScopeHandler<TState>(Microsoft.Extensions.Logging.ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired) where TState : notnull;
         bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel);
     }
@@ -112,29 +112,17 @@ namespace Microsoft.Extensions.Logging
         public System.Attribute[]?[]? ParameterAttributes { get { throw null; } set { } }
         public bool SkipEnabledCheck { get { throw null; } set { } }
     }
-    public abstract partial class LogEntryHandler<TState, TEnrichmentProperties>
+    public abstract partial class LogEntryHandler<TState>
     {
         protected LogEntryHandler() { }
-        public abstract void HandleLogEntry(ref Microsoft.Extensions.Logging.LogEntry<TState, TEnrichmentProperties> logEntry);
+        public abstract void HandleLogEntry(ref Microsoft.Extensions.Logging.Abstractions.LogEntry<TState> logEntry);
         public abstract bool IsEnabled(Microsoft.Extensions.Logging.LogLevel level);
     }
     public partial class LogEntryPipeline<TState> : Microsoft.Extensions.Logging.Pipeline
     {
-        public LogEntryPipeline(Microsoft.Extensions.Logging.LogEntryHandler<TState, Microsoft.Extensions.Logging.EmptyEnrichmentPropertyValues> handler, object? userState, bool isEnabled, bool isDynamicLevelCheckRequired) : base (default(object), default(bool), default(bool)) { }
-        public void HandleLogEntry(ref Microsoft.Extensions.Logging.LogEntry<TState, Microsoft.Extensions.Logging.EmptyEnrichmentPropertyValues> logEntry) { }
+        public LogEntryPipeline(Microsoft.Extensions.Logging.LogEntryHandler<TState> handler, object? userState, bool isEnabled, bool isDynamicLevelCheckRequired) : base (default(object), default(bool), default(bool)) { }
+        public void HandleLogEntry(ref Microsoft.Extensions.Logging.Abstractions.LogEntry<TState> logEntry) { }
         public bool IsEnabledDynamic(Microsoft.Extensions.Logging.LogLevel level) { throw null; }
-    }
-    public readonly ref partial struct LogEntry<TState, TEnrichmentProperties>
-    {
-        private readonly object _dummy;
-        private readonly int _dummyPrimitive;
-        public LogEntry(Microsoft.Extensions.Logging.LogLevel level, Microsoft.Extensions.Logging.EventId eventId, ref TState state, ref TEnrichmentProperties enrichmentProperties, System.Exception? exception, System.Func<TState, System.Exception?, string>? formatter) { throw null; }
-        public ref TEnrichmentProperties EnrichmentProperties { get { throw null; } }
-        public Microsoft.Extensions.Logging.EventId EventId { get { throw null; } }
-        public System.Exception? Exception { get { throw null; } }
-        public System.Func<TState, System.Exception?, string>? Formatter { get { throw null; } }
-        public Microsoft.Extensions.Logging.LogLevel LogLevel { get { throw null; } }
-        public ref TState State { get { throw null; } }
     }
     public static partial class LoggerExtensions
     {

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Testing;
 using Xunit;
 
@@ -94,10 +95,10 @@ namespace Microsoft.Extensions.Logging.Test
                 _handleLogEntryCallback = handleLogEntryCallback;
             }
 
-            public LogEntryHandler<TState, TEnrichmentProperties> GetLogEntryHandler<TState, TEnrichmentProperties>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired)
+            public LogEntryHandler<TState> GetLogEntryHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired)
             {
-                var nextHandler = _nextProcessor.GetLogEntryHandler<TState, TEnrichmentProperties>(metadata, out enabled, out dynamicEnabledCheckRequired);
-                return new TestLogEntryHandler<TState, TEnrichmentProperties>(nextHandler, _handleLogEntryCallback);
+                var nextHandler = _nextProcessor.GetLogEntryHandler<TState>(metadata, out enabled, out dynamicEnabledCheckRequired);
+                return new TestLogEntryHandler<TState>(nextHandler, _handleLogEntryCallback);
             }
 
             public ScopeHandler<TState> GetScopeHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired) where TState : notnull
@@ -109,18 +110,18 @@ namespace Microsoft.Extensions.Logging.Test
             public bool IsEnabled(LogLevel logLevel) => _nextProcessor.IsEnabled(logLevel);
         }
 
-        private sealed class TestLogEntryHandler<TState, TEnrichmentProperties> : LogEntryHandler<TState, TEnrichmentProperties>
+        private sealed class TestLogEntryHandler<TState> : LogEntryHandler<TState>
         {
-            private readonly LogEntryHandler<TState, TEnrichmentProperties> _nextHandler;
+            private readonly LogEntryHandler<TState> _nextHandler;
             private readonly Action<string> _handleLogEntryCallback;
 
-            public TestLogEntryHandler(LogEntryHandler<TState, TEnrichmentProperties> nextHandler, Action<string> handleLogEntryCallback)
+            public TestLogEntryHandler(LogEntryHandler<TState> nextHandler, Action<string> handleLogEntryCallback)
             {
                 _nextHandler = nextHandler;
                 _handleLogEntryCallback = handleLogEntryCallback;
             }
 
-            public override void HandleLogEntry(ref LogEntry<TState, TEnrichmentProperties> logEntry)
+            public override void HandleLogEntry(ref LogEntry<TState> logEntry)
             {
                 var message = logEntry.Formatter(logEntry.State, logEntry.Exception);
                 _handleLogEntryCallback(message);

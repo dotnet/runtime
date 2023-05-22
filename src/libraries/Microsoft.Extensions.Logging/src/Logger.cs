@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.Serialization;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Extensions.Logging
 {
@@ -43,8 +43,7 @@ namespace Microsoft.Extensions.Logging
             {
                 return;
             }
-            EmptyEnrichmentPropertyValues props = default;
-            LogEntry<TState, EmptyEnrichmentPropertyValues> logEntry = new LogEntry<TState, EmptyEnrichmentPropertyValues>(logLevel, eventId, ref state, ref props, exception, formatter);
+            LogEntry<TState> logEntry = new LogEntry<TState>(logLevel, category: null!, eventId, state, exception, formatter);
             pipeline.HandleLogEntry(ref logEntry);
         }
 
@@ -170,7 +169,7 @@ namespace Microsoft.Extensions.Logging
             {
                 if (!Pipelines.TryGetValue(key, out pipeline))
                 {
-                    LogEntryHandler<TState, EmptyEnrichmentPropertyValues> handler = Processor.GetLogEntryHandler<TState, EmptyEnrichmentPropertyValues>(metadata, out bool enabled, out bool dynamicCheckRequired);
+                    LogEntryHandler<TState> handler = Processor.GetLogEntryHandler<TState>(metadata, out bool enabled, out bool dynamicCheckRequired);
                     pipeline = new LogEntryPipeline<TState>(handler, userState, enabled, dynamicCheckRequired);
                     // in a multi-threaded race it is possible to create new pipelines after the versioned state is already disposed
                     // if this happens the pipeline is immediately marked as being not up-to-date.
@@ -225,7 +224,7 @@ namespace Microsoft.Extensions.Logging
         {
             public static readonly NullLogProcessor Instance = new NullLogProcessor();
 
-            public LogEntryHandler<TState, TEnrichmentProperties> GetLogEntryHandler<TState, TEnrichmentProperties>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired)
+            public LogEntryHandler<TState> GetLogEntryHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired)
             {
                 throw new NotImplementedException();
             }

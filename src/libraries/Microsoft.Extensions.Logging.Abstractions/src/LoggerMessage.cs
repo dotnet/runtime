@@ -225,8 +225,7 @@ namespace Microsoft.Extensions.Logging
                     if (!pipelineSnapshot.IsEnabled ||
                        (pipelineSnapshot.IsDynamicLevelCheckRequired && needFullEnabledCheck && !pipelineSnapshot.IsEnabledDynamic(metadata.LogLevel)))
                         return;
-                    EmptyEnrichmentPropertyValues props = default;
-                    LogEntry<TState, EmptyEnrichmentPropertyValues> entry = new LogEntry<TState, EmptyEnrichmentPropertyValues>(metadata.LogLevel, metadata.EventId, ref state, ref props, exception, null);
+                    LogEntry<TState> entry = new LogEntry<TState>(metadata.LogLevel, category: null!, metadata.EventId, state, exception, null!);
                     pipelineSnapshot.HandleLogEntry(ref entry);
                 }
                 else
@@ -238,8 +237,7 @@ namespace Microsoft.Extensions.Logging
             void LogSlowPath(ILogger logger, ref TState state, Exception? exception)
             {
                 LogEntryPipeline<TState>? pipelineSnapshot = null;
-                EmptyEnrichmentPropertyValues properties = default;
-                LogEntry<TState, EmptyEnrichmentPropertyValues> entry = new LogEntry<TState, EmptyEnrichmentPropertyValues>(metadata.LogLevel, metadata.EventId, ref state, ref properties, exception, null);
+                LogEntry<TState> entry = new LogEntry<TState>(metadata.LogLevel, category: null!, metadata.EventId, state, exception, null!);
                 if (logger is ILogEntryPipelineFactory)
                 {
                     pipelineSnapshot = ((ILogEntryPipelineFactory)logger).GetLoggingPipeline(metadata, logger);
@@ -299,8 +297,7 @@ namespace Microsoft.Extensions.Logging
                        (pipelineSnapshot.IsDynamicLevelCheckRequired && needFullEnabledCheck && !pipelineSnapshot.IsEnabledDynamic(logLevel)))
                         return;
                     LogValues<T1, T2> state = new LogValues<T1, T2>(metadata, arg1, arg2);
-                    EmptyEnrichmentPropertyValues props = default;
-                    LogEntry<LogValues<T1, T2>, EmptyEnrichmentPropertyValues> entry = new LogEntry<LogValues<T1, T2>, EmptyEnrichmentPropertyValues>(logLevel, eventId, ref state, ref props, exception, LogValues<T1, T2>.Callback);
+                    LogEntry<LogValues<T1, T2>> entry = new LogEntry<LogValues<T1, T2>>(logLevel, category: null!, eventId, state, exception, LogValues<T1, T2>.Callback);
                     pipelineSnapshot.HandleLogEntry(ref entry);
                 }
                 else
@@ -312,7 +309,6 @@ namespace Microsoft.Extensions.Logging
             void LogSlowPath(ILogger logger, T1 arg1, T2 arg2, Exception? exception)
             {
                 LogEntryPipeline<LogValues<T1, T2>>? pipelineSnapshot = null;
-                EmptyEnrichmentPropertyValues properties = default;
                 if (logger is ILogEntryPipelineFactory)
                 {
                     pipelineSnapshot = ((ILogEntryPipelineFactory)logger).GetLoggingPipeline(metadata, logger);
@@ -324,7 +320,7 @@ namespace Microsoft.Extensions.Logging
                        (pipelineSnapshot.IsDynamicLevelCheckRequired && needFullEnabledCheck && !pipelineSnapshot.IsEnabledDynamic(logLevel)))
                         return;
                     LogValues<T1, T2> state = new LogValues<T1, T2>(metadata, arg1, arg2);
-                    LogEntry<LogValues<T1, T2>, EmptyEnrichmentPropertyValues> entry = new LogEntry<LogValues<T1, T2>, EmptyEnrichmentPropertyValues>(logLevel, eventId, ref state, ref properties, exception, LogValues<T1, T2>.Callback);
+                    LogEntry<LogValues<T1, T2>> entry = new LogEntry<LogValues<T1, T2>>(logLevel, category: null!, eventId, state, exception, LogValues<T1, T2>.Callback);
                     pipelineSnapshot.HandleLogEntry(ref entry);
                 }
                 else
@@ -376,9 +372,8 @@ namespace Microsoft.Extensions.Logging
                     state._value17 = arg17;
                     state._value18 = arg18;
                     state._value19 = arg19;
-                    EmptyEnrichmentPropertyValues properties = default;
-                    LogEntry<LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>, EmptyEnrichmentPropertyValues> entry =
-                        new LogEntry<LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>, EmptyEnrichmentPropertyValues>(logLevel, eventId, ref state, ref properties, exception, null);
+                    LogEntry<LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>> entry =
+                        new LogEntry<LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>>(logLevel, category: null!, eventId, state, exception, null!);
                     pipelineSnapshot.HandleLogEntry(ref entry);
                 }
                 else
@@ -411,9 +406,8 @@ namespace Microsoft.Extensions.Logging
                 state._value17 = arg17;
                 state._value18 = arg18;
                 state._value19 = arg19;
-                EmptyEnrichmentPropertyValues properties = default;
-                LogEntry<LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>, EmptyEnrichmentPropertyValues> entry =
-                    new LogEntry<LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>, EmptyEnrichmentPropertyValues>(logLevel, eventId, ref state, ref properties, exception, null);
+                LogEntry<LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>> entry =
+                    new LogEntry<LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>>(logLevel, category: null!, eventId, state, exception, null!);
                 if (logger is ILogEntryPipelineFactory)
                 {
                     pipelineSnapshot = ((ILogEntryPipelineFactory)logger).GetLoggingPipeline(metadata, logger);

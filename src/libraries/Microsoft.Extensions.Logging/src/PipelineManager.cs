@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Logging
 
         private static LogEntryPipeline<TState> BuildPipeline<TState>(ILogEntryProcessor processor, ILogMetadata<TState>? metadata, object? userState)
         {
-            LogEntryHandler<TState, EmptyEnrichmentPropertyValues> handler = processor.GetLogEntryHandler<TState, EmptyEnrichmentPropertyValues>(metadata, out bool enabled, out bool dynamicCheckRequired);
+            LogEntryHandler<TState> handler = processor.GetLogEntryHandler<TState>(metadata, out bool enabled, out bool dynamicCheckRequired);
             return new LogEntryPipeline<TState>(handler, userState, enabled, dynamicCheckRequired);
         }
     }

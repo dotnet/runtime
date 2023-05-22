@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Serialization;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Extensions.Logging
 {
@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Logging
             _externalScopeProvider = externalScopeProvider;
         }
 
-        public LogEntryHandler<TState, TEnrichmentProperties> GetLogEntryHandler<TState, TEnrichmentProperties>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicCheckRequired)
+        public LogEntryHandler<TState> GetLogEntryHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicCheckRequired)
         {
             if (metadata != null)
             {
@@ -28,18 +28,18 @@ namespace Microsoft.Extensions.Logging
                 {
                     enabled = false;
                     dynamicCheckRequired = false;
-                    return NullHandler<TState, TEnrichmentProperties>.Instance;
+                    return NullHandler<TState>.Instance;
                 }
                 else if (filteredLoggers.Length == 1)
                 {
                     LoggerInformation loggerInfo = filteredLoggers[0];
-                    LogEntryHandler<TState, TEnrichmentProperties>? handler = null;
+                    LogEntryHandler<TState>? handler = null;
                     if (loggerInfo.Processor != null)
                     {
-                        handler = loggerInfo.Processor.GetLogEntryHandler<TState, TEnrichmentProperties>(metadata, out enabled, out dynamicCheckRequired);
+                        handler = loggerInfo.Processor.GetLogEntryHandler<TState>(metadata, out enabled, out dynamicCheckRequired);
                         if (handler != null)
                         {
-                            return new DispatchViaHandler<TState, TEnrichmentProperties>(handler);
+                            return new DispatchViaHandler<TState>(handler);
                         }
                     }
                 }
@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Logging
 
             enabled = true;
             dynamicCheckRequired = true;
-            return new DynamicDispatchToLoggers<TState, TEnrichmentProperties>(this, metadata?.GetStringMessageFormatter());
+            return new DynamicDispatchToLoggers<TState>(this, metadata?.GetStringMessageFormatter());
         }
 
         public ScopeHandler<TState> GetScopeHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicCheckRequired) where TState : notnull
@@ -110,10 +110,10 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        private sealed class NullHandler<TState, TEnrichmentProperties> : LogEntryHandler<TState, TEnrichmentProperties>
+        private sealed class NullHandler<TState> : LogEntryHandler<TState>
         {
-            public static readonly NullHandler<TState, TEnrichmentProperties> Instance = new NullHandler<TState, TEnrichmentProperties>();
-            public override void HandleLogEntry(ref LogEntry<TState, TEnrichmentProperties> logEntry)
+            public static readonly NullHandler<TState> Instance = new NullHandler<TState>();
+            public override void HandleLogEntry(ref LogEntry<TState> logEntry)
             {
             }
             public override bool IsEnabled(LogLevel level) => false;
@@ -126,16 +126,16 @@ namespace Microsoft.Extensions.Logging
             public override bool IsEnabled(LogLevel level) => false;
         }
 
-        private sealed class DispatchViaHandler<TState, TEnrichmentProperties> : LogEntryHandler<TState, TEnrichmentProperties>
+        private sealed class DispatchViaHandler<TState> : LogEntryHandler<TState>
         {
-            private LogEntryHandler<TState, TEnrichmentProperties> _nestedHandler;
+            private LogEntryHandler<TState> _nestedHandler;
 
-            public DispatchViaHandler(LogEntryHandler<TState, TEnrichmentProperties> handler)
+            public DispatchViaHandler(LogEntryHandler<TState> handler)
             {
                 _nestedHandler = handler;
             }
 
-            public override void HandleLogEntry(ref LogEntry<TState, TEnrichmentProperties> logEntry)
+            public override void HandleLogEntry(ref LogEntry<TState> logEntry)
             {
                 try
                 {
@@ -175,7 +175,7 @@ namespace Microsoft.Extensions.Logging
             public override bool IsEnabled(LogLevel level) => _nestedHandler.IsEnabled(level);
         }
 
-        private sealed class DynamicDispatchToLoggers<TState, TEnrichmentProperties> : LogEntryHandler<TState, TEnrichmentProperties>
+        private sealed class DynamicDispatchToLoggers<TState> : LogEntryHandler<TState>
         {
             private DispatchProcessor _processor;
             private Func<TState, Exception?, string>? _formatter;
@@ -186,7 +186,7 @@ namespace Microsoft.Extensions.Logging
                 _formatter = formatter;
             }
 
-            public override void HandleLogEntry(ref LogEntry<TState, TEnrichmentProperties> logEntry)
+            public override void HandleLogEntry(ref LogEntry<TState> logEntry)
             {
                 Func<TState, Exception?, string>? formatter = logEntry.Formatter ?? _formatter;
                 formatter ??= (TState s, Exception? _) => s == null ? "" : s.ToString() ?? "";
