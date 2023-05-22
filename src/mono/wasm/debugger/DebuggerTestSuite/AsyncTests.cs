@@ -43,11 +43,8 @@ namespace DebuggerTests
                 await CheckValue(res.Value["result"], TEnum("System.Threading.Tasks.TaskStatus", "RanToCompletion"), "t.Status");
              });
 
-# if FEATURE_WASM_THREADS
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496")]
-# else
         [ConditionalFact(nameof(RunningOnChrome))]
-# endif
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingOn))]
         public async Task AsyncLocalsInContinueWithInstanceUsingThisBlock() => await CheckInspectLocalsAtBreakpointSite(
              "DebuggerTests.AsyncTests.ContinueWithTests", "ContinueWithInstanceUsingThisAsync", 5, "DebuggerTests.AsyncTests.ContinueWithTests.ContinueWithInstanceUsingThisAsync.AnonymousMethod__6_0",
              "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
@@ -69,11 +66,8 @@ namespace DebuggerTests
                 await CheckValue(res.Value["result"], TDateTime(new DateTime(2510, 1, 2, 3, 4, 5)), "this.Date");
              });
 
-# if FEATURE_WASM_THREADS
-         [ActiveIssue("https://github.com/dotnet/runtime/issues/86496")]
-# else
          [Fact] // NestedContinueWith
-# endif
+         [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingOn))]
          public async Task AsyncLocalsInNestedContinueWithStaticBlock() => await CheckInspectLocalsAtBreakpointSite(
               "DebuggerTests.AsyncTests.ContinueWithTests", "NestedContinueWithStaticAsync", 5, "DebuggerTests.AsyncTests.ContinueWithTests.NestedContinueWithStaticAsync",
               "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",

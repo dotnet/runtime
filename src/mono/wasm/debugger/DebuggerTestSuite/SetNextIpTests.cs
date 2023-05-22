@@ -112,11 +112,8 @@ public class SetNextIpTests : DebuggerTests
             });
     }
 
-# if FEATURE_WASM_THREADS
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86496")]
-# else
     [ConditionalFact(nameof(RunningOnChrome))]
-# endif
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingOn))]
     public async Task Lambda()
     {
         var debugger_test_loc = "dotnet://debugger-test.dll/debugger-async-test.cs";
@@ -162,11 +159,8 @@ public class SetNextIpTests : DebuggerTests
             });
         }
 
-# if FEATURE_WASM_THREADS
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86496")]
-# else
     [ConditionalFact(nameof(RunningOnChrome))]
-# endif
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingOn))]
     public async Task Lambda_InvalidLocation()
     {
         var debugger_test_loc = "dotnet://debugger-test.dll/debugger-async-test.cs";
@@ -195,11 +189,8 @@ public class SetNextIpTests : DebuggerTests
         times: 2);
     }
 
-# if FEATURE_WASM_THREADS
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86496")]
-# else
     [ConditionalFact(nameof(RunningOnChrome))]
-# endif
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingOn))]
     public async Task Lambda_ToNestedLambda()
     {
         var debugger_test_loc = "dotnet://debugger-test.dll/debugger-async-test.cs";
@@ -229,11 +220,8 @@ public class SetNextIpTests : DebuggerTests
         times: 2);
         }
 
-# if FEATURE_WASM_THREADS
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86496")]
-# else
     [ConditionalFact(nameof(RunningOnChrome))]
-# endif
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingOn))]
     public async Task Lambda_ToNestedSingleLineLambda_Invalid()
     {
         var debugger_test_loc = "dotnet://debugger-test.dll/debugger-async-test.cs";
@@ -263,11 +251,8 @@ public class SetNextIpTests : DebuggerTests
         times: 2);
     }
 
-# if FEATURE_WASM_THREADS
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86496")]
-# else
     [ConditionalFact(nameof(RunningOnChrome))]
-# endif
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingOn))]
     public async Task Lambda_ToNestedSingleLineLambda_Valid()
     {
         var debugger_test_loc = "dotnet://debugger-test.dll/debugger-async-test.cs";
