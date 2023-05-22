@@ -9,12 +9,12 @@ namespace System.Diagnostics
     {
         internal static bool CompareTags(IEnumerable<KeyValuePair<string, object?>>? tags1, IEnumerable<KeyValuePair<string, object?>>? tags2)
         {
-            if (tags1 is null)
+            if (tags1 == tags2)
             {
-                return tags2 is null;
+                return true;
             }
 
-            if (tags2 is null)
+            if (tags1 is null || tags2 is null)
             {
                 return false;
             }
