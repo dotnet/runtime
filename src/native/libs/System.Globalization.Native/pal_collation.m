@@ -21,7 +21,7 @@ typedef enum
 
 static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(int32_t comparisonOptions)
 {
-    int32_t supportedOptions = IgnoreCase | IgnoreNonSpace | IgnoreWidth | StringSort;
+    int32_t supportedOptions = None | IgnoreCase | IgnoreNonSpace | IgnoreWidth | StringSort;
     // To achieve an equivalent search behavior to the default in ICU,
     // NSLiteralSearch is employed as the default search option.
     NSStringCompareOptions options = NSLiteralSearch;
@@ -40,8 +40,6 @@ static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(
 
     return options;
 }
-
-#endif
 
 /*
 Function:
@@ -75,3 +73,5 @@ int32_t GlobalizationNative_CompareStringNative(const char* localeName, int32_t 
                         range:string1Range
                         locale:currentLocale];
 }
+
+#endif

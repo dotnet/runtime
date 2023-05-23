@@ -15,7 +15,6 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
-            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
             AssertComparisonSupported(options);
 
@@ -28,23 +27,19 @@ namespace System.Globalization
                 result = Interop.Globalization.CompareStringNative(m_name, m_name.Length, pString1, string1.Length, pString2, string2.Length, options);
             }
 
-            if (result == -2)
-            {
-                throw new PlatformNotSupportedException(GetPNSE(options));
-            }
+            Debug.Assert(result != -2);
 
             return result;
         }
 
         private static void AssertComparisonSupported(CompareOptions options)
         {
-            if (CompareOptionsNotSupported(options))
+            if ((options | SupportedCompareOptions) != SupportedCompareOptions)
                 throw new PlatformNotSupportedException(GetPNSE(options));
         }
 
-        private static bool CompareOptionsNotSupported(CompareOptions options) =>
-            (options & CompareOptions.IgnoreSymbols) == CompareOptions.IgnoreSymbols ||
-            (options & CompareOptions.IgnoreKanaType) == CompareOptions.IgnoreKanaType;
+        private const CompareOptions SupportedCompareOptions = CompareOptions.None | CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace |
+                                                               CompareOptions.IgnoreWidth | CompareOptions.StringSort;
 
         private static string GetPNSE(CompareOptions options) =>
             SR.Format(SR.PlatformNotSupported_HybridGlobalizationWithCompareOptions, options);
