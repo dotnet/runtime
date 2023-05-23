@@ -174,10 +174,6 @@ namespace Microsoft.Win32.SafeHandles
             return handle;
         }
 
-        // Used by callers of OpenReadOnly.
-        internal static UnixFileMode GetFileMode(Interop.Sys.FileStatus status) =>
-            ((UnixFileMode)status.Mode) & PermissionMask;
-
         internal static SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, UnixFileMode? unixCreateMode = null,
                                             Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?>? createOpenException = null)
         {

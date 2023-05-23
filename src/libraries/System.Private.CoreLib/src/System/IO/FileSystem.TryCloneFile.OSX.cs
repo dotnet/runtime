@@ -7,8 +7,11 @@ namespace System.IO
 {
     internal static partial class FileSystem
     {
-        private static partial bool TryCloneFile(string sourceFullPath, in Interop.Sys.FileStatus srcStat, UnixFileMode filePermissions, string destFullPath, bool overwrite)
+        private static partial bool TryCloneFile(string sourceFullPath, in Interop.Sys.FileStatus srcStat, string destFullPath, bool overwrite)
         {
+            //get the file permissions for source file
+            UnixFileMode filePermissions = srcStat.Mode & SafeFileHandle.PermissionMask;
+
             // Read FileStatus of destination file to determine how to continue
             int destError = Interop.Sys.Stat(destFullPath, out Interop.Sys.FileStatus destStat);
             if (destError != 0)
