@@ -30,7 +30,6 @@ namespace System.IO
 
         public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
-            // Open the src file handle.
             long fileLength;
             UnixFileMode filePermissions;
             using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out fileLength, out filePermissions);
@@ -41,13 +40,12 @@ namespace System.IO
                 return;
             }
 
-            // Open the dst file handle, and copy the file.
             using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
                                             FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, filePermissions,
                                             CreateOpenException);
+
             Interop.CheckIo(Interop.Sys.CopyFile(src, dst, fileLength));
 
-            // Exception handler for SafeFileHandle.Open failing.
             static Exception? CreateOpenException(Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path)
             {
                 // If the destination path points to a directory, we throw to match Windows behaviour.
