@@ -7,7 +7,7 @@ TARGET_ARCH?=$(shell . $(TOP)eng/native/init-os-and-arch.sh && echo $${arch})
 TARGET_OS?=iossimulator
 DEPLOY_AND_RUN?=false
 STRIP_DEBUG_SYMBOLS?=false
-RUNTIME_PACKS?=false
+USE_RUNTIME_PACKS?=false
 
 REPO_DIR=$(realpath $(TOP))
 TASKS_DIR=$(REPO_DIR)/src/tasks
@@ -45,7 +45,7 @@ hello-app: clean
 	-p:TargetArchitecture=$(TARGET_ARCH) \
 	-p:DeployAndRun=$(DEPLOY_AND_RUN) \
 	-p:StripDebugSymbols=$(STRIP_DEBUG_SYMBOLS) \
-	-p:PublishAotUsingRuntimePack=$(RUNTIME_PACKS) \
+	-p:PublishAotUsingRuntimePack=$(USE_RUNTIME_PACKS) \
 	-bl
 
 clean:
