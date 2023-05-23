@@ -1006,28 +1006,28 @@ namespace System.Numerics
         {
             // Get the bytes that make up the BigInteger.
             byte[]? arrayToReturnToPool = null;
-            Span<byte> bits = stackalloc byte[64]; // arbitrary threshold
-            if (!value.TryWriteOrCountBytes(bits, out int bytesWrittenOrNeeded))
+            Span<byte> bytes = stackalloc byte[64]; // arbitrary threshold
+            if (!value.TryWriteOrCountBytes(bytes, out int bytesWrittenOrNeeded))
             {
-                bits = arrayToReturnToPool = ArrayPool<byte>.Shared.Rent(bytesWrittenOrNeeded);
-                bool success = value.TryWriteBytes(bits, out bytesWrittenOrNeeded);
+                bytes = arrayToReturnToPool = ArrayPool<byte>.Shared.Rent(bytesWrittenOrNeeded);
+                bool success = value.TryWriteBytes(bytes, out _);
                 Debug.Assert(success);
             }
-            bits = bits.Slice(0, bytesWrittenOrNeeded);
+            bytes = bytes.Slice(0, bytesWrittenOrNeeded);
 
-            Debug.Assert(!bits.IsEmpty);
+            Debug.Assert(!bytes.IsEmpty);
 
-            byte highByte = bits[^1];
+            byte highByte = bytes[^1];
 
             int charsInHighByte = 9 - byte.LeadingZeroCount(value._sign >= 0 ? highByte : (byte)~highByte);
-            long tmpCharCount = charsInHighByte + ((long)(bits.Length - 1) << 3);
+            long tmpCharCount = charsInHighByte + ((long)(bytes.Length - 1) << 3);
 
             if (tmpCharCount > Array.MaxLength)
             {
                 Debug.Assert(arrayToReturnToPool is not null);
                 ArrayPool<byte>.Shared.Return(arrayToReturnToPool);
 
-                throw GetException(ParsingStatus.Overflow);
+                throw new FormatException(SR.Format_TooLarge);
             }
 
             int charsForBits = (int)tmpCharCount;
@@ -1045,9 +1045,9 @@ namespace System.Numerics
 
             AppendByte(ref sb, highByte, charsInHighByte - 1);
 
-            for (int i = bits.Length - 2; i >= 0; i--)
+            for (int i = bytes.Length - 2; i >= 0; i--)
             {
-                AppendByte(ref sb, bits[i]);
+                AppendByte(ref sb, bytes[i]);
             }
 
             if (arrayToReturnToPool is not null)
