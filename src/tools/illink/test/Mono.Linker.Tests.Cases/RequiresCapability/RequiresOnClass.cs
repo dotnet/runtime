@@ -808,6 +808,28 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				instance.GetType ().GetMethod ("RUCMethod");
 			}
 
+			[RequiresUnreferencedCode ("--GenericTypeWithRequires--")]
+			[RequiresDynamicCode ("--GenericTypeWithRequires--")]
+			class GenericTypeWithRequires<T>
+			{
+				public static int NonGenericField;
+			}
+
+			// https://github.com/dotnet/runtime/issues/86633 - analyzer doesn't report this warning
+			[ExpectedWarning ("IL2026", "NonGenericField", "--GenericTypeWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "NonGenericField", "--GenericTypeWithRequires--", ProducedBy = Tool.NativeAot)]
+			static void TestDAMAccessOnOpenGeneric ()
+			{
+				typeof (GenericTypeWithRequires<>).RequiresPublicFields ();
+			}
+
+			[ExpectedWarning ("IL2026", "NonGenericField", "--GenericTypeWithRequires--")]
+			[ExpectedWarning ("IL3050", "NonGenericField", "--GenericTypeWithRequires--", ProducedBy = Tool.NativeAot)]
+			static void TestDAMAccessOnInstantiatedGeneric ()
+			{
+				typeof (GenericTypeWithRequires<int>).RequiresPublicFields ();
+			}
+
 			[ExpectedWarning ("IL2026", "--TestDAMOnTypeAccessInRUCScope--")]
 			public static void Test ()
 			{
@@ -816,6 +838,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				TestDynamicDependencyAccess ();
 				TestDAMOnTypeAccess (null);
 				TestDAMOnTypeAccessInRUCScope ();
+				TestDAMAccessOnOpenGeneric ();
+				TestDAMAccessOnInstantiatedGeneric ();
 			}
 		}
 

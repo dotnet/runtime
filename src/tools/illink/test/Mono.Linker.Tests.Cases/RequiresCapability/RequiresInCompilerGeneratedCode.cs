@@ -44,6 +44,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			ComplexCases.AsyncBodyCallingMethodWithRequires.Test ();
 			ComplexCases.GenericAsyncBodyCallingMethodWithRequires.Test ();
 			ComplexCases.GenericAsyncEnumerableBodyCallingRequiresWithAnnotations.Test ();
+
+			RUCOnDelegateCacheFields.Test ();
 		}
 
 		class WarnInIteratorBody
@@ -2213,6 +2215,25 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			class Disposable : IDisposable { public void Dispose () { } }
 
 			static Task<Disposable> GetDisposableAsync () { return Task.FromResult (new Disposable ()); }
+		}
+
+		class RUCOnDelegateCacheFields
+		{
+			[RequiresUnreferencedCode ("--RUCOnDelegateCacheFields.TargetType--")]
+			class TargetType
+			{
+				public static void Init ()
+				{
+					var Action = () => { };
+				}
+			}
+
+			[ExpectedWarning ("IL2026", nameof (TargetType) + "()")] // .ctor
+			[ExpectedWarning ("IL2026", nameof (TargetType.Init) + "()")] // Init method
+			public static void Test ()
+			{
+				typeof (TargetType).RequiresAll ();
+			}
 		}
 
 		static async Task<int> MethodAsync ()

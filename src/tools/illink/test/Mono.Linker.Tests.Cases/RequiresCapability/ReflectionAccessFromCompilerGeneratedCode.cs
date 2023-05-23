@@ -73,7 +73,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL3050", "--TestAsyncWithRUC--", ProducedBy = Tool.NativeAot | Tool.Analyzer)]
 			public static void Test ()
 			{
-				TestIterator ().GetEnumerator ().MoveNext (); // Must actually une the enumerator, otherwise NativeAOT will trim the implementation
+				TestIterator ().GetEnumerator ().MoveNext (); // Must actually use the enumerator, otherwise NativeAOT will trim the implementation
 				TestIteratorWithRUC ();
 				TestAsync ();
 				TestAsyncWithRUC ();
