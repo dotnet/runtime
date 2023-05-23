@@ -2067,7 +2067,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.WindowsThreadPool.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolPreAllocatedOverlapped.WindowsThreadPool.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.WindowsThreadPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WindowsThreadPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Win32.cs" />
   </ItemGroup>
