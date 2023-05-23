@@ -42998,9 +42998,10 @@ void gc_heap::compute_new_dynamic_data (int gen_number)
     dd_fragmentation (dd) = generation_free_list_space (gen) + generation_free_obj_space (gen);
 
     // make sure the subtraction below doesn't overflow
-    assert (dd_fragmentation (dd) <= total_gen_size);
-
-    dd_current_size (dd) = total_gen_size - dd_fragmentation (dd);
+    if (dd_fragmentation (dd) <= total_gen_size)
+        dd_current_size (dd) = total_gen_size - dd_fragmentation (dd);
+    else
+        dd_current_size (dd) = 0;
 
     gc_history_per_heap* current_gc_data_per_heap = get_gc_data_per_heap();
 
