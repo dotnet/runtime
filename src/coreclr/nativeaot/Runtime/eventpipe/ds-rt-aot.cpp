@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #include <eventpipe/ep-rt-config.h>
 
 #ifdef ENABLE_PERFTRACING
@@ -6,7 +9,7 @@
 #include <eventpipe/ep-stack-contents.h>
 #include <eventpipe/ep-rt.h>
 
- #include "ds-rt-aot.h"
+#include "ds-rt-aot.h"
 
 bool
 aot_ipc_get_process_id_disambiguation_key(

@@ -530,7 +530,7 @@ extern "C" bool RhInitialize()
 
 #if defined(_WIN32) || defined(FEATURE_PERFTRACING)
     atexit(&OnProcessExit);
-#endif    
+#endif
 
     if (!InitDLL(PalGetModuleHandleFromPointer((void*)&RhInitialize)))
         return false;
