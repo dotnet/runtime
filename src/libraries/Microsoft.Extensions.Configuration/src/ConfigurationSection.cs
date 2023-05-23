@@ -3,13 +3,18 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using Microsoft.Extensions.Primitives;
+using static System.Collections.Specialized.BitVector32;
 
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
     /// Represents a section of application configuration values.
     /// </summary>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerTypeProxy(typeof(ConfigurationSectionDebugView))]
     public class ConfigurationSection : IConfigurationSection
     {
         private readonly IConfigurationRoot _root;
@@ -96,5 +101,47 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <returns>The <see cref="IChangeToken"/>.</returns>
         public IChangeToken GetReloadToken() => _root.GetReloadToken();
+
+        private string DebuggerToString()
+        {
+            var s = $"Path = {Path}";
+            var childCount = ConfigurationItemDebugView.FromConfiguration(this, _root).Count;
+            if (childCount > 0)
+            {
+                s += $", Children = {childCount}";
+            }
+            if (Value is not null)
+            {
+                s += $", Value = {Value}";
+                (_, IConfigurationProvider? provider) = ConfigurationItemDebugView.GetValueAndProvider(_root, Path);
+                if (provider != null)
+                {
+                    s += $", Provider = {provider}";
+                }
+            }
+            return s;
+        }
+
+        private sealed class ConfigurationSectionDebugView
+        {
+            private readonly ConfigurationSection _current;
+
+            public ConfigurationSectionDebugView(ConfigurationSection current)
+            {
+                _current = current;
+            }
+
+            public string Path => _current.Path;
+            public string? Value => _current.Value;
+            public IConfigurationProvider? Provider
+            {
+                get
+                {
+                    (_, IConfigurationProvider? provider) = ConfigurationItemDebugView.GetValueAndProvider(_current._root, _current.Path);
+                    return provider;
+                }
+            }
+            public List<ConfigurationItemDebugView> Children => ConfigurationItemDebugView.FromConfiguration(_current, _current._root);
+        }
     }
 }
