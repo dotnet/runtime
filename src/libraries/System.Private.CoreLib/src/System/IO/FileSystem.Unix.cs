@@ -35,15 +35,15 @@ namespace System.IO
         {
             // Open the src file handle, and read the file permissions.
             using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out Interop.Sys.FileStatus srcFileStatus);
-            UnixFileMode filePermissions = srcFileStatus.Mode & SafeFileHandle.PermissionMask;
 
             // Try to clone the file first.
-            if (TryCloneFile(sourceFullPath, in srcFileStatus, filePermissions, destFullPath, overwrite))
+            if (TryCloneFile(sourceFullPath, in srcFileStatus, destFullPath, overwrite))
             {
                 return;
             }
 
             // Open the dst file handle, and copy the file.
+            UnixFileMode filePermissions = srcFileStatus.Mode & SafeFileHandle.PermissionMask;
             using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
                                             FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, filePermissions,
                                             CreateOpenException);
