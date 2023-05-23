@@ -242,7 +242,7 @@ namespace System.Diagnostics.Metrics
             public bool IsSharedSession(string commandSessionId)
             {
                 // commandSessionId may be null if it's the disable command
-                return _sessionId == SharedSessionId && (string.IsNullOrEmpty(commandSessionId) || commandSessionId == SharedSessionId);
+                return _sessionId.Equals(SharedSessionId) && (string.IsNullOrEmpty(commandSessionId) || commandSessionId.Equals(SharedSessionId));
             }
 
             public void OnEventCommand(EventCommandEventArgs command)
@@ -280,11 +280,12 @@ namespace System.Diagnostics.Metrics
                         {
                             if (command.Command == EventCommand.Disable && Interlocked.Decrement(ref _sharedSessionRefCount) == 0)
                             {
+                                Parent.Message($"Previous session with id {_sessionId} is stopped");
                                 _aggregationManager.Dispose();
                                 _aggregationManager = null;
-                                _sessionId = "";
+                                _sessionId = string.Empty;
                                 _sharedSessionIds.Clear();
-                                Parent.Message($"Previous session with id {_sessionId} is stopped"); return;
+                                return;
                             }
 
                             bool validShared = true;
@@ -369,11 +370,12 @@ namespace System.Diagnostics.Metrics
                             }
                             else if (command.Command == EventCommand.Disable && Interlocked.Decrement(ref _sharedSessionRefCount) == 0)
                             {
+                                Parent.Message($"Previous session with id {_sessionId} is stopped");
                                 _aggregationManager.Dispose();
                                 _aggregationManager = null;
-                                _sessionId = "";
+                                _sessionId = string.Empty;
                                 _sharedSessionIds.Clear();
-                                Parent.Message($"Previous session with id {_sessionId} is stopped"); return;
+                                return;
                             }
                         }
                     }
