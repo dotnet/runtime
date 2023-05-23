@@ -436,7 +436,7 @@ namespace Microsoft.Interop
             return Block(
                 LocalDeclarationStatement(VariableDeclaration(
                 GenericName(
-                    Identifier(TypeNames.System_Span),
+                    Identifier(TypeNames.System_ReadOnlySpan),
                     TypeArgumentList(SingletonSeparatedList(_unmanagedElementType))),
                 SingletonSeparatedList(
                     VariableDeclarator(
