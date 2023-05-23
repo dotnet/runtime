@@ -5868,21 +5868,57 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 {
     JITDUMP("Considering guarded devirtualization at IL offset %u (0x%x)\n", ilOffset, ilOffset);
 
-    // NativeAOT is the only target that currently supports getExactClasses-based GDV
-    // where we know the exact number of classes implementing the given base in compile-time
-    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && (baseClass != NO_CLASS_HANDLE))
+    bool hasPgoData = true;
+
+    CORINFO_CLASS_HANDLE  likelyClass  = NO_CLASS_HANDLE;
+    CORINFO_METHOD_HANDLE likelyMethod = NO_METHOD_HANDLE;
+    unsigned              likelihood   = 0;
+
+    // We currently only get likely class guesses when there is PGO data
+    // with class profiles.
+    //
+    if ((fgPgoClassProfiles == 0) && (fgPgoMethodProfiles == 0))
     {
-        const int            maxExactClasses = 2;
-        CORINFO_CLASS_HANDLE exactClasses[maxExactClasses];
-        if (info.compCompHnd->getExactClasses(baseClass, maxExactClasses, exactClasses) == maxExactClasses)
+        hasPgoData = false;
+    }
+    else
+    {
+        pickGDV(call, ilOffset, isInterface, &likelyClass, &likelyMethod, &likelihood);
+        if ((likelyClass == NO_CLASS_HANDLE) && (likelyMethod == NO_METHOD_HANDLE))
         {
-            JITDUMP("We have exactly %d classes implementing %s:\n", maxExactClasses, eeGetClassName(baseClass));
+            hasPgoData = false;
+        }
+    }
+
+    // NativeAOT is the only target that currently supports getExactClasses-based GDV
+    // where we know the exact number of classes implementing the given base in compile-time.
+    // For now, let's only do this when we don't have any PGO data. In future, we should be able to benefit
+    // from both.
+    if (!hasPgoData && (baseClass != NO_CLASS_HANDLE))
+    {
+        int maxTypeChecks = min(JitConfig.JitGuardedDevirtualizationMaxTypeChecks(), MAX_GDV_TYPE_CHECKS);
+
+        CORINFO_CLASS_HANDLE exactClasses[MAX_GDV_TYPE_CHECKS];
+        int numExactClasses = info.compCompHnd->getExactClasses(baseClass, MAX_GDV_TYPE_CHECKS, exactClasses);
+        if (numExactClasses == 0)
+        {
+            JITDUMP("No exact classes implementing %s\n", eeGetClassName(baseClass))
+        }
+        else if (numExactClasses > maxTypeChecks)
+        {
+            JITDUMP("Too many exact classes implementing %s (%d > %d)\n", eeGetClassName(baseClass), numExactClasses,
+                    maxTypeChecks)
+        }
+        else
+        {
+            assert(numExactClasses <= maxTypeChecks);
+            JITDUMP("We have exactly %d classes implementing %s:\n", numExactClasses, eeGetClassName(baseClass));
 
             // NOTE: The case where we have only a single implementation is handled naturally
             // through gtGetClassHandle without help of GDV.
             //
             int skipped = 0;
-            for (int exactClsIdx = 0; exactClsIdx < maxExactClasses; exactClsIdx++)
+            for (int exactClsIdx = 0; exactClsIdx < numExactClasses; exactClsIdx++)
             {
                 CORINFO_CLASS_HANDLE exactCls = exactClasses[exactClsIdx];
                 assert(exactCls != NO_CLASS_HANDLE);
@@ -5917,7 +5953,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 // NOTE: This is currently used only with NativeAOT. In theory, we could also check if we
                 // have static PGO data to decide which class to guess first. Presumably, this is a rare case.
                 //
-                const int likelyHood = 100 / maxExactClasses;
+                const int likelyHood = 100 / numExactClasses;
 
                 addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactMethodAttrs, clsAttrs,
                                                     likelyHood);
@@ -5926,22 +5962,9 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         }
     }
 
-    // We currently only get likely class guesses when there is PGO data
-    // with class profiles.
-    //
-    if ((fgPgoClassProfiles == 0) && (fgPgoMethodProfiles == 0))
+    if (!hasPgoData)
     {
-        JITDUMP("Not guessing for class or method: no GDV profile pgo data, or pgo disabled\n");
-        return;
-    }
-
-    CORINFO_CLASS_HANDLE  likelyClass;
-    CORINFO_METHOD_HANDLE likelyMethod;
-    unsigned              likelihood;
-    pickGDV(call, ilOffset, isInterface, &likelyClass, &likelyMethod, &likelihood);
-
-    if ((likelyClass == NO_CLASS_HANDLE) && (likelyMethod == NO_METHOD_HANDLE))
-    {
+        JITDUMP("Not guessing; no PGO and no exact classes\n");
         return;
     }
 

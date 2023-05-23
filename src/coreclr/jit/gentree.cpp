@@ -2223,16 +2223,21 @@ InlineCandidateInfo* GenTreeCall::GetGDVCandidateInfo(uint8_t index)
 //
 void GenTreeCall::AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candidateInfo)
 {
+    assert(gtInlineInfoCount < MAX_GDV_TYPE_CHECKS);
     assert(candidateInfo != nullptr);
+
     if (gtInlineInfoCount == 0)
     {
         gtInlineCandidateInfo = candidateInfo;
     }
+    else if (gtInlineInfoCount == 1)
+    {
+        gtInlineCandidateInfo =
+            new (comp, CMK_Inlining) InlineCandidateInfo[MAX_GDV_TYPE_CHECKS]{*gtInlineCandidateInfo, *candidateInfo};
+    }
     else
     {
-        // We only support two candidates for now (
-        assert(gtInlineInfoCount == 1);
-        gtInlineCandidateInfo = new (comp, CMK_Inlining) InlineCandidateInfo[2]{*gtInlineCandidateInfo, *candidateInfo};
+        gtInlineCandidateInfo[gtInlineInfoCount] = *candidateInfo;
     }
 
     gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT;
