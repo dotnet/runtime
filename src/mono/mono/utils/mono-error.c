@@ -30,7 +30,7 @@
 	va_end (args); \
 } while (0)
 
-TypeLoadFailureCallback type_load_failure_callback;
+TypeLoadFailureCallback type_load_failure_callback = mono_class_set_type_load_failure;
 
 static void
 mono_error_set_generic_errorv (MonoError *oerror, const char *name_space, const char *name, const char *msg_format, va_list args);
