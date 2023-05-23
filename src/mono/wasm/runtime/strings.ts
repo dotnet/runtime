@@ -77,7 +77,10 @@ export class StringDecoder {
             // When threading is enabled, TextDecoder does not accept a view of a
             // SharedArrayBuffer, we must make a copy of the array first.
             // See https://github.com/whatwg/encoding/issues/172
-            const subArray = typeof SharedArrayBuffer !== "undefined" && Module.HEAPU8.buffer instanceof SharedArrayBuffer
+        
+            // BEWARE: In some cases, `instanceof SharedArrayBuffer` returns false even though buffer is an SAB.
+            // Patch adapted from https://github.com/emscripten-core/emscripten/pull/16994
+            const subArray = typeof SharedArrayBuffer !== "undefined" && Object.prototype.toString.call(Module.HEAPU8.buffer) === "[object SharedArrayBuffer]"
                 ? Module.HEAPU8.slice(<any>start, <any>end)
                 : Module.HEAPU8.subarray(<any>start, <any>end);
 
