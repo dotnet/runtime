@@ -54,7 +54,7 @@ namespace Microsoft.Interop
                     return _nativeTypeMarshaller.GenerateSetupStatements(info, context);
                 case StubCodeContext.Stage.Marshal:
                     if (elementMarshalDirection is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional
-                        || (context.Direction == MarshalDirection.UnmanagedToManaged && GenerateByValueOutMarshalling(info)))
+                        || (context.Direction == MarshalDirection.UnmanagedToManaged && ShouldGenerateByValueOutMarshalling(info)))
                     {
                         return _nativeTypeMarshaller.GenerateMarshalStatements(info, context);
                     }
@@ -85,14 +85,14 @@ namespace Microsoft.Interop
                     break;
                 case StubCodeContext.Stage.Unmarshal:
                     if (elementMarshalDirection is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional
-                        || (context.Direction == MarshalDirection.ManagedToUnmanaged && GenerateByValueOutMarshalling(info)))
+                        || (context.Direction == MarshalDirection.ManagedToUnmanaged && ShouldGenerateByValueOutMarshalling(info)))
                     {
                         return _nativeTypeMarshaller.GenerateUnmarshalStatements(info, context);
                     }
                     break;
                 case StubCodeContext.Stage.GuaranteedUnmarshal:
                     if (elementMarshalDirection is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional
-                        || (context.Direction == MarshalDirection.ManagedToUnmanaged && GenerateByValueOutMarshalling(info)))
+                        || (context.Direction == MarshalDirection.ManagedToUnmanaged && ShouldGenerateByValueOutMarshalling(info)))
                     {
                         return _nativeTypeMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
                     }
@@ -106,7 +106,7 @@ namespace Microsoft.Interop
             return Array.Empty<StatementSyntax>();
         }
 
-        private bool GenerateByValueOutMarshalling(TypePositionInfo info)
+        private bool ShouldGenerateByValueOutMarshalling(TypePositionInfo info)
         {
             return _enableByValueContentsMarshalling && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out);
         }
