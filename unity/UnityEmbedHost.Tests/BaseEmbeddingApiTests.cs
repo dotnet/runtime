@@ -65,24 +65,41 @@ public abstract class BaseEmbeddingApiTests
     }
 
 #pragma warning disable CS0612
-    [TestCase(typeof(Bacon), nameof(Bacon.Fry), true)]
-    [TestCase(typeof(Bacon), nameof(Bacon.Smoke), false)]
-#pragma warning restore CS0612
-    public void MethodHasAttributeWorks(Type type, string methodName, bool shouldBeObsolete)
+    [TestCase(typeof(Bacon), nameof(Bacon.Fry), typeof(ObsoleteAttribute), typeof(ObsoleteAttribute))]
+    [TestCase(typeof(Bacon), nameof(Bacon.Smoke), typeof(ObsoleteAttribute), null)]
+    [TestCase(typeof(Bacon), nameof(Bacon.Smoke), typeof(FooParentAttribute), typeof(FooAttribute))]
+    [TestCase(typeof(Bacon), nameof(Bacon.Smoke), typeof(FooAttribute), typeof(FooAttribute))]
+    [TestCase(typeof(Bacon), nameof(Bacon.Fry), typeof(FooAttribute), null)]
+    [TestCase(typeof(Bacon), nameof(Bacon.Fry), typeof(FooParentAttribute), typeof(FooParentAttribute))]
+    public void MethodGetAttributeWorks(Type type, string methodName, Type attributeType, Type? expectedAttribute)
     {
-        Assert.That(ClrHost.unity_method_has_attribute(type.GetMethod(methodName)!.MethodHandle, typeof(ObsoleteAttribute)),
-            Is.EqualTo(shouldBeObsolete));
+        var attribute = ClrHost.unity_method_get_attribute(type.GetMethod(methodName)!.MethodHandle, attributeType);
+        Assert.That(attribute?.GetType(), Is.EqualTo(expectedAttribute));
     }
 
-#pragma warning disable CS0612
-    [TestCase(typeof(Bacon), true)]
-    [TestCase(typeof(Mammal), false)]
-#pragma warning restore CS0612
-    public void ClassHasAttributeWorks(Type type, bool shouldBeObsolete)
+    [TestCase(typeof(Bacon), typeof(ObsoleteAttribute), typeof(ObsoleteAttribute))]
+    [TestCase(typeof(Mammal), typeof(ObsoleteAttribute), null)]
+    [TestCase(typeof(Bacon), typeof(FooParentAttribute), typeof(FooAttribute))]
+    public void ClassGetAttributeWorks(Type type, Type attributeType, Type? expectedAttribute)
     {
-        Assert.That(ClrHost.unity_class_has_attribute(type, typeof(ObsoleteAttribute)),
-            Is.EqualTo(shouldBeObsolete));
+        var attribute = ClrHost.unity_class_get_attribute(type, attributeType);
+        Assert.That(attribute?.GetType(), Is.EqualTo(expectedAttribute));
     }
+
+    [TestCase(nameof(Bacon.applewood), typeof(ObsoleteAttribute), typeof(ObsoleteAttribute))]
+    [TestCase(nameof(Bacon.applewood), typeof(FooAttribute), null)]
+    [TestCase(nameof(Bacon.applewood), typeof(FooParentAttribute), typeof(FooParentAttribute))]
+    [TestCase(nameof(Bacon.hickory), typeof(ObsoleteAttribute), null)]
+    [TestCase(nameof(Bacon.hickory), typeof(FooParentAttribute), typeof(FooAttribute))]
+    [TestCase(nameof(Bacon.hickory), typeof(FooAttribute), typeof(FooAttribute))]
+    public void FieldGetAttributeWorks(string fieldName, Type attributeType, Type? expectedAttribute)
+    {
+        FieldInfo? info = typeof(Bacon).GetField(fieldName);
+        Assert.NotNull(info);
+        var attribute = ClrHost.unity_field_get_attribute(typeof(Bacon), info!.FieldHandle, attributeType);
+        Assert.That(attribute?.GetType(), Is.EqualTo(expectedAttribute));
+    }
+#pragma warning restore CS0612
 
     [Test]
     public unsafe void ValueBoxWorks()

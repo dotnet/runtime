@@ -1612,36 +1612,11 @@ TEST(mono_custom_attrs_has_attr_can_check_class_attribute)
     MonoClass *klassTestWithParamsAttribute = GetClassHelper(kTestDLLNameSpace, "TestWithParamsAttribute");
     MonoClass *klassAnotherTestAttribute = GetClassHelper(kTestDLLNameSpace, "AnotherTestAttribute");
 
-    GET_AND_CHECK(customAttrInfo, mono_custom_attrs_from_class(klassClassWithAttribute));
+    MonoObject* attrObj = mono_unity_class_get_attribute(klassClassWithAttribute, klassTestAttribute);
 
-    CHECK(mono_custom_attrs_has_attr(customAttrInfo, klassTestAttribute));
-    CHECK(mono_custom_attrs_has_attr(customAttrInfo, klassTestWithParamsAttribute));
-    CHECK(!mono_custom_attrs_has_attr(customAttrInfo, klassAnotherTestAttribute));
-
-    mono_custom_attrs_free(customAttrInfo);
-}
-
-TEST(mono_custom_attrs_get_attrs_can_enumerate_attributes)
-{
-    MonoClass *klassClassWithAttribute = GetClassHelper(kTestDLLNameSpace, "ClassWithAttribute");
-    MonoClass *klassTestAttribute = GetClassHelper(kTestDLLNameSpace, "TestAttribute");
-    MonoClass *klassInheritedTestAttribute = GetClassHelper(kTestDLLNameSpace, "InheritedTestAttribute");
-    MonoClass *klassTestWithParamsAttribute = GetClassHelper(kTestDLLNameSpace, "TestWithParamsAttribute");
-
-    GET_AND_CHECK(customAttrInfo, mono_custom_attrs_from_class(klassClassWithAttribute));
-
-    void* iterator = NULL;
-    MonoClass* attributeClass;
-    attributeClass = mono_custom_attrs_get_attrs(customAttrInfo, &iterator);
-    CHECK_EQUAL(klassTestAttribute, attributeClass);
-    attributeClass = mono_custom_attrs_get_attrs(customAttrInfo, &iterator);
-    CHECK_EQUAL(klassInheritedTestAttribute, attributeClass);
-    attributeClass = mono_custom_attrs_get_attrs(customAttrInfo, &iterator);
-    CHECK_EQUAL(klassTestWithParamsAttribute, attributeClass);
-    attributeClass = mono_custom_attrs_get_attrs(customAttrInfo, &iterator);
-    CHECK(attributeClass == NULL);
-
-    mono_custom_attrs_free(customAttrInfo);
+    CHECK(attrObj != NULL);
+    CHECK(mono_unity_class_get_attribute(klassClassWithAttribute, klassTestWithParamsAttribute) != NULL);
+    CHECK(mono_unity_class_get_attribute(klassClassWithAttribute, klassAnotherTestAttribute) == NULL);
 }
 
 TEST(mono_custom_attrs_get_attr_can_get_attribute_instance)
@@ -1649,10 +1624,8 @@ TEST(mono_custom_attrs_get_attr_can_get_attribute_instance)
     MonoClass *klassClassWithAttribute = GetClassHelper(kTestDLLNameSpace, "ClassWithAttribute");
     MonoClass *klassTestWithParamsAttribute = GetClassHelper(kTestDLLNameSpace, "TestWithParamsAttribute");
 
-    GET_AND_CHECK(customAttrInfo, mono_custom_attrs_from_class(klassClassWithAttribute));
-    GET_AND_CHECK(attributeInstance, mono_custom_attrs_get_attr(customAttrInfo, klassTestWithParamsAttribute));
+    GET_AND_CHECK(attributeInstance, mono_unity_class_get_attribute(klassClassWithAttribute, klassTestWithParamsAttribute));
     CHECK_EQUAL(klassTestWithParamsAttribute, mono_object_get_class(attributeInstance));
-    mono_custom_attrs_free(customAttrInfo);
 }
 
 TEST(mono_custom_attrs_get_attr_can_get_attribute_instance_for_inherited_attribute_from_base)
@@ -1661,32 +1634,8 @@ TEST(mono_custom_attrs_get_attr_can_get_attribute_instance_for_inherited_attribu
     MonoClass *klassTestAttribute = GetClassHelper(kTestDLLNameSpace, "TestAttribute");
     MonoClass *klassInheritedTestAttribute = GetClassHelper(kTestDLLNameSpace, "InheritedTestAttribute");
 
-    GET_AND_CHECK(customAttrInfo, mono_custom_attrs_from_class(klassClassWithAttribute));
-    GET_AND_CHECK(attributeInstance, mono_custom_attrs_get_attr(customAttrInfo, klassTestAttribute));
+    GET_AND_CHECK(attributeInstance, mono_unity_class_get_attribute(klassClassWithAttribute, klassTestAttribute));
     CHECK_EQUAL(klassInheritedTestAttribute, mono_object_get_class(attributeInstance));
-    mono_custom_attrs_free(customAttrInfo);
-}
-
-TEST(mono_custom_attrs_construct_can_get_attribute_instances)
-{
-    MonoClass *klassClassWithAttribute = GetClassHelper(kTestDLLNameSpace, "ClassWithAttribute");
-    MonoClass *klassTestAttribute = GetClassHelper(kTestDLLNameSpace, "TestAttribute");
-    MonoClass *klassInheritedTestAttribute = GetClassHelper(kTestDLLNameSpace, "InheritedTestAttribute");
-    MonoClass *klassTestWithParamsAttribute = GetClassHelper(kTestDLLNameSpace, "TestWithParamsAttribute");
-
-    GET_AND_CHECK(customAttrInfo, mono_custom_attrs_from_class(klassClassWithAttribute));
-    GET_AND_CHECK(attributeArray, mono_custom_attrs_construct(customAttrInfo));
-
-    GET_AND_CHECK(attribute1Instance, *(MonoObject**)scripting_array_element_ptr(attributeArray, 0, sizeof(MonoObject*)));
-    CHECK_EQUAL(klassTestAttribute, mono_object_get_class(attribute1Instance));
-
-    GET_AND_CHECK(attribute2Instance, *(MonoObject**)scripting_array_element_ptr(attributeArray, 1, sizeof(MonoObject*)));
-    CHECK_EQUAL(klassInheritedTestAttribute, mono_object_get_class(attribute2Instance));
-
-    GET_AND_CHECK(attribute3Instance, *(MonoObject**)scripting_array_element_ptr(attributeArray, 2, sizeof(MonoObject*)));
-    CHECK_EQUAL(klassTestWithParamsAttribute, mono_object_get_class(attribute3Instance));
-
-    mono_custom_attrs_free(customAttrInfo);
 }
 
 void GetFieldHelper(MonoClass *klass, MonoObject *obj, const char* fieldName, void* value)
@@ -1701,8 +1650,7 @@ TEST(mono_custom_attrs_get_attr_attribute_instance_has_correct_parameters)
     MonoClass *klassClassWithAttribute = GetClassHelper(kTestDLLNameSpace, "ClassWithAttribute");
     MonoClass *klassTestWithParamsAttribute = GetClassHelper(kTestDLLNameSpace, "TestWithParamsAttribute");
 
-    GET_AND_CHECK(customAttrInfo, mono_custom_attrs_from_class(klassClassWithAttribute));
-    GET_AND_CHECK(attributeInstance, mono_custom_attrs_get_attr(customAttrInfo, klassTestWithParamsAttribute));
+    GET_AND_CHECK(attributeInstance, mono_unity_class_get_attribute(klassClassWithAttribute, klassTestWithParamsAttribute));
 
     int i;
     GetFieldHelper(klassTestWithParamsAttribute, attributeInstance, "i", &i);
@@ -1721,8 +1669,6 @@ TEST(mono_custom_attrs_get_attr_attribute_instance_has_correct_parameters)
     float f;
     GetFieldHelper(klassTestWithParamsAttribute, attributeInstance, "f", &f);
     CHECK_EQUAL(1.0f, f);
-
-    mono_custom_attrs_free(customAttrInfo);
 }
 
 TEST(mono_custom_attrs_has_attr_can_check_method_attribute)
@@ -1731,12 +1677,8 @@ TEST(mono_custom_attrs_has_attr_can_check_method_attribute)
     MonoClass *klassTestAttribute = GetClassHelper(kTestDLLNameSpace, "TestAttribute");
     MonoClass *klassAnotherTestAttribute = GetClassHelper(kTestDLLNameSpace, "AnotherTestAttribute");
 
-    GET_AND_CHECK(customAttrInfo, mono_custom_attrs_from_method(methodWithAttribute));
-
-    CHECK(mono_custom_attrs_has_attr(customAttrInfo, klassTestAttribute));
-    CHECK(!mono_custom_attrs_has_attr(customAttrInfo, klassAnotherTestAttribute));
-
-    mono_custom_attrs_free(customAttrInfo);
+    CHECK(mono_unity_method_get_attribute(methodWithAttribute, klassTestAttribute) != NULL);
+    CHECK(mono_unity_method_get_attribute(methodWithAttribute, klassAnotherTestAttribute) == NULL);
 }
 
 TEST(mono_custom_attrs_has_attr_can_check_field_attribute)
@@ -1754,8 +1696,8 @@ TEST(mono_custom_attrs_has_attr_can_check_assembly_attribute)
     MonoClass *klassTestAttribute = GetClassHelper(kTestDLLNameSpace, "TestAttribute");
     MonoClass *klassAnotherTestAttribute = GetClassHelper(kTestDLLNameSpace, "AnotherTestAttribute");
 
-    CHECK(mono_unity_assembly_has_attribute(g_assembly, klassTestAttribute));
-    CHECK(!mono_unity_assembly_has_attribute(g_assembly, klassAnotherTestAttribute));
+    CHECK(mono_unity_assembly_get_attribute(g_assembly, klassTestAttribute) != NULL);
+    CHECK(mono_unity_assembly_get_attribute(g_assembly, klassAnotherTestAttribute) == NULL);
 }
 
 #define kHelloString "Hello"
