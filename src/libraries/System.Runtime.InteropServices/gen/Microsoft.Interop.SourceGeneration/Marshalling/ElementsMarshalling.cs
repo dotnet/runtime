@@ -13,7 +13,6 @@ namespace Microsoft.Interop
 {
     internal interface IElementsMarshallingCollectionSource
     {
-        StatementSyntax GetManagedValuesNumElementsAssignment(TypePositionInfo info, StubCodeContext context);
         InvocationExpressionSyntax GetUnmanagedValuesDestination(TypePositionInfo info, StubCodeContext context);
         InvocationExpressionSyntax GetManagedValuesSource(TypePositionInfo info, StubCodeContext context);
         InvocationExpressionSyntax GetUnmanagedValuesSource(TypePositionInfo info, StubCodeContext context);
@@ -23,10 +22,45 @@ namespace Microsoft.Interop
     internal interface IElementsMarshalling
     {
         StatementSyntax GenerateManagedToUnmanagedByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context);
+        StatementSyntax GenerateUnmanagedToManagedByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context);
         StatementSyntax GenerateMarshalStatement(TypePositionInfo info, StubCodeContext context);
         StatementSyntax GenerateManagedToUnmanagedByValueOutUnmarshalStatement(TypePositionInfo info, StubCodeContext context);
+        StatementSyntax GenerateUnmanagedToManagedByValueOutUnmarshalStatement(TypePositionInfo info, StubCodeContext context);
         StatementSyntax GenerateUnmarshalStatement(TypePositionInfo info, StubCodeContext context);
         StatementSyntax GenerateElementCleanupStatement(TypePositionInfo info, StubCodeContext context);
+    }
+
+#pragma warning disable SA1400 // Access modifier should be declared. https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3659
+    static file class ElementsMarshallingCollectionSourceExtensions
+#pragma warning restore SA1400 // Access modifier should be declared
+    {
+        public static StatementSyntax GetNumElementsAssignmentFromManagedValuesSource(this IElementsMarshallingCollectionSource source, TypePositionInfo info, StubCodeContext context)
+        {
+            var numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
+            // <numElements> = <GetManagedValuesSource>.Length;
+            return ExpressionStatement(
+                AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(numElementsIdentifier),
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        source.GetManagedValuesSource(info, context),
+                        IdentifierName("Length"))));
+        }
+
+        public static StatementSyntax GetNumElementsAssignmentFromManagedValuesDestination(this IElementsMarshallingCollectionSource source, TypePositionInfo info, StubCodeContext context)
+        {
+            var numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
+            // <numElements> = <GetManagedValuesDestination>.Length;
+            return ExpressionStatement(
+                AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(numElementsIdentifier),
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        source.GetManagedValuesDestination(info, context),
+                        IdentifierName("Length"))));
+        }
     }
 
     /// <summary>
@@ -56,6 +90,45 @@ namespace Microsoft.Interop
                         SyntaxKind.SimpleMemberAccessExpression,
                         _collectionSource.GetUnmanagedValuesDestination(info, context),
                         IdentifierName("Clear"))));
+        }
+
+        public StatementSyntax GenerateUnmanagedToManagedByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context)
+        {
+            ExpressionSyntax destination = CastToManagedIfNecessary(_collectionSource.GetUnmanagedValuesSource(info, context));
+
+            // MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(<GetManagedValuesSource>), <GetManagedValuesSource>.Length)
+            ExpressionSyntax source = InvocationExpression(
+                MemberAccessExpression(
+                    SyntaxKind.SimpleMemberAccessExpression,
+                    ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
+                    IdentifierName("CreateSpan")),
+                ArgumentList(
+                    SeparatedList(new[]
+                    {
+                        Argument(
+                            InvocationExpression(
+                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                    ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
+                                    IdentifierName("GetReference")),
+                                ArgumentList(SingletonSeparatedList(
+                                    Argument(_collectionSource.GetManagedValuesDestination(info, context))))))
+                            .WithRefKindKeyword(
+                                Token(SyntaxKind.RefKeyword)),
+                        Argument(
+                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                _collectionSource.GetManagedValuesDestination(info, context),
+                                IdentifierName("Length")))
+                    })));
+
+            // <source>.CopyTo(<destination>);
+            return ExpressionStatement(
+                InvocationExpression(
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        source,
+                        IdentifierName("CopyTo")))
+                .AddArgumentListArguments(
+                    Argument(destination)));
         }
 
         public StatementSyntax GenerateMarshalStatement(TypePositionInfo info, StubCodeContext context)
@@ -110,6 +183,19 @@ namespace Microsoft.Interop
                         IdentifierName("CopyTo")))
                 .AddArgumentListArguments(
                     Argument(destination)));
+        }
+
+        public StatementSyntax GenerateUnmanagedToManagedByValueOutUnmarshalStatement(TypePositionInfo info, StubCodeContext context)
+        {
+            // If the parameter is marshalled by-value [Out], then we don't marshal the contents of the collection.
+            // We do clear the span, so that if the invoke target doesn't fill it, we aren't left with undefined content.
+            // <GetManagedValuesDestination>.Clear();
+            return ExpressionStatement(
+                InvocationExpression(
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        _collectionSource.GetManagedValuesDestination(info, context),
+                        IdentifierName("Clear"))));
         }
 
         public StatementSyntax GenerateUnmarshalStatement(TypePositionInfo info, StubCodeContext context)
@@ -268,7 +354,7 @@ namespace Microsoft.Interop
             string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
             string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(info, context);
 
-            var setNumElements = _collectionSource.GetManagedValuesNumElementsAssignment(info, context);
+            var setNumElements = _collectionSource.GetNumElementsAssignmentFromManagedValuesSource(info, context);
 
             // Span<TElement> <managedSpan> = MemoryMarshal.CreateSpan(ref Unsafe.AsRef(in <GetManagedValuesSource>.GetPinnableReference(), <numElements>));
             LocalDeclarationStatementSyntax managedValuesDeclaration = LocalDeclarationStatement(VariableDeclaration(
@@ -409,6 +495,95 @@ namespace Microsoft.Interop
             }
 
             return EmptyStatement();
+        }
+
+        public StatementSyntax GenerateUnmanagedToManagedByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context)
+        {
+            // Use ManagedSource and NativeDestination spans for by-value marshalling since we're just marshalling back the contents,
+            // not the array itself.
+            // This code is ugly since we're now enforcing readonly safety with ReadOnlySpan for all other scenarios,
+            // but this is an uncommon case so we don't want to design the API around enabling just it.
+            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
+            string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(info, context);
+            string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(info, context);
+
+            var setNumElements = _collectionSource.GetNumElementsAssignmentFromManagedValuesDestination(info, context);
+
+            // Span<TUnmanagedElement> <nativeSpan> = MemoryMarshal.CreateSpan(ref Unsafe.AsRef(in <GetUnmanagedValuesSource>.GetPinnableReference(), <numElements>));
+            LocalDeclarationStatementSyntax unmanagedValuesSource = LocalDeclarationStatement(VariableDeclaration(
+                GenericName(
+                    Identifier(TypeNames.System_Span),
+                    TypeArgumentList(
+                        SingletonSeparatedList(_unmanagedElementType))
+                ),
+                SingletonSeparatedList(VariableDeclarator(nativeSpanIdentifier).WithInitializer(EqualsValueClause(
+                    InvocationExpression(
+                        MemberAccessExpression(
+                            SyntaxKind.SimpleMemberAccessExpression,
+                            ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
+                            IdentifierName("CreateSpan")))
+                    .WithArgumentList(
+                        ArgumentList(
+                            SeparatedList(
+                                new[]
+                                {
+                                    Argument(
+                                        InvocationExpression(
+                                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                                ParseName(TypeNames.System_Runtime_CompilerServices_Unsafe),
+                                                IdentifierName("AsRef")),
+                                            ArgumentList(SingletonSeparatedList(
+                                                Argument(
+                                                    InvocationExpression(
+                                                        MemberAccessExpression(
+                                                            SyntaxKind.SimpleMemberAccessExpression,
+                                                            _collectionSource.GetUnmanagedValuesSource(info, context),
+                                                            IdentifierName("GetPinnableReference")),
+                                                            ArgumentList()))
+                                                .WithRefKindKeyword(
+                                                    Token(SyntaxKind.InKeyword))))))
+                                    .WithRefKindKeyword(
+                                        Token(SyntaxKind.RefKeyword)),
+                                    Argument(
+                                        IdentifierName(numElementsIdentifier))
+                                }))))))));
+
+            // Span<TElement> <managedSpan> = <GetManagedValuesDestination>
+            LocalDeclarationStatementSyntax managedValuesDestination = LocalDeclarationStatement(VariableDeclaration(
+                GenericName(
+                    Identifier(TypeNames.System_Span),
+                    TypeArgumentList(SingletonSeparatedList(_elementInfo.ManagedType.Syntax))),
+                SingletonSeparatedList(
+                    VariableDeclarator(
+                        Identifier(managedSpanIdentifier))
+                    .WithInitializer(EqualsValueClause(
+                        _collectionSource.GetManagedValuesDestination(info, context))))));
+
+            // TODO: Clear elements in the loop as we see them. We can't use "original value" tracking here since we aren't replacing the collection,
+            // we're updating it in-place.
+            return Block(
+                setNumElements,
+                unmanagedValuesSource,
+                managedValuesDestination,
+                GenerateContentsMarshallingStatement(
+                    info,
+                    context,
+                    IdentifierName(numElementsIdentifier),
+                    StubCodeContext.Stage.Marshal,
+                    StubCodeContext.Stage.PinnedMarshal));
+        }
+
+        public StatementSyntax GenerateUnmanagedToManagedByValueOutUnmarshalStatement(TypePositionInfo info, StubCodeContext context)
+        {
+            // If the parameter is marshalled by-value [Out], then we don't marshal the contents of the collection.
+            // We do clear the span, so that if the invoke target doesn't fill it, we aren't left with undefined content.
+            // <GetManagedValuesDestination>.Clear();
+            return ExpressionStatement(
+                InvocationExpression(
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        _collectionSource.GetManagedValuesDestination(info, context),
+                        IdentifierName("Clear"))));
         }
     }
 }

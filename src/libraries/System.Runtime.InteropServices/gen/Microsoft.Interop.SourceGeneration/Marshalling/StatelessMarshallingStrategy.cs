@@ -638,20 +638,6 @@ namespace Microsoft.Interop
                     IdentifierName(ShapeMemberNames.LinearCollection.Stateless.GetManagedValuesDestination)),
                 ArgumentList(SingletonSeparatedList(Argument(IdentifierName(managedIdentifier)))));
         }
-
-        public StatementSyntax GetManagedValuesNumElementsAssignment(TypePositionInfo info, StubCodeContext context)
-        {
-            var numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
-            // <numElements> = <GetManagedValuesSource>.Length;
-            return ExpressionStatement(
-                AssignmentExpression(
-                    SyntaxKind.SimpleAssignmentExpression,
-                    IdentifierName(numElementsIdentifier),
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        GetManagedValuesSource(info, context),
-                        IdentifierName("Length"))));
-        }
     }
 
     /// <summary>
@@ -705,21 +691,27 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
+            if (context.Direction == MarshalDirection.ManagedToUnmanaged && !info.IsByRef && info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out)
+            {
+                yield return _elementsMarshalling.GenerateManagedToUnmanagedByValueOutMarshalStatement(info, context);
+                yield break;
+            }
+
+            if (context.Direction == MarshalDirection.UnmanagedToManaged && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
+            {
+                yield return _elementsMarshalling.GenerateUnmanagedToManagedByValueOutMarshalStatement(info, context);
+                yield break;
+            }
+
             foreach (var statement in _spaceMarshallingStrategy.GenerateMarshalStatements(info, context))
             {
                 yield return statement;
             }
+
             if (!_shape.HasFlag(MarshallerShape.ToUnmanaged) && !_shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
                 yield break;
 
-            if (context.Direction == MarshalDirection.ManagedToUnmanaged && !info.IsByRef && info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out)
-            {
-                yield return _elementsMarshalling.GenerateManagedToUnmanagedByValueOutMarshalStatement(info, context);
-            }
-            else
-            {
-                yield return _elementsMarshalling.GenerateMarshalStatement(info, context);
-            }
+            yield return _elementsMarshalling.GenerateMarshalStatement(info, context);
         }
 
         public IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(TypePositionInfo info, StubCodeContext context) => _spaceMarshallingStrategy.GenerateNotifyForSuccessfulInvokeStatements(info, context);
@@ -738,7 +730,13 @@ namespace Microsoft.Interop
                 yield break;
             }
 
-            if (!_shape.HasFlag(MarshallerShape.ToManaged))
+            if (context.Direction == MarshalDirection.UnmanagedToManaged && !info.IsByRef && info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out)
+            {
+                yield return _elementsMarshalling.GenerateManagedToUnmanagedByValueOutUnmarshalStatement(info, context);
+                yield break;
+            }
+
+                if (!_shape.HasFlag(MarshallerShape.ToManaged))
             {
                 yield break;
             }

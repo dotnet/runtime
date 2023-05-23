@@ -345,22 +345,6 @@ namespace Microsoft.Interop
                 ArgumentList(SingletonSeparatedList(
                     Argument(IdentifierName(numElementsIdentifier)))));
         }
-
-        public StatementSyntax GetManagedValuesNumElementsAssignment(TypePositionInfo info, StubCodeContext context)
-        {
-            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
-            // int <numElements> = <GetManagedValuesSource>.Length;
-            return LocalDeclarationStatement(
-                VariableDeclaration(
-                    PredefinedType(Token(SyntaxKind.IntKeyword)),
-                    SingletonSeparatedList(
-                        VariableDeclarator(numElementsIdentifier)
-                            .WithInitializer(EqualsValueClause(
-                                MemberAccessExpression(
-                                    SyntaxKind.SimpleMemberAccessExpression,
-                                    GetManagedValuesSource(info, context),
-                                    IdentifierName("Length")))))));
-        }
     }
 
     /// <summary>
@@ -407,6 +391,17 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
+            if (context.Direction == MarshalDirection.ManagedToUnmanaged && !info.IsByRef && info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out)
+            {
+                yield return _elementsMarshalling.GenerateManagedToUnmanagedByValueOutMarshalStatement(info, context);
+                yield break;
+            }
+            if (context.Direction == MarshalDirection.UnmanagedToManaged && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
+            {
+                yield return _elementsMarshalling.GenerateUnmanagedToManagedByValueOutMarshalStatement(info, context);
+                yield break;
+            }
+
             if (!_shape.HasFlag(MarshallerShape.ToUnmanaged) && !_shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
                 yield break;
 
@@ -415,27 +410,45 @@ namespace Microsoft.Interop
                 yield return statement;
             }
 
-            if (context.Direction == MarshalDirection.ManagedToUnmanaged && !info.IsByRef && info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out)
-            {
-                yield return _elementsMarshalling.GenerateManagedToUnmanagedByValueOutMarshalStatement(info, context);
-                yield break;
-            }
-
             yield return _elementsMarshalling.GenerateMarshalStatement(info, context);
         }
 
         public IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateNotifyForSuccessfulInvokeStatements(info, context);
         public IEnumerable<StatementSyntax> GeneratePinnedMarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GeneratePinnedMarshalStatements(info, context);
         public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GeneratePinStatements(info, context);
-        public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateSetupStatements(info, context);
+        public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context)
+        {
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateSetupStatements(info, context))
+            {
+                yield return statement;
+            }
+
+            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
+            yield return LocalDeclarationStatement(
+                VariableDeclaration(
+                    PredefinedType(Token(SyntaxKind.IntKeyword)),
+                    SingletonSeparatedList(
+                        VariableDeclarator(numElementsIdentifier))));
+            // Use the numElements local to ensure the compiler doesn't give errors for using an uninitialized variable.
+            // The value will never be used unless it has been initialized, so this is safe.
+            yield return MarshallerHelpers.SkipInitOrDefaultInit(
+                new TypePositionInfo(SpecialTypeInfo.Int32, NoMarshallingInfo.Instance)
+                {
+                    InstanceIdentifier = numElementsIdentifier
+                }, context);
+        }
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
-            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
-
             if (context.Direction == MarshalDirection.ManagedToUnmanaged && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
             {
                 yield return _elementsMarshalling.GenerateManagedToUnmanagedByValueOutUnmarshalStatement(info, context);
+                yield break;
+            }
+
+            if (context.Direction == MarshalDirection.UnmanagedToManaged && !info.IsByRef && info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out)
+            {
+                yield return _elementsMarshalling.GenerateUnmanagedToManagedByValueOutUnmarshalStatement(info, context);
                 yield break;
             }
 
@@ -445,13 +458,13 @@ namespace Microsoft.Interop
             }
             else
             {
-                // int <numElements> = <numElementsExpression>;
-                yield return LocalDeclarationStatement(
-                    VariableDeclaration(
-                        PredefinedType(Token(SyntaxKind.IntKeyword)),
-                        SingletonSeparatedList(
-                            VariableDeclarator(numElementsIdentifier)
-                                .WithInitializer(EqualsValueClause(_numElementsExpression)))));
+                string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
+
+                // <numElements> = <numElementsExpression>;
+                yield return ExpressionStatement(
+                    AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                        IdentifierName(numElementsIdentifier),
+                        _numElementsExpression));
 
                 yield return _elementsMarshalling.GenerateUnmarshalStatement(info, context);
             }
