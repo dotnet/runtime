@@ -407,7 +407,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
         {
             // We will use lea so displacement and not immediate will be relocatable
             size = EA_SET_FLG(EA_REMOVE_FLG(size, EA_CNS_RELOC_FLG), EA_DSP_RELOC_FLG);
-            GetEmitter()->emitIns_R_AI(INS_lea, size, reg, imm);
+            GetEmitter()->emitIns_R_AI(INS_lea, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
         }
         else
         {
