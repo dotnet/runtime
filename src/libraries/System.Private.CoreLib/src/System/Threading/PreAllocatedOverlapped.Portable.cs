@@ -24,9 +24,6 @@ namespace System.Threading
             _lifetime.Release(this);
         }
 
-        /// <summary>
-        /// Frees the resources associated with this <see cref="PreAllocatedOverlapped"/> instance.
-        /// </summary>
         private void DisposePortableCore()
         {
             _lifetime.Dispose(this);

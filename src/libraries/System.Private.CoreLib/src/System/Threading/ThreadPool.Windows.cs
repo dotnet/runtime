@@ -69,6 +69,7 @@ namespace System.Threading
                 InitializeForThreadPoolThreadPortableCore();
             }
         }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void IncrementCompletedWorkItemCount() => WindowsThreadPool.IncrementCompletedWorkItemCount();
 

@@ -123,6 +123,10 @@ namespace System.Threading
                 ReleasePortableCore();
             }
         }
+
+        /// <summary>
+        /// Frees the resources associated with this <see cref="PreAllocatedOverlapped"/> instance.
+        /// </summary>
         public void Dispose()
         {
             if (ThreadPool.UseWindowsThreadPool)
