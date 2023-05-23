@@ -80,6 +80,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private void DataIsAvailable()
         {
+            // While we COULD pump here, we don't want to. We want the pump to happen on the next event loop turn.
+            // Otherwise we could get a chain where a pump generates a new work item and that makes us pump again, forever.
             MainThreadScheduleBackgroundJob((void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
         }
 
