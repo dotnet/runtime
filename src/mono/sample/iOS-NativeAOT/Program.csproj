@@ -17,6 +17,7 @@
 
     <!-- FIXME: We do not use publish targets yet, but we need to create a publish directory -->
     <PublishDir Condition="'$(PublishDir)' == ''">$(OutputPath)/publish</PublishDir>
+    <UseLocalTargetingRuntimePack Condition="'$(PublishAotUsingRuntimePack)' == 'true'">false</UseLocalTargetingRuntimePack>
   </PropertyGroup>
 
   <ItemGroup>
@@ -42,16 +43,6 @@
         <IlcFrameworkPath Condition="'$(PublishAotUsingRuntimePack)' != 'true'">$(LibrariesAllBinArtifactsPath)</IlcFrameworkPath>
         <IlcFrameworkNativePath Condition="'$(PublishAotUsingRuntimePack)' != 'true'">$(LibrariesAllBinArtifactsPath)</IlcFrameworkNativePath>
     </PropertyGroup>
-  </Target>
-
-  <!-- Use locally built runtime pack -->
-  <Target Name="_UseLocalRuntimePackPath"
-    Condition="'$(PublishAotUsingRuntimePack)' == 'true'"
-    AfterTargets="ResolveFrameworkReferences">
-      <ItemGroup>
-        <ResolvedFrameworkReference Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App'" 
-                                    RuntimePackPath="$(CoreCLRArtifactsPath)" />
-      </ItemGroup>
   </Target>
 
   <Target Name="BuildAppBundle"
