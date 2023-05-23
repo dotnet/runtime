@@ -483,41 +483,40 @@ namespace System.IO.Compression
             if (includeBaseDirectory && di.Parent != null)
                 basePath = di.Parent.FullName;
 
-                FileSystemEnumerable<(string, CreateEntryType)> fse = CreateEnumerableForCreate(di.FullName);
+            FileSystemEnumerable<(string, CreateEntryType)> fse = CreateEnumerableForCreate(di.FullName);
 
-                foreach ((string fullPath, CreateEntryType type) in fse)
+            foreach ((string fullPath, CreateEntryType type) in fse)
+            {
+                directoryIsEmpty = false;
+
+                switch (type)
                 {
-                    directoryIsEmpty = false;
-
-                    switch (type)
-                    {
-                        case CreateEntryType.File:
-                            {
-                                // Create entry for file:
-                                string entryName = ArchivingUtils.EntryFromPath(fullPath.AsSpan(basePath.Length));
-                                ZipFileExtensions.DoCreateEntryFromFile(archive, fullPath, entryName, compressionLevel);
-                            }
-                            break;
-                        case CreateEntryType.Directory:
-                            if (ArchivingUtils.IsDirEmpty(fullPath))
-                            {
-                                // Create entry marking an empty dir:
-                                // FullName never returns a directory separator character on the end,
-                                // but Zip archives require it to specify an explicit directory:
-                                string entryName = ArchivingUtils.EntryFromPath(fullPath.AsSpan(basePath.Length), appendPathSeparator: true);
-                                archive.CreateEntry(entryName);
-                            }
-                            break;
-                        case CreateEntryType.Unsupported:
-                        default:
-                            throw new IOException(SR.Format(SR.ZipUnsupportedFile, fullPath));
-                    }
+                    case CreateEntryType.File:
+                        {
+                            // Create entry for file:
+                            string entryName = ArchivingUtils.EntryFromPath(fullPath.AsSpan(basePath.Length));
+                            ZipFileExtensions.DoCreateEntryFromFile(archive, fullPath, entryName, compressionLevel);
+                        }
+                        break;
+                    case CreateEntryType.Directory:
+                        if (ArchivingUtils.IsDirEmpty(fullPath))
+                        {
+                            // Create entry marking an empty dir:
+                            // FullName never returns a directory separator character on the end,
+                            // but Zip archives require it to specify an explicit directory:
+                            string entryName = ArchivingUtils.EntryFromPath(fullPath.AsSpan(basePath.Length), appendPathSeparator: true);
+                            archive.CreateEntry(entryName);
+                        }
+                        break;
+                    case CreateEntryType.Unsupported:
+                    default:
+                        throw new IOException(SR.Format(SR.ZipUnsupportedFile, fullPath));
                 }
-
-                // If no entries create an empty root directory entry:
-                if (includeBaseDirectory && directoryIsEmpty)
-                    archive.CreateEntry(ArchivingUtils.EntryFromPath(di.Name, appendPathSeparator: true));
             }
+
+            // If no entries create an empty root directory entry:
+            if (includeBaseDirectory && directoryIsEmpty)
+                archive.CreateEntry(ArchivingUtils.EntryFromPath(di.Name, appendPathSeparator: true));
         }
 
         private enum CreateEntryType
