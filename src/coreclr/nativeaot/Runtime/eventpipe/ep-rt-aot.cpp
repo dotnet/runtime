@@ -9,6 +9,10 @@
 #include <eventpipe/ep-stack-contents.h>
 #include <eventpipe/ep-rt.h>
 
+#ifdef TARGET_WINDOWS
+#include <windows.h>
+#endif
+
 // The regdisplay.h, StackFrameIterator.h, and thread.h includes are present only to access the Thread
 // class and can be removed if it turns out that the required ep_rt_thread_handle_t can be
 // implemented in some manner that doesn't rely on the Thread class.
@@ -328,6 +332,55 @@ ep_rt_aot_system_timestamp_get (void)
     FILETIME value;
     GetSystemTimeAsFileTime (&value);
     return static_cast<int64_t>(((static_cast<uint64_t>(value.dwHighDateTime)) << 32) | static_cast<uint64_t>(value.dwLowDateTime));
+}
+
+ep_rt_file_handle_t
+ep_rt_aot_file_open_write (const ep_char8_t *path)
+{
+    if (!path)
+        return INVALID_HANDLE_VALUE;
+
+#ifdef TARGET_WINDOWS
+    ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path, -1);
+    if (!path_utf16)
+        return INVALID_HANDLE_VALUE;
+
+    HANDLE res = ::CreateFileW (reinterpret_cast<LPCWSTR>(path_utf16), GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    ep_rt_utf16_string_free (path_utf16);
+    return static_cast<ep_rt_file_handle_t>(res);
+#else
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
+    // Implement for unix
+    return INVALID_HANDLE_VALUE;
+#endif
+}
+
+bool
+ep_rt_aot_file_close (ep_rt_file_handle_t file_handle)
+{
+#ifdef TARGET_WINDOWS
+    return ::CloseHandle (file_handle) != FALSE;
+#else
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
+    // Implement for unix
+    return true;
+#endif
+}
+
+bool
+ep_rt_aot_file_write (
+	ep_rt_file_handle_t file_handle,
+	const uint8_t *buffer,
+	uint32_t bytes_to_write,
+	uint32_t *bytes_written)
+{
+#ifdef TARGET_WINDOWS
+    return ::WriteFile (file_handle, buffer, bytes_to_write, reinterpret_cast<LPDWORD>(bytes_written), NULL) != FALSE;
+#else
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
+    // Implement for unix
+    return false;
+#endif
 }
 
 uint8_t *
