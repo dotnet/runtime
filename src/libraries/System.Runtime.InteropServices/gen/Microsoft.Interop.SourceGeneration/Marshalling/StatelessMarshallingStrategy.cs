@@ -351,7 +351,7 @@ namespace Microsoft.Interop
                             EqualsValueClause(
                                 LiteralExpression(SyntaxKind.FalseLiteralExpression))))));
 
-            // <nativeType> <original> = <originalValueIdentifier>;
+            // <nativeType> <original> = <nativeValueIdentifier>;
             yield return LocalDeclarationStatement(
                 VariableDeclaration(
                     AsNativeType(info).Syntax,

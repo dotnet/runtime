@@ -306,7 +306,7 @@ namespace Microsoft.Interop
                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                         IdentifierName(MarshallerHelpers.GetManagedSpanIdentifier(info, context)),
                         IdentifierName("Length")),
-                    StubCodeContext.Stage.Marshal));
+                    _elementInfo, _elementMarshaller, StubCodeContext.Stage.Marshal));
         }
 
         public StatementSyntax GenerateUnmarshalStatement(TypePositionInfo info, StubCodeContext context)
@@ -341,7 +341,7 @@ namespace Microsoft.Interop
                     info,
                     context,
                     IdentifierName(numElementsIdentifier),
-                    StubCodeContext.Stage.UnmarshalCapture,
+                    _elementInfo, _elementMarshaller, StubCodeContext.Stage.UnmarshalCapture,
                     StubCodeContext.Stage.Unmarshal));
         }
 
@@ -415,7 +415,7 @@ namespace Microsoft.Interop
                     info,
                     context,
                     IdentifierName(numElementsIdentifier),
-                    StubCodeContext.Stage.UnmarshalCapture,
+                    _elementInfo, _elementMarshaller, StubCodeContext.Stage.UnmarshalCapture,
                     StubCodeContext.Stage.Unmarshal));
         }
 
@@ -426,7 +426,7 @@ namespace Microsoft.Interop
                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                         IdentifierName(MarshallerHelpers.GetNativeSpanIdentifier(info, context)),
                         IdentifierName("Length")),
-                        StubCodeContext.Stage.Cleanup);
+                        _elementInfo, _elementMarshaller, StubCodeContext.Stage.Cleanup);
 
             if (contentsCleanupStatements.IsKind(SyntaxKind.EmptyStatement))
             {
@@ -446,55 +446,6 @@ namespace Microsoft.Interop
                                 ? _collectionSource.GetUnmanagedValuesDestination(info, context)
                                 : _collectionSource.GetUnmanagedValuesSource(info, context)))))),
                 contentsCleanupStatements);
-        }
-
-        private StatementSyntax GenerateContentsMarshallingStatement(
-            TypePositionInfo info,
-            StubCodeContext context,
-            ExpressionSyntax lengthExpression,
-            params StubCodeContext.Stage[] stagesToGeneratePerElement)
-        {
-            string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(info, context);
-            string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(info, context);
-            var elementSetupSubContext = new LinearCollectionElementMarshallingCodeContext(
-                StubCodeContext.Stage.Setup,
-                managedSpanIdentifier,
-                nativeSpanIdentifier,
-                context);
-
-            TypePositionInfo localElementInfo = _elementInfo with
-            {
-                InstanceIdentifier = info.InstanceIdentifier,
-                RefKind = info.IsByRef ? info.RefKind : info.ByValueContentsMarshalKind.GetRefKindForByValueContentsKind(),
-                ManagedIndex = info.ManagedIndex,
-                NativeIndex = info.NativeIndex
-            };
-
-            List<StatementSyntax> elementStatements = new();
-            foreach (StubCodeContext.Stage stage in stagesToGeneratePerElement)
-            {
-                var elementSubContext = elementSetupSubContext with { CurrentStage = stage };
-                elementStatements.AddRange(_elementMarshaller.Generate(localElementInfo, elementSubContext));
-            }
-
-            if (elementStatements.Count != 0)
-            {
-                StatementSyntax marshallingStatement = Block(
-                    List(_elementMarshaller.Generate(localElementInfo, elementSetupSubContext)
-                        .Concat(elementStatements)));
-
-                if (_elementMarshaller.AsNativeType(_elementInfo).Syntax is PointerTypeSyntax elementNativeType)
-                {
-                    PointerNativeTypeAssignmentRewriter rewriter = new(elementSetupSubContext.GetIdentifiers(localElementInfo).native, elementNativeType);
-                    marshallingStatement = (StatementSyntax)rewriter.Visit(marshallingStatement);
-                }
-
-                // Iterate through the elements of the native collection to marshal them
-                return MarshallerHelpers.GetForLoop(lengthExpression, elementSetupSubContext.IndexerIdentifier)
-                    .WithStatement(marshallingStatement);
-            }
-
-            return EmptyStatement();
         }
 
         public StatementSyntax GenerateUnmanagedToManagedByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context)
@@ -559,8 +510,6 @@ namespace Microsoft.Interop
                     .WithInitializer(EqualsValueClause(
                         _collectionSource.GetManagedValuesDestination(info, context))))));
 
-            // TODO: Clear elements in the loop as we see them. We can't use "original value" tracking here since we aren't replacing the collection,
-            // we're updating it in-place.
             return Block(
                 setNumElements,
                 unmanagedValuesSource,
@@ -569,8 +518,11 @@ namespace Microsoft.Interop
                     info,
                     context,
                     IdentifierName(numElementsIdentifier),
+                    _elementInfo,
+                    new ByValueMarshalOutOwnershipTrackingGenerator(_elementMarshaller),
                     StubCodeContext.Stage.Marshal,
-                    StubCodeContext.Stage.PinnedMarshal));
+                    StubCodeContext.Stage.PinnedMarshal,
+                    StubCodeContext.Stage.Cleanup));
         }
 
         public StatementSyntax GenerateUnmanagedToManagedByValueOutUnmarshalStatement(TypePositionInfo info, StubCodeContext context)
@@ -584,6 +536,138 @@ namespace Microsoft.Interop
                         SyntaxKind.SimpleMemberAccessExpression,
                         _collectionSource.GetManagedValuesDestination(info, context),
                         IdentifierName("Clear"))));
+        }
+
+        private static StatementSyntax GenerateContentsMarshallingStatement(
+            TypePositionInfo info,
+            StubCodeContext context,
+            ExpressionSyntax lengthExpression,
+            TypePositionInfo elementInfo,
+            IMarshallingGenerator elementMarshaller,
+            params StubCodeContext.Stage[] stagesToGeneratePerElement)
+        {
+            string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(info, context);
+            string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(info, context);
+            var elementSetupSubContext = new LinearCollectionElementMarshallingCodeContext(
+                StubCodeContext.Stage.Setup,
+                managedSpanIdentifier,
+                nativeSpanIdentifier,
+                context);
+
+            TypePositionInfo localElementInfo = elementInfo with
+            {
+                InstanceIdentifier = info.InstanceIdentifier,
+                RefKind = info.IsByRef ? info.RefKind : info.ByValueContentsMarshalKind.GetRefKindForByValueContentsKind(),
+                ManagedIndex = info.ManagedIndex,
+                NativeIndex = info.NativeIndex
+            };
+
+            List<StatementSyntax> elementStatements = new();
+            foreach (StubCodeContext.Stage stage in stagesToGeneratePerElement)
+            {
+                var elementSubContext = elementSetupSubContext with { CurrentStage = stage };
+                elementStatements.AddRange(elementMarshaller.Generate(localElementInfo, elementSubContext));
+            }
+
+            if (elementStatements.Count != 0)
+            {
+                StatementSyntax marshallingStatement = Block(
+                    List(elementMarshaller.Generate(localElementInfo, elementSetupSubContext)
+                        .Concat(elementStatements)));
+
+                if (elementMarshaller.AsNativeType(elementInfo).Syntax is PointerTypeSyntax elementNativeType)
+                {
+                    PointerNativeTypeAssignmentRewriter rewriter = new(elementSetupSubContext.GetIdentifiers(localElementInfo).native, elementNativeType);
+                    marshallingStatement = (StatementSyntax)rewriter.Visit(marshallingStatement);
+                }
+
+                // Iterate through the elements of the native collection to marshal them
+                return MarshallerHelpers.GetForLoop(lengthExpression, elementSetupSubContext.IndexerIdentifier)
+                    .WithStatement(marshallingStatement);
+            }
+
+            return EmptyStatement();
+        }
+
+        private sealed class ByValueMarshalOutOwnershipTrackingGenerator : IMarshallingGenerator
+        {
+            private readonly IMarshallingGenerator _inner;
+
+            public ByValueMarshalOutOwnershipTrackingGenerator(IMarshallingGenerator inner)
+            {
+                _inner = inner;
+            }
+
+            public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _inner.AsNativeType(info);
+            public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
+            {
+                if (context.CurrentStage == StubCodeContext.Stage.Setup)
+                {
+                    return GenerateSetupStatements();
+                }
+
+                if (context.CurrentStage == StubCodeContext.Stage.Cleanup)
+                {
+                    return GenerateStatementsFromInner(new OwnedValueCodeContext(context));
+                }
+
+                return GenerateStatementsFromInner(context);
+
+                IEnumerable<StatementSyntax> GenerateSetupStatements()
+                {
+                    foreach (var statement in GenerateStatementsFromInner(context))
+                    {
+                        yield return statement;
+                    }
+
+                    // <nativeType> <original> = <nativeValueIdentifier>;
+                    yield return LocalDeclarationStatement(
+                        VariableDeclaration(
+                            AsNativeType(info).Syntax,
+                            SingletonSeparatedList(
+                                VariableDeclarator(
+                                    Identifier(context.GetAdditionalIdentifier(info, StatelessUnmanagedToManagedOwnershipTracking.OriginalValueIdentifier)),
+                                    null,
+                                    EqualsValueClause(
+                                        IdentifierName(context.GetIdentifiers(info).native))))));
+                }
+
+                IEnumerable<StatementSyntax> GenerateStatementsFromInner(StubCodeContext contextForStage)
+                {
+                    return _inner.Generate(info, contextForStage);
+                }
+            }
+
+            public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => _inner.GetNativeSignatureBehavior(info);
+            public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context) => _inner.GetValueBoundaryBehavior(info, context);
+            public bool IsSupported(TargetFramework target, Version version) => _inner.IsSupported(target, version);
+            public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => _inner.SupportsByValueMarshalKind(marshalKind, context);
+            public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _inner.UsesNativeIdentifier(info, context);
+
+            private sealed record OwnedValueCodeContext : StubCodeContext
+            {
+                private StubCodeContext _innerContext;
+
+                public OwnedValueCodeContext(StubCodeContext innerContext)
+                {
+                    _innerContext = innerContext;
+                    CurrentStage = innerContext.CurrentStage;
+                }
+
+                public override bool SingleFrameSpansNativeContext => _innerContext.SingleFrameSpansNativeContext;
+
+                public override bool AdditionalTemporaryStateLivesAcrossStages => _innerContext.AdditionalTemporaryStateLivesAcrossStages;
+
+                public override (TargetFramework framework, Version version) GetTargetFramework() => _innerContext.GetTargetFramework();
+
+                public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
+                {
+                    var (managed, _) = _innerContext.GetIdentifiers(info);
+                    return (managed, _innerContext.GetAdditionalIdentifier(info, StatelessUnmanagedToManagedOwnershipTracking.OriginalValueIdentifier));
+                }
+
+                public override string GetAdditionalIdentifier(TypePositionInfo info, string name) => _innerContext.GetAdditionalIdentifier(info, name);
+            }
         }
     }
 }
