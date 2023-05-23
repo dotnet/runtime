@@ -2577,6 +2577,8 @@ void Lowering::TryLowerCselToCinvOrCneg(GenTreeOp* select, GenTree* cond)
     GenTree*   falseVal = select->gtOp2;
     const bool isCneg   = trueVal->OperIs(GT_NEG) || falseVal->OperIs(GT_NEG);
 
+    assert(trueVal->OperIs(GT_NOT, GT_NEG) || falseVal->OperIs(GT_NOT, GT_NEG));
+
     if (trueVal->OperIs(GT_NOT) || trueVal->OperIs(GT_NEG))
     {
         shouldReverseCondition  = true;
@@ -2592,7 +2594,7 @@ void Lowering::TryLowerCselToCinvOrCneg(GenTreeOp* select, GenTree* cond)
         nodeToRemove            = falseVal;
     }
 
-    if (!cond->OperIsCompare() && select->OperIs(GT_SELECT))
+    if (shouldReverseCondition && !cond->OperIsCompare() && select->OperIs(GT_SELECT))
     {
         // Non-compare nodes add additional GT_NOT node after reversing.
         // This would remove gains from this optimisation so don't proceed.
@@ -2668,11 +2670,11 @@ void Lowering::TryLowerCselToCinc(GenTreeOp* select, GenTree* cond)
                     // This would remove gains from this optimisation so don't proceed.
                     return;
                 }
-                select->gtOp2    = select->gtOp1;
                 GenTree* revCond = comp->gtReverseCond(cond);
                 assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
             }
-            select->gtOp1 = cond->AsOp();
+            BlockRange().Remove(select->gtOp2, true);
+            select->gtOp2 = nullptr;
             select->SetOper(GT_SELECT_INC);
             JITDUMP("Converted to: GT_SELECT_INC\n");
             DISPTREERANGE(BlockRange(), select);
