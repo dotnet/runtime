@@ -33,7 +33,7 @@
   <UsingTask TaskName="AppleAppBuilderTask"
              AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
 
-  <!-- FIXME: Once we set up builing appropriate runtime package for iOS-like platforms the following properties should be removed -->
+  <!-- Run before ILC setup  -->
   <Target Name="ConfigureIlcPathsForiOSCrossCompilation">
       <PropertyGroup>
         <IlcPath>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(HostOS).$(BuildArchitecture).$(CoreCLRConfiguration)', 'ilc'))</IlcPath>
@@ -42,6 +42,16 @@
         <IlcFrameworkPath Condition="'$(PublishAotUsingRuntimePack)' != 'true'">$(LibrariesAllBinArtifactsPath)</IlcFrameworkPath>
         <IlcFrameworkNativePath Condition="'$(PublishAotUsingRuntimePack)' != 'true'">$(LibrariesAllBinArtifactsPath)</IlcFrameworkNativePath>
     </PropertyGroup>
+  </Target>
+
+  <!-- Use locally built runtime pack -->
+  <Target Name="_UseLocalRuntimePackPath"
+    Condition="'$(PublishAotUsingRuntimePack)' == 'true'"
+    AfterTargets="ResolveFrameworkReferences">
+      <ItemGroup>
+        <ResolvedFrameworkReference Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App'" 
+                                    RuntimePackPath="$(CoreCLRArtifactsPath)" />
+      </ItemGroup>
   </Target>
 
   <Target Name="BuildAppBundle"
