@@ -32,22 +32,8 @@ namespace System.Formats.Tar
 
             if (_dataStream == null || _dataStream.CanSeek) // seek status of archive does not matter
             {
-                switch (format)
-                {
-                    case TarEntryFormat.V7:
-                        WriteV7FieldsToBuffer(GetTotalDataBytesToWrite(), buffer);
-                        break;
-                    case TarEntryFormat.Ustar:
-                        WriteUstarFieldsToBuffer(GetTotalDataBytesToWrite(), buffer);
-                        break;
-                    case TarEntryFormat.Pax:
-                        WritePaxFieldsToBuffer(GetTotalDataBytesToWrite(), buffer);
-                        break;
-                    case TarEntryFormat.Gnu:
-                        WriteGnuFieldsToBuffer(GetTotalDataBytesToWrite(), buffer);
-                        break;
-                }
-
+                long bytesToWrite = GetTotalDataBytesToWrite();
+                WriteFieldsToBuffer(format, bytesToWrite, buffer);
                 archiveStream.Write(buffer);
 
                 if (_dataStream != null)
@@ -68,22 +54,8 @@ namespace System.Formats.Tar
 
             if (_dataStream == null || _dataStream.CanSeek) // seek status of archive does not matter
             {
-                switch (format)
-                {
-                    case TarEntryFormat.V7:
-                        WriteV7FieldsToBuffer(GetTotalDataBytesToWrite(), buffer.Span);
-                        break;
-                    case TarEntryFormat.Ustar:
-                        WriteUstarFieldsToBuffer(GetTotalDataBytesToWrite(), buffer.Span);
-                        break;
-                    case TarEntryFormat.Pax:
-                        WritePaxFieldsToBuffer(GetTotalDataBytesToWrite(), buffer.Span);
-                        break;
-                    case TarEntryFormat.Gnu:
-                        WriteGnuFieldsToBuffer(GetTotalDataBytesToWrite(), buffer.Span);
-                        break;
-                }
-
+                long bytesToWrite = GetTotalDataBytesToWrite();
+                WriteFieldsToBuffer(format, bytesToWrite, buffer.Span);
                 await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
                 if (_dataStream != null)
@@ -134,22 +106,7 @@ namespace System.Formats.Tar
             // Go back to the start of the entry header to write the rest of the fields
             archiveStream.Position = headerStartPosition;
 
-            switch (format)
-            {
-                case TarEntryFormat.V7:
-                    WriteV7FieldsToBuffer(actualLength, buffer);
-                    break;
-                case TarEntryFormat.Ustar:
-                    WriteUstarFieldsToBuffer(actualLength, buffer);
-                    break;
-                case TarEntryFormat.Pax:
-                    WritePaxFieldsToBuffer(actualLength, buffer);
-                    break;
-                case TarEntryFormat.Gnu:
-                    WriteGnuFieldsToBuffer(actualLength, buffer);
-                    break;
-            }
-
+            WriteFieldsToBuffer(format, actualLength, buffer);
             archiveStream.Write(buffer);
 
             // Finally, move to the end of the header to continue with the next entry
@@ -194,22 +151,7 @@ namespace System.Formats.Tar
             // Go back to the start of the entry header to write the rest of the fields
             archiveStream.Position = headerStartPosition;
 
-            switch (format)
-            {
-                case TarEntryFormat.V7:
-                    WriteV7FieldsToBuffer(actualLength, buffer.Span);
-                    break;
-                case TarEntryFormat.Ustar:
-                    WriteUstarFieldsToBuffer(actualLength, buffer.Span);
-                    break;
-                case TarEntryFormat.Pax:
-                    WritePaxFieldsToBuffer(actualLength, buffer.Span);
-                    break;
-                case TarEntryFormat.Gnu:
-                    WriteGnuFieldsToBuffer(actualLength, buffer.Span);
-                    break;
-            }
-
+            WriteFieldsToBuffer(format, actualLength, buffer.Span);
             await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
             // Finally, move to the end of the header to continue with the next entry
@@ -461,6 +403,26 @@ namespace System.Formats.Tar
             tmpChecksum += WritePosixAndGnuSharedFields(buffer);
 
             _checksum = WriteChecksum(tmpChecksum, buffer);
+        }
+
+        // Writes the format-specific fields of the current entry, as well as the entry data length, into the specified buffer.
+        private void WriteFieldsToBuffer(TarEntryFormat format, long bytesToWrite, Span<byte> buffer)
+        {
+            switch (format)
+            {
+                case TarEntryFormat.V7:
+                    WriteV7FieldsToBuffer(bytesToWrite, buffer);
+                    break;
+                case TarEntryFormat.Ustar:
+                    WriteUstarFieldsToBuffer(bytesToWrite, buffer);
+                    break;
+                case TarEntryFormat.Pax:
+                    WritePaxFieldsToBuffer(bytesToWrite, buffer);
+                    break;
+                case TarEntryFormat.Gnu:
+                    WriteGnuFieldsToBuffer(bytesToWrite, buffer);
+                    break;
+            }
         }
 
         // Gnu and pax save in the name byte array only the UTF8 bytes that fit.
