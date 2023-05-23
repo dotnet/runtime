@@ -169,8 +169,7 @@ namespace Microsoft.Win32.SafeHandles
         // This information is retrieved from the 'stat' syscall that must be performed to ensure the path is not a directory.
         internal static SafeFileHandle OpenReadOnly(string fullPath, FileOptions options, out Interop.Sys.FileStatus status)
         {
-            SafeFileHandle handle = Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, options, preallocationSize: 0, DefaultCreateMode, out status, out bool isReadOnly);
-            Debug.Assert(isReadOnly);
+            SafeFileHandle handle = Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, options, preallocationSize: 0, DefaultCreateMode, out status);
             return handle;
         }
 
@@ -181,7 +180,7 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         private static SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, UnixFileMode openPermissions,
-                                            out Interop.Sys.FileStatus status, out bool isReadOnly,
+                                            out Interop.Sys.FileStatus status,
                                             Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?>? createOpenException = null)
         {
             // Translate the arguments into arguments for an open call.
@@ -196,7 +195,7 @@ namespace Microsoft.Win32.SafeHandles
 
                     // When Init return false, the path has changed to another file entry, and
                     // we need to re-open the path to reflect that.
-                    if (safeFileHandle.Init(fullPath, mode, access, share, options, preallocationSize, out status, out isReadOnly))
+                    if (safeFileHandle.Init(fullPath, mode, access, share, options, preallocationSize, out status))
                     {
                         return safeFileHandle;
                     }
@@ -294,12 +293,11 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         private bool Init(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize,
-                          out Interop.Sys.FileStatus status, out bool isReadOnly)
+                          out Interop.Sys.FileStatus status)
         {
             bool statusHasValue = false;
 
             status = default;
-            isReadOnly = false;
 
             // Make sure our handle is not a directory.
             // We can omit the check when write access is requested. open will have failed with EISDIR.
@@ -321,8 +319,6 @@ namespace Microsoft.Win32.SafeHandles
                     _canSeek = NullableBool.True;
                     Debug.Assert(Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
                 }
-
-                isReadOnly = true;
             }
 
             IsAsync = (options & FileOptions.Asynchronous) != 0;
