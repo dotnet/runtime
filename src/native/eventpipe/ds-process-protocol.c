@@ -1015,7 +1015,7 @@ process_protocol_helper_get_appcontext_properties (
 	bool result = false;
 
 	DiagnosticsAppContextPropertiesPayload payload;
-	DiagnosticsAppContextPropertiesPayload *props_payload = nullptr;
+	DiagnosticsAppContextPropertiesPayload *props_payload = NULL;
 
 	dn_vector_ptr_t *props_array = dn_vector_ptr_alloc ();
 	ep_raise_error_if_nok (props_array);
