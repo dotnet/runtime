@@ -529,11 +529,11 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
     switch (structSize)
     {
         case 1:
-            useType = TYP_BYTE;
+            useType = TYP_UBYTE;
             break;
 
         case 2:
-            useType = TYP_SHORT;
+            useType = TYP_USHORT;
             break;
 
 #if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI)
