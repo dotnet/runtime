@@ -115,11 +115,11 @@ jobs:
 
     # iOS devices
     - ${{ if in(parameters.platform, 'iOS_arm64') }}:
-      # split traffic for runtime-extra-platforms (which mostly runs on rolling builds)
+      # if necessary, you can split traffic between queues this way for PR's and rolling builds
       - ${{ if ne(parameters.jobParameters.isExtraPlatforms, true) }}:
-        - OSX.1015.Amd64.Iphone.Open
+        - OSX.13.Amd64.Iphone.Open
       - ${{ if eq(parameters.jobParameters.isExtraPlatforms, true) }}:
-        - OSX.1200.Amd64.Iphone.Open
+        - OSX.13.Amd64.Iphone.Open
 
     # tvOS devices
     - ${{ if in(parameters.platform, 'tvOS_arm64') }}:
