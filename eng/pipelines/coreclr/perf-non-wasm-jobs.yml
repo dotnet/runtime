@@ -80,7 +80,7 @@ jobs:
           archiveType: tar
           tarCompression: gz
 
-  build mono iOS scenarios
+  # build mono iOS scenarios
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
