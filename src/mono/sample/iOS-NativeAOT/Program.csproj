@@ -22,7 +22,6 @@
   <ItemGroup>
     <Compile Include="..\iOS\Program.cs" Link="Program.cs" />
     <DirectPInvoke Include="__Internal" />
-    <ExtraLinkerArguments Condition="'$(InvariantGlobalization)' != 'true'" Include="-licucore" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'maccatalyst'">
@@ -56,14 +55,17 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <NativeLibrary Include="%(ManagedBinary.IlcOutputFile)" />
+      <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />
+      <_LinkerFlagsToDrop Include="@(LinkerArg)" Condition="$([System.String]::new('%(Identity)').Contains('swift'))" />
+      <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
+      <ExtraLinkerArguments Include="@(LinkerArg)" />
     </ItemGroup>
 
     <RemoveDir Directories="$(AppDir)" />
 
     <AppleAppBuilderTask
         UseNativeAOTRuntime="$(UseNativeAOTRuntime)"
-        NativeDependencies="@(NativeLibrary)"
+        NativeDependencies="%(ManagedBinary.IlcOutputFile)"
         TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
         ProjectName="$(AppName)"
