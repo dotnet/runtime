@@ -117,7 +117,6 @@ namespace System
 #endif
 
         public static bool IsThreadingSupported => !IsBrowser && !IsWasi;
-        public static readonly bool IsThreadingOn => Type.GetType("System.Threading.Thread")?.GetProperty("IsThreadStartSupported", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null) == true;
         public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
 
         public static bool IsStartingProcessesSupported => !IsiOS && !IstvOS;

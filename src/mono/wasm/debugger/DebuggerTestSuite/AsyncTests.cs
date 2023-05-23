@@ -30,6 +30,7 @@ namespace DebuggerTests
              "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
              wait_for_event_fn: async (pause_location) =>
              {
+
                 var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
                 await CheckProps(frame_locals, new
                 {
@@ -44,7 +45,7 @@ namespace DebuggerTests
              });
 
         [ConditionalFact(nameof(RunningOnChrome))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingOn))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
         public async Task AsyncLocalsInContinueWithInstanceUsingThisBlock() => await CheckInspectLocalsAtBreakpointSite(
              "DebuggerTests.AsyncTests.ContinueWithTests", "ContinueWithInstanceUsingThisAsync", 5, "DebuggerTests.AsyncTests.ContinueWithTests.ContinueWithInstanceUsingThisAsync.AnonymousMethod__6_0",
              "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
@@ -67,7 +68,7 @@ namespace DebuggerTests
              });
 
          [Fact] // NestedContinueWith
-         [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingOn))]
+         [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
          public async Task AsyncLocalsInNestedContinueWithStaticBlock() => await CheckInspectLocalsAtBreakpointSite(
               "DebuggerTests.AsyncTests.ContinueWithTests", "NestedContinueWithStaticAsync", 5, "DebuggerTests.AsyncTests.ContinueWithTests.NestedContinueWithStaticAsync",
               "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
@@ -142,7 +143,6 @@ namespace DebuggerTests
         public async Task InspectLocalsInAsyncVBMethod()
         {
             var expression = $"{{ invoke_static_method('[debugger-test-vb] DebuggerTestVB.TestVbScope:Run'); }}";
-
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
                 "dotnet://debugger-test-vb.dll/debugger-test-vb.vb", 14, 12,
