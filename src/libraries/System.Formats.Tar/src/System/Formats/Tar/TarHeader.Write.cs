@@ -43,7 +43,7 @@ namespace System.Formats.Tar
             }
             else // seekable archive stream, unseekable data stream
             {
-                WriteWithUnseekableStreamAs(format, archiveStream, buffer);
+                WriteWithUnseekableDataStreamAs(format, archiveStream, buffer);
             }
         }
 
@@ -69,11 +69,12 @@ namespace System.Formats.Tar
             }
         }
 
-        private void WriteWithUnseekableStreamAs(TarEntryFormat format, Stream archiveStream, Span<byte> buffer)
+        private void WriteWithUnseekableDataStreamAs(TarEntryFormat format, Stream archiveStream, Span<byte> buffer)
         {
             // When the data stream is unseekable, the order in which we write the entry data changes
             Debug.Assert(archiveStream.CanSeek);
             Debug.Assert(_dataStream != null);
+            Debug.Assert(!_dataStream.CanSeek);
 
             // Store the start of the current entry's header, it'll be used later
             long headerStartPosition = archiveStream.Position;
@@ -119,6 +120,7 @@ namespace System.Formats.Tar
             // When the data stream is unseekable, the order in which we write the entry data changes
             Debug.Assert(archiveStream.CanSeek);
             Debug.Assert(_dataStream != null);
+            Debug.Assert(!_dataStream.CanSeek);
 
             // Store the start of the current entry's header, it'll be used later
             long headerStartPosition = archiveStream.Position;
