@@ -115,14 +115,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
         internal static void Install()
         {
-            var ctx = Current as JSSynchronizationContext;
-            if (ctx == null)
-            {
-                ctx = new JSSynchronizationContext();
-                MainThreadSynchronizationContext = ctx;
-                SetSynchronizationContext(ctx);
-            }
-            ctx.AwaitNewData();
+            MainThreadSynchronizationContext ??= new JSSynchronizationContext();
+            SynchronizationContext.SetSynchronizationContext(MainThreadSynchronizationContext);
+            MainThreadSynchronizationContext.AwaitNewData();
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
