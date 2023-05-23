@@ -68,9 +68,6 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonTypeInfoTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonTypeInfo";
             private const string JsonTypeInfoResolverTypeRef = "global::System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver";
 
-            private readonly JsonSourceGenerationContext _sourceGenerationContext;
-            private readonly SourceGenerationSpec _generationSpec;
-
             /// <summary>
             /// Contains an index from TypeRef to TypeGenerationSpec for the current ContextGenerationSpec.
             /// </summary>
@@ -83,53 +80,43 @@ namespace System.Text.Json.SourceGeneration
             /// </summary>
             private readonly Dictionary<string, string> _propertyNames = new();
 
-            public Emitter(in JsonSourceGenerationContext sourceGenerationContext, SourceGenerationSpec generationSpec)
-            {
-                _sourceGenerationContext = sourceGenerationContext;
-                _generationSpec = generationSpec;
-            }
+            /// <summary>
+            /// The SourceText emit implementation filled by the individual Roslyn versions.
+            /// </summary>
+            private partial void AddSource(string hintName, SourceText sourceText);
 
-            public void Emit()
+            public void Emit(ContextGenerationSpec contextGenerationSpec)
             {
-                foreach (DiagnosticInfo diagnostic in _generationSpec.Diagnostics)
+                Debug.Assert(_typeIndex.Count == 0);
+                Debug.Assert(_propertyNames.Count == 0);
+
+                foreach (TypeGenerationSpec spec in contextGenerationSpec.GeneratedTypes)
                 {
-                    // Report any diagnostics produced by the parser ahead of formatting source code.
-                    _sourceGenerationContext.ReportDiagnostic(diagnostic.CreateDiagnostic());
+                    _typeIndex.Add(spec.TypeRef, spec);
                 }
 
-                foreach (ContextGenerationSpec contextGenerationSpec in _generationSpec.ContextGenerationSpecs)
+                foreach (TypeGenerationSpec typeGenerationSpec in contextGenerationSpec.GeneratedTypes)
                 {
-                    Debug.Assert(_typeIndex.Count == 0);
-                    Debug.Assert(_propertyNames.Count == 0);
-
-                    foreach (TypeGenerationSpec spec in contextGenerationSpec.GeneratedTypes)
+                    SourceText? sourceText = GenerateTypeInfo(contextGenerationSpec, typeGenerationSpec);
+                    if (sourceText != null)
                     {
-                        _typeIndex.Add(spec.TypeRef, spec);
+                        AddSource($"{contextGenerationSpec.ContextType.Name}.{typeGenerationSpec.TypeInfoPropertyName}.g.cs", sourceText);
                     }
-
-                    foreach (TypeGenerationSpec typeGenerationSpec in contextGenerationSpec.GeneratedTypes)
-                    {
-                        SourceText? sourceText = GenerateTypeInfo(contextGenerationSpec, typeGenerationSpec);
-                        if (sourceText != null)
-                        {
-                            _sourceGenerationContext.AddSource($"{contextGenerationSpec.ContextType.Name}.{typeGenerationSpec.TypeInfoPropertyName}.g.cs", sourceText);
-                        }
-                    }
-
-                    string contextName = contextGenerationSpec.ContextType.Name;
-
-                    // Add root context implementation.
-                    _sourceGenerationContext.AddSource($"{contextName}.g.cs", GetRootJsonContextImplementation(contextGenerationSpec));
-
-                    // Add GetJsonTypeInfo override implementation.
-                    _sourceGenerationContext.AddSource($"{contextName}.GetJsonTypeInfo.g.cs", GetGetTypeInfoImplementation(contextGenerationSpec));
-
-                    // Add property name initialization.
-                    _sourceGenerationContext.AddSource($"{contextName}.PropertyNames.g.cs", GetPropertyNameInitialization(contextGenerationSpec));
-
-                    _propertyNames.Clear();
-                    _typeIndex.Clear();
                 }
+
+                string contextName = contextGenerationSpec.ContextType.Name;
+
+                // Add root context implementation.
+                AddSource($"{contextName}.g.cs", GetRootJsonContextImplementation(contextGenerationSpec));
+
+                // Add GetJsonTypeInfo override implementation.
+                AddSource($"{contextName}.GetJsonTypeInfo.g.cs", GetGetTypeInfoImplementation(contextGenerationSpec));
+
+                // Add property name initialization.
+                AddSource($"{contextName}.PropertyNames.g.cs", GetPropertyNameInitialization(contextGenerationSpec));
+
+                _propertyNames.Clear();
+                _typeIndex.Clear();
             }
 
             private static SourceWriter CreateSourceWriterWithContextHeader(ContextGenerationSpec contextSpec, bool isPrimaryContextSourceFile = false, string? interfaceImplementation = null)
