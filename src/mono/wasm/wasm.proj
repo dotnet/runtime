@@ -80,7 +80,7 @@
     </ManagedToNativeGenerator>
   </Target>
 
-  <UsingTask TaskName="EmitBundleSourceFiles" AssemblyFile="$(EmitBundleTasksAssemblyPath)" />
+  <UsingTask TaskName="EmitBundleSourceFiles" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
   <Target Name="GenerateTimezonesArchive" Returns="@(_WasmArchivedTimezones)">
     <PropertyGroup>
       <_WasmTimezonesPath>$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_WasmTimezonesPath>

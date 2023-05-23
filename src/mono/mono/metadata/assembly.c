@@ -1518,8 +1518,11 @@ mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filena
 	MONO_ENTER_GC_UNSAFE;
 	if (culture && culture [0] != 0)
 		image = open_from_satellite_bundle (alc, filename, status, culture);
-	else
-		image = open_from_bundle_internal (alc, filename, status);
+	else {
+		char *name = g_path_get_basename (filename);
+		image = open_from_bundle_internal (alc, name, status);
+		g_free (name);
+    }
 
 	if (image) {
 		mono_image_addref (image);

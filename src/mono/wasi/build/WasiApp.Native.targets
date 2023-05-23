@@ -341,7 +341,7 @@
           <!--EnvironmentVariables="@(EmscriptenEnvVars)" />-->
   <!--</Target>-->
 
-  <UsingTask TaskName="EmitBundleObjectFiles" AssemblyFile="$(EmitBundleTasksAssemblyPath)" />
+  <UsingTask TaskName="EmitBundleObjectFiles" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmitWasmBundleObjectFiles" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <Target Name="_GenerateAssemblyObjectFiles" Returns="@(_WasiObjectFilesForBundle)"
     Condition="'$(WasmSingleFileBundle)' == 'true'"

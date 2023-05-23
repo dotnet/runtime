@@ -267,7 +267,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                 {
                     preloadedSymbolData = $",\n{Utils.GetEmbeddedResource("mono-bundled-symbol.template")
                                                 .Replace("%ResourceSymbolName%", tuple.resourceSymbolName)
-                                                .Replace("%SymbolLen%", symbolDataLen[tuple.resourceSymbolName].ToString())}";
+                                                .Replace("%SymbolLen%", symbolDataLen[tuple.resourceSymbolName!].ToString())}";
                 }
                 preloadedStruct = preloadedStruct.Replace("%MonoBundledSymbolData%", preloadedSymbolData);
                 preallocatedAssemblies.Add($"    (MonoBundledResource *)&{tuple.resourceName}");
@@ -351,8 +351,16 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
         lock (symbolDataLen)
         {
-            if (!symbolDataLen.TryAdd(symbolName, generatedArrayLength) && symbolDataLen[symbolName] != generatedArrayLength)
-                Log.LogMessage(MessageImportance.High, $"There are duplicate resources with the same output symbol '{symbolName}' but have differing content sizes '{symbolDataLen[symbolName]}' != '{generatedArrayLength}'.");
+            int len = 0;
+            if (symbolDataLen.TryGetValue(symbolName, out len))
+            {
+                if (len != generatedArrayLength)
+                    Log.LogMessage(MessageImportance.High, $"There are duplicate resources with the same output symbol '{symbolName}' but have differing content sizes '{symbolDataLen[symbolName]}' != '{generatedArrayLength}'.");
+            }
+            else
+            {
+                symbolDataLen.Add(symbolName, generatedArrayLength);
+            }
         }
     }
 
