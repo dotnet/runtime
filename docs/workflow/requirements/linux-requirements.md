@@ -24,7 +24,7 @@ Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs (
 
 Install the following packages for the toolchain:
 
-* CMake 3.14.5 or newer
+* CMake 3.20 or newer
 * llvm
 * lld
 * clang
@@ -40,10 +40,18 @@ Install the following packages for the toolchain:
 * zlib1g-dev
 * ninja-build (optional, enables building native code with ninja instead of make)
 
+**NOTE**: If you have an Ubuntu version older than 22.04 LTS, don't install `cmake` using `apt`. Follow the note written down below.
+
 ```bash
 sudo apt install -y cmake llvm lld clang build-essential \
 python-is-python3 curl git lldb libicu-dev liblttng-ust-dev \
 libssl-dev libkrb5-dev zlib1g-dev ninja-build
+```
+
+**NOTE**: As of now, `apt` only has until CMake version 3.16.3 if you're using Ubuntu 20.04 LTS (or less in older Ubuntu versions), which is lower than the required 3.20. For this case, we use the `snap` package manager, which has version 3.26.4 at the time of writing:
+
+```bash
+sudo snap install cmake
 ```
 
 You now have all the required components.
