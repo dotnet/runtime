@@ -1375,7 +1375,7 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* 
 
     if (publicKey)
     {
-        if (g_pRhConfig->ReadKnobValue(publicKey, &uiValue, true))
+        if (g_pRhConfig->ReadKnobValue(publicKey, &uiValue))
         {
             *value = uiValue != 0;
             return true;
