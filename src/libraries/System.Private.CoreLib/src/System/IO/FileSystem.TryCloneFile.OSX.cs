@@ -54,19 +54,17 @@ namespace System.IO
                 }
 
                 // Try deleting destination:
+                // Delete the destination. This should fail on directories.
+                // Get a lock to the dest file to ensure we don't copy onto it when it's locked by something else, and then delete it.
+                try
                 {
-                    // Delete the destination. This should fail on directories.
-                    // Get a lock to the dest file to ensure we don't copy onto it when it's locked by something else, and then delete it.
-                    try
-                    {
-                        using SafeFileHandle? dstHandle = SafeFileHandle.Open(destFullPath, FileMode.Open, FileAccess.ReadWrite,
-                            FileShare.None, FileOptions.None, preallocationSize: 0);
-                        File.Delete(destFullPath);
-                    }
-                    catch (FileNotFoundException)
-                    {
-                        // We don't want to throw if it's just the file not existing, since we're trying to delete it.
-                    }
+                    using SafeFileHandle? dstHandle = SafeFileHandle.Open(destFullPath, FileMode.Open, FileAccess.ReadWrite,
+                        FileShare.None, FileOptions.None, preallocationSize: 0);
+                    File.Delete(destFullPath);
+                }
+                catch (FileNotFoundException)
+                {
+                    // We don't want to throw if it's just the file not existing, since we're trying to delete it.
                 }
 
                 // Try clonefile:
