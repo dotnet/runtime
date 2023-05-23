@@ -147,7 +147,7 @@ export function assert_synchronization_context(): void {
 
 export function assert_legacy_interop(): void {
     if (MonoWasmThreads) {
-        mono_assert(ENVIRONMENT_IS_PTHREAD, "Legacy interop is not supported with WebAssembly threads.");
+        mono_assert(!ENVIRONMENT_IS_PTHREAD, "Legacy interop is not supported with WebAssembly threads.");
     }
 }
 
