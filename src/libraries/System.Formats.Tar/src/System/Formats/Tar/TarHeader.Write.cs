@@ -171,42 +171,6 @@ namespace System.Formats.Tar
             _checksum = WriteChecksum(tmpChecksum, buffer);
         }
 
-        // Asynchronously writes the entry in the order required to be able to obtain the unseekable data stream size.
-        private async Task WriteAsUstarWithUnseekableDataStreamAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
-        {
-            // When the data stream is unseekable, the order in which we write the entry data changes
-            Debug.Assert(archiveStream.CanSeek);
-            Debug.Assert(_dataStream != null);
-
-            // Store the start of the current entry's header, it'll be used later
-            long headerStartPosition = archiveStream.Position;
-
-            // We know the exact location where the data starts depending on the format
-            long dataStartPosition = headerStartPosition + FieldLocations.PosixData;
-
-            // Move to the data start location and write the data
-            archiveStream.Seek(FieldLocations.PosixData, SeekOrigin.Current);
-            await _dataStream.CopyToAsync(archiveStream, cancellationToken).ConfigureAwait(false); // The data gets copied from the current position
-
-            // Get the new archive stream position, and the difference is the size of the data stream
-            long dataEndPosition = archiveStream.Position;
-            long actualLength = dataEndPosition - dataStartPosition;
-
-            // Write the padding now so that we can go back to writing the entry's header metadata
-            await WritePaddingAsync(archiveStream, actualLength, cancellationToken).ConfigureAwait(false);
-
-            // Store the end of the current header, we will write the next one after this position
-            long endOfHeaderPosition = archiveStream.Position;
-
-            // Go back to the start of the entry header to write the rest of the fields
-            archiveStream.Position = headerStartPosition;
-            WriteUstarFieldsToBuffer(actualLength, buffer.Span);
-            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
-
-            // Finally, move to the end of the header to continue with the next entry
-            archiveStream.Position = endOfHeaderPosition;
-        }
-
         // Writes the Ustar header fields to the specified buffer, calculates and writes the checksum, then returns the final data length.
         private void WriteUstarFieldsToBuffer(long size, Span<byte> buffer)
         {
