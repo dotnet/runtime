@@ -12,7 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace System.Diagnostics.Metrics.Tests
+namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
 {
     public class MetricsTests
     {

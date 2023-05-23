@@ -17,8 +17,8 @@ namespace System.Diagnostics.Metrics
         private bool _disposed;
         private Instrument? _instrument;
 
-        private readonly MeterListener _meterListener;
-        private readonly List<Measurement<T>> _measurements;
+        private MeterListener _meterListener;
+        private List<Measurement<T>> _measurements;
 
         /// <summary>
         /// Initialize a new instance <see cref="InstrumentRecorder{T}" /> to record the measurements published by <see cref="Instrument" />.
@@ -39,22 +39,10 @@ namespace System.Diagnostics.Metrics
             _measurements = new List<Measurement<T>>();
 
             _meterListener = new MeterListener();
-            _meterListener.InstrumentPublished = (inst, listener) =>
-            {
-                if (object.ReferenceEquals(inst, instrument))
-                {
-                    if (instrument is ObservableInstrument<T>)
-                    {
-                        _isObservableInstrument = true;
-                    }
 
-                    listener.EnableMeasurementEvents(inst, state: null);
-
-                    Instrument = instrument;
-                }
-            };
-
+            _instrument = instrument;
             _meterListener.SetMeasurementEventCallback<T>(OnMeasurementRecorded);
+            _meterListener.EnableMeasurementEvents(instrument, state: null);
             _meterListener.Start();
         }
 
@@ -77,26 +65,12 @@ namespace System.Diagnostics.Metrics
                 throw new ArgumentNullException(nameof(instrumentName));
             }
 
-            _measurements = new List<Measurement<T>>();
+            Initialize((instrument) => object.Equals(instrument.Meter.Scope, scopeFilter) &&
+                                       instrument.Meter.Name == meterName &&
+                                       instrument.Name == instrumentName);
 
-            _meterListener = new MeterListener();
-            _meterListener.InstrumentPublished = (instrument, listener) =>
-            {
-                if (object.Equals(instrument.Meter.Scope, scopeFilter) &&
-                    instrument.Meter.Name == meterName &&
-                    instrument.Name == instrumentName &&
-                    (instrument is ObservableInstrument<T> || instrument is Instrument<T>))
-                {
-                    if (Interlocked.CompareExchange(ref _instrument, instrument, null) is null)
-                    {
-                        _isObservableInstrument = instrument is ObservableInstrument<T>;
-                        listener.EnableMeasurementEvents(instrument, state: null);
-                    }
-                }
-            };
-
-            _meterListener.SetMeasurementEventCallback<T>(OnMeasurementRecorded);
-            _meterListener.Start();
+            Debug.Assert(_meterListener is not null);
+            Debug.Assert(_measurements is not null);
         }
 
         /// <summary>
@@ -117,13 +91,20 @@ namespace System.Diagnostics.Metrics
                 throw new ArgumentNullException(nameof(instrumentName));
             }
 
+            Initialize((instrument) => object.ReferenceEquals(instrument.Meter, meter) && instrument.Name == instrumentName);
+
+            Debug.Assert(_meterListener is not null);
+            Debug.Assert(_measurements is not null);
+        }
+
+        private void Initialize(Func<Instrument, bool> instrumentPredicate)
+        {
             _measurements = new List<Measurement<T>>();
 
             _meterListener = new MeterListener();
             _meterListener.InstrumentPublished = (instrument, listener) =>
             {
-                if (object.ReferenceEquals(instrument.Meter, meter) && instrument.Name == instrumentName &&
-                    (instrument is ObservableInstrument<T> || instrument is Instrument<T>))
+                if (instrumentPredicate(instrument) && (instrument is ObservableInstrument<T> || instrument is Instrument<T>))
                 {
                     if (Interlocked.CompareExchange(ref _instrument, instrument, null) is null)
                     {

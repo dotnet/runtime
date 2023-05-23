@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 
 namespace System.Diagnostics.Metrics
@@ -71,7 +72,9 @@ namespace System.Diagnostics.Metrics
             Version = version;
             if (tags is not null)
             {
-                Tags = new List<KeyValuePair<string, object?>>(tags);
+                var tagsArray = tags.ToArray();
+                // Array.Sort(tagsArray, (left, right) => string.Compare(left.Key, right.Key, StringComparison.Ordinal));
+                Tags = tagsArray;
             }
             Scope = scope;
 
