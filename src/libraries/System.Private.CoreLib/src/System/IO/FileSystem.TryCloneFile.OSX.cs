@@ -22,9 +22,6 @@ namespace System.IO
             // Try to delete the destination file if we're overwriting.
             if (error == Interop.Error.EEXIST && overwrite)
             {
-                // Get the file permissions for source file
-                UnixFileMode filePermissions = (UnixFileMode)srcStat.Mode & SafeFileHandle.PermissionMask;
-
                 // Read FileStatus of destination file to determine how to continue (we need to check that
                 // destination doesn't point to the same file as the source file so we can fail appropriately)
                 int destError = Interop.Sys.Stat(destFullPath, out Interop.Sys.FileStatus destStat);
@@ -63,7 +60,7 @@ namespace System.IO
                     try
                     {
                         using SafeFileHandle? dstHandle = SafeFileHandle.Open(destFullPath, FileMode.Open, FileAccess.ReadWrite,
-                            FileShare.None, FileOptions.None, preallocationSize: 0, filePermissions);
+                            FileShare.None, FileOptions.None, preallocationSize: 0);
                         File.Delete(destFullPath);
                     }
                     catch (FileNotFoundException)
