@@ -68,7 +68,7 @@ namespace System.Text.Json.SourceGeneration
             }
 
             OnSourceEmitting?.Invoke(ImmutableArray.Create(input.ContextGenerationSpec));
-            Emitter emitter = new(in sourceProductionContext);
+            Emitter emitter = new(sourceProductionContext);
             emitter.Emit(input.ContextGenerationSpec);
         }
 
@@ -81,7 +81,7 @@ namespace System.Text.Json.SourceGeneration
         {
             private readonly SourceProductionContext _context;
 
-            public Emitter(in SourceProductionContext context)
+            public Emitter(SourceProductionContext context)
                 => _context = context;
 
             private partial void AddSource(string hintName, SourceText sourceText)

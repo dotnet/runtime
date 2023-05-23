@@ -67,7 +67,7 @@ namespace System.Text.Json.SourceGeneration
                     knownSymbols.JsonSourceGenerationOptionsAttributeType != null &&
                     knownSymbols.JsonConverterType != null;
 
-                _builtInSupportTypes = CreateBuiltInSupportTypeSet(knownSymbols);
+                _builtInSupportTypes = (knownSymbols.BuiltInSupportTypes ??= CreateBuiltInSupportTypeSet(knownSymbols));
             }
 
             public ContextGenerationSpec? ParseContextGenerationSpec(ClassDeclarationSyntax contextClassDeclaration, SemanticModel semanticModel, CancellationToken cancellationToken)
@@ -89,11 +89,11 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 if (!TryParseJsonSerializerContextAttributes(
-                        contextClassDeclaration,
-                        semanticModel,
-                        cancellationToken,
-                        out List<TypeToGenerate>? rootSerializableTypes,
-                        out JsonSourceGenerationOptionsAttribute? options))
+                    contextClassDeclaration,
+                    semanticModel,
+                    cancellationToken,
+                    out List<TypeToGenerate>? rootSerializableTypes,
+                    out JsonSourceGenerationOptionsAttribute? options))
                 {
                     // Context does not specify any source gen attributes.
                     return null;
