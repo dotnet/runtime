@@ -456,18 +456,16 @@ namespace Microsoft.Interop
             {
                 yield break;
             }
-            else
-            {
-                string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
 
-                // <numElements> = <numElementsExpression>;
-                yield return ExpressionStatement(
-                    AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                        IdentifierName(numElementsIdentifier),
-                        _numElementsExpression));
+            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
 
-                yield return _elementsMarshalling.GenerateUnmarshalStatement(info, context);
-            }
+            // <numElements> = <numElementsExpression>;
+            yield return ExpressionStatement(
+                AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(numElementsIdentifier),
+                    _numElementsExpression));
+
+            yield return _elementsMarshalling.GenerateUnmarshalStatement(info, context);
 
             foreach (StatementSyntax statement in _innerMarshaller.GenerateUnmarshalStatements(info, context))
             {

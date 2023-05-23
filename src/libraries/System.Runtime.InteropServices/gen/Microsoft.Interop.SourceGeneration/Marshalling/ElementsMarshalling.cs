@@ -30,7 +30,7 @@ namespace Microsoft.Interop
         StatementSyntax GenerateElementCleanupStatement(TypePositionInfo info, StubCodeContext context);
     }
 
-#pragma warning disable SA1400 // Access modifier should be declared. https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3659
+#pragma warning disable SA1400 // Access modifier should be declared https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3659
     static file class ElementsMarshallingCollectionSourceExtensions
 #pragma warning restore SA1400 // Access modifier should be declared
     {
@@ -519,7 +519,7 @@ namespace Microsoft.Interop
                     context,
                     IdentifierName(numElementsIdentifier),
                     _elementInfo,
-                    new ByValueMarshalOutOwnershipTrackingGenerator(_elementMarshaller),
+                    new FreeAlwaysOwnedOriginalValueGenerator(_elementMarshaller),
                     StubCodeContext.Stage.Marshal,
                     StubCodeContext.Stage.PinnedMarshal,
                     StubCodeContext.Stage.Cleanup));
@@ -587,87 +587,6 @@ namespace Microsoft.Interop
             }
 
             return EmptyStatement();
-        }
-
-        private sealed class ByValueMarshalOutOwnershipTrackingGenerator : IMarshallingGenerator
-        {
-            private readonly IMarshallingGenerator _inner;
-
-            public ByValueMarshalOutOwnershipTrackingGenerator(IMarshallingGenerator inner)
-            {
-                _inner = inner;
-            }
-
-            public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _inner.AsNativeType(info);
-            public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
-            {
-                if (context.CurrentStage == StubCodeContext.Stage.Setup)
-                {
-                    return GenerateSetupStatements();
-                }
-
-                if (context.CurrentStage == StubCodeContext.Stage.Cleanup)
-                {
-                    return GenerateStatementsFromInner(new OwnedValueCodeContext(context));
-                }
-
-                return GenerateStatementsFromInner(context);
-
-                IEnumerable<StatementSyntax> GenerateSetupStatements()
-                {
-                    foreach (var statement in GenerateStatementsFromInner(context))
-                    {
-                        yield return statement;
-                    }
-
-                    // <nativeType> <original> = <nativeValueIdentifier>;
-                    yield return LocalDeclarationStatement(
-                        VariableDeclaration(
-                            AsNativeType(info).Syntax,
-                            SingletonSeparatedList(
-                                VariableDeclarator(
-                                    Identifier(context.GetAdditionalIdentifier(info, StatelessUnmanagedToManagedOwnershipTracking.OriginalValueIdentifier)),
-                                    null,
-                                    EqualsValueClause(
-                                        IdentifierName(context.GetIdentifiers(info).native))))));
-                }
-
-                IEnumerable<StatementSyntax> GenerateStatementsFromInner(StubCodeContext contextForStage)
-                {
-                    return _inner.Generate(info, contextForStage);
-                }
-            }
-
-            public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => _inner.GetNativeSignatureBehavior(info);
-            public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context) => _inner.GetValueBoundaryBehavior(info, context);
-            public bool IsSupported(TargetFramework target, Version version) => _inner.IsSupported(target, version);
-            public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => _inner.SupportsByValueMarshalKind(marshalKind, context);
-            public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _inner.UsesNativeIdentifier(info, context);
-
-            private sealed record OwnedValueCodeContext : StubCodeContext
-            {
-                private StubCodeContext _innerContext;
-
-                public OwnedValueCodeContext(StubCodeContext innerContext)
-                {
-                    _innerContext = innerContext;
-                    CurrentStage = innerContext.CurrentStage;
-                }
-
-                public override bool SingleFrameSpansNativeContext => _innerContext.SingleFrameSpansNativeContext;
-
-                public override bool AdditionalTemporaryStateLivesAcrossStages => _innerContext.AdditionalTemporaryStateLivesAcrossStages;
-
-                public override (TargetFramework framework, Version version) GetTargetFramework() => _innerContext.GetTargetFramework();
-
-                public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
-                {
-                    var (managed, _) = _innerContext.GetIdentifiers(info);
-                    return (managed, _innerContext.GetAdditionalIdentifier(info, StatelessUnmanagedToManagedOwnershipTracking.OriginalValueIdentifier));
-                }
-
-                public override string GetAdditionalIdentifier(TypePositionInfo info, string name) => _innerContext.GetAdditionalIdentifier(info, name);
-            }
         }
     }
 }
