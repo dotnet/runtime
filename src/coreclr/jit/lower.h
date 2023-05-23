@@ -110,7 +110,7 @@ private:
     void ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* addr);
     void ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node);
 #ifdef TARGET_XARCH
-    void MakeHWIntrinsicSrcContained(GenTreeHWIntrinsic* parentNode, GenTree* childNode);
+    void TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode, GenTreeVecCon* childNode);
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
 

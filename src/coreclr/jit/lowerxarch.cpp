@@ -7517,18 +7517,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             {
                 GenTree* broadcastOperand = childNode->AsHWIntrinsic()->Op(1);
                 bool     childSupportsRegOptional;
-                if (broadcastOperand->OperIs(GT_LCL_VAR))
-                {
-                    const unsigned opLclNum = broadcastOperand->AsLclVar()->GetLclNum();
-                    comp->lvaSetVarDoNotEnregister(opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
-                }
-                else if (broadcastOperand->OperIs(GT_HWINTRINSIC) &&
-                         broadcastOperand->AsHWIntrinsic()->Op(1)->OperIs(GT_LCL_VAR))
-                {
-                    assert(broadcastOperand->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe);
-                    const unsigned opLclNum = broadcastOperand->AsHWIntrinsic()->Op(1)->AsLclVar()->GetLclNum();
-                    comp->lvaSetVarDoNotEnregister(opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
-                }
                 if (IsContainableHWIntrinsicOp(childNode->AsHWIntrinsic(), broadcastOperand, &childSupportsRegOptional))
                 {
                     return true;
@@ -7540,8 +7528,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_AVX_BroadcastScalarToVector128:
         case NI_AVX_BroadcastScalarToVector256:
         {
-            GenTree* childNodeOp = hwintrinsic->Op(1);
-            assert(childNodeOp->OperIs(GT_LCL_ADDR, GT_LCL_VAR));
             return parentNode->OperIsEmbBroadcastCompatible();
         }
 
@@ -7554,19 +7540,18 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
 }
 
 //----------------------------------------------------------------------------------------------
-// MakeHWIntrInsicSrcContained: Unfold the eligible constant vector when embedded broadcast is
-//                              available.
+// TryFoldCnsVecForEmbeddedBroadcast: 
+//  Unfold the eligible constant vector when embedded broadcast is
+//  available.
 //
 //  Arguments:
 //     parentNode - The hardware intrinsic node
 //     childNode  - The operand node to try contain
 //
-void Lowering::MakeHWIntrinsicSrcContained(GenTreeHWIntrinsic* parentNode, GenTree* childNode)
+void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode, GenTreeVecCon* childNode)
 {
-    assert(childNode->OperIs(GT_CNS_VEC));
-    GenTreeVecCon* vecCon = childNode->AsVecCon();
-    assert(!vecCon->IsAllBitsSet());
-    assert(!vecCon->IsZero());
+    assert(!childNode->IsAllBitsSet());
+    assert(!childNode->IsZero());
     var_types   simdType            = parentNode->TypeGet();
     var_types   simdBaseType        = parentNode->GetSimdBaseType();
     CorInfoType simdBaseJitType     = parentNode->GetSimdBaseJitType();
@@ -7578,10 +7563,10 @@ void Lowering::MakeHWIntrinsicSrcContained(GenTreeHWIntrinsic* parentNode, GenTr
         case TYP_INT:
         case TYP_UINT:
         {
-            uint32_t firstElement = static_cast<uint32_t>(vecCon->gtSimdVal.u32[0]);
+            uint32_t firstElement = static_cast<uint32_t>(childNode->gtSimdVal.u32[0]);
             for (int i = 1; i < elementCount; i++)
             {
-                uint32_t elementToCheck = static_cast<uint32_t>(vecCon->gtSimdVal.u32[i]);
+                uint32_t elementToCheck = static_cast<uint32_t>(childNode->gtSimdVal.u32[i]);
                 if (firstElement != elementToCheck)
                 {
                     isCreatedFromScalar = false;
@@ -7597,10 +7582,10 @@ void Lowering::MakeHWIntrinsicSrcContained(GenTreeHWIntrinsic* parentNode, GenTr
         case TYP_ULONG:
 #endif // TARGET_AMD64
         {
-            uint64_t firstElement = static_cast<uint64_t>(vecCon->gtSimdVal.u64[0]);
+            uint64_t firstElement = static_cast<uint64_t>(childNode->gtSimdVal.u64[0]);
             for (int i = 1; i < elementCount; i++)
             {
-                uint64_t elementToCheck = static_cast<uint64_t>(vecCon->gtSimdVal.u64[i]);
+                uint64_t elementToCheck = static_cast<uint64_t>(childNode->gtSimdVal.u64[i]);
                 if (firstElement != elementToCheck)
                 {
                     isCreatedFromScalar = false;
@@ -7634,38 +7619,38 @@ void Lowering::MakeHWIntrinsicSrcContained(GenTreeHWIntrinsic* parentNode, GenTr
         {
             case TYP_FLOAT:
             {
-                float scalar = static_cast<float>(vecCon->gtSimdVal.f32[0]);
+                float scalar = static_cast<float>(childNode->gtSimdVal.f32[0]);
                 constScalar  = comp->gtNewDconNode(scalar, simdBaseType);
                 break;
             }
             case TYP_DOUBLE:
             {
-                double scalar = static_cast<double>(vecCon->gtSimdVal.f64[0]);
+                double scalar = static_cast<double>(childNode->gtSimdVal.f64[0]);
                 constScalar   = comp->gtNewDconNode(scalar, simdBaseType);
                 break;
             }
             case TYP_INT:
             {
-                int32_t scalar = static_cast<int32_t>(vecCon->gtSimdVal.i32[0]);
+                int32_t scalar = static_cast<int32_t>(childNode->gtSimdVal.i32[0]);
                 constScalar    = comp->gtNewIconNode(scalar, simdBaseType);
                 break;
             }
             case TYP_UINT:
             {
-                uint32_t scalar = static_cast<uint32_t>(vecCon->gtSimdVal.u32[0]);
+                uint32_t scalar = static_cast<uint32_t>(childNode->gtSimdVal.u32[0]);
                 constScalar     = comp->gtNewIconNode(scalar, TYP_INT);
                 break;
             }
 #if defined(TARGET_AMD64)
             case TYP_LONG:
             {
-                int64_t scalar = static_cast<int64_t>(vecCon->gtSimdVal.i64[0]);
+                int64_t scalar = static_cast<int64_t>(childNode->gtSimdVal.i64[0]);
                 constScalar    = comp->gtNewIconNode(scalar, simdBaseType);
                 break;
             }
             case TYP_ULONG:
             {
-                uint64_t scalar = static_cast<uint64_t>(vecCon->gtSimdVal.u64[0]);
+                uint64_t scalar = static_cast<uint64_t>(childNode->gtSimdVal.u64[0]);
                 constScalar     = comp->gtNewIconNode(scalar, TYP_LONG);
                 break;
             }
@@ -8009,11 +7994,11 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (IsContainableHWIntrinsicOp(node, op2, &supportsOp2RegOptional))
                     {
-                        if (op2->OperIs(GT_CNS_VEC) && op2->TypeIs(TYP_SIMD16, TYP_SIMD32, TYP_SIMD64) &&
+                        if (op2->OperIs(GT_CNS_VEC) &&
                             comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
                             node->OperIsEmbBroadcastCompatible())
                         {
-                            MakeHWIntrinsicSrcContained(node, op2);
+                            TryFoldCnsVecForEmbeddedBroadcast(node, op2->AsVecCon());
                         }
                         else
                         {
@@ -8027,7 +8012,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         if (op1->OperIs(GT_CNS_VEC) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
                             node->OperIsEmbBroadcastCompatible())
                         {
-                            MakeHWIntrinsicSrcContained(node, op1);
+                            TryFoldCnsVecForEmbeddedBroadcast(node, op1->AsVecCon());
                         }
                         else
                         {
