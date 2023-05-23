@@ -22,7 +22,12 @@ unsafe class Validate
     public static void Explicit_Fails()
     {
         Console.WriteLine($"{nameof(Explicit_Fails)}...");
-        Assert.Throws<TypeLoadException>(() => { return typeof(Explicit); });
+        Assert.Throws<TypeLoadException>(() => { var t = typeof(Explicit); });
+
+        Assert.Throws<TypeLoadException>(() =>
+        {
+            return sizeof(Explicit);
+        });
     }
 
     [InlineArray(0)]
@@ -35,7 +40,7 @@ unsafe class Validate
     public static void ZeroLength_Fails()
     {
         Console.WriteLine($"{nameof(ZeroLength_Fails)}...");
-        Assert.Throws<TypeLoadException>(() => { return typeof(ZeroLength); });
+        Assert.Throws<TypeLoadException>(() => { var t = typeof(ZeroLength); });
 
         Assert.Throws<TypeLoadException>(() =>
         {
@@ -57,7 +62,7 @@ unsafe class Validate
     public static void TooLarge_Fails()
     {
         Console.WriteLine($"{nameof(TooLarge_Fails)}...");
-        Assert.Throws<TypeLoadException>(() => { return typeof(TooLarge); });
+        Assert.Throws<TypeLoadException>(() => { var t = typeof(TooLarge); });
 
         Assert.Throws<TypeLoadException>(() =>
         {
@@ -79,7 +84,7 @@ unsafe class Validate
     public static void NegativeLength_Fails()
     {
         Console.WriteLine($"{nameof(NegativeLength_Fails)}...");
-        Assert.Throws<TypeLoadException>(() => { return typeof(NegativeLength); });
+        Assert.Throws<TypeLoadException>(() => { var t = typeof(NegativeLength); });
 
         Assert.Throws<TypeLoadException>(() =>
         {
@@ -102,7 +107,7 @@ unsafe class Validate
     public static void NoFields_Fails()
     {
         Console.WriteLine($"{nameof(NoFields_Fails)}...");
-        Assert.Throws<TypeLoadException>(() => { return typeof(NoFields); });
+        Assert.Throws<TypeLoadException>(() => { var t = typeof(NoFields); });
 
         Assert.Throws<TypeLoadException>(() =>
         {
@@ -121,7 +126,7 @@ unsafe class Validate
     public static void TwoFields_Fails()
     {
         Console.WriteLine($"{nameof(TwoFields_Fails)}...");
-        Assert.Throws<TypeLoadException>(() => { return typeof(TwoFields); });
+        Assert.Throws<TypeLoadException>(() => { var t = typeof(TwoFields); });
 
         Assert.Throws<TypeLoadException>(() =>
         {
