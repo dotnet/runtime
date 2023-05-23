@@ -14,8 +14,7 @@
     <NativeLib>static</NativeLib>
     <CustomNativeMain>true</CustomNativeMain>
     <UseNativeAOTRuntime Condition="'$(UseNativeAOTRuntime)' == ''">true</UseNativeAOTRuntime>
-    <!-- FIXME: Once we support building System.Globalization.Native and icu, should be removed -->
-    <InvariantGlobalization>true</InvariantGlobalization>
+
     <!-- FIXME: We do not use publish targets yet, but we need to create a publish directory -->
     <PublishDir Condition="'$(PublishDir)' == ''">$(OutputPath)/publish</PublishDir>
   </PropertyGroup>
@@ -23,6 +22,7 @@
   <ItemGroup>
     <Compile Include="..\iOS\Program.cs" Link="Program.cs" />
     <DirectPInvoke Include="__Internal" />
+    <ExtraLinkerArguments Condition="'$(InvariantGlobalization)' != 'true'" Include="-licucore" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'maccatalyst'">
@@ -30,7 +30,7 @@
     <EnableAppSandbox Condition="'$(EnableAppSandbox)' == ''">false</EnableAppSandbox>
   </PropertyGroup>
 
-  <Import Project="$(CoreClrProjectRoot)nativeaot\BuildIntegration\Microsoft.NETCore.Native.targets" />
+  <Import Project="$(CoreClrProjectRoot)nativeaot\BuildIntegration\Microsoft.DotNet.ILCompiler.SingleEntry.targets" />
   <UsingTask TaskName="AppleAppBuilderTask"
              AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
 
@@ -40,8 +40,8 @@
         <IlcPath>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(HostOS).$(BuildArchitecture).$(CoreCLRConfiguration)', 'ilc'))</IlcPath>
         <IlcToolsPath>$(IlcPath)</IlcToolsPath>
         <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
-        <IlcFrameworkPath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkPath>
-        <IlcFrameworkNativePath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkNativePath>
+        <IlcFrameworkPath Condition="'$(PublishAotUsingRuntimePack)' != 'true'">$(LibrariesAllBinArtifactsPath)</IlcFrameworkPath>
+        <IlcFrameworkNativePath Condition="'$(PublishAotUsingRuntimePack)' != 'true'">$(LibrariesAllBinArtifactsPath)</IlcFrameworkNativePath>
     </PropertyGroup>
   </Target>
 
@@ -75,7 +75,8 @@
         Optimized="$(Optimized)"
         InvariantGlobalization="$(InvariantGlobalization)"
         StripSymbolTable="$(StripDebugSymbols)"
-        AppDir="$(MSBuildThisFileDirectory)$(PublishDir)" >
+        AppDir="$(MSBuildThisFileDirectory)$(PublishDir)" 
+        ExtraLinkerArguments="@(ExtraLinkerArguments)" >
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>
