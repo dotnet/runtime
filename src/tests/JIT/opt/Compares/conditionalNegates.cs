@@ -62,7 +62,7 @@ public class ConditionalNegateTest
     [InlineData(77, int.MaxValue)]
     [InlineData(37, -int.MaxValue)]
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void cneg_int_min_max(int op1)
+    public static void cneg_int_min_max(int op1, int expected)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #46
         //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{ge|lt}}
