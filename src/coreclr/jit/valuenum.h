@@ -301,7 +301,7 @@ private:
     };
 
     // Helpers and an array of length GT_COUNT, mapping genTreeOp values to their VNFOpAttrib.
-    static constexpr uint8_t GetOpAttribsForGenTree(unsigned        oper,
+    static constexpr uint8_t GetOpAttribsForGenTree(genTreeOps      oper,
                                                     bool            commute,
                                                     bool            illegalAsVNFunc,
                                                     GenTreeOperKind kind);

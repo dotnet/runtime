@@ -8874,24 +8874,14 @@ static_assert((size) != 0 || !(extra),                                          
 
 #endif // FEATURE_HW_INTRINSICS
 
-/* static */ constexpr uint8_t ValueNumStore::GetOpAttribsForGenTree(unsigned        oper,
+/* static */ constexpr uint8_t ValueNumStore::GetOpAttribsForGenTree(genTreeOps      oper,
                                                                      bool            commute,
                                                                      bool            illegalAsVNFunc,
                                                                      GenTreeOperKind kind)
 {
-    uint8_t    value  = 0;
-    genTreeOps gtOper = static_cast<genTreeOps>(oper);
-    uint8_t    arity  = (kind & GTK_UNOP) >> 1;
-    arity |= (kind & GTK_BINOP) >> 1;
-    if (GenTree::StaticOperIs(gtOper, GT_SELECT))
-    {
-        arity = 3;
-    }
-
-    value |= (arity << VNFOA_ArityShift) & VNFOA_ArityMask;
-    value |= static_cast<uint8_t>(commute) << VNFOA_CommutativeShift;
-    value |= static_cast<uint8_t>(illegalAsVNFunc) << VNFOA_IllegalGenTreeOpShift;
-    return value;
+    return (((GenTree::StaticOperIs(oper, GT_SELECT) ? 3 : (((kind & GTK_UNOP) >> 1) | ((kind & GTK_BINOP) >> 1))) << VNFOA_ArityShift) & VNFOA_ArityMask)
+        | (static_cast<uint8_t>(commute) << VNFOA_CommutativeShift)
+        | (static_cast<uint8_t>(illegalAsVNFunc) << VNFOA_IllegalGenTreeOpShift);
 }
 
 /* static */ constexpr uint8_t ValueNumStore::GetOpAttribsForFunc(int  arity,
@@ -8899,15 +8889,14 @@ static_assert((size) != 0 || !(extra),                                          
                                                                   bool knownNonNull,
                                                                   bool sharedStatic)
 {
-    uint8_t value = static_cast<uint8_t>(commute) << VNFOA_CommutativeShift;
-    value |= static_cast<uint8_t>(knownNonNull) << VNFOA_KnownNonNullShift;
-    value |= static_cast<uint8_t>(sharedStatic) << VNFOA_SharedStaticShift;
-    value |= ((static_cast<uint8_t>(arity & ~(arity >> 31)) << VNFOA_ArityShift) & VNFOA_ArityMask);
-    return value;
+    return (static_cast<uint8_t>(commute) << VNFOA_CommutativeShift)
+        | (static_cast<uint8_t>(knownNonNull) << VNFOA_KnownNonNullShift)
+        | (static_cast<uint8_t>(sharedStatic) << VNFOA_SharedStaticShift)
+        | ((static_cast<uint8_t>(arity & ~(arity >> 31)) << VNFOA_ArityShift) & VNFOA_ArityMask);
 }
 
 const uint8_t ValueNumStore::s_vnfOpAttribs[VNF_COUNT] = {
-#define GTNODE(en, st, cm, ivn, ok) GetOpAttribsForGenTree(GT_##en, cm, ivn, static_cast<GenTreeOperKind>(ok)),
+#define GTNODE(en, st, cm, ivn, ok) GetOpAttribsForGenTree(static_cast<genTreeOps>(GT_##en), cm, ivn, static_cast<GenTreeOperKind>(ok)),
 #include "gtlist.h"
 
     0, // VNF_Boundary
