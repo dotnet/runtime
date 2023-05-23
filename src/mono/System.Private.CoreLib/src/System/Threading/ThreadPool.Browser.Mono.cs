@@ -28,7 +28,7 @@ namespace System.Threading
         }
     }
 
-    public static partial class ThreadPool
+    public static unsafe partial class ThreadPool
     {
         // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
         // the runtime may use the thread for processing other work
@@ -79,7 +79,7 @@ namespace System.Threading
             if (_callbackQueued)
                 return;
             _callbackQueued = true;
-            QueueCallback();
+            MainThreadScheduleBackgroundJob((void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
         }
 
         internal static void NotifyWorkItemProgress()
@@ -110,12 +110,13 @@ namespace System.Threading
             throw new PlatformNotSupportedException();
         }
 
-        [DynamicDependency("Callback")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void QueueCallback();
+        internal static extern unsafe void MainThreadScheduleBackgroundJob(void* callback);
 
-        private static void Callback()
-        {
+#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+#pragma warning restore CS3016
+        private static unsafe void BackgroundJobHandler () {
             _callbackQueued = false;
             ThreadPoolWorkQueue.Dispatch();
         }

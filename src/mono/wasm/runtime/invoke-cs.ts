@@ -10,7 +10,7 @@ import {
     bound_cs_function_symbol, get_signature_version, alloc_stack_frame, get_signature_type,
 } from "./marshal";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "./roots";
-import { conv_string, conv_string_root } from "./strings";
+import { conv_string_root, string_decoder } from "./strings";
 import { MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMarshalerArguments, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, VoidPtrNull, MonoObjectRefNull, MonoObjectNull } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
 import cwraps from "./cwraps";
@@ -18,8 +18,10 @@ import { assembly_load } from "./class-loader";
 import { wrap_error_root, wrap_no_error_root } from "./invoke-js";
 import { startMeasure, MeasuredBlock, endMeasure } from "./profiler";
 import { mono_log_debug } from "./logging";
+import { assert_synchronization_context } from "./pthreads/shared";
 
 export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, signature_hash: number, signature: JSFunctionSignature, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    assert_synchronization_context();
     const fqn_root = mono_wasm_new_external_root<MonoString>(fully_qualified_name), resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     const mark = startMeasure();
     try {
@@ -234,7 +236,7 @@ type BindingClosure = {
 
 export function invoke_method_and_handle_exception(method: MonoMethod, args: JSMarshalerArguments): void {
     const fail = cwraps.mono_wasm_invoke_method_bound(method, args);
-    if (fail) throw new Error("ERR24: Unexpected error: " + conv_string(fail));
+    if (fail) throw new Error("ERR24: Unexpected error: " + string_decoder.copy(fail));
     if (is_args_exception(args)) {
         const exc = get_arg(args, 0);
         throw marshal_exception_to_js(exc);

@@ -14,10 +14,12 @@ import { mono_log_debug, mono_wasm_symbolicate_string } from "./logging";
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
+import { assert_synchronization_context } from "./pthreads/shared";
 
 const fn_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, we never free bound functions
 
 export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_name: MonoStringRef, signature: JSFunctionSignature, function_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    assert_synchronization_context();
     const function_name_root = mono_wasm_new_external_root<MonoString>(function_name),
         module_name_root = mono_wasm_new_external_root<MonoString>(module_name),
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
@@ -315,6 +317,7 @@ export const importedModules: Map<string, Promise<any>> = new Map();
 export function dynamic_import(module_name: string, module_url: string): Promise<any> {
     mono_assert(module_name, "Invalid module_name");
     mono_assert(module_url, "Invalid module_name");
+    assert_synchronization_context();
     let promise = importedModulesPromises.get(module_name);
     const newPromise = !promise;
     if (newPromise) {
