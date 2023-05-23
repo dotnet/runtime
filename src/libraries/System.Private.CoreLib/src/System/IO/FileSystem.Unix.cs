@@ -30,8 +30,10 @@ namespace System.IO
 
         public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
-            // Open the src file handle, and read the file permissions.
-            using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out Interop.Sys.FileStatus srcFileStatus);
+            // Open the src file handle.
+            long fileLength;
+            UnixFileMode filePermissions;
+            using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out fileLength, out filePermissions);
 
             // Try to clone the file first.
             if (TryCloneFile(sourceFullPath, destFullPath, overwrite))
@@ -40,11 +42,10 @@ namespace System.IO
             }
 
             // Open the dst file handle, and copy the file.
-            UnixFileMode filePermissions = (UnixFileMode)srcFileStatus.Mode & SafeFileHandle.PermissionMask;
             using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
                                             FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, filePermissions,
                                             CreateOpenException);
-            Interop.CheckIo(Interop.Sys.CopyFile(src, dst, srcFileStatus.Size));
+            Interop.CheckIo(Interop.Sys.CopyFile(src, dst, fileLength));
 
             // Exception handler for SafeFileHandle.Open failing.
             static Exception? CreateOpenException(Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path)

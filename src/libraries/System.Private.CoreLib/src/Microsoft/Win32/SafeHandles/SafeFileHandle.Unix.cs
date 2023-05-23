@@ -11,7 +11,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        internal const UnixFileMode PermissionMask =
+        private const UnixFileMode PermissionMask =
             UnixFileMode.UserRead |
             UnixFileMode.UserWrite |
             UnixFileMode.UserExecute |
@@ -165,22 +165,23 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        // Specialized Open that returns the FileStatus of the opened file.
+        // Specialized Open that returns the file length and permissions of the opened file.
         // This information is retrieved from the 'stat' syscall that must be performed to ensure the path is not a directory.
-        internal static SafeFileHandle OpenReadOnly(string fullPath, FileOptions options, out Interop.Sys.FileStatus status)
+        internal static SafeFileHandle OpenReadOnly(string fullPath, FileOptions options, out long fileLength, out UnixFileMode filePermissions)
         {
-            SafeFileHandle handle = Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, options, preallocationSize: 0, DefaultCreateMode, out status);
+            SafeFileHandle handle = Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, options, preallocationSize: 0, DefaultCreateMode, out fileLength, out filePermissions, null);
+            Debug.Assert(fileLength >= 0);
             return handle;
         }
 
         internal static SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, UnixFileMode? unixCreateMode = null,
                                             Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?>? createOpenException = null)
         {
-            return Open(fullPath, mode, access, share, options, preallocationSize, unixCreateMode ?? DefaultCreateMode, out _, createOpenException);
+            return Open(fullPath, mode, access, share, options, preallocationSize, unixCreateMode ?? DefaultCreateMode, out _, out _, createOpenException);
         }
 
         private static SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, UnixFileMode openPermissions,
-                                            out Interop.Sys.FileStatus status,
+                                            out long fileLength, out UnixFileMode filePermissions,
                                             Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?>? createOpenException = null)
         {
             // Translate the arguments into arguments for an open call.
@@ -195,7 +196,7 @@ namespace Microsoft.Win32.SafeHandles
 
                     // When Init return false, the path has changed to another file entry, and
                     // we need to re-open the path to reflect that.
-                    if (safeFileHandle.Init(fullPath, mode, access, share, options, preallocationSize, out status))
+                    if (safeFileHandle.Init(fullPath, mode, access, share, options, preallocationSize, out fileLength, out filePermissions))
                     {
                         return safeFileHandle;
                     }
@@ -293,11 +294,12 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         private bool Init(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize,
-                          out Interop.Sys.FileStatus status)
+                          out long fileLength, out UnixFileMode filePermissions)
         {
+            Interop.Sys.FileStatus status = default;
             bool statusHasValue = false;
-
-            status = default;
+            fileLength = -1;
+            filePermissions = 0;
 
             // Make sure our handle is not a directory.
             // We can omit the check when write access is requested. open will have failed with EISDIR.
@@ -319,6 +321,9 @@ namespace Microsoft.Win32.SafeHandles
                     _canSeek = NullableBool.True;
                     Debug.Assert(Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
                 }
+
+                fileLength = status.Size;
+                filePermissions = ((UnixFileMode)status.Mode) & PermissionMask;
             }
 
             IsAsync = (options & FileOptions.Asynchronous) != 0;
