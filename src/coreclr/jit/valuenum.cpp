@@ -8854,16 +8854,14 @@ void ValueNumStore::vnDumpZeroObj(Compiler* comp, VNFuncApp* zeroObj)
 // Static fields, methods.
 
 #define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic, extra)                                        \
-    \
-static_assert((arity) >= 0 || !(extra), "valuenumfuncs.h has EncodesExtraTypeArg==true and arity<0 for " #vnf);
+    static_assert((arity) >= 0 || !(extra), "valuenumfuncs.h has EncodesExtraTypeArg==true and arity<0 for " #vnf);
 #include "valuenumfuncs.h"
 
 #ifdef FEATURE_HW_INTRINSICS
 
 #define HARDWARE_INTRINSIC(isa, name, size, argCount, extra, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)  \
-    \
-static_assert((size) != 0 || !(extra),                                                                                 \
-              "hwintrinsicslist<arch>.h has EncodesExtraTypeArg==true and size==0 for " #isa " " #name);
+    static_assert((size) != 0 || !(extra),                                                                             \
+                  "hwintrinsicslist<arch>.h has EncodesExtraTypeArg==true and size==0 for " #isa " " #name);
 #if defined(TARGET_XARCH)
 #include "hwintrinsiclistxarch.h"
 #elif defined(TARGET_ARM64)
@@ -8874,15 +8872,19 @@ static_assert((size) != 0 || !(extra),                                          
 
 #endif // FEATURE_HW_INTRINSICS
 
+/* static */ constexpr uint8_t ValueNumStore::GetOpAttribsForArity(genTreeOps oper, GenTreeOperKind kind)
+{
+    return ((GenTree::StaticOperIs(oper, GT_SELECT) ? 3 : (((kind & GTK_UNOP) >> 1) | ((kind & GTK_BINOP) >> 1)))
+            << VNFOA_ArityShift) &
+           VNFOA_ArityMask;
+}
+
 /* static */ constexpr uint8_t ValueNumStore::GetOpAttribsForGenTree(genTreeOps      oper,
                                                                      bool            commute,
                                                                      bool            illegalAsVNFunc,
                                                                      GenTreeOperKind kind)
 {
-    return (((GenTree::StaticOperIs(oper, GT_SELECT) ? 3 : (((kind & GTK_UNOP) >> 1) | ((kind & GTK_BINOP) >> 1)))
-             << VNFOA_ArityShift) &
-            VNFOA_ArityMask) |
-           (static_cast<uint8_t>(commute) << VNFOA_CommutativeShift) |
+    return GetOpAttribsForArity(oper, kind) | (static_cast<uint8_t>(commute) << VNFOA_CommutativeShift) |
            (static_cast<uint8_t>(illegalAsVNFunc) << VNFOA_IllegalGenTreeOpShift);
 }
 
