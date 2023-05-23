@@ -99,7 +99,7 @@ namespace System.Formats.Tar
             long actualLength = dataEndPosition - dataStartPosition;
 
             // Write the padding now so that we can go back to writing the entry's header metadata
-            WritePadding(archiveStream, actualLength);
+            WriteEmptyPadding(archiveStream, actualLength);
 
             // Store the end of the current header, we will write the next one after this position
             long endOfHeaderPosition = archiveStream.Position;
@@ -145,7 +145,7 @@ namespace System.Formats.Tar
             long actualLength = dataEndPosition - dataStartPosition;
 
             // Write the padding now so that we can go back to writing the entry's header metadata
-            await WritePaddingAsync(archiveStream, actualLength, cancellationToken).ConfigureAwait(false);
+            await WriteEmptyPaddingAsync(archiveStream, actualLength, cancellationToken).ConfigureAwait(false);
 
             // Store the end of the current header, we will write the next one after this position
             long endOfHeaderPosition = archiveStream.Position;
@@ -651,11 +651,11 @@ namespace System.Formats.Tar
         private static void WriteData(Stream archiveStream, Stream dataStream, long actualLength)
         {
             dataStream.CopyTo(archiveStream); // The data gets copied from the current position
-            WritePadding(archiveStream, actualLength);
+            WriteEmptyPadding(archiveStream, actualLength);
         }
 
         // Calculates the padding for the current entry and writes it after the data.
-        private static void WritePadding(Stream archiveStream, long actualLength)
+        private static void WriteEmptyPadding(Stream archiveStream, long actualLength)
         {
             int paddingAfterData = TarHelpers.CalculatePadding(actualLength);
             if (paddingAfterData != 0)
@@ -671,7 +671,7 @@ namespace System.Formats.Tar
         }
 
         // Calculates the padding for the current entry and asynchronously writes it after the data.
-        private static ValueTask WritePaddingAsync(Stream archiveStream, long actualLength, CancellationToken cancellationToken)
+        private static ValueTask WriteEmptyPaddingAsync(Stream archiveStream, long actualLength, CancellationToken cancellationToken)
         {
             int paddingAfterData = TarHelpers.CalculatePadding(actualLength);
             if (paddingAfterData != 0)
