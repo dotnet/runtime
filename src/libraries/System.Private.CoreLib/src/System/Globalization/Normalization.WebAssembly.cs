@@ -17,10 +17,9 @@ namespace System.Globalization
 
             ValidateArguments(strInput, normalizationForm);
 
-            int ret = Interop.JsGlobalization.IsNormalized(out string exceptionMessage, normalizationForm, strInput);
-
-            if (!string.IsNullOrEmpty(exceptionMessage))
-                throw new Exception(exceptionMessage);
+            int ret = Interop.JsGlobalization.IsNormalized(normalizationForm, strInput, out int exception, out object ex_result);
+            if (exception != 0)
+                throw new Exception((string)ex_result);
 
             return ret == 1;
         }
@@ -44,14 +43,12 @@ namespace System.Globalization
                 for (int attempt = 0; attempt < 2; attempt++)
                 {
                     int realLen;
-                    string exceptionMessage;
                     fixed (char* pDest = &MemoryMarshal.GetReference(buffer))
                     {
-                        realLen = Interop.JsGlobalization.NormalizeString(out exceptionMessage, normalizationForm, strInput, pDest, buffer.Length);
+                        realLen = Interop.JsGlobalization.NormalizeString(normalizationForm, strInput, pDest, buffer.Length, out int exception, out object ex_result);
+                        if (exception != 0)
+                            throw new Exception((string)ex_result);
                     }
-
-                    if (!string.IsNullOrEmpty(exceptionMessage))
-                        throw new Exception(exceptionMessage);
 
                     if (realLen <= buffer.Length)
                     {

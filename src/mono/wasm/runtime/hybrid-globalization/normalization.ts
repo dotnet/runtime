@@ -4,14 +4,15 @@
 import { setU16 } from "../memory";
 import { mono_wasm_new_external_root } from "../roots";
 import { conv_string_root } from "../strings";
-import { MonoString, MonoStringRef } from "../types/internal";
+import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
 import { Int32Ptr } from "../types/emscripten";
-import { pass_exception_details } from "./common";
+import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 
 const NORMALIZATION_FORM_MAP = [undefined, "NFC", "NFD", undefined, undefined, "NFKC", "NFKD"];
 
-export function mono_wasm_is_normalized(exceptionMessage: Int32Ptr, normalizationForm: number, inputStr: MonoStringRef) : number{
-    const inputRoot = mono_wasm_new_external_root<MonoString>(inputStr);
+export function mono_wasm_is_normalized(normalizationForm: number, inputStr: MonoStringRef, is_exception: Int32Ptr, ex_address: MonoObjectRef) : number{
+    const inputRoot = mono_wasm_new_external_root<MonoString>(inputStr),
+        exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
     try{
         const jsString = conv_string_root(inputRoot);
         if (!jsString)
@@ -19,18 +20,21 @@ export function mono_wasm_is_normalized(exceptionMessage: Int32Ptr, normalizatio
 
         const normalization = normalization_to_string(normalizationForm);
         const result = jsString.normalize(normalization);
+        wrap_no_error_root(is_exception, exceptionRoot);
         return result === jsString ? 1 : 0;
     }
     catch (ex) {
-        pass_exception_details(ex, exceptionMessage);
+        wrap_error_root(is_exception, ex, exceptionRoot);
         return -1;
     } finally {
         inputRoot.release();
+        exceptionRoot.release();
     }
 }
 
-export function mono_wasm_normalize_string(exceptionMessage: Int32Ptr, normalizationForm: number, inputStr: MonoStringRef, dstPtr: number, dstLength: number) : number{
-    const inputRoot = mono_wasm_new_external_root<MonoString>(inputStr);
+export function mono_wasm_normalize_string(normalizationForm: number, inputStr: MonoStringRef, dstPtr: number, dstLength: number, is_exception: Int32Ptr, ex_address: MonoObjectRef) : number{
+    const inputRoot = mono_wasm_new_external_root<MonoString>(inputStr),
+        exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
     try {
         const jsString = conv_string_root(inputRoot);
         if (!jsString)
@@ -46,10 +50,11 @@ export function mono_wasm_normalize_string(exceptionMessage: Int32Ptr, normaliza
             setU16(dstPtr + i*2, result.charCodeAt(i));
         return result.length;
     } catch (ex) {
-        pass_exception_details(ex, exceptionMessage);
+        wrap_error_root(is_exception, ex, exceptionRoot);
         return -1;
     } finally {
         inputRoot.release();
+        exceptionRoot.release();
     }
 }
 

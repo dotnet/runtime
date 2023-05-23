@@ -3,31 +3,35 @@
 
 import { mono_wasm_new_external_root } from "../roots";
 import { conv_string_root, string_decoder } from "../strings";
-import { MonoString, MonoStringRef } from "../types/internal";
+import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
 import { Int32Ptr } from "../types/emscripten";
-import { pass_exception_details } from "./common";
+import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 
-export function mono_wasm_compare_string(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number) : number{
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
+export function mono_wasm_compare_string(culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, is_exception: Int32Ptr, ex_address: MonoObjectRef) : number{
+    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
+        exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
     try{
         const cultureName = conv_string_root(cultureRoot);
         const string1 = string_decoder.decode(<any>str1, <any>(str1 + 2*str1Length));
         const string2 = string_decoder.decode(<any>str2, <any>(str2 + 2*str2Length));
         const casePicker = (options & 0x1f);
         const locale = cultureName ? cultureName : undefined;
+        wrap_no_error_root(is_exception, exceptionRoot);
         return compare_strings(string1, string2, locale, casePicker);
     }
     catch (ex: any) {
-        pass_exception_details(ex, exceptionMessage);
+        wrap_error_root(is_exception, ex, exceptionRoot);
         return -2;
     }
     finally {
         cultureRoot.release();
+        exceptionRoot.release();
     }
 }
 
-export function mono_wasm_starts_with(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number): number{
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
+export function mono_wasm_starts_with(culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number{
+    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
+        exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
     try{
         const cultureName = conv_string_root(cultureRoot);
         const prefix = decode_to_clean_string(str2, str2Length);
@@ -43,19 +47,22 @@ export function mono_wasm_starts_with(exceptionMessage: Int32Ptr, culture: MonoS
         const casePicker = (options & 0x1f);
         const locale = cultureName ? cultureName : undefined;
         const result = compare_strings(sourceOfPrefixLength, prefix, locale, casePicker);
+        wrap_no_error_root(is_exception, exceptionRoot);
         return result === 0 ? 1 : 0; // equals ? true : false
     }
     catch (ex: any) {
-        pass_exception_details(ex, exceptionMessage);
+        wrap_error_root(is_exception, ex, exceptionRoot);
         return -1;
     }
     finally {
         cultureRoot.release();
+        exceptionRoot.release();
     }
 }
 
-export function mono_wasm_ends_with(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number): number{
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
+export function mono_wasm_ends_with(culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number{
+    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
+        exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
     try{
         const cultureName = conv_string_root(cultureRoot);
         const suffix = decode_to_clean_string(str2, str2Length);
@@ -71,29 +78,38 @@ export function mono_wasm_ends_with(exceptionMessage: Int32Ptr, culture: MonoStr
         const casePicker = (options & 0x1f);
         const locale = cultureName ? cultureName : undefined;
         const result = compare_strings(sourceOfSuffixLength, suffix, locale, casePicker);
+        wrap_no_error_root(is_exception, exceptionRoot);
         return result === 0 ? 1 : 0; // equals ? true : false
     }
     catch (ex: any) {
-        pass_exception_details(ex, exceptionMessage);
+        wrap_error_root(is_exception, ex, exceptionRoot);
         return -1;
     }
     finally {
         cultureRoot.release();
+        exceptionRoot.release();
     }
 }
 
-export function mono_wasm_index_of(exceptionMessage: Int32Ptr, culture: MonoStringRef, needlePtr: number, needleLength: number, srcPtr: number, srcLength: number, options: number, fromBeginning: number): number{
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
+export function mono_wasm_index_of(culture: MonoStringRef, needlePtr: number, needleLength: number, srcPtr: number, srcLength: number, options: number, fromBeginning: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number{
+    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
+        exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
     try {
         const needle = string_decoder.decode(<any>needlePtr, <any>(needlePtr + 2*needleLength));
         // no need to look for an empty string
         if (clean_string(needle).length == 0)
+        {
+            wrap_no_error_root(is_exception, exceptionRoot);
             return fromBeginning ? 0 : srcLength;
+        }
 
         const source = string_decoder.decode(<any>srcPtr, <any>(srcPtr + 2*srcLength));
         // no need to look in an empty string
         if (clean_string(source).length == 0)
+        {
+            wrap_no_error_root(is_exception, exceptionRoot);
             return fromBeginning ? 0 : srcLength;
+        }
         const cultureName = conv_string_root(cultureRoot);
         const locale = cultureName ? cultureName : undefined;
         const casePicker = (options & 0x1f);
@@ -152,14 +168,16 @@ export function mono_wasm_index_of(exceptionMessage: Int32Ptr, culture: MonoStri
             }
             i = nextIndex;
         }
+        wrap_no_error_root(is_exception, exceptionRoot);
         return result;
     }
     catch (ex: any) {
-        pass_exception_details(ex, exceptionMessage);
+        wrap_error_root(is_exception, ex, exceptionRoot);
         return -1;
     }
     finally {
         cultureRoot.release();
+        exceptionRoot.release();
     }
 
     function check_match_found(str1: string, str2: string, locale: string | undefined, casePicker: number) : boolean
@@ -168,7 +186,7 @@ export function mono_wasm_index_of(exceptionMessage: Int32Ptr, culture: MonoStri
     }
 }
 
-export function compare_strings(string1: string, string2: string, locale: string | undefined, casePicker: number) : number{
+function compare_strings(string1: string, string2: string, locale: string | undefined, casePicker: number) : number{
     switch (casePicker)
     {
         case 0:

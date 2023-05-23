@@ -9,9 +9,9 @@ internal static partial class Interop
     internal static unsafe partial class JsGlobalization
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe int IsNormalized(out string exceptionMessage, NormalizationForm normalizationForm, in string source);
+        internal static extern unsafe int IsNormalized(NormalizationForm normalizationForm, in string source, out int exceptionalResult, out object result);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe int NormalizeString(out string exceptionMessage, NormalizationForm normalizationForm, in string source, char* dstBuffer, int dstBufferCapacity);
+        internal static extern unsafe int NormalizeString(NormalizationForm normalizationForm, in string source, char* dstBuffer, int dstBufferCapacity, out int exceptionalResult, out object result);
     }
 }
