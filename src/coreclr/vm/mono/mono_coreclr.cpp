@@ -679,7 +679,7 @@ extern "C" EXPORT_API MonoMethod* EXPORT_CC mono_class_get_methods(MonoClass* kl
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         PRECONDITION(klass != NULL);
     }
     CONTRACTL_END;
@@ -708,6 +708,7 @@ extern "C" EXPORT_API MonoMethod* EXPORT_CC mono_class_get_methods(MonoClass* kl
     }
 
     auto method = iterator->GetMethodDesc();
+    method->EnsureActive();
     iterator->Next();
     return (MonoMethod*)method;
 }
