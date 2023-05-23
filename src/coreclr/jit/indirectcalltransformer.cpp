@@ -588,7 +588,15 @@ private:
                 compiler->fgAddRefPred(checkBlock, prevCheckBlock);
 
                 // Weight for the new secondary check is the difference between the previous check and the thenBlock.
-                checkBlock->setBBProfileWeight(prevCheckBlock->bbWeight - thenBlock->bbWeight);
+                weight_t newWeight = prevCheckBlock->bbWeight - thenBlock->bbWeight;
+                if (newWeight < 0)
+                {
+                    // There could be a small error leading to e.g. -0.00001 instead of 0.0 here
+                    // Mostly because of inheritWeightPercentage for thenBlock;
+                    assert(abs(newWeight) < 0.01);
+                    newWeight = 0;
+                }
+                checkBlock->setBBProfileWeight(newWeight);
             }
 
             // Find last arg with a side effect. All args with any effect
@@ -982,7 +990,17 @@ private:
             checkBlock->bbJumpDest = elseBlock;
             compiler->fgAddRefPred(remainderBlock, elseBlock);
             compiler->fgAddRefPred(elseBlock, checkBlock);
-            elseBlock->setBBProfileWeight(checkBlock->bbWeight - thenBlock->bbWeight);
+
+            weight_t newWeight = checkBlock->bbWeight - thenBlock->bbWeight;
+            if (newWeight < 0)
+            {
+                // There could be a small error leading to e.g. -0.00001 instead of 0.0 here
+                // Mostly because of inheritWeightPercentage for thenBlock;
+                assert(abs(newWeight) < 0.01);
+                newWeight = 0;
+            }
+
+            elseBlock->setBBProfileWeight(newWeight);
 
             GenTreeCall* call    = origCall;
             Statement*   newStmt = compiler->gtNewStmt(call, stmt->GetDebugInfo());
