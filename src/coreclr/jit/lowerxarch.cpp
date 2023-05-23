@@ -7540,7 +7540,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
 }
 
 //----------------------------------------------------------------------------------------------
-// TryFoldCnsVecForEmbeddedBroadcast: 
+// TryFoldCnsVecForEmbeddedBroadcast:
 //  Unfold the eligible constant vector when embedded broadcast is
 //  available.
 //
@@ -7994,8 +7994,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (IsContainableHWIntrinsicOp(node, op2, &supportsOp2RegOptional))
                     {
-                        if (op2->OperIs(GT_CNS_VEC) &&
-                            comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
+                        if (op2->OperIs(GT_CNS_VEC) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
                             node->OperIsEmbBroadcastCompatible())
                         {
                             TryFoldCnsVecForEmbeddedBroadcast(node, op2->AsVecCon());
