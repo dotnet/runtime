@@ -35,8 +35,8 @@ steps:
     - script: rm -r -f $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp
       workingDirectory: $(Build.SourcesDirectory)/artifacts/bin
       displayName: clean bindir
-    
-  - ${{ if eq(parameters.osGroup, 'ios') }}:
+
+  - ${{ if and(eq(parameters.osGroup, 'ios'), eq(nameSuffix, 'iOSMono')) }}:
     - script: make build-appbundle TARGET=ios MONO_ARCH=arm64 MONO_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false
       env:
         DevTeamProvisioning: '-'
@@ -78,6 +78,8 @@ steps:
         artifactName: iOSSampleAppLLVM
         archiveExtension: '.zip'
         archiveType: zip
+
+  - ${{ if and(eq(parameters.osGroup, 'ios'), eq(nameSuffix, 'iOSNativeAOT')) }}:
     - script: make world TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release DEPLOY_AND_RUN=false
       env:
         DevTeamProvisioning: '-'
