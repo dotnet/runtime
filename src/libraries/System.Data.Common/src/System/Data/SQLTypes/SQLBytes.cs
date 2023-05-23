@@ -202,7 +202,7 @@ namespace System.Data.SqlTypes
 
                 _rgbWorkBuf ??= new byte[1];
 
-                Read(offset, _rgbWorkBuf, 0, 1);
+                Read(offset, _rgbWorkBuf.AsSpan(0, 1));
                 return _rgbWorkBuf[0];
             }
             set
@@ -210,7 +210,7 @@ namespace System.Data.SqlTypes
                 _rgbWorkBuf ??= new byte[1];
 
                 _rgbWorkBuf[0] = value;
-                Write(offset, _rgbWorkBuf, 0, 1);
+                Write(offset, _rgbWorkBuf.AsSpan(0, 1));
             }
         }
 
