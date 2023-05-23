@@ -123,22 +123,17 @@ namespace Microsoft.Extensions.Configuration
         private sealed class ConfigurationSectionDebugView
         {
             private readonly ConfigurationSection _current;
+            private readonly IConfigurationProvider? _provider;
 
             public ConfigurationSectionDebugView(ConfigurationSection current)
             {
                 _current = current;
+                (_, _provider) = ConfigurationItemDebugView.GetValueAndProvider(_current._root, _current.Path);
             }
 
             public string Path => _current.Path;
             public string? Value => _current.Value;
-            public IConfigurationProvider? Provider
-            {
-                get
-                {
-                    (_, IConfigurationProvider? provider) = ConfigurationItemDebugView.GetValueAndProvider(_current._root, _current.Path);
-                    return provider;
-                }
-            }
+            public IConfigurationProvider? Provider => _provider;
             public List<ConfigurationItemDebugView> Children => ConfigurationItemDebugView.FromConfiguration(_current, _current._root);
         }
     }
