@@ -8879,9 +8879,11 @@ static_assert((size) != 0 || !(extra),                                          
                                                                      bool            illegalAsVNFunc,
                                                                      GenTreeOperKind kind)
 {
-    return (((GenTree::StaticOperIs(oper, GT_SELECT) ? 3 : (((kind & GTK_UNOP) >> 1) | ((kind & GTK_BINOP) >> 1))) << VNFOA_ArityShift) & VNFOA_ArityMask)
-        | (static_cast<uint8_t>(commute) << VNFOA_CommutativeShift)
-        | (static_cast<uint8_t>(illegalAsVNFunc) << VNFOA_IllegalGenTreeOpShift);
+    return (((GenTree::StaticOperIs(oper, GT_SELECT) ? 3 : (((kind & GTK_UNOP) >> 1) | ((kind & GTK_BINOP) >> 1)))
+             << VNFOA_ArityShift) &
+            VNFOA_ArityMask) |
+           (static_cast<uint8_t>(commute) << VNFOA_CommutativeShift) |
+           (static_cast<uint8_t>(illegalAsVNFunc) << VNFOA_IllegalGenTreeOpShift);
 }
 
 /* static */ constexpr uint8_t ValueNumStore::GetOpAttribsForFunc(int  arity,
@@ -8889,14 +8891,15 @@ static_assert((size) != 0 || !(extra),                                          
                                                                   bool knownNonNull,
                                                                   bool sharedStatic)
 {
-    return (static_cast<uint8_t>(commute) << VNFOA_CommutativeShift)
-        | (static_cast<uint8_t>(knownNonNull) << VNFOA_KnownNonNullShift)
-        | (static_cast<uint8_t>(sharedStatic) << VNFOA_SharedStaticShift)
-        | ((static_cast<uint8_t>(arity & ~(arity >> 31)) << VNFOA_ArityShift) & VNFOA_ArityMask);
+    return (static_cast<uint8_t>(commute) << VNFOA_CommutativeShift) |
+           (static_cast<uint8_t>(knownNonNull) << VNFOA_KnownNonNullShift) |
+           (static_cast<uint8_t>(sharedStatic) << VNFOA_SharedStaticShift) |
+           ((static_cast<uint8_t>(arity & ~(arity >> 31)) << VNFOA_ArityShift) & VNFOA_ArityMask);
 }
 
 const uint8_t ValueNumStore::s_vnfOpAttribs[VNF_COUNT] = {
-#define GTNODE(en, st, cm, ivn, ok) GetOpAttribsForGenTree(static_cast<genTreeOps>(GT_##en), cm, ivn, static_cast<GenTreeOperKind>(ok)),
+#define GTNODE(en, st, cm, ivn, ok)                                                                                    \
+    GetOpAttribsForGenTree(static_cast<genTreeOps>(GT_##en), cm, ivn, static_cast<GenTreeOperKind>(ok)),
 #include "gtlist.h"
 
     0, // VNF_Boundary
