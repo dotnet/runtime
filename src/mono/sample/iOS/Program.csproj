@@ -38,7 +38,7 @@
       <AppDir>$(MSBuildThisFileDirectory)$(PublishDir)\app</AppDir>
       <IosSimulator Condition="'$(TargetsiOSSimulator)' == 'true'">iPhone 11</IosSimulator>
       <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
-      <RunAOTCompilation Condition="('$(TargetsMacCatalyst)' == 'false' and '$(IosSimulator)' == '') or '$(ForceAOT)' == 'true'">true</RunAOTCompilation>
+      <RunAOTCompilation>true</RunAOTCompilation>
     </PropertyGroup>
 
     <RemoveDir Directories="$(AppDir)" />
