@@ -43,7 +43,7 @@ namespace System.IO
             }
 
             // Open the dst file handle, and copy the file.
-            UnixFileMode filePermissions = srcFileStatus.Mode & SafeFileHandle.PermissionMask;
+            UnixFileMode filePermissions = (UnixFileMode)srcFileStatus.Mode & SafeFileHandle.PermissionMask;
             using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
                                             FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, filePermissions,
                                             CreateOpenException);
