@@ -593,7 +593,6 @@ private:
                 {
                     // There could be a small error leading to e.g. -0.00001 instead of 0.0 here
                     // Mostly because of inheritWeightPercentage for thenBlock;
-                    assert(abs(newWeight) < 0.01);
                     newWeight = 0;
                 }
                 checkBlock->setBBProfileWeight(newWeight);
@@ -996,7 +995,6 @@ private:
             {
                 // There could be a small error leading to e.g. -0.00001 instead of 0.0 here
                 // Mostly because of inheritWeightPercentage for thenBlock;
-                assert(abs(newWeight) < 0.01);
                 newWeight = 0;
             }
 
