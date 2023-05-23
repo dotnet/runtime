@@ -44,8 +44,8 @@ namespace System.IO
                 error = Interop.Sys.GetLastError();
             }
 
-            // Check if it's not supported, or if they're on different filesystems.
-            if (error == Interop.Error.ENOTSUP || error == Interop.Error.EXDEV)
+            // Check if it's not supported, if they're on different filesystems, or the destination file still exists.
+            if (error == Interop.Error.ENOTSUP || error == Interop.Error.EXDEV || error == Interop.Error.EEXIST)
             {
                 // Fall back to normal copy.
                 return false;
