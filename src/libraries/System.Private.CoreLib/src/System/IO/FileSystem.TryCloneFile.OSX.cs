@@ -22,40 +22,6 @@ namespace System.IO
             // Try to delete the destination file if we're overwriting.
             if (error == Interop.Error.EEXIST && overwrite)
             {
-                /*
-                // Read FileStatus of destination file to determine how to continue (we need to check that
-                // destination doesn't point to the same file as the source file so we can fail appropriately)
-                int destError = Interop.Sys.Stat(destFullPath, out Interop.Sys.FileStatus destStat);
-                if (destError != 0)
-                {
-                    // stat failed. If the destination doesn't exist anymore,
-                    // try clonefile; otherwise, fall back to a normal copy.
-                    if (Interop.Sys.GetLastError() == Interop.Error.ENOENT)
-                    {
-                        goto tryCloneFile;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-                else
-                {
-                    // Destination exists:
-                    if (srcStat.Dev != destStat.Dev)
-                    {
-                        // On different device, so fall back to normal copy
-                        return false;
-                    }
-                    if (srcStat.Ino == destStat.Ino)
-                    {
-                        // Copying onto itself
-                        throw new IOException(SR.Format(SR.IO_SharingViolation_File, destFullPath));
-                    }
-                }
-                */
-
-                // Try deleting destination:
                 // Delete the destination. This should fail on directories.
                 // Get a lock to the dest file to ensure we don't copy onto it when it's locked by something else, and then delete it.
                 try
@@ -70,7 +36,6 @@ namespace System.IO
                 }
 
                 // Try clonefile:
-                tryCloneFile:
                 if (Interop.@libc.clonefile(sourceFullPath, destFullPath, Interop.@libc.CLONE_ACL) == 0)
                 {
                     // Success
