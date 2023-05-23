@@ -765,9 +765,7 @@ void CodeGen::inst_RV_SH(
 // logic for determining what "kind" of operand "op" is.
 //
 // Arguments:
-//    op - The operand node for which to obtain the descriptor
-//    instOptions - The optional parameter to track if embedded broadcast is enabled
-//    simdBaseType - The base data type of the emitting instruction.
+//    op - The operand node for which to obtain the descriptor.
 //
 // Return Value:
 //    The operand descriptor for "op".
@@ -857,12 +855,12 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     // In the codes below, we specially handle the `Broadcast -> CNS_INT` form and
                     // handle other cases recursively.
                     GenTree* hwintrinsicChild = hwintrinsic->Op(1);
+                    assert(hwintrinsicChild->isContained());
                     if (hwintrinsicChild->OperIs(GT_CNS_INT))
                     {
                         // a special case is when the operand of CreateScalarUnsafe is in integer type,
                         // CreateScalarUnsafe node will be fold, so we directly match a pattern of
                         // broadcast -> LCL_VAR(TYP_(U)INT)
-                        assert(hwintrinsicChild->isContained());
                         ssize_t        scalarValue = hwintrinsicChild->AsIntCon()->IconValue();
                         UNATIVE_OFFSET cnum        = emit->emitDataConst(&scalarValue, genTypeSize(simdBaseType),
                                                                   genTypeSize(simdBaseType), simdBaseType);
