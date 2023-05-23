@@ -1087,9 +1087,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/buffersize/**">
             <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/config/**">
-            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/diagnosticport/**">
             <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
         </ExcludeList>
