@@ -10,11 +10,11 @@ namespace System.IO
     {
         private static partial bool TryCloneFile(string sourceFullPath, in Interop.Sys.FileStatus srcStat, string destFullPath, bool overwrite)
         {
-            // Try to clone the file immediately, this will only succeed if the destination doesn't exist,
-            // so we don't worry about locking for this one.
+            // Try to clone the file immediately, this will only succeed if the
+            // destination doesn't exist, so we don't worry about locking for this one.
             if (Interop.@libc.clonefile(sourceFullPath, destFullPath, Interop.@libc.CLONE_ACL) == 0)
             {
-                // Success
+                // Success.
                 return true;
             }
             Interop.Error error = Interop.Sys.GetLastError();
@@ -22,8 +22,8 @@ namespace System.IO
             // Try to delete the destination file if we're overwriting.
             if (error == Interop.Error.EEXIST && overwrite)
             {
-                // Delete the destination. This should fail on directories.
-                // Get a lock to the dest file to ensure we don't copy onto it when it's locked by something else, and then delete it.
+                // Delete the destination. This should fail on directories. Get a lock to the dest file to ensure we don't copy onto it when
+                // it's locked by something else, and then delete it. It should also fail if destination == source since it's already locked.
                 try
                 {
                     using SafeFileHandle? dstHandle = SafeFileHandle.Open(destFullPath, FileMode.Open, FileAccess.ReadWrite,
@@ -35,10 +35,10 @@ namespace System.IO
                     // We don't want to throw if it's just the file not existing, since we're trying to delete it.
                 }
 
-                // Try clonefile:
+                // Try clonefile now we've deleted the destination file.
                 if (Interop.@libc.clonefile(sourceFullPath, destFullPath, Interop.@libc.CLONE_ACL) == 0)
                 {
-                    // Success
+                    // Success.
                     return true;
                 }
                 error = Interop.Sys.GetLastError();
@@ -47,12 +47,12 @@ namespace System.IO
             // Check if it's not supported, or if they're on different filesystems.
             if (error == Interop.Error.ENOTSUP || error == Interop.Error.EXDEV)
             {
-                // Fall back to normal copy
+                // Fall back to normal copy.
                 return false;
             }
 
-            // Throw the appropriate exception
-            Debug.Assert(error != Interop.Error.SUCCESS); // We shouldn't fail with success
+            // Throw the appropriate exception.
+            Debug.Assert(error != Interop.Error.SUCCESS); // We shouldn't fail with success.
             throw Interop.GetExceptionForIoErrno(error.Info());
         }
     }
