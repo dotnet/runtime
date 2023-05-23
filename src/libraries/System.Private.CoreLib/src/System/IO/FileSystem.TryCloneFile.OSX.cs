@@ -71,14 +71,12 @@ namespace System.IO
 
                 // Try clonefile:
                 tryCloneFile:
+                if (Interop.@libc.clonefile(sourceFullPath, destFullPath, Interop.@libc.CLONE_ACL) == 0)
                 {
-                    if (Interop.@libc.clonefile(sourceFullPath, destFullPath, Interop.@libc.CLONE_ACL) == 0)
-                    {
-                        // Success
-                        return true;
-                    }
-                    error = Interop.Sys.GetLastError();
+                    // Success
+                    return true;
                 }
+                error = Interop.Sys.GetLastError();
             }
 
             // Check if it's not supported, or if they're on different filesystems.
