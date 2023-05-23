@@ -24,8 +24,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private readonly HashSet<ITypeSymbol> _unsupportedTypes = new(SymbolEqualityComparer.Default);
             private readonly Dictionary<ITypeSymbol, TypeSpec?> _createdSpecs = new(SymbolEqualityComparer.Default);
 
-            private readonly HashSet<ParsableFromStringTypeSpec> _primitivesForHelperGen = new();
-            private readonly HashSet<string> _namespaces = new()
+            private readonly HashSet<ParsableFromStringSpec> _primitivesForHelperGen = new();
+            private readonly HashSet<string> _typeNamespaces = new()
             {
                 "System",
                 "System.Globalization",
@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     _rootConfigTypes,
                     _methodsToGen,
                     _primitivesForHelperGen,
-                    _namespaces);
+                    _typeNamespaces);
             }
 
             private void ProcessBindCall(BinderInvocationOperation binderOperation)
@@ -352,7 +352,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else if (IsParsableFromString(type, out StringParsableTypeKind specialTypeKind))
                 {
-                    ParsableFromStringTypeSpec stringParsableSpec = new(type)
+                    ParsableFromStringSpec stringParsableSpec = new(type)
                     {
                         Location = location,
                         StringParsableTypeKind = specialTypeKind
@@ -377,7 +377,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else if (SymbolEqualityComparer.Default.Equals(type, _typeSymbols.IConfigurationSection))
                 {
-                    spec = new ConfigurationSectionTypeSpec(type) { Location = location };
+                    spec = new ConfigurationSectionSpec(type) { Location = location };
                 }
                 else if (type is INamedTypeSymbol namedType)
                 {
@@ -394,7 +394,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string @namespace = spec.Namespace;
                 if (@namespace is not null and not "<global namespace>")
                 {
-                    _namespaces.Add(@namespace);
+                    _typeNamespaces.Add(@namespace);
                 }
 
                 _createdSpecs[type] = spec;
@@ -657,7 +657,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     constructionStrategy = ConstructionStrategy.ToEnumerableMethod;
                     populationStrategy = CollectionPopulationStrategy.Cast_Then_Add;
                     toEnumerableMethodCall = "ToDictionary(pair => pair.Key, pair => pair.Value)";
-                    _namespaces.Add("System.Linq");
+                    _typeNamespaces.Add("System.Linq");
                 }
                 else
                 {
@@ -668,7 +668,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 DictionarySpec spec = new(type)
                 {
                     Location = location,
-                    KeyType = (ParsableFromStringTypeSpec)keySpec,
+                    KeyType = (ParsableFromStringSpec)keySpec,
                     ElementType = elementSpec,
                     ConstructionStrategy = constructionStrategy,
                     PopulationStrategy = populationStrategy,

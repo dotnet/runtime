@@ -6848,7 +6848,6 @@ void gc_heap::gc_thread_function ()
             END_TIMING(suspend_ee_during_log);
 
             proceed_with_gc_p = TRUE;
-            gradual_decommit_in_progress_p = FALSE;
 
             if (!should_proceed_with_gc())
             {
@@ -41526,6 +41525,12 @@ void gc_heap::decommit_ephemeral_segment_pages()
 // return true if we actually decommitted anything
 bool gc_heap::decommit_step (uint64_t step_milliseconds)
 {
+    if (settings.pause_mode == pause_no_gc)
+    {
+        // don't decommit at all if we have entered a no gc region
+        return false;
+    }
+
     size_t decommit_size = 0;
 
 #ifdef USE_REGIONS
