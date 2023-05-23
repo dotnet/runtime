@@ -12,6 +12,60 @@ namespace System.Threading
     /// </summary>
     public sealed partial class RegisteredWaitHandle : MarshalByRefObject
     {
+        private static AutoResetEvent? s_cachedEvent;
+        private static readonly LowLevelLock s_callbackLock = new LowLevelLock();
+
+        /// <summary>
+        /// The <see cref="WaitHandle"/> the user passed in via <see cref="Unregister(WaitHandle)"/>.
+        /// </summary>
+        private SafeWaitHandle? UserUnregisterWaitHandle { get; set; }
+
+        private IntPtr UserUnregisterWaitHandleValue { get; set; }
+
+        private static IntPtr InvalidHandleValue => new IntPtr(-1);
+
+        internal bool IsBlocking => UserUnregisterWaitHandleValue == InvalidHandleValue;
+
+        /// <summary>
+        /// The number of callbacks that are currently queued on the Thread Pool or executing.
+        /// </summary>
+        private int _numRequestedCallbacks;
+
+        /// <summary>
+        /// Notes if we need to signal the user's unregister event after all callbacks complete.
+        /// </summary>
+        private bool _signalAfterCallbacksComplete;
+
+        private bool _unregisterCalled;
+
+        private bool _unregistered;
+
+        private AutoResetEvent? _callbacksComplete;
+
+        private AutoResetEvent? _removed;
+
+        /// <summary>
+        /// The <see cref="PortableThreadPool.WaitThread"/> this <see cref="RegisteredWaitHandle"/> was registered on.
+        /// </summary>
+        internal PortableThreadPool.WaitThread? WaitThread { get; set; }
+
+        internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
+            int millisecondsTimeout, bool repeating)
+        {
+            Debug.Assert(!ThreadPool.UseWindowsThreadPool);
+            GC.SuppressFinalize(this);
+
+            Thread.ThrowIfNoThreadStart();
+            _waitHandle = waitHandle.SafeWaitHandle;
+            _callbackHelper = callbackHelper;
+            _signedMillisecondsTimeout = millisecondsTimeout;
+            _repeating = repeating;
+            if (!IsInfiniteTimeout)
+            {
+                RestartTimeout();
+            }
+        }
+
         private static AutoResetEvent RentEvent() =>
             Interlocked.Exchange(ref s_cachedEvent, null) ??
             new AutoResetEvent(false);

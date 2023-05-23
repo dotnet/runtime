@@ -15,6 +15,42 @@ namespace System.Threading
     //
     public sealed partial class RegisteredWaitHandle : MarshalByRefObject
     {
+        private readonly object? _lock;
+        private SafeWaitHandle? _waitHandle;
+        private bool _unregistering;
+
+        // Handle to this object to keep it alive
+        private GCHandle _gcHandle;
+
+        // Pointer to the TP_WAIT structure
+        private IntPtr _tpWait;
+
+        internal unsafe RegisteredWaitHandle(SafeWaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
+            uint millisecondsTimeout, bool repeating)
+        {
+            Debug.Assert(ThreadPool.UseWindowsThreadPool);
+
+            _lock = new object();
+
+            waitHandle.DangerousAddRef();
+            _waitHandle = waitHandle;
+
+            _callbackHelper = callbackHelper;
+            _millisecondsTimeout = millisecondsTimeout;
+            _repeating = repeating;
+
+            // Allocate _gcHandle and _tpWait as the last step and make sure they are never leaked
+            _gcHandle = GCHandle.Alloc(this);
+
+            _tpWait = Interop.Kernel32.CreateThreadpoolWait(&RegisteredWaitCallback, (IntPtr)_gcHandle, IntPtr.Zero);
+
+            if (_tpWait == IntPtr.Zero)
+            {
+                _gcHandle.Free();
+                throw new OutOfMemoryException();
+            }
+        }
+
 #pragma warning disable IDE0060 // Remove unused parameter
         [UnmanagedCallersOnly]
         internal static void RegisteredWaitCallback(IntPtr instance, IntPtr context, IntPtr wait, uint waitResult)
@@ -142,6 +178,44 @@ namespace System.Threading
             if ((safeWaitHandle != null) && !safeWaitHandle.IsInvalid)
             {
                 Interop.Kernel32.SetEvent(safeWaitHandle);
+            }
+        }
+
+        ~RegisteredWaitHandle()
+        {
+            Debug.Assert(ThreadPool.UseWindowsThreadPool);
+            // If _gcHandle is allocated, it points to this object, so this object must not be collected by the GC
+            Debug.Assert(!_gcHandle.IsAllocated);
+
+            // If this object gets resurrected and another thread calls Unregister, that creates a race condition.
+            // Do not block the finalizer thread. If another thread is running Unregister, it will clean up for us.
+            // The _lock may be null in case of OOM in the constructor.
+            if ((_lock != null) && Monitor.TryEnter(_lock))
+            {
+                try
+                {
+                    if (!_unregistering)
+                    {
+                        _unregistering = true;
+
+                        if (_tpWait != IntPtr.Zero)
+                        {
+                            // There must be no in-flight callbacks; just dispose resources
+                            Interop.Kernel32.CloseThreadpoolWait(_tpWait);
+                            _tpWait = IntPtr.Zero;
+                        }
+
+                        if (_waitHandle != null)
+                        {
+                            _waitHandle.DangerousRelease();
+                            _waitHandle = null;
+                        }
+                    }
+                }
+                finally
+                {
+                    Monitor.Exit(_lock);
+                }
             }
         }
     }
