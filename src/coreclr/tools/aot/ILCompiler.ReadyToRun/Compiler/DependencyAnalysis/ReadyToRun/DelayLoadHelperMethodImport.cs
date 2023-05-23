@@ -51,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     bool useDependency = true;
                     try
                     {
-                        factory.TypeSystemContext.DetectGenericCycles(_method.Method, canonMethod, "canonical method for instantiating stub");
+                        factory.DetectGenericCycles(_method.Method, canonMethod);
                     }
                     catch (TypeSystemException)
                     {

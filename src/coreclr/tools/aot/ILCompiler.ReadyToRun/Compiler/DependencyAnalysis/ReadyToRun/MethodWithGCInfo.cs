@@ -275,7 +275,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     if (node is IMethodNode methodNode)
                     {
-                        _method.Context.DetectGenericCycles(Method, methodNode.Method, "classMustBeLoadedBeforeCodeIsRun");
+                        factory.DetectGenericCycles(Method, methodNode.Method);
                     }
                     dependencyList.Add(node, "classMustBeLoadedBeforeCodeIsRun");
 

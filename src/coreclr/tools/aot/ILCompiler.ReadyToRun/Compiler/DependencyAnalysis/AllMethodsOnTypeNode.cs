@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     try
                     {
-                        context.TypeSystemContext.DetectGenericCycles(Type, method, "All methods on type");
+                        context.DetectGenericCycles(Type, method);
                         dependencies.Add(context.CompiledMethodNode(method), $"Method on type {Type.ToString()}");
                     }
                     catch (TypeSystemException)

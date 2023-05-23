@@ -419,18 +419,6 @@ namespace ILCompiler
                     canInline = false;
             }
 
-            if (canInline)
-            {
-                try
-                {
-                    callerMethod.Context.DetectGenericCycles(callerMethod, calleeMethod, "CanInline");
-                }
-                catch (TypeSystemException)
-                {
-                    canInline = false;
-                }
-            }
-
             return canInline;
         }
 

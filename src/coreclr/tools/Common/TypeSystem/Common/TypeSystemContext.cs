@@ -771,18 +771,6 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Throw when the caller-callee pair participate in a generic cycle.
-        /// </summary>
-        /// <param name="caller">Parent object requesting a new dependency to be added to the graph</param>
-        /// <param name="callee">The new dependency to be added to the graph</param>
-        /// <param name="name">Textual name describing the dependency</param>
-        /// <exception cref="NotSupportedException"></exception>
-        public virtual void DetectGenericCycles(TypeSystemEntity caller, TypeSystemEntity callee, string name)
-        {
-            throw new NotSupportedException();
-        }
-
-        /// <summary>
         /// Algorithm to control which types are considered to have static constructors
         /// </summary>
         protected internal abstract bool ComputeHasStaticConstructor(TypeDesc type);

@@ -60,7 +60,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 list = list ?? new DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>.DependencyList();
                 try
                 {
-                    factory.TypeSystemContext.DetectGenericCycles(_method.Method, canonMethod, "virtual function dependency on cross module inlineable method");
+                    factory.DetectGenericCycles(_method.Method, canonMethod);
                     list.Add(factory.CompiledMethodNode(canonMethod), "Virtual function dependency on cross module inlineable method");
                 }
                 catch (TypeSystemException)

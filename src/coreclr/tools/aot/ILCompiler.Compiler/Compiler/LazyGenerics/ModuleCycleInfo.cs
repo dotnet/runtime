@@ -131,7 +131,7 @@ namespace ILCompiler
                         {
                             if (FormsCycle(typeDef, out ModuleCycleInfo _))
                             {
-                                if (++breadthCounter >= _breadthCutoff)
+                                if (_breadthCutoff >= 0 && ++breadthCounter >= _breadthCutoff)
                                 {
                                     return true;
                                 }

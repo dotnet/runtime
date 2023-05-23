@@ -51,17 +51,12 @@ namespace ILCompiler
         private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
         private Int128FieldLayoutAlgorithm _int128FieldLayoutAlgorithm;
 
-        private readonly LazyGenericsSupport.GenericCycleDetector _genericCycleDetector;
-
         public ReadyToRunCompilerContext(
             TargetDetails details,
             SharedGenericsMode genericsMode,
             bool bubbleIncludesCorelib,
             InstructionSetSupport instructionSetSupport,
-            CompilerTypeSystemContext oldTypeSystemContext,
-            bool enableGenericCycleDetection,
-            int genericCycleDepthCutoff,
-            int genericCycleBreadthCutoff)
+            CompilerTypeSystemContext oldTypeSystemContext)
             : base(details, genericsMode)
         {
             InstructionSetSupport = instructionSetSupport;
@@ -88,11 +83,6 @@ namespace ILCompiler
             if (oldTypeSystemContext != null)
             {
                 InheritOpenModules(oldTypeSystemContext);
-            }
-
-            if (enableGenericCycleDetection)
-            {
-                _genericCycleDetector = new LazyGenericsSupport.GenericCycleDetector(genericCycleDepthCutoff, genericCycleBreadthCutoff);
             }
         }
 
@@ -135,11 +125,6 @@ namespace ILCompiler
         public void SetCompilationGroup(ReadyToRunCompilationModuleGroupBase compilationModuleGroup)
         {
             _r2rFieldLayoutAlgorithm.SetCompilationGroup(compilationModuleGroup);
-        }
-
-        public override void DetectGenericCycles(TypeSystemEntity caller, TypeSystemEntity callee, string name)
-        {
-            _genericCycleDetector?.DetectCycle(caller, callee);
         }
 
         /// <summary>

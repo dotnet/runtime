@@ -129,10 +129,7 @@ namespace ILCompiler
             //
             _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, versionBubbleIncludesCoreLib,
                 instructionSetSupport,
-                oldTypeSystemContext: null,
-                enableGenericCycleDetection: Get(_command.EnableGenericCycleDetection),
-                genericCycleDepthCutoff: Get(_command.GenericCycleDepthCutoff),
-                genericCycleBreadthCutoff: Get(_command.GenericCycleBreadthCutoff));
+                oldTypeSystemContext: null);
 
             string compositeRootPath = Get(_command.CompositeRootPath);
 
@@ -276,10 +273,7 @@ namespace ILCompiler
 
                         typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib,
                             _typeSystemContext.InstructionSetSupport,
-                            _typeSystemContext,
-                            enableGenericCycleDetection: Get(_command.EnableGenericCycleDetection),
-                            genericCycleDepthCutoff: Get(_command.GenericCycleDepthCutoff),
-                            genericCycleBreadthCutoff: Get(_command.GenericCycleBreadthCutoff));
+                            _typeSystemContext);
                         typeSystemContext.InputFilePaths = singleCompilationInputFilePaths;
                         typeSystemContext.ReferenceFilePaths = referenceFilePaths;
                         typeSystemContext.SetSystemModule((EcmaModule)typeSystemContext.GetModuleForSimpleName(systemModuleName));
@@ -626,6 +620,13 @@ namespace ILCompiler
                         .UseDependencyTracking(trackingLevel)
                         .UseCompilationRoots(compilationRoots)
                         .UseOptimizationMode(optimizationMode);
+
+                    if (Get(_command.EnableGenericCycleDetection))
+                    {
+                        builder.UseGenericCycleDetection(
+                            depthCutoff: Get(_command.GenericCycleDepthCutoff),
+                            breadthCutoff: Get(_command.GenericCycleBreadthCutoff));
+                    }
 
                     builder.UsePrintReproInstructions(CreateReproArgumentString);
 
