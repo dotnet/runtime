@@ -1163,6 +1163,10 @@ def find_test_from_name(host_os, test_location, test_name):
     for index, item in enumerate(loc_split):
         if not append:
             test_path = os.path.join(starting_path, item)
+            # Ensure the joined path is correct. Avoid forming /Vector256/1/ for Vector256_1
+            # where both Vector256 and Vector256_1 are valid dirs.
+            if not os.path.isdir(os.path.dirname(test_path)):
+                test_path = starting_path + "_" + item
         else:
             append = False
             test_path, size_of_largest_name_file = match_filename(starting_path + "_" + item)

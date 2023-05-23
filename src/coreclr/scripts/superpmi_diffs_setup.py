@@ -27,13 +27,15 @@ from jitutil import copy_directory, set_pipeline_variable, run_command, TempDir,
 
 parser = argparse.ArgumentParser(description="description")
 
-parser.add_argument("-arch", help="Architecture")
-parser.add_argument("-type", help="Type of diff (asmdiffs, tpdiff, all)")
-parser.add_argument("-source_directory", help="Path to the root directory of the dotnet/runtime source tree")
+parser.add_argument("-arch", required=True, help="Architecture")
+parser.add_argument("-platform", required=True, help="OS platform")
+parser.add_argument("-type", required=True, help="Type of diff (asmdiffs, tpdiff, all)")
+parser.add_argument("-source_directory", required=True, help="Path to the root directory of the dotnet/runtime source tree")
 parser.add_argument("-checked_directory", help="Path to the directory containing built checked binaries (e.g., <source_directory>/artifacts/bin/coreclr/windows.x64.Checked)")
 parser.add_argument("-release_directory", help="Path to the directory containing built release binaries (e.g., <source_directory>/artifacts/bin/coreclr/windows.x64.Release)")
 
 is_windows = platform.system() == "Windows"
+target_windows = True
 
 
 def setup_args(args):
@@ -53,6 +55,11 @@ def setup_args(args):
                         "arch",
                         lambda unused: True,
                         "Unable to set arch")
+
+    coreclr_args.verify(args,
+                        "platform",
+                        lambda unused: True,
+                        "Unable to set platform")
 
     coreclr_args.verify(args,
                         "type",
@@ -101,35 +108,51 @@ def setup_args(args):
             print("release_directory doesn't exist")
             sys.exit(1)
 
+    if coreclr_args.platform.lower() != "windows" and do_asmdiffs:
+        print("asmdiffs currently only implemented for windows")
+        sys.exit(1)
+
+    global target_windows
+    target_windows = coreclr_args.platform.lower() == "windows"
+
     return coreclr_args
 
 
 def match_jit_files(full_path):
     """ Match all the JIT files that we want to copy and use.
-        Note that we currently only match Windows files, and not osx cross-compile files.
+        We don't match osx cross-compile files.
         We also don't copy the "default" clrjit.dll, since we always use the fully specified
         JITs, e.g., clrjit_win_x86_x86.dll.
+        On non-Windows, don't bother copying Windows cross-targeting or arm32 cross-bitness compilers
+        (we assume here everything is running on 64-bit).
     """
     file_name = os.path.basename(full_path)
 
-    if file_name.startswith("clrjit_") and file_name.endswith(".dll") and file_name.find("osx") == -1:
-        return True
+    if target_windows:
+        if file_name.startswith("clrjit_") and file_name.endswith(".dll") and file_name.find("osx") == -1:
+            return True
+    else:
+        if file_name.startswith("libclrjit_") and file_name.endswith(".so") and file_name.find("_win_") == -1 and file_name.find("_arm_") == -1:
+            return True
 
     return False
 
 
 def match_superpmi_tool_files(full_path):
     """ Match all the SuperPMI tool files that we want to copy and use.
-        Note that we currently only match Windows files.
     """
     file_name = os.path.basename(full_path)
 
-    if file_name == "superpmi.exe" or file_name == "mcs.exe":
-        return True
+    if target_windows:
+        if file_name == "superpmi.exe" or file_name == "mcs.exe":
+            return True
+    else:
+        if file_name == "superpmi" or file_name == "mcs":
+            return True
 
     return False
 
-    
+
 def build_jit_analyze(coreclr_args, source_directory, jit_analyze_build_directory):
     """ Build and publish jit-analyze for use by asmdiffs
     """
@@ -211,6 +234,7 @@ def main(main_args):
     Note:
     1. asmdiffs uses Checked JITs, tpdiff uses Release JITs. Only the one needed is copied to the payload directory.
     2. Only asmdiffs needs jit-analyze and git
+    3. tpdiff can run on Linux, but asmdiffs is not implemented to run on Linux
 
     Args:
         main_args ([type]): Arguments to the script
@@ -229,6 +253,7 @@ def main(main_args):
     coreclr_args = setup_args(main_args)
 
     arch = coreclr_args.arch
+    platform_name = coreclr_args.platform.lower()
     source_directory = coreclr_args.source_directory
     checked_directory = coreclr_args.checked_directory
     release_directory = coreclr_args.release_directory
@@ -293,9 +318,6 @@ def main(main_args):
 
     ######## Get baseline JITs
 
-    # Note: we only support downloading Windows versions of the JIT currently. To support downloading
-    # non-Windows JITs on a Windows machine, pass `-host_os <os>` to jitrollingbuild.py.
-
     print("Fetching history of `main` branch so we can find the baseline JIT")
     run_command(["git", "fetch", "--depth=500", "origin", "main"], source_directory, _exit_on_fail=True)
 
@@ -310,6 +332,7 @@ def main(main_args):
             jit_rolling_build_script,
             "download",
             "-arch", arch,
+            "-host_os", platform_name,
             "-build_type", "checked",
             "-target_dir", base_jit_checked_directory],
             source_directory)
@@ -328,6 +351,7 @@ def main(main_args):
             jit_rolling_build_script,
             "download",
             "-arch", arch,
+            "-host_os", platform_name,
             "-build_type", "release",
             "-target_dir", base_jit_release_directory],
             source_directory)

@@ -377,7 +377,7 @@ private:
             elseBlock = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
 
             GenTree* fixedFptrAddress  = GetFixedFptrAddress();
-            GenTree* actualCallAddress = compiler->gtNewOperNode(GT_IND, pointerType, fixedFptrAddress);
+            GenTree* actualCallAddress = compiler->gtNewIndir(pointerType, fixedFptrAddress);
             GenTree* hiddenArgument    = GetHiddenArgument(fixedFptrAddress);
 
             Statement* fatStmt = CreateFatCallStmt(actualCallAddress, hiddenArgument);
@@ -409,7 +409,7 @@ private:
             GenTree* fixedFptrAddressCopy = compiler->gtCloneExpr(fixedFptrAddress);
             GenTree* wordSize          = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, genTypeSize(TYP_I_IMPL));
             GenTree* hiddenArgumentPtr = compiler->gtNewOperNode(GT_ADD, pointerType, fixedFptrAddressCopy, wordSize);
-            return compiler->gtNewOperNode(GT_IND, fixedFptrAddressCopy->TypeGet(), hiddenArgumentPtr);
+            return compiler->gtNewIndir(fixedFptrAddressCopy->TypeGet(), hiddenArgumentPtr);
         }
 
         //------------------------------------------------------------------------
@@ -465,7 +465,7 @@ private:
                 return;
             }
 
-            likelihood = origCall->gtGuardedDevirtualizationCandidateInfo->likelihood;
+            likelihood = origCall->GetGDVCandidateInfo()->likelihood;
             assert((likelihood >= 0) && (likelihood <= 100));
             JITDUMP("Likelihood of correct guess is %u\n", likelihood);
 
@@ -574,7 +574,7 @@ private:
             //
             lastStmt = checkBlock->lastStmt();
 
-            GuardedDevirtualizationCandidateInfo* guardedInfo = origCall->gtGuardedDevirtualizationCandidateInfo;
+            InlineCandidateInfo* guardedInfo = origCall->GetGDVCandidateInfo();
 
             // Create comparison. On success we will jump to do the indirect call.
             GenTree* compare;
@@ -612,8 +612,7 @@ private:
                         compiler->gtNewIconNode((ssize_t)compiler->eeGetEEInfo()->offsetOfDelegateFirstTarget,
                                                 TYP_I_IMPL);
                     GenTree* tarTree = compiler->gtNewOperNode(GT_ADD, TYP_BYREF, thisTree, offset);
-                    tarTree          = compiler->gtNewIndir(TYP_I_IMPL, tarTree);
-                    tarTree->gtFlags |= GTF_IND_INVARIANT;
+                    tarTree          = compiler->gtNewIndir(TYP_I_IMPL, tarTree, GTF_IND_INVARIANT);
 
                     CORINFO_METHOD_HANDLE methHnd = guardedInfo->guardedMethodHandle;
                     CORINFO_CONST_LOOKUP  lookup;
@@ -656,7 +655,7 @@ private:
             //
             // Note implicit by-ref returns should have already been converted
             // so any struct copy we induce here should be cheap.
-            InlineCandidateInfo* const inlineInfo = origCall->gtInlineCandidateInfo;
+            InlineCandidateInfo* const inlineInfo = origCall->GetInlineCandidateInfo();
 
             if (!origCall->TypeIs(TYP_VOID))
             {
@@ -737,7 +736,7 @@ private:
         {
             thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
             thenBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
-            InlineCandidateInfo* inlineInfo = origCall->gtInlineCandidateInfo;
+            InlineCandidateInfo* inlineInfo = origCall->GetInlineCandidateInfo();
             CORINFO_CLASS_HANDLE clsHnd     = inlineInfo->guardedClassHandle;
 
             //
@@ -841,7 +840,7 @@ private:
                         "inlineable\n");
 
                 call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
-                call->gtInlineCandidateInfo = nullptr;
+                call->ClearInlineInfo();
 
                 if (returnTemp != BAD_VAR_NUM)
                 {
@@ -865,7 +864,7 @@ private:
                 inlineInfo->clsHandle            = compiler->info.compCompHnd->getMethodClass(methodHnd);
                 inlineInfo->exactContextHnd      = context;
                 inlineInfo->preexistingSpillTemp = returnTemp;
-                call->gtInlineCandidateInfo      = inlineInfo;
+                call->SetSingleInlineCadidateInfo(inlineInfo);
 
                 // If there was a ret expr for this call, we need to create a new one
                 // and append it just after the call.
@@ -1093,11 +1092,11 @@ private:
                     GenTreeCall* const call = root->AsCall();
 
                     if (call->IsGuardedDevirtualizationCandidate() &&
-                        (call->gtGuardedDevirtualizationCandidateInfo->likelihood >= gdvChainLikelihood))
+                        (call->GetGDVCandidateInfo()->likelihood >= gdvChainLikelihood))
                     {
                         JITDUMP("GDV call at [%06u] has likelihood %u >= %u; chaining (%u stmts, %u nodes to dup).\n",
-                                compiler->dspTreeID(call), call->gtGuardedDevirtualizationCandidateInfo->likelihood,
-                                gdvChainLikelihood, chainStatementDup, chainNodeDup);
+                                compiler->dspTreeID(call), call->GetGDVCandidateInfo()->likelihood, gdvChainLikelihood,
+                                chainStatementDup, chainNodeDup);
 
                         call->gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT_CHAIN;
                         break;
@@ -1157,9 +1156,7 @@ private:
                 case IAT_PVALUE:
                 {
                     GenTree* tree = CreateFunctionTargetAddr(methHnd, lookup);
-                    tree          = compiler->gtNewIndir(TYP_I_IMPL, tree);
-                    tree->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
-                    tree->gtFlags &= ~GTF_EXCEPT;
+                    tree          = compiler->gtNewIndir(TYP_I_IMPL, tree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
                     return tree;
                 }
                 case IAT_PPVALUE:
@@ -1171,10 +1168,8 @@ private:
                 {
                     GenTree* addr = CreateFunctionTargetAddr(methHnd, lookup);
                     GenTree* tree = CreateFunctionTargetAddr(methHnd, lookup);
-                    tree          = compiler->gtNewIndir(TYP_I_IMPL, tree);
-                    tree->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
-                    tree->gtFlags &= ~GTF_EXCEPT;
-                    tree = compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, tree, addr);
+                    tree          = compiler->gtNewIndir(TYP_I_IMPL, tree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+                    tree          = compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, tree, addr);
                     return tree;
                 }
                 default:

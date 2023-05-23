@@ -3,11 +3,11 @@
 
 import { prevent_timer_throttling } from "./scheduling";
 import { Queue } from "./queue";
-import { PromiseController, createPromiseController } from "./promise-controller";
-import { mono_assert } from "./types";
-import { Module } from "./imports";
+import { Module, createPromiseController } from "./globals";
 import { setI32 } from "./memory";
 import { VoidPtr } from "./types/emscripten";
+import { PromiseController } from "./types/internal";
+import { mono_log_warn } from "./logging";
 
 const wasm_ws_pending_send_buffer = Symbol.for("wasm ws_pending_send_buffer");
 const wasm_ws_pending_send_buffer_offset = Symbol.for("wasm ws_pending_send_buffer_offset");
@@ -149,7 +149,7 @@ export function ws_wasm_close(ws: WebSocketExtension, code: number, reason: stri
     else {
         if (!mono_wasm_web_socket_close_warning) {
             mono_wasm_web_socket_close_warning = true;
-            console.warn("WARNING: Web browsers do not support closing the output side of a WebSocket. CloseOutputAsync has closed the socket and discarded any incoming messages.");
+            mono_log_warn("WARNING: Web browsers do not support closing the output side of a WebSocket. CloseOutputAsync has closed the socket and discarded any incoming messages.");
         }
         if (typeof reason === "string") {
             ws.close(code, reason);
@@ -238,7 +238,7 @@ function _mono_wasm_web_socket_on_message(ws: WebSocketExtension, event: Message
             _text_encoder_utf8 = new TextEncoder();
         }
         event_queue.enqueue({
-            type: 0,// WebSocketMessageType.Text
+            type: 0, // WebSocketMessageType.Text
             // according to the spec https://encoding.spec.whatwg.org/
             // - Unpaired surrogates will get replaced with 0xFFFD
             // - utf8 encode specifically is defined to never throw
@@ -251,7 +251,7 @@ function _mono_wasm_web_socket_on_message(ws: WebSocketExtension, event: Message
             throw new Error("ERR19: WebSocket receive expected ArrayBuffer");
         }
         event_queue.enqueue({
-            type: 1,// WebSocketMessageType.Binary
+            type: 1, // WebSocketMessageType.Binary
             data: new Uint8Array(event.data),
             offset: 0
         });
@@ -373,7 +373,7 @@ type ReceivePromiseControl = PromiseController<void> & {
 }
 
 type Message = {
-    type: number,// WebSocketMessageType
+    type: number, // WebSocketMessageType
     data: Uint8Array,
     offset: number
 }

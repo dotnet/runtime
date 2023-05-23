@@ -530,7 +530,7 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
         //------------------------------------------------------------------------
 
         GenTree* tree = comp->gtNewLclvNode(lclNum, TYP_STRUCT);
-        tree          = comp->gtNewBlkOpNode(tree, comp->gtNewIconNode(0));
+        tree          = comp->gtNewAssignNode(tree, comp->gtNewIconNode(0));
 
         Statement* newStmt = comp->gtNewStmt(tree);
 
@@ -664,7 +664,6 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 keepChecking = true;
                 break;
 
-            case GT_FIELD:
             case GT_IND:
                 // Address of the field/ind is not taken so the local doesn't escape.
                 canLclVarEscapeViaParentStack = false;
@@ -760,7 +759,6 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
                 keepChecking = true;
                 break;
 
-            case GT_FIELD:
             case GT_IND:
             {
                 // The new target could be *not* on the heap.

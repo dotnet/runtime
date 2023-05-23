@@ -123,6 +123,18 @@ struct WriteBarrierParameters
     bool region_use_bitwise_write_barrier;
 };
 
+struct FinalizerWorkItem
+{
+    FinalizerWorkItem* next;
+    void (*callback)(FinalizerWorkItem*);
+};
+
+struct NoGCRegionCallbackFinalizerWorkItem : public FinalizerWorkItem
+{
+    bool scheduled;
+    bool abandoned;
+};
+
 struct EtwGCSettingsInfo
 {
     size_t heap_hard_limit;
@@ -324,6 +336,27 @@ enum end_no_gc_region_status
     end_no_gc_not_in_progress = 1,
     end_no_gc_induced = 2,
     end_no_gc_alloc_exceeded = 3
+};
+
+// !!!!!!!!!!!!!!!!!!!!!!!
+// make sure you change the def in bcl\system\gc.cs
+// if you change this!
+enum refresh_memory_limit_status
+{
+    refresh_success = 0,
+    refresh_hard_limit_too_low = 1,
+    refresh_hard_limit_invalid = 2
+};
+
+// !!!!!!!!!!!!!!!!!!!!!!!
+// make sure you change the def in bcl\system\gc.cs
+// if you change this!
+enum enable_no_gc_region_callback_status
+{
+    succeed,
+    not_started,
+    insufficient_budget,
+    already_registered,
 };
 
 enum gc_kind
@@ -570,10 +603,6 @@ enum class GCConfigurationType
 
 using ConfigurationValueFunc = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);
 
-const int REFRESH_MEMORY_SUCCEED = 0;
-const int REFRESH_MEMORY_HARD_LIMIT_TOO_LOW = 1;
-const int REFRESH_MEMORY_HARD_LIMIT_INVALID = 2;
-
 // IGCHeap is the interface that the VM will use when interacting with the GC.
 class IGCHeap {
 public:
@@ -722,6 +751,7 @@ public:
 
     // Returns the generation in which obj is found. Also used by the VM
     // in some places, in particular syncblk code.
+    // Returns INT32_MAX if obj belongs to a non-GC heap.
     virtual unsigned WhichGeneration(Object* obj) PURE_VIRTUAL
 
     // Returns the number of GCs that have transpired in the given generation
@@ -980,6 +1010,12 @@ public:
 
     // Refresh the memory limit
     virtual int RefreshMemoryLimit() PURE_VIRTUAL
+
+    // Enable NoGCRegionCallback
+    virtual enable_no_gc_region_callback_status EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, uint64_t callback_threshold) PURE_VIRTUAL
+
+    // Get extra work for the finalizer
+    virtual FinalizerWorkItem* GetExtraWorkForFinalization() PURE_VIRTUAL
 };
 
 #ifdef WRITE_BARRIER_CHECK
@@ -991,7 +1027,7 @@ void updateGCShadow(Object** ptr, Object* val);
 #define GC_CALL_INTERIOR            0x1
 #define GC_CALL_PINNED              0x2
 
-// keep in sync with GC_ALLOC_FLAGS in GC.cs
+// keep in sync with GC_ALLOC_FLAGS in GC.CoreCLR.cs
 enum GC_ALLOC_FLAGS
 {
     GC_ALLOC_NO_FLAGS           = 0,

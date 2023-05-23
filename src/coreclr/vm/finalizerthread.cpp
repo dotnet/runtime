@@ -258,6 +258,15 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
 
         WaitForFinalizerEvent (hEventFinalizer);
 
+        // Process pending finalizer work items from the GC first.
+        FinalizerWorkItem* pWork = GCHeapUtilities::GetGCHeap()->GetExtraWorkForFinalization();
+        while (pWork != NULL)
+        {
+            FinalizerWorkItem* pNext = pWork->next;
+            pWork->callback(pWork);
+            pWork = pNext;
+        }
+
 #if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
         if (g_TriggerHeapDump && (CLRGetTickCount64() > (LastHeapDumpTime + LINUX_HEAP_DUMP_TIME_OUT)))
         {

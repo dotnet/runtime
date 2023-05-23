@@ -222,6 +222,7 @@ class EHSuccessorIterPosition
     // successor of BB1.  This captures the iteration over the successors of BB1
     // for this purpose.  (In reverse order; we're done when this field is 0).
     unsigned m_remainingRegSuccs;
+    unsigned m_numRegSuccs;
 
     // The current "regular" successor of "m_block" that we're considering.
     BasicBlock* m_curRegSucc;
@@ -245,7 +246,7 @@ public:
     EHSuccessorIterPosition(Compiler* comp, BasicBlock* block);
 
     // Constructs a position that "points" past the last EH successor of `block` ("end" position).
-    EHSuccessorIterPosition() : m_remainingRegSuccs(0), m_curTry(nullptr)
+    EHSuccessorIterPosition() : m_remainingRegSuccs(0), m_numRegSuccs(0), m_curTry(nullptr)
     {
     }
 
@@ -613,6 +614,12 @@ inline BasicBlockFlags& operator &=(BasicBlockFlags& a, BasicBlockFlags b)
 {
     return a = (BasicBlockFlags)((unsigned __int64)a & (unsigned __int64)b);
 }
+
+enum class BasicBlockVisit
+{
+    Continue,
+    Abort,
+};
 
 // clang-format on
 
@@ -1089,15 +1096,13 @@ struct BasicBlock : private LIR::Range
     BlockSet bbReach; // Set of all blocks that can reach this one
 
     union {
-        BasicBlock* bbIDom;   // Represent the closest dominator to this block (called the Immediate
-                              // Dominator) used to compute the dominance tree.
-        FlowEdge* bbLastPred; // Used early on by fgLinkBasicBlock/fgAddRefPred
+        BasicBlock* bbIDom;          // Represent the closest dominator to this block (called the Immediate
+                                     // Dominator) used to compute the dominance tree.
+        FlowEdge* bbLastPred;        // Used early on by fgLinkBasicBlock/fgAddRefPred
+        void*     bbSparseProbeList; // Used early on by fgInstrument
     };
 
-    union {
-        void* bbSparseCountInfo; // Used early on by fgIncorporateEdgeCounts
-        void* bbSparseProbeList; // Used early on by fgInstrument
-    };
+    void* bbSparseCountInfo; // Used early on by fgIncorporateEdgeCounts
 
     unsigned bbPreorderNum;  // the block's  preorder number in the graph (1...fgMaxBBNum]
     unsigned bbPostorderNum; // the block's postorder number in the graph (1...fgMaxBBNum]
@@ -1230,7 +1235,7 @@ struct BasicBlock : private LIR::Range
 #endif // DEBUG
 
     unsigned bbStackDepthOnEntry() const;
-    void bbSetStack(void* stackBuffer);
+    void bbSetStack(StackEntry* stack);
     StackEntry* bbStackOnEntry() const;
 
     // "bbNum" is one-based (for unknown reasons); it is sometimes useful to have the corresponding
@@ -1351,6 +1356,9 @@ struct BasicBlock : private LIR::Range
     {
         return Successors<AllSuccessorIterPosition>(comp, this);
     }
+
+    template <typename TFunc>
+    BasicBlockVisit VisitAllSuccs(Compiler* comp, TFunc func);
 
     // BBSuccList: adapter class for forward iteration of block successors, using range-based `for`,
     // normally used via BasicBlock::Succs(), e.g.:

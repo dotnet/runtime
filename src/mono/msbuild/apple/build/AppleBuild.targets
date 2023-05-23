@@ -141,7 +141,7 @@
       <MonoAOTCompilerDefaultAotArguments Include="nrgctx-fetch-trampolines=256" />
       <MonoAOTCompilerDefaultAotArguments Include="ngsharedvt-trampolines=4400" />
       <MonoAOTCompilerDefaultAotArguments Include="nftnptr-arg-trampolines=4000" />
-      <MonoAOTCompilerDefaultAotArguments Include="nrgctx-trampolines=40000" />
+      <MonoAOTCompilerDefaultAotArguments Include="nrgctx-trampolines=50000" />
 
       <MonoAOTCompilerDefaultProcessArguments Include="-O=gsharedvt" />
     </ItemGroup>

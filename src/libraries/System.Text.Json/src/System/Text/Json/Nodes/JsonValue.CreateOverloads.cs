@@ -225,7 +225,7 @@ namespace System.Text.Json.Nodes
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         [return: NotNullIfNotNull(nameof(value))]
-        public static JsonValue? Create(string? value, JsonNodeOptions? options = null) => value != null ? new JsonValueTrimmable<string>(value, JsonMetadataServices.StringConverter) : null;
+        public static JsonValue? Create(string? value, JsonNodeOptions? options = null) => value != null ? new JsonValueTrimmable<string?>(value, JsonMetadataServices.StringConverter) : null;
 
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.

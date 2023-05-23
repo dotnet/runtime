@@ -939,6 +939,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
+            options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled", "false");
 
             using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(() =>
             {
@@ -966,7 +967,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 Assert.Equal(2, ((Struct1)callSite.Value).Value);
             }, options);
 
-            // Verify the above scenarios work when IsDynamicCodeSupported is not set
+            // Verify the above scenarios work when IsDynamicCodeSupported + IsDynamicCodeCompiled are not set
             Func<Type, ServiceCallSite> callSiteFactory = CreateAotCompatibilityCallSiteFactory();
 
             // Open Generics

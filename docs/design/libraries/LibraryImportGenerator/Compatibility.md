@@ -2,7 +2,19 @@
 
 Documentation on compatibility guidance and the current state. The version headings act as a rolling delta between the previous version.
 
-## Version 2
+## Version 3 (.NET 8)
+
+### Safe Handles
+
+Due to trimming issues with NativeAOT's implementation of `Activator.CreateInstance`, we have decided to change our recommendation of providing a public parameterless constructor for `ref`, `out`, and return scenarios to a requirement. We already required a parameterless constructor of some visibility, so changing to a requirement matches our design principles of taking breaking changes to make interop more understandable and enforce more of our best practices instead of going out of our way to provide backward compatibility at increasing costs.
+
+### `UnmanagedType.Interface`
+
+Support for `MarshalAs(UnmanagedType.Interface)` is added to the interop source generators. `UnmanagedType.Interface` will marshal a parameter/return value of a type `T` to a COM interface pointer the `ComInterfaceMarshaller<T>` type. It will not support marshalling through the built-in COM interop subsystem.
+
+The `ComInterfaceMarshaller<T>` type has the following general behavior: An unmanaged pointer is marshalled to a managed object through `GetOrCreateObjectForComInstance` on a shared `StrategyBasedComWrappers` instance. A managed object is marshalled to an unmanaged pointer through that same shared instance with the `GetOrCreateComInterfaceForObject` method and then calling `QueryInterface` on the returned `IUnknown*` to get the pointer for the unmanaged interface with the IID from the managed type as defined by our default interface details strategy (or the IID of `IUnknown` if the managed type has no IID).
+
+## Version 2 (.NET 7 Release)
 
 The focus of version 2 is to support all repos that make up the .NET Product, including ASP.NET Core and Windows Forms, as well as all packages in dotnet/runtime.
 
@@ -11,7 +23,7 @@ The focus of version 2 is to support all repos that make up the .NET Product, in
 Support for user-defined type marshalling in the source-generated marshalling is described in [UserTypeMarshallingV2.md](UserTypeMarshallingV2.md). This support replaces the designs specified in [StructMarshalling.md](StructMarshalling.md) and [SpanMarshallers.md](SpanMarshallers.md).
 
 
-## Version 1
+## Version 1 (.NET 6 Prototype and .NET 7 Previews)
 
 The focus of version 1 is to support `NetCoreApp`. This implies that anything not needed by `NetCoreApp` is subject to change.
 

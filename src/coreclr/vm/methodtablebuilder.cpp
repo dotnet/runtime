@@ -1141,25 +1141,27 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     if (strcmp(className, "Vector`1") != 0 || strcmp(nameSpace, "System.Numerics") != 0)
         return false;
 
-    if (!TargetHasAVXSupport())
-        return false;
+    CORJIT_FLAGS CPUCompileFlags       = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
+    uint32_t     numInstanceFieldBytes = 16;
 
-    EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
-    if (jitMgr->LoadJIT())
+    if (CPUCompileFlags.IsSet(InstructionSet_AVX2))
     {
-        CORJIT_FLAGS cpuCompileFlags = jitMgr->GetCPUCompileFlags();
-        unsigned intrinsicSIMDVectorLength = jitMgr->m_jit->getMaxIntrinsicSIMDVectorLength(cpuCompileFlags);
-        if (intrinsicSIMDVectorLength != 0)
-        {
-            bmtFP->NumInstanceFieldBytes     = intrinsicSIMDVectorLength;
-            if (HasLayout())
-            {
-                GetLayoutInfo()->m_cbManagedSize = intrinsicSIMDVectorLength;
-            }
-            return true;
-        }
+        numInstanceFieldBytes = 32;
     }
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+
+    if (numInstanceFieldBytes != 16)
+    {
+        bmtFP->NumInstanceFieldBytes = numInstanceFieldBytes;
+
+        if (HasLayout())
+        {
+            GetLayoutInfo()->m_cbManagedSize = numInstanceFieldBytes;
+        }
+
+        return true;
+    }
+#endif // TARGET_X86 || TARGET_AMD64
+
     return false;
 }
 
@@ -1902,7 +1904,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
     // if there are context or thread static set the info in the method table optional members
     //
 
-    // Check for the RemotingProxy Attribute
     // structs with GC pointers MUST be pointer sized aligned because the GC assumes it
     if (IsValueClass() && pMT->ContainsPointers() && (bmtFP->NumInstanceFieldBytes % TARGET_POINTER_SIZE != 0))
     {
@@ -4118,7 +4119,7 @@ IS_VALUETYPE:
                                                                                 &bmtGenerics->typeContext,
                                                                                 ClassLoader::LoadTypes,
                                                                                 CLASS_LOAD_APPROXPARENTS,
-                                                                                TRUE, NULL, NULL, NULL, 
+                                                                                TRUE, NULL, NULL, NULL,
                                                                                 &recursiveControl).GetMethodTable();
                     }
                 }
@@ -4477,9 +4478,12 @@ IS_VALUETYPE:
         BuildMethodTableThrowException(IDS_EE_TOOMANYFIELDS);
     }
 
-    GetHalfBakedClass()->SetNumInstanceFields((WORD)dwNumInstanceFields);
-    GetHalfBakedClass()->SetNumStaticFields((WORD)dwNumStaticFields);
-    GetHalfBakedClass()->SetNumThreadStaticFields((WORD)dwNumThreadStaticFields);
+    if (!isEnCField)
+    {
+        GetHalfBakedClass()->SetNumInstanceFields((WORD)dwNumInstanceFields);
+        GetHalfBakedClass()->SetNumStaticFields((WORD)dwNumStaticFields);
+        GetHalfBakedClass()->SetNumThreadStaticFields((WORD)dwNumThreadStaticFields);
+    }
 
     if (bmtFP->fHasFixedAddressValueTypes)
     {
@@ -6075,7 +6079,7 @@ MethodTableBuilder::InitMethodDesc(
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_EVERYTHING, "MTB::IMD: pNewMD:%p (%u) EnC: %s tok:%x (%s::%s)\n",
+    LOG((LF_CORDB, LL_EVERYTHING, "MTB::IMD: pNewMD:%p (%u) EnC: %s tok:0x%08x (%s::%s)\n",
         pNewMD, Classification, (fEnC ? "true" : "false"), tok, pszDebugClassName, pszDebugMethodName));
 
     // Now we know the classification we can perform any classification specific initialization.

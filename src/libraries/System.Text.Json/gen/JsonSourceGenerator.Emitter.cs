@@ -3,10 +3,10 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using System.Text.Json.Reflection;
 using System.Text.Json.Serialization;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -16,8 +16,6 @@ namespace System.Text.Json.SourceGeneration
 {
     public sealed partial class JsonSourceGenerator
     {
-        private const string OptionsLocalVariableName = "options";
-
         private sealed partial class Emitter
         {
             // Literals in generated source
@@ -25,34 +23,29 @@ namespace System.Text.Json.SourceGeneration
             private const string CtorParamInitMethodNameSuffix = "CtorParamInit";
             private const string DefaultOptionsStaticVarName = "s_defaultOptions";
             private const string DefaultContextBackingStaticVarName = "s_defaultContext";
-            internal const string GetConverterFromFactoryMethodName = "GetConverterFromFactory";
             private const string OriginatingResolverPropertyName = "OriginatingResolver";
             private const string InfoVarName = "info";
-            private const string PropertyInfoVarName = "propertyInfo";
-            internal const string JsonContextVarName = "jsonContext";
             private const string NumberHandlingPropName = "NumberHandling";
             private const string UnmappedMemberHandlingPropName = "UnmappedMemberHandling";
+            private const string PreferredPropertyObjectCreationHandlingPropName = "PreferredPropertyObjectCreationHandling";
             private const string ObjectCreatorPropName = "ObjectCreator";
             private const string OptionsInstanceVariableName = "Options";
             private const string JsonTypeInfoReturnValueLocalVariableName = "jsonTypeInfo";
             private const string PropInitMethodNameSuffix = "PropInit";
-            private const string RuntimeCustomConverterFetchingMethodName = "GetRuntimeProvidedCustomConverter";
+            private const string TryGetTypeInfoForRuntimeCustomConverterMethodName = "TryGetTypeInfoForRuntimeCustomConverter";
+            private const string ExpandConverterMethodName = "ExpandConverter";
             private const string SerializeHandlerPropName = "SerializeHandler";
+            private const string OptionsLocalVariableName = "options";
             private const string ValueVarName = "value";
             private const string WriterVarName = "writer";
 
             private static readonly AssemblyName s_assemblyName = typeof(Emitter).Assembly.GetName();
-            private static readonly string s_generatedCodeAttributeSource = $@"
-[global::System.CodeDom.Compiler.GeneratedCodeAttribute(""{s_assemblyName.Name}"", ""{s_assemblyName.Version}"")]
-";
 
             // global::fully.qualified.name for referenced types
-            private const string ArrayTypeRef = "global::System.Array";
             private const string InvalidOperationExceptionTypeRef = "global::System.InvalidOperationException";
             private const string TypeTypeRef = "global::System.Type";
             private const string UnsafeTypeRef = "global::System.Runtime.CompilerServices.Unsafe";
             private const string EqualityComparerTypeRef = "global::System.Collections.Generic.EqualityComparer";
-            private const string IListTypeRef = "global::System.Collections.Generic.IList";
             private const string KeyValuePairTypeRef = "global::System.Collections.Generic.KeyValuePair";
             private const string JsonEncodedTextTypeRef = "global::System.Text.Json.JsonEncodedText";
             private const string JsonNamingPolicyTypeRef = "global::System.Text.Json.JsonNamingPolicy";
@@ -65,6 +58,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonCollectionInfoValuesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues";
             private const string JsonIgnoreConditionTypeRef = "global::System.Text.Json.Serialization.JsonIgnoreCondition";
             private const string JsonNumberHandlingTypeRef = "global::System.Text.Json.Serialization.JsonNumberHandling";
+            private const string JsonObjectCreationHandlingTypeRef = "global::System.Text.Json.Serialization.JsonObjectCreationHandling";
             private const string JsonUnmappedMemberHandlingTypeRef = "global::System.Text.Json.Serialization.JsonUnmappedMemberHandling";
             private const string JsonMetadataServicesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonMetadataServices";
             private const string JsonObjectInfoValuesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonObjectInfoValues";
@@ -74,32 +68,20 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonTypeInfoTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonTypeInfo";
             private const string JsonTypeInfoResolverTypeRef = "global::System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver";
 
-            private static DiagnosticDescriptor TypeNotSupported { get; } = new DiagnosticDescriptor(
-                id: "SYSLIB1030",
-                title: new LocalizableResourceString(nameof(SR.TypeNotSupportedTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                messageFormat: new LocalizableResourceString(nameof(SR.TypeNotSupportedMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: JsonConstants.SystemTextJsonSourceGenerationName,
-                defaultSeverity: DiagnosticSeverity.Warning,
-                isEnabledByDefault: true);
-
-            private static DiagnosticDescriptor DuplicateTypeName { get; } = new DiagnosticDescriptor(
-                id: "SYSLIB1031",
-                title: new LocalizableResourceString(nameof(SR.DuplicateTypeNameTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                messageFormat: new LocalizableResourceString(nameof(SR.DuplicateTypeNameMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: JsonConstants.SystemTextJsonSourceGenerationName,
-                defaultSeverity: DiagnosticSeverity.Warning,
-                isEnabledByDefault: true);
-
             private readonly JsonSourceGenerationContext _sourceGenerationContext;
-
-            private ContextGenerationSpec _currentContext = null!;
-
             private readonly SourceGenerationSpec _generationSpec;
 
-            private readonly HashSet<string> _emittedPropertyFileNames = new();
+            /// <summary>
+            /// Contains an index from TypeRef to TypeGenerationSpec for the current ContextGenerationSpec.
+            /// </summary>
+            private readonly Dictionary<TypeRef, TypeGenerationSpec> _typeIndex = new();
 
-            private bool _generateGetConverterMethodForTypes;
-            private bool _generateGetConverterMethodForProperties;
+            /// <summary>
+            /// Cache of property names (statically determined) found across the type graph of the JsonSerializerContext.
+            /// The dictionary Key is the JSON property name, and the Value is the variable name which is the same as the property
+            /// name except for cases where special characters are used with [JsonPropertyName].
+            /// </summary>
+            private readonly Dictionary<string, string> _propertyNames = new();
 
             public Emitter(in JsonSourceGenerationContext sourceGenerationContext, SourceGenerationSpec generationSpec)
             {
@@ -109,713 +91,589 @@ namespace System.Text.Json.SourceGeneration
 
             public void Emit()
             {
-                foreach (ContextGenerationSpec contextGenerationSpec in _generationSpec.ContextGenerationSpecList)
+                foreach (DiagnosticInfo diagnostic in _generationSpec.Diagnostics)
                 {
-                    _currentContext = contextGenerationSpec;
-                    _generateGetConverterMethodForTypes = false;
-                    _generateGetConverterMethodForProperties = false;
+                    // Report any diagnostics produced by the parser ahead of formatting source code.
+                    _sourceGenerationContext.ReportDiagnostic(diagnostic.CreateDiagnostic());
+                }
 
-                    foreach (TypeGenerationSpec typeGenerationSpec in _currentContext.RootSerializableTypes)
+                foreach (ContextGenerationSpec contextGenerationSpec in _generationSpec.ContextGenerationSpecs)
+                {
+                    Debug.Assert(_typeIndex.Count == 0);
+                    Debug.Assert(_propertyNames.Count == 0);
+
+                    foreach (TypeGenerationSpec spec in contextGenerationSpec.GeneratedTypes)
                     {
-                        GenerateTypeInfo(typeGenerationSpec);
+                        _typeIndex.Add(spec.TypeRef, spec);
                     }
 
-                    foreach (TypeGenerationSpec typeGenerationSpec in _currentContext.ImplicitlyRegisteredTypes)
+                    foreach (TypeGenerationSpec typeGenerationSpec in contextGenerationSpec.GeneratedTypes)
                     {
-                        GenerateTypeInfo(typeGenerationSpec);
+                        SourceText? sourceText = GenerateTypeInfo(contextGenerationSpec, typeGenerationSpec);
+                        if (sourceText != null)
+                        {
+                            _sourceGenerationContext.AddSource($"{contextGenerationSpec.ContextType.Name}.{typeGenerationSpec.TypeInfoPropertyName}.g.cs", sourceText);
+                        }
                     }
 
-                    string contextName = _currentContext.ContextType.Name;
+                    string contextName = contextGenerationSpec.ContextType.Name;
 
                     // Add root context implementation.
-                    AddSource(
-                        $"{contextName}.g.cs",
-                        GetRootJsonContextImplementation(),
-                        isRootContextDef: true);
+                    _sourceGenerationContext.AddSource($"{contextName}.g.cs", GetRootJsonContextImplementation(contextGenerationSpec));
 
                     // Add GetJsonTypeInfo override implementation.
-                    AddSource($"{contextName}.GetJsonTypeInfo.g.cs", GetGetTypeInfoImplementation(), interfaceImplementation: JsonTypeInfoResolverTypeRef);
+                    _sourceGenerationContext.AddSource($"{contextName}.GetJsonTypeInfo.g.cs", GetGetTypeInfoImplementation(contextGenerationSpec));
 
                     // Add property name initialization.
-                    AddSource($"{contextName}.PropertyNames.g.cs", GetPropertyNameInitialization());
+                    _sourceGenerationContext.AddSource($"{contextName}.PropertyNames.g.cs", GetPropertyNameInitialization(contextGenerationSpec));
+
+                    _propertyNames.Clear();
+                    _typeIndex.Clear();
                 }
             }
 
-            private void AddSource(string fileName, string source, bool isRootContextDef = false, string? interfaceImplementation = null)
+            private static SourceWriter CreateSourceWriterWithContextHeader(ContextGenerationSpec contextSpec, bool isPrimaryContextSourceFile = false, string? interfaceImplementation = null)
             {
-                string? generatedCodeAttributeSource = isRootContextDef ? s_generatedCodeAttributeSource : null;
+                var writer = new SourceWriter();
 
-                List<string> declarationList = _currentContext.ContextClassDeclarationList;
-                int declarationCount = declarationList.Count;
-                Debug.Assert(declarationCount >= 1);
+                writer.WriteLine("""
+                    // <auto-generated/>
 
-                string? @namespace = _currentContext.ContextType.Namespace;
-                bool isInGlobalNamespace = @namespace == JsonConstants.GlobalNamespaceValue;
+                    #nullable enable annotations
+                    #nullable disable warnings
 
-                StringBuilder sb = new("""
-// <auto-generated/>
+                    // Suppress warnings about [Obsolete] member usage in generated code.
+                    #pragma warning disable CS0612, CS0618
 
-#nullable enable annotations
-#nullable disable warnings
+                    """);
 
-// Suppress warnings about [Obsolete] member usage in generated code.
-#pragma warning disable CS0612, CS0618
-
-
-""");
-                int indentation = 0;
-
-                if (!isInGlobalNamespace)
+                if (contextSpec.Namespace != JsonConstants.GlobalNamespaceValue)
                 {
-                    sb.AppendLine($$"""
-namespace {{@namespace}}
-{
-""");
-                    indentation++;
+                    writer.WriteLine($"namespace {contextSpec.Namespace}");
+                    writer.WriteLine('{');
+                    writer.Indentation++;
                 }
 
-                for (int i = 0; i < declarationCount - 1; i++)
+                ImmutableEquatableArray<string> contextClasses = contextSpec.ContextClassDeclarations;
+                Debug.Assert(contextClasses.Count > 0);
+
+                // Emit any containing classes first.
+                for (int i = contextClasses.Count - 1; i > 0; i--)
                 {
-                    string declarationSource = $$"""
-{{declarationList[declarationCount - 1 - i]}}
-{
-""";
-                    sb.AppendLine(IndentSource(declarationSource, numIndentations: indentation++));
+                    writer.WriteLine(contextClasses[i]);
+                    writer.WriteLine('{');
+                    writer.Indentation++;
                 }
 
-                // Add the core implementation for the derived context class.
-                string partialContextImplementation = $$"""
-{{generatedCodeAttributeSource}}{{declarationList[0]}}{{(interfaceImplementation is null ? "" : ": " + interfaceImplementation)}}
-{
-{{IndentSource(source, 1)}}
-}
-""";
-                sb.AppendLine(IndentSource(partialContextImplementation, numIndentations: indentation--));
-
-                // Match curly braces for each containing type/namespace.
-                for (; indentation >= 0; indentation--)
+                if (isPrimaryContextSourceFile)
                 {
-                    sb.AppendLine(IndentSource("}", numIndentations: indentation));
+                    // Annotate context class with the GeneratedCodeAttribute
+                    writer.WriteLine($"""[global::System.CodeDom.Compiler.GeneratedCodeAttribute("{s_assemblyName.Name}", "{s_assemblyName.Version}")]""");
                 }
 
-                _sourceGenerationContext.AddSource(fileName, SourceText.From(sb.ToString(), Encoding.UTF8));
+                // Emit the JsonSerializerContext class declaration
+                writer.WriteLine($"{contextClasses[0]}{(interfaceImplementation is null ? "" : " : " + interfaceImplementation)}");
+                writer.WriteLine('{');
+                writer.Indentation++;
+
+                return writer;
             }
 
-            private void GenerateTypeInfo(TypeGenerationSpec typeGenerationSpec)
+            private static SourceText CompleteSourceFileAndReturnText(SourceWriter writer)
             {
-                Debug.Assert(typeGenerationSpec != null);
-
-                HashSet<TypeGenerationSpec> typesWithMetadata = _currentContext.TypesWithMetadataGenerated;
-
-                if (typesWithMetadata.Contains(typeGenerationSpec))
+                while (writer.Indentation > 0)
                 {
-                    return;
+                    writer.Indentation--;
+                    writer.WriteLine('}');
                 }
 
-                typesWithMetadata.Add(typeGenerationSpec);
+                return writer.ToSourceText();
+            }
 
-                string source;
-
+            private SourceText? GenerateTypeInfo(ContextGenerationSpec contextSpec, TypeGenerationSpec typeGenerationSpec)
+            {
                 switch (typeGenerationSpec.ClassType)
                 {
-                    case ClassType.KnownType:
-                        {
-                            source = GenerateForTypeWithKnownConverter(typeGenerationSpec);
-                        }
-                        break;
+                    case ClassType.BuiltInSupportType:
+                        return GenerateForTypeWithBuiltInConverter(contextSpec, typeGenerationSpec);
+
                     case ClassType.TypeWithDesignTimeProvidedCustomConverter:
-                        {
-                            source = GenerateForTypeWithUnknownConverter(typeGenerationSpec);
-                        }
-                        break;
+                        return GenerateForTypeWithCustomConverter(contextSpec, typeGenerationSpec);
+
                     case ClassType.Nullable:
-                        {
-                            Debug.Assert(typeGenerationSpec.NullableUnderlyingTypeMetadata != null);
+                        return GenerateForNullable(contextSpec, typeGenerationSpec);
 
-                            source = GenerateForNullable(typeGenerationSpec);
-                            GenerateTypeInfo(typeGenerationSpec.NullableUnderlyingTypeMetadata);
-                        }
-                        break;
                     case ClassType.Enum:
-                        {
-                            source = GenerateForEnum(typeGenerationSpec);
-                        }
-                        break;
+                        return GenerateForEnum(contextSpec, typeGenerationSpec);
+
                     case ClassType.Enumerable:
-                        {
-                            Debug.Assert(typeGenerationSpec.CollectionValueTypeMetadata != null);
-
-                            source = GenerateForCollection(typeGenerationSpec);
-                            GenerateTypeInfo(typeGenerationSpec.CollectionValueTypeMetadata);
-                        }
-                        break;
                     case ClassType.Dictionary:
-                        {
-                            Debug.Assert(typeGenerationSpec.CollectionKeyTypeMetadata != null);
-                            Debug.Assert(typeGenerationSpec.CollectionValueTypeMetadata != null);
+                        return GenerateForCollection(contextSpec, typeGenerationSpec);
 
-                            source = GenerateForCollection(typeGenerationSpec);
-                            GenerateTypeInfo(typeGenerationSpec.CollectionKeyTypeMetadata);
-                            GenerateTypeInfo(typeGenerationSpec.CollectionValueTypeMetadata);
-                        }
-                        break;
                     case ClassType.Object:
-                        {
-                            Debug.Assert(typeGenerationSpec.PropertyGenSpecList != null);
+                        return GenerateForObject(contextSpec, typeGenerationSpec);
 
-                            source = GenerateForObject(typeGenerationSpec);
+                    case ClassType.UnsupportedType:
+                        return GenerateForUnsupportedType(contextSpec, typeGenerationSpec);
 
-                            foreach (PropertyGenerationSpec spec in typeGenerationSpec.PropertyGenSpecList)
-                            {
-                                GenerateTypeInfo(spec.TypeGenerationSpec);
-                            }
-
-                            if (typeGenerationSpec.ConstructionStrategy == ObjectConstructionStrategy.ParameterizedConstructor)
-                            {
-                                foreach (ParameterGenerationSpec spec in typeGenerationSpec.CtorParamGenSpecArray!)
-                                {
-                                    GenerateTypeInfo(spec.TypeGenerationSpec);
-                                }
-                            }
-
-                            TypeGenerationSpec? extPropTypeSpec = typeGenerationSpec.ExtensionDataPropertyTypeSpec;
-                            if (extPropTypeSpec != null)
-                            {
-                                GenerateTypeInfo(extPropTypeSpec);
-                            }
-                        }
-                        break;
-                    case ClassType.KnownUnsupportedType:
-                        {
-                            source = GenerateForUnsupportedType(typeGenerationSpec);
-                        }
-                        break;
                     case ClassType.TypeUnsupportedBySourceGen:
-                        {
-                            Location location = typeGenerationSpec.Type.GetDiagnosticLocation() ?? typeGenerationSpec.AttributeLocation ?? _currentContext.Location;
-                            _sourceGenerationContext.ReportDiagnostic(
-                                Diagnostic.Create(TypeNotSupported, location, new string[] { typeGenerationSpec.TypeRef }));
-                            return;
-                        }
+                        return null; // Do not emit a source file for the type.
+
                     default:
-                        {
-                            throw new InvalidOperationException();
-                        }
+                        Debug.Fail($"Unexpected class type {typeGenerationSpec.ClassType}");
+                        return null;
                 }
-
-                // Don't add a duplicate file, but instead raise a diagnostic to say the duplicate has been skipped.
-                // Workaround https://github.com/dotnet/roslyn/issues/54185 by keeping track of the file names we've used.
-                string propertyFileName = $"{_currentContext.ContextType.Name}.{typeGenerationSpec.TypeInfoPropertyName}.g.cs";
-                if (_emittedPropertyFileNames.Add(propertyFileName))
-                {
-                    AddSource(propertyFileName, source);
-                }
-                else
-                {
-                    Location location = typeGenerationSpec.AttributeLocation ?? _currentContext.Location;
-                    _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(DuplicateTypeName, location, new string[] { typeGenerationSpec.TypeInfoPropertyName }));
-                }
-
-                _generateGetConverterMethodForTypes |= typeGenerationSpec.HasTypeFactoryConverter;
-                _generateGetConverterMethodForProperties |= typeGenerationSpec.HasPropertyFactoryConverters;
             }
 
-            private static string GenerateForTypeWithKnownConverter(TypeGenerationSpec typeMetadata)
+            private static SourceText GenerateForTypeWithBuiltInConverter(ContextGenerationSpec contextSpec, TypeGenerationSpec typeMetadata)
             {
-                string typeCompilableName = typeMetadata.TypeRef;
-                string typeFriendlyName = typeMetadata.TypeInfoPropertyName;
+                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec);
 
-                string metadataInitSource = $@"{JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeCompilableName)}({OptionsLocalVariableName}, {JsonMetadataServicesTypeRef}.{typeFriendlyName}Converter);";
+                string typeFQN = typeMetadata.TypeRef.FullyQualifiedName;
+                string typeInfoPropertyName = typeMetadata.TypeInfoPropertyName;
+                string metadataInitSource = $"{JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeFQN)}({OptionsLocalVariableName}, {JsonMetadataServicesTypeRef}.{typeInfoPropertyName}Converter);";
+                GenerateTypeInfoProperty(writer, typeMetadata, metadataInitSource);
 
-                return GenerateForType(typeMetadata, metadataInitSource);
+                return CompleteSourceFileAndReturnText(writer);
             }
 
-            private static string GenerateForTypeWithUnknownConverter(TypeGenerationSpec typeMetadata)
+            private static SourceText GenerateForTypeWithCustomConverter(ContextGenerationSpec contextSpec, TypeGenerationSpec typeMetadata)
             {
-                string typeCompilableName = typeMetadata.TypeRef;
+                Debug.Assert(typeMetadata.ConverterType != null);
 
-                // TODO (https://github.com/dotnet/runtime/issues/52218): consider moving this verification source to common helper.
-                StringBuilder metadataInitSource = new(
-                    $@"{JsonConverterTypeRef} converter = {typeMetadata.ConverterInstantiationLogic};
-                {TypeTypeRef} typeToConvert = typeof({typeCompilableName});");
+                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec);
 
-                metadataInitSource.Append($@"
-                if (!converter.CanConvert(typeToConvert))
-                {{
-                    throw new {InvalidOperationExceptionTypeRef}(string.Format(""{ExceptionMessages.IncompatibleConverterType}"", converter.GetType(), typeToConvert));
-                }}");
+                string typeFQN = typeMetadata.TypeRef.FullyQualifiedName;
+                string metadataInitSource = $$"""
+                    {{JsonConverterTypeRef}} converter = {{ExpandConverterMethodName}}(typeof({{typeFQN}}), new {{typeMetadata.ConverterType.FullyQualifiedName}}(), {{OptionsLocalVariableName}});
+                    {{JsonTypeInfoReturnValueLocalVariableName}} = {{JsonMetadataServicesTypeRef}}.{{GetCreateValueInfoMethodRef(typeFQN)}} ({{OptionsLocalVariableName}}, converter);
+                    """;
 
-                metadataInitSource.Append($@"
-                {JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeCompilableName)} ({OptionsLocalVariableName}, converter); ");
+                GenerateTypeInfoProperty(writer, typeMetadata, metadataInitSource);
 
-                return GenerateForType(typeMetadata, metadataInitSource.ToString());
+                return CompleteSourceFileAndReturnText(writer);
             }
 
-            private static string GenerateForNullable(TypeGenerationSpec typeMetadata)
+            private static SourceText GenerateForNullable(ContextGenerationSpec contextSpec, TypeGenerationSpec typeMetadata)
             {
-                string typeCompilableName = typeMetadata.TypeRef;
+                Debug.Assert(typeMetadata.NullableUnderlyingType != null);
 
-                TypeGenerationSpec? underlyingTypeMetadata = typeMetadata.NullableUnderlyingTypeMetadata;
-                Debug.Assert(underlyingTypeMetadata != null);
+                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec);
 
-                string underlyingTypeCompilableName = underlyingTypeMetadata.TypeRef;
+                string typeFQN = typeMetadata.TypeRef.FullyQualifiedName;
+                string underlyingTypeFQN = typeMetadata.NullableUnderlyingType.FullyQualifiedName;
 
-                string metadataInitSource = @$"{JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeCompilableName)}(
-                    {OptionsLocalVariableName},
-                    {JsonMetadataServicesTypeRef}.GetNullableConverter<{underlyingTypeCompilableName}>({OptionsLocalVariableName}));
-";
+                string metadataInitSource = $$"""
+                    {{JsonTypeInfoReturnValueLocalVariableName}} = {{JsonMetadataServicesTypeRef}}.{{GetCreateValueInfoMethodRef(typeFQN)}}(
+                        {{OptionsLocalVariableName}},
+                        {{JsonMetadataServicesTypeRef}}.GetNullableConverter<{{underlyingTypeFQN}}>({{OptionsLocalVariableName}}));
+                    """;
 
-                return GenerateForType(typeMetadata, metadataInitSource);
+                GenerateTypeInfoProperty(writer, typeMetadata, metadataInitSource);
+
+                return CompleteSourceFileAndReturnText(writer);
             }
 
-            private static string GenerateForUnsupportedType(TypeGenerationSpec typeMetadata)
+            private static SourceText GenerateForUnsupportedType(ContextGenerationSpec contextSpec, TypeGenerationSpec typeMetadata)
             {
-                string typeCompilableName = typeMetadata.TypeRef;
+                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec);
 
-                string metadataInitSource = $"{JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeCompilableName)}({OptionsLocalVariableName}, {JsonMetadataServicesTypeRef}.GetUnsupportedTypeConverter<{typeCompilableName}>());";
+                string typeFQN = typeMetadata.TypeRef.FullyQualifiedName;
+                string metadataInitSource = $"{JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeFQN)}({OptionsLocalVariableName}, {JsonMetadataServicesTypeRef}.GetUnsupportedTypeConverter<{typeFQN}>());";
 
-                return GenerateForType(typeMetadata, metadataInitSource);
+                GenerateTypeInfoProperty(writer, typeMetadata, metadataInitSource);
+
+                return CompleteSourceFileAndReturnText(writer);
             }
 
-            private static string GenerateForEnum(TypeGenerationSpec typeMetadata)
+            private static SourceText GenerateForEnum(ContextGenerationSpec contextSpec, TypeGenerationSpec typeMetadata)
             {
-                string typeCompilableName = typeMetadata.TypeRef;
+                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec);
 
-                string metadataInitSource = $"{JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeCompilableName)}({OptionsLocalVariableName}, {JsonMetadataServicesTypeRef}.GetEnumConverter<{typeCompilableName}>({OptionsLocalVariableName}));";
+                string typeFQN = typeMetadata.TypeRef.FullyQualifiedName;
+                string metadataInitSource = $"{JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeFQN)}({OptionsLocalVariableName}, {JsonMetadataServicesTypeRef}.GetEnumConverter<{typeFQN}>({OptionsLocalVariableName}));";
+                GenerateTypeInfoProperty(writer, typeMetadata, metadataInitSource);
 
-                return GenerateForType(typeMetadata, metadataInitSource);
+                return CompleteSourceFileAndReturnText(writer);
             }
 
-            private string GenerateForCollection(TypeGenerationSpec typeGenerationSpec)
+            private SourceText GenerateForCollection(ContextGenerationSpec contextSpec, TypeGenerationSpec typeGenerationSpec)
             {
+                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec);
+
                 // Key metadata
-                TypeGenerationSpec? collectionKeyTypeMetadata = typeGenerationSpec.CollectionKeyTypeMetadata;
-                Debug.Assert(!(typeGenerationSpec.ClassType == ClassType.Dictionary && collectionKeyTypeMetadata == null));
-                string? keyTypeCompilableName = collectionKeyTypeMetadata?.TypeRef;
+                TypeRef? collectionKeyType = typeGenerationSpec.CollectionKeyType;
+                Debug.Assert(!(typeGenerationSpec.ClassType == ClassType.Dictionary && collectionKeyType == null));
+                string? keyTypeFQN = collectionKeyType?.FullyQualifiedName;
 
                 // Value metadata
-                TypeGenerationSpec? collectionValueTypeMetadata = typeGenerationSpec.CollectionValueTypeMetadata;
-                Debug.Assert(collectionValueTypeMetadata != null);
-                string valueTypeCompilableName = collectionValueTypeMetadata.TypeRef;
-
-                string numberHandlingArg = $"{GetNumberHandlingAsStr(typeGenerationSpec.NumberHandling)}";
-
-                string serializeHandlerValue;
-
-                string? serializeHandlerSource;
-                if (!typeGenerationSpec.GenerateSerializationLogic)
-                {
-                    serializeHandlerSource = null;
-                    serializeHandlerValue = "null";
-                }
-                else
-                {
-                    serializeHandlerSource = typeGenerationSpec.ClassType == ClassType.Enumerable
-                        ? GenerateFastPathFuncForEnumerable(typeGenerationSpec)
-                        : GenerateFastPathFuncForDictionary(typeGenerationSpec);
-
-                    serializeHandlerValue = $"{typeGenerationSpec.TypeInfoPropertyName}{SerializeHandlerPropName}";
-                }
+                TypeRef? collectionValueType = typeGenerationSpec.CollectionValueType;
+                Debug.Assert(collectionValueType != null);
+                string valueTypeFQN = collectionValueType.FullyQualifiedName;
 
                 CollectionType collectionType = typeGenerationSpec.CollectionType;
 
-                string typeRef = typeGenerationSpec.TypeRef;
+                string? serializeMethodName = ShouldGenerateSerializationLogic(typeGenerationSpec)
+                    ? $"{typeGenerationSpec.TypeInfoPropertyName}{SerializeHandlerPropName}"
+                    : null;
 
-                string objectCreatorValue;
-                if (typeGenerationSpec.RuntimeTypeRef != null)
-                {
-                    objectCreatorValue = $"() => new {typeGenerationSpec.RuntimeTypeRef}()";
-                }
-                else
-                {
-                    objectCreatorValue = typeGenerationSpec.ConstructionStrategy == ObjectConstructionStrategy.ParameterlessConstructor
-                        ? $"() => new {typeRef}()"
-                        : "null";
-                }
-
-                string collectionInfoCreationPrefix = collectionType switch
-                {
-                    CollectionType.IListOfT => $"{JsonMetadataServicesTypeRef}.CreateIListInfo<",
-                    CollectionType.ICollectionOfT => $"{JsonMetadataServicesTypeRef}.CreateICollectionInfo<",
-                    CollectionType.StackOfT => $"{JsonMetadataServicesTypeRef}.CreateStackInfo<",
-                    CollectionType.QueueOfT => $"{JsonMetadataServicesTypeRef}.CreateQueueInfo<",
-                    CollectionType.Stack => $"{JsonMetadataServicesTypeRef}.CreateStackInfo<",
-                    CollectionType.Queue => $"{JsonMetadataServicesTypeRef}.CreateQueueInfo<",
-                    CollectionType.IEnumerableOfT => $"{JsonMetadataServicesTypeRef}.CreateIEnumerableInfo<",
-                    CollectionType.IAsyncEnumerableOfT => $"{JsonMetadataServicesTypeRef}.CreateIAsyncEnumerableInfo<",
-                    CollectionType.IDictionaryOfTKeyTValue => $"{JsonMetadataServicesTypeRef}.CreateIDictionaryInfo<",
-                    _ => $"{JsonMetadataServicesTypeRef}.Create{collectionType}Info<"
-                };
-
-                string dictInfoCreationPrefix = $"{collectionInfoCreationPrefix}{typeRef}, {keyTypeCompilableName!}, {valueTypeCompilableName}>({OptionsLocalVariableName}, {InfoVarName}";
-                string enumerableInfoCreationPrefix = $"{collectionInfoCreationPrefix}{typeRef}, {valueTypeCompilableName}>({OptionsLocalVariableName}, {InfoVarName}";
-                string immutableCollectionCreationSuffix = $"createRangeFunc: {typeGenerationSpec.ImmutableCollectionBuilderName}";
-
-                string collectionTypeInfoValue;
+                string typeFQN = typeGenerationSpec.TypeRef.FullyQualifiedName;
+                string createCollectionInfoMethodName = GetCollectionInfoMethodName(collectionType);
+                string createCollectionMethodExpr;
 
                 switch (collectionType)
                 {
                     case CollectionType.Array:
-                        collectionTypeInfoValue = $"{collectionInfoCreationPrefix}{valueTypeCompilableName}>({OptionsLocalVariableName}, {InfoVarName})";
+                        createCollectionMethodExpr = $"{createCollectionInfoMethodName}<{valueTypeFQN}>({OptionsLocalVariableName}, {InfoVarName})";
                         break;
                     case CollectionType.IEnumerable:
+                    case CollectionType.IDictionary:
                     case CollectionType.IList:
-                        collectionTypeInfoValue = $"{collectionInfoCreationPrefix}{typeRef}>({OptionsLocalVariableName}, {InfoVarName})";
+                        createCollectionMethodExpr = $"{createCollectionInfoMethodName}<{typeFQN}>({OptionsLocalVariableName}, {InfoVarName})";
                         break;
                     case CollectionType.Stack:
                     case CollectionType.Queue:
                         string addMethod = collectionType == CollectionType.Stack ? "Push" : "Enqueue";
-                        string addFuncNamedArg = $"addFunc: (collection, {ValueVarName}) => collection.{addMethod}({ValueVarName})";
-                        collectionTypeInfoValue = $"{collectionInfoCreationPrefix}{typeRef}>({OptionsLocalVariableName}, {InfoVarName}, {addFuncNamedArg})";
+                        string addFuncNamedArg = $"(collection, {ValueVarName}) => collection.{addMethod}({ValueVarName})";
+                        createCollectionMethodExpr = $"{createCollectionInfoMethodName}<{typeFQN}>({OptionsLocalVariableName}, {InfoVarName}, addFunc: {addFuncNamedArg})";
                         break;
                     case CollectionType.ImmutableEnumerable:
-                        collectionTypeInfoValue = $"{enumerableInfoCreationPrefix}, {immutableCollectionCreationSuffix})";
-                        break;
-                    case CollectionType.IDictionary:
-                        collectionTypeInfoValue = $"{collectionInfoCreationPrefix}{typeRef}>({OptionsLocalVariableName}, {InfoVarName})";
+                        createCollectionMethodExpr = $"{createCollectionInfoMethodName}<{typeFQN}, {valueTypeFQN}>({OptionsLocalVariableName}, {InfoVarName}, createRangeFunc: {typeGenerationSpec.ImmutableCollectionFactoryMethod})";
                         break;
                     case CollectionType.Dictionary:
                     case CollectionType.IDictionaryOfTKeyTValue:
                     case CollectionType.IReadOnlyDictionary:
-                        collectionTypeInfoValue = $"{dictInfoCreationPrefix})";
+                        Debug.Assert(keyTypeFQN != null);
+                        createCollectionMethodExpr = $"{createCollectionInfoMethodName}<{typeFQN}, {keyTypeFQN!}, {valueTypeFQN}>({OptionsLocalVariableName}, {InfoVarName})";
                         break;
                     case CollectionType.ImmutableDictionary:
-                        collectionTypeInfoValue = $"{dictInfoCreationPrefix}, {immutableCollectionCreationSuffix})";
+                        Debug.Assert(keyTypeFQN != null);
+                        createCollectionMethodExpr = $"{createCollectionInfoMethodName}<{typeFQN}, {keyTypeFQN!}, {valueTypeFQN}>({OptionsLocalVariableName}, {InfoVarName}, createRangeFunc: {typeGenerationSpec.ImmutableCollectionFactoryMethod})";
                         break;
                     default:
-                        collectionTypeInfoValue = $"{enumerableInfoCreationPrefix})";
+                        createCollectionMethodExpr = $"{createCollectionInfoMethodName}<{typeFQN}, {valueTypeFQN}>({OptionsLocalVariableName}, {InfoVarName})";
                         break;
                 }
 
-                string metadataInitSource = @$"{JsonCollectionInfoValuesTypeRef}<{typeRef}> {InfoVarName} = new {JsonCollectionInfoValuesTypeRef}<{typeRef}>()
-        {{
-            {ObjectCreatorPropName} = {objectCreatorValue},
-            {NumberHandlingPropName} = {numberHandlingArg},
-            {SerializeHandlerPropName} = {serializeHandlerValue}
-        }};
+                string metadataInitSource = $$"""
+                    var {{InfoVarName}} = new {{JsonCollectionInfoValuesTypeRef}}<{{typeFQN}}>()
+                    {
+                        {{ObjectCreatorPropName}} = {{FormatDefaultConstructorExpr(typeGenerationSpec)}},
+                        {{NumberHandlingPropName}} = {{GetNumberHandlingAsStr(typeGenerationSpec.NumberHandling)}},
+                        {{SerializeHandlerPropName}} = {{serializeMethodName ?? "null"}}
+                    };
 
-        {JsonTypeInfoReturnValueLocalVariableName} = {collectionTypeInfoValue};
-";
+                    {{JsonTypeInfoReturnValueLocalVariableName}} = {{JsonMetadataServicesTypeRef}}.{{createCollectionMethodExpr}};
+                    """;
 
-                return GenerateForType(typeGenerationSpec, metadataInitSource, serializeHandlerSource);
+                GenerateTypeInfoProperty(writer, typeGenerationSpec, metadataInitSource);
+
+                if (serializeMethodName != null)
+                {
+                    writer.WriteLine();
+
+                    if (typeGenerationSpec.ClassType == ClassType.Enumerable)
+                    {
+                        GenerateFastPathFuncForEnumerable(writer, serializeMethodName, typeGenerationSpec);
+                    }
+                    else
+                    {
+                        GenerateFastPathFuncForDictionary(writer, serializeMethodName, typeGenerationSpec);
+                    }
+                }
+
+                return CompleteSourceFileAndReturnText(writer);
             }
 
-            private string GenerateFastPathFuncForEnumerable(TypeGenerationSpec typeGenerationSpec)
+            private void GenerateFastPathFuncForEnumerable(SourceWriter writer, string serializeMethodName, TypeGenerationSpec typeGenerationSpec)
             {
-                Debug.Assert(typeGenerationSpec.CollectionValueTypeMetadata != null);
+                Debug.Assert(typeGenerationSpec.CollectionValueType != null);
+                TypeGenerationSpec valueTypeGenerationSpec = _typeIndex[typeGenerationSpec.CollectionValueType];
 
-                TypeGenerationSpec valueTypeGenerationSpec = typeGenerationSpec.CollectionValueTypeMetadata;
+                GenerateFastPathFuncHeader(writer, typeGenerationSpec, serializeMethodName);
 
-                Type elementType = valueTypeGenerationSpec.Type;
-                string? writerMethodToCall = GetWriterMethod(elementType);
+                writer.WriteLine($"{WriterVarName}.WriteStartArray();");
+                writer.WriteLine();
 
-                string iterationLogic;
-                string valueToWrite;
-
+                string getCurrentElementExpr;
                 switch (typeGenerationSpec.CollectionType)
                 {
                     case CollectionType.Array:
-                        iterationLogic = $"for (int i = 0; i < {ValueVarName}.Length; i++)";
-                        valueToWrite = $"{ValueVarName}[i]";
+                        writer.WriteLine($"for (int i = 0; i < {ValueVarName}.Length; i++)");
+                        getCurrentElementExpr = $"{ValueVarName}[i]";
                         break;
+
                     case CollectionType.IListOfT:
                     case CollectionType.List:
                     case CollectionType.IList:
-                        iterationLogic = $"for (int i = 0; i < {ValueVarName}.Count; i++)";
-                        valueToWrite = $"{ValueVarName}[i]";
+                        writer.WriteLine($"for (int i = 0; i < {ValueVarName}.Count; i++)");
+                        getCurrentElementExpr = $"{ValueVarName}[i]";
                         break;
+
                     default:
                         const string elementVarName = "element";
-                        iterationLogic = $"foreach ({valueTypeGenerationSpec.TypeRef} {elementVarName} in {ValueVarName})";
-                        valueToWrite = elementVarName;
+                        writer.WriteLine($"foreach ({valueTypeGenerationSpec.TypeRef.FullyQualifiedName} {elementVarName} in {ValueVarName})");
+                        getCurrentElementExpr = elementVarName;
                         break;
                 };
 
-                if (elementType == _generationSpec.CharType)
-                {
-                    valueToWrite = $"{valueToWrite}.ToString()";
-                }
+                writer.WriteLine('{');
+                writer.Indentation++;
 
-                string elementSerializationLogic = writerMethodToCall == null
-                    ? GetSerializeLogicForNonPrimitiveType(valueTypeGenerationSpec, valueToWrite)
-                    : $"{writerMethodToCall}Value({valueToWrite});";
+                GenerateSerializeValueStatement(writer, valueTypeGenerationSpec, getCurrentElementExpr);
 
-                string serializationLogic = $@"{WriterVarName}.WriteStartArray();
+                writer.Indentation--;
+                writer.WriteLine('}');
 
-    {iterationLogic}
-    {{
-        {elementSerializationLogic}
-    }}
+                writer.WriteLine();
+                writer.WriteLine($"{WriterVarName}.WriteEndArray();");
 
-    {WriterVarName}.WriteEndArray();";
-
-                return GenerateFastPathFuncForType(typeGenerationSpec, serializationLogic, emitNullCheck: typeGenerationSpec.CanBeNull);
+                writer.Indentation--;
+                writer.WriteLine('}');
             }
 
-            private string GenerateFastPathFuncForDictionary(TypeGenerationSpec typeGenerationSpec)
+            private void GenerateFastPathFuncForDictionary(SourceWriter writer, string serializeMethodName, TypeGenerationSpec typeGenerationSpec)
             {
-                Debug.Assert(typeGenerationSpec.CollectionKeyTypeMetadata != null);
-                Debug.Assert(typeGenerationSpec.CollectionValueTypeMetadata != null);
+                Debug.Assert(typeGenerationSpec.CollectionKeyType != null);
+                Debug.Assert(typeGenerationSpec.CollectionValueType != null);
 
-                TypeGenerationSpec keyTypeGenerationSpec = typeGenerationSpec.CollectionKeyTypeMetadata;
-                TypeGenerationSpec valueTypeGenerationSpec = typeGenerationSpec.CollectionValueTypeMetadata;
+                TypeRef keyType = typeGenerationSpec.CollectionKeyType;
+                TypeGenerationSpec valueTypeGenerationSpec = _typeIndex[typeGenerationSpec.CollectionValueType];
 
-                Type elementType = valueTypeGenerationSpec.Type;
-                string? writerMethodToCall = GetWriterMethod(elementType);
-                string elementSerializationLogic;
+                GenerateFastPathFuncHeader(writer, typeGenerationSpec, serializeMethodName);
 
-                const string pairVarName = "pair";
-                string keyToWrite = $"{pairVarName}.Key";
-                string valueToWrite = $"{pairVarName}.Value";
+                writer.WriteLine($"{WriterVarName}.WriteStartObject();");
+                writer.WriteLine();
 
-                if (elementType == _generationSpec.CharType)
-                {
-                    valueToWrite = $"{valueToWrite}.ToString()";
-                }
+                writer.WriteLine($"foreach ({KeyValuePairTypeRef}<{keyType.FullyQualifiedName}, {valueTypeGenerationSpec.TypeRef.FullyQualifiedName}> entry in {ValueVarName})");
+                writer.WriteLine('{');
+                writer.Indentation++;
 
-                if (writerMethodToCall != null)
-                {
-                    elementSerializationLogic = $"{writerMethodToCall}({keyToWrite}, {valueToWrite});";
-                }
-                else
-                {
-                    elementSerializationLogic = $@"{WriterVarName}.WritePropertyName({keyToWrite});
-        {GetSerializeLogicForNonPrimitiveType(valueTypeGenerationSpec, valueToWrite)}";
-                }
+                GenerateSerializePropertyStatement(writer, valueTypeGenerationSpec, propertyNameExpr: "entry.Key", valueExpr: "entry.Value");
 
-                string serializationLogic = $@"{WriterVarName}.WriteStartObject();
+                writer.Indentation--;
+                writer.WriteLine('}');
 
-    foreach ({KeyValuePairTypeRef}<{keyTypeGenerationSpec.TypeRef}, {valueTypeGenerationSpec.TypeRef}> {pairVarName} in {ValueVarName})
-    {{
-        {elementSerializationLogic}
-    }}
+                writer.WriteLine();
+                writer.WriteLine($"{WriterVarName}.WriteEndObject();");
 
-    {WriterVarName}.WriteEndObject();";
-
-                return GenerateFastPathFuncForType(typeGenerationSpec, serializationLogic, emitNullCheck: typeGenerationSpec.CanBeNull);
+                writer.Indentation--;
+                writer.WriteLine('}');
             }
 
-            private string GenerateForObject(TypeGenerationSpec typeMetadata)
+            private SourceText GenerateForObject(ContextGenerationSpec contextSpec, TypeGenerationSpec typeMetadata)
             {
+                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec);
+
                 string typeFriendlyName = typeMetadata.TypeInfoPropertyName;
                 ObjectConstructionStrategy constructionStrategy = typeMetadata.ConstructionStrategy;
 
-                string creatorInvocation = constructionStrategy == ObjectConstructionStrategy.ParameterlessConstructor
-                    ? $"static () => new {typeMetadata.TypeRef}()"
-                    : "null";
-
+                string creatorInvocation = FormatDefaultConstructorExpr(typeMetadata);
                 string parameterizedCreatorInvocation = constructionStrategy == ObjectConstructionStrategy.ParameterizedConstructor
                     ? GetParameterizedCtorInvocationFunc(typeMetadata)
                     : "null";
 
-                string? propMetadataInitFuncSource = null;
-                string? ctorParamMetadataInitFuncSource = null;
-                string? serializeFuncSource = null;
+                string? propInitMethodName = null;
+                string? propInitAdapterFunc = null;
+                string? ctorParamMetadataInitMethodName = null;
+                string? serializeMethodName = null;
 
-                string propInitMethod = "null";
-                string ctorParamMetadataInitMethodName = "null";
-                string serializeMethodName = "null";
-
-                if (typeMetadata.GenerateMetadata)
+                if (ShouldGenerateMetadata(typeMetadata))
                 {
-                    propMetadataInitFuncSource = GeneratePropMetadataInitFunc(typeMetadata);
-                    propInitMethod = $"_ => {typeFriendlyName}{PropInitMethodNameSuffix}({OptionsLocalVariableName})";
+                    propInitMethodName = $"{typeFriendlyName}{PropInitMethodNameSuffix}";
+                    propInitAdapterFunc = $"_ => {propInitMethodName}({OptionsLocalVariableName})";
 
                     if (constructionStrategy == ObjectConstructionStrategy.ParameterizedConstructor)
                     {
-                        ctorParamMetadataInitFuncSource = GenerateCtorParamMetadataInitFunc(typeMetadata);
                         ctorParamMetadataInitMethodName = $"{typeFriendlyName}{CtorParamInitMethodNameSuffix}";
                     }
                 }
 
-                if (typeMetadata.GenerateSerializationLogic)
+                if (ShouldGenerateSerializationLogic(typeMetadata))
                 {
-                    serializeFuncSource = GenerateFastPathFuncForObject(typeMetadata);
                     serializeMethodName = $"{typeFriendlyName}{SerializeHandlerPropName}";
                 }
 
                 const string ObjectInfoVarName = "objectInfo";
-                string genericArg = typeMetadata.TypeRef;
+                string genericArg = typeMetadata.TypeRef.FullyQualifiedName;
 
-                string objectInfoInitSource = $@"{JsonObjectInfoValuesTypeRef}<{genericArg}> {ObjectInfoVarName} = new {JsonObjectInfoValuesTypeRef}<{genericArg}>()
-        {{
-            {ObjectCreatorPropName} = {creatorInvocation},
-            ObjectWithParameterizedConstructorCreator = {parameterizedCreatorInvocation},
-            PropertyMetadataInitializer = {propInitMethod},
-            ConstructorParameterMetadataInitializer = {ctorParamMetadataInitMethodName},
-            {NumberHandlingPropName} = {GetNumberHandlingAsStr(typeMetadata.NumberHandling)},
-            {SerializeHandlerPropName} = {serializeMethodName}
-        }};
+                string metadataInitSource = $$"""
+                    var {{ObjectInfoVarName}} = new {{JsonObjectInfoValuesTypeRef}}<{{genericArg}}>()
+                    {
+                        {{ObjectCreatorPropName}} = {{creatorInvocation}},
+                        ObjectWithParameterizedConstructorCreator = {{parameterizedCreatorInvocation}},
+                        PropertyMetadataInitializer = {{propInitAdapterFunc ?? "null"}},
+                        ConstructorParameterMetadataInitializer = {{ctorParamMetadataInitMethodName ?? "null"}},
+                        {{NumberHandlingPropName}} = {{GetNumberHandlingAsStr(typeMetadata.NumberHandling)}},
+                        {{SerializeHandlerPropName}} = {{serializeMethodName ?? "null"}}
+                    };
 
-        {JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.CreateObjectInfo<{typeMetadata.TypeRef}>({OptionsLocalVariableName}, {ObjectInfoVarName});";
+                    {{JsonTypeInfoReturnValueLocalVariableName}} = {{JsonMetadataServicesTypeRef}}.CreateObjectInfo<{{typeMetadata.TypeRef.FullyQualifiedName}}>({{OptionsLocalVariableName}}, {{ObjectInfoVarName}});
+                    """;
 
                 if (typeMetadata.UnmappedMemberHandling != null)
                 {
-                    objectInfoInitSource += $"""
+                    metadataInitSource += $"""
 
-        {JsonTypeInfoReturnValueLocalVariableName}.{UnmappedMemberHandlingPropName} = {GetUnmappedMemberHandlingAsStr(typeMetadata.UnmappedMemberHandling.Value)};
-""";
+                        {JsonTypeInfoReturnValueLocalVariableName}.{UnmappedMemberHandlingPropName} = {GetUnmappedMemberHandlingAsStr(typeMetadata.UnmappedMemberHandling.Value)};
+                        """;
                 }
 
-                string additionalSource = @$"{propMetadataInitFuncSource}{serializeFuncSource}{ctorParamMetadataInitFuncSource}";
+                if (typeMetadata.PreferredPropertyObjectCreationHandling != null)
+                {
+                    metadataInitSource += $"""
 
-                return GenerateForType(typeMetadata, objectInfoInitSource, additionalSource);
+                        {JsonTypeInfoReturnValueLocalVariableName}.{PreferredPropertyObjectCreationHandlingPropName} = {GetObjectCreationHandlingAsStr(typeMetadata.PreferredPropertyObjectCreationHandling.Value)};
+                        """;
+                }
+
+                GenerateTypeInfoProperty(writer, typeMetadata, metadataInitSource);
+
+                if (propInitMethodName != null)
+                {
+                    writer.WriteLine();
+                    GeneratePropMetadataInitFunc(writer, propInitMethodName, typeMetadata);
+                }
+
+                if (serializeMethodName != null)
+                {
+                    writer.WriteLine();
+                    GenerateFastPathFuncForObject(writer, contextSpec, serializeMethodName, typeMetadata);
+                }
+
+                if (ctorParamMetadataInitMethodName != null)
+                {
+                    writer.WriteLine();
+                    GenerateCtorParamMetadataInitFunc(writer, ctorParamMetadataInitMethodName, typeMetadata);
+                }
+
+                writer.Indentation--;
+                writer.WriteLine('}');
+
+                return CompleteSourceFileAndReturnText(writer);
             }
 
-            private static string GeneratePropMetadataInitFunc(TypeGenerationSpec typeGenerationSpec)
+            private static void GeneratePropMetadataInitFunc(SourceWriter writer, string propInitMethodName, TypeGenerationSpec typeGenerationSpec)
             {
-                const string PropVarName = "properties";
+                Debug.Assert(typeGenerationSpec.PropertyGenSpecs != null);
+                ImmutableEquatableArray<PropertyGenerationSpec> properties = typeGenerationSpec.PropertyGenSpecs;
 
-                List<PropertyGenerationSpec> properties = typeGenerationSpec.PropertyGenSpecList!;
+                writer.WriteLine($"private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName})");
+                writer.WriteLine('{');
+                writer.Indentation++;
 
-                int propCount = properties.Count;
+                writer.WriteLine($"var properties = new {JsonPropertyInfoTypeRef}[{properties.Count}];");
+                writer.WriteLine();
 
-                string propertyArrayInstantiationValue = propCount == 0
-                    ? $"{ArrayTypeRef}.Empty<{JsonPropertyInfoTypeRef}>()"
-                    : $"new {JsonPropertyInfoTypeRef}[{propCount}]";
-
-                string propInitMethodName = $"{typeGenerationSpec.TypeInfoPropertyName}{PropInitMethodNameSuffix}";
-
-                StringBuilder sb = new();
-
-                sb.Append($@"
-private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName})
-{{
-    {JsonPropertyInfoTypeRef}[] {PropVarName} = {propertyArrayInstantiationValue};
-");
-
-                for (int i = 0; i < propCount; i++)
+                for (int i = 0; i < properties.Count; i++)
                 {
-                    PropertyGenerationSpec memberMetadata = properties[i];
+                    PropertyGenerationSpec property = properties[i];
+                    string propertyName = property.NameSpecifiedInSourceCode;
+                    string declaringTypeFQN = property.DeclaringType.FullyQualifiedName;
+                    string propertyTypeFQN = property.PropertyType.FullyQualifiedName;
 
-                    TypeGenerationSpec memberTypeMetadata = memberMetadata.TypeGenerationSpec;
-
-                    string nameSpecifiedInSourceCode = memberMetadata.NameSpecifiedInSourceCode;
-
-                    string declaringTypeCompilableName = memberMetadata.DeclaringTypeRef;
-
-                    string jsonPropertyNameValue = memberMetadata.JsonPropertyName != null
-                        ? @$"""{memberMetadata.JsonPropertyName}"""
-                        : "null";
-
-                    string getterValue = memberMetadata switch
+                    string getterValue = property switch
                     {
                         { DefaultIgnoreCondition: JsonIgnoreCondition.Always } => "null",
-                        { CanUseGetter: true } => $"static (obj) => (({declaringTypeCompilableName})obj).{nameSpecifiedInSourceCode}{(memberMetadata.TypeGenerationSpec.CanContainNullableReferenceAnnotations ? "!" : "")}",
+                        { CanUseGetter: true } => $"static (obj) => (({declaringTypeFQN})obj).{propertyName}",
                         { CanUseGetter: false, HasJsonInclude: true }
-                            => @$"static (obj) => throw new {InvalidOperationExceptionTypeRef}(""{string.Format(ExceptionMessages.InaccessibleJsonIncludePropertiesNotSupported, typeGenerationSpec.Type.Name, nameSpecifiedInSourceCode)}"")",
+                            => $"""static (obj) => throw new {InvalidOperationExceptionTypeRef}("{string.Format(ExceptionMessages.InaccessibleJsonIncludePropertiesNotSupported, typeGenerationSpec.TypeRef.Name, propertyName)}")""",
                         _ => "null"
                     };
 
-                    string setterValue = memberMetadata switch
+                    string setterValue = property switch
                     {
                         { DefaultIgnoreCondition: JsonIgnoreCondition.Always } => "null",
                         { CanUseSetter: true, IsInitOnlySetter: true }
-                            => @$"static (obj, value) => throw new {InvalidOperationExceptionTypeRef}(""{ExceptionMessages.InitOnlyPropertySetterNotSupported}"")",
-                        { CanUseSetter: true } when typeGenerationSpec.IsValueType
-                            => $@"static (obj, value) => {UnsafeTypeRef}.Unbox<{declaringTypeCompilableName}>(obj).{nameSpecifiedInSourceCode} = value!",
+                            => $"""static (obj, value) => throw new {InvalidOperationExceptionTypeRef}("{ExceptionMessages.InitOnlyPropertySetterNotSupported}")""",
+                        { CanUseSetter: true } when typeGenerationSpec.TypeRef.IsValueType
+                            => $"""static (obj, value) => {UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj).{propertyName} = value!""",
                         { CanUseSetter: true }
-                            => @$"static (obj, value) => (({declaringTypeCompilableName})obj).{nameSpecifiedInSourceCode} = value!",
+                            => $"""static (obj, value) => (({declaringTypeFQN})obj).{propertyName} = value!""",
                         { CanUseSetter: false, HasJsonInclude: true }
-                            => @$"static (obj, value) => throw new {InvalidOperationExceptionTypeRef}(""{string.Format(ExceptionMessages.InaccessibleJsonIncludePropertiesNotSupported, typeGenerationSpec.Type.Name, memberMetadata.ClrName)}"")",
+                            => $"""static (obj, value) => throw new {InvalidOperationExceptionTypeRef}("{string.Format(ExceptionMessages.InaccessibleJsonIncludePropertiesNotSupported, typeGenerationSpec.TypeRef.Name, property.MemberName)}")""",
                         _ => "null",
                     };
 
-                    JsonIgnoreCondition? ignoreCondition = memberMetadata.DefaultIgnoreCondition;
-                    string ignoreConditionNamedArg = ignoreCondition.HasValue
-                        ? $"{JsonIgnoreConditionTypeRef}.{ignoreCondition.Value}"
+                    string ignoreConditionNamedArg = property.DefaultIgnoreCondition.HasValue
+                        ? $"{JsonIgnoreConditionTypeRef}.{property.DefaultIgnoreCondition.Value}"
                         : "null";
 
-                    string converterValue = memberMetadata.ConverterInstantiationLogic == null
-                        ? "null"
-                        : $"{memberMetadata.ConverterInstantiationLogic}";
+                    string converterInstantiationExpr = property.ConverterType != null
+                        ? $"({JsonConverterTypeRef}<{propertyTypeFQN}>){ExpandConverterMethodName}(typeof({propertyTypeFQN}), new {property.ConverterType.FullyQualifiedName}(), {OptionsLocalVariableName})"
+                        : "null";
 
-                    string memberTypeCompilableName = memberTypeMetadata.TypeRef;
+                    writer.WriteLine($$"""
+                        var {{InfoVarName}}{{i}} = new {{JsonPropertyInfoValuesTypeRef}}<{{propertyTypeFQN}}>()
+                        {
+                            IsProperty = {{FormatBool(property.IsProperty)}},
+                            IsPublic = {{FormatBool(property.IsPublic)}},
+                            IsVirtual = {{FormatBool(property.IsVirtual)}},
+                            DeclaringType = typeof({{property.DeclaringType.FullyQualifiedName}}),
+                            Converter = {{converterInstantiationExpr}},
+                            Getter = {{getterValue}},
+                            Setter = {{setterValue}},
+                            IgnoreCondition = {{ignoreConditionNamedArg}},
+                            HasJsonInclude = {{FormatBool(property.HasJsonInclude)}},
+                            IsExtensionData = {{FormatBool(property.IsExtensionData)}},
+                            NumberHandling = {{GetNumberHandlingAsStr(property.NumberHandling)}},
+                            PropertyName = {{FormatStringLiteral(property.MemberName)}},
+                            JsonPropertyName = {{FormatStringLiteral(property.JsonPropertyName)}}
+                        };
 
-                    string infoVarName = $"{InfoVarName}{i}";
-                    string propertyInfoVarName = $"{PropertyInfoVarName}{i}";
+                        properties[{{i}}] = {{JsonMetadataServicesTypeRef}}.CreatePropertyInfo<{{propertyTypeFQN}}>({{OptionsLocalVariableName}}, {{InfoVarName}}{{i}});
+                        """);
 
-                    sb.Append($@"
-    {JsonPropertyInfoValuesTypeRef}<{memberTypeCompilableName}> {infoVarName} = new {JsonPropertyInfoValuesTypeRef}<{memberTypeCompilableName}>()
-    {{
-        IsProperty = {FormatBool(memberMetadata.IsProperty)},
-        IsPublic = {FormatBool(memberMetadata.IsPublic)},
-        IsVirtual = {FormatBool(memberMetadata.IsVirtual)},
-        DeclaringType = typeof({memberMetadata.DeclaringTypeRef}),
-        Converter = {converterValue},
-        Getter = {getterValue},
-        Setter = {setterValue},
-        IgnoreCondition = {ignoreConditionNamedArg},
-        HasJsonInclude = {FormatBool(memberMetadata.HasJsonInclude)},
-        IsExtensionData = {FormatBool(memberMetadata.IsExtensionData)},
-        NumberHandling = {GetNumberHandlingAsStr(memberMetadata.NumberHandling)},
-        PropertyName = ""{memberMetadata.ClrName}"",
-        JsonPropertyName = {jsonPropertyNameValue}
-    }};
-
-    {JsonPropertyInfoTypeRef} {propertyInfoVarName} = {JsonMetadataServicesTypeRef}.CreatePropertyInfo<{memberTypeCompilableName}>({OptionsLocalVariableName}, {infoVarName});");
-
-                    if (memberMetadata.HasJsonRequiredAttribute ||
-                        (memberMetadata.IsRequired && !typeGenerationSpec.ConstructorSetsRequiredParameters))
+                    if (property.HasJsonRequiredAttribute ||
+                        (property.IsRequired && !typeGenerationSpec.ConstructorSetsRequiredParameters))
                     {
-                        sb.Append($@"
-    {propertyInfoVarName}.IsRequired = true;");
+                        writer.WriteLine($"properties[{i}].IsRequired = true;");
                     }
 
-                    sb.Append($@"
-    {PropVarName}[{i}] = {propertyInfoVarName};
-");
+                    if (property.ObjectCreationHandling != null)
+                    {
+                        writer.WriteLine($"properties[{i}].ObjectCreationHandling = {GetObjectCreationHandlingAsStr(property.ObjectCreationHandling.Value)};");
+                    }
+
+                    writer.WriteLine();
                 }
 
-                sb.Append(@$"
-    return {PropVarName};
-}}");
-
-                return sb.ToString();
+                writer.WriteLine($"return properties;");
+                writer.Indentation--;
+                writer.WriteLine('}');
             }
 
-            private
-#if !DEBUG
-                static
-#endif
-                string GenerateCtorParamMetadataInitFunc(TypeGenerationSpec typeGenerationSpec)
+            private static void GenerateCtorParamMetadataInitFunc(SourceWriter writer, string ctorParamMetadataInitMethodName, TypeGenerationSpec typeGenerationSpec)
             {
                 const string parametersVarName = "parameters";
 
-                Debug.Assert(typeGenerationSpec.CtorParamGenSpecArray != null);
+                Debug.Assert(typeGenerationSpec.CtorParamGenSpecs != null);
 
-                ParameterGenerationSpec[] parameters = typeGenerationSpec.CtorParamGenSpecArray;
-                List<PropertyInitializerGenerationSpec>? propertyInitializers = typeGenerationSpec.PropertyInitializerSpecList;
-                int paramCount = parameters.Length + (propertyInitializers?.Count(propInit => !propInit.MatchesConstructorParameter) ?? 0);
+                ImmutableEquatableArray<ParameterGenerationSpec> parameters = typeGenerationSpec.CtorParamGenSpecs;
+                ImmutableEquatableArray<PropertyInitializerGenerationSpec>? propertyInitializers = typeGenerationSpec.PropertyInitializerSpecs;
+                int paramCount = parameters.Count + (propertyInitializers?.Count(propInit => !propInit.MatchesConstructorParameter) ?? 0);
                 Debug.Assert(paramCount > 0);
 
-                StringBuilder sb = new($@"
+                writer.WriteLine($"private static {JsonParameterInfoValuesTypeRef}[] {ctorParamMetadataInitMethodName}()");
+                writer.WriteLine('{');
+                writer.Indentation++;
 
-private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPropertyName}{CtorParamInitMethodNameSuffix}()
-{{
-    {JsonParameterInfoValuesTypeRef}[] {parametersVarName} = new {JsonParameterInfoValuesTypeRef}[{paramCount}];
-    {JsonParameterInfoValuesTypeRef} info;
-");
+                writer.WriteLine($"var {parametersVarName} = new {JsonParameterInfoValuesTypeRef}[{paramCount}];");
+                writer.WriteLine();
+
                 foreach (ParameterGenerationSpec spec in parameters)
                 {
-                    ParameterInfo reflectionInfo = spec.ParameterInfo;
-                    Type parameterType = reflectionInfo.ParameterType;
-                    string parameterTypeRef = parameterType.GetCompilableName();
+                    writer.WriteLine($$"""
+                        {{parametersVarName}}[{{spec.ParameterIndex}}] = new()
+                        {
+                            Name = "{{spec.Name}}",
+                            ParameterType = typeof({{spec.ParameterType.FullyQualifiedName}}),
+                            Position = {{spec.ParameterIndex}},
+                            HasDefaultValue = {{FormatBool(spec.HasDefaultValue)}},
+                            DefaultValue = {{FormatDefaultConstructorParameter(spec.DefaultValue, spec.ParameterType)}}
+                        };
 
-                    object? defaultValue = reflectionInfo.GetDefaultValue();
-                    string defaultValueAsStr = GetParamDefaultValueAsString(defaultValue, parameterType, parameterTypeRef);
-
-                    sb.Append(@$"
-    {InfoVarName} = new()
-    {{
-        Name = ""{reflectionInfo.Name!}"",
-        ParameterType = typeof({parameterTypeRef}),
-        Position = {reflectionInfo.Position},
-        HasDefaultValue = {FormatBool(reflectionInfo.HasDefaultValue)},
-        DefaultValue = {defaultValueAsStr}
-    }};
-    {parametersVarName}[{spec.ParameterIndex}] = {InfoVarName};
-");
+                        """);
                 }
 
                 if (propertyInitializers != null)
@@ -825,146 +683,126 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                     foreach (PropertyInitializerGenerationSpec spec in propertyInitializers)
                     {
                         if (spec.MatchesConstructorParameter)
+                        {
                             continue;
+                        }
 
-                        sb.Append(@$"
-    {InfoVarName} = new()
-    {{
-        Name = ""{spec.Property.ClrName}"",
-        ParameterType = typeof({spec.Property.TypeGenerationSpec.TypeRef}),
-        Position = {spec.ParameterIndex},
-        HasDefaultValue = false,
-        DefaultValue = default({spec.Property.TypeGenerationSpec.TypeRef}),
-    }};
-    {parametersVarName}[{spec.ParameterIndex}] = {InfoVarName};
-");
+                        writer.WriteLine($$"""
+                            {{parametersVarName}}[{{spec.ParameterIndex}}] = new()
+                            {
+                                Name = "{{spec.Name}}",
+                                ParameterType = typeof({{spec.ParameterType.FullyQualifiedName}}),
+                                Position = {{spec.ParameterIndex}},
+                            };
+
+                            """);
                     }
                 }
 
-                sb.Append(@$"
-    return {parametersVarName};
-}}");
+                writer.WriteLine($"return {parametersVarName};");
 
-                return sb.ToString();
+                writer.Indentation--;
+                writer.WriteLine('}');
             }
 
-            private string GenerateFastPathFuncForObject(TypeGenerationSpec typeGenSpec)
+            private void GenerateFastPathFuncForObject(SourceWriter writer, ContextGenerationSpec contextSpec, string serializeMethodName, TypeGenerationSpec typeGenSpec)
             {
-                JsonSourceGenerationOptionsAttribute options = _currentContext.GenerationOptions;
-                string typeRef = typeGenSpec.TypeRef;
+                string typeRef = typeGenSpec.TypeRef.FullyQualifiedName;
 
-                if (!typeGenSpec.TryFilterSerializableProps(
-                    options,
+                if (!TryFilterSerializableProps(
+                    typeGenSpec,
+                    contextSpec,
                     out Dictionary<string, PropertyGenerationSpec>? serializableProperties,
                     out bool castingRequiredForProps))
                 {
-                    string exceptionMessage = string.Format(ExceptionMessages.InvalidSerializablePropertyConfiguration, typeRef);
+                    // Type uses configuration that doesn't support fast-path: emit a stub that just throws.
+                    GenerateFastPathFuncHeader(writer, typeGenSpec, serializeMethodName, skipNullCheck: true);
 
-                    return GenerateFastPathFuncForType(typeGenSpec,
-                        $@"throw new {InvalidOperationExceptionTypeRef}(""{exceptionMessage}"");",
-                        emitNullCheck: false); // Skip null check since we want to throw an exception straightaway.
+                    string exceptionMessage = string.Format(ExceptionMessages.InvalidSerializablePropertyConfiguration, typeRef);
+                    writer.WriteLine($"""throw new {InvalidOperationExceptionTypeRef}("{exceptionMessage}");""");
+                    writer.Indentation--;
+                    writer.WriteLine('}');
+                    return;
                 }
 
-                StringBuilder sb = new();
+                GenerateFastPathFuncHeader(writer, typeGenSpec, serializeMethodName);
 
-                // Begin method logic.
                 if (typeGenSpec.ImplementsIJsonOnSerializing)
                 {
-                    sb.Append($@"((global::{JsonConstants.IJsonOnSerializingFullName}){ValueVarName}).OnSerializing();");
-                    sb.Append($@"{Environment.NewLine}    ");
+                    writer.WriteLine($"((global::{JsonConstants.IJsonOnSerializingFullName}){ValueVarName}).OnSerializing();");
+                    writer.WriteLine();
                 }
 
-                sb.Append($@"{WriterVarName}.WriteStartObject();");
+                writer.WriteLine($"{WriterVarName}.WriteStartObject();");
+                writer.WriteLine();
 
                 // Provide generation logic for each prop.
-                Debug.Assert(serializableProperties != null);
-
                 foreach (PropertyGenerationSpec propertyGenSpec in serializableProperties.Values)
                 {
-                    if (!ShouldIncludePropertyForFastPath(propertyGenSpec, options))
+                    TypeGenerationSpec propertyTypeSpec = _typeIndex[propertyGenSpec.PropertyType];
+
+                    if (!ShouldIncludePropertyForFastPath(propertyGenSpec, propertyTypeSpec, contextSpec))
                     {
                         continue;
                     }
 
-                    TypeGenerationSpec propertyTypeSpec = propertyGenSpec.TypeGenerationSpec;
-
                     string runtimePropName = propertyGenSpec.RuntimePropertyName;
-                    string propVarName = propertyGenSpec.PropertyNameVarName;
+                    string propNameVarName = propertyGenSpec.PropertyNameVarName;
 
                     // Add the property names to the context-wide cache; we'll generate the source to initialize them at the end of generation.
-                    Debug.Assert(!_currentContext.RuntimePropertyNames.TryGetValue(runtimePropName, out string? existingName) || existingName == propVarName);
-                    _currentContext.RuntimePropertyNames.TryAdd(runtimePropName, propVarName);
+                    Debug.Assert(!_propertyNames.TryGetValue(runtimePropName, out string? existingName) || existingName == propNameVarName);
+                    _propertyNames.TryAdd(runtimePropName, propNameVarName);
 
-                    Type propertyType = propertyTypeSpec.Type;
-                    string? objectRef = castingRequiredForProps ? $"(({propertyGenSpec.DeclaringTypeRef}){ValueVarName})" : ValueVarName;
-                    string propValue = $"{objectRef}.{propertyGenSpec.NameSpecifiedInSourceCode}";
-                    string methodArgs = $"{propVarName}, {propValue}";
+                    DefaultCheckType defaultCheckType = GetDefaultCheckType(contextSpec, propertyGenSpec);
+                    string? objectExpr = castingRequiredForProps ? $"(({propertyGenSpec.DeclaringType.FullyQualifiedName}){ValueVarName})" : ValueVarName;
+                    string propValueExpr = $"{objectExpr}.{propertyGenSpec.NameSpecifiedInSourceCode}";
 
-                    string? methodToCall = GetWriterMethod(propertyType);
-
-                    if (propertyType == _generationSpec.CharType)
+                    switch (defaultCheckType)
                     {
-                        methodArgs = $"{methodArgs}.ToString()";
-                    }
-
-                    string serializationLogic;
-
-                    if (methodToCall != null)
-                    {
-                        serializationLogic = $@"
-    {methodToCall}({methodArgs});";
-                    }
-                    else
-                    {
-                        serializationLogic = $@"
-    {WriterVarName}.WritePropertyName({propVarName});
-    {GetSerializeLogicForNonPrimitiveType(propertyTypeSpec, propValue)}";
-                    }
-
-                    JsonIgnoreCondition ignoreCondition = propertyGenSpec.DefaultIgnoreCondition ?? options.DefaultIgnoreCondition;
-                    DefaultCheckType defaultCheckType;
-                    bool typeCanBeNull = propertyTypeSpec.CanBeNull;
-
-                    switch (ignoreCondition)
-                    {
-                        case JsonIgnoreCondition.WhenWritingNull:
-                            defaultCheckType = typeCanBeNull ? DefaultCheckType.Null : DefaultCheckType.None;
+                        case DefaultCheckType.Null:
+                            writer.WriteLine($"if ({propValueExpr} != null)");
+                            writer.WriteLine('{');
+                            writer.Indentation++;
                             break;
-                        case JsonIgnoreCondition.WhenWritingDefault:
-                            defaultCheckType = typeCanBeNull ? DefaultCheckType.Null : DefaultCheckType.Default;
-                            break;
-                        default:
-                            defaultCheckType = DefaultCheckType.None;
+
+                        case DefaultCheckType.Default:
+                            writer.WriteLine($"if (!{EqualityComparerTypeRef}<{propertyGenSpec.PropertyType.FullyQualifiedName}>.Default.Equals(default, {propValueExpr}))");
+                            writer.WriteLine('{');
+                            writer.Indentation++;
                             break;
                     }
 
-                    sb.Append(WrapSerializationLogicInDefaultCheckIfRequired(serializationLogic, propValue, propertyTypeSpec.TypeRef, defaultCheckType));
+                    GenerateSerializePropertyStatement(writer, propertyTypeSpec, propNameVarName, propValueExpr);
+
+                    if (defaultCheckType != DefaultCheckType.None)
+                    {
+                        writer.Indentation--;
+                        writer.WriteLine('}');
+                    }
                 }
 
                 // End method logic.
-                sb.Append($@"
-
-    {WriterVarName}.WriteEndObject();");
+                writer.WriteLine();
+                writer.WriteLine($"{WriterVarName}.WriteEndObject();");
 
                 if (typeGenSpec.ImplementsIJsonOnSerialized)
                 {
-                    sb.Append($@"{Environment.NewLine}    ");
-                    sb.Append($@"((global::{JsonConstants.IJsonOnSerializedFullName}){ValueVarName}).OnSerialized();");
-                };
+                    writer.WriteLine();
+                    writer.WriteLine($"((global::{JsonConstants.IJsonOnSerializedFullName}){ValueVarName}).OnSerialized();");
+                }
 
-                return GenerateFastPathFuncForType(typeGenSpec, sb.ToString(), emitNullCheck: typeGenSpec.CanBeNull);
+                writer.Indentation--;
+                writer.WriteLine('}');
             }
 
-            private static bool ShouldIncludePropertyForFastPath(PropertyGenerationSpec propertyGenSpec, JsonSourceGenerationOptionsAttribute options)
+            private static bool ShouldIncludePropertyForFastPath(PropertyGenerationSpec propertyGenSpec, TypeGenerationSpec propertyTypeSpec, ContextGenerationSpec contextSpec)
             {
-                TypeGenerationSpec propertyTypeSpec = propertyGenSpec.TypeGenerationSpec;
-
                 if (propertyTypeSpec.ClassType == ClassType.TypeUnsupportedBySourceGen || !propertyGenSpec.CanUseGetter)
                 {
                     return false;
                 }
 
-                if (!propertyGenSpec.IsProperty && !propertyGenSpec.HasJsonInclude && !options.IncludeFields)
+                if (!propertyGenSpec.IsProperty && !propertyGenSpec.HasJsonInclude && !contextSpec.IncludeFields)
                 {
                     return false;
                 }
@@ -978,12 +816,12 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                 {
                     if (propertyGenSpec.IsProperty)
                     {
-                        if (options.IgnoreReadOnlyProperties)
+                        if (contextSpec.IgnoreReadOnlyProperties)
                         {
                             return false;
                         }
                     }
-                    else if (options.IgnoreReadOnlyFields)
+                    else if (contextSpec.IgnoreReadOnlyFields)
                     {
                         return false;
                     }
@@ -994,20 +832,20 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
 
             private static string GetParameterizedCtorInvocationFunc(TypeGenerationSpec typeGenerationSpec)
             {
-                Debug.Assert(typeGenerationSpec.CtorParamGenSpecArray != null);
-                ParameterGenerationSpec[] parameters = typeGenerationSpec.CtorParamGenSpecArray;
-                List<PropertyInitializerGenerationSpec>? propertyInitializers = typeGenerationSpec.PropertyInitializerSpecList;
+                Debug.Assert(typeGenerationSpec.CtorParamGenSpecs != null);
+                ImmutableEquatableArray<ParameterGenerationSpec> parameters = typeGenerationSpec.CtorParamGenSpecs;
+                ImmutableEquatableArray<PropertyInitializerGenerationSpec>? propertyInitializers = typeGenerationSpec.PropertyInitializerSpecs;
 
                 const string ArgsVarName = "args";
 
-                StringBuilder sb = new($"static ({ArgsVarName}) => new {typeGenerationSpec.TypeRef}(");
+                StringBuilder sb = new($"static ({ArgsVarName}) => new {typeGenerationSpec.TypeRef.FullyQualifiedName}(");
 
-                if (parameters.Length > 0)
+                if (parameters.Count > 0)
                 {
                     foreach (ParameterGenerationSpec param in parameters)
                     {
                         int index = param.ParameterIndex;
-                        sb.Append($"{GetParamUnboxing(param.ParameterInfo.ParameterType, index)}, ");
+                        sb.Append($"{GetParamUnboxing(param.ParameterType, index)}, ");
                     }
 
                     sb.Length -= 2; // delete the last ", " token
@@ -1021,7 +859,7 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                     sb.Append("{ ");
                     foreach (PropertyInitializerGenerationSpec property in propertyInitializers)
                     {
-                        sb.Append($"{property.Property.ClrName} = {GetParamUnboxing(property.Property.TypeGenerationSpec.Type, property.ParameterIndex)}, ");
+                        sb.Append($"{property.Name} = {GetParamUnboxing(property.ParameterType, property.ParameterIndex)}, ");
                     }
 
                     sb.Length -= 2; // delete the last ", " token
@@ -1030,83 +868,103 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
 
                 return sb.ToString();
 
-                static string GetParamUnboxing(Type type, int index)
-                    => $"({type.GetCompilableName()}){ArgsVarName}[{index}]";
+                static string GetParamUnboxing(TypeRef type, int index)
+                    => $"({type.FullyQualifiedName}){ArgsVarName}[{index}]";
             }
 
-            private string? GetWriterMethod(Type type)
+            private static string? GetPrimitiveWriterMethod(TypeGenerationSpec type)
             {
-                string? method;
-                if (_generationSpec.IsStringBasedType(type))
+                return type.PrimitiveTypeKind switch
                 {
-                    method = $"{WriterVarName}.WriteString";
+                    JsonPrimitiveTypeKind.Number => "WriteNumber",
+                    JsonPrimitiveTypeKind.String or JsonPrimitiveTypeKind.Char => "WriteString",
+                    JsonPrimitiveTypeKind.Boolean => "WriteBoolean",
+                    JsonPrimitiveTypeKind.ByteArray => "WriteBase64String",
+                    _ => null
+                };
+            }
+
+            private static void GenerateFastPathFuncHeader(SourceWriter writer, TypeGenerationSpec typeGenSpec, string methodName, bool skipNullCheck = false)
+            {
+                // fast path serializers for reference types always support null inputs.
+                string valueTypeRef = typeGenSpec.TypeRef.IsValueType
+                    ? typeGenSpec.TypeRef.FullyQualifiedName
+                    : typeGenSpec.TypeRef.FullyQualifiedName + "?";
+
+                writer.WriteLine($$"""
+                    // Intentionally not a static method because we create a delegate to it. Invoking delegates to instance
+                    // methods is almost as fast as virtual calls. Static methods need to go through a shuffle thunk.
+                    private void {{methodName}}({{Utf8JsonWriterTypeRef}} {{WriterVarName}}, {{valueTypeRef}} {{ValueVarName}})
+                    {
+                    """);
+
+                writer.Indentation++;
+
+                if (!skipNullCheck && typeGenSpec.TypeRef.CanBeNull)
+                {
+                    writer.WriteLine($$"""
+                        if ({{ValueVarName}} == null)
+                        {
+                            {{WriterVarName}}.WriteNullValue();
+                            return;
+                        }
+
+                        """);
                 }
-                else if (type == _generationSpec.BooleanType)
+            }
+
+            private static void GenerateSerializeValueStatement(SourceWriter writer, TypeGenerationSpec typeSpec, string valueExpr)
+            {
+                if (GetPrimitiveWriterMethod(typeSpec) is string primitiveWriterMethod)
                 {
-                    method = $"{WriterVarName}.WriteBoolean";
-                }
-                else if (type == _generationSpec.ByteArrayType)
-                {
-                    method = $"{WriterVarName}.WriteBase64String";
-                }
-                else if (type == _generationSpec.CharType)
-                {
-                    method = $"{WriterVarName}.WriteString";
-                }
-                else if (_generationSpec.IsNumberType(type))
-                {
-                    method = $"{WriterVarName}.WriteNumber";
+                    if (typeSpec.PrimitiveTypeKind is JsonPrimitiveTypeKind.Char)
+                    {
+                        writer.WriteLine($"{WriterVarName}.{primitiveWriterMethod}Value({valueExpr}.ToString());");
+                    }
+                    else
+                    {
+                        writer.WriteLine($"{WriterVarName}.{primitiveWriterMethod}Value({valueExpr});");
+                    }
                 }
                 else
                 {
-                    method = null;
+                    if (ShouldGenerateSerializationLogic(typeSpec))
+                    {
+                        writer.WriteLine($"{typeSpec.TypeInfoPropertyName}{SerializeHandlerPropName}({WriterVarName}, {valueExpr});");
+                    }
+                    else
+                    {
+                        writer.WriteLine($"{JsonSerializerTypeRef}.Serialize({WriterVarName}, {valueExpr}, {typeSpec.TypeInfoPropertyName});");
+                    }
                 }
-
-                return method;
             }
 
-            private static string GenerateFastPathFuncForType(TypeGenerationSpec typeGenSpec, string serializeMethodBody, bool emitNullCheck)
+            private static void GenerateSerializePropertyStatement(SourceWriter writer, TypeGenerationSpec typeSpec, string propertyNameExpr, string valueExpr)
             {
-                Debug.Assert(!emitNullCheck || typeGenSpec.CanBeNull);
-
-                string serializeMethodName = $"{typeGenSpec.TypeInfoPropertyName}{SerializeHandlerPropName}";
-                // fast path serializers for reference types always support null inputs.
-                string valueTypeRef = $"{typeGenSpec.TypeRef}{(typeGenSpec.IsValueType ? "" : "?")}";
-
-                return $@"
-
-// Intentionally not a static method because we create a delegate to it. Invoking delegates to instance
-// methods is almost as fast as virtual calls. Static methods need to go through a shuffle thunk.
-private void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {valueTypeRef} {ValueVarName})
-{{
-    {GetEarlyNullCheckSource(emitNullCheck)}
-    {serializeMethodBody}
-}}";
-            }
-
-            private static string? GetEarlyNullCheckSource(bool canBeNull)
-            {
-                return canBeNull
-                    ? $@"if ({ValueVarName} == null)
-    {{
-        {WriterVarName}.WriteNullValue();
-        return;
-    }}
-"
-                    : null;
-            }
-
-            private string GetSerializeLogicForNonPrimitiveType(TypeGenerationSpec typeGenerationSpec, string valueExpr)
-            {
-                string valueExprSuffix = typeGenerationSpec.CanContainNullableReferenceAnnotations ? "!" : "";
-
-                if (typeGenerationSpec.GenerateSerializationLogic)
+                if (GetPrimitiveWriterMethod(typeSpec) is string primitiveWriterMethod)
                 {
-                    return $"{typeGenerationSpec.TypeInfoPropertyName}{SerializeHandlerPropName}({WriterVarName}, {valueExpr}{valueExprSuffix});";
+                    if (typeSpec.PrimitiveTypeKind is JsonPrimitiveTypeKind.Char)
+                    {
+                        writer.WriteLine($"{WriterVarName}.{primitiveWriterMethod}({propertyNameExpr}, {valueExpr}.ToString());");
+                    }
+                    else
+                    {
+                        writer.WriteLine($"{WriterVarName}.{primitiveWriterMethod}({propertyNameExpr}, {valueExpr});");
+                    }
                 }
+                else
+                {
+                    writer.WriteLine($"{WriterVarName}.WritePropertyName({propertyNameExpr});");
 
-                string typeInfoRef = $"{_currentContext.ContextTypeRef}.Default.{typeGenerationSpec.TypeInfoPropertyName}!";
-                return $"{JsonSerializerTypeRef}.Serialize({WriterVarName}, {valueExpr}{valueExprSuffix}, {typeInfoRef});";
+                    if (ShouldGenerateSerializationLogic(typeSpec))
+                    {
+                        writer.WriteLine($"{typeSpec.TypeInfoPropertyName}{SerializeHandlerPropName}({WriterVarName}, {valueExpr});");
+                    }
+                    else
+                    {
+                        writer.WriteLine($"{JsonSerializerTypeRef}.Serialize({WriterVarName}, {valueExpr}, {typeSpec.TypeInfoPropertyName});");
+                    }
+                }
             }
 
             private enum DefaultCheckType
@@ -1116,74 +974,57 @@ private void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {val
                 Default,
             }
 
-            private static string WrapSerializationLogicInDefaultCheckIfRequired(string serializationLogic, string propValue, string propTypeRef, DefaultCheckType defaultCheckType)
+            private static DefaultCheckType GetDefaultCheckType(ContextGenerationSpec contextSpec, PropertyGenerationSpec propertySpec)
             {
-                string comparisonLogic;
-
-                switch (defaultCheckType)
+                return (propertySpec.DefaultIgnoreCondition ?? contextSpec.DefaultIgnoreCondition) switch
                 {
-                    case DefaultCheckType.None:
-                        return serializationLogic;
-                    case DefaultCheckType.Null:
-                        comparisonLogic = $"{propValue} != null";
-                        break;
-                    case DefaultCheckType.Default:
-                        comparisonLogic = $"!{EqualityComparerTypeRef}<{propTypeRef}>.Default.Equals(default, {propValue})";
-                        break;
-                    default:
-                        throw new InvalidOperationException();
-                }
-
-                return $@"
-    if ({comparisonLogic})
-    {{{IndentSource(serializationLogic, numIndentations: 1)}
-    }}";
+                    JsonIgnoreCondition.WhenWritingNull => propertySpec.PropertyType.CanBeNull ? DefaultCheckType.Null : DefaultCheckType.None,
+                    JsonIgnoreCondition.WhenWritingDefault => propertySpec.PropertyType.CanBeNull ? DefaultCheckType.Null : DefaultCheckType.Default,
+                    _ => DefaultCheckType.None,
+                };
             }
 
-            private static string GenerateForType(TypeGenerationSpec typeMetadata, string metadataInitSource, string? additionalSource = null)
+            private static void GenerateTypeInfoProperty(SourceWriter writer, TypeGenerationSpec typeMetadata, string metadataInitSource)
             {
-                string typeCompilableName = typeMetadata.TypeRef;
-                string typeFriendlyName = typeMetadata.TypeInfoPropertyName;
-                string typeInfoPropertyTypeRef = $"{JsonTypeInfoTypeRef}<{typeCompilableName}>";
+                string typeFQN = typeMetadata.TypeRef.FullyQualifiedName;
+                string typeInfoPropertyName = typeMetadata.TypeInfoPropertyName;
+                string typeInfoFQN = $"{JsonTypeInfoTypeRef}<{typeFQN}>";
 
-                return @$"private {typeInfoPropertyTypeRef}? _{typeFriendlyName};
+                writer.WriteLine($$"""
+                    private {{typeInfoFQN}}? _{{typeInfoPropertyName}};
 
-/// <summary>
-/// Defines the source generated JSON serialization contract metadata for a given type.
-/// </summary>
-public {typeInfoPropertyTypeRef} {typeFriendlyName}
-{{
-    get => _{typeFriendlyName} ??= ({typeInfoPropertyTypeRef}){OptionsInstanceVariableName}.GetTypeInfo(typeof({typeCompilableName}));
-}}
+                    /// <summary>
+                    /// Defines the source generated JSON serialization contract metadata for a given type.
+                    /// </summary>
+                    public {{typeInfoFQN}} {{typeInfoPropertyName}}
+                    {
+                        get => _{{typeInfoPropertyName}} ??= ({{typeInfoFQN}}){{OptionsInstanceVariableName}}.GetTypeInfo(typeof({{typeFQN}}));
+                    }
 
-private {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName})
-{{
-    {typeInfoPropertyTypeRef}? {JsonTypeInfoReturnValueLocalVariableName} = null;
-    {WrapWithCheckForCustomConverter(metadataInitSource, typeCompilableName)}
+                    private {{typeInfoFQN}} {{CreateTypeInfoMethodName(typeMetadata)}}({{JsonSerializerOptionsTypeRef}} {{OptionsLocalVariableName}})
+                    {
+                        if (!{{TryGetTypeInfoForRuntimeCustomConverterMethodName}}<{{typeFQN}}>({{OptionsLocalVariableName}}, out {{typeInfoFQN}} {{JsonTypeInfoReturnValueLocalVariableName}}))
+                        {
+                    """);
 
-    { /* NB OriginatingResolver should be the last property set by the source generator. */ ""}
-    {JsonTypeInfoReturnValueLocalVariableName}.{OriginatingResolverPropertyName} = this;
+                writer.Indentation += 2;
+                writer.WriteLine(metadataInitSource);
+                writer.Indentation -= 2;
 
-    return {JsonTypeInfoReturnValueLocalVariableName};
-}}
-{additionalSource}";
+                // NB OriginatingResolver should be the last property set by the source generator.
+                writer.WriteLine($$"""
+                        }
+
+                        {{JsonTypeInfoReturnValueLocalVariableName}}.{{OriginatingResolverPropertyName}} = this;
+                        return jsonTypeInfo;
+                    }
+                    """);
             }
 
-            private static string WrapWithCheckForCustomConverter(string source, string typeCompilableName)
-                => @$"{JsonConverterTypeRef}? customConverter;
-    if ({OptionsLocalVariableName}.Converters.Count > 0 && (customConverter = {RuntimeCustomConverterFetchingMethodName}({OptionsLocalVariableName}, typeof({typeCompilableName}))) != null)
-    {{
-        {JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeCompilableName)}({OptionsLocalVariableName}, customConverter);
-    }}
-    else
-    {{
-        {source}
-    }}";
-
-            private string GetRootJsonContextImplementation()
+            private static SourceText GetRootJsonContextImplementation(ContextGenerationSpec contextSpec)
             {
-                string contextTypeRef = _currentContext.ContextTypeRef;
-                string contextTypeName = _currentContext.ContextType.Name;
+                string contextTypeRef = contextSpec.ContextType.FullyQualifiedName;
+                string contextTypeName = contextSpec.ContextType.Name;
 
                 int backTickIndex = contextTypeName.IndexOf('`');
                 if (backTickIndex != -1)
@@ -1191,52 +1032,46 @@ private {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonS
                     contextTypeName = contextTypeName.Substring(0, backTickIndex);
                 }
 
-                StringBuilder sb = new();
+                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec, isPrimaryContextSourceFile: true);
 
-                sb.Append(@$"{GetLogicForDefaultSerializerOptionsInit()}
+                GetLogicForDefaultSerializerOptionsInit(contextSpec, writer);
 
-private static {contextTypeRef}? {DefaultContextBackingStaticVarName};
+                writer.WriteLine();
 
-/// <summary>
-/// The default <see cref=""{JsonSerializerContextTypeRef}""/> associated with a default <see cref=""{JsonSerializerOptionsTypeRef}""/> instance.
-/// </summary>
-public static {contextTypeRef} Default => {DefaultContextBackingStaticVarName} ??= new {contextTypeRef}(new {JsonSerializerOptionsTypeRef}({DefaultOptionsStaticVarName}));
+                writer.WriteLine($$"""
+                    private static {{contextTypeRef}}? {{DefaultContextBackingStaticVarName}};
 
-/// <summary>
-/// The source-generated options associated with this context.
-/// </summary>
-protected override {JsonSerializerOptionsTypeRef}? GeneratedSerializerOptions {{ get; }} = {DefaultOptionsStaticVarName};
+                    /// <summary>
+                    /// The default <see cref="{{JsonSerializerContextTypeRef}}"/> associated with a default <see cref="{{JsonSerializerOptionsTypeRef}}"/> instance.
+                    /// </summary>
+                    public static {{contextTypeRef}} Default => {{DefaultContextBackingStaticVarName}} ??= new {{contextTypeRef}}(new {{JsonSerializerOptionsTypeRef}}({{DefaultOptionsStaticVarName}}));
 
-/// <inheritdoc/>
-public {contextTypeName}() : base(null)
-{{
-}}
+                    /// <summary>
+                    /// The source-generated options associated with this context.
+                    /// </summary>
+                    protected override {{JsonSerializerOptionsTypeRef}}? GeneratedSerializerOptions { get; } = {{DefaultOptionsStaticVarName}};
 
-/// <inheritdoc/>
-public {contextTypeName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName}) : base({OptionsLocalVariableName})
-{{
-}}
+                    /// <inheritdoc/>
+                    public {{contextTypeName}}() : base(null)
+                    {
+                    }
 
-{GetFetchLogicForRuntimeSpecifiedCustomConverter()}");
+                    /// <inheritdoc/>
+                    public {{contextTypeName}}({{JsonSerializerOptionsTypeRef}} {{OptionsLocalVariableName}}) : base({{OptionsLocalVariableName}})
+                    {
+                    }
+                    """);
 
-                if (_generateGetConverterMethodForProperties)
-                {
-                    sb.Append(GetFetchLogicForGetCustomConverter_PropertiesWithFactories());
-                }
+                writer.WriteLine();
 
-                if (_generateGetConverterMethodForProperties || _generateGetConverterMethodForTypes)
-                {
-                    sb.Append(GetFetchLogicForGetCustomConverter_TypesWithFactories());
-                }
+                GenerateConverterHelpers(writer);
 
-                return sb.ToString();
+                return CompleteSourceFileAndReturnText(writer);
             }
 
-            private string GetLogicForDefaultSerializerOptionsInit()
+            private static void GetLogicForDefaultSerializerOptionsInit(ContextGenerationSpec contextSpec, SourceWriter writer)
             {
-                JsonSourceGenerationOptionsAttribute options = _currentContext.GenerationOptions;
-
-                string? namingPolicyName = options.PropertyNamingPolicy switch
+                string? namingPolicyName = contextSpec.PropertyNamingPolicy switch
                 {
                     JsonKnownNamingPolicy.CamelCase => nameof(JsonNamingPolicy.CamelCase),
                     JsonKnownNamingPolicy.SnakeCaseLower => nameof(JsonNamingPolicy.SnakeCaseLower),
@@ -1246,177 +1081,170 @@ public {contextTypeName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableNam
                     _ => null,
                 };
 
-                string? namingPolicyInit = namingPolicyName != null
-                    ? $@"
-            PropertyNamingPolicy = {JsonNamingPolicyTypeRef}.{namingPolicyName}"
-                    : null;
+                string namingPolicy = namingPolicyName != null
+                    ? $"{JsonNamingPolicyTypeRef}.{namingPolicyName}"
+                    : "null";
 
-                return $@"
-private static {JsonSerializerOptionsTypeRef} {DefaultOptionsStaticVarName} {{ get; }} = new {JsonSerializerOptionsTypeRef}()
-{{
-    DefaultIgnoreCondition = {JsonIgnoreConditionTypeRef}.{options.DefaultIgnoreCondition},
-    IgnoreReadOnlyFields = {FormatBool(options.IgnoreReadOnlyFields)},
-    IgnoreReadOnlyProperties = {FormatBool(options.IgnoreReadOnlyProperties)},
-    IncludeFields = {FormatBool(options.IncludeFields)},
-    WriteIndented = {FormatBool(options.WriteIndented)},{namingPolicyInit}
-}};";
+                writer.WriteLine($$"""
+                    private readonly static {{JsonSerializerOptionsTypeRef}} {{DefaultOptionsStaticVarName}} = new()
+                    {
+                        DefaultIgnoreCondition = {{JsonIgnoreConditionTypeRef}}.{{contextSpec.DefaultIgnoreCondition}},
+                        IgnoreReadOnlyFields = {{FormatBool(contextSpec.IgnoreReadOnlyFields)}},
+                        IgnoreReadOnlyProperties = {{FormatBool(contextSpec.IgnoreReadOnlyProperties)}},
+                        IncludeFields = {{FormatBool(contextSpec.IncludeFields)}},
+                        WriteIndented = {{FormatBool(contextSpec.WriteIndented)}},
+                        PropertyNamingPolicy = {{namingPolicy}}
+                    };
+                    """);
             }
 
-            private static string GetFetchLogicForRuntimeSpecifiedCustomConverter()
+            private static void GenerateConverterHelpers(SourceWriter writer)
             {
-                // TODO (https://github.com/dotnet/runtime/issues/52218): use a dictionary if count > ~15.
-                return @$"private static {JsonConverterTypeRef}? {RuntimeCustomConverterFetchingMethodName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName}, {TypeTypeRef} type)
-{{
-    {IListTypeRef}<{JsonConverterTypeRef}> converters = {OptionsLocalVariableName}.Converters;
+                // The generic type parameter could capture type parameters from containing types,
+                // so use a name that is unlikely to be used.
+                const string TypeParameter = "TJsonMetadataType";
 
-    for (int i = 0; i < converters.Count; i++)
-    {{
-        {JsonConverterTypeRef}? converter = converters[i];
+                writer.WriteLine($$"""
+                    private static bool {{TryGetTypeInfoForRuntimeCustomConverterMethodName}}<{{TypeParameter}}>({{JsonSerializerOptionsTypeRef}} options, out {{JsonTypeInfoTypeRef}}<{{TypeParameter}}> jsonTypeInfo)
+                    {
+                        {{JsonConverterTypeRef}}? converter = GetRuntimeConverterForType(typeof({{TypeParameter}}), options);
+                        if (converter != null)
+                        {
+                            jsonTypeInfo = {{JsonMetadataServicesTypeRef}}.{{CreateValueInfoMethodName}}<{{TypeParameter}}>(options, converter);
+                            return true;
+                        }
 
-        if (converter.CanConvert(type))
-        {{
-            if (converter is {JsonConverterFactoryTypeRef} factory)
-            {{
-                converter = factory.CreateConverter(type, {OptionsLocalVariableName});
-                if (converter == null || converter is {JsonConverterFactoryTypeRef})
-                {{
-                    throw new {InvalidOperationExceptionTypeRef}(string.Format(""{ExceptionMessages.InvalidJsonConverterFactoryOutput}"", factory.GetType()));
-                }}
-            }}
+                        jsonTypeInfo = null;
+                        return false;
+                    }
 
-            return converter;
-        }}
-    }}
+                    private static {{JsonConverterTypeRef}}? GetRuntimeConverterForType({{TypeTypeRef}} type, {{JsonSerializerOptionsTypeRef}} options)
+                    {
+                        for (int i = 0; i < options.Converters.Count; i++)
+                        {
+                            {{JsonConverterTypeRef}}? converter = options.Converters[i];
+                            if (converter?.CanConvert(type) == true)
+                            {
+                                return {{ExpandConverterMethodName}}(type, converter, options);
+                            }
+                        }
 
-    return null;
-}}";
+                        return null;
+                    }
+
+                    private static {{JsonConverterTypeRef}} {{ExpandConverterMethodName}}({{TypeTypeRef}} type, {{JsonConverterTypeRef}} converter, {{JsonSerializerOptionsTypeRef}} options)
+                    {
+                        if (converter is {{JsonConverterFactoryTypeRef}} factory)
+                        {
+                            converter = factory.CreateConverter(type, options);
+                            if (converter is null || converter is {{JsonConverterFactoryTypeRef}})
+                            {
+                                throw new {{InvalidOperationExceptionTypeRef}}(string.Format("{{ExceptionMessages.InvalidJsonConverterFactoryOutput}}", factory.GetType()));
+                            }
+                        }
+
+                        if (!converter.CanConvert(type))
+                        {
+                            throw new {{InvalidOperationExceptionTypeRef}}(string.Format("{{ExceptionMessages.IncompatibleConverterType}}", converter.GetType(), type));
+                        }
+                    
+                        return converter;
+                    }
+                    """);
             }
 
-            private static string GetFetchLogicForGetCustomConverter_PropertiesWithFactories()
+            private static SourceText GetGetTypeInfoImplementation(ContextGenerationSpec contextSpec)
             {
-                return @$"
-
-private static {JsonConverterTypeRef}<T> {GetConverterFromFactoryMethodName}<T>({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName}, {JsonConverterFactoryTypeRef} factory)
-{{
-    return ({JsonConverterTypeRef}<T>) {GetConverterFromFactoryMethodName}({OptionsLocalVariableName}, typeof(T), factory);
-}}";
-            }
-
-            private static string GetFetchLogicForGetCustomConverter_TypesWithFactories()
-            {
-                return @$"
-
-private static {JsonConverterTypeRef} {GetConverterFromFactoryMethodName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName}, {TypeTypeRef} type, {JsonConverterFactoryTypeRef} factory)
-{{
-    {JsonConverterTypeRef}? converter = factory.CreateConverter(type, {OptionsLocalVariableName});
-    if (converter == null || converter is {JsonConverterFactoryTypeRef})
-    {{
-        throw new {InvalidOperationExceptionTypeRef}(string.Format(""{ExceptionMessages.InvalidJsonConverterFactoryOutput}"", factory.GetType()));
-    }}
-
-    return converter;
-}}";
-            }
-
-            private string GetGetTypeInfoImplementation()
-            {
-                StringBuilder sb = new();
+                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec, interfaceImplementation: JsonTypeInfoResolverTypeRef);
 
                 // JsonSerializerContext.GetTypeInfo override -- returns cached metadata via JsonSerializerOptions
-                sb.Append(
-@$"/// <inheritdoc/>
-public override {JsonTypeInfoTypeRef}? GetTypeInfo({TypeTypeRef} type)
-{{
-    {OptionsInstanceVariableName}.TryGetTypeInfo(type, out {JsonTypeInfoTypeRef}? typeInfo);
-    return typeInfo;
-}}
-");
+                writer.WriteLine($$"""
+                    /// <inheritdoc/>
+                    public override {{JsonTypeInfoTypeRef}}? GetTypeInfo({{TypeTypeRef}} type)
+                    {
+                        {{OptionsInstanceVariableName}}.TryGetTypeInfo(type, out {{JsonTypeInfoTypeRef}}? typeInfo);
+                        return typeInfo;
+                    }
+                    """);
+
+                writer.WriteLine();
+
                 // Explicit IJsonTypeInfoResolver implementation -- the source of truth for metadata resolution
-                sb.AppendLine();
-                sb.Append(@$"{JsonTypeInfoTypeRef}? {JsonTypeInfoResolverTypeRef}.GetTypeInfo({TypeTypeRef} type, {JsonSerializerOptionsTypeRef} {OptionsLocalVariableName})
-{{");
-                foreach (TypeGenerationSpec metadata in _currentContext.TypesWithMetadataGenerated)
+                writer.WriteLine($"{JsonTypeInfoTypeRef}? {JsonTypeInfoResolverTypeRef}.GetTypeInfo({TypeTypeRef} type, {JsonSerializerOptionsTypeRef} {OptionsLocalVariableName})");
+                writer.WriteLine('{');
+                writer.Indentation++;
+
+                foreach (TypeGenerationSpec metadata in contextSpec.GeneratedTypes)
                 {
                     if (metadata.ClassType != ClassType.TypeUnsupportedBySourceGen)
                     {
-                        sb.Append($@"
-    if (type == typeof({metadata.TypeRef}))
-    {{
-        return {metadata.CreateTypeInfoMethodName}({OptionsLocalVariableName});
-    }}
-");
+                        writer.WriteLine($$"""
+                            if (type == typeof({{metadata.TypeRef.FullyQualifiedName}}))
+                            {
+                                return {{CreateTypeInfoMethodName(metadata)}}({{OptionsLocalVariableName}});
+                            }
+                            """);
                     }
                 }
 
-                sb.Append($@"
-    return null;
-}}
-");
+                writer.WriteLine("return null;");
 
-                return sb.ToString();
+                writer.Indentation--;
+                writer.WriteLine('}');
+
+                return CompleteSourceFileAndReturnText(writer);
             }
 
-            private string GetPropertyNameInitialization()
+            private SourceText GetPropertyNameInitialization(ContextGenerationSpec contextSpec)
             {
-                // Ensure metadata for types has already occurred.
-                Debug.Assert(!(
-                    _currentContext.TypesWithMetadataGenerated.Count == 0
-                    && _currentContext.RuntimePropertyNames.Count > 0));
+                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec);
 
-                StringBuilder sb = new();
-
-                foreach (KeyValuePair<string, string> name_varName_pair in _currentContext.RuntimePropertyNames)
+                foreach (KeyValuePair<string, string> name_varName_pair in _propertyNames)
                 {
-                    sb.Append($@"
-private static readonly {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {JsonEncodedTextTypeRef}.Encode(""{name_varName_pair.Key}"");");
+                    writer.WriteLine($$"""private static readonly {{JsonEncodedTextTypeRef}} {{name_varName_pair.Value}} = {{JsonEncodedTextTypeRef}}.Encode("{{name_varName_pair.Key}}");""");
                 }
 
-                return sb.ToString();
-            }
-
-            private static string IndentSource(string source, int numIndentations)
-            {
-                if (numIndentations == 0)
-                {
-                    return source;
-                }
-
-                string indentation = new string(' ', 4 * numIndentations); // 4 spaces per indentation.
-                return indentation + source.Replace(Environment.NewLine, Environment.NewLine + indentation);
+                return CompleteSourceFileAndReturnText(writer);
             }
 
             private static string GetNumberHandlingAsStr(JsonNumberHandling? numberHandling) =>
-                 numberHandling.HasValue
-                    ? $"({JsonNumberHandlingTypeRef}){(int)numberHandling.Value}"
-                    : "default";
+                numberHandling switch
+                {
+                    null => "default",
+                    >= 0 => $"({JsonNumberHandlingTypeRef}){(int)numberHandling.Value}",
+                    < 0 => $"({JsonNumberHandlingTypeRef})({(int)numberHandling.Value})"
+                };
+
+            private static string GetObjectCreationHandlingAsStr(JsonObjectCreationHandling creationHandling) =>
+                creationHandling >= 0
+                ? $"({JsonObjectCreationHandlingTypeRef}){(int)creationHandling}"
+                : $"({JsonObjectCreationHandlingTypeRef})({(int)creationHandling})";
 
             private static string GetUnmappedMemberHandlingAsStr(JsonUnmappedMemberHandling unmappedMemberHandling) =>
-                $"({JsonUnmappedMemberHandlingTypeRef}){(int)unmappedMemberHandling}";
+                unmappedMemberHandling >= 0
+                ? $"({JsonUnmappedMemberHandlingTypeRef}){(int)unmappedMemberHandling}"
+                : $"({JsonUnmappedMemberHandlingTypeRef})({(int)unmappedMemberHandling})";
 
             private static string GetCreateValueInfoMethodRef(string typeCompilableName) => $"{CreateValueInfoMethodName}<{typeCompilableName}>";
 
             private static string FormatBool(bool value) => value ? "true" : "false";
+            private static string FormatStringLiteral(string? value) => value is null ? "null" : $"\"{value}\"";
 
-            private
-#if !DEBUG
-                static
-#endif
-                string GetParamDefaultValueAsString(object? value, Type type, string typeRef)
+            /// <summary>
+            /// Method used to generate JsonTypeInfo given options instance
+            /// </summary>
+            private static string CreateTypeInfoMethodName(TypeGenerationSpec typeSpec)
+                => $"Create_{typeSpec.TypeInfoPropertyName}";
+
+            private static string FormatDefaultConstructorParameter(object? value, TypeRef type)
             {
                 if (value == null)
                 {
-                    return $"default({typeRef})";
+                    return $"default({type.FullyQualifiedName})";
                 }
 
-                if (type.IsEnum)
+                if (type.TypeKind is TypeKind.Enum)
                 {
-                    // Roslyn gives us an instance of the underlying type, which is numerical.
-#if DEBUG
-                    Type? runtimeType = _generationSpec.MetadataLoadContext.Resolve(value.GetType()!);
-                    Debug.Assert(runtimeType != null);
-                    Debug.Assert(_generationSpec.IsNumberType(runtimeType));
-#endif
-
                     // Return the numeric value.
                     return FormatNumber();
                 }
@@ -1434,7 +1262,7 @@ private static readonly {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {Js
                     case double.NaN:
                         return "double.NaN";
                     case double @double:
-                        return $"({typeRef})({@double.ToString(JsonConstants.DoubleFormatString, CultureInfo.InvariantCulture)})";
+                        return $"({type.FullyQualifiedName})({@double.ToString(JsonConstants.DoubleFormatString, CultureInfo.InvariantCulture)})";
                     case float.NegativeInfinity:
                         return "float.NegativeInfinity";
                     case float.PositiveInfinity:
@@ -1442,7 +1270,7 @@ private static readonly {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {Js
                     case float.NaN:
                         return "float.NaN";
                     case float @float:
-                        return $"({typeRef})({@float.ToString(JsonConstants.SingleFormatString, CultureInfo.InvariantCulture)})";
+                        return $"({type.FullyQualifiedName})({@float.ToString(JsonConstants.SingleFormatString, CultureInfo.InvariantCulture)})";
                     case decimal.MaxValue:
                         return "decimal.MaxValue";
                     case decimal.MinValue:
@@ -1456,7 +1284,212 @@ private static readonly {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {Js
                         return FormatNumber();
                 }
 
-                string FormatNumber() => $"({typeRef})({Convert.ToString(value, CultureInfo.InvariantCulture)})";
+                string FormatNumber() => $"({type.FullyQualifiedName})({Convert.ToString(value, CultureInfo.InvariantCulture)})";
+            }
+
+            private static string FormatDefaultConstructorExpr(TypeGenerationSpec typeSpec)
+            {
+                return typeSpec switch
+                {
+                    { RuntimeTypeRef: TypeRef runtimeType } => $"() => new {runtimeType.FullyQualifiedName}()",
+                    { IsValueTuple: true } => $"() => default({typeSpec.TypeRef.FullyQualifiedName})",
+                    { ConstructionStrategy: ObjectConstructionStrategy.ParameterlessConstructor } => $"() => new {typeSpec.TypeRef.FullyQualifiedName}()",
+                    _ => "null",
+                };
+            }
+
+            private static string GetCollectionInfoMethodName(CollectionType collectionType)
+            {
+                return collectionType switch
+                {
+                    CollectionType.Array => "CreateArrayInfo",
+                    CollectionType.List => "CreateListInfo",
+                    CollectionType.IListOfT or CollectionType.IList => "CreateIListInfo",
+                    CollectionType.ICollectionOfT => "CreateICollectionInfo",
+                    CollectionType.IEnumerableOfT or CollectionType.IEnumerable => "CreateIEnumerableInfo",
+                    CollectionType.StackOfT or CollectionType.Stack => "CreateStackInfo",
+                    CollectionType.QueueOfT or CollectionType.Queue => "CreateQueueInfo",
+                    CollectionType.ConcurrentStack => "CreateConcurrentStackInfo",
+                    CollectionType.ConcurrentQueue => "CreateConcurrentQueueInfo",
+                    CollectionType.ImmutableEnumerable => "CreateImmutableEnumerableInfo",
+                    CollectionType.IAsyncEnumerableOfT => "CreateIAsyncEnumerableInfo",
+                    CollectionType.ISet => "CreateISetInfo",
+
+                    CollectionType.Dictionary => "CreateDictionaryInfo",
+                    CollectionType.IDictionaryOfTKeyTValue or CollectionType.IDictionary => "CreateIDictionaryInfo",
+                    CollectionType.IReadOnlyDictionary => "CreateIReadOnlyDictionaryInfo",
+                    CollectionType.ImmutableDictionary => "CreateImmutableDictionaryInfo",
+
+                    _ => throw new Exception(),
+                };
+            }
+
+            private static bool ShouldGenerateMetadata(TypeGenerationSpec typeSpec)
+                => IsGenerationModeSpecified(typeSpec, JsonSourceGenerationMode.Metadata);
+
+            private static bool ShouldGenerateSerializationLogic(TypeGenerationSpec typeSpec)
+                => IsGenerationModeSpecified(typeSpec, JsonSourceGenerationMode.Serialization) && IsFastPathSupported(typeSpec);
+
+            private static bool IsGenerationModeSpecified(TypeGenerationSpec typeSpec, JsonSourceGenerationMode mode)
+                => typeSpec.GenerationMode == JsonSourceGenerationMode.Default || (mode & typeSpec.GenerationMode) != 0;
+
+            public static bool TryFilterSerializableProps(
+                    TypeGenerationSpec typeSpec,
+                    ContextGenerationSpec contextSpec,
+                    [NotNullWhen(true)] out Dictionary<string, PropertyGenerationSpec>? serializableProperties,
+                    out bool castingRequiredForProps)
+            {
+                Debug.Assert(typeSpec.PropertyGenSpecs != null);
+
+                castingRequiredForProps = false;
+                serializableProperties = new Dictionary<string, PropertyGenerationSpec>();
+                HashSet<string>? ignoredMembers = null;
+
+                for (int i = 0; i < typeSpec.PropertyGenSpecs.Count; i++)
+                {
+                    PropertyGenerationSpec propGenSpec = typeSpec.PropertyGenSpecs[i];
+                    JsonIgnoreCondition? ignoreCondition = propGenSpec.DefaultIgnoreCondition;
+
+                    if (ignoreCondition == JsonIgnoreCondition.WhenWritingNull && !propGenSpec.PropertyType.CanBeNull)
+                    {
+                        goto ReturnFalse;
+                    }
+
+                    // In case of JsonInclude fail if either:
+                    // 1. the getter is not accessible by the source generator or
+                    // 2. neither getter or setter methods are public.
+                    if (propGenSpec.HasJsonInclude && (!propGenSpec.CanUseGetter || !propGenSpec.IsPublic))
+                    {
+                        goto ReturnFalse;
+                    }
+
+                    // Discard any getters not accessible by the source generator.
+                    if (!propGenSpec.CanUseGetter)
+                    {
+                        continue;
+                    }
+
+                    if (!propGenSpec.IsProperty && !propGenSpec.HasJsonInclude && !contextSpec.IncludeFields)
+                    {
+                        continue;
+                    }
+
+                    // Using properties from an interface hierarchy -- require explicit casting when
+                    // getting properties in the fast path to account for possible diamond ambiguities.
+                    castingRequiredForProps |= typeSpec.TypeRef.TypeKind is TypeKind.Interface && propGenSpec.PropertyType != typeSpec.TypeRef;
+
+                    string memberName = propGenSpec.MemberName!;
+
+                    // The JsonPropertyNameAttribute or naming policy resulted in a collision.
+                    if (!serializableProperties.TryAdd(propGenSpec.RuntimePropertyName, propGenSpec))
+                    {
+                        PropertyGenerationSpec other = serializableProperties[propGenSpec.RuntimePropertyName]!;
+
+                        if (other.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
+                        {
+                            // Overwrite previously cached property since it has [JsonIgnore].
+                            serializableProperties[propGenSpec.RuntimePropertyName] = propGenSpec;
+                        }
+                        else
+                        {
+                            bool ignoreCurrentProperty;
+
+                            if (typeSpec.TypeRef.TypeKind is not TypeKind.Interface)
+                            {
+                                ignoreCurrentProperty =
+                                    // Does the current property have `JsonIgnoreAttribute`?
+                                    propGenSpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always ||
+                                    // Is the current property hidden by the previously cached property
+                                    // (with `new` keyword, or by overriding)?
+                                    other.MemberName == memberName ||
+                                    // Was a property with the same CLR name ignored? That property hid the current property,
+                                    // thus, if it was ignored, the current property should be ignored too.
+                                    ignoredMembers?.Contains(memberName) == true;
+                            }
+                            else
+                            {
+                                // Unlike classes, interface hierarchies reject all naming conflicts for non-ignored properties.
+                                // Conflicts like this are possible in two cases:
+                                // 1. Diamond ambiguity in property names, or
+                                // 2. Linear interface hierarchies that use properties with DIMs.
+                                //
+                                // Diamond ambiguities are not supported. Assuming there is demand, we might consider
+                                // adding support for DIMs in the future, however that would require adding more APIs
+                                // for the case of source gen.
+
+                                ignoreCurrentProperty = propGenSpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always;
+                            }
+
+                            if (!ignoreCurrentProperty)
+                            {
+                                // We have a conflict, emit a stub method that throws.
+                                goto ReturnFalse;
+                            }
+                        }
+                    }
+
+                    if (propGenSpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
+                    {
+                        (ignoredMembers ??= new()).Add(memberName);
+                    }
+                }
+
+                Debug.Assert(typeSpec.PropertyGenSpecs.Count >= serializableProperties.Count);
+                castingRequiredForProps |= typeSpec.PropertyGenSpecs.Count > serializableProperties.Count;
+                return true;
+
+            ReturnFalse:
+                serializableProperties = null;
+                castingRequiredForProps = false;
+                return false;
+            }
+
+            private static bool IsFastPathSupported(TypeGenerationSpec typeSpec)
+            {
+                if (typeSpec.IsPolymorphic)
+                {
+                    return false;
+                }
+
+                if (typeSpec.ClassType == ClassType.Object)
+                {
+                    if (typeSpec.ExtensionDataPropertyType != null)
+                    {
+                        return false;
+                    }
+
+                    Debug.Assert(typeSpec.PropertyGenSpecs != null);
+
+                    foreach (PropertyGenerationSpec property in typeSpec.PropertyGenSpecs)
+                    {
+                        if (property.PropertyType.SpecialType is SpecialType.System_Object ||
+                            property.NumberHandling == JsonNumberHandling.AllowNamedFloatingPointLiterals ||
+                            property.NumberHandling == JsonNumberHandling.WriteAsString ||
+                            property.ConverterType is not null)
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+
+                switch (typeSpec.CollectionType)
+                {
+                    case CollectionType.NotApplicable:
+                    case CollectionType.IAsyncEnumerableOfT:
+                        return false;
+                    case CollectionType.IDictionary:
+                    case CollectionType.Dictionary:
+                    case CollectionType.ImmutableDictionary:
+                    case CollectionType.IDictionaryOfTKeyTValue:
+                    case CollectionType.IReadOnlyDictionary:
+                        return typeSpec.CollectionKeyType!.SpecialType is SpecialType.System_String &&
+                               typeSpec.CollectionValueType!.SpecialType is not SpecialType.System_Object;
+                    default:
+                        // Non-dictionary collections
+                        return typeSpec.CollectionValueType!.SpecialType is not SpecialType.System_Object;
+                }
             }
         }
     }

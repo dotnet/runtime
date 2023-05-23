@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
-    [ReflectionBlocked]
     public sealed class Lock : IDisposable
     {
         //

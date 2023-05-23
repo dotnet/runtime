@@ -3,13 +3,13 @@
 
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
-import { Module, runtimeHelpers, INTERNAL, ENVIRONMENT_IS_PTHREAD } from "../imports";
+import { Module, runtimeHelpers, INTERNAL, ENVIRONMENT_IS_PTHREAD } from "../globals";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { _release_temp_frame } from "../memory";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";
 import { find_entry_point } from "../run";
 import { conv_string_root, js_string_to_mono_string_root } from "../strings";
-import { JSHandle, MonoStringRef, MonoObjectRef, MonoArray, MonoString, MonoObject, is_nullish, mono_assert, WasmRoot } from "../types";
+import { JSHandle, MonoStringRef, MonoObjectRef, MonoArray, MonoString, MonoObject, is_nullish, WasmRoot } from "../types/internal";
 import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { mono_array_root_to_js_array, unbox_mono_obj_root } from "./cs-to-js";
 import { js_array_to_mono_array, js_to_mono_obj_root } from "./js-to-cs";
@@ -283,7 +283,6 @@ export function mono_wasm_get_global_object_ref(global_name: MonoStringRef, is_e
 }
 
 // Blazor specific custom routine
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo: any, arg0: any, arg1: any, arg2: any): void | number {
     try {
         if (MonoWasmThreads) {

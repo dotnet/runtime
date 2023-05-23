@@ -9,7 +9,7 @@
 }
 .assembly extern xunit.core {}
 .assembly extern legacy library mscorlib {}
-.assembly legacy library 'nullsdarr' { }
+.assembly legacy library ASSEMBLY_NAME { }
 .class public auto ansi beforefieldinit nullsdarr
        extends [mscorlib]System.Object
 {

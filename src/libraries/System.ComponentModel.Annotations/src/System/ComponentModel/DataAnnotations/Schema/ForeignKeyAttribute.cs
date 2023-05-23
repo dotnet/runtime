@@ -23,11 +23,7 @@ namespace System.ComponentModel.DataAnnotations.Schema
         /// </param>
         public ForeignKeyAttribute(string name)
         {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                throw new ArgumentException(SR.Format(SR.ArgumentIsNullOrWhitespace, nameof(name)), nameof(name));
-            }
-
+            ArgumentException.ThrowIfNullOrWhiteSpace(name);
             Name = name;
         }
 

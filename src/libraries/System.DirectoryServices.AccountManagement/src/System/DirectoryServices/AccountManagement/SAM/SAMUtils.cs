@@ -48,7 +48,7 @@ namespace System.DirectoryServices.AccountManagement
             }
 
             // Couldn't retrieve the value
-            if (version == null || version.Length == 0)
+            if (string.IsNullOrEmpty(version))
                 return false;
 
             // This string should be in the form "M.N", where M and N are integers.

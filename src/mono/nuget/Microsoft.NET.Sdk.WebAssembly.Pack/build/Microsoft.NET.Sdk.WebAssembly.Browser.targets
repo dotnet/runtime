@@ -40,9 +40,9 @@ Copyright (c) .NET Foundation. All rights reserved.
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.GenerateWasmBootJson" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmBuildAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmPublishAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ConvertDllsToWebCil" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" />
 
   <PropertyGroup>
-    <SelfContained>true</SelfContained>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 
     <!-- Runtime feature defaults to trim unnecessary code -->
@@ -162,12 +162,20 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <Target Name="_ResolveWasmConfiguration" DependsOnTargets="_ResolveGlobalizationConfiguration">
     <PropertyGroup>
+      <_TargetingNET80OrLater>$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))</_TargetingNET80OrLater>
+
       <_BlazorEnableTimeZoneSupport>$(BlazorEnableTimeZoneSupport)</_BlazorEnableTimeZoneSupport>
       <_BlazorEnableTimeZoneSupport Condition="'$(_BlazorEnableTimeZoneSupport)' == ''">true</_BlazorEnableTimeZoneSupport>
       <_WasmInvariantGlobalization>$(InvariantGlobalization)</_WasmInvariantGlobalization>
       <_WasmInvariantGlobalization Condition="'$(_WasmInvariantGlobalization)' == ''">true</_WasmInvariantGlobalization>
       <_WasmCopyOutputSymbolsToOutputDirectory>$(CopyOutputSymbolsToOutputDirectory)</_WasmCopyOutputSymbolsToOutputDirectory>
       <_WasmCopyOutputSymbolsToOutputDirectory Condition="'$(_WasmCopyOutputSymbolsToOutputDirectory)'==''">true</_WasmCopyOutputSymbolsToOutputDirectory>
+      <_WasmEnableThreads>$(WasmEnableThreads)</_WasmEnableThreads>
+      <_WasmEnableThreads Condition="'$(_WasmEnableThreads)' == ''">false</_WasmEnableThreads>
+      
+      <_WasmEnableWebcil>$(WasmEnableWebcil)</_WasmEnableWebcil>
+      <_WasmEnableWebcil Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' or '$(_TargetingNET80OrLater)' != 'true'">false</_WasmEnableWebcil>
+      <_WasmEnableWebcil Condition="'$(_WasmEnableWebcil)' == ''">true</_WasmEnableWebcil>
       <_BlazorWebAssemblyStartupMemoryCache>$(BlazorWebAssemblyStartupMemoryCache)</_BlazorWebAssemblyStartupMemoryCache>
       <_BlazorWebAssemblyJiterpreter>$(BlazorWebAssemblyJiterpreter)</_BlazorWebAssemblyJiterpreter>
       <_BlazorWebAssemblyRuntimeOptions>$(BlazorWebAssemblyRuntimeOptions)</_BlazorWebAssemblyRuntimeOptions>
@@ -185,7 +193,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
       <!-- Remove dotnet.js/wasm from runtime pack, in favor of the relinked ones in @(WasmNativeAsset) -->
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
-                               Condition="@(WasmNativeAsset->Count()) > 0 and '%(FileName)' == 'dotnet' and ('%(Extension)' == '.wasm' or '%(Extension)' == '.js')" />
+                               Condition="@(WasmNativeAsset->Count()) > 0 and ( '%(FileName)' == 'dotnet' or '%(FileName)' == 'dotnet.native' ) and ('%(Extension)' == '.wasm' or '%(Extension)' == '.js')" />
     </ItemGroup>
 
     <ComputeWasmBuildAssets
@@ -200,13 +208,23 @@ Copyright (c) .NET Foundation. All rights reserved.
       CopySymbols="$(_WasmCopyOutputSymbolsToOutputDirectory)"
       OutputPath="$(OutputPath)"
       FingerprintDotNetJs="$(WasmFingerprintDotnetJs)"
+      EnableThreads="$(_WasmEnableThreads)"
     >
       <Output TaskParameter="AssetCandidates" ItemName="_BuildAssetsCandidates" />
       <Output TaskParameter="FilesToRemove" ItemName="_WasmBuildFilesToRemove" />
     </ComputeWasmBuildAssets>
 
+    <PropertyGroup>
+      <_WasmBuildWebCilPath>$(IntermediateOutputPath)webcil</_WasmBuildWebCilPath>
+    </PropertyGroup>
+
+    <ConvertDllsToWebCil Candidates="@(_BuildAssetsCandidates)" OutputPath="$(_WasmBuildWebCilPath)" IsEnabled="$(_WasmEnableWebcil)">
+      <Output TaskParameter="WebCilCandidates" ItemName="_WebCilAssetsCandidates" />
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </ConvertDllsToWebCil>
+
     <DefineStaticWebAssets
-      CandidateAssets="@(_BuildAssetsCandidates)"
+      CandidateAssets="@(_WebCilAssetsCandidates)"
       SourceId="$(PackageId)"
       SourceType="Computed"
       AssetKind="Build"
@@ -362,14 +380,25 @@ Copyright (c) .NET Foundation. All rights reserved.
       ExistingAssets="@(_WasmPublishPrefilteredAssets)"
       DotNetJsVersion="$(_DotNetJsVersion)"
       FingerprintDotNetJs="$(WasmFingerprintDotnetJs)"
+      EnableThreads="$(_WasmEnableThreads)"
+      IsWebCilEnabled="$(_WasmEnableWebcil)"
     >
       <Output TaskParameter="NewCandidates" ItemName="_NewWasmPublishStaticWebAssets" />
       <Output TaskParameter="FilesToRemove" ItemName="_PublishResolvedFilesToRemove" />
     </ComputeWasmPublishAssets>
 
+    <PropertyGroup>
+      <_WasmPublishWebCilPath>$(IntermediateOutputPath)webcil\publish</_WasmPublishWebCilPath>
+    </PropertyGroup>
+
+    <ConvertDllsToWebCil Candidates="@(_NewWasmPublishStaticWebAssets)" OutputPath="$(_WasmPublishWebCilPath)" IsEnabled="$(_WasmEnableWebcil)">
+      <Output TaskParameter="WebCilCandidates" ItemName="_NewWebCilPublishStaticWebAssets" />
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </ConvertDllsToWebCil>
+
     <ItemGroup>
       <ResolvedFileToPublish Remove="@(_PublishResolvedFilesToRemove)" />
-      <StaticWebAsset Include="@(_NewWasmPublishStaticWebAssets)" />
+      <StaticWebAsset Include="@(_NewWebCilPublishStaticWebAssets)" />
 
       <!-- TODO: Probably doesn't do anything as of now, original https://github.com/dotnet/aspnetcore/pull/34798 -->
       <PublishBlazorBootStaticWebAsset 
