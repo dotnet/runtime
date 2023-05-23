@@ -155,7 +155,7 @@ namespace System.Data.Tests.SqlTypes
             Span<byte> b2Span = b2.AsSpan();
             b2Span.Clear();
 
-            Stream stream = bytes.Stream;
+            using Stream stream = bytes.Stream;
             read = stream.Read(b2, 0, (int) bytes.Length);
             Assert.Equal(bytes.Length, read);
             Assert.Equal(bytes.Value[5], b2[5]);
@@ -177,7 +177,7 @@ namespace System.Data.Tests.SqlTypes
 
             Assert.Throws<ArgumentNullException>(() => bytes.Read(0, b2, 0, 10));
 
-            Stream stream = bytes.Stream;
+            using Stream stream = bytes.Stream;
             Assert.Throws<ArgumentNullException>(() => stream.Read(b2, 0, 10));
         }
 
@@ -190,7 +190,7 @@ namespace System.Data.Tests.SqlTypes
 
             Assert.Throws<ArgumentOutOfRangeException>(() => bytes.Read(0, b2, 0, 10));
 
-            Stream stream = bytes.Stream;
+            using Stream stream = bytes.Stream;
             Assert.Throws<ArgumentOutOfRangeException>(() => stream.Read(b2, 0, 10));
         }
 
@@ -232,7 +232,7 @@ namespace System.Data.Tests.SqlTypes
 
             Assert.Throws<SqlNullValueException>(() => bytes.Read(0, b2, 0, 1));
 
-            Stream stream = bytes.Stream;
+            using Stream stream = bytes.Stream;
             Assert.Throws<SqlNullValueException>(() => stream.Read(b2, 0, 1));
         }
 
@@ -245,26 +245,29 @@ namespace System.Data.Tests.SqlTypes
 
             const long offset = 5;
             long read = bytes.Read(offset, b2, 0, 10);
+            byte[] currentValue = bytes.Value;
             Assert.Equal(b1.Length - offset, read);
-            Assert.Equal(bytes.Value[5], b2[0]);
-            Assert.Equal(bytes.Value[9], b2[4]);
+            Assert.Equal(currentValue[5], b2[0]);
+            Assert.Equal(currentValue[9], b2[4]);
 
             Span<byte> b2Span = b2.AsSpan();
             b2Span.Clear();
 
-            Stream stream = bytes.Stream;
+            using Stream stream = bytes.Stream;
             read = stream.Read(b2, 0, 10);
             Assert.Equal(10, read);
-            Assert.Equal(bytes.Value[5], b2[5]);
-            Assert.Equal(bytes.Value[9], b2[9]);
+            currentValue = bytes.Value;
+            Assert.Equal(currentValue[5], b2[5]);
+            Assert.Equal(currentValue[9], b2[9]);
 
             b2Span.Clear();
             stream.Position = 0;
 
             read = stream.Read(b2Span.Slice(0, 10));
             Assert.Equal(10, read);
-            Assert.Equal(bytes.Value[5], b2Span[5]);
-            Assert.Equal(bytes.Value[9], b2Span[9]);
+            currentValue = bytes.Value;
+            Assert.Equal(currentValue[5], b2Span[5]);
+            Assert.Equal(currentValue[9], b2Span[9]);
         }
 
         [Fact]
@@ -285,7 +288,7 @@ namespace System.Data.Tests.SqlTypes
 
             Assert.Throws<ArgumentOutOfRangeException>(() => bytes.Read(0, b2, 0, -1));
 
-            Stream stream = bytes.Stream;
+            using Stream stream = bytes.Stream;
             Assert.Throws<ArgumentOutOfRangeException>(() => stream.Read(b2, 0, -1));
         }
 
@@ -298,7 +301,7 @@ namespace System.Data.Tests.SqlTypes
 
             Assert.Throws<ArgumentOutOfRangeException>(() => bytes.Read(0, b2, 3, 4));
 
-            Stream stream = bytes.Stream;
+            using Stream stream = bytes.Stream;
             Assert.Throws<ArgumentOutOfRangeException>(() => stream.Read(b2, 3, 4));
         }
 
@@ -316,7 +319,7 @@ namespace System.Data.Tests.SqlTypes
             Span<byte> b2Span = b2.AsSpan();
             b2Span.Clear();
 
-            Stream stream = bytes.Stream;
+            using Stream stream = bytes.Stream;
             stream.Write(b1, 0, b1.Length);
             Assert.Equal(bytes.Value[0], b1[0]);
 
@@ -356,7 +359,7 @@ namespace System.Data.Tests.SqlTypes
 
             Assert.Throws<ArgumentOutOfRangeException>(() => bytes.Write(0, b1, -1, b1.Length));
 
-            Stream stream = bytes.Stream;
+            using Stream stream = bytes.Stream;
             Assert.Throws<ArgumentOutOfRangeException>(() => stream.Write(b1, -1, b1.Length));
         }
 
@@ -368,7 +371,7 @@ namespace System.Data.Tests.SqlTypes
             SqlBytes bytes = new SqlBytes(b2);
             Assert.Throws<ArgumentOutOfRangeException>(() => bytes.Write(0, b1, b1.Length + 5, b1.Length));
 
-            Stream stream = bytes.Stream;
+            using Stream stream = bytes.Stream;
             Assert.Throws<ArgumentOutOfRangeException>(() => stream.Write(b1, b1.Length + 5, b1.Length));
         }
 
@@ -381,7 +384,7 @@ namespace System.Data.Tests.SqlTypes
 
             Assert.Throws<ArgumentOutOfRangeException>(() => bytes.Write(0, b1, 0, b1.Length + 5));
 
-            Stream stream = bytes.Stream;
+            using Stream stream = bytes.Stream;
             Assert.Throws<ArgumentOutOfRangeException>(() => stream.Write(b1, 0, b1.Length + 5));
         }
 
@@ -394,11 +397,10 @@ namespace System.Data.Tests.SqlTypes
 
             Assert.Throws<SqlTypeException>(() => bytes.Write(8, b1, 0, b1.Length));
 
-            Stream stream = bytes.Stream;
+            using Stream stream = bytes.Stream;
             const int offsetEmulation = 8;
-            stream.Write(b1, 0, offsetEmulation);
+            stream.Position = offsetEmulation;
 
-            Assert.Equal(offsetEmulation, stream.Position);
             Assert.Throws<SqlTypeException>(() => stream.Write(b1, 0, b1.Length));
         }
 
@@ -411,7 +413,7 @@ namespace System.Data.Tests.SqlTypes
 
             Assert.Throws<ArgumentNullException>(() => bytes.Write(0, b2, 0, 10));
 
-            Stream stream = bytes.Stream;
+            using Stream stream = bytes.Stream;
             Assert.Throws<ArgumentNullException>(() => stream.Write(b2, 0, 10));
         }
 
@@ -423,7 +425,7 @@ namespace System.Data.Tests.SqlTypes
 
             Assert.Throws<SqlTypeException>(() => bytes.Write(0, b1, 0, 10));
 
-            Stream stream = bytes.Stream;
+            using Stream stream = bytes.Stream;
             Assert.Throws<SqlTypeException>(() => stream.Write(b1, 0, 10));
             Assert.Throws<SqlTypeException>(() => stream.Write(b1.AsSpan(0, 10)));
         }
@@ -436,7 +438,7 @@ namespace System.Data.Tests.SqlTypes
 
             Assert.Throws<ArgumentNullException>(() => bytes.Write(0, b1, 0, 10));
 
-            Stream stream = bytes.Stream;
+            using Stream stream = bytes.Stream;
             Assert.Throws<ArgumentNullException>(() => stream.Write(b1, 0, 10));
         }
 
@@ -448,20 +450,29 @@ namespace System.Data.Tests.SqlTypes
             SqlBytes bytes = new SqlBytes(b2);
 
             bytes.Write(8, b1, 0, 10);
-            Assert.Equal(bytes.Value[8], b1[0]);
-            Assert.Equal(bytes.Value[17], b1[9]);
+            byte[] currentValue = bytes.Value;
+            Assert.Equal(currentValue[8], b1[0]);
+            Assert.Equal(currentValue[17], b1[9]);
 
             Span<byte> b2Span = b2.AsSpan();
             b2Span.Clear();
 
             const int offsetEmulate = 8;
-            Stream stream = bytes.Stream;
-            stream.Write(b1, 0, offsetEmulate);
-            Assert.Equal(offsetEmulate, stream.Position);
+            using Stream stream = bytes.Stream;
+            stream.Position = offsetEmulate;
 
             stream.Write(b1, 0, 10);
-            Assert.Equal(bytes.Value[8], b1[0]);
-            Assert.Equal(bytes.Value[17], b1[9]);
+            currentValue = bytes.Value;
+            Assert.Equal(currentValue[8], b1[0]);
+            Assert.Equal(currentValue[17], b1[9]);
+
+            b2Span.Clear();
+            stream.Position = offsetEmulate;
+
+            stream.Write(b1.AsSpan(0, 10));
+            currentValue = bytes.Value;
+            Assert.Equal(currentValue[8], b1[0]);
+            Assert.Equal(currentValue[17], b1[9]);
         }
 
         [Fact]
@@ -473,7 +484,7 @@ namespace System.Data.Tests.SqlTypes
 
             Assert.Throws<ArgumentOutOfRangeException>(() => bytes.Write(0, b1, 0, -1));
 
-            Stream stream = bytes.Stream;
+            using Stream stream = bytes.Stream;
             Assert.Throws<ArgumentOutOfRangeException>(() => stream.Write(b1, 0, -1));
         }
 
