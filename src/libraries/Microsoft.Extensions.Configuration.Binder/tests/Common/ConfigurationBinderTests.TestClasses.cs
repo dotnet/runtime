@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 
@@ -578,6 +579,25 @@ namespace Microsoft.Extensions
         {
             public string MyString { get; set; }
             public List<ClassWithIndirectSelfReference> MyList { get; set; }
+        }
+
+        public class DistributedQueueConfig
+        {
+            public List<QueueNamespaces> Namespaces { get; set; }
+        }
+
+        public class QueueNamespaces
+        {
+            public string Namespace { get; set; }
+
+            public Dictionary<string, QueueProperties> Queues { get; set; } = new();
+        }
+
+        public class QueueProperties
+        {
+            public DateTimeOffset? CreationDate { get; set; }
+
+            public DateTimeOffset? DequeueOnlyMarkedDate { get; set; } = default(DateTimeOffset);
         }
 
         public record RecordWithPrimitives

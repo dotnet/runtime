@@ -34,12 +34,11 @@
     <Compile Include="Helpers\SourceWriter.cs" />
     <Compile Include="Model\CollectionSpec.cs" />
     <Compile Include="Model\ConstructionStrategy.cs" />
-    <Compile Include="Model\ConfigurationSectionTypeSpec.cs" />
+    <Compile Include="Model\ConfigurationSectionSpec.cs" />
     <Compile Include="Model\NullableSpec.cs" />
     <Compile Include="Model\ObjectSpec.cs" />
-    <Compile Include="Model\ParsableFromStringTypeSpec.cs" />
+    <Compile Include="Model\ParsableFromStringSpec.cs" />
     <Compile Include="Model\PropertySpec.cs" />
-    <Compile Include="Model\TypeSpecKind.cs" />
     <Compile Include="Model\TypeSpec.cs" />
   </ItemGroup>
 </Project>

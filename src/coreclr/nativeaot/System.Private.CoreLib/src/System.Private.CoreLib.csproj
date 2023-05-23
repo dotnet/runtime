@@ -143,7 +143,6 @@
     <Compile Include="System\Reflection\Emit\CustomAttributeBuilder.cs" />
     <Compile Include="System\Reflection\Emit\DynamicILInfo.cs" />
     <Compile Include="System\Reflection\Emit\DynamicMethod.cs" />
-    <Compile Include="System\Reflection\Emit\ILGenerator.cs" />
     <Compile Include="System\Reflection\Emit\LocalBuilder.cs" />
     <Compile Include="System\Reflection\Emit\ReflectionEmitThrower.cs" />
     <Compile Include="System\Reflection\Emit\SignatureHelper.cs" />
