@@ -45,8 +45,8 @@ static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(
 Function:
 CompareString
 */
-int32_t GlobalizationNative_CompareStringNative(const char* localeName, int32_t lNameLength, const char* lpStr1, int32_t cwStr1Length, 
-                                                const char* lpStr2, int32_t cwStr2Length, int32_t comparisonOptions)
+int32_t GlobalizationNative_CompareStringNative(const unichar* localeName, int32_t lNameLength, const unichar* lpStr1, int32_t cwStr1Length, 
+                                                const unichar* lpStr2, int32_t cwStr2Length, int32_t comparisonOptions)
 {    
     NSLocale *currentLocale;
     if(localeName == NULL || lNameLength == 0)
@@ -55,12 +55,12 @@ int32_t GlobalizationNative_CompareStringNative(const char* localeName, int32_t 
     }
     else
     {
-        NSString *locName = [NSString stringWithCharacters: (const unichar *)localeName length: lNameLength];
+        NSString *locName = [NSString stringWithCharacters: localeName length: lNameLength];
         currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
     }
 
-    NSString *firstString = [NSString stringWithCharacters: (const unichar *)lpStr1 length: cwStr1Length];
-    NSString *secondString = [NSString stringWithCharacters: (const unichar *)lpStr2 length: cwStr2Length];
+    NSString *firstString = [NSString stringWithCharacters: lpStr1 length: cwStr1Length];
+    NSString *secondString = [NSString stringWithCharacters: lpStr2 length: cwStr2Length];
     NSRange string1Range = NSMakeRange(0, cwStr1Length);
     NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
     
