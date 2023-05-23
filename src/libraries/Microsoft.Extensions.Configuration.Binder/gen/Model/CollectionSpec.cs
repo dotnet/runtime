@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public override TypeSpecKind SpecKind => TypeSpecKind.Dictionary;
 
-        public required ParsableFromStringTypeSpec KeyType { get; init; }
+        public required ParsableFromStringSpec KeyType { get; init; }
     }
 
     internal enum CollectionPopulationStrategy

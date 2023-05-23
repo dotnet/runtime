@@ -9238,15 +9238,14 @@ struct ValueNumberState
 
         SetVisitBit(blk->bbNum, BVB_complete);
 
-        for (BasicBlock* succ : blk->GetAllSuccs(m_comp))
-        {
+        blk->VisitAllSuccs(m_comp, [&](BasicBlock* succ) {
 #ifdef DEBUG_VN_VISIT
             JITDUMP("   Succ(" FMT_BB ").\n", succ->bbNum);
 #endif // DEBUG_VN_VISIT
 
             if (GetVisitBit(succ->bbNum, BVB_complete))
             {
-                continue;
+                return BasicBlockVisit::Continue;
             }
 #ifdef DEBUG_VN_VISIT
             JITDUMP("     Not yet completed.\n");
@@ -9269,8 +9268,8 @@ struct ValueNumberState
                 JITDUMP("     All preds complete, adding to allDone.\n");
 #endif // DEBUG_VN_VISIT
 
-                assert(!GetVisitBit(succ->bbNum, BVB_onAllDone)); // Only last completion of last succ should add to
-                                                                  // this.
+                // Only last completion of last succ should add to this.
+                assert(!GetVisitBit(succ->bbNum, BVB_onAllDone));
                 m_toDoAllPredsDone.Push(succ);
                 SetVisitBit(succ->bbNum, BVB_onAllDone);
             }
@@ -9289,7 +9288,9 @@ struct ValueNumberState
                     SetVisitBit(succ->bbNum, BVB_onNotAllDone);
                 }
             }
-        }
+
+            return BasicBlockVisit::Continue;
+        });
     }
 
     bool ToDoExists()
