@@ -8,7 +8,7 @@ namespace System.IO
 {
     internal static partial class FileSystem
     {
-        private static partial bool TryCloneFile(string sourceFullPath, in Interop.Sys.FileStatus srcStat, string destFullPath, bool overwrite)
+        private static bool TryCloneFile(string sourceFullPath, in Interop.Sys.FileStatus srcStat, string destFullPath, bool overwrite)
         {
             // Try to clone the file immediately, this will only succeed if the
             // destination doesn't exist, so we don't worry about locking for this one.

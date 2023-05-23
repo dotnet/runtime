@@ -28,9 +28,6 @@ namespace System.IO
             UnixFileMode.OtherWrite |
             UnixFileMode.OtherExecute;
 
-        // TryCloneFile is defined in either FileSystem.TryCloneFile.OSX.cs or FileSystem.TryCloneFile.OtherUnix.cs.
-        private static partial bool TryCloneFile(string sourceFullPath, in Interop.Sys.FileStatus srcStat, string destFullPath, bool overwrite);
-
         public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
             // Open the src file handle, and read the file permissions.
