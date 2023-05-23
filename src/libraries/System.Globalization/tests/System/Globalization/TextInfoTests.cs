@@ -325,14 +325,12 @@ namespace System.Globalization.Tests
         [Fact]
         public void ToLower_InvalidSurrogates()
         {
-            bool usesTextDecoder = PlatformDetection.IsHybridGlobalizationOnBrowser && PlatformDetection.IsBrowserDomSupportedOrNodeJS;
-
             // Invalid UTF-16 in a string (mismatched surrogate pairs) should be unchanged.
             foreach (string cultureName in new string[] { "", "en-US", "fr" })
             {
-                ToLower(cultureName, "\uD83C\uD83C", usesTextDecoder ? "\uFFFD\uFFFD" : "\uD83C\uD83C");
-                ToLower(cultureName, "BE CAREFUL, \uDF08\uD83C, THIS ONE IS TRICKY", usesTextDecoder ? "be careful, \uFFFD\uFFFD, this one is tricky" : "be careful, \uDF08\uD83C, this one is tricky");
-                ToLower(cultureName, "BE CAREFUL, \uDF08\uDF08, THIS ONE IS TRICKY", usesTextDecoder ? "be careful, \uFFFD\uFFFD, this one is tricky" : "be careful, \uDF08\uDF08, this one is tricky");
+                ToLower(cultureName, "BE CAREFUL, \uD83C\uD83C, THIS ONE IS TRICKY", "be careful, \uD83C\uD83C, this one is tricky");
+                ToLower(cultureName, "BE CAREFUL, \uDF08\uD83C, THIS ONE IS TRICKY", "be careful, \uDF08\uD83C, this one is tricky");
+                ToLower(cultureName, "BE CAREFUL, \uDF08\uDF08, THIS ONE IS TRICKY", "be careful, \uDF08\uDF08, this one is tricky");
             }
         }
 
@@ -454,14 +452,12 @@ namespace System.Globalization.Tests
         [Fact]
         public void ToUpper_InvalidSurrogates()
         {
-            bool usesTextDecoder = PlatformDetection.IsHybridGlobalizationOnBrowser && PlatformDetection.IsBrowserDomSupportedOrNodeJS;
-
             // Invalid UTF-16 in a string (mismatched surrogate pairs) should be unchanged.
             foreach (string cultureName in new string[] { "", "en-US", "fr"})
             {
-                ToUpper(cultureName, "be careful, \uD83C\uD83C, this one is tricky", usesTextDecoder ? "BE CAREFUL, \uFFFD\uFFFD, THIS ONE IS TRICKY" : "BE CAREFUL, \uD83C\uD83C, THIS ONE IS TRICKY");
-                ToUpper(cultureName, "be careful, \uDF08\uD83C, this one is tricky", usesTextDecoder ? "BE CAREFUL, \uFFFD\uFFFD, THIS ONE IS TRICKY" : "BE CAREFUL, \uDF08\uD83C, THIS ONE IS TRICKY");
-                ToUpper(cultureName, "be careful, \uDF08\uDF08, this one is tricky", usesTextDecoder ? "BE CAREFUL, \uFFFD\uFFFD, THIS ONE IS TRICKY" : "BE CAREFUL, \uDF08\uDF08, THIS ONE IS TRICKY");
+                ToUpper(cultureName, "be careful, \uD83C\uD83C, this one is tricky", "BE CAREFUL, \uD83C\uD83C, THIS ONE IS TRICKY");
+                ToUpper(cultureName, "be careful, \uDF08\uD83C, this one is tricky", "BE CAREFUL, \uDF08\uD83C, THIS ONE IS TRICKY");
+                ToUpper(cultureName, "be careful, \uDF08\uDF08, this one is tricky", "BE CAREFUL, \uDF08\uDF08, THIS ONE IS TRICKY");
             }
         }
 
