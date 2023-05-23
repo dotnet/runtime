@@ -7,8 +7,8 @@
 
   <PropertyGroup>
     <_WasmBuildNativeCoreDependsOn>
-      _WasmAotCompileApp;
       _ScanAssembliesDecideLightweightMarshaler;
+      _WasmAotCompileApp;
       _WasmStripAOTAssemblies;
       _PrepareForWasmBuildNative;
       _GenerateDriverGenC;
@@ -684,7 +684,7 @@
 
   <Target Name="_ScanAssembliesDecideLightweightMarshaler">
      <ItemGroup>
-      <AssembliesToScan Include="$(WasmAppDir)\managed\*.dll" /> <!-- ### REALLY? ### -->
+      <AssembliesToScan Include="@(_WasmAssembliesInternal)" />
     </ItemGroup>
     
     <MarshalingPInvokeScanner Assemblies ="@(AssembliesToScan)">
