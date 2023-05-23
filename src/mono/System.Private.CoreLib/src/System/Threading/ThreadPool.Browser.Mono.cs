@@ -152,6 +152,9 @@ namespace System.Threading
         }
 
         [Conditional("unnecessary")]
-        internal static void ReportThreadStatus(bool isWorking) => ReportThreadStatusCore(isWorking);
+        internal static void ReportThreadStatus(bool isWorking)
+        {
+            
+        }
     }
 }
