@@ -9,6 +9,7 @@ import { Int32Ptr } from "../types/emscripten";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 
 const NORMALIZATION_FORM_MAP = [undefined, "NFC", "NFD", undefined, undefined, "NFKC", "NFKD"];
+const ERROR = -1;
 
 export function mono_wasm_is_normalized(normalizationForm: number, inputStr: MonoStringRef, is_exception: Int32Ptr, ex_address: MonoObjectRef) : number{
     const inputRoot = mono_wasm_new_external_root<MonoString>(inputStr),
@@ -25,7 +26,7 @@ export function mono_wasm_is_normalized(normalizationForm: number, inputStr: Mon
     }
     catch (ex) {
         wrap_error_root(is_exception, ex, exceptionRoot);
-        return -1;
+        return ERROR;
     } finally {
         inputRoot.release();
         exceptionRoot.release();
@@ -51,7 +52,7 @@ export function mono_wasm_normalize_string(normalizationForm: number, inputStr: 
         return result.length;
     } catch (ex) {
         wrap_error_root(is_exception, ex, exceptionRoot);
-        return -1;
+        return ERROR;
     } finally {
         inputRoot.release();
         exceptionRoot.release();

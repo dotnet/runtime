@@ -7,6 +7,9 @@ import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/i
 import { Int32Ptr } from "../types/emscripten";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 
+const COMPARISON_ERROR = -2;
+const INDEXING_ERROR = -1;
+
 export function mono_wasm_compare_string(culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, is_exception: Int32Ptr, ex_address: MonoObjectRef) : number{
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
@@ -21,7 +24,7 @@ export function mono_wasm_compare_string(culture: MonoStringRef, str1: number, s
     }
     catch (ex: any) {
         wrap_error_root(is_exception, ex, exceptionRoot);
-        return -2;
+        return COMPARISON_ERROR;
     }
     finally {
         cultureRoot.release();
@@ -52,7 +55,7 @@ export function mono_wasm_starts_with(culture: MonoStringRef, str1: number, str1
     }
     catch (ex: any) {
         wrap_error_root(is_exception, ex, exceptionRoot);
-        return -1;
+        return INDEXING_ERROR;
     }
     finally {
         cultureRoot.release();
@@ -83,7 +86,7 @@ export function mono_wasm_ends_with(culture: MonoStringRef, str1: number, str1Le
     }
     catch (ex: any) {
         wrap_error_root(is_exception, ex, exceptionRoot);
-        return -1;
+        return INDEXING_ERROR;
     }
     finally {
         cultureRoot.release();
@@ -173,7 +176,7 @@ export function mono_wasm_index_of(culture: MonoStringRef, needlePtr: number, ne
     }
     catch (ex: any) {
         wrap_error_root(is_exception, ex, exceptionRoot);
-        return -1;
+        return INDEXING_ERROR;
     }
     finally {
         cultureRoot.release();
@@ -194,12 +197,12 @@ function compare_strings(string1: string, string2: string, locale: string | unde
             //    StringSort - for ICU it gives the same result as None, see: https://github.com/dotnet/dotnet-api-docs/issues
             //    does not work for "ja"
             if (locale && locale.split("-")[0] === "ja")
-                return -2;
+                return COMPARISON_ERROR;
             return string1.localeCompare(string2, locale); // a ≠ b, a ≠ á, a ≠ A
         case 8:
             // 8: IgnoreKanaType works only for "ja"
             if (locale && locale.split("-")[0] !== "ja")
-                return -2;
+                return COMPARISON_ERROR;
             return string1.localeCompare(string2, locale); // a ≠ b, a ≠ á, a ≠ A
         case 1:
             // 1: IgnoreCase
