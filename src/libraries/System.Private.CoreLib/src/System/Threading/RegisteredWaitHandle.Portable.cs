@@ -52,8 +52,10 @@ namespace System.Threading
         internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
             int millisecondsTimeout, bool repeating)
         {
+#if WINDOWS
             Debug.Assert(!ThreadPool.UseWindowsThreadPool);
             GC.SuppressFinalize(this);
+#endif
 
             Thread.ThrowIfNoThreadStart();
             _waitHandle = waitHandle.SafeWaitHandle;

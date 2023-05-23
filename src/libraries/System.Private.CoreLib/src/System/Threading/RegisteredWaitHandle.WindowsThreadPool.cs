@@ -16,7 +16,6 @@ namespace System.Threading
     public sealed partial class RegisteredWaitHandle : MarshalByRefObject
     {
         private readonly object? _lock;
-        private SafeWaitHandle? _waitHandle;
         private bool _unregistering;
 
         // Handle to this object to keep it alive

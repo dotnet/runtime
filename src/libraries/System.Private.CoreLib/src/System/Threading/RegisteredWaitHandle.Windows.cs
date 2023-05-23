@@ -15,6 +15,7 @@ namespace System.Threading
 #endif
     public sealed partial class RegisteredWaitHandle : MarshalByRefObject
     {
+        private SafeWaitHandle? _waitHandle;
         private readonly _ThreadPoolWaitOrTimerCallback? _callbackHelper;
         private readonly uint _millisecondsTimeout;
         private readonly int _signedMillisecondsTimeout;
