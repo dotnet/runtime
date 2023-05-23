@@ -1,5 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
-cmake_policy(VERSION 3.17.0)
+cmake_minimum_required(VERSION 3.17.0)
 
 include(CheckCCompilerFlag)
 
