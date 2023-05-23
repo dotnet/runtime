@@ -8853,17 +8853,20 @@ void ValueNumStore::vnDumpZeroObj(Compiler* comp, VNFuncApp* zeroObj)
 
 // Static fields, methods.
 
-#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic, extra)  \
+#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic, extra)                                        \
+    \
 static_assert((arity) >= 0 || !(extra), "valuenumfuncs.h has EncodesExtraTypeArg==true and arity<0 for " #vnf);
 #include "valuenumfuncs.h"
 
 #ifdef FEATURE_HW_INTRINSICS
 
-#define HARDWARE_INTRINSIC(isa, name, size, argCount, extra, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-static_assert((size) != 0 || !(extra), "hwintrinsicslist<arch>.h has EncodesExtraTypeArg==true and size==0 for " #isa " " #name);
+#define HARDWARE_INTRINSIC(isa, name, size, argCount, extra, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)  \
+    \
+static_assert((size) != 0 || !(extra),                                                                                 \
+              "hwintrinsicslist<arch>.h has EncodesExtraTypeArg==true and size==0 for " #isa " " #name);
 #if defined(TARGET_XARCH)
 #include "hwintrinsiclistxarch.h"
-#elif defined (TARGET_ARM64)
+#elif defined(TARGET_ARM64)
 #include "hwintrinsiclistarm64.h"
 #else
 #error Unsupported platform
@@ -8871,11 +8874,14 @@ static_assert((size) != 0 || !(extra), "hwintrinsicslist<arch>.h has EncodesExtr
 
 #endif // FEATURE_HW_INTRINSICS
 
-/* static */ constexpr uint8_t ValueNumStore::GetOpAttribsForGenTree(unsigned oper, bool commute, bool illegalAsVNFunc, GenTreeOperKind kind)
+/* static */ constexpr uint8_t ValueNumStore::GetOpAttribsForGenTree(unsigned        oper,
+                                                                     bool            commute,
+                                                                     bool            illegalAsVNFunc,
+                                                                     GenTreeOperKind kind)
 {
-    uint8_t value = 0;
+    uint8_t    value  = 0;
     genTreeOps gtOper = static_cast<genTreeOps>(oper);
-    uint8_t arity = (kind & GTK_UNOP) >> 1;
+    uint8_t    arity  = (kind & GTK_UNOP) >> 1;
     arity |= (kind & GTK_BINOP) >> 1;
     if (GenTree::StaticOperIs(gtOper, GT_SELECT))
     {
@@ -8888,7 +8894,10 @@ static_assert((size) != 0 || !(extra), "hwintrinsicslist<arch>.h has EncodesExtr
     return value;
 }
 
-/* static */ constexpr uint8_t ValueNumStore::GetOpAttribsForFunc(int arity, bool commute, bool knownNonNull, bool sharedStatic)
+/* static */ constexpr uint8_t ValueNumStore::GetOpAttribsForFunc(int  arity,
+                                                                  bool commute,
+                                                                  bool knownNonNull,
+                                                                  bool sharedStatic)
 {
     uint8_t value = static_cast<uint8_t>(commute) << VNFOA_CommutativeShift;
     value |= static_cast<uint8_t>(knownNonNull) << VNFOA_KnownNonNullShift;
@@ -8897,14 +8906,13 @@ static_assert((size) != 0 || !(extra), "hwintrinsicslist<arch>.h has EncodesExtr
     return value;
 }
 
-const uint8_t ValueNumStore::s_vnfOpAttribs[VNF_COUNT] =
-{
+const uint8_t ValueNumStore::s_vnfOpAttribs[VNF_COUNT] = {
 #define GTNODE(en, st, cm, ivn, ok) GetOpAttribsForGenTree(GT_##en, cm, ivn, static_cast<GenTreeOperKind>(ok)),
 #include "gtlist.h"
 
     0, // VNF_Boundary
 
-#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic, extra)  \
+#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic, extra)                                        \
     GetOpAttribsForFunc((arity) + static_cast<int>(extra), commute, knownNonNull, sharedStatic),
 #include "valuenumfuncs.h"
 };
@@ -8960,13 +8968,13 @@ void ValueNumStore::ValidateValueNumStoreStatics()
 
 #define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic, extra)                                        \
     if (commute)                                                                                                       \
-        arr[vnfNum] |= VNFOA_Commutative;                                                                     \
+        arr[vnfNum] |= VNFOA_Commutative;                                                                              \
     if (knownNonNull)                                                                                                  \
-        arr[vnfNum] |= VNFOA_KnownNonNull;                                                                    \
+        arr[vnfNum] |= VNFOA_KnownNonNull;                                                                             \
     if (sharedStatic)                                                                                                  \
-        arr[vnfNum] |= VNFOA_SharedStatic;                                                                    \
+        arr[vnfNum] |= VNFOA_SharedStatic;                                                                             \
     if (arity > 0)                                                                                                     \
-        arr[vnfNum] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask);                                       \
+        arr[vnfNum] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask);                                                \
     vnfNum++;
 
 #include "valuenumfuncs.h"
@@ -8974,7 +8982,7 @@ void ValueNumStore::ValidateValueNumStoreStatics()
     assert(vnfNum == VNF_COUNT);
 
 #define ValueNumFuncSetArity(vnfNum, arity)                                                                            \
-    arr[vnfNum] &= ~VNFOA_ArityMask;                               /* clear old arity value   */ \
+    arr[vnfNum] &= ~VNFOA_ArityMask;                               /* clear old arity value   */                       \
     arr[vnfNum] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask) /* set the new arity value */
 
 #ifdef FEATURE_HW_INTRINSICS
