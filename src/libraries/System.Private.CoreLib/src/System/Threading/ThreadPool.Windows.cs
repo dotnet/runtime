@@ -48,13 +48,13 @@ namespace System.Threading
         public static bool BindHandle(IntPtr osHandle) =>
             ThreadPool.UseWindowsThreadPool ?
             WindowsThreadPool.BindHandle(osHandle) :
-            BindHandlePortableCore(osHandle);
+            BindHandleCore(osHandle);
 
         [SupportedOSPlatform("windows")]
         public static bool BindHandle(SafeHandle osHandle) =>
             ThreadPool.UseWindowsThreadPool ?
             WindowsThreadPool.BindHandle(osHandle) :
-            BindHandlePortableCore(osHandle);
+            BindHandleCore(osHandle);
 
         internal static bool EnsureConfigInitialized() => EnsureConfigInitializedCore();
 

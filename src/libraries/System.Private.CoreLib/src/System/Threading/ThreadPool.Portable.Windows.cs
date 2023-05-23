@@ -27,14 +27,14 @@ namespace System.Threading
 
         [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated. Use ThreadPool.BindHandle(SafeHandle) instead.")]
         [SupportedOSPlatform("windows")]
-        private static bool BindHandlePortableCore(IntPtr osHandle)
+        private static bool BindHandleCore(IntPtr osHandle)
         {
             PortableThreadPool.ThreadPoolInstance.RegisterForIOCompletionNotifications(osHandle);
             return true;
         }
 
         [SupportedOSPlatform("windows")]
-        private static bool BindHandlePortableCore(SafeHandle osHandle)
+        private static bool BindHandleCore(SafeHandle osHandle)
         {
             ArgumentNullException.ThrowIfNull(osHandle);
 
