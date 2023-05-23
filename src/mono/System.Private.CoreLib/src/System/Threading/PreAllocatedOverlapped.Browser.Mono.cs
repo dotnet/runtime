@@ -3,7 +3,7 @@
 
 namespace System.Threading
 {
-    public sealed partial class PreAllocatedOverlapped : System.IDisposable
+    public sealed class PreAllocatedOverlapped : System.IDisposable
     {
         [CLSCompliantAttribute(false)]
         public PreAllocatedOverlapped(IOCompletionCallback callback, object? state, object? pinData) { }
