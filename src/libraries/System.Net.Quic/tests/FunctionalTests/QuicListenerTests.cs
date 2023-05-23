@@ -374,7 +374,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        public async Task Listener_AlpnChange() {
+        public async Task Listener_AlpnNarrowingDown() {
             var listenerOptions = new QuicListenerOptions()
             {
                 ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
