@@ -1172,8 +1172,7 @@ void SsaBuilder::BlockRenameVariables(BasicBlock* block)
 //
 void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
 {
-    for (BasicBlock* succ : block->GetAllSuccs(m_pCompiler))
-    {
+    block->VisitAllSuccs(m_pCompiler, [this, block](BasicBlock* succ) {
         // Walk the statements for phi nodes.
         for (Statement* const stmt : succ->Statements())
         {
@@ -1359,7 +1358,9 @@ void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
                 tryInd = succTry->ebdEnclosingTryIndex;
             }
         }
-    }
+
+        return BasicBlockVisit::Continue;
+    });
 }
 
 //------------------------------------------------------------------------

@@ -42,13 +42,13 @@ function onMonoConfigReceived(config: MonoConfigInternal): void {
 export function makePreloadMonoMessage<TPort>(port: TPort): any {
     return {
         [monoSymbol]: {
-            mono_cmd: WorkerMonoCommandType.preload,
+            monoCmd: WorkerMonoCommandType.preload,
             port
         }
     };
 }
 
 const enum WorkerMonoCommandType {
-    channel_created = "channel_created",
+    channelCreated = "channel_created",
     preload = "preload",
 }

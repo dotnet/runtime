@@ -1176,9 +1176,9 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
     }
 }
 
-void GCToEEInterface::EnableFinalization(bool foundFinalizers)
+void GCToEEInterface::EnableFinalization(bool gcHasWorkForFinalizerThread)
 {
-    if (foundFinalizers)
+    if (gcHasWorkForFinalizerThread)
         RhEnableFinalization();
 }
 

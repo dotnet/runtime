@@ -489,12 +489,18 @@ push_var (TransformData *td, int var_index)
 	} while (0)
 
 static void
-set_simple_type_and_local (TransformData *td, StackInfo *sp, int type)
+set_type_and_local (TransformData *td, StackInfo *sp, int type, MonoClass *klass)
 {
-	SET_SIMPLE_TYPE (sp, type);
+	SET_TYPE (sp, type, klass);
 	create_interp_stack_local (td, sp, MINT_STACK_SLOT_SIZE);
 	if (!td->optimized)
 		td->locals [sp->local].stack_offset = sp->offset;
+}
+
+static void
+set_simple_type_and_local (TransformData *td, StackInfo *sp, int type)
+{
+	set_type_and_local (td, sp, type, NULL);
 }
 
 static void
@@ -779,8 +785,16 @@ init_bb_stack_state (TransformData *td, InterpBasicBlock *bb)
 {
 	// FIXME If already initialized, then we need to generate mov to the registers in the state.
 	// Check if already initialized
-	if (bb->stack_height >= 0)
+	if (bb->stack_height >= 0) {
+		// Discard type information if we have type conflicts for stack contents
+		for (int i = 0; i < bb->stack_height; i++) {
+			if (bb->stack_state [i].klass != td->stack [i].klass) {
+				bb->stack_state [i].klass = NULL;
+				td->stack [i].klass = NULL;
+			}
+		}
 		return;
+	}
 
 	bb->stack_height = GPTRDIFF_TO_INT (td->sp - td->stack);
 	if (bb->stack_height > 0) {
@@ -1211,6 +1225,7 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 
 	if (mono_aot_only && m_class_get_image (method->klass)->aot_module && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
 		ERROR_DECL (error);
+		mono_class_init_internal (method->klass);
 		gpointer addr = mono_aot_get_method (method, error);
 		if (addr && is_ok (error)) {
 			MonoAotMethodFlags flags = mono_aot_get_method_flags (addr);
@@ -3291,6 +3306,38 @@ interp_realign_simd_params (TransformData *td, StackInfo *sp_params, int num_arg
 	}
 }
 
+static MonoMethod*
+interp_try_devirt (MonoClass *this_klass, MonoMethod *target_method)
+{
+	ERROR_DECL(error);
+	// No relevant information about the type
+	if (!this_klass || this_klass == mono_defaults.object_class)
+		return NULL;
+
+	if (mono_class_is_interface (this_klass))
+		return NULL;
+
+	// Make sure first it is valid to lookup method in the vtable
+	gboolean assignable;
+	mono_class_is_assignable_from_checked (target_method->klass, this_klass, &assignable, error);
+	if (!is_ok (error) || !assignable)
+		return NULL;
+
+	MonoMethod *new_target_method = mono_class_get_virtual_method (this_klass, target_method, error);
+	if (!is_ok (error) || !new_target_method)
+		return NULL;
+
+	// TODO We would need to emit unboxing in order to devirtualize call to valuetype method
+	if (m_class_is_valuetype (new_target_method->klass))
+		return NULL;
+
+	// final methods can still be overriden with explicit overrides
+	if (m_class_is_sealed (this_klass))
+		return new_target_method;
+
+	return NULL;
+}
+
 /* Return FALSE if error, including inline failure */
 static gboolean
 interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target_method, MonoGenericContext *generic_context, MonoClass *constrained_class, gboolean readonly, MonoError *error, gboolean check_visibility, gboolean save_last_error, gboolean tailcall)
@@ -3528,6 +3575,19 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		}
 	}
 
+	// Attempt to devirtualize the call
+	if (is_virtual) {
+		MonoClass *this_klass = (td->sp - 1 - csignature->param_count)->klass;
+		MonoMethod *new_target_method = interp_try_devirt (this_klass, target_method);
+
+		if (new_target_method) {
+			if (td->verbose_level)
+				g_print ("DEVIRTUALIZE %s.%s to %s.%s\n", m_class_get_name (target_method->klass), target_method->name, m_class_get_name (new_target_method->klass), new_target_method->name);
+			target_method = new_target_method;
+			is_virtual = FALSE;
+		}
+	}
+
 	if (op == -1)
 		target_method = interp_transform_internal_calls (method, target_method, csignature, is_virtual);
 
@@ -3538,7 +3598,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		StackInfo *sp = td->sp - 1 - csignature->param_count;
 		interp_add_ins (td, MINT_CKNULL);
 		interp_ins_set_sreg (td->last_ins, sp->local);
-		set_simple_type_and_local (td, sp, sp->type);
+		set_type_and_local (td, sp, sp->type, sp->klass);
 		interp_ins_set_dreg (td->last_ins, sp->local);
 	}
 
@@ -3549,7 +3609,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 		if (interp_inline_method (td, target_method, mheader, error)) {
 			td->ip += 5;
-			return TRUE;
+			goto done;
 		}
 	}
 
@@ -3803,6 +3863,13 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		g_assert (call_offset == -1);
 	}
 
+
+done:
+	if (csignature->ret->type != MONO_TYPE_VOID && target_method) {
+		MonoClass *ret_klass = mini_handle_call_res_devirt (target_method);
+		if (ret_klass)
+			td->sp [-1].klass = ret_klass;
+	}
 	return TRUE;
 }
 
@@ -9024,7 +9091,7 @@ interp_fold_unop (TransformData *td, LocalValue *local_defs, InterpInst *ins)
 	return ins;
 }
 
-#define INTERP_FOLD_UNOP_BR(_opcode,_local_type,_cond) \
+#define INTERP_FOLD_UNOP_BR(_opcode,_cond) \
 	case _opcode: \
 		if (_cond) { \
 			ins->opcode = MINT_BR; \
@@ -9046,18 +9113,30 @@ interp_fold_unop_cond_br (TransformData *td, InterpBasicBlock *cbb, LocalValue *
 	int sreg = ins->sregs [0];
 	LocalValue *val = &local_defs [sreg];
 
-	if (val->type != LOCAL_VALUE_I4 && val->type != LOCAL_VALUE_I8)
+	if (val->type != LOCAL_VALUE_I4 && val->type != LOCAL_VALUE_I8 && val->type != LOCAL_VALUE_NON_NULL)
 		return ins;
 
-	// Top of the stack is a constant
-	switch (ins->opcode) {
-		INTERP_FOLD_UNOP_BR (MINT_BRFALSE_I4, LOCAL_VALUE_I4, val->i == 0);
-		INTERP_FOLD_UNOP_BR (MINT_BRFALSE_I8, LOCAL_VALUE_I8, val->l == 0);
-		INTERP_FOLD_UNOP_BR (MINT_BRTRUE_I4, LOCAL_VALUE_I4, val->i != 0);
-		INTERP_FOLD_UNOP_BR (MINT_BRTRUE_I8, LOCAL_VALUE_I8, val->l != 0);
+	if (val->type == LOCAL_VALUE_NON_NULL) {
+		switch (ins->opcode) {
+			INTERP_FOLD_UNOP_BR (MINT_BRFALSE_I4, FALSE);
+			INTERP_FOLD_UNOP_BR (MINT_BRFALSE_I8, FALSE);
+			INTERP_FOLD_UNOP_BR (MINT_BRTRUE_I4, TRUE);
+			INTERP_FOLD_UNOP_BR (MINT_BRTRUE_I8, TRUE);
 
-		default:
-			return ins;
+			default:
+				return ins;
+		}
+	} else {
+		// Top of the stack is a constant
+		switch (ins->opcode) {
+			INTERP_FOLD_UNOP_BR (MINT_BRFALSE_I4, val->i == 0);
+			INTERP_FOLD_UNOP_BR (MINT_BRFALSE_I8, val->l == 0);
+			INTERP_FOLD_UNOP_BR (MINT_BRTRUE_I4, val->i != 0);
+			INTERP_FOLD_UNOP_BR (MINT_BRTRUE_I8, val->l != 0);
+
+			default:
+				return ins;
+		}
 	}
 
 	if (td->verbose_level) {
@@ -9816,6 +9895,16 @@ retry:
 					sregs [0] = local;
 					needs_retry = TRUE;
 				}
+			} else if (opcode == MINT_CKNULL) {
+				InterpInst *def = local_defs [sregs [0]].ins;
+				if (def && def->opcode == MINT_LDLOCA_S) {
+					// CKNULL on LDLOCA is a NOP
+					ins->opcode = MINT_MOV_P;
+					needs_retry = TRUE;
+				}
+			} else if (opcode == MINT_BOX) {
+				// TODO Add more relevant opcodes
+				local_defs [dreg].type = LOCAL_VALUE_NON_NULL;
 			}
 
 			ins_index++;

@@ -64,9 +64,7 @@ namespace System.Text.Json.SourceGeneration
         public readonly INamedTypeSymbol? VersionType = compilation!.GetBestTypeByMetadataName(typeof(Version));
 
         // System.Text.Json types
-        public readonly INamedTypeSymbol? JsonConverterOfTType = compilation!.GetBestTypeByMetadataName("System.Text.Json.Serialization.JsonConverter`1");
-        public readonly INamedTypeSymbol? JsonConverterFactoryType = compilation!.GetBestTypeByMetadataName("System.Text.Json.Serialization.JsonConverterFactory");
-
+        public readonly INamedTypeSymbol? JsonConverterType = compilation!.GetBestTypeByMetadataName("System.Text.Json.Serialization.JsonConverter");
         public readonly INamedTypeSymbol? JsonSerializerContextType = compilation.GetBestTypeByMetadataName("System.Text.Json.Serialization.JsonSerializerContext");
         public readonly INamedTypeSymbol? JsonSerializableAttributeType = compilation.GetBestTypeByMetadataName("System.Text.Json.Serialization.JsonSerializableAttribute");
 

@@ -187,13 +187,13 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphAr
 
     GenTreeCall* call = tree->AsCall();
     // Args are cleared by ChangeOper above
-    call->gtCallType            = CT_HELPER;
-    call->gtReturnType          = tree->TypeGet();
-    call->gtCallMethHnd         = eeFindHelper(helper);
-    call->gtRetClsHnd           = nullptr;
-    call->gtCallMoreFlags       = GTF_CALL_M_EMPTY;
-    call->gtInlineCandidateInfo = nullptr;
-    call->gtControlExpr         = nullptr;
+    call->gtCallType      = CT_HELPER;
+    call->gtReturnType    = tree->TypeGet();
+    call->gtCallMethHnd   = eeFindHelper(helper);
+    call->gtRetClsHnd     = nullptr;
+    call->gtCallMoreFlags = GTF_CALL_M_EMPTY;
+    call->gtControlExpr   = nullptr;
+    call->ClearInlineInfo();
 #ifdef UNIX_X86_ABI
     call->gtFlags |= GTF_CALL_POP_ARGS;
 #endif // UNIX_X86_ABI
