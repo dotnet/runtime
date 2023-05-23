@@ -178,10 +178,7 @@ public class MarshalingPInvokeScanner : Task
     private static string[] ScanAssemblies(string[] assemblies)
     {
         HashSet<string> incompatible = new HashSet<string>();
-
         PathAssemblyResolver resolver = new PathAssemblyResolver(assemblies);
-        using MetadataLoadContext mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
-
         MinimalMarshalingTypeCompatibilityProvider mmtcp =  new MinimalMarshalingTypeCompatibilityProvider();
         foreach (string aname in assemblies)
         {
