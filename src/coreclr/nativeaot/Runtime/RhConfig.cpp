@@ -136,12 +136,12 @@ bool RhConfig::ReadConfigValue(_In_z_ const char *name, uint64_t* pValue, bool d
     return false;
 }
 
-bool RhConfig::ReadKnobValue(_In_z_ const char *name, uint64_t* pValue, bool decimal)
+bool RhConfig::ReadKnobValue(_In_z_ const char *name, uint64_t* pValue)
 {
     const char *embeddedValue = nullptr;
     if (GetEmbeddedKnob(name, &embeddedValue))
     {
-        *pValue = strtoull(embeddedValue, NULL, decimal ? 10 : 16);
+        *pValue = strtoull(embeddedValue, NULL, 10);
         return true;
     }
 

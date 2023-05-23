@@ -1411,7 +1411,7 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
 
     if (publicKey)
     {
-        if (g_pRhConfig->ReadKnobValue(publicKey, &uiValue, true))
+        if (g_pRhConfig->ReadKnobValue(publicKey, &uiValue))
         {
             *value = uiValue;
             return true;

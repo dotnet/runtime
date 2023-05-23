@@ -49,7 +49,7 @@ public:
     };
 
     bool ReadConfigValue(_In_z_ const char* wszName, uint64_t* pValue, bool decimal = false);
-    bool ReadKnobValue(_In_z_ const char* wszName, uint64_t* pValue, bool decimal = false);
+    bool ReadKnobValue(_In_z_ const char* wszName, uint64_t* pValue);
 
 #define DEFINE_VALUE_ACCESSOR(_name, defaultVal)        \
     uint64_t Get##_name()                                 \
