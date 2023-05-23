@@ -22,6 +22,7 @@ namespace System.IO
             // Try to delete the destination file if we're overwriting.
             if (error == Interop.Error.EEXIST && overwrite)
             {
+                /*
                 // Read FileStatus of destination file to determine how to continue (we need to check that
                 // destination doesn't point to the same file as the source file so we can fail appropriately)
                 int destError = Interop.Sys.Stat(destFullPath, out Interop.Sys.FileStatus destStat);
@@ -52,6 +53,7 @@ namespace System.IO
                         throw new IOException(SR.Format(SR.IO_SharingViolation_File, destFullPath));
                     }
                 }
+                */
 
                 // Try deleting destination:
                 // Delete the destination. This should fail on directories.
