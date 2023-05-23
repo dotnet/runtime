@@ -80,7 +80,8 @@ export class StringDecoder {
         
             // BEWARE: In some cases, `instanceof SharedArrayBuffer` returns false even though buffer is an SAB.
             // Patch adapted from https://github.com/emscripten-core/emscripten/pull/16994
-            const subArray = typeof SharedArrayBuffer !== "undefined" && Object.prototype.toString.call(Module.HEAPU8.buffer) === "[object SharedArrayBuffer]"
+            // See also https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/toStringTag
+            const subArray = typeof SharedArrayBuffer !== "undefined" && Module.HEAPU8.buffer[Symbol.toStringTag] === "SharedArrayBuffer"
                 ? Module.HEAPU8.slice(<any>start, <any>end)
                 : Module.HEAPU8.subarray(<any>start, <any>end);
 
