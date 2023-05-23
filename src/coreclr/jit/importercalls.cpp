@@ -879,7 +879,21 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     }
 
     //-------------------------------------------------------------------------
-    // The main group of arguments
+    // The main group of arguments, and the this pointer.
+
+    // 'this' is pushed on the IL stack before all call args, but if this is a
+    // constrained call 'this' is a byref that may need to be dereferenced.
+    // That dereference should happen _after_ all args, so we need to spill
+    // them if they can interfere.
+    bool hasThis;
+    hasThis = ((mflags & CORINFO_FLG_STATIC) == 0) && ((sig->callConv & CORINFO_CALLCONV_EXPLICITTHIS) == 0) &&
+              ((opcode != CEE_NEWOBJ) || (newobjThis != nullptr));
+
+    if (hasThis && (constraintCallThisTransform == CORINFO_DEREF_THIS))
+    {
+        impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG(
+                                       "constrained call requires dereference for 'this' right before call"));
+    }
 
     impPopCallArgs(sig, call->AsCall());
     if (extraArg.Node != nullptr)
@@ -899,8 +913,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     //-------------------------------------------------------------------------
     // The "this" pointer
 
-    if (((mflags & CORINFO_FLG_STATIC) == 0) && ((sig->callConv & CORINFO_CALLCONV_EXPLICITTHIS) == 0) &&
-        !((opcode == CEE_NEWOBJ) && (newobjThis == nullptr)))
+    if (hasThis)
     {
         GenTree* obj;
 
