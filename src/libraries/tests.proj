@@ -639,11 +639,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'tvos'">
-    <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
-                      BuildInParallel="false" />
-    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/80911 -->
-    <!-- <ProjectReference Include="$(MonoProjectRoot)sample\iOS-NativeAOT\Program.csproj"
-                      BuildInParallel="false" /> -->
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\Device\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
