@@ -12278,8 +12278,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
                 //
                 bool thisIsSingleReg = isSingleRegister(newRelatedPreferences);
                 if (!thisIsSingleReg ||
-                    (finalRelatedInterval->isLocalVar &&
-                     linearScan->isFree(linearScan->getRegisterRecord(genRegNumFromMask(newRelatedPreferences)))))
+                    linearScan->isFree(linearScan->getRegisterRecord(genRegNumFromMask(newRelatedPreferences))))
                 {
                     relatedPreferences = newRelatedPreferences;
                     // If this Interval has a downstream def without a single-register preference, continue to iterate.
