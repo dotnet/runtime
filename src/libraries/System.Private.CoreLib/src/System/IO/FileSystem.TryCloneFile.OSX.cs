@@ -23,7 +23,7 @@ namespace System.IO
             if (error == Interop.Error.EEXIST && overwrite)
             {
                 // Get the file permissions for source file
-                UnixFileMode filePermissions = srcStat.Mode & SafeFileHandle.PermissionMask;
+                UnixFileMode filePermissions = (UnixFileMode)srcStat.Mode & SafeFileHandle.PermissionMask;
 
                 // Read FileStatus of destination file to determine how to continue (we need to check that
                 // destination doesn't point to the same file as the source file so we can fail appropriately)
