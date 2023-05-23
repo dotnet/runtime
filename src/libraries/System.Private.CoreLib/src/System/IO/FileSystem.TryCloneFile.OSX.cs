@@ -9,7 +9,7 @@ namespace System.IO
     {
         private static partial bool TryCloneFile(string sourceFullPath, in Interop.Sys.FileStatus srcStat, string destFullPath, bool overwrite)
         {
-            //get the file permissions for source file
+            // get the file permissions for source file
             UnixFileMode filePermissions = srcStat.Mode & SafeFileHandle.PermissionMask;
 
             // Read FileStatus of destination file to determine how to continue
