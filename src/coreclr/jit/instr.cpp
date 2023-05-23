@@ -335,6 +335,22 @@ bool CodeGenInterface::instIsFP(instruction ins)
 #endif
 }
 
+#if defined(TARGET_XARCH)
+/*****************************************************************************
+ *
+ *  Returns non-zero if the given CPU instruction is an embedded broadcast
+ *  compatible instruction.
+ */
+
+// static inline
+bool CodeGenInterface::instIsEmbeddedBroadcastCompatible(instruction ins)
+{
+    assert((unsigned)ins < ArrLen(instInfo));
+
+    return (instInfo[ins] & INS_Flags_EmbeddedBroadcastSupported) != 0;
+}
+#endif // TARGET_XARCH
+
 /*****************************************************************************
  *
  *  Generate a set instruction.
@@ -1207,18 +1223,19 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
     {
         return false;
     }
-    // need to check if the datatype is EB compatible, say 32-, 64-bit.
-    insFlags flags                    = instInfo[ins];
-    bool     IsEmbBroadcastCompatible = (flags & INS_Flags_EmbeddedBroadcastSupported) != 0;
+
+    bool IsEmbBroadcastCompatible = instIsEmbeddedBroadcastCompatible(ins);
     if (!IsEmbBroadcastCompatible)
     {
         return false;
     }
 
-    insFlags inputSize = static_cast<insFlags>((CodeGenInterface::instInfo[ins] & Input_Mask));
-
     // Embedded broadcast can be applied when operands are in the following forms.
-    // 1. Broadcast -> CreateScalar -> LCL_VAR/CNS
+    // 1. (contained)Broadcast -> ContainedNode
+    if (!op->isContained() || !op->OperIsHWIntrinsic())
+    {
+        return false;
+    }
     bool IsEmbBroadcastEnabled = false;
     switch (op->OperGet())
     {
@@ -1239,7 +1256,7 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
     // 1. embedded broadcast compatible intrinsics
     // 2. proper forms on the intrinsic operands.
     // 3. EVEX enabled.
-    return IsEmbBroadcastCompatible && IsEmbBroadcastEnabled && GetEmitter()->UseEvexEncoding();
+    return IsEmbBroadcastCompatible && IsEmbBroadcastEnabled;
 }
 #endif //  TARGET_XARCH && FEATURE_HW_INTRINSICS
 

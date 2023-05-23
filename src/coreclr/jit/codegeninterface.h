@@ -127,7 +127,9 @@ private:
 #define INST_FP 0x01 // is it a FP instruction?
 public:
     static bool instIsFP(instruction ins);
-
+#if defined(TARGET_XARCH)
+    static bool instIsEmbeddedBroadcastCompatible(instruction ins);
+#endif // TARGET_XARCH
     //-------------------------------------------------------------------------
     // Liveness-related fields & methods
 public:

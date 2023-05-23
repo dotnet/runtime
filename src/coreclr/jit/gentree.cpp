@@ -19144,8 +19144,8 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_AVX2_BroadcastScalarToVector256:
         case NI_AVX512F_BroadcastScalarToVector512:
         {
-            // These intrinsic operations are contained as part of the operand of embedded broadcast compatiable
-            // instriction
+            // These intrinsic operations are contained as part of the operand of embedded broadcast compatible
+            // instruction
             return true;
         }
 

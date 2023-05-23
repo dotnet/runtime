@@ -7515,70 +7515,23 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL) &&
                 parentNode->OperIsEmbBroadcastCompatible())
             {
-                GenTree* createScalar = childNode->AsHWIntrinsic()->Op(1);
-                switch (createScalar->OperGet())
+                GenTree* broadcastOperand = childNode->AsHWIntrinsic()->Op(1);
+                bool     childSupportsRegOptional;
+                if (broadcastOperand->OperIs(GT_LCL_VAR))
                 {
-                    case GT_HWINTRINSIC:
-                    {
-                        if (createScalar->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe)
-                        {
-                            // Handle the case for:
-                            // BroadcastScalarTovector -> CreateScalarUnsafe -> LCL_VAR/CNS_DBL.
-                            GenTree* scalar = createScalar->AsHWIntrinsic()->Op(1);
-                            if (scalar->OperIs(GT_LCL_VAR))
-                            {
-                                switch (scalar->TypeGet())
-                                {
-                                    case TYP_FLOAT:
-                                    case TYP_DOUBLE:
-                                    {
-                                        const unsigned opLclNum = scalar->AsLclVar()->GetLclNum();
-                                        comp->lvaSetVarDoNotEnregister(
-                                            opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
-                                        MakeSrcContained(createScalar, scalar);
-                                        MakeSrcContained(childNode, createScalar);
-                                        return true;
-                                    }
-
-                                    default:
-                                        return false;
-                                }
-                            }
-                            else if (scalar->OperIs(GT_CNS_DBL))
-                            {
-                                MakeSrcContained(createScalar, scalar);
-                                MakeSrcContained(childNode, createScalar);
-                                return true;
-                            }
-                        }
-                        break;
-                    }
-                    case GT_LCL_VAR:
-                    {
-                        // if the operand of the CreateScalarUnsafe node is in Integer type, CreateScalarUnsafe node
-                        // will be
-                        // fold, we need to specially handle this case.
-                        assert(createScalar->TypeIs(TYP_INT) || createScalar->TypeIs(TYP_UINT) ||
-                               createScalar->TypeIs(TYP_LONG) || createScalar->TypeIs(TYP_ULONG));
-                        const unsigned opLclNum = createScalar->AsLclVar()->GetLclNum();
-                        comp->lvaSetVarDoNotEnregister(opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
-                        MakeSrcContained(childNode, createScalar);
-                        return true;
-                    }
-                    case GT_CNS_INT:
-                    case GT_IND:
-                    {
-                        // For CNS_INT, similar to the GT_LVL_VAR case.
-                        // If the operand of the CreateScalarUnsafe node is in Integer type, CreateScalarUnsafe node
-                        // will be
-                        // fold, we need to specially handle this case.
-
-                        // For IND, handle the case for Avx2.BroadcastScalarToVector*(T*)
-                        MakeSrcContained(childNode, createScalar);
-                        return true;
-                    }
-                    default:
-                        break;
+                    const unsigned opLclNum = broadcastOperand->AsLclVar()->GetLclNum();
+                    comp->lvaSetVarDoNotEnregister(opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+                }
+                else if (broadcastOperand->OperIs(GT_HWINTRINSIC) &&
+                         broadcastOperand->AsHWIntrinsic()->Op(1)->OperIs(GT_LCL_VAR))
+                {
+                    assert(broadcastOperand->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe);
+                    const unsigned opLclNum = broadcastOperand->AsHWIntrinsic()->Op(1)->AsLclVar()->GetLclNum();
+                    comp->lvaSetVarDoNotEnregister(opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+                }
+                if (IsContainableHWIntrinsicOp(childNode->AsHWIntrinsic(), broadcastOperand, &childSupportsRegOptional))
+                {
+                    return true;
                 }
             }
             return false;
@@ -7612,12 +7565,8 @@ void Lowering::MakeHWIntrinsicSrcContained(GenTreeHWIntrinsic* parentNode, GenTr
 {
     assert(childNode->OperIs(GT_CNS_VEC));
     GenTreeVecCon* vecCon = childNode->AsVecCon();
-    if (vecCon->IsAllBitsSet() || vecCon->IsZero())
-    {
-        // do not enable embedded broadcast for all 1/0 vectors.
-        MakeSrcContained(parentNode, childNode);
-        return;
-    }
+    assert(!vecCon->IsAllBitsSet());
+    assert(!vecCon->IsZero());
     var_types   simdType            = parentNode->TypeGet();
     var_types   simdBaseType        = parentNode->GetSimdBaseType();
     CorInfoType simdBaseJitType     = parentNode->GetSimdBaseJitType();
@@ -7675,6 +7624,10 @@ void Lowering::MakeHWIntrinsicSrcContained(GenTreeHWIntrinsic* parentNode, GenTr
         else if (simdType == TYP_SIMD64)
         {
             broadcastName = NI_AVX512F_BroadcastScalarToVector512;
+        }
+        else
+        {
+            assert(simdType == TYP_SIMD16);
         }
         GenTree* constScalar = nullptr;
         switch (simdBaseType)
@@ -8071,8 +8024,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                               (intrinsicId == NI_BMI2_X64_MultiplyNoFlags)) &&
                              IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
                     {
-                        if (op1->OperIs(GT_CNS_VEC) && op1->TypeIs(TYP_SIMD16, TYP_SIMD32, TYP_SIMD64) &&
-                            comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
+                        if (op1->OperIs(GT_CNS_VEC) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
                             node->OperIsEmbBroadcastCompatible())
                         {
                             MakeHWIntrinsicSrcContained(node, op1);
