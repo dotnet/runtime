@@ -183,10 +183,10 @@ inline void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
     g_theGCToCLR->StompWriteBarrier(args);
 }
 
-inline void GCToEEInterface::EnableFinalization(bool foundFinalizers)
+inline void GCToEEInterface::EnableFinalization(bool gcHasWorkForFinalizerThread)
 {
     assert(g_theGCToCLR != nullptr);
-    g_theGCToCLR->EnableFinalization(foundFinalizers);
+    g_theGCToCLR->EnableFinalization(gcHasWorkForFinalizerThread);
 }
 
 inline void GCToEEInterface::HandleFatalError(unsigned int exitCode)

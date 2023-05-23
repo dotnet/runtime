@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.CodeAnalysis;
-
 namespace System.Text.Json.SourceGeneration
 {
     /// <summary>
@@ -26,6 +24,6 @@ namespace System.Text.Json.SourceGeneration
     {
         public required ImmutableEquatableArray<ContextGenerationSpec> ContextGenerationSpecs { get; init; }
 
-        public required ImmutableEquatableArray<Diagnostic> Diagnostics { get; init; }
+        public required ImmutableEquatableArray<DiagnosticInfo> Diagnostics { get; init; }
     }
 }

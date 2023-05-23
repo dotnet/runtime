@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace System.Reflection.Emit
 {
-    internal sealed class DynamicILGenerator : ILGenerator
+    internal sealed class DynamicILGenerator : RuntimeILGenerator
     {
         internal DynamicScope m_scope;
         private readonly int m_methodSigToken;
@@ -105,7 +105,6 @@ namespace System.Reflection.Emit
             }
 
             UpdateStackSize(opcode, stackchange);
-
             PutInteger4(token);
         }
 
@@ -131,7 +130,6 @@ namespace System.Reflection.Emit
 
             // need to sort out the stack size story
             UpdateStackSize(opcode, 1);
-
             PutInteger4(token);
         }
 

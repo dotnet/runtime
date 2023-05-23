@@ -1054,8 +1054,80 @@
         <ExcludeList Include="$(XunitTestBinBase)/reflection/SetValue/TrySetReadonlyStaticField/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/200</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/**/*">
-            <Issue>EventPipe</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventcounter/eventcounter/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventcounter/gh53564/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventcounter/incrementingeventcounter/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventcounter/incrementingpollingcounter/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventcounter/pollingcounter/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventcounter/regression-25709/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventcounter/regression-46938/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventactivityidcontrol/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventlistener/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/bigevent/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/buffersize/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/config/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/diagnosticport/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/enabledisable/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/gcdump/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/pauseonstart/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/processenvironment/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/processinfo/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/processinfo2/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/providervalidation/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/reverse/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/reverseouter/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/runtimeeventsource/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b426654/b426654/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/208</Issue>
@@ -1095,6 +1167,15 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\Interop\PInvoke\Variant\VariantTestComWrappers\*">
             <Issue>https://github.com/dotnet/runtimelab/issues/306</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Invoke\thiscall\thisnull_d\*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: instance method called with null this</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Invoke\thiscall\thisnull_r\*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: instance method called with null this</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Regressions\Regression3_Regressions\*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Assembly.LoadFrom</Issue>
         </ExcludeList>
 
         <!-- Complex constrained calls -->
@@ -1157,6 +1238,11 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader\classloader\MethodImpl\CovariantReturns\UnitTest\UnitTest_GVM\*" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader\classloader\MethodImpl\CovariantReturns\UnitTest\UnitTestDelegates\*" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader\classloader\MethodImpl\CovariantReturns\UnitTest\OverrideMoreDerivedReturn\*" />
+
+        <!-- Requires Debug build -->
+        <ExcludeList Include="$(XunitTestBinBase)/JIT\Directed\debugging\poisoning\poison\poison\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT\Methodical\eh\finallyexec\nestedfinallycall_d\*" /> <!-- probably RyuJIT bug: https://github.com/dotnet/runtime/issues/86561 -->
+        <ExcludeList Include="$(XunitTestBinBase)/JIT\Methodical\eh\finallyexec\nestedfinallycall_r\*" /> <!-- probably RyuJIT bug: https://github.com/dotnet/runtime/issues/86561 -->
     </ItemGroup>
 
     <!-- run.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.

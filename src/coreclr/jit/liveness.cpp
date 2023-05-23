@@ -1263,15 +1263,16 @@ class LiveVarAnalysis
         }
 
         // Additionally, union in all the live-in tracked vars of successors.
-        for (BasicBlock* succ : block->GetAllSuccs(m_compiler))
-        {
+        block->VisitAllSuccs(m_compiler, [=](BasicBlock* succ) {
             VarSetOps::UnionD(m_compiler, m_liveOut, succ->bbLiveIn);
             m_memoryLiveOut |= succ->bbMemoryLiveIn;
             if (succ->bbNum <= block->bbNum)
             {
                 m_hasPossibleBackEdge = true;
             }
-        }
+
+            return BasicBlockVisit::Continue;
+        });
 
         /* For lvaKeepAliveAndReportThis methods, "this" has to be kept alive everywhere
            Note that a function may end in a throw on an infinite loop (as opposed to a return).
