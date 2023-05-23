@@ -84,8 +84,25 @@ namespace System.IO
                 }
             }
 
-            // Fall back to regular copy
-            return false;
+            // Check if it's not supported, or if they're on different filesystems.
+            if (error == Interop.Error.ENOTSUP || error == Interop.Error.EXDEV)
+            {
+                // Fall back to normal copy
+                return false;
+            }
+
+            // Check we didn't get an error due to 'invalid flags' (which should never happen)
+            Debug.Assert(error != Interop.Error.EINVAL);
+            if (error == Interop.Error.EINVAL)
+            {
+                // If we do somehow get here in release, we probably don't want
+                // copying to completely fail, so fall back to regular copy.
+                return false;
+            }
+
+            // Throw the appropriate exception
+            Debug.Assert(error != Interop.Error.SUCCESS); // We shouldn't fail with success
+            throw Interop.GetExceptionForIoErrno(error.Info());
         }
     }
 }
