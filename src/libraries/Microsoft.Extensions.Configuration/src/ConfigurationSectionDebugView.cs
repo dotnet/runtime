@@ -3,21 +3,27 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace Microsoft.Extensions.Configuration
 {
-    internal sealed class ConfigurationItemDebugView
+    internal sealed class ConfigurationSectionDebugView
     {
-        public ConfigurationItemDebugView(string path, string? value, IConfigurationProvider? provider)
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private readonly IConfigurationSection _section;
+
+        public ConfigurationSectionDebugView(IConfigurationSection section, string path, IConfigurationProvider? provider)
         {
+            _section = section;
             Path = path;
-            Value = value;
             Provider = provider;
         }
 
         public string Path { get; }
-        public string? Value { get; }
+        public string Key => _section.Key;
+        public string FullPath => _section.Path;
+        public string? Value => _section.Value;
         public IConfigurationProvider? Provider { get; }
 
         public override string ToString()
@@ -34,22 +40,23 @@ namespace Microsoft.Extensions.Configuration
             return s;
         }
 
-        internal static List<ConfigurationItemDebugView> FromConfiguration(IConfiguration current, IConfigurationRoot root, bool makePathsRelative = true)
+        internal static List<ConfigurationSectionDebugView> FromConfiguration(IConfiguration current, IConfigurationRoot root)
         {
-            var data = new List<ConfigurationItemDebugView>();
+            var data = new List<ConfigurationSectionDebugView>();
 
             var stack = new Stack<IConfiguration>();
             stack.Push(current);
-            int prefixLength = (makePathsRelative && current is IConfigurationSection rootSection) ? rootSection.Path.Length + 1 : 0;
+            int prefixLength = (current is IConfigurationSection rootSection) ? rootSection.Path.Length + 1 : 0;
             while (stack.Count > 0)
             {
                 IConfiguration config = stack.Pop();
                 // Don't include the sections value if we are removing paths, since it will be an empty key
-                if (config is IConfigurationSection section && (!makePathsRelative || config != current))
+                if (config is IConfigurationSection section && config != current)
                 {
-                    (string? value, IConfigurationProvider? provider) = GetValueAndProvider(root, section.Path);
+                    IConfigurationProvider? provider = GetValueProvider(root, section.Path);
+                    string path = section.Path.Substring(prefixLength);
 
-                    data.Add(new ConfigurationItemDebugView(section.Path.Substring(prefixLength), value, provider));
+                    data.Add(new ConfigurationSectionDebugView(section, path, provider));
                 }
                 foreach (IConfigurationSection child in config.GetChildren())
                 {
@@ -61,17 +68,17 @@ namespace Microsoft.Extensions.Configuration
             return data;
         }
 
-        internal static (string? Value, IConfigurationProvider? Provider) GetValueAndProvider(IConfigurationRoot root, string key)
+        internal static IConfigurationProvider? GetValueProvider(IConfigurationRoot root, string key)
         {
             foreach (IConfigurationProvider provider in root.Providers.Reverse())
             {
-                if (provider.TryGet(key, out string? value))
+                if (provider.TryGet(key, out _))
                 {
-                    return (value, provider);
+                    return provider;
                 }
             }
 
-            return (null, null);
+            return null;
         }
     }
 }

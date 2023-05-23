@@ -164,7 +164,7 @@ namespace Microsoft.Extensions.Configuration
 
         private string DebuggerToString()
         {
-            return $"Data = {ConfigurationItemDebugView.FromConfiguration(this, this).Count}";
+            return $"Sections = {ConfigurationSectionDebugView.FromConfiguration(this, this).Count}";
         }
 
         private sealed class ConfigurationManagerDebugView
@@ -177,7 +177,7 @@ namespace Microsoft.Extensions.Configuration
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public ConfigurationItemDebugView[] Items => ConfigurationItemDebugView.FromConfiguration(_current, _current).ToArray();
+            public ConfigurationSectionDebugView[] Items => ConfigurationSectionDebugView.FromConfiguration(_current, _current).ToArray();
         }
 
         private sealed class ConfigurationSources : IList<IConfigurationSource>

@@ -103,15 +103,15 @@ namespace Microsoft.Extensions.Configuration
         private string DebuggerToString()
         {
             var s = $"Path = {Path}";
-            var childCount = ConfigurationItemDebugView.FromConfiguration(this, _root).Count;
+            var childCount = Configuration.ConfigurationSectionDebugView.FromConfiguration(this, _root).Count;
             if (childCount > 0)
             {
-                s += $", Children = {childCount}";
+                s += $", Sections = {childCount}";
             }
             if (Value is not null)
             {
                 s += $", Value = {Value}";
-                (_, IConfigurationProvider? provider) = ConfigurationItemDebugView.GetValueAndProvider(_root, Path);
+                IConfigurationProvider? provider = Configuration.ConfigurationSectionDebugView.GetValueProvider(_root, Path);
                 if (provider != null)
                 {
                     s += $", Provider = {provider}";
@@ -128,13 +128,14 @@ namespace Microsoft.Extensions.Configuration
             public ConfigurationSectionDebugView(ConfigurationSection current)
             {
                 _current = current;
-                (_, _provider) = ConfigurationItemDebugView.GetValueAndProvider(_current._root, _current.Path);
+                _provider = Configuration.ConfigurationSectionDebugView.GetValueProvider(_current._root, _current.Path);
             }
 
             public string Path => _current.Path;
+            public string Key => _current.Key;
             public string? Value => _current.Value;
             public IConfigurationProvider? Provider => _provider;
-            public List<ConfigurationItemDebugView> Children => ConfigurationItemDebugView.FromConfiguration(_current, _current._root);
+            public List<Configuration.ConfigurationSectionDebugView> Sections => Configuration.ConfigurationSectionDebugView.FromConfiguration(_current, _current._root);
         }
     }
 }

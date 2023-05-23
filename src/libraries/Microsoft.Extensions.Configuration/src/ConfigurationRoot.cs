@@ -141,7 +141,7 @@ namespace Microsoft.Extensions.Configuration
 
         private string DebuggerToString()
         {
-            return $"Children = {ConfigurationItemDebugView.FromConfiguration(this, this).Count}";
+            return $"Sections = {ConfigurationSectionDebugView.FromConfiguration(this, this).Count}";
         }
 
         private sealed class ConfigurationRootDebugView
@@ -154,7 +154,7 @@ namespace Microsoft.Extensions.Configuration
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public ConfigurationItemDebugView[] Items => ConfigurationItemDebugView.FromConfiguration(_current, _current).ToArray();
+            public ConfigurationSectionDebugView[] Items => ConfigurationSectionDebugView.FromConfiguration(_current, _current).ToArray();
         }
     }
 }
