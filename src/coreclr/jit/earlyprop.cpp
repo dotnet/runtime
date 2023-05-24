@@ -771,12 +771,6 @@ bool Compiler::optCanMoveNullCheckPastTree(GenTree* tree,
             {
                 // We disallow stores to global memory.
                 result = tree->OperIsLocalStore() && !lvaGetDesc(tree->AsLclVarCommon())->IsAddressExposed();
-
-                // TODO-ASG-Cleanup: delete this zero-diff quirk. Some setup args for by-ref args do not have GLOB_REF.
-                if ((tree->gtFlags & GTF_GLOB_REF) == 0)
-                {
-                    result = true;
-                }
             }
         }
         else if (checkSideEffectSummary)
