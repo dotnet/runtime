@@ -1273,7 +1273,7 @@ private:
             else
             {
                 node->ChangeOper(GT_LCL_VAR);
-                node->gtFlags &= (GTF_NODE_MASK | GTF_DONT_CSE); // TODO-ASG-Cleanup: delete this zero-diff quirk.
+                node->gtFlags = GTF_EMPTY;
             }
             node->AsLclVar()->SetLclNum(fieldLclNum);
             node->gtType = fieldType;
