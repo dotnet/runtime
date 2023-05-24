@@ -30,7 +30,7 @@ steps:
         # Arcade uses this SDK instead of trying to restore one.
         DotNetCoreSdkDir: /usr/local/dotnet
 
-  - script: $(Build.SourcesDirectory)/eng/common/msbuild.sh --ci ${{ parameters.sendParams }}
+  - script: $(Build.SourcesDirectory)/eng/common/msbuild.sh --ci --warnaserror false ${{ parameters.sendParams }}
     displayName: ${{ parameters.displayName }} (Unix)
     condition: and(succeeded(), ${{ and(ne(parameters.condition, false), ne(parameters.sendParams, '')) }})
     env: ${{ parameters.environment }}
