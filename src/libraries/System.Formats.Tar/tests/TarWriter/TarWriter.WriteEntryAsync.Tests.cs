@@ -473,9 +473,10 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Gnu)]
         public async Task Write_TwoEntries_With_UnseekableDataStreams_Async(TarEntryFormat entryFormat)
         {
+            byte[] expectedBytes = new byte[] { 0x1, 0x2, 0x3, 0x4, 0x5 };
+
             await using MemoryStream internalDataStream1 = new();
-            byte[] expectedBytes1 = new byte[] { 0x1, 0x2, 0x3, 0x4, 0x5 };
-            await internalDataStream1.WriteAsync(expectedBytes1.AsMemory());
+            await internalDataStream1.WriteAsync(expectedBytes.AsMemory());
             internalDataStream1.Position = 0;
 
             TarEntryType fileEntryType = GetTarEntryTypeForTarEntryFormat(TarEntryType.RegularFile, entryFormat);
@@ -485,8 +486,7 @@ namespace System.Formats.Tar.Tests
             entry1.DataStream = unseekableDataStream1;
 
             await using MemoryStream internalDataStream2 = new();
-            byte[] expectedBytes2 = new byte[] { 0x1, 0x2, 0x3, 0x4, 0x5 };
-            await internalDataStream2.WriteAsync(expectedBytes2.AsMemory());
+            await internalDataStream2.WriteAsync(expectedBytes.AsMemory());
             internalDataStream2.Position = 0;
 
             await using WrappedStream unseekableDataStream2 = new(internalDataStream2, canRead: true, canWrite: false, canSeek: false);
@@ -508,12 +508,12 @@ namespace System.Formats.Tar.Tests
                 TarEntry readEntry = await reader.GetNextEntryAsync();
                 Assert.NotNull(readEntry);
                 await readEntry.DataStream.ReadExactlyAsync(actualBytes);
-                Assert.Equal(expectedBytes1, actualBytes);
+                Assert.Equal(expectedBytes, actualBytes);
 
                 readEntry = await reader.GetNextEntryAsync();
                 Assert.NotNull(readEntry);
                 await readEntry.DataStream.ReadExactlyAsync(actualBytes);
-                Assert.Equal(expectedBytes2, actualBytes);
+                Assert.Equal(expectedBytes, actualBytes);
 
                 Assert.Null(await reader.GetNextEntryAsync());
             }

@@ -554,9 +554,10 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Gnu)]
         public void Write_TwoEntries_With_UnseekableDataStreams(TarEntryFormat entryFormat)
         {
+            byte[] expectedBytes = new byte[] { 0x1, 0x2, 0x3, 0x4, 0x5 };
+
             using MemoryStream internalDataStream1 = new();
-            byte[] expectedBytes1 = new byte[] { 0x1, 0x2, 0x3, 0x4, 0x5 };
-            internalDataStream1.Write(expectedBytes1.AsSpan());
+            internalDataStream1.Write(expectedBytes.AsSpan());
             internalDataStream1.Position = 0;
 
             TarEntryType fileEntryType = GetTarEntryTypeForTarEntryFormat(TarEntryType.RegularFile, entryFormat);
@@ -566,8 +567,7 @@ namespace System.Formats.Tar.Tests
             entry1.DataStream = unseekableDataStream1;
 
             using MemoryStream internalDataStream2 = new();
-            byte[] expectedBytes2 = new byte[] { 0x1, 0x2, 0x3, 0x4, 0x5 };
-            internalDataStream2.Write(expectedBytes2.AsSpan());
+            internalDataStream2.Write(expectedBytes.AsSpan());
             internalDataStream2.Position = 0;
 
             using WrappedStream unseekableDataStream2 = new(internalDataStream2, canRead: true, canWrite: false, canSeek: false);
@@ -589,12 +589,12 @@ namespace System.Formats.Tar.Tests
                 TarEntry readEntry = reader.GetNextEntry();
                 Assert.NotNull(readEntry);
                 readEntry.DataStream.ReadExactly(actualBytes);
-                Assert.Equal(expectedBytes1, actualBytes);
+                Assert.Equal(expectedBytes, actualBytes);
 
                 readEntry = reader.GetNextEntry();
                 Assert.NotNull(readEntry);
                 readEntry.DataStream.ReadExactly(actualBytes);
-                Assert.Equal(expectedBytes2, actualBytes);
+                Assert.Equal(expectedBytes, actualBytes);
 
                 Assert.Null(reader.GetNextEntry());
             }
