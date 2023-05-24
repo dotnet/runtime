@@ -169,9 +169,6 @@ public class ILStrip : Microsoft.Build.Utilities.Task
                         MethodDefinition mdef = mr.GetMethodDefinition(mdefh);
                         int rva = mdef.RelativeVirtualAddress;
 
-                        Console.WriteLine(mr.GetString(mdef.Name));
-                        Console.WriteLine(methodToken);
-
                         MethodBodyBlock mb = peReader.GetMethodBody(rva);
                         int methodSize = mb.Size;
                         int sectionIndex = peReader.PEHeaders.GetContainingSectionIndex(rva);
@@ -186,12 +183,8 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
                         memStream.Position = actualLoc;
                         int firstbyte = memStream.ReadByte();
-                        Console.WriteLine(firstbyte);
-
                         int headerFlag = firstbyte & 0b11;
-
                         int headerSize = headerFlag == 2 ? 1 : 4;
-                        Console.WriteLine(headerSize);
 
                         memStream.Position = actualLoc + headerSize;
                         memStream.Write(zeroBuffer, 0, methodSize - headerSize);
