@@ -991,6 +991,7 @@ MonoMethodSignature  *mono_metadata_signature_dup_full (MonoImage *image,MonoMet
 MonoMethodSignature  *mono_metadata_signature_dup_mempool (MonoMemPool *mp, MonoMethodSignature *sig);
 MonoMethodSignature  *mono_metadata_signature_dup_mem_manager (MonoMemoryManager *mem_manager, MonoMethodSignature *sig);
 MonoMethodSignature  *mono_metadata_signature_dup_add_this (MonoImage *image, MonoMethodSignature *sig, MonoClass *klass);
+MonoMethodSignature  *mono_metadata_signature_dup_delegate_invoke_to_target (MonoMethodSignature *sig);
 
 MonoGenericInst *
 mono_get_shared_generic_inst (MonoGenericContainer *container);

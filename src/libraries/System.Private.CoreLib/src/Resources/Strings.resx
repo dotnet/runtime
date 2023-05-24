@@ -2042,21 +2042,6 @@
   <data name="CustomMarshaler_NullReturnForGetInstance" xml:space="preserve">
     <value>A call to GetInstance() for custom marshaler '{0}' returned null, which is not allowed.</value>
   </data>
-  <data name="event_TaskCompleted" xml:space="preserve">
-    <value>Task {2} completed.</value>
-  </data>
-  <data name="event_TaskScheduled" xml:space="preserve">
-    <value>Task {2} scheduled to TaskScheduler {0}.</value>
-  </data>
-  <data name="event_TaskStarted" xml:space="preserve">
-    <value>Task {2} executing.</value>
-  </data>
-  <data name="event_TaskWaitBegin" xml:space="preserve">
-    <value>Beginning wait ({3}) on Task {2}.</value>
-  </data>
-  <data name="event_TaskWaitEnd" xml:space="preserve">
-    <value>Ending wait on Task {2}.</value>
-  </data>
   <data name="EventSource_AbstractMustNotDeclareEventMethods" xml:space="preserve">
     <value>Abstract event source must not declare event methods ({0} with ID {1}).</value>
   </data>
@@ -3845,6 +3830,9 @@
   <data name="InvalidOperation_SuppliedInnerMustBeMarkedAggregation" xml:space="preserve">
     <value>Supplying a non-null inner should also be marked as Aggregated.</value>
   </data>
+  <data name="InvalidOperationException_NoGCRegionCallbackAlreadyRegistered" xml:space="preserve">
+    <value>A NoGCRegion callback is already registered.</value>
+  </data>
   <data name="Argument_SpansMustHaveSameLength" xml:space="preserve">
     <value>Length of items must be same as length of keys.</value>
   </data>
@@ -4052,6 +4040,12 @@
   <data name="InvalidOperationException_NoGCRegionNotInProgress" xml:space="preserve">
     <value>NoGCRegion mode must be set.</value>
   </data>
+  <data name="InvalidOperationException_HardLimitTooLow" xml:space="preserve">
+    <value>RefreshMemoryLimit failed with too low hard limit.</value>
+  </data>
+  <data name="InvalidOperationException_HardLimitInvalid" xml:space="preserve">
+    <value>RefreshMemoryLimit failed with invalid hard limit.</value>
+  </data>
   <data name="PlatformNotSupported_ReflectionEmit" xml:space="preserve">
     <value>Dynamic code generation is not supported on this platform.</value>
   </data>
@@ -4059,10 +4053,10 @@
     <value>AssemblyName.GetAssemblyName() is not supported on this platform.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptions" xml:space="preserve">
-    <value>CompareOptions = {0} are not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.</value>
+    <value>CompareOptions = {0} are not supported when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptionsForCulture" xml:space="preserve">
-    <value>CompareOptions = {0} are not supported for culture = {1} when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.</value>
+    <value>CompareOptions = {0} are not supported for culture = {1} when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithMatchLength" xml:space="preserve">
     <value>Match length calculation is not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this function.</value>
