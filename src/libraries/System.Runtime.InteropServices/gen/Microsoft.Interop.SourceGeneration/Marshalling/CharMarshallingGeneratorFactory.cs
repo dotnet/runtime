@@ -16,11 +16,13 @@ namespace Microsoft.Interop
 
         private readonly IMarshallingGeneratorFactory _inner;
         private readonly bool _useBlittableMarshallerForUtf16;
+        private readonly string _stringMarshallingAttributeProvider;
 
-        public CharMarshallingGeneratorFactory(IMarshallingGeneratorFactory inner, bool useBlittableMarshallerForUtf16)
+        public CharMarshallingGeneratorFactory(IMarshallingGeneratorFactory inner, bool useBlittableMarshallerForUtf16, string stringMarshallingAttributeProvider)
         {
             _inner = inner;
             _useBlittableMarshallerForUtf16 = useBlittableMarshallerForUtf16;
+            _stringMarshallingAttributeProvider = stringMarshallingAttributeProvider;
         }
 
         public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context)
@@ -41,7 +43,7 @@ namespace Microsoft.Interop
                 // [Compat] Require explicit marshalling information.
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = SR.MarshallingStringOrCharAsUndefinedNotSupported
+                    NotSupportedDetails = string.Format(SR.MarshallingStringOrCharAsUndefinedNotSupported, _stringMarshallingAttributeProvider)
                 };
             }
 
