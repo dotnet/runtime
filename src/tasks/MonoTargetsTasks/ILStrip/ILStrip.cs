@@ -69,6 +69,11 @@ public class ILStrip : Microsoft.Build.Utilities.Task
                 throw new ArgumentException($"'{nameof(MethodTokenFiles)}' is required.", nameof(MethodTokenFiles));
             }
 
+            if (!Directory.Exists(AssemblyPath))
+            {
+                throw new ArgumentException($"'{nameof(AssemblyPath)}' needs to be a valid path.", nameof(AssemblyPath));
+            }
+
             int allowedParallelism = DisableParallelStripping ? 1 : Math.Min(MethodTokenFiles.Length, Environment.ProcessorCount);
             if (BuildEngine is IBuildEngine9 be9)
                 allowedParallelism = be9.RequestCores(allowedParallelism);
@@ -76,7 +81,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
                                                         new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
                                                         (methodTokenFileItem, state) =>
                                                         {
-                                                            if (!TrimMethods(methodTokenFileItem))
+                                                            if (!TrimMethods(methodTokenFileItem, AssemblyPath))
                                                                 state.Stop();
                                                         });
 
@@ -117,22 +122,23 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         return true;
     }
 
-    private static bool TrimMethods(string methodTokenFileItem, string assemblyPath)
+    private bool TrimMethods(ITaskItem methodTokenFileItem, string assemblyPath)
     {
-        if (!File.Exists(methodTokenFileItem))
+        string methodTokenFile = methodTokenFileItem.ItemSpec;
+        if (!File.Exists(methodTokenFile))
         {
-            Log.LogMessage(MessageImportance.Low, $"[ILStrip] {methodTokenFileItem} doesn't exit.");
+            Log.LogMessage(MessageImportance.Low, $"[ILStrip] {methodTokenFile} doesn't exit.");
             return true;
         }
-        string[] log = File.ReadAllLines(methodTokenFileItem);
+        string[] log = File.ReadAllLines(methodTokenFile);
         if (log.Length <= 1)
         {
             // Frist line is assembly name
-            Log.LogMessage(MessageImportance.Low, $"[ILStrip] {methodTokenFileItem} doesn't contain any compiled method token.");
+            Log.LogMessage(MessageImportance.Low, $"[ILStrip] {methodTokenFile} doesn't contain any compiled method token.");
             return true;
         }
         string assemblyName = log[0];
-        int idxCompiledMethods = 1; 
+        int idxCompiledMethods = 1;
         string assemblyFilePath = Path.Combine(assemblyPath, (assemblyName + ".dll"));
         string trimmedAssemblyFilePath = Path.Combine(assemblyPath, (assemblyName + "_new.dll"));
         if (!File.Exists(assemblyFilePath))
@@ -140,13 +146,13 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             Log.LogMessage(MessageImportance.Low, $"[ILStrip] {assemblyFilePath} doesn't exit.");
             return true;
         }
-        
+
         using (FileStream fs = File.Open(assemblyFilePath, FileMode.Open),
                 os = File.Open(trimmedAssemblyFilePath, FileMode.Create))
         {
             MemoryStream memStream = new MemoryStream((int)fs.Length);
             fs.CopyTo(memStream);
-            
+
             fs.Position = 0;
             PEReader peReader = new PEReader(fs, PEStreamOptions.LeaveOpen);
             MetadataReader mr = peReader.GetMetadataReader();
@@ -162,7 +168,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
                     {
                         MethodDefinition mdef = mr.GetMethodDefinition(mdefh);
                         int rva = mdef.RelativeVirtualAddress;
-                        
+
                         Console.WriteLine(mr.GetString(mdef.Name));
                         Console.WriteLine(methodToken);
 
