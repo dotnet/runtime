@@ -9771,8 +9771,7 @@ DONE_MORPHING_CHILDREN:
     // Propagate comma throws.
     // If we are in the Valuenum CSE phase then don't morph away anything as these
     // nodes may have CSE defs/uses in them.
-    if (fgGlobalMorph && (oper != GT_COLON) &&
-        /* TODO-ASG-Cleanup: delete this zero-diff quirk */ !GenTree::OperIsStore(oper))
+    if (fgGlobalMorph && (oper != GT_COLON))
     {
         if ((op1 != nullptr) && fgIsCommaThrow(op1, true))
         {
