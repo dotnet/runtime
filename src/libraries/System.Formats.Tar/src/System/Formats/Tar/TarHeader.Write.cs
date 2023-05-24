@@ -660,11 +660,11 @@ namespace System.Formats.Tar
             {
                 Debug.Assert(paddingAfterData <= TarHelpers.RecordSize);
 
-                Span<byte> padding = stackalloc byte[TarHelpers.RecordSize];
-                padding = padding.Slice(0, paddingAfterData);
-                padding.Clear();
+                Span<byte> zeros = stackalloc byte[TarHelpers.RecordSize];
+                zeros = zeros.Slice(0, paddingAfterData);
+                zeros.Clear();
 
-                archiveStream.Write(padding);
+                archiveStream.Write(zeros);
             }
         }
 
@@ -676,10 +676,7 @@ namespace System.Formats.Tar
             {
                 Debug.Assert(paddingAfterData <= TarHelpers.RecordSize);
 
-                byte[] b = new byte[TarHelpers.RecordSize];
-                Memory<byte> padding = b.AsMemory();
-                padding = padding.Slice(0, paddingAfterData);
-
+                byte[] zeros = new byte[paddingAfterData];
                 return archiveStream.WriteAsync(padding, cancellationToken);
             }
 
