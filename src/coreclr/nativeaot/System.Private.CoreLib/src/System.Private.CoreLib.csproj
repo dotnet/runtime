@@ -280,10 +280,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetTickCount64.cs">
       <Link>Interop\Windows\Kernel32\Interop.GetTickCount64.cs</Link>
     </Compile>
-    <Compile Include="System\Threading\Timer.Windows.cs" Condition="'$(FeaturePortableTimer)' != 'true'" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.Timer.cs">
-      <Link>Interop\Windows\Kernel32\Interop.Timer.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.DynamicLoad.cs">
       <Link>Interop\Windows\Kernel32\Interop.DynamicLoad.cs</Link>
     </Compile>

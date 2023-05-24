@@ -1209,8 +1209,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Timeout.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimeoutHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PeriodicTimer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Timer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Portable.cs" Condition="'$(FeaturePortableTimer)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Timer.Portable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Timer.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Timer.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Timer.WindowsThreadPool.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Portable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Volatile.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitHandleCannotBeOpenedException.cs" />
@@ -1593,6 +1596,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CreateFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.Timer.cs">
+      <Link>Interop\Windows\Kernel32\Interop.Timer.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ThreadPoolIO.cs">
       <Link>Interop\Windows\Kernel32\Interop.ThreadPoolIO.cs</Link>
