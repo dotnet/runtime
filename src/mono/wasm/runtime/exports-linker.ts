@@ -27,7 +27,9 @@ import {
     mono_wasm_invoke_js_blazor, mono_wasm_invoke_js_with_args_ref, mono_wasm_get_object_property_ref, mono_wasm_set_object_property_ref,
     mono_wasm_get_by_index_ref, mono_wasm_set_by_index_ref, mono_wasm_get_global_object_ref
 } from "./net6-legacy/method-calls";
-import { mono_wasm_change_case, mono_wasm_change_case_invariant, mono_wasm_compare_string, mono_wasm_ends_with, mono_wasm_index_of, mono_wasm_starts_with } from "./hybrid-globalization";
+import { mono_wasm_change_case, mono_wasm_change_case_invariant } from "./hybrid-globalization/change-case";
+import { mono_wasm_compare_string, mono_wasm_ends_with, mono_wasm_starts_with, mono_wasm_index_of } from "./hybrid-globalization/collations";
+import { mono_wasm_is_normalized, mono_wasm_normalize_string } from "./hybrid-globalization/normalization";
 
 // the methods would be visible to EMCC linker
 // --- keep in sync with dotnet.cjs.lib.js ---
@@ -103,6 +105,8 @@ export function export_linker(): any {
         mono_wasm_starts_with,
         mono_wasm_ends_with,
         mono_wasm_index_of,
+        mono_wasm_is_normalized,
+        mono_wasm_normalize_string,
 
         // threading exports, if threading is enabled
         ...mono_wasm_threads_exports,
