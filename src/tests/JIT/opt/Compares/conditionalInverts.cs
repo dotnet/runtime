@@ -105,4 +105,29 @@ public class ConditionalInvertTest
         int result = op1 > 49.0 ? ~op2 : op2;
         Assert.Equal(expected, result);
     }
+
+    [Theory]
+    [InlineData(81, 21, 21)]
+    [InlineData(31, 17, -8)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void cinv_int_shifted_false_opr(int op1, int op2, int expected)
+    {
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #50
+        //ARM64-FULL-LINE-NEXT: csinv {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
+        int result = op1 > 50 ? op2 : ~(op1 >> 2);
+        Assert.Equal(expected, result);
+    }
+
+
+    [Theory]
+    [InlineData(81, 21, -21)]
+    [InlineData(31, 17, 17)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void cinv_int_shifted_true_opr(int op1, int op2, int expected)
+    {
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #51
+        //ARM64-FULL-LINE-NEXT: csinv {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
+        int result = op1 > 51 ? ~(op1 >> 2) : op2;
+        Assert.Equal(expected, result);
+    }
 }

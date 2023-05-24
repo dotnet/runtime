@@ -2606,7 +2606,10 @@ void Lowering::TryLowerCselToCinvOrCneg(GenTreeOp* select, GenTree* cond)
         return;
     }
 
+    // As the select node would handle the negation/inversion, the op is not required.
+    // If a value is contained in the negate/invert op, it cannot be contained anymore.
     BlockRange().Remove(nodeToRemove);
+    invertedOrNegatedVal->ClearContained();
     select->gtOp1 = nonInvertedOrNegatedVal;
     select->gtOp2 = invertedOrNegatedVal;
 
@@ -2618,7 +2621,7 @@ void Lowering::TryLowerCselToCinvOrCneg(GenTreeOp* select, GenTree* cond)
             assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
         }
         select->SetOper(isCneg ? GT_SELECT_NEG : GT_SELECT_INV);
-        JITDUMP("Converted to: %s\n", isCneg ? "SELECT_CNEG" : "SELECT_INV");
+        JITDUMP("Converted to: %s\n", isCneg ? "SELECT_NEG" : "SELECT_INV");
         DISPTREERANGE(BlockRange(), select);
         JITDUMP("\n");
     }
@@ -2632,7 +2635,7 @@ void Lowering::TryLowerCselToCinvOrCneg(GenTreeOp* select, GenTree* cond)
             selectcc->gtCondition = GenCondition::Reverse(selectCond);
         }
         selectcc->SetOper(isCneg ? GT_SELECT_NEGCC : GT_SELECT_INVCC);
-        JITDUMP("Converted to: %s\n", isCneg ? "SELECT_CNEGCC" : "SELECT_INVCC");
+        JITDUMP("Converted to: %s\n", isCneg ? "SELECT_NEGCC" : "SELECT_INVCC");
         DISPTREERANGE(BlockRange(), selectcc);
         JITDUMP("\n");
     }
