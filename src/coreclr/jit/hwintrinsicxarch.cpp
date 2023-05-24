@@ -2830,7 +2830,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             // Store the type from signature into SIMD base type for convenience
             divRemIntrinsic->SetSimdBaseJitType(simdBaseJitType);
 
-            retNode = impAssignMultiRegTypeToVar(divRemIntrinsic,
+            retNode = impStoreMultiRegValueToVar(divRemIntrinsic,
                                                  sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
             break;
         }

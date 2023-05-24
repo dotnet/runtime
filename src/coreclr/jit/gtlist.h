@@ -57,7 +57,6 @@ GTNODE(NEG              , GenTreeOp          ,0,GTK_UNOP)
 
 GTNODE(INTRINSIC        , GenTreeIntrinsic   ,0,GTK_BINOP|GTK_EXOP)
 
-GTNODE(ASG              , GenTreeOp          ,0,GTK_BINOP|DBK_NOTLIR)
 GTNODE(LOCKADD          , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
 GTNODE(XAND             , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(XORR             , GenTreeOp          ,0,GTK_BINOP)

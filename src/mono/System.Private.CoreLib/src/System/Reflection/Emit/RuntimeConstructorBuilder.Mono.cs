@@ -46,7 +46,7 @@ namespace System.Reflection.Emit
     {
 #region Sync with MonoReflectionCtorBuilder in object-internals.h
         private RuntimeMethodHandle mhandle;
-        private ILGenerator? ilgen;
+        private RuntimeILGenerator? ilgen;
         internal Type[]? parameters;
         private MethodAttributes attrs;
         private MethodImplAttributes iattrs;
@@ -251,7 +251,7 @@ namespace System.Reflection.Emit
                 return ilgen;
             if (!(((attrs & (MethodAttributes.Abstract | MethodAttributes.PinvokeImpl)) == 0) && ((iattrs & (MethodImplAttributes.Runtime | MethodImplAttributes.InternalCall)) == 0)))
                 throw new InvalidOperationException();
-            ilgen = new ILGenerator(type.Module, ((RuntimeModuleBuilder)type.Module).GetTokenGenerator(), streamSize);
+            ilgen = new RuntimeILGenerator(type.Module, ((RuntimeModuleBuilder)type.Module).GetTokenGenerator(), streamSize);
             return ilgen;
         }
 

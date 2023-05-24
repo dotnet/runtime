@@ -131,9 +131,9 @@ private:
     bool ContainsFatCalli(Statement* stmt)
     {
         GenTree* fatPointerCandidate = stmt->GetRootNode();
-        if (fatPointerCandidate->OperIs(GT_ASG))
+        if (fatPointerCandidate->OperIs(GT_STORE_LCL_VAR))
         {
-            fatPointerCandidate = fatPointerCandidate->gtGetOp2();
+            fatPointerCandidate = fatPointerCandidate->AsLclVar()->Data();
         }
         return fatPointerCandidate->IsCall() && fatPointerCandidate->AsCall()->IsFatPointerCandidate();
     }
@@ -305,7 +305,7 @@ private:
         FatPointerCallTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
             : Transformer(compiler, block, stmt)
         {
-            doesReturnValue = stmt->GetRootNode()->OperIs(GT_ASG);
+            doesReturnValue = stmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR);
             origCall        = GetCall(stmt);
             fptrAddress     = origCall->gtCallAddr;
             pointerType     = fptrAddress->TypeGet();
@@ -331,8 +331,8 @@ private:
             GenTreeCall* call = nullptr;
             if (doesReturnValue)
             {
-                assert(tree->OperIs(GT_ASG));
-                call = tree->gtGetOp2()->AsCall();
+                assert(tree->OperIs(GT_STORE_LCL_VAR));
+                call = tree->AsLclVar()->Data()->AsCall();
             }
             else
             {
@@ -706,12 +706,12 @@ private:
         //
         void SpillArgToTempBeforeGuard(CallArg* arg)
         {
-            unsigned   tmpNum  = compiler->lvaGrabTemp(true DEBUGARG("guarded devirt arg temp"));
-            GenTree*   asgTree = compiler->gtNewTempAssign(tmpNum, arg->GetNode());
-            Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
-            compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
+            unsigned   tmpNum    = compiler->lvaGrabTemp(true DEBUGARG("guarded devirt arg temp"));
+            GenTree*   store     = compiler->gtNewTempStore(tmpNum, arg->GetNode());
+            Statement* storeStmt = compiler->fgNewStmtFromTree(store, stmt->GetDebugInfo());
+            compiler->fgInsertStmtAtEnd(checkBlock, storeStmt);
 
-            arg->SetEarlyNode(compiler->gtNewLclvNode(tmpNum, genActualType(arg->GetNode())));
+            arg->SetEarlyNode(compiler->gtNewLclVarNode(tmpNum));
         }
 
         //------------------------------------------------------------------------
@@ -827,7 +827,7 @@ private:
             {
                 newThisObj = clonedObj;
             }
-            GenTree* assign = compiler->gtNewTempAssign(thisTemp, newThisObj);
+            GenTree* store = compiler->gtNewTempStore(thisTemp, newThisObj);
 
             if (clsHnd != NO_CLASS_HANDLE)
             {
@@ -839,7 +839,7 @@ private:
                                       compiler->info.compCompHnd->getMethodClass(inlineInfo->guardedMethodHandle));
             }
 
-            compiler->fgNewStmtAtEnd(block, assign);
+            compiler->fgNewStmtAtEnd(block, store);
 
             // Clone call for the devirtualized case. Note we must use the
             // special candidate helper and we need to use the new 'this'.
@@ -912,8 +912,8 @@ private:
 
                 if (returnTemp != BAD_VAR_NUM)
                 {
-                    GenTree* const assign = compiler->gtNewTempAssign(returnTemp, call);
-                    compiler->fgNewStmtAtEnd(block, assign);
+                    GenTree* const store = compiler->gtNewTempStore(returnTemp, call);
+                    compiler->fgNewStmtAtEnd(block, store);
                 }
                 else
                 {
@@ -947,7 +947,7 @@ private:
 
                     if (returnTemp != BAD_VAR_NUM)
                     {
-                        newRetExpr = compiler->gtNewTempAssign(returnTemp, newRetExpr);
+                        newRetExpr = compiler->gtNewTempStore(returnTemp, newRetExpr);
                     }
                     else
                     {
@@ -1010,8 +1010,8 @@ private:
 
             if (returnTemp != BAD_VAR_NUM)
             {
-                GenTree* assign = compiler->gtNewTempAssign(returnTemp, call);
-                newStmt->SetRootNode(assign);
+                GenTree* store = compiler->gtNewTempStore(returnTemp, call);
+                newStmt->SetRootNode(store);
             }
 
             compiler->fgInsertStmtAtEnd(elseBlock, newStmt);
