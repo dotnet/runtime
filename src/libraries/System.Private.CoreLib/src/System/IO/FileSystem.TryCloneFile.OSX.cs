@@ -73,8 +73,8 @@ namespace System.IO
             }
 
             // Check if it's not supported, if they're on different filesystems, the destination file still exists, or if we have unsupported flags still.
-            // EINVAL is checked again here since clonefile is implemented by filesystem-specific drivers, therefore it could potentially fail with flags=0.
-            if (error == Interop.Error.ENOTSUP || error == Interop.Error.EXDEV || error == Interop.Error.EEXIST || error == Interop.Error.EINVAL)
+            Debug.Assert(error != Interop.Error.EINVAL);
+            if (error == Interop.Error.ENOTSUP || error == Interop.Error.EXDEV || error == Interop.Error.EEXIST)
             {
                 // Fall back to normal copy.
                 return false;
