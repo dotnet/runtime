@@ -614,6 +614,32 @@ namespace System.Tests
             Assert.Equal(string.Empty, BinaryData.Empty.ToString());
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(4)]
+        [InlineData(7)]
+        public void LengthReturnsNumberOfBytes(int count)
+        {
+            var data = BinaryData.FromBytes(new byte[count]);
+            Assert.Equal(count, data.Length);
+        }
+
+        [Fact]
+        public void BinaryDataEmptyIsEmpty()
+        {
+            Assert.True(BinaryData.Empty.IsEmpty);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(4)]
+        [InlineData(7)]
+        public void NonEmptyBinaryDataIsNotEmpty(int count)
+        {
+            var data = BinaryData.FromString(new string('*', count));
+            Assert.False(data.IsEmpty);
+        }
+
         [Fact]
         public void IsBinaryDataMemberPropertySerialized()
         {
