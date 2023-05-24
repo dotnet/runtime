@@ -45,8 +45,8 @@ static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(
 Function:
 CompareString
 */
-int32_t GlobalizationNative_CompareStringNative(const unichar* localeName, int32_t lNameLength, const unichar* lpStr1, int32_t cwStr1Length, 
-                                                const unichar* lpStr2, int32_t cwStr2Length, int32_t comparisonOptions)
+int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName, int32_t lNameLength, const uint16_t* lpStr1, int32_t cwStr1Length, 
+                                                const uint16_t* lpStr2, int32_t cwStr2Length, int32_t comparisonOptions)
 {    
     NSLocale *currentLocale;
     if(localeName == NULL || lNameLength == 0)
