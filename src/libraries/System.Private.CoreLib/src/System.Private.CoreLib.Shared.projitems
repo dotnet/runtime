@@ -330,6 +330,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Invariant.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Nls.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.WebAssembly.cs" Condition="'$(TargetsBrowser)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.OSX.cs" Condition="'$(IsOSXLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Icu.cs" />
@@ -1272,6 +1273,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Collation.cs">
       <Link>Common\Interop\Interop.Collation.cs</Link>
+    </Compile>
+     <Compile Include="$(CommonPath)Interop\Interop.Collation.OSX.cs" Condition="'$(IsOSXLike)' == 'true'">
+      <Link>Common\Interop\Interop.Collation.OSX.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.ICU.cs">
       <Link>Common\Interop\Interop.ICU.cs</Link>
