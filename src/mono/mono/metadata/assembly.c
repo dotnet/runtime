@@ -1477,6 +1477,9 @@ bundled_assembly_match (const char *bundled_name, const char *name)
 static MonoImage *
 open_from_bundle_internal (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status)
 {
+	if (!mono_bundled_resources_contains_assemblies ())
+		return NULL;
+
 	MonoBundledAssemblyResource *assembly = mono_bundled_resources_get_assembly_resource (filename);
 	if (!assembly)
 		return NULL;
@@ -1487,6 +1490,9 @@ open_from_bundle_internal (MonoAssemblyLoadContext *alc, const char *filename, M
 static MonoImage *
 open_from_satellite_bundle (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status, const char *culture)
 {
+	if (!mono_bundled_resources_contains_satellite_assemblies ())
+		return NULL;
+
 	char *bundle_name = g_strconcat (culture, "/", filename, (const char *)NULL);
 
 	MonoBundledSatelliteAssemblyResource *satellite_assembly = mono_bundled_resources_get_satellite_assembly_resource (bundle_name);

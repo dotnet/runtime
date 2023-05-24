@@ -40,4 +40,8 @@ public class EmitBundleObjectFiles : EmitBundleBase
         return exitCode == 0;
     }
 
+    public override string GetDestinationFileExtension()
+    {
+        return ".o";
+    }
 }

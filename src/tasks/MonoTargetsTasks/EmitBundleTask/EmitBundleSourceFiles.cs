@@ -19,4 +19,9 @@ public class EmitBundleSourceFiles : EmitBundleBase
 
         return true;
     }
+
+    public override string GetDestinationFileExtension()
+    {
+        return ".c";
+    }
 }

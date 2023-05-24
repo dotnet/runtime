@@ -1,6 +1,6 @@
 <Project>
   <UsingTask TaskName="EmitBundleSourceFiles"
-             AssemblyFile="$(EmitBundleTasksAssemblyPath)" />
+             AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
   <UsingTask TaskName="LibraryBuilderTask" 
              AssemblyFile="$(LibraryBuilderTasksAssemblyPath)" />
 
@@ -48,15 +48,9 @@
   <Target Name="_GenerateBundle"
           Condition="'$(BundlesResources)' != 'false'">
     <PropertyGroup>
-      <BundleResourceFile>mono-bundled-resource-data.c</BundleResourceFile>
       <BundleSourceFile>mono-bundled-source.c</BundleSourceFile>
       <BundleOutputDirectory>$(BundleDir)</BundleOutputDirectory>
     </PropertyGroup>
-
-    <ItemGroup>
-      <BundledSources Include="$(BundleOutputDirectory)$(BundleResourceFile)" />
-      <BundledSources Include="$(BundleOutputDirectory)$(BundleSourceFile)" />
-    </ItemGroup>
 
     <ItemGroup>
       <_ResourcesToBundle Remove="@(_ResourcesToBundle)" />
@@ -74,9 +68,13 @@
       </_ResourcesToBundleWithHashes>
     </ItemGroup>
 
+    <ItemGroup>
+      <BundledSources Include="$(BundleOutputDirectory)$(BundleSourceFile)" />
+      <BundledSources Include="%(_ResourcesToBundleWithHashes.DestinationFile)" />
+    </ItemGroup>
+
     <EmitBundleSourceFiles
       FilesToBundle="@(_ResourcesToBundleWithHashes)"
-      CombinedResourceSource="$(BundleResourceFile)"
       BundleFile="$(BundleSourceFile)"
       OutputDirectory="$(BundleOutputDirectory)">
       <Output TaskParameter="BundledResources" ItemName="_BundledResources" />

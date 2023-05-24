@@ -62,7 +62,6 @@
       <LibraryBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(LibraryBuilderDir)', 'LibraryBuilder.dll'))</LibraryBuilderTasksAssemblyPath>
       <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
       <MonoTargetsTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoTargetsTasksDir)', 'RuntimeConfigParser.dll'))</MonoTargetsTasksAssemblyPath>
-      <EmitBundleTasksAssemblyPath>$([MSBuild]::NormalizePath('$(EmitBundleDir)', 'EmitBundle.dll'))</EmitBundleTasksAssemblyPath>
     </PropertyGroup>
 
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')"
