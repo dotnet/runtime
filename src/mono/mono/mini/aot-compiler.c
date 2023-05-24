@@ -14830,6 +14830,8 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 
 	if (acfg->aot_opts.compiled_methods_outfile && acfg->dedup_phase != DEDUP_COLLECT) {
 		acfg->compiled_methods_outfile = fopen (acfg->aot_opts.compiled_methods_outfile, "w+");
+		fprintf(acfg->compiled_methods_outfile, "%s\n", ass->aname.name);
+
 		if (!acfg->compiled_methods_outfile)
 			aot_printerrf (acfg, "Unable to open compiled-methods-outfile specified file %s\n", acfg->aot_opts.compiled_methods_outfile);
 	}

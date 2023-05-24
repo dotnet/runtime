@@ -12,6 +12,9 @@ using CilStrip.Mono.Cecil;
 using CilStrip.Mono.Cecil.Binary;
 using CilStrip.Mono.Cecil.Cil;
 using CilStrip.Mono.Cecil.Metadata;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 
 public class ILStrip : Microsoft.Build.Utilities.Task
 {
@@ -19,7 +22,6 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     /// Assemblies to be stripped.
     /// The assemblies will be modified in place if OutputPath metadata is not set.
     /// </summary>
-    [Required]
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
@@ -27,30 +29,64 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     /// </summary>
     public bool DisableParallelStripping { get; set; }
 
+    public bool TrimIndividualMethods { get; set; }
+
+    public ITaskItem[] MethodTokenFiles { get; set; } = Array.Empty<ITaskItem>();
+
+    public string AssemblyPath { get; set; } = "";
+
     public override bool Execute()
     {
-        if (Assemblies.Length == 0)
+        if (!TrimIndividualMethods)
         {
-            throw new ArgumentException($"'{nameof(Assemblies)}' is required.", nameof(Assemblies));
+            if (Assemblies.Length == 0)
+            {
+                throw new ArgumentException($"'{nameof(Assemblies)}' is required.", nameof(Assemblies));
+            }
+
+            int allowedParallelism = DisableParallelStripping ? 1 : Math.Min(Assemblies.Length, Environment.ProcessorCount);
+            if (BuildEngine is IBuildEngine9 be9)
+                allowedParallelism = be9.RequestCores(allowedParallelism);
+            ParallelLoopResult result = Parallel.ForEach(Assemblies,
+                                                        new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
+                                                        (assemblyItem, state) =>
+                                                        {
+                                                            if (!StripAssembly(assemblyItem))
+                                                                state.Stop();
+                                                        });
+
+            if (!result.IsCompleted && !Log.HasLoggedErrors)
+            {
+                Log.LogError("Unknown failure occurred while IL stripping assemblies. Check logs to get more details.");
+            }
+
+            return !Log.HasLoggedErrors;
         }
-
-        int allowedParallelism = DisableParallelStripping ? 1 : Math.Min(Assemblies.Length, Environment.ProcessorCount);
-        if (BuildEngine is IBuildEngine9 be9)
-            allowedParallelism = be9.RequestCores(allowedParallelism);
-        ParallelLoopResult result = Parallel.ForEach(Assemblies,
-                                                     new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
-                                                     (assemblyItem, state) =>
-                                                     {
-                                                         if (!StripAssembly(assemblyItem))
-                                                             state.Stop();
-                                                     });
-
-        if (!result.IsCompleted && !Log.HasLoggedErrors)
+        else
         {
-            Log.LogError("Unknown failure occurred while IL stripping assemblies. Check logs to get more details.");
-        }
+            if (MethodTokenFiles.Length == 0)
+            {
+                throw new ArgumentException($"'{nameof(MethodTokenFiles)}' is required.", nameof(MethodTokenFiles));
+            }
 
-        return !Log.HasLoggedErrors;
+            int allowedParallelism = DisableParallelStripping ? 1 : Math.Min(MethodTokenFiles.Length, Environment.ProcessorCount);
+            if (BuildEngine is IBuildEngine9 be9)
+                allowedParallelism = be9.RequestCores(allowedParallelism);
+            ParallelLoopResult result = Parallel.ForEach(MethodTokenFiles,
+                                                        new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
+                                                        (methodTokenFileItem, state) =>
+                                                        {
+                                                            if (!TrimMethods(methodTokenFileItem))
+                                                                state.Stop();
+                                                        });
+
+            if (!result.IsCompleted && !Log.HasLoggedErrors)
+            {
+                Log.LogError("Unknown failure occurred while IL stripping assemblies. Check logs to get more details.");
+            }
+
+            return !Log.HasLoggedErrors;
+        }
     }
 
     private bool StripAssembly(ITaskItem assemblyItem)
@@ -81,4 +117,91 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         return true;
     }
 
+    private static bool TrimMethods(string methodTokenFileItem, string assemblyPath)
+    {
+        if (!File.Exists(methodTokenFileItem))
+        {
+            Log.LogMessage(MessageImportance.Low, $"[ILStrip] {methodTokenFileItem} doesn't exit.");
+            return true;
+        }
+        string[] log = File.ReadAllLines(methodTokenFileItem);
+        if (log.Length <= 1)
+        {
+            // Frist line is assembly name
+            Log.LogMessage(MessageImportance.Low, $"[ILStrip] {methodTokenFileItem} doesn't contain any compiled method token.");
+            return true;
+        }
+        string assemblyName = log[0];
+        int idxCompiledMethods = 1; 
+        string assemblyFilePath = Path.Combine(assemblyPath, (assemblyName + ".dll"));
+        string trimmedAssemblyFilePath = Path.Combine(assemblyPath, (assemblyName + "_new.dll"));
+        if (!File.Exists(assemblyFilePath))
+        {
+            Log.LogMessage(MessageImportance.Low, $"[ILStrip] {assemblyFilePath} doesn't exit.");
+            return true;
+        }
+        
+        using (FileStream fs = File.Open(assemblyFilePath, FileMode.Open),
+                os = File.Open(trimmedAssemblyFilePath, FileMode.Create))
+        {
+            MemoryStream memStream = new MemoryStream((int)fs.Length);
+            fs.CopyTo(memStream);
+            
+            fs.Position = 0;
+            PEReader peReader = new PEReader(fs, PEStreamOptions.LeaveOpen);
+            MetadataReader mr = peReader.GetMetadataReader();
+
+            foreach (MethodDefinitionHandle mdefh in mr.MethodDefinitions)
+            {
+                if (idxCompiledMethods < log.Length)
+                {
+                    int methodToken = MetadataTokens.GetToken(mr, mdefh);
+                    int expMethodToken = Convert.ToInt32(log[idxCompiledMethods], 16);
+
+                    if (methodToken == expMethodToken)
+                    {
+                        MethodDefinition mdef = mr.GetMethodDefinition(mdefh);
+                        int rva = mdef.RelativeVirtualAddress;
+                        
+                        Console.WriteLine(mr.GetString(mdef.Name));
+                        Console.WriteLine(methodToken);
+
+                        MethodBodyBlock mb = peReader.GetMethodBody(rva);
+                        int methodSize = mb.Size;
+                        int sectionIndex = peReader.PEHeaders.GetContainingSectionIndex(rva);
+                        int relativeOffset = rva - peReader.PEHeaders.SectionHeaders[sectionIndex].VirtualAddress;
+                        int actualLoc = peReader.PEHeaders.SectionHeaders[sectionIndex].PointerToRawData + relativeOffset;
+
+                        byte[] zeroBuffer = new byte[methodSize];
+                        for (int i = 0; i < methodSize; i++)
+                        {
+                            zeroBuffer[i] = 0x0;
+                        }
+
+                        memStream.Position = actualLoc;
+                        int firstbyte = memStream.ReadByte();
+                        Console.WriteLine(firstbyte);
+
+                        int headerFlag = firstbyte & 0b11;
+
+                        int headerSize = headerFlag == 2 ? 1 : 4;
+                        Console.WriteLine(headerSize);
+
+                        memStream.Position = actualLoc + headerSize;
+                        memStream.Write(zeroBuffer, 0, methodSize - headerSize);
+
+                        idxCompiledMethods++;
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+            memStream.Position = 0;
+            memStream.CopyTo(os);
+        }
+
+        return true;
+    }
 }
