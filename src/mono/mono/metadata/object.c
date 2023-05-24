@@ -6361,7 +6361,7 @@ mono_string_new_utf8_len (const char *text, guint length, MonoError *error)
 	gunichar2 *ut = NULL;
 	glong items_written;
 
-	ut = eg_utf8_to_utf16_with_nuls (text, length, NULL, &items_written, &eg_error);
+	ut = g_utf8_to_utf16 (text, length, NULL, &items_written, &eg_error);
 
 	if (eg_error) {
 		o = NULL_HANDLE_STRING;

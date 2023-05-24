@@ -24,7 +24,7 @@ Revision History:
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
 #include "pal/file.h"
-#include "pal/utf8.h"
+#include <minipal/utf8.h>
 #include "pal/cruntime.h"
 #include "pal/stackstring.hpp"
 #include "pal/unicodedata.h"
@@ -253,16 +253,11 @@ MultiByteToWideChar(
         goto EXIT;
     }
 
-    // Use UTF8ToUnicode on all systems, since it replaces
+    // Use minipal_utf8_to_utf16_preallocated on all systems, since it replaces
     // invalid characters and Core Foundation doesn't do that.
     if (CodePage == CP_UTF8 || CodePage == CP_ACP)
     {
-        if (cbMultiByte <= -1)
-        {
-        cbMultiByte = strlen(lpMultiByteStr) + 1;
-        }
-
-        retval = UTF8ToUnicode(lpMultiByteStr, cbMultiByte, lpWideCharStr, cchWideChar, dwFlags);
+        retval = minipal_utf8_to_utf16_preallocated(lpMultiByteStr, cbMultiByte, &lpWideCharStr, cchWideChar, dwFlags, /* treatAsLE */ false);
         goto EXIT;
     }
 
@@ -338,15 +333,11 @@ WideCharToMultiByte(
         defaultChar = *lpDefaultChar;
     }
 
-    // Use UnicodeToUTF8 on all systems because we use
+    // Use minipal_utf16_to_utf8_preallocated on all systems because we use
     // UTF8ToUnicode in MultiByteToWideChar() on all systems.
     if (CodePage == CP_UTF8 || CodePage == CP_ACP)
     {
-        if (cchWideChar == -1)
-        {
-            cchWideChar = PAL_wcslen(lpWideCharStr) + 1;
-        }
-        retval = UnicodeToUTF8(lpWideCharStr, cchWideChar, lpMultiByteStr, cbMultiByte);
+        retval = minipal_utf16_to_utf8_preallocated(lpWideCharStr, cchWideChar, &lpMultiByteStr, cbMultiByte);
         goto EXIT;
     }
 
