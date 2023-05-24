@@ -26,6 +26,10 @@ namespace Microsoft.Extensions.Logging
         Tags = 32,
         Baggage = 64,
     }
+    public static partial class EnrichmentExtensions
+    {
+        public static Microsoft.Extensions.Logging.ILoggingBuilder Enrich<T>(this Microsoft.Extensions.Logging.ILoggingBuilder builder, string propertyName, System.Func<T> valueFunc) { throw null; }
+    }
     public static partial class FilterLoggingBuilderExtensions
     {
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddFilter(this Microsoft.Extensions.Logging.ILoggingBuilder builder, System.Func<Microsoft.Extensions.Logging.LogLevel, bool> levelFilter) { throw null; }

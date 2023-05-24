@@ -71,8 +71,4 @@ namespace Microsoft.Extensions.Logging
         public bool IsEnabledDynamic(LogLevel level) => _firstHandler.IsEnabled(level);
         public IDisposable? HandleScope(ref TState scope) => _firstHandler.HandleBeginScope(ref scope);
     }
-
-    public struct EmptyEnrichmentPropertyValues
-    {
-    }
 }

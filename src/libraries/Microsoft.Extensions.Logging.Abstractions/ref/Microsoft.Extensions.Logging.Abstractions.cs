@@ -18,9 +18,6 @@ namespace Microsoft.Extensions.Logging
         public void Flush() { }
         public void Grow(int minSize) { }
     }
-    public partial struct EmptyEnrichmentPropertyValues
-    {
-    }
     public readonly partial struct EventId : System.IEquatable<Microsoft.Extensions.Logging.EventId>
     {
         private readonly object _dummy;
@@ -37,7 +34,7 @@ namespace Microsoft.Extensions.Logging
         public override string ToString() { throw null; }
     }
     public delegate void FormatPropertyAction<PropType>(PropType propertyValue, ref Microsoft.Extensions.Logging.BufferWriter<byte> bufferWriter);
-    public delegate void FormatPropertyListAction<TState>(ref TState state, ref Microsoft.Extensions.Logging.BufferWriter<byte> bufferWriter);
+    public delegate void FormatPropertyListAction<TState>(in TState state, ref Microsoft.Extensions.Logging.BufferWriter<byte> bufferWriter);
     public delegate void FormatSpanPropertyAction(System.ReadOnlySpan<char> propertyValue, ref Microsoft.Extensions.Logging.BufferWriter<byte> bufferWriter);
     public partial interface IExternalScopeProvider
     {

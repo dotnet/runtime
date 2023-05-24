@@ -95,7 +95,7 @@ namespace Microsoft.Extensions.Logging
         Func<TState, Exception?, string> GetStringMessageFormatter();
     }
 
-    public delegate void FormatPropertyListAction<TState>(ref TState state, ref BufferWriter<byte> bufferWriter);
+    public delegate void FormatPropertyListAction<TState>(in TState state, ref BufferWriter<byte> bufferWriter);
     public delegate void FormatPropertyAction<PropType>(PropType propertyValue, ref BufferWriter<byte> bufferWriter);
     public delegate void FormatSpanPropertyAction(scoped ReadOnlySpan<char> propertyValue, ref BufferWriter<byte> bufferWriter);
 

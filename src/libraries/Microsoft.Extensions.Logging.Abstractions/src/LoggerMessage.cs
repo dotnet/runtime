@@ -765,7 +765,7 @@ namespace Microsoft.Extensions.Logging
                 FormatPropertyAction<T2> formatter1 = propertyFormatterFactory.GetPropertyFormatter<T2>(1, GetPropertyMetadata(1));
                 return FormatPropertyList;
 
-                void FormatPropertyList(ref LogValues<T1, T2> tstate, ref BufferWriter<byte> writer)
+                void FormatPropertyList(in LogValues<T1, T2> tstate, ref BufferWriter<byte> writer)
                 {
                     formatter0(tstate._value0, ref writer);
                     formatter1(tstate._value1, ref writer);
@@ -963,7 +963,7 @@ namespace Microsoft.Extensions.Logging
                 FormatPropertyAction<T19> formatter19 = propertyFormatterFactory.GetPropertyFormatter<T19>(19, GetPropertyMetadata(19));
                 return FormatPropertyList;
 
-                void FormatPropertyList(ref LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19> tstate, ref BufferWriter<byte> writer)
+                void FormatPropertyList(in LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19> tstate, ref BufferWriter<byte> writer)
                 {
                     formatter0(tstate._value0, ref writer);
                     formatter1(tstate._value1, ref writer);

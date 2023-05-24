@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using ConsoleApp31.Prototype;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Testing;
 using Microsoft.Extensions.Logging.Abstractions;
