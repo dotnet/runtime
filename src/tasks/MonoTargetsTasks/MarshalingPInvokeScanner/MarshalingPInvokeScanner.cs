@@ -91,10 +91,23 @@ internal sealed class MinimalMarshalingTypeCompatibilityProvider : ISignatureTyp
             TypeReference baseType = reader.GetTypeReference((TypeReferenceHandle)baseTypeHandle);
             if (reader.GetString(baseType.Name) == "Enum")
                 return Compatibility.Compatible;
+            else
+                return GetTypeFromReference(reader, (TypeReferenceHandle)baseTypeHandle, rawTypeKind);
+        }
+        else if(baseTypeHandle.Kind == HandleKind.TypeSpecification)
+        {
+            TypeSpecification specInner = reader.GetTypeSpecification((TypeSpecificationHandle)baseTypeHandle);
+            return specInner.DecodeSignature<Compatibility, object>(this, new object());
+        }
+        else if(baseTypeHandle.Kind == HandleKind.TypeDefinition)
+        {
+            TypeDefinitionHandle handleInner = (TypeDefinitionHandle)baseTypeHandle;
+            if(handle != handleInner)
+                return GetTypeFromDefinition(reader, handleInner, rawTypeKind);
         }
         else
         {
-            throw new NotImplementedException();
+            throw new InvalidOperationException();
         }
 
         return Compatibility.Incompatible;
@@ -117,15 +130,18 @@ internal sealed class MinimalMarshalingTypeCompatibilityProvider : ISignatureTyp
             }
             else
             {
-                throw new NotImplementedException();
+                throw new NotImplementedException(scope.Kind.ToString());
             }
         }
 
         return Compatibility.Incompatible;
     }
 
-    public Compatibility GetTypeFromSpecification(MetadataReader reader, object genericContext, TypeSpecificationHandle handle, byte rawTypeKind) =>
-        Compatibility.Incompatible; // TODO: Really?
+    public Compatibility GetTypeFromSpecification(MetadataReader reader, object genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
+    {
+        TypeSpecification spec = reader.GetTypeSpecification((TypeSpecificationHandle)handle);
+        return spec.DecodeSignature<Compatibility, object>(this, genericContext);
+    }
 }
 
 
@@ -168,11 +184,11 @@ public class MarshalingPInvokeScanner : Task
         if (Assemblies is not null)
             IncompatibleAssemblies = ScanAssemblies(Assemblies);
 
-        if(IncompatibleAssemblies is not null && IncompatibleAssemblies.Length != 0)
+        /*if(IncompatibleAssemblies is not null && IncompatibleAssemblies.Length != 0)
         {
             Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0,
                 "One or more assemblies is incompatible with the lightweight Mono marshaler. Therefore the full marshaler will be included.");
-        }
+        }*/
     }
 
     private static string[] ScanAssemblies(string[] assemblies)
