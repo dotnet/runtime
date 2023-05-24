@@ -644,7 +644,7 @@ private:
         if (lcl->OperIsLocalStore())
         {
             flags |= AccessKindFlags::IsAssignmentDestination;
-            
+
             if (lcl->AsLclVarCommon()->Data()->gtEffectiveVal()->IsCall())
             {
                 flags |= AccessKindFlags::IsAssignedFromCall;
