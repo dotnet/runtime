@@ -72,7 +72,7 @@ namespace System.IO
                 }
             }
 
-            // Check if it's not supported, if they're on different filesystems, the destination file still exists, or if we have unsupported flags still.
+            // Check if it's not supported, if files are on different filesystems, or if the destination file still exists.
             Debug.Assert(error != Interop.Error.EINVAL);
             if (error == Interop.Error.ENOTSUP || error == Interop.Error.EXDEV || error == Interop.Error.EEXIST)
             {
