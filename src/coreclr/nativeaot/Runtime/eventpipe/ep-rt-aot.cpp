@@ -13,6 +13,7 @@
 #include <windows.h>
 #else
 #include <fcntl.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #endif
 
@@ -384,7 +385,7 @@ ep_rt_aot_file_write (
     return ::WriteFile (file_handle, buffer, bytes_to_write, reinterpret_cast<LPDWORD>(bytes_written), NULL) != FALSE;
 #else
     int fd = (int)(ptrdiff_t)file_handle;
-    uint32_t ret = write (fd, buffer, bytes_to_write);
+    int ret = write (fd, buffer, bytes_to_write);
     if (ret == -1) {
         if (bytes_written != NULL) {
             *bytes_written = 0;
