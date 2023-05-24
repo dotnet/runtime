@@ -1274,7 +1274,8 @@ GenTree** ReplaceVisitor::InsertMidTreeReadBacksIfNecessary(GenTree** use)
 
             rep.NeedsReadBack = false;
             GenTree* readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
-            *use = m_compiler->gtNewOperNode(GT_COMMA, (*use)->IsValue() ? (*use)->TypeGet() : TYP_VOID, readBack, *use);
+            *use =
+                m_compiler->gtNewOperNode(GT_COMMA, (*use)->IsValue() ? (*use)->TypeGet() : TYP_VOID, readBack, *use);
             use           = &(*use)->AsOp()->gtOp2;
             m_madeChanges = true;
         }
