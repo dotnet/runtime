@@ -3289,11 +3289,8 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
 //
 GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt)
 {
-    // If we have a var definition then bail or
-    // If this is the address of the var then it will have the GTF_DONT_CSE
-    // flag set and we don't want to assertion prop on it.
-    // TODO-ASG: delete.
-    if (tree->gtFlags & (GTF_VAR_DEF | GTF_DONT_CSE))
+    // TODO-Cleanup: delete. Requires annotating locals propagated into multi-regs.
+    if ((tree->gtFlags & GTF_DONT_CSE) != 0)
     {
         return nullptr;
     }
