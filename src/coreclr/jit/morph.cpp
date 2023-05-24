@@ -4578,8 +4578,7 @@ GenTree* Compiler::fgMorphLeafLocal(GenTreeLclVarCommon* lclNode)
     // normalized on store. If this is one of the former, insert a narrowing cast on the load.
     //         ie. Convert: var-short --> cast-short(var-int)
     //
-    if (fgGlobalMorph && lclNode->OperIs(GT_LCL_VAR) && varDsc->lvNormalizeOnLoad() &&
-        /* TODO-ASG: delete this zero-diff quirk */ lclNode->CanCSE())
+    if (fgGlobalMorph && lclNode->OperIs(GT_LCL_VAR) && varDsc->lvNormalizeOnLoad())
     {
         var_types lclVarType = varDsc->TypeGet();
 
