@@ -963,9 +963,6 @@ ep_rt_file_open_write (const ep_char8_t *path)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path, -1);
-    ep_return_null_if_nok (path_utf16 != NULL);
-
     extern ep_rt_file_handle_t ep_rt_aot_file_open_write (const ep_char8_t *);
     return ep_rt_aot_file_open_write (path);
 }

@@ -733,12 +733,12 @@ REDHAWK_PALEXPORT char* PalCopyTCharAsChar(const TCHAR* toCopy)
 {
     int len = ::WideCharToMultiByte(CP_UTF8, 0, toCopy, -1, nullptr, 0, nullptr, nullptr);
     if (len == 0)
-        return false;
+        return nullptr;
 
-    NewArrayHolder<char> converted {new (nothrow) char[len]};
+    char* converted = new (nothrow) char[len];
     int written = ::WideCharToMultiByte(CP_UTF8, 0, toCopy, -1, converted, len, nullptr, nullptr);
     assert(len == written);
-    return converted.Extract();
+    return converted;
 }
 
 REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, uintptr_t size, uint32_t allocationType, uint32_t protect)
