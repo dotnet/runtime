@@ -39,7 +39,7 @@ internal sealed class InconclusiveCompatibilityCollection
             _data.Add(assyName, incAssyTypes);
         }
 
-        incAssyTypes.Add(string.Join(':', namespaceName, typeName));
+        incAssyTypes.Add(string.Join(":", namespaceName, typeName));
     }
 
     public HashSet<string> EnumerateForAssembly(string assyName)
@@ -216,7 +216,7 @@ public class MarshalingPInvokeScanner : Task
         foreach (TypeDefinitionHandle typeDefHandle in mdtReader.TypeDefinitions)
         {
             TypeDefinition typeDef = mdtReader.GetTypeDefinition(typeDefHandle);
-            string fullTypeName = string.Join(':', mdtReader.GetString(typeDef.Namespace), mdtReader.GetString(typeDef.Name));
+            string fullTypeName = string.Join(":", mdtReader.GetString(typeDef.Namespace), mdtReader.GetString(typeDef.Name));
 
             // This is not perfect, but should work right for enums defined in other assemblies,
             // which is the only case where we use Compatibility.Inconclusive.
