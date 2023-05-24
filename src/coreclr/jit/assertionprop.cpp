@@ -5715,15 +5715,8 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree)
 {
     // Don't perform const prop on expressions marked with GTF_DONT_CSE
-    // TODO-ASG: delete.
+    // TODO-Cleanup: delete. This is now only needed for the casts under a GTF_MUL_64RSLT node to stay intact.
     if (!tree->CanCSE())
-    {
-        return WALK_CONTINUE;
-    }
-
-    // Don't propagate floating-point constants into a TYP_STRUCT LclVar
-    // This can occur for HFA return values (see hfa_sf3E_r.exe)
-    if (tree->TypeGet() == TYP_STRUCT)
     {
         return WALK_CONTINUE;
     }
@@ -5733,6 +5726,7 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
         // Make sure we have an R-value.
         case GT_ADD:
         case GT_SUB:
+        case GT_MUL:
         case GT_DIV:
         case GT_MOD:
         case GT_UDIV:
@@ -5759,7 +5753,6 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
         case GT_ARR_LENGTH:
             break;
 
-        case GT_BLK:
         case GT_IND:
         {
             const ValueNum vn = tree->GetVN(VNK_Conservative);
@@ -5771,14 +5764,6 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
         break;
 
         case GT_JTRUE:
-            break;
-
-        case GT_MUL:
-            // Don't transform long multiplies.
-            if (tree->gtFlags & GTF_MUL_64RSLT)
-            {
-                return WALK_CONTINUE;
-            }
             break;
 
         case GT_LCL_VAR:
