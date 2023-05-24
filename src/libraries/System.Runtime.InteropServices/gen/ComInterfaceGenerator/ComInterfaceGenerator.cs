@@ -59,10 +59,8 @@ namespace Microsoft.Interop
             (var interfaceContexts, interfaceSymbolsWithoutDiagnostics) = context.FilterAndReportDiagnostics(interfaceContextsOrDiagnostics, interfaceSymbolsWithoutDiagnostics);
 
             var comMethodsAndSymbolsOrDiagnostics = interfaceSymbolsWithoutDiagnostics.Select(ComMethodInfo.GetMethodsFromInterface);
-            var methodInfoAndSymbolGroupedByInterface = context.FilterAndReportDiagnostics<
-                (ComMethodInfo MethodInfo, IMethodSymbol Symbol),
-                SequenceEqualImmutableArray<DiagnosticOr<(ComMethodInfo, IMethodSymbol)>>>
-                (comMethodsAndSymbolsOrDiagnostics);
+            var methodInfoAndSymbolGroupedByInterface = context
+                .FilterAndReportDiagnostics<(ComMethodInfo MethodInfo, IMethodSymbol Symbol)> (comMethodsAndSymbolsOrDiagnostics);
 
             var methodInfosGroupedByInterface = methodInfoAndSymbolGroupedByInterface
                 .Select(static (methods, ct) =>

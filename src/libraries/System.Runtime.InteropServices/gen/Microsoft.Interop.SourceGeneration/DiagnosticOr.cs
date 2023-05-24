@@ -71,7 +71,7 @@ namespace Microsoft.Interop
         }
     }
 
-    public static partial class IncrementalValuesProviderExtensions
+    public static partial class DiagnosticOrTHelperExtensions
     {
         /// <summary>
         /// Splits the elements of <paramref name="provider"/> into a "values" provider and a "diagnositics" provider.
@@ -86,8 +86,7 @@ namespace Microsoft.Interop
         /// <summary>
         /// Splits the inner arrays of <paramref name="provider"/> into values and diagnostics.
         /// </summary>
-        public static (IncrementalValuesProvider<SequenceEqualImmutableArray<T>>, IncrementalValuesProvider<Diagnostic>) SplitArrays<T, TEnumerable>(this IncrementalValuesProvider<TEnumerable> provider)
-            where TEnumerable : IEnumerable<DiagnosticOr<T>>
+        public static (IncrementalValuesProvider<SequenceEqualImmutableArray<T>>, IncrementalValuesProvider<Diagnostic>) SplitArrays<T>(this IncrementalValuesProvider<SequenceEqualImmutableArray<DiagnosticOr<T>>> provider)
         {
             var values = provider.Select((arr, ct) => arr.Where(x => x.IsValue).Select((x, ct) => x.Value).ToSequenceEqualImmutableArray());
             var diagnostics = provider.SelectMany((arr, ct) => arr.Where(x => x.IsDiagnostic).Select((x, ct) => x.Diagnostic));
@@ -103,10 +102,7 @@ namespace Microsoft.Interop
             var diagnostics = provider.Where(x => !x.Item1.IsValue).Select(static (x, ct) => x.Item1.Diagnostic);
             return (values, diagnostics);
         }
-    }
 
-    public static partial class IncrementalGeneratorInitializationContextExtensions
-    {
         /// <summary>
         /// Filters the <see cref="IncrementalValuesProvider{TValue}"/> by whether or not the is a <see cref="Diagnostic"/>, reports the diagnostics, and returns the values.
         /// </summary>
@@ -133,12 +129,11 @@ namespace Microsoft.Interop
         /// <summary>
         /// Filters each inner <see cref="IEnumerable{T}"/> of <see cref="DiagnosticOr{T}"/> by whether the elements are <see cref="Diagnostic"/>s, reports the diagnostics, and returns the values.
         /// </summary>
-        public static IncrementalValuesProvider<SequenceEqualImmutableArray<T>> FilterAndReportDiagnostics<T, TEnumerable>(
+        public static IncrementalValuesProvider<SequenceEqualImmutableArray<T>> FilterAndReportDiagnostics<T>(
             this IncrementalGeneratorInitializationContext ctx,
-            IncrementalValuesProvider<TEnumerable> diagnosticOrValues)
-            where TEnumerable : IEnumerable<DiagnosticOr<T>>
+            IncrementalValuesProvider<SequenceEqualImmutableArray<DiagnosticOr<T>>> diagnosticOrValues)
         {
-            var (values, diagnostics) = diagnosticOrValues.SplitArrays<T, TEnumerable>();
+            var (values, diagnostics) = diagnosticOrValues.SplitArrays<T>();
             ctx.RegisterDiagnostics(diagnostics);
             return values;
         }
