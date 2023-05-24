@@ -19740,6 +19740,84 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
             switch (simdBaseType)
             {
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                {
+                    assert((simdSize != 64) || IsBaselineVector512IsaSupportedDebugOnly());
+
+                    CorInfoType widenSimdBaseJitType;
+                    NamedIntrinsic convertIntrinsic;
+                    var_types      convertedType;
+                    unsigned       convertedSimdSize;
+
+                    if (simdSize == 32 && IsBaselineVector512IsaSupported())
+                    {
+                        if (simdBaseType == TYP_BYTE)
+                        {
+                            widenSimdBaseJitType = CORINFO_TYPE_SHORT;
+                            convertIntrinsic     = NI_AVX512BW_ConvertToVector512Int16;
+                        }
+                        else
+                        {
+                            widenSimdBaseJitType = CORINFO_TYPE_USHORT;
+                            convertIntrinsic     = NI_AVX512BW_ConvertToVector512UInt16;
+                        }
+
+                        convertedType     = TYP_SIMD64;
+                        convertedSimdSize = 64;
+                    }
+                    else if (simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                    {
+                        widenSimdBaseJitType = simdBaseType == TYP_BYTE ? CORINFO_TYPE_SHORT : CORINFO_TYPE_USHORT;
+                        convertIntrinsic = NI_AVX2_ConvertToVector256Int16;
+                        convertedType     = TYP_SIMD32;
+                        convertedSimdSize = 32;
+                    }
+                    else
+                    {
+                        widenSimdBaseJitType = simdBaseType == TYP_BYTE ? CORINFO_TYPE_SHORT : CORINFO_TYPE_USHORT;
+                        convertIntrinsic  = NI_Illegal;
+                        convertedType     = TYP_UNDEF;
+                        convertedSimdSize = 0;
+                    }
+
+                    if (convertedType != TYP_UNDEF)
+                    {
+                        op1 = gtNewSimdHWIntrinsicNode(convertedType, op1, convertIntrinsic, simdBaseJitType,
+                                                       simdSize);
+
+                        op2 = gtNewSimdHWIntrinsicNode(convertedType, op2, convertIntrinsic, simdBaseJitType,
+                                                       simdSize);
+
+                        op1 = gtNewSimdBinOpNode(GT_MUL, convertedType, op1, op2, widenSimdBaseJitType, convertedSimdSize);
+
+                        GenTree* dup = gtCloneExpr(op1);
+                        op1          = gtNewSimdNarrowNode(convertedType, op1, dup, simdBaseJitType, convertedSimdSize);
+                        return gtNewSimdGetLowerNode(type, op1, simdBaseJitType, convertedSimdSize);
+                    }
+                    else
+                    {
+                        // op1Dup = op1
+                        GenTree* op1Dup = fgMakeMultiUse(&op1);
+
+                        // op2Dup = op2
+                        GenTree* op2Dup = fgMakeMultiUse(&op2);
+
+                        // Multiply widened lower parts
+                        op1 = gtNewSimdWidenLowerNode(type, op1, simdBaseJitType, simdSize);
+                        op2 = gtNewSimdWidenLowerNode(type, op2, simdBaseJitType, simdSize);
+                        op1 = gtNewSimdBinOpNode(GT_MUL, type, op1, op2, widenSimdBaseJitType, simdSize);
+
+                        // Multiply widened upper parts
+                        op1Dup = gtNewSimdWidenUpperNode(type, op1Dup, simdBaseJitType, simdSize);
+                        op2Dup = gtNewSimdWidenUpperNode(type, op2Dup, simdBaseJitType, simdSize);
+                        op2    = gtNewSimdBinOpNode(GT_MUL, type, op1Dup, op2Dup, widenSimdBaseJitType, simdSize);
+
+                        // Narrow lower and upper
+                        return gtNewSimdNarrowNode(type, op1, op2, simdBaseJitType, simdSize);
+                    }
+                }
+
                 case TYP_SHORT:
                 case TYP_USHORT:
                 {
