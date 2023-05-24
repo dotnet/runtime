@@ -185,12 +185,6 @@ static int inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 static MonoInst*
 convert_value (MonoCompile *cfg, MonoType *type, MonoInst *ins);
 
-/* helper methods signatures */
-
-/* type loading helpers */
-static GENERATE_GET_CLASS_WITH_CACHE (iequatable, "System", "IEquatable`1")
-static GENERATE_GET_CLASS_WITH_CACHE (geqcomparer, "System.Collections.Generic", "GenericEqualityComparer`1");
-
 /*
  * Instruction metadata
  */
@@ -345,13 +339,13 @@ handle_enum:
 			type = mono_class_enum_basetype_internal (type->data.klass);
 			goto handle_enum;
 		}
-		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (type)))
+		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_XMOVE;
 		return OP_VMOVE;
 	case MONO_TYPE_TYPEDBYREF:
 		return OP_VMOVE;
 	case MONO_TYPE_GENERICINST:
-		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (type)))
+		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_XMOVE;
 		type = m_class_get_byval_arg (type->data.generic_class->container_class);
 		goto handle_enum;
@@ -5451,72 +5445,22 @@ emit_optimized_ldloca_ir (MonoCompile *cfg, guchar *ip, guchar *end, int local)
 static MonoInst*
 handle_call_res_devirt (MonoCompile *cfg, MonoMethod *cmethod, MonoInst *call_res)
 {
-	/*
-	 * Devirt EqualityComparer.Default.Equals () calls for some types.
-	 * The corefx code excepts these calls to be devirtualized.
-	 * This depends on the implementation of EqualityComparer.Default, which is
-	 * in mcs/class/referencesource/mscorlib/system/collections/generic/equalitycomparer.cs
-	 */
-	if (m_class_get_image (cmethod->klass) == mono_defaults.corlib &&
-		!strcmp (m_class_get_name (cmethod->klass), "EqualityComparer`1") &&
-		!strcmp (cmethod->name, "get_Default")) {
-		MonoType *param_type = mono_class_get_generic_class (cmethod->klass)->context.class_inst->type_argv [0];
-		MonoClass *inst;
-		MonoGenericContext ctx;
-		ERROR_DECL (error);
+	MonoClass *ret_klass = mini_handle_call_res_devirt (cmethod);
 
-		memset (&ctx, 0, sizeof (ctx));
+	if (ret_klass) {
+		MonoInst *typed_objref;
+		MONO_INST_NEW (cfg, typed_objref, OP_TYPED_OBJREF);
+		typed_objref->type = STACK_OBJ;
+		typed_objref->dreg = alloc_ireg_ref (cfg);
+		typed_objref->sreg1 = call_res->dreg;
+		typed_objref->klass = ret_klass;
+		MONO_ADD_INS (cfg->cbb, typed_objref);
 
-		MonoType *args [ ] = { param_type };
-		ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+		call_res = typed_objref;
 
-		inst = mono_class_inflate_generic_class_checked (mono_class_get_iequatable_class (), &ctx, error);
-		mono_error_assert_ok (error);
-
-		/* EqualityComparer<T>.Default returns specific types depending on T */
-		// FIXME: Add more
-		// 1. Implements IEquatable<T>
-		// 2. Nullable<T>
-		/*
-		 * Can't use this for string/byte as it might use a different comparer:
-		 *
-         * // Specialize type byte for performance reasons
-         * if (t == typeof(byte)) {
-         *     return (EqualityComparer<T>)(object)(new ByteEqualityComparer());
-         * }
-		 * #if MOBILE
-		 *   // Breaks .net serialization compatibility
-		 *   if (t == typeof (string))
-		 *       return (EqualityComparer<T>)(object)new InternalStringComparer ();
-		 * #endif
-		 */
-		if (mono_class_is_assignable_from_internal (inst, mono_class_from_mono_type_internal (param_type)) && param_type->type != MONO_TYPE_U1 && param_type->type != MONO_TYPE_STRING) {
-			MonoInst *typed_objref;
-			MonoClass *gcomparer_inst;
-
-			memset (&ctx, 0, sizeof (ctx));
-
-			args [0] = param_type;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-
-			MonoClass *gcomparer = mono_class_get_geqcomparer_class ();
-			g_assert (gcomparer);
-			gcomparer_inst = mono_class_inflate_generic_class_checked (gcomparer, &ctx, error);
-			if (is_ok (error)) {
-				MONO_INST_NEW (cfg, typed_objref, OP_TYPED_OBJREF);
-				typed_objref->type = STACK_OBJ;
-				typed_objref->dreg = alloc_ireg_ref (cfg);
-				typed_objref->sreg1 = call_res->dreg;
-				typed_objref->klass = gcomparer_inst;
-				MONO_ADD_INS (cfg->cbb, typed_objref);
-
-				call_res = typed_objref;
-
-				/* Force decompose */
-				cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
-				cfg->cbb->needs_decompose = TRUE;
-			}
-		}
+		/* Force decompose */
+		cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
+		cfg->cbb->needs_decompose = TRUE;
 	}
 
 	return call_res;
@@ -6109,7 +6053,7 @@ emit_setret (MonoCompile *cfg, MonoInst *val)
 			EMIT_NEW_RETLOADA (cfg, ret_addr);
 
 			MonoClass *ret_class = mono_class_from_mono_type_internal (ret_type);
-			if (MONO_CLASS_IS_SIMD (cfg, ret_class))
+			if (mini_class_is_simd (cfg, ret_class))
 				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, ret_addr->dreg, 0, val->dreg);
 			else
 				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREV_MEMBASE, ret_addr->dreg, 0, val->dreg);
@@ -13310,6 +13254,8 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 							/* printf ("INS: "); mono_print_ins (ins); */
 							/* Create a store instruction */
 							NEW_STORE_MEMBASE (cfg, store_ins, store_opcode, var->inst_basereg, var->inst_offset, ins->dreg);
+							if (store_ins->opcode == OP_STOREX_MEMBASE)
+								mini_type_to_eval_stack_type (cfg, var->inst_vtype, store_ins);
 
 							/* Insert it after the instruction */
 							mono_bblock_insert_after_ins (bb, ins, store_ins);
@@ -13455,6 +13401,8 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 							g_assert (load_opcode != OP_LOADI8_MEMBASE);
 #endif
 							NEW_LOAD_MEMBASE (cfg, load_ins, load_opcode, sreg, var->inst_basereg, var->inst_offset);
+							if (load_ins->opcode == OP_LOADX_MEMBASE)
+								mini_type_to_eval_stack_type (cfg, var->inst_vtype, load_ins);
 							mono_bblock_insert_before_ins (bb, ins, load_ins);
 							use_ins = load_ins;
 						}

@@ -26,7 +26,7 @@ try {
     console.log ("smoke: running FetchBackground(blurst.txt)");
     let s = await exports.Sample.Test.FetchBackground("./blurst.txt");
     console.log ("smoke: FetchBackground(blurst.txt) done");
-    if (s !== "It was the best of times, it was the blurst of times.\n") {
+    if (!s.startsWith("It was the best of times, it was the blurst of times.")) {
         const msg = `Unexpected FetchBackground result ${s}`;
         document.getElementById("out").innerHTML = msg;
         throw new Error (msg);

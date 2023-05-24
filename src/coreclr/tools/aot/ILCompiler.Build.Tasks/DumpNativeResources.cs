@@ -8,13 +8,14 @@ using System.Reflection.PortableExecutable;
 using System.Text;
 
 using Microsoft.Build.Framework;
+using Microsoft.Build.Utilities;
 
 namespace Build.Tasks
 {
     /// <summary>
     /// Dumps native Win32 resources in the given assembly into a specified *.res file.
     /// </summary>
-    public class DumpNativeResources : DesktopCompatibleTask
+    public class DumpNativeResources : Task
     {
         /// <summary>
         /// File name of the assembly with Win32 resources to be dumped.
