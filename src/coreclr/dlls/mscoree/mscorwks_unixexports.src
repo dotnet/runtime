@@ -104,7 +104,6 @@ mono_error_get_message
 mono_error_init
 mono_error_ok
 mono_exception_from_name_msg
-mono_exception_from_name_two_strings
 mono_exit_internal_call
 mono_field_from_token
 mono_field_get_flags
@@ -277,7 +276,6 @@ mono_unity_custom_attrs_construct
 mono_unity_domain_mempool_chunk_foreach
 mono_unity_domain_set_config
 mono_unity_domain_unload
-mono_unity_error_convert_to_exception
 mono_unity_field_from_token_checked
 mono_unity_free_captured_memory_snapshot
 mono_unity_g_free
