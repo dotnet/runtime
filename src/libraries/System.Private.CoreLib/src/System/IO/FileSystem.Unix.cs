@@ -35,27 +35,27 @@ namespace System.IO
             using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out fileLength, out filePermissions);
 
             // Try to clone the file first.
-            if (TryCloneFile(sourceFullPath, destFullPath, overwrite, CreateOpenException))
+            if (TryCloneFile(sourceFullPath, destFullPath, overwrite))
             {
                 return;
             }
 
             using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
                                             FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, filePermissions,
-                                            CreateOpenException);
+                                            CreateOpenExceptionForCopyFile);
 
             Interop.CheckIo(Interop.Sys.CopyFile(src, dst, fileLength));
+        }
 
-            static Exception? CreateOpenException(Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path)
+        private static Exception? CreateOpenExceptionForCopyFile(Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path)
+        {
+            // If the destination path points to a directory, we throw to match Windows behaviour.
+            if (error.Error == Interop.Error.EEXIST && DirectoryExists(path))
             {
-                // If the destination path points to a directory, we throw to match Windows behaviour.
-                if (error.Error == Interop.Error.EEXIST && DirectoryExists(path))
-                {
-                    return new IOException(SR.Format(SR.Arg_FileIsDirectory_Name, path));
-                }
-
-                return null; // Let SafeFileHandle create the exception for this error.
+                return new IOException(SR.Format(SR.Arg_FileIsDirectory_Name, path));
             }
+
+            return null; // Let SafeFileHandle create the exception for this error.
         }
 
 #pragma warning disable IDE0060

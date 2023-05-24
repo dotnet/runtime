@@ -8,7 +8,7 @@ namespace System.IO
 {
     internal static partial class FileSystem
     {
-        private static bool TryCloneFile(string sourceFullPath, string destFullPath, bool overwrite, Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?> createOpenException)
+        private static bool TryCloneFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
             // This helper function calls out to clonefile, and returns the error.
             static bool TryCloneFile(string sourceFullPath, string destFullPath, int flags, out Interop.Error error)
@@ -16,7 +16,7 @@ namespace System.IO
                 if (Interop.@libc.clonefile(sourceFullPath, destFullPath, flags) == 0)
                 {
                     // Success.
-                    error = default;
+                    error = Interop.Error.SUCCESS;
                     return true;
                 }
                 error = Interop.Sys.GetLastError();
@@ -45,7 +45,7 @@ namespace System.IO
                 try
                 {
                     using SafeFileHandle? dstHandle = SafeFileHandle.Open(destFullPath, FileMode.Open, FileAccess.ReadWrite,
-                        FileShare.None, FileOptions.None, preallocationSize: 0, createOpenException: createOpenException);
+                        FileShare.None, FileOptions.None, preallocationSize: 0, createOpenException: CreateOpenExceptionForCopyFile);
                     if (Interop.Sys.Unlink(destFullPath) < 0)
                     {
                         Interop.Error errorInfo = Interop.Sys.GetLastError();
@@ -63,14 +63,6 @@ namespace System.IO
 
                 // Try clonefile now we've deleted the destination file.
                 if (TryCloneFile(sourceFullPath, destFullPath, flags, out error)) return true;
-
-                // Some filesystems don't support ACLs, so may fail due to trying to copy ACLs.
-                // This will disable them and allow trying again (a maximum of 1 time).
-                if (flags != 0 && error == Interop.Error.EINVAL)
-                {
-                    flags = 0;
-                    if (TryCloneFile(sourceFullPath, destFullPath, flags, out error)) return true;
-                }
             }
 
             // Check if it's not supported, if files are on different filesystems, or if the destination file still exists.
