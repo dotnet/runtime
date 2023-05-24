@@ -615,7 +615,6 @@ namespace System
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
         public static explicit operator Half(float value)
         {
-            // TODO: Detailed explanation of this branchless conversion algorithm here
             #region Explanation of this algorithm
             // This algorithm converts a single-precision floating-point number to a half-precision floating-point number by multiplying it as a floating-point number and rearranging the bit sequence.
             // However, it introduces some tricks to implement rounding correctly, to avoid multiplying denormalized numbers and to deal with exceptions such as infinity and NaN without using branch instructions.
@@ -629,7 +628,110 @@ namespace System
             // Both formats use an offset binary representation for the exponent part: the exponent part for 1.0 is half of the maximum value for either precision, i.e., 127 for single-precision and 15 for half-precision.
             // The mantissa part is normalized when the exponent part is nonzero, since in binary numbers, 1 appears as the most significant digit for any nonzero number.
             //
+            // This conversion algorithm takes advantage of the similarity between the two formats.
+            // By isolating the sign part from the single-precision bitstring, limiting the range of absolute value, rounding the lower bits to match the half-precision, and shifting it 13 bits to the right, the boundary between the exponent and mantissa parts matches with that of half-precision.
+            // In other words,
+            // sEEEeeeeeffffffffffxxxxxxxxxxxxx is rearranged to
+            //    seeeeeffffffffff
+            // The x is the part that certainly gets rounded.
             //
+            // When you operate with floating-point number, rounding occurs after every single floating-point operation.
+            // For example, when you add 1.1f with MathF.PI, the internal representation of both value is:
+            // 0 01111111 00011001100110011001101 for 1.1f, and
+            // 0 10000000 10010010000111111011011 for MathF.PI (3.1415927f).
+            // And raw binary representation of both numbers is:
+            //   1.00011001100110011001101 for 1.1f, and
+            //  11.0010010000111111011011  for 3.1415927f.
+            // We matched the point for adding them properly.
+            // Adding these numbers results:
+            // 100.00111101110110010000011
+            // After normalizing the number:
+            // 1.0000111101110110010000011 x 2^2
+            // But it has 25 bits below the point. So we should round the number to 23bits by the method called "Round to nearest, ties to even"
+            // - Round to the nearest value
+            // - If the number is at the midway, round it to the nearest value with an even least significant digit.
+            // So we apply this:
+            // 1.00001111011101100100001 x 2^2
+            // And the result is:
+            // 0 10000001 00001111011101100100001
+            // Which matches the ground truth of `BitConverter.SingleToUInt32Bits(MathF.PI + 1.3f)`:
+            // 0 10000001 00001111011101100100001
+            //
+            // When we want to round the number to a certain precision, we can take advantage of this specification.
+            // If we craft a value to add carefully, the result of addition is rounded wherever we expect.
+            // For instance, MathF.PI (3.1415927f) is:
+            // 0 10000000 10010010000111111011011
+            // We craft the adding value to round the MathF.PI into half-precision by adding (exponentOffset0 in the actual code) by:
+            // - Making sure that both the exponentOffset0 and the value is smaller than MaxHalfValueBelowInfinity(65520.0f) as larger values goes infinity in Half, while letting NaN be as it is
+            // - Making sure that the exponentOffset0 is larger than MinExp (0x3880_0000u) as smaller values goes subnormal in Half
+            // - Clearing the fraction bits in exponentOffset0
+            // - Adding Exponent13 (0x0680_0000u) to exponentOffset0 with integer ALU, effectively adding 13 to the exponent part of exponentOffset0
+            // For 3.1415927f, the exponentOffset0 is:
+            // 0 10001101 00000000000000000000000 (16384f)
+            // Adding these numbers with floating-point arithmetic unit results:
+            // 0 10001101 00000000000011001001000 (16387.14f)
+            // You can see the first 11 bits of 11.0010010000111111011011 rounded appears at the bottom of the fraction part of the result.
+            // By subtracting the 16384f from this with floating-point arithmetic unit, we get this:
+            // 0 10000000 10010010000000000000000 (3.140625f)
+            // And here is the `BitConverter.HalfToUInt16Bits((Half)MathF.PI)` in binary:
+            // 0 10000 1001001000 (3.14)
+            //
+            // Now we have to resolve the difference of the exponent parts.
+            // We can simply multiply the 1.92593E-34f in the floating-point number multiplication unit, to adjust the exponent part.
+            // However, most hardware cannot efficiently handle the multiplication of denormalized numbers.
+            // Before adding the exponentOffset0 (16384f in this case) to 3.1415927f, we generate another value (called exponentOffset1 in the actual code) to adjust the exponent part by:
+            // - Subtracting the Exponent112 (0x3800_0000u) from of exponentOffset0 and store it to exponentOffset1, effectively subtracting 112 from the exponent part of exponentOffset0
+            // - Zeroing the exponentOffset1 if the value is NaN
+            // For 3.1415927f, the exponentOffset1 is:
+            // 0 00011101 00000000000000000000000 (3.1554436E-30f)
+            // Adding the exponentOffset0 (16384f) to 3.1415927f with floating-point arithmetic unit results:
+            // 0 10001101 00000000000011001001000 (16387.14f)
+            // Then subtract the Exponent112 (0x3800_0000u) from it with integer ALU:
+            // 0 00011101 00000000000011001001000 (3.1560485E-30f)
+            // Then subtract the exponentOffset1 (3.1554436E-30f in this case) with floating-point arithmetic unit:
+            // 0 00010000 10010010000000000000000 (6.0486237E-34f)
+            // And here is the `BitConverter.HalfToUInt16Bits((Half)MathF.PI)` in binary:
+            // 0 10000 1001001000 (3.14)
+            // Now we have to rearrange the bitstring.
+            // By shifting the internal representation of 6.0486237E-34f right by 13 bits, we get this: (omitting the leading 16 0s above the sign bit)
+            // 0 10000 1001001000 ((Half)3.140625f)
+            // Now we have to merge the sign bit at right position:
+            // 0 10000 1001001000 ((Half)3.140625f)
+            // And here is the `BitConverter.HalfToUInt16Bits((Half)MathF.PI)` in binary:
+            // 0 10000 1001001000 (3.14 in Half)
+            //
+            // If the value is NaN in Half, we should further modify the exponent part of the intermediate value.
+            // For the 0xffbf_ffffu (NaN,
+            // 1 11111111 01111111111111111111111 in binary), the exponentOffset0 is:
+            // 1 00001100 00000000000000000000000 (-2.40741243048e-35f)
+            // It doesn't look correct! But don't worry.
+            // The exponentOffset1 is:
+            // 0 00000000 00000000000000000000000 (0f)
+            // And the result of `value + exponentOffset0` is:
+            // 0 11111111 11111111111111111111111 (NaN)
+            // As the sign part is isolated at the beginning, the sign bit is 0 here.
+            // The exponent don't seem to be changed at all, and the only difference here from the original value 0xffbf_ffffu is the sign bit and the highest bit of fraction part.
+            // Setting the highest bit of fraction part is an expected behavior.
+            // After subtracting the Exponent112 from it, we get this:
+            // 0 10001111 11111111111111111111111 (131071.99f)
+            // Then subtract the exponentOffset1, we get this:
+            // 0 10001111 11111111111111111111111 (131071.99f)
+            // By shifting the internal representation of it right by 13 bits, we get this: (omitting the leading 0s above the sign bit)
+            // 10 0 01111 1111111111
+            // There are some garbage above the exponent part, so we clear them by ANDing with the NegatedHalfSignMask (0x7fffu):
+            // 0 01111 1111111111
+            // The maskedHalfExponentForNaN is generated as:
+            // - ExponentMask (0x7c00u) if the value is NaN, 0 otherwise
+            // Then the signAndMaskedExponent is generated by ORing the maskedHalfExponentForNaN and the isolated sign bit shifted 16 bits right (0x8000u in this case):
+            // 1 11111 0000000000 (Half.NegativeInfinity)
+            // The exponent part here is also a complete gibberish, so we clear them by ANDing the ~maskedHalfExponentForNaN:
+            // 0 00000 1111111111 (6.1E-05)
+            // Then merge the signAndMaskedExponent with it:
+            // 1 11111 1111111111 (NaN)
+            // And here is the `BitConverter.HalfToUInt16Bits((Half)BitConverter.UInt32BitsToSingle(0xffbf_ffffu))` in binary:
+            // 1 11111 1111111111 (NaN)
+            //
+            // This code does all of above steps, without any single branches.
             #endregion
             // Minimum exponent for rounding
             const uint MinExp = 0x3880_0000u;
@@ -641,13 +743,16 @@ namespace System
             const uint Exponent13 = 0x0680_0000u;
             // Maximum value that is not Infinity in Half
             const float MaxHalfValueBelowInfinity = 65520.0f;
+            // Mask for exponent bits in Half
+            const uint ExponentMask = BiasedExponentMask;
+            // Mask for exponent and fraction bits in Half
+            const uint NegatedHalfSignMask = 0x7fffu;
             uint bitValue = BitConverter.SingleToUInt32Bits(value);
             // Extract sign bit
             uint sign = bitValue & float.SignMask;
             // Clear sign bit
             value = float.Abs(value);
             // Rectify values that are Infinity in Half. (float.Min now emits vminps instruction if one of two arguments is a constant)
-
             value = float.Min(MaxHalfValueBelowInfinity, value);
             bitValue = BitConverter.SingleToUInt32Bits(value);
             // Detecting NaN (~0u if a is not NaN)
@@ -674,9 +779,9 @@ namespace System
             // Match the position of sign bit
             sign >>>= 16;
             // Only exponent bits will be modified if NaN
-            uint maskedHalfExponentForNaN = ~realMask & 0x7C00u;
+            uint maskedHalfExponentForNaN = ~realMask & ExponentMask;
             // Clear the upper unnecessary bits
-            bitValue &= 0x7fffu;
+            bitValue &= NegatedHalfSignMask;
             // Merge sign bit with possible NaN exponent
             uint signAndMaskedExponent = maskedHalfExponentForNaN | sign;
             // Clear exponents if value is NaN
@@ -964,23 +1069,28 @@ namespace System
             // The above operation produces the same result as if the rearranged bit sequence were multiplied by the constant 5.192297E+33f.
             // Finally, merging the isolated sign bits completes the conversion.
             #endregion
-
             // The smallest positive normal number in Half, converted to Single
             const uint ExponentLowerBound = 0x3880_0000u;
             // BitConverter.SingleToUInt32Bits(1.0f) - ((uint)BitConverter.HalfToUInt16Bits((Half)1.0f) << 13)
             const uint ExponentOffset = 0x3800_0000u;
             // Mask for sign bit in Single
             const uint FloatSignMask = float.SignMask;
+            // Mask for exponent bits in Half
+            const uint HalfExponentMask = BiasedExponentMask;
+            // Mask for bits in Single converted from Half
+            const int HalfToSingleBitsMask = 0x0FFF_E000;
             // Extract the internal representation of value
             short valueInInt16Bits = BitConverter.HalfToInt16Bits(value);
+            // Extract sign bit of value
+            uint sign = (uint)(int)valueInInt16Bits & FloatSignMask;
             // Copy sign bit to upper bits
-            uint bitValueInProcess = (uint)(int)valueInInt16Bits;
+            uint bitValueInProcess = (uint)valueInInt16Bits;
             // Extract exponent bits of value (BiasedExponent is not for here as it performs unnecessary shift)
-            uint offsetExponent = bitValueInProcess & 0x7c00u;
+            uint offsetExponent = bitValueInProcess & HalfExponentMask;
             // ~0u when value is subnormal, 0 otherwise
             uint subnormalMask = (uint)-Unsafe.BitCast<bool, byte>(offsetExponent == 0u);
             // ~0u when value is either Infinity or NaN, 0 otherwise
-            int infinityOrNaNMask = Unsafe.BitCast<bool, byte>(offsetExponent == 0x7c00u);
+            int infinityOrNaNMask = Unsafe.BitCast<bool, byte>(offsetExponent == HalfExponentMask);
             // 0x3880_0000u if value is subnormal, 0 otherwise
             uint maskedExponentLowerBound = subnormalMask & ExponentLowerBound;
             // 0x3880_0000u if value is subnormal, 0x3800_0000u otherwise
@@ -989,10 +1099,8 @@ namespace System
             bitValueInProcess <<= 13;
             // Double the offsetMaskedExponentLowerBound if value is either Infinity or NaN
             offsetMaskedExponentLowerBound <<= infinityOrNaNMask;
-            // Extract sign bit of value
-            uint sign = bitValueInProcess & FloatSignMask;
             // Extract exponent bits and fraction bits of value
-            bitValueInProcess &= 0x0FFF_E000;
+            bitValueInProcess &= HalfToSingleBitsMask;
             // Adjust exponent to match the range of exponent
             bitValueInProcess += offsetMaskedExponentLowerBound;
             // If value is subnormal, remove unnecessary 1 on top of fraction bits.
