@@ -10,23 +10,30 @@ namespace System.IO
     {
         private static bool TryCloneFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
+            // This helper function calls out to clonefile, and returns the error.
+            static bool TryCloneFile(string sourceFullPath, string destFullPath, bool overwrite, int flags, out Interop.Error error)
+            {
+                if (Interop.@libc.clonefile(sourceFullPath, destFullPath, flags) == 0)
+                {
+                    // Success.
+                    return true;
+                }
+                Interop.Error error = Interop.Sys.GetLastError();
+                return false;
+            }
+
             // Try to clone the file immediately, this will only succeed if the
             // destination doesn't exist, so we don't worry about locking for this one.
             int flags = Interop.@libc.CLONE_ACL;
-            retry1:
-            if (Interop.@libc.clonefile(sourceFullPath, destFullPath, flags) == 0)
-            {
-                // Success.
-                return true;
-            }
-            Interop.Error error = Interop.Sys.GetLastError();
+            Interop.Error error;
+            if (TryCloneFile(sourceFullPath, destFullPath, overwrite, flags, out error)) return true;
 
             // Some filesystems don't support ACLs, so may fail due to trying to copy ACLs.
             // This will disable them and allow trying again (a maximum of 1 time).
-            if (error == Interop.Error.EINVAL && flags != 0)
+            if (error == Interop.Error.EINVAL)
             {
                 flags = 0;
-                goto retry1;
+                if (TryCloneFile(sourceFullPath, destFullPath, overwrite, flags, out error)) return true;
             }
 
             // Try to delete the destination file if we're overwriting.
@@ -54,20 +61,14 @@ namespace System.IO
                 }
 
                 // Try clonefile now we've deleted the destination file.
-                retry2:
-                if (Interop.@libc.clonefile(sourceFullPath, destFullPath, flags) == 0)
-                {
-                    // Success.
-                    return true;
-                }
-                error = Interop.Sys.GetLastError();
+                if (TryCloneFile(sourceFullPath, destFullPath, overwrite, flags, out error)) return true;
 
                 // Some filesystems don't support ACLs, so may fail due to trying to copy ACLs.
                 // This will disable them and allow trying again (a maximum of 1 time).
-                if (error == Interop.Error.EINVAL && flags != 0)
+                if (flags != 0 && error == Interop.Error.EINVAL)
                 {
                     flags = 0;
-                    goto retry2;
+                    if (TryCloneFile(sourceFullPath, destFullPath, overwrite, flags, out error)) return true;
                 }
             }
 
