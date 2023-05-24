@@ -1410,10 +1410,13 @@ namespace Mono.Linker.Steps
 
 			MarkExportedTypesTarget.ProcessAssembly (assembly, Context);
 
-			if (ProcessReferencesStep.IsFullyPreservedAction (Annotations.GetAction (assembly))) {
-				if (!Context.TryGetCustomData ("DisableMarkingOfCopyAssemblies", out string? disableMarkingOfCopyAssembliesValue) ||
-					disableMarkingOfCopyAssembliesValue != "true")
+			var action = Annotations.GetAction (assembly);
+			if (ProcessReferencesStep.IsFullyPreservedAction (action)) {
+				if (action != AssemblyAction.Copy ||
+					!Context.TryGetCustomData ("DisableMarkingOfCopyAssemblies", out string? disableMarkingOfCopyAssembliesValue) ||
+					disableMarkingOfCopyAssembliesValue != "true") {
 					MarkEntireAssembly (assembly);
+				}
 				return;
 			}
 
@@ -3213,8 +3216,8 @@ namespace Mono.Linker.Steps
 
 			if (method.HasOverrides) {
 				var assembly = Context.Resolve (method.DeclaringType.Scope);
-				// If this method is in a Copy or CopyUsed assembly, .overrides won't get swept and we need to keep all of them
-				bool markAllOverrides = assembly != null && Annotations.GetAction (assembly) is AssemblyAction.Copy or AssemblyAction.CopyUsed;
+				// If this method is in a Copy, CopyUsed, or Save assembly, .overrides won't get swept and we need to keep all of them
+				bool markAllOverrides = assembly != null && Annotations.GetAction (assembly) is AssemblyAction.Copy or AssemblyAction.CopyUsed or AssemblyAction.Save;
 				foreach (MethodReference @base in method.Overrides) {
 					// Method implementing a static interface method will have an override to it - note instance methods usually don't unless they're explicit.
 					// Calling the implementation method directly has no impact on the interface, and as such it should not mark the interface or its method.

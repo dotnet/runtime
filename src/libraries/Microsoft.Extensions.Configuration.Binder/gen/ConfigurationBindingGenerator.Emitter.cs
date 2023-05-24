@@ -225,7 +225,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             #region Helper class in source-generation namespace.
             private void EmitHelperUsingStatements()
             {
-                foreach (string @namespace in _generationSpec.Namespaces)
+                foreach (string @namespace in _generationSpec.TypeNamespaces)
                 {
                     _writer.WriteLine($"using {@namespace};");
                 }
@@ -287,7 +287,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     TypeSpec effectiveType = (type as NullableSpec)?.UnderlyingType ?? type;
                     _writer.WriteBlockStart($"if (type == typeof({type.MinimalDisplayString}))");
                     EmitBindLogicFromString(
-                        (ParsableFromStringTypeSpec)effectiveType,
+                        (ParsableFromStringSpec)effectiveType,
                         Identifier.obj,
                         Expression.sectionValue,
                         Expression.sectionPath,
@@ -354,7 +354,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (_generationSpec.PrimitivesForHelperGen.Count > 0)
                 {
-                    foreach (ParsableFromStringTypeSpec type in _generationSpec.PrimitivesForHelperGen)
+                    foreach (ParsableFromStringSpec type in _generationSpec.PrimitivesForHelperGen)
                     {
                         EmitBlankLineIfRequired();
                         EmitPrimitiveParseMethod(type);
@@ -413,7 +413,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     """);
             }
 
-            private void EmitPrimitiveParseMethod(ParsableFromStringTypeSpec type)
+            private void EmitPrimitiveParseMethod(ParsableFromStringSpec type)
             {
                 string innerExceptionTypeDisplayString;
                 string cultureInfoTypeDisplayString;
@@ -589,7 +589,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (elementType.SpecKind is TypeSpecKind.ParsableFromString)
                 {
-                    ParsableFromStringTypeSpec stringParsableType = (ParsableFromStringTypeSpec)elementType;
+                    ParsableFromStringSpec stringParsableType = (ParsableFromStringSpec)elementType;
                     if (stringParsableType.StringParsableTypeKind is StringParsableTypeKind.ConfigValue)
                     {
                         string tempVarName = GetIncrementalVarName(Identifier.stringValue);
@@ -620,7 +620,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 _writer.WriteBlockStart($"foreach ({Identifier.IConfigurationSection} {Identifier.section} in {Identifier.configuration}.{Identifier.GetChildren}())");
 
-                ParsableFromStringTypeSpec keyType = type.KeyType;
+                ParsableFromStringSpec keyType = type.KeyType;
                 TypeSpec elementType = type.ElementType;
 
                 // Parse key
@@ -644,7 +644,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     if (elementType.SpecKind == TypeSpecKind.ParsableFromString)
                     {
-                        ParsableFromStringTypeSpec stringParsableType = (ParsableFromStringTypeSpec)elementType;
+                        ParsableFromStringSpec stringParsableType = (ParsableFromStringSpec)elementType;
                         if (stringParsableType.StringParsableTypeKind is StringParsableTypeKind.ConfigValue)
                         {
                             string tempVarName = GetIncrementalVarName(Identifier.stringValue);
@@ -786,7 +786,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             if (canSet)
                             {
                                 EmitBindLogicFromString(
-                                    (ParsableFromStringTypeSpec)propertyType,
+                                    (ParsableFromStringSpec)propertyType,
                                     expressionForPropertyAccess,
                                     expressionForConfigValueIndexer,
                                     expressionForConfigValuePath: Expression.sectionPath);
@@ -839,7 +839,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                         EmitCastToIConfigurationSection();
                     }
-                    EmitBindLogicFromString((ParsableFromStringTypeSpec)type, expressionForMemberAccess, Expression.sectionValue, Expression.sectionPath);
+                    EmitBindLogicFromString((ParsableFromStringSpec)type, expressionForMemberAccess, Expression.sectionValue, Expression.sectionPath);
                 }
                 else
                 {
@@ -944,7 +944,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
 
             private void EmitBindLogicFromString(
-                ParsableFromStringTypeSpec type,
+                ParsableFromStringSpec type,
                 string expressionForMemberAccess,
                 string expressionForConfigStringValue,
                 string expressionForConfigValuePath,

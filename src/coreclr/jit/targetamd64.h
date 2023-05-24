@@ -112,8 +112,6 @@
   #define STACK_ALIGN              16      // stack alignment requirement
   #define STACK_ALIGN_SHIFT        4       // Shift-right amount to convert size in bytes to size in STACK_ALIGN units == log2(STACK_ALIGN)
 
-  #define ZMM_RECOMMENDED_THRESHOLD 128    // A general recommendation to use ZMM for data starting from this size in bytes
-
 #if ETW_EBP_FRAMED
   #define RBM_ETW_FRAMED_EBP        RBM_NONE
   #define RBM_ETW_FRAMED_EBP_LIST

@@ -97,12 +97,17 @@ extends:
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
           platforms:
           - gcc_linux_x64
           jobParameters:
             testGroup: innerloop
+            nameSuffix: Native_GCC
+            buildArgs: -s clr.native+libs.native+mono+host.native -c $(_BuildConfig) -gcc
+            extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
+            extraStepsParameters:
+              testBuildArgs: skipmanaged skipgeneratelayout skiprestorepackages -gcc
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -243,7 +248,7 @@ extends:
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
             extraStepsParameters:
               creator: dotnet-bot
-              testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;" /p:BuildNativeAotFrameworkObjects=true'
+              testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;tracing;" /p:BuildNativeAotFrameworkObjects=true'
               liveLibrariesBuildConfig: Release
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             extraVariablesTemplates:
@@ -331,13 +336,16 @@ extends:
       # Build and test clr tools
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
           platforms:
           - linux_x64
           jobParameters:
-            testGroup: clrTools
             timeoutInMinutes: 120
+            nameSuffix: CLR_Tools_Tests
+            buildArgs: -s clr.aot+clr.iltools+libs+clr.toolstests -c $(_BuildConfig) -test
+            enablePublishTestResults: true
+            testResultsFormat: 'xunit'
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),

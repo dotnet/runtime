@@ -21,10 +21,10 @@ import {
     MintOpcodePtr, WasmValtype, WasmBuilder,
     append_memset_dest, append_bailout, append_exit,
     append_memmove_dest_src, try_append_memset_fast,
-    try_append_memmove_fast, counters, bytesFromHex,
+    try_append_memmove_fast, counters, getOpcodeTableValue,
     getMemberOffset, JiterpMember, BailoutReason,
-    getOpcodeTableValue
 } from "./jiterpreter-support";
+import { compileSimdFeatureDetect } from "./jiterpreter-feature-detect";
 import {
     sizeOfDataItem, sizeOfV128, sizeOfStackval,
 
@@ -154,7 +154,10 @@ function is_backward_branch_target(
 
 const knownConstantValues = new Map<number, number>();
 
-function get_known_constant_value(localOffset: number): number | undefined {
+function get_known_constant_value(builder: WasmBuilder, localOffset: number): number | undefined {
+    if (isAddressTaken(builder, localOffset))
+        return undefined;
+
     return knownConstantValues.get(localOffset);
 }
 
@@ -338,7 +341,7 @@ export function generateWasmBody(
                 const sizeOffset = getArgU16(ip, 3),
                     srcOffset = getArgU16(ip, 2),
                     destOffset = getArgU16(ip, 1),
-                    constantSize = get_known_constant_value(sizeOffset);
+                    constantSize = get_known_constant_value(builder, sizeOffset);
 
                 if (constantSize !== 0) {
                     if (typeof (constantSize) !== "number") {
@@ -389,10 +392,6 @@ export function generateWasmBody(
                 const sizeOffset = getArgU16(ip, 3),
                     valueOffset = getArgU16(ip, 2),
                     destOffset = getArgU16(ip, 1);
-                /*
-                constantSize = get_known_constant_value(sizeOffset),
-                constantValue = get_known_constant_value(valueOffset);
-                */
 
                 // TODO: Handle constant size initblks. Not sure if they matter though
                 // FIXME: This will cause an erroneous bailout if dest and size are both 0
@@ -2342,7 +2341,6 @@ function emit_branch(
 ): boolean {
     const isSafepoint = (opcode >= MintOpcode.MINT_BRFALSE_I4_SP) &&
         (opcode <= MintOpcode.MINT_BLT_UN_I8_IMM_SP);
-    eraseInferredState();
 
     // If the branch is taken we bail out to allow the interpreter to do it.
     // So for brtrue, we want to do 'cond == 0' to produce a bailout only
@@ -2998,8 +2996,6 @@ function emit_arrayop(builder: WasmBuilder, frame: NativePointer, ip: MintOpcode
     return true;
 }
 
-const vec128Test =
-    "0061736d0100000001040160000003020100070801047465737400000a090107004100fd111a0b";
 let wasmSimdSupported: boolean | undefined;
 
 function getIsWasmSimdSupported(): boolean {
@@ -3009,10 +3005,8 @@ function getIsWasmSimdSupported(): boolean {
     // Probe whether the current environment can handle wasm v128 opcodes.
     try {
         // Load and compile a test module that uses i32x4.splat. See wasm-simd-feature-detect.wat/wasm
-        const bytes = bytesFromHex(vec128Test);
-        counters.bytesGenerated += bytes.length;
-        new WebAssembly.Module(bytes);
-        wasmSimdSupported = true;
+        const module = compileSimdFeatureDetect();
+        wasmSimdSupported = !!module;
     } catch (exc) {
         mono_log_info("Disabling WASM SIMD support due to JIT failure", exc);
         wasmSimdSupported = false;
@@ -3061,9 +3055,9 @@ function emit_simd(
         case MintOpcode.MINT_SIMD_V128_LDC: {
             if (builder.options.enableSimd && getIsWasmSimdSupported()) {
                 builder.local("pLocals");
-                builder.appendSimd(WasmSimdOpcode.v128_const);
-                const view = Module.HEAPU8.slice(<any>ip + 4, <any>ip + 4 + sizeOfV128);
-                builder.appendBytes(view);
+                builder.v128_const(
+                    Module.HEAPU8.slice(<any>ip + 4, <any>ip + 4 + sizeOfV128)
+                );
                 append_simd_store(builder, ip);
             } else {
                 // dest
@@ -3182,8 +3176,7 @@ function emit_simd_2(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
             const tableEntry = createScalarTable[index];
             builder.local("pLocals");
             // Make a zero vector
-            builder.i52_const(0);
-            builder.appendSimd(WasmSimdOpcode.i64x2_splat);
+            builder.v128_const(0);
             // Load the scalar value
             append_ldloc(builder, getArgU16(ip, 2), tableEntry[0]);
             // Replace the first lane
@@ -3245,11 +3238,61 @@ function emit_simd_3(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
                 builder.appendU8(WasmOpcode.i32_eqz);
             append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
             return true;
+        case SimdIntrinsic3.V128_I2_SHUFFLE:
+        case SimdIntrinsic3.V128_I4_SHUFFLE:
+            // FIXME: I8
+            // FIXME: Many uses of these shuffles have constant shuffle indices,
+            //  which we could convert into bytes at compile time for vastly improved performance
+            return emit_shuffle(builder, ip, index === SimdIntrinsic3.V128_I2_SHUFFLE ? 8 : 4);
         default:
             return false;
     }
 
     return false;
+}
+
+// implement i16 and i32 shuffles on top of wasm's only shuffle opcode by expanding the
+//  element shuffle indices into byte indices
+function emit_shuffle(builder: WasmBuilder, ip: MintOpcodePtr, elementCount: number): boolean {
+    const elementSize = 16 / elementCount;
+    mono_assert((elementSize === 2) || (elementSize === 4), "Unsupported shuffle element size");
+    builder.local("pLocals");
+    // Load vec
+    append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+    // Load indices (in chars)
+    append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+    // There's no direct narrowing opcode for i32 -> i8, so we have to do two steps :(
+    if (elementCount === 4) {
+        // i32{lane0 ... lane3} -> i16{lane0 ... lane3, 0 ...}
+        builder.v128_const(0);
+        builder.appendSimd(WasmSimdOpcode.i16x8_narrow_i32x4_u);
+    }
+    // Load a zero vector (narrow takes two vectors)
+    builder.v128_const(0);
+    // i16{lane0 ... lane7} -> i8{lane0 ... lane7, 0 ...}
+    builder.appendSimd(WasmSimdOpcode.i8x16_narrow_i16x8_u);
+    // i8{0, 1, 2, 3 ...} -> i8{0, 0, 1, 1, 2, 2, 3, 3 ...}
+    builder.appendSimd(WasmSimdOpcode.v128_const);
+    for (let i = 0; i < elementCount; i++) {
+        for (let j = 0; j < elementSize; j++)
+            builder.appendU8(i);
+    }
+    builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);
+    // multiply indices by 2 to scale from char indices to byte indices
+    builder.i32_const(elementCount === 4 ? 2 : 1);
+    builder.appendSimd(WasmSimdOpcode.i8x16_shl);
+    // now add 1 to the secondary lane of each char
+    builder.appendSimd(WasmSimdOpcode.v128_const);
+    for (let i = 0; i < elementCount; i++) {
+        for (let j = 0; j < elementSize; j++)
+            builder.appendU8(j);
+    }
+    // we can do a bitwise or since we know we previously multiplied all the lanes by 2
+    builder.appendSimd(WasmSimdOpcode.v128_or);
+    // we now have two vectors on the stack, the values and the byte indices
+    builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);
+    append_simd_store(builder, ip);
+    return true;
 }
 
 function emit_simd_4(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic4): boolean {

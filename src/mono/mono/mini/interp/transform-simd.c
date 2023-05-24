@@ -45,6 +45,8 @@ lookup_intrins (guint16 *intrinsics, int size, MonoMethod *cmethod)
                 return (int)*result;
 }
 
+// These items need to be in ASCII order, which means alphabetical order where lowercase is after uppercase
+// i.e. all 'get_' and 'op_' need to come after regular title-case names
 static guint16 sri_vector128_methods [] = {
 	SN_AndNot,
 	SN_ConditionalSelect,
@@ -67,6 +69,10 @@ static guint16 sri_vector128_methods [] = {
 };
 
 static guint16 sri_vector128_t_methods [] = {
+	SN_get_AllBitsSet,
+	SN_get_Count,
+	SN_get_One,
+	SN_get_Zero,
 	SN_op_Addition,
 	SN_op_BitwiseAnd,
 	SN_op_BitwiseOr,
@@ -81,10 +87,6 @@ static guint16 sri_vector128_t_methods [] = {
 	SN_op_Subtraction,
 	SN_op_UnaryNegation,
 	SN_op_UnsignedRightShift,
-	SN_get_AllBitsSet,
-	SN_get_Count,
-	SN_get_One,
-	SN_get_Zero,
 };
 
 static guint16 sri_packedsimd_methods [] = {
@@ -125,9 +127,8 @@ static guint16 sri_packedsimd_methods [] = {
 static int sri_packedsimd_offset_from_atype [] = {
 	-1, // MONO_TYPE_END        = 0x00,
 	-1, // MONO_TYPE_VOID       = 0x01,
-	// FIXME: Should this be 2, for I4?
-	0, // MONO_TYPE_BOOLEAN    = 0x02,
-	1, // MONO_TYPE_CHAR       = 0x03,
+	-1, // MONO_TYPE_BOOLEAN    = 0x02,
+	-1, // MONO_TYPE_CHAR       = 0x03,
 	0, // MONO_TYPE_I1         = 0x04,
 	0, // MONO_TYPE_U1         = 0x05,
 	1, // MONO_TYPE_I2         = 0x06,
@@ -139,7 +140,7 @@ static int sri_packedsimd_offset_from_atype [] = {
 	4, // MONO_TYPE_R4         = 0x0c,
 	5, // MONO_TYPE_R8         = 0x0d,
 	-1, // MONO_TYPE_STRING     = 0x0e,
-	2, // MONO_TYPE_PTR        = 0x0f,
+	-1, // MONO_TYPE_PTR        = 0x0f,
 	-1, // MONO_TYPE_BYREF      = 0x10,
 	-1, // MONO_TYPE_VALUETYPE  = 0x11,
 	-1, // MONO_TYPE_CLASS      = 0x12,

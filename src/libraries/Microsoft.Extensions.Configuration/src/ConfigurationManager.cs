@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
@@ -16,6 +17,8 @@ namespace Microsoft.Extensions.Configuration
     /// ConfigurationManager is a mutable configuration object. It is both an <see cref="IConfigurationBuilder"/> and an <see cref="IConfigurationRoot"/>.
     /// As sources are added, it updates its current view of configuration.
     /// </summary>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerTypeProxy(typeof(ConfigurationManagerDebugView))]
     public sealed class ConfigurationManager : IConfigurationBuilder, IConfigurationRoot, IDisposable
     {
         // Concurrently modifying config sources or properties is not thread-safe. However, it is thread-safe to read config while modifying sources or properties.
@@ -157,6 +160,24 @@ namespace Microsoft.Extensions.Configuration
             {
                 registration.Dispose();
             }
+        }
+
+        private string DebuggerToString()
+        {
+            return $"Sections = {ConfigurationSectionDebugView.FromConfiguration(this, this).Count}";
+        }
+
+        private sealed class ConfigurationManagerDebugView
+        {
+            private readonly ConfigurationManager _current;
+
+            public ConfigurationManagerDebugView(ConfigurationManager current)
+            {
+                _current = current;
+            }
+
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public ConfigurationSectionDebugView[] Items => ConfigurationSectionDebugView.FromConfiguration(_current, _current).ToArray();
         }
 
         private sealed class ConfigurationSources : IList<IConfigurationSource>

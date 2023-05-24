@@ -2920,7 +2920,7 @@ get_ftnptr_for_method (MonoMethod *method, gboolean need_unbox, MonoError *error
 		res = mini_add_method_trampoline (method, res, mono_method_needs_static_rgctx_invoke (method, TRUE), need_unbox);
 		return res;
 	} else {
-		return mini_llvmonly_load_method_ftndesc (method, FALSE, FALSE, error);
+		return mini_llvmonly_load_method_ftndesc (method, FALSE, need_unbox, error);
 	}
 }
 
