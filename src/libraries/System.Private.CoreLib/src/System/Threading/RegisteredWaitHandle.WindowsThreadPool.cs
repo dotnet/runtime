@@ -54,10 +54,8 @@ namespace System.Threading
         [UnmanagedCallersOnly]
         internal static void RegisteredWaitCallback(IntPtr instance, IntPtr context, IntPtr wait, uint waitResult)
         {
-            // Enabling for NativeAot first
-#if NATIVEAOT
             var wrapper = ThreadPoolCallbackWrapper.Enter();
-#endif
+
             GCHandle handle = (GCHandle)context;
             RegisteredWaitHandle registeredWaitHandle = (RegisteredWaitHandle)handle.Target!;
             Debug.Assert((handle == registeredWaitHandle._gcHandle) && (wait == registeredWaitHandle._tpWait));
@@ -65,9 +63,8 @@ namespace System.Threading
             bool timedOut = (waitResult == (uint)Interop.Kernel32.WAIT_TIMEOUT);
             registeredWaitHandle.PerformCallbackWindowsThreadPool(timedOut);
             ThreadPool.IncrementCompletedWorkItemCount();
-#if NATIVEAOT
+
             wrapper.Exit();
-#endif
         }
 #pragma warning restore IDE0060
 

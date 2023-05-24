@@ -290,7 +290,7 @@
     <Compile Include="System\Threading\Thread.NativeAot.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
-    <Compile Include="System\Threading\ThreadPoolCallbackWrapper.cs" />
+    <Compile Include="System\Threading\ThreadPoolCallbackWrapper.NativeAot.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="System\Environment.NativeAot.Unix.cs" />
