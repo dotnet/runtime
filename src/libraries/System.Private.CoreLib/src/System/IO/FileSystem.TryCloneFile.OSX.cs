@@ -40,7 +40,7 @@ namespace System.IO
                         FileShare.None, FileOptions.None, preallocationSize: 0);
                     if (Interop.Sys.Unlink(destFullPath) < 0)
                     {
-                        Interop.ErrorInfo errorInfo = Interop.Sys.GetLastError();
+                        Interop.Error errorInfo = Interop.Sys.GetLastError();
                         if (error != Interop.Error.ENOENT)
                         {
                             // Fall back to standard copy as an unexpected error has occured.
