@@ -23,7 +23,7 @@ namespace System.IO
 
             // Some filesystems don't support ACLs, so may fail due to trying to copy ACLs.
             // This will disable them and allow trying again (a maximum of 1 time).
-            if (flags != 0 && error == Interop.Error.EINVAL)
+            if (error == Interop.Error.EINVAL && flags != 0)
             {
                 flags = 0;
                 goto retry1;
@@ -64,7 +64,7 @@ namespace System.IO
 
                 // Some filesystems don't support ACLs, so may fail due to trying to copy ACLs.
                 // This will disable them and allow trying again (a maximum of 1 time).
-                if (flags != 0 && error == Interop.Error.EINVAL)
+                if (error == Interop.Error.EINVAL && flags != 0)
                 {
                     flags = 0;
                     goto retry2;
