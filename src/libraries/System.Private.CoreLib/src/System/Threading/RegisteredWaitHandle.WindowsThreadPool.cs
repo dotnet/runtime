@@ -70,7 +70,8 @@ namespace System.Threading
 
         private void PerformCallbackWindowsThreadPool(bool timedOut)
         {
-            // New logic might be wrong here, not sure yet
+            // Prevent the race condition with Unregister and the previous PerformCallback call, which may still be
+            // holding the _lock.
             // If another thread is running Unregister, no need to restart the timer or clean up
             lock (_lock!)
             {
