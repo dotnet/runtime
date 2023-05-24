@@ -355,14 +355,14 @@ namespace Microsoft.Interop
         private readonly ICustomTypeMarshallingStrategy _innerMarshaller;
         private readonly MarshallerShape _shape;
         private readonly ExpressionSyntax _numElementsExpression;
-        private readonly IElementsMarshalling _elementsMarshalling;
+        private readonly ElementsMarshalling _elementsMarshalling;
         private readonly bool _cleanupElements;
 
         public StatefulLinearCollectionMarshalling(
             ICustomTypeMarshallingStrategy innerMarshaller,
             MarshallerShape shape,
             ExpressionSyntax numElementsExpression,
-            IElementsMarshalling elementsMarshalling,
+            ElementsMarshalling elementsMarshalling,
             bool cleanupElements)
         {
             _innerMarshaller = innerMarshaller;
@@ -393,11 +393,15 @@ namespace Microsoft.Interop
         {
             if (context.Direction == MarshalDirection.ManagedToUnmanaged && !info.IsByRef && info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out)
             {
-                yield return _elementsMarshalling.GenerateManagedToUnmanagedByValueOutMarshalStatement(info, context);
+                // If the parameter is marshalled by-value [Out], then we don't marshal the contents of the collection.
+                // We do clear the span, so that if the invoke target doesn't fill it, we aren't left with undefined content.
+                yield return _elementsMarshalling.GenerateClearManagedSource(info, context);
                 yield break;
             }
             if (context.Direction == MarshalDirection.UnmanagedToManaged && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
             {
+                // If the parameter is marshalled by-value [Out] or [In, Out], then we need to unmarshal the contents of the collection
+                // into the passed-in collection value.
                 yield return _elementsMarshalling.GenerateUnmanagedToManagedByValueOutMarshalStatement(info, context);
                 yield break;
             }
@@ -442,13 +446,17 @@ namespace Microsoft.Interop
         {
             if (context.Direction == MarshalDirection.ManagedToUnmanaged && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
             {
+                // If the parameter is marshalled by-value [Out] or [In, Out], then we need to unmarshal the contents of the collection
+                // into the passed-in collection value.
                 yield return _elementsMarshalling.GenerateManagedToUnmanagedByValueOutUnmarshalStatement(info, context);
                 yield break;
             }
 
             if (context.Direction == MarshalDirection.UnmanagedToManaged && !info.IsByRef && info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out)
             {
-                yield return _elementsMarshalling.GenerateUnmanagedToManagedByValueOutUnmarshalStatement(info, context);
+                // If the parameter is marshalled by-value [Out], then we don't marshal the contents of the collection.
+                // We do clear the span, so that if the invoke target doesn't fill it, we aren't left with undefined content.
+                yield return _elementsMarshalling.GenerateClearUnmanagedValuesSource(info, context);
                 yield break;
             }
 
