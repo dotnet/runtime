@@ -66,7 +66,6 @@ namespace System.IO
             }
 
             // Check if it's not supported, if files are on different filesystems, or if the destination file still exists.
-            Debug.Assert(error != Interop.Error.EINVAL);
             if (error == Interop.Error.ENOTSUP || error == Interop.Error.EXDEV || error == Interop.Error.EEXIST)
             {
                 // Fall back to normal copy.
@@ -74,6 +73,7 @@ namespace System.IO
             }
 
             // Throw the appropriate exception.
+            Debug.Assert(error != Interop.Error.EINVAL); // We shouldn't fail due to an invalid parameter.
             Debug.Assert(error != Interop.Error.SUCCESS); // We shouldn't fail with success.
             throw Interop.GetExceptionForIoErrno(error.Info(), destFullPath);
         }
