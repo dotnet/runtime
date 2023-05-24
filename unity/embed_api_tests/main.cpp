@@ -581,6 +581,21 @@ TEST(type_forwarder_lookup_results_in_identical_class)
     CHECK(forwarderImage != directImage);
 }
 
+TEST(mono_assembly_get_object)
+{
+    MonoClass *directLookup = GetClassHelper(kTestDLLNameSpace, kTestClassName);
+#if defined(_DEBUG)
+    std::string testDllPath = abs_path_from_file("../forwarder-test/bin/Debug/net8.0/forwarder-test.dll");
+#else
+    std::string testDllPath = abs_path_from_file("../forwarder-test/bin/Release/net8.0/forwarder-test.dll");
+#endif
+    MonoAssembly *forwarderAssembly = mono_domain_assembly_open (g_domain, testDllPath.c_str());
+    CHECK(forwarderAssembly != NULL);
+
+    MonoObject *result = mono_assembly_get_object(NULL, forwarderAssembly);
+    CHECK(result != NULL);
+}
+
 #if 0 //JON
 TEST(will_find_dependency_assembly_next_to_loaded_assembly)
 {

@@ -430,6 +430,38 @@ public abstract class BaseEmbeddingApiTests
         Assert.That(type.Assembly.GetName().Name, Is.EqualTo(name));
     }
 
+    [TestCase(typeof(IntPtr))]
+    [TestCase(typeof(Mammal))]
+    [TestCase(typeof(Socket))]
+    public void AssemblyGetObject(Type type)
+    {
+        var result = (Assembly)ClrHost.assembly_get_object(ClrHost.class_get_image(type));
+        Assert.That(result.Location, Is.EqualTo(type.Assembly.Location));
+    }
+
+    [Test]
+    public void AssemblyGetObjectFromLoad()
+    {
+        var location = GetType().Assembly.Location;
+        unsafe
+        {
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(location);
+            fixed (byte* bytes = utf8Bytes)
+            {
+                var asm = CoreCLRHost.load_assembly_from_path(bytes, utf8Bytes.Length);
+                var result = (Assembly)ClrHost.assembly_get_object(asm);
+                Assert.That(result.Location, Is.EqualTo(GetType().Assembly.Location));
+            }
+        }
+    }
+
+    [Test]
+    public void AssemblyGetObjectCoreLib()
+    {
+        var result = (Assembly)ClrHost.assembly_get_object(ClrHost.get_corlib());
+        Assert.That(result.Location, Is.EqualTo(typeof(object).Assembly.Location));
+    }
+
     /// <summary>
     /// NUnit's `Is.EquivalentTo` cannot handle multi-dimensional arrays.  It crashes on GetValue calls.
     /// </summary>
