@@ -100,8 +100,12 @@ namespace System.Globalization
         {
             Debug.Assert(strInput != null);
 
-
-            if (!GlobalizationMode.Hybrid && OperatingSystem.IsBrowser() && (normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD))
+            bool notSupported = OperatingSystem.IsBrowser() && (normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD);
+#if TARGET_BROWSER
+            if (!GlobalizationMode.Hybrid && notSupported)
+#else
+            if (notSupported)
+#endif
             {
                 // Browser's ICU doesn't contain data needed for FormKC and FormKD
                 throw new PlatformNotSupportedException();
