@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import BuildConfiguration from "consts:configuration";
+
 import { marshal_exception_to_cs, bind_arg_marshal_to_cs } from "./marshal-to-cs";
 import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol } from "./marshal";
 import { setI32_unchecked } from "./memory";
@@ -81,6 +83,13 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
         }
         else {
             bound_fn = bind_fn(closure);
+        }
+
+        // this is just to make debugging easier. 
+        // It's not CSP compliant and possibly not performant, that's why it's only enabled in debug builds
+        // in Release configuration, it would be a trimmed by rollup
+        if (BuildConfiguration === "Debug") {
+            bound_fn = new Function("fn", "return (function JSImport_" + js_function_name.replaceAll(".", "_") + "(){ return fn.apply(this, arguments)});")(bound_fn);
         }
 
         (<any>bound_fn)[imported_js_function_symbol] = true;

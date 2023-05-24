@@ -586,7 +586,7 @@ export function bindings_init(): void {
     try {
         const mark = startMeasure();
         init_managed_exports();
-        if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
+        if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop && !ENVIRONMENT_IS_PTHREAD) {
             init_legacy_exports();
         }
         if (MonoWasmThreads && !ENVIRONMENT_IS_PTHREAD) {

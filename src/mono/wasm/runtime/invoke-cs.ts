@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import BuildConfiguration from "consts:configuration";
+
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { Module, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_cs } from "./marshal-to-cs";
@@ -84,6 +86,13 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
         }
         else {
             bound_fn = bind_fn(closure);
+        }
+
+        // this is just to make debugging easier. 
+        // It's not CSP compliant and possibly not performant, that's why it's only enabled in debug builds
+        // in Release configuration, it would be a trimmed by rollup
+        if (BuildConfiguration === "Debug") {
+            bound_fn = new Function("fn", "return (function JSExport_" + methodname + "(){ return fn.apply(this, arguments)});")(bound_fn);
         }
 
         (<any>bound_fn)[bound_cs_function_symbol] = true;
@@ -235,6 +244,7 @@ type BindingClosure = {
 }
 
 export function invoke_method_and_handle_exception(method: MonoMethod, args: JSMarshalerArguments): void {
+    assert_synchronization_context();
     const fail = cwraps.mono_wasm_invoke_method_bound(method, args);
     if (fail) throw new Error("ERR24: Unexpected error: " + string_decoder.copy(fail));
     if (is_args_exception(args)) {
