@@ -39,37 +39,37 @@
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">
         <source>Source-generated COM will ignore any configuration that is not supported.</source>
-        <target state="needs-review-translation">源生成的 P/Invoke 将忽略任何不受支持的配置。</target>
+        <target state="translated">源生成的 COM 将忽略任何不受支持的配置。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessage">
         <source>The '{0}' configuration is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="needs-review-translation">源生成的 P/Invoke 不支持“{0}”配置。如果需要指定的配置，请改用常规的 “DllImport”。</target>
+        <target state="translated">源生成的 COM 不支持 "{0}" 配置。如果需要指定的配置，请改用 `ComImport`。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageMarshallingInfo">
         <source>The specified marshalling configuration is not supported by source-generated COM. {0}.</source>
-        <target state="needs-review-translation">源生成的 P/Invoke 不支持指定的封送配置。{0}。</target>
+        <target state="translated">源生成的 COM 不支持指定的封送配置。{0}。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageParameter">
         <source>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="needs-review-translation">源生成的 P/Invoke 不支持为参数“{1}”指定的“{0}”配置。如果需要指定的配置，请改用常规的 `DllImport`。</target>
+        <target state="translated">源生成的 COM 不支持方法“{0}”参数“{1}”配置。如果需要指定配置，请改用 `ComImport`。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageReturn">
         <source>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="needs-review-translation">源生成的 P/Invoke 不支持为方法“{1}”的返回值指定的“{0}”配置。如果需要指定的配置，请改用常规的 “DllImport”。</target>
+        <target state="translated">源生成的 COM 不支持方法“{0}”返回值的指定“{1}”配置。如果需要指定配置，请改用 `ComImport`。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageValue">
         <source>The specified value '{0}' for '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="needs-review-translation">源生成的 P/Invoke 不支持为“{1}”指定的值“{0}”。如果需要指定的配置，请改用常规的 “DllImport”。</target>
+        <target state="translated">源生成的 COM 不支持为 "{1}" 指定的值 "{0}"。如果需要指定的配置，请改用 `ComImport`。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedTitle">
         <source>Specified configuration is not supported by source-generated COM.</source>
-        <target state="needs-review-translation">源生成的 P/Invoke 不支持指定的配置。</target>
+        <target state="translated">源生成的 COM 不支持指定的配置。</target>
         <note />
       </trans-unit>
       <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
@@ -89,7 +89,7 @@
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">
         <source>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. COM source generation will ignore method '{0}'.</source>
-        <target state="needs-review-translation">方法“{0}”包含在未标记为 “partial” 的类型“{1}”中。P/Invoke 源生成将忽略方法“{0}”。</target>
+        <target state="translated">方法 "{0}" 包含在未标记为 "partial" 的类型 "{1}" 中。COM 源生成将忽略方法 "{0}"。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttributeMessage">
@@ -99,12 +99,12 @@
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodDescription">
         <source>Methods on interfaces marked with 'GeneratedComInterfaceAttribute' should be non-generic. COM source generation will ignore methods that are generic.</source>
-        <target state="needs-review-translation">标记为 “LibraryImportAttribute” 的方法应为 “static”、“partial” 和非泛型。P/Invoke 源生成将忽略非“static”、“non--partial” 或泛型的方法。</target>
+        <target state="translated">标记为 "GeneratedComInterfaceAttribute" 的接口上的方法应为非泛型。COM 源生成将忽略泛型方法。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodSignatureMessage">
         <source>Method '{0}' should be non-generic when on interfaces marked with the 'GeneratedComInterfaceAttribute'. COM source generation will ignore method '{0}'.</source>
-        <target state="needs-review-translation">在标记为 “LibraryImportAttribute” 时，方法“{0}”应为 “static”、“partial” 和非泛型。P/Invoke 源生成将忽略方法“{0}”。</target>
+        <target state="translated">在标记为 "GeneratedComInterfaceAttribute" 的接口上时，方法 "{0}" 应为非泛型。COM 源生成将忽略方法 "{0}"。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidExceptionMarshallingConfigurationDescription">
@@ -214,12 +214,12 @@
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">
         <source>For types that are not supported by source-generated COM, the resulting function pointer will rely on the underlying runtime to marshal the specified type.</source>
-        <target state="needs-review-translation">对于源生成的 P/Invoke 不支持的类型，生成的 P/Invoke 将依赖基础运行时来封送指定的类型。</target>
+        <target state="translated">对于源生成的 COM 不支持的类型，生成的函数指针将依赖基础运行时来封送指定的类型。</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageParameter">
         <source>The type '{0}' is not supported by source-generated COM. The generated source will not handle marshalling of parameter '{1}'.</source>
-        <target state="needs-review-translation">源生成的 P/Invoke 不支持“{0}”类型。生成的源将不处理参数“{1}”的封送。</target>
+        <target state="translated">源生成的 COM 不支持“{0}”类型。生成的源将不处理参数“{1}”的封送。</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageParameterWithDetails">
@@ -230,7 +230,7 @@
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageReturn">
         <source>The type '{0}' is not supported by source-generated COM. The generated source will not handle marshalling of the return value of method '{1}'.</source>
-        <target state="needs-review-translation">源生成的 P/Invoke 不支持“{0}”类型。生成的源将不处理方法“{1}”的返回值的封送。</target>
+        <target state="translated">源生成的 COM 不支持 "{0}" 类型。生成的源将不处理方法 "{1}" 的返回值的封送。</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageReturnWithDetails">
@@ -241,7 +241,7 @@
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitle">
         <source>Specified type is not supported by source-generated COM</source>
-        <target state="needs-review-translation">源生成的 P/Invoke 不支持指定的类型</target>
+        <target state="translated">源生成的 COM 不支持指定的类型</target>
         <note />
       </trans-unit>
     </body>
