@@ -30,6 +30,8 @@
     </PackageReference>
   </ItemGroup>
 
+  <Import Project="..\..\Common\Compiler\GenericCycleDetection\GenericCycleDetection.projitems" />
+
   <ItemGroup>
     <Compile Include="..\..\Common\Internal\Runtime\CorConstants.cs" Link="Common\CorConstants.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunConstants.cs" Link="Common\ReadyToRunConstants.cs" />
@@ -151,13 +153,6 @@
     <Compile Include="Compiler\Logger.cs" />
     <Compile Include="Compiler\ReadyToRunVisibilityRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRunProfilingRootProvider.cs" />
-    <Compile Include="..\ILCompiler.Compiler\Compiler\LazyGenerics\Graph.cs" Link="Compiler\GenericCycleDetection\Graph.cs" />
-    <Compile Include="..\ILCompiler.Compiler\Compiler\LazyGenerics\Graph.Cycles.cs" Link="Compiler\GenericCycleDetection\Graph.Cycles.cs" />
-    <Compile Include="..\ILCompiler.Compiler\Compiler\LazyGenerics\Graph.Vertex.cs" Link="Compiler\GenericCycleDetection\Graph.Vertex.cs" />
-    <Compile Include="..\ILCompiler.Compiler\Compiler\LazyGenerics\GraphBuilder.cs" Link="Compiler\GenericCycleDetection\GraphBuilder.cs" />
-    <Compile Include="..\ILCompiler.Compiler\Compiler\LazyGenerics\GraphBuilder.ForEach.cs" Link="Compiler\GenericCycleDetection\GraphBuilder.ForEach.cs" />
-    <Compile Include="..\ILCompiler.Compiler\Compiler\LazyGenerics\GraphBuilder.MethodCall.cs" Link="Compiler\GenericCycleDetection\GraphBuilder.MethodCall.cs" />
-    <Compile Include="..\ILCompiler.Compiler\Compiler\LazyGenerics\ModuleCycleInfo.cs" Link="Compiler\GenericCycleDetection\ModuleCycleInfo.cs" />
     <Compile Include="..\ILCompiler.Compiler\Compiler\Logging\MessageOrigin.cs" Link="Compiler\Logging\MessageOrigin.cs" />
     <Compile Include="..\ILCompiler.Compiler\Compiler\Logging\MessageContainer.cs" Link="Compiler\Logging\MessageContainer.cs" />
     <Compile Include="ObjectWriter\MapFileBuilder.cs" />
@@ -349,9 +344,5 @@
       <Namespace>ILLink.Shared</Namespace>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Compiler\GenericCycleDetection\" />
   </ItemGroup>
 </Project>

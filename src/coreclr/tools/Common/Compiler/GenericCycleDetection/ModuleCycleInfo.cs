@@ -8,7 +8,9 @@ using System.Collections.Concurrent;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
+#if !READYTORUN
 using ILLink.Shared;
+#endif
 
 using Debug = System.Diagnostics.Debug;
 
@@ -247,6 +249,7 @@ namespace ILCompiler
                 }
             }
 
+#if !READYTORUN
             public void LogWarnings(Logger logger)
             {
                 // Might need to sort these if we care about warning determinism, but we probably don't.
@@ -282,6 +285,7 @@ namespace ILCompiler
                     logger.LogWarning(actualProblem.Key.Owner, DiagnosticId.GenericRecursionCycle, actualProblem.Key.Referent.GetDisplayName(), message);
                 }
             }
+#endif
         }
     }
 }
