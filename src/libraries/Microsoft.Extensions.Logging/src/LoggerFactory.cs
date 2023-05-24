@@ -76,6 +76,21 @@ namespace Microsoft.Extensions.Logging
         /// Creates a new <see cref="LoggerFactory"/> instance.
         /// </summary>
         /// <param name="providers">The providers to use in producing <see cref="ILogger"/> instances.</param>
+        /// <param name="filterOption">The filter option to use.</param>
+        /// <param name="options">The <see cref="LoggerFactoryOptions"/>.</param>
+        /// <param name="scopeProvider">The <see cref="IExternalScopeProvider"/>.</param>
+        public LoggerFactory(IEnumerable<ILoggerProvider> providers,
+                             IOptionsMonitor<LoggerFilterOptions> filterOption,
+                             IOptions<LoggerFactoryOptions>? options = null,
+                             IExternalScopeProvider? scopeProvider = null) :
+            this(providers, Array.Empty<IProcessorFactory>(), filterOption, options, scopeProvider)
+        {
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="LoggerFactory"/> instance.
+        /// </summary>
+        /// <param name="providers">The providers to use in producing <see cref="ILogger"/> instances.</param>
         /// <param name="processorFactories">The processor factories to use in the logging pipeline.</param>
         /// <param name="filterOption">The filter option to use.</param>
         /// <param name="options">The <see cref="LoggerFactoryOptions"/>.</param>

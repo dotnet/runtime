@@ -58,6 +58,7 @@ namespace Microsoft.Extensions.Logging
         public LoggerFactory(System.Collections.Generic.IEnumerable<Microsoft.Extensions.Logging.ILoggerProvider> providers, Microsoft.Extensions.Logging.LoggerFilterOptions filterOptions) { }
         public LoggerFactory(System.Collections.Generic.IEnumerable<Microsoft.Extensions.Logging.ILoggerProvider> providers, Microsoft.Extensions.Options.IOptionsMonitor<Microsoft.Extensions.Logging.LoggerFilterOptions> filterOption) { }
         public LoggerFactory(System.Collections.Generic.IEnumerable<Microsoft.Extensions.Logging.ILoggerProvider> providers, Microsoft.Extensions.Options.IOptionsMonitor<Microsoft.Extensions.Logging.LoggerFilterOptions> filterOption, Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Logging.LoggerFactoryOptions>? options) { }
+        public LoggerFactory(System.Collections.Generic.IEnumerable<Microsoft.Extensions.Logging.ILoggerProvider> providers, Microsoft.Extensions.Options.IOptionsMonitor<Microsoft.Extensions.Logging.LoggerFilterOptions> filterOption, Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Logging.LoggerFactoryOptions>? options = null, Microsoft.Extensions.Logging.IExternalScopeProvider? scopeProvider = null) { }
         public LoggerFactory(System.Collections.Generic.IEnumerable<Microsoft.Extensions.Logging.ILoggerProvider> providers, System.Collections.Generic.IEnumerable<Microsoft.Extensions.Logging.IProcessorFactory> processorFactories, Microsoft.Extensions.Options.IOptionsMonitor<Microsoft.Extensions.Logging.LoggerFilterOptions> filterOption, Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Logging.LoggerFactoryOptions>? options = null, Microsoft.Extensions.Logging.IExternalScopeProvider? scopeProvider = null) { }
         public void AddProvider(Microsoft.Extensions.Logging.ILoggerProvider provider) { }
         protected virtual bool CheckDisposed() { throw null; }
@@ -94,16 +95,6 @@ namespace Microsoft.Extensions.Logging
         public static Microsoft.Extensions.Logging.ILoggingBuilder ClearProviders(this Microsoft.Extensions.Logging.ILoggingBuilder builder) { throw null; }
         public static Microsoft.Extensions.Logging.ILoggingBuilder Configure(this Microsoft.Extensions.Logging.ILoggingBuilder builder, System.Action<Microsoft.Extensions.Logging.LoggerFactoryOptions> action) { throw null; }
         public static Microsoft.Extensions.Logging.ILoggingBuilder SetMinimumLevel(this Microsoft.Extensions.Logging.ILoggingBuilder builder, Microsoft.Extensions.Logging.LogLevel level) { throw null; }
-    }
-    public readonly partial struct PipelineKey
-    {
-        private readonly object _dummy;
-        private readonly int _dummyPrimitive;
-        public PipelineKey(bool isLoggingPipeline, object typeOrMetadata, Microsoft.Extensions.Logging.ILogEntryProcessor? terminalProcessor, object? userState) { throw null; }
-        public bool IsLoggingPipeline { get { throw null; } }
-        public Microsoft.Extensions.Logging.ILogEntryProcessor? TerminalProcessor { get { throw null; } }
-        public object TypeOrMetadata { get { throw null; } }
-        public object? UserState { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=false, Inherited=false)]
     public partial class ProviderAliasAttribute : System.Attribute

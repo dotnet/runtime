@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Logging
         }
     }
 
-    public readonly struct PipelineKey
+    internal readonly struct PipelineKey
     {
         public PipelineKey(bool isLoggingPipeline, object typeOrMetadata, ILogEntryProcessor? terminalProcessor, object? userState)
         {
