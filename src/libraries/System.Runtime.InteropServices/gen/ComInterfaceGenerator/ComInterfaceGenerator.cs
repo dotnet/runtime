@@ -55,6 +55,7 @@ namespace Microsoft.Interop
                 .Collect()
                 .SelectMany(ComInterfaceContext.GetContexts);
 
+            // Filter down interface symbols to remove those with diagnostics from GetContexts
             (var interfaceContexts, interfaceSymbolsWithoutDiagnostics) = context.FilterAndReportDiagnostics(interfaceContextsOrDiagnostics, interfaceSymbolsWithoutDiagnostics);
 
             var comMethodsAndSymbolsOrDiagnostics = interfaceSymbolsWithoutDiagnostics.Select(ComMethodInfo.GetMethodsFromInterface);

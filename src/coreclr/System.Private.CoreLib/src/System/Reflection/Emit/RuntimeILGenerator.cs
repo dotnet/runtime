@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
-    public class ILGenerator
+    internal class RuntimeILGenerator : ILGenerator
     {
         #region Const Members
         private const int DefaultSize = 16;
@@ -78,11 +78,11 @@ namespace System.Reflection.Emit
         #region Constructor
         // package private constructor. This code path is used when client create
         // ILGenerator through MethodBuilder.
-        internal ILGenerator(MethodInfo methodBuilder) : this(methodBuilder, 64)
+        internal RuntimeILGenerator(MethodInfo methodBuilder) : this(methodBuilder, 64)
         {
         }
 
-        internal ILGenerator(MethodInfo methodBuilder, int size)
+        internal RuntimeILGenerator(MethodInfo methodBuilder, int size)
         {
             Debug.Assert(methodBuilder != null);
             Debug.Assert(methodBuilder is MethodBuilder || methodBuilder is DynamicMethod);
@@ -177,18 +177,7 @@ namespace System.Reflection.Emit
             Type[]? parameterTypes,
             Type[]? optionalParameterTypes)
         {
-            return GetMemberRefSignature(call, returnType, parameterTypes, null, null, optionalParameterTypes);
-        }
-        internal virtual SignatureHelper GetMemberRefSignature(CallingConventions call, Type? returnType,
-            Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers, Type[]? optionalParameterTypes)
-        {
-            return GetMemberRefSignature(call, returnType, parameterTypes, requiredCustomModifiers, optionalCustomModifiers, optionalParameterTypes, 0);
-        }
-
-        private SignatureHelper GetMemberRefSignature(CallingConventions call, Type? returnType,
-            Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers, Type[]? optionalParameterTypes, int cGenericParameters)
-        {
-            return ((RuntimeModuleBuilder)m_methodBuilder.Module).GetMemberRefSignature(call, returnType, parameterTypes, requiredCustomModifiers, optionalCustomModifiers, optionalParameterTypes, cGenericParameters);
+            return ((RuntimeModuleBuilder)m_methodBuilder.Module).GetMemberRefSignature(call, returnType, parameterTypes, null, null, optionalParameterTypes, 0);
         }
 
         internal byte[]? BakeByteArray()
@@ -383,29 +372,20 @@ namespace System.Reflection.Emit
         #region Public Members
 
         #region Emit
-        public virtual void Emit(OpCode opcode)
+        public override void Emit(OpCode opcode)
         {
             EnsureCapacity(3);
             InternalEmit(opcode);
         }
 
-        public virtual void Emit(OpCode opcode, byte arg)
+        public override void Emit(OpCode opcode, byte arg)
         {
             EnsureCapacity(4);
             InternalEmit(opcode);
             m_ILStream[m_length++] = arg;
         }
 
-        [CLSCompliant(false)]
-        public void Emit(OpCode opcode, sbyte arg)
-        {
-            // Puts opcode onto the stream of instructions followed by arg
-            EnsureCapacity(4);
-            InternalEmit(opcode);
-            m_ILStream[m_length++] = (byte)arg;
-        }
-
-        public virtual void Emit(OpCode opcode, short arg)
+        public override void Emit(OpCode opcode, short arg)
         {
             // Puts opcode onto the stream of instructions followed by arg
             EnsureCapacity(5);
@@ -414,7 +394,7 @@ namespace System.Reflection.Emit
             m_length += 2;
         }
 
-        public virtual void Emit(OpCode opcode, int arg)
+        public override void Emit(OpCode opcode, int arg)
         {
             // Special-case several opcodes that have shorter variants for common values.
             if (opcode.Equals(OpCodes.Ldc_I4))
@@ -505,7 +485,7 @@ namespace System.Reflection.Emit
             PutInteger4(arg);
         }
 
-        public virtual void Emit(OpCode opcode, MethodInfo meth)
+        public override void Emit(OpCode opcode, MethodInfo meth)
         {
             ArgumentNullException.ThrowIfNull(meth);
 
@@ -531,7 +511,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public virtual void EmitCalli(OpCode opcode, CallingConventions callingConvention,
+        public override void EmitCalli(OpCode opcode, CallingConventions callingConvention,
             Type? returnType, Type[]? parameterTypes, Type[]? optionalParameterTypes)
         {
             int stackchange = 0;
@@ -573,7 +553,7 @@ namespace System.Reflection.Emit
             PutInteger4(modBuilder.GetSignatureMetadataToken(sig));
         }
 
-        public virtual void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes)
+        public override void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes)
         {
             int stackchange = 0;
             int cParams = 0;
@@ -616,7 +596,7 @@ namespace System.Reflection.Emit
             PutInteger4(modBuilder.GetSignatureMetadataToken(sig));
         }
 
-        public virtual void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
+        public override void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
         {
             ArgumentNullException.ThrowIfNull(methodInfo);
 
@@ -650,7 +630,7 @@ namespace System.Reflection.Emit
             PutInteger4(tk);
         }
 
-        public virtual void Emit(OpCode opcode, SignatureHelper signature)
+        public override void Emit(OpCode opcode, SignatureHelper signature)
         {
             ArgumentNullException.ThrowIfNull(signature);
 
@@ -683,7 +663,7 @@ namespace System.Reflection.Emit
             PutInteger4(tempVal);
         }
 
-        public virtual void Emit(OpCode opcode, ConstructorInfo con)
+        public override void Emit(OpCode opcode, ConstructorInfo con)
         {
             ArgumentNullException.ThrowIfNull(con);
 
@@ -723,7 +703,7 @@ namespace System.Reflection.Emit
             PutInteger4(tk);
         }
 
-        public virtual void Emit(OpCode opcode, Type cls)
+        public override void Emit(OpCode opcode, Type cls)
         {
             // Puts opcode onto the stream and then the metadata token represented
             // by cls.  The location of cls is recorded so that the token can be
@@ -739,7 +719,7 @@ namespace System.Reflection.Emit
             PutInteger4(tempVal);
         }
 
-        public virtual void Emit(OpCode opcode, long arg)
+        public override void Emit(OpCode opcode, long arg)
         {
             EnsureCapacity(11);
             InternalEmit(opcode);
@@ -747,7 +727,7 @@ namespace System.Reflection.Emit
             m_length += 8;
         }
 
-        public virtual void Emit(OpCode opcode, float arg)
+        public override void Emit(OpCode opcode, float arg)
         {
             EnsureCapacity(7);
             InternalEmit(opcode);
@@ -755,7 +735,7 @@ namespace System.Reflection.Emit
             m_length += 4;
         }
 
-        public virtual void Emit(OpCode opcode, double arg)
+        public override void Emit(OpCode opcode, double arg)
         {
             EnsureCapacity(11);
             InternalEmit(opcode);
@@ -763,7 +743,7 @@ namespace System.Reflection.Emit
             m_length += 8;
         }
 
-        public virtual void Emit(OpCode opcode, Label label)
+        public override void Emit(OpCode opcode, Label label)
         {
             // Puts opcode onto the stream and leaves space to include label
             // when fixups are done.  Labels are created using ILGenerator.DefineLabel and
@@ -789,7 +769,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public virtual void Emit(OpCode opcode, Label[] labels)
+        public override void Emit(OpCode opcode, Label[] labels)
         {
             ArgumentNullException.ThrowIfNull(labels);
 
@@ -811,7 +791,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public virtual void Emit(OpCode opcode, FieldInfo field)
+        public override void Emit(OpCode opcode, FieldInfo field)
         {
             ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
             int tempVal = modBuilder.GetFieldMetadataToken(field);
@@ -821,7 +801,7 @@ namespace System.Reflection.Emit
             PutInteger4(tempVal);
         }
 
-        public virtual void Emit(OpCode opcode, string str)
+        public override void Emit(OpCode opcode, string str)
         {
             // Puts the opcode onto the IL stream followed by the metadata token
             // represented by str.  The location of str is recorded for future
@@ -834,7 +814,7 @@ namespace System.Reflection.Emit
             PutInteger4(tempVal);
         }
 
-        public virtual void Emit(OpCode opcode, LocalBuilder local)
+        public override void Emit(OpCode opcode, LocalBuilder local)
         {
             ArgumentNullException.ThrowIfNull(local);
 
@@ -919,7 +899,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Exceptions
-        public virtual Label BeginExceptionBlock()
+        public override Label BeginExceptionBlock()
         {
             // Begin an Exception block.  Creating an Exception block records some information,
             // but does not actually emit any IL onto the stream.  Exceptions should be created and
@@ -962,7 +942,7 @@ namespace System.Reflection.Emit
             return endLabel;
         }
 
-        public virtual void EndExceptionBlock()
+        public override void EndExceptionBlock()
         {
             if (m_currExcStackCount == 0)
             {
@@ -1003,7 +983,7 @@ namespace System.Reflection.Emit
             current.Done(m_length);
         }
 
-        public virtual void BeginExceptFilterBlock()
+        public override void BeginExceptFilterBlock()
         {
             // Begins an exception filter block.  Emits a branch instruction to the end of the current exception block.
 
@@ -1020,7 +1000,7 @@ namespace System.Reflection.Emit
             m_curDepth = 1;
         }
 
-        public virtual void BeginCatchBlock(Type? exceptionType)
+        public override void BeginCatchBlock(Type? exceptionType)
         {
             // Begins a catch block.  Emits a branch instruction to the end of the current exception block.
 
@@ -1053,7 +1033,7 @@ namespace System.Reflection.Emit
             m_curDepth = 1;
         }
 
-        public virtual void BeginFaultBlock()
+        public override void BeginFaultBlock()
         {
             if (m_currExcStackCount == 0)
             {
@@ -1070,7 +1050,7 @@ namespace System.Reflection.Emit
             m_curDepth = 0;
         }
 
-        public virtual void BeginFinallyBlock()
+        public override void BeginFinallyBlock()
         {
             if (m_currExcStackCount == 0)
             {
@@ -1105,7 +1085,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Labels
-        public virtual Label DefineLabel()
+        public override Label DefineLabel()
         {
             // We don't know the stack depth at the label yet, so set it to -1.
             return DefineLabel(-1);
@@ -1130,7 +1110,7 @@ namespace System.Reflection.Emit
             return new Label(m_labelCount++);
         }
 
-        public virtual void MarkLabel(Label loc)
+        public override void MarkLabel(Label loc)
         {
             // Defines a label by setting the position where that label is found within the stream.
             // Does not allow a label to be defined more than once.
@@ -1180,119 +1160,8 @@ namespace System.Reflection.Emit
 
         #endregion
 
-        #region IL Macros
-        public virtual void ThrowException([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type excType)
-        {
-            // Emits the il to throw an exception
-
-            ArgumentNullException.ThrowIfNull(excType);
-
-            if (!excType.IsSubclassOf(typeof(Exception)) && excType != typeof(Exception))
-            {
-                throw new ArgumentException(SR.Argument_NotExceptionType, nameof(excType));
-            }
-            ConstructorInfo? con = excType.GetConstructor(Type.EmptyTypes);
-            if (con == null)
-            {
-                throw new ArgumentException(SR.Arg_NoDefCTorWithoutTypeName, nameof(excType));
-            }
-            Emit(OpCodes.Newobj, con);
-            Emit(OpCodes.Throw);
-        }
-
-        private const string ConsoleTypeFullName = "System.Console, System.Console";
-
-        public virtual void EmitWriteLine(string value)
-        {
-            // Emits the IL to call Console.WriteLine with a string.
-
-            Emit(OpCodes.Ldstr, value);
-            Type[] parameterTypes = new Type[1];
-            parameterTypes[0] = typeof(string);
-            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
-            MethodInfo mi = consoleType.GetMethod("WriteLine", parameterTypes)!;
-            Emit(OpCodes.Call, mi);
-        }
-
-        public virtual void EmitWriteLine(LocalBuilder localBuilder)
-        {
-            // Emits the IL necessary to call WriteLine with lcl.  It is
-            // an error to call EmitWriteLine with a lcl which is not of
-            // one of the types for which Console.WriteLine implements overloads. (e.g.
-            // we do *not* call ToString on the locals.
-
-            if (m_methodBuilder == null)
-            {
-                throw new ArgumentException(SR.InvalidOperation_BadILGeneratorUsage);
-            }
-
-            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
-            MethodInfo prop = consoleType.GetMethod("get_Out")!;
-            Emit(OpCodes.Call, prop);
-            Emit(OpCodes.Ldloc, localBuilder);
-            Type[] parameterTypes = new Type[1];
-            Type cls = localBuilder.LocalType;
-            if (cls is TypeBuilder || cls is EnumBuilder)
-            {
-                throw new ArgumentException(SR.NotSupported_OutputStreamUsingTypeBuilder);
-            }
-            parameterTypes[0] = cls;
-            MethodInfo? mi = typeof(System.IO.TextWriter).GetMethod("WriteLine", parameterTypes);
-            if (mi == null)
-            {
-                throw new ArgumentException(SR.Argument_EmitWriteLineType, nameof(localBuilder));
-            }
-
-            Emit(OpCodes.Callvirt, mi);
-        }
-
-        public virtual void EmitWriteLine(FieldInfo fld)
-        {
-            ArgumentNullException.ThrowIfNull(fld);
-
-            // Emits the IL necessary to call WriteLine with fld.  It is
-            // an error to call EmitWriteLine with a fld which is not of
-            // one of the types for which Console.WriteLine implements overloads. (e.g.
-            // we do *not* call ToString on the fields.
-
-            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
-            MethodInfo prop = consoleType.GetMethod("get_Out")!;
-            Emit(OpCodes.Call, prop);
-
-            if ((fld.Attributes & FieldAttributes.Static) != 0)
-            {
-                Emit(OpCodes.Ldsfld, fld);
-            }
-            else
-            {
-                Emit(OpCodes.Ldarg_0); // Load the this ref.
-                Emit(OpCodes.Ldfld, fld);
-            }
-            Type[] parameterTypes = new Type[1];
-            Type cls = fld.FieldType;
-            if (cls is TypeBuilder || cls is EnumBuilder)
-            {
-                throw new NotSupportedException(SR.NotSupported_OutputStreamUsingTypeBuilder);
-            }
-            parameterTypes[0] = cls;
-            MethodInfo? mi = typeof(System.IO.TextWriter).GetMethod("WriteLine", parameterTypes);
-            if (mi == null)
-            {
-                throw new ArgumentException(SR.Argument_EmitWriteLineType, nameof(fld));
-            }
-
-            Emit(OpCodes.Callvirt, mi);
-        }
-
-        #endregion
-
         #region Debug API
-        public virtual LocalBuilder DeclareLocal(Type localType)
-        {
-            return DeclareLocal(localType, false);
-        }
-
-        public virtual LocalBuilder DeclareLocal(Type localType, bool pinned)
+        public override LocalBuilder DeclareLocal(Type localType, bool pinned)
         {
             // Declare a local of type "local". The current active lexical scope
             // will be the scope that local will live.
@@ -1319,7 +1188,7 @@ namespace System.Reflection.Emit
             return new LocalBuilder(m_localCount++, localType, methodBuilder, pinned);
         }
 
-        public virtual void UsingNamespace(string usingNamespace)
+        public override void UsingNamespace(string usingNamespace)
         {
             // Specifying the namespace to be used in evaluating locals and watches
             // for the current active lexical scope.
@@ -1329,7 +1198,7 @@ namespace System.Reflection.Emit
             if (m_methodBuilder is not RuntimeMethodBuilder methodBuilder)
                 throw new NotSupportedException();
 
-            int index = methodBuilder.GetILGenerator().m_ScopeTree.GetCurrentActiveScopeIndex();
+            int index = ((RuntimeILGenerator)methodBuilder.GetILGenerator()).m_ScopeTree.GetCurrentActiveScopeIndex();
             if (index == -1)
             {
                 methodBuilder.m_localSymInfo!.AddUsingNamespace(usingNamespace);
@@ -1340,17 +1209,17 @@ namespace System.Reflection.Emit
             }
         }
 
-        public virtual void BeginScope()
+        public override void BeginScope()
         {
             m_ScopeTree.AddScopeInfo(ScopeAction.Open, m_length);
         }
 
-        public virtual void EndScope()
+        public override void EndScope()
         {
             m_ScopeTree.AddScopeInfo(ScopeAction.Close, m_length);
         }
 
-        public virtual int ILOffset => m_length;
+        public override int ILOffset => m_length;
 
         #endregion
 
@@ -1424,11 +1293,11 @@ namespace System.Reflection.Emit
             int currentCatch = m_currentCatch;
             if (currentCatch >= m_catchAddr.Length)
             {
-                m_filterAddr = ILGenerator.EnlargeArray(m_filterAddr);
-                m_catchAddr = ILGenerator.EnlargeArray(m_catchAddr);
-                m_catchEndAddr = ILGenerator.EnlargeArray(m_catchEndAddr);
-                m_catchClass = ILGenerator.EnlargeArray(m_catchClass);
-                m_type = ILGenerator.EnlargeArray(m_type);
+                m_filterAddr = RuntimeILGenerator.EnlargeArray(m_filterAddr);
+                m_catchAddr = RuntimeILGenerator.EnlargeArray(m_catchAddr);
+                m_catchEndAddr = RuntimeILGenerator.EnlargeArray(m_catchEndAddr);
+                m_catchClass = RuntimeILGenerator.EnlargeArray(m_catchClass);
+                m_type = RuntimeILGenerator.EnlargeArray(m_type);
             }
             if (type == Filter)
             {

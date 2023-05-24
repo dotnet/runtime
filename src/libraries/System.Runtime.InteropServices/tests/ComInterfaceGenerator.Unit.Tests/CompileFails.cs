@@ -114,13 +114,23 @@ namespace ComInterfaceGenerator.Unit.Tests
             {
                 ID(),
                 codeSnippets.DerivedWithStringMarshalling(customWithNoType),
-                new DiagnosticResult[] { new DiagnosticResult(GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface).WithLocation(0).WithArguments("Test.IStringMarshalling0", CustomStringMarshallingWithNoCustomTypeMessage) }
+                new DiagnosticResult[]
+                {
+                    VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface)
+                        .WithLocation(0)
+                        .WithArguments("Test.IStringMarshalling0", CustomStringMarshallingWithNoCustomTypeMessage)
+                }
             };
             yield return new object[]
             {
                 ID(),
                 codeSnippets.DerivedWithStringMarshalling(utf8WithType),
-                new DiagnosticResult[] { new DiagnosticResult(GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface).WithLocation(0).WithArguments("Test.IStringMarshalling0", CustomTypeSpecifiedWithNoStringMarshallingCustom) }
+                new DiagnosticResult[]
+                {
+                    VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface)
+                        .WithLocation(0)
+                        .WithArguments("Test.IStringMarshalling0", CustomTypeSpecifiedWithNoStringMarshallingCustom)
+                }
             };
 
             // Inheritance no diagnostic
@@ -253,38 +263,46 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
                 """;
             yield return new object[] { ID(), source, emptyDiagnostics };
-            // Compilation can't find MarshalAs or MarshalUsing
-            //source = $$"""
-            //    using System;
-            //    using System.Runtime.InteropServices;
-            //    using System.Runtime.InteropServices.Marshalling;
-            //    namespace Test
-            //    {
-            //        [GeneratedComInterface]
-            //        [Guid("0E7204B5-4B61-4E06-B872-82BA652F2ECA")]
-            //        internal partial interface INoStringMarshalling
-            //        {
-            //            [return: MarshalUsing(typeof(Utf8StringMarshaller)]
-            //            public string GetString();
-            //            public void SetString([MarshalUsing(typeof(Utf8StringMarshaller))] string value);
-            //        }
-            //        [GeneratedComInterface(StringMarshalling = StringMarshalling.Utf16)]
-            //        [Guid("0E7204B5-4B61-5E06-B872-82BA652F2ECA")]
-            //        internal partial interface IStringMarshalling : INoStringMarshalling
-            //        {
-            //            public string GetString2();
-            //            public void SetString2(string value);
-            //        }
-            //    }
-            //    """;
-            //yield return new object[] { ID(), source, emptyDiagnostics };
+
+            source = $$"""
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                namespace Test
+                {
+                    [GeneratedComInterface]
+                    [Guid("0E7204B5-4B61-4E06-B872-82BA652F2ECA")]
+                    internal partial interface INoStringMarshalling
+                    {
+                        [return: MarshalUsing(typeof(Utf8StringMarshaller))]
+                        public string GetString();
+                        public void SetString([MarshalUsing(typeof(Utf8StringMarshaller))] string value);
+                    }
+                    [GeneratedComInterface(StringMarshalling = StringMarshalling.Utf16)]
+                    [Guid("0E7204B5-4B61-5E06-B872-82BA652F2ECA")]
+                    internal partial interface IStringMarshalling : INoStringMarshalling
+                    {
+                        public string GetString2();
+                        public void SetString2(string value);
+                    }
+                }
+                """;
+            yield return new object[] { ID(), source, emptyDiagnostics };
 
             // Base many levels up fails, all inheriting fail
             yield return new object[]
             {
                 ID(),
                 codeSnippets.DerivedWithStringMarshalling(customWithNoType, customUtf16Marshalling, customUtf16Marshalling, customUtf16Marshalling, customUtf16Marshalling, customUtf16Marshalling),
-               new DiagnosticResult[] {new DiagnosticResult(GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface).WithLocation(0).WithArguments("Test.IStringMarshalling0", CustomStringMarshallingWithNoCustomTypeMessage) }.Concat(MismatchesWithLocations(1)).Concat(BaseCannotBeGeneratedWithLocations(2, 3, 4, 5)).ToArray()
+                new DiagnosticResult[]
+                {
+                    VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface)
+                        .WithLocation(0)
+                        .WithArguments("Test.IStringMarshalling0", CustomStringMarshallingWithNoCustomTypeMessage)
+                }
+                   .Concat(MismatchesWithLocations(1))
+                   .Concat(BaseCannotBeGeneratedWithLocations(2, 3, 4, 5))
+                   .ToArray()
             };
 
             DiagnosticResult[] MismatchesWithLocations(params int[] locations)
@@ -294,8 +312,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                         new DiagnosticResult(GeneratorDiagnostics.InvalidStringMarshallingMismatchBetweenBaseAndDerived)
                             .WithLocation(i)
                             .WithArguments($"Test.IStringMarshalling{i}", StringMarshallingMustMatchBase))
-                   .ToArray();
+                    .ToArray();
             }
+
             DiagnosticResult[] BaseCannotBeGeneratedWithLocations(params int[] locations)
             {
                 return locations

@@ -11,88 +11,208 @@ using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 namespace System.Text.Json.SourceGeneration
 {
-    internal sealed class KnownTypeSymbols(Compilation compilation)
+    internal sealed class KnownTypeSymbols
     {
-#pragma warning disable CA1822 // Mark members as static false positive with primary constructors.
-        public Compilation Compilation => compilation!;
+        public KnownTypeSymbols(Compilation compilation)
+            => Compilation = compilation;
 
-        public readonly INamedTypeSymbol? IListOfTType = compilation!.GetBestTypeByMetadataName(typeof(IList<>));
-        public readonly INamedTypeSymbol? ICollectionOfTType = compilation!.GetBestTypeByMetadataName(typeof(ICollection<>));
-        public readonly INamedTypeSymbol? IEnumerableType = compilation!.GetBestTypeByMetadataName(typeof(IEnumerable));
-        public readonly INamedTypeSymbol? IEnumerableOfTType = compilation!.GetBestTypeByMetadataName(typeof(IEnumerable<>));
+        public Compilation Compilation { get; }
 
-        public readonly INamedTypeSymbol? ListOfTType = compilation!.GetBestTypeByMetadataName(typeof(List<>));
-        public readonly INamedTypeSymbol? DictionaryOfTKeyTValueType = compilation!.GetBestTypeByMetadataName(typeof(Dictionary<,>));
-        public readonly INamedTypeSymbol? IAsyncEnumerableOfTType = compilation!.GetBestTypeByMetadataName("System.Collections.Generic.IAsyncEnumerable`1");
-        public readonly INamedTypeSymbol? IDictionaryOfTKeyTValueType = compilation!.GetBestTypeByMetadataName(typeof(IDictionary<,>));
-        public readonly INamedTypeSymbol? IReadonlyDictionaryOfTKeyTValueType = compilation!.GetBestTypeByMetadataName(typeof(IReadOnlyDictionary<,>));
-        public readonly INamedTypeSymbol? ISetOfTType = compilation!.GetBestTypeByMetadataName(typeof(ISet<>));
-        public readonly INamedTypeSymbol? StackOfTType = compilation!.GetBestTypeByMetadataName(typeof(Stack<>));
-        public readonly INamedTypeSymbol? QueueOfTType = compilation!.GetBestTypeByMetadataName(typeof(Queue<>));
-        public readonly INamedTypeSymbol? ConcurrentStackType = compilation!.GetBestTypeByMetadataName(typeof(ConcurrentStack<>));
-        public readonly INamedTypeSymbol? ConcurrentQueueType = compilation!.GetBestTypeByMetadataName(typeof(ConcurrentQueue<>));
-        public readonly INamedTypeSymbol? IDictionaryType = compilation!.GetBestTypeByMetadataName(typeof(IDictionary));
-        public readonly INamedTypeSymbol? IListType = compilation!.GetBestTypeByMetadataName(typeof(IList));
-        public readonly INamedTypeSymbol? StackType = compilation!.GetBestTypeByMetadataName(typeof(Stack));
-        public readonly INamedTypeSymbol? QueueType = compilation!.GetBestTypeByMetadataName(typeof(Queue));
-        public readonly INamedTypeSymbol? KeyValuePair = compilation!.GetBestTypeByMetadataName(typeof(KeyValuePair<,>));
+        // Caches a set of types with built-in converter support. Populated by the Parser class.
+        public HashSet<ITypeSymbol>? BuiltInSupportTypes { get; set; }
 
-        public readonly INamedTypeSymbol? ImmutableArrayType = compilation!.GetBestTypeByMetadataName(typeof(ImmutableArray<>));
-        public readonly INamedTypeSymbol? ImmutableListType = compilation!.GetBestTypeByMetadataName(typeof(ImmutableList<>));
-        public readonly INamedTypeSymbol? IImmutableListType = compilation!.GetBestTypeByMetadataName(typeof(IImmutableList<>));
-        public readonly INamedTypeSymbol? ImmutableStackType = compilation!.GetBestTypeByMetadataName(typeof(ImmutableStack<>));
-        public readonly INamedTypeSymbol? IImmutableStackType = compilation!.GetBestTypeByMetadataName(typeof(IImmutableStack<>));
-        public readonly INamedTypeSymbol? ImmutableQueueType = compilation!.GetBestTypeByMetadataName(typeof(ImmutableQueue<>));
-        public readonly INamedTypeSymbol? IImmutableQueueType = compilation!.GetBestTypeByMetadataName(typeof(IImmutableQueue<>));
-        public readonly INamedTypeSymbol? ImmutableSortedType = compilation!.GetBestTypeByMetadataName(typeof(ImmutableSortedSet<>));
-        public readonly INamedTypeSymbol? ImmutableHashSetType = compilation!.GetBestTypeByMetadataName(typeof(ImmutableHashSet<>));
-        public readonly INamedTypeSymbol? IImmutableSetType = compilation!.GetBestTypeByMetadataName(typeof(IImmutableSet<>));
-        public readonly INamedTypeSymbol? ImmutableDictionaryType = compilation!.GetBestTypeByMetadataName(typeof(ImmutableDictionary<,>));
-        public readonly INamedTypeSymbol? ImmutableSortedDictionaryType = compilation!.GetBestTypeByMetadataName(typeof(ImmutableSortedDictionary<,>));
-        public readonly INamedTypeSymbol? IImmutableDictionaryType = compilation!.GetBestTypeByMetadataName(typeof(IImmutableDictionary<,>));
+        public INamedTypeSymbol? IListOfTType => GetOrResolveType(typeof(IList<>), ref _IListOfTType);
+        private Option<INamedTypeSymbol?> _IListOfTType;
 
-        public readonly INamedTypeSymbol ObjectType = compilation!.GetSpecialType(SpecialType.System_Object);
-        public readonly INamedTypeSymbol StringType = compilation!.GetSpecialType(SpecialType.System_String);
+        public INamedTypeSymbol? ICollectionOfTType => GetOrResolveType(typeof(ICollection<>), ref _ICollectionOfTType);
+        private Option<INamedTypeSymbol?> _ICollectionOfTType;
 
-        public readonly INamedTypeSymbol? DateTimeOffsetType = compilation!.GetBestTypeByMetadataName(typeof(DateTimeOffset));
-        public readonly INamedTypeSymbol? TimeSpanType = compilation!.GetBestTypeByMetadataName(typeof(TimeSpan));
-        public readonly INamedTypeSymbol? DateOnlyType = compilation!.GetBestTypeByMetadataName("System.DateOnly");
-        public readonly INamedTypeSymbol? TimeOnlyType = compilation!.GetBestTypeByMetadataName("System.TimeOnly");
-        public readonly IArrayTypeSymbol? ByteArrayType = compilation!.CreateArrayTypeSymbol(compilation.GetSpecialType(SpecialType.System_Byte), rank: 1);
-        public readonly INamedTypeSymbol? GuidType = compilation!.GetBestTypeByMetadataName(typeof(Guid));
-        public readonly INamedTypeSymbol? UriType = compilation!.GetBestTypeByMetadataName(typeof(Uri));
-        public readonly INamedTypeSymbol? VersionType = compilation!.GetBestTypeByMetadataName(typeof(Version));
+        public INamedTypeSymbol? IEnumerableType => GetOrResolveType(typeof(IEnumerable), ref _IEnumerableType);
+        private Option<INamedTypeSymbol?> _IEnumerableType;
+
+        public INamedTypeSymbol? IEnumerableOfTType => GetOrResolveType(typeof(IEnumerable<>), ref _IEnumerableOfTType);
+        private Option<INamedTypeSymbol?> _IEnumerableOfTType;
+
+        public INamedTypeSymbol? ListOfTType => GetOrResolveType(typeof(List<>), ref _ListOfTType);
+        private Option<INamedTypeSymbol?> _ListOfTType;
+
+        public INamedTypeSymbol? DictionaryOfTKeyTValueType => GetOrResolveType(typeof(Dictionary<,>), ref _DictionaryOfTKeyTValueType);
+        private Option<INamedTypeSymbol?> _DictionaryOfTKeyTValueType;
+
+        public INamedTypeSymbol? IAsyncEnumerableOfTType => GetOrResolveType("System.Collections.Generic.IAsyncEnumerable`1", ref _AsyncEnumerableOfTType);
+        private Option<INamedTypeSymbol?> _AsyncEnumerableOfTType;
+
+        public INamedTypeSymbol? IDictionaryOfTKeyTValueType => GetOrResolveType(typeof(IDictionary<,>), ref _IDictionaryOfTKeyTValueType);
+        private Option<INamedTypeSymbol?> _IDictionaryOfTKeyTValueType;
+
+        public INamedTypeSymbol? IReadonlyDictionaryOfTKeyTValueType => GetOrResolveType(typeof(IReadOnlyDictionary<,>), ref _IReadonlyDictionaryOfTKeyTValueType);
+        private Option<INamedTypeSymbol?> _IReadonlyDictionaryOfTKeyTValueType;
+
+        public INamedTypeSymbol? ISetOfTType => GetOrResolveType(typeof(ISet<>), ref _ISetOfTType);
+        private Option<INamedTypeSymbol?> _ISetOfTType;
+
+        public INamedTypeSymbol? StackOfTType => GetOrResolveType(typeof(Stack<>), ref _StackOfTType);
+        private Option<INamedTypeSymbol?> _StackOfTType;
+
+        public INamedTypeSymbol? QueueOfTType => GetOrResolveType(typeof(Queue<>), ref _QueueOfTType);
+        private Option<INamedTypeSymbol?> _QueueOfTType;
+
+        public INamedTypeSymbol? ConcurrentStackType => GetOrResolveType(typeof(ConcurrentStack<>), ref _ConcurrentStackType);
+        private Option<INamedTypeSymbol?> _ConcurrentStackType;
+
+        public INamedTypeSymbol? ConcurrentQueueType => GetOrResolveType(typeof(ConcurrentQueue<>), ref _ConcurrentQueueType);
+        private Option<INamedTypeSymbol?> _ConcurrentQueueType;
+
+        public INamedTypeSymbol? IDictionaryType => GetOrResolveType(typeof(IDictionary), ref _IDictionaryType);
+        private Option<INamedTypeSymbol?> _IDictionaryType;
+
+        public INamedTypeSymbol? IListType => GetOrResolveType(typeof(IList), ref _IListType);
+        private Option<INamedTypeSymbol?> _IListType;
+
+        public INamedTypeSymbol? StackType => GetOrResolveType(typeof(Stack), ref _StackType);
+        private Option<INamedTypeSymbol?> _StackType;
+
+        public INamedTypeSymbol? QueueType => GetOrResolveType(typeof(Queue), ref _QueueType);
+        private Option<INamedTypeSymbol?> _QueueType;
+
+        public INamedTypeSymbol? KeyValuePair => GetOrResolveType(typeof(KeyValuePair<,>), ref _KeyValuePair);
+        private Option<INamedTypeSymbol?> _KeyValuePair;
+
+        public INamedTypeSymbol? ImmutableArrayType => GetOrResolveType(typeof(ImmutableArray<>), ref _ImmutableArrayType);
+        private Option<INamedTypeSymbol?> _ImmutableArrayType;
+
+        public INamedTypeSymbol? ImmutableListType => GetOrResolveType(typeof(ImmutableList<>), ref _ImmutableListType);
+        private Option<INamedTypeSymbol?> _ImmutableListType;
+
+        public INamedTypeSymbol? IImmutableListType => GetOrResolveType(typeof(IImmutableList<>), ref _IImmutableListType);
+        private Option<INamedTypeSymbol?> _IImmutableListType;
+
+        public INamedTypeSymbol? ImmutableStackType => GetOrResolveType(typeof(ImmutableStack<>), ref _ImmutableStackType);
+        private Option<INamedTypeSymbol?> _ImmutableStackType;
+
+        public INamedTypeSymbol? IImmutableStackType => GetOrResolveType(typeof(IImmutableStack<>), ref _IImmutableStackType);
+        private Option<INamedTypeSymbol?> _IImmutableStackType;
+
+        public INamedTypeSymbol? ImmutableQueueType => GetOrResolveType(typeof(ImmutableQueue<>), ref _ImmutableQueueType);
+        private Option<INamedTypeSymbol?> _ImmutableQueueType;
+
+        public INamedTypeSymbol? IImmutableQueueType => GetOrResolveType(typeof(IImmutableQueue<>), ref _IImmutableQueueType);
+        private Option<INamedTypeSymbol?> _IImmutableQueueType;
+
+        public INamedTypeSymbol? ImmutableSortedType => GetOrResolveType(typeof(ImmutableSortedSet<>), ref _ImmutableSortedType);
+        private Option<INamedTypeSymbol?> _ImmutableSortedType;
+
+        public INamedTypeSymbol? ImmutableHashSetType => GetOrResolveType(typeof(ImmutableHashSet<>), ref _ImmutableHashSetType);
+        private Option<INamedTypeSymbol?> _ImmutableHashSetType;
+
+        public INamedTypeSymbol? IImmutableSetType => GetOrResolveType(typeof(IImmutableSet<>), ref _IImmutableSetType);
+        private Option<INamedTypeSymbol?> _IImmutableSetType;
+
+        public INamedTypeSymbol? ImmutableDictionaryType => GetOrResolveType(typeof(ImmutableDictionary<,>), ref _ImmutableDictionaryType);
+        private Option<INamedTypeSymbol?> _ImmutableDictionaryType;
+
+        public INamedTypeSymbol? ImmutableSortedDictionaryType => GetOrResolveType(typeof(ImmutableSortedDictionary<,>), ref _ImmutableSortedDictionaryType);
+        private Option<INamedTypeSymbol?> _ImmutableSortedDictionaryType;
+
+        public INamedTypeSymbol? IImmutableDictionaryType => GetOrResolveType(typeof(IImmutableDictionary<,>), ref _IImmutableDictionaryType);
+        private Option<INamedTypeSymbol?> _IImmutableDictionaryType;
+
+        public INamedTypeSymbol ObjectType => _ObjectType ??= Compilation.GetSpecialType(SpecialType.System_Object);
+        private INamedTypeSymbol? _ObjectType;
+
+        public INamedTypeSymbol StringType => _StringType ??= Compilation.GetSpecialType(SpecialType.System_String);
+        private INamedTypeSymbol? _StringType;
+
+        public INamedTypeSymbol? DateTimeOffsetType => GetOrResolveType(typeof(DateTimeOffset), ref _DateTimeOffsetType);
+        private Option<INamedTypeSymbol?> _DateTimeOffsetType;
+
+        public INamedTypeSymbol? TimeSpanType => GetOrResolveType(typeof(TimeSpan), ref _TimeSpanType);
+        private Option<INamedTypeSymbol?> _TimeSpanType;
+
+        public INamedTypeSymbol? DateOnlyType => GetOrResolveType("System.DateOnly", ref _DateOnlyType);
+        private Option<INamedTypeSymbol?> _DateOnlyType;
+
+        public INamedTypeSymbol? TimeOnlyType => GetOrResolveType("System.TimeOnly", ref _TimeOnlyType);
+        private Option<INamedTypeSymbol?> _TimeOnlyType;
+
+        public IArrayTypeSymbol? ByteArrayType => _ByteArrayType.HasValue
+            ? _ByteArrayType.Value
+            : (_ByteArrayType = new(Compilation.CreateArrayTypeSymbol(Compilation.GetSpecialType(SpecialType.System_Byte), rank: 1))).Value;
+
+        private Option<IArrayTypeSymbol?> _ByteArrayType;
+
+        public INamedTypeSymbol? GuidType => GetOrResolveType(typeof(Guid), ref _GuidType);
+        private Option<INamedTypeSymbol?> _GuidType;
+
+        public INamedTypeSymbol? UriType => GetOrResolveType(typeof(Uri), ref _UriType);
+        private Option<INamedTypeSymbol?> _UriType;
+
+        public INamedTypeSymbol? VersionType => GetOrResolveType(typeof(Version), ref _VersionType);
+        private Option<INamedTypeSymbol?> _VersionType;
 
         // System.Text.Json types
-        public readonly INamedTypeSymbol? JsonConverterOfTType = compilation!.GetBestTypeByMetadataName("System.Text.Json.Serialization.JsonConverter`1");
-        public readonly INamedTypeSymbol? JsonConverterFactoryType = compilation!.GetBestTypeByMetadataName("System.Text.Json.Serialization.JsonConverterFactory");
+        public INamedTypeSymbol? JsonConverterType => GetOrResolveType("System.Text.Json.Serialization.JsonConverter", ref _JsonConverterType);
+        private Option<INamedTypeSymbol?> _JsonConverterType;
 
-        public readonly INamedTypeSymbol? JsonSerializerContextType = compilation.GetBestTypeByMetadataName("System.Text.Json.Serialization.JsonSerializerContext");
-        public readonly INamedTypeSymbol? JsonSerializableAttributeType = compilation.GetBestTypeByMetadataName("System.Text.Json.Serialization.JsonSerializableAttribute");
+        public INamedTypeSymbol? JsonSerializerContextType => GetOrResolveType("System.Text.Json.Serialization.JsonSerializerContext", ref _JsonSerializerContextType);
+        private Option<INamedTypeSymbol?> _JsonSerializerContextType;
 
-        public readonly INamedTypeSymbol? JsonDocumentType = compilation!.GetBestTypeByMetadataName("System.Text.Json.JsonDocument");
-        public readonly INamedTypeSymbol? JsonElementType = compilation!.GetBestTypeByMetadataName("System.Text.Json.JsonElement");
+        public INamedTypeSymbol? JsonSerializableAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonSerializableAttribute", ref _JsonSerializableAttributeType);
+        private Option<INamedTypeSymbol?> _JsonSerializableAttributeType;
 
-        public readonly INamedTypeSymbol? JsonNodeType = compilation!.GetBestTypeByMetadataName("System.Text.Json.Nodes.JsonNode");
-        public readonly INamedTypeSymbol? JsonValueType = compilation!.GetBestTypeByMetadataName("System.Text.Json.Nodes.JsonValue");
-        public readonly INamedTypeSymbol? JsonObjectType = compilation!.GetBestTypeByMetadataName("System.Text.Json.Nodes.JsonObject");
-        public readonly INamedTypeSymbol? JsonArrayType = compilation!.GetBestTypeByMetadataName("System.Text.Json.Nodes.JsonArray");
+        public INamedTypeSymbol? JsonDocumentType => GetOrResolveType("System.Text.Json.JsonDocument", ref _JsonDocumentType);
+        private Option<INamedTypeSymbol?> _JsonDocumentType;
+
+        public INamedTypeSymbol? JsonElementType => GetOrResolveType("System.Text.Json.JsonElement", ref _JsonElementType);
+        private Option<INamedTypeSymbol?> _JsonElementType;
+
+        public INamedTypeSymbol? JsonNodeType => GetOrResolveType("System.Text.Json.Nodes.JsonNode", ref _JsonNodeType);
+        private Option<INamedTypeSymbol?> _JsonNodeType;
+
+        public INamedTypeSymbol? JsonValueType => GetOrResolveType("System.Text.Json.Nodes.JsonValue", ref _JsonValueType);
+        private Option<INamedTypeSymbol?> _JsonValueType;
+
+        public INamedTypeSymbol? JsonObjectType => GetOrResolveType("System.Text.Json.Nodes.JsonObject", ref _JsonObjectType);
+        private Option<INamedTypeSymbol?> _JsonObjectType;
+
+        public INamedTypeSymbol? JsonArrayType => GetOrResolveType("System.Text.Json.Nodes.JsonArray", ref _JsonArrayType);
+        private Option<INamedTypeSymbol?> _JsonArrayType;
 
         // System.Text.Json attributes
-        public readonly INamedTypeSymbol? JsonConverterAttributeType = compilation!.GetBestTypeByMetadataName("System.Text.Json.Serialization.JsonConverterAttribute");
-        public readonly INamedTypeSymbol? JsonDerivedTypeAttributeType = compilation!.GetBestTypeByMetadataName("System.Text.Json.Serialization.JsonDerivedTypeAttribute");
-        public readonly INamedTypeSymbol? JsonNumberHandlingAttributeType = compilation!.GetBestTypeByMetadataName("System.Text.Json.Serialization.JsonNumberHandlingAttribute");
-        public readonly INamedTypeSymbol? JsonObjectCreationHandlingAttributeType = compilation!.GetBestTypeByMetadataName("System.Text.Json.Serialization.JsonObjectCreationHandlingAttribute");
-        public readonly INamedTypeSymbol? JsonSourceGenerationOptionsAttributeType = compilation.GetBestTypeByMetadataName("System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute");
-        public readonly INamedTypeSymbol? JsonUnmappedMemberHandlingAttributeType = compilation!.GetBestTypeByMetadataName("System.Text.Json.Serialization.JsonUnmappedMemberHandlingAttribute");
+        public INamedTypeSymbol? JsonConverterAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonConverterAttribute", ref _JsonConverterAttributeType);
+        private Option<INamedTypeSymbol?> _JsonConverterAttributeType;
+
+        public INamedTypeSymbol? JsonDerivedTypeAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonDerivedTypeAttribute", ref _JsonDerivedTypeAttributeType);
+        private Option<INamedTypeSymbol?> _JsonDerivedTypeAttributeType;
+
+        public INamedTypeSymbol? JsonNumberHandlingAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonNumberHandlingAttribute", ref _JsonNumberHandlingAttributeType);
+        private Option<INamedTypeSymbol?> _JsonNumberHandlingAttributeType;
+
+        public INamedTypeSymbol? JsonObjectCreationHandlingAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonObjectCreationHandlingAttribute", ref _JsonObjectCreationHandlingAttributeType);
+        private Option<INamedTypeSymbol?> _JsonObjectCreationHandlingAttributeType;
+
+        public INamedTypeSymbol? JsonSourceGenerationOptionsAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute", ref _JsonSourceGenerationOptionsAttributeType);
+        private Option<INamedTypeSymbol?> _JsonSourceGenerationOptionsAttributeType;
+
+        public INamedTypeSymbol? JsonUnmappedMemberHandlingAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonUnmappedMemberHandlingAttribute", ref _JsonUnmappedMemberHandlingAttributeType);
+        private Option<INamedTypeSymbol?> _JsonUnmappedMemberHandlingAttributeType;
 
         // Unsupported types
-        public readonly INamedTypeSymbol? DelegateType = compilation!.GetSpecialType(SpecialType.System_Delegate);
-        public readonly INamedTypeSymbol? MemberInfoType = compilation!.GetBestTypeByMetadataName(typeof(MemberInfo));
-        public readonly INamedTypeSymbol? SerializationInfoType = compilation!.GetBestTypeByMetadataName(typeof(Runtime.Serialization.SerializationInfo));
-        public readonly INamedTypeSymbol? IntPtrType = compilation!.GetBestTypeByMetadataName(typeof(IntPtr));
-        public readonly INamedTypeSymbol? UIntPtrType = compilation!.GetBestTypeByMetadataName(typeof(UIntPtr));
-#pragma warning restore CA1822 // Mark members as static false positive with primary constructors.
+        public INamedTypeSymbol? DelegateType => _DelegateType ??= Compilation.GetSpecialType(SpecialType.System_Delegate);
+        private INamedTypeSymbol? _DelegateType;
+
+        public INamedTypeSymbol? MemberInfoType => GetOrResolveType(typeof(MemberInfo), ref _MemberInfoType);
+        private Option<INamedTypeSymbol?> _MemberInfoType;
+
+        public INamedTypeSymbol? SerializationInfoType => GetOrResolveType(typeof(Runtime.Serialization.SerializationInfo), ref _SerializationInfoType);
+        private Option<INamedTypeSymbol?> _SerializationInfoType;
+
+        public INamedTypeSymbol? IntPtrType => GetOrResolveType(typeof(IntPtr), ref _IntPtrType);
+        private Option<INamedTypeSymbol?> _IntPtrType;
+
+        public INamedTypeSymbol? UIntPtrType => GetOrResolveType(typeof(UIntPtr), ref _UIntPtrType);
+        private Option<INamedTypeSymbol?> _UIntPtrType;
+
 
         public bool IsImmutableEnumerableType(ITypeSymbol type, out string? factoryTypeFullName)
         {
@@ -172,6 +292,33 @@ namespace System.Text.Json.SourceGeneration
 
             factoryTypeFullName = null;
             return false;
+        }
+
+        private INamedTypeSymbol? GetOrResolveType(Type type, ref Option<INamedTypeSymbol?> field)
+            => GetOrResolveType(type.FullName!, ref field);
+
+        private INamedTypeSymbol? GetOrResolveType(string fullyQualifiedName, ref Option<INamedTypeSymbol?> field)
+        {
+            if (field.HasValue)
+            {
+                return field.Value;
+            }
+
+            INamedTypeSymbol? type = Compilation.GetBestTypeByMetadataName(fullyQualifiedName);
+            field = new(type);
+            return type;
+        }
+
+        private readonly struct Option<T>
+        {
+            public readonly bool HasValue;
+            public readonly T Value;
+
+            public Option(T value)
+            {
+                HasValue = true;
+                Value = value;
+            }
         }
     }
 }

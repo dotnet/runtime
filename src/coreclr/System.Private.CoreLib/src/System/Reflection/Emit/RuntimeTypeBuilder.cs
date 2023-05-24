@@ -1709,7 +1709,7 @@ namespace System.Reflection.Emit
                     if (meth.m_ilGenerator != null)
                     {
                         // we need to bake the method here.
-                        meth.CreateMethodBodyHelper(meth.GetILGenerator());
+                        meth.CreateMethodBodyHelper(((RuntimeILGenerator)meth.GetILGenerator()));
                     }
 
                     body = meth.GetBody();

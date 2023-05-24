@@ -290,11 +290,11 @@ namespace ComInterfaceGenerator.Unit.Tests
         {
             List<string> declarations = new();
             int i = 0;
-            foreach(var args in attributeArguments)
+            foreach (var args in attributeArguments)
             {
                 declarations.Add($$"""
                     {{GeneratedComInterface(args.StringMarshalling, args.StringMarshallingCustomType)}}
-                    internal partial interface {|#{{i}}:IStringMarshalling{{i}}|} {{(i > 0 ? $": IStringMarshalling{i-1}" : "")}}
+                    internal partial interface {|#{{i}}:IStringMarshalling{{i}}|} {{(i > 0 ? $": IStringMarshalling{i - 1}" : "")}}
                     {
                         public string GetString{{i}}();
                         public void SetString{{i}}(string value);
@@ -302,7 +302,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 """);
                 i++;
             }
-             return $$"""
+            return $$"""
                 using System;
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
