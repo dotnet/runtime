@@ -554,7 +554,6 @@ namespace System.Formats.Tar
             {
                 return 0;
             }
-            Debug.Assert(_dataStream.CanSeek);
 
             long length = _dataStream.Length;
             long position = _dataStream.Position;
