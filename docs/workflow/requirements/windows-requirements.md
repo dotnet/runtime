@@ -53,6 +53,8 @@ These steps are required only in case the tools have not been installed as Visua
 
 The _dotnet/runtime_ repository requires using CMake 3.20 or newer.
 
+**NOTE**: If you plan on using the `-msbuild` flag for building the repo, you will need version 3.21 at least. This is because the VS2022 generator doesn't exist in CMake until said version.
+
 #### Ninja
 
 * Install Ninja in one of the three following ways
