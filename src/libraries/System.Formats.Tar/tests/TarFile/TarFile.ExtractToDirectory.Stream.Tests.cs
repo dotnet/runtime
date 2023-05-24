@@ -230,8 +230,8 @@ namespace System.Formats.Tar.Tests
 
             // Size of files in many_small_files.tar are expected to be tiny and all equal
             int bufferLength = 1024;
-            byte[] buffer1 = new byte[bufferLength];
-            byte[] buffer2 = new byte[bufferLength];
+            byte[] fileContent = new byte[bufferLength];
+            byte[] dataStreamContent = new byte[bufferLength];
             TarEntry entry = reader.GetNextEntry();
             do
             {
@@ -253,13 +253,13 @@ namespace System.Formats.Tar.Tests
 
                     Assert.Equal(fileData.Length, entry.Length);
 
-                    Array.Clear(buffer1);
-                    Array.Clear(buffer2);
+                    Array.Clear(fileContent);
+                    Array.Clear(dataStreamContent);
 
-                    fileData.ReadExactly(buffer1, 0, (int)entry.Length);
-                    entry.DataStream.ReadExactly(buffer2, 0, (int)entry.Length);
+                    fileData.ReadExactly(fileContent, 0, (int)entry.Length);
+                    entry.DataStream.ReadExactly(dataStreamContent, 0, (int)entry.Length);
 
-                    AssertExtensions.SequenceEqual(buffer1, buffer2);
+                    AssertExtensions.SequenceEqual(fileContent, dataStreamContent);
                 }
             }
             while ((entry = reader.GetNextEntry()) != null);
