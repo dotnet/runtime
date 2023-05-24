@@ -5522,7 +5522,7 @@ void Compiler::fgValueNumberArrayElemLoad(GenTree* loadTree, VNFuncApp* addrFunc
 //                              to an array element.
 //
 // Arguments:
-//    storeNode - The ASG node performing the store
+//    storeNode - The store node
 //    addrFunc  - The "VNF_PtrToArrElem" function representing the address
 //    storeSize - The number of bytes being stored
 //    value     - (VN of) the value being stored
@@ -5640,7 +5640,7 @@ void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, Fiel
 //                          a class/static field.
 //
 // Arguments:
-//    storeNode - The ASG node performing the store
+//    storeNode - The store node
 //    baseAddr  - The "base address" of the field (see "GenTree::IsFieldAddr")
 //    fieldSeq  - The field sequence representing the address
 //    offset    - The offset, relative to the field, of the target location

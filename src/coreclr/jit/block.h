@@ -1117,7 +1117,7 @@ struct BasicBlock : private LIR::Range
                                   // BAD_IL_OFFSET.
 #endif                            // DEBUG
 
-    VARSET_TP bbVarUse; // variables used     by block (before an assignment)
+    VARSET_TP bbVarUse; // variables used     by block (before a definition)
     VARSET_TP bbVarDef; // variables assigned by block (before a use)
 
     VARSET_TP bbLiveIn;  // variables live on entry
@@ -1172,17 +1172,17 @@ struct BasicBlock : private LIR::Range
 
     union {
         EXPSET_TP bbCseGen;       // CSEs computed by block
-        ASSERT_TP bbAssertionGen; // value assignments computed by block
+        ASSERT_TP bbAssertionGen; // assertions computed by block
     };
 
     union {
         EXPSET_TP bbCseIn;       // CSEs available on entry
-        ASSERT_TP bbAssertionIn; // value assignments available on entry
+        ASSERT_TP bbAssertionIn; // assertions available on entry
     };
 
     union {
         EXPSET_TP bbCseOut;       // CSEs available on exit
-        ASSERT_TP bbAssertionOut; // value assignments available on exit
+        ASSERT_TP bbAssertionOut; // assertions available on exit
     };
 
     void* bbEmitCookie;
@@ -1280,9 +1280,9 @@ struct BasicBlock : private LIR::Range
     bool endsWithTailCallConvertibleToLoop(Compiler* comp, GenTree** tailCall) const;
 
     // Returns the first statement in the statement list of "this" that is
-    // not an SSA definition (a lcl = phi(...) assignment).
+    // not an SSA definition (a lcl = phi(...) store).
     Statement* FirstNonPhiDef() const;
-    Statement* FirstNonPhiDefOrCatchArgAsg() const;
+    Statement* FirstNonPhiDefOrCatchArgStore() const;
 
     BasicBlock() : bbStmtList(nullptr), bbLiveIn(VarSetOps::UninitVal()), bbLiveOut(VarSetOps::UninitVal())
     {
