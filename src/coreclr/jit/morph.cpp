@@ -7428,7 +7428,6 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
             {
                 GenTree* zero = (lclType == TYP_STRUCT) ? gtNewIconNode(0) : gtNewZeroConNode(lclType);
                 GenTree* init = gtNewStoreLclVarNode(varNum, zero);
-                init->gtType  = lclType; // TODO-ASG: delete this zero-diff quirk.
                 if (lclType == TYP_STRUCT)
                 {
                     init = fgMorphInitBlock(init);
