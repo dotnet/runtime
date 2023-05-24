@@ -355,7 +355,6 @@ namespace System.Formats.Tar
                 GenerateExtendedAttributeName();
 
             _mode = TarHelpers.GetDefaultMode(_typeFlag);
-            //_size = GetTotalDataBytesToWrite();
             _typeFlag = isGea ? TarEntryType.GlobalExtendedAttributes : TarEntryType.ExtendedAttributes;
         }
 
