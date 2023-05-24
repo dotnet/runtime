@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
-    public static partial class IncrementalValuesProviderExtensions
+    public static class IncrementalValuesProviderExtensions
     {
         public static IncrementalValuesProvider<(T Left, U Right)> Zip<T, U>(this IncrementalValuesProvider<T> left, IncrementalValuesProvider<U> right)
         {

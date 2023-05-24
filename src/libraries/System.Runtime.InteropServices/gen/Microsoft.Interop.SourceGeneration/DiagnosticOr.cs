@@ -71,7 +71,7 @@ namespace Microsoft.Interop
         }
     }
 
-    public static partial class DiagnosticOrTHelperExtensions
+    public static class DiagnosticOrTHelperExtensions
     {
         /// <summary>
         /// Splits the elements of <paramref name="provider"/> into a "values" provider and a "diagnositics" provider.
