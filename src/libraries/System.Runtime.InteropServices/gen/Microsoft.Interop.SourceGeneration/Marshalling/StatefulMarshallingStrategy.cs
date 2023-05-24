@@ -391,6 +391,11 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateMarshalStatements(info, context))
+            {
+                yield return statement;
+            }
+
             if (context.Direction == MarshalDirection.ManagedToUnmanaged && !info.IsByRef && info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out)
             {
                 // If the parameter is marshalled by-value [Out], then we don't marshal the contents of the collection.
@@ -408,11 +413,6 @@ namespace Microsoft.Interop
 
             if (!_shape.HasFlag(MarshallerShape.ToUnmanaged) && !_shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
                 yield break;
-
-            foreach (StatementSyntax statement in _innerMarshaller.GenerateMarshalStatements(info, context))
-            {
-                yield return statement;
-            }
 
             yield return _elementsMarshalling.GenerateMarshalStatement(info, context);
         }
