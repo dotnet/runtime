@@ -519,7 +519,6 @@ void SsaBuilder::InsertPhi(BasicBlock* block, unsigned lclNum)
     phi->SetCosts(0, 0);
     GenTree* store = m_pCompiler->gtNewStoreLclVarNode(lclNum, phi);
     store->SetCosts(0, 0);
-    store->gtType = type; // TODO-ASG-Cleanup: delete. This quirk avoided diffs from costing-induced tail dup.
 
     // Create the statement and chain everything in linear order - PHI, STORE_LCL_VAR.
     Statement* stmt = m_pCompiler->gtNewStmt(store);
