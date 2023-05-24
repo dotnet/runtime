@@ -13,16 +13,16 @@ namespace System.Threading
         internal static bool UseWindowsThreadPool { get; } =
             AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.UseWindowsThreadPool", "DOTNET_ThreadPool_UseWindowsThreadPool");
 
-#if CORECLR
-        // consider using internal const bool
+#if NATIVEAOT
+        private const bool IsWorkerTrackingEnabledInConfig = false;
+#elif CORECLR
         private static readonly bool IsWorkerTrackingEnabledInConfig =
             UseWindowsThreadPool ? false : GetEnableWorkerTracking();
-#elif NATIVEAOT
-        private const bool IsWorkerTrackingEnabledInConfig = false;
 #else
         private static readonly bool IsWorkerTrackingEnabledInConfig =
-            AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", false);
+            UseWindowsThreadPool ? false : AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", false);
 #endif
+
 
 #if CORECLR
         // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
