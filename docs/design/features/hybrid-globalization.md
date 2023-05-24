@@ -245,3 +245,13 @@ Using `IgnoreNonSpace` for these two with `HybridGlobalization` off, also return
 ``` C#
 new CultureInfo("de-DE").CompareInfo.IndexOf("strasse", "stra\u00DFe", 0, CompareOptions.IgnoreNonSpace); // 0 or -1
 ```
+
+**Normalization**
+
+In HybridGlobalization all normalization types are available:
+- `FormC`,
+- `FormD`,
+- `FormKC`,
+- `FormKD`.
+
+This means, that `FormKC` and `FormKD` do not throw `PlatfromNotSupportedException`, as it happens in non-hybrid mode on Browser.
