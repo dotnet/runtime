@@ -352,6 +352,7 @@ extern void schedule_background_exec (void);
 void
 mono_main_thread_schedule_background_job (background_job_cb cb)
 {
+	g_assert (cb);
 #ifndef DISABLE_THREADS
 	if (!mono_threads_wasm_is_browser_thread ()) {
 		THREADS_DEBUG ("mono_main_thread_schedule_background_job1: thread %p queued job %p to main thread\n", (gpointer)pthread_self(), (gpointer) cb);
@@ -372,6 +373,7 @@ GSList *jobs;
 void
 mono_current_thread_schedule_background_job (background_job_cb cb)
 {
+	g_assert (cb);
 #ifdef DISABLE_THREADS
 
 	if (!jobs)
@@ -421,6 +423,7 @@ mono_background_exec (void)
 
 	for (cur = j; cur; cur = cur->next) {
 		background_job_cb cb = (background_job_cb)cur->data;
+		g_assert (cb);
 		THREADS_DEBUG ("mono_background_exec on thread %p running job %p \n", (gpointer)pthread_self(), (gpointer)cb);
 		cb ();
 		THREADS_DEBUG ("mono_background_exec on thread %p done job %p \n", (gpointer)pthread_self(), (gpointer)cb);

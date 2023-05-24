@@ -153,6 +153,10 @@ namespace System.Runtime.InteropServices.JavaScript
                     }
                 }
             }
+            catch (Exception e)
+            {
+                Environment.FailFast("JSSynchronizationContext.BackgroundJobHandler failed", e);
+            }
             finally
             {
                 // If an item throws, we want to ensure that the next pump gets scheduled appropriately regardless.

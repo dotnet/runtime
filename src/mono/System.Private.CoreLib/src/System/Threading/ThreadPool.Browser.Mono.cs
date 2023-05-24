@@ -117,9 +117,17 @@ namespace System.Threading
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
 #pragma warning restore CS3016
         // this callback will arrive on the bound thread, called from mono_background_exec
-        private static void BackgroundJobHandler () {
-            _callbackQueued = false;
-            ThreadPoolWorkQueue.Dispatch();
+        private static void BackgroundJobHandler ()
+        {
+            try
+            {
+                _callbackQueued = false;
+                ThreadPoolWorkQueue.Dispatch();
+            }
+            catch (Exception e)
+            {
+                Environment.FailFast("ThreadPool.BackgroundJobHandler failed", e);
+            }
         }
 
         private static unsafe void NativeOverlappedCallback(nint overlappedPtr) =>

@@ -36,12 +36,20 @@ namespace System.Threading
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
 #pragma warning restore CS3016
         // this callback will arrive on the main thread, called from mono_wasm_execute_timer
-        private static void TimerHandler () {
-            // always only have one scheduled at a time
-            s_shortestDueTimeMs = long.MaxValue;
+        private static void TimerHandler ()
+        {
+            try
+            {
+                // always only have one scheduled at a time
+                s_shortestDueTimeMs = long.MaxValue;
 
-            long currentTimeMs = TickCount64;
-            ReplaceNextTimer(PumpTimerQueue(currentTimeMs), currentTimeMs);
+                long currentTimeMs = TickCount64;
+                ReplaceNextTimer(PumpTimerQueue(currentTimeMs), currentTimeMs);
+            }
+            catch (Exception e)
+            {
+                Environment.FailFast("TimerQueue.TimerHandler failed", e);
+            }
         }
 
         // this is called with shortest of timers scheduled on the particular TimerQueue

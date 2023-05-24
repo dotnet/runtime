@@ -586,6 +586,7 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_execute_timer (void)
 {
+	g_assert (timer_handler);
 	background_job_cb cb = timer_handler;
 	cb ();
 }
@@ -596,6 +597,7 @@ mono_wasm_execute_timer (void)
 void
 mono_wasm_main_thread_schedule_timer (void *timerHandler, int shortestDueTimeMs)
 {
+	g_assert (timerHandler);
 	timer_handler = timerHandler;
 #ifdef HOST_BROWSER
 #ifndef DISABLE_THREADS
