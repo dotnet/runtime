@@ -30,7 +30,11 @@ namespace System.Formats.Tar
             Debug.Assert(format > TarEntryFormat.Unknown && format <= TarEntryFormat.Gnu);
             Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
 
-            if (_dataStream == null || _dataStream.CanSeek) // seek status of archive does not matter
+            if (archiveStream.CanSeek && _dataStream is { CanSeek: false })
+            {
+                WriteWithUnseekableDataStreamAs(format, archiveStream, buffer);
+            }
+            else // Seek status of archive does not matter
             {
                 long bytesToWrite = GetTotalDataBytesToWrite();
                 WriteFieldsToBuffer(format, bytesToWrite, buffer);
@@ -41,10 +45,6 @@ namespace System.Formats.Tar
                     WriteData(archiveStream, _dataStream, _size);
                 }
             }
-            else // seekable archive stream, unseekable data stream
-            {
-                WriteWithUnseekableDataStreamAs(format, archiveStream, buffer);
-            }
         }
 
         internal async Task WriteAsAsync(TarEntryFormat format, Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
@@ -52,7 +52,11 @@ namespace System.Formats.Tar
             Debug.Assert(format > TarEntryFormat.Unknown && format <= TarEntryFormat.Gnu);
             Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
 
-            if (_dataStream == null || _dataStream.CanSeek) // seek status of archive does not matter
+            if (archiveStream.CanSeek && _dataStream is { CanSeek: false })
+            {
+                await WriteWithUnseekableDataStreamAsAsync(format, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+            }
+            else // seek status of archive does not matter
             {
                 long bytesToWrite = GetTotalDataBytesToWrite();
                 WriteFieldsToBuffer(format, bytesToWrite, buffer.Span);
@@ -62,10 +66,6 @@ namespace System.Formats.Tar
                 {
                     await WriteDataAsync(archiveStream, _dataStream, _size, cancellationToken).ConfigureAwait(false);
                 }
-            }
-            else // seekable archive stream, unseekable data stream
-            {
-                await WriteWithUnseekableDataStreamAsAsync(format, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
             }
         }
 
