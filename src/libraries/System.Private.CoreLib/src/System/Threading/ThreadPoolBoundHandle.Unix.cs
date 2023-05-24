@@ -73,10 +73,6 @@ namespace System.Threading
         /// </remarks>
         public static ThreadPoolBoundHandle BindHandle(SafeHandle handle)
         {
-            Debug.Assert(handle != null);
-            Debug.Assert(!handle.IsClosed);
-            Debug.Assert(!handle.IsInvalid);
-
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
         }
 
