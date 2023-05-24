@@ -80,7 +80,7 @@ namespace ILCompiler
         public Option<bool> EnableGenericCycleDetection { get; } =
             new(new[] { "--enable-generic-cycle-detection" }, SR.EnableGenericCycleDetection);
         public Option<int> GenericCycleDepthCutoff { get; } =
-            new(new[] { "--maxgenericcycledepth" }, () => ReadyToRunCompilerContext.DefaultGenericCycleDepthCutoff, SR.GenericCycleDepthCutoff);
+            new(new[] { "--maxgenericcycle" }, () => ReadyToRunCompilerContext.DefaultGenericCycleDepthCutoff, SR.GenericCycleDepthCutoff);
         public Option<int> GenericCycleBreadthCutoff { get; } =
             new(new[] { "--maxgenericcyclebreadth" }, () => ReadyToRunCompilerContext.DefaultGenericCycleBreadthCutoff, SR.GenericCycleBreadthCutoff);
         public Option<TargetArchitecture> TargetArchitecture { get; } =
