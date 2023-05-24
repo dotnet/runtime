@@ -1134,13 +1134,13 @@ void ReplaceVisitor::EndBlock()
             continue;
         }
 
-        for (size_t j = 0; j < agg->Replacements.size(); j++)
+        for (size_t i = 0; i < agg->Replacements.size(); i++)
         {
-            Replacement& rep = agg->Replacements[j];
+            Replacement& rep = agg->Replacements[i];
             assert(!rep.NeedsReadBack || !rep.NeedsWriteBack);
             if (rep.NeedsReadBack)
             {
-                if (m_liveness->IsReplacementLiveOut(m_currentBlock, agg->LclNum, (unsigned)j))
+                if (m_liveness->IsReplacementLiveOut(m_currentBlock, agg->LclNum, (unsigned)i))
                 {
                     JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB ":\n",
                             agg->LclNum, rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum,
