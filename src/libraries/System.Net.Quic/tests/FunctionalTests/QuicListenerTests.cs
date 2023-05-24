@@ -426,8 +426,10 @@ namespace System.Net.Quic.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86701")]
-        [Fact]
-        public async Task Listener_AlpnNarrowingDown_Failure() {
+        [Theory]
+        [InlineData("foo")]
+        [InlineData("not_existing")]
+        public async Task Listener_AlpnNarrowingDown_Failure(string alpn) {
             var listenerOptions = new QuicListenerOptions()
             {
                 ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
@@ -454,7 +456,7 @@ namespace System.Net.Quic.Tests
             QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
             clientOptions.ClientAuthenticationOptions.ApplicationProtocols = new()
             {
-                new SslApplicationProtocol("foo"),
+                new SslApplicationProtocol(alpn),
             };
             ValueTask<QuicConnection> connectTask = CreateQuicConnection(clientOptions);
             await Assert.ThrowsAsync<AuthenticationException>(() => listener.AcceptConnectionAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(30)));
