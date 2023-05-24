@@ -181,16 +181,6 @@ ds_rt_generate_core_dump (
  */
 
 static
-bool
-ipc_get_process_id_disambiguation_key (
-    uint32_t process_id,
-    uint64_t *key)
-{
-    extern bool aot_ipc_get_process_id_disambiguation_key(uint32_t process_id, uint64_t *key);
-    return aot_ipc_get_process_id_disambiguation_key(process_id, key);
-}
-
-static
 inline
 bool
 ds_rt_transport_get_default_name (

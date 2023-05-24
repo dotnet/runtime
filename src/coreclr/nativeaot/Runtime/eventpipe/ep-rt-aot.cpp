@@ -303,9 +303,7 @@ ep_rt_aot_current_thread_get_id (void)
     STATIC_CONTRACT_NOTHROW;
 
 #ifdef TARGET_UNIX
-    // AOT doesn't have PAL_GetCurrentOSThreadId, as CoreCLR does.
-    // But PalGetCurrentThreadIdForLogging does the same thing
-    return static_cast<ep_rt_thread_id_t>(PalGetCurrentThreadIdForLogging());
+    return static_cast<ep_rt_thread_id_t>(PalGetCurrentOSThreadId());
 #else
     return static_cast<ep_rt_thread_id_t>(::GetCurrentThreadId ());
 #endif

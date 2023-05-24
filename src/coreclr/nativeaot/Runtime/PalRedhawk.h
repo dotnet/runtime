@@ -769,7 +769,7 @@ REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alert
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalAttachThread(void* thread);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalDetachThread(void* thread);
 
-REDHAWK_PALIMPORT uint64_t PalGetCurrentThreadIdForLogging();
+REDHAWK_PALIMPORT uint64_t PalGetCurrentOSThreadId();
 
 REDHAWK_PALIMPORT uint64_t PalQueryPerformanceCounter();
 REDHAWK_PALIMPORT uint64_t PalQueryPerformanceFrequency();

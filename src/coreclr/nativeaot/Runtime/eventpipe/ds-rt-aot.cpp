@@ -11,6 +11,8 @@
 
 #include "ds-rt-aot.h"
 
+bool aot_ipc_get_process_id_disambiguation_key(uint32_t process_id, uint64_t *key);
+
 bool
 aot_ipc_get_process_id_disambiguation_key(
     uint32_t process_id,
@@ -39,43 +41,56 @@ aot_ipc_get_process_id_disambiguation_key(
         return false;
     }
 
+    bool result = false;
+    unsigned long long start_time = 0;
+    char *scan_start_position;
+    int result_sscanf;
+
     char *line = NULL;
     size_t line_len = 0;
     if (getline (&line, &line_len, stat_file) == -1)
     {
         EP_ASSERT (!"Failed to get start time of a process, getline failed.");
-        return false;
+        ep_raise_error ();
     }
 
-    unsigned long long start_time;
 
     // According to `man proc`, the second field in the stat file is the filename of the executable,
     // in parentheses. Tokenizing the stat file using spaces as separators breaks when that name
     // has spaces in it, so we start using sscanf_s after skipping everything up to and including the
     // last closing paren and the space after it.
-    char *scan_start_position = strrchr (line, ')');
+    scan_start_position = strrchr (line, ')');
     if (!scan_start_position || scan_start_position [1] == '\0') {
         EP_ASSERT (!"Failed to parse stat file contents with strrchr.");
-        return false;
+        ep_raise_error ();
     }
 
     scan_start_position += 2;
 
     // All the format specifiers for the fields in the stat file are provided by 'man proc'.
-    int result_sscanf = sscanf (scan_start_position,
+    result_sscanf = sscanf (scan_start_position,
         "%*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %*u %*u %*d %*d %*d %*d %*d %*d %llu \n",
         &start_time);
 
     if (result_sscanf != 1) {
         EP_ASSERT (!"Failed to parse stat file contents with sscanf.");
-        return false;
+        ep_raise_error ();
     }
 
     free (line);
     fclose (stat_file);
+    result = true;
 
+ep_on_exit:
     *key = (uint64_t)start_time;
-    return true;
+    return result;
+
+ep_on_error:
+    free (line);
+    fclose (stat_file);
+    result = false;
+    ep_exit_error_handler ();
+
 #else
     // If we don't have /proc, we just return false.
     DS_LOG_WARNING_0 ("ipc_get_process_id_disambiguation_key was called but is not implemented on this platform!");
@@ -113,7 +128,7 @@ ds_rt_aot_transport_get_default_name (
     // If ipc_get_process_id_disambiguation_key failed for some reason, it should set the value
     // to 0. We expect that anyone else making the pipe name will also fail and thus will
     // also try to use 0 as the value.
-    if (!ipc_get_process_id_disambiguation_key (id, &disambiguation_key))
+    if (!aot_ipc_get_process_id_disambiguation_key (id, &disambiguation_key))
         EP_ASSERT (disambiguation_key == 0);
     
     // Get a temp file location

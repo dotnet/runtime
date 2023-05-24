@@ -1090,8 +1090,7 @@ ep_rt_temp_path_get (
         }
     }
 
-    int32_t result;
-    result = snprintf (buffer, buffer_len, path[strlen(path) - 1] == '/' ? "%s" : "%s/", path);
+    int32_t result = snprintf (buffer, buffer_len, path[strlen(path) - 1] == '/' ? "%s" : "%s/", path);
     if (result <= 0 || (uint32_t)result >= buffer_len)
         ep_raise_error ();
 
@@ -1386,8 +1385,9 @@ ep_rt_utf8_to_utf16le_string (
     if (!str)
         return NULL;
 
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implementation would just use strlen and malloc to make a new buffer, and would then copy the string chars one by one
+    // Shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
+    // Implementation would just use strlen and malloc to make a new buffer, and would then copy the string chars one by one.
+    // Assumes that only ASCII is used for ep_char8_t
     size_t len_utf8 = strlen(str);        
     if (len_utf8 == 0)
         return NULL;
@@ -1398,6 +1398,7 @@ ep_rt_utf8_to_utf16le_string (
 
     for (size_t i = 0; i < len_utf8; i++)
     {
+        EP_ASSERT(isascii(str[i]));
          str_utf16[i] = str[i];
     }
 
@@ -1624,17 +1625,15 @@ pthread_createThreadHolder (void)
     void *value = eventpipe_tls_instance;
     if (value) {
         // we need to do the unallocation here
-        EventPipeThreadHolder *thread_holder_old = static_cast<EventPipeThreadHolder*>(value);    
-        ep_thread_unregister (ep_thread_holder_get_thread (thread_holder_old));
-        ep_thread_holder_free (thread_holder_old);
+        EventPipeThreadHolder *thread_holder_old = static_cast<EventPipeThreadHolder*>(value);
+        thread_holder_free_func(thread_holder_old);
         eventpipe_tls_instance = NULL;
 
         value = NULL;
     }
-    EventPipeThreadHolder *instance = ep_thread_holder_alloc (ep_thread_alloc());
+    EventPipeThreadHolder *instance = thread_holder_alloc_func();
     if (instance){
-        ep_thread_register (ep_thread_holder_get_thread (instance));
-        // we need to let pthread know
+        // We need to know when the thread is no longer in use to clean up EventPipeThreadHolder instance and will use pthread destructor function to get notification when that happens.
         pthread_setspecific(eventpipe_tls_key, instance);
         eventpipe_tls_instance = instance;
     }
