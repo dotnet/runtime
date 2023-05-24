@@ -81,7 +81,7 @@ namespace System.IO
 
             // Throw the appropriate exception.
             Debug.Assert(error != Interop.Error.SUCCESS); // We shouldn't fail with success.
-            throw Interop.GetExceptionForIoErrno(error.Info());
+            throw Interop.GetExceptionForIoErrno(error.Info(), destFullPath);
         }
     }
 }
