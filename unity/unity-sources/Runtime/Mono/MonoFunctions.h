@@ -312,25 +312,13 @@ DO_API(void, mono_verifier_set_mode, (MiniVerifierMode mode))
 DO_API(void, mono_jit_parse_options, (int argc, char * argv[]))
 DO_API(gpointer, mono_object_unbox, (MonoObject * o))
 
-DO_API(MonoObject*, mono_custom_attrs_get_attr, (MonoCustomAttrInfo * ainfo, MonoClass * attr_klass))
-
-DO_API(MonoArray*, mono_custom_attrs_construct, (MonoCustomAttrInfo * cinfo))
-DO_API(MonoArray*, mono_unity_custom_attrs_construct, (MonoCustomAttrInfo * cinfo, MonoError * error))
-
-DO_API(gboolean, mono_custom_attrs_has_attr, (MonoCustomAttrInfo * ainfo, MonoClass * attr_klass))
-DO_API(MonoCustomAttrInfo*, mono_custom_attrs_from_field, (MonoClass * klass, MonoClassField * field))
-DO_API(MonoCustomAttrInfo*, mono_custom_attrs_from_method, (MonoMethod * method))
-DO_API(MonoCustomAttrInfo*, mono_custom_attrs_from_property, (MonoClass * klass, MonoProperty * property))
-DO_API(MonoCustomAttrInfo*, mono_custom_attrs_from_class, (MonoClass * klass))
-DO_API(MonoCustomAttrInfo*, mono_custom_attrs_from_assembly, (MonoAssembly * assembly))
 DO_API(MonoArray*, mono_reflection_get_custom_attrs_by_type, (MonoObject * object, MonoClass * klass))
-DO_API(void, mono_custom_attrs_free, (MonoCustomAttrInfo * attr))
-DO_API(gboolean, mono_unity_class_has_attribute, (MonoClass* klass, MonoClass* attr_klass))
-DO_API(gboolean, mono_unity_assembly_has_attribute, (MonoAssembly* assembly, MonoClass* attr_klass))
-DO_API(gboolean, mono_unity_method_has_attribute, (MonoMethod* method, MonoClass* attr_klass))
+DO_API(MonoObject*, mono_unity_class_get_attribute, (MonoClass* klass, MonoClass* attr_klass))
+DO_API(MonoObject*, mono_unity_assembly_get_attribute, (MonoAssembly* assembly, MonoClass* attr_klass))
+DO_API(MonoObject*, mono_unity_method_get_attribute, (MonoMethod* method, MonoClass* attr_klass))
+DO_API(MonoObject*, mono_unity_field_get_attribute, (MonoClass* klass, MonoClassField* field, MonoClass* attr_klass))
 
 DO_API(void, mono_unity_set_data_dir, (const char * dir));
-DO_API(MonoClass*, mono_custom_attrs_get_attrs, (MonoCustomAttrInfo * ainfo, void** iterator))
 
 DO_API(MonoException*, mono_unity_loader_get_last_error_and_error_prepare_exception, (void))
 

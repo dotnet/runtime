@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -281,22 +282,46 @@ static unsafe partial class CoreCLRHost
         [NativeCallbackType("MonoType*")] IntPtr type)
         => type.TypeFromHandleIntPtr().ToNativeRepresentation();
 
-    public static bool unity_class_has_attribute(
+    [return: NativeCallbackType("MonoObject*")]
+    public static IntPtr unity_class_get_attribute(
         [NativeCallbackType("MonoClass*")] IntPtr klass,
         [NativeCallbackType("MonoClass*")] IntPtr attr_klass)
-        => Attribute.GetCustomAttribute(klass.TypeFromHandleIntPtr(), attr_klass.TypeFromHandleIntPtr()) != null;
+    {
+        Attribute[] attrs = Attribute.GetCustomAttributes(klass.TypeFromHandleIntPtr(), attr_klass.TypeFromHandleIntPtr());
+        // Need to do it this way to mimic old behavior where we only cared about the first found
+        return attrs.Length == 0 ? IntPtr.Zero : attrs[0].ToNativeRepresentation();
+    }
 
-    public static bool unity_assembly_has_attribute(
+    [return: NativeCallbackType("MonoObject*")]
+    public static IntPtr unity_assembly_get_attribute(
         [NativeCallbackType("MonoAssembly*")] IntPtr assembly,
         [NativeCallbackType("MonoClass*")] IntPtr attr_klass)
-        => Attribute.GetCustomAttribute(assembly.AssemblyFromGCHandleIntPtr(), attr_klass.TypeFromHandleIntPtr()) != null;
+    {
+        Attribute[] attrs = Attribute.GetCustomAttributes(assembly.AssemblyFromGCHandleIntPtr(), attr_klass.TypeFromHandleIntPtr());
+        return attrs.Length == 0 ? IntPtr.Zero : attrs[0].ToNativeRepresentation();
+    }
 
-    public static bool unity_method_has_attribute(
+    [return: NativeCallbackType("MonoObject*")]
+    public static IntPtr unity_method_get_attribute(
         [NativeCallbackType("MonoMethod*")] IntPtr method,
         [NativeCallbackType("MonoClass*")] IntPtr attr_class)
     {
         MethodBase mb = MethodBase.GetMethodFromHandle(method.MethodHandleFromHandleIntPtr());
-        return mb != null && mb.GetCustomAttribute(attr_class.TypeFromHandleIntPtr()) != null;
+        if (mb == null)
+            return IntPtr.Zero;
+        Attribute[] attrs = mb.GetCustomAttributes(attr_class.TypeFromHandleIntPtr()).ToArray();
+        return attrs.Length == 0 ? IntPtr.Zero : attrs[0].ToNativeRepresentation();
+    }
+
+    [return: NativeCallbackType("MonoObject*")]
+    public static IntPtr unity_field_get_attribute(
+        [NativeCallbackType("MonoClass*")] IntPtr klass,
+        [NativeCallbackType("MonoClassField*")] IntPtr field,
+        [NativeCallbackType("MonoClass*")] IntPtr attr_class)
+    {
+        Attribute[] attrs = FieldInfo.GetFieldFromHandle(field.FieldHandleFromHandleIntPtr(), RuntimeTypeHandle.FromIntPtr(klass))
+            .GetCustomAttributes(attr_class.TypeFromHandleIntPtr()).ToArray();
+        return attrs.Length == 0 ? IntPtr.Zero : attrs[0].ToNativeRepresentation();
     }
 
     [return: NativeCallbackType("const char*")]

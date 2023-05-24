@@ -83,11 +83,12 @@ struct HostStruct
     MonoObject* (*type_get_object)(MonoDomain* domain, MonoType* type);
     MonoArray* (*unity_array_new_2d)(MonoDomain* domain, MonoClass* klass, size_t size0, size_t size1);
     MonoArray* (*unity_array_new_3d)(MonoDomain* domain, MonoClass* klass, size_t size0, size_t size1, size_t size2);
-    gboolean (*unity_assembly_has_attribute)(MonoAssembly* assembly, MonoClass* attr_klass);
+    MonoObject* (*unity_assembly_get_attribute)(MonoAssembly* assembly, MonoClass* attr_klass);
     MonoClass* (*unity_class_get)(MonoImage* image, guint32 type_token);
-    gboolean (*unity_class_has_attribute)(MonoClass* klass, MonoClass* attr_klass);
+    MonoObject* (*unity_class_get_attribute)(MonoClass* klass, MonoClass* attr_klass);
+    MonoObject* (*unity_field_get_attribute)(MonoClass* klass, MonoClassField* field, MonoClass* attr_class);
+    MonoObject* (*unity_method_get_attribute)(MonoMethod* method, MonoClass* attr_class);
     void* (*unity_method_get_function_pointer)(MonoMethod* method);
-    gboolean (*unity_method_has_attribute)(MonoMethod* method, MonoClass* attr_class);
     MonoObject* (*value_box)(MonoDomain* domain, MonoClass* klass, gpointer val);
 };
 HostStruct* g_HostStruct;
@@ -137,13 +138,6 @@ extern "C" HRESULT  GetCLRRuntimeHost(REFIID riid, IUnknown **ppUnk);
 #define FIELD_ATTRIBUTE_FAMILY                0x0004
 #define FIELD_ATTRIBUTE_PUBLIC                0x0006
 const int MONO_TABLE_TYPEDEF = 2;               // mono/metadata/blob.h
-
-struct MonoCustomAttrInfo_clr
-{
-    IMDInternalImport *import;
-    mdToken mdDef;
-    Assembly *assembly;
-};
 
 template <COUNT_T MEMSIZE>
 static STRINGREF AllocateString(const InlineSString<MEMSIZE>& sstr)
@@ -991,384 +985,6 @@ extern "C" EXPORT_API MonoVTable* EXPORT_CC mono_class_vtable(MonoDomain *domain
 extern "C" EXPORT_API void EXPORT_CC mono_config_parse(const char *filename)
 {
     // NOP
-}
-
-MonoObject* CreateAttributeInstance(MonoCustomAttrInfo_clr* attributes, mdCustomAttribute mdAttribute, MonoClass *attr_klass)
-{
-    mdToken tkCtor;
-    if (attributes->import->GetCustomAttributeProps(mdAttribute, &tkCtor) != S_OK)
-        return NULL;
-
-    if (attr_klass == NULL)
-    {
-        if (TypeFromToken(tkCtor) == mdtMemberRef || TypeFromToken(tkCtor) == mdtMethodDef)
-        {
-            mdToken tkType;
-            if (attributes->import->GetParentToken(tkCtor, &tkType) == S_OK)
-            {
-                if (TypeFromToken(tkType) == mdtTypeRef || TypeFromToken(tkType) == mdtTypeDef)
-                {
-                    DomainAssembly* domainAssembly = attributes->assembly->GetDomainAssembly();
-                    attr_klass = (MonoClass*)ClassLoader::LoadTypeDefOrRefThrowing(domainAssembly->GetModule(), tkType,
-                                                                    ClassLoader::ReturnNullIfNotFound,
-                                                                    ClassLoader::PermitUninstDefOrRef,
-                                                                    tdNoTypes).AsMethodTable();
-                }
-            }
-        }
-    }
-
-    MonoObject* obj = mono_object_new(mono_domain_get(), attr_klass);
-
-    DomainAssembly* domainAssembly = attributes->assembly->GetDomainAssembly();
-
-    MethodDesc* ctorMethod = NULL;
-    if (TypeFromToken(tkCtor) == mdtMemberRef)
-    {
-        MethodDesc * pMD = NULL;
-        FieldDesc * pFD = NULL;
-        TypeHandle th;
-        MemberLoader::GetDescFromMemberRef(domainAssembly->GetModule(), tkCtor, &ctorMethod, &pFD, NULL, FALSE, &th);
-    }
-    else
-        ctorMethod = domainAssembly->GetModule()->LookupMethodDef(tkCtor);
-
-    const BYTE  *pbAttr;                // Custom attribute data as a BYTE*.
-    ULONG       cbAttr;                 // Size of custom attribute data.
-
-    if (attributes->import->GetCustomAttributeAsBlob(mdAttribute, (const void**)&pbAttr, &cbAttr) != S_OK)
-        return NULL;
-
-    CustomAttributeParser CA(pbAttr, cbAttr);
-    CA.ValidateProlog();
-
-    GCX_COOP();
-
-    MetaSig     methodSig(ctorMethod);
-    DWORD numArgs = methodSig.NumFixedArgs();
-    ArgIterator argIt(&methodSig);
-
-    const int MAX_ARG_SLOT = 128;
-    ARG_SLOT argslots[MAX_ARG_SLOT];
-    DWORD slotIndex = 0;
-    argslots[0] = PtrToArgSlot(obj);
-    slotIndex++;
-
-    for (DWORD argIndex = 0; argIndex < numArgs; argIndex++, slotIndex++)
-    {
-        int ofs = argIt.GetNextOffset();
-        _ASSERTE(ofs != TransitionBlock::InvalidOffset);
-        auto stackSize = argIt.GetArgSize();
-
-        auto argTH = methodSig.GetLastTypeHandleNT();
-        auto argType = argTH.GetInternalCorElementType();
-
-        switch (argType)
-        {
-        case ELEMENT_TYPE_I1:
-        case ELEMENT_TYPE_U1:
-        case ELEMENT_TYPE_BOOLEAN:
-            {
-                UINT8 u1 = 0;
-                CA.GetU1(&u1);
-                argslots[slotIndex] = u1;
-                break;
-            }
-
-        case ELEMENT_TYPE_I2:
-        case ELEMENT_TYPE_U2:
-            {
-                UINT16 u2 = 0;
-                CA.GetU2(&u2);
-                argslots[slotIndex] = u2;
-                break;
-            }
-        case ELEMENT_TYPE_I4:
-        case ELEMENT_TYPE_U4:
-            {
-                UINT32 u4 = 0;
-                CA.GetU4(&u4);
-                argslots[slotIndex] = u4;
-                break;
-            }
-        case ELEMENT_TYPE_I8:
-        case ELEMENT_TYPE_U8:
-            {
-                UINT64 u8 = 0;
-                CA.GetU8(&u8);
-                argslots[slotIndex] = u8;
-                break;
-            }
-        case ELEMENT_TYPE_R4:
-            {
-                float f = CA.GetR4();
-                argslots[slotIndex] = *(INT32*)(&f);
-                break;
-            }
-        case ELEMENT_TYPE_R8:
-            {
-                double d = CA.GetR8();
-                argslots[slotIndex] = *(INT64*)(&d);
-                break;
-            }
-        case ELEMENT_TYPE_CLASS:
-        case ELEMENT_TYPE_STRING:
-            {
-                ULONG cbVal;
-                LPCUTF8 pStr;
-                CA.GetString(&pStr, &cbVal);
-                argslots[slotIndex] = ObjToArgSlot(ObjectToOBJECTREF((Object*)mono_string_new_len(mono_domain_get(), pStr, cbVal)));
-                break;
-            }
-        default:
-            assert(false && "This argType is not supported");
-            break;
-        }
-    }
-
-    g_isManaged++;
-    EX_TRY
-    {
-        OBJECTREF objref = ObjectToOBJECTREF((Object*)obj);
-        MethodDescCallSite invoker(ctorMethod, &objref);
-        invoker.Call_RetArgSlot(argslots);
-    }
-    EX_CATCH
-    {
-        SString sstr;
-        GET_EXCEPTION()->GetMessage(sstr);
-        printf("Exc: %s %d %x\n", sstr.GetUTF8(), GET_EXCEPTION()->IsType(CLRException::GetType()), GET_EXCEPTION()->GetInstanceType());
-    }
-    EX_END_CATCH(SwallowAllExceptions)
-    g_isManaged--;
-
-    methodSig.Reset();
-
-    return obj;
-}
-
-
-extern "C" EXPORT_API MonoArray* EXPORT_CC mono_custom_attrs_construct(MonoCustomAttrInfo *ainfo)
-{
-    MonoCustomAttrInfo_clr* attributes = reinterpret_cast<MonoCustomAttrInfo_clr*>(ainfo);
-    HENUMInternal iterator;
-    if (attributes->import->EnumInit(mdtCustomAttribute, attributes->mdDef, &iterator) != S_OK)
-        return NULL;
-
-    auto count = attributes->import->EnumGetCount(&iterator);
-
-    auto array = mono_array_new(mono_domain_get(), mono_get_object_class(), count);
-
-    mdCustomAttribute mdAttribute;
-    int arrayIndex = 0;
-    while (attributes->import->EnumNext(&iterator, &mdAttribute))
-        ((MonoObject**)((ArrayBase*)array)->GetDataPtr())[arrayIndex++] = CreateAttributeInstance(attributes, mdAttribute, NULL);
-
-    return (MonoArray*)array;
-}
-
-thread_local ThreadLocalPoolAllocator<MonoCustomAttrInfo_clr,5> g_AttributeInfoAlloc;
-
-extern "C" EXPORT_API void EXPORT_CC mono_custom_attrs_free(MonoCustomAttrInfo* attr)
-{
-    g_AttributeInfoAlloc.Free((MonoCustomAttrInfo_clr*)attr);
-}
-
-extern "C" EXPORT_API MonoCustomAttrInfo* EXPORT_CC mono_custom_attrs_from_assembly(MonoAssembly *assembly)
-{
-    TRACE_API("%p", assembly);
-    MonoCustomAttrInfo_clr *aInfo = g_AttributeInfoAlloc.Alloc();
-    auto clrAssembly = (MonoImage_clr*)assembly;
-    aInfo->import = clrAssembly->GetMDImport();
-    aInfo->mdDef = clrAssembly->GetManifestToken();
-    aInfo->assembly = clrAssembly;
-    return (MonoCustomAttrInfo*)aInfo;
-}
-
-extern "C" EXPORT_API MonoCustomAttrInfo* EXPORT_CC mono_custom_attrs_from_class(MonoClass *klass)
-{
-    TRACE_API("%p", klass);
-    MonoClass_clr* clrClass = reinterpret_cast<MonoClass_clr*>(klass);
-    MonoCustomAttrInfo_clr *aInfo = g_AttributeInfoAlloc.Alloc();
-    aInfo->import = clrClass->GetMDImport();
-    aInfo->mdDef = clrClass->GetCl();
-    aInfo->assembly = clrClass->GetAssembly();
-    return (MonoCustomAttrInfo*)aInfo;
-}
-
-extern "C" EXPORT_API MonoCustomAttrInfo* EXPORT_CC mono_custom_attrs_from_field(MonoClass *klass, MonoClassField *field)
-{
-    TRACE_API("%p, %p", klass, field);
-    FieldDesc* clrFieldDesc = reinterpret_cast<FieldDesc*>(field);
-    MonoCustomAttrInfo_clr *aInfo = g_AttributeInfoAlloc.Alloc();
-    aInfo->import = clrFieldDesc->GetMDImport();
-    aInfo->mdDef = clrFieldDesc->GetMemberDef();
-    aInfo->assembly = clrFieldDesc->GetApproxEnclosingMethodTable_NoLogging()->GetAssembly();
-    return (MonoCustomAttrInfo*)aInfo;
-}
-
-extern "C" EXPORT_API MonoCustomAttrInfo* EXPORT_CC mono_custom_attrs_from_method(MonoMethod *method)
-{
-    TRACE_API("%p", method);
-    MonoMethod_clr* clrMethod = reinterpret_cast<MonoMethod_clr*>(method);
-    MonoCustomAttrInfo_clr *aInfo = g_AttributeInfoAlloc.Alloc();
-    aInfo->import = clrMethod->GetMDImport();
-    aInfo->mdDef = clrMethod->GetMemberDef();
-    aInfo->assembly = clrMethod->GetAssembly();
-    return (MonoCustomAttrInfo*)aInfo;
-}
-
-extern "C" EXPORT_API MonoCustomAttrInfo* EXPORT_CC mono_custom_attrs_from_property (MonoClass * klass, MonoProperty * property)
-{
-    ASSERT_NOT_IMPLEMENTED;
-    return NULL;
-}
-
-extern "C" EXPORT_API MonoObject* EXPORT_CC mono_custom_attrs_get_attr(MonoCustomAttrInfo *ainfo, MonoClass *requested_klass)
-{
-    TRACE_API("%p, %p", ainfo, attr_klass);
-    MonoCustomAttrInfo_clr* attributes = reinterpret_cast<MonoCustomAttrInfo_clr*>(ainfo);
-
-    HENUMInternal iterator;
-    if (attributes->import->EnumInit(mdtCustomAttribute, attributes->mdDef, &iterator) != S_OK)
-        return NULL;
-
-    mdCustomAttribute mdAttribute;
-    while (attributes->import->EnumNext(&iterator, &mdAttribute))
-    {
-        mdToken tkCtor;
-        if (attributes->import->GetCustomAttributeProps(mdAttribute, &tkCtor) == S_OK)
-        {
-            if (TypeFromToken(tkCtor) == mdtMemberRef || TypeFromToken(tkCtor) == mdtMethodDef)
-            {
-                mdToken tkType;
-                if (attributes->import->GetParentToken(tkCtor, &tkType) == S_OK)
-                {
-                    if (TypeFromToken(tkType) == mdtTypeRef || TypeFromToken(tkType) == mdtTypeDef)
-                    {
-                        DomainAssembly* domainAssembly = attributes->assembly->GetDomainAssembly();
-                        auto attr_klass = (MonoClass*)ClassLoader::LoadTypeDefOrRefThrowing(domainAssembly->GetModule(), tkType,
-                                                                        ClassLoader::ReturnNullIfNotFound,
-                                                                        ClassLoader::PermitUninstDefOrRef,
-                                                                        tdNoTypes).AsMethodTable();
-
-                        if (mono_class_is_subclass_of(attr_klass, requested_klass, false))
-                            return CreateAttributeInstance(attributes, mdAttribute, attr_klass);
-                    }
-                }
-            }
-        }
-    }
-
-    return NULL;
-}
-
-extern "C" EXPORT_API MonoClass* EXPORT_CC mono_custom_attrs_get_attrs (MonoCustomAttrInfo * ainfo, void** iterator)
-{
-    TRACE_API("%p, %p", ainfo, iterator);
-
-    MonoCustomAttrInfo_clr* attributes = reinterpret_cast<MonoCustomAttrInfo_clr*>(ainfo);
-    if (*iterator == NULL)
-    {
-        *iterator = new HENUMInternal();
-        if (attributes->import->EnumInit(mdtCustomAttribute, attributes->mdDef, (HENUMInternal*)*iterator) != S_OK)
-            return NULL;
-    }
-
-    mdCustomAttribute mdAttribute;
-    while (attributes->import->EnumNext((HENUMInternal*)*iterator, &mdAttribute))
-    {
-        mdToken tkCtor;
-        if (attributes->import->GetCustomAttributeProps(mdAttribute, &tkCtor) == S_OK)
-        {
-            if (TypeFromToken(tkCtor) == mdtMemberRef || TypeFromToken(tkCtor) == mdtMethodDef)
-            {
-                mdToken tkType;
-                if (attributes->import->GetParentToken(tkCtor, &tkType) == S_OK)
-                {
-                    if (TypeFromToken(tkType) == mdtTypeRef || TypeFromToken(tkType) == mdtTypeDef)
-                    {
-                        DomainAssembly* domainAssembly = attributes->assembly->GetDomainAssembly();
-                        MonoClass_clr* klass = ClassLoader::LoadTypeDefOrRefThrowing(domainAssembly->GetModule(), tkType,
-                                                                        ClassLoader::ReturnNullIfNotFound,
-                                                                        ClassLoader::PermitUninstDefOrRef,
-                                                                        tdNoTypes).AsMethodTable();
-                        if (klass != NULL)
-                            return (MonoClass*)klass;
-                    }
-                }
-            }
-        }
-    }
-
-    attributes->import->EnumClose((HENUMInternal*)*iterator);
-    delete (HENUMInternal*)*iterator;
-    return NULL;
-}
-
-extern "C" EXPORT_API gboolean EXPORT_CC mono_custom_attrs_has_attr(MonoCustomAttrInfo *ainfo, MonoClass *attr_klass)
-{
-    TRACE_API("%p, %p", ainfo, attr_klass);
-    MonoCustomAttrInfo_clr* attributes = reinterpret_cast<MonoCustomAttrInfo_clr*>(ainfo);
-    MonoClass_clr* attributeClass = reinterpret_cast<MonoClass_clr*>(attr_klass);
-
-// Reference implementation. This is about 3x slower, but will likely work for any type of attribute representation,
-// so if the optimized version below is suspected to not work correctly, try this one:
-/*
-    LPCUTF8 name, namespaze;
-	attributeClass->GetMDImport()->GetNameOfTypeDef(attributeClass->GetCl(), &name, &namespaze);
-
-    InlineSString<512> fullTypeName(SString::Utf8, namespaze);
-    fullTypeName.AppendUTF8(".");
-    fullTypeName.AppendUTF8(name);
-
-    return S_OK == attributes->import->GetCustomAttributeByName(attributes->mdDef, fullTypeName.GetUTF8NoConvert(), NULL, NULL) ? TRUE : FALSE;
-*/
-
-    HENUMInternal iterator;
-    if (attributes->import->EnumInit(mdtCustomAttribute, attributes->mdDef, &iterator) != S_OK)
-        return false;
-
-    mdCustomAttribute mdAttribute;
-    bool found = false;
-    while (attributes->import->EnumNext(&iterator, &mdAttribute))
-    {
-        mdToken tkCtor;
-        if (attributes->import->GetCustomAttributeProps(mdAttribute, &tkCtor) == S_OK)
-        {
-            if (TypeFromToken(tkCtor) == mdtMemberRef || TypeFromToken(tkCtor) == mdtMethodDef)
-            {
-                mdToken tkType;
-                if (attributes->import->GetParentToken(tkCtor, &tkType) == S_OK)
-                {
-                    if (TypeFromToken(tkType) == mdtTypeDef)
-                    {
-                        if (tkType == attributeClass->GetCl())
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-                    else if (TypeFromToken(tkType) == mdtTypeRef)
-                    {
-                        DomainAssembly* domainAssembly = attributes->assembly->GetDomainAssembly();
-                        MonoClass_clr* klass = ClassLoader::LoadTypeDefOrRefThrowing(domainAssembly->GetModule(), tkType,
-                                                                        ClassLoader::ReturnNullIfNotFound,
-                                                                        ClassLoader::PermitUninstDefOrRef,
-                                                                        tdNoTypes).AsMethodTable();
-                        if (klass == attributeClass)
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    attributes->import->EnumClose(&iterator);
-    return found;
 }
 
 extern "C" EXPORT_API void EXPORT_CC mono_debug_free_source_location(MonoDebugSourceLocation* location)
@@ -3229,12 +2845,6 @@ extern "C" EXPORT_API MonoVTable* EXPORT_CC mono_unity_class_try_get_vtable (Mon
     return NULL;
 }
 
-extern "C" EXPORT_API MonoArray* EXPORT_CC mono_unity_custom_attrs_construct (MonoCustomAttrInfo * cinfo, MonoError * error)
-{
-    ASSERT_NOT_IMPLEMENTED;
-    return NULL;
-}
-
 extern "C" EXPORT_API void EXPORT_CC mono_unity_domain_mempool_chunk_foreach (MonoDomain * domain, MonoDataFunc callback, void* userData)
 {
     ASSERT_NOT_IMPLEMENTED;
@@ -3531,23 +3141,30 @@ extern "C" EXPORT_API int EXPORT_CC mono_array_length(MonoArray* array)
 }
 
 // Generated by UnityEmbedHost.Generator - Commit these changes
-extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_class_has_attribute(MonoClass* klass, MonoClass* attr_klass)
+extern "C" EXPORT_API MonoObject* EXPORT_CC mono_unity_class_get_attribute(MonoClass* klass, MonoClass* attr_klass)
 {
     GCX_PREEMP(); // temporary until we sort out our GC thread model
-    return g_HostStruct->unity_class_has_attribute(klass, attr_klass);
+    return g_HostStruct->unity_class_get_attribute(klass, attr_klass);
 }
 
 // Generated by UnityEmbedHost.Generator - Commit these changes
-extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_assembly_has_attribute(MonoAssembly* assembly, MonoClass* attr_klass)
+extern "C" EXPORT_API MonoObject* EXPORT_CC mono_unity_assembly_get_attribute(MonoAssembly* assembly, MonoClass* attr_klass)
 {
     GCX_PREEMP(); // temporary until we sort out our GC thread model
-    return g_HostStruct->unity_assembly_has_attribute(assembly, attr_klass);
+    return g_HostStruct->unity_assembly_get_attribute(assembly, attr_klass);
 }
 
 // Generated by UnityEmbedHost.Generator - Commit these changes
-extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_method_has_attribute(MonoMethod* method, MonoClass* attr_class)
+extern "C" EXPORT_API MonoObject* EXPORT_CC mono_unity_method_get_attribute(MonoMethod* method, MonoClass* attr_class)
 {
     GCX_PREEMP(); // temporary until we sort out our GC thread model
-    return g_HostStruct->unity_method_has_attribute(method, attr_class);
+    return g_HostStruct->unity_method_get_attribute(method, attr_class);
+}
+
+// Generated by UnityEmbedHost.Generator - Commit these changes
+extern "C" EXPORT_API MonoObject* EXPORT_CC mono_unity_field_get_attribute(MonoClass* klass, MonoClassField* field, MonoClass* attr_class)
+{
+    GCX_PREEMP(); // temporary until we sort out our GC thread model
+    return g_HostStruct->unity_field_get_attribute(klass, field, attr_class);
 }
 

@@ -3,14 +3,29 @@
 
 namespace UnityEmbedHost.Tests;
 
+class FooParentAttribute : Attribute
+{ }
+
+class FooAttribute : FooParentAttribute
+{ }
+
 [Obsolete]
+[Foo]
 class Bacon
 {
     [Obsolete]
+    [FooParent]
+    public bool applewood = false;
+    [Foo]
+    public bool hickory = false;
+
+    [Obsolete]
+    [FooParent]
     public static void Fry()
     {
     }
 
+    [Foo]
     public static void Smoke()
     {
     }
