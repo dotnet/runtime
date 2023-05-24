@@ -668,6 +668,7 @@ void emitter::emitIns_R_R_I(
         assert(isGeneralRegister(reg1));
         assert(isGeneralRegister(reg2));
         assert(isValidSimm13(imm));
+        assert(!(imm & 3));
         code |= reg1 << 15;
         code |= reg2 << 20;
         code |= ((imm >> 11) & 0x1) << 7;
@@ -1855,10 +1856,12 @@ AGAIN:
                     }
                     else if (isValidSimm21(jmpDist + maxPlaceholderSize))
                     {
+                        // convert to opposite branch and jal
                         extra = 4;
                     }
                     else
                     {
+                        // convert to opposite branch and jalr
                         extra = 4 * 6;
                     }
                 }
@@ -1870,6 +1873,7 @@ AGAIN:
                     }
                     else
                     {
+                        // convert to jalr
                         extra = 4 * 5;
                     }
                 }
@@ -1949,10 +1953,12 @@ AGAIN:
                     }
                     else if (isValidSimm21(jmpDist + maxPlaceholderSize))
                     {
+                        // convert to opposite branch and jal
                         extra = 4;
                     }
                     else
                     {
+                        // convert to opposite branch and jalr
                         extra = 4 * 6;
                     }
                 }
@@ -1964,6 +1970,7 @@ AGAIN:
                     }
                     else
                     {
+                        // convert to jalr
                         extra = 4 * 5;
                     }
                 }
