@@ -169,7 +169,7 @@ public class XUnitLogChecker
 
     static void WriteLineTimestamp(string message)
     {
-        Console.Write($"[XUnitLogChecker]: {System.DateTime.Now}: ");
+        Console.Write($"[XUnitLogChecker]: {System.DateTime.Now:HH:mm:ss.ff}: ");
         Console.WriteLine(message);
     }
 
