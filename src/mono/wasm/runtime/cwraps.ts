@@ -9,6 +9,7 @@ import type {
 import type { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/emscripten";
 import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
 import { disableLegacyJsInterop, Module } from "./globals";
+import { mono_log_error } from "./logging";
 
 type SigLine = [lazy: boolean, name: string, returnType: string | null, argTypes?: string[], opts?: any];
 
@@ -252,7 +253,7 @@ export interface t_Cwraps {
     mono_jiterp_get_opcode_value_table_entry(opcode: number): number;
     mono_jiterp_get_simd_intrinsic(arity: number, index: number): VoidPtr;
     mono_jiterp_get_simd_opcode(arity: number, index: number): number;
-    mono_jiterp_get_arg_offset (imethod: number, sig: number, index: number): number;
+    mono_jiterp_get_arg_offset(imethod: number, sig: number, index: number): number;
     mono_jiterp_get_opcode_info(opcode: number, type: number): number;
 }
 
@@ -270,23 +271,23 @@ export const enum I52Error {
 
 const fastCwrapTypes = ["void", "number", null];
 
-function cwrap (name: string, returnType: string | null, argTypes: string[] | undefined, opts: any, throwOnError: boolean) : Function {
+function cwrap(name: string, returnType: string | null, argTypes: string[] | undefined, opts: any, throwOnError: boolean): Function {
     // Attempt to bypass emscripten's generated wrapper if it is safe to do so
     let fce =
         // Special cwrap options disable the fast path
         (typeof (opts) === "undefined") &&
-        // Only attempt to do fast calls if all the args and the return type are either number or void
-        (fastCwrapTypes.indexOf(returnType) >= 0) &&
-        (!argTypes || argTypes.every(atype => fastCwrapTypes.indexOf(atype) >= 0)) &&
-        // Module["asm"] may not be defined yet if we are early enough in the startup process
-        //  in that case, we need to rely on emscripten's lazy wrappers
-        Module["asm"]
+            // Only attempt to do fast calls if all the args and the return type are either number or void
+            (fastCwrapTypes.indexOf(returnType) >= 0) &&
+            (!argTypes || argTypes.every(atype => fastCwrapTypes.indexOf(atype) >= 0)) &&
+            // Module["asm"] may not be defined yet if we are early enough in the startup process
+            //  in that case, we need to rely on emscripten's lazy wrappers
+            Module["asm"]
             ? <Function>((<any>Module["asm"])[name])
             : undefined;
 
     // If the argument count for the wasm function doesn't match the signature, fall back to cwrap
     if (fce && argTypes && (fce.length !== argTypes.length)) {
-        console.error(`MONO_WASM: argument count mismatch for cwrap ${name}`);
+        mono_log_error(`argument count mismatch for cwrap ${name}`);
         fce = undefined;
     }
 
@@ -299,7 +300,7 @@ function cwrap (name: string, returnType: string | null, argTypes: string[] | un
         if (throwOnError)
             throw new Error(msg);
         else
-            console.error("MONO_WASM: " + msg);
+            mono_log_error("" + msg);
     }
     return fce;
 }

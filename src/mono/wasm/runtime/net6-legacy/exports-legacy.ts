@@ -76,7 +76,7 @@ export function cwraps_mono_api(mono: MONOType): void {
 
 export function export_internal_api(): any {
     return {
-        mono_method_resolve,//MarshalTests.cs
+        mono_method_resolve, //MarshalTests.cs
     };
 }
 

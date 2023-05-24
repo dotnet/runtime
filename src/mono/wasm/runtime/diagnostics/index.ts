@@ -9,6 +9,7 @@ import { is_nullish } from "../types/internal";
 import type { VoidPtr } from "../types/emscripten";
 import { getController, startDiagnosticServer } from "./browser/controller";
 import * as memory from "../memory";
+import { mono_log_warn } from "../logging";
 
 
 // called from C on the main thread
@@ -37,7 +38,7 @@ export async function mono_wasm_init_diagnostics(): Promise<void> {
     if (diagnosticsInitialized)
         return;
     if (!monoWasmThreads) {
-        console.warn("MONO_WASM: ignoring diagnostics options because this runtime does not support diagnostics");
+        mono_log_warn("ignoring diagnostics options because this runtime does not support diagnostics");
         return;
     } else {
         const options = diagnostic_options_from_environment();
@@ -96,12 +97,12 @@ function diagnostic_options_from_ports_spec(val: string): DiagnosticOptions | nu
     if (ports.length === 0)
         return null;
     if (ports.length !== 1) {
-        console.warn("MONO_WASM: multiple diagnostic ports specified, only the last one will be used");
+        mono_log_warn("multiple diagnostic ports specified, only the last one will be used");
     }
     const portSpec = ports[ports.length - 1];
     const components = portSpec.split(",");
     if (components.length < 1 || components.length > 3) {
-        console.warn("MONO_WASM: invalid diagnostic port specification, should be of the form <port>[,<connect>],[<nosuspend|suspend>]");
+        mono_log_warn("invalid diagnostic port specification, should be of the form <port>[,<connect>],[<nosuspend|suspend>]");
         return null;
     }
     const uri: string = components[0];
@@ -124,12 +125,12 @@ function diagnostic_options_from_ports_spec(val: string): DiagnosticOptions | nu
                 connect = true;
                 break;
             default:
-                console.warn(`MONO_WASM: invalid diagnostic port specification component: ${component}`);
+                mono_log_warn(`invalid diagnostic port specification component: ${component}`);
                 break;
         }
     }
     if (!connect) {
-        console.warn("MONO_WASM: this runtime does not support listening on a diagnostic port; no diagnostic server started");
+        mono_log_warn("this runtime does not support listening on a diagnostic port; no diagnostic server started");
         return null;
     }
     return {

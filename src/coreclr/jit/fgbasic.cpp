@@ -167,7 +167,7 @@ void Compiler::fgInit()
 #endif // DEBUG
 
 #ifdef FEATURE_SIMD
-    fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
+    fgPreviousCandidateSIMDFieldStoreStmt = nullptr;
 #endif
 
     fgHasSwitch                  = false;
@@ -6042,12 +6042,18 @@ bool Compiler::fgMightHaveLoop()
     {
         BitVecOps::AddElemD(&blockVecTraits, blocksSeen, block->bbNum);
 
-        for (BasicBlock* const succ : block->GetAllSuccs(this))
-        {
+        BasicBlockVisit result = block->VisitAllSuccs(this, [&](BasicBlock* succ) {
             if (BitVecOps::IsMember(&blockVecTraits, blocksSeen, succ->bbNum))
             {
-                return true;
+                return BasicBlockVisit::Abort;
             }
+
+            return BasicBlockVisit::Continue;
+        });
+
+        if (result == BasicBlockVisit::Abort)
+        {
+            return true;
         }
     }
     return false;
