@@ -244,10 +244,11 @@ class DecompositionPlan;
 
 class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
 {
-    Promotion*                      m_prom;
     jitstd::vector<AggregateInfo*>& m_aggregates;
     PromotionLiveness*              m_liveness;
-    bool                            m_madeChanges = false;
+    bool                            m_madeChanges         = false;
+    bool                            m_hasPendingReadBacks = false;
+    BasicBlock*                     m_currentBlock        = nullptr;
 
 public:
     enum
@@ -257,7 +258,7 @@ public:
     };
 
     ReplaceVisitor(Promotion* prom, jitstd::vector<AggregateInfo*>& aggregates, PromotionLiveness* liveness)
-        : GenTreeVisitor(prom->m_compiler), m_prom(prom), m_aggregates(aggregates), m_liveness(liveness)
+        : GenTreeVisitor(prom->m_compiler), m_aggregates(aggregates), m_liveness(liveness)
     {
     }
 
@@ -266,7 +267,14 @@ public:
         return m_madeChanges;
     }
 
-    void Reset()
+    void StartBlock(BasicBlock* block)
+    {
+        m_currentBlock = block;
+    }
+
+    void EndBlock();
+
+    void StartStatement()
     {
         m_madeChanges = false;
     }
@@ -274,12 +282,13 @@ public:
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user);
 
 private:
+    GenTree** InsertMidTreeReadBacksIfNecessary(GenTree** use);
     void LoadStoreAroundCall(GenTreeCall* call, GenTree* user);
     bool IsPromotedStructLocalDying(GenTreeLclVarCommon* structLcl);
     void ReplaceLocal(GenTree** use, GenTree* user);
     void StoreBeforeReturn(GenTreeUnOp* ret);
     void WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs, unsigned size);
-    void MarkForReadBack(unsigned lcl, unsigned offs, unsigned size);
+    bool MarkForReadBack(unsigned lcl, unsigned offs, unsigned size);
 
     void HandleStore(GenTree** use, GenTree* user);
     bool OverlappingReplacements(GenTreeLclVarCommon* lcl,
