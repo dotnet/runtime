@@ -1,4 +1,9 @@
-cmake_minimum_required(VERSION 3.17.0)
+if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
+    # Temporary workaround for CI wasm machines that still have CMake 3.17.0.
+    cmake_minimum_required(VERSION 3.17.0)
+else ()
+    cmake_minimum_required(VERSION 3.20)
+endif ()
 
 include(CheckCCompilerFlag)
 
