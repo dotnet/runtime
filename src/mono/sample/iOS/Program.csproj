@@ -65,9 +65,8 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <AOTMode Condition="'$(TargetOS)' != 'maccatalyst'">Full</AOTMode>
-      <AOTMode Condition="'$(TargetOS)' == 'maccatalyst' and '$(MonoForceInterpreter)' != 'true'">Full</AOTMode>
-      <AOTMode Condition="'$(TargetOS)' == 'maccatalyst' and '$(MonoForceInterpreter)' == 'true'">JustInterp</AOTMode>
+      <AOTMode Condition="'$(MonoForceInterpreter)' != 'true'">Full</AOTMode>
+      <AOTMode Condition="'$(MonoForceInterpreter)' == 'true'">JustInterp</AOTMode>
     </PropertyGroup>
 
     <MonoAOTCompiler
