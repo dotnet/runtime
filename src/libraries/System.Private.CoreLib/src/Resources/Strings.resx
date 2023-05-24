@@ -4053,10 +4053,10 @@
     <value>AssemblyName.GetAssemblyName() is not supported on this platform.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptions" xml:space="preserve">
-    <value>CompareOptions = {0} are not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.</value>
+    <value>CompareOptions = {0} are not supported when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptionsForCulture" xml:space="preserve">
-    <value>CompareOptions = {0} are not supported for culture = {1} when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.</value>
+    <value>CompareOptions = {0} are not supported for culture = {1} when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithMatchLength" xml:space="preserve">
     <value>Match length calculation is not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this function.</value>
