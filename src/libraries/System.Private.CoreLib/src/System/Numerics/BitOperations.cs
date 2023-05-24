@@ -945,12 +945,15 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Toggle specific bit in the given value
+        /// Flip the bit at a specific position in a given value.
+        /// Similar in behavior to the x86 instruction BTC (Bit Test and Complement).
         /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="index">The zero-based index of the bit to flip.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static uint ToggleBit(uint value, int bitPos)
+        internal static uint FlipBit(uint value, int index)
         {
-            return value ^ (1u << bitPos);
+            return value ^ (1u << index);
         }
     }
 }
