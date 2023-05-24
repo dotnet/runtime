@@ -84,30 +84,33 @@ internal sealed class MinimalMarshalingTypeCompatibilityProvider : ISignatureTyp
     public Compatibility GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
     {
         TypeDefinition typeDef = reader.GetTypeDefinition(handle);
+        if (reader.GetString(typeDef.Name) == "Enum")
+            return Compatibility.Compatible;
 
-        EntityHandle baseTypeHandle = typeDef.BaseType;
-        if(baseTypeHandle.Kind == HandleKind.TypeReference)
+        try
         {
-            TypeReference baseType = reader.GetTypeReference((TypeReferenceHandle)baseTypeHandle);
-            if (reader.GetString(baseType.Name) == "Enum")
-                return Compatibility.Compatible;
-            else
-                return GetTypeFromReference(reader, (TypeReferenceHandle)baseTypeHandle, rawTypeKind);
+            EntityHandle baseTypeHandle = typeDef.BaseType;
+            if(baseTypeHandle.Kind == HandleKind.TypeReference)
+            {
+                TypeReference baseType = reader.GetTypeReference((TypeReferenceHandle)baseTypeHandle);
+                if (reader.GetString(baseType.Name) == "Enum")
+                    return Compatibility.Compatible;
+            }
+            else if(baseTypeHandle.Kind == HandleKind.TypeSpecification)
+            {
+                TypeSpecification specInner = reader.GetTypeSpecification((TypeSpecificationHandle)baseTypeHandle);
+                return specInner.DecodeSignature<Compatibility, object>(this, new object());
+            }
+            else if(baseTypeHandle.Kind == HandleKind.TypeDefinition)
+            {
+                TypeDefinitionHandle handleInner = (TypeDefinitionHandle)baseTypeHandle;
+                if(handle != handleInner)
+                    return GetTypeFromDefinition(reader, handleInner, rawTypeKind);
+            }
         }
-        else if(baseTypeHandle.Kind == HandleKind.TypeSpecification)
+        catch(BadImageFormatException)
         {
-            TypeSpecification specInner = reader.GetTypeSpecification((TypeSpecificationHandle)baseTypeHandle);
-            return specInner.DecodeSignature<Compatibility, object>(this, new object());
-        }
-        else if(baseTypeHandle.Kind == HandleKind.TypeDefinition)
-        {
-            TypeDefinitionHandle handleInner = (TypeDefinitionHandle)baseTypeHandle;
-            if(handle != handleInner)
-                return GetTypeFromDefinition(reader, handleInner, rawTypeKind);
-        }
-        else
-        {
-            throw new InvalidOperationException();
+            return Compatibility.Incompatible;
         }
 
         return Compatibility.Incompatible;
@@ -183,15 +186,9 @@ public class MarshalingPInvokeScanner : Task
     {
         if (Assemblies is not null)
             IncompatibleAssemblies = ScanAssemblies(Assemblies);
-
-        /*if(IncompatibleAssemblies is not null && IncompatibleAssemblies.Length != 0)
-        {
-            Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0,
-                "One or more assemblies is incompatible with the lightweight Mono marshaler. Therefore the full marshaler will be included.");
-        }*/
     }
 
-    private static string[] ScanAssemblies(string[] assemblies)
+    private string[] ScanAssemblies(string[] assemblies)
     {
         HashSet<string> incompatible = new HashSet<string>();
         MinimalMarshalingTypeCompatibilityProvider mmtcp =  new MinimalMarshalingTypeCompatibilityProvider();
@@ -215,7 +212,7 @@ public class MarshalingPInvokeScanner : Task
         return mr.GetString(md.Name);
     }
 
-    private static void ResolveInconclusiveTypes(HashSet<string> incompatible, string assyPath, MinimalMarshalingTypeCompatibilityProvider mmtcp)
+    private void ResolveInconclusiveTypes(HashSet<string> incompatible, string assyPath, MinimalMarshalingTypeCompatibilityProvider mmtcp)
     {
         string assyName = MetadataReader.GetAssemblyName(assyPath).Name!;
         HashSet<string> inconclusiveTypes = mmtcp.GetInconclusiveTypesForAssembly(assyName);
@@ -239,12 +236,14 @@ public class MarshalingPInvokeScanner : Task
             if (inconclusiveTypes.Contains(fullTypeName) &&
                 mmtcp.GetTypeFromDefinition(mdtReader, typeDefHandle, 0) != Compatibility.Compatible)
             {
+                Log.LogMessage(MessageImportance.Low, string.Format("Type {0} is marshaled and requires marshal-ilgen.", fullTypeName));
+
                 incompatible.Add("(unknown assembly)");
             }
         }
     }
 
-    private static bool IsAssemblyIncompatible(string path, MinimalMarshalingTypeCompatibilityProvider mmtcp)
+    private bool IsAssemblyIncompatible(string path, MinimalMarshalingTypeCompatibilityProvider mmtcp)
     {
         using FileStream file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         using PEReader peReader = new PEReader(file);
@@ -286,11 +285,13 @@ public class MarshalingPInvokeScanner : Task
                     mmtcp, mdtReader, null!);
 
                 MethodSignature<Compatibility> sgn = decoder.DecodeMethodSignature(ref sgnBlobReader);
-                if(sgn.ReturnType == Compatibility.Incompatible)
-                    return true;
+                if(sgn.ReturnType == Compatibility.Incompatible || sgn.ParameterTypes.Any(p => p == Compatibility.Incompatible))
+                {
+                    Log.LogMessage(MessageImportance.Low, string.Format("Assebly {0} requires marhsal-ilgen for method {1}.{2}:{3} (first pass).",
+                        path, ns, name, mdtReader.GetString(mthDef.Name)));
 
-                if(sgn.ParameterTypes.Any(p => p == Compatibility.Incompatible))
                     return true;
+                }
             }
         }
 
