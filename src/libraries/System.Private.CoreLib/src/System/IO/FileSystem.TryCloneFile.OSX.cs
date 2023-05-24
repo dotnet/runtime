@@ -43,7 +43,7 @@ namespace System.IO
                         Interop.Error errorInfo = Interop.Sys.GetLastError();
                         if (error != Interop.Error.ENOENT)
                         {
-                            // Fall back to standard copy as an unexpected error has occured.
+                            // Fall back to standard copy as an unexpected error has occurred.
                             return false;
                         }
                     }
