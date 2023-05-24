@@ -6,7 +6,7 @@ namespace System.IO
     internal static partial class FileSystem
     {
 #pragma warning disable IDE0060 // Remove unused parameter
-         private static bool TryCloneFile(string sourceFullPath, string destFullPath, bool overwrite)
+         private static bool TryCloneFile(string sourceFullPath, string destFullPath, bool overwrite, Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?> createOpenException)
 #pragma warning restore IDE0060 // Remove unused parameter
          {
             // No such functionality is available on unix OSes (other than OSX-like ones).

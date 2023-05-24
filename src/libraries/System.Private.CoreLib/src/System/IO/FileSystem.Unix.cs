@@ -35,7 +35,7 @@ namespace System.IO
             using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out fileLength, out filePermissions);
 
             // Try to clone the file first.
-            if (TryCloneFile(sourceFullPath, destFullPath, overwrite))
+            if (TryCloneFile(sourceFullPath, destFullPath, overwrite, CreateOpenException))
             {
                 return;
             }

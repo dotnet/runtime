@@ -8,7 +8,7 @@ namespace System.IO
 {
     internal static partial class FileSystem
     {
-        private static bool TryCloneFile(string sourceFullPath, string destFullPath, bool overwrite)
+        private static bool TryCloneFile(string sourceFullPath, string destFullPath, bool overwrite, Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?> createOpenException)
         {
             // This helper function calls out to clonefile, and returns the error.
             static bool TryCloneFile(string sourceFullPath, string destFullPath, bool overwrite, int flags, out Interop.Error error)
@@ -44,7 +44,7 @@ namespace System.IO
                 try
                 {
                     using SafeFileHandle? dstHandle = SafeFileHandle.Open(destFullPath, FileMode.Open, FileAccess.ReadWrite,
-                        FileShare.None, FileOptions.None, preallocationSize: 0);
+                        FileShare.None, FileOptions.None, preallocationSize: 0, createOpenException: createOpenException);
                     if (Interop.Sys.Unlink(destFullPath) < 0)
                     {
                         Interop.Error errorInfo = Interop.Sys.GetLastError();
