@@ -100,6 +100,17 @@ elseif(CLR_CMAKE_HOST_UNIX)
         mscordaccore
     )
 
+    # Before llvm 16, lld was setting `--undefined-version` by default. The default was
+    # flipped to `--no-undefined-version` in lld 16, so we will explicitly set it to
+    # `--undefined-version` for our use-case.
+    include(CheckLinkerFlag OPTIONAL)
+    if(COMMAND check_linker_flag)
+        check_linker_flag(CXX -Wl,--undefined-version LINKER_SUPPORTS_UNDEFINED_VERSION)
+        if (LINKER_SUPPORTS_UNDEFINED_VERSION)
+            add_linker_flag(-Wl,--undefined-version)
+        endif(LINKER_SUPPORTS_UNDEFINED_VERSION)
+    endif(COMMAND check_linker_flag)
+
     # COREDBI_LIBRARIES is mentioned twice because ld is one pass linker and will not find symbols
     # if they are defined after they are used. Having all libs twice makes sure that ld will actually
     # find all symbols.

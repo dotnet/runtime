@@ -55,21 +55,9 @@ namespace Microsoft.Interop.JavaScript
         {
             // Collect all methods adorned with JSExportAttribute
             var attributedMethods = context.SyntaxProvider
-                .CreateSyntaxProvider(
-                    static (node, ct) => ShouldVisitNode(node),
-                    static (context, ct) =>
-                    {
-                        MethodDeclarationSyntax syntax = (MethodDeclarationSyntax)context.Node;
-                        if (context.SemanticModel.GetDeclaredSymbol(syntax, ct) is IMethodSymbol methodSymbol
-                            && methodSymbol.GetAttributes().Any(static attribute => attribute.AttributeClass?.ToDisplayString() == Constants.JSExportAttribute))
-                        {
-                            return new { Syntax = syntax, Symbol = methodSymbol };
-                        }
-
-                        return null;
-                    })
-                .Where(
-                    static modelData => modelData is not null);
+                .ForAttributeWithMetadataName(Constants.JSExportAttribute,
+                   static (node, ct) => node is MethodDeclarationSyntax,
+                   static (context, ct) => new { Syntax = (MethodDeclarationSyntax)context.TargetNode, Symbol = (IMethodSymbol)context.TargetSymbol });
 
             // Validate if attributed methods can have source generated
             var methodsWithDiagnostics = attributedMethods.Select(static (data, ct) =>
@@ -299,19 +287,6 @@ namespace Microsoft.Interop.JavaScript
             BlockSyntax registration = stubGenerator.GenerateJSExportRegistration();
 
             return (PrintGeneratedSource(incrementalContext.StubMethodSyntaxTemplate, incrementalContext.SignatureContext, wrapper, registration), incrementalContext.Diagnostics.AddRange(diagnostics.Diagnostics));
-        }
-
-        private static bool ShouldVisitNode(SyntaxNode syntaxNode)
-        {
-            // We only support C# method declarations.
-            if (syntaxNode.Language != LanguageNames.CSharp
-                || !syntaxNode.IsKind(SyntaxKind.MethodDeclaration))
-            {
-                return false;
-            }
-
-            // Filter out methods with no attributes early.
-            return ((MethodDeclarationSyntax)syntaxNode).AttributeLists.Count > 0;
         }
 
         private static Diagnostic? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)

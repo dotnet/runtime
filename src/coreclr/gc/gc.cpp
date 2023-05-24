@@ -91,6 +91,8 @@ BOOL bgc_heap_walk_for_etw_p = FALSE;
 
 #define UOH_ALLOCATION_RETRY_MAX_COUNT 2
 
+#define MAX_YP_SPIN_COUNT_UNIT 32768
+
 uint32_t yp_spin_count_unit = 0;
 uint32_t original_spin_count_unit = 0;
 size_t loh_size_threshold = LARGE_OBJECT_SIZE;
@@ -2287,6 +2289,7 @@ double      gc_heap::short_plugs_pad_ratio = 0;
 
 int         gc_heap::generation_skip_ratio_threshold = 0;
 int         gc_heap::conserve_mem_setting = 0;
+bool        gc_heap::spin_count_unit_config_p = false;
 
 uint64_t    gc_heap::suspended_start_time = 0;
 uint64_t    gc_heap::end_gc_time = 0;
@@ -2333,9 +2336,6 @@ size_t      gc_heap::heap_hard_limit_oh[total_oh_count];
 #ifdef USE_REGIONS
 
 size_t      gc_heap::regions_range = 0;
-
-size_t      gc_heap::heap_hard_limit_for_heap = 0;
-size_t      gc_heap::heap_hard_limit_for_bookkeeping = 0;
 
 #endif //USE_REGIONS
 
@@ -6944,10 +6944,6 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
 
         if (heap_hard_limit_oh[soh] != 0)
         {
-#ifdef USE_REGIONS
-            assert (heap_hard_limit_for_heap == 0);
-            assert (heap_hard_limit_for_bookkeeping == 0);
-#endif //USE_REGIONS
             if ((bucket < total_oh_count) && (committed_by_oh[bucket] + size) > heap_hard_limit_oh[bucket])
             {
                 exceeded_p = true;
@@ -6955,23 +6951,9 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
         }
         else
         {
-            size_t base;
-            size_t limit;
-#ifdef USE_REGIONS
-            if (h_number < 0)
-            {
-                base = current_total_committed_bookkeeping;
-                limit = heap_hard_limit_for_bookkeeping;
-            }
-            else
-            {
-                base = current_total_committed - current_total_committed_bookkeeping;
-                limit = heap_hard_limit_for_heap;
-            }
-#else
-            base = current_total_committed;
-            limit = heap_hard_limit;
-#endif //USE_REGIONS
+            size_t base = current_total_committed;
+            size_t limit = heap_hard_limit;
+
             if ((base + size) > limit)
             {
                 dprintf (1, ("%Id + %Id = %Id > limit %Id ", base, size, (base + size), limit));
@@ -11282,12 +11264,6 @@ void gc_heap::clear_region_info (heap_segment* region)
                         seg_deleted);
 
     bgc_verify_mark_array_cleared (region);
-
-    if (dt_high_memory_load_p())
-    {
-        decommit_mark_array_by_seg (region);
-        region->flags &= ~(heap_segment_flags_ma_committed);
-    }
 #endif //BACKGROUND_GC
 }
 
@@ -13607,26 +13583,6 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 #endif //BACKGROUND_GC
 #endif //WRITE_WATCH
 
-#ifdef USE_REGIONS
-    if (gc_heap::heap_hard_limit && gc_heap::heap_hard_limit_oh[soh] == 0)
-    {
-        size_t gc_region_size = (size_t)1 << min_segment_size_shr;
-        size_t sizes[total_bookkeeping_elements];
-        size_t bookkeeping_size_per_region = 0;
-        uint8_t* temp_lowest_address = (uint8_t*)gc_region_size;
-        gc_heap::get_card_table_element_sizes(temp_lowest_address, temp_lowest_address + gc_region_size, sizes);
-        for (int i = 0; i < total_bookkeeping_elements; i++)
-        {
-            bookkeeping_size_per_region += sizes[i];
-        }
-        size_t total_size_per_region = gc_region_size + bookkeeping_size_per_region;
-        size_t max_region_count = gc_heap::heap_hard_limit / total_size_per_region; // implictly rounded down
-        gc_heap::heap_hard_limit_for_heap = max_region_count * gc_region_size;
-        gc_heap::heap_hard_limit_for_bookkeeping = max_region_count * bookkeeping_size_per_region;
-        dprintf (REGIONS_LOG, ("bookkeeping_size_per_region = %Id", bookkeeping_size_per_region));
-    }
-#endif //USE_REGIONS
-
 #ifdef BACKGROUND_GC
     // leave the first page to contain only segment info
     // because otherwise we could need to revisit the first page frequently in
@@ -13791,6 +13747,14 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     yp_spin_count_unit = 32 * g_num_processors;
 #endif //MULTIPLE_HEAPS
 
+    // Check if the values are valid for the spin count if provided by the user
+    // and if they are, set them as the yp_spin_count_unit and then ignore any updates made in SetYieldProcessorScalingFactor.
+    uint32_t spin_count_unit_from_config = (uint32_t)GCConfig::GetGCSpinCountUnit();
+    gc_heap::spin_count_unit_config_p = (spin_count_unit_from_config > 0) && (spin_count_unit_from_config <= MAX_YP_SPIN_COUNT_UNIT);
+    if (gc_heap::spin_count_unit_config_p)
+    {
+        yp_spin_count_unit = spin_count_unit_from_config;
+    }
     original_spin_count_unit = yp_spin_count_unit;
 
 #if defined(__linux__)
@@ -14390,6 +14354,8 @@ gc_heap::init_gc_heap (int h_number)
 #endif //CARD_BUNDLE
 
 #ifdef BACKGROUND_GC
+    background_saved_highest_address = nullptr;
+    background_saved_lowest_address = nullptr;
     if (gc_can_use_concurrent)
         mark_array = translate_mark_array (card_table_mark_array (&g_gc_card_table[card_word (card_of (g_gc_lowest_address))]));
     else
@@ -20310,20 +20276,17 @@ bool gc_heap::try_get_new_free_region()
 bool gc_heap::init_table_for_region (int gen_number, heap_segment* region)
 {
 #ifdef BACKGROUND_GC
-    if (is_bgc_in_progress())
+    dprintf (GC_TABLE_LOG, ("new seg %Ix, mark_array is %Ix",
+        heap_segment_mem (region), mark_array));
+    if (((region->flags & heap_segment_flags_ma_committed) == 0) &&
+        !commit_mark_array_new_seg (__this, region))
     {
-        dprintf (GC_TABLE_LOG, ("new seg %Ix, mark_array is %Ix",
-            heap_segment_mem (region), mark_array));
-        if (((region->flags & heap_segment_flags_ma_committed) == 0) &&
-            !commit_mark_array_new_seg (__this, region))
-        {
-            dprintf (GC_TABLE_LOG, ("failed to commit mark array for the new region %Ix-%Ix",
-                get_region_start (region), heap_segment_reserved (region)));
+        dprintf (GC_TABLE_LOG, ("failed to commit mark array for the new region %Ix-%Ix",
+            get_region_start (region), heap_segment_reserved (region)));
 
-            // We don't have memory to commit the mark array so we cannot use the new region.
-            decommit_region (region, gen_to_oh (gen_number), heap_number);
-            return false;
-        }
+        // We don't have memory to commit the mark array so we cannot use the new region.
+        decommit_region (region, gen_to_oh (gen_number), heap_number);
+        return false;
     }
     if ((region->flags & heap_segment_flags_ma_committed) != 0)
     {
@@ -22594,6 +22557,8 @@ void gc_heap::garbage_collect_pm_full_gc()
 
 void gc_heap::garbage_collect (int n)
 {
+    gc_pause_mode saved_settings_pause_mode = settings.pause_mode;
+
     //reset the number of alloc contexts
     alloc_contexts_used = 0;
 
@@ -22999,7 +22964,7 @@ void gc_heap::garbage_collect (int n)
 #endif //MULTIPLE_HEAPS
 
 done:
-    if (settings.pause_mode == pause_no_gc)
+    if (saved_settings_pause_mode == pause_no_gc)
         allocate_for_no_gc_after_gc();
 }
 
@@ -45674,14 +45639,17 @@ size_t GCHeap::GetPromotedBytes(int heap_index)
 
 void GCHeap::SetYieldProcessorScalingFactor (float scalingFactor)
 {
-    assert (yp_spin_count_unit != 0);
-    uint32_t saved_yp_spin_count_unit = yp_spin_count_unit;
-    yp_spin_count_unit = (uint32_t)((float)original_spin_count_unit * scalingFactor / (float)9);
-
-    // It's very suspicious if it becomes 0 and also, we don't want to spin too much.
-    if ((yp_spin_count_unit == 0) || (yp_spin_count_unit > 32768))
+    if (!gc_heap::spin_count_unit_config_p)
     {
-        yp_spin_count_unit = saved_yp_spin_count_unit;
+        assert (yp_spin_count_unit != 0);
+        uint32_t saved_yp_spin_count_unit = yp_spin_count_unit;
+        yp_spin_count_unit = (uint32_t)((float)original_spin_count_unit * scalingFactor / (float)9);
+
+        // It's very suspicious if it becomes 0 and also, we don't want to spin too much.
+        if ((yp_spin_count_unit == 0) || (yp_spin_count_unit > MAX_YP_SPIN_COUNT_UNIT))
+        {
+            yp_spin_count_unit = saved_yp_spin_count_unit;
+        }
     }
 }
 
