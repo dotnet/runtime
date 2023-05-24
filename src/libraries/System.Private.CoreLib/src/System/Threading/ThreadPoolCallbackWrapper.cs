@@ -9,13 +9,14 @@ namespace System.Threading
 
         public static ThreadPoolCallbackWrapper Enter()
         {
-            if (!Thread.CurrentThread.IsThreadPoolThread)
+            Thread currentThread = Thread.CurrentThread;
+            if (!currentThread.IsThreadPoolThread)
             {
-                Thread.CurrentThread.IsThreadPoolThread = true;
+                currentThread.IsThreadPoolThread = true;
             }
             return new ThreadPoolCallbackWrapper
             {
-                _currentThread = Thread.CurrentThread,
+                _currentThread = currentThread,
             };
         }
 
