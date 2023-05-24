@@ -5486,7 +5486,8 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         else if (isCastClass)
         {
             // Jit can only inline expand CHKCASTCLASS and CHKCASTARRAY helpers.
-            canExpandInline = (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY);
+            canExpandInline = (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY) ||
+                              (helper == CORINFO_HELP_CHKCASTANY);
         }
         else if ((helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY))
         {
@@ -5625,7 +5626,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     if (isCastClass)
     {
         assert((helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY) ||
-               (helper == CORINFO_HELP_CHKCASTINTERFACE));
+               (helper == CORINFO_HELP_CHKCASTANY) || (helper == CORINFO_HELP_CHKCASTINTERFACE));
 
         CorInfoHelpFunc specialHelper = helper;
         if ((helper == CORINFO_HELP_CHKCASTCLASS) &&
