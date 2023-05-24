@@ -1212,7 +1212,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Timer.Portable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Timer.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Timer.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Timer.WindowsThreadPool.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Timer.WindowsThreadPool.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Portable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Volatile.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitHandle.cs" />
