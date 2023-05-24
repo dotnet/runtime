@@ -534,7 +534,7 @@ namespace System.Resources.Extensions.Tests
                     TaskScheduler.Default))
                 .ToArray();
 
-            Assert.True(task.Wait(TimeSpan.FromSeconds(30)));
+            Assert.True(Task.WaitAll(tasks, TimeSpan.FromSeconds(30)));
 
             void WaitForBarrierThenEnumerateResources()
             {
