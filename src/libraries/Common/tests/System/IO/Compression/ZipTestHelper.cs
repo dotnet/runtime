@@ -331,7 +331,7 @@ namespace System.IO.Compression.Tests
         {
             IEnumerable<string> actualEntries = Directory.EnumerateFileSystemEntries(actual, "*", SearchOption.AllDirectories);
             IEnumerable<string> expectedEntries = Directory.EnumerateFileSystemEntries(expected, "*", SearchOption.AllDirectories);
-            Assert.True(Enumerable.SequenceEqual(expectedEntries.Select(i => Path.GetFileName(i)), actualEntries.Select(i => Path.GetFileName(i))));
+            AssertExtensions.SequenceEqual(expectedEntries.Select(Path.GetFileName).ToArray(), actualEntries.Select(Path.GetFileName).ToArray());
         }
 
         private static void ItemEqual(string[] actualList, List<FileData> expectedList, bool isFile)
