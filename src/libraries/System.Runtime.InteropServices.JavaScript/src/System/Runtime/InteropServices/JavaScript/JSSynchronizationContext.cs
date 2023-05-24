@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices.JavaScript
     ///  thread-affinity-having APIs like WebSockets, fetch, WebGL, etc.
     /// Callbacks are processed during event loop turns via the runtime's background job system.
     /// </summary>
-    internal sealed unsafe class JSSynchronizationContext : SynchronizationContext
+    internal sealed class JSSynchronizationContext : SynchronizationContext
     {
         public readonly Thread MainThread;
 
@@ -39,7 +39,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private static JSSynchronizationContext? MainThreadSynchronizationContext;
         private readonly QueueType Queue;
-        private static void* BackgroundJobHandlerPtr = (void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler;
+        private readonly Action _DataIsAvailable;// don't allocate Action on each call to UnsafeOnCompleted
 
         private JSSynchronizationContext()
             : this(
@@ -55,6 +55,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             MainThread = mainThread;
             Queue = queue;
+            _DataIsAvailable = DataIsAvailable;
         }
 
         public override SynchronizationContext CreateCopy()
@@ -76,14 +77,14 @@ namespace System.Runtime.InteropServices.JavaScript
             //  fire a callback that will schedule a background job to pump the queue on the main thread.
             var awaiter = vt.AsTask().ConfigureAwait(false).GetAwaiter();
             // UnsafeOnCompleted avoids spending time flowing the execution context (we don't need it.)
-            awaiter.UnsafeOnCompleted(DataIsAvailable);
+            awaiter.UnsafeOnCompleted(_DataIsAvailable);
         }
 
-        private void DataIsAvailable()
+        private unsafe void DataIsAvailable()
         {
             // While we COULD pump here, we don't want to. We want the pump to happen on the next event loop turn.
             // Otherwise we could get a chain where a pump generates a new work item and that makes us pump again, forever.
-            MainThreadScheduleBackgroundJob(BackgroundJobHandlerPtr);
+            MainThreadScheduleBackgroundJob((void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
         }
 
         public override void Post(SendOrPostCallback d, object? state)
@@ -127,8 +128,8 @@ namespace System.Runtime.InteropServices.JavaScript
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
 #pragma warning restore CS3016
-        // this callback will arrive on the bound thread
-        private static unsafe void BackgroundJobHandler()
+        // this callback will arrive on the bound thread, called from mono_background_exec
+        private static void BackgroundJobHandler()
         {
             MainThreadSynchronizationContext!.Pump();
         }

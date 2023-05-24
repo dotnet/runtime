@@ -32,7 +32,7 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
         const js_function_name = conv_string_root(function_name_root)!;
         const mark = startMeasure();
         const js_module_name = conv_string_root(module_name_root)!;
-        mono_log_debug(`Binding [JSImport] ${js_function_name} from ${js_module_name}`);
+        mono_log_debug(`Binding [JSImport] ${js_function_name} from ${js_module_name} module`);
 
         const fn = mono_wasm_lookup_function(js_function_name, js_module_name);
         const args_count = get_signature_argument_count(signature);

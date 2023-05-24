@@ -57,7 +57,7 @@ namespace Sample
         const string fetchhelper = "./fetchelper.js";
 
         [JSImport("responseText", fetchhelper)]
-        private static partial Task<string> FetchHelperResponseText(JSObject response);
+        private static partial Task<string> FetchHelperResponseText(JSObject response, int delayMs);
 
         [JSExport]
         public static async Task<string> FetchBackground(string url)
@@ -77,7 +77,11 @@ namespace Sample
                 Console.WriteLine($"smoke: FetchBackground 5 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                 if (ok)
                 {
-                    var text = await FetchHelperResponseText(r);
+                    #if DEBUG
+                    var text = await FetchHelperResponseText(r, 5000);
+                    #else
+                    var text = await FetchHelperResponseText(r, 25000);
+                    #endif
                     Console.WriteLine($"smoke: FetchBackground 6 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                     return text;
                 }

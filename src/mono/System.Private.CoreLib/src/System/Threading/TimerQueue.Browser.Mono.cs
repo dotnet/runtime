@@ -14,12 +14,11 @@ namespace System.Threading
     // Based on TimerQueue.Portable.cs
     // Not thread safe
     //
-    internal unsafe partial class TimerQueue
+    internal partial class TimerQueue
     {
         private static List<TimerQueue>? s_scheduledTimers;
         private static List<TimerQueue>? s_scheduledTimersToFire;
         private static long s_shortestDueTimeMs = long.MaxValue;
-        private static void* TimerHandlerPtr = (void*)(delegate* unmanaged[Cdecl]<void>)&TimerHandler;
 
         // this means that it's in the s_scheduledTimers collection, not that it's the one which would run on the next TimeoutCallback
         private bool _isScheduled;
@@ -36,8 +35,8 @@ namespace System.Threading
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
 #pragma warning restore CS3016
-        // Called by mini-wasm.c:mono_wasm_execute_timer
-        private static unsafe void TimerHandler () {
+        // this callback will arrive on the main thread, called from mono_wasm_execute_timer
+        private static void TimerHandler () {
             // always only have one scheduled at a time
             s_shortestDueTimeMs = long.MaxValue;
 
@@ -66,7 +65,7 @@ namespace System.Threading
         }
 
         // shortest time of all TimerQueues
-        private static void ReplaceNextTimer(long shortestDueTimeMs, long currentTimeMs)
+        private static unsafe void ReplaceNextTimer(long shortestDueTimeMs, long currentTimeMs)
         {
             if (shortestDueTimeMs == long.MaxValue)
             {
@@ -79,7 +78,7 @@ namespace System.Threading
                 s_shortestDueTimeMs = shortestDueTimeMs;
                 int shortestWait = Math.Max((int)(shortestDueTimeMs - currentTimeMs), 0);
                 // this would cancel the previous schedule and create shorter one, it is expensive callback
-                MainThreadScheduleTimer(TimerHandlerPtr, shortestWait);
+                MainThreadScheduleTimer((void*)(delegate* unmanaged[Cdecl]<void>)&TimerHandler, shortestWait);
             }
         }
 

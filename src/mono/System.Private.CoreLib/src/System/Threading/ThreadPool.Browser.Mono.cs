@@ -28,7 +28,7 @@ namespace System.Threading
         }
     }
 
-    public static unsafe partial class ThreadPool
+    public static partial class ThreadPool
     {
         // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
         // the runtime may use the thread for processing other work
@@ -37,7 +37,6 @@ namespace System.Threading
         private const bool IsWorkerTrackingEnabledInConfig = false;
 
         private static bool _callbackQueued;
-        private static void* BackgroundJobHandlerPtr = (void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler;
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
         {
@@ -75,12 +74,12 @@ namespace System.Threading
 
         public static long CompletedWorkItemCount => 0;
 
-        internal static void RequestWorkerThread()
+        internal static unsafe void RequestWorkerThread()
         {
             if (_callbackQueued)
                 return;
             _callbackQueued = true;
-            MainThreadScheduleBackgroundJob(BackgroundJobHandlerPtr);
+            MainThreadScheduleBackgroundJob((void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
         }
 
         internal static void NotifyWorkItemProgress()
@@ -117,7 +116,8 @@ namespace System.Threading
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
 #pragma warning restore CS3016
-        private static unsafe void BackgroundJobHandler () {
+        // this callback will arrive on the bound thread, called from mono_background_exec
+        private static void BackgroundJobHandler () {
             _callbackQueued = false;
             ThreadPoolWorkQueue.Dispatch();
         }
