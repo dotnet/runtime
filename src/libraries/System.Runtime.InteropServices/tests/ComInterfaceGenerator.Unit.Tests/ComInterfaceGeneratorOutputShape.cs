@@ -166,8 +166,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 VerifyShadowingMethodShape(shadowingMethod);
 
                 shadowingMethod = Assert.Single(j.GetMembers("Method2"));
-                Assert.False(shadowingMethod.IsAbstract);
-                Assert.True(shadowingMethod.IsVirtual);
                 VerifyShadowingMethodShape(shadowingMethod);
             }
         }
