@@ -37,6 +37,7 @@ namespace System.Threading
         private const bool IsWorkerTrackingEnabledInConfig = false;
 
         private static bool _callbackQueued;
+        private static void* BackgroundJobHandlerPtr = (void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler;
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
         {
@@ -79,7 +80,7 @@ namespace System.Threading
             if (_callbackQueued)
                 return;
             _callbackQueued = true;
-            MainThreadScheduleBackgroundJob((void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
+            MainThreadScheduleBackgroundJob(BackgroundJobHandlerPtr);
         }
 
         internal static void NotifyWorkItemProgress()

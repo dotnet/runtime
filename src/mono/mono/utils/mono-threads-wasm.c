@@ -345,6 +345,10 @@ mono_memory_barrier_process_wide (void)
 G_EXTERN_C
 extern void schedule_background_exec (void);
 
+// when this is called from ThreadPool, the cb would be System.Threading.ThreadPool.BackgroundJobHandler
+// when this is called from JSSynchronizationContext, the cb would be System.Runtime.InteropServices.JavaScript.JSSynchronizationContext.BackgroundJobHandler
+// when this is called from sgen it would be wrapper of sgen_perform_collection_inner
+// when this is called from gc, it would be mono_runtime_do_background_work
 void
 mono_main_thread_schedule_background_job (background_job_cb cb)
 {

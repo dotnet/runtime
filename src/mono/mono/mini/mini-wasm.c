@@ -557,6 +557,7 @@ mono_init_native_crash_info (void)
 
 #endif
 
+// this points to System.Threading.TimerQueue.TimerHandler C# method
 static void *timer_handler;
 
 #ifdef HOST_BROWSER

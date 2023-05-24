@@ -19,6 +19,7 @@ namespace System.Threading
         private static List<TimerQueue>? s_scheduledTimers;
         private static List<TimerQueue>? s_scheduledTimersToFire;
         private static long s_shortestDueTimeMs = long.MaxValue;
+        private static void* TimerHandlerPtr = (void*)(delegate* unmanaged[Cdecl]<void>)&TimerHandler;
 
         // this means that it's in the s_scheduledTimers collection, not that it's the one which would run on the next TimeoutCallback
         private bool _isScheduled;
@@ -77,9 +78,8 @@ namespace System.Threading
             {
                 s_shortestDueTimeMs = shortestDueTimeMs;
                 int shortestWait = Math.Max((int)(shortestDueTimeMs - currentTimeMs), 0);
-                // this would cancel the previous schedule and create shorter one
-                // it is expensive call
-                MainThreadScheduleTimer((void*)(delegate* unmanaged[Cdecl]<void>)&TimerHandler, shortestWait);
+                // this would cancel the previous schedule and create shorter one, it is expensive callback
+                MainThreadScheduleTimer(TimerHandlerPtr, shortestWait);
             }
         }
 

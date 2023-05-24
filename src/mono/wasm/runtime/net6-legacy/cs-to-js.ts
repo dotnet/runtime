@@ -132,10 +132,10 @@ export function unbox_mono_obj_root(root: WasmRoot<any>): any {
 }
 
 export function mono_array_to_js_array(mono_array: MonoArray): any[] | null {
+    assert_legacy_interop();
     if (mono_array === MonoArrayNull)
         return null;
 
-    assert_legacy_interop();
     const arrayRoot = mono_wasm_new_root(mono_array);
     try {
         return mono_array_root_to_js_array(arrayRoot);

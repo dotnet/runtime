@@ -848,7 +848,6 @@ void mono_threads_join_unlock (void);
 typedef void (*background_job_cb)(void);
 void mono_main_thread_schedule_background_job (background_job_cb cb);
 void mono_current_thread_schedule_background_job (background_job_cb cb);
-void mono_bound_thread_schedule_background_job (int bound_thread, background_job_cb cb);
 #endif
 
 #ifdef USE_WINDOWS_BACKEND
