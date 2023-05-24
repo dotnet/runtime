@@ -1097,6 +1097,7 @@ private:
 
     // Given some tree node add refpositions for all the registers this node kills
     bool buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, regMaskTP killMask);
+    void updateIntervalPreferencesForKill(Interval* interval, regMaskTP killMask);
 
     regMaskTP allRegs(RegisterType rt);
     regMaskTP allByteRegs();
