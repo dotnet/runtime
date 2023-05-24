@@ -11,6 +11,9 @@
 
 #ifdef TARGET_WINDOWS
 #include <windows.h>
+#else
+#include <fcntl.h>
+#include <unistd.h>
 #endif
 
 // The regdisplay.h, StackFrameIterator.h, and thread.h includes are present only to access the Thread
@@ -349,9 +352,12 @@ ep_rt_aot_file_open_write (const ep_char8_t *path)
     ep_rt_utf16_string_free (path_utf16);
     return static_cast<ep_rt_file_handle_t>(res);
 #else
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // Implement for unix
-    return INVALID_HANDLE_VALUE;
+    mode_t perms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
+    int fd = creat (path, perms);
+    if (fd == -1)
+        return INVALID_HANDLE_VALUE;
+
+    return (ep_rt_file_handle_t)(ptrdiff_t)fd;
 #endif
 }
 
@@ -361,8 +367,8 @@ ep_rt_aot_file_close (ep_rt_file_handle_t file_handle)
 #ifdef TARGET_WINDOWS
     return ::CloseHandle (file_handle) != FALSE;
 #else
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // Implement for unix
+    int fd = (int)(ptrdiff_t)file_handle;
+    close (fd);
     return true;
 #endif
 }
@@ -377,9 +383,20 @@ ep_rt_aot_file_write (
 #ifdef TARGET_WINDOWS
     return ::WriteFile (file_handle, buffer, bytes_to_write, reinterpret_cast<LPDWORD>(bytes_written), NULL) != FALSE;
 #else
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // Implement for unix
-    return false;
+    int fd = (int)(ptrdiff_t)file_handle;
+    uint32_t ret = write (fd, buffer, bytes_to_write);
+    if (ret == -1) {
+        if (bytes_written != NULL) {
+            *bytes_written = 0;
+        }
+
+        return errno == EINTR;
+    }
+
+    if (bytes_written != NULL)
+        *bytes_written = ret;
+
+    return true;
 #endif
 }
 

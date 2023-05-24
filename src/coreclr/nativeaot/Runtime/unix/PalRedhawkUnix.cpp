@@ -740,7 +740,7 @@ REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
 
 REDHAWK_PALEXPORT char* PalCopyTCharAsChar(const TCHAR* toCopy)
 {
-    NewArrayHolder<char> copy {new (nothrow) char[strlen(toCopy)]};
+    NewArrayHolder<char> copy {new (nothrow) char[strlen(toCopy) + 1]};
     strcpy(copy, toCopy);
     return copy.Extract();
 }

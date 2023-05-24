@@ -28,7 +28,7 @@ namespace
         }
         buffer[DOTNET_PREFIX_LEN + nameLen] = '\0';
     #else
-        strcat(buffer, name);
+        strcpy(buffer + DOTNET_PREFIX_LEN, name);
     #endif
     }
 }
