@@ -43,12 +43,14 @@ extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *ca
 #endif /* DISABLE_LEGACY_JS_INTEROP */
 
 // HybridGlobalization
-extern void mono_wasm_change_case_invariant(MonoString **exceptionMessage, const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper);
-extern void mono_wasm_change_case(MonoString **exceptionMessage, MonoString **culture, const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper);
-extern int mono_wasm_compare_string(MonoString **exceptionMessage, MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options);
-extern mono_bool mono_wasm_starts_with(MonoString **exceptionMessage, MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options);
-extern mono_bool mono_wasm_ends_with(MonoString **exceptionMessage, MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options);
-extern int mono_wasm_index_of(MonoString **exceptionMessage, MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool fromBeginning);
+extern void mono_wasm_change_case_invariant(const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper, int *is_exception, MonoObject** ex_result);
+extern void mono_wasm_change_case(MonoString **culture, const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper, int *is_exception, MonoObject** ex_result);
+extern int mono_wasm_compare_string(MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *is_exception, MonoObject** ex_result);
+extern mono_bool mono_wasm_starts_with(MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *is_exception, MonoObject** ex_result);
+extern mono_bool mono_wasm_ends_with(MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *is_exception, MonoObject** ex_result);
+extern int mono_wasm_index_of(MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool fromBeginning, int *is_exception, MonoObject** ex_result);
+extern mono_bool mono_wasm_is_normalized(int32_t normalizationForm, MonoString **src, int *is_exception, MonoObject** ex_result);
+extern int mono_wasm_normalize_string(int32_t normalizationForm, MonoString **src, uint16_t* dst, int32_t dstLength, int *is_exception, MonoObject** ex_result);
 
 void bindings_initialize_internals (void)
 {
@@ -83,4 +85,6 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/JsGlobalization::StartsWith", mono_wasm_starts_with);
 	mono_add_internal_call ("Interop/JsGlobalization::EndsWith", mono_wasm_ends_with);
 	mono_add_internal_call ("Interop/JsGlobalization::IndexOf", mono_wasm_index_of);
+	mono_add_internal_call ("Interop/JsGlobalization::IsNormalized", mono_wasm_is_normalized);
+	mono_add_internal_call ("Interop/JsGlobalization::NormalizeString", mono_wasm_normalize_string);
 }

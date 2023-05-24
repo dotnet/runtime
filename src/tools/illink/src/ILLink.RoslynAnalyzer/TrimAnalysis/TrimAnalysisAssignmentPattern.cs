@@ -20,8 +20,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public TrimAnalysisAssignmentPattern (MultiValue source, MultiValue target, IOperation operation)
 		{
-			Source = source.Clone ();
-			Target = target.Clone ();
+			Source = source.DeepCopy ();
+			Target = target.DeepCopy ();
 			Operation = operation;
 		}
 

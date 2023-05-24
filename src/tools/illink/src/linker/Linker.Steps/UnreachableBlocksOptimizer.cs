@@ -1125,8 +1125,20 @@ namespace Mono.Linker.Steps
 							condBranches ??= new Stack<int> ();
 
 							condBranches.Push (GetInstructionIndex (handler.HandlerStart));
-							if (handler.FilterStart != null)
+							if (handler.FilterStart != null) {
 								condBranches.Push (GetInstructionIndex (handler.FilterStart));
+								int filterEnd = GetInstructionIndex (handler.HandlerStart) - 1;
+								if (filterEnd >= 0 && FoldedInstructions[filterEnd].OpCode == OpCodes.Endfilter) {
+									// The endfilter instruction must be at the end of each filter block, even if it's not reachable:
+									//
+									// ECMA 335
+									// I.12.4.2.8.2.5 endfilter:
+									// 1.Shall appear as the lexically last instruction in the filter.
+									// [Note: The endfilter is required even if no control - flow path reaches it.This can happen if, for
+									// example, the filter does a throw.end note]
+									reachable[filterEnd] = true;
+								}
+							}
 						}
 
 						if (condBranches?.Count > 0) {

@@ -32,5 +32,7 @@
     <Compile Include="..\NumberFormatInfo\NumberFormatInfoPercentNegativePattern.cs" />
     <Compile Include="..\NumberFormatInfo\NumberFormatInfoPercentGroupSizes.cs" />
     <Compile Include="..\NumberFormatInfo\NumberFormatInfoPercentPositivePattern.cs" />
+    <Compile Include="..\CompareInfo\CompareInfoTestsBase.cs" />
+    <Compile Include="..\CompareInfo\CompareInfoTests.Compare.cs" />
   </ItemGroup>
 </Project>

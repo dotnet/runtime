@@ -2688,6 +2688,7 @@ namespace System
         public static long GetTotalMemory(bool forceFullCollection) { throw null; }
         public static void KeepAlive(object? obj) { }
         public static void RegisterForFullGCNotification(int maxGenerationThreshold, int largeObjectHeapThreshold) { }
+        public static void RegisterNoGCRegionCallback(long totalSize, Action callback) { }
         public static void RemoveMemoryPressure(long bytesAllocated) { }
         public static void ReRegisterForFinalize(object obj) { }
         public static void SuppressFinalize(object obj) { }
@@ -2702,10 +2703,10 @@ namespace System
         public static System.GCNotificationStatus WaitForFullGCComplete(int millisecondsTimeout) { throw null; }
         public static System.GCNotificationStatus WaitForFullGCComplete(System.TimeSpan timeout) { throw null; }
         public static void WaitForPendingFinalizers() { }
-
-        public static TimeSpan GetTotalPauseDuration() { return TimeSpan.Zero; }
-
+        public static TimeSpan GetTotalPauseDuration() { throw null; }
         public static System.Collections.Generic.IReadOnlyDictionary<string, object> GetConfigurationVariables() { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("RefreshMemoryLimit is in preview.")]
+        public static void RefreshMemoryLimit() { throw null; }
     }
 
     public enum GCCollectionMode
@@ -6022,7 +6023,7 @@ namespace System
         public virtual string? GetEnumName(object value) { throw null; }
         public virtual string[] GetEnumNames() { throw null; }
         public virtual System.Type GetEnumUnderlyingType() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetEnumValues<TEnum> overload or the GetEnumValuesAsUnderlyingType method instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use Enum.GetValues<T> or the GetEnumValuesAsUnderlyingType method instead.")]
         public virtual System.Array GetEnumValues() { throw null; }
         public virtual System.Array GetEnumValuesAsUnderlyingType() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents)]
@@ -13461,7 +13462,7 @@ namespace System.Runtime.InteropServices.Marshalling
         ElementRef = 8,
         ElementOut = 9
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Delegate)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Delegate)]
     public sealed partial class NativeMarshallingAttribute : System.Attribute
     {
         public NativeMarshallingAttribute(System.Type nativeType) { }

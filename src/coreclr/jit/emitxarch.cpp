@@ -18825,6 +18825,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vinserti32x8:
         case INS_vinserti64x2:
         case INS_vinserti64x4:
+        case INS_vpermb:
         case INS_vpermi2d:
         case INS_vpermi2pd:
         case INS_vpermi2ps:
