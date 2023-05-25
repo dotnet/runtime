@@ -1454,12 +1454,12 @@ open_from_bundle_internal (MonoAssemblyLoadContext *alc, const char *filename, M
 	if (!mono_bundled_resources_contains_assemblies ())
 		return NULL;
 
+	MonoImage *image = NULL;
 	char *name = g_path_get_basename (filename);
-	MonoBundledAssemblyResource *assembly = mono_bundled_resources_get_assembly_resource (name);
-	if (!assembly)
-		return NULL;
 
-	MonoImage *image = mono_image_open_from_data_internal (alc, (char *)assembly->assembly.data, assembly->assembly.size, FALSE, status, FALSE, name, NULL);
+	MonoBundledAssemblyResource *assembly = mono_bundled_resources_get_assembly_resource (name);
+	if (assembly)
+		image = mono_image_open_from_data_internal (alc, (char *)assembly->assembly.data, assembly->assembly.size, FALSE, status, FALSE, name, NULL);
 
 	g_free (name);
 	return image;
@@ -1471,12 +1471,12 @@ open_from_satellite_bundle (MonoAssemblyLoadContext *alc, const char *filename, 
 	if (!mono_bundled_resources_contains_satellite_assemblies ())
 		return NULL;
 
+	MonoImage *image = NULL;
 	char *bundle_name = g_strconcat (culture, "/", filename, (const char *)NULL);
-	MonoBundledSatelliteAssemblyResource *satellite_assembly = mono_bundled_resources_get_satellite_assembly_resource (bundle_name);
-	if (!satellite_assembly)
-		return NULL;
 
-	MonoImage *image = mono_image_open_from_data_internal (alc, (char *)satellite_assembly->satellite_assembly.data, satellite_assembly->satellite_assembly.size, FALSE, status, FALSE, bundle_name, NULL);
+	MonoBundledSatelliteAssemblyResource *satellite_assembly = mono_bundled_resources_get_satellite_assembly_resource (bundle_name);
+	if (satellite_assembly)
+		image = mono_image_open_from_data_internal (alc, (char *)satellite_assembly->satellite_assembly.data, satellite_assembly->satellite_assembly.size, FALSE, status, FALSE, bundle_name, NULL);
 
 	g_free (bundle_name);
 	return image;
