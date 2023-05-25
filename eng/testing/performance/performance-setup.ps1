@@ -22,10 +22,12 @@ Param(
     [string] $LogicalMachine="",
     [switch] $AndroidMono,
     [switch] $iOSMono,
+    [switch] $iOSNativeAOT,
     [switch] $NoPGO,
     [switch] $DynamicPGO,
     [switch] $FullPGO,
     [switch] $iOSLlvmBuild,
+    [switch] $iOSStripSymbols,
     [string] $MauiVersion,
     [switch] $UseLocalCommitTime
 )
@@ -98,6 +100,11 @@ elseif($FullPGO)
 
 if ($iOSMono) {
     $Configurations += " iOSLlvmBuild=$iOSLlvmBuild"
+    $Configurations += " iOSStripSymbols=$iOSStripSymbols"
+}
+
+if ($iOSNativeAOT) {
+    $Configurations += " iOSStripSymbols=$iOSStripSymbols"
 }
 
 # FIX ME: This is a workaround until we get this from the actual pipeline

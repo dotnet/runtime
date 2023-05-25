@@ -14,6 +14,11 @@
     </HelixCorrelationPayload>
   </ItemGroup>
 
+  <PropertyGroup>
+    <SymbolsPath>symbols</SymbolsPath>
+    <SymbolsPath Condition="'$(iOSStripSymbols)' == 'True'">nosymbols</SymbolsPath>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
     <ScenarioDirectory>%HELIX_CORRELATION_PAYLOAD%\performance\src\scenarios\</ScenarioDirectory>
 
@@ -23,19 +28,20 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <HelixWorkItem Include="SOD - iOS HelloWorld Native AOT .app Size">
+    <HelixWorkItem Include="SOD - iOS HelloWorld Native AOT .app Size $(SymbolsPath)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <PreCommands>cd $(ScenarioDirectory)helloios;cp -rf $HELIX_CORRELATION_PAYLOAD/iosHelloWorld/nativeaot ./app;$(Python) pre.py --name app</PreCommands>
+      <PreCommands>cd $(ScenarioDirectory)helloios;cp -rf $HELIX_CORRELATION_PAYLOAD/iosHelloWorld/$(SymbolsPath) ./app;$(Python) pre.py --name app</PreCommands>
       <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
-    <HelixWorkItem Include="SOD - iOS HelloWorld Native AOT Zip Size">
+    <HelixWorkItem Include="SOD - iOS HelloWorld Native AOT Zip Size $(SymbolsPath)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <PreCommands>cd $(ScenarioDirectory)helloios;cp -v $HELIX_CORRELATION_PAYLOAD/iosHelloWorldZip/nativeaotzip/iOSSampleApp/iOSSampleApp.zip .;$(Python) pre.py --name iOSSampleApp.zip</PreCommands>
+      <PreCommands Condition="'$(SymbolsPath)' == 'symbols'">cd $(ScenarioDirectory)helloios;cp -v $HELIX_CORRELATION_PAYLOAD/iosHelloWorldZip/$(SymbolsPath)zip/iOSSampleApp/iOSSampleApp.zip .;$(Python) pre.py --name iOSSampleApp.zip</PreCommands>
+      <PreCommands Condition="'$(SymbolsPath)' == 'nosymbols'">cd $(ScenarioDirectory)helloios;cp -v $HELIX_CORRELATION_PAYLOAD/iosHelloWorldZip/$(SymbolsPath)zip/iOSSampleApp/iOSSampleApp$(SymbolsPath).zip .;$(Python) pre.py --name iOSSampleApp$(SymbolsPath).zip</PreCommands>
       <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
-    <XHarnessAppBundleToTest Include="Device Startup - iOS Native AOT HelloWorld">
+    <XHarnessAppBundleToTest Include="Device Startup - iOS Native AOT HelloWorld $(SymbolsPath)">
       <AppBundlePath>$(WorkItemDirectory).zip</AppBundlePath>
       <WorkItemTimeout>00:15:00</WorkItemTimeout>
       <TestTarget>ios-device</TestTarget>
@@ -44,7 +50,7 @@
           # PreCommands
           export XHARNESSPATH=$XHARNESS_CLI_PATH
 
-          cp -r $HELIX_CORRELATION_PAYLOAD/iosHelloWorld/nativeaot/HelloiOS.app $(ScenarioDirectory)helloios/HelloiOS.app
+          cp -r $HELIX_CORRELATION_PAYLOAD/iosHelloWorld/$(SymbolsPath)/HelloiOS.app $(ScenarioDirectory)helloios/HelloiOS.app
           cp -f embedded.mobileprovision $(ScenarioDirectory)helloios/HelloiOS.app
           cd $(ScenarioDirectory)helloios
           sign HelloiOS.app
