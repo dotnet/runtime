@@ -1023,7 +1023,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
     assert(dst != nullptr);
     //
     // INS_OPTS_J: placeholders.  1-ins: if the dst outof-range will be replaced by INS_OPTS_JALR.
-    //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu/beqz/bnez/b/bl  dst
+    // jal/j/jalr/bnez/beqz/beq/bne/blt/bge/bltu/bgeu dst
 
     assert(dst->bbFlags & BBF_HAS_LABEL);
 
@@ -2487,6 +2487,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     case 24:
                     {
                         assert(ins == INS_j || ins == INS_jal);
+                        // Make target address with offset, then jump (JALR) with the target address
                         imm               = imm - 2 * 4;
                         regNumber tmpReg1 = REG_RA;
                         ssize_t   high    = ((imm + 0x80000000) >> 32) & 0xffffffff;
@@ -2528,6 +2529,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                         dstRW += 4;
 
                         code = emitInsCode(INS_jalr);
+                        code |= (code_t)id->idReg1() << 7;
                         code |= (code_t)tmpReg2 << 15;
                         code |= (code_t)(low & 0xfff) << 20;
                         *(code_t*)dstRW = code;
@@ -2552,6 +2554,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                         *(code_t*)dstRW = code;
                         dstRW += 4;
 
+                        // Make target address with offset, then jump (JALR) with the target address
                         imm               = imm - 2 * 4;
                         regNumber tmpReg1 = REG_RA;
                         ssize_t   high    = ((imm + 0x80000000) >> 32) & 0xffffffff;
@@ -2630,7 +2633,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
         break;
         case INS_OPTS_J:
-            //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu/beqz/bnez/b/bl  dstRW-relative.
+            // jal/j/jalr/bnez/beqz/beq/bne/blt/bge/bltu/bgeu dstRW-relative.
             {
                 ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset(); // get jmp's offset relative delay-slot.
                 assert((imm & 3) == 0);
@@ -2658,6 +2661,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 {
                     assert(isValidSimm12(imm));
                     code |= ((code_t)(imm & 0xfff) << 20);
+                    code |= ((code_t)id->idReg1()) << 7;
+                    code |= ((code_t)id->idReg2()) << 15;
                 }
                 else if (ins == INS_bnez || ins == INS_beqz)
                 {
@@ -2680,7 +2685,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 }
                 else
                 {
-                    NYI_RISCV64("unimplemented on RISCV64 yet");
+                    unreached();
                 }
 
                 *(code_t*)dstRW = code;
