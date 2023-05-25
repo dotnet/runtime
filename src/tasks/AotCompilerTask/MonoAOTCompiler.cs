@@ -153,6 +153,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public bool UseDwarfDebug { get; set; }
 
     /// <summary>
+    /// Instructs the AOT compiler to print the list of aot compiled methods
+    /// </summary>
+    public bool CollectCompiledMethods { get; set; }
+
+    /// <summary>
+    /// Directory to store the aot output when using switch compiled-methods-outfile
+    /// </summary>
+    public string? CompiledMethodsOutputPath { get; set; }
+
+    /// <summary>
     /// File to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
     /// </summary>
     public string[]? AotProfilePath { get; set; }
@@ -709,6 +719,26 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         else if (!string.IsNullOrEmpty (DedupAssembly))
         {
             aotArgs.Add("dedup-skip");
+        }
+
+        if (CollectCompiledMethods)
+        {
+            if (string.IsNullOrEmpty(CompiledMethodsOutputPath))
+            {
+                Log.LogMessage(MessageImportance.Low, "Skipping collecting the list of aot compiled methods, cause the value of CompiledMethodsOutputPath is empty.");
+            }
+            else
+            {
+                if (!Directory.Exists(CompiledMethodsOutputPath))
+                {
+                    Directory.CreateDirectory(CompiledMethodsOutputPath);
+                }
+                string assemblyFileName = Path.GetFileName(assembly);
+                string assemblyName = assemblyFileName.Replace(".", "_");
+                string outputFileName = assemblyName + "_compiled_methods.txt";
+                string outputFilePath = Path.Combine(CompiledMethodsOutputPath, outputFileName);
+                aotArgs.Add($"compiled-methods-outfile={outputFilePath}");
+            }
         }
 
         // compute output mode and file names
