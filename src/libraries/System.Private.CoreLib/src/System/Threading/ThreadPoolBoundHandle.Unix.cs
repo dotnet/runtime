@@ -73,6 +73,11 @@ namespace System.Threading
         /// </remarks>
         public static ThreadPoolBoundHandle BindHandle(SafeHandle handle)
         {
+            ArgumentNullException.ThrowIfNull(handle);
+
+            if (handle.IsClosed || handle.IsInvalid)
+                throw new ArgumentException(SR.Argument_InvalidHandle, nameof(handle));
+
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
         }
 
