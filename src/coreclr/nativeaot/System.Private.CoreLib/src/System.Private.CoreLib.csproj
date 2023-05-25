@@ -29,8 +29,7 @@
     <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
   </PropertyGroup>
   <PropertyGroup>
-    <FeaturePortableTimer Condition="'$(FeaturePortableTimer)' == ''">false</FeaturePortableTimer>
-    <FeaturePortableTimer Condition="'$(TargetsUnix)' == 'true'">true</FeaturePortableTimer>
+    <FeaturePortableTimer>true</FeaturePortableTimer>
   </PropertyGroup>
   <PropertyGroup>
     <FeatureHardwareIntrinsics>true</FeatureHardwareIntrinsics>
