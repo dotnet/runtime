@@ -274,14 +274,14 @@ public abstract class BaseEmbeddingApiTests
         }
     }
 
-    [TestCase(typeof(Animal))]
+    [TestCase(typeof(Mammal))]
     [TestCase(typeof(ValueAnimal))]
     public void GetClass(Type type)
     {
         Assert.That(ClrHost.object_get_class(Activator.CreateInstance(type)!), Is.EqualTo(type));
     }
 
-    [TestCase(typeof(Animal))]
+    [TestCase(typeof(Mammal))]
     [TestCase(typeof(ValueAnimal))]
     public void ClassFromSystemTypeInstance(Type type)
     {
@@ -506,6 +506,58 @@ public abstract class BaseEmbeddingApiTests
     {
         var result = (Assembly)ClrHost.assembly_get_object(ClrHost.get_corlib());
         Assert.That(result.Location, Is.EqualTo(typeof(object).Assembly.Location));
+    }
+
+    // The exact same MethodInfo instance isn't returned but it's still the same method
+    [TestCase(typeof(Cat), typeof(Mammal), nameof(Mammal.VirtualOnAnimalNotOverridden))]
+    // Base Classes
+    [TestCase(typeof(Mammal), typeof(Animal), nameof(Animal.AbstractOnAnimal))]
+    [TestCase(typeof(Cat), typeof(Animal), nameof(Animal.AbstractOnAnimal))]
+    [TestCase(typeof(Cat), typeof(Mammal), nameof(Mammal.AbstractOnAnimal))]
+    [TestCase(typeof(ValueCat), typeof(object), nameof(object.ToString))]
+    [TestCase(typeof(Cat), typeof(IAnimal), nameof(IAnimal.InterfaceMethodOnIAnimal))]
+    [TestCase(typeof(Mammal), typeof(IMammal), nameof(IMammal.InterfaceMethodOnIMammal))]
+    // Interfaces
+    [TestCase(typeof(Cat), typeof(IAnimal), nameof(IAnimal.InterfaceMethodOnIAnimal))]
+    [TestCase(typeof(ValueCat), typeof(IAnimal), nameof(IAnimal.InterfaceMethodOnIAnimal))]
+    [TestCase(typeof(ValueCat), typeof(IAnimal), nameof(IAnimal.ExplicitlyImplementedByMany))]
+    [TestCase(typeof(Cat), typeof(IAnimal), nameof(IAnimal.ExplicitlyImplementedByMany))]
+    [TestCase(typeof(Cat), typeof(IMammal), nameof(IMammal.ExplicitlyImplementedByMany))]
+    [TestCase(typeof(Cat), typeof(IAnimal), nameof(IAnimal.InterfaceMethodOnIAnimalWithParameters), new [] {typeof(int)})]
+    [TestCase(typeof(Cat), typeof(IAnimal), nameof(IAnimal.InterfaceMethodOnIAnimalWithParameters), new [] {typeof(string)})]
+    [TestCase(typeof(Cat), typeof(IAnimal), nameof(IAnimal.InterfaceMethodOnIAnimalWithParameters), new [] {typeof(int), typeof(int)})]
+    public void ObjectGetVirtualMethodWhenObjectHasOverride(Type objType, Type baseType, string methodName, Type[]? parameters = null)
+    {
+        var obj = Activator.CreateInstance(objType);
+        var result = ClrHost.object_get_virtual_method(obj, baseType.FindInstanceMethodByName(methodName, parameters).MethodHandle);
+        var resultMethodInfo = MethodBase.GetMethodFromHandle(result)!;
+        var expectedMethodInfo = objType.FindInstanceMethodByNameOrExplicitInterfaceName(baseType, methodName, parameters);
+        Assert.That(resultMethodInfo.MetadataToken, Is.EqualTo(expectedMethodInfo.MetadataToken));
+    }
+
+    // Self
+    [TestCase(typeof(Cat), typeof(Cat), nameof(Cat.NonVirtualMethodOnCat))]
+    [TestCase(typeof(Cat), typeof(Cat), nameof(Cat.VirtualMethodOnCat))]
+    // Base
+    [TestCase(typeof(Cat), typeof(Animal), nameof(Animal.NonVirtualMethodOnAnimal))]
+    public void ObjectGetVirtualMethodWhenBaseMethodIsReturned(Type objType, Type baseType, string methodName)
+    {
+        var obj = Activator.CreateInstance(objType);
+        var baseMethodInfo = baseType.FindInstanceMethodByName(methodName, Array.Empty<Type>());
+        var result = ClrHost.object_get_virtual_method(obj, baseMethodInfo.MethodHandle);
+        var resultMethodInfo = MethodBase.GetMethodFromHandle(result)!;
+        Assert.That(resultMethodInfo, Is.EqualTo(baseMethodInfo));
+    }
+
+    [TestCase(typeof(CatOnlyInterface), typeof(Animal), nameof(Animal.AbstractOnAnimal))]
+    // Interfaces - Type does not implement interfaces
+    [TestCase(typeof(CatOnlyInterface), typeof(IImposterAnimal), nameof(IImposterAnimal.InterfaceMethodOnIAnimal))]
+    [TestCase(typeof(ImposterCat), typeof(IAnimal), nameof(IAnimal.InterfaceMethodOnIAnimalWithParameters), new [] {typeof(int)})]
+    public void ObjectGetVirtualMethodNoMatch(Type objType, Type baseType, string methodName, Type[]? parameters = null)
+    {
+        var obj = Activator.CreateInstance(objType);
+        var result = ClrHost.object_get_virtual_method_raw_return_only(obj, baseType.FindInstanceMethodByName(methodName, parameters).MethodHandle);
+        Assert.That(result, Is.EqualTo(IntPtr.Zero));
     }
 
     /// <summary>

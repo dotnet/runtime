@@ -373,6 +373,73 @@ static unsafe partial class CoreCLRHost
         IntPtr assembly)
         => assembly.AssemblyFromGCHandleIntPtr().ToNativeRepresentation();
 
+    [return: NativeCallbackType("MonoMethod*")]
+    public static IntPtr object_get_virtual_method([NativeCallbackType("MonoObject*")] IntPtr obj,
+        [NativeCallbackType("MonoMethod*")] IntPtr method)
+    {
+        var managedObject = obj.ToManagedRepresentation();
+        var baseMethodInfo = (MethodInfo)MethodInfo.GetMethodFromHandle(method.MethodHandleFromHandleIntPtr());
+
+        if (baseMethodInfo == null)
+            throw new ArgumentException($"Invalid method handle");
+
+        Type type = managedObject.GetType();
+
+        if (type == baseMethodInfo.DeclaringType)
+            return method;
+
+        // Mono's implementation of object_get_virtual_method had this check.
+        if (baseMethodInfo.IsFinal || !baseMethodInfo.IsVirtual)
+            return method;
+
+        if (!baseMethodInfo.DeclaringType!.IsInterface)
+        {
+            var bindingFlags = BindingFlags.Instance;
+            if (baseMethodInfo.IsPublic)
+                bindingFlags |= BindingFlags.Public;
+            else
+                bindingFlags |= BindingFlags.NonPublic;
+
+            var objectMethods = type.GetMethods(bindingFlags);
+
+            foreach (var objectMethod in objectMethods)
+            {
+                var objectBaseDefinition = objectMethod.GetBaseDefinition();
+                // GetBaseDefinition will return the base most method in the hierarchy.  Which means, it won't be the same as the baseMethodInfo if there are any intermediate overrides
+                // because of this there are 2 scenarios we need to handle
+                // 1) When the GetBaseDefinition returns baseMethodInfo, that is the most straight forward case
+                // 2) If (1) is not true, then we need to handle the situation where there is an intermediate override.  In this case,
+                //      if objectMethod.GetBaseDefinition() shares the same value as baseMethodInfo.GetBaseDefinition() then we have found the method we are looking for
+                if (objectBaseDefinition == baseMethodInfo || objectBaseDefinition == baseMethodInfo.GetBaseDefinition())
+                    return objectMethod.MethodHandle.MethodHandleIntPtr();
+            }
+        }
+        else
+        {
+            InterfaceMapping ifaceMap;
+            try
+            {
+                ifaceMap = type.GetInterfaceMap(baseMethodInfo.DeclaringType);
+            }
+            catch (ArgumentException)
+            {
+                // Type does not implement the interface
+                return IntPtr.Zero;
+            }
+
+            for (int i = 0; i < ifaceMap.InterfaceMethods.Length; i++)
+            {
+                MethodInfo ifaceMethod = ifaceMap.InterfaceMethods[i];
+                if (ifaceMethod == baseMethodInfo)
+                {
+                    return ifaceMap.TargetMethods[i].MethodHandle.MethodHandleIntPtr();
+                }
+            }
+        }
+
+        return IntPtr.Zero;
+    }
+
     static void Log(string message)
     {
         var bytes = System.Text.Encoding.UTF8.GetBytes(message);

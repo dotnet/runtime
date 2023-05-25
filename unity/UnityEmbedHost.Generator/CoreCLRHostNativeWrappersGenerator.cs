@@ -263,6 +263,8 @@ namespace Unity.CoreCLRHelpers;
                 return ".ToManagedRepresentation()";
             case "MonoClass*":
                 return ".TypeFromHandleIntPtr()";
+            case "MonoMethod*":
+                return ".MethodHandleFromHandleIntPtr()";
         }
 
         return string.Empty;
