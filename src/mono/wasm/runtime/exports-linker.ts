@@ -13,7 +13,7 @@ import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_c
 import { mono_wasm_marshal_promise } from "./marshal-to-js";
 import { mono_wasm_eventloop_has_unsettled_interop_promises } from "./pthreads/shared/eventloop";
 import { mono_wasm_pthread_on_pthread_attached } from "./pthreads/worker";
-import { mono_set_timeout, schedule_background_exec } from "./scheduling";
+import { mono_wasm_schedule_timer, schedule_background_exec } from "./scheduling";
 import { mono_wasm_asm_loaded } from "./startup";
 import { mono_wasm_diagnostic_server_on_server_thread_created } from "./diagnostics/server_pthread";
 import { mono_wasm_diagnostic_server_on_runtime_server_init, mono_wasm_event_pipe_early_startup_callback } from "./diagnostics";
@@ -64,7 +64,7 @@ const mono_wasm_legacy_interop_exports = !WasmEnableLegacyJsInterop ? undefined 
 export function export_linker(): any {
     return {
         // mini-wasm.c
-        mono_set_timeout,
+        mono_wasm_schedule_timer,
 
         // mini-wasm-debugger.c
         mono_wasm_asm_loaded,

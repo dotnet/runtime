@@ -39,37 +39,37 @@
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">
         <source>Source-generated COM will ignore any configuration that is not supported.</source>
-        <target state="needs-review-translation">Zdrojem generovaná volání P/Invokes budou ignorovat všechny nepodporované konfigurace.</target>
+        <target state="translated">Model COM vygenerovaný zdrojem bude ignorovat všechny nepodporované konfigurace.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessage">
         <source>The '{0}' configuration is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="needs-review-translation">Konfiguraci {0} nepodporují zdrojem generovaná volání P/Invokes. Pokud je určená konfigurace povinná, použijte místo ní normální DllImport.</target>
+        <target state="translated">Konfigurace „{0}“ není podporována modelem COM generovaným zdrojem. Pokud je zadaná konfigurace povinná, použijte místo toho „ComImport“.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageMarshallingInfo">
         <source>The specified marshalling configuration is not supported by source-generated COM. {0}.</source>
-        <target state="needs-review-translation">Určenou konfiguraci zařazování nepodporují zdrojem generovaná volání P/Invokes. {0}.</target>
+        <target state="translated">Zadaná konfigurace zařazování není podporována modelem COM generovaným zdrojem. {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageParameter">
         <source>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="needs-review-translation">Určená konfigurace {0} pro parametr {1} není podporována voláním P/Invokes. Pokud je určená konfigurace povinná, použijte místo ní normální DllImport.</target>
+        <target state="translated">Zadaná konfigurace „{0}“ pro parametr „{1}“ není podporována modelem COM generovaným zdrojem. Pokud je zadaná konfigurace povinná, použijte místo toho ComImport.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageReturn">
         <source>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="needs-review-translation">Určenou konfiguraci {0} návratové hodnoty metody {1} nepodporují zdrojem generovaná volání P/Invokes. Pokud je určená konfigurace povinná, použijte místo ní normální Dllimport.</target>
+        <target state="translated">Zadaná konfigurace „{0}“ pro návratovou hodnotu metody „{1}“ není podporována modelem COM generovaným zdrojem. Pokud je zadaná konfigurace povinná, použijte místo toho ComImport.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageValue">
         <source>The specified value '{0}' for '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="needs-review-translation">Určená hodnota {0} pro {1} se nepodporuje u zdrojem generovaných volání P/Invokes. Pokud je určená konfigurace povinná, použijte místo ní normální Dllimport.</target>
+        <target state="translated">Zadaná hodnota „{0}“ pro „{1}“ není podporována modelem COM generovaným zdrojem. Pokud je zadaná konfigurace povinná, použijte místo toho ComImport.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedTitle">
         <source>Specified configuration is not supported by source-generated COM.</source>
-        <target state="needs-review-translation">Určenou konfiguraci nepodporují zdrojem generovaná volání P/Invokes.</target>
+        <target state="translated">Zadaná konfigurace není podporována modelem COM generovaným zdrojem.</target>
         <note />
       </trans-unit>
       <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
@@ -89,7 +89,7 @@
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">
         <source>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. COM source generation will ignore method '{0}'.</source>
-        <target state="needs-review-translation">Metoda {0} je obsažena v typu {1}, který není označen jako „partial“. Generování zdrojů volání P/Invoke bude metodu {0} ignorovat.</target>
+        <target state="translated">Metoda „{0}“ je obsažena v typu „{1}“, který není označen jako „částečně provedený kód“. Generování zdroje modelu COM bude metodu „{0}“ ignorovat.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttributeMessage">
@@ -99,12 +99,12 @@
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodDescription">
         <source>Methods on interfaces marked with 'GeneratedComInterfaceAttribute' should be non-generic. COM source generation will ignore methods that are generic.</source>
-        <target state="needs-review-translation">Metody označené atributem LibraryImportAttribute by měly být typu „static“, „partial“ a non-generic. Generování zdrojů volání P/Invoke bude ignorovat metody typu non-„static“, non-„partial“ a generic.</target>
+        <target state="translated">Metody na rozhraních označených atributem „GeneratedComInterfaceAttribute“ by neměly být obecné povahy. Generování zdroje modelu COM bude obecné metody ignorovat.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodSignatureMessage">
         <source>Method '{0}' should be non-generic when on interfaces marked with the 'GeneratedComInterfaceAttribute'. COM source generation will ignore method '{0}'.</source>
-        <target state="needs-review-translation">Metoda {0} by měla mít vlastnost „static“, „partial“ a non-generic, když je označena atributem LibraryImportAttribute. Generování zdroje voláním P/Invoke bude metodu {0} ignorovat.</target>
+        <target state="translated">Metoda „{0}“ by neměla být v rozhraních označených atributem GeneratedComInterfaceAttribute obecné povahy. Generování zdroje modelu COM bude metodu „{0}“ ignorovat.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidExceptionMarshallingConfigurationDescription">
@@ -134,12 +134,12 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
         <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="new">Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</target>
+        <target state="translated">Rozhraní s atributem GeneratedComInterfaceAttribute musí být částečná, neobecná a musí určovat identifikátor GUID s atributem System.Runtime.InteropServices.GuidAttribute.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceIsGeneric">
         <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</source>
-        <target state="new">Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</target>
+        <target state="translated">Rozhraní „{0}“ má atribut GeneratedComInterfaceAttribute, ale je obecné.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute">
@@ -214,12 +214,12 @@
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">
         <source>For types that are not supported by source-generated COM, the resulting function pointer will rely on the underlying runtime to marshal the specified type.</source>
-        <target state="needs-review-translation">U typů, které nejsou podporovány zdrojem generovanými voláními P/Invoke, bude výsledné volání P/Invoke záviset na podkladovém modulu runtime, aby určený typ zařadil.</target>
+        <target state="translated">U typů, které nejsou podporovány modelem COM generovaným zdrojem, bude výsledný ukazatel funkce při zařazování zadaného typu spoléhat na základní modul runtime.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageParameter">
         <source>The type '{0}' is not supported by source-generated COM. The generated source will not handle marshalling of parameter '{1}'.</source>
-        <target state="needs-review-translation">Typ {0} nepodporují zdrojem generovaná volání P/Invokes. Vygenerovaný zdroj nebude zpracovávat zařazování parametru {1}.</target>
+        <target state="translated">Model COM vygenerovaný zdrojem nepodporuje typ „{0}“. Vygenerovaný zdroj nezpracuje zařazování parametru „{1}“.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageParameterWithDetails">
@@ -230,7 +230,7 @@
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageReturn">
         <source>The type '{0}' is not supported by source-generated COM. The generated source will not handle marshalling of the return value of method '{1}'.</source>
-        <target state="needs-review-translation">Typ {0} nepodporují zdrojem generovaná volání P/Invokes. Vygenerovaný zdroj nebude zpracovávat zařazování návratové hodnoty metody {1}.</target>
+        <target state="translated">Model COM vygenerovaný zdrojem nepodporuje typ „{0}“. Vygenerovaný zdroj nebude zpracovávat zařazování návratové hodnoty metody „{1}“.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageReturnWithDetails">
@@ -241,7 +241,7 @@
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitle">
         <source>Specified type is not supported by source-generated COM</source>
-        <target state="needs-review-translation">Určený typ nepodporují zdrojem generovaná volání P/Invokes.</target>
+        <target state="translated">Zadaný typ není podporován modelem COM generovaným zdrojem.</target>
         <note />
       </trans-unit>
     </body>

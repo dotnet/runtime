@@ -62,6 +62,7 @@ struct Access
     weight_t CountWtd                      = 0;
     weight_t CountAssignmentSourceWtd      = 0;
     weight_t CountAssignmentDestinationWtd = 0;
+    weight_t CountAssignedFromCallWtd      = 0;
     weight_t CountCallArgsWtd              = 0;
     weight_t CountReturnsWtd               = 0;
     weight_t CountPassedAsRetbufWtd        = 0;
@@ -101,7 +102,8 @@ enum class AccessKindFlags : uint32_t
     IsAssignmentSource      = 2,
     IsAssignmentDestination = 4,
     IsCallRetBuf            = 8,
-    IsReturned              = 16,
+    IsAssignedFromCall      = 16,
+    IsReturned              = 32,
 };
 
 inline constexpr AccessKindFlags operator~(AccessKindFlags a)
@@ -263,6 +265,11 @@ public:
         {
             access->CountAssignmentDestination++;
             access->CountAssignmentDestinationWtd += weight;
+
+            if ((flags & AccessKindFlags::IsAssignedFromCall) != AccessKindFlags::None)
+            {
+                access->CountAssignedFromCallWtd += weight;
+            }
         }
 
         if ((flags & AccessKindFlags::IsCallArg) != AccessKindFlags::None)
@@ -356,11 +363,11 @@ public:
     //
     bool EvaluateReplacement(Compiler* comp, unsigned lclNum, const Access& access)
     {
-        weight_t countOverlappedCallsWtd                 = 0;
-        weight_t countOverlappedReturnsWtd               = 0;
-        weight_t countOverlappedRetbufsWtd               = 0;
-        weight_t countOverlappedAssignmentDestinationWtd = 0;
-        weight_t countOverlappedAssignmentSourceWtd      = 0;
+        weight_t countOverlappedCallArgWtd                = 0;
+        weight_t countOverlappedReturnsWtd                = 0;
+        weight_t countOverlappedRetbufsWtd                = 0;
+        weight_t countOverlappedAssignedFromCallWtd       = 0;
+        weight_t countOverlappedDecomposableAssignmentWtd = 0;
 
         bool overlap = false;
         for (const Access& otherAccess : m_accesses)
@@ -378,51 +385,77 @@ public:
                 return false;
             }
 
-            countOverlappedCallsWtd += otherAccess.CountCallArgsWtd;
+            countOverlappedCallArgWtd += otherAccess.CountCallArgsWtd;
             countOverlappedReturnsWtd += otherAccess.CountReturnsWtd;
             countOverlappedRetbufsWtd += otherAccess.CountPassedAsRetbufWtd;
-            countOverlappedAssignmentDestinationWtd += otherAccess.CountAssignmentDestinationWtd;
-            countOverlappedAssignmentSourceWtd += otherAccess.CountAssignmentSourceWtd;
+            countOverlappedAssignedFromCallWtd += otherAccess.CountAssignedFromCallWtd;
+            countOverlappedDecomposableAssignmentWtd +=
+                (otherAccess.CountAssignmentDestinationWtd + otherAccess.CountAssignmentSourceWtd -
+                 otherAccess.CountAssignedFromCallWtd);
         }
 
-        // TODO-CQ: Tune the following heuristics. Currently they are based on
-        // x64 code size although using BB weights when available. This mixing
-        // does not make sense.
         weight_t costWithout = 0;
 
-        // A normal access without promotion looks like:
-        // mov reg, [reg+offs]
-        // It may also be contained. Overall we are going to cost each use of
-        // an unpromoted local at 6.5 bytes.
-        // TODO-CQ: We can make much better guesses on what will and won't be contained.
-        costWithout += access.CountWtd * 6.5;
+        // We cost any normal access (which is a struct load or store) without promotion at 3 cycles.
+        costWithout += access.CountWtd * 3;
 
         weight_t costWith = 0;
 
-        // For any use we expect to just use the register directly. We will cost this at 3.5 bytes.
-        costWith += access.CountWtd * 3.5;
+        // For promoted accesses we expect these to turn into reg-reg movs (and in many cases be fully contained in the
+        // parent).
+        // We cost these at 0.5 cycles.
+        costWith += access.CountWtd * 0.5;
+
+        // Now look at the overlapping struct uses that promotion will make more expensive.
 
         weight_t   countReadBacksWtd = 0;
         LclVarDsc* lcl               = comp->lvaGetDesc(lclNum);
-        // For parameters or OSR locals we need an initial read back
+        // For parameters or OSR locals we always need one read back.
         if (lcl->lvIsParam || lcl->lvIsOSRLocal)
         {
             countReadBacksWtd += comp->fgFirstBB->getBBWeight(comp);
         }
 
+        // If used as a retbuf we need a readback after.
         countReadBacksWtd += countOverlappedRetbufsWtd;
-        countReadBacksWtd += countOverlappedAssignmentDestinationWtd;
 
-        // A read back puts the value from stack back to (hopefully) register. We cost it at 5 bytes.
-        costWith += countReadBacksWtd * 5;
+        // The same if the struct was assigned from a call, since we don't
+        // currently have any "forwarding" optimization for this case.
+        countReadBacksWtd += countOverlappedAssignedFromCallWtd;
+
+        // A readback turns into a stack load that we costed at 3 above.
+        costWith += countReadBacksWtd * 3;
 
         // Write backs with TYP_REFs when the base local is an implicit byref
-        // involves checked write barriers, so they are very expensive.
+        // involves checked write barriers, so they are very expensive. We cost that at 10 cycles.
         // TODO-CQ: This should be adjusted once we type implicit byrefs as TYP_I_IMPL.
-        weight_t writeBackCost = comp->lvaIsImplicitByRefLocal(lclNum) && (access.AccessType == TYP_REF) ? 15 : 5;
-        weight_t countWriteBacksWtd =
-            countOverlappedCallsWtd + countOverlappedReturnsWtd + countOverlappedAssignmentSourceWtd;
+        // Otherwise we cost it like a store to stack at 3 cycles.
+        weight_t writeBackCost = comp->lvaIsImplicitByRefLocal(lclNum) && (access.AccessType == TYP_REF) ? 10 : 3;
+
+        // We write back before an overlapping struct use passed as an arg.
+        // TODO-CQ: A store-forwarding optimization in lowering could get rid
+        // of these copies; however, it requires lowering to be able to prove
+        // that not writing the fields into the struct local is ok.
+        weight_t countWriteBacksWtd = countOverlappedCallArgWtd;
         costWith += countWriteBacksWtd * writeBackCost;
+
+        // Overlapping assignments are decomposable so we don't cost them as
+        // being more expensive than their unpromoted counterparts (i.e. we
+        // don't consider them at all). However, we should do something more
+        // clever here, since:
+        // * We may still end up writing the full remainder as part of the
+        //   decomposed assignment, in which case all the field writes are just
+        //   added code size/perf cost.
+        // * Even if we don't, decomposing a single struct write into many
+        //   field writes is not necessarily profitable (e.g. 16 byte field
+        //   stores vs 1 XMM load/store).
+        //
+        // TODO-CQ: This ends up being a combinatorial optimization problem. We
+        // need to take a more "whole-struct" view here and look at sets of
+        // fields we are promoting together, evaluating all of them at once in
+        // comparison with the covering struct uses. This will also allow us to
+        // give a bonus to promoting remainders that may not have scalar uses
+        // but will allow fully decomposing assignments away.
 
         JITDUMP("  Evaluating access %s @ %03u\n", varTypeName(access.AccessType), access.Offset);
         JITDUMP("    Single write-back cost: " FMT_WT "\n", writeBackCost);
@@ -611,6 +644,11 @@ private:
         if (lcl->OperIsLocalStore())
         {
             flags |= AccessKindFlags::IsAssignmentDestination;
+
+            if (lcl->AsLclVarCommon()->Data()->gtEffectiveVal()->IsCall())
+            {
+                flags |= AccessKindFlags::IsAssignedFromCall;
+            }
         }
 
         if (user == nullptr)

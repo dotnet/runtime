@@ -22,7 +22,6 @@ namespace System.Text.Json.SourceGeneration
             private const string CreateValueInfoMethodName = "CreateValueInfo";
             private const string CtorParamInitMethodNameSuffix = "CtorParamInit";
             private const string DefaultOptionsStaticVarName = "s_defaultOptions";
-            private const string DefaultContextBackingStaticVarName = "s_defaultContext";
             private const string OriginatingResolverPropertyName = "OriginatingResolver";
             private const string InfoVarName = "info";
             private const string NumberHandlingPropName = "NumberHandling";
@@ -1026,12 +1025,10 @@ namespace System.Text.Json.SourceGeneration
                 writer.WriteLine();
 
                 writer.WriteLine($$"""
-                    private static {{contextTypeRef}}? {{DefaultContextBackingStaticVarName}};
-
                     /// <summary>
                     /// The default <see cref="{{JsonSerializerContextTypeRef}}"/> associated with a default <see cref="{{JsonSerializerOptionsTypeRef}}"/> instance.
                     /// </summary>
-                    public static {{contextTypeRef}} Default => {{DefaultContextBackingStaticVarName}} ??= new {{contextTypeRef}}(new {{JsonSerializerOptionsTypeRef}}({{DefaultOptionsStaticVarName}}));
+                    public static {{contextTypeRef}} Default { get; } = new {{contextTypeRef}}(new {{JsonSerializerOptionsTypeRef}}({{DefaultOptionsStaticVarName}}));
 
                     /// <summary>
                     /// The source-generated options associated with this context.

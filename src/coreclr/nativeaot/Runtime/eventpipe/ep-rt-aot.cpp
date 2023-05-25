@@ -20,12 +20,18 @@
 #include "holder.h"
 #include "SpinLock.h"
 
+#ifdef TARGET_UNIX
+// Per module (1 for NativeAOT), key that will be used to implement TLS in Unix
+pthread_key_t eventpipe_tls_key;
+__thread EventPipeThreadHolder* eventpipe_tls_instance;
+#else
+thread_local EventPipeAotThreadHolderTLS EventPipeAotThreadHolderTLS::g_threadHolderTLS;
+#endif
+
 // Uses _rt_aot_lock_internal_t that has CrstStatic as a field
 // This is initialized at the beginning and EventPipe library requires the lock handle to be maintained by the runtime
 ep_rt_lock_handle_t _ep_rt_aot_config_lock_handle;
 CrstStatic _ep_rt_aot_config_lock;
-
-thread_local EventPipeAotThreadHolderTLS EventPipeAotThreadHolderTLS::g_threadHolderTLS;
 
 ep_char8_t *volatile _ep_rt_aot_diagnostics_cmd_line;
 
@@ -297,10 +303,7 @@ ep_rt_aot_current_thread_get_id (void)
     STATIC_CONTRACT_NOTHROW;
 
 #ifdef TARGET_UNIX
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: AOT doesn't have PAL_GetCurrentOSThreadId, as CoreCLR does.
-    // PalDebugBreak();    
-    return static_cast<ep_rt_thread_id_t>(0);
+    return static_cast<ep_rt_thread_id_t>(PalGetCurrentOSThreadId());
 #else
     return static_cast<ep_rt_thread_id_t>(::GetCurrentThreadId ());
 #endif
@@ -378,7 +381,15 @@ ep_rt_aot_utf16_string_len (const ep_char16_t *str)
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (str != NULL);
 
-    return wcslen (reinterpret_cast<LPCWSTR>(str));
+    #ifdef TARGET_UNIX
+        const uint16_t *a = (const uint16_t *)str;
+        size_t length = 0;
+        while (a [length])
+            ++length;
+        return length;
+    #else
+        return wcslen (reinterpret_cast<LPCWSTR>(str));
+    #endif
 }
 
 uint32_t
@@ -509,6 +520,17 @@ ep_rt_aot_volatile_store_ptr_without_barrier (
     VolatileStoreWithoutBarrier<void *> ((void **)ptr, value);
 }
 
+void unix_tls_callback_fn(void *value) 
+{
+    if (value) {
+        // we need to do the unallocation here
+        EventPipeThreadHolder *thread_holder_old = static_cast<EventPipeThreadHolder*>(value);    
+        // @TODO - inline
+        thread_holder_free_func (thread_holder_old);
+        value = NULL;
+    }
+}
+
 void ep_rt_aot_init (void)
 {
     extern ep_rt_lock_handle_t _ep_rt_aot_config_lock_handle;
@@ -516,6 +538,11 @@ void ep_rt_aot_init (void)
 
     _ep_rt_aot_config_lock_handle.lock = &_ep_rt_aot_config_lock;
     _ep_rt_aot_config_lock_handle.lock->InitNoThrow (CrstType::CrstEventPipeConfig);
+
+    // Initialize the pthread key used for TLS in Unix
+    #ifdef TARGET_UNIX
+    pthread_key_create(&eventpipe_tls_key, unix_tls_callback_fn);
+    #endif
 }
 
 bool ep_rt_aot_lock_acquire (ep_rt_lock_handle_t *lock)

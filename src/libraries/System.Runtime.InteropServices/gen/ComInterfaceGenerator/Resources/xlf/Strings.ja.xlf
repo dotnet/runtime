@@ -39,37 +39,37 @@
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">
         <source>Source-generated COM will ignore any configuration that is not supported.</source>
-        <target state="needs-review-translation">ソース生成済みの P/Invoke は、サポートされていない構成を無視します。</target>
+        <target state="translated">ソース生成済みの COM は、サポートされていない構成を無視します。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessage">
         <source>The '{0}' configuration is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="needs-review-translation">'{0}' 構成は、ソース生成済みの P/Invoke ではサポートされていません。指定された構成が必要な場合は、代わりに通常の 'DllImport' を使用します。</target>
+        <target state="translated">'{0}' 構成は、ソース生成済みの COM ではサポートされていません。指定した構成が必要な場合は、代わりに 'ComImport' を使用してください。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageMarshallingInfo">
         <source>The specified marshalling configuration is not supported by source-generated COM. {0}.</source>
-        <target state="needs-review-translation">指定されたマーシャリング構成は、ソースで生成された P/Invoke ではサポートされていません。{0}。</target>
+        <target state="translated">指定されたマーシャリング構成は、ソース生成済みの COM ではサポートされていません。{0}。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageParameter">
         <source>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="needs-review-translation">パラメーター '{1}' 向けに指定された '{0}' 構成は、ソース生成済みの P/Invoke ではサポートされていません。指定された構成が必要な場合は、代わりに通常の 'DllImport' を使用します。</target>
+        <target state="translated">パラメーター '{1}' に指定された '{0}' 構成は、ソース生成済みの COM ではサポートされていません。指定した構成が必要な場合は、代わりに 'ComImport' を使用してください。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageReturn">
         <source>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="needs-review-translation">メソッド '{1}' の戻り値向けに指定された '{0}' 構成は、ソース生成済みの P/Invoke ではサポートされていません。指定された構成が必要な場合は、代わりに通常の 'DllImport' を使用します。</target>
+        <target state="translated">メソッド '{0}' の戻り値に指定された '{1}' 構成は、ソース生成済みの COM ではサポートされていません。指定した構成が必要な場合は、代わりに 'ComImport' を使用してください。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageValue">
         <source>The specified value '{0}' for '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="needs-review-translation">'{1}' 向けに指定された値 '{0}' は、ソース生成済みの P/Invoke ではサポートされていません。指定された構成が必要な場合は、代わりに通常の 'DllImport' を使用します。</target>
+        <target state="translated">'{1}' に指定された値 '{0}' は、ソース生成済みの COM ではサポートされていません。指定した構成が必要な場合は、代わりに 'ComImport' を使用してください。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedTitle">
         <source>Specified configuration is not supported by source-generated COM.</source>
-        <target state="needs-review-translation">指定された構成は、ソースで生成された P/Invoke ではサポートされていません。</target>
+        <target state="translated">指定された構成は、ソース生成済みの COM ではサポートされていません。</target>
         <note />
       </trans-unit>
       <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
@@ -89,7 +89,7 @@
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">
         <source>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. COM source generation will ignore method '{0}'.</source>
-        <target state="needs-review-translation">メソッド '{0}' は、'partial' とマークされていない型 '{1}' に含まれています。P/Invoke ソース生成はメソッド '{0}' を無視します。</target>
+        <target state="translated">メソッド '{0}' は、'partial' とマークされていない型 '{1}' に含まれています。COM ソース生成はメソッド '{0}' を無視します。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttributeMessage">
@@ -99,12 +99,12 @@
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodDescription">
         <source>Methods on interfaces marked with 'GeneratedComInterfaceAttribute' should be non-generic. COM source generation will ignore methods that are generic.</source>
-        <target state="needs-review-translation">'LibraryImportAttribute' でマークされたメソッドは、'static'、'partial'、非ジェネリックである必要があります。P/Invoke ソース生成では、非 'static'、非 'partial'、ジェネリックであるメソッドは無視されます。</target>
+        <target state="translated">'GeneratedComInterfaceAttribute' でマークされたインターフェイス上のメソッドは非ジェネリックである必要があります。COM ソース生成は、ジェネリック メソッドを無視します。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodSignatureMessage">
         <source>Method '{0}' should be non-generic when on interfaces marked with the 'GeneratedComInterfaceAttribute'. COM source generation will ignore method '{0}'.</source>
-        <target state="needs-review-translation">'LibraryImportAttribute' でマークされている場合、メソッド '{0}'は 'static'、'partial'、非ジェネリックである必要があります。P/Invoke ソース生成では、メソッド '{0}' は無視されます。</target>
+        <target state="translated">'GeneratedComInterfaceAttribute' でマークされたインターフェイスでは、メソッド '{0}' は非ジェネリックである必要があります。COM ソース生成はメソッド '{0}' を無視します。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidExceptionMarshallingConfigurationDescription">
@@ -214,12 +214,12 @@
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">
         <source>For types that are not supported by source-generated COM, the resulting function pointer will rely on the underlying runtime to marshal the specified type.</source>
-        <target state="needs-review-translation">ソース生成済みの P/Invoke でサポートされていない型である場合、生成された P/Invoke は、基礎となるなるランタイムに依存して、指定された型をマーシャリングします。</target>
+        <target state="translated">ソース生成済みの COM でサポートされていない型である場合、生成された関数ポインターは、基礎となるなるランタイムに依存して、指定された型をマーシャリングします。</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageParameter">
         <source>The type '{0}' is not supported by source-generated COM. The generated source will not handle marshalling of parameter '{1}'.</source>
-        <target state="needs-review-translation">型 '{0}' は、ソース生成済みの P/Invoke ではサポートされていません。生成されたソースは、パラメーター '{1}' のマーシャリングを処理しません。</target>
+        <target state="translated">型 '{0}' は、ソース生成済みの COM ではサポートされていません。生成されたソースは、パラメーター '{1}' のマーシャリングを処理しません。</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageParameterWithDetails">
@@ -230,7 +230,7 @@
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageReturn">
         <source>The type '{0}' is not supported by source-generated COM. The generated source will not handle marshalling of the return value of method '{1}'.</source>
-        <target state="needs-review-translation">型 '{0}' は、ソース生成済みの P/Invoke ではサポートされていません。生成されたソースは、メソッド '{1}' の戻り値のマーシャリングを処理しません。</target>
+        <target state="translated">型 '{0}' は、ソース生成済みの COM ではサポートされていません。生成されたソースは、メソッド '{1}' の戻り値のマーシャリングを処理しません。</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageReturnWithDetails">
@@ -241,7 +241,7 @@
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitle">
         <source>Specified type is not supported by source-generated COM</source>
-        <target state="needs-review-translation">指定された型は、ソースで生成された P/Invoke ではサポートされていません</target>
+        <target state="translated">指定された型は、ソース生成済みの COM ではサポートされていません</target>
         <note />
       </trans-unit>
     </body>

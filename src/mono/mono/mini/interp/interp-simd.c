@@ -377,6 +377,12 @@ interp_v128_i4_equals (gpointer res, gpointer v1, gpointer v2)
 }
 
 static void
+interp_v128_r4_equals (gpointer res, gpointer v1, gpointer v2)
+{
+	*(v128_r4*)res = *(v128_r4*)v1 == *(v128_r4*)v2;
+}
+
+static void
 interp_v128_i8_equals (gpointer res, gpointer v1, gpointer v2)
 {
 	*(v128_i8*)res = *(v128_i8*)v1 == *(v128_i8*)v2;
