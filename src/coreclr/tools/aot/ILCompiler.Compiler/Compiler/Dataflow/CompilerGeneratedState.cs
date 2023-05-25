@@ -135,7 +135,7 @@ namespace ILCompiler.Dataflow
                                             Debug.Assert(generatedType.IsTypeDefinition);
 
                                             // fill in null for now, attribute providers will be filled in later
-                                            if (!generatedTypeToTypeArgs.TryAdd (generatedType, new TypeArgumentInfo (method, null)))
+                                            if (!generatedTypeToTypeArgs.TryAdd(generatedType, new TypeArgumentInfo(method, null)))
                                             {
                                                 var alreadyAssociatedMethod = generatedTypeToTypeArgs[generatedType].CreatingMethod;
                                                 logger?.LogWarning(new MessageOrigin(method), DiagnosticId.MethodsAreAssociatedWithUserMethod, method.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), generatedType.GetDisplayName());
@@ -288,7 +288,7 @@ namespace ILCompiler.Dataflow
                         // Finally, add resolved type arguments to the cache
                         var info = generatedTypeToTypeArgs[generatedType];
                         _generatedTypeToTypeArgumentInfo ??= new Dictionary<MetadataType, TypeArgumentInfo>();
-                        if (!_generatedTypeToTypeArgumentInfo.TryAdd (generatedType, info))
+                        if (!_generatedTypeToTypeArgumentInfo.TryAdd(generatedType, info))
                         {
                             var method = info.CreatingMethod;
                             var alreadyAssociatedMethod = _generatedTypeToTypeArgumentInfo[generatedType].CreatingMethod;
@@ -332,7 +332,7 @@ namespace ILCompiler.Dataflow
                     var method = typeInfo.CreatingMethod;
                     var body = ilProvider.GetMethodIL(method);
                     var typeArgs = new GenericParameterDesc?[generatedType.Instantiation.Length];
-                    var typeRef = ScanForInit(generatedType, body); // TODO: context?
+                    var typeRef = ScanForInit(generatedType, body);
                     if (typeRef is null)
                     {
                         return;
