@@ -274,18 +274,26 @@ let _text_decoder_utf8_relaxed: TextDecoder | undefined = undefined;
 let _text_decoder_utf8_validating: TextDecoder | undefined = undefined;
 let _text_encoder_utf8: TextEncoder | undefined = undefined;
 
-export function encodeUTF8(str: string) {
+export function encodeUTF8(str: string): Uint8Array {
     if (_text_encoder_utf8 === undefined) {
+        if (typeof TextEncoder === "undefined") {
+            const buffer = new Uint8Array(str.length * 2);
+            Module.stringToUTF8Array(str, buffer, 0, str.length * 2);
+            return buffer;
+        }
         _text_encoder_utf8 = new TextEncoder();
     }
     return _text_encoder_utf8.encode(str);
 }
 
-export function utf8ToStringRelaxed(heapOrArray: Uint8Array): string {
+export function utf8ToStringRelaxed(buffer: Uint8Array): string {
     if (_text_decoder_utf8_relaxed === undefined) {
+        if (typeof TextDecoder === "undefined") {
+            return Module.UTF8ArrayToString(buffer, 0, buffer.byteLength);
+        }
         _text_decoder_utf8_relaxed = new TextDecoder("utf-8", { fatal: false });
     }
-    return _text_decoder_utf8_relaxed.decode(heapOrArray);
+    return _text_decoder_utf8_relaxed.decode(buffer);
 }
 
 export function utf8ToString(ptr: CharPtr): string {
@@ -301,6 +309,9 @@ export function decodeUTF8(heapOrArray: Uint8Array, idx: number, maxBytesToRead:
         return Module.UTF8ArrayToString(heapOrArray, idx, maxBytesToRead);
     }
     if (_text_decoder_utf8_validating === undefined) {
+        if (typeof TextDecoder === "undefined") {
+            return Module.UTF8ArrayToString(heapOrArray, idx, maxBytesToRead);
+        }
         _text_decoder_utf8_validating = new TextDecoder("utf-8");
     }
     const view = copy_string_buffer_as_necessary(heapOrArray, idx as any, endPtr as any);

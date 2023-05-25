@@ -48,6 +48,7 @@ export declare interface EmscriptenModule {
     getValue(ptr: number, type: string, noSafe?: number | boolean): number;
     UTF8ToString(ptr: CharPtr, maxBytesToRead?: number): string;
     UTF8ArrayToString(u8Array: Uint8Array, idx?: number, maxBytesToRead?: number): string;
+    stringToUTF8Array(str: string, heap: Uint8Array, outIdx: number, maxBytesToWrite: number): void;
     FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
     FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
     addFunction(fn: Function, signature: string): number;

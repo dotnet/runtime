@@ -193,6 +193,7 @@
       <EmccExportedRuntimeMethod Include="getValue" />
       <EmccExportedRuntimeMethod Include="UTF8ToString" />
       <EmccExportedRuntimeMethod Include="UTF8ArrayToString" />
+      <EmccExportedRuntimeMethod Include="stringToUTF8Array" />
       <EmccExportedRuntimeMethod Include="FS_createPath" />
       <EmccExportedRuntimeMethod Include="FS_createDataFile" />
       <EmccExportedRuntimeMethod Include="removeRunDependency" />
