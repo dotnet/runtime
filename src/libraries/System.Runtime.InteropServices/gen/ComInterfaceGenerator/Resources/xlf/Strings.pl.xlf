@@ -39,37 +39,37 @@
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">
         <source>Source-generated COM will ignore any configuration that is not supported.</source>
-        <target state="needs-review-translation">Funkcja P/Invokes generowana przez źródło zignoruje każdą nieobsługiwaną konfigurację.</target>
+        <target state="translated">COM wygenerowany przez źródło zignoruje każdą konfigurację, która nie jest obsługiwana.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessage">
         <source>The '{0}' configuration is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="needs-review-translation">Konfiguracja {0} nie jest obsługiwana przez funkcję P/Invokes generowaną przez źródło. Jeśli określona konfiguracja jest wymagana, użyj zamiast tego zwykłego elementu „DllImport”.</target>
+        <target state="translated">Konfiguracja „{0}” nie jest obsługiwana przez COM generowany przez źródło. Jeśli określona konfiguracja jest wymagana, użyj zamiast niej `ComImport`.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageMarshallingInfo">
         <source>The specified marshalling configuration is not supported by source-generated COM. {0}.</source>
-        <target state="needs-review-translation">Określona konfiguracja skierowania nie jest obsługiwana przez funkcję P/Invokes generowaną przez źródło. {0}.</target>
+        <target state="translated">Określona konfiguracja skierowania nie jest obsługiwana przez COM generowany źródłowo. {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageParameter">
         <source>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="needs-review-translation">Określona konfiguracja „{0}” dla parametru „{1}” nie jest obsługiwana przez funkcję P/Invokes generowaną przez źródło. Jeśli określona konfiguracja jest wymagana, użyj zamiast tego zwykłego elementu „DllImport”.</target>
+        <target state="translated">Określona konfiguracja „{0}” dla parametru „{1}” nie jest obsługiwana przez COM generowany przez źródło. Jeśli określona konfiguracja jest wymagana, użyj zamiast niej `ComImport`.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageReturn">
         <source>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="needs-review-translation">Określona konfiguracja „{0}” dla wartości zwracanej przez metodę „{1}” nie jest obsługiwana przez funkcję P/Invokes generowaną przez źródło. Jeśli określona konfiguracja jest wymagana, użyj zamiast tego zwykłego elementu „DllImport”.</target>
+        <target state="translated">Określona konfiguracja „{0}” dla wartości zwracanej metody „{1}” nie jest obsługiwana przez COM generowany przez źródło. Jeśli określona konfiguracja jest wymagana, użyj zamiast niej `ComImport`.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageValue">
         <source>The specified value '{0}' for '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="needs-review-translation">Określona wartość „{0}” dla parametru „{1}” nie jest obsługiwana przez funkcję P/Invokes generowaną przez źródło. Jeśli określona konfiguracja jest wymagana, użyj zamiast tego zwykłego elementu „DllImport”.</target>
+        <target state="translated">Określona wartość „{0}” dla „{1}” nie jest obsługiwana przez COM generowany przez źródło. Jeśli określona konfiguracja jest wymagana, użyj zamiast niej `ComImport`.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedTitle">
         <source>Specified configuration is not supported by source-generated COM.</source>
-        <target state="needs-review-translation">Określona konfiguracja nie jest obsługiwana przez funkcję P/Invokes generowaną przez źródło.</target>
+        <target state="translated">Określona konfiguracja nie jest obsługiwana przez COM wygenerowany przez źródło.</target>
         <note />
       </trans-unit>
       <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
@@ -89,7 +89,7 @@
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">
         <source>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. COM source generation will ignore method '{0}'.</source>
-        <target state="needs-review-translation">Metoda „{0}” jest zawarta w typie „{1}”, który nie jest oznaczony jako „częściowy”. Generowanie źródła funkcji P/Invoke zignoruje metodę „{0}”.</target>
+        <target state="translated">Metoda „{0}” jest zawarta w typie „{1}”, który nie jest oznaczony jako „częściowy”. Generowanie źródła COM zignoruje metodę „{0}”.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttributeMessage">
@@ -99,12 +99,12 @@
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodDescription">
         <source>Methods on interfaces marked with 'GeneratedComInterfaceAttribute' should be non-generic. COM source generation will ignore methods that are generic.</source>
-        <target state="needs-review-translation">Metody oznaczone jako atrybut „LibraryImportAttribute” powinny być „statyczne”, „częściowe” i nieogólne. Generowanie źródła funkcji P/Invoke zignoruje metody, które nie są „statyczne”, nie są „częściowe” lub ogólne.</target>
+        <target state="translated">Metody w interfejsach oznaczone atrybutem „GeneratedComInterfaceAttribute” powinny być nie-ogólne. Generowanie źródła COM zignoruje metody, które są ogólne.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodSignatureMessage">
         <source>Method '{0}' should be non-generic when on interfaces marked with the 'GeneratedComInterfaceAttribute'. COM source generation will ignore method '{0}'.</source>
-        <target state="needs-review-translation">Metoda „{0}” powinna być „statyczna”, „częściowa” i nieogólna, gdy jest oznaczona za pomocą atrybutu „LibraryImportAttribute”. Generowanie źródła funkcji P/Invoke zignoruje metodę „{0}”.</target>
+        <target state="translated">Metoda „{0}” powinna być nie-ogólna w interfejsach oznaczonych atrybutem „GeneratedComInterfaceAttribute”. Generowanie źródła COM zignoruje metodę „{0}”.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidExceptionMarshallingConfigurationDescription">
@@ -134,12 +134,12 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
         <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="new">Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</target>
+        <target state="translated">Interfejsy z atrybutem „GeneratedComInterfaceAttribute” muszą być częściowe, nie być ogóle, i muszą określać identyfikator GUID z atrybutem „System.Runtime.InteropServices.GuidAttribute”.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceIsGeneric">
         <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</source>
-        <target state="new">Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</target>
+        <target state="translated">Interfejs „{0}” ma atrybut „GeneratedComInterfaceAttribute”, ale jest ogólny.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute">
@@ -214,12 +214,12 @@
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">
         <source>For types that are not supported by source-generated COM, the resulting function pointer will rely on the underlying runtime to marshal the specified type.</source>
-        <target state="needs-review-translation">W przypadku typów, które nie są obsługiwane przez funkcję P/Invokes generowaną przez źródło, wynikowa funkcja P/Invoke będzie polegać na bazowym środowisku uruchomieniowym, aby skierować określony typ.</target>
+        <target state="translated">W przypadku typów, które nie są obsługiwane przez COM wygenerowany przez źródło, wynikowy wskaźnik funkcji będzie polegał na bazowym środowisku uruchomieniowym w celu skierowania określonego typu.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageParameter">
         <source>The type '{0}' is not supported by source-generated COM. The generated source will not handle marshalling of parameter '{1}'.</source>
-        <target state="needs-review-translation">Typ „{0}” nie jest obsługiwany przez funkcję P/Invokes generowaną przez źródło. Wygenerowane źródło nie obsługuje skierowania parametru „{1}”.</target>
+        <target state="translated">Typ „{0}” nie jest obsługiwany przez COM generowany przez źródło. Wygenerowane źródło nie będzie obsługiwać skierowania parametru „{1}”.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageParameterWithDetails">
@@ -230,7 +230,7 @@
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageReturn">
         <source>The type '{0}' is not supported by source-generated COM. The generated source will not handle marshalling of the return value of method '{1}'.</source>
-        <target state="needs-review-translation">Typ „{0}” nie jest obsługiwany przez funkcję P/Invokes generowaną przez źródło. Wygenerowane źródło nie obsługuje skierowania wartości zwracanej przez metodę „{1}”.</target>
+        <target state="translated">Typ „{0}” nie jest obsługiwany przez COM generowany przez źródło. Wygenerowane źródło nie będzie obsługiwać skierowania wartości zwracanej przez metodę „{1}”.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageReturnWithDetails">
@@ -241,7 +241,7 @@
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitle">
         <source>Specified type is not supported by source-generated COM</source>
-        <target state="needs-review-translation">Określony typ nie jest obsługiwany przez funkcję P/Invokes generowaną przez źródło</target>
+        <target state="translated">Określony typ nie jest obsługiwany przez źródłowy COM</target>
         <note />
       </trans-unit>
     </body>
