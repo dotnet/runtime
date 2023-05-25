@@ -677,7 +677,7 @@ namespace System.Formats.Tar
                 Debug.Assert(paddingAfterData <= TarHelpers.RecordSize);
 
                 byte[] zeros = new byte[paddingAfterData];
-                return archiveStream.WriteAsync(padding, cancellationToken);
+                return archiveStream.WriteAsync(zeros, cancellationToken);
             }
 
             return ValueTask.CompletedTask;
