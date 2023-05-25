@@ -162,7 +162,7 @@ namespace System.Diagnostics
         {
             if (index < 0)
             {
-                throw new OutOfMemoryException(nameof(index));
+                throw new ArgumentOutOfRangeException (nameof(index));
             }
 
             if (index >= _maxIndex)
@@ -180,7 +180,7 @@ namespace System.Diagnostics
         {
             if (index < 0)
             {
-                throw new OutOfMemoryException(nameof(index));
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
 
             if (index >= _maxIndex)
