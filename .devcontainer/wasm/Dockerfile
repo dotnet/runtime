@@ -27,6 +27,9 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         zlib1g-dev \
         ninja-build
 
+# Install LTS npm and node
+RUN nvm install --lts
+
 # Install V8 Engine
 SHELL ["/bin/bash", "-c"]
 
