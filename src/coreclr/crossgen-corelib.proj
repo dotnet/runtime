@@ -3,7 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="$(CoreClrProjectRoot)/tools/aot/crossgen2/crossgen2.csproj" Condition="'$(CrossBuild)' != 'true' and '$(BuildArchitecture)' == '$(TargetArchitecture)'" OutputItemType="Crossgen2" />
     <ProjectReference Include="$(CoreClrProjectRoot)/tools/aot/crossgen2/crossgen2_crossarch.csproj" Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)'" OutputItemType="Crossgen2" />
-    <ProjectReference Include="$(CoreClrProjectRoot)/tools/dotnet-pgo/dotnet-pgo.csproj" OutputItemType="DotNetPgo" />
+    <ProjectReference Include="$(CoreClrProjectRoot)/tools/dotnet-pgo/dotnet-pgo.csproj" OutputItemType="DotNetPgo" Condition="'$(DotNetBuildFromSource)' != 'true'" />
     <ProjectReference Include="$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))" OutputItemType="CoreLib" />
   </ItemGroup>
 
@@ -46,6 +46,7 @@
   <Target Name="CreateMergedMibcFile"
           DependsOnTargets="ResolveProjectReferences"
           Inputs="@(OptimizationMibcFiles);@(DotNetPgo)"
+          Condition="'@(DotNetPgo)' != ''"
           Outputs="$(MergedMibcPath)">
 
     <PropertyGroup>
@@ -56,8 +57,8 @@
       <DotNetPgoCmd>$(DotNetPgoCmd) --compressed false</DotNetPgoCmd> <!-- Signing service doesn't handle compressed mibc signing correctly. -->
     </PropertyGroup>
 
-    <Message Condition="'$(DotNetBuildFromSource)' != 'true'" Importance="High" Text="$(DotNetPgoCmd)"/>
-    <Exec Condition="'$(DotNetBuildFromSource)' != 'true'" Command="$(DotNetPgoCmd)" />
+    <Message Importance="High" Text="$(DotNetPgoCmd)"/>
+    <Exec Command="$(DotNetPgoCmd)" />
   </Target>
 
   <Target Name="PrepareInvokeCrossgen" DependsOnTargets="ResolveProjectReferences;CreateMergedMibcFile">
