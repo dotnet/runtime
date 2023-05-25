@@ -588,7 +588,7 @@ private:
                 compiler->fgAddRefPred(checkBlock, prevCheckBlock);
 
                 // Weight for the new secondary check is the difference between the previous check and the thenBlock.
-                weight_t newWeight = prevCheckBlock->bbWeight - thenBlock->bbWeight;
+                weight_t newWeight = inheritWeightPercentage(prevCheckBlock, 100 - origCall->GetGDVCandidateInfo(checkIdx)->likelihood);
                 if (newWeight < 0)
                 {
                     // There could be a small error leading to e.g. -0.00001 instead of 0.0 here
