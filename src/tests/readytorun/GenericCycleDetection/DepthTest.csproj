@@ -4,8 +4,8 @@
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
     <!-- This is an explicit crossgen test -->
     <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
-    <!-- Without this flag Crossgen2 crashes after about an hour with arithmetic overflow -->
-    <CrossGen2TestExtraArguments>--enable-generic-cycle-detection</CrossGen2TestExtraArguments>
+    <!-- Without this flag Crossgen2 crashes after several minutes with arithmetic overflow -->
+    <CrossGen2TestExtraArguments>--enable-generic-cycle-detection --maxgenericcycle:3 --maxgenericcyclebreadth:-1</CrossGen2TestExtraArguments>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
