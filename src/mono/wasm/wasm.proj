@@ -256,6 +256,9 @@
       <EmccExportedFunction Include="_tanf" />
       <EmccExportedFunction Include="_tanhf" />
     </ItemGroup>
+    <ItemGroup Condition="'$(MonoWasmThreads)' == 'true'">
+      <EmccExportedFunction Include="_emscripten_main_runtime_thread_id"  />
+    </ItemGroup>
     <PropertyGroup>
       <_EmccExportedLibraryFunction>&quot;[@(EmccExportedLibraryFunction -> '%27%(Identity)%27', ',')]&quot;</_EmccExportedLibraryFunction>
       <_EmccExportedRuntimeMethods>&quot;[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]&quot;</_EmccExportedRuntimeMethods>
