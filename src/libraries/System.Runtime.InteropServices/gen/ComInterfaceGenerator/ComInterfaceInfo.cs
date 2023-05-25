@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -20,7 +21,8 @@ namespace Microsoft.Interop
         InterfaceDeclarationSyntax Declaration,
         ContainingSyntaxContext TypeDefinitionContext,
         ContainingSyntax ContainingSyntax,
-        Guid InterfaceId)
+        Guid InterfaceId,
+        LocationInfo DiagnosticLocation)
     {
         public static (ComInterfaceInfo? Info, Diagnostic? Diagnostic) From(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax)
         {
@@ -58,14 +60,63 @@ namespace Microsoft.Interop
             if (!TryGetBaseComInterface(symbol, syntax, out INamedTypeSymbol? baseSymbol, out Diagnostic? baseDiagnostic))
                 return (null, baseDiagnostic);
 
-            return (new ComInterfaceInfo(
-                ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol),
-                symbol.ToDisplayString(),
-                baseSymbol?.ToDisplayString(),
-                syntax,
-                new ContainingSyntaxContext(syntax),
-                new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
-                guid ?? Guid.Empty), null);
+            if (!StringMarshallingIsValid(symbol, syntax, baseSymbol, out Diagnostic? stringMarshallingDiagnostic))
+                return (null, stringMarshallingDiagnostic);
+
+            return (
+                new ComInterfaceInfo(
+                    ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol),
+                    symbol.ToDisplayString(),
+                    baseSymbol?.ToDisplayString(),
+                    syntax,
+                    new ContainingSyntaxContext(syntax),
+                    new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
+                    guid ?? Guid.Empty,
+                    LocationInfo.From(symbol)),
+                null);
+        }
+
+        private static bool StringMarshallingIsValid(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, INamedTypeSymbol? baseSymbol, [NotNullWhen(false)] out Diagnostic? stringMarshallingDiagnostic)
+        {
+            var attrInfo = GeneratedComInterfaceData.From(GeneratedComInterfaceCompilationData.GetAttributeDataFromInterfaceSymbol(symbol));
+            if (attrInfo.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling) || attrInfo.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshallingCustomType))
+            {
+                if (attrInfo.StringMarshalling is StringMarshalling.Custom && attrInfo.StringMarshallingCustomType is null)
+                {
+                    stringMarshallingDiagnostic = Diagnostic.Create(
+                        GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface,
+                        syntax.Identifier.GetLocation(),
+                        symbol.ToDisplayString(),
+                        SR.InvalidStringMarshallingConfigurationMissingCustomType);
+                    return false;
+                }
+                if (attrInfo.StringMarshalling is not StringMarshalling.Custom && attrInfo.StringMarshallingCustomType is not null)
+                {
+                    stringMarshallingDiagnostic = Diagnostic.Create(
+                        GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface,
+                        syntax.Identifier.GetLocation(),
+                        symbol.ToDisplayString(),
+                        SR.InvalidStringMarshallingConfigurationNotCustom);
+                    return false;
+                }
+            }
+            if (baseSymbol is not null)
+            {
+                var baseAttrInfo = GeneratedComInterfaceData.From(GeneratedComInterfaceCompilationData.GetAttributeDataFromInterfaceSymbol(baseSymbol));
+                // The base can be undefined string marshalling
+                if ((baseAttrInfo.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling) || baseAttrInfo.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshallingCustomType))
+                    && baseAttrInfo != attrInfo)
+                {
+                    stringMarshallingDiagnostic = Diagnostic.Create(
+                        GeneratorDiagnostics.InvalidStringMarshallingMismatchBetweenBaseAndDerived,
+                        syntax.Identifier.GetLocation(),
+                        symbol.ToDisplayString(),
+                        SR.GeneratedComInterfaceStringMarshallingMustMatchBase);
+                    return false;
+                }
+            }
+            stringMarshallingDiagnostic = null;
+            return true;
         }
 
         /// <summary>

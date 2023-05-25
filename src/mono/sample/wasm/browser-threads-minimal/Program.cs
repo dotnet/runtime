@@ -21,15 +21,21 @@ namespace Sample
         [JSExport]
         public static async Task TestCanStartThread()
         {
+            Console.WriteLine($"smoke: TestCanStartThread 1 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
             var tcs = new TaskCompletionSource<int>();
             var t = new Thread(() =>
             {
+                Console.WriteLine($"smoke: TestCanStartThread 2 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                 var childTid = Thread.CurrentThread.ManagedThreadId;
                 tcs.SetResult(childTid);
+                Console.WriteLine($"smoke: TestCanStartThread 3 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
             });
             t.Start();
+            Console.WriteLine($"smoke: TestCanStartThread 4 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
             var childTid = await tcs.Task;
+            Console.WriteLine($"smoke: TestCanStartThread 5 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
             t.Join();
+            Console.WriteLine($"smoke: TestCanStartThread 6 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
             if (childTid == Thread.CurrentThread.ManagedThreadId)
                 throw new Exception("Child thread ran on same thread as parent");
         }
@@ -51,24 +57,35 @@ namespace Sample
         const string fetchhelper = "./fetchelper.js";
 
         [JSImport("responseText", fetchhelper)]
-        private static partial Task<string> FetchHelperResponseText(JSObject response);
+        private static partial Task<string> FetchHelperResponseText(JSObject response, int delayMs);
 
         [JSExport]
         public static async Task<string> FetchBackground(string url)
         {
+            Console.WriteLine($"smoke: FetchBackground 1 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
             var t = Task.Run(async () =>
             {
-                using var import = await JSHost.ImportAsync(fetchhelper, "./fetchhelper.js");
+                Console.WriteLine($"smoke: FetchBackground 2 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
+                var x=JSHost.ImportAsync(fetchhelper, "./fetchhelper.js");
+                Console.WriteLine($"smoke: FetchBackground 3A ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
+                using var import = await x;
+                Console.WriteLine($"smoke: FetchBackground 3B ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                 var r = await GlobalThisFetch(url);
+                Console.WriteLine($"smoke: FetchBackground 4 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                 var ok = (bool)r.GetPropertyAsBoolean("ok");
 
-                Console.WriteLine($"XYZ: FetchBackground fetch returned to thread:{Thread.CurrentThread.ManagedThreadId}, ok: {ok}");
+                Console.WriteLine($"smoke: FetchBackground 5 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                 if (ok)
                 {
-                    var text = await FetchHelperResponseText(r);
-                    Console.WriteLine($"XYZ: FetchBackground fetch returned to thread:{Thread.CurrentThread.ManagedThreadId}, text: {text}");
+                    #if DEBUG
+                    var text = await FetchHelperResponseText(r, 5000);
+                    #else
+                    var text = await FetchHelperResponseText(r, 25000);
+                    #endif
+                    Console.WriteLine($"smoke: FetchBackground 6 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                     return text;
                 }
+                Console.WriteLine($"smoke: FetchBackground 7 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                 return "not-ok";
             });
             var r = await t;

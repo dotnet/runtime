@@ -53,6 +53,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			RUCOnNewSlotVirtualMethodDerivedAnnotated.Test ();
 
 			CompilerGeneratedBackingField.Test ();
+
+			RUCOnVirtualOnAnnotatedBase.Test ();
+			RUCOnVirtualOnAnnotatedBaseUsedByDerived.Test ();
+			UseByDerived.Test ();
 		}
 
 		[Kept]
@@ -638,6 +642,178 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			{
 				_derivedInstance = new Derived ();
 				_derivedInstance.GetType ().RequiresPublicMethods ();
+			}
+		}
+
+		[Kept]
+		class RUCOnVirtualOnAnnotatedBase
+		{
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			public class Base
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode ("--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--")]
+				[ExpectedWarning ("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--")]
+				public virtual void RUCVirtualMethod () { }
+			}
+
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptBaseType (typeof (Base))]
+			public class Derived : Base
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode ("--RUCOnVirtualMethodDerivedAnnotated.Derived.RUCVirtualMethod--")]
+				public override void RUCVirtualMethod () { }
+			}
+
+			[Kept]
+			static Base _baseInstance;
+
+			[Kept]
+			public static void Test ()
+			{
+				_baseInstance = new Derived ();
+				_baseInstance.GetType ().RequiresPublicMethods ();
+			}
+		}
+
+		[Kept]
+		class RUCOnVirtualOnAnnotatedBaseUsedByDerived
+		{
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			public class Base
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode ("--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--")]
+				// https://github.com/dotnet/runtime/issues/86580
+				// Compare to the case above - the only difference is the type of the field
+				// and it causes different warnings to be produced.
+				// [ExpectedWarning ("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--")]
+				public virtual void RUCVirtualMethod () { }
+			}
+
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptBaseType (typeof (Base))]
+			// https://github.com/dotnet/runtime/issues/86580
+			[ExpectedWarning ("IL2113", "--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--", ProducedBy = Tool.Trimmer)]
+			public class Derived : Base
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode ("--RUCOnVirtualMethodDerivedAnnotated.Derived.RUCVirtualMethod--")]
+				public override void RUCVirtualMethod () { }
+			}
+
+			[Kept]
+			static Derived _baseInstance;
+
+			[Kept]
+			public static void Test ()
+			{
+				_baseInstance = new Derived ();
+				_baseInstance.GetType ().RequiresPublicMethods ();
+			}
+		}
+
+		[Kept]
+		class UseByDerived
+		{
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[KeptMember (".ctor()")]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			class AnnotatedBase
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[KeptAttributeAttribute (typeof (RequiresDynamicCodeAttribute))]
+				[KeptAttributeAttribute (typeof (RequiresAssemblyFilesAttribute))]
+				[RequiresUnreferencedCode ("--AnnotatedBase.VirtualMethodWithRequires--")]
+				[RequiresDynamicCode ("--AnnotatedBase.VirtualMethodWithRequires--")]
+				[RequiresAssemblyFiles ("--AnnotatedBase.VirtualMethodWithRequires--")]
+				public virtual void VirtualMethodWithRequires () { }
+			}
+
+			[Kept]
+			[KeptBaseType (typeof (AnnotatedBase))]
+			[KeptMember (".ctor()")]
+			// https://github.com/dotnet/runtime/issues/86580
+			[ExpectedWarning ("IL2113", "--AnnotatedBase.VirtualMethodWithRequires--", ProducedBy = Tool.Trimmer)]
+			class Derived : AnnotatedBase
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[KeptAttributeAttribute (typeof (RequiresDynamicCodeAttribute))]
+				[KeptAttributeAttribute (typeof (RequiresAssemblyFilesAttribute))]
+				[ExpectedWarning ("IL2112", "--Derived.MethodWithRequires--")]
+				[RequiresUnreferencedCode ("--Derived.MethodWithRequires--")]
+				// Currently we decided to not warn on RDC and RAF due to type hierarchy marking
+				[RequiresDynamicCode ("--Derived.MethodWithRequires--")]
+				[RequiresAssemblyFiles ("--Derived.MethodWithRequires--")]
+				public static void MethodWithRequires () { }
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[KeptAttributeAttribute (typeof (RequiresDynamicCodeAttribute))]
+				[KeptAttributeAttribute (typeof (RequiresAssemblyFilesAttribute))]
+				[RequiresUnreferencedCode ("--Derived.VirtualMethodWithRequires--")]
+				[RequiresDynamicCode ("--Derived.VirtualMethodWithRequires--")]
+				[RequiresAssemblyFiles ("--Derived.VirtualMethodWithRequires--")]
+				public override void VirtualMethodWithRequires () { }
+			}
+
+			[Kept]
+			static void TestMethodOnDerived (Derived instance)
+			{
+				instance.GetType ().GetMethod ("MethodWithRequires");
+			}
+
+			[Kept]
+			[KeptMember (".ctor()")]
+			class BaseWithRequires
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[KeptAttributeAttribute (typeof (RequiresDynamicCodeAttribute))]
+				[KeptAttributeAttribute (typeof (RequiresAssemblyFilesAttribute))]
+				[RequiresUnreferencedCode ("--Base.MethodWithRequires--")]
+				[RequiresDynamicCode ("--Base.MethodWithRequires--")]
+				[RequiresAssemblyFiles ("--Base.MethodWithRequires--")]
+				public static void MethodWithRequires () { }
+			}
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[KeptBaseType (typeof (BaseWithRequires))]
+			[KeptMember (".ctor()")]
+			[ExpectedWarning ("IL2113", "--Base.MethodWithRequires--")]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			class AnnotatedDerived : BaseWithRequires
+			{
+			}
+
+			[Kept]
+			static void TestMethodOnBase (AnnotatedDerived instance)
+			{
+				instance.GetType ().GetMethod (nameof (BaseWithRequires.MethodWithRequires));
+			}
+
+			[Kept]
+			public static void Test ()
+			{
+				TestMethodOnDerived (new Derived ());
+				TestMethodOnBase (new AnnotatedDerived ());
 			}
 		}
 
