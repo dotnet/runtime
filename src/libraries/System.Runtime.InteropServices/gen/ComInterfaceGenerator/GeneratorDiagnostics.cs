@@ -24,6 +24,7 @@ namespace Microsoft.Interop
             public const string InvalidGeneratedComInterfaceAttributeUsage = Prefix + "1092";
             public const string MultipleComInterfaceBaseTypes = Prefix + "1093";
             public const string AnalysisFailed = Prefix + "1094";
+            public const string BaseInterfaceFailedGeneration = Prefix + "1095";
         }
 
         private const string Category = "ComInterfaceGenerator";
@@ -58,11 +59,31 @@ namespace Microsoft.Interop
             isEnabledByDefault: true,
             description: GetResourceString(nameof(SR.InvalidAttributedMethodDescription)));
 
-        public static readonly DiagnosticDescriptor InvalidStringMarshallingConfiguration =
+        public static readonly DiagnosticDescriptor InvalidStringMarshallingMismatchBetweenBaseAndDerived =
+            new DiagnosticDescriptor(
+                Ids.InvalidGeneratedComInterfaceAttributeUsage,
+            GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageTitle)),
+            GetResourceString(nameof(SR.InvalidStringMarshallingConfigurationOnInterfaceMessage)),
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true,
+            description: GetResourceString(nameof(SR.GeneratedComInterfaceStringMarshallingMustMatchBase)));
+
+        public static readonly DiagnosticDescriptor InvalidStringMarshallingConfigurationOnMethod =
             new DiagnosticDescriptor(
             Ids.InvalidLibraryImportAttributeUsage,
             GetResourceString(nameof(SR.InvalidVirtualMethodIndexAttributeUsage)),
-            GetResourceString(nameof(SR.InvalidStringMarshallingConfigurationMessage)),
+            GetResourceString(nameof(SR.InvalidStringMarshallingConfigurationOnMethodMessage)),
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true,
+            description: GetResourceString(nameof(SR.InvalidStringMarshallingConfigurationDescription)));
+
+        public static readonly DiagnosticDescriptor InvalidStringMarshallingConfigurationOnInterface =
+            new DiagnosticDescriptor(
+            Ids.InvalidGeneratedComInterfaceAttributeUsage,
+            GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageTitle)),
+            GetResourceString(nameof(SR.InvalidStringMarshallingConfigurationOnInterfaceMessage)),
             Category,
             DiagnosticSeverity.Error,
             isEnabledByDefault: true,
@@ -214,7 +235,7 @@ namespace Microsoft.Interop
                 GetResourceString(nameof(SR.AnalysisFailedTitle)),
                 GetResourceString(nameof(SR.AnalysisFailedMethodMessage)),
                 Category,
-                DiagnosticSeverity.Warning,
+                DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.AnalysisFailedDescription)));
 
@@ -224,9 +245,19 @@ namespace Microsoft.Interop
                 GetResourceString(nameof(SR.AnalysisFailedTitle)),
                 GetResourceString(nameof(SR.AnalysisFailedInterfaceMessage)),
                 Category,
-                DiagnosticSeverity.Warning,
+                DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.AnalysisFailedDescription)));
+
+        public static readonly DiagnosticDescriptor BaseInterfaceIsNotGenerated =
+            new DiagnosticDescriptor(
+                Ids.BaseInterfaceFailedGeneration,
+                GetResourceString(nameof(SR.BaseInterfaceCannotBeGeneratedTitle)),
+                GetResourceString(nameof(SR.BaseInterfaceCannotBeGeneratedMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.BaseInterfaceCannotBeGeneratedDescription)));
 
         private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
 
@@ -246,7 +277,7 @@ namespace Microsoft.Interop
         {
             _diagnostics.Add(
                 attributeData.CreateDiagnostic(
-                    GeneratorDiagnostics.InvalidStringMarshallingConfiguration,
+                    GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnMethod,
                     methodName,
                     detailsMessage));
         }

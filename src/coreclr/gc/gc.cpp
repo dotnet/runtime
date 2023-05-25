@@ -6995,6 +6995,7 @@ void gc_heap::gc_thread_function ()
             {
                 update_collection_counts_for_no_gc();
                 proceed_with_gc_p = FALSE;
+                gradual_decommit_in_progress_p = FALSE;
             }
             else
             {

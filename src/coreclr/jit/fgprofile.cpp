@@ -819,14 +819,13 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp, uint8_t*
         comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR, false);
 
     // Increment value by 1
-    GenTree* rhsNode = comp->gtNewOperNode(GT_ADD, countType, valueNode, comp->gtNewIconNode(1, countType));
+    GenTree* incValueNode = comp->gtNewOperNode(GT_ADD, countType, valueNode, comp->gtNewIconNode(1, countType));
 
     // Write new Basic-Block count value
-    GenTree* lhsNode =
-        comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR, false);
-    GenTree* asgNode = comp->gtNewAssignNode(lhsNode, rhsNode);
+    GenTree* counterAddrNode = comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
+    GenTree* updateNode      = comp->gtNewStoreIndNode(countType, counterAddrNode, incValueNode);
 
-    return asgNode;
+    return updateNode;
 }
 
 //------------------------------------------------------------------------
@@ -2037,7 +2036,7 @@ public:
         //
         //      (CALLVIRT
         //        (COMMA
-        //          (ASG tmp, obj)
+        //          (tmp = obj)
         //          (COMMA
         //            (CALL probe_fn tmp, &probeEntry)
         //            tmp)))
@@ -2127,15 +2126,14 @@ public:
 
         // Generate the IR...
         //
-        GenTree* const tmpNode2      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTree* const callCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
-        GenTree* const tmpNode3      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTree* const asgNode       = compiler->gtNewAssignNode(tmpNode3, objUse->GetNode());
-        GenTree* const asgCommaNode  = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
+        GenTree* const tmpNode2       = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+        GenTree* const callCommaNode  = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
+        GenTree* const storeNode      = compiler->gtNewStoreLclVarNode(tmpNum, objUse->GetNode());
+        GenTree* const storeCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, storeNode, callCommaNode);
 
         // Update the call
         //
-        objUse->SetEarlyNode(asgCommaNode);
+        objUse->SetEarlyNode(storeCommaNode);
 
         JITDUMP("Modified call is now\n");
         DISPTREE(call);

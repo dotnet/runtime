@@ -112,6 +112,10 @@ let linked_functions = [
     "mono_wasm_starts_with",
     "mono_wasm_ends_with",
     "mono_wasm_index_of",
+    "mono_wasm_is_normalized",
+    "mono_wasm_normalize_string",
+    "mono_wasm_to_Unicode",
+    "mono_wasm_to_ASCII",
 
     "icudt68_dat",
 ];
