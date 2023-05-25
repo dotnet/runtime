@@ -828,8 +828,8 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
     // Since flow is going to bypass block, make sure there
     // is nothing in block that can cause a side effect.
     //
-    // For non-PHI RBO, we neglect PHI assignments. This can leave SSA
-    // in an incorrect state but so far it has not yet caused problems.
+    // For non-PHI RBO, we neglect PHI stores. This can leave SSA in
+    // an incorrect state but so far it has not yet caused problems.
     //
     // For PHI-based RBO we need to be more cautious and insist that
     // any PHI is locally consumed, so that if we bypass the block we
@@ -1851,12 +1851,12 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             break;
         }
 
-        // Bail if value has an embedded assignment. We could handle this
+        // Bail if value has an embedded store. We could handle this
         // if we generalized the interference check we run below.
         //
         if ((prevTreeData->gtFlags & GTF_ASG) != 0)
         {
-            JITDUMP(" -- prev tree RHS has embedded assignment\n");
+            JITDUMP(" -- prev tree value has embedded assignment\n");
             break;
         }
 

@@ -791,7 +791,7 @@ void Compiler::fgExtendDbgScopes()
 
 /*****************************************************************************
  *
- * For debuggable code, we allow redundant assignments to vars
+ * For debuggable code, we allow redundant stores to vars
  * by marking them live over their entire scope.
  */
 
@@ -2174,7 +2174,7 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
     {
         // We are only interested in avoiding the removal of nodes with direct side effects
         // (as opposed to side effects of their children).
-        // This default case should never include calls or assignments.
+        // This default case should never include calls or stores.
         assert(!node->OperRequiresAsgFlag() && !node->OperIs(GT_CALL));
         if (!node->gtSetFlags() && !node->OperMayThrow(this))
         {

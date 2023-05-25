@@ -774,7 +774,7 @@ bool Compiler::optValnumCSE_Locate()
                 }
 
                 // Don't allow non-SIMD struct CSEs under a return; we don't fully
-                // re-morph these if we introduce a CSE assignment, and so may create
+                // re-morph these if we introduce a CSE store, and so may create
                 // IR that lower is not yet prepared to handle.
                 //
                 if (isReturn && varTypeIsStruct(tree->gtType) && !varTypeIsSIMD(tree->gtType))
@@ -2710,7 +2710,7 @@ public:
 
     // PerformCSE() takes a successful candidate and performs  the appropriate replacements:
     //
-    // It will replace all of the CSE defs with assignments to a new "cse0" LclVar
+    // It will replace all of the CSE defs with writes to a new "cse0" LclVar
     // and will replace all of the CSE uses with reads of the "cse0" LclVar
     //
     // It will also put cse0 into SSA if there is just one def.
@@ -2777,8 +2777,8 @@ public:
         m_addCSEcount++;
         m_pCompiler->optCSEcount++;
 
-        //  Walk all references to this CSE, adding an assignment
-        //  to the CSE temp to all defs and changing all refs to
+        //  Walk all references to this CSE, adding a store to
+        //  the CSE temp to all defs and changing all refs to
         //  a simple use of the CSE temp.
         //
         //  Later we will unmark any nested CSE's for the CSE uses.
@@ -3137,7 +3137,7 @@ public:
                 if (!store->OperIs(GT_STORE_LCL_VAR))
                 {
                     // This can only be the case for a struct in which the 'val' was a COMMA, so
-                    // the assignment is sunk below it.
+                    // the store is sunk below it.
                     store = store->gtEffectiveVal(true);
                     noway_assert(origStore->OperIs(GT_COMMA) && (origStore == val));
                 }
@@ -3201,10 +3201,10 @@ public:
                 }
                 cseUse->gtVNPair = exp->gtVNPair; // The 'cseUse' is equal to the original expression.
 
-                /* Create a comma node for the CSE assignment */
+                /* Create a comma node for the CSE store */
                 cse           = m_pCompiler->gtNewOperNode(GT_COMMA, expTyp, origStore, cseUse);
                 cse->gtVNPair = cseUse->gtVNPair; // The comma's value is the same as 'val'
-                                                  // as the assignment to the CSE LclVar
+                                                  // as the store to the CSE LclVar
                                                   // cannot add any new exceptions
             }
 

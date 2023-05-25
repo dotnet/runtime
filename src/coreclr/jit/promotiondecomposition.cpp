@@ -5,7 +5,7 @@
 #include "promotion.h"
 #include "jitstd/algorithm.h"
 
-// Represents a list of statements; this is the result of assignment decomposition.
+// Represents a list of statements; this is the result of store decomposition.
 class DecompositionStatementList
 {
     GenTree* m_head = nullptr;

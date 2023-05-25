@@ -51,9 +51,9 @@ struct Access
 
     // Number of times we saw this access.
     unsigned Count = 0;
-    // Number of times this access is on the RHS of an assignment.
+    // Number of times this access is the value operand of a store.
     unsigned CountAssignmentSource = 0;
-    // Number of times this access is on the LHS of an assignment.
+    // Number of times this access is the destination of a store.
     unsigned CountAssignmentDestination = 0;
     unsigned CountCallArgs              = 0;
     unsigned CountReturns               = 0;
@@ -1357,8 +1357,8 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
         // 2. Teach LSRA to allow the above cases, simplifying IR concepts (e.g.
         //    introduce something like GT_COPY on top of LCL_VAR when they
         //    need to be "defs")
-        // 3. Change the pass here to avoid creating any embedded assignments by making use
-        //    of gtSplitTree. We will only need to split in very edge cases since the point
+        // 3. Change the pass here to avoid creating any embedded stores by making use of
+        //    gtSplitTree. We will only need to split in very edge cases since the point
         //    at which the replacement was marked as needing read back is practically always
         //    going to be in a previous statement, so this shouldn't be too bad for CQ.
 
@@ -1396,7 +1396,7 @@ void ReplaceVisitor::StoreBeforeReturn(GenTreeUnOp* ret)
 //   replacements into a struct local.
 //
 // Parameters:
-//   use  - The use, which will be updated with a cascading comma trees of assignments
+//   use  - The use, which will be updated with a cascading comma tree of stores
 //   lcl  - The struct local
 //   offs - The starting offset into the struct local of the overlapping range to write back to
 //   size - The size of the overlapping range

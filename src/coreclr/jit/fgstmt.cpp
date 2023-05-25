@@ -49,9 +49,9 @@ bool Compiler::fgBlockContainsStatementBounded(BasicBlock* block,
 //   stmt  - the statement to be inserted.
 //
 // Notes:
-//    We always insert phi statements at the beginning.
-//    In other cases, if there are any phi assignments and/or an assignment of
-//    the GT_CATCH_ARG, we insert after those.
+//    We always insert phi statements at the beginning. In other cases, if
+//    there are any phi stores and/or a store of the GT_CATCH_ARG, we insert
+//    after those.
 //
 void Compiler::fgInsertStmtAtBeg(BasicBlock* block, Statement* stmt)
 {
