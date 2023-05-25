@@ -60,13 +60,14 @@
       <_LinkerFlagsToDrop Include="@(LinkerArg)" Condition="$([System.String]::new('%(Identity)').Contains('swift'))" />
       <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
       <ExtraLinkerArguments Include="@(LinkerArg)" />
+      <_NativeDependencies Include="%(ManagedBinary.IlcOutputFile)" />
     </ItemGroup>
 
     <RemoveDir Directories="$(AppDir)" />
 
     <AppleAppBuilderTask
         UseNativeAOTRuntime="$(UseNativeAOTRuntime)"
-        NativeDependencies="%(ManagedBinary.IlcOutputFile)"
+        NativeDependencies="@(_NativeDependencies)"
         TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
         ProjectName="$(AppName)"
