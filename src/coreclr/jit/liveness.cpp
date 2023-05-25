@@ -1895,12 +1895,12 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
 
                 if (isDeadStore && fgTryRemoveDeadStoreLIR(node, lclVarNode, block))
                 {
-                    GenTree* data = lclVarNode->Data();
-                    data->SetUnusedValue();
+                    GenTree* value = lclVarNode->Data();
+                    value->SetUnusedValue();
 
-                    if (data->isIndir())
+                    if (value->isIndir())
                     {
-                        Lowering::TransformUnusedIndirection(data->AsIndir(), this, block);
+                        Lowering::TransformUnusedIndirection(value->AsIndir(), this, block);
                     }
                 }
                 break;
@@ -2141,11 +2141,11 @@ bool Compiler::fgRemoveDeadStore(GenTree**           pTree,
     *pStoreRemoved = true;
 
     GenTreeLclVarCommon* store = tree->AsLclVarCommon();
-    GenTree*             data  = store->Data();
+    GenTree*             value = store->Data();
 
     // Check for side effects.
     GenTree* sideEffList = nullptr;
-    if ((data->gtFlags & GTF_SIDE_EFFECT) != 0)
+    if ((value->gtFlags & GTF_SIDE_EFFECT) != 0)
     {
 #ifdef DEBUG
         if (verbose)
@@ -2156,7 +2156,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**           pTree,
         }
 #endif // DEBUG
 
-        gtExtractSideEffList(data, &sideEffList);
+        gtExtractSideEffList(value, &sideEffList);
     }
 
     // Test for interior statement

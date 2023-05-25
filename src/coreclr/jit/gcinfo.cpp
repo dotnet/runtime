@@ -241,8 +241,8 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
     }
 
     // Ignore any assignments of NULL or nongc object
-    GenTree* const data = store->Data()->gtSkipReloadOrCopy();
-    if (data->IsIntegralConst(0) || data->IsIconHandle(GTF_ICON_OBJ_HDL))
+    GenTree* const value = store->Data()->gtSkipReloadOrCopy();
+    if (value->IsIntegralConst(0) || value->IsIconHandle(GTF_ICON_OBJ_HDL))
     {
         return WBF_NoBarrier;
     }

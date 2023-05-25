@@ -3042,14 +3042,15 @@ public:
 
     GenTree* gtNewConWithPattern(var_types type, uint8_t pattern);
 
-    GenTreeLclVar* gtNewStoreLclVarNode(unsigned lclNum, GenTree* data);
+    GenTreeLclVar* gtNewStoreLclVarNode(unsigned lclNum, GenTree* value);
 
     GenTreeLclFld* gtNewStoreLclFldNode(
-        unsigned lclNum, var_types type, ClassLayout* layout, unsigned offset, GenTree* data);
+        unsigned lclNum, var_types type, ClassLayout* layout, unsigned offset, GenTree* value);
 
-    GenTreeLclFld* gtNewStoreLclFldNode(unsigned lclNum, var_types type, unsigned offset, GenTree* data)
+    GenTreeLclFld* gtNewStoreLclFldNode(unsigned lclNum, var_types type, unsigned offset, GenTree* value)
     {
-        return gtNewStoreLclFldNode(lclNum, type, (type == TYP_STRUCT) ? data->GetLayout(this) : nullptr, offset, data);
+        return gtNewStoreLclFldNode(
+            lclNum, type, (type == TYP_STRUCT) ? value->GetLayout(this) : nullptr, offset, value);
     }
 
     GenTree* gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg);
@@ -3396,7 +3397,7 @@ public:
 
     GenTreeMDArr* gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
 
-    void gtInitializeStoreNode(GenTree* store, GenTree* data);
+    void gtInitializeStoreNode(GenTree* store, GenTree* value);
 
     void gtInitializeIndirNode(GenTreeIndir* indir, GenTreeFlags indirFlags);
 
@@ -3405,10 +3406,10 @@ public:
     GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTreeBlk* gtNewStoreBlkNode(
-        ClassLayout* layout, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY);
+        ClassLayout* layout, GenTree* addr, GenTree* value, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTreeStoreInd* gtNewStoreIndNode(
-        var_types type, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY);
+        var_types type, GenTree* addr, GenTree* value, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTree* gtNewLoadValueNode(
         var_types type, ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
@@ -3424,16 +3425,17 @@ public:
     }
 
     GenTree* gtNewStoreValueNode(
-        var_types type, ClassLayout* layout, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY);
+        var_types type, ClassLayout* layout, GenTree* addr, GenTree* value, GenTreeFlags indirFlags = GTF_EMPTY);
 
-    GenTree* gtNewStoreValueNode(ClassLayout* layout, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY)
+    GenTree* gtNewStoreValueNode(
+        ClassLayout* layout, GenTree* addr, GenTree* value, GenTreeFlags indirFlags = GTF_EMPTY)
     {
-        return gtNewStoreValueNode(layout->GetType(), layout, addr, data, indirFlags);
+        return gtNewStoreValueNode(layout->GetType(), layout, addr, value, indirFlags);
     }
 
-    GenTree* gtNewStoreValueNode(var_types type, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY)
+    GenTree* gtNewStoreValueNode(var_types type, GenTree* addr, GenTree* value, GenTreeFlags indirFlags = GTF_EMPTY)
     {
-        return gtNewStoreValueNode(type, nullptr, addr, data, indirFlags);
+        return gtNewStoreValueNode(type, nullptr, addr, value, indirFlags);
     }
 
     GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);

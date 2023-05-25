@@ -4586,9 +4586,9 @@ GenTree* Compiler::fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon* lclNode)
     GenTree* argNode;
     if (lclNode->OperIsLocalStore())
     {
-        GenTree* data = lclNode->Data();
-        argNode       = lclNode->TypeIs(TYP_STRUCT) ? gtNewStoreBlkNode(lclNode->GetLayout(this), argAddr, data)
-                                                    : gtNewStoreIndNode(lclNode->TypeGet(), argAddr, data)->AsIndir();
+        GenTree* value = lclNode->Data();
+        argNode        = lclNode->TypeIs(TYP_STRUCT) ? gtNewStoreBlkNode(lclNode->GetLayout(this), argAddr, value)
+                                                     : gtNewStoreIndNode(lclNode->TypeGet(), argAddr, value)->AsIndir();
     }
     else if (lclNode->OperIsLocalRead())
     {
@@ -9747,11 +9747,11 @@ GenTree* Compiler::fgMorphFinalizeIndir(GenTreeIndir* indir)
             addr->ChangeType(indir->TypeGet());
             if (indir->OperIs(GT_STOREIND))
             {
-                GenTree* data = indir->Data();
+                GenTree* value = indir->Data();
                 addr->SetOper(GT_STORE_LCL_FLD);
-                addr->AsLclFld()->Data() = data;
+                addr->AsLclFld()->Data() = value;
                 addr->gtFlags |= (GTF_ASG | GTF_VAR_DEF);
-                addr->AddAllEffectsFlags(data);
+                addr->AddAllEffectsFlags(value);
             }
             else
             {

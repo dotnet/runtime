@@ -2109,8 +2109,8 @@ bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block, unsigned lclNu
         GenTree* const tree = stmt->GetRootNode();
         if (tree->OperIsLocalStore() && !tree->OperIsBlkOp() && (tree->AsLclVarCommon()->GetLclNum() == lclNum))
         {
-            GenTree* const data = tree->Data();
-            if (data->OperIsArrLength() || data->OperIsConst() || data->OperIsCompare())
+            GenTree* const value = tree->Data();
+            if (value->OperIsArrLength() || value->OperIsConst() || value->OperIsCompare())
             {
                 return true;
             }
