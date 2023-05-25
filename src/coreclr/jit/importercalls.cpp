@@ -5942,7 +5942,14 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 // NOTE: This is currently used only with NativeAOT. In theory, we could also check if we
                 // have static PGO data to decide which class to guess first. Presumably, this is a rare case.
                 //
-                const int likelyHood = 100 / numExactClasses;
+                int likelyHood = 100 / numExactClasses;
+
+                // If numExactClasses is 3, then likelyHood is 33 and 33*3=99.
+                // Apply the error to the first guess, so we'll have [34,33,33]
+                if (exactClsIdx == 0)
+                {
+                    likelyHood += 100 - likelyHood * numExactClasses;
+                }
 
                 addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactMethodAttrs, clsAttrs,
                                                     likelyHood);
@@ -6205,34 +6212,41 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 
     if (call->IsGuardedDevirtualizationCandidate())
     {
-        const uint8_t candidatesCount = call->GetInlineCandidatesCount();
-        assert(candidatesCount > 0);
-        for (uint8_t candidateId = 0; candidateId < candidatesCount; candidateId++)
-        {
-            // Do the actual evaluation
-            bool success = impMarkInlineCandidateHelper(call, candidateId, exactContextHnd,
-                                                        exactContextNeedsRuntimeLookup, callInfo, ilOffset);
-            if (!success)
-            {
-                if (candidatesCount > 1)
-                {
-                    // TODO: we should not give up if one of the candidates fails to inline while others succeed.
-                    //
-                    JITDUMP(
-                        "We had multiple inline candidates but have to give up on them since one of them didn't pass"
-                        "inline checks")
-                    call->ClearInlineInfo();
-                    call->ClearGuardedDevirtualizationCandidate();
-                }
-                break;
-            }
-        }
+        //const uint8_t candidatesCount = call->GetInlineCandidatesCount();
+        //assert(candidatesCount > 0);
+        //for (uint8_t candidateId = 0; candidateId < candidatesCount; candidateId++)
+        //{
+        //    InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate");
+
+        //    // Do the actual evaluation
+        //    impMarkInlineCandidateHelper(call, candidateId, exactContextHnd,
+        //        exactContextNeedsRuntimeLookup, callInfo, ilOffset, &inlineResult);
+
+        //    if (!inlineResult.IsSuccess())
+        //    {
+        //        if (candidatesCount > 1)
+        //        {
+        //            // TODO: we should not give up if one of the candidates fails to inline while others succeed.
+        //            //
+        //            JITDUMP(
+        //                "We had multiple inline candidates but have to give up on them since one of them didn't pass"
+        //                "inline checks")
+        //            call->ClearInlineInfo();
+        //            call->ClearGuardedDevirtualizationCandidate();
+        //        }
+        //        break;
+        //    }
+        //}
+        call->ClearInlineInfo();
+        call->ClearGuardedDevirtualizationCandidate();
+        return;
     }
     else
     {
         const uint8_t candidatesCount = call->GetInlineCandidatesCount();
         assert(candidatesCount <= 1);
-        impMarkInlineCandidateHelper(call, 0, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, ilOffset);
+        InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate");
+        impMarkInlineCandidateHelper(call, 0, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, ilOffset, &inlineResult);
     }
 
     // If this call is an inline candidate or is not a guarded devirtualization
@@ -6276,15 +6290,14 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 //    method may be marked as "noinline" to short-circuit any
 //    future assessments of calls to this method.
 //
-// Return value:
-//    true if we can inline the given inline candidate, false otherwise.
 
-bool Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
+void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
                                             uint8_t                candidateIndex,
                                             CORINFO_CONTEXT_HANDLE exactContextHnd,
                                             bool                   exactContextNeedsRuntimeLookup,
                                             CORINFO_CALL_INFO*     callInfo,
-                                            IL_OFFSET              ilOffset)
+                                            IL_OFFSET              ilOffset,
+                                            InlineResult*          inlineResult)
 {
     // Let the strategy know there's another call
     impInlineRoot()->m_inlineStrategy->NoteCall();
@@ -6298,46 +6311,44 @@ bool Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
          * figure out why we did not set MAXOPT for this compile.
          */
         assert(!compIsForInlining());
-        return false;
+        return;
     }
-
-    InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate");
 
     // Don't inline if not optimizing root method
     if (opts.compDbgCode)
     {
-        inlineResult.NoteFatal(InlineObservation::CALLER_DEBUG_CODEGEN);
-        return false;
+        inlineResult->NoteFatal(InlineObservation::CALLER_DEBUG_CODEGEN);
+        return;
     }
 
     // Don't inline if inlining into this method is disabled.
     if (impInlineRoot()->m_inlineStrategy->IsInliningDisabled())
     {
-        inlineResult.NoteFatal(InlineObservation::CALLER_IS_JIT_NOINLINE);
-        return false;
+        inlineResult->NoteFatal(InlineObservation::CALLER_IS_JIT_NOINLINE);
+        return;
     }
 
     // Don't inline into callers that use the NextCallReturnAddress intrinsic.
     if (info.compHasNextCallRetAddr)
     {
-        inlineResult.NoteFatal(InlineObservation::CALLER_USES_NEXT_CALL_RET_ADDR);
-        return false;
+        inlineResult->NoteFatal(InlineObservation::CALLER_USES_NEXT_CALL_RET_ADDR);
+        return;
     }
 
     // Inlining candidate determination needs to honor only IL tail prefix.
     // Inlining takes precedence over implicit tail call optimization (if the call is not directly recursive).
     if (call->IsTailPrefixedCall())
     {
-        inlineResult.NoteFatal(InlineObservation::CALLSITE_EXPLICIT_TAIL_PREFIX);
-        return false;
+        inlineResult->NoteFatal(InlineObservation::CALLSITE_EXPLICIT_TAIL_PREFIX);
+        return;
     }
 
     // Delegate Invoke method doesn't have a body and gets special cased instead.
     // Don't even bother trying to inline it.
     if (call->IsDelegateInvoke() && !call->IsGuardedDevirtualizationCandidate())
     {
-        inlineResult.NoteFatal(InlineObservation::CALLEE_HAS_NO_BODY);
-        return false;
+        inlineResult->NoteFatal(InlineObservation::CALLEE_HAS_NO_BODY);
+        return;
     }
 
     // Tail recursion elimination takes precedence over inlining.
@@ -6346,8 +6357,8 @@ bool Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     // as a fast tail call or turned into a loop.
     if (gtIsRecursiveCall(call) && call->IsImplicitTailCall())
     {
-        inlineResult.NoteFatal(InlineObservation::CALLSITE_IMPLICIT_REC_TAIL_CALL);
-        return false;
+        inlineResult->NoteFatal(InlineObservation::CALLSITE_IMPLICIT_REC_TAIL_CALL);
+        return;
     }
 
     if (call->IsVirtual())
@@ -6356,8 +6367,8 @@ bool Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         // but reject all other virtual calls.
         if (!call->IsGuardedDevirtualizationCandidate())
         {
-            inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_NOT_DIRECT);
-            return false;
+            inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_NOT_DIRECT);
+            return;
         }
     }
 
@@ -6366,15 +6377,15 @@ bool Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     if (call->gtCallType == CT_HELPER)
     {
         assert(!call->IsGuardedDevirtualizationCandidate());
-        inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_CALL_TO_HELPER);
-        return false;
+        inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_CALL_TO_HELPER);
+        return;
     }
 
     /* Ignore indirect calls */
     if (call->gtCallType == CT_INDIRECT)
     {
-        inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_NOT_DIRECT_MANAGED);
-        return false;
+        inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_NOT_DIRECT_MANAGED);
+        return;
     }
 
     /* I removed the check for BBJ_THROW.  BBJ_THROW is usually marked as rarely run.  This more or less
@@ -6437,8 +6448,8 @@ bool Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
 #endif
 
-            inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_WITHIN_CATCH);
-            return false;
+            inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_WITHIN_CATCH);
+            return;
         }
 
         if (bbInFilterILRange(compCurBB))
@@ -6450,8 +6461,8 @@ bool Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
             }
 #endif
 
-            inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_WITHIN_FILTER);
-            return false;
+            inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_WITHIN_FILTER);
+            return;
         }
     }
 
@@ -6459,16 +6470,16 @@ bool Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     if (methAttr & CORINFO_FLG_DONT_INLINE)
     {
-        inlineResult.NoteFatal(InlineObservation::CALLEE_IS_NOINLINE);
-        return false;
+        inlineResult->NoteFatal(InlineObservation::CALLEE_IS_NOINLINE);
+        return;
     }
 
     /* Cannot inline synchronized methods */
 
     if (methAttr & CORINFO_FLG_SYNCH)
     {
-        inlineResult.NoteFatal(InlineObservation::CALLEE_IS_SYNCHRONIZED);
-        return false;
+        inlineResult->NoteFatal(InlineObservation::CALLEE_IS_SYNCHRONIZED);
+        return;
     }
 
     /* Check legality of PInvoke callsite (for inlining of marshalling code) */
@@ -6479,17 +6490,17 @@ bool Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         BasicBlock* block = compIsForInlining() ? impInlineInfo->iciBlock : compCurBB;
         if (!impCanPInvokeInlineCallSite(block))
         {
-            inlineResult.NoteFatal(InlineObservation::CALLSITE_PINVOKE_EH);
-            return false;
+            inlineResult->NoteFatal(InlineObservation::CALLSITE_PINVOKE_EH);
+            return;
         }
     }
 
     InlineCandidateInfo* inlineCandidateInfo = nullptr;
-    impCheckCanInline(call, candidateIndex, fncHandle, methAttr, exactContextHnd, &inlineCandidateInfo, &inlineResult);
+    impCheckCanInline(call, candidateIndex, fncHandle, methAttr, exactContextHnd, &inlineCandidateInfo, inlineResult);
 
-    if (inlineResult.IsFailure())
+    if (inlineResult->IsFailure())
     {
-        return false;
+        return;
     }
 
     // The old value should be null OR this call should be a guarded devirtualization candidate.
@@ -6528,9 +6539,7 @@ bool Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     // Since we're not actually inlining yet, and this call site is
     // still just an inline candidate, there's nothing to report.
-    inlineResult.SetSuccessResult(INLINE_CHECK_CAN_INLINE_SUCCESS);
-
-    return true;
+    inlineResult->SetSuccessResult(INLINE_CHECK_CAN_INLINE_SUCCESS);
 }
 
 /******************************************************************************/
