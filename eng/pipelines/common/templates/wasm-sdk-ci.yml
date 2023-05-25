@@ -5,6 +5,11 @@ parameters:
   platforms: []
   shouldContinueOnError: false
 
+repositories:
+  - repository: SdkRepo # The name used to reference this repository in the checkout step
+    type: github
+    name: dotnet/sdk
+
 jobs:
 
 #
@@ -49,7 +54,7 @@ jobs:
       extraStepsTemplate: /eng/pipelines/common/templates/additional-steps-then-helix.yml
       extraStepsParameters:
         additionalSteps:
-          - checkout: git://dotnet/sdk
+          - checkout: SdkRepo
             displayName: Checkout dotnet/sdk
           - script: ls -l
           - script: ls -l $(Pipeline.Workspace)
