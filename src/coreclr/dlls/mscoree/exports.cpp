@@ -147,6 +147,8 @@ static void ConvertConfigPropertiesToUnicode(
     LPCWSTR* propertyValuesW = new (nothrow) LPCWSTR[propertyCount];
     ASSERTE_ALL_BUILDS(propertyValuesW != nullptr);
 
+    LPCWSTR diagnostic_startup_hooks_value = nullptr;
+
     for (int propertyIndex = 0; propertyIndex < propertyCount; ++propertyIndex)
     {
         propertyKeysW[propertyIndex] = StringToUnicode(propertyKeys[propertyIndex]);
@@ -189,10 +191,97 @@ static void ConvertConfigPropertiesToUnicode(
             if (hostContractLocal->pinvoke_override != nullptr)
                 *pinvokeOverride = hostContractLocal->pinvoke_override;
         }
+        else if (strcmp(propertyKeys[propertyIndex], HOST_PROPERTY_DIAGNOSTIC_STARTUP_HOOKS) == 0)
+        {
+            diagnostic_startup_hooks_value = propertyValuesW[propertyIndex];
+        }
+    }
+
+    if (nullptr != diagnostic_startup_hooks_value)
+    {
+        HostInformation::SetProperty(HOST_PROPERTY_DIAGNOSTIC_STARTUP_HOOKS, diagnostic_startup_hooks_value);
     }
 
     *propertyKeysWRef = propertyKeysW;
     *propertyValuesWRef = propertyValuesW;
+}
+
+static void CreateAppDomainProperties(
+    LPCWSTR* configPropertyKeys,
+    LPCWSTR* configPropertyValues,
+    int configPropertyCount,
+    NewArrayHolder<LPCWSTR>& appDomainPropertyKeys,
+    NewArrayHolder<LPCWSTR>& appDomainPropertyValues,
+    int& appDomainPropertyCount,
+    ConstWStringArrayHolder& allocatedStrings)
+{
+    // Dynamically create list of properties to provide to app domain creation
+    // Some properties may have been dynamically specified through other means,
+    // such as the diagnostic IPC channel setting startup hooks.
+    appDomainPropertyCount = configPropertyCount;
+
+    // Check if the diagnostic startup hook was specified in the host
+    bool diagnostic_startup_hooks_handled = true;
+    const WCHAR* diagnostic_startup_hooks_value = nullptr;
+    SString diagnostic_startup_hooks_value_str;
+    if (HostInformation::GetProperty(HOST_PROPERTY_DIAGNOSTIC_STARTUP_HOOKS, diagnostic_startup_hooks_value_str))
+    {
+        diagnostic_startup_hooks_handled = false;
+        diagnostic_startup_hooks_value = diagnostic_startup_hooks_value_str.GetCopyOfUnicodeString();
+        appDomainPropertyCount++;
+    }
+
+    // These holders will not take ownership of the strings but provide a wrapper
+    // in order to allow using them as a single indexable array. The owners are still
+    // responsible for deleting the strings.
+    appDomainPropertyKeys = new (nothrow) LPCWSTR[appDomainPropertyCount];
+    ASSERTE_ALL_BUILDS(appDomainPropertyKeys != nullptr);
+
+    appDomainPropertyValues = new (nothrow) LPCWSTR[appDomainPropertyCount];
+    ASSERTE_ALL_BUILDS(appDomainPropertyValues != nullptr);
+
+    // Add properties that were explicitly passed for initialization
+    int propertyIndex = 0;
+    while (propertyIndex < configPropertyCount)
+    {
+        // If one of the properties that was passed for intialization is the diganostic startup
+        // hook AND the diagnostic startup hook was set in the host information, replace the
+        // value by prefering the host information value.
+        if (u16_strcmp(configPropertyKeys[propertyIndex], TEXT(HOST_PROPERTY_DIAGNOSTIC_STARTUP_HOOKS)) == 0 &&
+            nullptr != diagnostic_startup_hooks_value)
+        {
+            appDomainPropertyKeys[propertyIndex] = TEXT(HOST_PROPERTY_DIAGNOSTIC_STARTUP_HOOKS);
+            appDomainPropertyValues[propertyIndex] = diagnostic_startup_hooks_value;
+
+            if (!diagnostic_startup_hooks_handled)
+            {
+                // Skip dynamically adding the diagnostic startup hook to the array holder since
+                // it already exists in the properties passed for initialization.
+                diagnostic_startup_hooks_handled = true;
+                appDomainPropertyCount--;
+            }
+        }
+        else
+        {
+            appDomainPropertyKeys[propertyIndex] = configPropertyKeys[propertyIndex];
+            appDomainPropertyValues[propertyIndex] = configPropertyValues[propertyIndex];
+        }
+        propertyIndex++;
+    }
+    
+    // Append diagnostic startup hook property if it has not been handled yet
+    if (!diagnostic_startup_hooks_handled)
+    {
+        appDomainPropertyKeys[propertyIndex] = TEXT(HOST_PROPERTY_DIAGNOSTIC_STARTUP_HOOKS);
+        appDomainPropertyValues[propertyIndex] = diagnostic_startup_hooks_value;
+        propertyIndex++;
+    }
+
+    allocatedStrings.Set(new (nothrow) LPCWSTR[1], 1);
+    ASSERTE_ALL_BUILDS(allocatedStrings != nullptr);
+    allocatedStrings[0] = diagnostic_startup_hooks_value;
+
+    ASSERTE_ALL_BUILDS(propertyIndex == appDomainPropertyCount);
 }
 
 coreclr_error_writer_callback_fn g_errorWriter = nullptr;
@@ -320,14 +409,27 @@ int coreclr_initialize(
     hr = host->Start();
     IfFailRet(hr);
 
+    NewArrayHolder<LPCWSTR> appDomainPropertyKeys;
+    NewArrayHolder<LPCWSTR> appDomainPropertyValues;
+    int appDomainPropertyCount;
+    ConstWStringArrayHolder allocatedStrings;
+    CreateAppDomainProperties(
+        propertyKeysW,
+        propertyValuesW,
+        propertyCount,
+        appDomainPropertyKeys,
+        appDomainPropertyValues,
+        appDomainPropertyCount,
+        allocatedStrings);
+
     hr = host->CreateAppDomainWithManager(
         appDomainFriendlyNameW,
         APPDOMAIN_SECURITY_DEFAULT,
         NULL,                    // Name of the assembly that contains the AppDomainManager implementation
         NULL,                    // The AppDomainManager implementation type name
-        propertyCount,
-        propertyKeysW,
-        propertyValuesW,
+        appDomainPropertyCount,
+        appDomainPropertyKeys,
+        appDomainPropertyValues,
         (DWORD *)domainId);
 
     if (SUCCEEDED(hr))

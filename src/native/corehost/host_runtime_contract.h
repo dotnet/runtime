@@ -23,6 +23,7 @@
 #define HOST_PROPERTY_PINVOKE_OVERRIDE "PINVOKE_OVERRIDE"
 #define HOST_PROPERTY_PLATFORM_RESOURCE_ROOTS "PLATFORM_RESOURCE_ROOTS"
 #define HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES "TRUSTED_PLATFORM_ASSEMBLIES"
+#define HOST_PROPERTY_DIAGNOSTIC_STARTUP_HOOKS "DIAGNOSTIC_STARTUP_HOOKS"
 
 struct host_runtime_contract
 {
@@ -37,6 +38,13 @@ struct host_runtime_contract
         const char* key,
         /*out*/ char* value_buffer,
         size_t value_buffer_size,
+        void* contract_context);
+
+    // Set the value of a runtime property.
+    // Returns true if able to set successfully, false otherwise.
+    bool(HOST_CONTRACT_CALLTYPE* set_runtime_property)(
+        const char* key,
+        const char* value,
         void* contract_context);
 
     // Probe an app bundle for `path`. Sets its location (`offset`, `size`) in the bundle if found.

@@ -133,6 +133,32 @@ namespace
 
         return -1;
     }
+
+    bool HOST_CONTRACT_CALLTYPE set_runtime_property(
+        const char* key,
+        const char* value,
+        void* contract_context)
+    {
+        hostpolicy_context_t* context = static_cast<hostpolicy_context_t*>(contract_context);
+
+        pal::string_t key_str;
+        if (!pal::clr_palstring(key, &key_str))
+            return false;
+
+        if (nullptr != value)
+        {
+            pal::string_t value_str;
+            if (!pal::clr_palstring(value, &value_str))
+                return false;
+
+            context->coreclr_properties.add(key_str.c_str(), value_str.c_str());
+        }
+        else
+        {
+            context->coreclr_properties.remove(key_str.c_str());
+        }
+        return true;
+    }
 }
 
 bool hostpolicy_context_t::should_read_rid_fallback_graph(const hostpolicy_init_t &init)
@@ -378,6 +404,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         }
 
         host_contract.get_runtime_property = &get_runtime_property;
+        host_contract.set_runtime_property = &set_runtime_property;
         pal::stringstream_t ptr_stream;
         ptr_stream << "0x" << std::hex << (size_t)(&host_contract);
         if (!coreclr_properties.add(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT), ptr_stream.str().c_str()))

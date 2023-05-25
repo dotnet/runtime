@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Diagnostics.CodeAnalysis;
@@ -32,8 +33,21 @@ namespace System
             if (!IsSupported)
                 return;
 
+            List<string> startupHookParts = new();
+
+            string? diagnosticStartupHooksVariable = AppContext.GetData("DIAGNOSTIC_STARTUP_HOOKS") as string;
+            if (null != diagnosticStartupHooksVariable)
+            {
+                startupHookParts.AddRange(diagnosticStartupHooksVariable.Split(Path.PathSeparator));
+            }
+
             string? startupHooksVariable = AppContext.GetData("STARTUP_HOOKS") as string;
-            if (startupHooksVariable == null)
+            if (null != startupHooksVariable)
+            {
+                startupHookParts.AddRange(startupHooksVariable.Split(Path.PathSeparator));
+            }
+
+            if (startupHookParts.Count == 0)
             {
                 return;
             }
@@ -47,9 +61,8 @@ namespace System
             };
 
             // Parse startup hooks variable
-            string[] startupHookParts = startupHooksVariable.Split(Path.PathSeparator);
-            StartupHookNameOrPath[] startupHooks = new StartupHookNameOrPath[startupHookParts.Length];
-            for (int i = 0; i < startupHookParts.Length; i++)
+            StartupHookNameOrPath[] startupHooks = new StartupHookNameOrPath[startupHookParts.Count];
+            for (int i = 0; i < startupHookParts.Count; i++)
             {
                 string startupHookPart = startupHookParts[i];
                 if (string.IsNullOrEmpty(startupHookPart))
