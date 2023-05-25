@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import monoWasmThreads from "consts:monoWasmThreads";
+import MonoWasmThreads from "consts:monoWasmThreads";
 
 import { MemOffset, NumberOrPointer } from "./types/internal";
 import { VoidPtr, CharPtr } from "./types/emscripten";
@@ -298,7 +298,7 @@ export function getEnv(name: string): string | null {
 
 const BuiltinAtomics = globalThis.Atomics;
 
-export const Atomics = monoWasmThreads ? {
+export const Atomics = MonoWasmThreads ? {
     storeI32(offset: MemOffset, value: number): void {
         updateGrowableHeapViews();
         BuiltinAtomics.store(Module.HEAP32, <any>offset >>> 2, value);
@@ -315,9 +315,15 @@ export const Atomics = monoWasmThreads ? {
 // when we run with multithreading enabled, we need to make sure that the memory views are updated on each worker
 // on non-MT build, this will be a no-op trimmed by rollup
 export function updateGrowableHeapViews() {
-    if (!monoWasmThreads) return;
-    mono_assert(Module.wasmMemory, "Module.wasmMemory not set");
-    if (Module.wasmMemory.buffer != Module.HEAPU8.buffer) {
+    if (!MonoWasmThreads) return;
+    if (Module.wasmMemory!.buffer != Module.HEAPU8.buffer) {
         runtimeHelpers.updateMemoryViews();
     }
+}
+
+const sharedArrayBufferDefined = typeof SharedArrayBuffer !== "undefined";
+export function isSharedArrayBuffer(value: any): value is SharedArrayBuffer {
+    if (!MonoWasmThreads) return false;
+    // this condition should be eliminated by rollup on non-threading builds
+    return sharedArrayBufferDefined && value.buffer[Symbol.toStringTag] === "SharedArrayBuffer";
 }

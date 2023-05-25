@@ -1,14 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
-
 import { mono_wasm_new_root_buffer } from "./roots";
 import { MonoString, MonoStringNull, is_nullish, WasmRoot, WasmRootBuffer } from "./types/internal";
 import { Module } from "./globals";
 import cwraps from "./cwraps";
 import { mono_wasm_new_root } from "./roots";
-import { updateGrowableHeapViews, getI32, getU32 } from "./memory";
+import { updateGrowableHeapViews, getI32, getU32, isSharedArrayBuffer } from "./memory";
 import { NativePointer, CharPtr } from "./types/emscripten";
 import { assert_legacy_interop } from "./pthreads/shared";
 
@@ -78,7 +76,7 @@ export class StringDecoder {
         let str = "";
         if (this.mono_text_decoder) {
             updateGrowableHeapViews();
-            const subArray = copy_string_buffer_as_necessary(Module.HEAPU8, start, end);
+            const subArray = copyBufferIfNecessary(Module.HEAPU8, start, end);
             str = this.mono_text_decoder.decode(subArray);
         } else {
             for (let i = 0; i < <any>end - <any>start; i += 2) {
@@ -314,11 +312,9 @@ export function decodeUTF8(heapOrArray: Uint8Array, idx: number, maxBytesToRead:
         }
         _text_decoder_utf8_validating = new TextDecoder("utf-8");
     }
-    const view = copy_string_buffer_as_necessary(heapOrArray, idx as any, endPtr as any);
+    const view = copyBufferIfNecessary(heapOrArray, idx as any, endPtr as any);
     return _text_decoder_utf8_validating.decode(view);
 }
-
-const mayNeedCopy = MonoWasmThreads && typeof SharedArrayBuffer !== "undefined";
 
 // When threading is enabled, TextDecoder does not accept a view of a
 // SharedArrayBuffer, we must make a copy of the array first.
@@ -326,10 +322,10 @@ const mayNeedCopy = MonoWasmThreads && typeof SharedArrayBuffer !== "undefined";
 // BEWARE: In some cases, `instanceof SharedArrayBuffer` returns false even though buffer is an SAB.
 // Patch adapted from https://github.com/emscripten-core/emscripten/pull/16994
 // See also https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/toStringTag
-export function copy_string_buffer_as_necessary(view: Uint8Array, start: CharPtr, end: CharPtr): Uint8Array {
+export function copyBufferIfNecessary(view: Uint8Array, start: CharPtr, end: CharPtr): Uint8Array {
     updateGrowableHeapViews();
     // this condition should be eliminated by rollup on non-threading builds
-    const needsCopy = mayNeedCopy && view.buffer[Symbol.toStringTag] === "SharedArrayBuffer";
+    const needsCopy = isSharedArrayBuffer(view.buffer);
     return needsCopy
         ? view.slice(<any>start, <any>end)
         : view.subarray(<any>start, <any>end);

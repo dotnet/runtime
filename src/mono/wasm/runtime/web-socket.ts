@@ -8,7 +8,7 @@ import { updateGrowableHeapViews, setI32 } from "./memory";
 import { VoidPtr } from "./types/emscripten";
 import { PromiseController } from "./types/internal";
 import { mono_log_warn } from "./logging";
-import { copy_string_buffer_as_necessary, utf8ToStringRelaxed, encodeUTF8 } from "./strings";
+import { copyBufferIfNecessary, utf8ToStringRelaxed, encodeUTF8 } from "./strings";
 
 const wasm_ws_pending_send_buffer = Symbol.for("wasm ws_pending_send_buffer");
 const wasm_ws_pending_send_buffer_offset = Symbol.for("wasm ws_pending_send_buffer_offset");
@@ -335,7 +335,7 @@ function _mono_wasm_web_socket_send_buffering(ws: WebSocketExtension, buffer_vie
         if (message_type === 0) {
             // text, convert from UTF-8 bytes to string, because of bad browser API
 
-            const bytes = copy_string_buffer_as_necessary(buffer, 0 as any, offset as any);
+            const bytes = copyBufferIfNecessary(buffer, 0 as any, offset as any);
             // we do not validate outgoing data https://github.com/dotnet/runtime/issues/59214
             return utf8ToStringRelaxed(bytes);
         } else {
