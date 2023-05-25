@@ -98,6 +98,8 @@ class TrampolineInfo {
         method: MonoMethod, rmethod: VoidPtr, cinfo: VoidPtr,
         arg_offsets: VoidPtr, catch_exceptions: boolean
     ) {
+        mono_assert(arg_offsets, "Expected nonzero arg_offsets pointer");
+
         this.method = method;
         this.rmethod = rmethod;
         this.catchExceptions = catch_exceptions;

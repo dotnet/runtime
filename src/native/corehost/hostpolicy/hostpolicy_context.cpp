@@ -137,7 +137,7 @@ namespace
 
 bool hostpolicy_context_t::should_read_rid_fallback_graph(const hostpolicy_init_t &init)
 {
-    const auto &iter = std::find(init.cfg_keys.cbegin(), init.cfg_keys.cend(), _X("System.Host.Resolution.ReadRidGraph"));
+    const auto &iter = std::find(init.cfg_keys.cbegin(), init.cfg_keys.cend(), _X("System.Runtime.Loader.UseRidGraph"));
     if (iter != init.cfg_keys.cend())
     {
         size_t idx = iter - init.cfg_keys.cbegin();

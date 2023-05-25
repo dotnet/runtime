@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Text;
 
 public class BringUpTest
@@ -153,6 +154,8 @@ public class BringUpTest
             return Fail;
         }
 
+        TestFirstChanceExceptionEvent();
+
         throw new Exception("UnhandledException");
 
         return Fail;
@@ -239,6 +242,43 @@ public class BringUpTest
         {
             return 42;
         }
+    }
+
+    static void TestFirstChanceExceptionEvent()
+    {
+        bool didInvokeHandler = false;
+        Exception exception = new Exception();
+        EventHandler<FirstChanceExceptionEventArgs> handler = (_, e) =>
+        {
+            Console.WriteLine("Exception triggered FirstChanceException event handler");
+            if (e.Exception != exception)
+            {
+                Console.WriteLine("Unexpected exception!");
+                Environment.Exit(Fail);
+            }
+
+            didInvokeHandler = true;
+        };
+        Func<Exception, bool> check = e =>
+        {
+            if (!didInvokeHandler)
+            {
+                Console.WriteLine("Did not invoke FirstChanceException event handler!");
+                Environment.Exit(Fail);
+            }
+
+            return e == exception;
+        };
+
+        AppDomain.CurrentDomain.FirstChanceException += handler;
+        try
+        {
+            throw exception;
+        }
+        catch (Exception e) when (check(e))
+        {
+        }
+        AppDomain.CurrentDomain.FirstChanceException -= handler;
     }
 
     static bool FilterWithStackTrace(Exception e)

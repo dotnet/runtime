@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
-import { Module, runtimeHelpers, INTERNAL, ENVIRONMENT_IS_PTHREAD } from "../globals";
+import { Module, runtimeHelpers, INTERNAL } from "../globals";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { _release_temp_frame } from "../memory";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";
@@ -14,6 +13,7 @@ import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { mono_array_root_to_js_array, unbox_mono_obj_root } from "./cs-to-js";
 import { js_array_to_mono_array, js_to_mono_obj_root } from "./js-to-cs";
 import { Converter, BoundMethodToken, mono_method_resolve, mono_method_get_call_signature_ref, mono_bind_method } from "./method-binding";
+import { assert_legacy_interop } from "../pthreads/shared";
 
 const boundMethodsByFqn: Map<string, Function> = new Map();
 
@@ -53,6 +53,7 @@ export function _teardown_after_call(
 
 export function mono_bind_static_method(fqn: string, signature?: string/*ArgsMarshalString*/): Function {
     mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "The runtime must be initialized.");
+    assert_legacy_interop();
 
     const key = `${fqn}-${signature}`;
     let js_method = boundMethodsByFqn.get(key);
@@ -69,6 +70,7 @@ export function mono_bind_static_method(fqn: string, signature?: string/*ArgsMar
 }
 
 export function mono_bind_assembly_entry_point(assembly: string, signature?: string/*ArgsMarshalString*/): Function {
+    assert_legacy_interop();
     const method = find_entry_point(assembly);
     if (typeof (signature) !== "string")
         signature = mono_method_get_call_signature_ref(method, undefined);
@@ -84,6 +86,7 @@ export function mono_bind_assembly_entry_point(assembly: string, signature?: str
 
 export function mono_call_assembly_entry_point(assembly: string, args?: any[], signature?: string/*ArgsMarshalString*/): number {
     mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "The runtime must be initialized.");
+    assert_legacy_interop();
     if (!args) {
         args = [[]];
     }
@@ -91,9 +94,7 @@ export function mono_call_assembly_entry_point(assembly: string, args?: any[], s
 }
 
 export function mono_wasm_invoke_js_with_args_ref(js_handle: JSHandle, method_name: MonoStringRef, args: MonoObjectRef, is_exception: Int32Ptr, result_address: MonoObjectRef): any {
-    if (MonoWasmThreads && ENVIRONMENT_IS_PTHREAD) {
-        throw new Error("Legacy interop is not supported with WebAssembly threads.");
-    }
+    assert_legacy_interop();
     const argsRoot = mono_wasm_new_external_root<MonoArray>(args),
         nameRoot = mono_wasm_new_external_root<MonoString>(method_name),
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
@@ -131,6 +132,7 @@ export function mono_wasm_invoke_js_with_args_ref(js_handle: JSHandle, method_na
 }
 
 export function mono_wasm_get_object_property_ref(js_handle: JSHandle, property_name: MonoStringRef, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    assert_legacy_interop();
     const nameRoot = mono_wasm_new_external_root<MonoString>(property_name),
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
@@ -158,6 +160,7 @@ export function mono_wasm_get_object_property_ref(js_handle: JSHandle, property_
 }
 
 export function mono_wasm_set_object_property_ref(js_handle: JSHandle, property_name: MonoStringRef, value: MonoObjectRef, createIfNotExist: boolean, hasOwnProperty: boolean, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    assert_legacy_interop();
     const valueRoot = mono_wasm_new_external_root<MonoObject>(value),
         nameRoot = mono_wasm_new_external_root<MonoString>(property_name),
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
@@ -206,6 +209,7 @@ export function mono_wasm_set_object_property_ref(js_handle: JSHandle, property_
 }
 
 export function mono_wasm_get_by_index_ref(js_handle: JSHandle, property_index: number, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    assert_legacy_interop();
     const resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
         const obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
@@ -225,6 +229,7 @@ export function mono_wasm_get_by_index_ref(js_handle: JSHandle, property_index: 
 }
 
 export function mono_wasm_set_by_index_ref(js_handle: JSHandle, property_index: number, value: MonoObjectRef, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    assert_legacy_interop();
     const valueRoot = mono_wasm_new_external_root<MonoObject>(value),
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
@@ -246,6 +251,7 @@ export function mono_wasm_set_by_index_ref(js_handle: JSHandle, property_index: 
 }
 
 export function mono_wasm_get_global_object_ref(global_name: MonoStringRef, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    assert_legacy_interop();
     const nameRoot = mono_wasm_new_external_root<MonoString>(global_name),
         resultRoot = mono_wasm_new_external_root(result_address);
     try {
@@ -285,9 +291,7 @@ export function mono_wasm_get_global_object_ref(global_name: MonoStringRef, is_e
 // Blazor specific custom routine
 export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo: any, arg0: any, arg1: any, arg2: any): void | number {
     try {
-        if (MonoWasmThreads) {
-            throw new Error("Legacy interop is not supported with WebAssembly threads.");
-        }
+        assert_legacy_interop();
         const blazorExports = (<any>globalThis).Blazor;
         if (!blazorExports) {
             throw new Error("The blazor.webassembly.js library is not loaded.");
