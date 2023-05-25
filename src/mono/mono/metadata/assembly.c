@@ -1480,11 +1480,15 @@ open_from_bundle_internal (MonoAssemblyLoadContext *alc, const char *filename, M
 	if (!mono_bundled_resources_contains_assemblies ())
 		return NULL;
 
-	MonoBundledAssemblyResource *assembly = mono_bundled_resources_get_assembly_resource (filename);
+	char *name = g_path_get_basename (filename);
+	MonoBundledAssemblyResource *assembly = mono_bundled_resources_get_assembly_resource (name);
 	if (!assembly)
 		return NULL;
 
-	return mono_image_open_from_data_internal (alc, (char *)assembly->assembly.data, assembly->assembly.size, FALSE, status, FALSE, assembly->resource.id, NULL);
+	MonoImage *image = mono_image_open_from_data_internal (alc, (char *)assembly->assembly.data, assembly->assembly.size, FALSE, status, FALSE, name, NULL);
+
+	g_free (name);
+	return image;
 }
 
 static MonoImage *
@@ -1494,13 +1498,14 @@ open_from_satellite_bundle (MonoAssemblyLoadContext *alc, const char *filename, 
 		return NULL;
 
 	char *bundle_name = g_strconcat (culture, "/", filename, (const char *)NULL);
-
 	MonoBundledSatelliteAssemblyResource *satellite_assembly = mono_bundled_resources_get_satellite_assembly_resource (bundle_name);
-	g_free (bundle_name);
 	if (!satellite_assembly)
 		return NULL;
 
-	return mono_image_open_from_data_internal (alc, (char *)satellite_assembly->satellite_assembly.data, satellite_assembly->satellite_assembly.size, FALSE, status, FALSE, satellite_assembly->resource.id, NULL);
+	MonoImage *image = mono_image_open_from_data_internal (alc, (char *)satellite_assembly->satellite_assembly.data, satellite_assembly->satellite_assembly.size, FALSE, status, FALSE, bundle_name, NULL);
+
+	g_free (bundle_name);
+	return image;
 
 }
 
@@ -1524,11 +1529,8 @@ mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filena
 	MONO_ENTER_GC_UNSAFE;
 	if (culture && culture [0] != 0)
 		image = open_from_satellite_bundle (alc, filename, status, culture);
-	else {
-		char *name = g_path_get_basename (filename);
-		image = open_from_bundle_internal (alc, name, status);
-		g_free (name);
-    }
+	else
+		image = open_from_bundle_internal (alc, filename, status);
 
 	if (image) {
 		mono_image_addref (image);

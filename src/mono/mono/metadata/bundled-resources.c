@@ -6,6 +6,8 @@
 #include <stdbool.h>
 
 #include <mono/metadata/bundled-resources-internals.h>
+#include <mono/metadata/cil-coff.h>
+#include <mono/metadata/webcil-loader.h>
 
 static GHashTable *bundled_resources = NULL;
 static bool bundle_contains_assemblies = false;
@@ -64,6 +66,54 @@ mono_bundled_resources_value_destroy_func (void *resource)
 		value->free_bundled_resource_func (resource);
 }
 
+static bool
+is_known_assembly_extension (const char *ext)
+{
+	return !strcmp (ext, ".dll") || !strcmp (ext, ".webcil") || !strcmp (ext, MONO_WEBCIL_IN_WASM_EXTENSION);
+}
+
+static gboolean
+resource_id_equal (const char *id_one, const char *id_two)
+{
+	const char *extension_one = strrchr (id_one, '.');
+	const char *extension_two = strrchr (id_two, '.');
+	if (extension_one && extension_two && is_known_assembly_extension (extension_one) && is_known_assembly_extension (extension_two)) {
+		size_t len_one = extension_one - id_one;
+		size_t len_two = extension_two - id_two;
+		return (len_one == len_two) && !strncmp (id_one, id_two, len_one);
+	}
+
+	return !strcmp (id_one, id_two);
+}
+
+static guint
+resource_id_hash (const char *id)
+{
+	guint hash = 0;
+	size_t len = strlen (id);
+	char *extension = strrchr (id, '.');
+	// alias all extensions to .dll
+	bool has_asm_extension = false;
+	if (extension && is_known_assembly_extension (extension)) {
+		len = extension - id;
+		has_asm_extension = true;
+	}
+
+	char *p = (char *)id;
+
+	while (p != id + len)
+		hash = (hash << 5) - (hash + (unsigned char)*p++);
+
+	if (has_asm_extension) {
+		hash = (hash << 5) - (hash + '.');
+		hash = (hash << 5) - (hash + 'd');
+		hash = (hash << 5) - (hash + 'l');
+		hash = (hash << 5) - (hash + 'l');
+	}
+
+	return hash;
+}
+
 //---------------------------------------------------------------------------------------
 //
 // mono_bundled_resources_add handles bundling of many types of resources to circumvent
@@ -87,7 +137,7 @@ void
 mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t len)
 {
 	if (!bundled_resources)
-		bundled_resources = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, mono_bundled_resources_value_destroy_func);
+		bundled_resources = g_hash_table_new_full ((GHashFunc)resource_id_hash, (GEqualFunc)resource_id_equal, NULL, mono_bundled_resources_value_destroy_func);
 
 	bool assemblyAdded = false;
 	bool satelliteAssemblyAdded = false;
