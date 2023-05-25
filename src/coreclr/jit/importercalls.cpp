@@ -5903,12 +5903,8 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         }
         else
         {
-            assert(numExactClasses <= maxTypeChecks);
+            assert((numExactClasses > 0) && (numExactClasses <= maxTypeChecks));
             JITDUMP("We have exactly %d classes implementing %s:\n", numExactClasses, eeGetClassName(baseClass));
-
-            // While it's legal to have only one exact class here, we expect that such cases are handled
-            // naturally without help of GDV.
-            assert(numExactClasses > 1);
 
             int skipped = 0;
             for (int exactClsIdx = 0; exactClsIdx < numExactClasses; exactClsIdx++)

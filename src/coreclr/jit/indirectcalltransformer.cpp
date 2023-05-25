@@ -984,15 +984,17 @@ private:
             compiler->fgAddRefPred(remainderBlock, elseBlock);
             compiler->fgAddRefPred(elseBlock, checkBlock);
 
-            weight_t newWeight = checkBlock->bbWeight - thenBlock->bbWeight;
-            if (newWeight < 0)
+            // Calculate the likelihood of the else block as a remainder of the sum
+            // of all the other likelihoods.
+            unsigned elseLikelihood = 100;
+            for (uint8_t i = 0; i < origCall->GetInlineCandidatesCount(); i++)
             {
-                // There could be a small error leading to e.g. -0.00001 instead of 0.0 here
-                // Mostly because of inheritWeightPercentage for thenBlock;
-                newWeight = 0;
+                elseLikelihood -= origCall->GetGDVCandidateInfo(i)->likelihood;
             }
+            // Make sure it didn't overflow
+            assert(elseLikelihood <= 100);
 
-            elseBlock->setBBProfileWeight(newWeight);
+            elseBlock->inheritWeightPercentage(currBlock, elseLikelihood);
 
             GenTreeCall* call    = origCall;
             Statement*   newStmt = compiler->gtNewStmt(call, stmt->GetDebugInfo());
