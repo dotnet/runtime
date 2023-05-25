@@ -1002,7 +1002,7 @@ namespace System.Numerics
             }
         }
 
-        private static string? FormatBigIntegerToBin(BigInteger value, int digits)
+        private static string? FormatBigIntegerToBin(bool targetSpan, BigInteger value, int digits, Span<char> destination, out int charsWritten, out bool spanSuccess)
         {
             // Get the bytes that make up the BigInteger.
             byte[]? arrayToReturnToPool = null;
@@ -1035,6 +1035,18 @@ namespace System.Numerics
             Debug.Assert(digits < Array.MaxLength);
             int charsIncludeDigits = Math.Max(digits, charsForBits);
 
+            if (targetSpan && charsIncludeDigits > destination.Length)
+            {
+                if (arrayToReturnToPool is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(arrayToReturnToPool);
+                }
+
+                charsWritten = 0;
+                spanSuccess = false;
+                return null;
+            }
+
             // each byte is typically eight chars
             ValueStringBuilder sb = charsIncludeDigits > 512 ? new ValueStringBuilder(charsIncludeDigits) : new ValueStringBuilder(stackalloc char[charsIncludeDigits]);
 
@@ -1054,6 +1066,16 @@ namespace System.Numerics
             {
                 ArrayPool<byte>.Shared.Return(arrayToReturnToPool);
             }
+
+            if (targetSpan)
+            {
+                spanSuccess = sb.TryCopyTo(destination, out charsWritten);
+                Debug.Assert(spanSuccess);
+                return null;
+            }
+
+            charsWritten = 0;
+            spanSuccess = false;
             return sb.ToString();
 
             static void AppendByte(ref ValueStringBuilder sb, byte b, int startHighBit = 7)
@@ -1089,7 +1111,10 @@ namespace System.Numerics
             {
                 return FormatBigIntegerToHex(targetSpan, value, fmt, digits, info, destination, out charsWritten, out spanSuccess);
             }
-
+            if (fmt == 'b' || fmt == 'B')
+            {
+                return FormatBigIntegerToBin(targetSpan, value, digits, destination, out charsWritten, out spanSuccess);
+            }
 
             if (value._bits == null)
             {
