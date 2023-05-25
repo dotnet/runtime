@@ -1448,32 +1448,6 @@ absolute_dir (const gchar *filename)
 	return res;
 }
 
-static gboolean
-bundled_assembly_match (const char *bundled_name, const char *name)
-{
-#ifndef ENABLE_WEBCIL
-	return strcmp (bundled_name, name) == 0;
-#else
-	if (strcmp (bundled_name, name) == 0)
-		return TRUE;
-	/* if they want a .dll and we have the matching .webcil, return it */
-	if (g_str_has_suffix (bundled_name, ".webcil") && g_str_has_suffix (name, ".dll")) {
-		size_t bprefix = strlen (bundled_name) - strlen (".webcil");
-		size_t nprefix = strlen (name) - strlen (".dll");
-		if (bprefix == nprefix && strncmp (bundled_name, name, bprefix) == 0)
-			return TRUE;
-	}
-	/* if they want a .dll and we have the matching .wasm webcil-in-wasm, return it */
-	if (g_str_has_suffix (bundled_name, MONO_WEBCIL_IN_WASM_EXTENSION) && g_str_has_suffix (name, ".dll")) {
-		size_t bprefix = strlen (bundled_name) - strlen (MONO_WEBCIL_IN_WASM_EXTENSION);
-		size_t nprefix = strlen (name) - strlen (".dll");
-		if (bprefix == nprefix && strncmp (bundled_name, name, bprefix) == 0)
-			return TRUE;
-	}
-	return FALSE;
-#endif
-}
-
 static MonoImage *
 open_from_bundle_internal (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status)
 {

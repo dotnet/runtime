@@ -66,6 +66,7 @@ mono_bundled_resources_value_destroy_func (void *resource)
 		value->free_bundled_resource_func (resource);
 }
 
+#ifdef ENABLE_WEBCIL
 static bool
 is_known_assembly_extension (const char *ext)
 {
@@ -89,23 +90,23 @@ resource_id_equal (const char *id_one, const char *id_two)
 static guint
 resource_id_hash (const char *id)
 {
+	const char *current = id;
+	const char *extension = NULL;
+	guint previous_hash = 0;
 	guint hash = 0;
-	size_t len = strlen (id);
-	char *extension = strrchr (id, '.');
-	// alias all extensions to .dll
-	bool has_asm_extension = false;
-	if (extension && is_known_assembly_extension (extension)) {
-		len = extension - id;
-		has_asm_extension = true;
+
+	while (*current) {
+		hash = (hash << 5) - (hash + *current);
+		if (*current == '.') {
+			extension = current;
+			previous_hash = hash;
+		}
+		current++;
 	}
 
-	char *p = (char *)id;
-
-	while (p != id + len)
-		hash = (hash << 5) - (hash + (unsigned char)*p++);
-
-	if (has_asm_extension) {
-		hash = (hash << 5) - (hash + '.');
+	// alias all extensions to .dll
+	if (extension && is_known_assembly_extension (extension)) {
+		hash = previous_hash;
 		hash = (hash << 5) - (hash + 'd');
 		hash = (hash << 5) - (hash + 'l');
 		hash = (hash << 5) - (hash + 'l');
@@ -113,6 +114,7 @@ resource_id_hash (const char *id)
 
 	return hash;
 }
+#endif // ENABLE_WEBCIL
 
 //---------------------------------------------------------------------------------------
 //
@@ -136,8 +138,13 @@ resource_id_hash (const char *id)
 void
 mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t len)
 {
-	if (!bundled_resources)
+	if (!bundled_resources) {
+#ifdef ENABLE_WEBCIL
 		bundled_resources = g_hash_table_new_full ((GHashFunc)resource_id_hash, (GEqualFunc)resource_id_equal, NULL, mono_bundled_resources_value_destroy_func);
+#else
+		bundled_resources = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, mono_bundled_resources_value_destroy_func);
+#endif
+	}
 
 	bool assemblyAdded = false;
 	bool satelliteAssemblyAdded = false;
