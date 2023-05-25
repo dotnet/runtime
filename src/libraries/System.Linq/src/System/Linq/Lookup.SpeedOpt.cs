@@ -10,22 +10,16 @@ namespace System.Linq
     {
         IGrouping<TKey, TElement>[] IIListProvider<IGrouping<TKey, TElement>>.ToArray()
         {
-            IGrouping<TKey, TElement>[] array = new IGrouping<TKey, TElement>[_count];
-            int index = 0;
-            Grouping<TKey, TElement>? g = _lastGrouping;
-            if (g != null)
+            IGrouping<TKey, TElement>[] array;
+            if (_count > 0)
             {
-                do
-                {
-                    g = g._next;
-                    Debug.Assert(g != null);
-
-                    array[index] = g;
-                    ++index;
-                }
-                while (g != _lastGrouping);
+                array = new IGrouping<TKey, TElement>[_count];
+                Fill(_lastGrouping, array);
             }
-
+            else
+            {
+                array = Array.Empty<IGrouping<TKey, TElement>>();
+            }
             return array;
         }
 
@@ -53,8 +47,24 @@ namespace System.Linq
 
         List<IGrouping<TKey, TElement>> IIListProvider<IGrouping<TKey, TElement>>.ToList()
         {
-            List<IGrouping<TKey, TElement>> list = new List<IGrouping<TKey, TElement>>(_count);
-            Grouping<TKey, TElement>? g = _lastGrouping;
+            List<IGrouping<TKey, TElement>> list;
+            if (_count > 0)
+            {
+                list = new List<IGrouping<TKey, TElement>>(_count);
+                Fill(_lastGrouping, Enumerable.SetCountAndGetSpan(list, _count));
+            }
+            else
+            {
+                list = new List<IGrouping<TKey, TElement>>();
+            }
+
+            return list;
+        }
+
+        private static void Fill(Grouping<TKey, TElement>? lastGrouping, Span<IGrouping<TKey, TElement>> results)
+        {
+            int index = 0;
+            Grouping<TKey, TElement>? g = lastGrouping;
             if (g != null)
             {
                 do
@@ -62,12 +72,12 @@ namespace System.Linq
                     g = g._next;
                     Debug.Assert(g != null);
 
-                    list.Add(g);
-                }
-                while (g != _lastGrouping);
+                    results[index] = g;
+                    ++index;
+                } while (g != lastGrouping);
             }
 
-            return list;
+            Debug.Assert(index == results.Length, "All list elements were not initialized.");
         }
 
         int IIListProvider<IGrouping<TKey, TElement>>.GetCount(bool onlyIfCheap) => _count;

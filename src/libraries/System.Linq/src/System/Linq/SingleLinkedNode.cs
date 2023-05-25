@@ -92,15 +92,26 @@ namespace System.Linq
             Debug.Assert(count == GetCount());
 
             TSource[] array = new TSource[count];
-            int index = count;
+            Fill(array);
+            return array;
+        }
+
+        /// <summary>
+        /// Fills a span with the items of this node's singly-linked list in reverse.
+        /// </summary>
+        /// <param name="span">The span to fill. Must be the precise size required.</param>
+        public void Fill(Span<TSource> span)
+        {
+            Debug.Assert(span.Length == GetCount());
+
+            int index = span.Length;
             for (SingleLinkedNode<TSource>? node = this; node != null; node = node.Linked)
             {
                 --index;
-                array[index] = node.Item;
+                span[index] = node.Item;
             }
 
             Debug.Assert(index == 0);
-            return array;
         }
     }
 }

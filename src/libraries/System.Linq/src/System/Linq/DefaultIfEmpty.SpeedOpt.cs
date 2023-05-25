@@ -18,10 +18,21 @@ namespace System.Linq
 
             public List<TSource> ToList()
             {
-                List<TSource> list = _source.ToList();
-                if (list.Count == 0)
+                List<TSource> list;
+                if (_source is IIListProvider<TSource> listProvider && listProvider.GetCount(onlyIfCheap: true) == 0)
                 {
-                    list.Add(_default);
+                    // When _source is empty, the ToList() code path will generally allocate an empty list which must then
+                    // be resized to accept the default item. When it is cheap to determine that it will be empty, directly
+                    // allocate a single item list instead.
+                    list = ToSingleItemList(_default);
+                }
+                else
+                {
+                    list = _source.ToList();
+                    if (list.Count == 0)
+                    {
+                        list.Add(_default);
+                    }
                 }
 
                 return list;

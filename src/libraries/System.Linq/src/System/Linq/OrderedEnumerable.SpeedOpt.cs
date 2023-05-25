@@ -98,7 +98,7 @@ namespace System.Linq
 
             if (minIdx == maxIdx)
             {
-                return new List<TElement>(1) { GetEnumerableSorter().ElementAt(buffer._items, count, minIdx) };
+                return Enumerable.ToSingleItemList(GetEnumerableSorter().ElementAt(buffer._items, count, minIdx));
             }
 
             List<TElement> list = new List<TElement>(maxIdx - minIdx + 1);

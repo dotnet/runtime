@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Linq
 {
@@ -255,14 +256,37 @@ namespace System.Linq
 
         private static List<TSource> HashSetToList<TSource>(HashSet<TSource> set)
         {
-            var result = new List<TSource>(set.Count);
+            int count = set.Count;
 
-            foreach (TSource item in set)
+            List<TSource> result;
+            if (count > 0)
             {
-                result.Add(item);
+                result = new List<TSource>(count);
+                Span<TSource> span = SetCountAndGetSpan(result, count);
+
+                int index = 0;
+                foreach (TSource item in set)
+                {
+                    span[index] = item;
+                    ++index;
+                }
+
+                Debug.Assert(index == span.Length, "All list elements were not initialized.");
+            }
+            else
+            {
+                result = new List<TSource>();
             }
 
             return result;
+        }
+
+        internal static List<TSource> ToSingleItemList<TSource>(TSource item)
+        {
+            List<TSource> list = new List<TSource>(1);
+            Span<TSource> span = SetCountAndGetSpan(list, 1);
+            span[0] = item;
+            return list;
         }
     }
 }
