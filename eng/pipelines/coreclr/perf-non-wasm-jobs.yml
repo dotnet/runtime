@@ -1,6 +1,6 @@
 jobs:
 
-- ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
+# - ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
 
 #   # build mono
 #   - template: /eng/pipelines/common/platform-matrix.yml
@@ -148,107 +148,107 @@ jobs:
   #       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
   #       logicalmachine: 'perfpixel4a'
 
-  # run mono iOS scenarios scenarios
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: mono
-      platforms:
-        - osx_x64
-      jobParameters:
-        testGroup: perf
-        runtimeType: iOSMono
-        projectFile: ios_scenarios.proj
-        runKind: ios_scenarios
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        logicalmachine: 'perfiphone12mini'
-        iOSLlvmBuild: False
-        iOSStripSymbols: False
+  # # run mono iOS scenarios scenarios
+  # - template: /eng/pipelines/common/platform-matrix.yml
+  #   parameters:
+  #     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+  #     buildConfig: release
+  #     runtimeFlavor: mono
+  #     platforms:
+  #       - osx_x64
+  #     jobParameters:
+  #       testGroup: perf
+  #       runtimeType: iOSMono
+  #       projectFile: ios_scenarios.proj
+  #       runKind: ios_scenarios
+  #       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+  #       logicalmachine: 'perfiphone12mini'
+  #       iOSLlvmBuild: False
+  #       iOSStripSymbols: False
 
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: mono
-      platforms:
-        - osx_x64
-      jobParameters:
-        testGroup: perf
-        runtimeType: iOSMono
-        projectFile: ios_scenarios.proj
-        runKind: ios_scenarios
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        logicalmachine: 'perfiphone12mini'
-        iOSLlvmBuild: False
-        iOSStripSymbols: True
+  # - template: /eng/pipelines/common/platform-matrix.yml
+  #   parameters:
+  #     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+  #     buildConfig: release
+  #     runtimeFlavor: mono
+  #     platforms:
+  #       - osx_x64
+  #     jobParameters:
+  #       testGroup: perf
+  #       runtimeType: iOSMono
+  #       projectFile: ios_scenarios.proj
+  #       runKind: ios_scenarios
+  #       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+  #       logicalmachine: 'perfiphone12mini'
+  #       iOSLlvmBuild: False
+  #       iOSStripSymbols: True
 
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: mono
-      platforms:
-        - osx_x64
-      jobParameters:
-        testGroup: perf
-        runtimeType: iOSMono
-        projectFile: ios_scenarios.proj
-        runKind: ios_scenarios
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        logicalmachine: 'perfiphone12mini'
-        iOSLlvmBuild: True
-        iOSStripSymbols: False
+  # - template: /eng/pipelines/common/platform-matrix.yml
+  #   parameters:
+  #     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+  #     buildConfig: release
+  #     runtimeFlavor: mono
+  #     platforms:
+  #       - osx_x64
+  #     jobParameters:
+  #       testGroup: perf
+  #       runtimeType: iOSMono
+  #       projectFile: ios_scenarios.proj
+  #       runKind: ios_scenarios
+  #       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+  #       logicalmachine: 'perfiphone12mini'
+  #       iOSLlvmBuild: True
+  #       iOSStripSymbols: False
 
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: mono
-      platforms:
-        - osx_x64
-      jobParameters:
-        testGroup: perf
-        runtimeType: iOSMono
-        projectFile: ios_scenarios.proj
-        runKind: ios_scenarios
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        logicalmachine: 'perfiphone12mini'
-        iOSLlvmBuild: True
-        iOSStripSymbols: True
+  # - template: /eng/pipelines/common/platform-matrix.yml
+  #   parameters:
+  #     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+  #     buildConfig: release
+  #     runtimeFlavor: mono
+  #     platforms:
+  #       - osx_x64
+  #     jobParameters:
+  #       testGroup: perf
+  #       runtimeType: iOSMono
+  #       projectFile: ios_scenarios.proj
+  #       runKind: ios_scenarios
+  #       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+  #       logicalmachine: 'perfiphone12mini'
+  #       iOSLlvmBuild: True
+  #       iOSStripSymbols: True
 
-  # run NativeAOT iOS scenarios
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: mono
-      platforms:
-        - osx_x64
-      jobParameters:
-        testGroup: perf
-        runtimeType: iOSNativeAOT
-        projectFile: ios_nativeaot_scenarios.proj
-        runKind: ios_scenarios
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        logicalmachine: 'perfiphone12mini'
-        iOSStripSymbols: False
+  # # run NativeAOT iOS scenarios
+  # - template: /eng/pipelines/common/platform-matrix.yml
+  #   parameters:
+  #     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+  #     buildConfig: release
+  #     runtimeFlavor: mono
+  #     platforms:
+  #       - osx_x64
+  #     jobParameters:
+  #       testGroup: perf
+  #       runtimeType: iOSNativeAOT
+  #       projectFile: ios_nativeaot_scenarios.proj
+  #       runKind: ios_scenarios
+  #       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+  #       logicalmachine: 'perfiphone12mini'
+  #       iOSStripSymbols: False
 
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: mono
-      platforms:
-        - osx_x64
-      jobParameters:
-        testGroup: perf
-        runtimeType: iOSNativeAOT
-        projectFile: ios_nativeaot_scenarios.proj
-        runKind: ios_scenarios
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        logicalmachine: 'perfiphone12mini'
-        iOSStripSymbols: True
+  # - template: /eng/pipelines/common/platform-matrix.yml
+  #   parameters:
+  #     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+  #     buildConfig: release
+  #     runtimeFlavor: mono
+  #     platforms:
+  #       - osx_x64
+  #     jobParameters:
+  #       testGroup: perf
+  #       runtimeType: iOSNativeAOT
+  #       projectFile: ios_nativeaot_scenarios.proj
+  #       runKind: ios_scenarios
+  #       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+  #       logicalmachine: 'perfiphone12mini'
+  #       iOSStripSymbols: True
 
   # # run mono microbenchmarks perf job
   # - template: /eng/pipelines/common/platform-matrix.yml
