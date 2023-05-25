@@ -588,14 +588,8 @@ private:
                 compiler->fgAddRefPred(checkBlock, prevCheckBlock);
 
                 // Weight for the new secondary check is the difference between the previous check and the thenBlock.
-                weight_t newWeight = inheritWeightPercentage(prevCheckBlock, 100 - origCall->GetGDVCandidateInfo(checkIdx)->likelihood);
-                if (newWeight < 0)
-                {
-                    // There could be a small error leading to e.g. -0.00001 instead of 0.0 here
-                    // Mostly because of inheritWeightPercentage for thenBlock;
-                    newWeight = 0;
-                }
-                checkBlock->setBBProfileWeight(newWeight);
+                checkBlock->inheritWeightPercentage(prevCheckBlock,
+                                                    100 - origCall->GetGDVCandidateInfo(checkIdx)->likelihood);
             }
 
             // Find last arg with a side effect. All args with any effect
@@ -932,7 +926,7 @@ private:
                 inlineInfo->clsHandle            = compiler->info.compCompHnd->getMethodClass(methodHnd);
                 inlineInfo->exactContextHnd      = context;
                 inlineInfo->preexistingSpillTemp = returnTemp;
-                call->SetSingleInlineCadidateInfo(inlineInfo);
+                call->SetSingleInlineCandidateInfo(inlineInfo);
 
                 // If there was a ret expr for this call, we need to create a new one
                 // and append it just after the call.

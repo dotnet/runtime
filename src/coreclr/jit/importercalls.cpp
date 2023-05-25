@@ -6523,7 +6523,7 @@ bool Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     else
     {
         assert(candidateIndex == 0);
-        call->SetSingleInlineCadidateInfo(inlineCandidateInfo);
+        call->SetSingleInlineCandidateInfo(inlineCandidateInfo);
     }
 
     // Let the strategy know there's another candidate.

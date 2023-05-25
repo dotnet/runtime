@@ -5430,7 +5430,7 @@ struct GenTreeCall final : public GenTree
         return gtInlineCandidateInfo;
     }
 
-    void SetSingleInlineCadidateInfo(InlineCandidateInfo* candidateInfo);
+    void SetSingleInlineCandidateInfo(InlineCandidateInfo* candidateInfo);
 
     InlineCandidateInfo* GetGDVCandidateInfo(uint8_t index);
 
@@ -5438,7 +5438,7 @@ struct GenTreeCall final : public GenTree
 
     void ClearInlineInfo()
     {
-        SetSingleInlineCadidateInfo(nullptr);
+        SetSingleInlineCandidateInfo(nullptr);
     }
 
     uint8_t GetInlineCandidatesCount()
