@@ -385,13 +385,17 @@ ep_rt_aot_file_write (
     return ::WriteFile (file_handle, buffer, bytes_to_write, reinterpret_cast<LPDWORD>(bytes_written), NULL) != FALSE;
 #else
     int fd = (int)(ptrdiff_t)file_handle;
-    int ret = write (fd, buffer, bytes_to_write);
+    int ret;
+    do {
+        ret = write (fd, buffer, bytes_to_write);
+    } while (ret == -1 && errno == EINTR);
+
     if (ret == -1) {
         if (bytes_written != NULL) {
             *bytes_written = 0;
         }
 
-        return errno == EINTR;
+        return false;
     }
 
     if (bytes_written != NULL)
