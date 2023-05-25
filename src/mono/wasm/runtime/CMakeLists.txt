@@ -1,4 +1,9 @@
-cmake_minimum_required(VERSION 3.14.5)
+if (TARGET_ARCH MATCHES "wasm")
+    # Temporary workaround for CI wasm machines that still have CMake 3.17.0.
+    cmake_minimum_required(VERSION 3.17.0)
+else ()
+    cmake_minimum_required(VERSION 3.20)
+endif ()
 
 project(mono-wasm-runtime C)
 
