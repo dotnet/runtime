@@ -358,33 +358,26 @@
     <GetFileHash Files="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat">
       <Output TaskParameter="Items" ItemName="WasmBundleIcuWithHashes" />
     </GetFileHash>
-    <ItemGroup>
-      <WasmBundleAssembliesWithHashes Update="@(WasmBundleAssembliesWithHashes)">
-        <DestinationFile>$(_WasmIntermediateOutputPath)%(WasmBundleAssembliesWithHashes.Filename)%(WasmBundleAssembliesWithHashes.Extension).$([System.String]::Copy(%(WasmBundleAssembliesWithHashes.FileHash)).Substring(0, 8)).o</DestinationFile>
-      </WasmBundleAssembliesWithHashes>
-      <WasmBundleIcuWithHashes Update="@(WasmBundleIcuWithHashes)">
-        <DestinationFile>$(_WasmIntermediateOutputPath)%(WasmBundleIcuWithHashes.Filename)%(WasmBundleIcuWithHashes.Extension).$([System.String]::Copy(%(WasmBundleIcuWithHashes.FileHash)).Substring(0, 8)).o</DestinationFile>
-      </WasmBundleIcuWithHashes>
-    </ItemGroup>
     <!-- TODO make this incremental compilation -->
     <EmitBundleObjectFiles
       FilesToBundle="@(WasmBundleAssembliesWithHashes)"
       ClangExecutable="$(WasiClang)"
       BundleRegistrationFunctionName="mono_register_assemblies_bundle"
       BundleFile="$(_WasmAssembliesBundleObjectFile)"
-      OutputDirectory="$(_WasmIntermediateOutputPath)"
-      />
+      OutputDirectory="$(_WasmIntermediateOutputPath)">
+      <Output TaskParameter="BundledResources" ItemName="BundledWasmAssemblies" />
+    </EmitBundleObjectFiles>
 
     <ItemGroup>
       <_WasiObjectFilesForBundle Include="$(_WasmIntermediateOutputPath)$(_WasmAssembliesBundleObjectFile)" />
-      <_WasiObjectFilesForBundle Include="%(WasmBundleAssembliesWithHashes.DestinationFile)" />
+      <_WasiObjectFilesForBundle Include="$(_WasmIntermediateOutputPath)%(BundledWasmAssemblies.DestinationFile)" />
     </ItemGroup>
 
     <!-- Clean up the bundle-objects dir - remove anything we no longer need -->
     <ItemGroup>
       <WasmBundleFileToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
       <WasmBundleFileToDelete Remove="$(_WasmIntermediateOutputPath)$(_WasmAssembliesBundleObjectFile)" />
-      <WasmBundleFileToDelete Remove="%(WasmBundleAssembliesWithHashes.DestinationFile)" />
+      <WasmBundleFileToDelete Remove="$(_WasmIntermediateOutputPath)%(BundledWasmAssemblies.DestinationFile)" />
     </ItemGroup>
 
     <EmitBundleObjectFiles
@@ -393,17 +386,18 @@
       ClangExecutable="$(WasiClang)"
       BundleRegistrationFunctionName="mono_register_icu_bundle"
       BundleFile="$(_WasmIcuBundleObjectFile)"
-      OutputDirectory="$(_WasmIntermediateOutputPath)"
-      />
+      OutputDirectory="$(_WasmIntermediateOutputPath)">
+      <Output TaskParameter="BundledResources" ItemName="BundledWasmIcu" />
+    </EmitBundleObjectFiles>
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
       <_WasiObjectFilesForBundle Include="$(_WasmIntermediateOutputPath)$(_WasmIcuBundleObjectFile)" />
-      <_WasiObjectFilesForBundle Include="%(WasmBundleIcuWithHashes.DestinationFile)" />
+      <_WasiObjectFilesForBundle Include="$(_WasmIntermediateOutputPath)%(BundledWasmIcu.DestinationFile)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
       <WasmBundleFileToDelete Remove="$(_WasmIntermediateOutputPath)$(_WasmIcuBundleObjectFile)" />
-      <WasmBundleFileToDelete Remove="%(WasmBundleIcuWithHashes.DestinationFile)" />
+      <WasmBundleFileToDelete Remove="$(_WasmIntermediateOutputPath)%(BundledWasmIcu.DestinationFile)" />
     </ItemGroup>
     
     <Delete Files="@(WasmBundleFileToDelete)" />

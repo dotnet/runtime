@@ -81,7 +81,6 @@
     </GetFileHash>
     <ItemGroup>
       <_WasmBundleTimezonesWithHashes Update="@(_WasmBundleTimezonesWithHashes)">
-        <DestinationFile>$(WasiObjDir)\wasm-bundled-$([System.String]::Copy(%(_WasmBundleTimezonesWithHashes.FileHash))).o</DestinationFile>
         <RegisteredName>/usr/share/zoneinfo/$([MSBuild]::MakeRelative($(_WasmTimezonesPath), %(_WasmBundleTimezonesWithHashes.Identity)).Replace('\','/'))</RegisteredName>
       </_WasmBundleTimezonesWithHashes>
     </ItemGroup>
@@ -91,10 +90,11 @@
       ClangExecutable="$(WasiClang)"
       BundleRegistrationFunctionName="mono_register_timezones_bundle"
       BundleFile="$(_WasmTimezonesBundleObjectFile)"
-      OutputDirectory="$(WasiObjDir)"
-      />
+      OutputDirectory="$(WasiObjDir)">
+      <Output TaskParameter="BundledResources" ItemName="BundledWasiTimezones" />
+    </EmitBundleObjectFiles>
     <ItemGroup>
-      <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasiObjDir), %(_WasmBundleTimezonesWithHashes.DestinationFile)).Replace('\','/'))" />
+      <WasmBundleTimezonesObjects Include="%(BundledWasiTimezones.DestinationFile)" />
       <WasmBundleTimezonesObjects Include="$(_WasmTimezonesBundleObjectFile)" />
     </ItemGroup>
     <WriteLinesToFile File="$(_WasmTimezonesArchiveRsp)"
@@ -111,7 +111,7 @@
     <ItemGroup>
       <_WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
       <_WasmBundleTimezonesToDelete Remove="$(WasiObjDir)\$(_WasmTimezonesBundleObjectFile)" />
-      <_WasmBundleTimezonesToDelete Remove="%(_WasmBundleTimezonesWithHashes.DestinationFile)" />
+      <_WasmBundleTimezonesToDelete Remove="$(WasiObjDir)\%(BundledWasiTimezones.DestinationFile)" />
     </ItemGroup>
     <Delete Files="@(_WasmBundleTimezonesToDelete)" />
   </Target>
