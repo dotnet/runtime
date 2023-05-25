@@ -53,10 +53,9 @@ namespace System.Diagnostics.Metrics
             Unit = unit;
             if (tags is not null)
             {
-                var tagsArray = DiagnosticsHelper.ToArray(tags);
-                Debug.Assert(tagsArray is not null);
-                Array.Sort(tagsArray, (left, right) => string.Compare(left.Key, right.Key, StringComparison.Ordinal));
-                Tags = tagsArray;
+                var tagList = new List<KeyValuePair<string, object?>>(tags);
+                tagList.Sort((left, right) => string.Compare(left.Key, right.Key, StringComparison.Ordinal));
+                Tags = tagList;
             }
         }
 

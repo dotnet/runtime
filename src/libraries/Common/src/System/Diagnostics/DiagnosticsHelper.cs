@@ -7,61 +7,10 @@ namespace System.Diagnostics
 {
     internal static class DiagnosticsHelper
     {
-        // This is similar to System.Linq ToArray. We are not using System.Linq here to avoid the dependency.
-        internal static KeyValuePair<string, object?>[]? ToArray(IEnumerable<KeyValuePair<string, object?>>? tags)
-        {
-            if (tags is null)
-            {
-                return null;
-            }
-
-            KeyValuePair<string, object?>[]? array = null;
-            if (tags is ICollection<KeyValuePair<string, object?>> tagsCol)
-            {
-                array = new KeyValuePair<string, object?>[tagsCol.Count];
-                if (tagsCol is IList<KeyValuePair<string, object?>> secondList)
-                {
-                    for (int i = 0; i < tagsCol.Count; i++)
-                    {
-                        array[i] = secondList[i];
-                    }
-
-                    return array;
-                }
-            }
-
-            if (array is null)
-            {
-                int count = 0;
-                using (IEnumerator<KeyValuePair<string, object?>> enumerator = tags.GetEnumerator())
-                {
-                    while (enumerator.MoveNext())
-                    {
-                        count++;
-                    }
-                }
-
-                array = new KeyValuePair<string, object?>[count];
-            }
-
-            Debug.Assert(array is not null);
-
-            int index = 0;
-            using (IEnumerator<KeyValuePair<string, object?>> enumerator = tags.GetEnumerator())
-            {
-                while (enumerator.MoveNext())
-                {
-                    array[index++] = enumerator.Current;
-                }
-            }
-
-            return array;
-        }
-
         /// <summary>
         /// Compares two tag collections for equality.
         /// </summary>
-        /// <param name="sortedTags">The first collection of tags. it has to be a sorted array</param>
+        /// <param name="sortedTags">The first collection of tags. it has to be a sorted List</param>
         /// <param name="tags2">The second collection of tags. This one doesn't have to be sorted nor be specific collection type</param>
         /// <returns>True if the two collections are equal, false otherwise</returns>
         /// <remarks>
@@ -70,7 +19,7 @@ namespace System.Diagnostics
         /// we avoid the allocation of a new array by using the second collection as is and not converting it to an array. the reason
         /// is we call this every time we try to create a meter or instrument and we don't want to allocate a new array every time.
         /// </remarks>
-        internal static bool CompareTags(KeyValuePair<string, object?>[]? sortedTags, IEnumerable<KeyValuePair<string, object?>>? tags2)
+        internal static bool CompareTags(List<KeyValuePair<string, object?>>? sortedTags, IEnumerable<KeyValuePair<string, object?>>? tags2)
         {
             if (sortedTags == tags2)
             {
@@ -85,7 +34,7 @@ namespace System.Diagnostics
             // creating with 2 longs which can initially handle 2 * 64 = 128 tags
             BitMapper bitMapper = new BitMapper(stackalloc ulong[2], true);
 
-            int count = sortedTags.Length;
+            int count = sortedTags.Count;
             if (tags2 is ICollection<KeyValuePair<string, object?>> tagsCol)
             {
                 if (tagsCol.Count != count)
@@ -132,7 +81,7 @@ namespace System.Diagnostics
                 while (enumerator.MoveNext())
                 {
                     listCount++;
-                    if (listCount > sortedTags.Length)
+                    if (listCount > sortedTags.Count)
                     {
                         return false;
                     }
@@ -161,7 +110,7 @@ namespace System.Diagnostics
                     }
                 }
 
-                return listCount == sortedTags.Length;
+                return listCount == sortedTags.Count;
             }
         }
     }
