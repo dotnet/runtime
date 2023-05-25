@@ -240,8 +240,8 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
     }
 
     // Ignore any assignments of NULL.
-    GenTree* data = store->Data()->gtSkipReloadOrCopy();
-    if ((data->GetVN(VNK_Liberal) == ValueNumStore::VNForNull()) || data->IsIntegralConst(0))
+    GenTree* value = store->Data()->gtSkipReloadOrCopy();
+    if ((value->GetVN(VNK_Liberal) == ValueNumStore::VNForNull()) || value->IsIntegralConst(0))
     {
         return WBF_NoBarrier;
     }
@@ -254,7 +254,7 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
     }
 
     // Write-barriers are no-op for frozen objects (as values)
-    if (data->IsIconHandle(GTF_ICON_OBJ_HDL))
+    if (value->IsIconHandle(GTF_ICON_OBJ_HDL))
     {
         // Ignore frozen objects
         return WBF_NoBarrier;
