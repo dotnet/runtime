@@ -17,6 +17,7 @@ namespace System.Net.Quic.Tests
     [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported))]
     public sealed class QuicListenerTests : QuicTestBase
     {
+        private const int PassingTestTimeout = 30;
         public QuicListenerTests(ITestOutputHelper output) : base(output) { }
 
         [Fact]
@@ -374,7 +375,11 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        public async Task Listener_AlpnNarrowingDown_Success() {
+        public async Task Listener_AlpnNarrowingDown_Success()
+        {
+            using CancellationTokenSource testTimeoutCts = new CancellationTokenSource(PassingTestTimeout);
+            CancellationToken timeoutToken = testTimeoutCts.Token;
+
             var listenerOptions = new QuicListenerOptions()
             {
                 ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
@@ -406,8 +411,8 @@ namespace System.Net.Quic.Tests
                 new SslApplicationProtocol("bar"),
             };
             ValueTask<QuicConnection> connectTask1 = CreateQuicConnection(clientOptions1);
-            await using QuicConnection serverConnection1 = await listener.AcceptConnectionAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(30));
-            await using QuicConnection clientConnection1 = await connectTask1.AsTask().WaitAsync(TimeSpan.FromSeconds(30));
+            await using QuicConnection serverConnection1 = await listener.AcceptConnectionAsync().AsTask().WaitAsync(timeoutToken);
+            await using QuicConnection clientConnection1 = await connectTask1.AsTask().WaitAsync(timeoutToken);
 
             Assert.Equal(new SslApplicationProtocol("bar"), clientConnection1.NegotiatedApplicationProtocol);
 
@@ -419,8 +424,8 @@ namespace System.Net.Quic.Tests
                 new SslApplicationProtocol("test"),
             };
             ValueTask<QuicConnection> connectTask2 = CreateQuicConnection(clientOptions2);
-            await using QuicConnection serverConnection2 = await listener.AcceptConnectionAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(30));
-            await using QuicConnection clientConnection2 = await connectTask2.AsTask().WaitAsync(TimeSpan.FromSeconds(30));
+            await using QuicConnection serverConnection2 = await listener.AcceptConnectionAsync().AsTask().WaitAsync(timeoutToken);
+            await using QuicConnection clientConnection2 = await connectTask2.AsTask().WaitAsync(timeoutToken);
 
             Assert.Equal(new SslApplicationProtocol("test"), clientConnection2.NegotiatedApplicationProtocol);
         }
@@ -429,7 +434,11 @@ namespace System.Net.Quic.Tests
         [Theory]
         [InlineData("foo")]
         [InlineData("not_existing")]
-        public async Task Listener_AlpnNarrowingDown_Failure(string alpn) {
+        public async Task Listener_AlpnNarrowingDown_Failure(string alpn)
+        {
+            using CancellationTokenSource testTimeoutCts = new CancellationTokenSource(PassingTestTimeout);
+            CancellationToken timeoutToken = testTimeoutCts.Token;
+
             var listenerOptions = new QuicListenerOptions()
             {
                 ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
@@ -459,8 +468,8 @@ namespace System.Net.Quic.Tests
                 new SslApplicationProtocol(alpn),
             };
             ValueTask<QuicConnection> connectTask = CreateQuicConnection(clientOptions);
-            await Assert.ThrowsAsync<AuthenticationException>(() => listener.AcceptConnectionAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(30)));
-            await Assert.ThrowsAsync<AuthenticationException>(() => connectTask.AsTask().WaitAsync(TimeSpan.FromSeconds(30)));
+            await Assert.ThrowsAsync<AuthenticationException>(() => listener.AcceptConnectionAsync().AsTask().WaitAsync(timeoutToken));
+            await Assert.ThrowsAsync<AuthenticationException>(() => connectTask.AsTask().WaitAsync(timeoutToken));
         }
     }
 }
