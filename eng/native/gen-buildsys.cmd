@@ -87,24 +87,22 @@ goto loop
 
 set __ExtraCmakeParams="-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" "-DCLR_CMAKE_HOST_ARCH=%__Arch%" %__ExtraCmakeParams%
 
-set __CmdLineOptionsUpToDateFile=%__IntermediatesDir%\cmake_cmd_line.txt
+set __CmdLineOptionsUpToDateFile=
 set __CMakeCmdLineCache=
 if not "%__ConfigureOnly%" == "1" (
     REM MSBuild can't reload from a CMake reconfigure during build correctly, so only do this
     REM command-line up to date check for non-VS generators.
     if "%__CmakeGenerator:Visual Studio=%" == "%__CmakeGenerator%" (
-        if exist "%__CmdLineOptionsUpToDateFile%" (
-            set /p __CMakeCmdLineCache=<"%__CmdLineOptionsUpToDateFile%"
+        set __CmdLineOptionsUpToDateFile=%__IntermediatesDir%\cmake_cmd_line.txt
+        if exist "!__CmdLineOptionsUpToDateFile!" (
+            set /p __CMakeCmdLineCache=<"!__CmdLineOptionsUpToDateFile!"
             REM Strip the extra space from the end of the cached command line
             if "!__ExtraCmakeParams!" == "!__CMakeCmdLineCache:~0,-1!" (
                 echo The CMake command line is the same as the last run. Skipping running CMake.
                 exit /B 0
             ) else (
                 echo The CMake command line differs from the last run. Running CMake again.
-                echo %__ExtraCmakeParams% > %__CmdLineOptionsUpToDateFile%
             )
-        ) else (
-            echo %__ExtraCmakeParams% > %__CmdLineOptionsUpToDateFile%
         )
     )
 )
@@ -114,6 +112,11 @@ if /i "%__UseEmcmake%" == "1" (
 ) else (
     "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir%
 )
+
+if not [!__CmdLineOptionsUpToDateFile!] == [] (
+    echo %__ExtraCmakeParams% > !__CmdLineOptionsUpToDateFile!
+)
+
 endlocal
 exit /B %errorlevel%
 
