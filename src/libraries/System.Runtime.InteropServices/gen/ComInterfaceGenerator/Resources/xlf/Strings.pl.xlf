@@ -174,7 +174,7 @@
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationOnMethodMessage">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on method '{0}' is invalid. {1}</source>
-        <target state="new">The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on method '{0}' is invalid. {1}</target>
+        <target state="translated">Konfiguracja elementów „StringMarshalling” i „StringMarshallingCustomType” w metodzie „{0}” jest nieprawidłowa. {1}</target>
         <note>{1} is a message containing additional details about what is not valid</note>
       </trans-unit>
       <trans-unit id="InvalidVirtualMethodIndexAttributeUsage">
