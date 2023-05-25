@@ -7,7 +7,6 @@
     <WasmAppBuilderTasksAssemblyPath>$(_TasksDir)WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
     <WasmBuildTasksAssemblyPath>$(_TasksDir)WasmBuildTasks.dll</WasmBuildTasksAssemblyPath>
     <WasmAppHostDir>$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', 'WasmAppHost'))</WasmAppHostDir>
-    <MarshalingPInvokeScannerPath>$(_TasksDir)MarshalingPInvokeScanner.dll</MarshalingPInvokeScannerPath>
 
     <!-- only for non-blazor projects -->
     <WasmEmitSymbolMap Condition="'$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true' and '$(UsingMicrosoftNETSdkWebAssembly)' != 'true' and '$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">true</WasmEmitSymbolMap>

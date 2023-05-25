@@ -162,10 +162,6 @@
         <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\build\*"
           TargetDir="build/"/>
-
-        <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\MarshalingPInvokeScanner\Debug\$(NetCoreAppToolCurrent)\**"
-          TargetDir="MarshalingPInvokeScanner/"/>
     </ItemGroup>
 
     <ItemGroup>

@@ -101,7 +101,6 @@
                                                  .Replace('{MonoAOTCompilerTasksAssemblyPath}', '$(MonoAOTCompilerTasksAssemblyPath)')
                                                  .Replace('{MonoTargetsTasksAssemblyPath}', '$(MonoTargetsTasksAssemblyPath)')
                                                  .Replace('{WasmAppBuilderTasksAssemblyPath}', '$(WasmAppBuilderTasksAssemblyPath)')
-                                                 .Replace('{MarshalingPInvokeScannerPath}', '$(MarshalingPInvokeScannerPath)')
                                                  .Replace('{MicrosoftNetCoreAppRuntimePackRidDir}', '$(MicrosoftNetCoreAppRuntimePackRidDir)')
                                                  .Replace('{ProductVersion}', '$(ProductVersion)')
                                                  .Replace('{NetCoreAppCurrent}', '$(NetCoreAppCurrent)')

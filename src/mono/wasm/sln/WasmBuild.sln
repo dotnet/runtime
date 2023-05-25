@@ -23,8 +23,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WasmSymbolicator", "..\symb
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApplyUpdateReferencedAssembly", "..\debugger\tests\ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj", "{75477B6F-DC8E-4002-88B8-017C992C568E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MarshalingPInvokeScanner", "..\..\..\tasks\MarshalingPInvokeScanner\MarshalingPInvokeScanner.csproj", "{3B91A002-4048-41D7-BE19-E29FDFE518C4}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

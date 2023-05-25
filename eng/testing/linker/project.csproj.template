@@ -17,7 +17,6 @@
     <WasmAppBuilderTasksAssemblyPath>{WasmAppBuilderTasksAssemblyPath}</WasmAppBuilderTasksAssemblyPath>
     <MonoTargetsTasksAssemblyPath>{MonoTargetsTasksAssemblyPath}</MonoTargetsTasksAssemblyPath>
     <MicrosoftNetCoreAppRuntimePackRidDir>{MicrosoftNetCoreAppRuntimePackRidDir}</MicrosoftNetCoreAppRuntimePackRidDir>
-    <MarshalingPInvokeScannerPath>{MarshalingPInvokeScannerPath}</MarshalingPInvokeScannerPath>
 
     <!-- Needed for targetingpacks.targets -->
     <ProductVersion>{ProductVersion}</ProductVersion>
