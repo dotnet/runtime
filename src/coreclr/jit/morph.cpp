@@ -14007,8 +14007,8 @@ GenTree* Compiler::fgInitThisClass()
 // fgPreExpandQmarkChecks: Verify that the importer has created GT_QMARK nodes
 // in a way we can process them. The following
 //
-// Returns:
-//    Suitable phase status.
+// Arguments:
+//   expr - tree to check
 //
 // Remarks:
 //   The following is allowed:
@@ -14051,7 +14051,7 @@ void Compiler::fgPostExpandQmarkChecks()
         for (Statement* const stmt : block->Statements())
         {
             GenTree* expr = stmt->GetRootNode();
-            assert(!gtTreeContainsOper(expr, GT_QMARK) && "QMARKs are disallowed beyond morph");
+            assert(!gtTreeContainsOper(expr, GT_QMARK) && "QMARKs no longer allowed");
         }
     }
 }
@@ -14513,13 +14513,13 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 #endif // DEBUG
 }
 
-/*****************************************************************************
- *
- *  Expand GT_QMARK nodes from the flow graph into basic blocks.
- *
- */
-
-void Compiler::fgExpandQmarkNodes()
+//------------------------------------------------------------------------
+// fgExpandQmarkNodes: expand QMARKs into control flow.
+//
+// Returns:
+//    Suitable phase status.
+//
+PhaseStatus Compiler::fgExpandQmarkNodes()
 {
     if (compQmarkUsed)
     {
@@ -14528,17 +14528,14 @@ void Compiler::fgExpandQmarkNodes()
             for (Statement* const stmt : block->Statements())
             {
                 GenTree* expr = stmt->GetRootNode();
-#ifdef DEBUG
-                fgPreExpandQmarkChecks(expr);
-#endif
+                INDEBUG(fgPreExpandQmarkChecks(expr));
                 fgExpandQmarkStmt(block, stmt);
             }
         }
-#ifdef DEBUG
-        fgPostExpandQmarkChecks();
-#endif
     }
-    compQmarkRationalized = true;
+    compQmarkAllowed = false;
+    INDEBUG(fgPostExpandQmarkChecks());
+    return compQmarkUsed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------

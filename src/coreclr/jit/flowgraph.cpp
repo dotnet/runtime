@@ -2637,6 +2637,8 @@ PhaseStatus Compiler::fgAddInternal()
 
     noway_assert(!dbgHandle || !pDbgHandle);
 
+    Statement* qmark = nullptr;
+
     if (dbgHandle || pDbgHandle)
     {
         // Test the JustMyCode VM global state variable
@@ -2650,11 +2652,17 @@ PhaseStatus Compiler::fgAddInternal()
         callback          = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), callback);
 
         // Stick the conditional call at the start of the method
-
+        //
         fgEnsureFirstBBisScratch();
-        fgNewStmtAtEnd(fgFirstBB, gtNewQmarkNode(TYP_VOID, guardCheckCond, callback->AsColon()));
 
-        madeChanges = true;
+        // Temporarily allow qmarks.
+        // We will expand this out at the end of this method.
+        //
+        assert(!compQmarkAllowed);
+        compQmarkAllowed = true;
+        qmark            = fgNewStmtAtEnd(fgFirstBB, gtNewQmarkNode(TYP_VOID, guardCheckCond, callback->AsColon()));
+        compQmarkAllowed = false;
+        madeChanges      = true;
     }
 
 #if !defined(FEATURE_EH_FUNCLETS)
@@ -2740,6 +2748,13 @@ PhaseStatus Compiler::fgAddInternal()
     {
         fgAddReversePInvokeEnterExit();
         madeChanges = true;
+    }
+
+    // If we created a qmark, expand it now.
+    //
+    if (qmark != nullptr)
+    {
+        fgExpandQmarkStmt(fgFirstBB, qmark);
     }
 
 #ifdef DEBUG

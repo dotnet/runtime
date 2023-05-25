@@ -7154,7 +7154,7 @@ GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTreeCol
 {
     compQmarkUsed        = true;
     GenTreeQmark* result = new (this, GT_QMARK) GenTreeQmark(type, cond, colon);
-    assert(!compQmarkRationalized && "QMARKs are illegal to create after QMARK-rationalization");
+    assert(compQmarkAllowed && "QMARKs are illegal to create after QMARK expansion");
     return result;
 }
 

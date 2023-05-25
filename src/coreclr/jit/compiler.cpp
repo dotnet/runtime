@@ -1917,7 +1917,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compLocallocSeen             = false;
     compLocallocUsed             = false;
     compLocallocOptimized        = false;
-    compQmarkRationalized        = false;
+    compQmarkAllowed             = true;
     compQmarkUsed                = false;
     compFloatingPointUsed        = false;
 
@@ -4570,6 +4570,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_POST_IMPORT, &Compiler::fgPostImportationCleanup);
 
+    // Expand QMARKs
+    //
+    DoPhase(this, PHASE_QMARK, &Compiler::fgExpandQmarkNodes);
+
     // If we're importing for inlining, we're done.
     if (compIsForInlining())
     {
@@ -4776,8 +4780,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         // Decide the kind of code we want to generate
         fgSetOptions();
-
-        fgExpandQmarkNodes();
 
 #ifdef DEBUG
         compCurBB = nullptr;
