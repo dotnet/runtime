@@ -20,6 +20,7 @@
     <ItemGroup>
       <_ExtraLibrarySources Include="$(_AotModuleTablePath)" />
       <_ExtraLibrarySources Include="@(BundledSources)" />
+      <_ExtraLibrarySources Include="%(_BundledResources.DestinationFile)" />
       <_ExtraLinkerArgs Include="@(_CommonLinkerArgs)" />
       <_BundledRuntimeConfig Include="@(_BundledResources)" Condition="$([System.String]::Copy('%(Identity)').EndsWith('runtimeconfig.bin'))" />
     </ItemGroup>
@@ -63,14 +64,7 @@
     </GetFileHash>
 
     <ItemGroup>
-      <_ResourcesToBundleWithHashes Update="@(_ResourcesToBundleWithHashes)">
-        <DestinationFile>$(BundleOutputDirectory)%(_ResourcesToBundleWithHashes.Filename)%(_ResourcesToBundleWithHashes.Extension).$([System.String]::Copy(%(_ResourcesToBundleWithHashes.FileHash)).Substring(0, 8)).c</DestinationFile>
-      </_ResourcesToBundleWithHashes>
-    </ItemGroup>
-
-    <ItemGroup>
       <BundledSources Include="$(BundleOutputDirectory)$(BundleSourceFile)" />
-      <BundledSources Include="%(_ResourcesToBundleWithHashes.DestinationFile)" />
     </ItemGroup>
 
     <EmitBundleSourceFiles

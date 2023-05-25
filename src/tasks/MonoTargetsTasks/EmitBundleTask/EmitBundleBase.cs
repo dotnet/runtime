@@ -19,6 +19,8 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
     private Dictionary<string, string> resourceDataSymbolDictionary = new();
 
+    private Dictionary<string, string[]> resourcesForDataSymbolDictionary= new();
+
     /// Must have DestinationFile metadata, which is the output filename
     /// Could have RegisteredName, otherwise it would be the filename.
     /// RegisteredName should be prefixed with namespace in form of unix like path. For example: "/usr/share/zoneinfo/"
@@ -66,19 +68,27 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                 file.SetMetadata("RegisteredName", registeredName);
             }
 
-            var destinationFile = file.GetMetadata("DestinationFile");
-            if (string.IsNullOrEmpty(destinationFile))
-            {
-                destinationFile = Path.GetFileNameWithoutExtension(file.ItemSpec) + GetDestinationFileExtension();
-                file.SetMetadata("DestinationFile", destinationFile);
-            }
-
-            string resourceDataSymbol = ToSafeSymbolName(destinationFile);
+            string resourceDataSymbol = $"bundled_resource_{ToSafeSymbolName(Utils.ComputeHash(file.ItemSpec))}";
             if (resourceDataSymbolDictionary.ContainsKey(registeredName))
             {
                 throw new LogAsErrorException($"Multiple resources have the same RegisteredName '{registeredName}'. Ensure {nameof(FilesToBundle)} 'RegisteredName' metadata are set and unique.");
             }
+            Log.LogMessage(MessageImportance.High, $"Adding '{registeredName}':'{resourceDataSymbol}'");
             resourceDataSymbolDictionary.Add(registeredName, resourceDataSymbol);
+
+            file.SetMetadata("DestinationFile", resourceDataSymbol + GetDestinationFileExtension());
+
+            string[] resourcesWithDataSymbol;
+            if (resourcesForDataSymbolDictionary.TryGetValue(resourceDataSymbol, out string[]? resourcesAlreadyWithDataSymbol))
+            {
+                resourcesForDataSymbolDictionary.Remove(resourceDataSymbol);
+                resourcesWithDataSymbol = resourcesAlreadyWithDataSymbol.Append(registeredName).ToArray();
+            }
+            else
+            {
+                resourcesWithDataSymbol = new[] {registeredName};
+            }
+            resourcesForDataSymbolDictionary.Add(resourceDataSymbol, resourcesWithDataSymbol);
 
             bundledResources.Add(bundledResource);
         }
@@ -109,7 +119,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
             Log.LogMessage(MessageImportance.Low, "Bundling {0} into {1}", inputFile, destinationFile);
             var symbolName = resourceDataSymbolDictionary[registeredName];
-            if (!Emit(destinationFile, (codeStream) => {
+            if (!Emit(Path.Combine(OutputDirectory, destinationFile), (codeStream) => {
                 using var inputStream = File.OpenRead(inputFile);
                 using var outputUtf8Writer = new StreamWriter(codeStream, Utf8NoBom);
                 BundleFileToCSource(symbolName, inputStream, outputUtf8Writer);
@@ -202,14 +212,14 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
     private static Dictionary<string, int> symbolDataLen = new();
 
-    private static string GatherUniqueExportedResourceDataSymbols(List<ITaskItem> uniqueDestinationFiles)
+    private string GatherUniqueExportedResourceDataSymbols(List<ITaskItem> uniqueDestinationFiles)
     {
         StringBuilder resourceSymbols = new ();
         HashSet<string> resourcesAdded = new (); // Different Timezone resources may have the same contents
         foreach (var uniqueDestinationFile in uniqueDestinationFiles)
         {
-            string destinationFile = uniqueDestinationFile.GetMetadata("DestinationFile");
-            string resourceDataSymbol = ToSafeSymbolName(destinationFile);
+            string registeredName = uniqueDestinationFile.GetMetadata("RegisteredName");
+            string resourceDataSymbol = resourceDataSymbolDictionary[registeredName];
             if (!resourcesAdded.Contains(resourceDataSymbol))
             {
                 resourceSymbols.AppendLine($"extern uint8_t {resourceDataSymbol}_data[];");
@@ -319,6 +329,8 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
         outputUtf8Writer.WriteLine("#include <stdint.h>");
 
+        string[] resourcesForDataSymbol = resourcesForDataSymbolDictionary[symbolName];
+        outputUtf8Writer.WriteLine($"// Resource Registered Names: {string.Join(", ", resourcesForDataSymbol)}");
         outputUtf8Writer.Write($"uint8_t {symbolName}_data[] = {{");
         outputUtf8Writer.Flush();
         while ((bytesRead = inputStream.Read(buf, 0, buf.Length)) > 0)
