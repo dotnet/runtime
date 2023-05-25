@@ -7464,7 +7464,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     // into a helper call by either front-end or lowering phase, unless we have AVX512F
     // accelerated conversions.
     noway_assert(!varTypeIsUnsigned(dstType) || (dstSize != EA_ATTR(genTypeSize(TYP_LONG))) ||
-                 compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                 compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F));
 
     // If the dstType is TYP_UINT, we have 32-bits to encode the
     // float number. Any of 33rd or above bits can be the sign bit.
