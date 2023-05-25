@@ -5486,8 +5486,15 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         else if (isCastClass)
         {
             // Jit can only inline expand CHKCASTCLASS and CHKCASTARRAY helpers.
-            canExpandInline = (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY) ||
-                              (helper == CORINFO_HELP_CHKCASTANY);
+            canExpandInline = (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY);
+
+            // For ChkCastAny we ignore cases where the class is known to be abstract or is an interface.
+            if (helper == CORINFO_HELP_CHKCASTANY)
+            {
+                const bool isAbstract = (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) &
+                                         (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0;
+                canExpandInline = !isAbstract;
+            }
         }
         else if ((helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY))
         {
