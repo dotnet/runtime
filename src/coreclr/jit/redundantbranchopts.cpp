@@ -1028,8 +1028,8 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
     // Since flow is going to bypass block, make sure there
     // is nothing in block that can cause a side effect.
     //
-    // For non-PHI RBO, we neglect PHI assignments. This can leave SSA
-    // in an incorrect state but so far it has not yet caused problems.
+    // For non-PHI RBO, we neglect PHI stores. This can leave SSA in
+    // an incorrect state but so far it has not yet caused problems.
     //
     // For PHI-based RBO we need to be more cautious and insist that
     // any PHI is locally consumed, so that if we bypass the block we
@@ -1919,7 +1919,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             break;
         }
 
-        // Figure out what local is assigned here.
+        // Figure out what local is defined here.
         //
         const unsigned   prevTreeLclNum = prevTree->AsLclVarCommon()->GetLclNum();
         LclVarDsc* const prevTreeLclDsc = lvaGetDesc(prevTreeLclNum);
