@@ -27,6 +27,12 @@ namespace Microsoft.Interop
             return _inner.Create(info, context);
         }
 
+        // Necessary for API compatibility with preview 4 SDK
+        public NoMarshallingInfoErrorMarshallingFactory(IMarshallingGeneratorFactory inner)
+            : this(inner, DefaultTypeToErrorMessageMap("LibraryImportAttribute"))
+        {
+        }
+
         public NoMarshallingInfoErrorMarshallingFactory(IMarshallingGeneratorFactory inner, string stringMarshallingAttribute)
             : this(inner, DefaultTypeToErrorMessageMap(stringMarshallingAttribute))
         {
