@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Linq;
 
 namespace System.Diagnostics.Metrics
 {
@@ -54,8 +53,9 @@ namespace System.Diagnostics.Metrics
             Unit = unit;
             if (tags is not null)
             {
-                var tagsArray = tags.ToArray();
-                // Array.Sort(tagsArray, (left, right) => string.Compare(left.Key, right.Key, StringComparison.Ordinal));
+                var tagsArray = DiagnosticsHelper.ToArray(tags);
+                Debug.Assert(tagsArray is not null);
+                Array.Sort(tagsArray, (left, right) => string.Compare(left.Key, right.Key, StringComparison.Ordinal));
                 Tags = tagsArray;
             }
         }

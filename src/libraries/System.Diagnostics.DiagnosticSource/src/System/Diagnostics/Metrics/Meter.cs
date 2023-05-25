@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 
 namespace System.Diagnostics.Metrics
@@ -72,8 +71,9 @@ namespace System.Diagnostics.Metrics
             Version = version;
             if (tags is not null)
             {
-                var tagsArray = tags.ToArray();
-                // Array.Sort(tagsArray, (left, right) => string.Compare(left.Key, right.Key, StringComparison.Ordinal));
+                var tagsArray = DiagnosticsHelper.ToArray(tags);
+                Debug.Assert(tagsArray is not null);
+                Array.Sort(tagsArray, (left, right) => string.Compare(left.Key, right.Key, StringComparison.Ordinal));
                 Tags = tagsArray;
             }
             Scope = scope;
@@ -462,7 +462,7 @@ namespace System.Diagnostics.Metrics
             foreach (Instrument instrument in instrumentList)
             {
                 if (instrument.GetType() == instrumentType && instrument.Unit == unit &&
-                    instrument.Description == description && DiagnosticsHelper.CompareTags(instrument.Tags, tags))
+                    instrument.Description == description && DiagnosticsHelper.CompareTags(instrument.Tags as KeyValuePair<string, object?>[], tags))
                 {
                     return instrument;
                 }
