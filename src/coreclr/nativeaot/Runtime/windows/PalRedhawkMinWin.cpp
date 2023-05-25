@@ -227,7 +227,7 @@ extern "C" uint64_t PalQueryPerformanceFrequency()
     return GCToOSInterface::QueryPerformanceFrequency();
 }
 
-extern "C" uint64_t PalGetCurrentThreadIdForLogging()
+extern "C" uint64_t PalGetCurrentOSThreadId()
 {
     return GetCurrentThreadId();
 }
