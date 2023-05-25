@@ -370,14 +370,14 @@
 
     <ItemGroup>
       <_WasiObjectFilesForBundle Include="$(_WasmIntermediateOutputPath)$(_WasmAssembliesBundleObjectFile)" />
-      <_WasiObjectFilesForBundle Include="$(_WasmIntermediateOutputPath)%(BundledWasmAssemblies.DestinationFile)" />
+      <_WasiObjectFilesForBundle Include="%(BundledWasmAssemblies.DestinationFile)" />
     </ItemGroup>
 
     <!-- Clean up the bundle-objects dir - remove anything we no longer need -->
     <ItemGroup>
       <WasmBundleFileToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
       <WasmBundleFileToDelete Remove="$(_WasmIntermediateOutputPath)$(_WasmAssembliesBundleObjectFile)" />
-      <WasmBundleFileToDelete Remove="$(_WasmIntermediateOutputPath)%(BundledWasmAssemblies.DestinationFile)" />
+      <WasmBundleFileToDelete Remove="%(BundledWasmAssemblies.DestinationFile)" />
     </ItemGroup>
 
     <EmitBundleObjectFiles
@@ -392,12 +392,12 @@
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
       <_WasiObjectFilesForBundle Include="$(_WasmIntermediateOutputPath)$(_WasmIcuBundleObjectFile)" />
-      <_WasiObjectFilesForBundle Include="$(_WasmIntermediateOutputPath)%(BundledWasmIcu.DestinationFile)" />
+      <_WasiObjectFilesForBundle Include="%(BundledWasmIcu.DestinationFile)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
       <WasmBundleFileToDelete Remove="$(_WasmIntermediateOutputPath)$(_WasmIcuBundleObjectFile)" />
-      <WasmBundleFileToDelete Remove="$(_WasmIntermediateOutputPath)%(BundledWasmIcu.DestinationFile)" />
+      <WasmBundleFileToDelete Remove="%(BundledWasmIcu.DestinationFile)" />
     </ItemGroup>
     
     <Delete Files="@(WasmBundleFileToDelete)" />

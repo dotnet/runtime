@@ -73,10 +73,9 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             {
                 throw new LogAsErrorException($"Multiple resources have the same RegisteredName '{registeredName}'. Ensure {nameof(FilesToBundle)} 'RegisteredName' metadata are set and unique.");
             }
-            Log.LogMessage(MessageImportance.High, $"Adding '{registeredName}':'{resourceDataSymbol}'");
             resourceDataSymbolDictionary.Add(registeredName, resourceDataSymbol);
 
-            file.SetMetadata("DestinationFile", resourceDataSymbol + GetDestinationFileExtension());
+            file.SetMetadata("DestinationFile", Path.Combine(OutputDirectory, resourceDataSymbol + GetDestinationFileExtension()));
 
             string[] resourcesWithDataSymbol;
             if (resourcesForDataSymbolDictionary.TryGetValue(resourceDataSymbol, out string[]? resourcesAlreadyWithDataSymbol))
@@ -119,7 +118,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
             Log.LogMessage(MessageImportance.Low, "Bundling {0} into {1}", inputFile, destinationFile);
             var symbolName = resourceDataSymbolDictionary[registeredName];
-            if (!Emit(Path.Combine(OutputDirectory, destinationFile), (codeStream) => {
+            if (!Emit(destinationFile, (codeStream) => {
                 using var inputStream = File.OpenRead(inputFile);
                 using var outputUtf8Writer = new StreamWriter(codeStream, Utf8NoBom);
                 BundleFileToCSource(symbolName, inputStream, outputUtf8Writer);

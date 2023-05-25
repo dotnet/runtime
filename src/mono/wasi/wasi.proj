@@ -94,7 +94,7 @@
       <Output TaskParameter="BundledResources" ItemName="BundledWasiTimezones" />
     </EmitBundleObjectFiles>
     <ItemGroup>
-      <WasmBundleTimezonesObjects Include="%(BundledWasiTimezones.DestinationFile)" />
+      <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasmObjDir), %(BundledWasiTimezones.DestinationFile)).Replace('\','/'))" />
       <WasmBundleTimezonesObjects Include="$(_WasmTimezonesBundleObjectFile)" />
     </ItemGroup>
     <WriteLinesToFile File="$(_WasmTimezonesArchiveRsp)"
@@ -111,7 +111,7 @@
     <ItemGroup>
       <_WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
       <_WasmBundleTimezonesToDelete Remove="$(WasiObjDir)\$(_WasmTimezonesBundleObjectFile)" />
-      <_WasmBundleTimezonesToDelete Remove="$(WasiObjDir)\%(BundledWasiTimezones.DestinationFile)" />
+      <_WasmBundleTimezonesToDelete Remove="%(BundledWasiTimezones.DestinationFile)" />
     </ItemGroup>
     <Delete Files="@(_WasmBundleTimezonesToDelete)" />
   </Target>

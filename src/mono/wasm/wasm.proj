@@ -111,7 +111,7 @@
     </EmitBundleSourceFiles>
 
     <ItemGroup>
-      <_WasmBundleTimezonesSources Include="%(BundledWasmTimezones.DestinationFile)" />
+      <_WasmBundleTimezonesSources Include="$([MSBuild]::MakeRelative($(WasmObjDir), %(BundledWasmTimezones.DestinationFile)).Replace('\','/'))" />
       <_WasmBundleTimezonesSources Include="$(_WasmTimezonesBundleSourceFile)" />
     </ItemGroup>
     <WriteLinesToFile File="$(_WasmTimezonesSourcesRsp)"
@@ -148,7 +148,7 @@
       <_WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.c" />
       <_WasmBundleTimezonesToDelete Remove="$(WasmObjDir)\$(_WasmTimezonesBundleSourceFile)" />
       <_WasmBundleTimezonesToDelete Remove="$(_WasmTimezonesBundleObjectFile)" />
-      <_WasmBundleTimezonesToDelete Remove="$(WasmObjDir)\%(BundledWasmTimezones.DestinationFile)" />
+      <_WasmBundleTimezonesToDelete Remove="%(BundledWasmTimezones.DestinationFile)" />
       <_WasmBundleTimezonesToDelete Remove="%(WasmBundleTimezonesObjects)" />
     </ItemGroup>
     <Delete Files="@(_WasmBundleTimezonesToDelete)" />
