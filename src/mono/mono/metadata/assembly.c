@@ -1480,7 +1480,6 @@ open_from_satellite_bundle (MonoAssemblyLoadContext *alc, const char *filename, 
 
 	g_free (bundle_name);
 	return image;
-
 }
 
 /**
@@ -3134,12 +3133,15 @@ mono_assembly_get_name_internal (MonoAssembly *assembly)
 
 /**
  * mono_register_bundled_assemblies:
+ * Dynamically allocates MonoBundledAssemblyResources to leverage
+ * preferred bundling api mono_bundled_resources_add.
  */
 void
 mono_register_bundled_assemblies (const MonoBundledAssembly **assemblies)
 {
 	for (int i = 0; assemblies [i]; ++i) {
 		const MonoBundledAssembly *assembly = assemblies [i];
+		// Check if assembly pdb counterpart had been added via mono_register_symfile_for_assembly
 		MonoBundledAssemblyResource *assembly_resource = mono_bundled_resources_get_assembly_resource (assembly->name);
 		if (!assembly_resource) {
 			assembly_resource = g_new0 (MonoBundledAssemblyResource, 1);
@@ -3175,6 +3177,8 @@ mono_create_new_bundled_satellite_assembly (const char *name, const char *cultur
 
 /**
  * mono_register_bundled_satellite_assemblies:
+ * Dynamically allocates MonoBundledSatelliteAssemblyResources to leverage
+ * preferred bundling api mono_bundled_resources_add.
  */
 void
 mono_register_bundled_satellite_assemblies (const MonoBundledSatelliteAssembly **satellite_assemblies)

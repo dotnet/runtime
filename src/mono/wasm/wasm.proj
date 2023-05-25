@@ -85,7 +85,6 @@
     <PropertyGroup>
       <_WasmTimezonesPath>$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_WasmTimezonesPath>
       <_WasmTimezonesBundleSourceFile>wasm-bundled-timezones.c</_WasmTimezonesBundleSourceFile>
-      <_WasmTimezonesBundleObjectFile>$(WasmObjDir)\wasm-bundled-timezones.o</_WasmTimezonesBundleObjectFile>
       <_WasmTimezonesBundleArchive>$(WasmObjDir)\wasm-bundled-timezones.a</_WasmTimezonesBundleArchive>
       <_WasmTimezonesSourcesRsp>$(WasmObjDir)\wasm-bundled-timezones-sources.rsp</_WasmTimezonesSourcesRsp>
       <_WasmTimezonesArchiveRsp>$(WasmObjDir)\wasm-bundled-timezones-archive.rsp</_WasmTimezonesArchiveRsp>
@@ -147,7 +146,6 @@
       <_WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
       <_WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.c" />
       <_WasmBundleTimezonesToDelete Remove="$(WasmObjDir)\$(_WasmTimezonesBundleSourceFile)" />
-      <_WasmBundleTimezonesToDelete Remove="$(_WasmTimezonesBundleObjectFile)" />
       <_WasmBundleTimezonesToDelete Remove="%(BundledWasmTimezones.DestinationFile)" />
       <_WasmBundleTimezonesToDelete Remove="%(WasmBundleTimezonesObjects)" />
     </ItemGroup>

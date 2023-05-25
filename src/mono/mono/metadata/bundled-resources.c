@@ -170,9 +170,7 @@ mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t 
 //---------------------------------------------------------------------------------------
 //
 // mono_bundled_resources_get retrieves the pointer of the MonoBundledResource associated
-// with a key equivalent to the requested resource id. If the requested bundled resource's
-// name has been added via mono_bundled_resources_add, a MonoBundled*Resource had been
-// preallocated, typically through EmitBundleTask.
+// with a key equivalent to the requested resource id.
 //
 // Arguments:
 //  * id - Unique name of the resource
@@ -190,6 +188,21 @@ mono_bundled_resources_get (const char *id)
 	return g_hash_table_lookup (bundled_resources, id);
 }
 
+//---------------------------------------------------------------------------------------
+//
+// mono_bundled_resources_get_assembly_resource retrieves MonoBundledAssemblyResource* associated
+// with a key equivalent to the requested resource id if found.
+//
+// Arguments:
+//  * id - Unique name of the resource
+//
+// Returns:
+//  MonoBundledAssemblyResource * - Pointer to the bundled assembly resource in the hashmap with the key `id`
+//
+// Note: As MonoBundled*Resource types are not public, prefer `mono_bundled_resources_get_assembly_resource_values`
+// in external contexts to grab assembly and symbol data.
+//
+
 MonoBundledAssemblyResource *
 mono_bundled_resources_get_assembly_resource (const char *id)
 {
@@ -200,6 +213,21 @@ mono_bundled_resources_get_assembly_resource (const char *id)
 	g_assert (assembly->resource.type == MONO_BUNDLED_ASSEMBLY);
 	return assembly;
 }
+
+//---------------------------------------------------------------------------------------
+//
+// mono_bundled_resources_get_satellite_assembly_resource retrieves MonoBundledSatelliteAssemblyResource* associated
+// with a key equivalent to the requested resource id if found.
+//
+// Arguments:
+//  * id - Unique name of the resource
+//
+// Returns:
+//  MonoBundledSatelliteAssemblyResource * - Pointer to the bundled assembly resource in the hashmap with the key `id`
+//
+// Note: As MonoBundled*Resource types are not public, prefer `mono_bundled_resources_get_satellite_assembly_resource_values`
+// in external contexts to grab satellite assembly data.
+//
 
 MonoBundledSatelliteAssemblyResource *
 mono_bundled_resources_get_satellite_assembly_resource (const char *id)
@@ -212,6 +240,21 @@ mono_bundled_resources_get_satellite_assembly_resource (const char *id)
 	return satellite_assembly;
 }
 
+//---------------------------------------------------------------------------------------
+//
+// mono_bundled_resources_get_data_resource retrieves MonoBundledDataResource* associated
+// with a key equivalent to the requested resource id if found.
+//
+// Arguments:
+//  * id - Unique name of the resource
+//
+// Returns:
+//  MonoBundledDataResource * - Pointer to the bundled assembly resource in the hashmap with the key `id`
+//
+// Note: As MonoBundled*Resource types are not public, prefer `mono_bundled_resources_get_data_resource_values`
+// in external contexts to grab data.
+//
+
 MonoBundledDataResource *
 mono_bundled_resources_get_data_resource (const char *id)
 {
@@ -222,6 +265,22 @@ mono_bundled_resources_get_data_resource (const char *id)
 	g_assert (data->resource.type == MONO_BUNDLED_DATA);
 	return data;
 }
+
+//---------------------------------------------------------------------------------------
+//
+// mono_bundled_resources_get_assembly_resource_values retrieves assembly data associated
+// with a key equivalent to the requested resource id if found.
+//
+// Arguments:
+//  * id - Unique name of the resource
+//  ** data_out - address to point at assembly byte data
+//  ** size_out - address to point at assembly byte data size
+//  ** symbol_data_out - address to point at assembly symbol byte data
+//  ** symbol_size_out - address to point at assembly symbol byte data size
+//
+// Returns:
+//  bool - whether or not a valid MonoBundledAssemblyResource was found with key 'id'
+//
 
 bool
 mono_bundled_resources_get_assembly_resource_values (const char *id, const uint8_t **data_out, uint32_t *size_out, const uint8_t **symbol_data_out, uint32_t *symbol_size_out)
@@ -244,6 +303,20 @@ mono_bundled_resources_get_assembly_resource_values (const char *id, const uint8
 	return true;
 }
 
+//---------------------------------------------------------------------------------------
+//
+// mono_bundled_resources_get_satellite_assembly_resource_values retrieves satellite assembly data associated
+// with a key equivalent to the requested resource id if found.
+//
+// Arguments:
+//  * id - Unique name of the resource
+//  ** data_out - address to point at satellite assembly byte data
+//  ** size_out - address to point at satellite assembly byte data size
+//
+// Returns:
+//  bool - whether or not a valid MonoBundledSatelliteAssemblyResource was found with key 'id'
+//
+
 bool
 mono_bundled_resources_get_satellite_assembly_resource_values (const char *id, const uint8_t **data_out, uint32_t *size_out)
 {
@@ -261,6 +334,20 @@ mono_bundled_resources_get_satellite_assembly_resource_values (const char *id, c
 
 	return true;
 }
+
+//---------------------------------------------------------------------------------------
+//
+// mono_bundled_resources_get_data_resource_values retrieves data associated
+// with a key equivalent to the requested resource id if found.
+//
+// Arguments:
+//  * id - Unique name of the resource
+//  ** data_out - address to point at resource byte data
+//  ** size_out - address to point at resource byte data size
+//
+// Returns:
+//  bool - whether or not a valid MonoBundledDataResource was found with key 'id'
+//
 
 bool
 mono_bundled_resources_get_data_resource_values (const char *id, const uint8_t **data_out, uint32_t *size_out)

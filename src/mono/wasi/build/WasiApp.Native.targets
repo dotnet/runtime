@@ -352,15 +352,9 @@
       <_WasmAssembliesBundleObjectFile>wasi_bundled_assemblies.o</_WasmAssembliesBundleObjectFile>
       <_WasmIcuBundleObjectFile>wasi_bundled_icu.o</_WasmIcuBundleObjectFile>
     </PropertyGroup>
-    <GetFileHash Files="@(_WasmAssembliesInternal)">
-      <Output TaskParameter="Items" ItemName="WasmBundleAssembliesWithHashes" />
-    </GetFileHash>
-    <GetFileHash Files="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat">
-      <Output TaskParameter="Items" ItemName="WasmBundleIcuWithHashes" />
-    </GetFileHash>
     <!-- TODO make this incremental compilation -->
     <EmitBundleObjectFiles
-      FilesToBundle="@(WasmBundleAssembliesWithHashes)"
+      FilesToBundle="@(_WasmAssembliesInternal)"
       ClangExecutable="$(WasiClang)"
       BundleRegistrationFunctionName="mono_register_assemblies_bundle"
       BundleFile="$(_WasmAssembliesBundleObjectFile)"
@@ -382,7 +376,7 @@
 
     <EmitBundleObjectFiles
       Condition="'$(InvariantGlobalization)' != 'true'"
-      FilesToBundle="@(WasmBundleIcuWithHashes)"
+      FilesToBundle="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"
       ClangExecutable="$(WasiClang)"
       BundleRegistrationFunctionName="mono_register_icu_bundle"
       BundleFile="$(_WasmIcuBundleObjectFile)"

@@ -1070,10 +1070,13 @@ mono_is_debugger_attached (void)
 
 /**
  * mono_register_symfile_for_assembly:
+ * Dynamically allocates MonoBundledAssemblyResource to leverage
+ * preferred bundling api mono_bundled_resources_add.
  */
 void
 mono_register_symfile_for_assembly (const char *assembly_name, const mono_byte *raw_contents, int size)
 {
+    // Check if assembly dll counterpart had been added via mono_register_bundled_assemblies
 	MonoBundledAssemblyResource *assembly_resource = mono_bundled_resources_get_assembly_resource (assembly_name);
 	if (!assembly_resource) {
 		assembly_resource = g_new0 (MonoBundledAssemblyResource, 1);

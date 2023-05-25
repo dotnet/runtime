@@ -290,18 +290,18 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                                          .Replace("%Len%", $"{resourceDataSymbol}_data_len_val"));
         }
 
-        var addPreallocatedResources = new StringBuilder();
+        List<string> addPreallocatedResources = new ();
         if (assembliesCount != 0) {
             preallocatedResources.AppendLine($"MonoBundledResource *{bundleRegistrationFunctionName}_assembly_resources[] = {{\n{string.Join(",\n", preallocatedAssemblies)}\n}};");
-            addPreallocatedResources.AppendLine($"    mono_bundled_resources_add ({bundleRegistrationFunctionName}_assembly_resources, {assembliesCount});");
+            addPreallocatedResources.Add($"    mono_bundled_resources_add ({bundleRegistrationFunctionName}_assembly_resources, {assembliesCount});");
         }
         if (satelliteAssembliesCount != 0) {
             preallocatedResources.AppendLine($"MonoBundledResource *{bundleRegistrationFunctionName}_satellite_assembly_resources[] = {{\n{string.Join(",\n", preallocatedSatelliteAssemblies)}\n}};");
-            addPreallocatedResources.AppendLine($"    mono_bundled_resources_add ({bundleRegistrationFunctionName}_satellite_assembly_resources, {satelliteAssembliesCount});");
+            addPreallocatedResources.Add($"    mono_bundled_resources_add ({bundleRegistrationFunctionName}_satellite_assembly_resources, {satelliteAssembliesCount});");
         }
         if (dataCount != 0) {
             preallocatedResources.AppendLine($"MonoBundledResource *{bundleRegistrationFunctionName}_data_resources[] = {{\n{string.Join(",\n", preallocatedData)}\n}};");
-            addPreallocatedResources.AppendLine($"    mono_bundled_resources_add ({bundleRegistrationFunctionName}_data_resources, {dataCount});");
+            addPreallocatedResources.Add($"    mono_bundled_resources_add ({bundleRegistrationFunctionName}_data_resources, {dataCount});");
         }
 
         outputUtf8Writer.Write(Utils.GetEmbeddedResource("mono-bundled-resource-preallocation-and-registration.template")
@@ -309,7 +309,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                                 .Replace("%PreallocatedStructs%", string.Join("\n", preallocatedSource))
                                 .Replace("%PreallocatedResources%", preallocatedResources.ToString())
                                 .Replace("%BundleRegistrationFunctionName%", bundleRegistrationFunctionName)
-                                .Replace("%AddPreallocatedResources%", addPreallocatedResources.ToString()));
+                                .Replace("%AddPreallocatedResources%", string.Join("\n", addPreallocatedResources)));
     }
 
     private void BundleFileToCSource(string symbolName, FileStream inputStream, StreamWriter outputUtf8Writer)
@@ -370,9 +370,6 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
     private static string ToSafeSymbolName(string destinationFileName, bool filenameOnly = true)
     {
-        // Since destinationFileName includes a content hash, we can safely strip off the directory name
-        // as the filename is always unique enough. This avoid disclosing information about the build
-        // file structure in the resulting symbols.
         var filename = destinationFileName;
         if (filenameOnly)
             filename = Path.GetFileName(destinationFileName);

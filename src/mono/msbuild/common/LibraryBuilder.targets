@@ -59,16 +59,12 @@
       <_ResourcesToBundle Include="$(_ParsedRuntimeConfigFilePath)" />
     </ItemGroup>
 
-    <GetFileHash Files="@(_ResourcesToBundle)">
-      <Output TaskParameter="Items" ItemName="_ResourcesToBundleWithHashes" />
-    </GetFileHash>
-
     <ItemGroup>
       <BundledSources Include="$(BundleOutputDirectory)$(BundleSourceFile)" />
     </ItemGroup>
 
     <EmitBundleSourceFiles
-      FilesToBundle="@(_ResourcesToBundleWithHashes)"
+      FilesToBundle="@(_ResourcesToBundle)"
       BundleFile="$(BundleSourceFile)"
       OutputDirectory="$(BundleOutputDirectory)">
       <Output TaskParameter="BundledResources" ItemName="_BundledResources" />

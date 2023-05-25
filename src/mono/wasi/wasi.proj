@@ -76,17 +76,14 @@
     <ItemGroup>
       <_WasmTimezonesInternal Include="$(_WasmTimezonesPath)\**\*.*" WasmRole="Timezone"/>
     </ItemGroup>
-    <GetFileHash Files="@(_WasmTimezonesInternal)">
-      <Output TaskParameter="Items" ItemName="_WasmBundleTimezonesWithHashes" />
-    </GetFileHash>
     <ItemGroup>
-      <_WasmBundleTimezonesWithHashes Update="@(_WasmBundleTimezonesWithHashes)">
-        <RegisteredName>/usr/share/zoneinfo/$([MSBuild]::MakeRelative($(_WasmTimezonesPath), %(_WasmBundleTimezonesWithHashes.Identity)).Replace('\','/'))</RegisteredName>
-      </_WasmBundleTimezonesWithHashes>
+      <_WasmTimezonesInternal Update="@(_WasmTimezonesInternal)">
+        <RegisteredName>/usr/share/zoneinfo/$([MSBuild]::MakeRelative($(_WasmTimezonesPath), %(_WasmTimezonesInternal.Identity)).Replace('\','/'))</RegisteredName>
+      </_WasmTimezonesInternal>
     </ItemGroup>
     <!-- TODO make this incremental compilation -->
     <EmitBundleObjectFiles
-      FilesToBundle="@(_WasmBundleTimezonesWithHashes)" 
+      FilesToBundle="@(_WasmTimezonesInternal)"
       ClangExecutable="$(WasiClang)"
       BundleRegistrationFunctionName="mono_register_timezones_bundle"
       BundleFile="$(_WasmTimezonesBundleObjectFile)"
@@ -94,7 +91,7 @@
       <Output TaskParameter="BundledResources" ItemName="BundledWasiTimezones" />
     </EmitBundleObjectFiles>
     <ItemGroup>
-      <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasmObjDir), %(BundledWasiTimezones.DestinationFile)).Replace('\','/'))" />
+      <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasiObjDir), %(BundledWasiTimezones.DestinationFile)).Replace('\','/'))" />
       <WasmBundleTimezonesObjects Include="$(_WasmTimezonesBundleObjectFile)" />
     </ItemGroup>
     <WriteLinesToFile File="$(_WasmTimezonesArchiveRsp)"
