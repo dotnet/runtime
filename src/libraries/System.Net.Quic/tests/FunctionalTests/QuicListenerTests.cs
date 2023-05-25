@@ -17,7 +17,6 @@ namespace System.Net.Quic.Tests
     [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported))]
     public sealed class QuicListenerTests : QuicTestBase
     {
-        private const int PassingTestTimeout = 30;
         public QuicListenerTests(ITestOutputHelper output) : base(output) { }
 
         [Fact]
