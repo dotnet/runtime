@@ -54,8 +54,8 @@ namespace System.Threading
         {
 #if WINDOWS
             Debug.Assert(!ThreadPool.UseWindowsThreadPool);
-            GC.SuppressFinalize(this);
 #endif
+            GC.SuppressFinalize(this);
 
             Thread.ThrowIfNoThreadStart();
             _waitHandle = waitHandle.SafeWaitHandle;
