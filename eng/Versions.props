@@ -10,7 +10,7 @@
     <!-- note: when bumping previous package versions on a release branch, make sure to
                set $(WorkloadsTestPreviousVersions)=false, so those manifests won't be installed
                during testing. -->
-    <PackageVersionNet7>7.0.6</PackageVersionNet7>
+    <PackageVersionNet7>7.0.7</PackageVersionNet7>
     <PackageVersionNet6>6.0.$([MSBuild]::Add($([System.Version]::Parse('$(PackageVersionNet7)').Build),11))</PackageVersionNet6>
     <PreReleaseVersionLabel>preview</PreReleaseVersionLabel>
     <PreReleaseVersionIteration>5</PreReleaseVersionIteration>
