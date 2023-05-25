@@ -15,7 +15,7 @@ import {
     set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize
 } from "./marshal";
 import { get_marshaler_to_js_by_type } from "./marshal-to-js";
-import { _zero_region } from "./memory";
+import { _zero_region, updateGrowableHeapViews } from "./memory";
 import { js_string_to_mono_string_root } from "./strings";
 import { GCHandle, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
@@ -496,16 +496,19 @@ export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<
         }
         else if (element_type == MarshalerType.Byte) {
             mono_assert(Array.isArray(value) || value instanceof Uint8Array, "Value is not an Array or Uint8Array");
+            updateGrowableHeapViews();
             const targetView = Module.HEAPU8.subarray(<any>buffer_ptr, buffer_ptr + length);
             targetView.set(value);
         }
         else if (element_type == MarshalerType.Int32) {
             mono_assert(Array.isArray(value) || value instanceof Int32Array, "Value is not an Array or Int32Array");
+            updateGrowableHeapViews();
             const targetView = Module.HEAP32.subarray(<any>buffer_ptr >> 2, (buffer_ptr >> 2) + length);
             targetView.set(value);
         }
         else if (element_type == MarshalerType.Double) {
             mono_assert(Array.isArray(value) || value instanceof Float64Array, "Value is not an Array or Float64Array");
+            updateGrowableHeapViews();
             const targetView = Module.HEAPF64.subarray(<any>buffer_ptr >> 3, (buffer_ptr >> 3) + length);
             targetView.set(value);
         }

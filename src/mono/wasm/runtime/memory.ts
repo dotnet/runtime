@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import monoWasmThreads from "consts:monoWasmThreads";
+
 import { MemOffset, NumberOrPointer } from "./types/internal";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 import cwraps, { I52Error } from "./cwraps";
 import { Module, runtimeHelpers } from "./globals";
+import { utf8ToString } from "./strings";
 
 const alloca_stack: Array<VoidPtr> = [];
 const alloca_buffer_size = 32 * 1024;
@@ -53,10 +55,12 @@ function assert_int_in_range(value: Number, min: Number, max: Number) {
 }
 
 export function _zero_region(byteOffset: VoidPtr, sizeBytes: number): void {
-    Module.HEAP8.fill(0, <any>byteOffset, <any>byteOffset + sizeBytes);
+    updateGrowableHeapViews();
+    Module.HEAPU8.fill(0, <any>byteOffset, <any>byteOffset + sizeBytes);
 }
 
 export function setB32(offset: MemOffset, value: number | boolean): void {
+    updateGrowableHeapViews();
     const boolValue = !!value;
     if (typeof (value) === "number")
         assert_int_in_range(value, 0, 1);
@@ -65,11 +69,13 @@ export function setB32(offset: MemOffset, value: number | boolean): void {
 
 export function setU8(offset: MemOffset, value: number): void {
     assert_int_in_range(value, 0, 0xFF);
+    updateGrowableHeapViews();
     Module.HEAPU8[<any>offset] = value;
 }
 
 export function setU16(offset: MemOffset, value: number): void {
     assert_int_in_range(value, 0, 0xFFFF);
+    updateGrowableHeapViews();
     Module.HEAPU16[<any>offset >>> 1] = value;
 }
 
@@ -83,25 +89,30 @@ export function setU32_unchecked(offset: MemOffset, value: NumberOrPointer): voi
 
 export function setU32(offset: MemOffset, value: NumberOrPointer): void {
     assert_int_in_range(<any>value, 0, 0xFFFF_FFFF);
+    updateGrowableHeapViews();
     Module.HEAPU32[<any>offset >>> 2] = <number><any>value;
 }
 
 export function setI8(offset: MemOffset, value: number): void {
     assert_int_in_range(value, -0x80, 0x7F);
+    updateGrowableHeapViews();
     Module.HEAP8[<any>offset] = value;
 }
 
 export function setI16(offset: MemOffset, value: number): void {
     assert_int_in_range(value, -0x8000, 0x7FFF);
+    updateGrowableHeapViews();
     Module.HEAP16[<any>offset >>> 1] = value;
 }
 
 export function setI32_unchecked(offset: MemOffset, value: number): void {
+    updateGrowableHeapViews();
     Module.HEAP32[<any>offset >>> 2] = value;
 }
 
 export function setI32(offset: MemOffset, value: number): void {
     assert_int_in_range(<any>value, -0x8000_0000, 0x7FFF_FFFF);
+    updateGrowableHeapViews();
     Module.HEAP32[<any>offset >>> 2] = value;
 }
 
@@ -124,6 +135,7 @@ function autoThrowI52(error: I52Error) {
  */
 export function setI52(offset: MemOffset, value: number): void {
     mono_assert(Number.isSafeInteger(value), () => `Value is not a safe integer: ${value} (${typeof (value)})`);
+    updateGrowableHeapViews();
     const error = cwraps.mono_wasm_f64_to_i52(<any>offset, value);
     autoThrowI52(error);
 }
@@ -134,6 +146,7 @@ export function setI52(offset: MemOffset, value: number): void {
 export function setU52(offset: MemOffset, value: number): void {
     mono_assert(Number.isSafeInteger(value), () => `Value is not a safe integer: ${value} (${typeof (value)})`);
     mono_assert(value >= 0, "Can't convert negative Number into UInt64");
+    updateGrowableHeapViews();
     const error = cwraps.mono_wasm_f64_to_u52(<any>offset, value);
     autoThrowI52(error);
 }
@@ -147,28 +160,34 @@ export function setI64Big(offset: MemOffset, value: bigint): void {
 
 export function setF32(offset: MemOffset, value: number): void {
     mono_assert(typeof value === "number", () => `Value is not a Number: ${value} (${typeof (value)})`);
+    updateGrowableHeapViews();
     Module.HEAPF32[<any>offset >>> 2] = value;
 }
 
 export function setF64(offset: MemOffset, value: number): void {
     mono_assert(typeof value === "number", () => `Value is not a Number: ${value} (${typeof (value)})`);
+    updateGrowableHeapViews();
     Module.HEAPF64[<any>offset >>> 3] = value;
 }
 
 
 export function getB32(offset: MemOffset): boolean {
+    updateGrowableHeapViews();
     return !!(Module.HEAP32[<any>offset >>> 2]);
 }
 
 export function getU8(offset: MemOffset): number {
+    updateGrowableHeapViews();
     return Module.HEAPU8[<any>offset];
 }
 
 export function getU16(offset: MemOffset): number {
+    updateGrowableHeapViews();
     return Module.HEAPU16[<any>offset >>> 1];
 }
 
 export function getU32(offset: MemOffset): number {
+    updateGrowableHeapViews();
     return Module.HEAPU32[<any>offset >>> 2];
 }
 
@@ -189,14 +208,17 @@ export function getF64_unaligned(offset: MemOffset): number {
 }
 
 export function getI8(offset: MemOffset): number {
+    updateGrowableHeapViews();
     return Module.HEAP8[<any>offset];
 }
 
 export function getI16(offset: MemOffset): number {
+    updateGrowableHeapViews();
     return Module.HEAP16[<any>offset >>> 1];
 }
 
 export function getI32(offset: MemOffset): number {
+    updateGrowableHeapViews();
     return Module.HEAP32[<any>offset >>> 2];
 }
 
@@ -221,14 +243,17 @@ export function getU52(offset: MemOffset): number {
 }
 
 export function getI64Big(offset: MemOffset): bigint {
+    updateGrowableHeapViews();
     return Module.HEAP64[<any>offset >>> 3];
 }
 
 export function getF32(offset: MemOffset): number {
+    updateGrowableHeapViews();
     return Module.HEAPF32[<any>offset >>> 2];
 }
 
 export function getF64(offset: MemOffset): number {
+    updateGrowableHeapViews();
     return Module.HEAPF64[<any>offset >>> 3];
 }
 
@@ -252,6 +277,7 @@ export function withStackAlloc<T1, T2, T3, TResult>(bytesWanted: number, f: (ptr
 // @bytes must be a typed array. space is allocated for it in the native heap
 //  and it is copied to that location. returns the address of the allocation.
 export function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr {
+    updateGrowableHeapViews();
     const memoryOffset = Module._malloc(bytes.length);
     const heapBytes = new Uint8Array(Module.HEAPU8.buffer, <any>memoryOffset, bytes.length);
     heapBytes.set(bytes);
@@ -264,7 +290,7 @@ export function getEnv(name: string): string | null {
         charPtr = cwraps.mono_wasm_getenv(name);
         if (<any>charPtr === 0)
             return null;
-        else return Module.UTF8ToString(charPtr);
+        else return utf8ToString(charPtr);
     } finally {
         if (charPtr) Module._free(<any>charPtr);
     }
@@ -274,13 +300,24 @@ const BuiltinAtomics = globalThis.Atomics;
 
 export const Atomics = monoWasmThreads ? {
     storeI32(offset: MemOffset, value: number): void {
-
+        updateGrowableHeapViews();
         BuiltinAtomics.store(Module.HEAP32, <any>offset >>> 2, value);
     },
     notifyI32(offset: MemOffset, count: number): void {
+        updateGrowableHeapViews();
         BuiltinAtomics.notify(Module.HEAP32, <any>offset >>> 2, count);
     }
 } : {
     storeI32: setI32,
     notifyI32: () => { /*empty*/ }
 };
+
+// when we run with multithreading enabled, we need to make sure that the memory views are updated on each worker
+// on non-MT build, this will be a no-op trimmed by rollup
+export function updateGrowableHeapViews() {
+    if (!monoWasmThreads) return;
+    mono_assert(Module.wasmMemory, "Module.wasmMemory not set");
+    if (Module.wasmMemory.buffer != Module.HEAPU8.buffer) {
+        runtimeHelpers.updateMemoryViews();
+    }
+}

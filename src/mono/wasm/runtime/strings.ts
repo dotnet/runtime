@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
+
 import { mono_wasm_new_root_buffer } from "./roots";
 import { MonoString, MonoStringNull, is_nullish, WasmRoot, WasmRootBuffer } from "./types/internal";
 import { Module } from "./globals";
 import cwraps from "./cwraps";
 import { mono_wasm_new_root } from "./roots";
-import { getI32, getU32 } from "./memory";
+import { updateGrowableHeapViews, getI32, getU32 } from "./memory";
 import { NativePointer, CharPtr } from "./types/emscripten";
 import { assert_legacy_interop } from "./pthreads/shared";
 
@@ -75,17 +77,8 @@ export class StringDecoder {
     decode(start: CharPtr, end: CharPtr): string {
         let str = "";
         if (this.mono_text_decoder) {
-            // When threading is enabled, TextDecoder does not accept a view of a
-            // SharedArrayBuffer, we must make a copy of the array first.
-            // See https://github.com/whatwg/encoding/issues/172
-        
-            // BEWARE: In some cases, `instanceof SharedArrayBuffer` returns false even though buffer is an SAB.
-            // Patch adapted from https://github.com/emscripten-core/emscripten/pull/16994
-            // See also https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/toStringTag
-            const subArray = typeof SharedArrayBuffer !== "undefined" && Module.HEAPU8.buffer[Symbol.toStringTag] === "SharedArrayBuffer"
-                ? Module.HEAPU8.slice(<any>start, <any>end)
-                : Module.HEAPU8.subarray(<any>start, <any>end);
-
+            updateGrowableHeapViews();
+            const subArray = copy_string_buffer_as_necessary(Module.HEAPU8, start, end);
             str = this.mono_text_decoder.decode(subArray);
         } else {
             for (let i = 0; i < <any>end - <any>start; i += 2) {
@@ -275,4 +268,58 @@ export function js_string_to_mono_string_new(string: string): MonoString {
     } finally {
         temp.release();
     }
+}
+
+let _text_decoder_utf8_relaxed: TextDecoder | undefined = undefined;
+let _text_decoder_utf8_validating: TextDecoder | undefined = undefined;
+let _text_encoder_utf8: TextEncoder | undefined = undefined;
+
+export function encodeUTF8(str: string) {
+    if (_text_encoder_utf8 === undefined) {
+        _text_encoder_utf8 = new TextEncoder();
+    }
+    return _text_encoder_utf8.encode(str);
+}
+
+export function utf8ToStringRelaxed(heapOrArray: Uint8Array): string {
+    if (_text_decoder_utf8_relaxed === undefined) {
+        _text_decoder_utf8_relaxed = new TextDecoder("utf-8", { fatal: false });
+    }
+    return _text_decoder_utf8_relaxed.decode(heapOrArray);
+}
+
+export function utf8ToString(ptr: CharPtr): string {
+    updateGrowableHeapViews();
+    return decodeUTF8(Module.HEAPU8, ptr as any, Module.HEAPU8.length - (ptr as any));
+}
+
+export function decodeUTF8(heapOrArray: Uint8Array, idx: number, maxBytesToRead: number): string {
+    const endIdx = idx + maxBytesToRead;
+    let endPtr = idx;
+    while (heapOrArray[endPtr] && !(endPtr >= endIdx)) ++endPtr;
+    if (endPtr - idx <= 16) {
+        return Module.UTF8ArrayToString(heapOrArray, idx, maxBytesToRead);
+    }
+    if (_text_decoder_utf8_validating === undefined) {
+        _text_decoder_utf8_validating = new TextDecoder("utf-8");
+    }
+    const view = copy_string_buffer_as_necessary(heapOrArray, idx as any, endPtr as any);
+    return _text_decoder_utf8_validating.decode(view);
+}
+
+const mayNeedCopy = MonoWasmThreads && typeof SharedArrayBuffer !== "undefined";
+
+// When threading is enabled, TextDecoder does not accept a view of a
+// SharedArrayBuffer, we must make a copy of the array first.
+// See https://github.com/whatwg/encoding/issues/172
+// BEWARE: In some cases, `instanceof SharedArrayBuffer` returns false even though buffer is an SAB.
+// Patch adapted from https://github.com/emscripten-core/emscripten/pull/16994
+// See also https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/toStringTag
+export function copy_string_buffer_as_necessary(view: Uint8Array, start: CharPtr, end: CharPtr): Uint8Array {
+    updateGrowableHeapViews();
+    // this condition should be eliminated by rollup on non-threading builds
+    const needsCopy = mayNeedCopy && view.buffer[Symbol.toStringTag] === "SharedArrayBuffer";
+    return needsCopy
+        ? view.slice(<any>start, <any>end)
+        : view.subarray(<any>start, <any>end);
 }

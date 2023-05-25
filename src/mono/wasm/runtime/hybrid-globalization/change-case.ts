@@ -2,16 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { Module } from "../globals";
-import { setU16 } from "../memory";
+import { updateGrowableHeapViews, setU16 } from "../memory";
 import { mono_wasm_new_external_root } from "../roots";
 import { conv_string_root } from "../strings";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
 import { Int32Ptr } from "../types/emscripten";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 
-export function mono_wasm_change_case_invariant(src: number, srcLength: number, dst: number, dstLength: number, toUpper: number, is_exception: Int32Ptr, ex_address: MonoObjectRef) : void{
+export function mono_wasm_change_case_invariant(src: number, srcLength: number, dst: number, dstLength: number, toUpper: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): void {
     const exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
-    try{
+    try {
         const input = get_utf16_string(src, srcLength);
         let result = toUpper ? input.toUpperCase() : input.toLowerCase();
         // Unicode defines some codepoints which expand into multiple codepoints,
@@ -20,7 +20,7 @@ export function mono_wasm_change_case_invariant(src: number, srcLength: number, 
             result = input;
 
         for (let i = 0; i < result.length; i++)
-            setU16(dst + i*2, result.charCodeAt(i));
+            setU16(dst + i * 2, result.charCodeAt(i));
         wrap_no_error_root(is_exception, exceptionRoot);
     }
     catch (ex: any) {
@@ -31,10 +31,10 @@ export function mono_wasm_change_case_invariant(src: number, srcLength: number, 
     }
 }
 
-export function mono_wasm_change_case(culture: MonoStringRef, src: number, srcLength: number, dst: number, destLength: number, toUpper: number, is_exception: Int32Ptr, ex_address: MonoObjectRef) : void{
+export function mono_wasm_change_case(culture: MonoStringRef, src: number, srcLength: number, dst: number, destLength: number, toUpper: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): void {
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
-    try{
+    try {
         const cultureName = conv_string_root(cultureRoot);
         if (!cultureName)
             throw new Error("Cannot change case, the culture name is null.");
@@ -44,7 +44,7 @@ export function mono_wasm_change_case(culture: MonoStringRef, src: number, srcLe
             result = input;
 
         for (let i = 0; i < destLength; i++)
-            setU16(dst + i*2, result.charCodeAt(i));
+            setU16(dst + i * 2, result.charCodeAt(i));
         wrap_no_error_root(is_exception, exceptionRoot);
     }
     catch (ex: any) {
@@ -56,7 +56,8 @@ export function mono_wasm_change_case(culture: MonoStringRef, src: number, srcLe
     }
 }
 
-function get_utf16_string(ptr: number, length: number): string{
+function get_utf16_string(ptr: number, length: number): string {
+    updateGrowableHeapViews();
     const view = new Uint16Array(Module.HEAPU16.buffer, ptr, length);
     let string = "";
     for (let i = 0; i < length; i++)

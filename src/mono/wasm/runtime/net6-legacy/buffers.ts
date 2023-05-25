@@ -7,6 +7,7 @@ import { mono_wasm_new_external_root } from "../roots";
 import { MonoArray, MonoObjectRef, MonoObject } from "../types/internal";
 import { Int32Ptr, TypedArray } from "../types/emscripten";
 import { js_to_mono_obj_root } from "./js-to-cs";
+import { updateGrowableHeapViews } from "../memory";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function mono_wasm_typed_array_from_ref(pinned_array: MonoArray, begin: number, end: number, bytes_per_element: number, type: number, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
@@ -98,6 +99,7 @@ function typedarray_copy_from(typed_array: TypedArray, pinned_array: MonoArray, 
         // offset index into the view
         const offset = begin * bytes_per_element;
         // Set view bytes to value from HEAPU8
+        updateGrowableHeapViews();
         typedarrayBytes.set(Module.HEAPU8.subarray(<any>pinned_array + offset, <any>pinned_array + offset + num_of_bytes));
         return num_of_bytes;
     }

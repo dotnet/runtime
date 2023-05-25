@@ -7,6 +7,8 @@ import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 import { mono_log_warn } from "./logging";
+import { updateGrowableHeapViews } from "./memory";
+import { utf8ToString } from "./strings";
 const commands_received: any = new Map<number, CommandResponse>();
 commands_received.remove = function (key: number): CommandResponse { const value = this.get(key); this.delete(key); return value; };
 let _call_function_res_cache: any = {};
@@ -39,11 +41,13 @@ export function mono_wasm_fire_debugger_agent_message_with_data_to_pause(base64S
 }
 
 export function mono_wasm_fire_debugger_agent_message_with_data(data: number, len: number): void {
+    updateGrowableHeapViews();
     const base64String = toBase64StringImpl(new Uint8Array(Module.HEAPU8.buffer, data, len));
     mono_wasm_fire_debugger_agent_message_with_data_to_pause(base64String);
 }
 
 export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, buffer: number, buffer_len: number): void {
+    updateGrowableHeapViews();
     const dbg_command = new Uint8Array(Module.HEAPU8.buffer, buffer, buffer_len);
     const base64String = toBase64StringImpl(dbg_command);
     const buffer_obj = {
@@ -59,6 +63,7 @@ export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, 
 }
 
 function mono_wasm_malloc_and_set_debug_buffer(command_parameters: string) {
+    updateGrowableHeapViews();
     if (command_parameters.length > _debugger_buffer_len) {
         if (_debugger_buffer)
             Module._free(_debugger_buffer);
@@ -150,7 +155,7 @@ export function mono_wasm_debugger_attached(): void {
 
 export function mono_wasm_set_entrypoint_breakpoint(assembly_name: CharPtr, entrypoint_method_token: number): void {
     //keep these assignments, these values are used by BrowserDebugProxy
-    _assembly_name_str = Module.UTF8ToString(assembly_name).concat(".dll");
+    _assembly_name_str = utf8ToString(assembly_name).concat(".dll");
     _entrypoint_method_token = entrypoint_method_token;
     //keep this console.assert, otherwise optimization will remove the assignments
     // eslint-disable-next-line no-console
@@ -341,7 +346,7 @@ export function mono_wasm_release_object(objectId: string): void {
 }
 
 export function mono_wasm_debugger_log(level: number, message_ptr: CharPtr): void {
-    const message = Module.UTF8ToString(message_ptr);
+    const message = utf8ToString(message_ptr);
 
     if (INTERNAL["logging"] && typeof INTERNAL.logging["debugger"] === "function") {
         INTERNAL.logging.debugger(level, message);

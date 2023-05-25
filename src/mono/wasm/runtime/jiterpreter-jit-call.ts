@@ -18,6 +18,7 @@ import {
 } from "./jiterpreter-feature-detect";
 import cwraps from "./cwraps";
 import { mono_log_error, mono_log_info } from "./logging";
+import { utf8ToString } from "./strings";
 
 // Controls miscellaneous diagnostic output.
 const trace = 0;
@@ -149,7 +150,7 @@ class TrampolineInfo {
         if (useFullNames) {
             const pMethodName = method ? cwraps.mono_wasm_method_get_full_name(method) : <any>0;
             try {
-                suffix = Module.UTF8ToString(pMethodName);
+                suffix = utf8ToString(pMethodName);
             } finally {
                 if (pMethodName)
                     Module._free(<any>pMethodName);

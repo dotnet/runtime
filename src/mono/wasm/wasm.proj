@@ -295,6 +295,9 @@
 
     <ItemGroup Condition="'$(MonoWasmThreads)' == 'true'">
       <WasmOptConfigurationFlags Include="--enable-threads;--enable-bulk-memory;--enable-sign-ext" />
+
+      <!-- workaround for https://github.com/emscripten-core/emscripten/issues/18034 -->
+      <_EmccLinkFlags Include="-s TEXTDECODER=0"/>
     </ItemGroup>
 
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">

@@ -16,6 +16,7 @@ import { conv_string_root } from "./strings";
 import { JSHandleNull, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToJs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
 import { get_marshaler_to_cs_by_type } from "./marshal-to-cs";
+import { updateGrowableHeapViews } from "./memory";
 
 export function initialize_marshalers_to_js(): void {
     if (cs_to_js_marshalers.size == 0) {
@@ -422,14 +423,17 @@ function _marshal_array_to_js_impl(arg: JSMarshalerArgument, element_type: Marsh
         }
     }
     else if (element_type == MarshalerType.Byte) {
+        updateGrowableHeapViews();
         const sourceView = Module.HEAPU8.subarray(<any>buffer_ptr, buffer_ptr + length);
         result = sourceView.slice();//copy
     }
     else if (element_type == MarshalerType.Int32) {
+        updateGrowableHeapViews();
         const sourceView = Module.HEAP32.subarray(buffer_ptr >> 2, (buffer_ptr >> 2) + length);
         result = sourceView.slice();//copy
     }
     else if (element_type == MarshalerType.Double) {
+        updateGrowableHeapViews();
         const sourceView = Module.HEAPF64.subarray(buffer_ptr >> 3, (buffer_ptr >> 3) + length);
         result = sourceView.slice();//copy
     }

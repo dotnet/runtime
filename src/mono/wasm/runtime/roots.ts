@@ -5,7 +5,7 @@ import cwraps from "./cwraps";
 import { Module } from "./globals";
 import { VoidPtr, ManagedPointer, NativePointer } from "./types/emscripten";
 import { MonoObjectRef, MonoObjectRefNull, MonoObject, is_nullish, WasmRoot, WasmRootBuffer } from "./types/internal";
-import { _zero_region } from "./memory";
+import { _zero_region, updateGrowableHeapViews } from "./memory";
 
 const maxScratchRoots = 8192;
 let _scratch_root_buffer: WasmRootBuffer | null = null;
@@ -217,6 +217,7 @@ export class WasmRootBufferImpl implements WasmRootBuffer {
     get(index: number): ManagedPointer {
         this._check_in_range(index);
         const offset = this.get_address_32(index);
+        updateGrowableHeapViews();
         return <any>Module.HEAPU32[offset];
     }
 
@@ -232,6 +233,7 @@ export class WasmRootBufferImpl implements WasmRootBuffer {
     }
 
     _unsafe_get(index: number): number {
+        updateGrowableHeapViews();
         return Module.HEAPU32[this.__offset32 + index];
     }
 
@@ -329,6 +331,7 @@ class WasmJsOwnedRoot<T extends MonoObject> implements WasmRoot<T> {
     clear(): void {
         // .set performs an expensive write barrier, and that is not necessary in most cases
         //  for clear since clearing a root cannot cause new objects to survive a GC
+        updateGrowableHeapViews();
         const address32 = this.__buffer.get_address_32(this.__index);
         Module.HEAPU32[address32] = 0;
     }
@@ -379,6 +382,7 @@ class WasmExternalRoot<T extends MonoObject> implements WasmRoot<T> {
     }
 
     get(): T {
+        updateGrowableHeapViews();
         const result = Module.HEAPU32[this.__external_address_32];
         return <any>result;
     }
@@ -425,6 +429,7 @@ class WasmExternalRoot<T extends MonoObject> implements WasmRoot<T> {
     clear(): void {
         // .set performs an expensive write barrier, and that is not necessary in most cases
         //  for clear since clearing a root cannot cause new objects to survive a GC
+        updateGrowableHeapViews();
         Module.HEAPU32[<any>this.__external_address >>> 2] = 0;
     }
 

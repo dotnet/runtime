@@ -6,7 +6,7 @@ import { Module } from "./globals";
 import { NativePointer } from "./types/emscripten";
 import {
     getU16, getI16,
-    getU32_unaligned, getI32_unaligned, getF32_unaligned, getF64_unaligned,
+    getU32_unaligned, getI32_unaligned, getF32_unaligned, getF64_unaligned, updateGrowableHeapViews,
 } from "./memory";
 import {
     WasmOpcode, WasmSimdOpcode,
@@ -3055,6 +3055,7 @@ function emit_simd(
         case MintOpcode.MINT_SIMD_V128_LDC: {
             if (builder.options.enableSimd && getIsWasmSimdSupported()) {
                 builder.local("pLocals");
+                updateGrowableHeapViews();
                 builder.v128_const(
                     Module.HEAPU8.slice(<any>ip + 4, <any>ip + 4 + sizeOfV128)
                 );
