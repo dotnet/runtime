@@ -1541,7 +1541,7 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return)
 	size = mini_type_stack_size_full (t, &align, cinfo->pinvoke);
 	align_size = ALIGN_TO (size, 8);
 
-	if (m_class_is_simd_type (klass) && !cinfo->pinvoke && !is_return && cinfo->fr < FP_PARAM_REGS) {
+	if (m_class_is_simd_type (klass) && size <= 16 && !cinfo->pinvoke && !is_return && cinfo->fr < FP_PARAM_REGS) {
 		ainfo->storage = ArgInSIMDReg;
 		ainfo->reg = cinfo->fr;
 		ainfo->nregs = 1;
