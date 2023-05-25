@@ -5423,9 +5423,16 @@ struct GenTreeCall final : public GenTree
 
     InlineCandidateInfo* GetSingleInlineCandidateInfo()
     {
-        if (gtInlineInfoCount != 1)
+        // gtInlineInfoCount can be 0 (not an inline candidate) or 1
+        if (gtInlineInfoCount == 0)
         {
-            assert(!"Call has no or multiple inline candidates");
+            assert(!IsInlineCandidate());
+            assert(gtInlineCandidateInfo == nullptr);
+            return nullptr;
+        }
+        else if (gtInlineInfoCount > 1)
+        {
+            assert(!"Call has multiple inline candidates");
         }
         return gtInlineCandidateInfo;
     }
