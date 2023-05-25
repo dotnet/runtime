@@ -3232,6 +3232,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/Misc/function_pointer/MutualThdRecur-fptr/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/Benchstones/MDBenchI/MDPuzzle/**">
+            <Issue>https://github.com/dotnet/runtime/issues/86772</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/VT/callconv/jumps4_r/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
