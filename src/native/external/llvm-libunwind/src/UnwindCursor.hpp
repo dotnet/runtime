@@ -932,6 +932,7 @@ public:
   virtual void        setFloatReg(int, unw_fpreg_t);
   virtual int         step(bool stage2 = false);
   virtual void        getInfo(unw_proc_info_t *);
+  virtual void        setInfo(unw_proc_info_t *);
   virtual void        jumpto();
   virtual bool        isSignalFrame();
   virtual bool        getFunctionName(char *buf, size_t len, unw_word_t *off);
@@ -2883,6 +2884,11 @@ void UnwindCursor<A, R>::getInfo(unw_proc_info_t *info) {
     memset(info, 0, sizeof(*info));
   else
     *info = _info;
+}
+
+template <typename A, typename R>
+void UnwindCursor<A, R>::setInfo(unw_proc_info_t* info) {
+  _info = *info;
 }
 
 template <typename A, typename R>
