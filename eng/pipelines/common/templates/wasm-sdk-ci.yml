@@ -1,0 +1,60 @@
+parameters:
+  alwaysRun: false
+  isExtraPlatformsBuild: false
+  isWasmOnlyBuild: false
+  platforms: []
+  shouldContinueOnError: false
+
+jobs:
+
+#
+# Build the whole product using Mono and run libraries tests, for Wasm.Build.Tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms: ${{ parameters.platforms }}
+    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+    variables:
+      # map dependencies variables to local variables
+      - name: alwaysRunVar
+        value: ${{ parameters.alwaysRun }}
+      - name: workloadsTestPreviousVersionsVar
+        value: $[
+          or(
+            eq(variables['Build.SourceBranchName'], 'main'),
+            eq(variables['System.PullRequest.TargetBranch'], 'main'))
+          ]
+      - name: shouldRunOnDefaultPipelines
+        value: $[
+          or(
+            eq(variables['wasmDarcDependenciesChanged'], true),
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true))
+          ]
+    jobParameters:
+      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
+      testGroup: innerloop
+      nameSuffix: WasmBuildTests
+      buildArgs:
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(variables['alwaysRunVar'], true),
+          eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/common/templates/additional-steps-then-helix.yml
+      extraStepsParameters:
+        additionalSteps:
+          - checkout: git://dotnet/sdk
+            displayName: Checkout dotnet/sdk
+          - script: ls -l
+          - script: ls -l $(Pipeline.Workspace)
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)_$(_hostedOs)
+        extraHelixArguments: /p:BrowserHost=$(_hostedOs)
+        scenarios:
+        - buildwasmapps
