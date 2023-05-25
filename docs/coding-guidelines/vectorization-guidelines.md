@@ -214,7 +214,7 @@ All that complexity needs to pay off. We need to **benchmark the code to verify 
 
 #### Custom config
 
-It's possible to define a config that instructs the harness to run the benchmarks for all four scenarios:
+It's possible to define a config that instructs the harness to run the benchmarks for all three scenarios:
 
 ```csharp
 static void Main(string[] args)
@@ -310,7 +310,7 @@ AMD Ryzen Threadripper PRO 3945WX 12-Cores, 1 CPU, 24 logical and 12 physical co
 | Contains | Vector256 | 1024 |  55.769 ns | 0.6720 ns |  0.39 |     391 B |
 ```
 
-The results should be very stable (flat distributions), but on the other hand we are measuring the performance of the best case scenario (the input is large and its entire contents are searched through, as the value is never found).
+The results should be very stable (flat distributions), but on the other hand we are measuring the performance of the best case scenario (the input is large, aligned and its entire contents are searched through, as the value is never found).
 
 Explaining benchmark design guidelines is outside of the scope of this document, but we have a [dedicated document](https://github.com/dotnet/performance/blob/main/docs/microbenchmark-design-guidelines.md#benchmarks-are-not-unit-tests) about it. To make a long story short, **you should benchmark all scenarios that are realistic for your production environment**, so your customers can actually benefit from your improvements.
 
@@ -374,7 +374,11 @@ int Sum(Span<int> buffer)
 
 **Note:** Use `ref MemoryMarshal.GetReference(span)` instead of `ref span[0]` and `ref MemoryMarshal.GetArrayDataReference(array)` instead of `ref array[0]` to handle empty buffer scenarios (which would throw `IndexOutOfRangeException`). If the buffer is empty, these methods return a reference to the location where the 0th element would have been stored. Such a reference may or may not be null. You can use it for pinning but you must never de-reference it.
 
-**Note:** The `GetReference` method has an overload that accepts a `ReadOnlySpan` and returns mutable reference. Please use it with caution! To get a `readonly` reference, you need to use [ReadOnlySpan<T>.GetPinnableReference](https://learn.microsoft.com/dotnet/api/system.readonlyspan-1.getpinnablereference).
+**Note:** The `GetReference` method has an overload that accepts a `ReadOnlySpan` and returns mutable reference. Please use it with caution! To get a `readonly` reference, you can use [ReadOnlySpan<T>.GetPinnableReference](https://learn.microsoft.com/dotnet/api/system.readonlyspan-1.getpinnablereference) or just do the following:
+
+```csharp
+ref readonly T searchSpace = ref MemoryMarshal.GetReference(buffer);
+```
 
 **Note:** Please keep in mind that `Vector128.Sum` is a static method. `Vectior128<T>` and `Vector256<T>` provide both instance and static methods (operators like `+` are just static methods in C#). `Vector128` and `Vector256` are non-generic static classes with static methods only. It's important to know about their existence when searching for methods.
 
@@ -453,11 +457,11 @@ Both `Vector128` and `Vector256` provide at least five ways of loading them from
 ```csharp
 public static class Vector128
 {
-    public static Vector128<T> Load<T>(T* source) where T : unmanaged;
-    public static Vector128<T> LoadAligned<T>(T* source) where T : unmanaged;
-    public static Vector128<T> LoadAlignedNonTemporal<T>(T* source) where T : unmanaged;
-    public static Vector128<T> LoadUnsafe<T>(ref T source) where T : struct;
-    public static Vector128<T> LoadUnsafe<T>(ref T source, nuint elementOffset) where T : struct;
+    public static Vector128<T> Load<T>(T* source) where T : unmanaged
+    public static Vector128<T> LoadAligned<T>(T* source) where T : unmanaged
+    public static Vector128<T> LoadAlignedNonTemporal<T>(T* source) where T : unmanaged
+    public static Vector128<T> LoadUnsafe<T>(ref T source) where T : struct
+    public static Vector128<T> LoadUnsafe<T>(ref T source, nuint elementOffset) where T : struct
 }
 ```
 
@@ -572,7 +576,7 @@ Which could return true because `currentSearchSpace` was invalid and not updated
 That is why **we recommend using the overload that takes a managed reference and an element offset. It does not require pinning or doing any pointer arithmetic. It still requires care as passing an incorrect offset results in a GC hole.**
 
 ```csharp
-public static Vector128<T> LoadUnsafe<T>(ref T source, nuint elementOffset) where T : struct;
+public static Vector128<T> LoadUnsafe<T>(ref T source, nuint elementOffset) where T : struct
 ```
 
 **The only thing we need to keep in mind is potential `nuint` overflow when doing unsigned integer arithmetic.**
@@ -592,18 +596,18 @@ Similarly to loading, both `Vector128` and `Vector256` provide at least five way
 ```csharp
 public static class Vector128
 {
-    public static void Store<T>(this Vector128<T> source, T* destination) where T : unmanaged;
-    public static void StoreAligned<T>(this Vector128<T> source, T* destination) where T : unmanaged;
-    public static void StoreAlignedNonTemporal<T>(this Vector128<T> source, T* destination) where T : unmanaged;
-    public static void StoreUnsafe<T>(this Vector128<T> source, ref T destination) where T : struct;
-    public static void StoreUnsafe<T>(this Vector128<T> source, ref T destination, nuint elementOffset) where T : struct;
+    public static void Store<T>(this Vector128<T> source, T* destination) where T : unmanaged
+    public static void StoreAligned<T>(this Vector128<T> source, T* destination) where T : unmanaged
+    public static void StoreAlignedNonTemporal<T>(this Vector128<T> source, T* destination) where T : unmanaged
+    public static void StoreUnsafe<T>(this Vector128<T> source, ref T destination) where T : struct
+    public static void StoreUnsafe<T>(this Vector128<T> source, ref T destination, nuint elementOffset) where T : struct
 }
 ```
 
 For the reasons described for loading, we recommend using the overload that takes managed reference and element offset:
 
 ```csharp
-public static void StoreUnsafe<T>(this Vector128<T> source, ref T destination, nuint elementOffset) where T : struct;
+public static void StoreUnsafe<T>(this Vector128<T> source, ref T destination, nuint elementOffset) where T : struct
 ```
 
 **Note**: when loading values from one buffer and storing them into another, we need to consider whether they overlap or not. [MemoryExtensions.Overlap](https://learn.microsoft.com/dotnet/api/system.memoryextensions.overlaps#system-memoryextensions-overlaps-1(system-readonlyspan((-0))-system-readonlyspan((-0)))) is an API for doing that.
@@ -690,16 +694,16 @@ If we reuse one of the loops presented in the previous sections, all we need to 
 
 ```csharp
 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-bool VectorContainsNonAsciiChar(Vector128<byte> asciiVector)
+bool IsValidAscii(Vector128<byte> vector)
 {
     // to perform "> 127" check we can use GreaterThanAny method:
-    return Vector128.GreaterThanAny(asciiVector, Vector128.Create((byte)127))
+    return !Vector128.GreaterThanAny(vector, Vector128.Create((byte)127))
     // to perform "< 0" check, we need to use AsSByte and LessThanAny methods:
-    return Vector128.LessThanAny(asciiVector.AsSByte(), Vector128<sbyte>.Zero)
+    return !Vector128.LessThanAny(vector.AsSByte(), Vector128<sbyte>.Zero)
     // to perform an AND operation, we need to use & operator
-    return (asciiVector & Vector128.Create((byte)0b_1000_0000)) != Vector128<byte>.Zero;
+    return (vector & Vector128.Create((byte)0b_1000_0000)) == Vector128<byte>.Zero;
     // we can also just use ExtractMostSignificantBits method:
-    return asciiVector.ExtractMostSignificantBits() != 0;
+    return vector.ExtractMostSignificantBits() == 0;
 }
 ```
 
@@ -708,12 +712,12 @@ We can also use the hardware-specific instructions if they are available:
 ```csharp
 if (Sse41.IsSupported)
 {
-    return !Sse41.TestZ(asciiVector, Vector128.Create((byte)0b_1000_0000));
+    return Sse41.TestZ(vector, Vector128.Create((byte)0b_1000_0000));
 }
 else if (AdvSimd.Arm64.IsSupported)
 {
-    Vector128<byte> maxBytes = AdvSimd.Arm64.MaxPairwise(asciiVector, asciiVector);
-    return (maxBytes.AsUInt64().ToScalar() & 0x8080808080808080) != 0;
+    Vector128<byte> maxBytes = AdvSimd.Arm64.MaxPairwise(vector, vector);
+    return (maxBytes.AsUInt64().ToScalar() & 0x8080808080808080) == 0;
 }
 ```
 
@@ -737,7 +741,7 @@ AMD Ryzen Threadripper PRO 3945WX 12-Cores, 1 CPU, 24 logical and 12 physical co
 | ExtractMostSignificantBits | 1024 |  27.33 ns |  0.11 |     141 B |
 ```
 
-Even such a simple problem can be solved in at least 5 different ways. Using sophisticated hardware-specific instructions does not always provide the best performance, so **with the new `Vector128` and `Vector256` APIs we don't need to become assembly language experts to write fast, vectorized code**.
+Even such a simple problem can be solved in at least 5 different ways and each of them can perform significantly different on different hardware. Using sophisticated hardware-specific instructions does not always provide the best performance, so **with the new `Vector128` and `Vector256` APIs we don't need to become assembly language experts to write fast, vectorized code**.
 
 ## Tool-Chain
 
@@ -750,13 +754,13 @@ Even such a simple problem can be solved in at least 5 different ways. Using sop
 Each of the vector types provides a `Create` method that accepts a single value and returns a vector with all elements initialized to this value.
 
 ```csharp
-public static Vector128<T> Create<T>(T value) where T : struct;
+public static Vector128<T> Create<T>(T value) where T : struct
 ```
 
 `CreateScalar` initializes first element to the specified value, and the remaining elements to zero.
 
 ```csharp
-public static Vector128<int> CreateScalar(int value);
+public static Vector128<int> CreateScalar(int value)
 ```
 
 `CreateScalarUnsafe` is similar, but the remaining elements are left uninitialized. It's dangerous!
@@ -786,6 +790,8 @@ All size-specific vector types provide a set of APIs for common bit operations.
 
 `BitwiseAnd` computes the bitwise-and of two vectors, `BitwiseOr` computes the bitwise-or of two vectors. They can both be expressed by using the corresponding operators (`&` and `|`). The same goes for `Xor` which can be expressed with `^` operator and `Negate` (`~`).
 
+**Note:** The **operators should be preferred where possible**, as it helps avoid bugs around operator precedence and can improve readability.
+
 ```csharp
 public static Vector128<T> BitwiseAnd<T>(Vector128<T> left, Vector128<T> right) where T : struct => left & right;
 public static Vector128<T> BitwiseOr<T>(Vector128<T> left, Vector128<T> right) where T : struct => left | right;
@@ -803,9 +809,9 @@ public static Vector128<T> AndNot<T>(Vector128<T> left, Vector128<T> right) => l
 `ShiftRightArithmetic` performs a **signed** shift right and `ShiftRightLogical` performs an **unsigned** shift:
 
 ```csharp
-public static Vector128<sbyte> ShiftLeft(Vector128<sbyte> vector, int shiftCount);
-public static Vector128<sbyte> ShiftRightArithmetic(Vector128<sbyte> vector, int shiftCount);
-public static Vector128<byte> ShiftRightLogical(Vector128<byte> vector, int shiftCount);
+public static Vector128<sbyte> ShiftLeft(Vector128<sbyte> vector, int shiftCount) => vector << shiftCount;
+public static Vector128<sbyte> ShiftRightArithmetic(Vector128<sbyte> vector, int shiftCount) => vector >> shiftCount;
+public static Vector128<byte> ShiftRightLogical(Vector128<byte> vector, int shiftCount) => vector >>> shiftCount;
 ```
 
 ### Equality
@@ -853,9 +859,9 @@ Console.WriteLine(Convert.ToString(mostSignificantBits, 2).PadLeft(32, '0'));
 00000000000000000000000000000100
 ```
 
-and use [BitOperations.TrailingZeroCount](https://learn.microsoft.com/dotnet/api/system.numerics.bitoperations.trailingzerocount) to get the trailing zero count.
+and use [BitOperations.TrailingZeroCount](https://learn.microsoft.com/dotnet/api/system.numerics.bitoperations.trailingzerocount) or [uint.TrailingZeroCount](https://learn.microsoft.com/dotnet/api/system.uint32.trailingzerocount) (introduced in .NET 7) to get the trailing zero count.
 
-To calculate the last index, we should use [BitOperations.LeadingZeroCount](https://learn.microsoft.com/dotnet/api/system.numerics.bitoperations.leadingzerocount). But the returned value needs to be subtracted from 31 (32 bits in an `unit`, indexed from 0).
+To calculate the last index, we should use [BitOperations.LeadingZeroCount](https://learn.microsoft.com/dotnet/api/system.numerics.bitoperations.leadingzerocount) or [uint.LeadingZeroCount](https://learn.microsoft.com/dotnet/api/system.uint32.leadingzerocount) (introduced in .NET 7). But the returned value needs to be subtracted from 31 (32 bits in an `unit`, indexed from 0).
 
 If we were working with a buffer loaded from memory (example: searching for the last index of a given character in the buffer) both results would be relative to the `elementOffset` provided to the `Load` method that was used to load the vector from the buffer.
 
@@ -928,7 +934,7 @@ Assert.Equal(Vector128.Create(4.0f, 3, 3, 4), result);
 
 ### Math
 
-Very simple math operations can be also expressed by using the operators:
+Very simple math operations can be also expressed by using the operators. The operators should be preferred where possible, as it helps avoid bugs around operator precedence and can improve readability.
 
 ```csharp
 public static Vector128<T> Add<T>(Vector128<T> left, Vector128<T> right) where T : struct => left + right;
@@ -946,10 +952,12 @@ public static Vector128<T> Subtract<T>(Vector128<T> left, Vector128<T> right) =>
 ```csharp
 public static Vector128<T> Abs<T>(Vector128<T> vector) where T : struct
 public static Vector128<double> Ceiling(Vector128<double> vector)
+public static Vector128<float> Ceiling(Vector128<float> vector)
+public static Vector128<double> Floor(Vector128<double> vector)
 public static Vector128<float> Floor(Vector128<float> vector)
-public static Vector128<T> Max<T>(Vector128<T> left, Vector128<T> right)
-public static Vector128<T> Min<T>(Vector128<T> left, Vector128<T> right)
-public static Vector128<T> Sqrt<T>(Vector128<T> vector);
+public static Vector128<T> Max<T>(Vector128<T> left, Vector128<T> right) where T : struct
+public static Vector128<T> Min<T>(Vector128<T> left, Vector128<T> right) where T : struct
+public static Vector128<T> Sqrt<T>(Vector128<T> vector) where T : struct
 public static T Sum<T>(Vector128<T> vector) where T : struct
 ```
 
