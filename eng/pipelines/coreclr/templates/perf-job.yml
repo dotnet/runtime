@@ -109,9 +109,9 @@ jobs:
     ${{ if in(parameters.runtimeType, 'AndroidMono') }}:
       extraSetupParameters: -Architecture ${{ parameters.archType }} -AndroidMono
     ${{ if in(parameters.runtimeType, 'iOSMono') }}:
-      extraSetupParameters: --architecture ${{ parameters.archType }} --iosmono --iosllvmbuild ${{ parameters.iOSLlvmBuild }} ${{ parameters.iOSStripSymbols }}
+      extraSetupParameters: --architecture ${{ parameters.archType }} --iosmono --iosllvmbuild ${{ parameters.iOSLlvmBuild }} --iosstripsymbols ${{ parameters.iOSStripSymbols }}
     ${{ if in(parameters.runtimeType, 'iOSNativeAOT') }}:
-      extraSetupParameters: --architecture ${{ parameters.archType }} --iosnativeaot ${{ parameters.iOSStripSymbols }}
+      extraSetupParameters: --architecture ${{ parameters.archType }} --iosnativeaot --iosstripsymbols ${{ parameters.iOSStripSymbols }}
 
     variables:
     - ${{ each variable in parameters.variables }}:
