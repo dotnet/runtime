@@ -281,13 +281,13 @@ private:
     void WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs, unsigned size);
     void MarkForReadBack(unsigned lcl, unsigned offs, unsigned size);
 
-    void HandleAssignment(GenTree** use, GenTree* user);
+    void HandleStore(GenTree** use, GenTree* user);
     bool OverlappingReplacements(GenTreeLclVarCommon* lcl,
                                  Replacement**        firstReplacement,
                                  Replacement**        endReplacement = nullptr);
-    void EliminateCommasInBlockOp(GenTreeOp* asg, DecompositionStatementList* result);
-    void InitFields(GenTreeLclVarCommon* dst, Replacement* firstRep, Replacement* endRep, DecompositionPlan* plan);
-    void CopyBetweenFields(GenTree*                    dst,
+    void EliminateCommasInBlockOp(GenTree* store, DecompositionStatementList* result);
+    void InitFields(GenTreeLclVarCommon* dstStore, Replacement* firstRep, Replacement* endRep, DecompositionPlan* plan);
+    void CopyBetweenFields(GenTree*                    store,
                            Replacement*                dstFirstRep,
                            Replacement*                dstEndRep,
                            GenTree*                    src,

@@ -22,6 +22,21 @@
         <target state="translated">L'analisi per la generazione non è riuscita.</target>
         <note />
       </trans-unit>
+      <trans-unit id="BaseInterfaceCannotBeGeneratedDescription">
+        <source>COM interface source generation requires all base COM interfaces to be valid interfaces. Fix any issues on the base interface to resolve this diagnostic.</source>
+        <target state="new">COM interface source generation requires all base COM interfaces to be valid interfaces. Fix any issues on the base interface to resolve this diagnostic.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BaseInterfaceCannotBeGeneratedMessage">
+        <source>COM interface {0} inherits from {1}, which has errors. ComInterfaceGenerator will not generate source for {0}.</source>
+        <target state="new">COM interface {0} inherits from {1}, which has errors. ComInterfaceGenerator will not generate source for {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BaseInterfaceCannotBeGeneratedTitle">
+        <source>The base COM interface failed to generate source. ComInterfaceGenerator will not generate source for this interface.</source>
+        <target state="new">The base COM interface failed to generate source. ComInterfaceGenerator will not generate source for this interface.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">
         <source>Source-generated COM will ignore any configuration that is not supported.</source>
         <target state="needs-review-translation">I P/Invoke generati dall'origine ignoreranno qualsiasi configurazione non supportata.</target>
@@ -55,6 +70,11 @@
       <trans-unit id="ConfigurationNotSupportedTitle">
         <source>Specified configuration is not supported by source-generated COM.</source>
         <target state="needs-review-translation">La configurazione specificata non è supportata dai P/Invoke generati dall'origine.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
+        <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</source>
+        <target state="new">The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</target>
         <note />
       </trans-unit>
       <trans-unit id="InterfaceTypeNotSupportedMessage">
@@ -137,11 +157,6 @@
         <target state="translated">La configurazione di 'StringMarshalling' e 'StringMarshallingCustomType' non è valida.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidStringMarshallingConfigurationMessage">
-        <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on method '{0}' is invalid. {1}</source>
-        <target state="translated">La configurazione di 'StringMarshalling' e 'StringMarshallingCustomType' nel metodo '{0}' non è valida. {1}</target>
-        <note>{1} is a message containing additional details about what is not valid</note>
-      </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationMissingCustomType">
         <source>'StringMarshallingCustomType' must be specified when 'StringMarshalling' is set to 'StringMarshalling.Custom'.</source>
         <target state="translated">È necessario specificare 'StringMarshallingCustomType' quando 'StringMarshalling' è impostato su 'StringMarshalling.Custom'.</target>
@@ -151,6 +166,16 @@
         <source>'StringMarshalling' should be set to 'StringMarshalling.Custom' when 'StringMarshallingCustomType' is specified.</source>
         <target state="translated">'StringMarshalling' deve essere impostato su 'StringMarshalling.Custom' quando è specificato 'StringMarshallingCustomType'.</target>
         <note />
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationOnInterfaceMessage">
+        <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</source>
+        <target state="new">The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationOnMethodMessage">
+        <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on method '{0}' is invalid. {1}</source>
+        <target state="new">The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on method '{0}' is invalid. {1}</target>
+        <note>{1} is a message containing additional details about what is not valid</note>
       </trans-unit>
       <trans-unit id="InvalidVirtualMethodIndexAttributeUsage">
         <source>Invalid 'VirtualMethodIndexAttribute' usage</source>

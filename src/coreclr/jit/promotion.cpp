@@ -536,7 +536,7 @@ public:
     {
         GenTree* tree = *use;
 
-        if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_LCL_ADDR))
+        if (tree->OperIsAnyLocal())
         {
             GenTreeLclVarCommon* lcl = tree->AsLclVarCommon();
             LclVarDsc*           dsc = m_compiler->lvaGetDesc(lcl);
@@ -559,7 +559,7 @@ public:
                 {
                     accessType   = lcl->TypeGet();
                     accessLayout = accessType == TYP_STRUCT ? lcl->GetLayout(m_compiler) : nullptr;
-                    accessFlags  = ClassifyLocalRead(lcl, user);
+                    accessFlags  = ClassifyLocalAccess(lcl, user);
                 }
 
                 LocalUses* uses = GetOrCreateUses(lcl->GetLclNum());
@@ -594,7 +594,7 @@ private:
 
     //------------------------------------------------------------------------
     // ClassifyLocalAccess:
-    //   Given a local use and its user, classify information about it.
+    //   Given a local node and its user, classify information about it.
     //
     // Parameters:
     //   lcl - The local
@@ -603,50 +603,36 @@ private:
     // Returns:
     //   Flags classifying the access.
     //
-    AccessKindFlags ClassifyLocalRead(GenTreeLclVarCommon* lcl, GenTree* user)
+    AccessKindFlags ClassifyLocalAccess(GenTreeLclVarCommon* lcl, GenTree* user)
     {
-        assert(lcl->OperIsLocalRead());
+        assert(lcl->OperIsLocalRead() || lcl->OperIsLocalStore());
 
         AccessKindFlags flags = AccessKindFlags::None;
+        if (lcl->OperIsLocalStore())
+        {
+            flags |= AccessKindFlags::IsAssignmentDestination;
+        }
+
+        if (user == nullptr)
+        {
+            return flags;
+        }
+
         if (user->IsCall())
         {
-            GenTreeCall* call     = user->AsCall();
-            unsigned     argIndex = 0;
-            for (CallArg& arg : call->gtArgs.Args())
+            for (CallArg& arg : user->AsCall()->gtArgs.Args())
             {
-                if (arg.GetNode() != lcl)
+                if (arg.GetNode() == lcl)
                 {
-                    argIndex++;
-                    continue;
+                    flags |= AccessKindFlags::IsCallArg;
+                    break;
                 }
-
-                flags |= AccessKindFlags::IsCallArg;
-
-                unsigned argSize = 0;
-                if (arg.GetSignatureType() != TYP_STRUCT)
-                {
-                    argSize = genTypeSize(arg.GetSignatureType());
-                }
-                else
-                {
-                    argSize = m_compiler->typGetObjLayout(arg.GetSignatureClassHandle())->GetSize();
-                }
-
-                break;
             }
         }
 
-        if (user->OperIs(GT_ASG))
+        if (user->OperIsStore() && (user->Data() == lcl))
         {
-            if (user->gtGetOp1() == lcl)
-            {
-                flags |= AccessKindFlags::IsAssignmentDestination;
-            }
-
-            if (user->gtGetOp2() == lcl)
-            {
-                flags |= AccessKindFlags::IsAssignmentSource;
-            }
+            flags |= AccessKindFlags::IsAssignmentSource;
         }
 
         if (user->OperIs(GT_RETURN))
@@ -1086,8 +1072,7 @@ StructSegments Promotion::SignificantSegments(Compiler*    compiler,
 // CreateWriteBack:
 //   Create IR that writes a replacement local's value back to its struct local:
 //
-//     ASG
-//       LCL_FLD int V00 [+4]
+//     STORE_LCL_FLD int V00 [+4]
 //       LCL_VAR int V01
 //
 // Parameters:
@@ -1100,18 +1085,16 @@ StructSegments Promotion::SignificantSegments(Compiler*    compiler,
 //
 GenTree* Promotion::CreateWriteBack(Compiler* compiler, unsigned structLclNum, const Replacement& replacement)
 {
-    GenTree* dst = compiler->gtNewLclFldNode(structLclNum, replacement.AccessType, replacement.Offset);
-    GenTree* src = compiler->gtNewLclvNode(replacement.LclNum, genActualType(replacement.AccessType));
-    GenTree* asg = compiler->gtNewAssignNode(dst, src);
-    return asg;
+    GenTree* value = compiler->gtNewLclVarNode(replacement.LclNum);
+    GenTree* store = compiler->gtNewStoreLclFldNode(structLclNum, replacement.AccessType, replacement.Offset, value);
+    return store;
 }
 
 //------------------------------------------------------------------------
 // CreateReadBack:
 //   Create IR that reads a replacement local's value back from its struct local:
 //
-//     ASG
-//       LCL_VAR int V01
+//     STORE_LCL_VAR int V01
 //       LCL_FLD int V00 [+4]
 //
 // Parameters:
@@ -1124,27 +1107,24 @@ GenTree* Promotion::CreateWriteBack(Compiler* compiler, unsigned structLclNum, c
 //
 GenTree* Promotion::CreateReadBack(Compiler* compiler, unsigned structLclNum, const Replacement& replacement)
 {
-    GenTree* dst = compiler->gtNewLclvNode(replacement.LclNum, genActualType(replacement.AccessType));
-    GenTree* src = compiler->gtNewLclFldNode(structLclNum, replacement.AccessType, replacement.Offset);
-    GenTree* asg = compiler->gtNewAssignNode(dst, src);
-    return asg;
+    GenTree* value = compiler->gtNewLclFldNode(structLclNum, replacement.AccessType, replacement.Offset);
+    GenTree* store = compiler->gtNewStoreLclVarNode(replacement.LclNum, value);
+    return store;
 }
 
 Compiler::fgWalkResult ReplaceVisitor::PostOrderVisit(GenTree** use, GenTree* user)
 {
     GenTree* tree = *use;
 
-    if (tree->OperIs(GT_ASG))
+    if (tree->OperIsStore())
     {
-        // If LHS of the ASG was a local then we skipped it as we don't
-        // want to see it until after the RHS.
-        if (tree->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+        if (tree->OperIsLocalStore())
         {
-            ReplaceLocal(&tree->AsOp()->gtOp1, tree);
+            ReplaceLocal(use, user);
         }
 
-        // Assignments can be decomposed directly into accesses of the replacements.
-        HandleAssignment(use, user);
+        // Stores can be decomposed directly into accesses of the replacements.
+        HandleStore(use, user);
         return fgWalkResult::WALK_CONTINUE;
     }
 
@@ -1164,10 +1144,7 @@ Compiler::fgWalkResult ReplaceVisitor::PostOrderVisit(GenTree** use, GenTree* us
         return fgWalkResult::WALK_CONTINUE;
     }
 
-    // Skip the local on the LHS of ASGs when we see it in the normal tree
-    // visit; we handle it as part of the parent ASG instead.
-    if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
-        ((user == nullptr) || !user->OperIs(GT_ASG) || (user->gtGetOp1() != tree)))
+    if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD))
     {
         ReplaceLocal(use, user);
         return fgWalkResult::WALK_CONTINUE;
@@ -1302,7 +1279,10 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
 #ifdef DEBUG
     if (accessType == TYP_STRUCT)
     {
-        assert((user == nullptr) || user->OperIs(GT_ASG, GT_CALL, GT_RETURN));
+        if (lcl->OperIsLocalRead())
+        {
+            assert((user == nullptr) || user->OperIs(GT_CALL, GT_RETURN) || user->OperIsStore());
+        }
     }
     else
     {
@@ -1335,13 +1315,21 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
     Replacement& rep = replacements[index];
     assert(accessType == rep.AccessType);
     JITDUMP("  ..replaced with promoted lcl V%02u\n", rep.LclNum);
-    *use = m_compiler->gtNewLclvNode(rep.LclNum, accessType);
+
+    bool isDef = lcl->OperIsLocalStore();
+    if (isDef)
+    {
+        *use = m_compiler->gtNewStoreLclVarNode(rep.LclNum, lcl->Data());
+    }
+    else
+    {
+        *use = m_compiler->gtNewLclvNode(rep.LclNum, accessType);
+    }
 
     (*use)->gtFlags |= lcl->gtFlags & GTF_VAR_DEATH;
 
-    if ((lcl->gtFlags & GTF_VAR_DEF) != 0)
+    if (isDef)
     {
-        (*use)->gtFlags |= GTF_VAR_DEF; // TODO-ASG: delete.
         rep.NeedsWriteBack = true;
         rep.NeedsReadBack  = false;
     }
@@ -1358,9 +1346,9 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
         // └──▌  ADD       int
         //    ├──▌  LCL_VAR   int    V10 tmp6        -> copy propagated to [V35 tmp31]
         //    └──▌  COMMA     int
-        //       ├──▌  ASG       int
-        //       │  ├──▌  LCL_VAR   int    V35 tmp31
+        //       ├──▌  STORE_LCL_VAR int    V35 tmp31
         //       │  └──▌  LCL_FLD   int    V03 loc1         [+4]
+        //
         // This really ought to be handled by local copy prop, but the way it works during
         // morph makes it hard to fix there.
         //
@@ -1733,10 +1721,9 @@ void Promotion::ExplicitlyZeroInitReplacementLocals(unsigned                    
             continue;
         }
 
-        GenTree* dst = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
-        GenTree* src = m_compiler->gtNewZeroConNode(rep.AccessType);
-        GenTree* asg = m_compiler->gtNewAssignNode(dst, src);
-        InsertInitStatement(prevStmt, asg);
+        GenTree* value = m_compiler->gtNewZeroConNode(rep.AccessType);
+        GenTree* store = m_compiler->gtNewStoreLclVarNode(rep.LclNum, value);
+        InsertInitStatement(prevStmt, store);
     }
 }
 
