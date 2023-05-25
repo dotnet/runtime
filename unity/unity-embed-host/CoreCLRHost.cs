@@ -18,6 +18,7 @@ static unsafe partial class CoreCLRHost
 {
     static ALCWrapper alcWrapper;
     static FieldInfo assemblyHandleField;
+    private static HostStructNative* _hostStructNative;
     private static readonly Dictionary<Assembly, AssemblyPair> m_assemblies = new ();
 
     private readonly struct AssemblyPair
@@ -31,12 +32,17 @@ static unsafe partial class CoreCLRHost
         public readonly IntPtr name;
     }
 
-    internal static int InitMethod(HostStruct* functionStruct, int structSize)
+    internal static int InitMethod(HostStruct* functionStruct, int structSize, HostStructNative* functionStructNative, int structSizeNative)
     {
         if (Marshal.SizeOf<HostStruct>() != structSize)
-            throw new Exception($"Invalid struct size, Managed was {Marshal.SizeOf<HostStruct>()} and Native was {structSize}");
+            throw new Exception($"Invalid struct size {nameof(HostStruct)}, Managed was {Marshal.SizeOf<HostStruct>()} and Native was {structSize}");
+
+        if (Marshal.SizeOf<HostStructNative>() != structSizeNative)
+            throw new Exception($"Invalid struct size for {nameof(HostStructNative)}, Managed was {Marshal.SizeOf<HostStructNative>()} and Native was {structSizeNative}");
 
         InitState();
+
+        _hostStructNative = functionStructNative;
 
         InitHostStruct(functionStruct);
 
@@ -359,6 +365,13 @@ static unsafe partial class CoreCLRHost
         [NativeCallbackType("MonoAssembly*")]
         IntPtr assembly)
         => assembly.AssemblyFromGCHandleIntPtr().ToNativeRepresentation();
+
+    static void Log(string message)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(message);
+        fixed (byte* p = bytes)
+            _hostStructNative->unity_log(p);
+    }
 
     private static StringPtr StringToPtr(string s)
     {

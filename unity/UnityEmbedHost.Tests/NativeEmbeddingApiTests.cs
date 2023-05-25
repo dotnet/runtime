@@ -14,4 +14,14 @@ namespace UnityEmbedHost.Tests;
 public class NativeEmbeddingApiTests : BaseEmbeddingApiTests
 {
     internal override ICoreCLRHostWrapper ClrHost { get; } = new CoreCLRHostNativeWrappers();
+
+    [Test]
+    [Category("ExcludeFromNormalTestRun")]
+    public void ExceptionDoesNotCauseACrash()
+    {
+        var fieldInfo = typeof(Cat).GetField(nameof(Cat.EarCount));
+        // Pass the wrong type to cause an exception
+        var result = ClrHost.field_get_object(typeof(Mammal), fieldInfo!.FieldHandle);
+        Assert.IsNull(result);
+    }
 }

@@ -38,7 +38,25 @@ public class Utils
     public static void RunProcess(ProcessStartInfo psi, GlobalConfig config)
         => RunProcess(psi, config.VerbosityLevel == Verbosity.Silent);
 
+    public static (int ExitCode, string Stdout, string StdErr) RunProcessNoThrow(ProcessStartInfo psi, GlobalConfig config, bool alwaysCaptureOutput = false)
+        => RunProcessNoThrow(psi, config.VerbosityLevel == Verbosity.Silent, alwaysCaptureOutput: alwaysCaptureOutput);
+
     public static void RunProcess(ProcessStartInfo psi, bool silent = false)
+    {
+        var result = RunProcessNoThrow(psi, silent);
+        if (result.ExitCode != 0)
+        {
+            if (silent)
+            {
+                Console.WriteLine(result.Stdout);
+                Console.WriteLine(result.StdErr);
+            }
+
+            throw new Exception($"Running {psi.FileName} {psi.Arguments} failed!");
+        }
+    }
+
+    public static (int ExitCode, string Stdout, string StdErr) RunProcessNoThrow(ProcessStartInfo psi, bool silent = false, bool alwaysCaptureOutput = false)
     {
 
         Console.WriteLine($"Running: {psi.FileName} {psi.Arguments}");
@@ -48,7 +66,8 @@ public class Utils
         {
             proc.StartInfo = psi;
             proc.StartInfo.UseShellExecute = false;
-            if (silent)
+            bool outputRedirected = silent || alwaysCaptureOutput;
+            if (outputRedirected)
             {
                 proc.StartInfo.RedirectStandardOutput = true;
                 proc.StartInfo.RedirectStandardError = true;
@@ -57,17 +76,7 @@ public class Utils
             proc.Start();
 
             proc.WaitForExit();
-            if (proc.ExitCode != 0)
-            {
-                if (silent)
-                {
-                    Console.WriteLine(proc.StandardOutput.ReadToEnd());
-                    Console.WriteLine(proc.StandardError.ReadToEnd());
-                }
-
-                throw new Exception($"Running {psi.FileName} {psi.Arguments} failed!");
-            }
+            return (proc.ExitCode, outputRedirected ? proc.StandardOutput.ReadToEnd() : string.Empty, outputRedirected ? proc.StandardError.ReadToEnd() : string.Empty);
         }
     }
-
 }

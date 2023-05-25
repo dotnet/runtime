@@ -73,7 +73,19 @@ static unsafe partial class CoreCLRHost
         {
             sb.AppendLine("    [System.Runtime.InteropServices.UnmanagedCallersOnly]");
             string signature = methodSymbol.FormatMethodParametersForMethodSignature();
-            sb.AppendLine($"    static {methodSymbol.ReturnType} {methodSymbol.Name}_native({signature}) => {methodSymbol.Name}({FormatMethodParametersNames(methodSymbol)});");
+            sb.AppendLine($"    static {methodSymbol.ReturnType} {methodSymbol.Name}_native({signature})");
+            sb.AppendLine("    {");
+            sb.AppendLine("        try");
+            sb.AppendLine("        {");
+            sb.AppendLine($"            return {methodSymbol.Name}({FormatMethodParametersNames(methodSymbol)});");
+            sb.AppendLine("        }");
+            sb.AppendLine("        catch (System.Exception e)");
+            sb.AppendLine("        {");
+            sb.AppendLine("            Log(e.ToString());");
+            sb.AppendLine("            System.Environment.Exit(1);");
+            sb.AppendLine("        }");
+            sb.AppendLine("        return default;");
+            sb.AppendLine("    }");
             sb.AppendLine();
         }
 
