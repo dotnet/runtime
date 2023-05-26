@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_JTrue1
 {
     const int Pass = 100;
@@ -18,7 +19,8 @@ public class BringUpTest_JTrue1
         return 0;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int y = JTrue1(1);
         if (y == 2) return Pass;

@@ -262,8 +262,9 @@
 
     <ItemGroup>
       <!-- Remove the managed pdbs from our payloads.
-           This is for performance reasons to reduce our helix payload size  -->
-      <ReducedLegacyPayloadFiles Include="@(_LegacyPayloadFiles)" Condition=" '%(Extension)' != '.pdb' " />
+           This is for performance reasons to reduce our helix payload size
+           Note: for Native AOT the pdb is the native PDB. !analyze wouldn't work without it at all so we keep it -->
+      <ReducedLegacyPayloadFiles Include="@(_LegacyPayloadFiles)" Condition=" '%(Extension)' != '.pdb' or '$(_NativeAotTest)' == 'true'" />
 
       <ReducedLegacyPayloadFilesFinal Include="@(ReducedLegacyPayloadFiles)" Condition=" '%(Extension)' != '.sh' and '$(TestWrapperTargetsWindows)' == 'true' "/>
       <ReducedLegacyPayloadFilesFinal Include="@(ReducedLegacyPayloadFiles)" Condition=" '%(Extension)' != '.cmd' and '$(TestWrapperTargetsWindows)' != 'true' "/>
@@ -360,7 +361,8 @@
       <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssembly" Exclude="$(TestBinDir)**\supportFiles\*.MergedTestAssembly" />
 
       <_MergedWrapperMarker Update="@(_MergedWrapperMarker)">
-        <TestExecutionScriptPath>$([System.IO.Path]::ChangeExtension('%(Identity)', '.$(TestScriptExtension)'))</TestExecutionScriptPath>
+        <TestExecutionScriptPath Condition="'$(TargetsBrowser)' != 'true'">$([System.IO.Path]::ChangeExtension('%(Identity)', '.$(TestScriptExtension)'))</TestExecutionScriptPath>
+        <TestExecutionScriptPath Condition="'$(TargetsBrowser)' == 'true'">%(RootDir)%(Directory)AppBundle/RunTests.$(TestScriptExtension)</TestExecutionScriptPath>
       </_MergedWrapperMarker>
 
       <!-- Exclude merged test wrappers without the test execution script for this target (skipped due to CLRTestTargetUnsupported et al) -->

@@ -17,7 +17,7 @@ import {
 import { get_marshaler_to_js_by_type } from "./marshal-to-js";
 import { _zero_region } from "./memory";
 import { js_string_to_mono_string_root } from "./strings";
-import { mono_assert, GCHandle, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "./types";
+import { GCHandle, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
 import { addUnsettledPromise, settleUnsettledPromise } from "./pthreads/shared/eventloop";
 
@@ -325,7 +325,6 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
     });
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function marshal_exception_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);

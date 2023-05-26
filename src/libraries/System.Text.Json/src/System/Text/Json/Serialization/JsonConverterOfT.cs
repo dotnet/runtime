@@ -152,7 +152,12 @@ namespace System.Text.Json.Serialization
         }
 
         // Provide a default implementation for value converters.
-        internal virtual bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
+        internal virtual bool OnTryWrite(Utf8JsonWriter writer,
+#nullable disable // T may or may not be nullable depending on the derived converter's HandleNull override.
+            T value,
+#nullable enable
+            JsonSerializerOptions options,
+            ref WriteStack state)
         {
             Write(writer, value, options);
             return true;
@@ -356,9 +361,9 @@ namespace System.Text.Json.Serialization
         /// The 'in' modifier in 'TryWrite(in T Value)' causes boxing for Nullable{T}, so this helper avoids that.
         /// TODO: Remove this work-around once https://github.com/dotnet/runtime/issues/50915 is addressed.
         /// </summary>
-        private static bool IsNull(T value) => value is null;
+        private static bool IsNull(T? value) => value is null;
 
-        internal bool TryWrite(Utf8JsonWriter writer, in T value, JsonSerializerOptions options, ref WriteStack state)
+        internal bool TryWrite(Utf8JsonWriter writer, in T? value, JsonSerializerOptions options, ref WriteStack state)
         {
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
             {
@@ -604,7 +609,7 @@ namespace System.Text.Json.Serialization
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         public abstract void Write(
             Utf8JsonWriter writer,
-#nullable disable // T may or may not be nullable depending on the derived type's overload.
+#nullable disable // T may or may not be nullable depending on the derived converter's HandleNull override.
             T value,
 #nullable restore
             JsonSerializerOptions options);
@@ -650,7 +655,7 @@ namespace System.Text.Json.Serialization
         /// <param name="value">The value to convert. Note that the value of <seealso cref="HandleNull"/> determines if the converter handles <see langword="null" /> values.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         /// <remarks>Method should be overridden in custom converters of types used in serialized dictionary keys.</remarks>
-        public virtual void WriteAsPropertyName(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+        public virtual void WriteAsPropertyName(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options)
         {
             // .NET 5 backward compatibility: hardcode the default converter for primitive key serialization.
             JsonConverter<T>? fallbackConverter = GetFallbackConverterForPropertyNameSerialization(options);
@@ -662,8 +667,13 @@ namespace System.Text.Json.Serialization
             fallbackConverter.WriteAsPropertyNameCore(writer, value, options, isWritingExtensionDataProperty: false);
         }
 
-        internal virtual void WriteAsPropertyNameCore(Utf8JsonWriter writer, T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
+        internal virtual void WriteAsPropertyNameCore(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(value));
+            }
+
             if (isWritingExtensionDataProperty)
             {
                 // Extension data is meant as mechanism to gather unused JSON properties;
@@ -707,7 +717,7 @@ namespace System.Text.Json.Serialization
         internal virtual T ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling, JsonSerializerOptions options)
             => throw new InvalidOperationException();
 
-        internal virtual void WriteNumberWithCustomHandling(Utf8JsonWriter writer, T value, JsonNumberHandling handling)
+        internal virtual void WriteNumberWithCustomHandling(Utf8JsonWriter writer, T? value, JsonNumberHandling handling)
             => throw new InvalidOperationException();
     }
 }

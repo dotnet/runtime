@@ -392,12 +392,105 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<nint>   CompareGreaterThanOrEqual(Vector128<nint>   left, Vector128<nint>   right) { throw new PlatformNotSupportedException(); }
         public static Vector128<nuint>  CompareGreaterThanOrEqual(Vector128<nuint>  left, Vector128<nuint>  right) { throw new PlatformNotSupportedException(); }
 
+       // Floating-point sign bit operations
+
+        public static Vector128<float>  Negate(Vector128<float>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> Negate(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<float>  Abs(Vector128<float>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> Abs(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+        // Floating-point min and max
+
+        public static Vector128<float>  Min(Vector128<float>  left, Vector128<float>  right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> Min(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<float>  Max(Vector128<float>  left, Vector128<float>  right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> Max(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<float>  PseudoMin(Vector128<float>  left, Vector128<float>  right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> PseudoMin(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<float>  PseudoMax(Vector128<float>  left, Vector128<float>  right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> PseudoMax(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+        // Floating-point arithmetic
+
+        public static Vector128<float>  Add(Vector128<float>  left, Vector128<float>  right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> Add(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<float>  Subtract(Vector128<float>  left, Vector128<float>  right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> Subtract(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<float>  Divide(Vector128<float>  left, Vector128<float>  right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> Divide(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<float>  Multiply(Vector128<float>  left, Vector128<float>  right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> Multiply(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<float>  Sqrt(Vector128<float>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> Sqrt(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<float>  Ceiling(Vector128<float>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> Ceiling(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<float>  Floor(Vector128<float>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> Floor(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<float>  Truncate(Vector128<float>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> Truncate(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<float>  RoundToNearest(Vector128<float>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> RoundToNearest(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
         // Conversions
+
+        public static Vector128<float> ConvertToSingle(Vector128<int>    value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> ConvertToSingle(Vector128<uint>   value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> ConvertToSingle(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<double> ConvertToDoubleLower(Vector128<int>   value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> ConvertToDoubleLower(Vector128<uint>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> ConvertToDoubleLower(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<int>  ConvertToInt32Saturate(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        internal static Vector128<uint> ConvertToUnsignedInt32Saturate(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<int>  ConvertToInt32Saturate(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+        internal static Vector128<uint> ConvertToUnsignedInt32Saturate(Vector128<double> value) { throw new PlatformNotSupportedException(); }
 
         internal static Vector128<sbyte>  ConvertNarrowingSignedSaturate(Vector128<short>   lower, Vector128<short> upper) { throw new PlatformNotSupportedException(); }
         internal static Vector128<short>  ConvertNarrowingSignedSaturate(Vector128<int>     lower, Vector128<int>   upper) { throw new PlatformNotSupportedException(); }
 
         internal static Vector128<byte>   ConvertNarrowingUnsignedSaturate(Vector128<short> lower, Vector128<short> upper) { throw new PlatformNotSupportedException(); }
         internal static Vector128<ushort> ConvertNarrowingUnsignedSaturate(Vector128<int>   lower, Vector128<int>   upper) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<short>  SignExtendWideningLower(Vector128<sbyte>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> SignExtendWideningLower(Vector128<byte>   value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>    SignExtendWideningLower(Vector128<short>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint>   SignExtendWideningLower(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long>   SignExtendWideningLower(Vector128<int>    value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong>  SignExtendWideningLower(Vector128<uint>   value) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<short>  SignExtendWideningUpper(Vector128<sbyte>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> SignExtendWideningUpper(Vector128<byte>   value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>    SignExtendWideningUpper(Vector128<short>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint>   SignExtendWideningUpper(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long>   SignExtendWideningUpper(Vector128<int>    value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong>  SignExtendWideningUpper(Vector128<uint>   value) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<short>  ZeroExtendWideningLower(Vector128<sbyte>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ZeroExtendWideningLower(Vector128<byte>   value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>    ZeroExtendWideningLower(Vector128<short>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint>   ZeroExtendWideningLower(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long>   ZeroExtendWideningLower(Vector128<int>    value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong>  ZeroExtendWideningLower(Vector128<uint>   value) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<short>  ZeroExtendWideningUpper(Vector128<sbyte>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ZeroExtendWideningUpper(Vector128<byte>   value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>    ZeroExtendWideningUpper(Vector128<short>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint>   ZeroExtendWideningUpper(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long>   ZeroExtendWideningUpper(Vector128<int>    value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong>  ZeroExtendWideningUpper(Vector128<uint>   value) { throw new PlatformNotSupportedException(); }
     }
 }

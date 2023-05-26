@@ -57,7 +57,6 @@ GTNODE(NEG              , GenTreeOp          ,0,GTK_UNOP)
 
 GTNODE(INTRINSIC        , GenTreeIntrinsic   ,0,GTK_BINOP|GTK_EXOP)
 
-GTNODE(ASG              , GenTreeOp          ,0,GTK_BINOP|DBK_NOTLIR)
 GTNODE(LOCKADD          , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
 GTNODE(XAND             , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(XORR             , GenTreeOp          ,0,GTK_BINOP)
@@ -89,8 +88,7 @@ GTNODE(NULLCHECK        , GenTreeIndir       ,0,GTK_UNOP|GTK_NOVALUE)           
 GTNODE(ARR_LENGTH       , GenTreeArrLen      ,0,GTK_UNOP|GTK_EXOP)            // single-dimension (SZ) array length
 GTNODE(MDARR_LENGTH     , GenTreeMDArr       ,0,GTK_UNOP|GTK_EXOP)            // multi-dimension (MD) array length of a specific dimension
 GTNODE(MDARR_LOWER_BOUND, GenTreeMDArr       ,0,GTK_UNOP|GTK_EXOP)            // multi-dimension (MD) array lower bound of a specific dimension
-GTNODE(FIELD            , GenTreeField       ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) // Field load
-GTNODE(FIELD_ADDR       , GenTreeField       ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) // Field address
+GTNODE(FIELD_ADDR       , GenTreeFieldAddr   ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) // Field address
 GTNODE(ALLOCOBJ         , GenTreeAllocObj    ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) // object allocator
 
 GTNODE(INIT_VAL         , GenTreeOp          ,0,GTK_UNOP) // Initialization value for an initBlk
@@ -101,6 +99,8 @@ GTNODE(ARR_ADDR         , GenTreeArrAddr     ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR)   
 
 GTNODE(BSWAP            , GenTreeOp          ,0,GTK_UNOP)               // Byte swap (32-bit or 64-bit)
 GTNODE(BSWAP16          , GenTreeOp          ,0,GTK_UNOP)               // Byte swap lower 16-bits and zero upper 16 bits
+
+GTNODE(LZCNT            , GenTreeOp          ,0,GTK_UNOP)               // Leading Zero Count - Only used for SIMD VN evaluation today
 
 //-----------------------------------------------------------------------------
 //  Binary operators (2 operands):
@@ -215,8 +215,6 @@ GTNODE(AND_NOT          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 
 #ifdef TARGET_ARM64
 GTNODE(BFIZ             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Bitfield Insert in Zero.
-GTNODE(CSNEG_MI         , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Conditional select, negate, minus result
-GTNODE(CNEG_LT          , GenTreeOp          ,0,GTK_UNOP|DBK_NOTHIR)  // Conditional, negate, signed less than result
 #endif
 
 //-----------------------------------------------------------------------------
@@ -246,11 +244,21 @@ GTNODE(SELECTCC         , GenTreeOpCC        ,0,GTK_BINOP|DBK_NOTHIR)
 // operands and sets the condition flags according to the result. Otherwise
 // sets the condition flags to the specified immediate value.
 GTNODE(CCMP             , GenTreeCCMP        ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
-// Maps to arm64 cinc instruction. It returns the operand incremented by one when the condition is true.
-// Otherwise returns the unchanged operand. Optimises for patterns such as, result = condition ? op1 + 1 : op1
-GTNODE(CINC             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
-// Variant of CINC that reuses flags computed by a previous node with the specified condition.
-GTNODE(CINCCC           , GenTreeOpCC        ,0,GTK_UNOP|DBK_NOTHIR)
+// Maps to arm64 csinc/cinc instruction. Computes result = condition ? op1 : op2 + 1.
+// If op2 is null, computes result = condition ? op1 + 1 : op1.
+GTNODE(SELECT_INC             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
+// Variant of SELECT_INC that reuses flags computed by a previous node with the specified condition.
+GTNODE(SELECT_INCCC           , GenTreeOpCC        ,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to arm64 csinv/cinv instruction. Computes result = condition ? op1 : ~op2.
+// If op2 is null, computes result = condition ? ~op1 : op1.
+GTNODE(SELECT_INV             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
+// Variant of SELECT_INV that reuses flags computed by a previous node with the specified condition.
+GTNODE(SELECT_INVCC           , GenTreeOpCC        ,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to arm64 csneg/cneg instruction.. Computes result = condition ? op1 : -op2.
+// If op2 is null, computes result = condition ? -op1 : op1.
+GTNODE(SELECT_NEG             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
+// Variant of SELECT_NEG that reuses flags computed by a previous node with the specified condition.
+GTNODE(SELECT_NEGCC           , GenTreeOpCC        ,0,GTK_BINOP|DBK_NOTHIR)
 #endif
 
 //-----------------------------------------------------------------------------
@@ -264,8 +272,6 @@ GTNODE(JTRUE            , GenTreeOp          ,0,GTK_UNOP|GTK_NOVALUE)
 //-----------------------------------------------------------------------------
 
 GTNODE(ARR_ELEM         , GenTreeArrElem     ,0,GTK_SPECIAL)            // Multi-dimensional array-element address
-GTNODE(ARR_INDEX        , GenTreeArrIndex    ,0,GTK_BINOP|GTK_EXOP)     // Effective, bounds-checked index for one dimension of a multi-dimensional array element
-GTNODE(ARR_OFFSET       , GenTreeArrOffs     ,0,GTK_SPECIAL)            // Flattened offset of multi-dimensional array element
 GTNODE(CALL             , GenTreeCall        ,0,GTK_SPECIAL|DBK_NOCONTAIN)
 GTNODE(FIELD_LIST       , GenTreeFieldList   ,0,GTK_SPECIAL)            // List of fields of a struct, when passed as an argument
 

@@ -807,6 +807,24 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
         }
     }
 
+    // Verify that dom block dominates all of block's predecessors.
+    //
+    // This will initially be true but if we jump thread through
+    // dom block, it may no longer be true.
+    //
+    if (domBlock != nullptr)
+    {
+        for (BasicBlock* const predBlock : block->PredBlocks())
+        {
+            if (!fgDominate(domBlock, predBlock))
+            {
+                JITDUMP("Dom " FMT_BB " is stale (does not dominate pred " FMT_BB "); no threading\n", domBlock->bbNum,
+                        predBlock->bbNum);
+                return false;
+            }
+        }
+    }
+
     // Since flow is going to bypass block, make sure there
     // is nothing in block that can cause a side effect.
     //
@@ -835,7 +853,7 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
         {
             if (isPhiRBO)
             {
-                GenTreeLclVarCommon* const phiDef = tree->AsOp()->gtGetOp1()->AsLclVarCommon();
+                GenTreeLclVarCommon* const phiDef = tree->AsLclVarCommon();
                 unsigned const             lclNum = phiDef->GetLclNum();
                 unsigned const             ssaNum = phiDef->GetSsaNum();
                 LclVarDsc* const           varDsc = lvaGetDesc(lclNum);
@@ -1218,12 +1236,12 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
                 break;
             }
 
-            GenTree* const phiDefNode = stmt->GetRootNode();
+            GenTreeLclVar* const phiDefNode = stmt->GetRootNode()->AsLclVar();
             assert(phiDefNode->IsPhiDefn());
-            GenTreeLclVarCommon* const phiDefLclNode = phiDefNode->AsOp()->gtOp1->AsLclVarCommon();
-            if (phiDefLclNode->GetLclNum() == lclNum)
+
+            if (phiDefNode->GetLclNum() == lclNum)
             {
-                if (phiDefLclNode->GetSsaNum() == ssaDefNum)
+                if (phiDefNode->GetSsaNum() == ssaDefNum)
                 {
                     funcArgToPhiLocalMap[i]   = lclNum;
                     funcArgToPhiDefNodeMap[i] = phiDefNode;
@@ -1269,8 +1287,8 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
                 continue;
             }
 
-            GenTree* const    phiNode = funcArgToPhiDefNodeMap[i];
-            GenTreePhi* const phi     = phiNode->gtGetOp2()->AsPhi();
+            GenTree* const    phiDef = funcArgToPhiDefNodeMap[i];
+            GenTreePhi* const phi    = phiDef->AsLclVar()->Data()->AsPhi();
             for (GenTreePhi::Use& use : phi->Uses())
             {
                 GenTreePhiArg* const phiArgNode = use.GetNode()->AsPhiArg();
@@ -1620,21 +1638,18 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
 // Here's a walkthrough of how this operates. Given a block like
 //
 // STMT00388 (IL 0x30D...  ???)
-//  *  ASG       ref    <l:$9d3, c:$9d4>
-//  +--*  LCL_VAR   ref    V121 tmp97       d:1 <l:$2c8, c:$99f>
+//  *  STORE_LCL_VAR ref    V121 tmp97       d:1
 //   \--*  IND       ref    <l:$9d3, c:$9d4>
 //       \--*  LCL_VAR   byref  V116 tmp92       u:1 (last use) Zero Fseq[m_task] $18c
 //
 // STMT00390 (IL 0x30D...  ???)
-//  *  ASG       bool   <l:$8ff, c:$a02>
-//  +--*  LCL_VAR   int    V123 tmp99       d:1 <l:$8ff, c:$a02>
+//  *  STORE_LCL_VAR int    V123 tmp99       d:1
 //  \--*  NE        int    <l:$8ff, c:$a02>
 //     +--*  LCL_VAR   ref    V121 tmp97       u:1 <l:$2c8, c:$99f>
 //     \--*  CNS_INT   ref    null $VN.Null
 //
 // STMT00391
-//  *  ASG       ref    $133
-//  +--*  LCL_VAR   ref    V124 tmp100      d:1 $133
+//  *  STORE_LCL_VAR ref    V124 tmp100      d:1
 //  \--*  IND       ref    $133
 //     \--*  CNS_INT(h) long   0x31BD3020 [ICON_STR_HDL] $34f
 //
@@ -1644,41 +1659,39 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
 //     +--*  LCL_VAR   int    V123 tmp99       u:1 (last use) <l:$8ff, c:$a02>
 //     \--*  CNS_INT   int    0 $40
 //
-// We will first consider STMT00391. It is a local assign but the RHS value number
+// We will first consider STMT00391. It is a local store but the value's VN
 // isn't related to $8ff. So we continue searching and add V124 to the array
 // of defined locals.
 //
-// Next we consider STMT00390. It is a local assign and the RHS value number is
-// the same, $8ff. So this compare is a fwd-sub candidate. We check if any local
-// on the RHS is in the defined locals array. The answer is no. So the RHS tree
-// can be safely forwarded in place of the compare in STMT00392. We check if V123 is
-// live out of the block. The answer is no. So This RHS tree becomes the candidate tree.
-// We add V123 to the array of defined locals and keep searching.
+// Next we consider STMT00390. It is a local store and the value's VN is the
+// same, $8ff. So this compare is a fwd-sub candidate. We check if any local
+// in the value tree in the defined locals array. The answer is no. So the
+// value tree can be safely forwarded in place of the compare in STMT00392.
+// We check if V123 is live out of the block. The answer is no. So this value
+// tree becomes the candidate tree. We add V123 to the array of defined locals
+// and keep searching.
 //
-// Next we consider STMT00388, It is a local assign but the RHS value number
-// isn't related to $8ff. So we continue searching and add V121 to the array
-// of defined locals.
+// Next we consider STMT00388, It is a local store but the value's VN isn't
+// related to $8ff. So we continue searching and add V121 to the array of
+// defined locals.
 //
 // We reach the end of the block and stop searching.
 //
 // Since we found a viable candidate, we clone it and substitute into the jump:
 //
 // STMT00388 (IL 0x30D...  ???)
-//  *  ASG       ref    <l:$9d3, c:$9d4>
-//  +--*  LCL_VAR   ref    V121 tmp97       d:1 <l:$2c8, c:$99f>
+//  *  STORE_LCL_VAR ref    V121 tmp97       d:1
 //   \--*  IND       ref    <l:$9d3, c:$9d4>
 //       \--*  LCL_VAR   byref  V116 tmp92       u:1 (last use) Zero Fseq[m_task] $18c
 //
 // STMT00390 (IL 0x30D...  ???)
-//  *  ASG       bool   <l:$8ff, c:$a02>
-//  +--*  LCL_VAR   int    V123 tmp99       d:1 <l:$8ff, c:$a02>
+//  *  STORE_LCL_VAR int    V123 tmp99       d:1
 //  \--*  NE        int    <l:$8ff, c:$a02>
 //     +--*  LCL_VAR   ref    V121 tmp97       u:1 <l:$2c8, c:$99f>
 //     \--*  CNS_INT   ref    null $VN.Null
 //
 // STMT00391
-//  *  ASG       ref    $133
-//  +--*  LCL_VAR   ref    V124 tmp100      d:1 $133
+//  *  STORE_LCL_VAR ref    V124 tmp100      d:1
 //  \--*  IND       ref    $133
 //     \--*  CNS_INT(h) long   0x31BD3020 [ICON_STR_HDL] $34f
 //
@@ -1793,7 +1806,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             break;
         }
 
-        // We are looking for ASG(lcl, ...)
+        // We are looking for STORE_LCL_VAR(...)
         //
         GenTree* const prevTree = prevStmt->GetRootNode();
 
@@ -1807,11 +1820,8 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             continue;
         }
 
-        // If prevTree has side effects, bail,
-        // unless it is in the immediately preceding statement.
-        //
-        // (we'll later show that any exception must come from the RHS as the LHS
-        // will be a simple local).
+        // If prevTree has side effects, bail, unless it is in the immediately preceding statement.
+        // We'll handle exceptional side effects with VNs below.
         //
         if ((prevTree->gtFlags & (GTF_CALL | GTF_ORDER_SIDEEFF)) != 0)
         {
@@ -1825,33 +1835,26 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             sideEffect = true;
         }
 
-        if (!prevTree->OperIs(GT_ASG))
+        if (!prevTree->OperIs(GT_STORE_LCL_VAR))
         {
-            JITDUMP(" -- prev tree not ASG\n");
+            JITDUMP(" -- prev tree not STORE_LCL_VAR\n");
             break;
         }
 
-        GenTree* const prevTreeLHS = prevTree->AsOp()->gtOp1;
-        GenTree* const prevTreeRHS = prevTree->AsOp()->gtOp2;
-
-        if (!prevTreeLHS->OperIs(GT_LCL_VAR))
-        {
-            JITDUMP(" -- prev tree not ASG(LCL...)\n");
-            break;
-        }
+        GenTree* const prevTreeData = prevTree->AsLclVar()->Data();
 
         // If we are seeing PHIs we have run out of interesting stmts.
         //
-        if (prevTreeRHS->OperIs(GT_PHI))
+        if (prevTreeData->OperIs(GT_PHI))
         {
             JITDUMP(" -- prev tree is a phi\n");
             break;
         }
 
-        // Bail if RHS has an embedded assignment. We could handle this
+        // Bail if value has an embedded assignment. We could handle this
         // if we generalized the interference check we run below.
         //
-        if ((prevTreeRHS->gtFlags & GTF_ASG) != 0)
+        if ((prevTreeData->gtFlags & GTF_ASG) != 0)
         {
             JITDUMP(" -- prev tree RHS has embedded assignment\n");
             break;
@@ -1859,15 +1862,15 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         // Figure out what local is assigned here.
         //
-        const unsigned   prevTreeLcl    = prevTreeLHS->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* const prevTreeLclDsc = lvaGetDesc(prevTreeLcl);
+        const unsigned   prevTreeLclNum = prevTree->AsLclVarCommon()->GetLclNum();
+        LclVarDsc* const prevTreeLclDsc = lvaGetDesc(prevTreeLclNum);
 
         // If local is not tracked, assume we can't safely reason about interference
         // or liveness.
         //
         if (!prevTreeLclDsc->lvTracked)
         {
-            JITDUMP(" -- prev tree defs untracked V%02u\n", prevTreeLcl);
+            JITDUMP(" -- prev tree defs untracked V%02u\n", prevTreeLclNum);
             break;
         }
 
@@ -1879,12 +1882,12 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             break;
         }
 
-        definedLocals[definedLocalsCount++] = prevTreeLcl;
+        definedLocals[definedLocalsCount++] = prevTreeLclNum;
 
         // If the normal liberal VN of RHS is the normal liberal VN of the current tree, or is "related",
         // consider forward sub.
         //
-        const ValueNum                  domCmpVN        = vnStore->VNNormalValue(prevTreeRHS->GetVN(VNK_Liberal));
+        const ValueNum                  domCmpVN        = vnStore->VNNormalValue(prevTreeData->GetVN(VNK_Liberal));
         bool                            matched         = false;
         ValueNumStore::VN_RELATION_KIND vnRelationMatch = ValueNumStore::VN_RELATION_KIND::VRK_Same;
 
@@ -1911,7 +1914,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         //
         if (treeExcVN != vnStore->VNForEmptyExcSet())
         {
-            const ValueNum prevTreeExcVN = vnStore->VNExceptionSet(prevTreeRHS->GetVN(VNK_Liberal));
+            const ValueNum prevTreeExcVN = vnStore->VNExceptionSet(prevTreeData->GetVN(VNK_Liberal));
 
             if (!vnStore->VNExcIsSubset(prevTreeExcVN, treeExcVN))
             {
@@ -1927,7 +1930,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         for (unsigned int i = 0; i < definedLocalsCount; i++)
         {
-            if (gtHasRef(prevTreeRHS, definedLocals[i]))
+            if (gtHasRef(prevTreeData, definedLocals[i]))
             {
                 JITDUMP(" -- prev tree ref to V%02u interferes\n", definedLocals[i]);
                 interferes = true;
@@ -1942,7 +1945,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         // Heuristic: only forward sub a relop
         //
-        if (!prevTreeRHS->OperIsCompare())
+        if (!prevTreeData->OperIsCompare())
         {
             JITDUMP(" -- prev tree is not relop\n");
             continue;
@@ -1954,12 +1957,12 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         //
         if (VarSetOps::IsMember(this, block->bbLiveOut, prevTreeLclDsc->lvVarIndex))
         {
-            JITDUMP(" -- prev tree lcl V%02u is live-out\n", prevTreeLcl);
+            JITDUMP(" -- prev tree lcl V%02u is live-out\n", prevTreeLclNum);
             continue;
         }
 
         JITDUMP(" -- prev tree is viable candidate for relop fwd sub!\n");
-        candidateTree       = prevTreeRHS;
+        candidateTree       = prevTreeData;
         candidateStmt       = prevStmt;
         candidateVnRelation = vnRelationMatch;
     }
@@ -2094,21 +2097,26 @@ bool Compiler::optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlo
             continue;
         }
 
-        for (BasicBlock* succ : nextBlock->GetAllSuccs(this))
-        {
+        BasicBlockVisit result = nextBlock->VisitAllSuccs(this, [this, toBlock, &stack](BasicBlock* succ) {
             if (succ == toBlock)
             {
-                return true;
+                return BasicBlockVisit::Abort;
             }
 
             if (BitVecOps::IsMember(optReachableBitVecTraits, optReachableBitVec, succ->bbNum))
             {
-                continue;
+                return BasicBlockVisit::Continue;
             }
 
             BitVecOps::AddElemD(optReachableBitVecTraits, optReachableBitVec, succ->bbNum);
 
             stack.Push(succ);
+            return BasicBlockVisit::Continue;
+        });
+
+        if (result == BasicBlockVisit::Abort)
+        {
+            return true;
         }
     }
 

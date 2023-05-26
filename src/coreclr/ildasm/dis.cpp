@@ -143,7 +143,7 @@ static void UnicodeToFile(_In_ __nullterminated const WCHAR* wz, FILE* pF)
 {
     unsigned endofline = 0x000A000D;
     int L;
-    if((L=(int)wcslen(wz))) fwrite(wz,L*sizeof(WCHAR),1,pF);
+    if((L=(int)u16_strlen(wz))) fwrite(wz,L*sizeof(WCHAR),1,pF);
     fwrite(&endofline,4,1,pF);
 }
 static void ToGUIOrFile(_In_ __nullterminated const char* sz, void* GUICookie)
@@ -1103,7 +1103,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 {
                     WCHAR wzFileName[2048];
                     SourceLinesHelper(GUICookie, pLCD, wzFileName, 2048);
-                    bIsNewFile = (wcscmp(wzFileName,wzWasFileName)!=0);
+                    bIsNewFile = (u16_strcmp(wzFileName,wzWasFileName)!=0);
                     if(bIsNewFile||(pLCD->Line < ulWasLine))
                     {
                         wcscpy_s(wzWasFileName,2048,wzFileName);

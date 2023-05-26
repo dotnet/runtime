@@ -198,3 +198,112 @@ Web API does not expose locale-sensitive endsWith/startsWith function. As a work
 
 - `IgnoreSymbols`
 Only comparisons that do not skip character types are allowed. E.g. `IgnoreSymbols` skips symbol-chars in comparison/indexing. All `CompareOptions` combinations that include `IgnoreSymbols` throw `PlatformNotSupportedException`.
+
+
+**String indexing**
+
+Affected public APIs:
+- CompareInfo.IndexOf
+- CompareInfo.LastIndexOf
+- String.IndexOf
+- String.LastIndexOf
+
+Web API does not expose locale-sensitive indexing function. There is a discussion on adding it: https://github.com/tc39/ecma402/issues/506. In the current state, as a workaround, locale-sensitive string segmenter combined with locale-sensitive comparison is used. This approach, beyond having the same compare option limitations as described under **String comparison**, has additional limitations connected with the workaround used. Information about additional limitations:
+
+- Support depends on [`Intl.segmenter's support`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Segmenter#browser_compatibility).
+
+- `IgnoreSymbols`
+
+Only comparisons that ignore types of characters but do not skip them are allowed. E.g. `IgnoreCase` ignores type (case) of characters but `IgnoreSymbols` skips symbol-chars in comparison/indexing. All `CompareOptions` combinations that include `IgnoreSymbols` throw `PlatformNotSupportedException`.
+
+- Some letters consist of more than one grapheme.
+
+Using locale-sensitive segmenter `Intl.Segmenter(locale, { granularity: "grapheme" })` does not guarantee that string will be segmented by letters but by graphemes. E.g. in `cs-CZ` and `sk-SK` "ch" is 1 letter, 2 graphemes. The following code with `HybridGlobalization` switched off returns -1 (not found) while with `HybridGlobalization` switched on, it returns 1.
+
+``` C#
+new CultureInfo("sk-SK").CompareInfo.IndexOf("ch", "h"); // -1 or 1
+```
+
+- Some graphemes consist of more than one character.
+E.g. `\r\n` that represents two characters in C#, is treated as one grapheme by the segmenter:
+
+``` JS
+const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+Array.from(segmenter.segment("\r\n")) // {segment: '\r\n', index: 0, input: '\r\n'}
+```
+
+Because we are comparing grapheme-by-grapheme, character `\r` or character `\n` will not be found in `\r\n` string when `HybridGlobalization` is switched on.
+
+- Some graphemes have multi-grapheme equivalents.
+E.g. in `de-DE` ß (%u00DF) is one letter and one grapheme and "ss" is one letter and is recognized as two graphemes. Web API's equivalent of `IgnoreNonSpace` treats them as the same letter when comparing. Similar case: ǳ (%u01F3) and dz.
+``` JS
+"ß".localeCompare("ss", "de-DE", { sensitivity: "case" }); // 0
+```
+
+Using `IgnoreNonSpace` for these two with `HybridGlobalization` off, also returns 0 (they are equal). However, the workaround used in `HybridGlobalization` will compare them grapheme-by-grapheme and will return -1.
+
+``` C#
+new CultureInfo("de-DE").CompareInfo.IndexOf("strasse", "stra\u00DFe", 0, CompareOptions.IgnoreNonSpace); // 0 or -1
+```
+
+
+### OSX
+
+For OSX platforms we are using native apis instead of ICU data.
+
+**String comparison**
+
+Affected public APIs:
+- CompareInfo.Compare,
+- String.Compare,
+- String.Equals.
+
+The number of `CompareOptions` and `NSStringCompareOptions` combinations are limited. Originally supported combinations can be found [here for CompareOptions](https://learn.microsoft.com/dotnet/api/system.globalization.compareoptions) and [here for NSStringCompareOptions](https://developer.apple.com/documentation/foundation/nsstringcompareoptions).
+
+- `IgnoreSymbols` is not supported because there is no equivalent in native api. Throws `PlatformNotSupportedException`.
+
+- `IgnoreKanaType` is not supported because there is no equivalent in native api. Throws `PlatformNotSupportedException`.
+
+- `None`:
+
+`CompareOptions.None` is mapped to `NSStringCompareOptions.NSLiteralSearch`
+
+There are some behaviour changes. Below are examples of such cases.
+
+| **character 1** | **character 2** | **CompareOptions** | **hybrid globalization** | **icu** |                       **comments**                      |
+|:---------------:|:---------------:|--------------------|:------------------------:|:-------:|:-------------------------------------------------------:|
+|   `\u3042` あ   |   `\u30A1` ァ   |   None  |             1            |    -1   |     hiragana and katakana characters are ordered differently compared to ICU    |
+|   `\u304D\u3083` きゃ  |   `\u30AD\u30E3` キャ |     None     |             1            |    -1   | hiragana and katakana characters are ordered differently compared to ICU  |
+|   `\u304D\u3083` きゃ  |   `\u30AD\u3083` キゃ  |     None     |             1           |    -1   |  hiragana and katakana characters are ordered differently compared to ICU  |
+|   `\u3070\u3073\uFF8C\uFF9E\uFF8D\uFF9E\u307C` ばびﾌﾞﾍﾞぼ  |   `\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E` バビぶベﾎﾞ  |     None     |   1  |  -1  | hiragana and katakana characters are ordered differently compared to ICU   |
+|   `\u3060` だ  |   `\u30C0` ダ  |     None     |   1  |  -1  |   hiragana and katakana characters are ordered differently compared to ICU |
+|   `\u00C0` À  |   `A\u0300` À  |     None     |   1  |  0  |   This is not same character for native api |
+
+- `StringSort` :
+
+`CompareOptions.StringSort` is mapped to `NSStringCompareOptions.NSLiteralSearch` .ICU's default is to use "StringSort", i.e. nonalphanumeric symbols come before alphanumeric. That is how works also `NSLiteralSearch`.
+
+- `IgnoreCase`:
+
+`CompareOptions.IgnoreCase` is mapped to `NSStringCompareOptions.NSCaseInsensitiveSearch | NSStringCompareOptions.NSLiteralSearch`
+
+There are some behaviour changes. Below are examples of such cases.
+
+| **character 1** | **character 2** | **CompareOptions** | **hybrid globalization** | **icu** |                       **comments**                      |
+|:---------------:|:---------------:|--------------------|:------------------------:|:-------:|:-------------------------------------------------------:|
+|   `\u3060` だ |   `\u30C0` ダ  |     IgnoreCase     |   1  |  -1  |  hiragana and katakana characters are ordered differently compared to ICU  |
+|   `\u00C0` À |   `a\u0300` à  |     IgnoreCase     |   1  |  0  |  This is related to above mentioned case under `CompareOptions.None` i.e. `\u00C0` À !=  À `A\u0300`   |
+
+- `IgnoreNonSpace`:
+
+`CompareOptions.IgnoreNonSpace` is mapped to `NSStringCompareOptions.NSDiacriticInsensitiveSearch | NSStringCompareOptions.NSLiteralSearch`
+
+- `IgnoreWidth`:
+
+`CompareOptions.IgnoreWidth` is mapped to `NSStringCompareOptions.NSWidthInsensitiveSearch | NSStringCompareOptions.NSLiteralSearch`
+
+- All combinations that contain below `CompareOptions` always throw `PlatformNotSupportedException`:
+
+`IgnoreSymbols`,
+
+`IgnoreKanaType`,

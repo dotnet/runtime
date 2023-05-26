@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_assert, MonoType, MonoMethod } from "./types";
+import { MonoType, MonoMethod } from "./types/internal";
 import { NativePointer, Int32Ptr, VoidPtr } from "./types/emscripten";
 import { Module, runtimeHelpers } from "./globals";
 import {
@@ -13,7 +13,11 @@ import {
     _now, elapsedTimes, counters, getWasmFunctionTable, applyOptions,
     recordFailure, getOptions
 } from "./jiterpreter-support";
+import {
+    compileDoJitCall
+} from "./jiterpreter-feature-detect";
 import cwraps from "./cwraps";
+import { mono_log_error, mono_log_info } from "./logging";
 
 // Controls miscellaneous diagnostic output.
 const trace = 0;
@@ -94,6 +98,8 @@ class TrampolineInfo {
         method: MonoMethod, rmethod: VoidPtr, cinfo: VoidPtr,
         arg_offsets: VoidPtr, catch_exceptions: boolean
     ) {
+        mono_assert(arg_offsets, "Expected nonzero arg_offsets pointer");
+
         this.method = method;
         this.rmethod = rmethod;
         this.catchExceptions = catch_exceptions;
@@ -157,7 +163,7 @@ class TrampolineInfo {
 }
 
 // this is cached replacements for Module.getWasmTableEntry();
-// we could add <EmccExportedLibraryFunction Include="$getWasmTableEntry" /> and <EmccExportedRuntimeMethod Include="getWasmTableEntry" /> 
+// we could add <EmccExportedLibraryFunction Include="$getWasmTableEntry" /> and <EmccExportedRuntimeMethod Include="getWasmTableEntry" />
 // if we need to export the original
 function getWasmTableEntry(index: number) {
     let result = fnCache[index];
@@ -224,9 +230,6 @@ export function mono_interp_jit_wasm_jit_call_trampoline(
         mono_interp_flush_jitcall_queue();
 }
 
-// pure wasm implementation of do_jit_call_indirect (using wasm EH). see do-jit-call.wat / do-jit-call.wasm
-const doJitCall16 =
-    "0061736d01000000010b0260017f0060037f7f7f00021d020169066d656d6f727902000001690b6a69745f63616c6c5f636200000302010107180114646f5f6a69745f63616c6c5f696e64697265637400010a1301110006402001100019200241013602000b0b";
 let doJitCallModule: WebAssembly.Module | undefined = undefined;
 
 function getIsWasmEhSupported(): boolean {
@@ -235,16 +238,10 @@ function getIsWasmEhSupported(): boolean {
 
     // Probe whether the current environment can handle wasm exceptions
     try {
-        // Load and compile the wasm version of do_jit_call_indirect. This serves as a way to probe for wasm EH
-        const bytes = new Uint8Array(doJitCall16.length / 2);
-        for (let i = 0; i < doJitCall16.length; i += 2)
-            bytes[i / 2] = parseInt(doJitCall16.substring(i, i + 2), 16);
-
-        counters.bytesGenerated += bytes.length;
-        doJitCallModule = new WebAssembly.Module(bytes);
+        doJitCallModule = compileDoJitCall();
         wasmEhSupported = true;
     } catch (exc) {
-        console.log("MONO_WASM: Disabling WASM EH support due to JIT failure", exc);
+        mono_log_info("Disabling WASM EH support due to JIT failure", exc);
         wasmEhSupported = false;
     }
 
@@ -279,8 +276,10 @@ export function mono_jiterp_do_jit_call_indirect(
             const instance = new WebAssembly.Instance(doJitCallModule!, {
                 i: {
                     jit_call_cb: jitCallCb,
-                    memory: (<any>Module).asm.memory
-                }
+                },
+                m: {
+                    h: (<any>Module).asm.memory
+                },
             });
             const impl = instance.exports.do_jit_call_indirect;
             if (typeof (impl) !== "function")
@@ -291,7 +290,7 @@ export function mono_jiterp_do_jit_call_indirect(
             cwraps.mono_jiterp_update_jit_call_dispatcher(result);
             failed = false;
         } catch (exc) {
-            console.error("MONO_WASM: failed to compile do_jit_call handler", exc);
+            mono_log_error("failed to compile do_jit_call handler", exc);
             failed = true;
         }
         // If wasm EH support was detected, a native wasm implementation of the dispatcher was already registered.
@@ -396,7 +395,12 @@ export function mono_interp_flush_jitcall_queue(): void {
 
         // Emit function imports
         for (let i = 0; i < trampImports.length; i++)
-            builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], true, false, trampImports[i][2]);
+            builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], false, trampImports[i][2]);
+
+        // Assign import indices so they get emitted in the import section
+        for (let i = 0; i < trampImports.length; i++)
+            builder.markImportAsUsed(trampImports[i][0]);
+
         builder._generateImportSection();
 
         // Function section
@@ -441,15 +445,12 @@ export function mono_interp_flush_jitcall_queue(): void {
         compileStarted = _now();
         const buffer = builder.getArrayView();
         if (trace > 0)
-            console.log(`do_jit_call queue flush generated ${buffer.length} byte(s) of wasm`);
+            mono_log_info(`do_jit_call queue flush generated ${buffer.length} byte(s) of wasm`);
         counters.bytesGenerated += buffer.length;
         const traceModule = new WebAssembly.Module(buffer);
+        const wasmImports = builder.getWasmImports();
 
-        const traceInstance = new WebAssembly.Instance(traceModule, {
-            i: builder.getImportedFunctionTable(),
-            c: <any>builder.getConstants(),
-            m: { h: (<any>Module).asm.memory }
-        });
+        const traceInstance = new WebAssembly.Instance(traceModule, wasmImports);
 
         for (let i = 0; i < jitQueue.length; i++) {
             const info = jitQueue[i];
@@ -460,7 +461,7 @@ export function mono_interp_flush_jitcall_queue(): void {
             if (!idx)
                 throw new Error("add_function_pointer returned a 0 index");
             else if (trace >= 2)
-                console.log(`${info.name} -> fn index ${idx}`);
+                mono_log_info(`${info.name} -> fn index ${idx}`);
 
             info.result = idx;
             cwraps.mono_jiterp_register_jit_call_thunk(<any>info.cinfo, idx);
@@ -478,7 +479,7 @@ export function mono_interp_flush_jitcall_queue(): void {
         rejected = false;
         // console.error(`${traceName} failed: ${exc} ${exc.stack}`);
         // HACK: exc.stack is enormous garbage in v8 console
-        console.error(`MONO_WASM: jit_call code generation failed: ${exc}`);
+        mono_log_error(`jit_call code generation failed: ${exc}`);
         recordFailure();
     } finally {
         const finished = _now();
@@ -498,9 +499,9 @@ export function mono_interp_flush_jitcall_queue(): void {
 
         // FIXME
         if (threw || (!rejected && ((trace >= 2) || dumpWrappers))) {
-            console.log(`// MONO_WASM: ${jitQueue.length} jit call wrappers generated, blob follows //`);
+            mono_log_info(`// ${jitQueue.length} jit call wrappers generated, blob follows //`);
             for (let i = 0; i < jitQueue.length; i++)
-                console.log(`// #${i} === ${jitQueue[i].name} hasThis=${jitQueue[i].hasThisReference} hasRet=${jitQueue[i].hasReturnValue} wasmArgTypes=${jitQueue[i].wasmNativeSignature}`);
+                mono_log_info(`// #${i} === ${jitQueue[i].name} hasThis=${jitQueue[i].hasThisReference} hasRet=${jitQueue[i].hasReturnValue} wasmArgTypes=${jitQueue[i].wasmNativeSignature}`);
 
             let s = "", j = 0;
             try {
@@ -519,15 +520,15 @@ export function mono_interp_flush_jitcall_queue(): void {
                 s += b.toString(16);
                 s += " ";
                 if ((s.length % 10) === 0) {
-                    console.log(`${j}\t${s}`);
+                    mono_log_info(`${j}\t${s}`);
                     s = "";
                     j = i + 1;
                 }
             }
-            console.log(`${j}\t${s}`);
-            console.log("// end blob //");
+            mono_log_info(`${j}\t${s}`);
+            mono_log_info("// end blob //");
         } else if (rejected && !threw) {
-            console.error("MONO_WASM: failed to generate trampoline for unknown reason");
+            mono_log_error("failed to generate trampoline for unknown reason");
         }
 
         jitQueue.length = 0;
@@ -702,7 +703,7 @@ function generate_wasm_body(
             } else {
                 const loadWasmOp = (wasmOpcodeFromCilOpcode as any)[loadCilOp];
                 if (!loadWasmOp) {
-                    console.error(`No wasm load op for arg #${i} type ${info.paramTypes[i]} cil opcode ${loadCilOp}`);
+                    mono_log_error(`No wasm load op for arg #${i} type ${info.paramTypes[i]} cil opcode ${loadCilOp}`);
                     return false;
                 }
 
@@ -764,7 +765,7 @@ function generate_wasm_body(
         const storeCilOp = cwraps.mono_jiterp_type_to_stind(info.returnType);
         const storeWasmOp = (wasmOpcodeFromCilOpcode as any)[storeCilOp];
         if (!storeWasmOp) {
-            console.error(`No wasm store op for return type ${info.returnType} cil opcode ${storeCilOp}`);
+            mono_log_error(`No wasm store op for return type ${info.returnType} cil opcode ${storeCilOp}`);
             return false;
         }
 

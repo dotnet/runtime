@@ -1600,3 +1600,59 @@ public class MultiThreadedTest
     }
 }
 
+[AttributeUsage(AttributeTargets.Class)]
+public sealed class CustomAttribute<TInterface> : Attribute
+{
+}
+
+[Custom<GenericCustomAttributeDecoratedClassInheritsFromClassWithoutDebugSymbols>]
+public class GenericCustomAttributeDecoratedClassInheritsFromClassWithoutDebugSymbols : DebuggerTests.ClassWithoutDebugSymbolsToInherit
+{
+    public static void Run()
+    {
+        var myVar = new GenericCustomAttributeDecoratedClassInheritsFromClassWithoutDebugSymbols();
+        myVar.CallMethod();
+    }
+
+    public void CallMethod()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+    public int myField2;
+    public int myField;
+}
+
+[Custom<GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClass>]
+public class GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClass : ClassNonUserCodeToInherit
+{
+    public static void Run()
+    {
+        var myVar = new GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClass();
+        myVar.CallMethod();
+    }
+
+    public void CallMethod()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public int myField2;
+    public int myField;
+}
+
+[Custom<GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass>]
+public class GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass : DebuggerTests.ClassNonUserCodeToInheritThatInheritsFromNormalClass
+{
+    public static void Run()
+    {
+        var myVar = new GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass();
+        myVar.CallMethod();
+    }
+
+    public void CallMethod()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public int myField;
+}

@@ -28,7 +28,9 @@ namespace Internal.Reflection.Execution
         private AssemblyBinderImplementation()
         {
             _scopeGroups = new KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup>[0];
-            ModuleList.AddModuleRegistrationCallback(RegisterModule);
+
+            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
+                RegisterModule(module);
         }
 
         public static AssemblyBinderImplementation Instance { get; } = new AssemblyBinderImplementation();
@@ -194,16 +196,9 @@ namespace Internal.Reflection.Execution
         /// that this function may never be called concurrently so that we can assume that two threads
         /// never update the reader and scope list at the same time.
         /// </summary>
-        /// <param name="moduleInfo">Module to register</param>
-        private void RegisterModule(ModuleInfo moduleInfo)
+        /// <param name="nativeFormatModuleInfo">Module to register</param>
+        private void RegisterModule(NativeFormatModuleInfo nativeFormatModuleInfo)
         {
-            NativeFormatModuleInfo nativeFormatModuleInfo = moduleInfo as NativeFormatModuleInfo;
-
-            if (nativeFormatModuleInfo == null)
-            {
-                return;
-            }
-
             LowLevelDictionaryWithIEnumerable<RuntimeAssemblyName, ScopeDefinitionGroup> scopeGroups = new LowLevelDictionaryWithIEnumerable<RuntimeAssemblyName, ScopeDefinitionGroup>();
             foreach (KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup> oldGroup in _scopeGroups)
             {

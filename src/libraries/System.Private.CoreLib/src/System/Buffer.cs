@@ -345,6 +345,7 @@ namespace System
 
 #if !MONO // Mono BulkMoveWithWriteBarrier is in terms of elements (not bytes) and takes a type handle.
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void Memmove<T>(ref T destination, ref T source, nuint elementCount)
         {
