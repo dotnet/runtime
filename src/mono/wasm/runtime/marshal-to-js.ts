@@ -12,7 +12,7 @@ import {
     get_signature_res_type, get_arg_u16, array_element_size, get_string_root,
     ArraySegment, Span, MemoryViewType, get_signature_arg3_type, get_arg_i64_big, get_arg_intptr, get_arg_element_type, JavaScriptMarshalerArgSize
 } from "./marshal";
-import { conv_string_root } from "./strings";
+import { monoStringToString } from "./strings";
 import { JSHandleNull, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToJs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
 import { get_marshaler_to_cs_by_type } from "./marshal-to-cs";
@@ -302,7 +302,7 @@ export function marshal_string_to_js(arg: JSMarshalerArgument): string | null {
     }
     const root = get_string_root(arg);
     try {
-        const value = conv_string_root(root);
+        const value = monoStringToString(root);
         return value;
     } finally {
         root.release();

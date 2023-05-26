@@ -6,7 +6,7 @@ import BuildConfiguration from "consts:configuration";
 import { marshal_exception_to_cs, bind_arg_marshal_to_cs } from "./marshal-to-cs";
 import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol } from "./marshal";
 import { setI32, setI32_unchecked, updateGrowableHeapViews } from "./memory";
-import { conv_string_root, js_string_to_mono_string_root } from "./strings";
+import { monoStringToString, stringToMonoStringRoot } from "./strings";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
 import { INTERNAL, Module } from "./globals";
@@ -29,9 +29,9 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
         const version = get_signature_version(signature);
         mono_assert(version === 1, () => `Signature version ${version} mismatch.`);
 
-        const js_function_name = conv_string_root(function_name_root)!;
+        const js_function_name = monoStringToString(function_name_root)!;
         const mark = startMeasure();
-        const js_module_name = conv_string_root(module_name_root)!;
+        const js_module_name = monoStringToString(module_name_root)!;
         mono_log_debug(`Binding [JSImport] ${js_function_name} from ${js_module_name} module`);
 
         const fn = mono_wasm_lookup_function(js_function_name, js_module_name);
@@ -370,7 +370,7 @@ function _wrap_error_flag(is_exception: Int32Ptr | null, ex: any): string {
 
 export function wrap_error_root(is_exception: Int32Ptr | null, ex: any, result: WasmRoot<MonoObject>): void {
     const res = _wrap_error_flag(is_exception, ex);
-    js_string_to_mono_string_root(res, <any>result);
+    stringToMonoStringRoot(res, <any>result);
 }
 
 // to set out parameters of icalls

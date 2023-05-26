@@ -16,7 +16,7 @@ import {
 } from "./marshal";
 import { get_marshaler_to_js_by_type } from "./marshal-to-js";
 import { _zero_region, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
-import { js_string_to_mono_string_root } from "./strings";
+import { stringToMonoStringRoot } from "./strings";
 import { GCHandle, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
 import { addUnsettledPromise, settleUnsettledPromise } from "./pthreads/shared/eventloop";
@@ -225,7 +225,7 @@ function _marshal_string_to_cs(arg: JSMarshalerArgument, value: string) {
 function _marshal_string_to_cs_impl(arg: JSMarshalerArgument, value: string) {
     const root = get_string_root(arg);
     try {
-        js_string_to_mono_string_root(value, root);
+        stringToMonoStringRoot(value, root);
     }
     finally {
         root.release();

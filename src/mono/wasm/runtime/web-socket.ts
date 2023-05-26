@@ -8,7 +8,7 @@ import { setI32, localHeapViewU8 } from "./memory";
 import { VoidPtr } from "./types/emscripten";
 import { PromiseController } from "./types/internal";
 import { mono_log_warn } from "./logging";
-import { copyBufferIfNecessary, utf8ToStringRelaxed, encodeUTF8 } from "./strings";
+import { copyBufferIfNecessary, utf8ToStringRelaxed, stringToUTF8 } from "./strings";
 
 const wasm_ws_pending_send_buffer = Symbol.for("wasm ws_pending_send_buffer");
 const wasm_ws_pending_send_buffer_offset = Symbol.for("wasm ws_pending_send_buffer_offset");
@@ -238,7 +238,7 @@ function _mono_wasm_web_socket_on_message(ws: WebSocketExtension, event: Message
             // according to the spec https://encoding.spec.whatwg.org/
             // - Unpaired surrogates will get replaced with 0xFFFD
             // - utf8 encode specifically is defined to never throw
-            data: encodeUTF8(event.data),
+            data: stringToUTF8(event.data),
             offset: 0
         });
     }

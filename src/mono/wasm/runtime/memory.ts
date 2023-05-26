@@ -55,8 +55,7 @@ function assert_int_in_range(value: Number, min: Number, max: Number) {
 }
 
 export function _zero_region(byteOffset: VoidPtr, sizeBytes: number): void {
-    updateGrowableHeapViews();
-    Module.HEAPU8.fill(0, <any>byteOffset, <any>byteOffset + sizeBytes);
+    localHeapViewU8().fill(0, <any>byteOffset, <any>byteOffset + sizeBytes);
 }
 
 export function setB32(offset: MemOffset, value: number | boolean): void {
@@ -300,9 +299,8 @@ export function withStackAlloc<T1, T2, T3, TResult>(bytesWanted: number, f: (ptr
 // @bytes must be a typed array. space is allocated for it in the native heap
 //  and it is copied to that location. returns the address of the allocation.
 export function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr {
-    updateGrowableHeapViews();
     const memoryOffset = Module._malloc(bytes.length);
-    const heapBytes = new Uint8Array(Module.HEAPU8.buffer, <any>memoryOffset, bytes.length);
+    const heapBytes = new Uint8Array(localHeapViewU8().buffer, <any>memoryOffset, bytes.length);
     heapBytes.set(bytes);
     return memoryOffset;
 }
@@ -323,12 +321,10 @@ const BuiltinAtomics = globalThis.Atomics;
 
 export const Atomics = MonoWasmThreads ? {
     storeI32(offset: MemOffset, value: number): void {
-        updateGrowableHeapViews();
-        BuiltinAtomics.store(Module.HEAP32, <any>offset >>> 2, value);
+        BuiltinAtomics.store(localHeapViewI32(), <any>offset >>> 2, value);
     },
     notifyI32(offset: MemOffset, count: number): void {
-        updateGrowableHeapViews();
-        BuiltinAtomics.notify(Module.HEAP32, <any>offset >>> 2, count);
+        BuiltinAtomics.notify(localHeapViewI32(), <any>offset >>> 2, count);
     }
 } : {
     storeI32: setI32,

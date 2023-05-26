@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { setU16_local, updateGrowableHeapViews } from "../memory";
 import { mono_wasm_new_external_root } from "../roots";
-import { conv_string_root } from "../strings";
+import { monoStringToString, stringToUTF16 } from "../strings";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
 import { Int32Ptr } from "../types/emscripten";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
@@ -15,7 +14,7 @@ export function mono_wasm_is_normalized(normalizationForm: number, inputStr: Mon
     const inputRoot = mono_wasm_new_external_root<MonoString>(inputStr),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
     try {
-        const jsString = conv_string_root(inputRoot);
+        const jsString = monoStringToString(inputRoot);
         if (!jsString)
             throw new Error("Invalid string was received.");
 
@@ -37,7 +36,7 @@ export function mono_wasm_normalize_string(normalizationForm: number, inputStr: 
     const inputRoot = mono_wasm_new_external_root<MonoString>(inputStr),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
     try {
-        const jsString = conv_string_root(inputRoot);
+        const jsString = monoStringToString(inputRoot);
         if (!jsString)
             throw new Error("Invalid string was received.");
 
@@ -47,9 +46,7 @@ export function mono_wasm_normalize_string(normalizationForm: number, inputStr: 
         // increase the dest buffer
         if (result.length > dstLength)
             return result.length;
-        updateGrowableHeapViews();
-        for (let i = 0; i < result.length; i++)
-            setU16_local(dstPtr + i * 2, result.charCodeAt(i));
+        stringToUTF16(dstPtr, dstPtr + 2 * dstLength, result);
         return result.length;
     } catch (ex) {
         wrap_error_root(is_exception, ex, exceptionRoot);

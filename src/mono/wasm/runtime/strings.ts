@@ -8,99 +8,167 @@ import cwraps from "./cwraps";
 import { mono_wasm_new_root } from "./roots";
 import { updateGrowableHeapViews, isSharedArrayBuffer, localHeapViewU8, getI32_local, getU32_local, getI16_local, setU16_local } from "./memory";
 import { NativePointer, CharPtr } from "./types/emscripten";
-import { assert_legacy_interop } from "./pthreads/shared";
 
-export class StringDecoder {
-
-    private mono_wasm_string_root: any;
-    private mono_text_decoder: TextDecoder | undefined | null;
-    private mono_wasm_string_decoder_buffer: NativePointer | undefined;
-
-    init_fields(): void {
-        if (!this.mono_wasm_string_decoder_buffer) {
-            this.mono_text_decoder = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-16le") : null;
-            this.mono_wasm_string_root = mono_wasm_new_root();
-            this.mono_wasm_string_decoder_buffer = Module._malloc(12);
-        }
-    }
-
-    /**
-     * @deprecated Not GC or thread safe
-     */
-    copy(mono_string: MonoString): string | null {
-        this.init_fields();
-        if (mono_string === MonoStringNull)
-            return null;
-
-        this.mono_wasm_string_root.value = mono_string;
-        const result = this.copy_root(this.mono_wasm_string_root);
-        this.mono_wasm_string_root.value = MonoStringNull;
-        return result;
-    }
-
-    copy_root(root: WasmRoot<MonoString>): string | null {
-        this.init_fields();
-        if (root.value === MonoStringNull)
-            return null;
-
-        const ppChars = <any>this.mono_wasm_string_decoder_buffer + 0,
-            pLengthBytes = <any>this.mono_wasm_string_decoder_buffer + 4,
-            pIsInterned = <any>this.mono_wasm_string_decoder_buffer + 8;
-
-        cwraps.mono_wasm_string_get_data_ref(root.address, <any>ppChars, <any>pLengthBytes, <any>pIsInterned);
-
-        let result = undefined;
-        updateGrowableHeapViews();
-        const lengthBytes = getI32_local(pLengthBytes),
-            pChars = getU32_local(ppChars),
-            isInterned = getI32_local(pIsInterned);
-
-        if (isInterned)
-            result = interned_string_table.get(root.value)!;
-
-        if (result === undefined) {
-            if (lengthBytes && pChars) {
-                result = this.decode(<any>pChars, <any>pChars + lengthBytes);
-                if (isInterned)
-                    interned_string_table.set(root.value, result);
-            } else
-                result = mono_wasm_empty_string;
-        }
-
-        if (result === undefined)
-            throw new Error(`internal error when decoding string at location ${root.value}`);
-
-        return result;
-    }
-
-    decode(start: CharPtr, end: CharPtr): string {
-        let str = "";
-        if (this.mono_text_decoder) {
-            const subArray = copyBufferIfNecessary(localHeapViewU8(), start, end);
-            str = this.mono_text_decoder.decode(subArray);
-        } else {
-            updateGrowableHeapViews();
-            for (let i = 0; i < <any>end - <any>start; i += 2) {
-                const char = getI16_local(<any>start + i);
-                str += String.fromCharCode(char);
-            }
-        }
-
-        return str;
-    }
-}
-
-const interned_string_table = new Map<MonoString, string>();
 export const interned_js_string_table = new Map<string, MonoString>();
+export const mono_wasm_empty_string = "";
+let mono_wasm_string_root: any;
+let mono_wasm_string_decoder_buffer: NativePointer | undefined;
+const interned_string_table = new Map<MonoString, string>();
 let _empty_string_ptr: MonoString = <any>0;
 const _interned_string_full_root_buffers = [];
 let _interned_string_current_root_buffer: WasmRootBuffer | null = null;
 let _interned_string_current_root_buffer_count = 0;
-export const string_decoder = new StringDecoder();
-export const mono_wasm_empty_string = "";
+let _text_decoder_utf16: TextDecoder | undefined | null;
+let _text_decoder_utf8_relaxed: TextDecoder | undefined = undefined;
+let _text_decoder_utf8_validating: TextDecoder | undefined = undefined;
+let _text_encoder_utf8: TextEncoder | undefined = undefined;
 
-export function conv_string_root(root: WasmRoot<MonoString>): string | null {
-    return string_decoder.copy_root(root);
+export function strings_init(): void {
+    if (!mono_wasm_string_decoder_buffer) {
+        _text_decoder_utf16 = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-16le") : null;
+        mono_wasm_string_root = mono_wasm_new_root();
+        mono_wasm_string_decoder_buffer = Module._malloc(12);
+    }
+}
+
+export function stringToUTF8(str: string): Uint8Array {
+    if (_text_encoder_utf8 === undefined) {
+        if (typeof TextEncoder === "undefined") {
+            const buffer = new Uint8Array(str.length * 2);
+            Module.stringToUTF8Array(str, buffer, 0, str.length * 2);
+            return buffer;
+        }
+        _text_encoder_utf8 = new TextEncoder();
+    }
+    return _text_encoder_utf8.encode(str);
+}
+
+export function utf8ToStringRelaxed(buffer: Uint8Array): string {
+    if (_text_decoder_utf8_relaxed === undefined) {
+        if (typeof TextDecoder === "undefined") {
+            return Module.UTF8ArrayToString(buffer, 0, buffer.byteLength);
+        }
+        _text_decoder_utf8_relaxed = new TextDecoder("utf-8", { fatal: false });
+    }
+    return _text_decoder_utf8_relaxed.decode(buffer);
+}
+
+export function utf8ToString(ptr: CharPtr): string {
+    const heapU8 = localHeapViewU8();
+    return utf8BufferToString(heapU8, ptr as any, heapU8.length - (ptr as any));
+}
+
+export function utf8BufferToString(heapOrArray: Uint8Array, idx: number, maxBytesToRead: number): string {
+    const endIdx = idx + maxBytesToRead;
+    let endPtr = idx;
+    while (heapOrArray[endPtr] && !(endPtr >= endIdx)) ++endPtr;
+    if (endPtr - idx <= 16) {
+        return Module.UTF8ArrayToString(heapOrArray, idx, maxBytesToRead);
+    }
+    if (_text_decoder_utf8_validating === undefined) {
+        if (typeof TextDecoder === "undefined") {
+            return Module.UTF8ArrayToString(heapOrArray, idx, maxBytesToRead);
+        }
+        _text_decoder_utf8_validating = new TextDecoder("utf-8");
+    }
+    const view = copyBufferIfNecessary(heapOrArray, idx as any, endPtr as any);
+    return _text_decoder_utf8_validating.decode(view);
+}
+
+export function utf16ToString(startPtr: number, endPtr: number): string {
+    let str = "";
+    if (_text_decoder_utf16 && (endPtr - startPtr) > 16) {
+        const subArray = copyBufferIfNecessary(localHeapViewU8(), startPtr as any, endPtr as any);
+        str = _text_decoder_utf16.decode(subArray);
+    } else {
+        updateGrowableHeapViews();
+        for (let i = startPtr; i < endPtr; i += 2) {
+            const char = getI16_local(i);
+            str += String.fromCharCode(char);
+        }
+    }
+
+    return str;
+}
+
+export function stringToUTF16(dstPtr: number, endPtr: number, text: string) {
+    updateGrowableHeapViews();
+    for (let i = dstPtr; i < endPtr && i / 2 < text.length; i += 2)
+        setU16_local(i, text.charCodeAt(i));
+}
+
+/* @deprecated not GC safe, use monoStringToString */
+export function monoStringToStringUnsafe(mono_string: MonoString): string | null {
+    if (mono_string === MonoStringNull)
+        return null;
+
+    mono_wasm_string_root.value = mono_string;
+    const result = monoStringToString(mono_wasm_string_root);
+    mono_wasm_string_root.value = MonoStringNull;
+    return result;
+}
+
+export function monoStringToString(root: WasmRoot<MonoString>): string | null {
+    if (root.value === MonoStringNull)
+        return null;
+
+    const ppChars = <any>mono_wasm_string_decoder_buffer + 0,
+        pLengthBytes = <any>mono_wasm_string_decoder_buffer + 4,
+        pIsInterned = <any>mono_wasm_string_decoder_buffer + 8;
+
+    cwraps.mono_wasm_string_get_data_ref(root.address, <any>ppChars, <any>pLengthBytes, <any>pIsInterned);
+
+    let result = undefined;
+    updateGrowableHeapViews();
+    const lengthBytes = getI32_local(pLengthBytes),
+        pChars = getU32_local(ppChars),
+        isInterned = getI32_local(pIsInterned);
+
+    if (isInterned)
+        result = interned_string_table.get(root.value)!;
+
+    if (result === undefined) {
+        if (lengthBytes && pChars) {
+            result = utf16ToString(<any>pChars, <any>pChars + lengthBytes);
+            if (isInterned)
+                interned_string_table.set(root.value, result);
+        } else
+            result = mono_wasm_empty_string;
+    }
+
+    if (result === undefined)
+        throw new Error(`internal error when decoding string at location ${root.value}`);
+
+    return result;
+}
+
+export function stringToMonoStringRoot(string: string, result: WasmRoot<MonoString>): void {
+    result.clear();
+
+    if (string === null)
+        return;
+    else if (typeof (string) === "symbol")
+        js_string_to_mono_string_interned_root(string, result);
+    else if (typeof (string) !== "string")
+        throw new Error("Expected string argument, got " + typeof (string));
+    else if (string.length === 0)
+        // Always use an interned pointer for empty strings
+        js_string_to_mono_string_interned_root(string, result);
+    else {
+        // Looking up large strings in the intern table will require the JS runtime to
+        //  potentially hash them and then do full byte-by-byte comparisons, which is
+        //  very expensive. Because we can not guarantee it won't happen, try to minimize
+        //  the cost of this and prevent performance issues for large strings
+        if (string.length <= 256) {
+            const interned = interned_js_string_table.get(string);
+            if (interned) {
+                result.set(interned);
+                return;
+            }
+        }
+
+        js_string_to_mono_string_new_root(string, result);
+    }
 }
 
 // Ensures the string is already interned on both the managed and JavaScript sides,
@@ -189,39 +257,10 @@ export function js_string_to_mono_string_interned_root(string: string | symbol, 
     _store_string_in_intern_table(text, result, true);
 }
 
-export function js_string_to_mono_string_root(string: string, result: WasmRoot<MonoString>): void {
-    result.clear();
-
-    if (string === null)
-        return;
-    else if (typeof (string) === "symbol")
-        js_string_to_mono_string_interned_root(string, result);
-    else if (typeof (string) !== "string")
-        throw new Error("Expected string argument, got " + typeof (string));
-    else if (string.length === 0)
-        // Always use an interned pointer for empty strings
-        js_string_to_mono_string_interned_root(string, result);
-    else {
-        // Looking up large strings in the intern table will require the JS runtime to
-        //  potentially hash them and then do full byte-by-byte comparisons, which is
-        //  very expensive. Because we can not guarantee it won't happen, try to minimize
-        //  the cost of this and prevent performance issues for large strings
-        if (string.length <= 256) {
-            const interned = interned_js_string_table.get(string);
-            if (interned) {
-                result.set(interned);
-                return;
-            }
-        }
-
-        js_string_to_mono_string_new_root(string, result);
-    }
-}
-
-export function js_string_to_mono_string_new_root(string: string, result: WasmRoot<MonoString>): void {
+function js_string_to_mono_string_new_root(string: string, result: WasmRoot<MonoString>): void {
     const bufferLen = (string.length + 1) * 2;
     const buffer = Module._malloc(bufferLen);
-    encodeUTF16(buffer as any, bufferLen, string);
+    stringToUTF16(buffer as any, bufferLen, string);
     cwraps.mono_wasm_string_from_utf16_ref(<any>buffer, string.length, result.address);
     Module._free(buffer);
 }
@@ -229,7 +268,7 @@ export function js_string_to_mono_string_new_root(string: string, result: WasmRo
 /**
  * @deprecated Not GC or thread safe
  */
-export function js_string_to_mono_string_interned(string: string | symbol): MonoString {
+function js_string_to_mono_string_interned(string: string | symbol): MonoString {
     const temp = mono_wasm_new_root<MonoString>();
     try {
         js_string_to_mono_string_interned_root(string, temp);
@@ -238,97 +277,6 @@ export function js_string_to_mono_string_interned(string: string | symbol): Mono
         temp.release();
     }
 }
-
-/**
- * @deprecated Not GC or thread safe
- */
-export function js_string_to_mono_string(string: string): MonoString {
-    assert_legacy_interop();
-    const temp = mono_wasm_new_root<MonoString>();
-    try {
-        js_string_to_mono_string_root(string, temp);
-        return temp.value;
-    } finally {
-        temp.release();
-    }
-}
-
-/**
- * @deprecated Not GC or thread safe
- */
-export function js_string_to_mono_string_new(string: string): MonoString {
-    assert_legacy_interop();
-    const temp = mono_wasm_new_root<MonoString>();
-    try {
-        js_string_to_mono_string_new_root(string, temp);
-        return temp.value;
-    } finally {
-        temp.release();
-    }
-}
-
-let _text_decoder_utf8_relaxed: TextDecoder | undefined = undefined;
-let _text_decoder_utf8_validating: TextDecoder | undefined = undefined;
-let _text_encoder_utf8: TextEncoder | undefined = undefined;
-
-export function encodeUTF8(str: string): Uint8Array {
-    if (_text_encoder_utf8 === undefined) {
-        if (typeof TextEncoder === "undefined") {
-            const buffer = new Uint8Array(str.length * 2);
-            Module.stringToUTF8Array(str, buffer, 0, str.length * 2);
-            return buffer;
-        }
-        _text_encoder_utf8 = new TextEncoder();
-    }
-    return _text_encoder_utf8.encode(str);
-}
-
-export function utf8ToStringRelaxed(buffer: Uint8Array): string {
-    if (_text_decoder_utf8_relaxed === undefined) {
-        if (typeof TextDecoder === "undefined") {
-            return Module.UTF8ArrayToString(buffer, 0, buffer.byteLength);
-        }
-        _text_decoder_utf8_relaxed = new TextDecoder("utf-8", { fatal: false });
-    }
-    return _text_decoder_utf8_relaxed.decode(buffer);
-}
-
-export function utf8ToString(ptr: CharPtr): string {
-    const heapU8 = localHeapViewU8();
-    return decodeUTF8(heapU8, ptr as any, heapU8.length - (ptr as any));
-}
-
-export function decodeUTF8(heapOrArray: Uint8Array, idx: number, maxBytesToRead: number): string {
-    const endIdx = idx + maxBytesToRead;
-    let endPtr = idx;
-    while (heapOrArray[endPtr] && !(endPtr >= endIdx)) ++endPtr;
-    if (endPtr - idx <= 16) {
-        return Module.UTF8ArrayToString(heapOrArray, idx, maxBytesToRead);
-    }
-    if (_text_decoder_utf8_validating === undefined) {
-        if (typeof TextDecoder === "undefined") {
-            return Module.UTF8ArrayToString(heapOrArray, idx, maxBytesToRead);
-        }
-        _text_decoder_utf8_validating = new TextDecoder("utf-8");
-    }
-    const view = copyBufferIfNecessary(heapOrArray, idx as any, endPtr as any);
-    return _text_decoder_utf8_validating.decode(view);
-}
-
-export function decodeUTF16(ptr: number, length: number): string {
-    updateGrowableHeapViews();
-    let string = "";
-    for (let i = 0; i < length; i++)
-        string += String.fromCharCode(getI16_local(ptr + i));
-    return string;
-}
-
-export function encodeUTF16(dst: number, destLength: number, str: string) {
-    updateGrowableHeapViews();
-    for (let i = 0; i < str.length && i < destLength; i++)
-        setU16_local(dst + i * 2, str.charCodeAt(i));
-}
-
 
 // When threading is enabled, TextDecoder does not accept a view of a
 // SharedArrayBuffer, we must make a copy of the array first.

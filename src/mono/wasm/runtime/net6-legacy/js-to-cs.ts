@@ -8,7 +8,7 @@ import { Module } from "../globals";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { setI32_unchecked, setU32_unchecked, setF64, setB32, localHeapViewU8 } from "../memory";
 import { mono_wasm_new_root, mono_wasm_release_roots, mono_wasm_new_external_root } from "../roots";
-import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root } from "../strings";
+import { stringToMonoStringRoot, js_string_to_mono_string_interned_root } from "../strings";
 import { MonoObject, is_nullish, MonoClass, MonoArray, MonoObjectNull, JSHandle, MonoObjectRef, JSHandleNull, JSHandleDisposed, WasmRoot } from "../types/internal";
 import { TypedArray, Int32Ptr } from "../types/emscripten";
 import { has_backing_array_buffer } from "./buffers";
@@ -89,7 +89,7 @@ export function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, s
             return;
         }
         case typeof js_obj === "string":
-            js_string_to_mono_string_root(js_obj, <any>result);
+            stringToMonoStringRoot(js_obj, <any>result);
             return;
         case typeof js_obj === "symbol":
             js_string_to_mono_string_interned_root(js_obj, <any>result);
@@ -156,7 +156,7 @@ function js_typedarray_to_heap(typedArray: TypedArray) {
     const ptr = Module._malloc(numBytes);
     const heapBytes = new Uint8Array(heapU8.buffer, <any>ptr, numBytes);
     heapBytes.set(new Uint8Array(typedArray.buffer, typedArray.byteOffset, numBytes));
-    // WARNING: returned memory view will get stale when linear memory grows on another thread. This is legacy interop so we try to fix it. The view will be fine when used in synchronous calls.
+    // WARNING: returned memory view will get stale when linear memory grows on another thread. This is legacy interop so we don't try to fix it. The view will be fine when used in synchronous calls.
     return heapBytes;
 }
 
