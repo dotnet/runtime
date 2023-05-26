@@ -24,17 +24,17 @@
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedDescription">
         <source>COM interface source generation requires all base COM interfaces to be valid interfaces. Fix any issues on the base interface to resolve this diagnostic.</source>
-        <target state="new">COM interface source generation requires all base COM interfaces to be valid interfaces. Fix any issues on the base interface to resolve this diagnostic.</target>
+        <target state="translated">Для создания источника COM-интерфейса все базовые COM-интерфейсы должны быть допустимыми. Устраните все проблемы в базовом интерфейсе, чтобы разрешить это диагностическое уведомление.</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedMessage">
         <source>COM interface {0} inherits from {1}, which has errors. ComInterfaceGenerator will not generate source for {0}.</source>
-        <target state="new">COM interface {0} inherits from {1}, which has errors. ComInterfaceGenerator will not generate source for {0}.</target>
+        <target state="translated">COM-интерфейс {0} наследует от {1}, где есть ошибки. ComInterfaceGenerator не будет создавать источник для {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedTitle">
         <source>The base COM interface failed to generate source. ComInterfaceGenerator will not generate source for this interface.</source>
-        <target state="new">The base COM interface failed to generate source. ComInterfaceGenerator will not generate source for this interface.</target>
+        <target state="translated">Базовому COM-интерфейсу не удалось создать источник. ComInterfaceGenerator не будет создавать источник для этого интерфейса.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">
@@ -74,7 +74,7 @@
       </trans-unit>
       <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</source>
-        <target state="new">The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</target>
+        <target state="translated">Конфигурация "StringMarshalling" и "StringMarshallingCustomType" должна соответствовать базовому COM-интерфейсу.</target>
         <note />
       </trans-unit>
       <trans-unit id="InterfaceTypeNotSupportedMessage">
@@ -169,12 +169,12 @@
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationOnInterfaceMessage">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</source>
-        <target state="new">The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</target>
+        <target state="translated">Конфигурация "StringMarshalling" и "StringMarshallingCustomType" в интерфейсе "{0}" недопустима. {1}</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationOnMethodMessage">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on method '{0}' is invalid. {1}</source>
-        <target state="new">The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on method '{0}' is invalid. {1}</target>
+        <target state="translated">Конфигурация \"StringMarshalling\" и \"StringMarshallingCustomType\" в методе \"{0}\" недопустима. {1}</target>
         <note>{1} is a message containing additional details about what is not valid</note>
       </trans-unit>
       <trans-unit id="InvalidVirtualMethodIndexAttributeUsage">
