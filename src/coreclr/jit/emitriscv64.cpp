@@ -285,12 +285,12 @@ void emitter::emitIns_S_R_R(instruction ins, emitAttr attr, regNumber reg1, regN
     if (tmpReg == REG_NA)
     {
         reg2 = regBase;
-        imm = base + offs;
+        imm  = base + offs;
     }
     else
     {
         reg2 = tmpReg;
-        imm = offs;
+        imm  = offs;
     }
 
     assert(reg2 != REG_NA && reg2 != codeGen->rsGetRsvdReg());
