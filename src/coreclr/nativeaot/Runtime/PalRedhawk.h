@@ -17,8 +17,9 @@
 
 #include <sal.h>
 #include <stdarg.h>
-#include "gcenv.structs.h"
+#include "gcenv.structs.h" // CRITICAL_SECTION
 #include "IntrinsicConstants.h"
+#include "PalRedhawkCommon.h"
 
 #ifndef PAL_REDHAWK_INCLUDED
 #define PAL_REDHAWK_INCLUDED
@@ -50,7 +51,6 @@
 #endif // !_MSC_VER
 
 #ifndef _INC_WINDOWS
-//#ifndef DACCESS_COMPILE
 
 // There are some fairly primitive type definitions below but don't pull them into the rest of Redhawk unless
 // we have to (in which case these definitions will move to CommonTypes.h).
@@ -65,13 +65,12 @@ typedef void *              LPOVERLAPPED;
 
 #ifdef TARGET_UNIX
 #define __stdcall
+typedef char TCHAR;
+#define _T(s) s
+#else
+typedef wchar_t TCHAR;
+#define _T(s) L##s
 #endif
-
-#ifndef __GCENV_BASE_INCLUDED__
-#define CALLBACK            __stdcall
-#define WINAPI              __stdcall
-#define WINBASEAPI          __declspec(dllimport)
-#endif //!__GCENV_BASE_INCLUDED__
 
 #ifdef TARGET_UNIX
 #define DIRECTORY_SEPARATOR_CHAR '/'
@@ -100,9 +99,6 @@ typedef struct _GUID {
 } GUID;
 
 #define DECLARE_HANDLE(_name) typedef HANDLE _name
-
-// defined in gcrhenv.cpp
-bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t dwSwitchCount);
 
 struct FILETIME
 {
@@ -502,7 +498,6 @@ typedef enum _EXCEPTION_DISPOSITION {
 #define NULL_AREA_SIZE                   (64*1024)
 #endif
 
-//#endif // !DACCESS_COMPILE
 #endif // !_INC_WINDOWS
 
 
@@ -510,10 +505,12 @@ typedef enum _EXCEPTION_DISPOSITION {
 #ifndef DACCESS_COMPILE
 #ifndef _INC_WINDOWS
 
-#ifndef __GCENV_BASE_INCLUDED__
+#ifndef TRUE
 #define TRUE                    1
+#endif
+#ifndef FALSE
 #define FALSE                   0
-#endif // !__GCENV_BASE_INCLUDED__
+#endif
 
 #define INVALID_HANDLE_VALUE    ((HANDLE)(intptr_t)-1)
 
@@ -750,6 +747,9 @@ REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalH
 
 #ifdef FEATURE_ETW
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalEventEnabled(REGHANDLE regHandle, _In_ const EVENT_DESCRIPTOR* eventDescriptor);
+REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalEventRegister(const GUID * arg1, void * arg2, void * arg3, REGHANDLE * arg4);
+REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalEventUnregister(REGHANDLE arg1);
+REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t arg3, EVENT_DATA_DESCRIPTOR * arg4);
 #endif
 
 REDHAWK_PALIMPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer);
@@ -769,12 +769,14 @@ REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alert
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalAttachThread(void* thread);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalDetachThread(void* thread);
 
-REDHAWK_PALIMPORT uint64_t PalGetCurrentThreadIdForLogging();
+REDHAWK_PALIMPORT uint64_t PalGetCurrentOSThreadId();
 
 REDHAWK_PALIMPORT uint64_t PalQueryPerformanceCounter();
 REDHAWK_PALIMPORT uint64_t PalQueryPerformanceFrequency();
 
 REDHAWK_PALIMPORT void PalPrintFatalError(const char* message);
+
+REDHAWK_PALIMPORT char* PalCopyTCharAsChar(const TCHAR* toCopy);
 
 #ifdef TARGET_UNIX
 REDHAWK_PALIMPORT int32_t __cdecl _stricmp(const char *string1, const char *string2);

@@ -474,22 +474,24 @@ static void UninitDLL()
 // the process is terminated via `exit()` or a signal. Thus there is no such distinction
 // between threads.
 Thread* g_threadPerformingShutdown = NULL;
+#endif
 
 static void __cdecl OnProcessExit()
 {
+#ifdef _WIN32
     // The process is exiting and the current thread is performing the shutdown.
     // When this thread exits some threads may be already rudely terminated.
     // It would not be a good idea for this thread to wait on any locks
     // or run managed code at shutdown, so we will not try detaching it.
     Thread* currentThread = ThreadStore::RawGetCurrentThread();
     g_threadPerformingShutdown = currentThread;
+#endif
 
 #ifdef FEATURE_PERFTRACING
     EventPipeAdapter_Shutdown();
     DiagnosticServerAdapter_Shutdown();
 #endif
 }
-#endif
 
 void RuntimeThreadShutdown(void* thread)
 {
@@ -526,7 +528,7 @@ extern "C" bool RhInitialize()
     if (!PalInit())
         return false;
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(FEATURE_PERFTRACING)
     atexit(&OnProcessExit);
 #endif
 

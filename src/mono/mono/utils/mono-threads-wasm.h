@@ -43,6 +43,12 @@ mono_threads_wasm_async_run_in_main_thread_vi (void (*func)(gpointer), gpointer 
 void
 mono_threads_wasm_async_run_in_main_thread_vii (void (*func)(gpointer, gpointer), gpointer user_data1, gpointer user_data2);
 
+void
+mono_threads_wasm_async_run_in_target_thread (pthread_t target_thread, void (*func) (void));
+
+void
+mono_threads_wasm_async_run_in_target_thread_vi (pthread_t target_thread, void (*func) (gpointer), gpointer user_data);
+
 static inline
 int32_t
 mono_wasm_atomic_wait_i32 (volatile int32_t *addr, int32_t expected, int32_t timeout_ns)
@@ -59,6 +65,10 @@ mono_wasm_atomic_wait_i32 (volatile int32_t *addr, int32_t expected, int32_t tim
 	// 2 == "timed-out", timeout expired before thread was woken up
 	return __builtin_wasm_memory_atomic_wait32((int32_t*)addr, expected, timeout_ns);
 }
+
+extern MonoNativeTlsKey jobs_key;
+#else /* DISABLE_THREADS */
+extern GSList *jobs;
 #endif /* DISABLE_THREADS */
 
 // Called from register_thread when a pthread attaches to the runtime
