@@ -573,7 +573,7 @@ public:
         {
             GenTreeLclVarCommon* lcl = tree->AsLclVarCommon();
             LclVarDsc*           dsc = m_compiler->lvaGetDesc(lcl);
-            if (!dsc->lvPromoted && (dsc->TypeGet() == TYP_STRUCT) && !dsc->IsAddressExposed())
+            if (Promotion::IsCandidateForPhysicalPromotion(dsc))
             {
                 var_types       accessType;
                 ClassLayout*    accessLayout;
@@ -1528,7 +1528,7 @@ void ReplaceVisitor::MarkForReadBack(unsigned lcl, unsigned offs, unsigned size)
 //
 PhaseStatus Promotion::Run()
 {
-    if (m_compiler->lvaCount <= 0)
+    if (!HaveCandidateLocals())
     {
         return PhaseStatus::MODIFIED_NOTHING;
     }
@@ -1541,7 +1541,14 @@ PhaseStatus Promotion::Run()
 
         for (Statement* stmt : bb->Statements())
         {
-            localsUse.WalkTree(stmt->GetRootNodePointer(), nullptr);
+            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+            {
+                if (Promotion::IsCandidateForPhysicalPromotion(m_compiler->lvaGetDesc(lcl)))
+                {
+                    localsUse.WalkTree(stmt->GetRootNodePointer(), nullptr);
+                    break;
+                }
+            }
         }
     }
 
@@ -1711,6 +1718,38 @@ PhaseStatus Promotion::Run()
     }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// Promotion::HaveCandidateLocals:
+//   Check if there are any locals that are candidates for physical promotion.
+//
+// Returns:
+//   True if so.
+//
+bool Promotion::HaveCandidateLocals()
+{
+    for (unsigned lclNum = 0; lclNum < m_compiler->lvaCount; lclNum++)
+    {
+        if (IsCandidateForPhysicalPromotion(m_compiler->lvaGetDesc(lclNum)))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// Promotion::IsCandidateForPhysicalPromotion:
+//   Check if a specified local is a candidate for physical promotion.
+//
+// Returns:
+//   True if so.
+//
+bool Promotion::IsCandidateForPhysicalPromotion(LclVarDsc* dsc)
+{
+    return (dsc->TypeGet() == TYP_STRUCT) && !dsc->lvPromoted && !dsc->IsAddressExposed();
 }
 
 //------------------------------------------------------------------------
