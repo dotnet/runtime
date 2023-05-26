@@ -58,12 +58,19 @@ jobs:
           - script: git clone https://www.github.com/dotnet/sdk --depth 1
             workingDirectory: $(Pipeline.Workspace)
             displayName: Checkout dotnet/sdk
-          - script: ls -l $(Pipeline.Workspace)
-            workingDirectory: $(Pipeline.Workspace)
-            displayName: Checkout dotnet/sdk
-          - script: cd sdk && ./build.sh -c Release -restore -test --projects $PWD/src/Tests/Microsoft.NET.Sdk.BlazorWebAssembly.Tests/Microsoft.NET.Sdk.BlazorWebAssembly.Tests.csproj /bl
+          - script: cd sdk && ./build.sh -c $(_BuildConfig) -restore -test --projects $PWD/src/Tests/Microsoft.NET.Sdk.BlazorWebAssembly.Tests/Microsoft.NET.Sdk.BlazorWebAssembly.Tests.csproj /bl
             workingDirectory: $(Pipeline.Workspace)
             displayName: Build tests
+          - task: PublishTestResults@2
+            displayName: Publish Test Results
+            inputs:
+              testResultsFormat: 'VSTest'
+              testResultsFiles: '*.xml'
+              searchFolder: '$(Pipeline.Workspace)/sdk/artifacts/TestResults/$(_BuildConfig)'
+              mergeTestResults: true
+              testRunTitle: Sdk-WasmTestResults
+            continueOnError: true
+            condition: always()
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)_$(_hostedOs)
         extraHelixArguments: /p:BrowserHost=$(_hostedOs)
