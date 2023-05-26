@@ -2480,8 +2480,10 @@ uint8_t*    gc_heap::last_gen1_pin_end;
 
 gen_to_condemn_tuning gc_heap::gen_to_condemn_reasons;
 
+uint64_t    gc_heap::etw_allocationTickMode;
 size_t      gc_heap::etw_allocation_running_amount[total_oh_count];
 size_t      gc_heap::etw_allocation_running_threshold[total_oh_count];
+size_t      gc_heap::etw_allocation_next_threshold[total_oh_count];
 
 uint64_t    gc_heap::total_alloc_bytes_soh = 0;
 
@@ -14425,10 +14427,12 @@ gc_heap::init_gc_heap (int h_number)
     heap_number = h_number;
 #endif //MULTIPLE_HEAPS
 
+    etw_allocationTickMode = GCConfig::GetAllocationTickMode();
     memset (etw_allocation_running_amount, 0, sizeof (etw_allocation_running_amount));
     for (int i = 0; i < total_oh_count; i++)
 	{
         etw_allocation_running_threshold[i] = etw_allocation_tick_mean;
+        etw_allocation_next_threshold[i] = etw_allocation_tick_mean;
 	}
     memset (allocated_since_last_gc, 0, sizeof (allocated_since_last_gc));
     memset (&oom_info, 0, sizeof (oom_info));
@@ -16176,6 +16180,30 @@ size_t gc_heap::limit_from_size (size_t size, uint32_t flags, size_t physical_li
 
     size_t desired_size_to_allocate  = max (padded_size, min_size_to_allocate);
     size_t new_physical_limit = min (physical_limit, desired_size_to_allocate);
+
+#ifdef FEATURE_EVENT_TRACE
+    // If the AllocationTick threshold will be reached, check if the next one
+    // will be within the currently calculated limit.
+    // In that case, shrink the limit to the next threshold
+    if (etw_allocationTickMode == 3)
+    {
+      #ifdef FEATURE_NATIVEAOT
+        if (EVENT_ENABLED(GCAllocationTick_V1))
+      #else
+        if (EVENT_ENABLED(GCAllocationTick_V4))
+      #endif
+        {
+            if (is_alloc_beyond_threshold(gen_number, size))
+            {
+                size_t nextThreshold = get_alloc_next_threshold(gen_number);
+                if (nextThreshold <= (new_physical_limit - padded_size))
+                {
+                    new_physical_limit = size + nextThreshold + Align(min_obj_size, align_const);
+                }
+            }
+        }
+    }
+#endif
 
     size_t new_limit = new_allocation_limit (padded_size,
                                              new_physical_limit,
@@ -18016,21 +18044,9 @@ void gc_heap::trigger_gc_for_alloc (int gen_number, gc_reason gr,
 }
 
 inline
-bool gc_heap::update_alloc_info (int gen_number, size_t allocated_size, size_t* etw_allocation_amount)
+size_t gc_heap::compute_alloc_threshold ()
 {
-    bool exceeded_p = false;
-    int oh_index = gen_to_oh (gen_number);
-    allocated_since_last_gc[oh_index] += allocated_size;
-
-    size_t& etw_allocated = etw_allocation_running_amount[oh_index];
-    etw_allocated += allocated_size;
-
-    size_t& etw_threshold = etw_allocation_running_threshold[oh_index];
-    if (etw_allocated > etw_threshold)
-    {
-        *etw_allocation_amount = etw_allocated;
-        exceeded_p = true;
-        etw_allocated = 0;
+    size_t threshold = etw_allocation_tick_mean;
 
 // avoid computing if not needed
 #ifdef FEATURE_EVENT_TRACE
@@ -18040,10 +18056,62 @@ bool gc_heap::update_alloc_info (int gen_number, size_t allocated_size, size_t* 
     if (EVENT_ENABLED(GCAllocationTick_V4))
   #endif
     {
-        // compute the next threshold based on a Poisson process with a etw_allocation_tick_mean average
-        etw_threshold = (size_t)(-log(1 - ((double)gc_rand::get_rand(RAND_MAX)/(double)RAND_MAX)) * etw_allocation_tick_mean) + 1;
+        if ((etw_allocationTickMode == 2) || (etw_allocationTickMode == 3))
+        {
+            // compute the next threshold based on a Poisson process with a etw_allocation_tick_mean average
+            threshold = (size_t)(-log((double)gc_rand::get_rand(RAND_MAX)/(double)RAND_MAX) * etw_allocation_tick_mean) + 1;
+        }
+        else
+        if (etw_allocationTickMode == 1)
+        {
+            // compute the next threshold as mean +/- mean/2 (i.e. from mean/2 + 1 to mean + mean/2)
+            threshold = (etw_allocation_tick_mean / 2) + (size_t)(gc_rand::get_rand(etw_allocation_tick_mean) + 1);
+        }
+
+        // nothing to do for fixed mode: threshold is defined as 100 KB by default
     }
 #endif
+
+    return threshold;
+}
+
+inline
+size_t gc_heap::get_alloc_current_threshold (int gen_number)
+{
+    int oh_index = gen_to_oh (gen_number);
+    return etw_allocation_running_threshold[oh_index];
+}
+
+inline
+size_t gc_heap::get_alloc_next_threshold (int gen_number)
+{
+    int oh_index = gen_to_oh (gen_number);
+    return etw_allocation_next_threshold[oh_index];
+}
+
+inline
+bool gc_heap::is_alloc_beyond_threshold(int gen_number, size_t size)
+{
+    int oh_index = gen_to_oh (gen_number);
+    return (etw_allocation_running_amount[oh_index] + size > etw_allocation_running_threshold[oh_index]);
+}
+
+inline
+bool gc_heap::update_alloc_info (int gen_number, size_t allocated_size, size_t* etw_allocation_amount)
+{
+    bool exceeded_p = is_alloc_beyond_threshold(gen_number, allocated_size);
+
+    int oh_index = gen_to_oh (gen_number);
+    allocated_since_last_gc[oh_index] += allocated_size;
+    etw_allocation_running_amount[oh_index] += allocated_size;
+
+    if (exceeded_p)
+    {
+        *etw_allocation_amount = etw_allocation_running_amount[oh_index];
+        etw_allocation_running_amount[oh_index] = 0;
+
+        etw_allocation_running_threshold[oh_index] = etw_allocation_next_threshold[oh_index];
+        etw_allocation_next_threshold[oh_index] = compute_alloc_threshold();
     }
 
     return exceeded_p;

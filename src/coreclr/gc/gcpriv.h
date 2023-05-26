@@ -2967,6 +2967,10 @@ private:
                           uint64_t* available_page_file=NULL);
     PER_HEAP_METHOD size_t generation_size (int gen_number);
     PER_HEAP_ISOLATED_METHOD size_t get_total_survived_size();
+    PER_HEAP_METHOD size_t get_alloc_current_threshold (int gen_number);
+    PER_HEAP_METHOD size_t get_alloc_next_threshold (int gen_number);
+    PER_HEAP_METHOD bool is_alloc_beyond_threshold (int gen_number, size_t size);
+    PER_HEAP_METHOD size_t compute_alloc_threshold ();
     PER_HEAP_METHOD bool update_alloc_info (int gen_number,
                             size_t allocated_size,
                             size_t* etw_allocation_amount);
@@ -3853,8 +3857,13 @@ private:
 #endif //HEAP_ANALYZE
 
     PER_HEAP_FIELD_DIAG_ONLY gen_to_condemn_tuning gen_to_condemn_reasons;
+    PER_HEAP_FIELD_DIAG_ONLY uint64_t etw_allocationTickMode;
     PER_HEAP_FIELD_DIAG_ONLY size_t etw_allocation_running_amount[total_oh_count];
+    // it is needed to know what will be the next threshold after the running one
+    // to compute the limit of an allocation context: if it is smaller than this
+    // next threshold, then the limit is adjusted to the next threshold
     PER_HEAP_FIELD_DIAG_ONLY size_t etw_allocation_running_threshold[total_oh_count];
+    PER_HEAP_FIELD_DIAG_ONLY size_t etw_allocation_next_threshold[total_oh_count];
     PER_HEAP_FIELD_DIAG_ONLY uint64_t total_alloc_bytes_soh;
     PER_HEAP_FIELD_DIAG_ONLY uint64_t total_alloc_bytes_uoh;
 
