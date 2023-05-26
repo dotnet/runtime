@@ -281,24 +281,6 @@ namespace System.Data.SqlTypes
             AssertValid();
         }
 
-        private long ReadNoValidation(long offset, Span<byte> buffer)
-        {
-            if (_state == SqlBytesCharsState.Stream)
-            {
-                if (_stream!.Position != offset)
-                    _stream.Seek(offset, SeekOrigin.Begin);
-                return _stream.Read(buffer);
-            }
-
-            // Adjust count based on data length
-            int count = Math.Min(buffer.Length, (int)(Length - offset));
-
-            Span<byte> span = _rgbBuf!.AsSpan((int)offset, count);
-            span.CopyTo(buffer);
-
-            return span.Length;
-        }
-
         internal long Read(long offset, Span<byte> buffer)
         {
             if (IsNull)
@@ -309,6 +291,7 @@ namespace System.Data.SqlTypes
 
             return ReadNoValidation(offset, buffer);
         }
+
         // Read data of specified length from specified offset into a buffer
         public long Read(long offset, byte[] buffer, int offsetInBuffer, int count)
         {
@@ -330,41 +313,22 @@ namespace System.Data.SqlTypes
             return ReadNoValidation(offset, buffer.AsSpan(offsetInBuffer, count));
         }
 
-        private void WriteNoValidation(long offset, ReadOnlySpan<byte> buffer)
+        private long ReadNoValidation(long offset, Span<byte> buffer)
         {
-            if (IsNull)
+            if (_state == SqlBytesCharsState.Stream)
             {
-                // If NULL and there is buffer inside, we only allow writing from
-                // offset zero.
-                //
-                if (offset != 0)
-                    throw new SqlTypeException(SR.SqlMisc_WriteNonZeroOffsetOnNullMessage);
-
-                // treat as if our current length is zero.
-                // Note this has to be done after all inputs are validated, so that
-                // we won't throw exception after this point.
-                //
-                _lCurLen = 0;
-                _state = SqlBytesCharsState.Buffer;
-            }
-            else if (offset > _lCurLen)
-            {
-                // Don't allow writing from an offset that this larger than current length.
-                // It would leave uninitialized data in the buffer.
-                //
-                throw new SqlTypeException(SR.SqlMisc_WriteOffsetLargerThanLenMessage);
+                if (_stream!.Position != offset)
+                    _stream.Seek(offset, SeekOrigin.Begin);
+                return _stream.Read(buffer);
             }
 
-            if (buffer.Length != 0)
-            {
-                Span<byte> span = _rgbBuf.AsSpan((int)offset, buffer.Length);
-                buffer.CopyTo(span);
+            // Adjust count based on data length
+            int count = Math.Min(buffer.Length, (int)(Length - offset));
 
-                // If the last position that has been written is after
-                // the current data length, reset the length
-                if (_lCurLen < offset + buffer.Length)
-                    _lCurLen = offset + buffer.Length;
-            }
+            Span<byte> span = _rgbBuf!.AsSpan((int)offset, count);
+            span.CopyTo(buffer);
+
+            return span.Length;
         }
 
         internal void Write(long offset, ReadOnlySpan<byte> buffer)
@@ -426,6 +390,43 @@ namespace System.Data.SqlTypes
             }
 
             AssertValid();
+        }
+
+        private void WriteNoValidation(long offset, ReadOnlySpan<byte> buffer)
+        {
+            if (IsNull)
+            {
+                // If NULL and there is buffer inside, we only allow writing from
+                // offset zero.
+                //
+                if (offset != 0)
+                    throw new SqlTypeException(SR.SqlMisc_WriteNonZeroOffsetOnNullMessage);
+
+                // treat as if our current length is zero.
+                // Note this has to be done after all inputs are validated, so that
+                // we won't throw exception after this point.
+                //
+                _lCurLen = 0;
+                _state = SqlBytesCharsState.Buffer;
+            }
+            else if (offset > _lCurLen)
+            {
+                // Don't allow writing from an offset that this larger than current length.
+                // It would leave uninitialized data in the buffer.
+                //
+                throw new SqlTypeException(SR.SqlMisc_WriteOffsetLargerThanLenMessage);
+            }
+
+            if (buffer.Length != 0)
+            {
+                Span<byte> span = _rgbBuf.AsSpan((int)offset, buffer.Length);
+                buffer.CopyTo(span);
+
+                // If the last position that has been written is after
+                // the current data length, reset the length
+                if (_lCurLen < offset + buffer.Length)
+                    _lCurLen = offset + buffer.Length;
+            }
         }
 
         public SqlBinary ToSqlBinary()
