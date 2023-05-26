@@ -281,7 +281,7 @@ namespace System.Data.SqlTypes
             AssertValid();
         }
 
-        private long ReadInternal(Span<byte> buffer, long offset)
+        private long ReadNoValidation(Span<byte> buffer, long offset)
         {
             if (_state == SqlBytesCharsState.Stream)
             {
@@ -307,7 +307,7 @@ namespace System.Data.SqlTypes
             ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, Length);
             ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
-            return ReadInternal(buffer, offset);
+            return ReadNoValidation(buffer, offset);
         }
         // Read data of specified length from specified offset into a buffer
         public long Read(long offset, byte[] buffer, int offsetInBuffer, int count)
@@ -327,10 +327,10 @@ namespace System.Data.SqlTypes
             ArgumentOutOfRangeException.ThrowIfNegative(count);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - offsetInBuffer);
 
-            return ReadInternal(buffer.AsSpan(offsetInBuffer, count), offset);
+            return ReadNoValidation(buffer.AsSpan(offsetInBuffer, count), offset);
         }
 
-        private void WriteInternal(long offset, ReadOnlySpan<byte> buffer)
+        private void WriteNoValidation(long offset, ReadOnlySpan<byte> buffer)
         {
             if (IsNull)
             {
@@ -388,7 +388,7 @@ namespace System.Data.SqlTypes
                 if (buffer.Length > _rgbBuf.Length - offset)
                     throw new SqlTypeException(SR.SqlMisc_BufferInsufficientMessage);
 
-                WriteInternal(offset, buffer);
+                WriteNoValidation(offset, buffer);
             }
         }
 
@@ -422,7 +422,7 @@ namespace System.Data.SqlTypes
                 if (count > _rgbBuf.Length - offset)
                     throw new SqlTypeException(SR.SqlMisc_BufferInsufficientMessage);
 
-                WriteInternal(offset, buffer.AsSpan(offsetInBuffer, count));
+                WriteNoValidation(offset, buffer.AsSpan(offsetInBuffer, count));
             }
 
             AssertValid();
@@ -716,7 +716,7 @@ namespace System.Data.SqlTypes
             return _lPosition;
         }
 
-        private int ReadInternal(Span<byte> buffer)
+        private int ReadNoValidation(Span<byte> buffer)
         {
             int bytesRead = (int)_sb.Read(_lPosition, buffer);
             _lPosition += bytesRead;
@@ -730,17 +730,17 @@ namespace System.Data.SqlTypes
 
             ValidateBufferArguments(buffer, offset, count);
 
-            return ReadInternal(buffer.AsSpan(offset, count));
+            return ReadNoValidation(buffer.AsSpan(offset, count));
         }
 
         public override int Read(Span<byte> buffer)
         {
             CheckIfStreamClosed();
 
-            return ReadInternal(buffer);
+            return ReadNoValidation(buffer);
         }
 
-        private void WriteInternal(ReadOnlySpan<byte> buffer)
+        private void WriteNoValidation(ReadOnlySpan<byte> buffer)
         {
             _sb.Write(_lPosition, buffer);
             _lPosition += buffer.Length;
@@ -752,14 +752,14 @@ namespace System.Data.SqlTypes
 
             ValidateBufferArguments(buffer, offset, count);
 
-            WriteInternal(buffer);
+            WriteNoValidation(buffer);
         }
 
         public override void Write(ReadOnlySpan<byte> buffer)
         {
             CheckIfStreamClosed();
 
-            WriteInternal(buffer);
+            WriteNoValidation(buffer);
         }
 
         public override int ReadByte()
