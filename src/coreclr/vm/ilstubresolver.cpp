@@ -293,59 +293,44 @@ ILStubResolver::AllocGeneratedIL(
 #if !defined(DACCESS_COMPILE)
     _ASSERTE(0 != cbCode);
 
-    if (!UseLoaderHeap())
+    // Perform a single allocation for all needed memory
+    AllocMemHolder<BYTE> allocMemory;
+    NewArrayHolder<BYTE> newMemory;
+    BYTE* memory;
+
+    S_SIZE_T toAlloc = (S_SIZE_T(sizeof(CompileTimeState)) + S_SIZE_T(cbCode) + S_SIZE_T(cbLocalSig));
+    _ASSERTE(!toAlloc.IsOverflow());
+
+    if (UseLoaderHeap())
     {
-        NewArrayHolder<BYTE>             pNewILCodeBuffer = new BYTE[cbCode];
-        NewHolder<CompileTimeState>      pNewCompileTimeState = new CompileTimeState{};
-        NewArrayHolder<BYTE>             pNewLocalSig = NULL;
-
-        if (0 != cbLocalSig)
-        {
-            pNewLocalSig = new BYTE[cbLocalSig];
-        }
-
-        COR_ILMETHOD_DECODER* pILHeader = &pNewCompileTimeState->m_ILHeader;
-
-        CreateILHeader(pILHeader, cbCode, maxStack, pNewILCodeBuffer, pNewLocalSig, cbLocalSig);
-
-#ifdef _DEBUG
-        LPVOID pPrevCompileTimeState =
-#endif // _DEBUG
-            InterlockedExchangeT(&m_pCompileTimeState, pNewCompileTimeState.GetValue());
-        CONSISTENCY_CHECK(ILNotYetGenerated == (UINT_PTR)pPrevCompileTimeState);
-
-        pNewLocalSig.SuppressRelease();
-        pNewILCodeBuffer.SuppressRelease();
-        pNewCompileTimeState.SuppressRelease();
-        return pILHeader;
+        allocMemory = m_loaderHeap->AllocMem(toAlloc);
+        memory = allocMemory;
     }
     else
     {
-        AllocMemHolder<BYTE>             pNewILCodeBuffer(m_loaderHeap->AllocMem(S_SIZE_T(cbCode)));
-        AllocMemHolder<CompileTimeState> pNewCompileTimeState(m_loaderHeap->AllocMem(S_SIZE_T(sizeof(CompileTimeState))));
-        memset(pNewCompileTimeState, 0, sizeof(CompileTimeState));
-        AllocMemHolder<BYTE>             pNewLocalSig;
-
-        if (0 != cbLocalSig)
-        {
-            pNewLocalSig = m_loaderHeap->AllocMem(S_SIZE_T(cbLocalSig));
-        }
-
-        COR_ILMETHOD_DECODER* pILHeader = &pNewCompileTimeState->m_ILHeader;
-
-        CreateILHeader(pILHeader, cbCode, maxStack, pNewILCodeBuffer, pNewLocalSig, cbLocalSig);
-
-#ifdef _DEBUG
-        LPVOID pPrevCompileTimeState =
-#endif // _DEBUG
-            InterlockedExchangeT(&m_pCompileTimeState, (CompileTimeState*)pNewCompileTimeState);
-        CONSISTENCY_CHECK(ILNotYetGenerated == (UINT_PTR)pPrevCompileTimeState);
-
-        pNewLocalSig.SuppressRelease();
-        pNewILCodeBuffer.SuppressRelease();
-        pNewCompileTimeState.SuppressRelease();
-        return pILHeader;
+        newMemory = new BYTE[toAlloc.Value()];
+        memory = newMemory;
     }
+
+    CompileTimeState* pNewCompileTimeState = (CompileTimeState*)memory;
+    memset(pNewCompileTimeState, 0, sizeof(*pNewCompileTimeState));
+
+    BYTE* pNewILCodeBuffer = ((BYTE*)pNewCompileTimeState) + sizeof(*pNewCompileTimeState);
+    BYTE* pNewLocalSig = (0 == cbLocalSig)
+        ? NULL
+        : (pNewILCodeBuffer + cbCode);
+
+    COR_ILMETHOD_DECODER* pILHeader = &pNewCompileTimeState->m_ILHeader;
+
+    CreateILHeader(pILHeader, cbCode, maxStack, pNewILCodeBuffer, pNewLocalSig, cbLocalSig);
+
+    LPVOID pPrevCompileTimeState = InterlockedExchangeT(&m_pCompileTimeState, pNewCompileTimeState);
+    CONSISTENCY_CHECK(ILNotYetGenerated == (UINT_PTR)pPrevCompileTimeState);
+    (void*)pPrevCompileTimeState;
+
+    allocMemory.SuppressRelease();
+    newMemory.SuppressRelease();
+    return pILHeader;
 
 #else  // DACCESS_COMPILE
     DacNotImpl();
@@ -436,16 +421,6 @@ ILStubResolver::ClearCompileTimeState(CompileTimeStatePtrSpecialValues newState)
     // See allocations in AllocGeneratedIL and SetStubTargetMethodSig
     //
 
-    COR_ILMETHOD_DECODER * pILHeader = &m_pCompileTimeState->m_ILHeader;
-
-    CONSISTENCY_CHECK(NULL != pILHeader->Code);
-    delete[] pILHeader->Code;
-
-    if (NULL != pILHeader->LocalVarSig)
-    {
-        delete[] pILHeader->LocalVarSig;
-    }
-
     if (!m_pCompileTimeState->m_StubTargetMethodSig.IsNull())
     {
         delete[] m_pCompileTimeState->m_StubTargetMethodSig.GetPtr();
@@ -456,7 +431,9 @@ ILStubResolver::ClearCompileTimeState(CompileTimeStatePtrSpecialValues newState)
         delete[] m_pCompileTimeState->m_pEHSect;
     }
 
-    delete m_pCompileTimeState;
+    // The allocation being deleted here is a bulk allocation
+    // that is typed as a BYTE[].
+    delete[] m_pCompileTimeState;
 
     InterlockedExchangeT(&m_pCompileTimeState, dac_cast<PTR_CompileTimeState>((TADDR)newState));
 } // ILStubResolver::ClearCompileTimeState

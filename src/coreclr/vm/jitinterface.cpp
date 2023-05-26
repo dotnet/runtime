@@ -382,6 +382,12 @@ inline static CorInfoType toJitType(TypeHandle typeHnd, CORINFO_CLASS_HANDLE *cl
     return CEEInfo::asCorInfoType(typeHnd.GetInternalCorElementType(), typeHnd, clsRet);
 }
 
+enum ConvToJitSigFlags : int
+{
+    CONV_TO_JITSIG_FLAGS_NONE       = 0x0,
+    CONV_TO_JITSIG_FLAGS_LOCALSIG   = 0x1,
+};
+
 //---------------------------------------------------------------------------------------
 //
 //@GENERICS:
@@ -396,9 +402,7 @@ inline static CorInfoType toJitType(TypeHandle typeHnd, CORINFO_CLASS_HANDLE *cl
 // localSig     - Is it a local variables declaration, or a method signature (with return type, etc).
 // contextType  - The type with any instantiaton information
 //
-//static
-void
-CEEInfo::ConvToJitSig(
+static void ConvToJitSig(
     PCCOR_SIGNATURE       pSig,
     DWORD                 cbSig,
     CORINFO_MODULE_HANDLE scopeHnd,
@@ -520,7 +524,7 @@ CEEInfo::ConvToJitSig(
     sigRet->flags = sigRetFlags;
 
     _ASSERTE(SigInfoFlagsAreValid(sigRet));
-} // CEEInfo::ConvToJitSig
+} // ConvToJitSig
 
 //---------------------------------------------------------------------------------------
 //
@@ -853,17 +857,6 @@ size_t CEEInfo::findNameOfToken (Module* module,
 
     return strlen (szFQName);
 }
-
-#ifdef HOST_WINDOWS
-/* static */
-uint32_t CEEInfo::ThreadLocalOffset(void* p)
-{
-    PTEB Teb = NtCurrentTeb();
-    uint8_t** pTls = (uint8_t**)Teb->ThreadLocalStoragePointer;
-    uint8_t* pOurTls = pTls[_tls_index];
-    return (uint32_t)((uint8_t*)p - pOurTls);
-}
-#endif // HOST_WINDOWS
 
 CorInfoHelpFunc CEEInfo::getLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle)
 {
@@ -1806,6 +1799,14 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isG
 }
 
 /*********************************************************************/
+static uint32_t ThreadLocalOffset(void* p)
+{
+    PTEB Teb = NtCurrentTeb();
+    uint8_t** pTls = (uint8_t**)Teb->ThreadLocalStoragePointer;
+    uint8_t* pOurTls = pTls[_tls_index];
+    return (uint32_t)((uint8_t*)p - pOurTls);
+}
+
 void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
 {
     CONTRACTL {
@@ -1822,13 +1823,13 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
     if (isGCType)
     {
-        pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_GCThreadStaticBlocks);
-        pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_GCMaxThreadStaticBlocks);
+        pInfo->offsetOfThreadStaticBlocks = ThreadLocalOffset(&t_GCThreadStaticBlocks);
+        pInfo->offsetOfMaxThreadStaticBlocks = ThreadLocalOffset(&t_GCMaxThreadStaticBlocks);
     }
     else
     {
-        pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_NonGCThreadStaticBlocks);
-        pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_NonGCMaxThreadStaticBlocks);
+        pInfo->offsetOfThreadStaticBlocks = ThreadLocalOffset(&t_NonGCThreadStaticBlocks);
+        pInfo->offsetOfMaxThreadStaticBlocks = ThreadLocalOffset(&t_NonGCMaxThreadStaticBlocks);
     }
 
     pInfo->offsetOfGCDataPointer = static_cast<uint32_t>(PtrArray::GetDataOffset());
@@ -1989,7 +1990,7 @@ CEEInfo::findCallSiteSig(
     SigTypeContext typeContext;
     GetTypeContext(context, &typeContext);
 
-    CEEInfo::ConvToJitSig(
+    ConvToJitSig(
         pSig,
         cbSig,
         scopeHnd,
@@ -2040,7 +2041,7 @@ CEEInfo::findSig(
     SigTypeContext typeContext;
     GetTypeContext(context, &typeContext);
 
-    CEEInfo::ConvToJitSig(
+    ConvToJitSig(
         pSig,
         cbSig,
         scopeHnd,
@@ -4901,6 +4902,61 @@ CorInfoIsAccessAllowedResult CEEInfo::canAccessClass(
     return isAccessAllowed;
 }
 
+//---------------------------------------------------------------------------------------
+// Given a method descriptor ftnHnd, extract signature information into sigInfo
+// Obtain (representative) instantiation information from ftnHnd's owner class
+//@GENERICSVER: added explicit owner parameter
+// Internal version without JIT-EE transition
+static void getMethodSigInternal(
+    CORINFO_METHOD_HANDLE ftnHnd,
+    CORINFO_SIG_INFO *    sigRet,
+    CORINFO_CLASS_HANDLE  owner,
+    SignatureKind signatureKind)
+{
+    STANDARD_VM_CONTRACT;
+
+    MethodDesc * ftn = GetMethod(ftnHnd);
+
+    PCCOR_SIGNATURE pSig = NULL;
+    DWORD           cbSig = 0;
+    ftn->GetSig(&pSig, &cbSig);
+
+    SigTypeContext context(ftn, (TypeHandle)owner);
+
+    // Type parameters in the signature are instantiated
+    // according to the class/method/array instantiation of ftnHnd and owner
+    ConvToJitSig(
+        pSig,
+        cbSig,
+        GetScopeHandle(ftn),
+        mdTokenNil,
+        &context,
+        CONV_TO_JITSIG_FLAGS_NONE,
+        sigRet);
+
+    //@GENERICS:
+    // Shared generic methods and shared methods on generic structs take an extra argument representing their instantiation
+    if (ftn->RequiresInstArg())
+    {
+        //
+        // If we are making a virtual call to an instance method on an interface, we need to lie to the JIT.
+        // The reason being that we already made sure target is always directly callable (through instantiation stubs),
+        // JIT should not generate shared generics aware call code and insert the secret argument again at the callsite.
+        // Otherwise we would end up with two secret generic dictionary arguments (since the stub also provides one).
+        //
+        BOOL isCallSiteThatGoesThroughInstantiatingStub =
+            (signatureKind == SK_VIRTUAL_CALLSITE &&
+            !ftn->IsStatic() &&
+            ftn->GetMethodTable()->IsInterface()) ||
+            signatureKind == SK_STATIC_VIRTUAL_CODEPOINTER_CALLSITE;
+        if (!isCallSiteThatGoesThroughInstantiatingStub)
+            sigRet->callConv = (CorInfoCallConv) (sigRet->callConv | CORINFO_CALLCONV_PARAMTYPE);
+    }
+
+    // We want the calling convention bit to be consistant with the method attribute bit
+    _ASSERTE( (IsMdStatic(ftn->GetAttrs()) == 0) == ((sigRet->callConv & CORINFO_CALLCONV_HASTHIS) != 0) );
+}
+
 /***********************************************************************/
 // return the address of a pointer to a callable stub that will do the
 // virtual or interface call
@@ -6703,6 +6759,15 @@ mdToken FindGenericMethodArgTypeSpec(IMDInternalImport* pInternalImport)
     COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
 }
 
+static void setILIntrinsicMethodInfo(CORINFO_METHOD_INFO* methInfo,uint8_t* ilcode, int ilsize, int maxstack)
+{
+    methInfo->ILCode = ilcode;
+    methInfo->ILCodeSize = ilsize;
+    methInfo->maxStack = maxstack;
+    methInfo->EHcount = 0;
+    methInfo->options = (CorInfoOptions)0;
+}
+
 /*********************************************************************
 
 IL is the most efficient and portable way to implement certain low level methods
@@ -7686,13 +7751,13 @@ getMethodInfoHelper(
     /* Fetch the method signature */
     // Type parameters in the signature should be instantiated according to the
     // class/method/array instantiation of ftnHnd
-    CEEInfo::ConvToJitSig(
+    ConvToJitSig(
         pSig,
         cbSig,
         GetScopeHandle(ftn),
         mdTokenNil,
         &context,
-        CEEInfo::CONV_TO_JITSIG_FLAGS_NONE,
+        CONV_TO_JITSIG_FLAGS_NONE,
         &methInfo->args);
 
     // Shared generic or static per-inst methods and shared methods on generic structs
@@ -7705,13 +7770,13 @@ getMethodInfoHelper(
     /* And its local variables */
     // Type parameters in the signature should be instantiated according to the
     // class/method/array instantiation of ftnHnd
-    CEEInfo::ConvToJitSig(
+    ConvToJitSig(
         pLocalSig,
         cbLocalSig,
         GetScopeHandle(ftn),
         mdTokenNil,
         &context,
-        CEEInfo::CONV_TO_JITSIG_FLAGS_LOCALSIG,
+        CONV_TO_JITSIG_FLAGS_LOCALSIG,
         &methInfo->locals);
 
 } // getMethodInfoHelper
@@ -8369,7 +8434,7 @@ void CEEInfo::reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
     EE_TO_JIT_TRANSITION();
 }
 
-void CEEInfo::getEHinfoHelper(
+static void getEHinfoHelper(
     CORINFO_METHOD_HANDLE   ftnHnd,
     unsigned                EHnumber,
     CORINFO_EH_CLAUSE*      clause,
@@ -8441,62 +8506,9 @@ CEEInfo::getMethodSig(
 
     JIT_TO_EE_TRANSITION();
 
-    getMethodSigInternal(ftnHnd, sigRet, owner);
+    getMethodSigInternal(ftnHnd, sigRet, owner, SK_NOT_CALLSITE);
 
     EE_TO_JIT_TRANSITION();
-}
-
-//---------------------------------------------------------------------------------------
-//
-void
-CEEInfo::getMethodSigInternal(
-    CORINFO_METHOD_HANDLE ftnHnd,
-    CORINFO_SIG_INFO *    sigRet,
-    CORINFO_CLASS_HANDLE  owner,
-    SignatureKind signatureKind)
-{
-    STANDARD_VM_CONTRACT;
-
-    MethodDesc * ftn = GetMethod(ftnHnd);
-
-    PCCOR_SIGNATURE pSig = NULL;
-    DWORD           cbSig = 0;
-    ftn->GetSig(&pSig, &cbSig);
-
-    SigTypeContext context(ftn, (TypeHandle)owner);
-
-    // Type parameters in the signature are instantiated
-    // according to the class/method/array instantiation of ftnHnd and owner
-    CEEInfo::ConvToJitSig(
-        pSig,
-        cbSig,
-        GetScopeHandle(ftn),
-        mdTokenNil,
-        &context,
-        CONV_TO_JITSIG_FLAGS_NONE,
-        sigRet);
-
-    //@GENERICS:
-    // Shared generic methods and shared methods on generic structs take an extra argument representing their instantiation
-    if (ftn->RequiresInstArg())
-    {
-        //
-        // If we are making a virtual call to an instance method on an interface, we need to lie to the JIT.
-        // The reason being that we already made sure target is always directly callable (through instantiation stubs),
-        // JIT should not generate shared generics aware call code and insert the secret argument again at the callsite.
-        // Otherwise we would end up with two secret generic dictionary arguments (since the stub also provides one).
-        //
-        BOOL isCallSiteThatGoesThroughInstantiatingStub =
-            (signatureKind == SK_VIRTUAL_CALLSITE &&
-            !ftn->IsStatic() &&
-            ftn->GetMethodTable()->IsInterface()) ||
-            signatureKind == SK_STATIC_VIRTUAL_CODEPOINTER_CALLSITE;
-        if (!isCallSiteThatGoesThroughInstantiatingStub)
-            sigRet->callConv = (CorInfoCallConv) (sigRet->callConv | CORINFO_CALLCONV_PARAMTYPE);
-    }
-
-    // We want the calling convention bit to be consistant with the method attribute bit
-    _ASSERTE( (IsMdStatic(ftn->GetAttrs()) == 0) == ((sigRet->callConv & CORINFO_CALLCONV_HASTHIS) != 0) );
 }
 
 //---------------------------------------------------------------------------------------
@@ -12700,7 +12712,7 @@ CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags)
     return flags;
 }
 
-CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHOD_INFO * methodInfo)
+static CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHOD_INFO * methodInfo)
 {
     STANDARD_VM_CONTRACT;
 
@@ -12907,17 +12919,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
         LOG((LF_JIT, LL_INFO10000, "{ Jitting method (%p) %s %s\n", ftn, methodString.GetUTF8(), ftn->m_pszDebugMethodSignature));
     }
-
-#if 0
-    if (!SString::_stricmp(cls,"ENC") &&
-       (!SString::_stricmp(name,"G")))
-    {
-       static count = 0;
-       count++;
-       if (count > 0)
-            DebugBreak();
-    }
-#endif // 0
 #endif // _DEBUG
 
     CORINFO_METHOD_HANDLE ftnHnd = (CORINFO_METHOD_HANDLE)ftn;
@@ -12954,8 +12955,8 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     {
         CEEJitInfo jitInfo(ftn, ILHeader, jitMgr, !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
 
-#if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64)
         if (fForceJumpStubOverflow)
             jitInfo.SetJumpStubOverflow(fAllowRel32);
         jitInfo.SetAllowRel32(fAllowRel32);
@@ -12964,7 +12965,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             jitInfo.SetJumpStubOverflow(fForceJumpStubOverflow);
 #endif
         jitInfo.SetReserveForJumpStubs(reserveForJumpStubs);
-#endif
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
         // If this is an OSR jit request, grab the OSR info so we can pass it to the jit

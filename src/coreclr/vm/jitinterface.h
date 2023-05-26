@@ -71,17 +71,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                         CORJIT_FLAGS flags,
                         ULONG* sizeOfCode = NULL);
 
-void setILIntrinsicMethodInfo(CORINFO_METHOD_INFO* methInfo,
-                              uint8_t* ilcode,
-                              int ilsize,
-                              int maxstack);
-
-
-void getMethodInfoHelper(MethodDesc * ftn,
-                         CORINFO_METHOD_HANDLE ftnHnd,
-                         COR_ILMETHOD_DECODER * header,
-                         CORINFO_METHOD_INFO *  methInfo);
-
 void getMethodInfoILMethodHeaderHelper(
     COR_ILMETHOD_DECODER* header,
     CORINFO_METHOD_INFO* methInfo
@@ -439,22 +428,7 @@ public:
     static size_t findNameOfToken (Module* module, mdToken metaTOK,
                             _Out_writes_ (FQNameCapacity) char * szFQName, size_t FQNameCapacity);
 
-#ifdef HOST_WINDOWS
-    static uint32_t ThreadLocalOffset(void* p);
-#endif // HOST_WINDOWS
-
     DWORD getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftnHnd);
-
-    // Given a method descriptor ftnHnd, extract signature information into sigInfo
-    // Obtain (representative) instantiation information from ftnHnd's owner class
-    //@GENERICSVER: added explicit owner parameter
-    // Internal version without JIT-EE transition
-    void getMethodSigInternal (
-            CORINFO_METHOD_HANDLE ftnHnd,
-            CORINFO_SIG_INFO* sigInfo,
-            CORINFO_CLASS_HANDLE owner = NULL,
-            SignatureKind signatureKind = SK_NOT_CALLSITE
-            );
 
     bool resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info);
 
@@ -469,13 +443,6 @@ public:
     CorInfoType getFieldTypeInternal (CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType = NULL,CORINFO_CLASS_HANDLE owner = NULL);
 
 protected:
-
-    static void getEHinfoHelper(
-        CORINFO_METHOD_HANDLE   ftnHnd,
-        unsigned                EHnumber,
-        CORINFO_EH_CLAUSE*      clause,
-        COR_ILMETHOD_DECODER*   pILHeader);
-
     void freeArrayInternal(void* array);
 
 public:
@@ -550,27 +517,6 @@ private:
 #endif
 
 public:
-
-    enum ConvToJitSigFlags : int
-    {
-        CONV_TO_JITSIG_FLAGS_NONE                       = 0x0,
-        CONV_TO_JITSIG_FLAGS_LOCALSIG                   = 0x1,
-    };
-
-    //@GENERICS:
-    // The method handle is used to instantiate method and class type parameters
-    // It's also used to determine whether an extra dictionary parameter is required
-    static
-    void
-    ConvToJitSig(
-        PCCOR_SIGNATURE       pSig,
-        DWORD                 cbSig,
-        CORINFO_MODULE_HANDLE scopeHnd,
-        mdToken               token,
-        SigTypeContext*       context,
-        ConvToJitSigFlags     flags,
-        CORINFO_SIG_INFO *    sigRet);
-
     MethodDesc * GetMethodForSecurity(CORINFO_METHOD_HANDLE callerHandle);
 
     // Prepare the information about how to do a runtime lookup of the handle with shared
@@ -697,9 +643,7 @@ public:
         } CONTRACTL_END;
 
         if (m_CodeHeaderRW != m_CodeHeader)
-        {
-            delete [] (BYTE*)m_CodeHeaderRW;
-        }
+            freeArrayInternal(m_CodeHeaderRW);
 
         m_CodeHeader = NULL;
         m_CodeHeaderRW = NULL;
@@ -798,7 +742,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return 0;
     }
-#endif
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     // Called by the runtime to supply patchpoint information to the jit.
@@ -873,9 +817,7 @@ public:
         } CONTRACTL_END;
 
         if (m_CodeHeaderRW != m_CodeHeader)
-        {
-            delete [] (BYTE*)m_CodeHeaderRW;
-        }
+            freeArrayInternal(m_CodeHeaderRW);
 
         if (m_pOffsetMapping != NULL)
             freeArrayInternal(m_pOffsetMapping);

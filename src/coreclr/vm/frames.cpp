@@ -2200,7 +2200,7 @@ void ComputeCallRefMap(MethodDesc* pMD,
     // an instantiation argument. But if we're in a situation where we haven't resolved the method yet
     // we need to pretent that unresolved default interface methods are like any other interface
     // methods and don't have an instantiation argument.
-    // See code:CEEInfo::getMethodSigInternal
+    // See code:getMethodSigInternal
     //
     assert(!isDispatchCell || !pMD->RequiresInstArg() || pMD->GetMethodTable()->IsInterface());
     if (pMD->RequiresInstArg() && !isDispatchCell)

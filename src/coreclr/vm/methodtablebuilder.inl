@@ -15,7 +15,7 @@
 
 //***************************************************************************************
 inline MethodTableBuilder::DeclaredMethodIterator::DeclaredMethodIterator(
-            MethodTableBuilder &mtb) : 
+            MethodTableBuilder &mtb) :
                 m_numDeclaredMethods((int)mtb.NumDeclaredMethods()),
                 m_declaredMethods(mtb.bmtMethod->m_rgDeclaredMethods),
                 m_idx(-1)
@@ -513,10 +513,12 @@ MethodTableBuilder::GetMethodClassification(MethodTableBuilder::METHOD_TYPE type
     C_ASSERT((DWORD)METHOD_TYPE_FCALL        == (DWORD)mcFCall);
     C_ASSERT((DWORD)METHOD_TYPE_NDIRECT      == (DWORD)mcNDirect);
     C_ASSERT((DWORD)METHOD_TYPE_EEIMPL       == (DWORD)mcEEImpl);
+    C_ASSERT((DWORD)METHOD_TYPE_ARRAY        == (DWORD)mcArray);
     C_ASSERT((DWORD)METHOD_TYPE_INSTANTIATED == (DWORD)mcInstantiated);
 #ifdef FEATURE_COMINTEROP
     C_ASSERT((DWORD)METHOD_TYPE_COMINTEROP   == (DWORD)mcComInterop);
 #endif
+    C_ASSERT((DWORD)METHOD_TYPE_DYNAMIC      == (DWORD)mcDynamic);
 
     return (DWORD)type;
 }

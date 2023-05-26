@@ -126,10 +126,12 @@ private:
         METHOD_TYPE_FCALL   = 1,
         METHOD_TYPE_NDIRECT = 2,
         METHOD_TYPE_EEIMPL  = 3,
+        METHOD_TYPE_ARRAY   = 4,
         METHOD_TYPE_INSTANTIATED = 5,
 #ifdef FEATURE_COMINTEROP
-        METHOD_TYPE_COMINTEROP = 6,
+        METHOD_TYPE_COMINTEROP   = 6,
 #endif
+        METHOD_TYPE_DYNAMIC      = 7
     };
 
 private:
