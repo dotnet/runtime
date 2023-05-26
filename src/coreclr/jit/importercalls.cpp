@@ -5886,7 +5886,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
     // where we know the exact number of classes implementing the given base in compile-time.
     // For now, let's only do this when we don't have any PGO data. In future, we should be able to benefit
     // from both.
-    if (!hasPgoData && (baseClass != NO_CLASS_HANDLE))
+    if (!hasPgoData && (baseClass != NO_CLASS_HANDLE) && JitConfig.JitEnableExactDevirtualization())
     {
         int maxTypeChecks = min(JitConfig.JitGuardedDevirtualizationMaxTypeChecks(), MAX_GDV_TYPE_CHECKS);
 
@@ -6212,41 +6212,39 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 
     if (call->IsGuardedDevirtualizationCandidate())
     {
-        //const uint8_t candidatesCount = call->GetInlineCandidatesCount();
-        //assert(candidatesCount > 0);
-        //for (uint8_t candidateId = 0; candidateId < candidatesCount; candidateId++)
-        //{
-        //    InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate");
+        const uint8_t candidatesCount = call->GetInlineCandidatesCount();
+        assert(candidatesCount > 0);
+        for (uint8_t candidateId = 0; candidateId < candidatesCount; candidateId++)
+        {
+            InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate", true);
 
-        //    // Do the actual evaluation
-        //    impMarkInlineCandidateHelper(call, candidateId, exactContextHnd,
-        //        exactContextNeedsRuntimeLookup, callInfo, ilOffset, &inlineResult);
+            // Do the actual evaluation
+            impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
+                                         ilOffset, &inlineResult);
 
-        //    if (!inlineResult.IsSuccess())
-        //    {
-        //        if (candidatesCount > 1)
-        //        {
-        //            // TODO: we should not give up if one of the candidates fails to inline while others succeed.
-        //            //
-        //            JITDUMP(
-        //                "We had multiple inline candidates but have to give up on them since one of them didn't pass"
-        //                "inline checks")
-        //            call->ClearInlineInfo();
-        //            call->ClearGuardedDevirtualizationCandidate();
-        //        }
-        //        break;
-        //    }
-        //}
-        call->ClearInlineInfo();
-        call->ClearGuardedDevirtualizationCandidate();
-        return;
+            if (!inlineResult.IsCandidate())
+            {
+                if (candidatesCount > 1)
+                {
+                    // TODO: we should not give up if one of the candidates fails to inline while others succeed.
+                    //
+                    JITDUMP(
+                        "We had multiple inline candidates but have to give up on them since one of them didn't pass"
+                        "inline checks")
+                    call->ClearInlineInfo();
+                    call->ClearGuardedDevirtualizationCandidate();
+                }
+                break;
+            }
+        }
     }
     else
     {
         const uint8_t candidatesCount = call->GetInlineCandidatesCount();
         assert(candidatesCount <= 1);
-        InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate");
-        impMarkInlineCandidateHelper(call, 0, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, ilOffset, &inlineResult);
+        InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate", true);
+        impMarkInlineCandidateHelper(call, 0, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, ilOffset,
+                                     &inlineResult);
     }
 
     // If this call is an inline candidate or is not a guarded devirtualization
@@ -6524,8 +6522,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     if (call->IsGuardedDevirtualizationCandidate())
     {
-        assert(call->GetGDVCandidateInfo(candidateIndex) != nullptr);
-        *call->GetGDVCandidateInfo(candidateIndex) = *inlineCandidateInfo;
+        assert(call->GetGDVCandidateInfo(candidateIndex) == inlineCandidateInfo);
         call->gtFlags |= GTF_CALL_INLINE_CANDIDATE;
     }
     else
