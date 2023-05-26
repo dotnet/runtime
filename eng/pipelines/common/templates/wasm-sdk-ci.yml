@@ -58,7 +58,7 @@ jobs:
           - script: git clone https://www.github.com/dotnet/sdk --depth 1
             workingDirectory: $(Pipeline.Workspace)
             displayName: Checkout dotnet/sdk
-          - script: cd sdk && ./build.sh -c $(_BuildConfig) -restore -test --projects $PWD/src/Tests/Microsoft.NET.Sdk.BlazorWebAssembly.Tests/Microsoft.NET.Sdk.BlazorWebAssembly.Tests.csproj /bl
+          - script: cd sdk && mkdir -p artifacts/bin/redist/Release/dotnet && ln -s $(Build.SourcesDirectory)/artifacts/bin/dotnet-latest artifacts/bin/redist/Release/dotnet && ls -l artifacts/bin/redist/Release && ./build.sh -c $(_BuildConfig) -restore -test --projects $PWD/src/Tests/Microsoft.NET.Sdk.BlazorWebAssembly.Tests/Microsoft.NET.Sdk.BlazorWebAssembly.Tests.csproj /bl
             workingDirectory: $(Pipeline.Workspace)
             displayName: Build tests
           - task: PublishTestResults@2
