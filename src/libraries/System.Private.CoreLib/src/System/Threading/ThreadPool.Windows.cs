@@ -21,16 +21,14 @@ namespace System.Threading
 #endif
 
 
-#if CORECLR
+#if !(TARGET_BROWSER && FEATURE_WASM_THREADS)
         // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
         // the runtime may use the thread for processing other work.
         //
         // Windows thread pool threads need to yield back to the thread pool periodically, otherwise those threads may be
         // considered to be doing long-running work and change thread pool heuristics, such as slowing or halting thread
         // injection.
-        internal static bool YieldFromDispatchLoop => UseWindowsThreadPool ? true : false;
-#elif !(TARGET_BROWSER && FEATURE_WASM_THREADS)
-        internal static bool YieldFromDispatchLoop => false;
+        internal static bool YieldFromDispatchLoop => UseWindowsThreadPool;
 #endif
 
         [CLSCompliant(false)]
