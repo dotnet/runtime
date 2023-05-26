@@ -19,7 +19,7 @@ Revision History:
 #include <errno.h>
 #include <limits.h>
 #include <string.h>
-#include <new>
+#include <assert.h>
 
 #define FASTLOOP
 
@@ -28,6 +28,8 @@ Revision History:
 #else
 #define W(str) u##str
 #endif
+
+inline void *operator new(size_t, void *p) throw () { return p; }
 
 struct CharUnicodeInfo
 {
@@ -188,11 +190,11 @@ public:
     //
     // Return the appropriate unicode string alternative to the character that need to fall back.
 
-    virtual DecoderFallbackBuffer* CreateFallbackBuffer() = 0;
+    virtual DecoderFallbackBuffer* CreateFallbackBuffer() { assert(!"pure virtual function called"); while(true); }
 
     // Maximum number of characters that this instance of this fallback could return
 
-    virtual int GetMaxCharCount() = 0;
+    virtual int GetMaxCharCount() { assert(!"pure virtual function called"); while(true); }
 };
 
 class DecoderReplacementFallback : public DecoderFallback
@@ -275,16 +277,16 @@ class DecoderFallbackBuffer
     // These wrap the internal methods so that we can check for people doing stuff that's incorrect
 
 public:
-    virtual bool Fallback(unsigned char bytesUnknown[], int index, int size) = 0;
+    virtual bool Fallback(unsigned char bytesUnknown[], int index, int size) { assert(!"pure virtual function called"); while(true); }
 
     // Get next character
-    virtual char16_t GetNextChar() = 0;
+    virtual char16_t GetNextChar() { assert(!"pure virtual function called"); while(true); }
 
     //Back up a character
-    virtual bool MovePrevious() = 0;
+    virtual bool MovePrevious() { assert(!"pure virtual function called"); while(true); }
 
     // How many chars left in this fallback?
-    virtual int GetRemaining() = 0;
+    virtual int GetRemaining() { assert(!"pure virtual function called"); while(true); }
 
     // Clear the buffer
     virtual void Reset()
@@ -606,10 +608,10 @@ public:
     //
     // Return the appropriate unicode string alternative to the character that need to fall back.
 
-    virtual EncoderFallbackBuffer* CreateFallbackBuffer() = 0;
+    virtual EncoderFallbackBuffer* CreateFallbackBuffer() { assert(!"pure virtual function called"); while(true); }
 
     // Maximum number of characters that this instance of this fallback could return
-    virtual int GetMaxCharCount() = 0;
+    virtual int GetMaxCharCount() { assert(!"pure virtual function called"); while(true); }
 };
 
 class EncoderReplacementFallback : public EncoderFallback
@@ -692,18 +694,18 @@ class EncoderFallbackBuffer
     // These wrap the internal methods so that we can check for people doing stuff that is incorrect
 
 public:
-    virtual bool Fallback(char16_t charUnknown, int index) = 0;
+    virtual bool Fallback(char16_t charUnknown, int index) { assert(!"pure virtual function called"); while(true); }
 
-    virtual bool Fallback(char16_t charUnknownHigh, char16_t charUnknownLow, int index) = 0;
+    virtual bool Fallback(char16_t charUnknownHigh, char16_t charUnknownLow, int index) { assert(!"pure virtual function called"); while(true); }
 
     // Get next character
-    virtual char16_t GetNextChar() = 0;
+    virtual char16_t GetNextChar() { assert(!"pure virtual function called"); while(true); }
 
     // Back up a character
-    virtual bool MovePrevious() = 0;
+    virtual bool MovePrevious() { assert(!"pure virtual function called"); while(true); }
 
     // How many chars left in this fallback?
-    virtual int GetRemaining() = 0;
+    virtual int GetRemaining() { assert(!"pure virtual function called"); while(true); }
 
     // Not sure if this should be public or not.
     // Clear the buffer

@@ -589,6 +589,14 @@ if(GCC)
   if(ENABLE_WERROR)
     append("-Werror" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
   endif()
+
+  # don't link with C++ runtime lib for targets which don't require it (tvOS and iOS need it for ICU)
+  if(NOT LLVM_PREFIX AND NOT HOST_TVOS AND NOT HOST_IOS)
+    append("-nodefaultlibs" CMAKE_CXX_FLAGS)
+    if(NOT HOST_WASM)
+      append("-lc" CMAKE_CXX_FLAGS)
+    endif()
+  endif()
 endif()
 
 ######################################

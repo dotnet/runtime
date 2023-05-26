@@ -39,7 +39,7 @@ set(eglib_common_sources
 if(HOST_WIN32)
 set_source_files_properties("${CLR_SRC_NATIVE_DIR}/minipal/utf8.cpp" PROPERTIES COMPILE_FLAGS "/wd4100 /wd4267 /wd4458 /wd4310")
 else()
-set_source_files_properties("${CLR_SRC_NATIVE_DIR}/minipal/utf8.cpp" PROPERTIES COMPILE_FLAGS "-std=c++11 -nostdlib -fno-rtti -fno-exceptions")
+set_source_files_properties("${CLR_SRC_NATIVE_DIR}/minipal/utf8.cpp" PROPERTIES COMPILE_FLAGS "-std=c++11 -fno-rtti -fno-exceptions")
 endif()
 
 set(eglib_headers
