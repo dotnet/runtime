@@ -15,7 +15,6 @@ namespace System.Numerics
     /// [!INCLUDE[vectors-are-rows-paragraph](~/includes/system-numerics-vectors-are-rows.md)]
     /// ]]></format></remarks>
     [Intrinsic]
-    [StructLayout(LayoutKind.Sequential)]
     public partial struct Vector4 : IEquatable<Vector4>, IFormattable
     {
         /// <summary>The X component of the vector.</summary>
@@ -67,7 +66,7 @@ namespace System.Numerics
             if (Vector128.IsHardwareAccelerated)
             {
                 Unsafe.SkipInit(out this);
-                Unsafe.As<float, Vector128<float>>(ref this.X) = Vector128.Create(x, y, z, w);
+                Unsafe.As<Vector4, Vector128<float>>(ref this) = Vector128.Create(x, y, z, w);
             }
             else
             {
