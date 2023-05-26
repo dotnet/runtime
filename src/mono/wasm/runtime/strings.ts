@@ -6,7 +6,7 @@ import { MonoString, MonoStringNull, is_nullish, WasmRoot, WasmRootBuffer } from
 import { Module } from "./globals";
 import cwraps from "./cwraps";
 import { mono_wasm_new_root } from "./roots";
-import { updateGrowableHeapViews, isSharedArrayBuffer, localHeapViewU8, localHeapViewI16, getI32_local, getU32_local } from "./memory";
+import { updateGrowableHeapViews, isSharedArrayBuffer, localHeapViewU8, getI32_local, getU32_local, getI16_local, setU16_local } from "./memory";
 import { NativePointer, CharPtr } from "./types/emscripten";
 import { assert_legacy_interop } from "./pthreads/shared";
 
@@ -79,8 +79,9 @@ export class StringDecoder {
             const subArray = copyBufferIfNecessary(localHeapViewU8(), start, end);
             str = this.mono_text_decoder.decode(subArray);
         } else {
+            updateGrowableHeapViews();
             for (let i = 0; i < <any>end - <any>start; i += 2) {
-                const char = Module.getValue(<any>start + i, "i16");
+                const char = getI16_local(<any>start + i);
                 str += String.fromCharCode(char);
             }
         }
@@ -219,11 +220,7 @@ export function js_string_to_mono_string_root(string: string, result: WasmRoot<M
 
 export function js_string_to_mono_string_new_root(string: string, result: WasmRoot<MonoString>): void {
     const buffer = Module._malloc((string.length + 1) * 2);
-    const buffer16 = (<any>buffer >>> 1) | 0;
-    const heapI16 = localHeapViewI16();
-    for (let i = 0; i < string.length; i++)
-        heapI16[buffer16 + i] = string.charCodeAt(i);
-    heapI16[buffer16 + string.length] = 0;
+    encodeUTF16(buffer as any, string);
     cwraps.mono_wasm_string_from_utf16_ref(<any>buffer, string.length, result.address);
     Module._free(buffer);
 }
@@ -317,6 +314,21 @@ export function decodeUTF8(heapOrArray: Uint8Array, idx: number, maxBytesToRead:
     return _text_decoder_utf8_validating.decode(view);
 }
 
+export function decodeUTF16(ptr: number, length: number): string {
+    updateGrowableHeapViews();
+    let string = "";
+    for (let i = 0; i < length; i++)
+        string += String.fromCharCode(getI16_local(ptr + i));
+    return string;
+}
+
+export function encodeUTF16(dst: number, str: string) {
+    updateGrowableHeapViews();
+    for (let i = 0; i < str.length; i++)
+        setU16_local(dst + i * 2, str.charCodeAt(i));
+}
+
+
 // When threading is enabled, TextDecoder does not accept a view of a
 // SharedArrayBuffer, we must make a copy of the array first.
 // See https://github.com/whatwg/encoding/issues/172
@@ -324,7 +336,6 @@ export function decodeUTF8(heapOrArray: Uint8Array, idx: number, maxBytesToRead:
 // Patch adapted from https://github.com/emscripten-core/emscripten/pull/16994
 // See also https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/toStringTag
 export function copyBufferIfNecessary(view: Uint8Array, start: CharPtr, end: CharPtr): Uint8Array {
-    updateGrowableHeapViews();
     // this condition should be eliminated by rollup on non-threading builds
     const needsCopy = isSharedArrayBuffer(view.buffer);
     return needsCopy

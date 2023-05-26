@@ -5,7 +5,7 @@ import cwraps from "./cwraps";
 import { Module } from "./globals";
 import { VoidPtr, ManagedPointer, NativePointer } from "./types/emscripten";
 import { MonoObjectRef, MonoObjectRefNull, MonoObject, is_nullish, WasmRoot, WasmRootBuffer } from "./types/internal";
-import { _zero_region, localHeapViewU32, updateGrowableHeapViews } from "./memory";
+import { _zero_region, localHeapViewU32 } from "./memory";
 
 const maxScratchRoots = 8192;
 let _scratch_root_buffer: WasmRootBuffer | null = null;
@@ -379,7 +379,6 @@ class WasmExternalRoot<T extends MonoObject> implements WasmRoot<T> {
     }
 
     get(): T {
-        updateGrowableHeapViews();
         const result = localHeapViewU32()[this.__external_address_32];
         return <any>result;
     }
@@ -426,7 +425,6 @@ class WasmExternalRoot<T extends MonoObject> implements WasmRoot<T> {
     clear(): void {
         // .set performs an expensive write barrier, and that is not necessary in most cases
         //  for clear since clearing a root cannot cause new objects to survive a GC
-        updateGrowableHeapViews();
         localHeapViewU32()[<any>this.__external_address >>> 2] = 0;
     }
 

@@ -230,6 +230,11 @@ export function getI16(offset: MemOffset): number {
     return Module.HEAP16[<any>offset >>> 1];
 }
 
+// does not check for growable heap
+export function getI16_local(offset: MemOffset): number {
+    return Module.HEAP16[<any>offset >>> 1];
+}
+
 export function getI32(offset: MemOffset): number {
     updateGrowableHeapViews();
     return Module.HEAP32[<any>offset >>> 2];
@@ -394,8 +399,8 @@ export function localHeapViewF64(): Float64Array {
 }
 
 const sharedArrayBufferDefined = typeof SharedArrayBuffer !== "undefined";
-export function isSharedArrayBuffer(value: any): value is SharedArrayBuffer {
+export function isSharedArrayBuffer(buffer: any): buffer is SharedArrayBuffer {
     if (!MonoWasmThreads) return false;
     // this condition should be eliminated by rollup on non-threading builds
-    return sharedArrayBufferDefined && value.buffer[Symbol.toStringTag] === "SharedArrayBuffer";
+    return sharedArrayBufferDefined && buffer[Symbol.toStringTag] === "SharedArrayBuffer";
 }

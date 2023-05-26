@@ -609,15 +609,14 @@ export function mono_wasm_asm_loaded(assembly_name: CharPtr, assembly_ptr: numbe
     // Only trigger this codepath for assemblies loaded after app is ready
     if (runtimeHelpers.mono_wasm_runtime_is_ready !== true)
         return;
-
-    updateGrowableHeapViews();
+    const heapU8 = localHeapViewU8();
     const assembly_name_str = assembly_name !== CharPtrNull ? utf8ToString(assembly_name).concat(".dll") : "";
-    const assembly_data = new Uint8Array(localHeapViewU8().buffer, assembly_ptr, assembly_len);
+    const assembly_data = new Uint8Array(heapU8.buffer, assembly_ptr, assembly_len);
     const assembly_b64 = toBase64StringImpl(assembly_data);
 
     let pdb_b64;
     if (pdb_ptr) {
-        const pdb_data = new Uint8Array(localHeapViewU8().buffer, pdb_ptr, pdb_len);
+        const pdb_data = new Uint8Array(heapU8.buffer, pdb_ptr, pdb_len);
         pdb_b64 = toBase64StringImpl(pdb_data);
     }
 
