@@ -247,10 +247,10 @@ static void CreateAppDomainProperties(
         // If one of the properties that was passed for intialization is the diganostic startup
         // hook AND the diagnostic startup hook was set in the host information, replace the
         // value by prefering the host information value.
-        if (u16_strcmp(configPropertyKeys[propertyIndex], TEXT(HOST_PROPERTY_DIAGNOSTIC_STARTUP_HOOKS)) == 0 &&
+        if (u16_strcmp(configPropertyKeys[propertyIndex], _T(HOST_PROPERTY_DIAGNOSTIC_STARTUP_HOOKS)) == 0 &&
             nullptr != diagnostic_startup_hooks_value)
         {
-            appDomainPropertyKeys[propertyIndex] = TEXT(HOST_PROPERTY_DIAGNOSTIC_STARTUP_HOOKS);
+            appDomainPropertyKeys[propertyIndex] = _T(HOST_PROPERTY_DIAGNOSTIC_STARTUP_HOOKS);
             appDomainPropertyValues[propertyIndex] = diagnostic_startup_hooks_value;
 
             if (!diagnostic_startup_hooks_handled)
@@ -272,7 +272,7 @@ static void CreateAppDomainProperties(
     // Append diagnostic startup hook property if it has not been handled yet
     if (!diagnostic_startup_hooks_handled)
     {
-        appDomainPropertyKeys[propertyIndex] = TEXT(HOST_PROPERTY_DIAGNOSTIC_STARTUP_HOOKS);
+        appDomainPropertyKeys[propertyIndex] = _T(HOST_PROPERTY_DIAGNOSTIC_STARTUP_HOOKS);
         appDomainPropertyValues[propertyIndex] = diagnostic_startup_hooks_value;
         propertyIndex++;
     }
