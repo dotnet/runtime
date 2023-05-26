@@ -6,7 +6,7 @@ import { Module } from "../globals";
 import { parseFQN } from "../invoke-cs";
 import { setI32, setU32, setF32, setF64, setU52, setI52, setB32, setI32_unchecked, setU32_unchecked, _zero_region, _create_temp_frame, getB32, getI32, getU32, getF32, getF64 } from "../memory";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";
-import { stringToMonoStringRoot, js_string_to_mono_string_interned_root, monoStringToString } from "../strings";
+import { stringToMonoStringRoot, stringToInternedMonoStringRoot, monoStringToString } from "../strings";
 import { MonoMethod, MonoObject, VoidPtrNull, MarshalType, MonoString, MonoObjectNull, WasmRootBuffer, WasmRoot } from "../types/internal";
 import { VoidPtr } from "../types/emscripten";
 import { legacyManagedExports } from "./corebindings";
@@ -82,7 +82,7 @@ export function _create_primitive_converters(): void {
     const result = primitiveConverters;
     result.set("m", { steps: [{}], size: 0 });
     result.set("s", { steps: [{ convert_root: stringToMonoStringRoot.bind(Module) }], size: 0, needs_root: true });
-    result.set("S", { steps: [{ convert_root: js_string_to_mono_string_interned_root.bind(Module) }], size: 0, needs_root: true });
+    result.set("S", { steps: [{ convert_root: stringToInternedMonoStringRoot.bind(Module) }], size: 0, needs_root: true });
     // note we also bind first argument to false for both _js_to_mono_obj and _js_to_mono_uri,
     // because we will root the reference, so we don't need in-flight reference
     // also as those are callback arguments and we don't have platform code which would release the in-flight reference on C# end

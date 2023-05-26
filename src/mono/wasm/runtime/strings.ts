@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { mono_wasm_new_root_buffer } from "./roots";
-import { MonoString, MonoStringNull, is_nullish, WasmRoot, WasmRootBuffer } from "./types/internal";
+import { MonoString, MonoStringNull, WasmRoot, WasmRootBuffer } from "./types/internal";
 import { Module } from "./globals";
 import cwraps from "./cwraps";
 import { mono_wasm_new_root } from "./roots";
@@ -13,7 +13,7 @@ export const interned_js_string_table = new Map<string, MonoString>();
 export const mono_wasm_empty_string = "";
 let mono_wasm_string_root: any;
 let mono_wasm_string_decoder_buffer: NativePointer | undefined;
-const interned_string_table = new Map<MonoString, string>();
+export const interned_string_table = new Map<MonoString, string>();
 let _empty_string_ptr: MonoString = <any>0;
 const _interned_string_full_root_buffers = [];
 let _interned_string_current_root_buffer: WasmRootBuffer | null = null;
@@ -148,12 +148,12 @@ export function stringToMonoStringRoot(string: string, result: WasmRoot<MonoStri
     if (string === null)
         return;
     else if (typeof (string) === "symbol")
-        js_string_to_mono_string_interned_root(string, result);
+        stringToInternedMonoStringRoot(string, result);
     else if (typeof (string) !== "string")
         throw new Error("Expected string argument, got " + typeof (string));
     else if (string.length === 0)
         // Always use an interned pointer for empty strings
-        js_string_to_mono_string_interned_root(string, result);
+        stringToInternedMonoStringRoot(string, result);
     else {
         // Looking up large strings in the intern table will require the JS runtime to
         //  potentially hash them and then do full byte-by-byte comparisons, which is
@@ -171,19 +171,37 @@ export function stringToMonoStringRoot(string: string, result: WasmRoot<MonoStri
     }
 }
 
-// Ensures the string is already interned on both the managed and JavaScript sides,
-//  then returns the interned string value (to provide fast reference comparisons like C#)
-export function mono_intern_string(string: string): string {
-    if (string.length === 0)
-        return mono_wasm_empty_string;
+export function stringToInternedMonoStringRoot(string: string | symbol, result: WasmRoot<MonoString>): void {
+    let text: string | undefined;
+    if (typeof (string) === "symbol") {
+        text = string.description;
+        if (typeof (text) !== "string")
+            text = Symbol.keyFor(string);
+        if (typeof (text) !== "string")
+            text = "<unknown Symbol>";
+    } else if (typeof (string) === "string") {
+        text = string;
+    }
 
-    // HACK: This would normally be unsafe, but the return value of js_string_to_mono_string_interned is always an
-    //  interned string, so the address will never change and it is safe for us to use the raw pointer. Don't do this though
-    const ptr = js_string_to_mono_string_interned(string);
-    const result = interned_string_table.get(ptr);
-    if (is_nullish(result))
-        throw new Error("internal error: interned_string_table did not contain string after js_string_to_mono_string_interned");
-    return result;
+    if (typeof (text) !== "string") {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        throw new Error(`Argument to js_string_to_mono_string_interned must be a string but was ${string}`);
+    }
+
+    if ((text.length === 0) && _empty_string_ptr) {
+        result.set(_empty_string_ptr);
+        return;
+    }
+
+    const ptr = interned_js_string_table.get(text);
+    if (ptr) {
+        result.set(ptr);
+        return;
+    }
+
+    js_string_to_mono_string_new_root(text, result);
+    _store_string_in_intern_table(text, result, true);
 }
 
 function _store_string_in_intern_table(string: string, root: WasmRoot<MonoString>, internIt: boolean): void {
@@ -224,58 +242,12 @@ function _store_string_in_intern_table(string: string, root: WasmRoot<MonoString
     rootBuffer.copy_value_from_address(index, root.address);
 }
 
-export function js_string_to_mono_string_interned_root(string: string | symbol, result: WasmRoot<MonoString>): void {
-    let text: string | undefined;
-    if (typeof (string) === "symbol") {
-        text = string.description;
-        if (typeof (text) !== "string")
-            text = Symbol.keyFor(string);
-        if (typeof (text) !== "string")
-            text = "<unknown Symbol>";
-    } else if (typeof (string) === "string") {
-        text = string;
-    }
-
-    if (typeof (text) !== "string") {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        throw new Error(`Argument to js_string_to_mono_string_interned must be a string but was ${string}`);
-    }
-
-    if ((text.length === 0) && _empty_string_ptr) {
-        result.set(_empty_string_ptr);
-        return;
-    }
-
-    const ptr = interned_js_string_table.get(text);
-    if (ptr) {
-        result.set(ptr);
-        return;
-    }
-
-    js_string_to_mono_string_new_root(text, result);
-    _store_string_in_intern_table(text, result, true);
-}
-
 function js_string_to_mono_string_new_root(string: string, result: WasmRoot<MonoString>): void {
     const bufferLen = (string.length + 1) * 2;
     const buffer = Module._malloc(bufferLen);
     stringToUTF16(buffer as any, bufferLen, string);
     cwraps.mono_wasm_string_from_utf16_ref(<any>buffer, string.length, result.address);
     Module._free(buffer);
-}
-
-/**
- * @deprecated Not GC or thread safe
- */
-function js_string_to_mono_string_interned(string: string | symbol): MonoString {
-    const temp = mono_wasm_new_root<MonoString>();
-    try {
-        js_string_to_mono_string_interned_root(string, temp);
-        return temp.value;
-    } finally {
-        temp.release();
-    }
 }
 
 // When threading is enabled, TextDecoder does not accept a view of a
