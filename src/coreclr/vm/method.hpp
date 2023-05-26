@@ -1633,17 +1633,12 @@ protected:
         // enum_flag2_HasPrecode implies that enum_flag2_HasStableEntryPoint is set.
         enum_flag2_HasStableEntryPoint                  = 0x01,   // The method entrypoint is stable (either precode or actual code)
         enum_flag2_HasPrecode                           = 0x02,   // Precode has been allocated for this method
-
         enum_flag2_IsUnboxingStub                       = 0x04,
-        // unused                                       = 0x08,
-
+        enum_flag2_IsUnsafeAccessor                     = 0x08,   // This is discovered and marked late in the MethodDescs lifetime
         enum_flag2_IsIntrinsic                          = 0x10,   // Jit may expand method as an intrinsic
-
         enum_flag2_IsEligibleForTieredCompilation       = 0x20,
-
         enum_flag2_RequiresCovariantReturnTypeChecking  = 0x40
-
-        // unused                           = 0x80,
+        // unused                                       = 0x80,
     };
     BYTE        m_bFlags2;
 
@@ -1713,6 +1708,18 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_bFlags2 |= enum_flag2_IsIntrinsic;
+    }
+
+    inline BOOL IsUnsafeAccessor()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return (m_bFlags2 & enum_flag2_IsUnsafeAccessor) != 0;
+    }
+
+    inline void SetIsUnsafeAccessor()
+    {
+        LIMITED_METHOD_CONTRACT;
+        InterlockedUpdateFlags2(enum_flag2_IsUnsafeAccessor, TRUE);
     }
 
     BOOL RequiresCovariantReturnTypeChecking()
@@ -1818,12 +1825,12 @@ private:
     PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier);
     PCODE GetPrecompiledR2RCode(PrepareCodeConfig* pConfig);
     PCODE GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0);
-    COR_ILMETHOD_DECODER* GetAndVerifyILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
-    COR_ILMETHOD_DECODER* GetAndVerifyMetadataILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
-    COR_ILMETHOD_DECODER* GetAndVerifyNoMetadataILHeader();
     PCODE JitCompileCode(PrepareCodeConfig* pConfig);
     PCODE JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry);
     PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode, CORJIT_FLAGS* pFlags);
+
+public:
+    bool TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
 #endif // DACCESS_COMPILE
 
 #ifdef HAVE_GCCOVER

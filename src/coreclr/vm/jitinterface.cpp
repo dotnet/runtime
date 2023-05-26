@@ -201,6 +201,49 @@ BOOL ModifyCheckForDynamicMethod(DynamicResolver *pResolver,
     return doAccessCheck;
 }
 
+TransientMethodDetails::TransientMethodDetails(MethodDesc* pMD, _In_opt_ COR_ILMETHOD_DECODER* header, CORINFO_MODULE_HANDLE scope)
+    : Method{ pMD }
+    , Header{ header }
+    , Scope{ scope }
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(Method != NULL);
+    _ASSERTE(Scope == NULL || IsDynamicScope(Scope));
+}
+
+TransientMethodDetails::TransientMethodDetails(TransientMethodDetails&& other)
+{
+    LIMITED_METHOD_CONTRACT;
+    *this = std::move(other);
+}
+
+TransientMethodDetails::~TransientMethodDetails()
+{
+    STANDARD_VM_CONTRACT;
+    // If the supplied scope is dynamic, release resources.
+    if (IsDynamicScope(Scope))
+    {
+        DynamicResolver* resolver = GetDynamicResolver(Scope);
+        resolver->FreeCompileTimeState();
+        delete resolver;
+    }
+}
+
+TransientMethodDetails& TransientMethodDetails::operator=(TransientMethodDetails&& other)
+{
+    LIMITED_METHOD_CONTRACT;
+    if (this != &other)
+    {
+        Method = other.Method;
+        Header = other.Header;
+        Scope = other.Scope;
+        other.Method = NULL;
+        other.Header = NULL;
+        other.Scope = NULL;
+    }
+    return *this;
+}
+
 /*****************************************************************************/
 
 // Initialize from data we passed across to the JIT
@@ -3372,6 +3415,38 @@ NoSpecialCase:
     }
 }
 
+void CEEInfo::AddTransientMethodDetails(TransientMethodDetails details)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(details.Method != NULL);
+
+    if (m_transientDetails == NULL)
+        m_transientDetails = new SArray<TransientMethodDetails>();
+    m_transientDetails->Append(std::move(details));
+}
+
+bool CEEInfo::FindTransientMethodDetails(MethodDesc* pMD, TransientMethodDetails** details)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pMD != NULL);
+    _ASSERTE(details != NULL);
+
+    if (m_transientDetails != NULL)
+    {
+        TransientMethodDetails* curr = m_transientDetails->GetElements();
+        TransientMethodDetails* end = curr + m_transientDetails->GetCount();
+        for (;curr != end; ++curr)
+        {
+            if (curr->Method == pMD)
+            {
+                *details = curr;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 /*********************************************************************/
 size_t CEEInfo::printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
 {
@@ -5397,8 +5472,10 @@ void CEEInfo::getCallInfo(
     pResult->hMethod = CORINFO_METHOD_HANDLE(pTargetMD);
 
     pResult->accessAllowed = CORINFO_ACCESS_ALLOWED;
-    if ((flags & CORINFO_CALLINFO_SECURITYCHECKS) &&
-        !((MethodDesc *)callerHandle)->IsILStub()) // IL stubs can access everything, don't bother doing access checks
+    MethodDesc* callerMethod = (MethodDesc*)callerHandle;
+    if ((flags & CORINFO_CALLINFO_SECURITYCHECKS)
+        && !(callerMethod->IsILStub()) // IL stubs can access everything, don't bother doing access checks
+        && !(callerMethod->IsUnsafeAccessor())) // UnsafeAccessor method, by definition, can access everything
     {
         //Our type system doesn't always represent the target exactly with the MethodDesc.  In all cases,
         //carry around the parent MethodTable for both Caller and Callee.
@@ -7619,44 +7696,78 @@ bool getILIntrinsicImplementationForActivator(MethodDesc* ftn,
     return true;
 }
 
-void setILIntrinsicMethodInfo(CORINFO_METHOD_INFO* methInfo,uint8_t* ilcode, int ilsize, int maxstack)
-{
-    methInfo->ILCode = ilcode;
-    methInfo->ILCodeSize = ilsize;
-    methInfo->maxStack = maxstack;
-    methInfo->EHcount = 0;
-    methInfo->options = (CorInfoOptions)0;
-}
-
 //---------------------------------------------------------------------------------------
 //
-//static
-void
-getMethodInfoHelper(
-    MethodDesc *           ftn,
-    CORINFO_METHOD_HANDLE  ftnHnd,
-    COR_ILMETHOD_DECODER * header,
-    CORINFO_METHOD_INFO *  methInfo)
+
+class MethodInfoHelperContext final
+{
+public:
+    MethodDesc* Method;
+    COR_ILMETHOD_DECODER* Header;
+    DynamicResolver* TransientResolver;
+
+    MethodInfoHelperContext(MethodDesc* pMD, _In_opt_ COR_ILMETHOD_DECODER* header = NULL)
+        : Method{ pMD }
+        , Header{ header }
+        , TransientResolver{}
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(pMD != NULL);
+    }
+
+    MethodInfoHelperContext(const TransientMethodDetails* details)
+        : Method{ details->Method }
+        , Header{ details->Header }
+        , TransientResolver{ NULL }
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (IsDynamicScope(details->Scope))
+            TransientResolver = GetDynamicResolver(details->Scope);
+    }
+
+    MethodInfoHelperContext(const MethodInfoHelperContext&) = delete;
+    MethodInfoHelperContext(MethodInfoHelperContext&& other) = delete;
+
+    ~MethodInfoHelperContext() = default;
+
+    MethodInfoHelperContext& operator=(const MethodInfoHelperContext&) = delete;
+    MethodInfoHelperContext& operator=(MethodInfoHelperContext&& other) = delete;
+
+    bool HasTransientMethodDetails() const
+    {
+        return TransientResolver != NULL;
+    }
+
+    TransientMethodDetails CreateTransientMethodDetails() const
+    {
+        _ASSERTE(HasTransientMethodDetails());
+        return TransientMethodDetails{Method, Header, MakeDynamicScope(TransientResolver)};
+    }
+};
+
+static bool getMethodInfoHelper(
+    MethodInfoHelperContext& cxt,
+    CORINFO_METHOD_INFO* methInfo)
 {
     STANDARD_VM_CONTRACT;
+    _ASSERTE(methInfo != NULL);
 
-    _ASSERTE(ftn == GetMethod(ftnHnd));
+    MethodDesc* ftn      = cxt.Method;
+    methInfo->ftn        = (CORINFO_METHOD_HANDLE)ftn;
+    methInfo->regionKind = CORINFO_REGION_JIT;
 
-    methInfo->ftn             = ftnHnd;
-    methInfo->scope           = GetScopeHandle(ftn);
-    methInfo->regionKind      = CORINFO_REGION_JIT;
-    //
-    // For Jitted code the regionKind is JIT;
-    // For Ngen-ed code the zapper will set this to HOT or COLD, if we
-    // are using IBC data to partition methods into Hot/Cold regions
+    CORINFO_MODULE_HANDLE scopeHnd = NULL;
 
     /* Grab information from the IL header */
+    PCCOR_SIGNATURE pLocalSig   = NULL;
+    uint32_t        cbLocalSig  = 0;
 
-    PCCOR_SIGNATURE pLocalSig = NULL;
-    uint32_t        cbLocalSig = 0;
-
-    if (NULL != header)
+    // Having a header means there is backing IL for the method.
+    if (NULL != cxt.Header)
     {
+        scopeHnd = cxt.HasTransientMethodDetails()
+            ? MakeDynamicScope(cxt.TransientResolver)
+            : GetScopeHandle(ftn->GetModule());
         bool fILIntrinsic = false;
 
         MethodTable * pMT  = ftn->GetMethodTable();
@@ -7692,16 +7803,16 @@ getMethodInfoHelper(
 
         if (!fILIntrinsic)
         {
-            getMethodInfoILMethodHeaderHelper(header, methInfo);
-            pLocalSig = header->LocalVarSig;
-            cbLocalSig = header->cbLocalVarSig;
+            getMethodInfoILMethodHeaderHelper(cxt.Header, methInfo);
+            pLocalSig = cxt.Header->LocalVarSig;
+            cbLocalSig = cxt.Header->cbLocalVarSig;
         }
     }
-    else
+    else if (ftn->IsDynamicMethod())
     {
-        _ASSERTE(ftn->IsDynamicMethod());
+        DynamicResolver* pResolver = ftn->AsDynamicMethodDesc()->GetResolver();
+        scopeHnd = MakeDynamicScope(pResolver);
 
-        DynamicResolver * pResolver = ftn->AsDynamicMethodDesc()->GetResolver();
         unsigned int EHCount;
         methInfo->ILCode = pResolver->GetCodeInfo(&methInfo->ILCodeSize,
                                                   &methInfo->maxStack,
@@ -7711,7 +7822,22 @@ getMethodInfoHelper(
         SigPointer localSig = pResolver->GetLocalSig();
         localSig.GetSignature(&pLocalSig, &cbLocalSig);
     }
+    else if (ftn->TryGenerateUnsafeAccessor(&cxt.TransientResolver, &cxt.Header))
+    {
+        scopeHnd = MakeDynamicScope(cxt.TransientResolver);
 
+        _ASSERTE(cxt.Header != NULL);
+        getMethodInfoILMethodHeaderHelper(cxt.Header, methInfo);
+        pLocalSig = cxt.Header->LocalVarSig;
+        cbLocalSig = cxt.Header->cbLocalVarSig;
+    }
+    else
+    {
+        return false;
+    }
+
+    _ASSERTE(scopeHnd != NULL);
+    methInfo->scope = scopeHnd;
     methInfo->options = (CorInfoOptions)(((UINT32)methInfo->options) |
                             ((ftn->AcquiresInstMethodTableFromThis() ? CORINFO_GENERICS_CTXT_FROM_THIS : 0) |
                              (ftn->RequiresInstMethodTableArg() ? CORINFO_GENERICS_CTXT_FROM_METHODTABLE : 0) |
@@ -7754,7 +7880,7 @@ getMethodInfoHelper(
     ConvToJitSig(
         pSig,
         cbSig,
-        GetScopeHandle(ftn),
+        methInfo->scope,
         mdTokenNil,
         &context,
         CONV_TO_JITSIG_FLAGS_NONE,
@@ -7773,12 +7899,13 @@ getMethodInfoHelper(
     ConvToJitSig(
         pLocalSig,
         cbLocalSig,
-        GetScopeHandle(ftn),
+        methInfo->scope,
         mdTokenNil,
         &context,
         CONV_TO_JITSIG_FLAGS_LOCALSIG,
         &methInfo->locals);
 
+    return true;
 } // getMethodInfoHelper
 
 //---------------------------------------------------------------------------------------
@@ -7800,30 +7927,36 @@ CEEInfo::getMethodInfo(
 
     MethodDesc * ftn = GetMethod(ftnHnd);
 
-    if (!ftn->IsDynamicMethod() && (!ftn->IsIL() || !ftn->GetRVA() || ftn->IsWrapperStub()))
+    // Get the IL header
+    MethodInfoHelperContext cxt{ ftn };
+    if (ftn->IsDynamicMethod())
     {
-    /* Return false if not IL or has no code */
-        result = false;
+        result = getMethodInfoHelper(cxt, methInfo);
     }
-    else
+    else if (!ftn->IsWrapperStub() && ftn->HasILHeader())
     {
-        /* Get the IL header */
-
-        if (ftn->IsDynamicMethod())
+        COR_ILMETHOD_DECODER header(ftn->GetILHeader(TRUE), ftn->GetMDImport(), NULL);
+        cxt.Header = &header;
+        result = getMethodInfoHelper(cxt, methInfo);
+    }
+    else if (ftn->IsIL() && ftn->GetRVA() == 0)
+    {
+        // IL methods with no RVA indicate there is no implementation defined in metadata.
+        // Check if we previously generated details/implementation for this method.
+        TransientMethodDetails* detailsMaybe = NULL;
+        if (FindTransientMethodDetails(ftn, &detailsMaybe))
         {
-            getMethodInfoHelper(ftn, ftnHnd, NULL, methInfo);
-        }
-        else
-        {
-            COR_ILMETHOD_DECODER header(ftn->GetILHeader(TRUE), ftn->GetMDImport(), NULL);
-
-            getMethodInfoHelper(ftn, ftnHnd, &header, methInfo);
+            cxt.Header = detailsMaybe->Header;
+            cxt.TransientResolver = GetDynamicResolver(detailsMaybe->Scope);
         }
 
+        result = getMethodInfoHelper(cxt, methInfo);
+    }
+
+    if (result)
+    {
         LOG((LF_JIT, LL_INFO100000, "Getting method info (possible inline) %s::%s%s\n",
             ftn->m_pszDebugClassName, ftn->m_pszDebugMethodName, ftn->m_pszDebugMethodSignature));
-
-        result = true;
     }
 
     EE_TO_JIT_TRANSITION();
@@ -12857,11 +12990,12 @@ BOOL g_fAllowRel32 = TRUE;
 // Calls to this method that occur to check if inlining can occur on x86,
 // are OK since they discard the return value of this method.
 PCODE UnsafeJitFunction(PrepareCodeConfig* config,
-                        COR_ILMETHOD_DECODER* ILHeader,
+                        _In_opt_ COR_ILMETHOD_DECODER* ILHeader,
                         CORJIT_FLAGS flags,
                         ULONG * pSizeOfCode)
 {
     STANDARD_VM_CONTRACT;
+    _ASSERTE(config != NULL);
 
     NativeCodeVersion nativeCodeVersion = config->GetCodeVersion();
     MethodDesc* ftn = nativeCodeVersion.GetMethodDesc();
@@ -12921,12 +13055,14 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     }
 #endif // _DEBUG
 
-    CORINFO_METHOD_HANDLE ftnHnd = (CORINFO_METHOD_HANDLE)ftn;
+    MethodInfoHelperContext cxt{ ftn, ILHeader };
     CORINFO_METHOD_INFO methodInfo;
+    if (!getMethodInfoHelper(cxt, &methodInfo))
+    {
+        _ASSERTE(!"[TODO] What exception to throw?");
+    }
 
-    getMethodInfoHelper(ftn, ftnHnd, ILHeader, &methodInfo);
-
-    // If it's generic then we can only enter through an instantiated md
+    // If it's generic then we can only enter through an instantiated MethodDesc
     _ASSERTE(!ftn->IsGenericMethodDefinition());
 
     // method attributes and signature are consistant
@@ -12975,9 +13111,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             PatchpointInfo* patchpointInfo = nativeCodeVersion.GetOSRInfo(&ilOffset);
             jitInfo.SetOSRInfo(patchpointInfo, ilOffset);
         }
-#endif
+#endif // FEATURE_ON_STACK_REPLACEMENT
 
-        MethodDesc * pMethodForSecurity = jitInfo.GetMethodForSecurity(ftnHnd);
+        if (cxt.HasTransientMethodDetails())
+            jitInfo.AddTransientMethodDetails(std::move(cxt.CreateTransientMethodDetails()));
+
+        MethodDesc * pMethodForSecurity = jitInfo.GetMethodForSecurity(methodInfo.ftn);
 
         //Since the check could trigger a demand, we have to do this every time.
         //This is actually an overly complicated way to make sure that a method can access all its arguments

@@ -4981,23 +4981,6 @@ MethodTableBuilder::ValidateMethods()
     DeclaredMethodIterator it(*this);
     while (it.Next())
     {
-        // The RVA is only valid/testable if it has not been overwritten
-        // for something like edit-and-continue
-        // Complete validation of non-zero RVAs is done later inside MethodDesc::GetILHeader.
-        if ((it.RVA() == 0) && (pModule->GetDynamicIL(it.Token(), FALSE) == NULL))
-        {
-            // for IL code that is implemented here must have a valid code RVA
-            // this came up due to a linker bug where the ImplFlags/DescrOffset were
-            // being set to null and we weren't coping with it
-            if((IsMiIL(it.ImplFlags()) || IsMiOPTIL(it.ImplFlags())) &&
-                   !IsMdAbstract(it.Attrs()) &&
-                   !IsReallyMdPinvokeImpl(it.Attrs()) &&
-                !IsMiInternalCall(it.ImplFlags()))
-            {
-                BuildMethodTableThrowException(IDS_CLASSLOAD_MISSINGMETHODRVA, it.Token());
-            }
-        }
-
         if (IsMdRTSpecialName(it.Attrs()))
         {
             if (IsMdVirtual(it.Attrs()))

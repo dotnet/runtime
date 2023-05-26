@@ -395,9 +395,27 @@ extern "C"
 #endif // TARGET_ARM64
 };
 
+/*********************************************************************/
+/*********************************************************************/
 
-/*********************************************************************/
-/*********************************************************************/
+// Transient data for a MethodDesc involved
+// in the current JIT compilation.
+struct TransientMethodDetails final
+{
+    MethodDesc* Method;
+    COR_ILMETHOD_DECODER* Header;
+    CORINFO_MODULE_HANDLE Scope;
+
+    TransientMethodDetails() = default;
+    TransientMethodDetails(MethodDesc* pMD, _In_opt_ COR_ILMETHOD_DECODER* header, CORINFO_MODULE_HANDLE scope);
+    TransientMethodDetails(const TransientMethodDetails&) = delete;
+    TransientMethodDetails(TransientMethodDetails&&);
+    ~TransientMethodDetails();
+
+    TransientMethodDetails& operator=(const TransientMethodDetails&) = delete;
+    TransientMethodDetails& operator=(TransientMethodDetails&&);
+};
+
 class CEEInfo : public ICorJitInfo
 {
     friend class CEEDynamicCodeInfo;
@@ -464,6 +482,7 @@ public:
     CEEInfo(MethodDesc * fd = NULL, bool fAllowInlining = true) :
         m_pJitHandles(nullptr),
         m_pMethodBeingCompiled(fd),
+        m_transientDetails(NULL),
         m_pThread(GetThreadNULLOk()),
         m_hMethodForSecurity_Key(NULL),
         m_pMethodForSecurity_Value(NULL),
@@ -490,8 +509,9 @@ public:
                 DestroyHandle(elements[i]);
             }
             delete m_pJitHandles;
-            m_pJitHandles = nullptr;
         }
+
+        delete m_transientDetails;
 #endif
     }
 
@@ -531,10 +551,15 @@ public:
     CalledMethod * GetCalledMethods() { return m_pCalledMethods; }
 #endif
 
+    // Add/Find transient method details.
+    void AddTransientMethodDetails(TransientMethodDetails details);
+    bool FindTransientMethodDetails(MethodDesc* pMD, TransientMethodDetails** details);
+
 protected:
-    SArray<OBJECTHANDLE>*   m_pJitHandles;                      // GC handles used by JIT
-    MethodDesc*             m_pMethodBeingCompiled;             // Top-level method being compiled
-    Thread *                m_pThread;                          // Cached current thread for faster JIT-EE transitions
+    SArray<OBJECTHANDLE>*   m_pJitHandles;          // GC handles used by JIT
+    MethodDesc*             m_pMethodBeingCompiled; // Top-level method being compiled
+    SArray<TransientMethodDetails>* m_transientDetails;   // Transient details for dynamic codegen scenarios.
+    Thread *                m_pThread;              // Cached current thread for faster JIT-EE transitions
     CORJIT_FLAGS            m_jitFlags;
 
     CORINFO_METHOD_HANDLE getMethodBeingCompiled()
