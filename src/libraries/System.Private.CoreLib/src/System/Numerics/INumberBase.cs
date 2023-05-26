@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace System.Numerics
 {
@@ -23,7 +24,8 @@ namespace System.Numerics
           ISpanParsable<TSelf>,
           ISubtractionOperators<TSelf, TSelf, TSelf>,
           IUnaryPlusOperators<TSelf, TSelf>,
-          IUnaryNegationOperators<TSelf, TSelf>
+          IUnaryNegationOperators<TSelf, TSelf>,
+          IUtf8SpanParsable<TSelf>
         where TSelf : INumberBase<TSelf>?
     {
         /// <summary>Gets the value <c>1</c> for the type.</summary>
@@ -274,6 +276,20 @@ namespace System.Numerics
         /// <exception cref="OverflowException"><paramref name="s" /> is not representable by <typeparamref name="TSelf" />.</exception>
         static abstract TSelf Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider);
 
+        /// <summary>Parses a span of UTF-8 characters into a value.</summary>
+        /// <param name="utf8Text">The span of UTF-8 characters to parse.</param>
+        /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="utf8Text" />.</param>
+        /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="utf8Text" />.</param>
+        /// <returns>The result of parsing <paramref name="utf8Text" />.</returns>
+        /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
+        /// <exception cref="FormatException"><paramref name="utf8Text" /> is not in the correct format.</exception>
+        /// <exception cref="OverflowException"><paramref name="utf8Text" /> is not representable by <typeparamref name="TSelf" />.</exception>
+        static virtual TSelf Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider)
+        {
+            string s = Encoding.Unicode.GetString(utf8Text);
+            return TSelf.Parse(s, style, provider);
+        }
+
         /// <summary>Tries to convert a value to an instance of the current type, throwing an overflow exception for any values that fall outside the representable range of the current type.</summary>
         /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
         /// <param name="value">The value which is used to create the instance of <typeparamref name="TSelf" />.</param>
@@ -353,5 +369,30 @@ namespace System.Numerics
         /// <returns><c>true</c> if <paramref name="s" /> was successfully parsed; otherwise, <c>false</c>.</returns>
         /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
         static abstract bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result);
+
+        /// <summary>Tries to parse a span of UTF-8 characters into a value.</summary>
+        /// <param name="utf8Text">The span of UTF-8 characters to parse.</param>
+        /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="utf8Text" />.</param>
+        /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="utf8Text" />.</param>
+        /// <param name="result">On return, contains the result of successfully parsing <paramref name="utf8Text" /> or an undefined value on failure.</param>
+        /// <returns><c>true</c> if <paramref name="utf8Text" /> was successfully parsed; otherwise, <c>false</c>.</returns>
+        /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
+        static virtual bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result)
+        {
+            string s = Encoding.Unicode.GetString(utf8Text);
+            return TSelf.TryParse(s, style, provider, out result);
+        }
+
+        static TSelf IUtf8SpanParsable<TSelf>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider)
+        {
+            string s = Encoding.Unicode.GetString(utf8Text);
+            return TSelf.Parse(s, provider);
+        }
+
+        static bool IUtf8SpanParsable<TSelf>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, [MaybeNullWhen(returnValue: false)] out TSelf result)
+        {
+            string s = Encoding.Unicode.GetString(utf8Text);
+            return TSelf.TryParse(s, provider, out result);
+        }
     }
 }
