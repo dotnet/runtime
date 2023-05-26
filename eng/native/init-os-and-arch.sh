@@ -17,6 +17,9 @@ darwin)
     exit 1 ;;
 esac
 
+echo "OSName = $OSName"
+echo "os = $os"
+
 # On Solaris, `uname -m` is discouraged, see https://docs.oracle.com/cd/E36784_01/html/E36870/uname-1.html
 # and `uname -p` returns processor type (e.g. i386 on amd64).
 # The appropriate tool to determine CPU is isainfo(1) https://docs.oracle.com/cd/E36784_01/html/E36870/isainfo-1.html.
@@ -78,3 +81,6 @@ case "$CPUName" in
         exit 1
         ;;
 esac
+
+echo "CPUName = $CPUName"
+echo "arch = $arch"
