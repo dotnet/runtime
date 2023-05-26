@@ -9,7 +9,6 @@
     <IsShipping>false</IsShipping>
     <OutputPath>$(RuntimeBinDir)\InjectResource</OutputPath>
     <RunAnalyzers>false</RunAnalyzers>
-    <EnableLibraryImportGenerator>false</EnableLibraryImportGenerator>
   </PropertyGroup>
 
   <ItemGroup>

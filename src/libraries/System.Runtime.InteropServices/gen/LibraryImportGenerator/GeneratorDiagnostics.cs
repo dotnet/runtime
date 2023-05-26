@@ -231,7 +231,7 @@ namespace Microsoft.Interop
             string? notSupportedDetails,
             ImmutableDictionary<string, string> diagnosticProperties)
         {
-            Location diagnosticLocation = Location.None;
+            CodeAnalysis.Location diagnosticLocation = CodeAnalysis.Location.None;
             string elementName = string.Empty;
 
             if (info.IsManagedReturnPosition)

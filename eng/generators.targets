@@ -46,8 +46,7 @@
   <ItemGroup Condition="'@(EnabledGenerators)' != '' and
                         @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'LibraryImportGenerator'))">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj;
-                               $(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj;
-                               $(LibrariesProjectRoot)System.Runtime.InteropServices\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj"
+                               $(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj"
                       ReferenceOutputAssembly="false"
                       OutputItemType="Analyzer" />
   </ItemGroup>

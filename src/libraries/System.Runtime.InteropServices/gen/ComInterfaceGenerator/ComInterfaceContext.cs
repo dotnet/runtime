@@ -59,7 +59,7 @@ namespace Microsoft.Interop
                     var diagnostic = DiagnosticOr<ComInterfaceContext>.From(
                         DiagnosticInfo.Create(
                             GeneratorDiagnostics.BaseInterfaceIsNotGenerated,
-                            iface.DiagnosticLocation.AsLocation(), iface.ThisInterfaceKey, iface.BaseInterfaceKey));
+                            iface.DiagnosticLocation, iface.ThisInterfaceKey, iface.BaseInterfaceKey));
                     nameToContextCache[iface.ThisInterfaceKey] = diagnostic;
                     return diagnostic;
                 }

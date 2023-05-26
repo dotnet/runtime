@@ -68,8 +68,8 @@ namespace Microsoft.Interop
             // [GeneratedComInterface] attribute.
             // This restriction not only makes finding the syntax for a given method cheaper,
             // but it also enables us to ensure that we can determine vtable method order easily.
-            Location interfaceLocation = ifaceContext.Declaration.GetLocation();
-            Location? methodLocationInAttributedInterfaceDeclaration = null;
+            CodeAnalysis.Location interfaceLocation = ifaceContext.Declaration.GetLocation();
+            CodeAnalysis.Location? methodLocationInAttributedInterfaceDeclaration = null;
             foreach (var methodLocation in method.Locations)
             {
                 if (methodLocation.SourceTree == interfaceLocation.SourceTree

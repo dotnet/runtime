@@ -25,7 +25,7 @@ namespace Microsoft.Interop
         ContainingSyntaxContext TypeDefinitionContext,
         ContainingSyntax ContainingSyntax,
         Guid InterfaceId,
-        LocationInfo DiagnosticLocation)
+        Location DiagnosticLocation)
     {
         public static DiagnosticOrInterfaceInfo From(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, CancellationToken _)
         {
@@ -77,7 +77,7 @@ namespace Microsoft.Interop
                     new ContainingSyntaxContext(syntax),
                     new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
                     guid ?? Guid.Empty,
-                    LocationInfo.FromSymbol(symbol)),
+                    symbol.Locations[0]),
                 symbol));
         }
 
