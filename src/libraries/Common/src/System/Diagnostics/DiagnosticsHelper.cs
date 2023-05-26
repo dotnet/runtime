@@ -149,15 +149,9 @@ namespace System.Diagnostics
 
         public bool IsSet(int index)
         {
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            Debug.Assert(index >= 0);
+            Debug.Assert(index < _maxIndex);
 
-            if (index >= _maxIndex)
-            {
-                return false;
-            }
 
             GetIndexAndMask(index, out int bitIndex, out ulong mask);
             ulong value = _bitMap[bitIndex];
