@@ -5584,12 +5584,13 @@ void Compiler::addFatPointerCandidate(GenTreeCall* call)
 // pickGDV: Use profile information to pick a GDV candidate for a call site.
 //
 // Arguments:
-//    call        - the call
-//    ilOffset    - exact IL offset of the call
-//    isInterface - whether or not the call target is defined on an interface
-//    classGuess  - [out] the class to guess for (mutually exclusive with methodGuess)
-//    methodGuess - [out] the method to guess for (mutually exclusive with classGuess)
-//    likelihood  - [out] an estimate of the likelihood that the guess will succeed
+//    call            - the call
+//    ilOffset        - exact IL offset of the call
+//    isInterface     - whether or not the call target is defined on an interface
+//    classGuesses    - [out] the classes to guess for (mutually exclusive with methodGuess)
+//    methodGuesses   - [out] the methods to guess for (mutually exclusive with classGuess)
+//    candidatesCount - [out] number of guesses
+//    likelihoods     - [out] estimates of the likelihoods that the guesses will succeed
 //
 void Compiler::pickGDV(GenTreeCall*           call,
                        IL_OFFSET              ilOffset,
@@ -5704,7 +5705,10 @@ void Compiler::pickGDV(GenTreeCall*           call,
             classGuesses[0]  = (CORINFO_CLASS_HANDLE)likelyClasses[index].handle;
             likelihoods[0]   = 100;
             *candidatesCount = 1;
-            // TODO: report multiple candidates
+            // TODO: report multiple random candidates. For now we don't do it because with the current impl
+            // we might give up on all candidates if one of them is not inlinable, so we don't want to reduce
+            // testing coverage.
+            //
             JITDUMP("Picked random class for GDV: %p (%s)\n", classGuesses[0], eeGetClassName(classGuesses[0]));
             return;
         }
@@ -5713,7 +5717,10 @@ void Compiler::pickGDV(GenTreeCall*           call,
             methodGuesses[0] = (CORINFO_METHOD_HANDLE)likelyMethods[index - numberOfClasses].handle;
             likelihoods[0]   = 100;
             *candidatesCount = 1;
-            // TODO: report multiple candidates
+            // TODO: report multiple random candidates. For now we don't do it because with the current impl
+            // we might give up on all candidates if one of them is not inlinable, so we don't want to reduce
+            // testing coverage.
+            //
             JITDUMP("Picked random method for GDV: %p (%s)\n", methodGuesses[0], eeGetMethodFullName(methodGuesses[0]));
             return;
         }
@@ -5917,6 +5924,8 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
     else
     {
         pickGDV(call, ilOffset, isInterface, likelyClasses, likelyMethodes, &candidatesCount, likelihoods);
+        assert((unsigned)candidatesCount <= MAX_GDV_TYPE_CHECKS);
+        assert((unsigned)candidatesCount <= JitConfig.JitGuardedDevirtualizationMaxTypeChecks());
         if (candidatesCount == 0)
         {
             hasPgoData = false;
@@ -5974,7 +5983,9 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 if (!info.compCompHnd->resolveVirtualMethod(&dvInfo))
                 {
                     JITDUMP("Can't figure out which method would be invoked, sorry\n");
-                    return;
+                    // Maybe other candidates will be resolved.
+                    // Although, we no longer can remove the fallback (we never do it currently anyway)
+                    break;
                 }
 
                 CORINFO_METHOD_HANDLE exactMethod      = dvInfo.devirtualizedMethod;
@@ -6005,6 +6016,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         return;
     }
 
+    // Iterate over the guesses
     for (int candidateId = 0; candidateId < candidatesCount; candidateId++)
     {
         CORINFO_CLASS_HANDLE  likelyClass  = likelyClasses[candidateId];
@@ -6022,7 +6034,9 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 // No point guessing for this.
                 //
                 JITDUMP("Not guessing for class; abstract (stale profile)\n");
-                return;
+
+                // Continue checking other candidates, maybe some of them aren't stale.
+                break;
             }
 
             // Figure out which method will be called.
@@ -6039,7 +6053,9 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
             if (!canResolve)
             {
                 JITDUMP("Can't figure out which method would be invoked, sorry\n");
-                return;
+
+                // Continue checking other candidates, maybe some of them will succeed.
+                break;
             }
 
             likelyMethod = dvInfo.devirtualizedMethod;
@@ -6049,13 +6065,16 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 
         if (likelyClass == NO_CLASS_HANDLE)
         {
+            // We don't support multiple candidates for method guessing yet.
+            assert(candidateId == 0);
+
             // For method GDV do a few more checks that we get for free in the
             // resolve call above for class-based GDV.
             if ((likelyMethodAttribs & CORINFO_FLG_STATIC) != 0)
             {
                 assert((fgPgoSource != ICorJitInfo::PgoSource::Dynamic) || call->IsDelegateInvoke());
                 JITDUMP("Cannot currently handle devirtualizing static delegate calls, sorry\n");
-                return;
+                break;
             }
 
             CORINFO_CLASS_HANDLE definingClass = info.compCompHnd->getMethodClass(likelyMethod);
@@ -6071,7 +6090,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
             if ((likelyClassAttribs & CORINFO_FLG_VALUECLASS) != 0)
             {
                 JITDUMP("Cannot currently handle devirtualizing delegate calls on value types, sorry\n");
-                return;
+                break;
             }
 
             // Verify that the call target and args look reasonable so that the JIT
@@ -6094,7 +6113,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 JITDUMP("Target for method-based GDV is incompatible (stale profile?)\n");
                 assert((fgPgoSource != ICorJitInfo::PgoSource::Dynamic) &&
                        "Unexpected stale profile in dynamic PGO data");
-                return;
+                break;
             }
         }
 

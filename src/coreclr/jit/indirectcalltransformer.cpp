@@ -587,9 +587,18 @@ private:
                 prevCheckBlock->bbJumpDest = checkBlock;
                 compiler->fgAddRefPred(checkBlock, prevCheckBlock);
 
-                // Weight for the new secondary check is the difference between the previous check and the thenBlock.
-                checkBlock->inheritWeightPercentage(prevCheckBlock,
-                                                    100 - origCall->GetGDVCandidateInfo(checkIdx)->likelihood);
+                // Calculate the total likelihood for this check as a sum of likelihoods
+                // of all previous candidates (thenBlocks)
+                unsigned checkLikelihood = 100;
+                for (uint8_t previousCandidate = 0; previousCandidate < checkIdx; previousCandidate++)
+                {
+                    checkLikelihood -= origCall->GetGDVCandidateInfo(previousCandidate)->likelihood;
+                }
+
+                // Make sure we didn't overflow
+                assert(checkLikelihood <= 100);
+
+                checkBlock->inheritWeightPercentage(currBlock, checkLikelihood);
             }
 
             // Find last arg with a side effect. All args with any effect
