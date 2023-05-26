@@ -23,14 +23,23 @@ export declare interface CharPtrPtr extends NativePointer {
 }
 
 export declare interface EmscriptenModule {
+    /** @deprecated Please use growableHeapI8() instead.*/
     HEAP8: Int8Array,
+    /** @deprecated Please use growableHeapI16() instead.*/
     HEAP16: Int16Array;
+    /** @deprecated Please use growableHeapI32() instead. */
     HEAP32: Int32Array;
+    /** @deprecated Please use growableHeapI64() instead. */
     HEAP64: BigInt64Array;
+    /** @deprecated Please use growableHeapU8() instead. */
     HEAPU8: Uint8Array;
+    /** @deprecated Please use growableHeapU16() instead. */
     HEAPU16: Uint16Array;
+    /** @deprecated Please use growableHeapU32() instead */
     HEAPU32: Uint32Array;
+    /** @deprecated Please use growableHeapF32() instead */
     HEAPF32: Float32Array;
+    /** @deprecated Please use growableHeapF64() instead. */
     HEAPF64: Float64Array;
 
     // this should match emcc -s EXPORTED_FUNCTIONS

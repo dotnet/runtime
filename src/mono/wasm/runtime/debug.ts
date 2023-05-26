@@ -7,7 +7,7 @@ import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 import { mono_log_warn } from "./logging";
-import { updateGrowableHeapViews } from "./memory";
+import { localHeapViewU8 } from "./memory";
 import { utf8ToString } from "./strings";
 const commands_received: any = new Map<number, CommandResponse>();
 commands_received.remove = function (key: number): CommandResponse { const value = this.get(key); this.delete(key); return value; };
@@ -41,14 +41,12 @@ export function mono_wasm_fire_debugger_agent_message_with_data_to_pause(base64S
 }
 
 export function mono_wasm_fire_debugger_agent_message_with_data(data: number, len: number): void {
-    updateGrowableHeapViews();
-    const base64String = toBase64StringImpl(new Uint8Array(Module.HEAPU8.buffer, data, len));
+    const base64String = toBase64StringImpl(new Uint8Array(localHeapViewU8().buffer, data, len));
     mono_wasm_fire_debugger_agent_message_with_data_to_pause(base64String);
 }
 
 export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, buffer: number, buffer_len: number): void {
-    updateGrowableHeapViews();
-    const dbg_command = new Uint8Array(Module.HEAPU8.buffer, buffer, buffer_len);
+    const dbg_command = new Uint8Array(localHeapViewU8().buffer, buffer, buffer_len);
     const base64String = toBase64StringImpl(dbg_command);
     const buffer_obj = {
         res_ok,
@@ -63,7 +61,7 @@ export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, 
 }
 
 function mono_wasm_malloc_and_set_debug_buffer(command_parameters: string) {
-    updateGrowableHeapViews();
+    const heapU8 = localHeapViewU8();
     if (command_parameters.length > _debugger_buffer_len) {
         if (_debugger_buffer)
             Module._free(_debugger_buffer);
@@ -72,7 +70,7 @@ function mono_wasm_malloc_and_set_debug_buffer(command_parameters: string) {
     }
     const byteCharacters = atob(command_parameters);
     for (let i = 0; i < byteCharacters.length; i++) {
-        Module.HEAPU8[<any>_debugger_buffer + i] = byteCharacters.charCodeAt(i);
+        heapU8[<any>_debugger_buffer + i] = byteCharacters.charCodeAt(i);
     }
 }
 

@@ -174,6 +174,8 @@ export type APIType = {
     getAssemblyExports(assemblyName: string): Promise<any>,
     setModuleImports(moduleName: string, moduleImports: any): void,
     getConfig: () => MonoConfig,
+
+    // memory management
     setHeapB32: (offset: NativePointer, value: number | boolean) => void,
     setHeapU8: (offset: NativePointer, value: number) => void,
     setHeapU16: (offset: NativePointer, value: number) => void,
@@ -198,6 +200,15 @@ export type APIType = {
     getHeapI64Big: (offset: NativePointer) => bigint,
     getHeapF32: (offset: NativePointer) => number,
     getHeapF64: (offset: NativePointer) => number,
+    localHeapViewI8: () => Int8Array,
+    localHeapViewI16: () => Int16Array,
+    localHeapViewI32: () => Int32Array,
+    localHeapViewI64Big: () => BigInt64Array,
+    localHeapViewU8: () => Uint8Array,
+    localHeapViewU16: () => Uint16Array,
+    localHeapViewU32: () => Uint32Array,
+    localHeapViewF32: () => Float32Array,
+    localHeapViewF64: () => Float64Array,
 }
 
 export type RuntimeAPI = {

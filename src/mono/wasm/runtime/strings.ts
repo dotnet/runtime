@@ -6,7 +6,7 @@ import { MonoString, MonoStringNull, is_nullish, WasmRoot, WasmRootBuffer } from
 import { Module } from "./globals";
 import cwraps from "./cwraps";
 import { mono_wasm_new_root } from "./roots";
-import { updateGrowableHeapViews, getI32, getU32, isSharedArrayBuffer } from "./memory";
+import { updateGrowableHeapViews, isSharedArrayBuffer, localHeapViewU8, localHeapViewI16, getI32_local, getU32_local } from "./memory";
 import { NativePointer, CharPtr } from "./types/emscripten";
 import { assert_legacy_interop } from "./pthreads/shared";
 
@@ -50,9 +50,10 @@ export class StringDecoder {
         cwraps.mono_wasm_string_get_data_ref(root.address, <any>ppChars, <any>pLengthBytes, <any>pIsInterned);
 
         let result = undefined;
-        const lengthBytes = getI32(pLengthBytes),
-            pChars = getU32(ppChars),
-            isInterned = getI32(pIsInterned);
+        updateGrowableHeapViews();
+        const lengthBytes = getI32_local(pLengthBytes),
+            pChars = getU32_local(ppChars),
+            isInterned = getI32_local(pIsInterned);
 
         if (isInterned)
             result = interned_string_table.get(root.value)!;
@@ -75,8 +76,7 @@ export class StringDecoder {
     decode(start: CharPtr, end: CharPtr): string {
         let str = "";
         if (this.mono_text_decoder) {
-            updateGrowableHeapViews();
-            const subArray = copyBufferIfNecessary(Module.HEAPU8, start, end);
+            const subArray = copyBufferIfNecessary(localHeapViewU8(), start, end);
             str = this.mono_text_decoder.decode(subArray);
         } else {
             for (let i = 0; i < <any>end - <any>start; i += 2) {
@@ -220,9 +220,10 @@ export function js_string_to_mono_string_root(string: string, result: WasmRoot<M
 export function js_string_to_mono_string_new_root(string: string, result: WasmRoot<MonoString>): void {
     const buffer = Module._malloc((string.length + 1) * 2);
     const buffer16 = (<any>buffer >>> 1) | 0;
+    const heapI16 = localHeapViewI16();
     for (let i = 0; i < string.length; i++)
-        Module.HEAP16[buffer16 + i] = string.charCodeAt(i);
-    Module.HEAP16[buffer16 + string.length] = 0;
+        heapI16[buffer16 + i] = string.charCodeAt(i);
+    heapI16[buffer16 + string.length] = 0;
     cwraps.mono_wasm_string_from_utf16_ref(<any>buffer, string.length, result.address);
     Module._free(buffer);
 }
@@ -295,8 +296,8 @@ export function utf8ToStringRelaxed(buffer: Uint8Array): string {
 }
 
 export function utf8ToString(ptr: CharPtr): string {
-    updateGrowableHeapViews();
-    return decodeUTF8(Module.HEAPU8, ptr as any, Module.HEAPU8.length - (ptr as any));
+    const heapU8 = localHeapViewU8();
+    return decodeUTF8(heapU8, ptr as any, heapU8.length - (ptr as any));
 }
 
 export function decodeUTF8(heapOrArray: Uint8Array, idx: number, maxBytesToRead: number): string {

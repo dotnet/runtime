@@ -79,10 +79,18 @@ export function setU16(offset: MemOffset, value: number): void {
     Module.HEAPU16[<any>offset >>> 1] = value;
 }
 
+// does not check for growable heap
+export function setU16_local(offset: MemOffset, value: number): void {
+    assert_int_in_range(value, 0, 0xFFFF);
+    Module.HEAPU16[<any>offset >>> 1] = value;
+}
+
+// does not check for overflow nor growable heap
 export function setU16_unchecked(offset: MemOffset, value: number): void {
     Module.HEAPU16[<any>offset >>> 1] = value;
 }
 
+// does not check for overflow nor growable heap
 export function setU32_unchecked(offset: MemOffset, value: NumberOrPointer): void {
     Module.HEAPU32[<any>offset >>> 2] = <number><any>value;
 }
@@ -191,6 +199,11 @@ export function getU32(offset: MemOffset): number {
     return Module.HEAPU32[<any>offset >>> 2];
 }
 
+// does not check for growable heap
+export function getU32_local(offset: MemOffset): number {
+    return Module.HEAPU32[<any>offset >>> 2];
+}
+
 export function getI32_unaligned(offset: MemOffset): number {
     return cwraps.mono_wasm_get_i32_unaligned(<any>offset);
 }
@@ -219,6 +232,11 @@ export function getI16(offset: MemOffset): number {
 
 export function getI32(offset: MemOffset): number {
     updateGrowableHeapViews();
+    return Module.HEAP32[<any>offset >>> 2];
+}
+
+// does not check for growable heap
+export function getI32_local(offset: MemOffset): number {
     return Module.HEAP32[<any>offset >>> 2];
 }
 
@@ -319,6 +337,60 @@ export function updateGrowableHeapViews() {
     if (Module.wasmMemory!.buffer != Module.HEAPU8.buffer) {
         runtimeHelpers.updateMemoryViews();
     }
+}
+
+// returns memory view which is valid within current synchronous call stack
+export function localHeapViewI8(): Int8Array {
+    updateGrowableHeapViews();
+    return Module.HEAP8;
+}
+
+// returns memory view which is valid within current synchronous call stack
+export function localHeapViewI16(): Int16Array {
+    updateGrowableHeapViews();
+    return Module.HEAP16;
+}
+
+// returns memory view which is valid within current synchronous call stack
+export function localHeapViewI32(): Int32Array {
+    updateGrowableHeapViews();
+    return Module.HEAP32;
+}
+
+// returns memory view which is valid within current synchronous call stack
+export function localHeapViewI64Big(): BigInt64Array {
+    updateGrowableHeapViews();
+    return Module.HEAP64;
+}
+
+// returns memory view which is valid within current synchronous call stack
+export function localHeapViewU8(): Uint8Array {
+    updateGrowableHeapViews();
+    return Module.HEAPU8;
+}
+
+// returns memory view which is valid within current synchronous call stack
+export function localHeapViewU16(): Uint16Array {
+    updateGrowableHeapViews();
+    return Module.HEAPU16;
+}
+
+// returns memory view which is valid within current synchronous call stack
+export function localHeapViewU32(): Uint32Array {
+    updateGrowableHeapViews();
+    return Module.HEAPU32;
+}
+
+// returns memory view which is valid within current synchronous call stack
+export function localHeapViewF32(): Float32Array {
+    updateGrowableHeapViews();
+    return Module.HEAPF32;
+}
+
+// returns memory view which is valid within current synchronous call stack
+export function localHeapViewF64(): Float64Array {
+    updateGrowableHeapViews();
+    return Module.HEAPF64;
 }
 
 const sharedArrayBufferDefined = typeof SharedArrayBuffer !== "undefined";

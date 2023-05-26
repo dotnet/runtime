@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "../globals";
-import { updateGrowableHeapViews, setU16 } from "../memory";
+import { localHeapViewU8, setU16_local, updateGrowableHeapViews } from "../memory";
 import { mono_wasm_new_external_root } from "../roots";
 import { conv_string_root } from "../strings";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
@@ -19,8 +18,9 @@ export function mono_wasm_change_case_invariant(src: number, srcLength: number, 
         if (result.length > dstLength)
             result = input;
 
+        updateGrowableHeapViews();
         for (let i = 0; i < result.length; i++)
-            setU16(dst + i * 2, result.charCodeAt(i));
+            setU16_local(dst + i * 2, result.charCodeAt(i));
         wrap_no_error_root(is_exception, exceptionRoot);
     }
     catch (ex: any) {
@@ -43,8 +43,9 @@ export function mono_wasm_change_case(culture: MonoStringRef, src: number, srcLe
         if (result.length > destLength)
             result = input;
 
+        updateGrowableHeapViews();
         for (let i = 0; i < destLength; i++)
-            setU16(dst + i * 2, result.charCodeAt(i));
+            setU16_local(dst + i * 2, result.charCodeAt(i));
         wrap_no_error_root(is_exception, exceptionRoot);
     }
     catch (ex: any) {
@@ -57,8 +58,7 @@ export function mono_wasm_change_case(culture: MonoStringRef, src: number, srcLe
 }
 
 function get_utf16_string(ptr: number, length: number): string {
-    updateGrowableHeapViews();
-    const view = new Uint16Array(Module.HEAPU16.buffer, ptr, length);
+    const view = new Uint16Array(localHeapViewU8().buffer, ptr, length);
     let string = "";
     for (let i = 0; i < length; i++)
         string += String.fromCharCode(view[i]);

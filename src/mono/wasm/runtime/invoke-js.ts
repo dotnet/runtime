@@ -5,7 +5,7 @@ import BuildConfiguration from "consts:configuration";
 
 import { marshal_exception_to_cs, bind_arg_marshal_to_cs } from "./marshal-to-cs";
 import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol } from "./marshal";
-import { setI32_unchecked } from "./memory";
+import { setI32, setI32_unchecked, updateGrowableHeapViews } from "./memory";
 import { conv_string_root, js_string_to_mono_string_root } from "./strings";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
@@ -95,11 +95,11 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
         (<any>bound_fn)[imported_js_function_symbol] = true;
         const fn_handle = fn_wrapper_by_fn_handle.length;
         fn_wrapper_by_fn_handle.push(bound_fn);
-        setI32_unchecked(function_js_handle, <any>fn_handle);
+        setI32(function_js_handle, <any>fn_handle);
         wrap_no_error_root(is_exception, resultRoot);
         endMeasure(mark, MeasuredBlock.bindJsFunction, js_function_name);
     } catch (ex: any) {
-        setI32_unchecked(function_js_handle, 0);
+        setI32(function_js_handle, 0);
         Module.err(ex.toString());
         wrap_error_root(is_exception, ex, resultRoot);
     } finally {
@@ -362,6 +362,7 @@ function _wrap_error_flag(is_exception: Int32Ptr | null, ex: any): string {
         res = mono_wasm_symbolicate_string(res);
     }
     if (is_exception) {
+        updateGrowableHeapViews();
         setI32_unchecked(is_exception, 1);
     }
     return res;
@@ -375,6 +376,7 @@ export function wrap_error_root(is_exception: Int32Ptr | null, ex: any, result: 
 // to set out parameters of icalls
 export function wrap_no_error_root(is_exception: Int32Ptr | null, result?: WasmRoot<MonoObject>): void {
     if (is_exception) {
+        updateGrowableHeapViews();
         setI32_unchecked(is_exception, 0);
     }
     if (result) {

@@ -5,7 +5,7 @@ import { MonoType, MonoMethod } from "./types/internal";
 import { NativePointer, Int32Ptr, VoidPtr } from "./types/emscripten";
 import { Module, runtimeHelpers } from "./globals";
 import {
-    getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked
+    getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked, updateGrowableHeapViews
 } from "./memory";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import {
@@ -186,6 +186,7 @@ export function mono_interp_invoke_wasm_jit_call_trampoline(
     try {
         thunk(ret_sp, sp, ftndesc, thrown);
     } catch (exc) {
+        updateGrowableHeapViews();
         setU32_unchecked(thrown, 1);
     }
 }
@@ -265,6 +266,7 @@ export function mono_jiterp_do_jit_call_indirect(
         try {
             jitCallCb(_cb_data);
         } catch (exc) {
+            updateGrowableHeapViews();
             setU32_unchecked(_thrown, 1);
         }
     };

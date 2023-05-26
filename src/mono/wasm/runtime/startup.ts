@@ -31,7 +31,7 @@ import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legac
 import { BINDING, MONO } from "./net6-legacy/globals";
 import { mono_log_debug, mono_log_warn } from "./logging";
 import { install_synchronization_context } from "./pthreads/shared";
-import { updateGrowableHeapViews } from "./memory";
+import { localHeapViewU8, updateGrowableHeapViews } from "./memory";
 
 
 // default size if MonoConfig.pthreadPoolSize is undefined
@@ -518,8 +518,9 @@ async function mono_wasm_before_memory_snapshot() {
     if (runtimeHelpers.loadedMemorySnapshot) {
         // get the bytes after we re-sized the memory, so that we don't have too much memory in use at the same time
         const memoryBytes = await getMemorySnapshot();
-        mono_assert(memoryBytes!.byteLength === Module.HEAPU8.byteLength, "Loaded memory is not the expected size");
-        Module.HEAPU8.set(new Uint8Array(memoryBytes!), 0);
+        const heapU8 = localHeapViewU8();
+        mono_assert(memoryBytes!.byteLength === heapU8.byteLength, "Loaded memory is not the expected size");
+        heapU8.set(new Uint8Array(memoryBytes!), 0);
         mono_log_debug("Loaded WASM linear memory from browser cache");
 
         // all things below are loaded from the snapshot
@@ -552,7 +553,7 @@ async function mono_wasm_before_memory_snapshot() {
     if (runtimeHelpers.config.startupMemoryCache) {
         // this would install the mono_jiterp_do_jit_call_indirect
         cwraps.mono_jiterp_update_jit_call_dispatcher(-1);
-        await storeMemorySnapshot(Module.HEAPU8.buffer);
+        await storeMemorySnapshot(localHeapViewU8().buffer);
         runtimeHelpers.storeMemorySnapshotPending = false;
     }
 
@@ -611,12 +612,12 @@ export function mono_wasm_asm_loaded(assembly_name: CharPtr, assembly_ptr: numbe
 
     updateGrowableHeapViews();
     const assembly_name_str = assembly_name !== CharPtrNull ? utf8ToString(assembly_name).concat(".dll") : "";
-    const assembly_data = new Uint8Array(Module.HEAPU8.buffer, assembly_ptr, assembly_len);
+    const assembly_data = new Uint8Array(localHeapViewU8().buffer, assembly_ptr, assembly_len);
     const assembly_b64 = toBase64StringImpl(assembly_data);
 
     let pdb_b64;
     if (pdb_ptr) {
-        const pdb_data = new Uint8Array(Module.HEAPU8.buffer, pdb_ptr, pdb_len);
+        const pdb_data = new Uint8Array(localHeapViewU8().buffer, pdb_ptr, pdb_len);
         pdb_b64 = toBase64StringImpl(pdb_data);
     }
 

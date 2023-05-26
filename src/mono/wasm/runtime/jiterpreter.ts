@@ -4,10 +4,7 @@
 import { MonoMethod } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
 import { Module, runtimeHelpers } from "./globals";
-import {
-    updateGrowableHeapViews,
-    getU16, getU32_unaligned
-} from "./memory";
+import { getU16, getU32_unaligned, localHeapViewU8 } from "./memory";
 import { WasmOpcode, getOpcodeName } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
@@ -990,9 +987,8 @@ export function mono_interp_tier_prepare_jiterpreter(
     const imethod = getU32_unaligned(getMemberOffset(JiterpMember.Imethod) + <any>frame);
     const backBranchCount = getU32_unaligned(getMemberOffset(JiterpMember.BackwardBranchOffsetsCount) + imethod);
     const pBackBranches = getU32_unaligned(getMemberOffset(JiterpMember.BackwardBranchOffsets) + imethod);
-    updateGrowableHeapViews();
     let backwardBranchTable = backBranchCount
-        ? new Uint16Array(Module.HEAPU8.buffer, pBackBranches, backBranchCount)
+        ? new Uint16Array(localHeapViewU8().buffer, pBackBranches, backBranchCount)
         : null;
 
     // If we're compiling a trace that doesn't start at the beginning of a method,

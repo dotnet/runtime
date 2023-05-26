@@ -3,8 +3,8 @@
 
 import { prevent_timer_throttling } from "./scheduling";
 import { Queue } from "./queue";
-import { Module, createPromiseController } from "./globals";
-import { updateGrowableHeapViews, setI32 } from "./memory";
+import { createPromiseController } from "./globals";
+import { setI32, localHeapViewU8 } from "./memory";
 import { VoidPtr } from "./types/emscripten";
 import { PromiseController } from "./types/internal";
 import { mono_log_warn } from "./logging";
@@ -88,8 +88,7 @@ export function ws_wasm_open(ws: WebSocketExtension): Promise<WebSocketExtension
 export function ws_wasm_send(ws: WebSocketExtension, buffer_ptr: VoidPtr, buffer_length: number, message_type: number, end_of_message: boolean): Promise<void> | null {
     mono_assert(!!ws, "ERR17: expected ws instance");
 
-    updateGrowableHeapViews();
-    const buffer_view = new Uint8Array(Module.HEAPU8.buffer, <any>buffer_ptr, buffer_length);
+    const buffer_view = new Uint8Array(localHeapViewU8().buffer, <any>buffer_ptr, buffer_length);
     const whole_buffer = _mono_wasm_web_socket_send_buffering(ws, buffer_view, message_type, end_of_message);
 
     if (!end_of_message || !whole_buffer) {
@@ -271,8 +270,7 @@ function _mono_wasm_web_socket_receive_buffering(ws: WebSocketExtension, event_q
     const count = Math.min(buffer_length, event.data.length - event.offset);
     if (count > 0) {
         const sourceView = event.data.subarray(event.offset, event.offset + count);
-        updateGrowableHeapViews();
-        const bufferView = new Uint8Array(Module.HEAPU8.buffer, <any>buffer_ptr, buffer_length);
+        const bufferView = new Uint8Array(localHeapViewU8().buffer, <any>buffer_ptr, buffer_length);
         bufferView.set(sourceView, 0);
         event.offset += count;
     }
