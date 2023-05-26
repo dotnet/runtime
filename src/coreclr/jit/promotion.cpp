@@ -1150,9 +1150,67 @@ GenTree* Promotion::CreateReadBack(Compiler* compiler, unsigned structLclNum, co
     return store;
 }
 
+//------------------------------------------------------------------------
+// EndBlock:
+//   Handle reaching the end of the currently started block by preparing
+//   internal state for upcoming basic blocks, and inserting any necessary
+//   readbacks.
+//
+// Remarks:
+//   We currently expect all fields to be most up-to-date in their field locals
+//   at the beginning of every basic block. That means all replacements should
+//   have Replacement::NeedsReadBack == false and Replacement::NeedsWriteBack
+//   == true at the beginning of every block. This function makes it so that is
+//   the case.
+//
+void ReplaceVisitor::EndBlock()
+{
+    for (AggregateInfo* agg : m_aggregates)
+    {
+        if (agg == nullptr)
+        {
+            continue;
+        }
+
+        for (size_t i = 0; i < agg->Replacements.size(); i++)
+        {
+            Replacement& rep = agg->Replacements[i];
+            assert(!rep.NeedsReadBack || !rep.NeedsWriteBack);
+            if (rep.NeedsReadBack)
+            {
+                if (m_liveness->IsReplacementLiveOut(m_currentBlock, agg->LclNum, (unsigned)i))
+                {
+                    JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB ":\n",
+                            agg->LclNum, rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum,
+                            m_currentBlock->bbNum);
+
+                    GenTree*   readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
+                    Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
+                    DISPSTMT(stmt);
+                    m_compiler->fgInsertStmtNearEnd(m_currentBlock, stmt);
+                }
+                else
+                {
+                    JITDUMP("Skipping reading back dead replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB
+                            "\n",
+                            agg->LclNum, rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum,
+                            m_currentBlock->bbNum);
+                }
+                rep.NeedsReadBack = false;
+            }
+
+            rep.NeedsWriteBack = true;
+        }
+    }
+
+    m_hasPendingReadBacks = false;
+}
+
 Compiler::fgWalkResult ReplaceVisitor::PostOrderVisit(GenTree** use, GenTree* user)
 {
     GenTree* tree = *use;
+
+    use = InsertMidTreeReadBacksIfNecessary(use);
 
     if (tree->OperIsStore())
     {
@@ -1189,6 +1247,80 @@ Compiler::fgWalkResult ReplaceVisitor::PostOrderVisit(GenTree** use, GenTree* us
     }
 
     return fgWalkResult::WALK_CONTINUE;
+}
+
+//------------------------------------------------------------------------
+// InsertMidTreeReadBacksIfNecessary:
+//   If necessary, insert IR to read back all replacements before the specified use.
+//
+// Parameters:
+//   use - The use
+//
+// Returns:
+//   New use pointing to the old tree.
+//
+// Remarks:
+//   When a struct field is most up-to-date in its struct local it is marked to
+//   need a read back. We then need to decide when to insert IR to read it back
+//   to its field local.
+//
+//   We normally do this before the first use of the field we find, or before
+//   we transfer control to any successor. This method handles the case of
+//   implicit control flow related to EH; when this basic block is in a
+//   try-region (or filter block) and we find a tree that may throw it eagerly
+//   inserts pending readbacks.
+//
+GenTree** ReplaceVisitor::InsertMidTreeReadBacksIfNecessary(GenTree** use)
+{
+    if (!m_hasPendingReadBacks || !m_compiler->ehBlockHasExnFlowDsc(m_currentBlock))
+    {
+        return use;
+    }
+
+    if (((*use)->gtFlags & (GTF_EXCEPT | GTF_CALL)) == 0)
+    {
+        assert(!(*use)->OperMayThrow(m_compiler));
+        return use;
+    }
+
+    if (!(*use)->OperMayThrow(m_compiler))
+    {
+        return use;
+    }
+
+    JITDUMP("Reading back pending replacements before tree with possible exception side effect inside block in try "
+            "region\n");
+
+    for (AggregateInfo* agg : m_aggregates)
+    {
+        if (agg == nullptr)
+        {
+            continue;
+        }
+
+        for (Replacement& rep : agg->Replacements)
+        {
+            // TODO-CQ: We should ensure we do not mark dead fields as
+            // requiring readback. Currently it is handled by querying liveness
+            // as part of end-of-block readback insertion, but for these
+            // mid-tree readbacks we cannot query liveness information for
+            // arbitrary locals.
+            if (!rep.NeedsReadBack)
+            {
+                continue;
+            }
+
+            rep.NeedsReadBack = false;
+            GenTree* readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
+            *use =
+                m_compiler->gtNewOperNode(GT_COMMA, (*use)->IsValue() ? (*use)->TypeGet() : TYP_VOID, readBack, *use);
+            use           = &(*use)->AsOp()->gtOp2;
+            m_madeChanges = true;
+        }
+    }
+
+    m_hasPendingReadBacks = false;
+    return use;
 }
 
 //------------------------------------------------------------------------
@@ -1237,7 +1369,10 @@ void ReplaceVisitor::LoadStoreAroundCall(GenTreeCall* call, GenTree* user)
         GenTreeLclVarCommon* retBufLcl = retBufArg->GetNode()->AsLclVarCommon();
         unsigned             size      = m_compiler->typGetObjLayout(call->gtRetClsHnd)->GetSize();
 
-        MarkForReadBack(retBufLcl->GetLclNum(), retBufLcl->GetLclOffs(), size);
+        if (MarkForReadBack(retBufLcl->GetLclNum(), retBufLcl->GetLclOffs(), size))
+        {
+            JITDUMP("Retbuf has replacements that were marked for read back\n");
+        }
     }
 }
 
@@ -1269,10 +1404,9 @@ bool ReplaceVisitor::IsPromotedStructLocalDying(GenTreeLclVarCommon* lcl)
     }
 
     AggregateInfo* agg = m_aggregates[lcl->GetLclNum()];
-
-    for (size_t i = 0; i < agg->Replacements.size(); i++)
+    for (Replacement& rep : agg->Replacements)
     {
-        if (agg->Replacements[i].NeedsReadBack)
+        if (rep.NeedsReadBack)
         {
             return false;
         }
@@ -1487,11 +1621,11 @@ void ReplaceVisitor::WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs,
 //   offs         - The starting offset of the range in the struct local that needs to be read back from.
 //   size         - The size of the range
 //
-void ReplaceVisitor::MarkForReadBack(unsigned lcl, unsigned offs, unsigned size)
+bool ReplaceVisitor::MarkForReadBack(unsigned lcl, unsigned offs, unsigned size)
 {
     if (m_aggregates[lcl] == nullptr)
     {
-        return;
+        return false;
     }
 
     jitstd::vector<Replacement>& replacements = m_aggregates[lcl]->Replacements;
@@ -1506,17 +1640,20 @@ void ReplaceVisitor::MarkForReadBack(unsigned lcl, unsigned offs, unsigned size)
         }
     }
 
-    bool     result = false;
-    unsigned end    = offs + size;
+    bool     any = false;
+    unsigned end = offs + size;
     while ((index < replacements.size()) && (replacements[index].Offset < end))
     {
-        result           = true;
+        any              = true;
         Replacement& rep = replacements[index];
         assert(rep.Overlaps(offs, size));
-        rep.NeedsReadBack  = true;
-        rep.NeedsWriteBack = false;
+        rep.NeedsReadBack     = true;
+        rep.NeedsWriteBack    = false;
+        m_hasPendingReadBacks = true;
         index++;
     }
+
+    return any;
 }
 
 //------------------------------------------------------------------------
@@ -1631,10 +1768,12 @@ PhaseStatus Promotion::Run()
     ReplaceVisitor replacer(this, aggregates, &liveness);
     for (BasicBlock* bb : m_compiler->Blocks())
     {
+        replacer.StartBlock(bb);
+
         for (Statement* stmt : bb->Statements())
         {
             DISPSTMT(stmt);
-            replacer.Reset();
+            replacer.StartStatement();
             replacer.WalkTree(stmt->GetRootNodePointer(), nullptr);
 
             if (replacer.MadeChanges())
@@ -1646,42 +1785,7 @@ PhaseStatus Promotion::Run()
             }
         }
 
-        for (unsigned i = 0; i < numLocals; i++)
-        {
-            if (aggregates[i] == nullptr)
-            {
-                continue;
-            }
-
-            for (size_t j = 0; j < aggregates[i]->Replacements.size(); j++)
-            {
-                Replacement& rep = aggregates[i]->Replacements[j];
-                assert(!rep.NeedsReadBack || !rep.NeedsWriteBack);
-                if (rep.NeedsReadBack)
-                {
-                    if (liveness.IsReplacementLiveOut(bb, i, (unsigned)j))
-                    {
-                        JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB ":\n", i,
-                                rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, bb->bbNum);
-
-                        GenTree*   readBack = CreateReadBack(m_compiler, i, rep);
-                        Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
-                        DISPSTMT(stmt);
-                        m_compiler->fgInsertStmtNearEnd(bb, stmt);
-                    }
-                    else
-                    {
-                        JITDUMP(
-                            "Skipping reading back dead replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB
-                            "\n",
-                            i, rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, bb->bbNum);
-                    }
-                    rep.NeedsReadBack = false;
-                }
-
-                rep.NeedsWriteBack = true;
-            }
-        }
+        replacer.EndBlock();
     }
 
     // Insert initial IR to read arguments/OSR locals into replacement locals,
