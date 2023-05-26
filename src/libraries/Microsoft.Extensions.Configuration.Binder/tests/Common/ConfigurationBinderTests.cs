@@ -7,7 +7,9 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+#if BUILDING_SOURCE_GENERATOR_TESTS
 using Microsoft.Extensions.Configuration;
+#endif
 using Microsoft.Extensions.Configuration.Test;
 using Xunit;
 
@@ -903,7 +905,7 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
+        [Fact]
         public void ExceptionWhenTryingToBindClassWithoutParameterlessConstructor()
         {
             var input = new Dictionary<string, string>
@@ -1823,6 +1825,52 @@ namespace Microsoft.Extensions
             Assert.Equal(DateOnly.Parse("2002-03-22"), obj.Prop18);
             Assert.Equal(TimeOnly.Parse("18:26:38.7327436"), obj.Prop22);
 #endif
+        }
+
+        [Fact]
+        public void ForClasses_ParameterlessConstructorIsPickedOverParameterized()
+        {
+            string data = """
+                {
+                    "MyInt": 9,
+                }
+                """;
+
+            var configuration = TestHelpers.GetConfigurationFromJsonString(data);
+            var obj = configuration.Get<ClassWithParameterlessAndParameterizedCtor>();
+            Assert.Equal(1, obj.MyInt);
+        }
+
+        [Fact]
+        public void ForStructs_ParameterlessConstructorIsPickedOverParameterized()
+        {
+            string data = """
+                {
+                    "MyInt": 10,
+                }
+                """;
+
+            var configuration = TestHelpers.GetConfigurationFromJsonString(data);
+            var obj = configuration.Get<ClassWithParameterlessAndParameterizedCtor>();
+            Assert.Equal(1, obj.MyInt);
+        }
+
+        public class ClassWithParameterlessAndParameterizedCtor
+        {
+            public ClassWithParameterlessAndParameterizedCtor() => MyInt = 1;
+
+            public ClassWithParameterlessAndParameterizedCtor(int myInt) => MyInt = 10;
+
+            public int MyInt { get; }
+        }
+
+        public struct StructWithParameterlessAndParameterizedCtor
+        {
+            public StructWithParameterlessAndParameterizedCtor() => MyInt = 1;
+
+            public StructWithParameterlessAndParameterizedCtor(int myInt) => MyInt = 10;
+
+            public int MyInt { get; }
         }
     }
 }

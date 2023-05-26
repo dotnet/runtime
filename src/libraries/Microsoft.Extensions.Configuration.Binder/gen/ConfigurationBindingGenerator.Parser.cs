@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 
@@ -832,7 +833,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         objectSpec.InitExceptionMessage = string.Format(ExceptionMessages.MultipleParameterizedConstructors, typeName);
                     }
 
-                    ctor = parameterizedCtor ?? parameterlessCtor;
+                    ctor = type.IsValueType
+                        // Roslyn ctor fetching APIs include paramerterless ctors for structs, unlike System.Reflection.
+                        ? parameterizedCtor ?? parameterlessCtor
+                        : parameterlessCtor ?? parameterizedCtor;
                 }
 
                 objectSpec.InitializationStrategy = ctor?.Parameters.Length is 0 ? InitializationStrategy.ParameterlessConstructor : InitializationStrategy.ParameterizedConstructor;
