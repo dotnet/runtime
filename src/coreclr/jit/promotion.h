@@ -169,6 +169,10 @@ class Promotion
         return ~min;
     }
 
+    bool HaveCandidateLocals();
+
+    static bool IsCandidateForPhysicalPromotion(LclVarDsc* dsc);
+
 public:
     explicit Promotion(Compiler* compiler) : m_compiler(compiler)
     {
