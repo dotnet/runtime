@@ -13,15 +13,14 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     public static class MeterFactoryExtensions
     {
         /// <summary>
-        /// Creates a <see cref="Meter" /> with the specified <paramref name="name" />, <paramref name="version" />, <paramref name="tags" />, and <paramref name="scope" />.
+        /// Creates a <see cref="Meter" /> with the specified <paramref name="name" />, <paramref name="version" />, and <paramref name="tags" />.
         /// </summary>
         /// <param name="meterFactory">The <see cref="IMeterFactory" /> to use to create the <see cref="Meter" />.</param>
         /// <param name="name">The name of the <see cref="Meter" />.</param>
         /// <param name="version">The version of the <see cref="Meter" />.</param>
         /// <param name="tags">The tags to associate with the <see cref="Meter" />.</param>
-        /// <param name="scope">The scope to associate with the <see cref="Meter" />.</param>
-        /// <returns>A <see cref="Meter" /> with the specified <paramref name="name" />, <paramref name="version" />, <paramref name="tags" />, and <paramref name="scope" />.</returns>
-        public static Meter Create(this IMeterFactory meterFactory, string name, string? version = null, IEnumerable<KeyValuePair<string, object?>>? tags = null, object? scope = null)
+        /// <returns>A <see cref="Meter" /> with the specified <paramref name="name" />, <paramref name="version" />, and <paramref name="tags" />.</returns>
+        public static Meter Create(this IMeterFactory meterFactory, string name, string? version = null, IEnumerable<KeyValuePair<string, object?>>? tags = null)
         {
             if (meterFactory is null)
             {
@@ -32,7 +31,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             {
                 Version = version,
                 Tags = tags,
-                Scope = scope
+                Scope = meterFactory
             });
         }
     }
