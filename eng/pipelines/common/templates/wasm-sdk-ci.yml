@@ -64,7 +64,7 @@ jobs:
           - task: PublishTestResults@2
             displayName: Publish Test Results
             inputs:
-              testResultsFormat: 'VSTest'
+              testResultsFormat: 'XUnit'
               testResultsFiles: '*.xml'
               searchFolder: '$(Pipeline.Workspace)/sdk/artifacts/TestResults/$(_BuildConfig)'
               mergeTestResults: true
