@@ -740,22 +740,26 @@ namespace System.Data.SqlTypes
             return ReadInternal(buffer);
         }
 
+        private void WriteInternal(ReadOnlySpan<byte> buffer)
+        {
+            _sb.Write(_lPosition, buffer);
+            _lPosition += buffer.Length;
+        }
+
         public override void Write(byte[] buffer, int offset, int count)
         {
             CheckIfStreamClosed();
 
             ValidateBufferArguments(buffer, offset, count);
 
-            _sb.Write(_lPosition, buffer, offset, count);
-            _lPosition += count;
+            WriteInternal(buffer);
         }
 
         public override void Write(ReadOnlySpan<byte> buffer)
         {
             CheckIfStreamClosed();
 
-            _sb.Write(_lPosition, buffer);
-            _lPosition += buffer.Length;
+            WriteInternal(buffer);
         }
 
         public override int ReadByte()
