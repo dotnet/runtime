@@ -19790,7 +19790,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                         op1 = gtNewSimdBinOpNode(GT_MUL, convertedType, op1, op2, widenSimdBaseJitType,
                                                  convertedSimdSize);
 
-                        GenTree* dup = gtCloneExpr(op1);
+                        GenTree* dup = fgMakeMultiUse(&op1);
                         op1          = gtNewSimdNarrowNode(convertedType, op1, dup, simdBaseJitType, convertedSimdSize);
                         return gtNewSimdGetLowerNode(type, op1, simdBaseJitType, convertedSimdSize);
                     }
