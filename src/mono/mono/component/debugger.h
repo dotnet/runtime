@@ -15,6 +15,12 @@
 #include "mono/metadata/seq-points-data.h"
 
 typedef struct {
+	GSList *bps;
+	MonoMethod *current_method;
+	gboolean force_step_out;
+} JMC_Modifier;
+
+typedef struct {
 	MdbgProtModifierKind kind;
 	union {
 		int count; /* For kind == MOD_KIND_COUNT */
@@ -24,6 +30,7 @@ typedef struct {
 		GHashTable *source_files; /* For kind == MONO_KIND_SOURCE_FILE_ONLY */
 		GHashTable *type_names; /* For kind == MONO_KIND_TYPE_NAME_ONLY */
 		MdbgProtStepFilter filter; /* For kind == MOD_KIND_STEP */
+		JMC_Modifier *jmc; /* For kind == MOD_KIND_JMC */
 	} data;
 	gboolean caught, uncaught, subclasses, not_filtered_feature, everything_else; /* For kind == MOD_KIND_EXCEPTION_ONLY */
 } Modifier;

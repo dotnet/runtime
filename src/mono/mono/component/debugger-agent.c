@@ -7424,7 +7424,124 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 
 	return ERR_NONE;
 }
-
+static ErrorCode
+jmc_modifier (int *step_thread_id, StepSize *size, StepDepth *depth, Modifier *modifier, EventRequest *req, guint8 *p, guint8 *end, Buffer *buf)
+{
+	ErrorCode err;
+	ERROR_DECL (error);
+	MonoDomain *domain = NULL;
+	MonoThread *step_thread;
+	*step_thread_id = decode_id (p, &p, end);
+	*size = (StepSize)decode_int (p, &p, end);
+	*depth = (StepDepth)decode_int (p, &p, end);
+	int module_len = decode_int (p, &p, end);
+	MonoMethod *paused_method = NULL;
+	modifier->data.jmc = (JMC_Modifier *)g_malloc0 (sizeof (JMC_Modifier));
+	if (*depth == STEP_DEPTH_OVER) {
+		g_assert (*step_thread_id);
+		err = get_object (*step_thread_id, (MonoObject**)&step_thread);
+		if (err != ERR_NONE) {
+			g_free (req);
+			return err;
+		}
+		GET_TLS_DATA_FROM_THREAD (THREAD_TO_INTERNAL(step_thread));
+		
+		if (tls == NULL)
+			return ERR_UNLOADED;
+		if (tls->frame_count > 0)
+			paused_method = tls->frames [0]->actual_method;
+	}
+	
+	for (int j = 0 ; j < module_len; j++) {
+		MonoImage *image = decode_moduleid (p, &p, end, &domain, &err);
+		bool module_jmc = decode_byte (p, &p, end);
+		int type_len = decode_int (p, &p, end);
+		GPtrArray *type_array = g_ptr_array_new ();
+		GPtrArray *method_array = g_ptr_array_new ();
+		for (int k = 0 ; k < type_len; k++)	{
+			MonoClass *klass = decode_typeid (p, &p, end, &domain, &err);
+			bool type_jmc = decode_byte (p, &p, end);
+			int method_len = decode_int (p, &p, end);
+			for (int l = 0 ; l < method_len; l++) {
+				MonoMethod *current_method = decode_methodid (p, &p, end, &domain, &err);
+				bool method_jmc = decode_byte (p, &p, end);
+				if (current_method == paused_method && method_jmc == FALSE) {
+					modifier->data.jmc->current_method = paused_method;
+					*depth = STEP_DEPTH_OUT;
+				}
+				if (!type_jmc && method_jmc) {
+					MonoBreakpoint* bp = mono_de_set_breakpoint (current_method, 0, req, NULL);
+					modifier->data.jmc->bps = g_slist_append (modifier->data.jmc->bps, bp);
+				}
+				if (type_jmc && !method_jmc)
+					g_ptr_array_add (method_array, current_method);
+			}
+			if (!module_jmc && type_jmc) {
+				MonoMethod *m;
+				mono_class_setup_methods (klass);
+				gpointer iter = NULL;
+				while ((m = mono_class_get_methods (klass, &iter))) {
+					bool found = FALSE;
+					guint n = 0;
+					while (n < method_array->len) {
+						if (m == (MonoMethod *)g_ptr_array_index (method_array, n))
+						{
+							found = TRUE;
+							break;
+						}
+					}
+					if (!found)
+					{
+						MonoBreakpoint* bp = mono_de_set_breakpoint (m, 0, req, NULL);
+						modifier->data.jmc->bps = g_slist_append (modifier->data.jmc->bps, bp);
+					}
+				} 
+			}
+			if (module_jmc && !type_jmc)
+				g_ptr_array_add (type_array, klass);
+		}
+		if (module_jmc) {
+			int rows = mono_image_get_table_rows (image, MONO_TABLE_TYPEDEF);
+			for (int q = 1; q <= rows; q++) {
+				MonoClass *klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | q, error);
+				mono_error_cleanup (error);
+				if (!klass)
+					continue;
+				guint o = 0;
+				while (o < type_array->len) {
+					bool found2 = FALSE;
+					if (klass == (MonoClass*) g_ptr_array_index (type_array, o)) {
+						found2 = TRUE;
+						break;
+					}
+					if (!found2) {
+						MonoMethod *m;
+						mono_class_setup_methods (klass);
+						gpointer iter = NULL;
+						while ((m = mono_class_get_methods (klass, &iter))) {
+							bool found = FALSE;
+							guint n = 0;
+							while (n < method_array->len) {
+								if (m == (MonoMethod *)g_ptr_array_index (method_array, n))
+								{
+									found = TRUE;
+									break;
+								}
+							}
+							if (!found)	{
+								MonoBreakpoint* bp = mono_de_set_breakpoint (m, 0, req, NULL);
+								modifier->data.jmc->bps = g_slist_append (modifier->data.jmc->bps, bp);
+							}
+						} 
+					}
+				}
+			}
+		}
+		g_ptr_array_free (type_array, TRUE);
+		g_ptr_array_free (method_array, TRUE);
+	}
+	return ERR_NONE;	
+}
 static ErrorCode
 event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 {
@@ -7556,6 +7673,9 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 					if (s)
 						g_hash_table_insert (modifier->data.type_names, s, s);
 				}
+			} else if (mod == MDBGPROT_MOD_KIND_STEP_JMC) {
+				modifier = &req->modifiers [i];
+				jmc_modifier (&step_thread_id, &size, &depth, modifier, req, p, end, buf);
 			} else {
 				g_free (req);
 				return ERR_NOT_IMPLEMENTED;

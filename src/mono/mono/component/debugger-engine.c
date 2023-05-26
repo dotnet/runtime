@@ -572,6 +572,23 @@ ss_req_cleanup (void)
 	dbg_unlock ();
 }
 
+static gboolean
+mono_de_is_jmc_stepping (void)
+{
+	gboolean jmc = FALSE;
+	dbg_lock ();
+	for (guint i = 0; i < the_ss_reqs->len; ++i) {
+		SingleStepReq *current_req = (SingleStepReq *)g_ptr_array_index (the_ss_reqs, i);
+		if (current_req->req && current_req->req->nmodifiers == 1 && current_req->req->modifiers[0].kind == MDBGPROT_MOD_KIND_STEP_JMC)
+		{
+			jmc = TRUE;
+			break;
+		}
+	}
+	dbg_unlock ();
+	return jmc;
+}	
+
 /*
  * mono_de_start_single_stepping:
  *
@@ -581,6 +598,8 @@ ss_req_cleanup (void)
 void
 mono_de_start_single_stepping (void)
 {
+	if (mono_de_is_jmc_stepping())
+		return;
 	int val = mono_atomic_inc_i32 (&ss_count);
 
 	if (val == 1) {
@@ -594,6 +613,8 @@ mono_de_start_single_stepping (void)
 void
 mono_de_stop_single_stepping (void)
 {
+	if (mono_de_is_jmc_stepping() && ss_count == 0)
+		return;
 	int val = mono_atomic_dec_i32 (&ss_count);
 
 	if (val == 0) {
@@ -692,6 +713,16 @@ ss_destroy (SingleStepReq *req)
 	PRINT_DEBUG_MSG (1, "[dbg] ss_destroy.\n");
 
 	ss_stop (req);
+
+	if (req->req->nmodifiers == 1 && req->req->modifiers[0].kind == MDBGPROT_MOD_KIND_STEP_JMC)
+	{
+		GSList *l;
+		for (l = req->req->modifiers[0].data.jmc->bps; l; l = l->next) {
+			mono_de_clear_breakpoint ((MonoBreakpoint *)l->data);
+		}
+		g_slist_free (req->req->modifiers[0].data.jmc->bps);
+		req->req->modifiers[0].data.jmc->bps = NULL;
+	}
 
 	g_free (req);
 }
@@ -883,10 +914,10 @@ mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls,
 	MonoDebugMethodInfo *minfo;
 	MonoDebugSourceLocation *loc = NULL;
 	gboolean hit = TRUE;
+	int nframes = 0;
+	DbgEngineStackFrame **frames = NULL;
 
 	if ((req->filter & STEP_FILTER_STATIC_CTOR)) {
-		DbgEngineStackFrame **frames;
-		int nframes;
 		rt_callbacks.ss_calculate_framecount (tls, ctx, TRUE, &frames, &nframes);
 
 		gboolean ret = FALSE;
@@ -931,24 +962,52 @@ mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls,
 		return FALSE;
 	}
 
+	//process jmc stepping
+	gboolean is_JMC_bp = FALSE;
+	MonoMethod *method_to_step_out = NULL;			
+	GSList *jmc_bps = NULL;
+	if (req->req->nmodifiers == 1 && req->req->modifiers[0].kind == MDBGPROT_MOD_KIND_STEP_JMC) {
+		jmc_bps = req->req->modifiers[0].data.jmc->bps;
+		method_to_step_out = req->req->modifiers[0].data.jmc->current_method;
+	}
+	if (method_to_step_out) {
+		if (frames == NULL)
+			rt_callbacks.ss_calculate_framecount (tls, ctx, TRUE, &frames, &nframes);
+		for (int i = 0; i < nframes; i++) {
+			MonoMethod *external_method = frames [i]->method;
+			if (method_to_step_out == external_method)
+				return FALSE;
+		}
+	}
+
 	if ((req->depth == STEP_DEPTH_OVER || req->depth == STEP_DEPTH_OUT) && hit && !req->async_stepout_method) {
 		gboolean is_step_out = req->depth == STEP_DEPTH_OUT;
-		int nframes;
-		rt_callbacks.ss_calculate_framecount (tls, ctx, FALSE, NULL, &nframes);
-
 		// Because functions can call themselves recursively, we need to make sure we're stopping at the right stack depth.
 		// In case of step out, the target is the frame *enclosing* the one where the request was made.
+		if (frames == NULL)
+			rt_callbacks.ss_calculate_framecount (tls, ctx, TRUE, &frames, &nframes);
 		int target_frames = req->nframes + (is_step_out ? -1 : 0);
 		if (req->nframes > 0 && nframes > 0 && nframes > target_frames) {
-			/* Hit the breakpoint in a recursive call, don't halt */
-			PRINT_DEBUG_MSG (1, "[%p] Breakpoint at lower frame while stepping %s, continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), is_step_out ? "out" : "over");
-			return FALSE;
+			if (!is_step_out) {
+				do {
+					MonoBreakpoint* bp = (MonoBreakpoint *)jmc_bps->data;
+					if (bp->method == method && bp->il_offset == sp->il_offset)
+					{
+						is_JMC_bp = TRUE;
+						break;
+					}
+					jmc_bps = jmc_bps->next;
+				} while (jmc_bps);
+			}
+			if (!is_JMC_bp && !method_to_step_out) {
+				/* Hit the breakpoint in a recursive call, don't halt */
+				PRINT_DEBUG_MSG (1, "[%p] Breakpoint at lower frame while stepping %s, continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), is_step_out ? "out" : "over");
+				return FALSE;
+			}
 		}
 	}
 
 	if (req->depth == STEP_DEPTH_INTO && req->size == STEP_SIZE_MIN && (sp->flags & MONO_SEQ_POINT_FLAG_NONEMPTY_STACK) && req->start_method) {
-		int nframes;
-		rt_callbacks.ss_calculate_framecount (tls, ctx, FALSE, NULL, &nframes);
 		if (req->start_method == method && req->nframes && nframes == req->nframes) { //Check also frame count(could be recursion)
 			PRINT_DEBUG_MSG (1, "[%p] Seq point at nonempty stack %x while stepping in, continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), sp->il_offset);
 			return FALSE;
@@ -982,8 +1041,8 @@ mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls,
 		req->last_column = -1;
 		return hit;
 	} else if (loc && method == req->last_method && loc->row == req->last_line && loc->column == req->last_column) {
-		int nframes;
-		rt_callbacks.ss_calculate_framecount (tls, ctx, FALSE, NULL, &nframes);
+		if (frames == NULL)
+			rt_callbacks.ss_calculate_framecount (tls, ctx, FALSE, NULL, &nframes);
 		if (nframes == req->nframes) { // If the frame has changed we're clearly not on the same source line.
 			PRINT_DEBUG_MSG (1, "[%p] Same source line (%d), continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), loc->row);
 			hit = FALSE;
