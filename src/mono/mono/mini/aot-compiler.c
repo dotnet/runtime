@@ -9828,8 +9828,9 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	mono_atomic_inc_i32 (&acfg->stats.ccount);
 
 	if (acfg->aot_opts.compiled_methods_outfile && acfg->compiled_methods_outfile != NULL) {
-		if (!mono_method_is_generic_impl (method) && method->token != 0)
-			fprintf (acfg->compiled_methods_outfile, "%x\n", method->token);
+		if (!mono_method_is_generic_impl (method) && method->token != 0) {
+			fprintf (acfg->compiled_methods_outfile, "%d\n", method->token);
+		}
 	}
 }
 

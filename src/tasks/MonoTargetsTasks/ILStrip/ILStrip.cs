@@ -138,7 +138,6 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             return true;
         }
         string assemblyName = log[0];
-        int idxCompiledMethods = 1;
         string assemblyFilePath = Path.Combine(assemblyPath, (assemblyName + ".dll"));
         string trimmedAssemblyFilePath = Path.Combine(assemblyPath, (assemblyName + "_new.dll"));
         if (!File.Exists(assemblyFilePath))
@@ -157,44 +156,59 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             PEReader peReader = new PEReader(fs, PEStreamOptions.LeaveOpen);
             MetadataReader mr = peReader.GetMetadataReader();
 
+            Dictionary<int, int> token_to_rva = new Dictionary<int, int>();
+            Dictionary<int, int> method_body_uses = new Dictionary<int, int>();
+
             foreach (MethodDefinitionHandle mdefh in mr.MethodDefinitions)
             {
-                if (idxCompiledMethods < log.Length)
+                int methodToken = MetadataTokens.GetToken(mr, mdefh);
+                MethodDefinition mdef = mr.GetMethodDefinition(mdefh);
+                int rva = mdef.RelativeVirtualAddress;
+
+                token_to_rva.Add(methodToken, rva);
+
+                if (method_body_uses.TryGetValue(rva, out var count))
                 {
-                    int methodToken = MetadataTokens.GetToken(mr, mdefh);
-                    int expMethodToken = Convert.ToInt32(log[idxCompiledMethods], 16);
-
-                    if (methodToken == expMethodToken)
-                    {
-                        MethodDefinition mdef = mr.GetMethodDefinition(mdefh);
-                        int rva = mdef.RelativeVirtualAddress;
-
-                        MethodBodyBlock mb = peReader.GetMethodBody(rva);
-                        int methodSize = mb.Size;
-                        int sectionIndex = peReader.PEHeaders.GetContainingSectionIndex(rva);
-                        int relativeOffset = rva - peReader.PEHeaders.SectionHeaders[sectionIndex].VirtualAddress;
-                        int actualLoc = peReader.PEHeaders.SectionHeaders[sectionIndex].PointerToRawData + relativeOffset;
-
-                        byte[] zeroBuffer = new byte[methodSize];
-                        for (int i = 0; i < methodSize; i++)
-                        {
-                            zeroBuffer[i] = 0x0;
-                        }
-
-                        memStream.Position = actualLoc;
-                        int firstbyte = memStream.ReadByte();
-                        int headerFlag = firstbyte & 0b11;
-                        int headerSize = headerFlag == 2 ? 1 : 4;
-
-                        memStream.Position = actualLoc + headerSize;
-                        memStream.Write(zeroBuffer, 0, methodSize - headerSize);
-
-                        idxCompiledMethods++;
-                    }
+                    method_body_uses[rva]++;
                 }
                 else
                 {
-                    break;
+                    method_body_uses.Add(rva, 1);
+                }
+            }
+
+            for (int i = 1; i < log.Length; i++)
+            {
+                int methodToken2Trim = Convert.ToInt32(log[i]);
+                int rva2Trim = token_to_rva[methodToken2Trim];
+                method_body_uses[rva2Trim]--;
+            }
+
+            foreach (var kvp in method_body_uses)
+            {
+                int rva = kvp.Key;
+                int count = kvp.Value;
+                if (count == 0)
+                {
+                    MethodBodyBlock mb = peReader.GetMethodBody(rva);
+                    int methodSize = mb.Size;
+                    int sectionIndex = peReader.PEHeaders.GetContainingSectionIndex(rva);
+                    int relativeOffset = rva - peReader.PEHeaders.SectionHeaders[sectionIndex].VirtualAddress;
+                    int actualLoc = peReader.PEHeaders.SectionHeaders[sectionIndex].PointerToRawData + relativeOffset;
+
+                    byte[] zeroBuffer = new byte[methodSize];
+                    for (int i = 0; i < methodSize; i++)
+                    {
+                        zeroBuffer[i] = 0x0;
+                    }
+
+                    memStream.Position = actualLoc;
+                    int firstbyte = memStream.ReadByte();
+                    int headerFlag = firstbyte & 0b11;
+                    int headerSize = headerFlag == 2 ? 1 : 4;
+
+                    memStream.Position = actualLoc + headerSize;
+                    memStream.Write(zeroBuffer, 0, methodSize - headerSize);
                 }
             }
             memStream.Position = 0;
