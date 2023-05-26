@@ -70,8 +70,5 @@ namespace System.Threading
             out bool isBoolean,
             out char* appContextConfigName);
 
-        private static bool GetEnableWorkerTracking() =>
-            AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", false);
-
     }
 }

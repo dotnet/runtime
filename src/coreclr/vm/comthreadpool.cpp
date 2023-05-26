@@ -43,23 +43,22 @@ FCIMPL4(INT32, ThreadPoolNative::GetNextConfigUInt32Value,
         case 2: if (TryGetConfig(CLRConfig::INTERNAL_ThreadPool_ForceMaxWorkerThreads, false, W("System.Threading.ThreadPool.MaxThreads"))) { return 3; } FALLTHROUGH;
         case 3: if (TryGetConfig(CLRConfig::INTERNAL_ThreadPool_DisableStarvationDetection, true, W("System.Threading.ThreadPool.DisableStarvationDetection"))) { return 4; } FALLTHROUGH;
         case 4: if (TryGetConfig(CLRConfig::INTERNAL_ThreadPool_DebugBreakOnWorkerStarvation, true, W("System.Threading.ThreadPool.DebugBreakOnWorkerStarvation"))) { return 5; } FALLTHROUGH;
-        case 5: if (TryGetConfig(CLRConfig::INTERNAL_ThreadPool_EnableWorkerTracking, true, W("System.Threading.ThreadPool.EnableWorkerTracking"))) { return 6; } FALLTHROUGH;
-        case 6: if (TryGetConfig(CLRConfig::INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit, false, W("System.Threading.ThreadPool.UnfairSemaphoreSpinLimit"))) { return 7; } FALLTHROUGH;
+        case 5: if (TryGetConfig(CLRConfig::INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit, false, W("System.Threading.ThreadPool.UnfairSemaphoreSpinLimit"))) { return 6; } FALLTHROUGH;
 
-        case 7: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_Disable, true, W("System.Threading.ThreadPool.HillClimbing.Disable"))) { return 8; } FALLTHROUGH;
-        case 8: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_WavePeriod, false, W("System.Threading.ThreadPool.HillClimbing.WavePeriod"))) { return 9; } FALLTHROUGH;
-        case 9: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_TargetSignalToNoiseRatio, false, W("System.Threading.ThreadPool.HillClimbing.TargetSignalToNoiseRatio"))) { return 10; } FALLTHROUGH;
-        case 10: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_ErrorSmoothingFactor, false, W("System.Threading.ThreadPool.HillClimbing.ErrorSmoothingFactor"))) { return 11; } FALLTHROUGH;
-        case 11: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_WaveMagnitudeMultiplier, false, W("System.Threading.ThreadPool.HillClimbing.WaveMagnitudeMultiplier"))) { return 12; } FALLTHROUGH;
-        case 12: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_MaxWaveMagnitude, false, W("System.Threading.ThreadPool.HillClimbing.MaxWaveMagnitude"))) { return 13; } FALLTHROUGH;
-        case 13: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_WaveHistorySize, false, W("System.Threading.ThreadPool.HillClimbing.WaveHistorySize"))) { return 14; } FALLTHROUGH;
-        case 14: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_Bias, false, W("System.Threading.ThreadPool.HillClimbing.Bias"))) { return 15; } FALLTHROUGH;
-        case 15: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_MaxChangePerSecond, false, W("System.Threading.ThreadPool.HillClimbing.MaxChangePerSecond"))) { return 16; } FALLTHROUGH;
-        case 16: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_MaxChangePerSample, false, W("System.Threading.ThreadPool.HillClimbing.MaxChangePerSample"))) { return 17; } FALLTHROUGH;
-        case 17: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_MaxSampleErrorPercent, false, W("System.Threading.ThreadPool.HillClimbing.MaxSampleErrorPercent"))) { return 18; } FALLTHROUGH;
-        case 18: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_SampleIntervalLow, false, W("System.Threading.ThreadPool.HillClimbing.SampleIntervalLow"))) { return 19; } FALLTHROUGH;
-        case 19: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_SampleIntervalHigh, false, W("System.Threading.ThreadPool.HillClimbing.SampleIntervalHigh"))) { return 20; } FALLTHROUGH;
-        case 20: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_GainExponent, false, W("System.Threading.ThreadPool.HillClimbing.GainExponent"))) { return 21; } FALLTHROUGH;
+        case 6: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_Disable, true, W("System.Threading.ThreadPool.HillClimbing.Disable"))) { return 7; } FALLTHROUGH;
+        case 7: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_WavePeriod, false, W("System.Threading.ThreadPool.HillClimbing.WavePeriod"))) { return 8; } FALLTHROUGH;
+        case 8: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_TargetSignalToNoiseRatio, false, W("System.Threading.ThreadPool.HillClimbing.TargetSignalToNoiseRatio"))) { return 9; } FALLTHROUGH;
+        case 9: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_ErrorSmoothingFactor, false, W("System.Threading.ThreadPool.HillClimbing.ErrorSmoothingFactor"))) { return 10; } FALLTHROUGH;
+        case 10: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_WaveMagnitudeMultiplier, false, W("System.Threading.ThreadPool.HillClimbing.WaveMagnitudeMultiplier"))) { return 11; } FALLTHROUGH;
+        case 11: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_MaxWaveMagnitude, false, W("System.Threading.ThreadPool.HillClimbing.MaxWaveMagnitude"))) { return 12; } FALLTHROUGH;
+        case 12: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_WaveHistorySize, false, W("System.Threading.ThreadPool.HillClimbing.WaveHistorySize"))) { return 13; } FALLTHROUGH;
+        case 13: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_Bias, false, W("System.Threading.ThreadPool.HillClimbing.Bias"))) { return 14; } FALLTHROUGH;
+        case 14: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_MaxChangePerSecond, false, W("System.Threading.ThreadPool.HillClimbing.MaxChangePerSecond"))) { return 15; } FALLTHROUGH;
+        case 15: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_MaxChangePerSample, false, W("System.Threading.ThreadPool.HillClimbing.MaxChangePerSample"))) { return 16; } FALLTHROUGH;
+        case 16: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_MaxSampleErrorPercent, false, W("System.Threading.ThreadPool.HillClimbing.MaxSampleErrorPercent"))) { return 17; } FALLTHROUGH;
+        case 17: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_SampleIntervalLow, false, W("System.Threading.ThreadPool.HillClimbing.SampleIntervalLow"))) { return 18; } FALLTHROUGH;
+        case 18: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_SampleIntervalHigh, false, W("System.Threading.ThreadPool.HillClimbing.SampleIntervalHigh"))) { return 19; } FALLTHROUGH;
+        case 19: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_GainExponent, false, W("System.Threading.ThreadPool.HillClimbing.GainExponent"))) { return 20; } FALLTHROUGH;
 
         default:
             *configValueRef = 0;

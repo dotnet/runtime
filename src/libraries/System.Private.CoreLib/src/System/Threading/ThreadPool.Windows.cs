@@ -15,12 +15,9 @@ namespace System.Threading
 
 #if NATIVEAOT
         private const bool IsWorkerTrackingEnabledInConfig = false;
-#elif CORECLR
-        private static readonly bool IsWorkerTrackingEnabledInConfig =
-            UseWindowsThreadPool ? false : GetEnableWorkerTracking();
 #else
         private static readonly bool IsWorkerTrackingEnabledInConfig =
-            UseWindowsThreadPool ? false : AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", false);
+            UseWindowsThreadPool ? false : AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", "DOTNET_ThreadPool_EnableWorkerTracking", false);
 #endif
 
 
