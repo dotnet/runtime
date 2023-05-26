@@ -62,6 +62,7 @@ struct Access
     weight_t CountWtd                      = 0;
     weight_t CountAssignmentSourceWtd      = 0;
     weight_t CountAssignmentDestinationWtd = 0;
+    weight_t CountAssignedFromCallWtd      = 0;
     weight_t CountCallArgsWtd              = 0;
     weight_t CountReturnsWtd               = 0;
     weight_t CountPassedAsRetbufWtd        = 0;
@@ -101,7 +102,8 @@ enum class AccessKindFlags : uint32_t
     IsAssignmentSource      = 2,
     IsAssignmentDestination = 4,
     IsCallRetBuf            = 8,
-    IsReturned              = 16,
+    IsAssignedFromCall      = 16,
+    IsReturned              = 32,
 };
 
 inline constexpr AccessKindFlags operator~(AccessKindFlags a)
@@ -263,6 +265,11 @@ public:
         {
             access->CountAssignmentDestination++;
             access->CountAssignmentDestinationWtd += weight;
+
+            if ((flags & AccessKindFlags::IsAssignedFromCall) != AccessKindFlags::None)
+            {
+                access->CountAssignedFromCallWtd += weight;
+            }
         }
 
         if ((flags & AccessKindFlags::IsCallArg) != AccessKindFlags::None)
@@ -356,11 +363,11 @@ public:
     //
     bool EvaluateReplacement(Compiler* comp, unsigned lclNum, const Access& access)
     {
-        weight_t countOverlappedCallsWtd                 = 0;
-        weight_t countOverlappedReturnsWtd               = 0;
-        weight_t countOverlappedRetbufsWtd               = 0;
-        weight_t countOverlappedAssignmentDestinationWtd = 0;
-        weight_t countOverlappedAssignmentSourceWtd      = 0;
+        weight_t countOverlappedCallArgWtd                = 0;
+        weight_t countOverlappedReturnsWtd                = 0;
+        weight_t countOverlappedRetbufsWtd                = 0;
+        weight_t countOverlappedAssignedFromCallWtd       = 0;
+        weight_t countOverlappedDecomposableAssignmentWtd = 0;
 
         bool overlap = false;
         for (const Access& otherAccess : m_accesses)
@@ -378,51 +385,77 @@ public:
                 return false;
             }
 
-            countOverlappedCallsWtd += otherAccess.CountCallArgsWtd;
+            countOverlappedCallArgWtd += otherAccess.CountCallArgsWtd;
             countOverlappedReturnsWtd += otherAccess.CountReturnsWtd;
             countOverlappedRetbufsWtd += otherAccess.CountPassedAsRetbufWtd;
-            countOverlappedAssignmentDestinationWtd += otherAccess.CountAssignmentDestinationWtd;
-            countOverlappedAssignmentSourceWtd += otherAccess.CountAssignmentSourceWtd;
+            countOverlappedAssignedFromCallWtd += otherAccess.CountAssignedFromCallWtd;
+            countOverlappedDecomposableAssignmentWtd +=
+                (otherAccess.CountAssignmentDestinationWtd + otherAccess.CountAssignmentSourceWtd -
+                 otherAccess.CountAssignedFromCallWtd);
         }
 
-        // TODO-CQ: Tune the following heuristics. Currently they are based on
-        // x64 code size although using BB weights when available. This mixing
-        // does not make sense.
         weight_t costWithout = 0;
 
-        // A normal access without promotion looks like:
-        // mov reg, [reg+offs]
-        // It may also be contained. Overall we are going to cost each use of
-        // an unpromoted local at 6.5 bytes.
-        // TODO-CQ: We can make much better guesses on what will and won't be contained.
-        costWithout += access.CountWtd * 6.5;
+        // We cost any normal access (which is a struct load or store) without promotion at 3 cycles.
+        costWithout += access.CountWtd * 3;
 
         weight_t costWith = 0;
 
-        // For any use we expect to just use the register directly. We will cost this at 3.5 bytes.
-        costWith += access.CountWtd * 3.5;
+        // For promoted accesses we expect these to turn into reg-reg movs (and in many cases be fully contained in the
+        // parent).
+        // We cost these at 0.5 cycles.
+        costWith += access.CountWtd * 0.5;
+
+        // Now look at the overlapping struct uses that promotion will make more expensive.
 
         weight_t   countReadBacksWtd = 0;
         LclVarDsc* lcl               = comp->lvaGetDesc(lclNum);
-        // For parameters or OSR locals we need an initial read back
+        // For parameters or OSR locals we always need one read back.
         if (lcl->lvIsParam || lcl->lvIsOSRLocal)
         {
             countReadBacksWtd += comp->fgFirstBB->getBBWeight(comp);
         }
 
+        // If used as a retbuf we need a readback after.
         countReadBacksWtd += countOverlappedRetbufsWtd;
-        countReadBacksWtd += countOverlappedAssignmentDestinationWtd;
 
-        // A read back puts the value from stack back to (hopefully) register. We cost it at 5 bytes.
-        costWith += countReadBacksWtd * 5;
+        // The same if the struct was assigned from a call, since we don't
+        // currently have any "forwarding" optimization for this case.
+        countReadBacksWtd += countOverlappedAssignedFromCallWtd;
+
+        // A readback turns into a stack load that we costed at 3 above.
+        costWith += countReadBacksWtd * 3;
 
         // Write backs with TYP_REFs when the base local is an implicit byref
-        // involves checked write barriers, so they are very expensive.
+        // involves checked write barriers, so they are very expensive. We cost that at 10 cycles.
         // TODO-CQ: This should be adjusted once we type implicit byrefs as TYP_I_IMPL.
-        weight_t writeBackCost = comp->lvaIsImplicitByRefLocal(lclNum) && (access.AccessType == TYP_REF) ? 15 : 5;
-        weight_t countWriteBacksWtd =
-            countOverlappedCallsWtd + countOverlappedReturnsWtd + countOverlappedAssignmentSourceWtd;
+        // Otherwise we cost it like a store to stack at 3 cycles.
+        weight_t writeBackCost = comp->lvaIsImplicitByRefLocal(lclNum) && (access.AccessType == TYP_REF) ? 10 : 3;
+
+        // We write back before an overlapping struct use passed as an arg.
+        // TODO-CQ: A store-forwarding optimization in lowering could get rid
+        // of these copies; however, it requires lowering to be able to prove
+        // that not writing the fields into the struct local is ok.
+        weight_t countWriteBacksWtd = countOverlappedCallArgWtd;
         costWith += countWriteBacksWtd * writeBackCost;
+
+        // Overlapping assignments are decomposable so we don't cost them as
+        // being more expensive than their unpromoted counterparts (i.e. we
+        // don't consider them at all). However, we should do something more
+        // clever here, since:
+        // * We may still end up writing the full remainder as part of the
+        //   decomposed assignment, in which case all the field writes are just
+        //   added code size/perf cost.
+        // * Even if we don't, decomposing a single struct write into many
+        //   field writes is not necessarily profitable (e.g. 16 byte field
+        //   stores vs 1 XMM load/store).
+        //
+        // TODO-CQ: This ends up being a combinatorial optimization problem. We
+        // need to take a more "whole-struct" view here and look at sets of
+        // fields we are promoting together, evaluating all of them at once in
+        // comparison with the covering struct uses. This will also allow us to
+        // give a bonus to promoting remainders that may not have scalar uses
+        // but will allow fully decomposing assignments away.
 
         JITDUMP("  Evaluating access %s @ %03u\n", varTypeName(access.AccessType), access.Offset);
         JITDUMP("    Single write-back cost: " FMT_WT "\n", writeBackCost);
@@ -536,7 +569,7 @@ public:
     {
         GenTree* tree = *use;
 
-        if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_LCL_ADDR))
+        if (tree->OperIsAnyLocal())
         {
             GenTreeLclVarCommon* lcl = tree->AsLclVarCommon();
             LclVarDsc*           dsc = m_compiler->lvaGetDesc(lcl);
@@ -559,7 +592,7 @@ public:
                 {
                     accessType   = lcl->TypeGet();
                     accessLayout = accessType == TYP_STRUCT ? lcl->GetLayout(m_compiler) : nullptr;
-                    accessFlags  = ClassifyLocalRead(lcl, user);
+                    accessFlags  = ClassifyLocalAccess(lcl, user);
                 }
 
                 LocalUses* uses = GetOrCreateUses(lcl->GetLclNum());
@@ -594,7 +627,7 @@ private:
 
     //------------------------------------------------------------------------
     // ClassifyLocalAccess:
-    //   Given a local use and its user, classify information about it.
+    //   Given a local node and its user, classify information about it.
     //
     // Parameters:
     //   lcl - The local
@@ -603,50 +636,41 @@ private:
     // Returns:
     //   Flags classifying the access.
     //
-    AccessKindFlags ClassifyLocalRead(GenTreeLclVarCommon* lcl, GenTree* user)
+    AccessKindFlags ClassifyLocalAccess(GenTreeLclVarCommon* lcl, GenTree* user)
     {
-        assert(lcl->OperIsLocalRead());
+        assert(lcl->OperIsLocalRead() || lcl->OperIsLocalStore());
 
         AccessKindFlags flags = AccessKindFlags::None;
-        if (user->IsCall())
+        if (lcl->OperIsLocalStore())
         {
-            GenTreeCall* call     = user->AsCall();
-            unsigned     argIndex = 0;
-            for (CallArg& arg : call->gtArgs.Args())
+            flags |= AccessKindFlags::IsAssignmentDestination;
+
+            if (lcl->AsLclVarCommon()->Data()->gtEffectiveVal()->IsCall())
             {
-                if (arg.GetNode() != lcl)
-                {
-                    argIndex++;
-                    continue;
-                }
-
-                flags |= AccessKindFlags::IsCallArg;
-
-                unsigned argSize = 0;
-                if (arg.GetSignatureType() != TYP_STRUCT)
-                {
-                    argSize = genTypeSize(arg.GetSignatureType());
-                }
-                else
-                {
-                    argSize = m_compiler->typGetObjLayout(arg.GetSignatureClassHandle())->GetSize();
-                }
-
-                break;
+                flags |= AccessKindFlags::IsAssignedFromCall;
             }
         }
 
-        if (user->OperIs(GT_ASG))
+        if (user == nullptr)
         {
-            if (user->gtGetOp1() == lcl)
-            {
-                flags |= AccessKindFlags::IsAssignmentDestination;
-            }
+            return flags;
+        }
 
-            if (user->gtGetOp2() == lcl)
+        if (user->IsCall())
+        {
+            for (CallArg& arg : user->AsCall()->gtArgs.Args())
             {
-                flags |= AccessKindFlags::IsAssignmentSource;
+                if (arg.GetNode() == lcl)
+                {
+                    flags |= AccessKindFlags::IsCallArg;
+                    break;
+                }
             }
+        }
+
+        if (user->OperIsStore() && (user->Data() == lcl))
+        {
+            flags |= AccessKindFlags::IsAssignmentSource;
         }
 
         if (user->OperIs(GT_RETURN))
@@ -1086,8 +1110,7 @@ StructSegments Promotion::SignificantSegments(Compiler*    compiler,
 // CreateWriteBack:
 //   Create IR that writes a replacement local's value back to its struct local:
 //
-//     ASG
-//       LCL_FLD int V00 [+4]
+//     STORE_LCL_FLD int V00 [+4]
 //       LCL_VAR int V01
 //
 // Parameters:
@@ -1100,18 +1123,16 @@ StructSegments Promotion::SignificantSegments(Compiler*    compiler,
 //
 GenTree* Promotion::CreateWriteBack(Compiler* compiler, unsigned structLclNum, const Replacement& replacement)
 {
-    GenTree* dst = compiler->gtNewLclFldNode(structLclNum, replacement.AccessType, replacement.Offset);
-    GenTree* src = compiler->gtNewLclvNode(replacement.LclNum, genActualType(replacement.AccessType));
-    GenTree* asg = compiler->gtNewAssignNode(dst, src);
-    return asg;
+    GenTree* value = compiler->gtNewLclVarNode(replacement.LclNum);
+    GenTree* store = compiler->gtNewStoreLclFldNode(structLclNum, replacement.AccessType, replacement.Offset, value);
+    return store;
 }
 
 //------------------------------------------------------------------------
 // CreateReadBack:
 //   Create IR that reads a replacement local's value back from its struct local:
 //
-//     ASG
-//       LCL_VAR int V01
+//     STORE_LCL_VAR int V01
 //       LCL_FLD int V00 [+4]
 //
 // Parameters:
@@ -1124,27 +1145,24 @@ GenTree* Promotion::CreateWriteBack(Compiler* compiler, unsigned structLclNum, c
 //
 GenTree* Promotion::CreateReadBack(Compiler* compiler, unsigned structLclNum, const Replacement& replacement)
 {
-    GenTree* dst = compiler->gtNewLclvNode(replacement.LclNum, genActualType(replacement.AccessType));
-    GenTree* src = compiler->gtNewLclFldNode(structLclNum, replacement.AccessType, replacement.Offset);
-    GenTree* asg = compiler->gtNewAssignNode(dst, src);
-    return asg;
+    GenTree* value = compiler->gtNewLclFldNode(structLclNum, replacement.AccessType, replacement.Offset);
+    GenTree* store = compiler->gtNewStoreLclVarNode(replacement.LclNum, value);
+    return store;
 }
 
 Compiler::fgWalkResult ReplaceVisitor::PostOrderVisit(GenTree** use, GenTree* user)
 {
     GenTree* tree = *use;
 
-    if (tree->OperIs(GT_ASG))
+    if (tree->OperIsStore())
     {
-        // If LHS of the ASG was a local then we skipped it as we don't
-        // want to see it until after the RHS.
-        if (tree->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+        if (tree->OperIsLocalStore())
         {
-            ReplaceLocal(&tree->AsOp()->gtOp1, tree);
+            ReplaceLocal(use, user);
         }
 
-        // Assignments can be decomposed directly into accesses of the replacements.
-        HandleAssignment(use, user);
+        // Stores can be decomposed directly into accesses of the replacements.
+        HandleStore(use, user);
         return fgWalkResult::WALK_CONTINUE;
     }
 
@@ -1164,10 +1182,7 @@ Compiler::fgWalkResult ReplaceVisitor::PostOrderVisit(GenTree** use, GenTree* us
         return fgWalkResult::WALK_CONTINUE;
     }
 
-    // Skip the local on the LHS of ASGs when we see it in the normal tree
-    // visit; we handle it as part of the parent ASG instead.
-    if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
-        ((user == nullptr) || !user->OperIs(GT_ASG) || (user->gtGetOp1() != tree)))
+    if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD))
     {
         ReplaceLocal(use, user);
         return fgWalkResult::WALK_CONTINUE;
@@ -1302,7 +1317,10 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
 #ifdef DEBUG
     if (accessType == TYP_STRUCT)
     {
-        assert((user == nullptr) || user->OperIs(GT_ASG, GT_CALL, GT_RETURN));
+        if (lcl->OperIsLocalRead())
+        {
+            assert((user == nullptr) || user->OperIs(GT_CALL, GT_RETURN) || user->OperIsStore());
+        }
     }
     else
     {
@@ -1335,13 +1353,21 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
     Replacement& rep = replacements[index];
     assert(accessType == rep.AccessType);
     JITDUMP("  ..replaced with promoted lcl V%02u\n", rep.LclNum);
-    *use = m_compiler->gtNewLclvNode(rep.LclNum, accessType);
+
+    bool isDef = lcl->OperIsLocalStore();
+    if (isDef)
+    {
+        *use = m_compiler->gtNewStoreLclVarNode(rep.LclNum, lcl->Data());
+    }
+    else
+    {
+        *use = m_compiler->gtNewLclvNode(rep.LclNum, accessType);
+    }
 
     (*use)->gtFlags |= lcl->gtFlags & GTF_VAR_DEATH;
 
-    if ((lcl->gtFlags & GTF_VAR_DEF) != 0)
+    if (isDef)
     {
-        (*use)->gtFlags |= GTF_VAR_DEF; // TODO-ASG: delete.
         rep.NeedsWriteBack = true;
         rep.NeedsReadBack  = false;
     }
@@ -1358,9 +1384,9 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
         // └──▌  ADD       int
         //    ├──▌  LCL_VAR   int    V10 tmp6        -> copy propagated to [V35 tmp31]
         //    └──▌  COMMA     int
-        //       ├──▌  ASG       int
-        //       │  ├──▌  LCL_VAR   int    V35 tmp31
+        //       ├──▌  STORE_LCL_VAR int    V35 tmp31
         //       │  └──▌  LCL_FLD   int    V03 loc1         [+4]
+        //
         // This really ought to be handled by local copy prop, but the way it works during
         // morph makes it hard to fix there.
         //
@@ -1733,10 +1759,9 @@ void Promotion::ExplicitlyZeroInitReplacementLocals(unsigned                    
             continue;
         }
 
-        GenTree* dst = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
-        GenTree* src = m_compiler->gtNewZeroConNode(rep.AccessType);
-        GenTree* asg = m_compiler->gtNewAssignNode(dst, src);
-        InsertInitStatement(prevStmt, asg);
+        GenTree* value = m_compiler->gtNewZeroConNode(rep.AccessType);
+        GenTree* store = m_compiler->gtNewStoreLclVarNode(rep.LclNum, value);
+        InsertInitStatement(prevStmt, store);
     }
 }
 

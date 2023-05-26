@@ -33,6 +33,18 @@ namespace System
         public static BinaryData Empty { get; } = new BinaryData(ReadOnlyMemory<byte>.Empty);
 
         /// <summary>
+        /// Gets the number of bytes of this data.
+        /// </summary>
+        /// <returns>The number of bytes of this data.</returns>
+        public int Length => _bytes.Length;
+
+        /// <summary>
+        /// Gets a value that indicates whether this data is empty.
+        /// </summary>
+        /// <returns><see langword="true" /> if the data is empty (that is, its <see cref="Length" /> is 0); otherwise, <see langword="false" />.</returns>
+        public bool IsEmpty => _bytes.IsEmpty;
+
+        /// <summary>
         /// Creates a <see cref="BinaryData"/> instance by wrapping the
         /// provided byte array.
         /// </summary>
