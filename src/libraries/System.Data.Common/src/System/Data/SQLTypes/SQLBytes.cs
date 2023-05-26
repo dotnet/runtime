@@ -47,8 +47,6 @@ namespace System.Data.SqlTypes
         internal Stream? _stream;
         private SqlBytesCharsState _state;
 
-        private byte[]? _rgbWorkBuf;    // A 1-byte work buffer.
-
         // The max data length that we support at this time.
         private const long x_lMaxLen = int.MaxValue;
 
@@ -80,8 +78,6 @@ namespace System.Data.SqlTypes
                 _lCurLen = _rgbBuf.Length;
             }
 
-            _rgbWorkBuf = null;
-
             AssertValid();
         }
 
@@ -97,8 +93,6 @@ namespace System.Data.SqlTypes
             _lCurLen = x_lNull;
             _stream = s;
             _state = (s == null) ? SqlBytesCharsState.Null : SqlBytesCharsState.Stream;
-
-            _rgbWorkBuf = null;
 
             AssertValid();
         }
@@ -200,17 +194,14 @@ namespace System.Data.SqlTypes
                 ArgumentOutOfRangeException.ThrowIfNegative(offset);
                 ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(offset, Length);
 
-                _rgbWorkBuf ??= new byte[1];
+                byte b = 0;
 
-                Read(offset, _rgbWorkBuf.AsSpan(0, 1));
-                return _rgbWorkBuf[0];
+                Read(offset, new Span<byte>(ref b));
+                return b;
             }
             set
             {
-                _rgbWorkBuf ??= new byte[1];
-
-                _rgbWorkBuf[0] = value;
-                Write(offset, _rgbWorkBuf.AsSpan(0, 1));
+                Write(offset, new ReadOnlySpan<byte>(in value));
             }
         }
 
@@ -476,7 +467,6 @@ namespace System.Data.SqlTypes
                 Debug.Assert(FStream() || (_rgbBuf != null && _lCurLen <= _rgbBuf.Length));
                 Debug.Assert(!FStream() || (_lCurLen == x_lNull));
             }
-            Debug.Assert(_rgbWorkBuf == null || _rgbWorkBuf.Length == 1);
         }
 
         // Copy the data from the Stream to the array buffer.
