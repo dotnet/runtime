@@ -29,10 +29,19 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     /// </summary>
     public bool DisableParallelStripping { get; set; }
 
+    /// <summary>
+    /// Enable the feature of trimming indiviual methods
+    /// </summary>
     public bool TrimIndividualMethods { get; set; }
 
+    /// <summary>
+    /// Methods to be trimmed, identified by method token
+    /// </summary>
     public ITaskItem[] MethodTokenFiles { get; set; } = Array.Empty<ITaskItem>();
 
+    /// <summary>
+    /// Directory where all the assemblies are stored
+    /// </summary>
     public string AssemblyPath { get; set; } = "";
 
     public override bool Execute()
