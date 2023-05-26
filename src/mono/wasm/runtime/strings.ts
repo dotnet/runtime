@@ -93,8 +93,12 @@ export function utf16ToString(startPtr: number, endPtr: number): string {
 
 export function stringToUTF16(dstPtr: number, endPtr: number, text: string) {
     updateGrowableHeapViews();
-    for (let i = dstPtr; i < endPtr && i / 2 < text.length; i += 2)
-        setU16_local(i, text.charCodeAt(i));
+    const len = text.length;
+    for (let i = 0; i < len; i++) {
+        setU16_local(dstPtr, text.charCodeAt(i));
+        dstPtr += 2;
+        if (dstPtr >= endPtr) break;
+    }
 }
 
 /* @deprecated not GC safe, use monoStringToString */
@@ -245,7 +249,7 @@ function _store_string_in_intern_table(string: string, root: WasmRoot<MonoString
 function js_string_to_mono_string_new_root(string: string, result: WasmRoot<MonoString>): void {
     const bufferLen = (string.length + 1) * 2;
     const buffer = Module._malloc(bufferLen);
-    stringToUTF16(buffer as any, bufferLen, string);
+    stringToUTF16(buffer as any, buffer as any + bufferLen, string);
     cwraps.mono_wasm_string_from_utf16_ref(<any>buffer, string.length, result.address);
     Module._free(buffer);
 }

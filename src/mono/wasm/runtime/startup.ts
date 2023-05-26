@@ -269,7 +269,6 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         }
 
         bindings_init();
-        strings_init();
         if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
 
         if (runtimeHelpers.config.startupOptions && INTERNAL.resourceLoader) {
@@ -583,6 +582,7 @@ export function bindings_init(): void {
     runtimeHelpers.mono_wasm_bindings_is_ready = true;
     try {
         const mark = startMeasure();
+        strings_init();
         init_managed_exports();
         if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop && !ENVIRONMENT_IS_PTHREAD) {
             init_legacy_exports();
