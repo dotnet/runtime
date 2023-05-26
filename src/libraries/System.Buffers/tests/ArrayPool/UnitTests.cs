@@ -3,12 +3,14 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Globalization;
 using System.Linq;
 using System.Numerics;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
-using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Buffers.ArrayPool.Tests
@@ -603,6 +605,89 @@ namespace System.Buffers.ArrayPool.Tests
             yield return new object[] { ArrayPool<byte>.Create(1024*1024, 50) };
             yield return new object[] { ArrayPool<byte>.Create(1024*1024, 1) };
             yield return new object[] { ArrayPool<byte>.Shared };
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("", "", "2147483647", "8")]
+        [InlineData("0", "0", "2147483647", "8")]
+        [InlineData("1", "2", "1", "2")]
+        [InlineData("2", "1", "2", "1")]
+        [InlineData("4", "123", "4", "123")]
+        [InlineData("1000", "123", "1000", "123")]
+        [InlineData("   1    ", "   2   ", "1", "2")]
+        [InlineData(
+            "                                                                                         1 ",
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "2" + 
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     ",
+            "2147483647", "8")]
+        public void SharedPool_SetEnvironmentVariables_ValuesRespected(
+            string partitionCount, string maxArraysPerPartition, string expectedPartitionCount, string expectedMaxArraysPerPartition)
+        {
+            // This test relies on private reflection into the shared pool implementation.
+            // If those details change, this test will need to be updated accordingly.
+
+            var psi = new ProcessStartInfo();
+            psi.Environment.Add("DOTNET_SYSTEM_BUFFERS_SHAREDARRAYPOOL_MAXPARTITIONCOUNT", partitionCount);
+            psi.Environment.Add("DOTNET_SYSTEM_BUFFERS_SHAREDARRAYPOOL_MAXARRAYSPERPARTITION", maxArraysPerPartition);
+
+            RemoteExecutor.Invoke((partitionCount, maxArraysPerPartition, expectedPartitionCount, expectedMaxArraysPerPartition) =>
+            {
+                Type staticsType = typeof(ArrayPool<>).Assembly.GetType("System.Buffers.SharedArrayPoolStatics");
+                Assert.NotNull(staticsType);
+
+                FieldInfo partitionCountField = staticsType.GetField("s_partitionCount", BindingFlags.NonPublic | BindingFlags.Static);
+                Assert.NotNull(partitionCountField);
+                int partitionCountValue = (int)partitionCountField.GetValue(null);
+                if (int.Parse(expectedPartitionCount) > 0)
+                {
+                    Assert.Equal(Math.Min(int.Parse(expectedPartitionCount), Environment.ProcessorCount), partitionCountValue);
+                }
+                else
+                {
+                    Assert.Equal(Environment.ProcessorCount, partitionCountValue);
+                }
+
+                FieldInfo maxArraysPerPartitionField = staticsType.GetField("s_maxArraysPerPartition", BindingFlags.NonPublic | BindingFlags.Static);
+                Assert.NotNull(maxArraysPerPartitionField);
+                int maxArraysPerPartitionValue = (int)maxArraysPerPartitionField.GetValue(null);
+                if (int.Parse(expectedMaxArraysPerPartition) > 0)
+                {
+                    Assert.Equal(int.Parse(expectedMaxArraysPerPartition), maxArraysPerPartitionValue);
+                }
+                else
+                {
+                    Assert.Equal(8, maxArraysPerPartitionValue);
+                }
+
+                // Make sure the pool is still usable
+                for (int i = 0; i < 2; i++)
+                {
+                    byte[] array = ArrayPool<byte>.Shared.Rent(123);
+                    Assert.NotNull(array);
+                    Assert.InRange(array.Length, 123, int.MaxValue);
+                    ArrayPool<byte>.Shared.Return(array);
+                }
+
+            }, partitionCount, maxArraysPerPartition, expectedPartitionCount, expectedMaxArraysPerPartition, new RemoteInvokeOptions() { StartInfo = psi }).Dispose();
         }
     }
 }

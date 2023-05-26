@@ -769,7 +769,7 @@ REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alert
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalAttachThread(void* thread);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalDetachThread(void* thread);
 
-REDHAWK_PALIMPORT uint64_t PalGetCurrentThreadIdForLogging();
+REDHAWK_PALIMPORT uint64_t PalGetCurrentOSThreadId();
 
 REDHAWK_PALIMPORT uint64_t PalQueryPerformanceCounter();
 REDHAWK_PALIMPORT uint64_t PalQueryPerformanceFrequency();
@@ -779,16 +779,6 @@ REDHAWK_PALIMPORT void PalPrintFatalError(const char* message);
 #ifdef TARGET_UNIX
 REDHAWK_PALIMPORT int32_t __cdecl _stricmp(const char *string1, const char *string2);
 #endif // TARGET_UNIX
-
-#ifdef UNICODE
-#define _tcsicmp _wcsicmp
-#define _tcscat wcscat
-#define _tcslen wcslen
-#else
-#define _tcsicmp _stricmp
-#define _tcscat strcat
-#define _tcslen strlen
-#endif
 
 #if defined(HOST_X86) || defined(HOST_AMD64)
 

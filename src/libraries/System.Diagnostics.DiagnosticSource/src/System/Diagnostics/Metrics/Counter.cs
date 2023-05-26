@@ -15,7 +15,11 @@ namespace System.Diagnostics.Metrics
     /// </remarks>
     public sealed class Counter<T> : Instrument<T> where T : struct
     {
-        internal Counter(Meter meter, string name, string? unit, string? description) : base(meter, name, unit, description)
+        internal Counter(Meter meter, string name, string? unit, string? description) : this(meter, name, unit, description, null)
+        {
+        }
+
+        internal Counter(Meter meter, string name, string? unit, string? description, IEnumerable<KeyValuePair<string, object?>>? tags) : base(meter, name, unit, description, tags)
         {
             Publish();
         }

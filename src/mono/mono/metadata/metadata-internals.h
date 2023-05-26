@@ -282,6 +282,12 @@ typedef struct {
 	/* Module entry point is _CorDllMain. */
 	guint8 has_entry_point : 1;
 #endif
+#ifdef ENABLE_WEBCIL
+	/* set to a non-zero value when we load a webcil-in-wasm image.
+	 * Note that in that case MonoImage:raw_data is not equal to MonoImageStorage:raw_data
+	 */
+	int32_t webcil_section_adjustment;
+#endif
 } MonoImageStorage;
 
 struct _MonoImage {
@@ -297,7 +303,7 @@ struct _MonoImage {
 
 	MonoImageStorage *storage;
 
-	/* Aliases storage->raw_data when storage is non-NULL. Otherwise NULL. */
+	/* Points into storage->raw_data when storage is non-NULL. Otherwise NULL. */
 	char *raw_data;
 	guint32 raw_data_len;
 
@@ -985,6 +991,7 @@ MonoMethodSignature  *mono_metadata_signature_dup_full (MonoImage *image,MonoMet
 MonoMethodSignature  *mono_metadata_signature_dup_mempool (MonoMemPool *mp, MonoMethodSignature *sig);
 MonoMethodSignature  *mono_metadata_signature_dup_mem_manager (MonoMemoryManager *mem_manager, MonoMethodSignature *sig);
 MonoMethodSignature  *mono_metadata_signature_dup_add_this (MonoImage *image, MonoMethodSignature *sig, MonoClass *klass);
+MonoMethodSignature  *mono_metadata_signature_dup_delegate_invoke_to_target (MonoMethodSignature *sig);
 
 MonoGenericInst *
 mono_get_shared_generic_inst (MonoGenericContainer *container);

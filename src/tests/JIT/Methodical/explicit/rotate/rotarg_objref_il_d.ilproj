@@ -5,6 +5,7 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="rotarg_objref_d.il" />
     <Compile Include="rotarg_objref.il" />
   </ItemGroup>
 </Project>

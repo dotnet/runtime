@@ -61,6 +61,7 @@ extends:
           platforms:
           - windows_x64
           - windows_x86
+          - linux_x64
           jobParameters:
             uploadAs: 'pipelineArtifacts'
             condition: not(eq(dependencies.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
@@ -87,6 +88,7 @@ extends:
           platforms:
           - windows_x64
           - windows_x86
+          - linux_x64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
