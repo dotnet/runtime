@@ -15,6 +15,7 @@ namespace System.Numerics
     /// [!INCLUDE[vectors-are-rows-paragraph](~/includes/system-numerics-vectors-are-rows.md)]
     /// ]]></format></remarks>
     [Intrinsic]
+    [StructLayout(LayoutKind.Sequential)]
     public partial struct Vector4 : IEquatable<Vector4>, IFormattable
     {
         /// <summary>The X component of the vector.</summary>
@@ -63,10 +64,18 @@ namespace System.Numerics
         [Intrinsic]
         public Vector4(float x, float y, float z, float w)
         {
-            X = x;
-            Y = y;
-            Z = z;
-            W = w;
+            if (Vector128.IsHardwareAccelerated)
+            {
+                Unsafe.SkipInit(out this);
+                Unsafe.As<float, Vector128<float>>(ref this.X) = Vector128.Create(x, y, z, w);
+            }
+            else
+            {
+                X = x;
+                Y = y;
+                Z = z;
+                W = w;
+            }
         }
 
         /// <summary>Constructs a vector from the given <see cref="ReadOnlySpan{Single}" />. The span must contain at least 4 elements.</summary>
