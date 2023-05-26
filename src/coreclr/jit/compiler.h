@@ -4797,8 +4797,9 @@ public:
 
     FoldResult fgFoldConditional(BasicBlock* block);
 
+    PhaseStatus fgMorphBlocks();
+    void fgMorphBlock(BasicBlock* block);
     void fgMorphStmts(BasicBlock* block);
-    void fgMorphBlocks();
 
     void fgMergeBlockReturn(BasicBlock* block);
 
