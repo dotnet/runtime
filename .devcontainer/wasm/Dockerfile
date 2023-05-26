@@ -27,9 +27,12 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         zlib1g-dev \
         ninja-build
 
-# Install V8 Engine
 SHELL ["/bin/bash", "-c"]
 
+# Install LTS npm and node
+RUN source /usr/local/share/nvm/nvm.sh && nvm install --lts
+
+# Install V8 Engine
 RUN curl -sSL "https://netcorenativeassets.blob.core.windows.net/resource-packages/external/linux/chromium-v8/v8-linux64-rel-8.5.183.zip" -o ./v8.zip \
     && unzip ./v8.zip -d /usr/local/v8 \
     && echo $'#!/usr/bin/env bash\n\

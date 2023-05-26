@@ -907,7 +907,20 @@ namespace System.Diagnostics.Tests
 
             double cpuUsage = cpuTimeDiff / (timeDiff * Environment.ProcessorCount);
 
-            Assert.InRange(cpuUsage, 0, 1);
+            try
+            {
+                Assert.InRange(cpuUsage, 0, 1); // InRange is an inclusive test
+            }
+            catch (InRangeException)
+            {
+                string msg = $"Assertion failed. {cpuUsage} is not in range [0,1]. " +
+                             $"proc time before:{processorTimeBeforeSpin.TotalMilliseconds} " +
+                             $"proc time after:{processorTimeAfterSpin.TotalMilliseconds} " +
+                             $"timeDiff:{timeDiff} " +
+                             $"cpuTimeDiff:{cpuTimeDiff} " +
+                             $"Environment.ProcessorCount:{Environment.ProcessorCount}";
+                throw new XunitException(msg);
+            }
         }
 
         [Fact]
