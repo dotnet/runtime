@@ -3,6 +3,7 @@
     <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
     <IsShipping>false</IsShipping>
     <RunAnalyzers>false</RunAnalyzers>
+    <EnableLibraryImportGenerator>false</EnableLibraryImportGenerator>
   </PropertyGroup>
 
   <ItemGroup>

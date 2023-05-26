@@ -37,11 +37,11 @@ namespace Microsoft.Interop
                     new StubEnvironment(data.Right, data.Left.Left.TargetFramework, data.Left.Left.Version, data.Left.Right));
         }
 
-        public static void RegisterDiagnostics(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<Diagnostic> diagnostics)
+        public static void RegisterDiagnostics(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<DiagnosticInfo> diagnostics)
         {
             context.RegisterSourceOutput(diagnostics.Where(diag => diag is not null), (context, diagnostic) =>
             {
-                context.ReportDiagnostic(diagnostic);
+                context.ReportDiagnostic(diagnostic.ToDiagnostic());
             });
         }
 

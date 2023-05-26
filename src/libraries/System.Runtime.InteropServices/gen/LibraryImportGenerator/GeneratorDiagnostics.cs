@@ -169,9 +169,9 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksDescription)));
 
-        private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
+        private readonly List<DiagnosticInfo> _diagnostics = new List<DiagnosticInfo>();
 
-        public IEnumerable<Diagnostic> Diagnostics => _diagnostics;
+        public IEnumerable<DiagnosticInfo> Diagnostics => _diagnostics;
 
         /// <summary>
         /// Report diagnostic for invalid configuration for string marshalling.
@@ -336,7 +336,7 @@ namespace Microsoft.Interop
         public void ReportCannotForwardToDllImport(MethodSignatureDiagnosticLocations method, string name, string? value = null)
         {
             _diagnostics.Add(
-                Diagnostic.Create(
+                DiagnosticInfo.Create(
                     CannotForwardToDllImport,
                     method.FallbackLocation,
                     value is null ? name : $"{name}={value}"));

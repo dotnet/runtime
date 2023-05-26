@@ -9,21 +9,30 @@ namespace Microsoft.Interop
     /// <summary>
     /// Contains data required to reconstruct a <see cref="Location"/> without keeping any symbols or references to a <see cref="Compilation"/>
     /// </summary>
-    internal sealed record LocationInfo(
-        LinePositionSpan LinePositionSpan,
-        string FilePath,
-        TextSpan TextSpan)
+    public sealed record LocationInfo
     {
+        public required LinePositionSpan LinePositionSpan { get; init; }
+        public required string FilePath { get; init; }
+        public required TextSpan TextSpan { get; init; }
         public Location AsLocation() => Location.Create(FilePath, TextSpan, LinePositionSpan);
 
-        public static LocationInfo From(ISymbol symbol)
+        public static LocationInfo FromSymbol(ISymbol symbol)
         {
             var location = symbol.Locations[0];
+            return FromLocation(location);
+        }
+
+        public static LocationInfo FromLocation(Location location)
+        {
             var lineSpan = location.GetLineSpan().Span;
             var filePath = location.SourceTree.FilePath;
             var textSpan = location.SourceSpan;
-
-            return new LocationInfo(lineSpan, filePath, textSpan);
+            return new LocationInfo()
+            {
+                LinePositionSpan = lineSpan,
+                FilePath = filePath,
+                TextSpan = textSpan
+            };
         }
     }
 }

@@ -3,6 +3,7 @@
     <TargetFramework>$(TargetFrameworkForNETCoreTasks)</TargetFramework>
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
+    <EnableLibraryImportGenerator>false</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\Common\Utils.cs" />

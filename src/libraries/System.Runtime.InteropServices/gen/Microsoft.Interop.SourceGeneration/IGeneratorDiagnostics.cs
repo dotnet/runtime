@@ -13,7 +13,7 @@ namespace Microsoft.Interop
 {
     public static class DiagnosticExtensions
     {
-        public static Diagnostic CreateDiagnostic(
+        public static DiagnosticInfo CreateDiagnostic(
             this ISymbol symbol,
             DiagnosticDescriptor descriptor,
             params object[] args)
@@ -21,7 +21,7 @@ namespace Microsoft.Interop
             return symbol.Locations.CreateDiagnostic(descriptor, args);
         }
 
-        public static Diagnostic CreateDiagnostic(
+        public static DiagnosticInfo CreateDiagnostic(
             this ISymbol symbol,
             DiagnosticDescriptor descriptor,
             ImmutableDictionary<string, string> properties,
@@ -30,7 +30,7 @@ namespace Microsoft.Interop
             return symbol.Locations.CreateDiagnostic(descriptor, properties, args);
         }
 
-        public static Diagnostic CreateDiagnostic(
+        public static DiagnosticInfo CreateDiagnostic(
             this AttributeData attributeData,
             DiagnosticDescriptor descriptor,
             params object[] args)
@@ -43,7 +43,7 @@ namespace Microsoft.Interop
             return location.CreateDiagnostic(descriptor, args);
         }
 
-        public static Diagnostic CreateDiagnostic(
+        public static DiagnosticInfo CreateDiagnostic(
             this AttributeData attributeData,
             DiagnosticDescriptor descriptor,
             ImmutableDictionary<string, string> properties,
@@ -57,7 +57,7 @@ namespace Microsoft.Interop
             return location.CreateDiagnostic(descriptor, properties, args);
         }
 
-        public static Diagnostic CreateDiagnostic(
+        public static DiagnosticInfo CreateDiagnostic(
             this ImmutableArray<Location> locations,
             DiagnosticDescriptor descriptor,
             params object[] args)
@@ -65,7 +65,7 @@ namespace Microsoft.Interop
             return CreateDiagnostic(locations, descriptor, properties: null, args);
         }
 
-        public static Diagnostic CreateDiagnostic(
+        public static DiagnosticInfo CreateDiagnostic(
             this ImmutableArray<Location> locations,
             DiagnosticDescriptor descriptor,
             ImmutableDictionary<string, string> properties,
@@ -89,28 +89,28 @@ namespace Microsoft.Interop
             }
 
             return firstLocation is null ?
-                Diagnostic.Create(descriptor, Location.None, properties: properties, args) :
-                Diagnostic.Create(descriptor, firstLocation, additionalLocations, properties, args);
+                DiagnosticInfo.Create(descriptor, Location.None, properties: properties, args) :
+                DiagnosticInfo.Create(descriptor, firstLocation, additionalLocations, properties, args);
         }
 
-        public static Diagnostic CreateDiagnostic(
+        public static DiagnosticInfo CreateDiagnostic(
             this Location location,
             DiagnosticDescriptor descriptor,
             params object[] args)
         {
-            return Diagnostic.Create(
+            return DiagnosticInfo.Create(
                 descriptor,
                 location: location.IsInSource ? location : Location.None,
                 messageArgs: args);
         }
 
-        public static Diagnostic CreateDiagnostic(
+        public static DiagnosticInfo CreateDiagnostic(
             this Location location,
             DiagnosticDescriptor descriptor,
             ImmutableDictionary<string, string> properties,
             params object[] args)
         {
-            return Diagnostic.Create(
+            return DiagnosticInfo.Create(
                 descriptor,
                 location: location.IsInSource ? location : Location.None,
                 properties: properties,
