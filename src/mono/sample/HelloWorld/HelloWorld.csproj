@@ -25,6 +25,8 @@
       LibraryFormat="$(_AotLibraryFormat)"
       Assemblies="@(AotInputAssemblies)"
       OutputDir="$(PublishDir)"
+      CollectCompiledMethods="$(StripILCode)"
+      CompiledMethodsOutputPath="$(MethodTokenFilePath)"
       IntermediateOutputPath="$(IntermediateOutputPath)"
       UseAotDataFile="$(UseAotDataFile)"
       CacheFilePath="$(IntermediateOutputPath)aot_compiler_cache.json"
@@ -34,5 +36,24 @@
       MibcProfilePath="$(MibcProfilePath)">
       <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
+  </Target>
+
+  <UsingTask TaskName="ILStrip"
+             AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+
+  <Target Name="StripILCode" Condition="'$(StripILCode)' == 'true'" AfterTargets="AOTCompileApp">
+    <PropertyGroup>
+      <TrimIndividualMethods>true</TrimIndividualMethods>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <MethodTokenFiles Include="$(MethodTokenFilePath)/*.txt" />
+    </ItemGroup>
+
+    <ILStrip
+      TrimIndividualMethods="$(TrimIndividualMethods)"
+      MethodTokenFiles="@(MethodTokenFiles)"
+      AssemblyPath="$(PublishDir)">
+    </ILStrip>
   </Target>
 </Project>
