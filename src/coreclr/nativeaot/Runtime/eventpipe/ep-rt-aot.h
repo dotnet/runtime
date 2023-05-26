@@ -19,6 +19,7 @@
 #include <eventpipe/ep-session-provider.h>
 
 #include "rhassert.h"
+#include <RhConfig.h>
 
 #ifdef TARGET_UNIX
 #define sprintf_s snprintf
@@ -415,11 +416,11 @@ inline
 bool
 ep_rt_config_value_get_enable (void)
 {
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: EventPipe Configuration values - RhConfig?
-    // (CLRConfig::INTERNAL_EnableEventPipe) != 0
-    // If EventPipe environment variables are specified, parse them and start a session.
-    // TODO: Not start a session for now
+    // See https://learn.microsoft.com/dotnet/core/diagnostics/eventpipe#trace-using-environment-variables
+    bool value;
+    if (RhConfig::Environment::TryGetBooleanValue("EnableEventPipe", &value))
+        return value;
+
     return false;
 }
 
@@ -429,12 +430,13 @@ ep_char8_t *
 ep_rt_config_value_get_config (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: EventPipe Configuration values - RhConfig?
-    // (CLRConfig::INTERNAL_EventPipeConfig)
-    // PalDebugBreak();
+
+    // See https://learn.microsoft.com/dotnet/core/diagnostics/eventpipe#trace-using-environment-variables
+    char* value;
+    if (RhConfig::Environment::TryGetStringValue("EventPipeConfig", &value))
+        return (ep_char8_t*)value;
+
     return nullptr;
-//    return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()), -1);
 }
 
 static
@@ -443,10 +445,12 @@ ep_char8_t *
 ep_rt_config_value_get_output_path (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: EventPipe Configuration values - RhConfig?
-    // (CLRConfig::INTERNAL_EventPipeOutputPath)
-    //PalDebugBreak();
+
+    // See https://learn.microsoft.com/dotnet/core/diagnostics/eventpipe#trace-using-environment-variables
+    char* value;
+    if (RhConfig::Environment::TryGetStringValue("EventPipeOutputPath", &value))
+        return (ep_char8_t*)value;
+
     return nullptr;
 }
 
@@ -456,10 +460,15 @@ uint32_t
 ep_rt_config_value_get_circular_mb (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: EventPipe Configuration values - RhConfig?
-    // (CLRConfig::INTERNAL_EventPipeCircularMB)
-    //PalDebugBreak();
+
+    // See https://learn.microsoft.com/dotnet/core/diagnostics/eventpipe#trace-using-environment-variables
+    uint64_t value;
+    if (RhConfig::Environment::TryGetIntegerValue("EventPipeCircularMB", &value))
+    {
+        EP_ASSERT(value <= UINT32_MAX);
+        return static_cast<uint32_t>(value);
+    }
+
     return 0;
 }
 
@@ -469,10 +478,11 @@ bool
 ep_rt_config_value_get_output_streaming (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: EventPipe Configuration values - RhConfig?
-    // (CLRConfig::INTERNAL_EventPipeOutputStreaming)
-    //PalDebugBreak();
+
+    bool value;
+    if (RhConfig::Environment::TryGetBooleanValue("EventPipeOutputStreaming", &value))
+        return value;
+
     return false;
 }
 
@@ -482,10 +492,11 @@ bool
 ep_rt_config_value_get_enable_stackwalk (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: EventPipe Configuration values - RhConfig?
-    // (CLRConfig::INTERNAL_EventPipeEnableStackwalk)
-    //PalDebugBreak();
+
+    bool value;
+    if (RhConfig::Environment::TryGetBooleanValue("EventPipeEnableStackwalk", &value))
+        return value;
+
     return true;
 }
 
@@ -996,14 +1007,8 @@ ep_rt_file_open_write (const ep_char8_t *path)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path, -1);
-    ep_return_null_if_nok (path_utf16 != NULL);
-
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Find out the way to open a file in native
-    // PalDebugBreak();
-
-    return 0;
+    extern ep_rt_file_handle_t ep_rt_aot_file_open_write (const ep_char8_t *);
+    return ep_rt_aot_file_open_write (path);
 }
 
 static
@@ -1013,10 +1018,8 @@ ep_rt_file_close (ep_rt_file_handle_t file_handle)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Find out the way to close a file in native
-    // PalDebugBreak();
-    return true;
+    extern bool ep_rt_aot_file_close (ep_rt_file_handle_t);
+    return ep_rt_aot_file_close (file_handle);
 }
 
 static
@@ -1031,11 +1034,8 @@ ep_rt_file_write (
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (buffer != NULL);
 
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Find out the way to write to a file in native
-    // PalDebugBreak();
-    
-    return false;
+    extern bool ep_rt_aot_file_write (ep_rt_file_handle_t, const uint8_t*, uint32_t, uint32_t*);
+    return ep_rt_aot_file_write (file_handle, buffer, bytes_to_write, bytes_written);
 }
 
 static
