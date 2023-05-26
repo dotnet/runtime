@@ -398,14 +398,39 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         bool         doCpObj = !blkNode->OperIs(GT_STORE_DYN_BLK) && layout->HasGCPtr();
 
 #ifndef JIT32_GCENCODER
-        if (doCpObj && dstAddr->OperIs(GT_LCL_ADDR) &&
+        if (doCpObj &&
             (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy, false)))
         {
-            // If the size is small enough to unroll then we need to mark the block as non-interruptible
-            // to actually allow unrolling. The generated code does not report GC references loaded in the
-            // temporary register(s) used for copying. This is not supported for the JIT32_GCENCODER.
-            doCpObj                  = false;
-            blkNode->gtBlkOpGcUnsafe = true;
+            bool doUnrollCpObj = false;
+
+            if (dstAddr->OperIs(GT_LCL_ADDR))
+            {
+                doUnrollCpObj = true;
+            }
+            else
+            {
+                // If the layout contains a byref, then we know it must live on the stack
+                // and no write barriers are needed.
+                unsigned slots = layout->GetSlotCount();
+                for (unsigned i = 0; i < slots; i++)
+                {
+                    if (layout->IsGCByRef(i))
+                    {
+                        doUnrollCpObj = true;
+                        break;
+                    }
+                }
+
+            }
+
+            if (doUnrollCpObj)
+            {
+                // If the size is small enough to unroll then we need to mark the block as non-interruptible
+                // to actually allow unrolling. The generated code does not report GC references loaded in the
+                // temporary register(s) used for copying. This is not supported for the JIT32_GCENCODER.
+                doCpObj                  = false;
+                blkNode->gtBlkOpGcUnsafe = true;
+            }
         }
 #endif
 
