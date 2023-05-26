@@ -5749,7 +5749,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
         else if (maxNumberOfGuesses == 2)
         {
             // Two guesses - slightly relax the thresholds
-            likelihoodThreshold = isInterface ? 12 : 15;
+            likelihoodThreshold = isInterface ? 15 : 20;
         }
         else
         {
@@ -5757,8 +5757,14 @@ void Compiler::pickGDV(GenTreeCall*           call,
             likelihoodThreshold = 10;
         }
 
+        // We have 'maxNumberOfGuesses' number of classes available
+        // and we're allowed to make 'maxNumberOfGuesses' number of guesses
+        // Iterate over the available classes to find classes with likelihoods bigger than
+        // a specific threshold
+        //
         assert(*candidatesCount == 0);
-        for (unsigned guessIdx = 0; guessIdx < min((unsigned)maxNumberOfGuesses, numberOfClasses); guessIdx++)
+        unsigned totalGuesses = min((unsigned)maxNumberOfGuesses, numberOfClasses);
+        for (unsigned guessIdx = 0; guessIdx < totalGuesses; guessIdx++)
         {
             if (likelyClasses[guessIdx].likelihood >= likelihoodThreshold)
             {
@@ -5925,7 +5931,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
     {
         pickGDV(call, ilOffset, isInterface, likelyClasses, likelyMethodes, &candidatesCount, likelihoods);
         assert((unsigned)candidatesCount <= MAX_GDV_TYPE_CHECKS);
-        assert((unsigned)candidatesCount <= JitConfig.JitGuardedDevirtualizationMaxTypeChecks());
+        assert((unsigned)candidatesCount <= (unsigned)JitConfig.JitGuardedDevirtualizationMaxTypeChecks());
         if (candidatesCount == 0)
         {
             hasPgoData = false;
