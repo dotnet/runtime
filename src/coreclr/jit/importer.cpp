@@ -1704,9 +1704,18 @@ bool Compiler::impSpillStackEntry(unsigned level,
         if (tree->OperGet() == GT_RET_EXPR)
         {
             JITDUMP("\n*** see V%02u = GT_RET_EXPR, noting temp\n", tnum);
-            GenTree*             call = tree->AsRetExpr()->gtInlineCandidate;
-            InlineCandidateInfo* ici  = call->AsCall()->GetInlineCandidateInfo();
-            ici->preexistingSpillTemp = tnum;
+            GenTreeCall* call = tree->AsRetExpr()->gtInlineCandidate->AsCall();
+            if (call->IsGuardedDevirtualizationCandidate())
+            {
+                for (uint8_t i = 0; i < call->GetInlineCandidatesCount(); i++)
+                {
+                    call->GetGDVCandidateInfo(i)->preexistingSpillTemp = tnum;
+                }
+            }
+            else
+            {
+                call->AsCall()->GetSingleInlineCandidateInfo()->preexistingSpillTemp = tnum;
+            }
         }
     }
 

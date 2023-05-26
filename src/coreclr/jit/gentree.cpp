@@ -2164,12 +2164,12 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBloc
 }
 
 //-------------------------------------------------------------------------
-// SetSingleInlineCadidateInfo: set a single inline candidate info in the current call.
+// SetSingleInlineCandidateInfo: set a single inline candidate info in the current call.
 //
 // Arguments:
 //     candidateInfo - inline candidate info
 //
-void GenTreeCall::SetSingleInlineCadidateInfo(InlineCandidateInfo* candidateInfo)
+void GenTreeCall::SetSingleInlineCandidateInfo(InlineCandidateInfo* candidateInfo)
 {
     if (candidateInfo != nullptr)
     {
@@ -2180,9 +2180,9 @@ void GenTreeCall::SetSingleInlineCadidateInfo(InlineCandidateInfo* candidateInfo
     {
         gtInlineInfoCount = 0;
         gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
-        gtCallMoreFlags &= ~GTF_CALL_M_GUARDED_DEVIRT;
     }
     gtInlineCandidateInfo = candidateInfo;
+    ClearGuardedDevirtualizationCandidate();
 }
 
 //-------------------------------------------------------------------------
@@ -2199,22 +2199,29 @@ InlineCandidateInfo* GenTreeCall::GetGDVCandidateInfo(uint8_t index)
 
 //-------------------------------------------------------------------------
 // AddGDVCandidateInfo: Record a guarded devirtualization (GDV) candidate info
-//     for this call. For now, we only support one GDV candidate per call.
+//     for this call. A call can't have more than MAX_GDV_TYPE_CHECKS number of candidates
 //
 // Arguments:
+//     comp          - Compiler instance
 //     candidateInfo - GDV candidate info
 //
-void GenTreeCall::AddGDVCandidateInfo(InlineCandidateInfo* candidateInfo)
+void GenTreeCall::AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candidateInfo)
 {
+    assert(gtInlineInfoCount < MAX_GDV_TYPE_CHECKS);
     assert(candidateInfo != nullptr);
+
     if (gtInlineInfoCount == 0)
     {
         gtInlineCandidateInfo = candidateInfo;
     }
+    else if (gtInlineInfoCount == 1)
+    {
+        gtInlineCandidateInfo =
+            new (comp, CMK_Inlining) InlineCandidateInfo[MAX_GDV_TYPE_CHECKS]{*gtInlineCandidateInfo, *candidateInfo};
+    }
     else
     {
-        // Allocate a fixed list of InlineCandidateInfo structs
-        assert(!"multiple GDV candidates are not implemented yet");
+        gtInlineCandidateInfo[gtInlineInfoCount] = *candidateInfo;
     }
 
     gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT;
@@ -7729,10 +7736,11 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     node->gtCallType    = callType;
     node->gtCallMethHnd = callHnd;
     INDEBUG(node->callSig = nullptr;)
-    node->tailCallInfo    = nullptr;
-    node->gtRetClsHnd     = nullptr;
-    node->gtControlExpr   = nullptr;
-    node->gtCallMoreFlags = GTF_CALL_M_EMPTY;
+    node->tailCallInfo      = nullptr;
+    node->gtRetClsHnd       = nullptr;
+    node->gtControlExpr     = nullptr;
+    node->gtCallMoreFlags   = GTF_CALL_M_EMPTY;
+    node->gtInlineInfoCount = 0;
 
     if (callType == CT_INDIRECT)
     {
@@ -12353,10 +12361,11 @@ void Compiler::gtDispTree(GenTree*     tree,
                 printf(" (FramesRoot last use)");
             }
 
-            if (((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0) && (call->GetInlineCandidateInfo() != nullptr) &&
-                (call->GetInlineCandidateInfo()->exactContextHnd != nullptr))
+            if (((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0) &&
+                (call->GetSingleInlineCandidateInfo() != nullptr) &&
+                (call->GetSingleInlineCandidateInfo()->exactContextHnd != nullptr))
             {
-                printf(" (exactContextHnd=0x%p)", dspPtr(call->GetInlineCandidateInfo()->exactContextHnd));
+                printf(" (exactContextHnd=0x%p)", dspPtr(call->GetSingleInlineCandidateInfo()->exactContextHnd));
             }
 
             gtDispCommonEndLine(tree);
@@ -17871,7 +17880,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 // type class handle in the inline info (for GDV candidates,
                 // this data is valid only for a correct guess, so we cannot
                 // use it).
-                InlineCandidateInfo* inlInfo = call->GetInlineCandidateInfo();
+                InlineCandidateInfo* inlInfo = call->GetSingleInlineCandidateInfo();
                 assert(inlInfo != nullptr);
 
                 // Grab it as our first cut at a return type.
