@@ -281,7 +281,7 @@ namespace System.Data.SqlTypes
             AssertValid();
         }
 
-        private long ReadNoValidation(Span<byte> buffer, long offset)
+        private long ReadNoValidation(long offset, Span<byte> buffer)
         {
             if (_state == SqlBytesCharsState.Stream)
             {
@@ -307,7 +307,7 @@ namespace System.Data.SqlTypes
             ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, Length);
             ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
-            return ReadNoValidation(buffer, offset);
+            return ReadNoValidation(offset, buffer);
         }
         // Read data of specified length from specified offset into a buffer
         public long Read(long offset, byte[] buffer, int offsetInBuffer, int count)
@@ -327,7 +327,7 @@ namespace System.Data.SqlTypes
             ArgumentOutOfRangeException.ThrowIfNegative(count);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - offsetInBuffer);
 
-            return ReadNoValidation(buffer.AsSpan(offsetInBuffer, count), offset);
+            return ReadNoValidation(offset, buffer.AsSpan(offsetInBuffer, count));
         }
 
         private void WriteNoValidation(long offset, ReadOnlySpan<byte> buffer)
