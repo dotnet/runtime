@@ -497,23 +497,23 @@ public:
             {
                 printf("  [%03u..%03u) as %s\n", access.Offset, access.Offset + access.Layout->GetSize(),
                        access.Layout->GetClassName());
-                printf("    #:                             (%u, " FMT_WT ")\n", access.Count, access.CountWtd);
-                printf("    # assigned from:               (%u, " FMT_WT ")\n", access.CountAssignmentSource,
-                       access.CountAssignmentSourceWtd);
-                printf("    # assigned to:                 (%u, " FMT_WT ")\n", access.CountAssignmentDestination,
-                       access.CountAssignmentDestinationWtd);
-                printf("    # as call arg:                 (%u, " FMT_WT ")\n", access.CountCallArgs,
-                       access.CountCallArgsWtd);
-                printf("    # as retbuf:                   (%u, " FMT_WT ")\n", access.CountPassedAsRetbuf,
-                       access.CountPassedAsRetbufWtd);
-                printf("    # as returned value:           (%u, " FMT_WT ")\n\n", access.CountReturns,
-                       access.CountReturnsWtd);
             }
             else
             {
                 printf("  %s @ %03u\n", varTypeName(access.AccessType), access.Offset);
-                printf("    #:                             (%u, " FMT_WT ")\n", access.Count, access.CountWtd);
             }
+
+            printf("    #:                             (%u, " FMT_WT ")\n", access.Count, access.CountWtd);
+            printf("    # assigned from:               (%u, " FMT_WT ")\n", access.CountAssignmentSource,
+                   access.CountAssignmentSourceWtd);
+            printf("    # assigned to:                 (%u, " FMT_WT ")\n", access.CountAssignmentDestination,
+                   access.CountAssignmentDestinationWtd);
+            printf("    # as call arg:                 (%u, " FMT_WT ")\n", access.CountCallArgs,
+                   access.CountCallArgsWtd);
+            printf("    # as retbuf:                   (%u, " FMT_WT ")\n", access.CountPassedAsRetbuf,
+                   access.CountPassedAsRetbufWtd);
+            printf("    # as returned value:           (%u, " FMT_WT ")\n\n", access.CountReturns,
+                   access.CountReturnsWtd);
         }
     }
 #endif
@@ -524,7 +524,7 @@ class LocalsUseVisitor : public GenTreeVisitor<LocalsUseVisitor>
 {
     Promotion*  m_prom;
     LocalUses** m_uses;
-    weight_t m_curBBWeight;
+    BasicBlock* m_curBB = nullptr;
 
 public:
     enum
@@ -539,14 +539,14 @@ public:
 
     //------------------------------------------------------------------------
     // SetBB:
-    //   Set current BB we are visiting.
+    //   Set current BB we are visiting. Used to get BB weights for access costing.
     //
     // Parameters:
     //   bb - The current basic block.
     //
     void SetBB(BasicBlock* bb)
     {
-        m_curBBWeight = bb->getBBWeight(m_compiler);
+        m_curBB = bb;
     }
 
     //------------------------------------------------------------------------
@@ -569,135 +569,39 @@ public:
     {
         GenTree* tree = *use;
 
-        // Struct uses of locals only ever appear as
-        // 1. A store into a struct local
-        // 2. The value of a struct store
-        // 3. A call argument
-        // 4. Being returned
-        // Thus we can skip subtrees without any of these.
-        //
-        if (!tree->OperIs(GT_RETURN) && ((tree->gtFlags & (GTF_CALL | GTF_ASG)) == 0))
+        if (tree->OperIsAnyLocal())
         {
-            return fgWalkResult::WALK_SKIP_SUBTREES;
-        }
-
-        if (tree->OperIs(GT_RETURN))
-        {
-            if (tree->TypeIs(TYP_STRUCT))
+            GenTreeLclVarCommon* lcl = tree->AsLclVarCommon();
+            LclVarDsc*           dsc = m_compiler->lvaGetDesc(lcl);
+            if (Promotion::IsCandidateForPhysicalPromotion(dsc))
             {
-                GenTree* value = tree->gtGetOp1();
-                assert((value != nullptr) && value->TypeIs(TYP_STRUCT));
-                if (value->OperIsLocalRead())
-                {
-                    GenTreeLclVarCommon* lcl = value->AsLclVarCommon();
-                    if (Promotion::IsCandidateForPhysicalPromotion(m_compiler->lvaGetDesc(lcl)))
-                    {
-                        LocalUses* uses = GetOrCreateUses(lcl->GetLclNum());
-                        uses->RecordAccess(lcl->GetLclOffs(), TYP_STRUCT, lcl->GetLayout(m_compiler), AccessKindFlags::IsReturned, m_curBBWeight);
-                    }
-                }
-            }
-        }
-        else if (tree->IsCall())
-        {
-            for (CallArg& arg : tree->AsCall()->gtArgs.Args())
-            {
-                GenTree* argNode = arg.GetNode();
-
-                if (!argNode->OperIsAnyLocal())
-                {
-                    continue;
-                }
-
-                GenTreeLclVarCommon* lcl = argNode->AsLclVarCommon();
-
-                if (!Promotion::IsCandidateForPhysicalPromotion(m_compiler->lvaGetDesc(lcl)))
-                {
-                    continue;
-                }
-
+                var_types       accessType;
+                ClassLayout*    accessLayout;
                 AccessKindFlags accessFlags;
-                ClassLayout* layout;
-                if (argNode->TypeIs(TYP_STRUCT))
+
+                if (lcl->OperIs(GT_LCL_ADDR))
                 {
-                    accessFlags = AccessKindFlags::IsCallArg;
-                    layout = lcl->GetLayout(m_compiler);
-                }
-                else if (argNode->OperIs(GT_LCL_ADDR) && (arg.GetWellKnownArg() == WellKnownArg::RetBuffer))
-                {
-                    accessFlags = AccessKindFlags::IsCallRetBuf;
-                    layout = m_compiler->typGetObjLayout(tree->AsCall()->gtRetClsHnd);
+                    assert(user->OperIs(GT_CALL) && dsc->IsHiddenBufferStructArg() &&
+                           (user->AsCall()->gtArgs.GetRetBufferArg()->GetNode() == lcl));
+
+                    accessType   = TYP_STRUCT;
+                    accessLayout = m_compiler->typGetObjLayout(user->AsCall()->gtRetClsHnd);
+                    accessFlags  = AccessKindFlags::IsCallRetBuf;
                 }
                 else
                 {
-                    continue;
+                    accessType   = lcl->TypeGet();
+                    accessLayout = accessType == TYP_STRUCT ? lcl->GetLayout(m_compiler) : nullptr;
+                    accessFlags  = ClassifyLocalAccess(lcl, user);
                 }
 
                 LocalUses* uses = GetOrCreateUses(lcl->GetLclNum());
-                uses->RecordAccess(lcl->GetLclOffs(), TYP_STRUCT, layout, accessFlags, m_curBBWeight);
-            }
-        }
-        else if (tree->OperIsStore() && tree->TypeIs(TYP_STRUCT))
-        {
-            if (tree->OperIsLocalStore())
-            {
-                GenTreeLclVarCommon* lcl = tree->AsLclVarCommon();
-                if (Promotion::IsCandidateForPhysicalPromotion(m_compiler->lvaGetDesc(lcl)))
-                {
-                    ClassLayout* layout = lcl->GetLayout(m_compiler);
-                    AccessKindFlags flags = AccessKindFlags::IsAssignmentDestination;
-                    if (tree->Data()->gtEffectiveVal()->IsCall())
-                    {
-                        flags |= AccessKindFlags::IsAssignedFromCall;
-                    }
-
-                    LocalUses* uses = GetOrCreateUses(lcl->GetLclNum());
-                    uses->RecordAccess(lcl->GetLclOffs(), TYP_STRUCT, layout, flags, m_curBBWeight);
-                }
-            }
-
-            if (tree->Data()->OperIsLocalRead())
-            {
-                GenTreeLclVarCommon* lcl = tree->Data()->AsLclVarCommon();
-                if (Promotion::IsCandidateForPhysicalPromotion(m_compiler->lvaGetDesc(lcl)))
-                {
-                    ClassLayout* layout = lcl->GetLayout(m_compiler);
-                    LocalUses* uses = GetOrCreateUses(lcl->GetLclNum());
-                    uses->RecordAccess(lcl->GetLclOffs(), TYP_STRUCT, layout, AccessKindFlags::IsAssignmentSource, m_curBBWeight);
-                }
+                unsigned   offs = lcl->GetLclOffs();
+                uses->RecordAccess(offs, accessType, accessLayout, accessFlags, m_curBB->getBBWeight(m_compiler));
             }
         }
 
         return fgWalkResult::WALK_CONTINUE;
-    }
-
-    void WalkStatement(Statement* stmt)
-    {
-        bool hasStructUse = false;
-        // First account for scalar uses using the locals tree list. For scalar
-        // uses we do not need any user information.
-        for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-        {
-            if (!Promotion::IsCandidateForPhysicalPromotion(m_compiler->lvaGetDesc(lcl)))
-            {
-                continue;
-            }
-
-            if (lcl->OperIs(GT_LCL_ADDR) || lcl->TypeIs(TYP_STRUCT))
-            {
-                hasStructUse = true;
-                continue;
-            }
-
-            LocalUses* uses = GetOrCreateUses(lcl->GetLclNum());
-            uses->RecordAccess(lcl->GetLclOffs(), lcl->TypeGet(), nullptr, AccessKindFlags::None, m_curBBWeight);
-        }
-
-        // If we saw any struct uses then account for those with a normal tree walk.
-        if (hasStructUse)
-        {
-            WalkTree(stmt->GetRootNodePointer(), nullptr);
-        }
     }
 
 private:
@@ -719,6 +623,63 @@ private:
         }
 
         return m_uses[lclNum];
+    }
+
+    //------------------------------------------------------------------------
+    // ClassifyLocalAccess:
+    //   Given a local node and its user, classify information about it.
+    //
+    // Parameters:
+    //   lcl - The local
+    //   user - The user of the local.
+    //
+    // Returns:
+    //   Flags classifying the access.
+    //
+    AccessKindFlags ClassifyLocalAccess(GenTreeLclVarCommon* lcl, GenTree* user)
+    {
+        assert(lcl->OperIsLocalRead() || lcl->OperIsLocalStore());
+
+        AccessKindFlags flags = AccessKindFlags::None;
+        if (lcl->OperIsLocalStore())
+        {
+            flags |= AccessKindFlags::IsAssignmentDestination;
+
+            if (lcl->AsLclVarCommon()->Data()->gtEffectiveVal()->IsCall())
+            {
+                flags |= AccessKindFlags::IsAssignedFromCall;
+            }
+        }
+
+        if (user == nullptr)
+        {
+            return flags;
+        }
+
+        if (user->IsCall())
+        {
+            for (CallArg& arg : user->AsCall()->gtArgs.Args())
+            {
+                if (arg.GetNode() == lcl)
+                {
+                    flags |= AccessKindFlags::IsCallArg;
+                    break;
+                }
+            }
+        }
+
+        if (user->OperIsStore() && (user->Data() == lcl))
+        {
+            flags |= AccessKindFlags::IsAssignmentSource;
+        }
+
+        if (user->OperIs(GT_RETURN))
+        {
+            assert(user->gtGetOp1() == lcl);
+            flags |= AccessKindFlags::IsReturned;
+        }
+
+        return flags;
     }
 };
 
@@ -1580,7 +1541,14 @@ PhaseStatus Promotion::Run()
 
         for (Statement* stmt : bb->Statements())
         {
-            localsUse.WalkStatement(stmt);
+            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+            {
+                if (Promotion::IsCandidateForPhysicalPromotion(m_compiler->lvaGetDesc(lcl)))
+                {
+                    localsUse.WalkTree(stmt->GetRootNodePointer(), nullptr);
+                    break;
+                }
+            }
         }
     }
 
