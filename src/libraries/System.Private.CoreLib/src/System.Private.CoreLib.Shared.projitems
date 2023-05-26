@@ -509,6 +509,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\ISpanFormattable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IUtfChar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IUtf8SpanFormattable.cs" />
+	<Compile Include="$(MSBuildThisFileDirectory)System\IUtf8SpanParsable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Lazy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\LazyOfTTMetadata.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\LoaderOptimization.cs" />
