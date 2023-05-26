@@ -152,7 +152,6 @@ namespace System.Diagnostics
             Debug.Assert(index >= 0);
             Debug.Assert(index < _maxIndex);
 
-
             GetIndexAndMask(index, out int bitIndex, out ulong mask);
             ulong value = _bitMap[bitIndex];
             return ((value & mask) != 0);
