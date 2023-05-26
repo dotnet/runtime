@@ -394,6 +394,7 @@ namespace System.Globalization.Tests
                 // we also don't preform.
                 // es-zed does not case to SS when uppercased.
                 yield return new object[] { cultureName, "\u00DF", "\u00DF" };
+                yield return new object[] { cultureName, "stra\u00DFe", "STRA\u00DFE" };
 
                 // Ligatures do not expand when cased.
                 yield return new object[] { cultureName, "\uFB00", "\uFB00" };

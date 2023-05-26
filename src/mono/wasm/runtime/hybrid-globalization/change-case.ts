@@ -13,15 +13,37 @@ export function mono_wasm_change_case_invariant(src: number, srcLength: number, 
     const exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
     try{
         const input = get_utf16_string(src, srcLength);
-        let result = toUpper ? input.toUpperCase() : input.toLowerCase();
+        const result = toUpper ? input.toUpperCase() : input.toLowerCase();
+
         // Unicode defines some codepoints which expand into multiple codepoints,
         // originally we do not support this expansion
-        if (result.length > dstLength)
-            result = input;
+        if (result.length <= dstLength)
+        {
+            for (let i = 0; i < result.length; i++)
+                setU16(dst + i*2, result.charCodeAt(i));
+            wrap_no_error_root(is_exception, exceptionRoot);
+            return;
+        }
 
-        for (let i = 0; i < result.length; i++)
-            setU16(dst + i*2, result.charCodeAt(i));
-        wrap_no_error_root(is_exception, exceptionRoot);
+        // workaround to maintain the ICU-like behavior
+        if (toUpper)
+        {
+            for (let i=0; i < input.length; i++)
+            {
+                const upperChar = input[i].toUpperCase();
+                const appendedChar = upperChar.length > 1 ? input[i] : upperChar;
+                setU16(dst + i*2, appendedChar.charCodeAt(0));
+            }
+        }
+        else
+        {
+            for (let i=0; i < input.length; i++)
+            {
+                const lowerChar = input[i].toLowerCase();
+                const appendedChar = lowerChar.length > 1 ? input[i] : lowerChar;
+                setU16(dst + i*2, appendedChar.charCodeAt(0));
+            }
+        }
     }
     catch (ex: any) {
         wrap_error_root(is_exception, ex, exceptionRoot);
@@ -39,12 +61,34 @@ export function mono_wasm_change_case(culture: MonoStringRef, src: number, srcLe
         if (!cultureName)
             throw new Error("Cannot change case, the culture name is null.");
         const input = get_utf16_string(src, srcLength);
-        let result = toUpper ? input.toLocaleUpperCase(cultureName) : input.toLocaleLowerCase(cultureName);
-        if (result.length > destLength)
-            result = input;
+        const result = toUpper ? input.toLocaleUpperCase(cultureName) : input.toLocaleLowerCase(cultureName);
 
-        for (let i = 0; i < destLength; i++)
-            setU16(dst + i*2, result.charCodeAt(i));
+        if (result.length <= destLength)
+        {
+            for (let i = 0; i < result.length; i++)
+                setU16(dst + i*2, result.charCodeAt(i));
+            wrap_no_error_root(is_exception, exceptionRoot);
+            return;
+        }
+        // workaround to maintain the ICU-like behavior
+        if (toUpper)
+        {
+            for (let i=0; i < input.length; i++)
+            {
+                const upperChar = input[i].toLocaleUpperCase(cultureName);
+                const appendedChar = upperChar.length > 1 ? input[i] : upperChar;
+                setU16(dst + i*2, appendedChar.charCodeAt(0));
+            }
+        }
+        else
+        {
+            for (let i=0; i < input.length; i++)
+            {
+                const lowerChar = input[i].toLocaleLowerCase(cultureName);
+                const appendedChar = lowerChar.length > 1 ? input[i] : lowerChar;
+                setU16(dst + i*2, appendedChar.charCodeAt(0));
+            }
+        }
         wrap_no_error_root(is_exception, exceptionRoot);
     }
     catch (ex: any) {
