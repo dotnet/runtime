@@ -64,8 +64,7 @@ public class XUnitLogChecker
 
         if (File.Exists(finalLogPath))
         {
-            Console.WriteLine($"[XUnitLogChecker]: Item '{wrapperName}' did"
-                              + " complete successfully!");
+            WriteLineTimestamp($"Item '{wrapperName}' did complete successfully!");
             return SUCCESS;
         }
 
@@ -82,9 +81,9 @@ public class XUnitLogChecker
         {
             WriteLineTimestamp("No logs were found. This work"
                                + " item was skipped.");
-            Console.WriteLine($"[XUnitLogChecker]: If this is a mistake, then"
-                              + " something went very wrong. The expected temp"
-                              + $" log name would be: '{tempLogName}'");
+            WriteLineTimestamp($"If this is a mistake, then"
+                               + " something went very wrong. The expected temp"
+                               + $" log name would be: '{tempLogName}'");
             return SUCCESS;
         }
 
@@ -128,8 +127,8 @@ public class XUnitLogChecker
                                                .ToArray();
 
         // Here goes the main core of the XUnit Log Checker :)
-        Console.WriteLine($"[XUnitLogChecker]: Item '{wrapperName}' did not"
-                        + " finish running. Checking and fixing the log...");
+        WriteLineTimestamp($"Item '{wrapperName}' did not"
+                          + " finish running. Checking and fixing the log...");
 
         bool success = FixTheXml(tempLogPath);
         if (!success)
@@ -309,7 +308,7 @@ public class XUnitLogChecker
 
         if (tags.Count == 0)
         {
-            Console.WriteLine($"[XUnitLogChecker]: XUnit log file '{xFile}' was A-OK!");
+            WriteLineTimestamp($"XUnit log file '{xFile}' was A-OK!");
             return true;
         }
 
