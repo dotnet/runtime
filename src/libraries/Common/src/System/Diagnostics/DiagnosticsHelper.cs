@@ -31,10 +31,10 @@ namespace System.Diagnostics
                 return false;
             }
 
-            // creating with 2 longs which can initially handle 2 * 64 = 128 tags
-            BitMapper bitMapper = new BitMapper(stackalloc ulong[2], true);
-
             int count = sortedTags.Count;
+            int size = count / (sizeof(long) * 8) + 1;
+            BitMapper bitMapper = new BitMapper(size <= 100 ? stackalloc ulong[size] : new ulong[size]);
+
             if (tags2 is ICollection<KeyValuePair<string, object?>> tagsCol)
             {
                 if (tagsCol.Count != count)
@@ -120,55 +120,26 @@ namespace System.Diagnostics
         private int _maxIndex;
         private Span<ulong> _bitMap;
 
-        public BitMapper(Span<ulong> bitMap, bool zeroInitialize = false)
+        public BitMapper(Span<ulong> bitMap)
         {
             _bitMap = bitMap;
+            _bitMap.Clear();
             _maxIndex = bitMap.Length * sizeof(long) * 8;
-
-            if (zeroInitialize)
-            {
-                for (int i = 0; i < _bitMap.Length; i++)
-                {
-                    _bitMap[i] = 0;
-                }
-            }
         }
 
         public int MaxIndex => _maxIndex;
 
-        private void Expand(int index)
-        {
-            if (_maxIndex > index)
-            {
-                return;
-            }
-
-            int newMax = (index / sizeof(long)) + 10;
-
-            Span<ulong> newBitMap = new ulong[newMax];
-            _bitMap.CopyTo(newBitMap);
-            _bitMap = newBitMap;
-            _maxIndex = newMax * sizeof(long);
-        }
-
         private static void GetIndexAndMask(int index, out int bitIndex, out ulong mask)
         {
-            bitIndex = index >> sizeof(long);
-            int bit = index & (sizeof(long) - 1);
+            bitIndex = index >> 6;
+            int bit = index & (sizeof(long) * 8 - 1);
             mask = 1UL << bit;
         }
 
         public bool SetBit(int index)
         {
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException (nameof(index));
-            }
-
-            if (index >= _maxIndex)
-            {
-                Expand(index);
-            }
+            Debug.Assert(index >= 0);
+            Debug.Assert(index < _maxIndex);
 
             GetIndexAndMask(index, out int bitIndex, out ulong mask);
             ulong value = _bitMap[bitIndex];

@@ -52,7 +52,11 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                     _cachedMeters.Add(options.Name, meterList);
                 }
 
+                object? scope = options.Scope;
+                options.Scope = this;
                 FactoryMeter m = new FactoryMeter(options.Name, options.Version, options.Tags, scope: this);
+                options.Scope = scope;
+
                 meterList.Add(m);
                 return m;
             }
