@@ -16,7 +16,7 @@ export function mono_wasm_change_case_invariant(src: number, srcLength: number, 
         // originally we do not support this expansion
         if (result.length > dstLength)
             result = input;
-        encodeUTF16(dst, result);
+        encodeUTF16(dst, dstLength, result);
         wrap_no_error_root(is_exception, exceptionRoot);
     }
     catch (ex: any) {
@@ -27,7 +27,7 @@ export function mono_wasm_change_case_invariant(src: number, srcLength: number, 
     }
 }
 
-export function mono_wasm_change_case(culture: MonoStringRef, src: number, srcLength: number, dst: number, destLength: number, toUpper: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): void {
+export function mono_wasm_change_case(culture: MonoStringRef, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): void {
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
     try {
@@ -36,10 +36,10 @@ export function mono_wasm_change_case(culture: MonoStringRef, src: number, srcLe
             throw new Error("Cannot change case, the culture name is null.");
         const input = decodeUTF16(src, srcLength);
         let result = toUpper ? input.toLocaleUpperCase(cultureName) : input.toLocaleLowerCase(cultureName);
-        if (result.length > destLength)
+        if (result.length > dstLength)
             result = input;
 
-        encodeUTF16(dst, result);
+        encodeUTF16(dst, dstLength, result);
         wrap_no_error_root(is_exception, exceptionRoot);
     }
     catch (ex: any) {

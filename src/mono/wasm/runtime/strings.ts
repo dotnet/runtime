@@ -219,8 +219,9 @@ export function js_string_to_mono_string_root(string: string, result: WasmRoot<M
 }
 
 export function js_string_to_mono_string_new_root(string: string, result: WasmRoot<MonoString>): void {
-    const buffer = Module._malloc((string.length + 1) * 2);
-    encodeUTF16(buffer as any, string);
+    const bufferLen = (string.length + 1) * 2;
+    const buffer = Module._malloc(bufferLen);
+    encodeUTF16(buffer as any, bufferLen, string);
     cwraps.mono_wasm_string_from_utf16_ref(<any>buffer, string.length, result.address);
     Module._free(buffer);
 }
@@ -322,9 +323,9 @@ export function decodeUTF16(ptr: number, length: number): string {
     return string;
 }
 
-export function encodeUTF16(dst: number, str: string) {
+export function encodeUTF16(dst: number, destLength: number, str: string) {
     updateGrowableHeapViews();
-    for (let i = 0; i < str.length; i++)
+    for (let i = 0; i < str.length && i < destLength; i++)
         setU16_local(dst + i * 2, str.charCodeAt(i));
 }
 
