@@ -56,10 +56,13 @@ jobs:
       extraStepsParameters:
         additionalSteps:
           - script: git clone https://www.github.com/dotnet/sdk --depth 1
+            workingDirectory: $(Pipeline.Workspace)
             displayName: Checkout dotnet/sdk
-          - script: ls -l
           - script: ls -l $(Pipeline.Workspace)
-          - script: cd $(Pipeline.Workspace) && ./build.sh -c Release -restore -test --projects $PWD/src/Tests/Microsoft.NET.Sdk.BlazorWebAssembly.Tests/Microsoft.NET.Sdk.BlazorWebAssembly.Tests.csproj /bl
+            workingDirectory: $(Pipeline.Workspace)
+            displayName: Checkout dotnet/sdk
+          - script: cd sdk && ./build.sh -c Release -restore -test --projects $PWD/src/Tests/Microsoft.NET.Sdk.BlazorWebAssembly.Tests/Microsoft.NET.Sdk.BlazorWebAssembly.Tests.csproj /bl
+            workingDirectory: $(Pipeline.Workspace)
             displayName: Build tests
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)_$(_hostedOs)
