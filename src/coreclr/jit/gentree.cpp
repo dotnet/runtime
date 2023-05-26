@@ -19745,7 +19745,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 {
                     assert((simdSize != 64) || IsBaselineVector512IsaSupportedDebugOnly());
 
-                    CorInfoType widenSimdBaseJitType;
+                    CorInfoType    widenSimdBaseJitType;
                     NamedIntrinsic convertIntrinsic;
                     var_types      convertedType;
                     unsigned       convertedSimdSize;
@@ -19769,27 +19769,26 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     else if (simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_AVX2))
                     {
                         widenSimdBaseJitType = simdBaseType == TYP_BYTE ? CORINFO_TYPE_SHORT : CORINFO_TYPE_USHORT;
-                        convertIntrinsic = NI_AVX2_ConvertToVector256Int16;
-                        convertedType     = TYP_SIMD32;
-                        convertedSimdSize = 32;
+                        convertIntrinsic     = NI_AVX2_ConvertToVector256Int16;
+                        convertedType        = TYP_SIMD32;
+                        convertedSimdSize    = 32;
                     }
                     else
                     {
                         widenSimdBaseJitType = simdBaseType == TYP_BYTE ? CORINFO_TYPE_SHORT : CORINFO_TYPE_USHORT;
-                        convertIntrinsic  = NI_Illegal;
-                        convertedType     = TYP_UNDEF;
-                        convertedSimdSize = 0;
+                        convertIntrinsic     = NI_Illegal;
+                        convertedType        = TYP_UNDEF;
+                        convertedSimdSize    = 0;
                     }
 
                     if (convertedType != TYP_UNDEF)
                     {
-                        op1 = gtNewSimdHWIntrinsicNode(convertedType, op1, convertIntrinsic, simdBaseJitType,
-                                                       simdSize);
+                        op1 = gtNewSimdHWIntrinsicNode(convertedType, op1, convertIntrinsic, simdBaseJitType, simdSize);
 
-                        op2 = gtNewSimdHWIntrinsicNode(convertedType, op2, convertIntrinsic, simdBaseJitType,
-                                                       simdSize);
+                        op2 = gtNewSimdHWIntrinsicNode(convertedType, op2, convertIntrinsic, simdBaseJitType, simdSize);
 
-                        op1 = gtNewSimdBinOpNode(GT_MUL, convertedType, op1, op2, widenSimdBaseJitType, convertedSimdSize);
+                        op1 = gtNewSimdBinOpNode(GT_MUL, convertedType, op1, op2, widenSimdBaseJitType,
+                                                 convertedSimdSize);
 
                         GenTree* dup = gtCloneExpr(op1);
                         op1          = gtNewSimdNarrowNode(convertedType, op1, dup, simdBaseJitType, convertedSimdSize);
