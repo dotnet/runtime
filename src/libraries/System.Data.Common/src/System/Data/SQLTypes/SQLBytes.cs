@@ -717,12 +717,11 @@ namespace System.Data.SqlTypes
             return _lPosition;
         }
 
-        private int ReadNoValidation(Span<byte> buffer)
+        public override int Read(Span<byte> buffer)
         {
-            int bytesRead = (int)_sb.Read(_lPosition, buffer);
-            _lPosition += bytesRead;
+            CheckIfStreamClosed();
 
-            return bytesRead;
+            return ReadNoValidation(buffer);
         }
         // The Read/Write/ReadByte/WriteByte simply delegates to SqlBytes
         public override int Read(byte[] buffer, int offset, int count)
@@ -734,17 +733,19 @@ namespace System.Data.SqlTypes
             return ReadNoValidation(buffer.AsSpan(offset, count));
         }
 
-        public override int Read(Span<byte> buffer)
+        private int ReadNoValidation(Span<byte> buffer)
+        {
+            int bytesRead = (int)_sb.Read(_lPosition, buffer);
+            _lPosition += bytesRead;
+
+            return bytesRead;
+        }
+
+        public override void Write(ReadOnlySpan<byte> buffer)
         {
             CheckIfStreamClosed();
 
-            return ReadNoValidation(buffer);
-        }
-
-        private void WriteNoValidation(ReadOnlySpan<byte> buffer)
-        {
-            _sb.Write(_lPosition, buffer);
-            _lPosition += buffer.Length;
+            WriteNoValidation(buffer);
         }
 
         public override void Write(byte[] buffer, int offset, int count)
@@ -756,11 +757,10 @@ namespace System.Data.SqlTypes
             WriteNoValidation(buffer);
         }
 
-        public override void Write(ReadOnlySpan<byte> buffer)
+        private void WriteNoValidation(ReadOnlySpan<byte> buffer)
         {
-            CheckIfStreamClosed();
-
-            WriteNoValidation(buffer);
+            _sb.Write(_lPosition, buffer);
+            _lPosition += buffer.Length;
         }
 
         public override int ReadByte()
