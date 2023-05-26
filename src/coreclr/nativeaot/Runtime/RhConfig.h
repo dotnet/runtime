@@ -14,13 +14,14 @@
 
 #ifndef DACCESS_COMPILE
 
+#include <sal.h>
+
 class RhConfig
 {
 
 #define CONFIG_INI_NOT_AVAIL (void*)0x1  //signal for ini file failed to load
 #define CONFIG_KEY_MAXLEN 50             //arbitrary max length of config keys increase if needed
 #define CONFIG_VAL_MAXLEN 16              //64 bit uint in hex
-
 private:
     struct ConfigPair
     {
@@ -36,6 +37,15 @@ private:
     void* volatile g_embeddedSettings = NULL;
 
 public:
+    class Environment
+    {
+    public: // static
+        static bool TryGetBooleanValue(const char* name, bool* value);
+        static bool TryGetIntegerValue(const char* name, uint64_t* value, bool decimal = false);
+
+        // Get environment variable configuration as a string. On success, the caller owns the returned string value.
+        static bool TryGetStringValue(const char* name, char** value);
+    };
 
     bool ReadConfigValue(_In_z_ const char* wszName, uint64_t* pValue, bool decimal = false);
 

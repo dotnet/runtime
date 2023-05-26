@@ -901,7 +901,6 @@ protected:
     void genCodeForCompare(GenTreeOp* tree);
 #ifdef TARGET_ARM64
     void genCodeForCCMP(GenTreeCCMP* ccmp);
-    void genCodeForCinc(GenTreeOp* cinc);
 #endif
     void genCodeForSelect(GenTreeOp* select);
     void genIntrinsic(GenTreeIntrinsic* treeNode);
@@ -1250,7 +1249,6 @@ protected:
 #if defined(TARGET_ARM64)
     void genCodeForJumpCompare(GenTreeOpCC* tree);
     void genCodeForBfiz(GenTreeOp* tree);
-    void genCodeForCond(GenTreeOp* tree);
 #endif // TARGET_ARM64
 
 #if defined(FEATURE_EH_FUNCLETS)

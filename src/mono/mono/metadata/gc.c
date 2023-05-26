@@ -695,7 +695,7 @@ mono_wasm_gc_finalize_notify (void)
 	/* use this if we are going to start the finalizer thread on wasm. */
 	mono_coop_sem_post (&finalizer_sem);
 #else
-	mono_threads_schedule_background_job (mono_runtime_do_background_work);
+	mono_main_thread_schedule_background_job (mono_runtime_do_background_work);
 #endif
 }
 

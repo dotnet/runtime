@@ -4451,11 +4451,9 @@ user_break_cb (StackFrameInfo *frame, MonoContext *ctx, gpointer user_data)
 {
 	UserBreakCbData *data = (UserBreakCbData*)user_data;
 
-	if (frame->type == FRAME_TYPE_INTERP_TO_MANAGED || frame->type == FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX) {
-		data->found = TRUE;
-		return TRUE;
-	}
-	if (frame->managed) {
+	if (frame->managed ||
+			frame->type == FRAME_TYPE_INTERP_TO_MANAGED ||
+			frame->type == FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX) {
 		data->found = TRUE;
 		*data->ctx = *ctx;
 

@@ -10,17 +10,20 @@ import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { ManagedObject } from "../marshal";
 import { getU32, getI32, getF32, getF64, setI32_unchecked } from "../memory";
 import { mono_wasm_new_root, mono_wasm_new_external_root } from "../roots";
-import { conv_string_root } from "../strings";
+import { conv_string_root, string_decoder } from "../strings";
 import { legacyManagedExports } from "./corebindings";
 import { legacyHelpers } from "./globals";
 import { js_to_mono_obj_root } from "./js-to-cs";
 import { mono_bind_method, mono_method_get_call_signature_ref } from "./method-binding";
 import { createPromiseController } from "../globals";
+import { assert_legacy_interop } from "../pthreads/shared";
 
 const delegate_invoke_symbol = Symbol.for("wasm delegate_invoke");
 
 // this is only used from Blazor
 export function unbox_mono_obj(mono_obj: MonoObject): any {
+    assert_legacy_interop();
+
     if (mono_obj === MonoObjectNull)
         return undefined;
 
@@ -129,6 +132,7 @@ export function unbox_mono_obj_root(root: WasmRoot<any>): any {
 }
 
 export function mono_array_to_js_array(mono_array: MonoArray): any[] | null {
+    assert_legacy_interop();
     if (mono_array === MonoArrayNull)
         return null;
 
@@ -340,4 +344,12 @@ export function get_js_owned_object_by_gc_handle_ref(gc_handle: GCHandle, result
     }
     // this is always strong gc_handle
     legacyManagedExports._get_js_owned_object_by_gc_handle_ref(gc_handle, result);
+}
+
+/**
+ * @deprecated Not GC or thread safe
+ */
+export function conv_string(mono_obj: MonoString): string | null {
+    assert_legacy_interop();
+    return string_decoder.copy(mono_obj);
 }
