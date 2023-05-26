@@ -7484,14 +7484,12 @@ jmc_modifier (int *step_thread_id, StepSize *size, StepDepth *depth, Modifier *m
 					bool found = FALSE;
 					guint n = 0;
 					while (n < method_array->len) {
-						if (m == (MonoMethod *)g_ptr_array_index (method_array, n))
-						{
+						if (m == (MonoMethod *)g_ptr_array_index (method_array, n))	{
 							found = TRUE;
 							break;
 						}
 					}
-					if (!found)
-					{
+					if (!found)	{
 						MonoBreakpoint* bp = mono_de_set_breakpoint (m, 0, req, NULL);
 						modifier->data.jmc->bps = g_slist_append (modifier->data.jmc->bps, bp);
 					}
@@ -7522,8 +7520,7 @@ jmc_modifier (int *step_thread_id, StepSize *size, StepDepth *depth, Modifier *m
 							bool found = FALSE;
 							guint n = 0;
 							while (n < method_array->len) {
-								if (m == (MonoMethod *)g_ptr_array_index (method_array, n))
-								{
+								if (m == (MonoMethod *)g_ptr_array_index (method_array, n)) {
 									found = TRUE;
 									break;
 								}
