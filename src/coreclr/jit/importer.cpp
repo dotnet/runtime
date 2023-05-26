@@ -5536,11 +5536,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                 if ((likelyCls != NO_CLASS_HANDLE) &&
                     (likelyClass.likelihood > (UINT32)JitConfig.JitGuardedDevirtualizationChainLikelihood()))
                 {
-                    // Legality check: make sure it's at least possible to cast the likely class
-                    // to the base class, e.g. String -> T will return TypeCompareState::May
-                    // Int -> String will be MustNot.
-                    if ((info.compCompHnd->compareTypesForCast(likelyCls, pResolvedToken->hClass) !=
-                         TypeCompareState::MustNot))
+                    if ((info.compCompHnd->compareTypesForCast(likelyCls, pResolvedToken->hClass) == TypeCompareState::Must))
                     {
                         bool isAbstract = (info.compCompHnd->getClassAttribs(likelyCls) &
                                            (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0;
