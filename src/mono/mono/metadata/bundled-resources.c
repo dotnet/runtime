@@ -66,11 +66,55 @@ mono_bundled_resources_value_destroy_func (void *resource)
 		value->free_bundled_resource_func (resource);
 }
 
+#ifdef ENABLE_WEBCIL
 static bool
-is_alternate_assembly_extension (const char *ext)
+is_known_assembly_extension (const char *ext)
 {
-	return !strcmp (ext, ".webcil") || !strcmp (ext, MONO_WEBCIL_IN_WASM_EXTENSION);
+	return !strcmp (ext, ".dll") || !strcmp (ext, ".webcil") || !strcmp (ext, MONO_WEBCIL_IN_WASM_EXTENSION);
 }
+
+static gboolean
+resource_id_equal (const char *id_one, const char *id_two)
+{
+	const char *extension_one = strrchr (id_one, '.');
+	const char *extension_two = strrchr (id_two, '.');
+	if (extension_one && extension_two && is_known_assembly_extension (extension_one) && is_known_assembly_extension (extension_two)) {
+		size_t len_one = extension_one - id_one;
+		size_t len_two = extension_two - id_two;
+		return (len_one == len_two) && !strncmp (id_one, id_two, len_one);
+	}
+
+	return !strcmp (id_one, id_two);
+}
+
+static guint
+resource_id_hash (const char *id)
+{
+	const char *current = id;
+	const char *extension = NULL;
+	guint previous_hash = 0;
+	guint hash = 0;
+
+	while (*current) {
+		hash = (hash << 5) - (hash + *current);
+		if (*current == '.') {
+			extension = current;
+			previous_hash = hash;
+		}
+		current++;
+	}
+
+	// alias all extensions to .dll
+	if (extension && is_known_assembly_extension (extension)) {
+		hash = previous_hash;
+		hash = (hash << 5) - (hash + 'd');
+		hash = (hash << 5) - (hash + 'l');
+		hash = (hash << 5) - (hash + 'l');
+	}
+
+	return hash;
+}
+#endif // ENABLE_WEBCIL
 
 //---------------------------------------------------------------------------------------
 //
@@ -96,9 +140,9 @@ mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t 
 {
 	if (!bundled_resources) {
 #ifdef ENABLE_WEBCIL
-		bundled_resources = g_hash_table_new_full ((GHashFunc)resource_id_hash, (GEqualFunc)resource_id_equal, g_free, mono_bundled_resources_value_destroy_func);
+		bundled_resources = g_hash_table_new_full ((GHashFunc)resource_id_hash, (GEqualFunc)resource_id_equal, NULL, mono_bundled_resources_value_destroy_func);
 #else
-		bundled_resources = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, mono_bundled_resources_value_destroy_func);
+		bundled_resources = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, mono_bundled_resources_value_destroy_func);
 #endif
 	}
 
@@ -113,15 +157,7 @@ mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t 
 		if (resource_to_bundle->type == MONO_BUNDLED_SATELLITE_ASSEMBLY)
 			satelliteAssemblyAdded = true;
 
-		char *key = strdup (resource_to_bundle->id);
-		g_assert (key);
-		const char *extension = strrchr (key, '.');
-		if (is_alternate_assembly_extension (extension)) {
-			size_t n = extension - key;
-			memcpy (key + n, ".dll\0", 5);
-		}
-
-		g_hash_table_insert (bundled_resources, key, resource_to_bundle);
+		g_hash_table_insert (bundled_resources, (gpointer) resource_to_bundle->id, resource_to_bundle);
 	}
 
 	if (assemblyAdded)
