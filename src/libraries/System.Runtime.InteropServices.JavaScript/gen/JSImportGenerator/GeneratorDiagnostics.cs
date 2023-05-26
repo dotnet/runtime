@@ -28,9 +28,9 @@ namespace Microsoft.Interop
         }
 
         private const string Category = "JSImportGenerator";
-        private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
+        private readonly List<DiagnosticInfo> _diagnostics = new List<DiagnosticInfo>();
 
-        public IEnumerable<Diagnostic> Diagnostics => _diagnostics;
+        public IEnumerable<DiagnosticInfo> Diagnostics => _diagnostics;
 
         public void ReportInvalidMarshallingAttributeInfo(
             AttributeData attributeData,
