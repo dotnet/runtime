@@ -89,6 +89,27 @@ static guint16 sri_vector128_t_methods [] = {
 	SN_op_UnsignedRightShift,
 };
 
+static guint16 sn_vector_t_methods [] = {
+	SN_get_AllBitsSet,
+	SN_get_Count,
+	SN_get_One,
+	SN_get_Zero,
+	SN_op_Addition,
+	SN_op_BitwiseAnd,
+	SN_op_BitwiseOr,
+	SN_op_Division,
+	SN_op_Equality,
+	SN_op_ExclusiveOr,
+	SN_op_Inequality,
+	SN_op_LeftShift,
+	SN_op_Multiply,
+	SN_op_OnesComplement,
+	SN_op_RightShift,
+	SN_op_Subtraction,
+	SN_op_UnaryNegation,
+	SN_op_UnsignedRightShift,
+};
+
 static guint16 sri_packedsimd_methods [] = {
 	SN_Add,
 	SN_And,
@@ -300,7 +321,7 @@ emit_common_simd_operations (TransformData *td, int id, int atype, int vector_si
 static gboolean
 get_common_simd_info (MonoClass *vector_klass, MonoMethodSignature *csignature, MonoTypeEnum *atype, int *vector_size, int *arg_size, int *scalar_arg)
 {
-	if (!m_class_is_simd_type (vector_klass))
+	if (!m_class_is_simd_type (vector_klass) && csignature->param_count)
 		vector_klass = mono_class_from_mono_type_internal (csignature->params [0]);
 	if (!m_class_is_simd_type (vector_klass))
 		return FALSE;
@@ -539,6 +560,38 @@ opcode_added:
 	return TRUE;
 }
 
+static gboolean
+emit_sn_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
+{
+	int id = lookup_intrins (sn_vector_t_methods, sizeof (sn_vector_t_methods), cmethod);
+	if (id == -1)
+		return FALSE;
+
+	gint16 simd_opcode = -1;
+	gint16 simd_intrins = -1;
+
+	// First argument is always vector
+	MonoClass *vector_klass = cmethod->klass;
+
+	MonoTypeEnum atype;
+	int vector_size, arg_size, scalar_arg;
+	if (!get_common_simd_info (vector_klass, csignature, &atype, &vector_size, &arg_size, &scalar_arg))
+		return FALSE;
+
+	if (emit_common_simd_operations (td, id, atype, vector_size, arg_size, scalar_arg, &simd_opcode, &simd_intrins))
+		goto opcode_added;
+
+	if (simd_opcode == -1 || simd_intrins == -1)
+		return FALSE;
+
+	interp_add_ins (td, simd_opcode);
+	td->last_ins->data [0] = simd_intrins;
+
+opcode_added:
+	emit_common_simd_epilogue (td, vector_klass, csignature, vector_size);
+	return TRUE;
+}
+
 #if HOST_BROWSER
 static int
 map_packedsimd_intrins_based_on_atype (MonoTypeEnum atype, int base_intrins, gboolean allow_float)
@@ -722,6 +775,9 @@ interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodS
 			return emit_sri_vector128 (td, cmethod, csignature);
 		else if (!strcmp (class_name, "Vector128`1"))
 			return emit_sri_vector128_t (td, cmethod, csignature);
+	} else if (!strcmp (class_ns, "System.Numerics")) {
+		if (!strcmp (class_name, "Vector`1"))
+			return emit_sn_vector_t (td, cmethod, csignature);
 	} else if (!strcmp (class_ns, "System.Runtime.Intrinsics.Wasm")) {
 		if (!strcmp (class_name, "PackedSimd"))
 			return emit_sri_packedsimd (td, cmethod, csignature);
