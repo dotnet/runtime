@@ -30,7 +30,7 @@
 	va_end (args); \
 } while (0)
 
-TypeLoadFailureCallback type_load_failure_callback = mono_class_set_type_load_failure;
+TypeLoadFailureCallback mono_class_set_deferred_type_load_failure_callback = mono_class_set_type_load_failure;
 
 static void
 mono_error_set_generic_errorv (MonoError *oerror, const char *name_space, const char *name, const char *msg_format, va_list args);
@@ -912,7 +912,7 @@ mono_error_set_first_argument (MonoError *oerror, const char *first_argument)
 }
 
 /**
- * mono_class_set_type_load_deferred_failure:
+ * mono_class_set_deferred_type_load_failure:
  * \param klass class in which the failure was detected
  * \param fmt \c printf -style error message string.
  *
@@ -924,7 +924,7 @@ mono_error_set_first_argument (MonoError *oerror, const char *first_argument)
  * \returns FALSE
  */
 gboolean
-mono_class_set_type_load_deferred_failure (MonoClass *klass, const char * fmt, ...)
+mono_class_set_deferred_type_load_failure (MonoClass *klass, const char * fmt, ...)
 {
 	if (!mono_class_has_deferred_failure (klass)) {
 		va_list args;
@@ -973,9 +973,9 @@ mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...)
 
 void set_failure_type(FailureType failure_type) {
 	if (failure_type == DEFERRED_FAILURE) {
-		type_load_failure_callback = mono_class_set_type_load_deferred_failure;
+		mono_class_set_deferred_type_load_failure_callback = mono_class_set_deferred_type_load_failure;
 	} else if (failure_type == IMMEDIATE_FAILURE) {
-		type_load_failure_callback = mono_class_set_type_load_failure;
+		mono_class_set_deferred_type_load_failure_callback = mono_class_set_type_load_failure;
 	} else {
 		g_assert_not_reached ();
 	}

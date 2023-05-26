@@ -305,7 +305,7 @@ mono_class_setup_fields (MonoClass *klass)
 	}
 
 	if (m_class_is_inlinearray (klass) && m_class_inlinearray_value (klass) <= 0)
-		type_load_failure_callback (klass, "Inline array length property must be positive.");
+		mono_class_set_deferred_type_load_failure_callback (klass, "Inline array length property must be positive.");
 
 	/* Get the real size */
 	explicit_size = mono_metadata_packing_from_typedef (klass->image, klass->type_token, &packing_size, &real_size);
@@ -376,7 +376,7 @@ mono_class_setup_fields (MonoClass *klass)
 				break;
 			}
 			if (m_class_is_inlinearray (klass)) {
-				if (type_load_failure_callback (klass, "Inline array struct must not have explicit layout."))
+				if (mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct must not have explicit layout."))
 					break;
 			}
 		}
@@ -2279,7 +2279,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 					size *= m_class_inlinearray_value (klass);
 					inlined_fields++;
 					if(size == 0 || size > struct_max_size) {
-						if (type_load_failure_callback (klass, "Inline array struct size out of bounds, abnormally large."))
+						if (mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct size out of bounds, abnormally large."))
 							break;
 						else
 							size = initial_size;
@@ -2313,7 +2313,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			}
 		}
 		if (m_class_is_inlinearray (klass) && inlined_fields != 1)
-			type_load_failure_callback (klass, "Inline array struct must have a single field.");
+			mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct must have a single field.");
 		break;
 	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT: {
 		real_size = 0;

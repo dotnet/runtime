@@ -341,10 +341,10 @@ set_failure_type (FailureType failure_type);
  */
 typedef gboolean (*TypeLoadFailureCallback)(MonoClass *klass, const char * fmt, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
 
-extern TypeLoadFailureCallback type_load_failure_callback;
+extern TypeLoadFailureCallback mono_class_set_deferred_type_load_failure_callback;
 
 gboolean
-mono_class_set_type_load_deferred_failure (MonoClass *klass, const char * fmt, ...);
+mono_class_set_deferred_type_load_failure (MonoClass *klass, const char * fmt, ...);
 
 gboolean
 mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...);
