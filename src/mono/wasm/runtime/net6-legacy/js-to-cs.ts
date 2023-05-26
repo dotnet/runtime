@@ -151,9 +151,9 @@ function _extract_mono_obj_root(should_add_in_flight: boolean, js_obj: any, resu
 // https://github.com/Planeshifter/emscripten-examples/blob/master/01_PassingArrays/sum_post.js
 function js_typedarray_to_heap(typedArray: TypedArray) {
     assert_legacy_interop();
-    const heapU8 = localHeapViewU8();
     const numBytes = typedArray.length * typedArray.BYTES_PER_ELEMENT;
     const ptr = Module._malloc(numBytes);
+    const heapU8 = localHeapViewU8();
     const heapBytes = new Uint8Array(heapU8.buffer, <any>ptr, numBytes);
     heapBytes.set(new Uint8Array(typedArray.buffer, typedArray.byteOffset, numBytes));
     // WARNING: returned memory view will get stale when linear memory grows on another thread. This is legacy interop so we don't try to fix it. The view will be fine when used in synchronous calls.

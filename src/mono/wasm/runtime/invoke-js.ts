@@ -5,7 +5,7 @@ import BuildConfiguration from "consts:configuration";
 
 import { marshal_exception_to_cs, bind_arg_marshal_to_cs } from "./marshal-to-cs";
 import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol } from "./marshal";
-import { setI32, setI32_unchecked, updateGrowableHeapViews } from "./memory";
+import { setI32, setI32_unchecked, receiveWorkerHeapViews } from "./memory";
 import { monoStringToString, stringToMonoStringRoot } from "./strings";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
@@ -362,7 +362,7 @@ function _wrap_error_flag(is_exception: Int32Ptr | null, ex: any): string {
         res = mono_wasm_symbolicate_string(res);
     }
     if (is_exception) {
-        updateGrowableHeapViews();
+        receiveWorkerHeapViews();
         setI32_unchecked(is_exception, 1);
     }
     return res;
@@ -376,7 +376,7 @@ export function wrap_error_root(is_exception: Int32Ptr | null, ex: any, result: 
 // to set out parameters of icalls
 export function wrap_no_error_root(is_exception: Int32Ptr | null, result?: WasmRoot<MonoObject>): void {
     if (is_exception) {
-        updateGrowableHeapViews();
+        receiveWorkerHeapViews();
         setI32_unchecked(is_exception, 0);
     }
     if (result) {

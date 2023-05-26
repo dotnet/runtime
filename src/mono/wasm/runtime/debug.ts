@@ -61,7 +61,6 @@ export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, 
 }
 
 function mono_wasm_malloc_and_set_debug_buffer(command_parameters: string) {
-    const heapU8 = localHeapViewU8();
     if (command_parameters.length > _debugger_buffer_len) {
         if (_debugger_buffer)
             Module._free(_debugger_buffer);
@@ -69,6 +68,7 @@ function mono_wasm_malloc_and_set_debug_buffer(command_parameters: string) {
         _debugger_buffer = Module._malloc(_debugger_buffer_len);
     }
     const byteCharacters = atob(command_parameters);
+    const heapU8 = localHeapViewU8();
     for (let i = 0; i < byteCharacters.length; i++) {
         heapU8[<any>_debugger_buffer + i] = byteCharacters.charCodeAt(i);
     }

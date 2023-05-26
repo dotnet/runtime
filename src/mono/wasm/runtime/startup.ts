@@ -31,7 +31,7 @@ import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legac
 import { BINDING, MONO } from "./net6-legacy/globals";
 import { mono_log_debug, mono_log_warn } from "./logging";
 import { install_synchronization_context } from "./pthreads/shared";
-import { localHeapViewU8, updateGrowableHeapViews } from "./memory";
+import { localHeapViewU8 } from "./memory";
 
 
 // default size if MonoConfig.pthreadPoolSize is undefined
@@ -491,7 +491,7 @@ async function instantiate_wasm_module(
 
                 // .grow() takes a delta compared to the previous size
                 wasmMemory.grow((memorySize! - wasmMemory.buffer.byteLength + 65535) >>> 16);
-                updateGrowableHeapViews();
+                runtimeHelpers.updateMemoryViews();
             } catch (err) {
                 mono_log_warn("failed to resize memory for the snapshot", err);
                 runtimeHelpers.loadedMemorySnapshot = false;
