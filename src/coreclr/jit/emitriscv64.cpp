@@ -2529,7 +2529,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                         dstRW += 4;
 
                         code = emitInsCode(INS_jalr);
-                        code |= (code_t)id->idReg1() << 7;
+                        code |= (code_t)REG_RA << 7; // use REG_RA for returning
                         code |= (code_t)tmpReg2 << 15;
                         code |= (code_t)(low & 0xfff) << 20;
                         *(code_t*)dstRW = code;
@@ -2596,6 +2596,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                         dstRW += 4;
 
                         code = emitInsCode(INS_jalr);
+                        code |= (code_t)REG_RA << 7; // use REG_RA for returning
                         code |= (code_t)tmpReg2 << 15;
                         code |= (code_t)(low & 0xfff) << 20;
                         *(code_t*)dstRW = code;
