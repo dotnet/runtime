@@ -15,7 +15,6 @@ using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = Tool.NativeAot)]
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
 	class CompilerGeneratedCodeAccessedViaReflection
@@ -56,9 +55,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
 			[ExpectedWarning ("IL3002", "--MethodWithRequires--",
-				ProducedBy = Tool.Analyzer)]
+				ProducedBy = Tool.Analyzer | Tool.NativeAot, CompilerGeneratedCode = true)]
 			[ExpectedWarning ("IL3050", "--MethodWithRequires--",
-				ProducedBy = Tool.Analyzer)]
+				ProducedBy = Tool.Analyzer | Tool.NativeAot, CompilerGeneratedCode = true)]
 			[ExpectedWarning ("IL2119", "<" + nameof (IteratorCallsMethodWithRequires) + ">", "MoveNext", CompilerGeneratedCode = true,
 				ProducedBy = Tool.Trimmer)]
 			public static IEnumerable<int> IteratorCallsMethodWithRequires ()
@@ -103,14 +102,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2112", nameof (RUCTypeWithIterators) + "()", "--RUCTypeWithIterators--", CompilerGeneratedCode = true,
-				ProducedBy = Tool.Trimmer)]
+				ProducedBy = Tool.Trimmer | Tool.NativeAot)] // warning about .ctor
 			[RequiresUnreferencedCode ("--RUCTypeWithIterators--")]
 			class RUCTypeWithIterators
 			{
 				[ExpectedWarning ("IL2112", nameof (StaticIteratorCallsMethodWithRequires) + "()",
-					ProducedBy = Tool.Trimmer)]
-				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+					ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot, CompilerGeneratedCode = true)]
+				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot, CompilerGeneratedCode = true)]
 				public static IEnumerable<int> StaticIteratorCallsMethodWithRequires ()
 				{
 					yield return 0;
@@ -118,9 +117,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 
 				[ExpectedWarning ("IL2112", nameof (InstanceIteratorCallsMethodWithRequires) + "()",
-					ProducedBy = Tool.Trimmer)]
-				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
-				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+					ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot, CompilerGeneratedCode = true)]
+				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot, CompilerGeneratedCode = true)]
 				public IEnumerable<int> InstanceIteratorCallsMethodWithRequires ()
 				{
 					yield return 0;
@@ -141,7 +140,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2026", nameof (RUCTypeWithIterators) + "()", "--RUCTypeWithIterators--")]
 			// Expect to see warnings about RUC on type, for all static state machine members.
 			[ExpectedWarning ("IL2026", nameof (RUCTypeWithIterators.StaticIteratorCallsMethodWithRequires) + "()", "--RUCTypeWithIterators--")]
-			[ExpectedWarning ("IL2026", nameof (RUCTypeWithIterators.InstanceIteratorCallsMethodWithRequires) + "()", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
+			[ExpectedWarning ("IL2026", nameof (RUCTypeWithIterators.InstanceIteratorCallsMethodWithRequires) + "()")]
 			[ExpectedWarning ("IL2118", "<" + nameof (IteratorWithCorrectDataflow) + ">", "<t_IteratorWithCorrectDataflow>",
 				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (IteratorWithProblematicDataflow) + ">", "<t_IteratorWithProblematicDataflow>",
@@ -169,8 +168,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot, CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot, CompilerGeneratedCode = true)]
 			public static async Task AsyncCallsMethodWithRequires ()
 			{
 				MethodWithRequires ();
@@ -213,8 +212,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot, CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot, CompilerGeneratedCode = true)]
 			public static async IAsyncEnumerable<int> AsyncIteratorCallsMethodWithRequires ()
 			{
 				yield return await MethodAsync ();
@@ -265,8 +264,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				var lambda =
 				[ExpectedWarning ("IL2026", "--MethodWithRequires--")]
-				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
-				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 				[ExpectedWarning ("IL2119", "<" + nameof (LambdaCallsMethodWithRequires) + ">",
 					ProducedBy = Tool.Trimmer)]
 				() => MethodWithRequires ();
@@ -286,12 +285,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2111", "<" + nameof (LambdaWithCorrectParameter) + ">",
-				ProducedBy = Tool.Trimmer)]
+				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void LambdaWithCorrectParameter ()
 			{
 				var lambda =
 				[ExpectedWarning ("IL2114", "<" + nameof (LambdaWithCorrectParameter) + ">",
-					ProducedBy = Tool.Trimmer)]
+					ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 				([DynamicallyAccessedMembersAttribute (DynamicallyAccessedMemberTypes.All)] Type t) => {
 					t.RequiresAll ();
 				};
@@ -350,22 +349,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2112", nameof (RUCTypeWithLambdas) + "()", "--RUCTypeWithLambdas--", CompilerGeneratedCode = true,
-				ProducedBy = Tool.Trimmer)]
+				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[RequiresUnreferencedCode ("--RUCTypeWithLambdas--")]
 			class RUCTypeWithLambdas
 			{
-				[ExpectedWarning ("IL2112", nameof (MethodWithLambdas), "--RUCTypeWithLambdas--", ProducedBy = Tool.Trimmer)]
+				[ExpectedWarning ("IL2112", nameof (MethodWithLambdas), "--RUCTypeWithLambdas--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 				public void MethodWithLambdas ()
 				{
 					var lambda =
-					[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
-					[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+					[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+					[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 					() => MethodWithRequires ();
 
 					int i = 0;
 					var lambdaWithCapturedState =
-					[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
-					[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+					[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+					[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 					() => {
 						i++;
 						MethodWithRequires ();
@@ -383,13 +382,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2118", "<" + nameof (LambdaWithCorrectDataflow) + ">",
 				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2111", "<" + nameof (LambdaWithCorrectParameter) + ">",
-				ProducedBy = Tool.Trimmer)]
+				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[ExpectedWarning ("IL2118", "<" + nameof (LambdaWithProblematicDataflow) + ">",
 				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (LambdaWithCapturedTypeToDAM) + ">",
 				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2026", nameof (RUCTypeWithLambdas) + "()", "--RUCTypeWithLambdas--")]
-			[ExpectedWarning ("IL2026", nameof (RUCTypeWithLambdas.MethodWithLambdas) + "()", "--RUCTypeWithLambdas--", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
+			[ExpectedWarning ("IL2026", nameof (RUCTypeWithLambdas.MethodWithLambdas) + "()", "--RUCTypeWithLambdas--")]
 			public static void Test (Lambdas test = null)
 			{
 				typeof (Lambdas).RequiresAll ();
@@ -410,8 +409,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static void LocalFunctionCallsMethodWithRequires ()
 			{
 				[ExpectedWarning ("IL2026", "--MethodWithRequires--")]
-				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
-				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 				[ExpectedWarning ("IL2119", "<" + nameof (LocalFunctionCallsMethodWithRequires) + ">",
 					ProducedBy = Tool.Trimmer)]
 				void LocalFunction () => MethodWithRequires ();
@@ -479,25 +478,25 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2112", nameof (RUCTypeWithLocalFunctions) + "()", CompilerGeneratedCode = true,
-				ProducedBy = Tool.Trimmer)]
+				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[RequiresUnreferencedCode ("--RUCTypeWithLocalFunctions--")]
 			class RUCTypeWithLocalFunctions
 			{
 				[ExpectedWarning ("IL2112", nameof (MethodWithLocalFunctions), "--RUCTypeWithLocalFunctions--",
-					ProducedBy = Tool.Trimmer)]
+					ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 				public void MethodWithLocalFunctions ()
 				{
-					[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
-					[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+					[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+					[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 					void LocalFunction () => MethodWithRequires ();
 
-					[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
-					[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+					[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+					[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 					static void StaticLocalFunction () => MethodWithRequires ();
 
 					int i = 0;
-					[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
-					[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+					[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+					[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 					void LocalFunctionWithCapturedState ()
 					{
 						i++;
@@ -522,7 +521,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				ProducedBy = Tool.Trimmer)]
 			// Expect RUC warnings for static, compiler-generated code warnings for instance.
 			[ExpectedWarning ("IL2026", nameof (RUCTypeWithLocalFunctions) + "()", "--RUCTypeWithLocalFunctions--")]
-			[ExpectedWarning ("IL2026", nameof (RUCTypeWithLocalFunctions.MethodWithLocalFunctions) + "()", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
+			[ExpectedWarning ("IL2026", nameof (RUCTypeWithLocalFunctions.MethodWithLocalFunctions) + "()")]
 			public static void Test (LocalFunctions test = null)
 			{
 				typeof (LocalFunctions).RequiresAll ();
