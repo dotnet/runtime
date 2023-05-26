@@ -113,43 +113,4 @@ namespace Microsoft.Extensions.Logging
         public virtual void AppendFormatted(int index, string value, IBufferWriter<char> buffer) => AppendFormatted<string>(index, value, buffer);
         public abstract void AppendFormatted<T>(int index, T value, IBufferWriter<char> buffer);
     }
-
-//    public readonly ref struct LogEntry<TState, TEnrichmentProperties>
-//    {
-//#if NET8_0_OR_GREATER
-//        private readonly ref TState _state;
-//        private readonly ref TEnrichmentProperties _enrichmentProperties;
-//#else
-//        // TODO: Explore making intrinsic. Or convert to regular fields.
-//        private readonly ByReference<TState> _state;
-//        private readonly ByReference<TEnrichmentProperties> _enrichmentProperties;
-//#endif
-
-//        public LogEntry(LogLevel level, EventId eventId, ref TState state, ref TEnrichmentProperties enrichmentProperties, Exception? exception, Func<TState, Exception?, string>? formatter)
-//        {
-//            LogLevel = level;
-//            EventId = eventId;
-//#if NET8_0_OR_GREATER
-//            _state = ref state;
-//            _enrichmentProperties = ref enrichmentProperties;
-//#else
-//            _state = new ByReference<TState>(ref state);
-//            _enrichmentProperties = new ByReference<TEnrichmentProperties>(ref enrichmentProperties);
-//#endif
-//            Exception = exception;
-//            Formatter = formatter;
-//        }
-
-//#if NET8_0_OR_GREATER
-//        public ref TState State => ref _state;
-//        public ref TEnrichmentProperties EnrichmentProperties => ref _enrichmentProperties;
-//#else
-//        public ref TState State => ref _state.Value;
-//        public ref TEnrichmentProperties EnrichmentProperties => ref _enrichmentProperties.Value;
-//#endif
-//        public LogLevel LogLevel { get; }
-//        public EventId EventId { get; }
-//        public Exception? Exception { get; }
-//        public Func<TState, Exception?, string>? Formatter { get; }
-//    }
 }
