@@ -71,6 +71,7 @@
       DOTNET_JitRandomOnStackReplacement;
       DOTNET_JitRandomlyCollect64BitCounts;
       DOTNET_TieredPGO_InstrumentedTierAlwaysOptimized;
+      DOTNET_JitProfileCasts;
       DOTNET_JitForceControlFlowGuard;
       DOTNET_JitCFGUseDispatcher;
       RunningIlasmRoundTrip;
@@ -224,13 +225,13 @@
     <TestEnvironment Include="clrinterpreter" TieredCompilation="1" />
     <TestEnvironment Include="defaultpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" />
     <TestEnvironment Include="fullpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0"/>
-    <TestEnvironment Include="fullpgo_methodprofiling" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitDelegateProfiling="1" JitVTableProfiling="1" />
+    <TestEnvironment Include="fullpgo_methodprofiling" TieredPGO="1" JitProfileCasts="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitDelegateProfiling="1" JitVTableProfiling="1" />
     <TestEnvironment Include="fullpgo_methodprofiling_always_optimized" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitDelegateProfiling="1" JitVTableProfiling="1" TieredPGO_InstrumentedTierAlwaysOptimized="1" />
-    <TestEnvironment Include="fullpgo_random_gdv" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitRandomlyCollect64BitCounts="1" />
+    <TestEnvironment Include="fullpgo_random_gdv" TieredPGO="1" JitProfileCasts="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitRandomlyCollect64BitCounts="1" />
     <TestEnvironment Include="fullpgo_random_gdv_methodprofiling_only" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitClassProfiling="0" JitDelegateProfiling="1" JitVTableProfiling="1" JitRandomlyCollect64BitCounts="1" />
     <TestEnvironment Include="fullpgo_random_gdv_edge" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitRandomEdgeCounts="1" JitRandomlyCollect64BitCounts="1" />
     <TestEnvironment Include="syntheticpgo" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitSynthesizeCounts="1" JitCheckSynthesizedProfile="1" />
-    <TestEnvironment Include="syntheticpgo_blend" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitSynthesizeCounts="3" JitCheckSynthesizedProfile="1" />
+    <TestEnvironment Include="syntheticpgo_blend" TieredPGO="1" JitProfileCasts="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitSynthesizeCounts="3" JitCheckSynthesizedProfile="1" />
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' == 'true'" GCName="clrgc.dll"/>
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' != 'true'" GCName="libclrgc.so"/>
     <TestEnvironment Include="gcstandaloneserver" Condition="'$(TargetsWindows)' == 'true'" gcServer="1" GCName="clrgc.dll"/>

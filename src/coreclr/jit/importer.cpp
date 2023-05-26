@@ -1377,7 +1377,8 @@ bool Compiler::impIsCastHelperEligibleForClassProbe(GenTree* tree)
     {
         const CorInfoHelpFunc helper = eeGetHelperNum(tree->AsCall()->gtCallMethHnd);
         if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS) ||
-            (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTINTERFACE))
+            (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTINTERFACE) ||
+            (helper == CORINFO_HELP_ISINSTANCEOFANY) || (helper == CORINFO_HELP_CHKCASTANY))
         {
             return true;
         }
@@ -1408,7 +1409,8 @@ bool Compiler::impIsCastHelperMayHaveProfileData(CorInfoHelpFunc helper)
     }
 
     if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS) ||
-        (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTINTERFACE))
+        (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTINTERFACE) ||
+        (helper == CORINFO_HELP_ISINSTANCEOFANY) || (helper == CORINFO_HELP_CHKCASTANY))
     {
         return true;
     }
@@ -5534,8 +5536,11 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                 if ((likelyCls != NO_CLASS_HANDLE) &&
                     (likelyClass.likelihood > (UINT32)JitConfig.JitGuardedDevirtualizationChainLikelihood()))
                 {
-                    if ((info.compCompHnd->compareTypesForCast(likelyCls, pResolvedToken->hClass) ==
-                         TypeCompareState::Must))
+                    // Legality check: make sure it's at least possible to cast the likely class
+                    // to the base class, e.g. String -> T will return TypeCompareState::May
+                    // Int -> String will be MustNot.
+                    if ((info.compCompHnd->compareTypesForCast(likelyCls, pResolvedToken->hClass) !=
+                         TypeCompareState::MustNot))
                     {
                         bool isAbstract = (info.compCompHnd->getClassAttribs(likelyCls) &
                                            (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0;
