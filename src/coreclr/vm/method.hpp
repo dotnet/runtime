@@ -1634,7 +1634,7 @@ protected:
         enum_flag2_HasStableEntryPoint                  = 0x01,   // The method entrypoint is stable (either precode or actual code)
         enum_flag2_HasPrecode                           = 0x02,   // Precode has been allocated for this method
         enum_flag2_IsUnboxingStub                       = 0x04,
-        enum_flag2_IsUnsafeAccessor                     = 0x08,   // This is discovered and marked late in the MethodDescs lifetime
+        // unused                                       = 0x08,
         enum_flag2_IsIntrinsic                          = 0x10,   // Jit may expand method as an intrinsic
         enum_flag2_IsEligibleForTieredCompilation       = 0x20,
         enum_flag2_RequiresCovariantReturnTypeChecking  = 0x40
@@ -1708,18 +1708,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_bFlags2 |= enum_flag2_IsIntrinsic;
-    }
-
-    inline BOOL IsUnsafeAccessor()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (m_bFlags2 & enum_flag2_IsUnsafeAccessor) != 0;
-    }
-
-    inline void SetIsUnsafeAccessor()
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedUpdateFlags2(enum_flag2_IsUnsafeAccessor, TRUE);
     }
 
     BOOL RequiresCovariantReturnTypeChecking()

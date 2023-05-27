@@ -333,23 +333,38 @@ inline MethodDesc* GetMethod(CORINFO_METHOD_HANDLE methodHandle)
 
 enum CORINFO_MODULE_HANDLE_TYPES
 {
-    CORINFO_NORMAL_MODULE  = 0,
-    CORINFO_DYNAMIC_MODULE = 1,
+    // The module handle is a Module
+    CORINFO_NORMAL_MODULE    = 0,
+
+    // The module handle is a DynamicResolver
+    CORINFO_DYNAMIC_MODULE   = 1,
+
+    // The module handle permits unrestricted access
+    CORINFO_MODULE_ALLACCESS = 2,
 };
 
-#define CORINFO_MODULE_HANDLE_TYPE_MASK (CORINFO_NORMAL_MODULE | CORINFO_DYNAMIC_MODULE)
+#define CORINFO_MODULE_HANDLE_TYPE_MASK (CORINFO_NORMAL_MODULE | CORINFO_DYNAMIC_MODULE | CORINFO_MODULE_ALLACCESS)
 
 inline bool IsDynamicScope(CORINFO_MODULE_HANDLE module)
 {
     LIMITED_METHOD_CONTRACT;
-    return (CORINFO_DYNAMIC_MODULE == (((size_t)module) & CORINFO_MODULE_HANDLE_TYPE_MASK));
+    return !!(CORINFO_DYNAMIC_MODULE & (((size_t)module) & CORINFO_MODULE_HANDLE_TYPE_MASK));
 }
 
-inline CORINFO_MODULE_HANDLE MakeDynamicScope(DynamicResolver* pResolver)
+inline bool IsAllAccessScope(CORINFO_MODULE_HANDLE module)
+{
+    LIMITED_METHOD_CONTRACT;
+    return !!(CORINFO_MODULE_ALLACCESS & (((size_t)module) & CORINFO_MODULE_HANDLE_TYPE_MASK));
+}
+
+inline CORINFO_MODULE_HANDLE MakeDynamicScope(DynamicResolver* pResolver, bool permitAllAccess)
 {
     LIMITED_METHOD_CONTRACT;
     CONSISTENCY_CHECK(0 == (((size_t)pResolver) & CORINFO_MODULE_HANDLE_TYPE_MASK));
-    return (CORINFO_MODULE_HANDLE)(((size_t)pResolver) | CORINFO_DYNAMIC_MODULE);
+    uint32_t type = CORINFO_DYNAMIC_MODULE;
+    if (permitAllAccess)
+        type |= CORINFO_MODULE_ALLACCESS;
+    return (CORINFO_MODULE_HANDLE)(((size_t)pResolver) | type);
 }
 
 inline DynamicResolver* GetDynamicResolver(CORINFO_MODULE_HANDLE module)

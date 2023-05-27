@@ -1241,11 +1241,6 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     if (hr != S_OK)
         return false;
 
-    // This flag is always set here and is never used to indicate skipping any work.
-    // We don't change our behavior based on this flag because we always need to
-    // generate the IL for this API.
-    SetIsUnsafeAccessor();
-
     UnsafeAccessorKind kind;
     SString name;
 

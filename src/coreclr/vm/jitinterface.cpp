@@ -152,7 +152,7 @@ inline CORINFO_MODULE_HANDLE GetScopeHandle(MethodDesc* method)
     LIMITED_METHOD_CONTRACT;
     if (method->IsDynamicMethod())
     {
-        return MakeDynamicScope(method->AsDynamicMethodDesc()->GetResolver());
+        return MakeDynamicScope(method->AsDynamicMethodDesc()->GetResolver(), method->IsILStub());
     }
     else
     {
@@ -5474,8 +5474,7 @@ void CEEInfo::getCallInfo(
     pResult->accessAllowed = CORINFO_ACCESS_ALLOWED;
     MethodDesc* callerMethod = (MethodDesc*)callerHandle;
     if ((flags & CORINFO_CALLINFO_SECURITYCHECKS)
-        && !(callerMethod->IsILStub()) // IL stubs can access everything, don't bother doing access checks
-        && !(callerMethod->IsUnsafeAccessor())) // UnsafeAccessor method, by definition, can access everything
+        && !(IsAllAccessScope(pResolvedToken->tokenScope)))
     {
         //Our type system doesn't always represent the target exactly with the MethodDesc.  In all cases,
         //carry around the parent MethodTable for both Caller and Callee.
@@ -7738,10 +7737,16 @@ public:
         return TransientResolver != NULL;
     }
 
+    CORINFO_MODULE_HANDLE CreateScopeHandle() const
+    {
+        _ASSERTE(HasTransientMethodDetails());
+        return MakeDynamicScope(TransientResolver, true /* permitAllAccess */);
+    }
+
     TransientMethodDetails CreateTransientMethodDetails() const
     {
         _ASSERTE(HasTransientMethodDetails());
-        return TransientMethodDetails{Method, Header, MakeDynamicScope(TransientResolver)};
+        return TransientMethodDetails{Method, Header, CreateScopeHandle() };
     }
 };
 
@@ -7766,7 +7771,7 @@ static bool getMethodInfoHelper(
     if (NULL != cxt.Header)
     {
         scopeHnd = cxt.HasTransientMethodDetails()
-            ? MakeDynamicScope(cxt.TransientResolver)
+            ? cxt.CreateScopeHandle()
             : GetScopeHandle(ftn->GetModule());
         bool fILIntrinsic = false;
 
@@ -7811,7 +7816,7 @@ static bool getMethodInfoHelper(
     else if (ftn->IsDynamicMethod())
     {
         DynamicResolver* pResolver = ftn->AsDynamicMethodDesc()->GetResolver();
-        scopeHnd = MakeDynamicScope(pResolver);
+        scopeHnd = MakeDynamicScope(pResolver, ftn->IsILStub());
 
         unsigned int EHCount;
         methInfo->ILCode = pResolver->GetCodeInfo(&methInfo->ILCodeSize,
@@ -7824,7 +7829,7 @@ static bool getMethodInfoHelper(
     }
     else if (ftn->TryGenerateUnsafeAccessor(&cxt.TransientResolver, &cxt.Header))
     {
-        scopeHnd = MakeDynamicScope(cxt.TransientResolver);
+        scopeHnd = cxt.CreateScopeHandle();
 
         _ASSERTE(cxt.Header != NULL);
         getMethodInfoILMethodHeaderHelper(cxt.Header, methInfo);
