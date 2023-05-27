@@ -6212,9 +6212,8 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 
     if (call->IsGuardedDevirtualizationCandidate())
     {
-        const uint8_t candidatesCount = call->GetInlineCandidatesCount();
-        assert(candidatesCount > 0);
-        for (uint8_t candidateId = 0; candidateId < candidatesCount; candidateId++)
+        assert(call->GetInlineCandidatesCount() > 0);
+        for (uint8_t candidateId = 0; candidateId < call->GetInlineCandidatesCount(); candidateId++)
         {
             InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate", true);
 
@@ -6222,19 +6221,13 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
             impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
                                          ilOffset, &inlineResult);
 
+            // Ignore non-inlineable candidates
+            // TODO: Consider keeping them to just devirtualize without inlining, at least for interface
+            // calls on NativeAOT, but that requires more changes elsewhere too.
             if (!inlineResult.IsCandidate())
             {
-                if (candidatesCount > 1)
-                {
-                    // TODO: we should not give up if one of the candidates fails to inline while others succeed.
-                    //
-                    JITDUMP(
-                        "We had multiple inline candidates but have to give up on them since one of them didn't pass"
-                        "inline checks")
-                    call->ClearInlineInfo();
-                    call->ClearGuardedDevirtualizationCandidate();
-                }
-                break;
+                call->RemoveGDVCandidateInfo(this, candidateId);
+                candidateId--;
             }
         }
     }
