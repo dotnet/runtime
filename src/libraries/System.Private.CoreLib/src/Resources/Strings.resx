@@ -2234,6 +2234,9 @@
   <data name="EventSource_VarArgsParameterMismatch" xml:space="preserve">
     <value>Event {0} was called with a different type as defined (argument "{1}"). This may cause the event to be displayed incorrectly.</value>
   </data>
+  <data name="EventSource_ChannelUnsupported" xml:space="preserve">
+    <value>Event {0} specifies a channel on a self describing EventSource.</value>
+  </data>
   <data name="Exception_EmptyFieldForCustomAttributeType" xml:space="preserve">
     <value>Custom attribute type '{0}' doesn't contain a field named '{1}'.</value>
   </data>
