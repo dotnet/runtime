@@ -2197,7 +2197,7 @@ InlineCandidateInfo* GenTreeCall::GetGDVCandidateInfo(uint8_t index)
     if (gtInlineInfoCount > 1)
     {
         // In this case we should access it through gtInlineCandidateInfoList
-        return &gtInlineCandidateInfoList->at(index);
+        return gtInlineCandidateInfoList->at(index);
     }
     return gtInlineCandidateInfo;
 }
@@ -2223,15 +2223,15 @@ void GenTreeCall::AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candi
     else if (gtInlineInfoCount == 1)
     {
         // Upgrade gtInlineCandidateInfo to gtInlineCandidateInfoList (vector)
-        CompAllocator       allocator          = comp->getAllocator(CMK_Inlining);
-        InlineCandidateInfo firstCandidateInfo = *gtInlineCandidateInfo;
-        gtInlineCandidateInfoList              = new (allocator) jitstd::vector<InlineCandidateInfo>(allocator);
-        gtInlineCandidateInfoList->push_back(firstCandidateInfo);
-        gtInlineCandidateInfoList->push_back(*candidateInfo);
+        CompAllocator        allocator      = comp->getAllocator(CMK_Inlining);
+        InlineCandidateInfo* firstCandidate = gtInlineCandidateInfo;
+        gtInlineCandidateInfoList           = new (allocator) jitstd::vector<InlineCandidateInfo*>(allocator);
+        gtInlineCandidateInfoList->push_back(firstCandidate);
+        gtInlineCandidateInfoList->push_back(candidateInfo);
     }
     else
     {
-        gtInlineCandidateInfoList->push_back(*candidateInfo);
+        gtInlineCandidateInfoList->push_back(candidateInfo);
     }
     gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT;
     gtInlineInfoCount++;
@@ -2263,10 +2263,7 @@ void GenTreeCall::RemoveGDVCandidateInfo(Compiler* comp, uint8_t index)
     // Downgrade gtInlineCandidateInfoList to gtInlineCandidateInfo
     if (gtInlineInfoCount == 1)
     {
-        InlineCandidateInfo firstItem = gtInlineCandidateInfoList->at(0);
-        gtInlineCandidateInfoList->clear();
-        gtInlineCandidateInfo  = new (comp, CMK_Inlining) InlineCandidateInfo;
-        *gtInlineCandidateInfo = firstItem;
+        gtInlineCandidateInfo = gtInlineCandidateInfoList->at(0);
     }
 }
 

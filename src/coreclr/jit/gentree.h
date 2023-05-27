@@ -5548,7 +5548,7 @@ struct GenTreeCall final : public GenTree
         // gtInlineCandidateInfo is only used when inlining methods
         InlineCandidateInfo* gtInlineCandidateInfo;
         // gtInlineCandidateInfoList is used when we have more than one GDV candidate
-        jitstd::vector<InlineCandidateInfo>* gtInlineCandidateInfoList;
+        jitstd::vector<InlineCandidateInfo*>* gtInlineCandidateInfoList;
 
         HandleHistogramProfileCandidateInfo* gtHandleHistogramProfileCandidateInfo;
         LateDevirtualizationInfo*            gtLateDevirtualizationInfo;
