@@ -13664,30 +13664,33 @@ PhaseStatus Compiler::fgMorphBlocks()
         fgComputeEnterBlocksSet();
         fgDfsReversePostorder();
 
-        // Morph can introduce new blocks, so remember
-        // how many there were to start with
+        // Morph can introduce new blocks, so enable tracking block creation
         //
         unsigned const bbNumMax = fgBBNumMax;
-
+        fgEnableNewBlockTracking();
         for (unsigned i = 1; i <= bbNumMax; i++)
         {
             BasicBlock* const block = fgBBReversePostorder[i];
             fgMorphBlock(block);
         }
+        fgDisableNewBlockTracking();
 
         // If morph created new blocks, then morph them as well.
-        // (TODO: track this set more efficiently)
+        // Temporarily forbid creating even more new blocks so
+        // we don't have to iterate until closure.
+        //
         // (TODO: verify that this potential out of order processing does not cause issues)
         //
-        if (fgBBNumMax != bbNumMax)
+        if (fgNewBBs->size() > 0)
         {
-            for (BasicBlock* block : Blocks())
+            JITDUMP("Morph created %u new blocks, processing them out of RPO\n", fgNewBBs->size());
+
+            INDEBUG(fgSafeBasicBlockCreation = false);
+            for (BasicBlock* const block : *fgNewBBs)
             {
-                // TODO: we might need to pass a flag here indicating that this block
-                // cannot safely use the pred block assertion state.
-                //
                 fgMorphBlock(block);
             }
+            INDEBUG(fgSafeBasicBlockCreation = true);
         }
     }
 

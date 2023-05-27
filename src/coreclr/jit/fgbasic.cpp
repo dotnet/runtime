@@ -84,6 +84,9 @@ void Compiler::fgInit()
     fgSafeBasicBlockCreation = true;
 #endif // DEBUG
 
+    fgTrackNewBlockCreation = false;
+    fgNewBBs                = nullptr;
+
     fgLocalVarLivenessDone = false;
     fgIsDoingEarlyLiveness = false;
     fgDidEarlyLiveness     = false;

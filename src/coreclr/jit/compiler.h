@@ -3182,6 +3182,12 @@ public:
     bool fgSafeBasicBlockCreation;
 #endif
 
+    bool fgTrackNewBlockCreation;
+    jitstd::vector<BasicBlock*>* fgNewBBs;
+
+    void fgEnableNewBlockTracking();
+    void fgDisableNewBlockTracking();
+
     BasicBlock* bbNewBasicBlock(BBjumpKinds jumpKind);
 
     /*

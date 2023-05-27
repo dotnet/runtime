@@ -831,6 +831,7 @@ void MorphCopyBlockHelper::MorphStructCases()
         bool srcFldIsProfitable = ((m_srcVarDsc != nullptr) && (!m_srcVarDsc->lvDoNotEnregister ||
                                                                 (m_srcVarDsc->HasGCPtr() && (m_dstVarDsc == nullptr)) ||
                                                                 (m_srcVarDsc->lvFieldCnt == 1)));
+
         // Are both dest and src promoted structs?
         if (m_dstDoFldStore && m_srcDoFldStore && (dstFldIsProfitable || srcFldIsProfitable))
         {

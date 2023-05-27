@@ -1396,6 +1396,11 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
 
     block = new (this, CMK_BasicBlock) BasicBlock;
 
+    if (fgTrackNewBlockCreation)
+    {
+        fgNewBBs->push_back(block);
+    }
+
 #if MEASURE_BLOCK_SIZE
     BasicBlock::s_Count += 1;
     BasicBlock::s_Size += sizeof(*block);
@@ -1495,6 +1500,35 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     block->bbPostorderNum = 0;
 
     return block;
+}
+
+//------------------------------------------------------------------------
+// fgEnableNewBlockTracking: start tracking creation of new blocks
+//
+void Compiler::fgEnableNewBlockTracking()
+{
+    assert(!fgTrackNewBlockCreation);
+    fgTrackNewBlockCreation = true;
+
+    if (fgNewBBs == nullptr)
+    {
+        CompAllocator allocator = getAllocator(CMK_BasicBlock);
+        fgNewBBs                = new (allocator) jitstd::vector<BasicBlock*>(allocator);
+    }
+
+    fgNewBBs->clear();
+}
+
+//------------------------------------------------------------------------
+// fgDisableNewBlockTracking: stop tracking creation of new blocks
+//
+// Notes:
+//   Does not alter fgNewBBs
+//
+void Compiler::fgDisableNewBlockTracking()
+{
+    assert(fgTrackNewBlockCreation);
+    fgTrackNewBlockCreation = false;
 }
 
 //------------------------------------------------------------------------

@@ -2785,6 +2785,10 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     fgDebugCheckBlockLinks();
     fgFirstBBisScratch();
 
+    // We should not be leaving new block tracking enabled across phases
+    //
+    assert(!fgTrackNewBlockCreation);
+
     if (fgBBcount > 10000 && expensiveDebugCheckLevel < 1)
     {
         // The basic block checks are too expensive if there are too many blocks,
