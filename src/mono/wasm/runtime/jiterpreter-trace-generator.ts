@@ -23,6 +23,7 @@ import {
     append_memmove_dest_src, try_append_memset_fast,
     try_append_memmove_fast, counters, getOpcodeTableValue,
     getMemberOffset, JiterpMember, BailoutReason,
+    isZeroPageReserved
 } from "./jiterpreter-support";
 import { compileSimdFeatureDetect } from "./jiterpreter-feature-detect";
 import {
@@ -608,10 +609,11 @@ export function generateWasmBody(
 
                 // str
                 const ptrLocal = builder.options.zeroPageOptimization ? "math_rhs32" : "cknull_ptr";
-                if (builder.options.zeroPageOptimization && cwraps.mono_wasm_is_zero_page_reserved()) {
+                if (builder.options.zeroPageOptimization && isZeroPageReserved()) {
                     // load string ptr and stash it
                     // if the string ptr is null, the length check will fail and we will bail out,
                     //  so the null check is not necessary
+                    counters.nullChecksFused++;
                     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
                     builder.local(ptrLocal, WasmOpcode.tee_local);
                 } else
@@ -2849,9 +2851,10 @@ function append_getelema1(
     builder.local("math_lhs32", WasmOpcode.tee_local);
 
     const ptrLocal = builder.options.zeroPageOptimization ? "math_rhs32" : "cknull_ptr";
-    if (builder.options.zeroPageOptimization && cwraps.mono_wasm_is_zero_page_reserved()) {
+    if (builder.options.zeroPageOptimization && isZeroPageReserved()) {
         // load array ptr and stash it
         // if the array ptr is null, the length check will fail and we will bail out
+        counters.nullChecksFused++;
         append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
         builder.local(ptrLocal, WasmOpcode.tee_local);
     } else

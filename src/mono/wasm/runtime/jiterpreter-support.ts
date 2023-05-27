@@ -1431,6 +1431,7 @@ export const counters = {
     failures: 0,
     bytesGenerated: 0,
     nullChecksEliminated: 0,
+    nullChecksFused: 0,
     backBranchesEmitted: 0,
     backBranchesNotEmitted: 0,
     simdFallback: simdFallbackCounters,
@@ -1772,6 +1773,22 @@ export function bytesFromHex(hex: string): Uint8Array {
     for (let i = 0; i < hex.length; i += 2)
         bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
     return bytes;
+}
+
+export function isZeroPageReserved(): boolean {
+    // FIXME: This check will always return true on worker threads.
+    // Right now the jiterpreter is disabled when threading is active, so that's not an issue.
+    if (!cwraps.mono_wasm_is_zero_page_reserved())
+        return false;
+
+    // Determine whether emscripten's stack checker or some other troublemaker has
+    //  written junk at the start of memory. The previous cwraps call will have
+    //  checked whether the stack starts at zero or not (on the main thread).
+    // We can't do this in the C helper because emcc/asan might be checking pointers.
+    return (Module.HEAPU32[0] === 0) &&
+        (Module.HEAPU32[1] === 0) &&
+        (Module.HEAPU32[2] === 0) &&
+        (Module.HEAPU32[3] === 0);
 }
 
 export type JiterpreterOptions = {
