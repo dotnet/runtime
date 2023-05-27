@@ -68,6 +68,13 @@ unsigned SsaStressHashHelper()
 }
 #endif
 
+//------------------------------------------------------------------------
+//  AllSuccessorEnumerator: Construct an instance of the enumerator.
+//
+//  Arguments:
+//     comp  - Compiler instance
+//     block - The block whose successors are to be iterated
+//
 AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block) : m_block(block)
 {
     m_numSuccs = 0;

@@ -143,7 +143,7 @@ SsaBuilder::SsaBuilder(Compiler* pCompiler)
 //
 //  Return Value:
 //     The number of nodes visited while performing DFS on the graph.
-
+//
 int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
 {
     Compiler* comp = m_pCompiler;
