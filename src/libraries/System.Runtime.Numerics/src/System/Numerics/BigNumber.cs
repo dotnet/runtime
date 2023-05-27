@@ -1035,48 +1035,48 @@ namespace System.Numerics
             Debug.Assert(digits < Array.MaxLength);
             int charsIncludeDigits = Math.Max(digits, charsForBits);
 
-            if (targetSpan && charsIncludeDigits > destination.Length)
+            try
+            {
+                if (targetSpan && charsIncludeDigits > destination.Length)
+                {
+                    charsWritten = 0;
+                    spanSuccess = false;
+                    return null;
+                }
+
+                // each byte is typically eight chars
+                ValueStringBuilder sb = charsIncludeDigits > 512 ? new ValueStringBuilder(charsIncludeDigits) : new ValueStringBuilder(stackalloc char[charsIncludeDigits]);
+
+                if (digits > charsForBits)
+                {
+                    sb.Append(value._sign >= 0 ? '0' : '1', digits - charsForBits);
+                }
+
+                AppendByte(ref sb, highByte, charsInHighByte - 1);
+
+                for (int i = bytes.Length - 2; i >= 0; i--)
+                {
+                    AppendByte(ref sb, bytes[i]);
+                }
+
+                if (targetSpan)
+                {
+                    spanSuccess = sb.TryCopyTo(destination, out charsWritten);
+                    Debug.Assert(spanSuccess);
+                    return null;
+                }
+
+                charsWritten = 0;
+                spanSuccess = false;
+                return sb.ToString();
+            }
+            finally
             {
                 if (arrayToReturnToPool is not null)
                 {
                     ArrayPool<byte>.Shared.Return(arrayToReturnToPool);
                 }
-
-                charsWritten = 0;
-                spanSuccess = false;
-                return null;
             }
-
-            // each byte is typically eight chars
-            ValueStringBuilder sb = charsIncludeDigits > 512 ? new ValueStringBuilder(charsIncludeDigits) : new ValueStringBuilder(stackalloc char[charsIncludeDigits]);
-
-            if (digits > charsForBits)
-            {
-                sb.Append(value._sign >= 0 ? '0' : '1', digits - charsForBits);
-            }
-
-            AppendByte(ref sb, highByte, charsInHighByte - 1);
-
-            for (int i = bytes.Length - 2; i >= 0; i--)
-            {
-                AppendByte(ref sb, bytes[i]);
-            }
-
-            if (arrayToReturnToPool is not null)
-            {
-                ArrayPool<byte>.Shared.Return(arrayToReturnToPool);
-            }
-
-            if (targetSpan)
-            {
-                spanSuccess = sb.TryCopyTo(destination, out charsWritten);
-                Debug.Assert(spanSuccess);
-                return null;
-            }
-
-            charsWritten = 0;
-            spanSuccess = false;
-            return sb.ToString();
 
             static void AppendByte(ref ValueStringBuilder sb, byte b, int startHighBit = 7)
             {
