@@ -13642,52 +13642,47 @@ PhaseStatus Compiler::fgMorphBlocks()
         lvSetMinOptsDoNotEnreg();
     }
 
-    // Build a reverse postorder
+    // Morph all blocks. If we aren't then we just morph in normal bbNext order.
     //
-    fgRenumberBlocks();
-    EnsureBasicBlockEpoch();
-    fgComputeEnterBlocksSet();
-    fgDfsReversePostorder();
-
-    // Morph may introduce new blocks, so remember
-    // how many there were to start with
-    //
-    unsigned const bbNumMax = fgBBNumMax;
-
-    for (unsigned i = 1; i <= bbNumMax; i++)
+    if (!optLocalAssertionProp)
     {
-        BasicBlock* const block = fgBBReversePostorder[i];
-        fgMorphBlock(block);
-    }
-
-    // If morph created new blocks, then morph them as well.
-    // (TODO: track this set more efficiently)
-    //
-    if (fgBBNumMax != bbNumMax)
-    {
+        // Note morph can add blocks downstream from the current block,
+        // and alter (but not null out) the current block's bbNext;
+        // this iterator ensures they all get visited.
+        //
         for (BasicBlock* block : Blocks())
         {
-            if (block->bbNum > bbNumMax)
+            fgMorphBlock(block);
+        }
+    }
+    else
+    {
+        // We are optimizing. Process in RPO.
+        //
+        fgRenumberBlocks();
+        EnsureBasicBlockEpoch();
+        fgComputeEnterBlocksSet();
+        fgDfsReversePostorder();
+
+        // Morph can introduce new blocks, so remember
+        // how many there were to start with
+        //
+        unsigned const bbNumMax = fgBBNumMax;
+
+        for (unsigned i = 1; i <= bbNumMax; i++)
+        {
+            BasicBlock* const block = fgBBReversePostorder[i];
+            fgMorphBlock(block);
+        }
+
+        // If morph created new blocks, then morph them as well.
+        // (TODO: track this set more efficiently)
+        // (TODO: verify that this potential out of order processing does not cause issues)
+        //
+        if (fgBBNumMax != bbNumMax)
+        {
+            for (BasicBlock* block : Blocks())
             {
-
-#ifdef DEBUG
-                // Sanity checks to hopefully ensure the newly added blocks
-                // don't invalidate any forward assertion propagtion we did for the
-                // original blocks.
-                //
-                if (block != fgFirstBB)
-                {
-                    const unsigned numSucc = block->NumSucc();
-                    assert(numSucc <= 1);
-
-                    if (numSucc == 1)
-                    {
-                        BasicBlock* const viableTarget = opts.IsOSR() ? fgEntryBB : fgFirstBB;
-                        assert(block->isEmpty() || (block->GetUniqueSucc() == viableTarget));
-                    }
-                }
-#endif
-
                 // TODO: we might need to pass a flag here indicating that this block
                 // cannot safely use the pred block assertion state.
                 //
