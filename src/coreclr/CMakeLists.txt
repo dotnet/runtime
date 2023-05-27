@@ -97,7 +97,7 @@ endif(NOT CLR_CROSS_COMPONENTS_BUILD)
 #     - do not depend on clr's compile definitions
 #-----------------------------------------
 if(CLR_CMAKE_HOST_UNIX)
-    if(CLR_CMAKE_TARGET_ANDROID)
+    if(CLR_CMAKE_TARGET_ANDROID AND NOT DEFINED CMAKE_ANDROID_NDK)
         find_library(LZMA NAMES lzma)
         if(LZMA STREQUAL LZMA-NOTFOUND)
            message(FATAL_ERROR "Cannot find liblzma.")

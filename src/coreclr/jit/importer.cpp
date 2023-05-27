@@ -1704,9 +1704,18 @@ bool Compiler::impSpillStackEntry(unsigned level,
         if (tree->OperGet() == GT_RET_EXPR)
         {
             JITDUMP("\n*** see V%02u = GT_RET_EXPR, noting temp\n", tnum);
-            GenTree*             call = tree->AsRetExpr()->gtInlineCandidate;
-            InlineCandidateInfo* ici  = call->AsCall()->GetInlineCandidateInfo();
-            ici->preexistingSpillTemp = tnum;
+            GenTreeCall* call = tree->AsRetExpr()->gtInlineCandidate->AsCall();
+            if (call->IsGuardedDevirtualizationCandidate())
+            {
+                for (uint8_t i = 0; i < call->GetInlineCandidatesCount(); i++)
+                {
+                    call->GetGDVCandidateInfo(i)->preexistingSpillTemp = tnum;
+                }
+            }
+            else
+            {
+                call->AsCall()->GetSingleInlineCandidateInfo()->preexistingSpillTemp = tnum;
+            }
         }
     }
 
@@ -5487,6 +5496,14 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         {
             // Jit can only inline expand CHKCASTCLASS and CHKCASTARRAY helpers.
             canExpandInline = (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY);
+
+            // For ChkCastAny we ignore cases where the class is known to be abstract or is an interface.
+            if (helper == CORINFO_HELP_CHKCASTANY)
+            {
+                const bool isAbstract = (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) &
+                                         (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0;
+                canExpandInline = !isAbstract;
+            }
         }
         else if ((helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY))
         {
@@ -5625,7 +5642,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     if (isCastClass)
     {
         assert((helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY) ||
-               (helper == CORINFO_HELP_CHKCASTINTERFACE));
+               (helper == CORINFO_HELP_CHKCASTANY) || (helper == CORINFO_HELP_CHKCASTINTERFACE));
 
         CorInfoHelpFunc specialHelper = helper;
         if ((helper == CORINFO_HELP_CHKCASTCLASS) &&
