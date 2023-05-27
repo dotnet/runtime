@@ -511,6 +511,96 @@ namespace System.Numerics
             }
         }
 
+        private static ParsingStatus BinNumberToBigInteger(ref BigNumberBuffer number, out BigInteger result)
+        {
+            if (number.digits is null || number.digits.Length < 2)
+            {
+                result = default;
+                return ParsingStatus.Failed;
+            }
+
+            const int DigitsPerBlock = 32;
+
+            int totalDigitCount = number.digits.Length - 1;   // Ignore trailing '\0'
+
+            int blockCount = Math.DivRem(totalDigitCount, DigitsPerBlock, out int remainingDigitsInBlock);
+            if (remainingDigitsInBlock == 0)
+            {
+                remainingDigitsInBlock = DigitsPerBlock;
+            }
+            else
+            {
+                blockCount++;
+            }
+
+            Debug.Assert(number.digits[0] is '0' or '1');
+            bool isNegative = number.digits[0] == '1';
+
+            uint[]? arrayFromPool = null;
+            Span<uint> bufferSpan = blockCount <= BigIntegerCalculator.StackAllocThreshold ?
+                stackalloc uint[blockCount] : (arrayFromPool = ArrayPool<uint>.Shared.Rent(blockCount)).AsSpan(0, blockCount);
+
+            try
+            {
+                uint currentBlock = isNegative ? 0xFF_FF_FF_FF : 0x0;
+                int bufferPos = blockCount;
+                foreach (ReadOnlyMemory<char> chunkMem in number.digits.GetChunks())
+                {
+                    ReadOnlySpan<char> chunk = chunkMem.Span;
+                    foreach (char c in chunk)
+                    {
+                        if (c == '\0')
+                        {
+                            break;
+                        }
+
+                        Debug.Assert(c is '0' or '1');
+                        currentBlock = (currentBlock << 1) | (uint)(c - '0');
+
+                        if (--remainingDigitsInBlock == 0)
+                        {
+                            bufferSpan[--bufferPos] = currentBlock;
+                            remainingDigitsInBlock = DigitsPerBlock;
+
+                            // we do not need to reset currentBlock now, because it should always set all its bits by left shift in subsequent iterations
+                        }
+                    }
+
+                    Debug.Assert(bufferPos > 0 || remainingDigitsInBlock == DigitsPerBlock);
+                }
+
+                Debug.Assert(bufferPos == 0 && remainingDigitsInBlock == DigitsPerBlock);
+
+                if (isNegative)
+                {
+                    NumericsHelpers.DangerousMakeTwosComplement(bufferSpan);
+                }
+
+                bufferSpan = bufferSpan.TrimEnd(0u);
+                if (bufferSpan.IsEmpty)
+                {
+                    result = BigInteger.Zero;
+                }
+                else if (bufferSpan.Length == 1 && bufferSpan[0] <= int.MaxValue)
+                {
+                    result = new BigInteger((int)(isNegative ? -bufferSpan[0] : bufferSpan[0]), (uint[]?)null);
+                }
+                else
+                {
+                    result = new BigInteger(isNegative ? -1 : 1, bufferSpan.ToArray());
+                }
+
+                return ParsingStatus.OK;
+            }
+            finally
+            {
+                if (arrayFromPool is not null)
+                {
+                    ArrayPool<uint>.Shared.Return(arrayFromPool);
+                }
+            }
+        }
+
         //
         // This threshold is for choosing the algorithm to use based on the number of digits.
         //
