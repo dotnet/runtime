@@ -45,7 +45,7 @@ jobs:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
       nameSuffix: WasmBuildTests
-      buildArgs:
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs) /p:WorkloadsTestPreviousVersions=$(workloadsTestPreviousVersionsVar)
       timeoutInMinutes: 180
       condition: >-
         or(
