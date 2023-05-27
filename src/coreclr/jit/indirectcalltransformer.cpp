@@ -483,9 +483,7 @@ private:
             assert((likelihood >= 0) && (likelihood <= 100));
             JITDUMP("Likelihood of correct guess is %u\n", likelihood);
 
-            // TODO: implement chaining for multiple GDV candidates
-            const bool canChainGdv = GetChecksCount() == 1;
-            if (canChainGdv)
+            if (IsChainingSupported())
             {
                 const bool isChainedGdv = (origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_CHAIN) != 0;
 
@@ -516,6 +514,12 @@ private:
         virtual const char* Name()
         {
             return "GuardedDevirtualization";
+        }
+
+        bool IsChainingSupported()
+        {
+            // TODO: implement chaining for multiple GDV candidates
+            return GetChecksCount() == 1;
         }
 
         //------------------------------------------------------------------------
@@ -848,7 +852,11 @@ private:
             // special candidate helper and we need to use the new 'this'.
             GenTreeCall* call = compiler->gtCloneCandidateCall(origCall);
             call->gtArgs.GetThisArg()->SetEarlyNode(compiler->gtNewLclvNode(thisTemp, TYP_REF));
-            call->SetIsGuarded();
+
+            if (IsChainingSupported())
+            {
+                call->SetIsGuarded();
+            }
 
             JITDUMP("Direct call [%06u] in block " FMT_BB "\n", compiler->dspTreeID(call), block->bbNum);
 
@@ -1009,7 +1017,11 @@ private:
             Statement*   newStmt = compiler->gtNewStmt(call, stmt->GetDebugInfo());
 
             call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
-            call->SetIsGuarded();
+
+            if (IsChainingSupported())
+            {
+                call->SetIsGuarded();
+            }
 
             JITDUMP("Residual call [%06u] moved to block " FMT_BB "\n", compiler->dspTreeID(call), elseBlock->bbNum);
 
