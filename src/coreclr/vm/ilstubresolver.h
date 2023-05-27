@@ -89,6 +89,9 @@ protected:
     //
     struct CompileTimeState
     {
+        CompileTimeState() = default;
+        ~CompileTimeState() = default;
+
         COR_ILMETHOD_DECODER   m_ILHeader;
         COR_ILMETHOD_SECT_EH * m_pEHSect;
         SigPointer             m_StubTargetMethodSig;

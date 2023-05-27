@@ -7772,7 +7772,7 @@ static bool getMethodInfoHelper(
     {
         scopeHnd = cxt.HasTransientMethodDetails()
             ? cxt.CreateScopeHandle()
-            : GetScopeHandle(ftn->GetModule());
+            : GetScopeHandle(ftn);
         bool fILIntrinsic = false;
 
         MethodTable * pMT  = ftn->GetMethodTable();

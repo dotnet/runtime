@@ -312,8 +312,8 @@ ILStubResolver::AllocGeneratedIL(
         memory = newMemory;
     }
 
-    CompileTimeState* pNewCompileTimeState = (CompileTimeState*)memory;
-    memset(pNewCompileTimeState, 0, sizeof(*pNewCompileTimeState));
+    // Using placement new
+    CompileTimeState* pNewCompileTimeState = new (memory) CompileTimeState{};
 
     BYTE* pNewILCodeBuffer = ((BYTE*)pNewCompileTimeState) + sizeof(*pNewCompileTimeState);
     BYTE* pNewLocalSig = (0 == cbLocalSig)
@@ -418,22 +418,16 @@ ILStubResolver::ClearCompileTimeState(CompileTimeStatePtrSpecialValues newState)
     CONTRACTL_END;
 
     //
-    // See allocations in AllocGeneratedIL and SetStubTargetMethodSig
+    // See allocations in AllocGeneratedIL, SetStubTargetMethodSig and AllocEHSect
     //
 
-    if (!m_pCompileTimeState->m_StubTargetMethodSig.IsNull())
-    {
-        delete[] m_pCompileTimeState->m_StubTargetMethodSig.GetPtr();
-    }
+    delete[](void*)m_pCompileTimeState->m_StubTargetMethodSig.GetPtr();
+    delete[](void*)m_pCompileTimeState->m_pEHSect;
 
-    if (NULL != m_pCompileTimeState->m_pEHSect)
-    {
-        delete[] m_pCompileTimeState->m_pEHSect;
-    }
-
-    // The allocation being deleted here is a bulk allocation
-    // that is typed as a BYTE[].
-    delete[] m_pCompileTimeState;
+    // The allocation being deleted here was allocated using placement new
+    // from a bulk allocation so manually call the destructor.
+    m_pCompileTimeState->~CompileTimeState();
+    delete[](void*)m_pCompileTimeState;
 
     InterlockedExchangeT(&m_pCompileTimeState, dac_cast<PTR_CompileTimeState>((TADDR)newState));
 } // ILStubResolver::ClearCompileTimeState
