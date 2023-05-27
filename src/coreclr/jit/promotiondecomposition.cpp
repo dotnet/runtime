@@ -1033,6 +1033,7 @@ void ReplaceVisitor::HandleStore(GenTree** use, GenTree* user)
 
                 plan.MarkNonRemainderUseOfStructLocal();
                 dstFirstRep->NeedsReadBack = true;
+                m_hasPendingReadBacks      = true;
                 dstFirstRep++;
             }
 
@@ -1052,6 +1053,7 @@ void ReplaceVisitor::HandleStore(GenTree** use, GenTree* user)
 
                     plan.MarkNonRemainderUseOfStructLocal();
                     dstLastRep->NeedsReadBack = true;
+                    m_hasPendingReadBacks     = true;
                     dstEndRep--;
                 }
             }
@@ -1122,7 +1124,10 @@ void ReplaceVisitor::HandleStore(GenTree** use, GenTree* user)
         {
             GenTreeLclVarCommon* lclStore = store->AsLclVarCommon();
             unsigned             size     = lclStore->GetLayout(m_compiler)->GetSize();
-            MarkForReadBack(lclStore->GetLclNum(), lclStore->GetLclOffs(), size);
+            if (MarkForReadBack(lclStore->GetLclNum(), lclStore->GetLclOffs(), size))
+            {
+                JITDUMP("Marked store destination replacements to be read back (could not decompose this store)\n");
+            }
         }
     }
 }
