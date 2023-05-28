@@ -70,11 +70,17 @@ namespace System.Linq
                 return array;
             }
 
-            private List<TSource> LazyToList()
+            public override List<TSource> ToList()
             {
-                Debug.Assert(GetCount(onlyIfCheap: true) == -1);
+                int count = GetCount(onlyIfCheap: true);
 
-                var list = new List<TSource>();
+                if (count == 1)
+                {
+                    // If GetCount returns 1, then _source is empty and only _item should be returned
+                    return ToSingleItemList(_item);
+                }
+
+                List<TSource> list = count == -1 ? new List<TSource>() : new List<TSource>(count);
                 if (!_appending)
                 {
                     list.Add(_item);
@@ -86,49 +92,6 @@ namespace System.Linq
                     list.Add(_item);
                 }
 
-                return list;
-            }
-
-            public override List<TSource> ToList()
-            {
-                int count = GetCount(onlyIfCheap: true);
-                if (count == -1)
-                {
-                    return LazyToList();
-                }
-
-                if (count == 1)
-                {
-                    // If GetCount returns 1, then _source is empty and only _item should be returned
-                    return ToSingleItemList(_item);
-                }
-
-                var list = new List<TSource>(count);
-                Span<TSource> span = SetCountAndGetSpan(list, count);
-                int index;
-                if (_appending)
-                {
-                    index = 0;
-                }
-                else
-                {
-                    span[0] = _item;
-                    index = 1;
-                }
-
-                foreach (var item in _source)
-                {
-                    span[index] = item;
-                    ++index;
-                }
-
-                if (_appending)
-                {
-                    span[index] = _item;
-                    ++index; // For the Debug.Assert, should be elided in release mode
-                }
-
-                Debug.Assert(index == span.Length, "All list elements were not initialized.");
                 return list;
             }
 
@@ -166,13 +129,8 @@ namespace System.Linq
 
                 TSource[] array = builder.ToArray();
 
-                int index = 0;
-                for (SingleLinkedNode<TSource>? node = _prepended; node != null; node = node.Linked)
-                {
-                    array[index++] = node.Item;
-                }
-
-                _appended?.Fill(array.AsSpan(^_appendCount));
+                _prepended?.Fill(array);
+                _appended?.FillReversed(array);
 
                 return array;
             }
@@ -216,21 +174,15 @@ namespace System.Linq
                 return array;
             }
 
-            private List<TSource> LazyToList()
+            public override List<TSource> ToList()
             {
-                Debug.Assert(GetCount(onlyIfCheap: true) == -1);
-
-                var list = new List<TSource>();
+                int count = GetCount(onlyIfCheap: true);
+                List<TSource> list = count == -1 ? new List<TSource>() : new List<TSource>(count);
 
                 if (_prepended != null)
                 {
                     Span<TSource> span = SetCountAndGetSpan(list, _prependCount);
-                    int index = 0;
-                    for (SingleLinkedNode<TSource>? node = _prepended; node != null; node = node.Linked)
-                    {
-                        span[index] = node.Item;
-                        ++index;
-                    }
+                    _prepended.Fill(span);
                 }
 
                 list.AddRange(_source);
@@ -239,43 +191,9 @@ namespace System.Linq
                 {
                     int index = list.Count;
                     Span<TSource> span = SetCountAndGetSpan(list, index + _appendCount);
-                    _appended.Fill(span[index..]);
+                    _appended.FillReversed(span);
                 }
 
-                return list;
-            }
-
-            public override List<TSource> ToList()
-            {
-                int count = GetCount(onlyIfCheap: true);
-                if (count == -1)
-                {
-                    return LazyToList();
-                }
-
-                var list = new List<TSource>(count);
-                Span<TSource> span = SetCountAndGetSpan(list, count);
-                int index = 0;
-
-                for (SingleLinkedNode<TSource>? node = _prepended; node != null; node = node.Linked)
-                {
-                    list[index] = node.Item;
-                    ++index;
-                }
-
-                foreach (var item in _source)
-                {
-                    span[index] = item;
-                    ++index;
-                }
-
-                if (_appended != null)
-                {
-                    _appended.Fill(span[index..]);
-                    index += _appendCount; // For the Debug.Assert, should be elided in release mode
-                }
-
-                Debug.Assert(index == span.Length, "All list elements were not initialized.");
                 return list;
             }
 
