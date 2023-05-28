@@ -131,11 +131,13 @@ EXTERN_C void __dmb(unsigned int _Type);
 #pragma intrinsic(__dmb)
 FORCEINLINE void PalYieldProcessor()
 {
-    __dmb(0xA /* _ARM_BARRIER_ISHST */);
+    __dmb(_ARM_BARRIER_ISHST);
     __yield();
 }
 
-#define PalMemoryBarrier() __dmb(_ARM64_BARRIER_ISH)
+#define PalMemoryBarrier() __dmb(_ARM_BARRIER_ISH)
+
+#define PalReadMemoryBarrier() __dmb(_ARM_BARRIER_ISH)
 
 #elif defined(HOST_ARM64)
 
@@ -145,7 +147,7 @@ EXTERN_C void __dmb(unsigned int _Type);
 #pragma intrinsic(__dmb)
 FORCEINLINE void PalYieldProcessor()
 {
-    __dmb(0xA /* _ARM64_BARRIER_ISHST */);
+    __dmb(_ARM64_BARRIER_ISHST);
     __yield();
 }
 
