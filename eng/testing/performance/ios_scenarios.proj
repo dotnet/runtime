@@ -32,14 +32,13 @@
   <ItemGroup>
     <HelixWorkItem Include="SOD - iOS HelloWorld .app Size $(LlvmPath) $(SymbolsPath)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <PreCommands>cd $(ScenarioDirectory)helloios;cp -rf $HELIX_CORRELATION_PAYLOAD/iosHelloWorld/$(SymbolsPath)/$(LlvmPath) ./app;$(Python) pre.py --name app</PreCommands>
+      <PreCommands>cd $(ScenarioDirectory)helloios;cp -rf $HELIX_CORRELATION_PAYLOAD/iosHelloWorld/$(LlvmPath)$(SymbolsPath) ./app;$(Python) pre.py --name app</PreCommands>
       <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
     <HelixWorkItem Include="SOD - iOS HelloWorld Mono Zip Size $(LlvmPath) $(SymbolsPath)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <PreCommands Condition="'$(SymbolsPath)' == 'symbols'">cd $(ScenarioDirectory)helloios;cp -v $HELIX_CORRELATION_PAYLOAD/iosHelloWorldZip/$(SymbolsPath)/$(LlvmPath)zip/iOSSampleApp$(LlvmPath)/iOSSampleApp$(LlvmPath).zip .;$(Python) pre.py --name iOSSampleApp$(LlvmPath).zip</PreCommands>
-      <PreCommands Condition="'$(SymbolsPath)' == 'nosymbols'">cd $(ScenarioDirectory)helloios;cp -v $HELIX_CORRELATION_PAYLOAD/iosHelloWorldZip/$(SymbolsPath)/$(LlvmPath)zip/iOSSampleApp$(LlvmPath)$(SymbolsPath)/iOSSampleApp$(LlvmPath)$(SymbolsPath).zip .;$(Python) pre.py --name iOSSampleApp$(LlvmPath)$(SymbolsPath).zip</PreCommands>
+      <PreCommands>cd $(ScenarioDirectory)helloios;cp -v $HELIX_CORRELATION_PAYLOAD/iosHelloWorldZip/$(LlvmPath)$(SymbolsPath)zip/iOSSampleApp$(LlvmPath)$(SymbolsPath)/iOSSampleApp$(LlvmPath)$(SymbolsPath).zip .;$(Python) pre.py --name iOSSampleApp$(LlvmPath)$(SymbolsPath).zip</PreCommands>
       <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
@@ -52,7 +51,7 @@
           # PreCommands
           export XHARNESSPATH=$XHARNESS_CLI_PATH
 
-          cp -r $HELIX_CORRELATION_PAYLOAD/iosHelloWorld/$(SymbolsPath)/$(LlvmPath)/HelloiOS.app $(ScenarioDirectory)helloios/HelloiOS.app
+          cp -r $HELIX_CORRELATION_PAYLOAD/iosHelloWorld/$(LlvmPath)$(SymbolsPath)/HelloiOS.app $(ScenarioDirectory)helloios/HelloiOS.app
           cp -f embedded.mobileprovision $(ScenarioDirectory)helloios/HelloiOS.app
           cd $(ScenarioDirectory)helloios
           sign HelloiOS.app

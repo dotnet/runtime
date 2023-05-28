@@ -457,22 +457,22 @@ if [[ "$iosmono" == "true" ]]; then
     if [[ "$iosllvmbuild" == "true" ]]; then
       if [[ "$iosstripsymbols" == "true" ]]; then
           # LLVM NoSymbols Mono .app
-          mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nosymbols/llvm $payload_directory/iosHelloWorld
-          mkdir -p $payload_directory/iosHelloWorldZip/nosymbols/llvmzip && cp -rv $source_directory/iosHelloWorldZip/nosymbols/llvmzip $payload_directory/iosHelloWorldZip
+          mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/llvmnosymbols $payload_directory/iosHelloWorld
+          mkdir -p $payload_directory/iosHelloWorldZip/llvmnosymbolszip && cp -rv $source_directory/iosHelloWorldZip/llvmnosymbolszip $payload_directory/iosHelloWorldZip
       else
           # LLVM Mono .app
-          mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/symbols/llvm $payload_directory/iosHelloWorld
-          mkdir -p $payload_directory/iosHelloWorldZip/symbols/llvmzip && cp -rv $source_directory/iosHelloWorldZip/symbols/llvmzip $payload_directory/iosHelloWorldZip
+          mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/llvmsymbols $payload_directory/iosHelloWorld
+          mkdir -p $payload_directory/iosHelloWorldZip/llvmsymbolszip && cp -rv $source_directory/iosHelloWorldZip/llvmsymbolszip $payload_directory/iosHelloWorldZip
       fi
     else
       if [[ "$iosstripsymbols" == "true" ]]; then
         # NoLLVM Mono .app
-        mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nosymbols/nollvm $payload_directory/iosHelloWorld
-        mkdir -p $payload_directory/iosHelloWorldZip/nosymbols/nollvmzip && cp -rv $source_directory/iosHelloWorldZip/nosymbols/nollvmzip $payload_directory/iosHelloWorldZip
+        mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nollvmnosymbols $payload_directory/iosHelloWorld
+        mkdir -p $payload_directory/iosHelloWorldZip/nollvmnosymbolszip && cp -rv $source_directory/iosHelloWorldZip/nollvmnosymbolszip $payload_directory/iosHelloWorldZip
       else
         # NoLLVM Mono .app
-        mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/symbols/nollvm $payload_directory/iosHelloWorld
-        mkdir -p $payload_directory/iosHelloWorldZip/symbols/nollvmzip && cp -rv $source_directory/iosHelloWorldZip/symbols/nollvmzip $payload_directory/iosHelloWorldZip
+        mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nollvmsymbols $payload_directory/iosHelloWorld
+        mkdir -p $payload_directory/iosHelloWorldZip/nollvmsymbolszip && cp -rv $source_directory/iosHelloWorldZip/nollvmsymbolszip $payload_directory/iosHelloWorldZip
       fi
     fi
 fi

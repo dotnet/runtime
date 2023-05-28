@@ -36,8 +36,7 @@
     </HelixWorkItem>
     <HelixWorkItem Include="SOD - iOS HelloWorld Native AOT Zip Size $(SymbolsPath)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <PreCommands Condition="'$(SymbolsPath)' == 'symbols'">cd $(ScenarioDirectory)helloios;cp -v $HELIX_CORRELATION_PAYLOAD/iosHelloWorldZip/$(SymbolsPath)zip/iOSSampleApp/iOSSampleApp.zip .;$(Python) pre.py --name iOSSampleApp.zip</PreCommands>
-      <PreCommands Condition="'$(SymbolsPath)' == 'nosymbols'">cd $(ScenarioDirectory)helloios;cp -v $HELIX_CORRELATION_PAYLOAD/iosHelloWorldZip/$(SymbolsPath)zip/iOSSampleApp/iOSSampleApp$(SymbolsPath).zip .;$(Python) pre.py --name iOSSampleApp$(SymbolsPath).zip</PreCommands>
+      <PreCommands>cd $(ScenarioDirectory)helloios;cp -v $HELIX_CORRELATION_PAYLOAD/iosHelloWorldZip/$(SymbolsPath)zip/iOSSampleApp$(SymbolsPath)/iOSSampleApp$(SymbolsPath).zip .;$(Python) pre.py --name iOSSampleApp$(SymbolsPath).zip</PreCommands>
       <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>

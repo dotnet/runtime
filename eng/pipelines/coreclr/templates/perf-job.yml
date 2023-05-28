@@ -232,49 +232,49 @@ jobs:
     - ${{ if eq(parameters.runtimeType, 'iOSMono') }}: 
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
-          unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld/symbols/nollvm
+          unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld/nollvmsymbols
           cleanUnpackFolder: false
-          artifactFileName: 'iOSSampleAppNoLLVM.zip'
-          artifactName: 'iOSSampleAppNoLLVM'
-          displayName: 'iOS Sample App NoLLVM'
+          artifactFileName: 'iOSSampleAppNoLLVMSymbols.zip'
+          artifactName: 'iOSSampleAppNoLLVMSymbols'
+          displayName: 'iOS Sample App NoLLVM Symbols'
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
-          unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld/symbols/llvm
+          unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld/llvmsymbols
           cleanUnpackFolder: false
-          artifactFileName: 'iOSSampleAppLLVM.zip'
-          artifactName: 'iOSSampleAppLLVM'
-          displayName: 'iOS Sample App LLVM'
+          artifactFileName: 'iOSSampleAppLLVMSymbols.zip'
+          artifactName: 'iOSSampleAppLLVMSymbols'
+          displayName: 'iOS Sample App LLVM Symbols'
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
-          unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld/nosymbols/nollvm
+          unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld/nollvmnosymbols
           cleanUnpackFolder: false
           artifactFileName: 'iOSSampleAppNoLLVMNoSymbols.zip'
           artifactName: 'iOSSampleAppNoLLVMNoSymbols'
           displayName: 'iOS Sample App NoLLVM NoSymbols'
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
-          unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld/nosymbols/llvm
+          unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld/llvmnosymbols
           cleanUnpackFolder: false
           artifactFileName: 'iOSSampleAppLLVMNoSymbols.zip'
           artifactName: 'iOSSampleAppLLVMNoSymbols'
           displayName: 'iOS Sample App LLVM NoSymbols'
       # same artifact as above but don't extract .zip
       - task: DownloadBuildArtifacts@0
-        displayName: 'Download iOS Sample App NoLLVM'
+        displayName: 'Download iOS Sample App NoLLVM Symbols'
         inputs:
           buildType: current
           downloadType: single
-          downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/symbols/nollvmzip'
-          artifactName: 'iOSSampleAppNoLLVM'
+          downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/nollvmsymbolszip'
+          artifactName: 'iOSSampleAppNoLLVMSymbols'
           checkDownloadedFiles: true
       # same artifact as above but don't extract .zip
       - task: DownloadBuildArtifacts@0
-        displayName: 'Download iOS Sample App LLVM'
+        displayName: 'Download iOS Sample App LLVM Symbols'
         inputs:
           buildType: current
           downloadType: single
-          downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/symbols/llvmzip'
-          artifactName: 'iOSSampleAppLLVM'
+          downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/llvmsymbolszip'
+          artifactName: 'iOSSampleAppLLVMSymbols'
           checkDownloadedFiles: true
       # same artifact as above but don't extract .zip
       - task: DownloadBuildArtifacts@0
@@ -282,7 +282,7 @@ jobs:
         inputs:
           buildType: current
           downloadType: single
-          downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/nosymbols/nollvmzip'
+          downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/nollvmnosymbolszip'
           artifactName: 'iOSSampleAppNoLLVMNoSymbols'
           checkDownloadedFiles: true
       # same artifact as above but don't extract .zip
@@ -291,7 +291,7 @@ jobs:
         inputs:
           buildType: current
           downloadType: single
-          downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/nosymbols/llvmzip'
+          downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/llvmnosymbolszip'
           artifactName: 'iOSSampleAppLLVMNoSymbols'
           checkDownloadedFiles: true
 
@@ -301,9 +301,9 @@ jobs:
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld/symbols
           cleanUnpackFolder: false
-          artifactFileName: 'iOSSampleApp.zip'
-          artifactName: 'iOSSampleApp'
-          displayName: 'iOS Sample App'
+          artifactFileName: 'iOSSampleAppSymbols.zip'
+          artifactName: 'iOSSampleAppSymbols'
+          displayName: 'iOS Sample App Symbols'
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld/nosymbols
@@ -313,12 +313,12 @@ jobs:
           displayName: 'iOS Sample App NoSymbols'
       # same artifact as above but don't extract .zip
       - task: DownloadBuildArtifacts@0
-        displayName: 'Download iOS Sample App'
+        displayName: 'Download iOS Sample App Symbols'
         inputs:
           buildType: current
           downloadType: single
           downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/symbols'
-          artifactName: 'iOSSampleApp'
+          artifactName: 'iOSSampleAppSymbols'
           checkDownloadedFiles: true
       # same artifact as above but don't extract .zip
       - task: DownloadBuildArtifacts@0
