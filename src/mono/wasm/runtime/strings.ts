@@ -72,7 +72,7 @@ export function utf8BufferToString(heapOrArray: Uint8Array, idx: number, maxByte
 }
 
 export function utf16ToString(startPtr: number, endPtr: number): string {
-    if (_text_decoder_utf16 && (endPtr - startPtr) > 16) {
+    if (_text_decoder_utf16) {
         const subArray = viewOrCopy(localHeapViewU8(), startPtr as any, endPtr as any);
         return _text_decoder_utf16.decode(subArray);
     } else {
