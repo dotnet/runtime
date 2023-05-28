@@ -787,6 +787,8 @@ namespace Microsoft.WebAssembly.Diagnostics
     }
     internal sealed partial class MonoSDBHelper
     {
+        public const string WebcilInWasmExtension = ".wasm";
+
         private static int debuggerObjectId;
         private static int cmdId = 1; //cmdId == 0 is used by events which come from runtime
         private const int MINOR_VERSION = 61;
@@ -1217,6 +1219,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (result.EndsWith(".webcil")) {
                 /* don't leak .webcil names to the debugger - work in terms of the original .dlls */
                 string baseName = result.Substring(0, result.Length - 7);
+                result = baseName + ".dll";
+            }
+            if (result.EndsWith(WebcilInWasmExtension)) {
+                /* don't leak webcil .wasm names to the debugger - work in terms of the original .dlls */
+                string baseName = result.Substring(0, result.Length - WebcilInWasmExtension.Length);
                 result = baseName + ".dll";
             }
             return result;

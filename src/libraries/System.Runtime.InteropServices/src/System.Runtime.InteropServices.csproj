@@ -32,6 +32,8 @@
     <Compile Include="System\Runtime\InteropServices\ImportedFromTypeLibAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ManagedToNativeComInteropStubAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshalling\ComExposedClassAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\UniqueComInterfaceMarshaller.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\ComInterfaceMarshaller.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshalling\ComObject.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshalling\DefaultCaching.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshalling\DefaultIUnknownInterfaceDetailsStrategy.cs" />

@@ -288,22 +288,9 @@ namespace ILCompiler.Dataflow
                     {
                         Debug.Assert(generatedType == generatedType.GetTypeDefinition());
 
-                        if (HasGenericParameters(generatedType))
+                        if (generatedType.HasInstantiation)
                             MapGeneratedTypeTypeParameters(generatedType);
                     }
-                }
-
-                /// <summary>
-                /// Check if the type itself is generic. The only difference is that
-                /// if the type is a nested type, the generic parameters from its
-                /// parent type don't count.
-                /// </summary>
-                static bool HasGenericParameters(MetadataType typeDef)
-                {
-                    if (typeDef.ContainingType == null)
-                        return typeDef.HasInstantiation;
-
-                    return typeDef.Instantiation.Length > typeDef.ContainingType.Instantiation.Length;
                 }
 
                 void MapGeneratedTypeTypeParameters(MetadataType generatedType)

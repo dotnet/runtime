@@ -331,7 +331,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
-        public static void PublicContexAndTestClassWithPropertiesWithDifferentAccesibilities()
+        public void PublicContextAndTestClassWithPropertiesWithDifferentAccessibilities()
         {
             JsonSerializerOptions options = new()
             {
@@ -360,7 +360,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
-        public static void PublicContexAndJsonConverter()
+        public void PublicContextAndJsonConverter()
         {
             JsonConverter obj = JsonMetadataServices.BooleanConverter;
 
@@ -371,7 +371,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
-        public static void PublicContexAndJsonSerializerOptions()
+        public void PublicContextAndJsonSerializerOptions()
         {
             JsonSerializerOptions obj = new()
             {

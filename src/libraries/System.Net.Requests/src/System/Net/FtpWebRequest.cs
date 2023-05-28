@@ -261,10 +261,8 @@ namespace System.Net
             }
             set
             {
-                if (string.IsNullOrEmpty(value))
-                {
-                    throw new ArgumentException(SR.net_ftp_invalid_method_name, nameof(value));
-                }
+                ArgumentException.ThrowIfNullOrEmpty(value);
+
                 if (InUse)
                 {
                     throw new InvalidOperationException(SR.net_reqsubmitted);
@@ -300,10 +298,7 @@ namespace System.Net
                     throw new InvalidOperationException(SR.net_reqsubmitted);
                 }
 
-                if (string.IsNullOrEmpty(value))
-                {
-                    throw new ArgumentException(SR.net_ftp_invalid_renameto, nameof(value));
-                }
+                ArgumentException.ThrowIfNullOrEmpty(value);
 
                 _renameTo = value;
             }
@@ -497,7 +492,7 @@ namespace System.Net
             NetworkCredential? networkCredential = null;
             _uri = uri;
             _methodInfo = FtpMethodInfo.GetMethodInfo(WebRequestMethods.Ftp.DownloadFile);
-            if (_uri.UserInfo != null && _uri.UserInfo.Length != 0)
+            if (!string.IsNullOrEmpty(_uri.UserInfo))
             {
                 string userInfo = _uri.UserInfo;
                 string username = userInfo;

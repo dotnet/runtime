@@ -292,6 +292,7 @@ namespace System
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static void ThrowIfNullOrEmpty([System.Diagnostics.CodeAnalysis.NotNullAttribute] string? argument, [System.Runtime.CompilerServices.CallerArgumentExpression("argument")] string? paramName = null) { throw null; }
+        public static void ThrowIfNullOrWhiteSpace([System.Diagnostics.CodeAnalysis.NotNullAttribute] string? argument, [System.Runtime.CompilerServices.CallerArgumentExpression("argument")] string? paramName = null) { throw null; }
     }
     public partial class ArgumentNullException : System.ArgumentException
     {
@@ -2687,6 +2688,7 @@ namespace System
         public static long GetTotalMemory(bool forceFullCollection) { throw null; }
         public static void KeepAlive(object? obj) { }
         public static void RegisterForFullGCNotification(int maxGenerationThreshold, int largeObjectHeapThreshold) { }
+        public static void RegisterNoGCRegionCallback(long totalSize, Action callback) { }
         public static void RemoveMemoryPressure(long bytesAllocated) { }
         public static void ReRegisterForFinalize(object obj) { }
         public static void SuppressFinalize(object obj) { }
@@ -2701,10 +2703,10 @@ namespace System
         public static System.GCNotificationStatus WaitForFullGCComplete(int millisecondsTimeout) { throw null; }
         public static System.GCNotificationStatus WaitForFullGCComplete(System.TimeSpan timeout) { throw null; }
         public static void WaitForPendingFinalizers() { }
-
-        public static TimeSpan GetTotalPauseDuration() { return TimeSpan.Zero; }
-
+        public static TimeSpan GetTotalPauseDuration() { throw null; }
         public static System.Collections.Generic.IReadOnlyDictionary<string, object> GetConfigurationVariables() { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("RefreshMemoryLimit is in preview.")]
+        public static void RefreshMemoryLimit() { throw null; }
     }
 
     public enum GCCollectionMode
@@ -13460,7 +13462,7 @@ namespace System.Runtime.InteropServices.Marshalling
         ElementRef = 8,
         ElementOut = 9
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Delegate)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Delegate)]
     public sealed partial class NativeMarshallingAttribute : System.Attribute
     {
         public NativeMarshallingAttribute(System.Type nativeType) { }

@@ -455,14 +455,14 @@ namespace System.Runtime.Serialization.DataContracts
                     {
                         if (collectionContractAttribute.IsItemNameSetExplicitly)
                         {
-                            if (collectionContractAttribute.ItemName == null || collectionContractAttribute.ItemName.Length == 0)
+                            if (string.IsNullOrEmpty(collectionContractAttribute.ItemName))
                                 throw new InvalidDataContractException(SR.Format(SR.InvalidCollectionContractItemName, DataContract.GetClrTypeFullName(UnderlyingType)));
                             itemName = DataContract.EncodeLocalName(collectionContractAttribute.ItemName);
                             _itemNameSetExplicit = true;
                         }
                         if (collectionContractAttribute.IsKeyNameSetExplicitly)
                         {
-                            if (collectionContractAttribute.KeyName == null || collectionContractAttribute.KeyName.Length == 0)
+                            if (string.IsNullOrEmpty(collectionContractAttribute.KeyName))
                                 throw new InvalidDataContractException(SR.Format(SR.InvalidCollectionContractKeyName, DataContract.GetClrTypeFullName(UnderlyingType)));
                             if (!isDictionary)
                                 throw new InvalidDataContractException(SR.Format(SR.InvalidCollectionContractKeyNoDictionary, DataContract.GetClrTypeFullName(UnderlyingType), collectionContractAttribute.KeyName));
@@ -470,7 +470,7 @@ namespace System.Runtime.Serialization.DataContracts
                         }
                         if (collectionContractAttribute.IsValueNameSetExplicitly)
                         {
-                            if (collectionContractAttribute.ValueName == null || collectionContractAttribute.ValueName.Length == 0)
+                            if (string.IsNullOrEmpty(collectionContractAttribute.ValueName))
                                 throw new InvalidDataContractException(SR.Format(SR.InvalidCollectionContractValueName, DataContract.GetClrTypeFullName(UnderlyingType)));
                             if (!isDictionary)
                                 throw new InvalidDataContractException(SR.Format(SR.InvalidCollectionContractValueNoDictionary, DataContract.GetClrTypeFullName(UnderlyingType), collectionContractAttribute.ValueName));

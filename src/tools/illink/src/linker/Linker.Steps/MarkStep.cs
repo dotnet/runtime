@@ -1088,7 +1088,7 @@ namespace Mono.Linker.Steps
 					continue;
 
 				if (signature == null) {
-					MarkIndirectlyCalledMethod (m, reason, ScopeStack.CurrentScope.Origin);
+					MarkMethodVisibleToReflection (m, reason, ScopeStack.CurrentScope.Origin);
 					marked = true;
 					continue;
 				}
@@ -1107,7 +1107,7 @@ namespace Mono.Linker.Steps
 				if (!matched)
 					continue;
 
-				MarkIndirectlyCalledMethod (m, reason, ScopeStack.CurrentScope.Origin);
+				MarkMethodVisibleToReflection (m, reason, ScopeStack.CurrentScope.Origin);
 				marked = true;
 			}
 
@@ -1410,10 +1410,13 @@ namespace Mono.Linker.Steps
 
 			MarkExportedTypesTarget.ProcessAssembly (assembly, Context);
 
-			if (ProcessReferencesStep.IsFullyPreservedAction (Annotations.GetAction (assembly))) {
-				if (!Context.TryGetCustomData ("DisableMarkingOfCopyAssemblies", out string? disableMarkingOfCopyAssembliesValue) ||
-					disableMarkingOfCopyAssembliesValue != "true")
+			var action = Annotations.GetAction (assembly);
+			if (ProcessReferencesStep.IsFullyPreservedAction (action)) {
+				if (action != AssemblyAction.Copy ||
+					!Context.TryGetCustomData ("DisableMarkingOfCopyAssemblies", out string? disableMarkingOfCopyAssembliesValue) ||
+					disableMarkingOfCopyAssembliesValue != "true") {
 					MarkEntireAssembly (assembly);
+				}
 				return;
 			}
 
@@ -1871,13 +1874,16 @@ namespace Mono.Linker.Steps
 			return MarkType (type, reason, origin);
 		}
 
-		internal void MarkMethodVisibleToReflection (MethodDefinition method, in DependencyInfo reason, in MessageOrigin origin)
+		internal void MarkMethodVisibleToReflection (MethodReference method, in DependencyInfo reason, in MessageOrigin origin)
 		{
-			MarkIndirectlyCalledMethod (method, reason, origin);
-			Annotations.MarkReflectionUsed (method);
+			MarkMethod (method, reason, origin);
+			if (Context.Resolve (method) is MethodDefinition methodDefinition) {
+				Annotations.MarkReflectionUsed (methodDefinition);
+				Annotations.MarkIndirectlyCalledMethod (methodDefinition);
+			}
 		}
 
-		internal void MarkFieldVisibleToReflection (FieldDefinition field, in DependencyInfo reason, in MessageOrigin origin)
+		internal void MarkFieldVisibleToReflection (FieldReference field, in DependencyInfo reason, in MessageOrigin origin)
 		{
 			MarkField (field, reason, origin);
 		}
@@ -2914,12 +2920,6 @@ namespace Mono.Linker.Steps
 				MarkMethod (method, reason, ScopeStack.CurrentScope.Origin);
 		}
 
-		protected internal void MarkIndirectlyCalledMethod (MethodDefinition method, in DependencyInfo reason, in MessageOrigin origin)
-		{
-			MarkMethod (method, reason, origin);
-			Annotations.MarkIndirectlyCalledMethod (method);
-		}
-
 		protected virtual MethodDefinition? MarkMethod (MethodReference reference, DependencyInfo reason, in MessageOrigin origin)
 		{
 			DependencyKind originalReasonKind = reason.Kind;
@@ -3216,8 +3216,8 @@ namespace Mono.Linker.Steps
 
 			if (method.HasOverrides) {
 				var assembly = Context.Resolve (method.DeclaringType.Scope);
-				// If this method is in a Copy or CopyUsed assembly, .overrides won't get swept and we need to keep all of them
-				bool markAllOverrides = assembly != null && Annotations.GetAction (assembly) is AssemblyAction.Copy or AssemblyAction.CopyUsed;
+				// If this method is in a Copy, CopyUsed, or Save assembly, .overrides won't get swept and we need to keep all of them
+				bool markAllOverrides = assembly != null && Annotations.GetAction (assembly) is AssemblyAction.Copy or AssemblyAction.CopyUsed or AssemblyAction.Save;
 				foreach (MethodReference @base in method.Overrides) {
 					// Method implementing a static interface method will have an override to it - note instance methods usually don't unless they're explicit.
 					// Calling the implementation method directly has no impact on the interface, and as such it should not mark the interface or its method.
@@ -3692,21 +3692,28 @@ namespace Mono.Linker.Steps
 				break;
 
 			case OperandType.InlineMethod: {
-					DependencyKind dependencyKind = instruction.OpCode.Code switch {
-						Code.Jmp => DependencyKind.DirectCall,
-						Code.Call => DependencyKind.DirectCall,
-						Code.Callvirt => DependencyKind.VirtualCall,
-						Code.Newobj => DependencyKind.Newobj,
-						Code.Ldvirtftn => DependencyKind.Ldvirtftn,
-						Code.Ldftn => DependencyKind.Ldftn,
+					(DependencyKind dependencyKind, bool markForReflectionAccess) = instruction.OpCode.Code switch {
+						Code.Jmp => (DependencyKind.DirectCall, false),
+						Code.Call => (DependencyKind.DirectCall, false),
+						Code.Callvirt => (DependencyKind.VirtualCall, false),
+						Code.Newobj => (DependencyKind.Newobj, false),
+						Code.Ldvirtftn => (DependencyKind.Ldvirtftn, true),
+						Code.Ldftn => (DependencyKind.Ldftn, true),
 						_ => throw new InvalidOperationException ($"unexpected opcode {instruction.OpCode}")
 					};
 
+					MethodReference methodReference = (MethodReference) instruction.Operand;
+
 					requiresReflectionMethodBodyScanner |=
-						ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite (Context, (MethodReference) instruction.Operand);
+						ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite (Context, methodReference);
 
 					ScopeStack.UpdateCurrentScopeInstructionOffset (instruction.Offset);
-					MarkMethod ((MethodReference) instruction.Operand, new DependencyInfo (dependencyKind, method), ScopeStack.CurrentScope.Origin);
+					if (markForReflectionAccess) {
+						MarkMethodVisibleToReflection (methodReference, new DependencyInfo (dependencyKind, method), ScopeStack.CurrentScope.Origin);
+					}
+					else {
+						MarkMethod (methodReference, new DependencyInfo (dependencyKind, method), ScopeStack.CurrentScope.Origin);
+					}
 					break;
 				}
 
@@ -3721,9 +3728,9 @@ namespace Mono.Linker.Steps
 						if (Context.TryResolve (typeReference) is TypeDefinition type)
 							MarkTypeVisibleToReflection (typeReference, type, reason, ScopeStack.CurrentScope.Origin);
 					} else if (token is MethodReference methodReference) {
-						MarkMethod (methodReference, reason, ScopeStack.CurrentScope.Origin);
+						MarkMethodVisibleToReflection (methodReference, reason, ScopeStack.CurrentScope.Origin);
 					} else {
-						MarkField ((FieldReference) token, reason, ScopeStack.CurrentScope.Origin);
+						MarkFieldVisibleToReflection ((FieldReference) token, reason, ScopeStack.CurrentScope.Origin);
 					}
 					break;
 				}

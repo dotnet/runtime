@@ -1281,7 +1281,7 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
 
     if (call->IsInlineCandidate())
     {
-        InlineCandidateInfo* info   = call->gtInlineCandidateInfo;
+        InlineCandidateInfo* info   = call->GetInlineCandidateInfo();
         context->m_Code             = info->methInfo.ILCode;
         context->m_ILSize           = info->methInfo.ILCodeSize;
         context->m_ActualCallOffset = info->ilOffset;

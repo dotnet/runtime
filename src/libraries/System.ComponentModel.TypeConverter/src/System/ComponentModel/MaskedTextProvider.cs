@@ -2710,7 +2710,7 @@ namespace System.ComponentModel
         {
             testPosition = 0;
 
-            if (input == null || input.Length == 0) // nothing to verify.
+            if (string.IsNullOrEmpty(input)) // nothing to verify.
             {
                 resultHint = MaskedTextResultHint.NoEffect;
                 return true;

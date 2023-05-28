@@ -1756,8 +1756,8 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     structPromotionInfo = lvaStructPromotionInfo(typeHnd);
 
 #if defined(FEATURE_SIMD)
-    // maxSIMDStructBytes() represents the size of the largest primitive type that we can struct promote.
-    const unsigned maxSize = MAX_NumOfFieldsInPromotableStruct * compiler->maxSIMDStructBytes();
+    // getMaxVectorByteLength() represents the size of the largest primitive type that we can struct promote.
+    const unsigned maxSize = MAX_NumOfFieldsInPromotableStruct * compiler->getMaxVectorByteLength();
 #else  // !FEATURE_SIMD
     // sizeof(double) represents the size of the largest primitive type that we can struct promote.
     const unsigned maxSize = MAX_NumOfFieldsInPromotableStruct * sizeof(double);
@@ -3111,13 +3111,6 @@ void Compiler::lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool is
 {
     noway_assert(varNum < lvaCount);
 
-    // If we are just importing, we cannot reliably track local ref types,
-    // since the jit maps CORINFO_TYPE_VAR to TYP_REF.
-    if (compIsForImportOnly())
-    {
-        return;
-    }
-
     if (clsHnd != NO_CLASS_HANDLE && !isExact && JitConfig.JitEnableExactDevirtualization())
     {
         CORINFO_CLASS_HANDLE exactClass;
@@ -3205,13 +3198,6 @@ void Compiler::lvaSetClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE 
 void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact)
 {
     assert(varNum < lvaCount);
-
-    // If we are just importing, we cannot reliably track local ref types,
-    // since the jit maps CORINFO_TYPE_VAR to TYP_REF.
-    if (compIsForImportOnly())
-    {
-        return;
-    }
 
     // Else we should have a class handle to consider
     assert(clsHnd != nullptr);
@@ -3578,6 +3564,7 @@ void Compiler::lvaSortByRefCount()
 
         // Start by assuming that the variable will be tracked.
         varDsc->lvTracked = 1;
+        INDEBUG(varDsc->lvTrackedWithoutIndex = 0);
 
         if (varDsc->lvRefCnt(lvaRefCountState) == 0)
         {

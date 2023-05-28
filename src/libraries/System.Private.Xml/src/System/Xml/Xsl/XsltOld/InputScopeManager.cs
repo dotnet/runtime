@@ -77,7 +77,7 @@ namespace System.Xml.Xsl.XsltOld
             Debug.Assert(nspace != null);
             _scopeStack.AddNamespace(prefix, nspace, _defaultNS);
 
-            if (prefix == null || prefix.Length == 0)
+            if (string.IsNullOrEmpty(prefix))
             {
                 _defaultNS = nspace;
             }
