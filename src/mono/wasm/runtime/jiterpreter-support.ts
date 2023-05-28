@@ -7,6 +7,8 @@ import { WasmOpcode, WasmSimdOpcode } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
 import { mono_log_error, mono_log_info } from "./logging";
+import { localHeapViewU8 } from "./memory";
+import { utf8ToString } from "./strings";
 
 export const maxFailures = 2,
     maxMemsetSize = 64,
@@ -903,7 +905,7 @@ export class BlobBuilder {
     constructor() {
         this.capacity = 16 * 1024;
         this.buffer = <any>Module._malloc(this.capacity);
-        Module.HEAPU8.fill(0, this.buffer, this.buffer + this.capacity);
+        localHeapViewU8().fill(0, this.buffer, this.buffer + this.capacity);
         this.size = 0;
         this.clear();
         if (typeof (TextEncoder) === "function")
@@ -919,7 +921,7 @@ export class BlobBuilder {
             throw new Error("Buffer full");
 
         const result = this.size;
-        Module.HEAPU8[this.buffer + (this.size++)] = value;
+        localHeapViewU8()[this.buffer + (this.size++)] = value;
         return result;
     }
 
@@ -1008,16 +1010,17 @@ export class BlobBuilder {
         if (typeof (count) !== "number")
             count = this.size;
 
-        Module.HEAPU8.copyWithin(destination.buffer + destination.size, this.buffer, this.buffer + count);
+        localHeapViewU8().copyWithin(destination.buffer + destination.size, this.buffer, this.buffer + count);
         destination.size += count;
     }
 
     appendBytes(bytes: Uint8Array, count?: number) {
         const result = this.size;
-        if (bytes.buffer === Module.HEAPU8.buffer) {
+        const heapU8 = localHeapViewU8();
+        if (bytes.buffer === heapU8.buffer) {
             if (typeof (count) !== "number")
                 count = bytes.length;
-            Module.HEAPU8.copyWithin(this.buffer + result, bytes.byteOffset, bytes.byteOffset + count);
+            heapU8.copyWithin(this.buffer + result, bytes.byteOffset, bytes.byteOffset + count);
             this.size += count;
         } else {
             if (typeof (count) === "number")
@@ -1067,7 +1070,7 @@ export class BlobBuilder {
     }
 
     getArrayView(fullCapacity?: boolean) {
-        return new Uint8Array(Module.HEAPU8.buffer, this.buffer, fullCapacity ? this.capacity : this.size);
+        return new Uint8Array(localHeapViewU8().buffer, this.buffer, fullCapacity ? this.capacity : this.size);
     }
 }
 
@@ -1483,7 +1486,7 @@ export function copyIntoScratchBuffer(src: NativePointer, size: number): NativeP
     if (size > 64)
         throw new Error("Scratch buffer size is 64");
 
-    Module.HEAPU8.copyWithin(<any>scratchBuffer, <any>src, <any>src + size);
+    localHeapViewU8().copyWithin(<any>scratchBuffer, <any>src, <any>src + size);
     return scratchBuffer;
 }
 
@@ -1882,7 +1885,7 @@ export function getOptions() {
 
 function updateOptions() {
     const pJson = cwraps.mono_jiterp_get_options_as_json();
-    const json = Module.UTF8ToString(<any>pJson);
+    const json = utf8ToString(<any>pJson);
     Module._free(<any>pJson);
     const blob = JSON.parse(json);
 
