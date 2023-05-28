@@ -24,7 +24,8 @@ namespace System
           IEquatable<Half>,
           IBinaryFloatingPointIeee754<Half>,
           IMinMaxValue<Half>,
-          IUtf8SpanFormattable
+          IUtf8SpanFormattable,
+          IBinaryFloatParseAndFormatInfo<Half>
     {
         private const NumberStyles DefaultParseStyle = NumberStyles.Float | NumberStyles.AllowThousands;
 
@@ -53,6 +54,9 @@ namespace System
 
         internal const ushort MinTrailingSignificand = 0x0000;
         internal const ushort MaxTrailingSignificand = 0x03FF;
+
+        internal const int TrailingSignificandLength = 10;
+        internal const int SignificandLength = TrailingSignificandLength + 1;
 
         // Constants representing the private bit-representation for various default values
 
@@ -285,7 +289,7 @@ namespace System
         public static Half Parse(string s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseHalf(s, DefaultParseStyle, NumberFormatInfo.CurrentInfo);
+            return Number.ParseFloat<Half>(s, DefaultParseStyle, NumberFormatInfo.CurrentInfo);
         }
 
         /// <summary>
@@ -298,7 +302,7 @@ namespace System
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseHalf(s, style, NumberFormatInfo.CurrentInfo);
+            return Number.ParseFloat<Half>(s, style, NumberFormatInfo.CurrentInfo);
         }
 
         /// <summary>
@@ -310,7 +314,7 @@ namespace System
         public static Half Parse(string s, IFormatProvider? provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseHalf(s, DefaultParseStyle, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseFloat<Half>(s, DefaultParseStyle, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <summary>
@@ -324,7 +328,7 @@ namespace System
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseHalf(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseFloat<Half>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <summary>
@@ -337,7 +341,7 @@ namespace System
         public static Half Parse(ReadOnlySpan<char> s, NumberStyles style = DefaultParseStyle, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.ParseHalf(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseFloat<Half>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <summary>
@@ -399,7 +403,7 @@ namespace System
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Half result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.TryParseHalf(s, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseFloat(s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         private static bool AreZero(Half left, Half right)
@@ -2015,5 +2019,45 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         public static Half operator +(Half value) => value;
+
+        //
+        // IBinaryFloatParseAndFormatInfo
+        //
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.NumberBufferLength => Number.HalfNumberBufferLength;
+
+        static ulong IBinaryFloatParseAndFormatInfo<Half>.ZeroBits => 0;
+        static ulong IBinaryFloatParseAndFormatInfo<Half>.InfinityBits => 0x7C00;
+
+        static ulong IBinaryFloatParseAndFormatInfo<Half>.NormalMantissaMask => (1UL << SignificandLength) - 1;
+        static ulong IBinaryFloatParseAndFormatInfo<Half>.DenormalMantissaMask => TrailingSignificandMask;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.MinBinaryExponent => 1 - MaxExponent;
+        static int IBinaryFloatParseAndFormatInfo<Half>.MaxBinaryExponent => MaxExponent;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.MinDecimalExponent => -8;
+        static int IBinaryFloatParseAndFormatInfo<Half>.MaxDecimalExponent => 5;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.ExponentBias => ExponentBias;
+        static ushort IBinaryFloatParseAndFormatInfo<Half>.ExponentBits => 5;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.OverflowDecimalExponent => (MaxExponent + (2 * SignificandLength)) / 3;
+        static int IBinaryFloatParseAndFormatInfo<Half>.InfinityExponent => 0x1F;
+
+        static ushort IBinaryFloatParseAndFormatInfo<Half>.NormalMantissaBits => SignificandLength;
+        static ushort IBinaryFloatParseAndFormatInfo<Half>.DenormalMantissaBits => TrailingSignificandLength;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.MinFastFloatDecimalExponent => -8;
+        static int IBinaryFloatParseAndFormatInfo<Half>.MaxFastFloatDecimalExponent => 4;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.MinExponentRoundToEven => -21;
+        static int IBinaryFloatParseAndFormatInfo<Half>.MaxExponentRoundToEven => 5;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.MaxExponentFastPath => 4;
+        static ulong IBinaryFloatParseAndFormatInfo<Half>.MaxMantissaFastPath => 2UL << TrailingSignificandLength;
+
+        static Half IBinaryFloatParseAndFormatInfo<Half>.BitsToFloat(ulong bits) => BitConverter.UInt16BitsToHalf((ushort)(bits));
+
+        static ulong IBinaryFloatParseAndFormatInfo<Half>.FloatToBits(Half value) => BitConverter.HalfToUInt16Bits(value);
     }
 }

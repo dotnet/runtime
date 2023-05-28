@@ -33,7 +33,8 @@ namespace System
           IEquatable<double>,
           IBinaryFloatingPointIeee754<double>,
           IMinMaxValue<double>,
-          IUtf8SpanFormattable
+          IUtf8SpanFormattable,
+          IBinaryFloatParseAndFormatInfo<double>
     {
         private readonly double m_value; // Do not rename (binary serialization)
 
@@ -375,27 +376,27 @@ namespace System
         public static double Parse(string s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDouble(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo);
+            return Number.ParseFloat<double>(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo);
         }
 
         public static double Parse(string s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDouble(s, style, NumberFormatInfo.CurrentInfo);
+            return Number.ParseFloat<double>(s, style, NumberFormatInfo.CurrentInfo);
         }
 
         public static double Parse(string s, IFormatProvider? provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDouble(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseFloat<double>(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.GetInstance(provider));
         }
 
         public static double Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDouble(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseFloat<double>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         // Parses a double from a String in the given style.  If
@@ -409,7 +410,7 @@ namespace System
         public static double Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.ParseDouble(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseFloat<double>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static bool TryParse([NotNullWhen(true)] string? s, out double result)
@@ -449,7 +450,7 @@ namespace System
 
         private static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out double result)
         {
-            return Number.TryParseDouble(s, style, info, out result);
+            return Number.TryParseFloat(s, style, info, out result);
         }
 
         //
@@ -2179,6 +2180,46 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static double IUnaryPlusOperators<double, double>.operator +(double value) => (double)(+value);
+
+        //
+        // IBinaryFloatParseAndFormatInfo
+        //
+
+        static int IBinaryFloatParseAndFormatInfo<double>.NumberBufferLength => Number.DoubleNumberBufferLength;
+
+        static ulong IBinaryFloatParseAndFormatInfo<double>.ZeroBits => 0;
+        static ulong IBinaryFloatParseAndFormatInfo<double>.InfinityBits => 0x7FF00000_00000000;
+
+        static ulong IBinaryFloatParseAndFormatInfo<double>.NormalMantissaMask => (1UL << SignificandLength) - 1;
+        static ulong IBinaryFloatParseAndFormatInfo<double>.DenormalMantissaMask => TrailingSignificandMask;
+
+        static int IBinaryFloatParseAndFormatInfo<double>.MinBinaryExponent => 1 - MaxExponent;
+        static int IBinaryFloatParseAndFormatInfo<double>.MaxBinaryExponent => MaxExponent;
+
+        static int IBinaryFloatParseAndFormatInfo<double>.MinDecimalExponent => -324;
+        static int IBinaryFloatParseAndFormatInfo<double>.MaxDecimalExponent => 309;
+
+        static int IBinaryFloatParseAndFormatInfo<double>.ExponentBias => ExponentBias;
+        static ushort IBinaryFloatParseAndFormatInfo<double>.ExponentBits => 11;
+
+        static int IBinaryFloatParseAndFormatInfo<double>.OverflowDecimalExponent => (MaxExponent + (2 * SignificandLength)) / 3;
+        static int IBinaryFloatParseAndFormatInfo<double>.InfinityExponent => 0x7FF;
+
+        static ushort IBinaryFloatParseAndFormatInfo<double>.NormalMantissaBits => SignificandLength;
+        static ushort IBinaryFloatParseAndFormatInfo<double>.DenormalMantissaBits => TrailingSignificandLength;
+
+        static int IBinaryFloatParseAndFormatInfo<double>.MinFastFloatDecimalExponent => -342;
+        static int IBinaryFloatParseAndFormatInfo<double>.MaxFastFloatDecimalExponent => 308;
+
+        static int IBinaryFloatParseAndFormatInfo<double>.MinExponentRoundToEven => -4;
+        static int IBinaryFloatParseAndFormatInfo<double>.MaxExponentRoundToEven => 23;
+
+        static int IBinaryFloatParseAndFormatInfo<double>.MaxExponentFastPath => 22;
+        static ulong IBinaryFloatParseAndFormatInfo<double>.MaxMantissaFastPath => 2UL << TrailingSignificandLength;
+
+        static double IBinaryFloatParseAndFormatInfo<double>.BitsToFloat(ulong bits) => BitConverter.UInt64BitsToDouble(bits);
+
+        static ulong IBinaryFloatParseAndFormatInfo<double>.FloatToBits(double value) => BitConverter.DoubleToUInt64Bits(value);
 
         //
         // Helpers

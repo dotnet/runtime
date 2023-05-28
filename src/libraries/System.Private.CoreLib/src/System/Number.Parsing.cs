@@ -45,6 +45,46 @@ namespace System
         static abstract TSelf MultiplyBy16(TSelf value);
     }
 
+    internal interface IBinaryFloatParseAndFormatInfo<TSelf> : IBinaryFloatingPointIeee754<TSelf>, IMinMaxValue<TSelf>
+        where TSelf : unmanaged, IBinaryFloatParseAndFormatInfo<TSelf>
+    {
+        static abstract int NumberBufferLength { get; }
+
+        static abstract ulong ZeroBits { get; }
+        static abstract ulong InfinityBits { get; }
+
+        static abstract ulong NormalMantissaMask { get; }
+        static abstract ulong DenormalMantissaMask { get; }
+
+        static abstract int MinBinaryExponent { get; }
+        static abstract int MaxBinaryExponent { get; }
+
+        static abstract int MinDecimalExponent { get; }
+        static abstract int MaxDecimalExponent { get; }
+
+        static abstract int ExponentBias { get; }
+        static abstract ushort ExponentBits { get; }
+
+        static abstract int OverflowDecimalExponent { get; }
+        static abstract int InfinityExponent { get; }
+
+        static abstract ushort NormalMantissaBits { get; }
+        static abstract ushort DenormalMantissaBits { get; }
+
+        static abstract int MinFastFloatDecimalExponent { get; }
+        static abstract int MaxFastFloatDecimalExponent { get; }
+
+        static abstract int MinExponentRoundToEven { get; }
+        static abstract int MaxExponentRoundToEven { get; }
+
+        static abstract int MaxExponentFastPath { get; }
+        static abstract ulong MaxMantissaFastPath { get; }
+
+        static abstract TSelf BitsToFloat(ulong bits);
+
+        static abstract ulong FloatToBits(TSelf value);
+    }
+
     internal static partial class Number
     {
         private const int Int32Precision = 10;
@@ -54,17 +94,10 @@ namespace System
         private const int Int128Precision = 39;
         private const int UInt128Precision = 39;
 
-        private const int DoubleMaxExponent = 309;
-        private const int DoubleMinExponent = -324;
+        private const int FloatingPointMaxExponent = 309;
+        private const int FloatingPointMinExponent = -324;
 
-        private const int FloatingPointMaxExponent = DoubleMaxExponent;
-        private const int FloatingPointMinExponent = DoubleMinExponent;
-
-        private const int SingleMaxExponent = 39;
-        private const int SingleMinExponent = -45;
-
-        private const int HalfMaxExponent = 5;
-        private const int HalfMinExponent = -8;
+        private const int FloatingPointMaxDenormalMantissaBits = 52;
 
         private static unsafe bool TryNumberBufferToBinaryInteger<TInteger>(ref NumberBuffer number, ref TInteger value)
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
@@ -944,29 +977,10 @@ namespace System
             return true;
         }
 
-        internal static double ParseDouble(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
+        internal static TFloat ParseFloat<TFloat>(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
+            where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
         {
-            if (!TryParseDouble(value, styles, info, out double result))
-            {
-                ThrowOverflowOrFormatException(ParsingStatus.Failed, value);
-            }
-
-            return result;
-        }
-
-        internal static float ParseSingle(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
-        {
-            if (!TryParseSingle(value, styles, info, out float result))
-            {
-                ThrowOverflowOrFormatException(ParsingStatus.Failed, value);
-            }
-
-            return result;
-        }
-
-        internal static Half ParseHalf(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
-        {
-            if (!TryParseHalf(value, styles, info, out Half result))
+            if (!TryParseFloat(value, styles, info, out TFloat result))
             {
                 ThrowOverflowOrFormatException(ParsingStatus.Failed, value);
             }
@@ -995,9 +1009,10 @@ namespace System
 
         internal static bool SpanStartsWith(ReadOnlySpan<char> span, char c) => !span.IsEmpty && span[0] == c;
 
-        internal static unsafe bool TryParseDouble(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out double result)
+        internal static unsafe bool TryParseFloat<TFloat>(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out TFloat result)
+            where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
         {
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, stackalloc byte[DoubleNumberBufferLength]);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, stackalloc byte[TFloat.NumberBufferLength]);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -1009,15 +1024,15 @@ namespace System
 
                 if (valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
                 {
-                    result = double.PositiveInfinity;
+                    result = TFloat.PositiveInfinity;
                 }
                 else if (valueTrim.EqualsOrdinalIgnoreCase(info.NegativeInfinitySymbol))
                 {
-                    result = double.NegativeInfinity;
+                    result = TFloat.NegativeInfinity;
                 }
                 else if (valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
                 {
-                    result = double.NaN;
+                    result = TFloat.NaN;
                 }
                 else if (valueTrim.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase))
                 {
@@ -1025,174 +1040,32 @@ namespace System
 
                     if (valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
                     {
-                        result = double.PositiveInfinity;
+                        result = TFloat.PositiveInfinity;
                     }
                     else if (valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
                     {
-                        result = double.NaN;
+                        result = TFloat.NaN;
                     }
                     else
                     {
-                        result = 0;
+                        result = TFloat.Zero;
                         return false;
                     }
                 }
                 else if ((valueTrim.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) && valueTrim.Slice(info.NegativeSign.Length).EqualsOrdinalIgnoreCase(info.NaNSymbol)) ||
                         (info.AllowHyphenDuringParsing && SpanStartsWith(valueTrim, '-') && valueTrim.Slice(1).EqualsOrdinalIgnoreCase(info.NaNSymbol)))
                 {
-                    result = double.NaN;
+                    result = TFloat.NaN;
                 }
                 else
                 {
-                    result = 0;
+                    result = TFloat.Zero;
                     return false; // We really failed
                 }
             }
             else
             {
-                result = NumberToDouble(ref number);
-            }
-
-            return true;
-        }
-
-        internal static unsafe bool TryParseHalf(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out Half result)
-        {
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, stackalloc byte[HalfNumberBufferLength]);
-
-            if (!TryStringToNumber(value, styles, ref number, info))
-            {
-                ReadOnlySpan<char> valueTrim = value.Trim();
-
-                // This code would be simpler if we only had the concept of `InfinitySymbol`, but
-                // we don't so we'll check the existing cases first and then handle `PositiveSign` +
-                // `PositiveInfinitySymbol` and `PositiveSign/NegativeSign` + `NaNSymbol` last.
-                //
-                // Additionally, since some cultures ("wo") actually define `PositiveInfinitySymbol`
-                // to include `PositiveSign`, we need to check whether `PositiveInfinitySymbol` fits
-                // that case so that we don't start parsing things like `++infini`.
-
-                if (valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
-                {
-                    result = Half.PositiveInfinity;
-                }
-                else if (valueTrim.EqualsOrdinalIgnoreCase(info.NegativeInfinitySymbol))
-                {
-                    result = Half.NegativeInfinity;
-                }
-                else if (valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
-                {
-                    result = Half.NaN;
-                }
-                else if (valueTrim.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase))
-                {
-                    valueTrim = valueTrim.Slice(info.PositiveSign.Length);
-
-                    if (!info.PositiveInfinitySymbol.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase) && valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
-                    {
-                        result = Half.PositiveInfinity;
-                    }
-                    else if (!info.NaNSymbol.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase) && valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
-                    {
-                        result = Half.NaN;
-                    }
-                    else
-                    {
-                        result = Half.Zero;
-                        return false;
-                    }
-                }
-                else if (valueTrim.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
-                         !info.NaNSymbol.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
-                         valueTrim.Slice(info.NegativeSign.Length).EqualsOrdinalIgnoreCase(info.NaNSymbol))
-                {
-                    result = Half.NaN;
-                }
-                else if (info.AllowHyphenDuringParsing && SpanStartsWith(valueTrim, '-') && !info.NaNSymbol.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
-                         !info.NaNSymbol.StartsWith('-') && valueTrim.Slice(1).EqualsOrdinalIgnoreCase(info.NaNSymbol))
-                {
-                    result = Half.NaN;
-                }
-                else
-                {
-                    result = Half.Zero;
-                    return false; // We really failed
-                }
-            }
-            else
-            {
-                result = NumberToHalf(ref number);
-            }
-
-            return true;
-        }
-
-        internal static unsafe bool TryParseSingle(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out float result)
-        {
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, stackalloc byte[SingleNumberBufferLength]);
-
-            if (!TryStringToNumber(value, styles, ref number, info))
-            {
-                ReadOnlySpan<char> valueTrim = value.Trim();
-
-                // This code would be simpler if we only had the concept of `InfinitySymbol`, but
-                // we don't so we'll check the existing cases first and then handle `PositiveSign` +
-                // `PositiveInfinitySymbol` and `PositiveSign/NegativeSign` + `NaNSymbol` last.
-                //
-                // Additionally, since some cultures ("wo") actually define `PositiveInfinitySymbol`
-                // to include `PositiveSign`, we need to check whether `PositiveInfinitySymbol` fits
-                // that case so that we don't start parsing things like `++infini`.
-
-                if (valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
-                {
-                    result = float.PositiveInfinity;
-                }
-                else if (valueTrim.EqualsOrdinalIgnoreCase(info.NegativeInfinitySymbol))
-                {
-                    result = float.NegativeInfinity;
-                }
-                else if (valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
-                {
-                    result = float.NaN;
-                }
-                else if (valueTrim.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase))
-                {
-                    valueTrim = valueTrim.Slice(info.PositiveSign.Length);
-
-                    if (!info.PositiveInfinitySymbol.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase) && valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
-                    {
-                        result = float.PositiveInfinity;
-                    }
-                    else if (!info.NaNSymbol.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase) && valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
-                    {
-                        result = float.NaN;
-                    }
-                    else
-                    {
-                        result = 0;
-                        return false;
-                    }
-                }
-                else if (valueTrim.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
-                         !info.NaNSymbol.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
-                         valueTrim.Slice(info.NegativeSign.Length).EqualsOrdinalIgnoreCase(info.NaNSymbol))
-                {
-                    result = float.NaN;
-                }
-                else if (info.AllowHyphenDuringParsing && SpanStartsWith(valueTrim, '-') && !info.NaNSymbol.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
-                         !info.NaNSymbol.StartsWith('-') && valueTrim.Slice(1).EqualsOrdinalIgnoreCase(info.NaNSymbol))
-                {
-                    result = float.NaN;
-                }
-                else
-                {
-                    result = 0;
-                    return false; // We really failed
-                }
-            }
-            else
-            {
-                result = NumberToSingle(ref number);
+                result = NumberToFloat<TFloat>(ref number);
             }
 
             return true;
@@ -1358,67 +1231,24 @@ namespace System
                 new FormatException(SR.Format_InvalidString) :
                 new OverflowException(SR.Overflow_UInt128);
 
-        internal static double NumberToDouble(ref NumberBuffer number)
+        internal static TFloat NumberToFloat<TFloat>(ref NumberBuffer number)
+            where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
         {
             number.CheckConsistency();
-            double result;
+            TFloat result;
 
-            if ((number.DigitsCount == 0) || (number.Scale < DoubleMinExponent))
+            if ((number.DigitsCount == 0) || (number.Scale < TFloat.MinDecimalExponent))
             {
-                result = 0;
+                result = TFloat.Zero;
             }
-            else if (number.Scale > DoubleMaxExponent)
+            else if (number.Scale > TFloat.MaxDecimalExponent)
             {
-                result = double.PositiveInfinity;
+                result = TFloat.PositiveInfinity;
             }
             else
             {
-                ulong bits = NumberToDoubleFloatingPointBits(ref number, in FloatingPointInfo.Double);
-                result = BitConverter.UInt64BitsToDouble(bits);
-            }
-
-            return number.IsNegative ? -result : result;
-        }
-
-        internal static Half NumberToHalf(ref NumberBuffer number)
-        {
-            number.CheckConsistency();
-            Half result;
-
-            if ((number.DigitsCount == 0) || (number.Scale < HalfMinExponent))
-            {
-                result = default;
-            }
-            else if (number.Scale > HalfMaxExponent)
-            {
-                result = Half.PositiveInfinity;
-            }
-            else
-            {
-                ushort bits = NumberToHalfFloatingPointBits(ref number, in FloatingPointInfo.Half);
-                result = new Half(bits);
-            }
-
-            return number.IsNegative ? Half.Negate(result) : result;
-        }
-
-        internal static float NumberToSingle(ref NumberBuffer number)
-        {
-            number.CheckConsistency();
-            float result;
-
-            if ((number.DigitsCount == 0) || (number.Scale < SingleMinExponent))
-            {
-                result = 0;
-            }
-            else if (number.Scale > SingleMaxExponent)
-            {
-                result = float.PositiveInfinity;
-            }
-            else
-            {
-                uint bits = NumberToSingleFloatingPointBits(ref number, in FloatingPointInfo.Single);
-                result = BitConverter.UInt32BitsToSingle(bits);
+                ulong bits = NumberToFloatingPointBits<TFloat>(ref number);
+                result = TFloat.BitsToFloat(bits);
             }
 
             return number.IsNegative ? -result : result;
