@@ -94,7 +94,7 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
                 LogLevel.Information,
                 new EventId(1, nameof(LogNameRedacted)),
                 "User {username} has now {status} status",
-                new LogDefineOptions() { ParameterAttributes = new Attribute[]?[] { new Attribute[] { new EUPIAttribute() }, null } });
+                new LogDefineOptions() { ParameterMetadata = new Attribute[]?[] { new Attribute[] { new EUPIAttribute() }, null } });
     }
 }
 

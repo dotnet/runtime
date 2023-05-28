@@ -15,6 +15,9 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         public bool SkipEnabledCheck { get; set; }
 
-        public Attribute[]?[]? ParameterAttributes { get; set; }
+        /// <summary>
+        /// Gets or sets a collection of parameter metadata. Items in the collection match parameters to the log message by position.
+        /// </summary>
+        public object[]?[]? ParameterMetadata { get; set; }
     }
 }

@@ -86,8 +86,8 @@ namespace Microsoft.Extensions.Logging
         int PropertyCount { get; }
         void AppendFormattedMessage(in TState state, System.Buffers.IBufferWriter<char> buffer);
         System.Action<TState, System.Buffers.IBufferWriter<char>> GetMessageFormatter(Microsoft.Extensions.Logging.PropertyCustomFormatter[] customFormatters);
+        Microsoft.Extensions.Logging.LogPropertyInfo GetPropertyInfo(int index);
         Microsoft.Extensions.Logging.FormatPropertyListAction<TState> GetPropertyListFormatter(Microsoft.Extensions.Logging.IPropertyFormatterFactory propertyFormatterFactory);
-        Microsoft.Extensions.Logging.LogPropertyMetadata GetPropertyMetadata(int index);
         System.Func<TState, System.Exception?, string> GetStringMessageFormatter();
     }
     public partial interface IProcessorFactory
@@ -96,8 +96,8 @@ namespace Microsoft.Extensions.Logging
     }
     public partial interface IPropertyFormatterFactory
     {
-        Microsoft.Extensions.Logging.FormatPropertyAction<PropType> GetPropertyFormatter<PropType>(int propertyIndex, Microsoft.Extensions.Logging.LogPropertyMetadata metadata);
-        Microsoft.Extensions.Logging.FormatSpanPropertyAction GetSpanPropertyFormatter(int propertyIndex, Microsoft.Extensions.Logging.LogPropertyMetadata metadata);
+        Microsoft.Extensions.Logging.FormatPropertyAction<PropType> GetPropertyFormatter<PropType>(int propertyIndex, Microsoft.Extensions.Logging.LogPropertyInfo metadata);
+        Microsoft.Extensions.Logging.FormatSpanPropertyAction GetSpanPropertyFormatter(int propertyIndex, Microsoft.Extensions.Logging.LogPropertyInfo metadata);
     }
     public partial interface ISupportExternalScope
     {
@@ -106,7 +106,7 @@ namespace Microsoft.Extensions.Logging
     public partial class LogDefineOptions
     {
         public LogDefineOptions() { }
-        public System.Attribute[]?[]? ParameterAttributes { get { throw null; } set { } }
+        public object[]?[]? ParameterMetadata { get { throw null; } set { } }
         public bool SkipEnabledCheck { get { throw null; } set { } }
     }
     public abstract partial class LogEntryHandler<TState>
@@ -180,7 +180,6 @@ namespace Microsoft.Extensions.Logging
         public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, System.Exception?> Define<T1>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString, Microsoft.Extensions.Logging.LogDefineOptions? options) { throw null; }
         public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, System.Exception?> Define<T1, T2>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString) { throw null; }
         public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, System.Exception?> Define<T1, T2>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString, Microsoft.Extensions.Logging.LogDefineOptions? options) { throw null; }
-        public static Microsoft.Extensions.Logging.LoggerMessage.Action<Microsoft.Extensions.Logging.ILogger, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, System.Exception?> Define<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString, Microsoft.Extensions.Logging.LogDefineOptions? options = null) { throw null; }
         public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, T3, System.Exception?> Define<T1, T2, T3>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString) { throw null; }
         public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, T3, System.Exception?> Define<T1, T2, T3>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString, Microsoft.Extensions.Logging.LogDefineOptions? options) { throw null; }
         public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, T3, T4, System.Exception?> Define<T1, T2, T3, T4>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString) { throw null; }
@@ -189,7 +188,6 @@ namespace Microsoft.Extensions.Logging
         public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, T3, T4, T5, System.Exception?> Define<T1, T2, T3, T4, T5>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString, Microsoft.Extensions.Logging.LogDefineOptions? options) { throw null; }
         public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, T3, T4, T5, T6, System.Exception?> Define<T1, T2, T3, T4, T5, T6>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString) { throw null; }
         public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, T3, T4, T5, T6, System.Exception?> Define<T1, T2, T3, T4, T5, T6>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString, Microsoft.Extensions.Logging.LogDefineOptions? options) { throw null; }
-        public delegate void Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21>(T0 v0, T1 v1, T2 v2, T3 v3, T4 v4, T5 v5, T6 v6, T7 v7, T8 v8, T9 v9, T10 v10, T11 v11, T12 v12, T13 v13, T14 v14, T15 v15, T16 v16, T17 v17, T18 v18, T19 v19, T20 v20, T21 v21);
         public delegate void Log<TState>(Microsoft.Extensions.Logging.ILogger logger, ref TState state, System.Exception? exception);
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method)]
@@ -210,7 +208,7 @@ namespace Microsoft.Extensions.Logging
         Microsoft.Extensions.Logging.ScopePipeline<TState> Microsoft.Extensions.Logging.ILogEntryPipelineFactory.GetScopePipeline<TState>(Microsoft.Extensions.Logging.ILogMetadata<TState>? metadata, object? userState) { throw null; }
         System.IDisposable Microsoft.Extensions.Logging.ILogger.BeginScope<TState>(TState state) { throw null; }
         bool Microsoft.Extensions.Logging.ILogger.IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) { throw null; }
-        void Microsoft.Extensions.Logging.ILogger.Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception, string> formatter) { }
+        void Microsoft.Extensions.Logging.ILogger.Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter) { }
     }
     public enum LogLevel
     {
@@ -222,13 +220,12 @@ namespace Microsoft.Extensions.Logging
         Critical = 5,
         None = 6,
     }
-    public partial struct LogPropertyMetadata
+    public partial struct LogPropertyInfo
     {
         private object _dummy;
         private int _dummyPrimitive;
-        public LogPropertyMetadata(string name, string? formatSpecifier, System.Attribute[]? attributes) { throw null; }
-        public readonly System.Attribute[]? Attributes { get { throw null; } }
-        public readonly string? FormatSpecifier { get { throw null; } }
+        public LogPropertyInfo(string name, object[]? metadata) { throw null; }
+        public readonly object[]? Metadata { get { throw null; } }
         public readonly string Name { get { throw null; } }
     }
     public partial class Pipeline

@@ -159,7 +159,7 @@ namespace Microsoft.Extensions.Logging
                 FormatPropertyListAction<TState> formatter = _innerMetadata.GetPropertyListFormatter(propertyFormatterFactory);
                 return new FormatPropertyListAction<EnrichmentPropertyValues<TState, T0>>((in EnrichmentPropertyValues<TState, T0> s, ref BufferWriter<byte> w) => formatter(in s.NestedProperties, ref w));
             }
-            public LogPropertyMetadata GetPropertyMetadata(int index) => _innerMetadata.GetPropertyMetadata(index);
+            public LogPropertyInfo GetPropertyInfo(int index) => _innerMetadata.GetPropertyInfo(index);
             public Func<EnrichmentPropertyValues<TState, T0>, Exception?, string> GetStringMessageFormatter()
             {
                 var formatter = _innerMetadata.GetStringMessageFormatter();
@@ -248,7 +248,7 @@ namespace Microsoft.Extensions.Logging
                 FormatPropertyListAction<TState> formatter = _innerMetadata.GetPropertyListFormatter(propertyFormatterFactory);
                 return new FormatPropertyListAction<EnrichmentPropertyValues<TState, T0, T1>>((in EnrichmentPropertyValues<TState, T0, T1> s, ref BufferWriter<byte> w) => formatter(in s.NestedProperties, ref w));
             }
-            public LogPropertyMetadata GetPropertyMetadata(int index) => _innerMetadata.GetPropertyMetadata(index);
+            public LogPropertyInfo GetPropertyInfo(int index) => _innerMetadata.GetPropertyInfo(index);
             public Func<EnrichmentPropertyValues<TState, T0, T1>, Exception?, string> GetStringMessageFormatter()
             {
                 var formatter = _innerMetadata.GetStringMessageFormatter();
@@ -346,7 +346,7 @@ namespace Microsoft.Extensions.Logging
                 FormatPropertyListAction<TState> formatter = _innerMetadata.GetPropertyListFormatter(propertyFormatterFactory);
                 return new FormatPropertyListAction<UnboundedEnrichmentPropertyValues<TState, T0, T1>>((in UnboundedEnrichmentPropertyValues<TState, T0, T1> s, ref BufferWriter<byte> w) => formatter(in s.NestedProperties, ref w));
             }
-            public LogPropertyMetadata GetPropertyMetadata(int index) => _innerMetadata.GetPropertyMetadata(index);
+            public LogPropertyInfo GetPropertyInfo(int index) => _innerMetadata.GetPropertyInfo(index);
             public Func<UnboundedEnrichmentPropertyValues<TState, T0, T1>, Exception?, string> GetStringMessageFormatter()
             {
                 var formatter = _innerMetadata.GetStringMessageFormatter();

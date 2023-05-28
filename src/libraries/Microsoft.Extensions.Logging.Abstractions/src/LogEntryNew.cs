@@ -69,17 +69,15 @@ namespace Microsoft.Extensions.Logging
         public ILogMetadata<TState> Metadata { get; }
     }
 
-    public struct LogPropertyMetadata
+    public struct LogPropertyInfo
     {
-        public LogPropertyMetadata(string name, string? formatSpecifier, Attribute[]? attributes)
+        public LogPropertyInfo(string name, object[]? metadata)
         {
             Name = name;
-            FormatSpecifier = formatSpecifier;
-            Attributes = attributes;
+            Metadata = metadata;
         }
         public string Name { get; }
-        public string? FormatSpecifier { get; }
-        public Attribute[]? Attributes { get; }
+        public object[]? Metadata { get; }
     }
 
     public interface ILogMetadata<TState>
@@ -88,7 +86,7 @@ namespace Microsoft.Extensions.Logging
         EventId EventId { get; }
         string OriginalFormat { get; }
         int PropertyCount { get; }
-        LogPropertyMetadata GetPropertyMetadata(int index);
+        LogPropertyInfo GetPropertyInfo(int index);
         void AppendFormattedMessage(in TState state, IBufferWriter<char> buffer);
         Action<TState, IBufferWriter<char>> GetMessageFormatter(PropertyCustomFormatter[] customFormatters);
         FormatPropertyListAction<TState> GetPropertyListFormatter(IPropertyFormatterFactory propertyFormatterFactory);
@@ -101,8 +99,8 @@ namespace Microsoft.Extensions.Logging
 
     public interface IPropertyFormatterFactory
     {
-        FormatPropertyAction<PropType> GetPropertyFormatter<PropType>(int propertyIndex, LogPropertyMetadata metadata);
-        FormatSpanPropertyAction GetSpanPropertyFormatter(int propertyIndex, LogPropertyMetadata metadata);
+        FormatPropertyAction<PropType> GetPropertyFormatter<PropType>(int propertyIndex, LogPropertyInfo metadata);
+        FormatSpanPropertyAction GetSpanPropertyFormatter(int propertyIndex, LogPropertyInfo metadata);
     }
 
     public abstract class PropertyCustomFormatter

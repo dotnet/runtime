@@ -283,7 +283,7 @@ namespace Microsoft.Extensions.Logging
         /// <returns>A delegate which when invoked creates a log message.</returns>
         public static Action<ILogger, T1, T2, Exception?> Define<T1, T2>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options)
         {
-            LogValuesMetadata<T1, T2> metadata = LogValues<T1, T2>.CreateMetadata(logLevel, eventId, formatString, options?.ParameterAttributes);
+            LogValuesMetadata<T1, T2> metadata = LogValues<T1, T2>.CreateMetadata(logLevel, eventId, formatString, options?.ParameterMetadata);
             LogEntryPipeline<LogValues<T1, T2>>? pipeline = null;
             bool needFullEnabledCheck = (options == null || !options.SkipEnabledCheck);
             return Log;
@@ -329,102 +329,6 @@ namespace Microsoft.Extensions.Logging
                         return;
                     LogValues<T1, T2> state = new LogValues<T1, T2>(metadata, arg1, arg2);
                     logger.Log(logLevel, eventId, state, exception, LogValues<T1, T2>.Callback);
-                }
-            }
-        }
-
-        public delegate void Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21>(T0 v0, T1 v1, T2 v2, T3 v3, T4 v4, T5 v5, T6 v6, T7 v7, T8 v8, T9 v9, T10 v10, T11 v11, T12 v12, T13 v13, T14 v14, T15 v15, T16 v16, T17 v17, T18 v18, T19 v19, T20 v20, T21 v21);
-
-        public static Action<ILogger, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, Exception?> Define<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options = null)
-        {
-            LogValuesMetadata<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19> metadata =
-                LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>.CreateMetadata(logLevel, eventId, formatString, options?.ParameterAttributes);
-            LogEntryPipeline<LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>>? pipeline = null;
-            bool needFullEnabledCheck = (options == null || !options.SkipEnabledCheck);
-            return Log;
-
-            void Log(ILogger logger, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15, T16 arg16, T17 arg17, T18 arg18, T19 arg19, Exception? exception)
-            {
-                LogEntryPipeline<LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>>? pipelineSnapshot = pipeline;
-                if (pipelineSnapshot != null && pipelineSnapshot.UserState == logger && pipelineSnapshot.IsUpToDate)
-                {
-                    if (!pipelineSnapshot.IsEnabled ||
-                       (pipelineSnapshot.IsDynamicLevelCheckRequired && needFullEnabledCheck && !pipelineSnapshot.IsEnabledDynamic(logLevel)))
-                        return;
-                    LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19> state = new LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>(metadata);
-                    state._value0 = arg0;
-                    state._value1 = arg1;
-                    state._value2 = arg2;
-                    state._value3 = arg3;
-                    state._value4 = arg4;
-                    state._value5 = arg5;
-                    state._value6 = arg6;
-                    state._value7 = arg7;
-                    state._value8 = arg8;
-                    state._value9 = arg9;
-                    state._value10 = arg10;
-                    state._value11 = arg11;
-                    state._value12 = arg12;
-                    state._value13 = arg13;
-                    state._value14 = arg14;
-                    state._value15 = arg15;
-                    state._value16 = arg16;
-                    state._value17 = arg17;
-                    state._value18 = arg18;
-                    state._value19 = arg19;
-                    LogEntry<LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>> entry =
-                        new LogEntry<LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>>(logLevel, category: null!, eventId, state, exception, null!);
-                    pipelineSnapshot.HandleLogEntry(ref entry);
-                }
-                else
-                {
-                    LogSlowPath(logger, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, exception);
-                }
-            }
-
-            void LogSlowPath(ILogger logger, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15, T16 arg16, T17 arg17, T18 arg18, T19 arg19, Exception? exception)
-            {
-                LogEntryPipeline<LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>>? pipelineSnapshot = null;
-                LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19> state = new LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>(metadata);
-                state._value0 = arg0;
-                state._value1 = arg1;
-                state._value2 = arg2;
-                state._value3 = arg3;
-                state._value4 = arg4;
-                state._value5 = arg5;
-                state._value6 = arg6;
-                state._value7 = arg7;
-                state._value8 = arg8;
-                state._value9 = arg9;
-                state._value10 = arg10;
-                state._value11 = arg11;
-                state._value12 = arg12;
-                state._value13 = arg13;
-                state._value14 = arg14;
-                state._value15 = arg15;
-                state._value16 = arg16;
-                state._value17 = arg17;
-                state._value18 = arg18;
-                state._value19 = arg19;
-                LogEntry<LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>> entry =
-                    new LogEntry<LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>>(logLevel, category: null!, eventId, state, exception, null!);
-                if (logger is ILogEntryPipelineFactory)
-                {
-                    pipelineSnapshot = ((ILogEntryPipelineFactory)logger).GetLoggingPipeline(metadata, logger);
-                    pipeline = pipelineSnapshot;
-                }
-                if (pipelineSnapshot != null)
-                {
-                    if (!pipelineSnapshot.IsEnabled ||
-                       (pipelineSnapshot.IsDynamicLevelCheckRequired && needFullEnabledCheck && !pipelineSnapshot.IsEnabledDynamic(logLevel)))
-                        return;
-                    pipelineSnapshot.HandleLogEntry(ref entry);
-                }
-                else
-                {
-                    if (needFullEnabledCheck && logger.IsEnabled(logLevel))
-                        return;
-                    logger.Log(entry.LogLevel, entry.EventId, entry.State, entry.Exception, LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>.Callback);
                 }
             }
         }
@@ -735,7 +639,7 @@ namespace Microsoft.Extensions.Logging
 
         internal class LogValuesMetadata<T1, T2> : LogValuesMetadata, ILogMetadata<LogValues<T1, T2>>
         {
-            public LogValuesMetadata(string format, LogLevel level, EventId eventId, Attribute[]?[]? attributes = null) : base(format, level, eventId, attributes) { }
+            public LogValuesMetadata(string format, LogLevel level, EventId eventId, object[]?[]? metadata = null) : base(format, level, eventId, metadata) { }
 
             public void AppendFormattedMessage(in LogValues<T1, T2> state, IBufferWriter<char> buffer)
             {
@@ -761,8 +665,8 @@ namespace Microsoft.Extensions.Logging
 
             public FormatPropertyListAction<LogValues<T1, T2>> GetPropertyListFormatter(IPropertyFormatterFactory propertyFormatterFactory)
             {
-                FormatPropertyAction<T1> formatter0 = propertyFormatterFactory.GetPropertyFormatter<T1>(0, GetPropertyMetadata(0));
-                FormatPropertyAction<T2> formatter1 = propertyFormatterFactory.GetPropertyFormatter<T2>(1, GetPropertyMetadata(1));
+                FormatPropertyAction<T1> formatter0 = propertyFormatterFactory.GetPropertyFormatter<T1>(0, GetPropertyInfo(0));
+                FormatPropertyAction<T2> formatter1 = propertyFormatterFactory.GetPropertyFormatter<T2>(1, GetPropertyInfo(1));
                 return FormatPropertyList;
 
                 void FormatPropertyList(in LogValues<T1, T2> tstate, ref BufferWriter<byte> writer)
@@ -771,7 +675,6 @@ namespace Microsoft.Extensions.Logging
                     formatter1(tstate._value1, ref writer);
                 }
             }
-
 
             public Action<LogValues<T1, T2>, IBufferWriter<char>> GetMessageFormatter(PropertyCustomFormatter[] customPropertyFormatters) =>
                 (state, buffer) => AppendFormattedMessage(state, buffer, customPropertyFormatters);
@@ -823,8 +726,6 @@ namespace Microsoft.Extensions.Logging
             }
 
             public Func<LogValues<T1, T2>, Exception?, string> GetStringMessageFormatter() => LogValues<T1, T2>.Callback;
-
-
         }
 
         internal readonly struct LogValues<T0, T1> : IReadOnlyList<KeyValuePair<string, object?>>
@@ -879,280 +780,10 @@ namespace Microsoft.Extensions.Logging
                 return GetEnumerator();
             }
 
-            public static LogValuesMetadata<T0, T1> CreateMetadata(LogLevel level, EventId eventId, string formatString, Attribute[]?[]? parameterAttributes = null)
+            public static LogValuesMetadata<T0, T1> CreateMetadata(LogLevel level, EventId eventId, string formatString, object[]?[]? parameterMetadata = null)
             {
-                var metadata = new LogValuesMetadata<T0, T1>(formatString, level, eventId, parameterAttributes);
+                var metadata = new LogValuesMetadata<T0, T1>(formatString, level, eventId, parameterMetadata);
                 ValidateFormatStringParameterCount(formatString, expectedNamedParameterCount: 2, metadata.PropertyCount);
-                return metadata;
-            }
-        }
-
-        internal class LogValuesMetadata<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19> :
-            LogValuesMetadata, ILogMetadata<LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>>
-        {
-            public LogValuesMetadata(string format, LogLevel level, EventId eventId, Attribute[]?[]? attributes = null) : base(format, level, eventId, attributes) { }
-
-            public void AppendFormattedMessage(in LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19> state, IBufferWriter<char> buffer)
-            {
-                BufferWriter<char> writer = new BufferWriter<char>(buffer);
-                foreach ((string? Literal, int ArgIndex, int Alignment, string? Format) segment in CompositeFormat._segments)
-                {
-                    int index = segment.ArgIndex;
-                    switch (index)
-                    {
-                        case 0:
-                            AppendFormattedPropertyValue(state._value0, ref writer, segment.Alignment, segment.Format);
-                            break;
-                        case 1:
-                            AppendFormattedPropertyValue(state._value1, ref writer, segment.Alignment, segment.Format);
-                            break;
-                        default:
-                            writer.Write(segment.Literal.AsSpan());
-                            break;
-                    }
-                }
-                writer.Flush();
-            }
-
-            public Action<LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>, IBufferWriter<char>> GetMessageFormatter(PropertyCustomFormatter[] customPropertyFormatters) =>
-                (state, buffer) => AppendFormattedMessage(state, buffer, customPropertyFormatters);
-
-            private void AppendFormattedMessage(in LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19> state, IBufferWriter<char> buffer, PropertyCustomFormatter[] customFormatters)
-            {
-                BufferWriter<char> writer = new BufferWriter<char>(buffer);
-                foreach ((string? Literal, int ArgIndex, int Alignment, string? Format) segment in CompositeFormat._segments)
-                {
-                    int index = segment.ArgIndex;
-                    switch (index)
-                    {
-                        case 0:
-                            AppendCustomFormattedProperty(index, state._value0, ref writer, segment.Alignment, segment.Format, customFormatters[index]);
-                            break;
-                        case 1:
-                            AppendCustomFormattedProperty(index, state._value1, ref writer, segment.Alignment, segment.Format, customFormatters[index]);
-                            break;
-                        default:
-                            writer.Write(segment.Literal.AsSpan());
-                            break;
-                    }
-                }
-                writer.Flush();
-            }
-
-            public FormatPropertyListAction<LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>> GetPropertyListFormatter(IPropertyFormatterFactory propertyFormatterFactory)
-            {
-                FormatPropertyAction<T0> formatter0 = propertyFormatterFactory.GetPropertyFormatter<T0>(0, GetPropertyMetadata(0));
-                FormatPropertyAction<T1> formatter1 = propertyFormatterFactory.GetPropertyFormatter<T1>(1, GetPropertyMetadata(1));
-                FormatPropertyAction<T2> formatter2 = propertyFormatterFactory.GetPropertyFormatter<T2>(2, GetPropertyMetadata(2));
-                FormatPropertyAction<T3> formatter3 = propertyFormatterFactory.GetPropertyFormatter<T3>(3, GetPropertyMetadata(3));
-                FormatPropertyAction<T4> formatter4 = propertyFormatterFactory.GetPropertyFormatter<T4>(4, GetPropertyMetadata(4));
-                FormatPropertyAction<T5> formatter5 = propertyFormatterFactory.GetPropertyFormatter<T5>(5, GetPropertyMetadata(5));
-                FormatPropertyAction<T6> formatter6 = propertyFormatterFactory.GetPropertyFormatter<T6>(6, GetPropertyMetadata(6));
-                FormatPropertyAction<T7> formatter7 = propertyFormatterFactory.GetPropertyFormatter<T7>(7, GetPropertyMetadata(7));
-                FormatPropertyAction<T8> formatter8 = propertyFormatterFactory.GetPropertyFormatter<T8>(8, GetPropertyMetadata(8));
-                FormatPropertyAction<T9> formatter9 = propertyFormatterFactory.GetPropertyFormatter<T9>(9, GetPropertyMetadata(9));
-                FormatPropertyAction<T10> formatter10 = propertyFormatterFactory.GetPropertyFormatter<T10>(10, GetPropertyMetadata(10));
-                FormatPropertyAction<T11> formatter11 = propertyFormatterFactory.GetPropertyFormatter<T11>(11, GetPropertyMetadata(11));
-                FormatPropertyAction<T12> formatter12 = propertyFormatterFactory.GetPropertyFormatter<T12>(12, GetPropertyMetadata(12));
-                FormatPropertyAction<T13> formatter13 = propertyFormatterFactory.GetPropertyFormatter<T13>(13, GetPropertyMetadata(13));
-                FormatPropertyAction<T14> formatter14 = propertyFormatterFactory.GetPropertyFormatter<T14>(14, GetPropertyMetadata(14));
-                FormatPropertyAction<T15> formatter15 = propertyFormatterFactory.GetPropertyFormatter<T15>(15, GetPropertyMetadata(15));
-                FormatPropertyAction<T16> formatter16 = propertyFormatterFactory.GetPropertyFormatter<T16>(16, GetPropertyMetadata(16));
-                FormatPropertyAction<T17> formatter17 = propertyFormatterFactory.GetPropertyFormatter<T17>(17, GetPropertyMetadata(17));
-                FormatPropertyAction<T18> formatter18 = propertyFormatterFactory.GetPropertyFormatter<T18>(18, GetPropertyMetadata(18));
-                FormatPropertyAction<T19> formatter19 = propertyFormatterFactory.GetPropertyFormatter<T19>(19, GetPropertyMetadata(19));
-                return FormatPropertyList;
-
-                void FormatPropertyList(in LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19> tstate, ref BufferWriter<byte> writer)
-                {
-                    formatter0(tstate._value0, ref writer);
-                    formatter1(tstate._value1, ref writer);
-                    formatter2(tstate._value2, ref writer);
-                    formatter3(tstate._value3, ref writer);
-                    formatter4(tstate._value4, ref writer);
-                    formatter5(tstate._value5, ref writer);
-                    formatter6(tstate._value6, ref writer);
-                    formatter7(tstate._value7, ref writer);
-                    formatter8(tstate._value8, ref writer);
-                    formatter9(tstate._value9, ref writer);
-                    formatter10(tstate._value10, ref writer);
-                    formatter11(tstate._value11, ref writer);
-                    formatter12(tstate._value12, ref writer);
-                    formatter13(tstate._value13, ref writer);
-                    formatter14(tstate._value14, ref writer);
-                    formatter15(tstate._value15, ref writer);
-                    formatter16(tstate._value16, ref writer);
-                    formatter17(tstate._value17, ref writer);
-                    formatter18(tstate._value18, ref writer);
-                    formatter19(tstate._value19, ref writer);
-                }
-            }
-
-            private static void AppendCustomFormattedProperty<T>(int index, T value, ref BufferWriter<char> writer, int alignment, string? format, PropertyCustomFormatter? formatter)
-            {
-                if (formatter == null)
-                {
-                    AppendFormattedPropertyValue(value, ref writer, alignment, format);
-                }
-                else
-                {
-                    writer.Flush();
-                    if (value is string strVal)
-                    {
-                        formatter.AppendFormatted(index, strVal, writer.Writer);
-                    }
-                    else if (value is int intVal)
-                    {
-                        formatter.AppendFormatted(index, intVal, writer.Writer);
-                    }
-                    else
-                    {
-                        formatter.AppendFormatted(index, value, writer.Writer);
-                    }
-                }
-            }
-
-            public Func<LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>, Exception?, string> GetStringMessageFormatter() =>
-                LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>.Callback;
-        }
-
-        internal struct LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19> : IReadOnlyList<KeyValuePair<string, object?>>
-        {
-            public static readonly Func<LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>, Exception?, string> Callback = (state, exception) => state.ToString();
-
-            private readonly LogValuesFormatter _formatter;
-            internal T0 _value0;
-            internal T1 _value1;
-            internal T2 _value2;
-            internal T3 _value3;
-            internal T4 _value4;
-            internal T5 _value5;
-            internal T6 _value6;
-            internal T7 _value7;
-            internal T8 _value8;
-            internal T9 _value9;
-            internal T10 _value10;
-            internal T11 _value11;
-            internal T12 _value12;
-            internal T13 _value13;
-            internal T14 _value14;
-            internal T15 _value15;
-            internal T16 _value16;
-            internal T17 _value17;
-            internal T18 _value18;
-            internal T19 _value19;
-
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
-            public LogValues(LogValuesFormatter formatter)
-#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
-            {
-                _formatter = formatter;
-            }
-
-            public LogValues(LogValuesFormatter formatter, T0 value0, T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10,
-                T11 value11, T12 value12, T13 value13, T14 value14, T15 value15, T16 value16, T17 value17, T18 value18, T19 value19)
-            {
-                _formatter = formatter;
-                _value0 = value0;
-                _value1 = value1;
-                _value2 = value2;
-                _value3 = value3;
-                _value4 = value4;
-                _value5 = value5;
-                _value6 = value6;
-                _value7 = value7;
-                _value8 = value8;
-                _value9 = value9;
-                _value10 = value10;
-                _value11 = value11;
-                _value12 = value12;
-                _value13 = value13;
-                _value14 = value14;
-                _value15 = value15;
-                _value16 = value16;
-                _value17 = value17;
-                _value18 = value18;
-                _value19 = value19;
-            }
-
-            public ILogMetadata<LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>>? Metadata =>
-                _formatter as LogValuesMetadata<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>;
-
-            public KeyValuePair<string, object?> this[int index]
-            {
-                get
-                {
-                    switch (index)
-                    {
-                        case 0:
-                            return new KeyValuePair<string, object?>(_formatter.GetValueName(0), _value0);
-                        case 1:
-                            return new KeyValuePair<string, object?>(_formatter.GetValueName(1), _value1);
-                        case 2:
-                            return new KeyValuePair<string, object?>(_formatter.GetValueName(2), _value2);
-                        case 3:
-                            return new KeyValuePair<string, object?>(_formatter.GetValueName(3), _value3);
-                        case 4:
-                            return new KeyValuePair<string, object?>(_formatter.GetValueName(4), _value4);
-                        case 5:
-                            return new KeyValuePair<string, object?>(_formatter.GetValueName(5), _value5);
-                        case 6:
-                            return new KeyValuePair<string, object?>(_formatter.GetValueName(6), _value6);
-                        case 7:
-                            return new KeyValuePair<string, object?>(_formatter.GetValueName(7), _value7);
-                        case 8:
-                            return new KeyValuePair<string, object?>(_formatter.GetValueName(8), _value8);
-                        case 9:
-                            return new KeyValuePair<string, object?>(_formatter.GetValueName(9), _value9);
-                        case 10:
-                            return new KeyValuePair<string, object?>(_formatter.GetValueName(10), _value10);
-                        case 11:
-                            return new KeyValuePair<string, object?>(_formatter.GetValueName(11), _value11);
-                        case 12:
-                            return new KeyValuePair<string, object?>(_formatter.GetValueName(12), _value12);
-                        case 13:
-                            return new KeyValuePair<string, object?>(_formatter.GetValueName(13), _value13);
-                        case 14:
-                            return new KeyValuePair<string, object?>(_formatter.GetValueName(14), _value14);
-                        case 15:
-                            return new KeyValuePair<string, object?>(_formatter.GetValueName(15), _value15);
-                        case 16:
-                            return new KeyValuePair<string, object?>(_formatter.GetValueName(16), _value16);
-                        case 17:
-                            return new KeyValuePair<string, object?>(_formatter.GetValueName(17), _value17);
-                        case 18:
-                            return new KeyValuePair<string, object?>(_formatter.GetValueName(18), _value18);
-                        case 19:
-                            return new KeyValuePair<string, object?>(_formatter.GetValueName(19), _value19);
-                        case 20:
-                            return new KeyValuePair<string, object?>("{OriginalFormat}", _formatter.OriginalFormat);
-                        default:
-                            throw new IndexOutOfRangeException(nameof(index));
-                    }
-                }
-            }
-
-            public int Count => 21;
-
-            public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
-            {
-                for (int i = 0; i < Count; ++i)
-                {
-                    yield return this[i];
-                }
-            }
-
-            public override string ToString() => throw new NotImplementedException();
-
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
-
-            public static LogValuesMetadata<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19> CreateMetadata(LogLevel level, EventId eventId, string formatString, Attribute[]?[]? parameterAttributes = null)
-            {
-                var metadata = new LogValuesMetadata<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>(formatString, level, eventId, parameterAttributes);
-                ValidateFormatStringParameterCount(formatString, expectedNamedParameterCount: 20, metadata.PropertyCount);
                 return metadata;
             }
         }

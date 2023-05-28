@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Logging
 {
     internal class LogValuesMetadata : LogValuesFormatter
     {
-        public LogValuesMetadata(string format, LogLevel level, EventId eventId, Attribute[]?[]? attributes) : base(format, attributes)
+        public LogValuesMetadata(string format, LogLevel level, EventId eventId, object[]?[]? metadata) : base(format, metadata)
         {
             LogLevel = level;
             EventId = eventId;
@@ -32,21 +32,21 @@ namespace Microsoft.Extensions.Logging
     {
         private const string NullValue = "(null)";
         private static readonly char[] FormatDelimiters = { ',', ':' };
-        private readonly LogPropertyMetadata[]? _metadata;
+        private readonly LogPropertyInfo[]? _metadata;
         private readonly InternalCompositeFormat _format;
 
         // NOTE: If this assembly ever builds for netcoreapp, the below code should change to:
         // - Be annotated as [SkipLocalsInit] to avoid zero'ing the stackalloc'd char span
         // - Format _valueNames.Count directly into a span
 
-        public LogValuesFormatter(string format, Attribute[]?[]? attributes = null)
+        public LogValuesFormatter(string format, object[]?[]? metadata = null)
         {
             ThrowHelper.ThrowIfNull(format);
 
             OriginalFormat = format;
 
             var vsb = new ValueStringBuilder(stackalloc char[256]);
-            List<LogPropertyMetadata> metadata = new List<LogPropertyMetadata>();
+            List<LogPropertyInfo> propertyMetadata = new List<LogPropertyInfo>();
             int scanIndex = 0;
             int endIndex = format.Length;
 
@@ -74,21 +74,16 @@ namespace Microsoft.Extensions.Logging
                     int colonIndex = format.IndexOf(':', openBraceIndex, closeBraceIndex - openBraceIndex);
 
                     vsb.Append(format.AsSpan(scanIndex, openBraceIndex - scanIndex + 1));
-                    vsb.Append(metadata.Count.ToString());
+                    vsb.Append(propertyMetadata.Count.ToString());
                     string propName = format.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1);
                     vsb.Append(format.AsSpan(formatDelimiterIndex, closeBraceIndex - formatDelimiterIndex + 1));
-                    string? propFormat = null;
-                    if (colonIndex != -1)
-                    {
-                        propFormat = format.Substring(colonIndex + 1, closeBraceIndex - colonIndex - 1);
-                    }
-                    Attribute[]? propAttributes = attributes != null && attributes.Length >= metadata.Count ? attributes[metadata.Count] : null;
-                    metadata.Add(new LogPropertyMetadata(propName, propFormat, propAttributes));
+                    object[]? propMetadata = metadata != null && metadata.Length >= propertyMetadata.Count ? metadata[propertyMetadata.Count] : null;
+                    propertyMetadata.Add(new LogPropertyInfo(propName, propMetadata));
                     scanIndex = closeBraceIndex + 1;
                 }
             }
 
-            _metadata = metadata.ToArray();
+            _metadata = propertyMetadata.ToArray();
             _format = InternalCompositeFormat.Parse(vsb.ToString());
         }
 
@@ -97,7 +92,7 @@ namespace Microsoft.Extensions.Logging
         public int PropertyCount => _metadata != null ? _metadata.Length : 0;
         public string GetValueName(int index) => _metadata![index].Name;
 
-        public LogPropertyMetadata GetPropertyMetadata(int index) => _metadata![index];
+        public LogPropertyInfo GetPropertyInfo(int index) => _metadata![index];
 
         private static int FindBraceIndex(string format, char brace, int startIndex, int endIndex)
         {

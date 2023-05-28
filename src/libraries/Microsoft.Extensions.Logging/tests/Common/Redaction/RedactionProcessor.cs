@@ -1,6 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// Prototype redaction processor uses APIs not available on .NET Framework.
+// The prototype redaction could probably be updated to support .NET Framework if required.
+
 #if NET8_0_OR_GREATER
 
 using System;
@@ -83,12 +86,12 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
             List<PropertyRedaction> redactions = new List<PropertyRedaction>();
             for (int i = 0; i < metadata.PropertyCount; i++)
             {
-                LogPropertyMetadata propMetadata = metadata.GetPropertyMetadata(i);
-                if (propMetadata.Attributes == null)
+                LogPropertyInfo propMetadata = metadata.GetPropertyInfo(i);
+                if (propMetadata.Metadata == null)
                 {
                     continue;
                 }
-                DataClassificationAttribute? dataClassAttr = propMetadata.Attributes.OfType<DataClassificationAttribute>().FirstOrDefault();
+                DataClassificationAttribute? dataClassAttr = propMetadata.Metadata.OfType<DataClassificationAttribute>().FirstOrDefault();
                 if (dataClassAttr != null)
                 {
                     redactions.Add(new PropertyRedaction(i, _redactorProvider!.GetRedactor(dataClassAttr.DataClass)));
@@ -317,7 +320,7 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
             return (state, buffer) => innerFormatter(state.OriginalState, buffer);
         }
 
-        public LogPropertyMetadata GetPropertyMetadata(int index) => _originalMetadata.GetPropertyMetadata(index);
+        public LogPropertyInfo GetPropertyInfo(int index) => _originalMetadata.GetPropertyInfo(index);
 
         class Slot { public ArrayBufferWriter<char>? Buffer; }
         static ThreadLocal<Slot?> t_slot = new ThreadLocal<Slot?>();
@@ -353,12 +356,12 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
                 _wrappedFormatterFactory = wrappedFormatterFactory;
             }
 
-            public FormatPropertyAction<PropType> GetPropertyFormatter<PropType>(int propertyIndex, LogPropertyMetadata metadata)
+            public FormatPropertyAction<PropType> GetPropertyFormatter<PropType>(int propertyIndex, LogPropertyInfo metadata)
             {
                 PropertyRedaction? redaction = _metadata.GetRedactionForIndex(propertyIndex);
                 if (!redaction.HasValue)
                 {
-                    return _wrappedFormatterFactory.GetPropertyFormatter<PropType>(propertyIndex, _metadata.GetPropertyMetadata(propertyIndex));
+                    return _wrappedFormatterFactory.GetPropertyFormatter<PropType>(propertyIndex, _metadata.GetPropertyInfo(propertyIndex));
                 }
                 else
                 {
@@ -366,12 +369,12 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
                 }
             }
 
-            public FormatSpanPropertyAction GetSpanPropertyFormatter(int propertyIndex, LogPropertyMetadata metadata)
+            public FormatSpanPropertyAction GetSpanPropertyFormatter(int propertyIndex, LogPropertyInfo metadata)
             {
                 PropertyRedaction? redaction = _metadata.GetRedactionForIndex(propertyIndex);
                 if (!redaction.HasValue)
                 {
-                    return _wrappedFormatterFactory.GetSpanPropertyFormatter(propertyIndex, _metadata.GetPropertyMetadata(propertyIndex));
+                    return _wrappedFormatterFactory.GetSpanPropertyFormatter(propertyIndex, _metadata.GetPropertyInfo(propertyIndex));
                 }
                 else
                 {
@@ -379,9 +382,9 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
                 }
             }
 
-            private FormatSpanPropertyAction GetRedactedSpanPropertyFormatter(int propertyIndex, LogPropertyMetadata metadata, IRedactor redactor)
+            private FormatSpanPropertyAction GetRedactedSpanPropertyFormatter(int propertyIndex, LogPropertyInfo metadata, IRedactor redactor)
             {
-                FormatSpanPropertyAction wrappedFormatter = _wrappedFormatterFactory.GetSpanPropertyFormatter(propertyIndex, _metadata.GetPropertyMetadata(propertyIndex));
+                FormatSpanPropertyAction wrappedFormatter = _wrappedFormatterFactory.GetSpanPropertyFormatter(propertyIndex, _metadata.GetPropertyInfo(propertyIndex));
                 return FormatRedactedProperty;
 
                 void FormatRedactedProperty(scoped ReadOnlySpan<char> value, ref BufferWriter<byte> writer)
@@ -401,9 +404,9 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
                 }
             }
 
-            private FormatPropertyAction<PropType> GetRedactedPropertyFormatter<PropType>(int propertyIndex, LogPropertyMetadata metadata, IRedactor redactor)
+            private FormatPropertyAction<PropType> GetRedactedPropertyFormatter<PropType>(int propertyIndex, LogPropertyInfo metadata, IRedactor redactor)
             {
-                FormatSpanPropertyAction wrappedFormatter = _wrappedFormatterFactory.GetSpanPropertyFormatter(propertyIndex, _metadata.GetPropertyMetadata(propertyIndex));
+                FormatSpanPropertyAction wrappedFormatter = _wrappedFormatterFactory.GetSpanPropertyFormatter(propertyIndex, _metadata.GetPropertyInfo(propertyIndex));
                 return FormatRedactedProperty;
 
                 void FormatRedactedProperty(PropType value, ref BufferWriter<byte> writer)
