@@ -204,6 +204,14 @@ namespace System.Threading
         }
         #endregion
 
+        #region ReadMemoryBarrier
+        [Intrinsic]
+        internal static void ReadMemoryBarrier()
+        {
+            RuntimeImports.ReadMemoryBarrier();
+        }
+        #endregion
+
         #region Read
         public static long Read(ref long location)
         {

@@ -795,6 +795,10 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpMemoryBarrier")]
         internal static extern void MemoryBarrier();
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpReadMemoryBarrier")]
+        internal static extern void ReadMemoryBarrier();
+
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "acos")]

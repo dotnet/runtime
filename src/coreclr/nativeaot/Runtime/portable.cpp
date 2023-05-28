@@ -469,6 +469,11 @@ COOP_PINVOKE_HELPER(void, RhpMemoryBarrier, ())
     PalMemoryBarrier();
 }
 
+COOP_PINVOKE_HELPER(void, RhpReadMemoryBarrier, ())
+{
+    PalReadMemoryBarrier();
+}
+
 #if defined(USE_PORTABLE_HELPERS)
 EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
 {
