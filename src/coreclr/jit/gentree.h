@@ -5425,20 +5425,38 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_RETBUFFARG_LCLOPT) != 0;
     }
 
-    InlineCandidateInfo* GetInlineCandidateInfo()
+    InlineCandidateInfo* GetSingleInlineCandidateInfo()
     {
+        // gtInlineInfoCount can be 0 (not an inline candidate) or 1
+        if (gtInlineInfoCount == 0)
+        {
+            assert(!IsInlineCandidate());
+            assert(gtInlineCandidateInfo == nullptr);
+            return nullptr;
+        }
+        else if (gtInlineInfoCount > 1)
+        {
+            assert(!"Call has multiple inline candidates");
+        }
         return gtInlineCandidateInfo;
     }
 
-    void SetSingleInlineCadidateInfo(InlineCandidateInfo* candidateInfo);
+    void SetSingleInlineCandidateInfo(InlineCandidateInfo* candidateInfo);
 
-    InlineCandidateInfo* GetGDVCandidateInfo(uint8_t index = 0);
+    InlineCandidateInfo* GetGDVCandidateInfo(uint8_t index);
 
-    void AddGDVCandidateInfo(InlineCandidateInfo* candidateInfo);
+    void AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candidateInfo);
+
+    void RemoveGDVCandidateInfo(Compiler* comp, uint8_t index);
 
     void ClearInlineInfo()
     {
-        SetSingleInlineCadidateInfo(nullptr);
+        SetSingleInlineCandidateInfo(nullptr);
+    }
+
+    uint8_t GetInlineCandidatesCount()
+    {
+        return gtInlineInfoCount;
     }
 
     //-----------------------------------------------------------------------------------------
@@ -5526,8 +5544,12 @@ struct GenTreeCall final : public GenTree
     union {
         // only used for CALLI unmanaged calls (CT_INDIRECT)
         GenTree* gtCallCookie;
+
         // gtInlineCandidateInfo is only used when inlining methods
-        InlineCandidateInfo*                 gtInlineCandidateInfo;
+        InlineCandidateInfo* gtInlineCandidateInfo;
+        // gtInlineCandidateInfoList is used when we have more than one GDV candidate
+        jitstd::vector<InlineCandidateInfo*>* gtInlineCandidateInfoList;
+
         HandleHistogramProfileCandidateInfo* gtHandleHistogramProfileCandidateInfo;
         LateDevirtualizationInfo*            gtLateDevirtualizationInfo;
         CORINFO_GENERIC_HANDLE compileTimeHelperArgumentHandle; // Used to track type handle argument of dynamic helpers

@@ -1351,7 +1351,17 @@ DONE_CALL:
                 GenTreeRetExpr* retExpr = gtNewInlineCandidateReturnExpr(call->AsCall(), genActualType(callRetTyp));
 
                 // Link the retExpr to the call so if necessary we can manipulate it later.
-                origCall->GetInlineCandidateInfo()->retExpr = retExpr;
+                if (origCall->IsGuardedDevirtualizationCandidate())
+                {
+                    for (uint8_t i = 0; i < origCall->GetInlineCandidatesCount(); i++)
+                    {
+                        origCall->GetGDVCandidateInfo(i)->retExpr = retExpr;
+                    }
+                }
+                else
+                {
+                    origCall->GetSingleInlineCandidateInfo()->retExpr = retExpr;
+                }
 
                 // Propagate retExpr as the placeholder for the call.
                 call = retExpr;
@@ -5850,22 +5860,107 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 {
     JITDUMP("Considering guarded devirtualization at IL offset %u (0x%x)\n", ilOffset, ilOffset);
 
+    bool hasPgoData = true;
+
+    CORINFO_CLASS_HANDLE  likelyClass  = NO_CLASS_HANDLE;
+    CORINFO_METHOD_HANDLE likelyMethod = NO_METHOD_HANDLE;
+    unsigned              likelihood   = 0;
+
     // We currently only get likely class guesses when there is PGO data
     // with class profiles.
     //
     if ((fgPgoClassProfiles == 0) && (fgPgoMethodProfiles == 0))
     {
-        JITDUMP("Not guessing for class or method: no GDV profile pgo data, or pgo disabled\n");
-        return;
+        hasPgoData = false;
+    }
+    else
+    {
+        pickGDV(call, ilOffset, isInterface, &likelyClass, &likelyMethod, &likelihood);
+        if ((likelyClass == NO_CLASS_HANDLE) && (likelyMethod == NO_METHOD_HANDLE))
+        {
+            hasPgoData = false;
+        }
     }
 
-    CORINFO_CLASS_HANDLE  likelyClass;
-    CORINFO_METHOD_HANDLE likelyMethod;
-    unsigned              likelihood;
-    pickGDV(call, ilOffset, isInterface, &likelyClass, &likelyMethod, &likelihood);
-
-    if ((likelyClass == NO_CLASS_HANDLE) && (likelyMethod == NO_METHOD_HANDLE))
+    // NativeAOT is the only target that currently supports getExactClasses-based GDV
+    // where we know the exact number of classes implementing the given base in compile-time.
+    // For now, let's only do this when we don't have any PGO data. In future, we should be able to benefit
+    // from both.
+    if (!hasPgoData && (baseClass != NO_CLASS_HANDLE) && JitConfig.JitEnableExactDevirtualization())
     {
+        int maxTypeChecks = min(JitConfig.JitGuardedDevirtualizationMaxTypeChecks(), MAX_GDV_TYPE_CHECKS);
+
+        CORINFO_CLASS_HANDLE exactClasses[MAX_GDV_TYPE_CHECKS];
+        int numExactClasses = info.compCompHnd->getExactClasses(baseClass, MAX_GDV_TYPE_CHECKS, exactClasses);
+        if (numExactClasses == 0)
+        {
+            JITDUMP("No exact classes implementing %s\n", eeGetClassName(baseClass))
+        }
+        else if (numExactClasses > maxTypeChecks)
+        {
+            JITDUMP("Too many exact classes implementing %s (%d > %d)\n", eeGetClassName(baseClass), numExactClasses,
+                    maxTypeChecks)
+        }
+        else
+        {
+            assert((numExactClasses > 0) && (numExactClasses <= maxTypeChecks));
+            JITDUMP("We have exactly %d classes implementing %s:\n", numExactClasses, eeGetClassName(baseClass));
+
+            int skipped = 0;
+            for (int exactClsIdx = 0; exactClsIdx < numExactClasses; exactClsIdx++)
+            {
+                CORINFO_CLASS_HANDLE exactCls = exactClasses[exactClsIdx];
+                assert(exactCls != NO_CLASS_HANDLE);
+
+                uint32_t clsAttrs = info.compCompHnd->getClassAttribs(exactCls);
+
+                // The getExactClasses method is expected to return precise data, thus eliminating the need
+                // to check if it is stale.
+                //
+                assert((clsAttrs & CORINFO_FLG_ABSTRACT) == 0);
+
+                JITDUMP("  %d) %s\n", exactClsIdx, eeGetClassName(exactCls));
+
+                // Figure out which method will be called.
+                //
+                CORINFO_DEVIRTUALIZATION_INFO dvInfo;
+                dvInfo.virtualMethod               = baseMethod;
+                dvInfo.objClass                    = exactCls;
+                dvInfo.context                     = *pContextHandle;
+                dvInfo.exactContext                = *pContextHandle;
+                dvInfo.pResolvedTokenVirtualMethod = nullptr;
+
+                if (!info.compCompHnd->resolveVirtualMethod(&dvInfo))
+                {
+                    JITDUMP("Can't figure out which method would be invoked, sorry\n");
+                    return;
+                }
+
+                CORINFO_METHOD_HANDLE exactMethod      = dvInfo.devirtualizedMethod;
+                uint32_t              exactMethodAttrs = info.compCompHnd->getMethodAttribs(exactMethod);
+
+                // NOTE: This is currently used only with NativeAOT. In theory, we could also check if we
+                // have static PGO data to decide which class to guess first. Presumably, this is a rare case.
+                //
+                int likelyHood = 100 / numExactClasses;
+
+                // If numExactClasses is 3, then likelyHood is 33 and 33*3=99.
+                // Apply the error to the first guess, so we'll have [34,33,33]
+                if (exactClsIdx == 0)
+                {
+                    likelyHood += 100 - likelyHood * numExactClasses;
+                }
+
+                addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactMethodAttrs, clsAttrs,
+                                                    likelyHood);
+            }
+            return;
+        }
+    }
+
+    if (!hasPgoData)
+    {
+        JITDUMP("Not guessing; no PGO and no exact classes\n");
         return;
     }
 
@@ -6085,7 +6180,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
         }
     }
 
-    call->AddGDVCandidateInfo(pInfo);
+    call->AddGDVCandidateInfo(this, pInfo);
 }
 
 //------------------------------------------------------------------------
@@ -6111,8 +6206,39 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 {
     GenTreeCall* call = callNode->AsCall();
 
-    // Do the actual evaluation
-    impMarkInlineCandidateHelper(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, ilOffset);
+    // Call might not have an inline candidate info yet (will be set by impMarkInlineCandidateHelper)
+    // so we assume there is always a least one candidate:
+    //
+
+    if (call->IsGuardedDevirtualizationCandidate())
+    {
+        assert(call->GetInlineCandidatesCount() > 0);
+        for (uint8_t candidateId = 0; candidateId < call->GetInlineCandidatesCount(); candidateId++)
+        {
+            InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate", true);
+
+            // Do the actual evaluation
+            impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
+                                         ilOffset, &inlineResult);
+
+            // Ignore non-inlineable candidates
+            // TODO: Consider keeping them to just devirtualize without inlining, at least for interface
+            // calls on NativeAOT, but that requires more changes elsewhere too.
+            if (!inlineResult.IsCandidate())
+            {
+                call->RemoveGDVCandidateInfo(this, candidateId);
+                candidateId--;
+            }
+        }
+    }
+    else
+    {
+        const uint8_t candidatesCount = call->GetInlineCandidatesCount();
+        assert(candidatesCount <= 1);
+        InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate", true);
+        impMarkInlineCandidateHelper(call, 0, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, ilOffset,
+                                     &inlineResult);
+    }
 
     // If this call is an inline candidate or is not a guarded devirtualization
     // candidate, we're done.
@@ -6140,6 +6266,7 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 //
 // Arguments:
 //    callNode -- call under scrutiny
+//    candidateIndex -- index of the inline candidate to evaluate
 //    exactContextHnd -- context handle for inlining
 //    exactContextNeedsRuntimeLookup -- true if context required runtime lookup
 //    callInfo -- call info from VM
@@ -6151,15 +6278,17 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 //    filled in the associated InlineCandidateInfo.
 //
 //    If callNode is not an inline candidate, and the reason is
-//    something that is inherent to the method being called, the
 //    method may be marked as "noinline" to short-circuit any
 //    future assessments of calls to this method.
+//
 
 void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
+                                            uint8_t                candidateIndex,
                                             CORINFO_CONTEXT_HANDLE exactContextHnd,
                                             bool                   exactContextNeedsRuntimeLookup,
                                             CORINFO_CALL_INFO*     callInfo,
-                                            IL_OFFSET              ilOffset)
+                                            IL_OFFSET              ilOffset,
+                                            InlineResult*          inlineResult)
 {
     // Let the strategy know there's another call
     impInlineRoot()->m_inlineStrategy->NoteCall();
@@ -6176,26 +6305,24 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         return;
     }
 
-    InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate");
-
     // Don't inline if not optimizing root method
     if (opts.compDbgCode)
     {
-        inlineResult.NoteFatal(InlineObservation::CALLER_DEBUG_CODEGEN);
+        inlineResult->NoteFatal(InlineObservation::CALLER_DEBUG_CODEGEN);
         return;
     }
 
     // Don't inline if inlining into this method is disabled.
     if (impInlineRoot()->m_inlineStrategy->IsInliningDisabled())
     {
-        inlineResult.NoteFatal(InlineObservation::CALLER_IS_JIT_NOINLINE);
+        inlineResult->NoteFatal(InlineObservation::CALLER_IS_JIT_NOINLINE);
         return;
     }
 
     // Don't inline into callers that use the NextCallReturnAddress intrinsic.
     if (info.compHasNextCallRetAddr)
     {
-        inlineResult.NoteFatal(InlineObservation::CALLER_USES_NEXT_CALL_RET_ADDR);
+        inlineResult->NoteFatal(InlineObservation::CALLER_USES_NEXT_CALL_RET_ADDR);
         return;
     }
 
@@ -6203,7 +6330,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     // Inlining takes precedence over implicit tail call optimization (if the call is not directly recursive).
     if (call->IsTailPrefixedCall())
     {
-        inlineResult.NoteFatal(InlineObservation::CALLSITE_EXPLICIT_TAIL_PREFIX);
+        inlineResult->NoteFatal(InlineObservation::CALLSITE_EXPLICIT_TAIL_PREFIX);
         return;
     }
 
@@ -6211,7 +6338,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     // Don't even bother trying to inline it.
     if (call->IsDelegateInvoke() && !call->IsGuardedDevirtualizationCandidate())
     {
-        inlineResult.NoteFatal(InlineObservation::CALLEE_HAS_NO_BODY);
+        inlineResult->NoteFatal(InlineObservation::CALLEE_HAS_NO_BODY);
         return;
     }
 
@@ -6221,7 +6348,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     // as a fast tail call or turned into a loop.
     if (gtIsRecursiveCall(call) && call->IsImplicitTailCall())
     {
-        inlineResult.NoteFatal(InlineObservation::CALLSITE_IMPLICIT_REC_TAIL_CALL);
+        inlineResult->NoteFatal(InlineObservation::CALLSITE_IMPLICIT_REC_TAIL_CALL);
         return;
     }
 
@@ -6231,7 +6358,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         // but reject all other virtual calls.
         if (!call->IsGuardedDevirtualizationCandidate())
         {
-            inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_NOT_DIRECT);
+            inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_NOT_DIRECT);
             return;
         }
     }
@@ -6241,14 +6368,14 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     if (call->gtCallType == CT_HELPER)
     {
         assert(!call->IsGuardedDevirtualizationCandidate());
-        inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_CALL_TO_HELPER);
+        inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_CALL_TO_HELPER);
         return;
     }
 
     /* Ignore indirect calls */
     if (call->gtCallType == CT_INDIRECT)
     {
-        inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_NOT_DIRECT_MANAGED);
+        inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_NOT_DIRECT_MANAGED);
         return;
     }
 
@@ -6261,13 +6388,13 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     if (call->IsGuardedDevirtualizationCandidate())
     {
-        if (call->GetGDVCandidateInfo()->guardedMethodUnboxedEntryHandle != nullptr)
+        if (call->GetGDVCandidateInfo(candidateIndex)->guardedMethodUnboxedEntryHandle != nullptr)
         {
-            fncHandle = call->GetGDVCandidateInfo()->guardedMethodUnboxedEntryHandle;
+            fncHandle = call->GetGDVCandidateInfo(candidateIndex)->guardedMethodUnboxedEntryHandle;
         }
         else
         {
-            fncHandle = call->GetGDVCandidateInfo()->guardedMethodHandle;
+            fncHandle = call->GetGDVCandidateInfo(candidateIndex)->guardedMethodHandle;
         }
         methAttr = info.compCompHnd->getMethodAttribs(fncHandle);
     }
@@ -6312,7 +6439,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
 #endif
 
-            inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_WITHIN_CATCH);
+            inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_WITHIN_CATCH);
             return;
         }
 
@@ -6325,7 +6452,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
             }
 #endif
 
-            inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_WITHIN_FILTER);
+            inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_WITHIN_FILTER);
             return;
         }
     }
@@ -6334,7 +6461,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     if (methAttr & CORINFO_FLG_DONT_INLINE)
     {
-        inlineResult.NoteFatal(InlineObservation::CALLEE_IS_NOINLINE);
+        inlineResult->NoteFatal(InlineObservation::CALLEE_IS_NOINLINE);
         return;
     }
 
@@ -6342,7 +6469,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     if (methAttr & CORINFO_FLG_SYNCH)
     {
-        inlineResult.NoteFatal(InlineObservation::CALLEE_IS_SYNCHRONIZED);
+        inlineResult->NoteFatal(InlineObservation::CALLEE_IS_SYNCHRONIZED);
         return;
     }
 
@@ -6354,27 +6481,26 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         BasicBlock* block = compIsForInlining() ? impInlineInfo->iciBlock : compCurBB;
         if (!impCanPInvokeInlineCallSite(block))
         {
-            inlineResult.NoteFatal(InlineObservation::CALLSITE_PINVOKE_EH);
+            inlineResult->NoteFatal(InlineObservation::CALLSITE_PINVOKE_EH);
             return;
         }
     }
 
     InlineCandidateInfo* inlineCandidateInfo = nullptr;
-    impCheckCanInline(call, fncHandle, methAttr, exactContextHnd, &inlineCandidateInfo, &inlineResult);
+    impCheckCanInline(call, candidateIndex, fncHandle, methAttr, exactContextHnd, &inlineCandidateInfo, inlineResult);
 
-    if (inlineResult.IsFailure())
+    if (inlineResult->IsFailure())
     {
         return;
     }
 
     // The old value should be null OR this call should be a guarded devirtualization candidate.
-    assert((call->GetInlineCandidateInfo() == nullptr) || call->IsGuardedDevirtualizationCandidate());
+    assert(call->IsGuardedDevirtualizationCandidate() || (call->GetSingleInlineCandidateInfo() == nullptr));
 
     // The new value should not be null.
     assert(inlineCandidateInfo != nullptr);
     inlineCandidateInfo->exactContextNeedsRuntimeLookup = exactContextNeedsRuntimeLookup;
     inlineCandidateInfo->ilOffset                       = ilOffset;
-    call->SetSingleInlineCadidateInfo(inlineCandidateInfo);
 
     // If we're in an inlinee compiler, and have a return spill temp, and this inline candidate
     // is also a tail call candidate, it can use the same return spill temp.
@@ -6387,12 +6513,23 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
                 inlineCandidateInfo->preexistingSpillTemp);
     }
 
+    if (call->IsGuardedDevirtualizationCandidate())
+    {
+        assert(call->GetGDVCandidateInfo(candidateIndex) == inlineCandidateInfo);
+        call->gtFlags |= GTF_CALL_INLINE_CANDIDATE;
+    }
+    else
+    {
+        assert(candidateIndex == 0);
+        call->SetSingleInlineCandidateInfo(inlineCandidateInfo);
+    }
+
     // Let the strategy know there's another candidate.
     impInlineRoot()->m_inlineStrategy->NoteCandidate();
 
     // Since we're not actually inlining yet, and this call site is
     // still just an inline candidate, there's nothing to report.
-    inlineResult.SetSuccessResult(INLINE_CHECK_CAN_INLINE_SUCCESS);
+    inlineResult->SetSuccessResult(INLINE_CHECK_CAN_INLINE_SUCCESS);
 }
 
 /******************************************************************************/
@@ -7517,6 +7654,7 @@ bool Compiler::impTailCallRetTypeCompatible(bool                     allowWideni
 //
 // Arguments:
 //   call - inline candidate
+//   candidateIndex - index of inline candidate in the call's inline candidate list
 //   fncHandle - method that will be called
 //   methAttr - attributes for the method
 //   exactContextHnd - exact context for the method
@@ -7528,6 +7666,7 @@ bool Compiler::impTailCallRetTypeCompatible(bool                     allowWideni
 //   status (if method cannot be inlined)
 //
 void Compiler::impCheckCanInline(GenTreeCall*           call,
+                                 uint8_t                candidateIndex,
                                  CORINFO_METHOD_HANDLE  fncHandle,
                                  unsigned               methAttr,
                                  CORINFO_CONTEXT_HANDLE exactContextHnd,
@@ -7541,6 +7680,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
     {
         Compiler*              pThis;
         GenTreeCall*           call;
+        uint8_t                candidateIndex;
         CORINFO_METHOD_HANDLE  fncHandle;
         unsigned               methAttr;
         CORINFO_CONTEXT_HANDLE exactContextHnd;
@@ -7551,6 +7691,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 
     param.pThis                 = this;
     param.call                  = call;
+    param.candidateIndex        = candidateIndex;
     param.fncHandle             = fncHandle;
     param.methAttr              = methAttr;
     param.exactContextHnd       = (exactContextHnd != nullptr) ? exactContextHnd : MAKE_METHODCONTEXT(fncHandle);
@@ -7663,7 +7804,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 
             if (pParam->call->IsGuardedDevirtualizationCandidate())
             {
-                pInfo = pParam->call->GetInlineCandidateInfo();
+                pInfo = pParam->call->GetGDVCandidateInfo(pParam->candidateIndex);
             }
             else
             {
