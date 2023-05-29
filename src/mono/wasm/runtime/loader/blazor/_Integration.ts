@@ -17,12 +17,12 @@ export async function loadBootConfig(config: MonoConfigInternal, module: DotnetM
     const bootConfigPromise = BootConfigResult.initAsync(config.startupOptions?.loadBootResource, config.applicationEnvironment);
     const bootConfigResult: BootConfigResult = await bootConfigPromise;
     await initializeBootConfig(bootConfigResult, module, config.startupOptions);
+    setupModuleForBlazor(module);
 }
 
 export async function initializeBootConfig(bootConfigResult: BootConfigResult, module: DotnetModuleInternal, startupOptions?: Partial<WebAssemblyStartOptions>) {
     INTERNAL.resourceLoader = resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, startupOptions ?? {});
     mapBootConfigToMonoConfig(loaderHelpers.config, bootConfigResult.applicationEnvironment);
-    setupModuleForBlazor(module);
 }
 
 let resourcesLoaded = 0;
