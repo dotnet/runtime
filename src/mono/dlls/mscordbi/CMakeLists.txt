@@ -40,7 +40,6 @@ include_directories(
   ${CLR_DIR}/md/compiler
   ${CLR_DIR}/pal/prebuilt/inc
   ${CLR_DIR}/nativeresources)
-  #${CLR_DIR}/debug/dbgutil)
 
 set(mscorbi_sources_base
     cordb.cpp
