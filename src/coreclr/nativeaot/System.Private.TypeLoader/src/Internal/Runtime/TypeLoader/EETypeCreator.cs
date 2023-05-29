@@ -369,7 +369,7 @@ namespace Internal.Runtime.TypeLoader
                 if (state.GcDataSize != 0)
                 {
                     // Statics are allocated on GC heap
-                    object obj = RuntimeAugments.NewObject(((MethodTable*)state.GcStaticDesc)->ToRuntimeTypeHandle());
+                    object obj = RuntimeAugments.RawNewObject(((MethodTable*)state.GcStaticDesc)->ToRuntimeTypeHandle());
                     gcStaticData = RuntimeAugments.RhHandleAlloc(obj, GCHandleType.Normal);
 
                     pEEType->DynamicGcStaticsData = gcStaticData;
