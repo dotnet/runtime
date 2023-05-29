@@ -732,10 +732,10 @@ namespace System
             }
             catch (OverflowException)
             {
-                Number.ThrowOverflowException(TypeCode.Byte);
+                Number.ThrowOverflowException<byte>();
                 throw;
             }
-            if (temp != (byte)temp) Number.ThrowOverflowException(TypeCode.Byte);
+            if (temp != (byte)temp) Number.ThrowOverflowException<byte>();
             return (byte)temp;
         }
 
@@ -753,10 +753,10 @@ namespace System
             }
             catch (OverflowException)
             {
-                Number.ThrowOverflowException(TypeCode.SByte);
+                Number.ThrowOverflowException<sbyte>();
                 throw;
             }
-            if (temp != (sbyte)temp) Number.ThrowOverflowException(TypeCode.SByte);
+            if (temp != (sbyte)temp) Number.ThrowOverflowException<sbyte>();
             return (sbyte)temp;
         }
 
@@ -773,10 +773,10 @@ namespace System
             }
             catch (OverflowException)
             {
-                Number.ThrowOverflowException(TypeCode.Int16);
+                Number.ThrowOverflowException<short>();
                 throw;
             }
-            if (temp != (short)temp) Number.ThrowOverflowException(TypeCode.Int16);
+            if (temp != (short)temp) Number.ThrowOverflowException<short>();
             return (short)temp;
         }
 
@@ -848,10 +848,10 @@ namespace System
             }
             catch (OverflowException)
             {
-                Number.ThrowOverflowException(TypeCode.UInt16);
+                Number.ThrowOverflowException<ushort>();
                 throw;
             }
-            if (temp != (ushort)temp) Number.ThrowOverflowException(TypeCode.UInt16);
+            if (temp != (ushort)temp) Number.ThrowOverflowException<ushort>();
             return (ushort)temp;
         }
 

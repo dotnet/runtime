@@ -956,7 +956,7 @@ namespace System
 
                 if (throwOnFailure)
                 {
-                    Number.ThrowOverflowException(Type.GetTypeCode(typeof(TUnderlying)));
+                    Number.ThrowOverflowException<TUnderlying>();
                 }
             }
 
@@ -1023,7 +1023,7 @@ namespace System
 
                 if (throwOnFailure)
                 {
-                    Number.ThrowOverflowException(Type.GetTypeCode(typeof(TUnderlying)));
+                    ThrowHelper.ThrowOverflowException();
                 }
 #else
                 throw CreateUnknownEnumTypeException();

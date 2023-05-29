@@ -286,11 +286,7 @@ namespace System
         /// </summary>
         /// <param name="s">The input to be parsed.</param>
         /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. </returns>
-        public static Half Parse(string s)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseFloat<Half>(s, DefaultParseStyle, NumberFormatInfo.CurrentInfo);
-        }
+        public static Half Parse(string s) => Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null);
 
         /// <summary>
         /// Parses a <see cref="Half"/> from a <see cref="string"/> in the given <see cref="NumberStyles"/>.
@@ -298,12 +294,7 @@ namespace System
         /// <param name="s">The input to be parsed.</param>
         /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
         /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. </returns>
-        public static Half Parse(string s, NumberStyles style)
-        {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseFloat<Half>(s, style, NumberFormatInfo.CurrentInfo);
-        }
+        public static Half Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
 
         /// <summary>
         /// Parses a <see cref="Half"/> from a <see cref="string"/> and <see cref="IFormatProvider"/>.
@@ -311,11 +302,7 @@ namespace System
         /// <param name="s">The input to be parsed.</param>
         /// <param name="provider">A format provider.</param>
         /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. </returns>
-        public static Half Parse(string s, IFormatProvider? provider)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseFloat<Half>(s, DefaultParseStyle, NumberFormatInfo.GetInstance(provider));
-        }
+        public static Half Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider);
 
         /// <summary>
         /// Parses a <see cref="Half"/> from a <see cref="string"/> with the given <see cref="NumberStyles"/> and <see cref="IFormatProvider"/>.
@@ -326,9 +313,11 @@ namespace System
         /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. </returns>
         public static Half Parse(string s, NumberStyles style = DefaultParseStyle, IFormatProvider? provider = null)
         {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseFloat<Half>(s, style, NumberFormatInfo.GetInstance(provider));
+            if (s is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
+            return Parse(s.AsSpan(), style, provider);
         }
 
         /// <summary>
@@ -341,7 +330,7 @@ namespace System
         public static Half Parse(ReadOnlySpan<char> s, NumberStyles style = DefaultParseStyle, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.ParseFloat<Half>(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseFloat<char, Half>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <summary>
@@ -350,15 +339,7 @@ namespace System
         /// <param name="s">The input to be parsed.</param>
         /// <param name="result">The equivalent <see cref="Half"/> value representing the input string if the parse was successful. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Half"/> value is returned.</param>
         /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
-        public static bool TryParse([NotNullWhen(true)] string? s, out Half result)
-        {
-            if (s == null)
-            {
-                result = default;
-                return false;
-            }
-            return TryParse(s, DefaultParseStyle, provider: null, out result);
-        }
+        public static bool TryParse([NotNullWhen(true)] string? s, out Half result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null, out result);
 
         /// <summary>
         /// Tries to parse a <see cref="Half"/> from a <see cref="ReadOnlySpan{Char}"/> in the default parse style.
@@ -366,10 +347,7 @@ namespace System
         /// <param name="s">The input to be parsed.</param>
         /// <param name="result">The equivalent <see cref="Half"/> value representing the input string if the parse was successful. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Half"/> value is returned.</param>
         /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
-        public static bool TryParse(ReadOnlySpan<char> s, out Half result)
-        {
-            return TryParse(s, DefaultParseStyle, provider: null, out result);
-        }
+        public static bool TryParse(ReadOnlySpan<char> s, out Half result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null, out result);
 
         /// <summary>
         /// Tries to parse a <see cref="Half"/> from a <see cref="string"/> with the given <see cref="NumberStyles"/> and <see cref="IFormatProvider"/>.
@@ -385,11 +363,10 @@ namespace System
 
             if (s == null)
             {
-                result = default;
+                result = Zero;
                 return false;
             }
-
-            return TryParse(s.AsSpan(), style, provider, out result);
+            return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         /// <summary>

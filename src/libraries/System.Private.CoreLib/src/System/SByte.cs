@@ -144,7 +144,7 @@ namespace System
         public static sbyte Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseBinaryInteger<sbyte>(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<char, sbyte>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static bool TryParse([NotNullWhen(true)] string? s, out sbyte result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
@@ -160,7 +160,7 @@ namespace System
                 result = 0;
                 return false;
             }
-            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out sbyte result)

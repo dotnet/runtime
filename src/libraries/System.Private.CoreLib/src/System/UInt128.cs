@@ -142,7 +142,7 @@ namespace System
         public static UInt128 Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseBinaryInteger<UInt128>(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<char, UInt128>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static bool TryParse([NotNullWhen(true)] string? s, out UInt128 result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
@@ -158,7 +158,7 @@ namespace System
                 result = 0;
                 return false;
             }
-            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out UInt128 result)
@@ -217,7 +217,7 @@ namespace System
             if (value._upper > uint.MaxValue)
             {
                 // The default behavior of decimal conversions is to always throw on overflow
-                Number.ThrowOverflowException(TypeCode.Decimal);
+                Number.ThrowOverflowException(SR.Overflow_Decimal);
             }
 
             uint hi32 = (uint)(value._upper);
