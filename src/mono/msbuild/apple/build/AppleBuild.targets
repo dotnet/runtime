@@ -184,6 +184,7 @@
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </_AotInputAssemblies>
+      <_ExcludeFromAppDir Include="$(_iOSLikeDedupAssembly)" />
     </ItemGroup>
 
     <!-- 
@@ -259,6 +260,7 @@
       ProjectName="$(AssemblyName)"
       RuntimeComponents="$(RuntimeComponents)"
       TargetOS="$(TargetOS)"
+      ExcludeFromAppDir="@(_ExcludeFromAppDir)"
       UseConsoleUITemplate="$(UseConsoleUITemplate)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
