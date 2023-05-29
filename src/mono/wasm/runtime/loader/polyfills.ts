@@ -76,6 +76,7 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
             return <Response><any>{
                 ok: true,
                 url,
+                headers: [],
                 arrayBuffer: () => {
                     return new Uint8Array(read(url, "binary"));
                 },
@@ -90,6 +91,7 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
             ok: false,
             url,
             status: 500,
+            headers: [],
             statusText: "ERR28: " + e,
             arrayBuffer: () => { throw e; },
             json: () => { throw e; }

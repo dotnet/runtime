@@ -70,6 +70,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
         var config = new BootJsonData()
         {
+            config = new(),
             entryAssembly = MainAssemblyName,
             icuDataMode = InvariantGlobalization ? ICUDataMode.Invariant : HybridGlobalization ? ICUDataMode.Hybrid : ICUDataMode.Sharded
         };
