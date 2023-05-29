@@ -4,6 +4,7 @@
 using global::System;
 using global::System.Threading;
 using global::System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
@@ -24,6 +25,11 @@ namespace Internal.Reflection.Execution.MethodInvokers
             : base(methodInvokeInfo)
         {
             _declaringTypeHandle = declaringTypeHandle;
+
+            if (methodInvokeInfo.Method.IsConstructor && !methodInvokeInfo.Method.IsStatic)
+            {
+                _allocatorMethod = RuntimeAugments.GetAllocateObjectHelperForType(declaringTypeHandle);
+            }
         }
 
         [DebuggerGuidedStepThroughAttribute]
@@ -34,6 +40,20 @@ namespace Internal.Reflection.Execution.MethodInvokers
                 ValidateThis(thisObject, _declaringTypeHandle);
             }
 
+            object? result = MethodInvokeInfo.Invoke(
+                thisObject,
+                MethodInvokeInfo.LdFtnResult,
+                arguments,
+                binderBundle,
+                wrapInTargetInvocationException);
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            return result;
+        }
+
+        [DebuggerGuidedStepThroughAttribute]
+        protected sealed override object CreateInstance(object[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
+        {
+            object thisObject = RawCalliHelper.Call<object>(_allocatorMethod, _declaringTypeHandle.Value);
             object? result = MethodInvokeInfo.Invoke(
                 thisObject,
                 MethodInvokeInfo.LdFtnResult,
@@ -74,5 +94,13 @@ namespace Internal.Reflection.Execution.MethodInvokers
         public sealed override IntPtr LdFtnResult => MethodInvokeInfo.LdFtnResult;
 
         private RuntimeTypeHandle _declaringTypeHandle;
+        private IntPtr _allocatorMethod;
+
+        private static unsafe class RawCalliHelper
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static T Call<T>(IntPtr pfn, IntPtr arg)
+            => ((delegate*<IntPtr, T>)pfn)(arg);
+        }
     }
 }

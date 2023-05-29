@@ -48,6 +48,12 @@ namespace System.Reflection.Runtime.MethodInfos
             return result;
         }
 
+        protected sealed override object CreateInstance(object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
+        {
+            // Custom method invokers need to also create the instance, so we just pass a null this.
+            return Invoke(null, arguments, binderBundle, wrapInTargetInvocationException);
+        }
+
         public sealed override Delegate CreateDelegate(RuntimeTypeHandle delegateType, object target, bool isStatic, bool isVirtual, bool isOpen)
         {
             if (_thisType.IsConstructedGenericType && _thisType.GetGenericTypeDefinition() == typeof(Nullable<>))
