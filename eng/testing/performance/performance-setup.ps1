@@ -203,6 +203,7 @@ Write-PipelineSetVariable -Name 'RunFromPerfRepo' -Value "$RunFromPerformanceRep
 Write-PipelineSetVariable -Name 'Compare' -Value "$Compare" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'MonoDotnet' -Value "$UsingMono" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iOSLlvmBuild" -IsMultiJobVariable $false
+Write-PipelineSetVariable -Name 'iOSStripSymbols' -Value "$iOSStripSymbols" -IsMultiJobVariable $false
 
 # Helix Arguments
 Write-PipelineSetVariable -Name 'Creator' -Value "$Creator" -IsMultiJobVariable $false

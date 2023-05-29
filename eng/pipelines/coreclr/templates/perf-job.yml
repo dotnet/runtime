@@ -111,7 +111,7 @@ jobs:
     ${{ if in(parameters.runtimeType, 'iOSMono') }}:
       extraSetupParameters: --architecture ${{ parameters.archType }} --iosmono --iosllvmbuild ${{ parameters.iOSLlvmBuild }} --iosstripsymbols ${{ parameters.iOSStripSymbols }}
     ${{ if in(parameters.runtimeType, 'iOSNativeAOT') }}:
-      extraSetupParameters: --architecture ${{ parameters.archType }} --iosnativeaot --iosstripsymbols ${{ parameters.iOSStripSymbols }}
+      extraSetupParameters: --architecture ${{ parameters.archType }} --iosnativeaot --iosllvmbuild ${{ parameters.iOSLlvmBuild }} --iosstripsymbols ${{ parameters.iOSStripSymbols }}
 
     variables:
     - ${{ each variable in parameters.variables }}:

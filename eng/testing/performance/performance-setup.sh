@@ -182,8 +182,8 @@ while (($# > 0)); do
       shift 2
       ;;
     --iosstripsymbols)
-      iosstripsymbols=$2
-      shift 2
+      iosstripsymbols=$3
+      shift 3
       ;;
     --mauiversion)
       maui_version=$2
