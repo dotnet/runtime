@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 
@@ -114,6 +113,11 @@ namespace Microsoft.Extensions
             }
         }
 
+        public class ClassWithPrimaryCtor(string color, int length)
+        {
+            public string Color { get; } = color;
+            public int Length { get; } = length;
+        }
 
         public record RecordTypeOptions(string Color, int Length);
 

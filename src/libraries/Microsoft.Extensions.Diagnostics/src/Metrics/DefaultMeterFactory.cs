@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 {
     internal sealed class DefaultMeterFactory : IMeterFactory
     {
-        private readonly Dictionary<string, List<Meter>> _cachedMeters = new();
+        private readonly Dictionary<string, List<FactoryMeter>> _cachedMeters = new();
         private bool _disposed;
 
         public DefaultMeterFactory() { }
@@ -22,6 +22,11 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                 throw new ArgumentNullException(nameof(options));
             }
 
+            if (options.Scope is not null && !object.ReferenceEquals(options.Scope, this))
+            {
+                throw new InvalidOperationException(SR.InvalidScope);
+            }
+
             Debug.Assert(options.Name is not null);
 
             lock (_cachedMeters)
@@ -31,11 +36,11 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                     throw new ObjectDisposedException(nameof(DefaultMeterFactory));
                 }
 
-                if (_cachedMeters.TryGetValue(options.Name, out List<Meter>? meterList))
+                if (_cachedMeters.TryGetValue(options.Name, out List<FactoryMeter>? meterList))
                 {
                     foreach (Meter meter in meterList)
                     {
-                        if (meter.Version == options.Version && DiagnosticsHelper.CompareTags(meter.Tags, options.Tags))
+                        if (meter.Version == options.Version && DiagnosticsHelper.CompareTags(meter.Tags as List<KeyValuePair<string, object?>>, options.Tags))
                         {
                             return meter;
                         }
@@ -43,11 +48,15 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                 }
                 else
                 {
-                    meterList = new List<Meter>();
+                    meterList = new List<FactoryMeter>();
                     _cachedMeters.Add(options.Name, meterList);
                 }
 
-                Meter m = new Meter(options.Name, options.Version, options.Tags, scope: this);
+                object? scope = options.Scope;
+                options.Scope = this;
+                FactoryMeter m = new FactoryMeter(options.Name, options.Version, options.Tags, scope: this);
+                options.Scope = scope;
+
                 meterList.Add(m);
                 return m;
             }
@@ -64,16 +73,31 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
                 _disposed = true;
 
-                foreach (List<Meter> meterList in _cachedMeters.Values)
+                foreach (List<FactoryMeter> meterList in _cachedMeters.Values)
                 {
-                    foreach (Meter meter in meterList)
+                    foreach (FactoryMeter meter in meterList)
                     {
-                        meter.Dispose();
+                        meter.Release();
                     }
                 }
 
                 _cachedMeters.Clear();
             }
+        }
+    }
+
+    internal sealed class FactoryMeter : Meter
+    {
+        public FactoryMeter(string name, string? version, IEnumerable<KeyValuePair<string, object?>>? tags, object? scope)
+            : base(name, version, tags, scope)
+        {
+        }
+
+        public void Release() => base.Dispose(true); // call the protected Dispose(bool)
+
+        protected override void Dispose(bool disposing)
+        {
+            // no-op, disallow users from disposing of the meters created from the factory.
         }
     }
 }

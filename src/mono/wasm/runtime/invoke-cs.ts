@@ -12,7 +12,7 @@ import {
     bound_cs_function_symbol, get_signature_version, alloc_stack_frame, get_signature_type,
 } from "./marshal";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "./roots";
-import { conv_string_root, string_decoder } from "./strings";
+import { monoStringToString, monoStringToStringUnsafe } from "./strings";
 import { MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMarshalerArguments, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, VoidPtrNull, MonoObjectRefNull, MonoObjectNull } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
 import cwraps from "./cwraps";
@@ -31,7 +31,7 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
         mono_assert(version === 1, () => `Signature version ${version} mismatch.`);
 
         const args_count = get_signature_argument_count(signature);
-        const js_fqn = conv_string_root(fqn_root)!;
+        const js_fqn = monoStringToString(fqn_root)!;
         mono_assert(js_fqn, "fully_qualified_name must be string");
 
         mono_log_debug(`Binding [JSExport] ${js_fqn}`);
@@ -246,7 +246,7 @@ type BindingClosure = {
 export function invoke_method_and_handle_exception(method: MonoMethod, args: JSMarshalerArguments): void {
     assert_synchronization_context();
     const fail = cwraps.mono_wasm_invoke_method_bound(method, args);
-    if (fail) throw new Error("ERR24: Unexpected error: " + string_decoder.copy(fail));
+    if (fail) throw new Error("ERR24: Unexpected error: " + monoStringToStringUnsafe(fail));
     if (is_args_exception(args)) {
         const exc = get_arg(args, 0);
         throw marshal_exception_to_js(exc);
@@ -301,7 +301,7 @@ export async function mono_wasm_get_assembly_exports(assembly: string): Promise<
                 try {
                     cwraps.mono_wasm_invoke_method_ref(method, MonoObjectRefNull, VoidPtrNull, outException.address, outResult.address);
                     if (outException.value !== MonoObjectNull) {
-                        const msg = conv_string_root(outResult)!;
+                        const msg = monoStringToString(outResult)!;
                         throw new Error(msg);
                     }
                 }

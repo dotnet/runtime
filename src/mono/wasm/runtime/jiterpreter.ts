@@ -4,9 +4,7 @@
 import { MonoMethod } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
 import { Module, runtimeHelpers } from "./globals";
-import {
-    getU16, getU32_unaligned
-} from "./memory";
+import { getU16, getU32_unaligned, localHeapViewU8 } from "./memory";
 import { WasmOpcode, getOpcodeName } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
@@ -22,6 +20,7 @@ import {
     generateWasmBody
 } from "./jiterpreter-trace-generator";
 import { mono_log_error, mono_log_info, mono_log_warn } from "./logging";
+import { utf8ToString } from "./strings";
 
 // Controls miscellaneous diagnostic output.
 export const trace = 0;
@@ -979,17 +978,17 @@ export function mono_interp_tier_prepare_jiterpreter(
     let methodFullName: string | undefined;
     if (mostRecentOptions.estimateHeat || (instrumentedMethodNames.length > 0) || useFullNames) {
         const pMethodName = cwraps.mono_wasm_method_get_full_name(method);
-        methodFullName = Module.UTF8ToString(pMethodName);
+        methodFullName = utf8ToString(pMethodName);
         Module._free(<any>pMethodName);
     }
-    const methodName = Module.UTF8ToString(cwraps.mono_wasm_method_get_name(method));
+    const methodName = utf8ToString(cwraps.mono_wasm_method_get_name(method));
     info.name = methodFullName || methodName;
 
     const imethod = getU32_unaligned(getMemberOffset(JiterpMember.Imethod) + <any>frame);
     const backBranchCount = getU32_unaligned(getMemberOffset(JiterpMember.BackwardBranchOffsetsCount) + imethod);
     const pBackBranches = getU32_unaligned(getMemberOffset(JiterpMember.BackwardBranchOffsets) + imethod);
     let backwardBranchTable = backBranchCount
-        ? new Uint16Array(Module.HEAPU8.buffer, pBackBranches, backBranchCount)
+        ? new Uint16Array(localHeapViewU8().buffer, pBackBranches, backBranchCount)
         : null;
 
     // If we're compiling a trace that doesn't start at the beginning of a method,
@@ -1086,7 +1085,7 @@ export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
             for (let i = 0, c = Math.min(summaryStatCount, targetPointers.length); i < c; i++) {
                 const targetMethod = Number(targetPointers[i]) | 0;
                 const pMethodName = cwraps.mono_wasm_method_get_full_name(<any>targetMethod);
-                const targetMethodName = Module.UTF8ToString(pMethodName);
+                const targetMethodName = utf8ToString(pMethodName);
                 const hitCount = callTargetCounts[<any>targetMethod];
                 Module._free(<any>pMethodName);
                 mono_log_info(`${targetMethodName} ${hitCount}`);

@@ -97,7 +97,7 @@ export async function storeMemorySnapshot(memory: ArrayBuffer) {
         }
         const copy = MonoWasmThreads
             // storing SHaredArrayBuffer in the cache is not working
-            ? (new Int8Array(memory)).slice(0)
+            ? (new Uint8Array(memory)).slice(0)
             : memory;
 
         const responseToCache = new Response(copy, {

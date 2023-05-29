@@ -266,7 +266,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             static void VerifyCompilation(Compilation comp)
             {
-                Assert.True(comp.GetTypeByMetadataName("Test.IFoo")
+                Assert.True(comp.GetTypeByMetadataName("Test.IDerivedIface")
                     ?.GetMembers()
                     .Where(m => m.Kind == SymbolKind.Method && m.Name == "Bar")
                     .SingleOrDefault()

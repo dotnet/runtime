@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
@@ -16,7 +17,8 @@ namespace Microsoft.Interop
     /// </summary>
     internal sealed record ComMethodInfo(
         MethodDeclarationSyntax Syntax,
-        string MethodName)
+        string MethodName,
+        SequenceEqualImmutableArray<AttributeInfo> Attributes)
     {
         /// <summary>
         /// Returns a list of tuples of ComMethodInfo, IMethodSymbol, and Diagnostic. If ComMethodInfo is null, Diagnostic will not be null, and vice versa.
@@ -108,7 +110,14 @@ namespace Microsoft.Interop
             {
                 return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(diag);
             }
-            var comMethodInfo = new ComMethodInfo(comMethodDeclaringSyntax, method.Name);
+
+            var attributes = method.GetAttributes();
+            var attributeInfos = ImmutableArray.CreateBuilder<AttributeInfo>(attributes.Length);
+            foreach (var attr in attributes)
+            {
+                attributeInfos.Add(AttributeInfo.From(attr));
+            }
+            var comMethodInfo = new ComMethodInfo(comMethodDeclaringSyntax, method.Name, attributeInfos.MoveToImmutable().ToSequenceEqual());
             return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From((comMethodInfo, method));
         }
     }

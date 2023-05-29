@@ -4364,6 +4364,7 @@ private:
                         InlineResult*         inlineResult);
 
     void impCheckCanInline(GenTreeCall*           call,
+                           uint8_t                candidateIndex,
                            CORINFO_METHOD_HANDLE  fncHandle,
                            unsigned               methAttr,
                            CORINFO_CONTEXT_HANDLE exactContextHnd,
@@ -4392,10 +4393,12 @@ private:
                                 IL_OFFSET              ilOffset);
 
     void impMarkInlineCandidateHelper(GenTreeCall*           call,
+                                      uint8_t                candidateIndex,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
                                       bool                   exactContextNeedsRuntimeLookup,
                                       CORINFO_CALL_INFO*     callInfo,
-                                      IL_OFFSET              ilOffset);
+                                      IL_OFFSET              ilOffset,
+                                      InlineResult*          inlineResult);
 
     bool impTailCallRetTypeCompatible(bool                     allowWidening,
                                       var_types                callerRetType,
