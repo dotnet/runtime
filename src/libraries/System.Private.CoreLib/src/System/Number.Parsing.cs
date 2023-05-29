@@ -964,7 +964,8 @@ namespace System
             goto DoneAtEndButPotentialOverflow;
         }
 
-        internal static decimal ParseDecimal(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
+        internal static decimal ParseDecimal<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
             ParsingStatus status = TryParseDecimal(value, styles, info, out decimal result);
             if (status != ParsingStatus.OK)
@@ -1110,7 +1111,8 @@ namespace System
             return result;
         }
 
-        internal static ParsingStatus TryParseDecimal(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out decimal result)
+        internal static ParsingStatus TryParseDecimal<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out decimal result)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
             NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, stackalloc byte[DecimalNumberBufferLength]);
 
