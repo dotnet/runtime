@@ -92,7 +92,7 @@ export type MonoConfig = {
 export interface ResourceRequest {
     name: string, // the name of the asset, including extension.
     behavior: AssetBehaviours, // determines how the asset will be handled once loaded
-    resolvedUrl?: string;
+    resolvedUrl?: string; // this should be absolute url to the asset
     hash?: string;
 }
 
