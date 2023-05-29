@@ -38,6 +38,8 @@
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets" />
 
+  <Target Name="BuildAppBundle" AfterTargets="CopyFilesToPublishDirectory;Build" DependsOnTargets="Publish" />
+
   <Target Name="RunAppBundle"
           AfterTargets="_AppleGenerateAppBundle"
           Condition="'$(ArchiveTests)' != 'true' and '$(DeployAndRun)' == 'true'">
