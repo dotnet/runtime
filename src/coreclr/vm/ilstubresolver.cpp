@@ -421,13 +421,13 @@ ILStubResolver::ClearCompileTimeState(CompileTimeStatePtrSpecialValues newState)
     // See allocations in AllocGeneratedIL, SetStubTargetMethodSig and AllocEHSect
     //
 
-    delete[](void*)m_pCompileTimeState->m_StubTargetMethodSig.GetPtr();
-    delete[](void*)m_pCompileTimeState->m_pEHSect;
+    delete[](BYTE*)m_pCompileTimeState->m_StubTargetMethodSig.GetPtr();
+    delete[](BYTE*)m_pCompileTimeState->m_pEHSect;
 
     // The allocation being deleted here was allocated using placement new
     // from a bulk allocation so manually call the destructor.
     m_pCompileTimeState->~CompileTimeState();
-    delete[](void*)m_pCompileTimeState;
+    delete[](BYTE*)(void*)m_pCompileTimeState;
 
     InterlockedExchangeT(&m_pCompileTimeState, dac_cast<PTR_CompileTimeState>((TADDR)newState));
 } // ILStubResolver::ClearCompileTimeState

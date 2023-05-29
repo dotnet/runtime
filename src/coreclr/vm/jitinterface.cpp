@@ -13119,7 +13119,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
         if (cxt.HasTransientMethodDetails())
-            jitInfo.AddTransientMethodDetails(std::move(cxt.CreateTransientMethodDetails()));
+            jitInfo.AddTransientMethodDetails(cxt.CreateTransientMethodDetails());
 
         MethodDesc * pMethodForSecurity = jitInfo.GetMethodForSecurity(methodInfo.ftn);
 
