@@ -3075,17 +3075,18 @@ mono_riscv_emit_store_stack (guint8 *code, guint64 regs, int basereg, int offset
 /* CFA_OFFSET is the offset between the CFA and basereg */
 static __attribute__ ((__warn_unused_result__)) guint8 *
 emit_store_regarray_cfa (
-    MonoCompile *cfg, guint8 *code, guint64 regs, int basereg, int offset, int cfa_offset, guint64 no_cfa_regset)
+    MonoCompile *cfg, guint8 *code, guint64 regs, int basereg, int offset, guint64 no_cfa_regset)
 {
 	guint32 cfa_regset = regs & ~no_cfa_regset;
+	g_assert(basereg == RISCV_FP);
+	g_assert(offset <= 0);
 
 	for (int i = 0; i < 32; ++i) {
 		if (regs & (1 << i)) {
 			code = mono_riscv_emit_store (code, i, basereg, offset + (i * sizeof (host_mgreg_t)), 0);
 
 			if (cfa_regset & (1 << i)) {
-				g_assert (cfa_offset >= 0);
-				mono_emit_unwind_op_offset (cfg, code, i, (-cfa_offset) + offset + (i * sizeof (host_mgreg_t)));
+				mono_emit_unwind_op_offset (cfg, code, i, offset + (i * sizeof (host_mgreg_t)));
 			}
 		}
 	}
@@ -3099,7 +3100,7 @@ emit_store_regarray_cfa (
  * Clobbers T6.
  */
 static guint8 *
-emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offset)
+emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 {
 	/*
 	 * The LMF should contain all the state required to be able to reconstruct the machine state
@@ -3114,7 +3115,7 @@ emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offse
 	code = mono_riscv_emit_store (code, RISCV_T6, RISCV_FP, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, pc), 0);
 	/* callee saved gregs + sp */
 	code = emit_store_regarray_cfa (cfg, code, MONO_ARCH_LMF_REGS, RISCV_FP,
-	                                lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, gregs), cfa_offset, (1 << RISCV_SP));
+	                                lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, gregs), (1 << RISCV_SP));
 
 	return code;
 }
@@ -3296,7 +3297,6 @@ guint8 *
 mono_arch_emit_prolog (MonoCompile *cfg)
 {
 	guint8 *code;
-	int cfa_offset;
 
 	cfg->code_size = MAX (cfg->header->code_size * 4, 1024);
 	code = cfg->native_code = g_malloc (cfg->code_size);
@@ -3307,13 +3307,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	/*
 	 * - Setup frame
 	 */
-	cfa_offset = 0;
 	int stack_size = 0;
-	mono_emit_unwind_op_def_cfa (cfg, code, RISCV_SP, 0);
 
 	/* Setup frame */
 	if (RISCV_VALID_I_IMM (-cfg->stack_offset)) {
 		riscv_addi (code, RISCV_SP, RISCV_SP, -cfg->stack_offset);
+		mono_emit_unwind_op_def_cfa_offset (cfg, code, cfg->stack_offset);
 		// save return value
 		stack_size += sizeof (target_mgreg_t);
 		code = mono_riscv_emit_store (code, RISCV_RA, RISCV_SP, cfg->stack_offset - stack_size, 0);
@@ -3321,33 +3320,33 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		stack_size += sizeof (target_mgreg_t);
 		code = mono_riscv_emit_store (code, RISCV_FP, RISCV_SP, cfg->stack_offset - stack_size, 0);
 
+		mono_emit_unwind_op_offset (cfg, code, RISCV_RA, -(int)sizeof (target_mgreg_t));
+		mono_emit_unwind_op_offset (cfg, code, RISCV_FP, -(int)(sizeof (target_mgreg_t) * 2));
+
 		// set s0(fp) value
 		riscv_addi (code, RISCV_FP, RISCV_SP, cfg->stack_offset);
 	} else {
-		// save current FP into T0
-		riscv_addi (code, RISCV_T0, RISCV_FP, 0);
-
-		// FP = SP
-		riscv_addi (code, RISCV_FP, RISCV_SP, 0);
-
-		// save return value
-		stack_size += sizeof (target_mgreg_t);
-		code = mono_riscv_emit_store (code, RISCV_RA, RISCV_FP, -stack_size, 0);
-
-		// save fp value, here is T0
-		stack_size += sizeof (target_mgreg_t);
-		code = mono_riscv_emit_store (code, RISCV_T0, RISCV_FP, -stack_size, 0);
-
 		// save stack size into T0
 		code = mono_riscv_emit_imm (code, RISCV_T0, cfg->stack_offset);
 		// calculate SP
 		riscv_sub (code, RISCV_SP, RISCV_SP, RISCV_T0);
-	}
+		mono_emit_unwind_op_def_cfa (cfg, code, RISCV_SP, cfg->stack_offset);
 
-	cfa_offset += cfg->stack_offset;
-	mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
-	mono_emit_unwind_op_offset (cfg, code, RISCV_RA, cfa_offset - sizeof (target_mgreg_t));
-	mono_emit_unwind_op_offset (cfg, code, RISCV_FP, cfa_offset - (sizeof (target_mgreg_t) * 2));
+		// save return value
+		stack_size += sizeof (target_mgreg_t);
+		code = mono_riscv_emit_store (code, RISCV_RA, RISCV_SP, cfg->stack_offset - stack_size, 0);
+		// save s0(fp) value
+		stack_size += sizeof (target_mgreg_t);
+		code = mono_riscv_emit_store (code, RISCV_FP, RISCV_SP, cfg->stack_offset - stack_size, 0);
+
+		mono_emit_unwind_op_offset (cfg, code, RISCV_RA, -(int)sizeof (target_mgreg_t));
+		mono_emit_unwind_op_offset (cfg, code, RISCV_FP, -(int)(sizeof (target_mgreg_t) * 2));
+
+		// set s0(fp) value
+		code = mono_riscv_emit_imm (code, RISCV_T0, cfg->stack_offset);
+		riscv_add (code, RISCV_FP, RISCV_SP, RISCV_T0);
+	}
+	mono_emit_unwind_op_def_cfa (cfg, code, RISCV_FP, 0);
 
 	// save other registers
 	if (cfg->param_area)
@@ -3356,7 +3355,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	if (cfg->method->save_lmf) {
 		g_assert (cfg->lmf_var->inst_offset <= 0);
-		code = emit_setup_lmf (cfg, code, cfg->lmf_var->inst_offset, cfa_offset);
+		code = emit_setup_lmf (cfg, code, cfg->lmf_var->inst_offset);
 	} else
 		/* Save gregs */
 		code = mono_riscv_emit_store_stack (code, MONO_ARCH_CALLEE_SAVED_REGS & cfg->used_int_regs, RISCV_FP,

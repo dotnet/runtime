@@ -105,7 +105,6 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 	/* Setup stack frame */
 	imm = frame_size;
-	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, RISCV_SP, 0);
 
 	g_assert (RISCV_VALID_I_IMM (-imm));
 
@@ -113,11 +112,13 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, frame_size);
 
 	code = mono_riscv_emit_store (code, RISCV_RA, RISCV_SP, imm - sizeof (host_mgreg_t), 0);
-	mono_add_unwind_op_offset (unwind_ops, code, buf, RISCV_RA, sizeof (host_mgreg_t));
-	code = mono_riscv_emit_store (code, RISCV_S0, RISCV_SP, imm - sizeof (host_mgreg_t) * 2, 0);
-	mono_add_unwind_op_offset (unwind_ops, code, buf, RISCV_S0, sizeof (host_mgreg_t) * 2);
+	mono_add_unwind_op_offset (unwind_ops, code, buf, RISCV_RA, -sizeof (host_mgreg_t));
+	code = mono_riscv_emit_store (code, RISCV_FP, RISCV_SP, imm - sizeof (host_mgreg_t) * 2, 0);
+	mono_add_unwind_op_offset (unwind_ops, code, buf, RISCV_FP, -sizeof (host_mgreg_t) * 2);
 
-	riscv_addi (code, RISCV_S0, RISCV_SP, imm);
+	riscv_addi (code, RISCV_FP, RISCV_SP, imm);
+	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, RISCV_FP, 0);
+
 
 	/* Save gregs */
 	gregs_regset = ~((1 << RISCV_ZERO) | (1 << RISCV_FP) | (1 << RISCV_SP));
@@ -602,7 +603,7 @@ mono_arch_create_general_rgctx_lazy_fetch_trampoline (MonoTrampInfo **info, gboo
 
 	code = buf = mono_global_codeman_reserve (tramp_size);
 
-	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, RISCV_SP, 0);
+	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, RISCV_FP, 0);
 
 	/*
 	 * The RGCTX register holds a pointer to a <slot, trampoline address> pair.
