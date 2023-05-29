@@ -35,7 +35,7 @@ export function mono_wasm_change_case_invariant(src: number, srcLength: number, 
             for (let i=0; i < input.length; i+=jump)
             {
                 // surrogate parts have to enter ToUpper/ToLower together to give correct output
-                if (IsSurrogate(input, i))
+                if (isSurrogate(input, i))
                 {
                     jump = 2;
                     const surrogate = input.substring(i, i+2);
@@ -57,7 +57,7 @@ export function mono_wasm_change_case_invariant(src: number, srcLength: number, 
         {
             for (let i=0; i < input.length; i+=jump)
             {
-                if (IsSurrogate(input, i))
+                if (isSurrogate(input, i))
                 {
                     jump = 2;
                     const surrogate = input.substring(i, i+2);
@@ -108,7 +108,7 @@ export function mono_wasm_change_case(culture: MonoStringRef, src: number, srcLe
             for (let i=0; i < input.length; i+=jump)
             {
                 // surrogate parts have to enter ToUpper/ToLower together to give correct output
-                if (IsSurrogate(input, i))
+                if (isSurrogate(input, i))
                 {
                     jump = 2;
                     const surrogate = input.substring(i, i+2);
@@ -131,7 +131,7 @@ export function mono_wasm_change_case(culture: MonoStringRef, src: number, srcLe
             for (let i=0; i < input.length; i+=jump)
             {
                 // surrogate parts have to enter ToUpper/ToLower together to give correct output
-                if (IsSurrogate(input, i))
+                if (isSurrogate(input, i))
                 {
                     jump = 2;
                     const surrogate = input.substring(i, i+2);
@@ -159,7 +159,7 @@ export function mono_wasm_change_case(culture: MonoStringRef, src: number, srcLe
     }
 }
 
-function IsSurrogate(str: string, startIdx: number) : boolean
+function isSurrogate(str: string, startIdx: number) : boolean
 {
     return SURROGATE_HIGHER_START <= str[startIdx] &&
         str[startIdx] <= SURROGATE_HIGHER_END &&
