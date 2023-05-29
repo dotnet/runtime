@@ -4,6 +4,7 @@
 #if NET8_0_OR_GREATER
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Test;
@@ -15,7 +16,7 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
     public class RedactionTests
     {
         [Fact]
-        public void RedactLoggerMessage()
+        public void Redact_Message()
         {
             var sink = new TestSink();
             var provider = new TestLoggerProvider(sink, isEnabled: true);
@@ -33,6 +34,44 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
             Assert.Equal(2, sink.Writes.Count);
             Assert.Equal("User Frank has now 76 status", sink.Writes.ElementAt(0).Message);
             Assert.Equal("User [Redacted - EUPI] has now 76 status", sink.Writes.ElementAt(1).Message);
+        }
+
+        [Fact]
+        public void Redact_StateValues()
+        {
+            var sink = new TestSink();
+            var provider = new TestLoggerProvider(sink, isEnabled: true);
+            ILoggerFactory factory = LoggerFactory.Create(b =>
+            {
+                b.AddProvider(provider);
+                b.Services.AddSingleton<IRedactorProvider, TestRedactorProvider>();
+                b.AddRedactionProcessor();
+            });
+
+            ILogger foo = factory.CreateLogger("Foo");
+            LogMessages.LogNameRedacted(foo, "Frank", 76);
+
+            Assert.Equal(1, sink.Writes.Count);
+            var write = sink.Writes.ElementAt(0);
+            Assert.Equal("User [Redacted - EUPI] has now 76 status", write.Message);
+
+            var values = Assert.IsAssignableFrom<IReadOnlyList<KeyValuePair<string, object>>>(write.State);
+            Assert.Collection(values,
+                kvp =>
+                {
+                    Assert.Equal("username", kvp.Key);
+                    Assert.Equal("[Redacted - EUPI]", kvp.Value);
+                },
+                kvp =>
+                {
+                    Assert.Equal("status", kvp.Key);
+                    Assert.Equal(76, kvp.Value);
+                },
+                kvp =>
+                {
+                    Assert.Equal("{OriginalFormat}", kvp.Key);
+                    Assert.Equal("User {username} has now {status} status", kvp.Value);
+                });
         }
 
         private sealed class TestRedactorProvider : IRedactorProvider

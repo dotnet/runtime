@@ -8,6 +8,7 @@
 
 using System;
 using System.Buffers;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -270,15 +271,28 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
 
     internal class RedactedLogMetadata<T> : ILogMetadata<RedactedValues<T>>
     {
-        ILogMetadata<T> _originalMetadata;
-        PropertyRedaction[] _redactions;
-        Action<T, IBufferWriter<char>>? _defaultFormatter;
+        private readonly ILogMetadata<T> _originalMetadata;
+        private readonly PropertyRedaction[] _redactions;
+        private Action<T, IBufferWriter<char>>? _defaultFormatter;
+
         public RedactedLogMetadata(ILogMetadata<T> metadata, PropertyRedaction[] redactions)
         {
             _originalMetadata = metadata;
             _redactions = redactions;
-
         }
+
+        public IRedactor? GetPropertyRedactor(int index)
+        {
+            for (var i = 0; i < _redactions.Length; i++)
+            {
+                if (_redactions[i].Index == index)
+                {
+                    return _redactions[i].Redactor;
+                }
+            }
+            return null;
+        }
+
         public ILogMetadata<T> OriginalMetadata => _originalMetadata;
 
         public LogLevel LogLevel => _originalMetadata.LogLevel;
@@ -477,7 +491,7 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
         }
     }
 
-    internal struct RedactedValues<T>
+    internal struct RedactedValues<T> : IReadOnlyList<KeyValuePair<string, object?>>
     {
         public RedactedValues(RedactedLogMetadata<T> metadata, in T originalState)
         {
@@ -488,7 +502,37 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
         public RedactedLogMetadata<T> Metadata;
         public T OriginalState;
 
+        private IReadOnlyList<KeyValuePair<string, object?>> _originalStateValues;
+        public IReadOnlyList<KeyValuePair<string, object?>> OriginalStateValues => _originalStateValues ??= OriginalState as IReadOnlyList<KeyValuePair<string, object?>>;
+
         public override string ToString() => Metadata.FormatMessage(this);
+
+        public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
+        {
+            for (var i = 0; i < Count; i++)
+            {
+                yield return this[i];
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public int Count => OriginalStateValues != null ? OriginalStateValues.Count : 0;
+
+        public KeyValuePair<string, object?> this[int index]
+        {
+            get
+            {
+                var originalValue = OriginalStateValues[index];
+                var redactor = Metadata.GetPropertyRedactor(index);
+                if (redactor == null)
+                {
+                    return originalValue;
+                }
+                string? unredactedValue = originalValue.Value?.ToString();
+                return new KeyValuePair<string, object?>(originalValue.Key, redactor.Redact(unredactedValue));
+            }
+        }
 
         public static readonly Func<RedactedValues<T>, Exception?, string> Callback = (state, e) => state.ToString();
     }
