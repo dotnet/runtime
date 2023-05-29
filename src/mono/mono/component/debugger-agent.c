@@ -7499,7 +7499,7 @@ jmc_modifier (int *step_thread_id, StepSize *size, StepDepth *depth, Modifier *m
 				g_ptr_array_add (type_array, klass);
 		}
 		if (module_jmc) {
-			int rows = mono_image_get_table_rows (image, MONO_TABLE_TYPEDEF);
+			int rows = table_info_get_rows (&image->tables [MONO_TABLE_TYPEDEF]);
 			for (int q = 1; q <= rows; q++) {
 				MonoClass *klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | q, error);
 				mono_error_cleanup (error);
