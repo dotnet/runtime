@@ -31,7 +31,14 @@ namespace System
             if (constructor == null)
             {
                 if (type.IsValueType)
-                    return RuntimeAugments.NewObject(type.TypeHandle);
+                {
+                    if (type.IsByRefLike)
+                        throw new TargetException();
+
+                    Debug.Assert(Nullable.GetUnderlyingType(type) == null);
+
+                    return RuntimeAugments.RawNewObject(type.TypeHandle);
+                }
 
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, type));
             }
@@ -77,7 +84,14 @@ namespace System
             if (matches.Count == 0)
             {
                 if (numArgs == 0 && type.IsValueType)
-                    return RuntimeAugments.NewObject(type.TypeHandle);
+                {
+                    if (type.IsByRefLike)
+                        throw new TargetException();
+
+                    Debug.Assert(Nullable.GetUnderlyingType(type) == null);
+
+                    return RuntimeAugments.RawNewObject(type.TypeHandle);
+                }
 
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, type));
             }

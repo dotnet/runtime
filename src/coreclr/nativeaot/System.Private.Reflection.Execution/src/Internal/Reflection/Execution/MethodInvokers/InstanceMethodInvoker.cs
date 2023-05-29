@@ -19,7 +19,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
     //
     // Implements Invoke() for non-virtual instance methods.
     //
-    internal sealed class InstanceMethodInvoker : MethodInvokerWithMethodInvokeInfo
+    internal sealed unsafe class InstanceMethodInvoker : MethodInvokerWithMethodInvokeInfo
     {
         public InstanceMethodInvoker(MethodInvokeInfo methodInvokeInfo, RuntimeTypeHandle declaringTypeHandle)
             : base(methodInvokeInfo)
@@ -28,8 +28,20 @@ namespace Internal.Reflection.Execution.MethodInvokers
 
             if (methodInvokeInfo.Method.IsConstructor && !methodInvokeInfo.Method.IsStatic)
             {
-                _allocatorMethod = RuntimeAugments.GetAllocateObjectHelperForType(declaringTypeHandle);
+                if (RuntimeAugments.IsByRefLike(declaringTypeHandle))
+                {
+                    _allocatorMethod = &ThrowTargetException;
+                }
+                else
+                {
+                    _allocatorMethod = (delegate*<nint, object>)RuntimeAugments.GetAllocateObjectHelperForType(declaringTypeHandle);
+                }
             }
+        }
+
+        private static object ThrowTargetException(IntPtr _)
+        {
+            throw new TargetException();
         }
 
         [DebuggerGuidedStepThroughAttribute]
@@ -54,14 +66,14 @@ namespace Internal.Reflection.Execution.MethodInvokers
         protected sealed override object CreateInstance(object[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
             object thisObject = RawCalliHelper.Call<object>(_allocatorMethod, _declaringTypeHandle.Value);
-            object? result = MethodInvokeInfo.Invoke(
+            MethodInvokeInfo.Invoke(
                 thisObject,
                 MethodInvokeInfo.LdFtnResult,
                 arguments,
                 binderBundle,
                 wrapInTargetInvocationException);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-            return result;
+            return thisObject;
         }
 
         public sealed override Delegate CreateDelegate(RuntimeTypeHandle delegateType, object target, bool isStatic, bool isVirtual, bool isOpen)
@@ -94,13 +106,13 @@ namespace Internal.Reflection.Execution.MethodInvokers
         public sealed override IntPtr LdFtnResult => MethodInvokeInfo.LdFtnResult;
 
         private RuntimeTypeHandle _declaringTypeHandle;
-        private IntPtr _allocatorMethod;
+        private delegate*<nint, object> _allocatorMethod;
 
-        private static unsafe class RawCalliHelper
+        private static class RawCalliHelper
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static T Call<T>(IntPtr pfn, IntPtr arg)
-            => ((delegate*<IntPtr, T>)pfn)(arg);
+            public static T Call<T>(delegate*<IntPtr, T> pfn, IntPtr arg)
+            => pfn(arg);
         }
     }
 }
