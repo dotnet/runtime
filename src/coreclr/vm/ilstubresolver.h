@@ -51,8 +51,6 @@ public:
     void SetStubTargetMethodSig(PCCOR_SIGNATURE pStubTargetMethodSig, DWORD cbStubTargetSigLength);
     void SetStubMethodDesc(MethodDesc* pStubMD);
 
-    void CreateILHeader(COR_ILMETHOD_DECODER* pILHeader, size_t cbCode, UINT maxStack, BYTE* pNewILCodeBuffer, BYTE* pNewLocalSig, DWORD cbLocalSig);
-
     COR_ILMETHOD_DECODER * AllocGeneratedIL(size_t cbCode, DWORD cbLocalSig, UINT maxStack);
     COR_ILMETHOD_DECODER * GetILHeader();
     COR_ILMETHOD_SECT_EH* AllocEHSect(size_t nClauses);

@@ -268,16 +268,15 @@ void ILStubResolver::SetLoaderHeap(PTR_LoaderHeap pLoaderHeap)
     m_loaderHeap = pLoaderHeap;
 }
 
-void ILStubResolver::CreateILHeader(COR_ILMETHOD_DECODER* pILHeader, size_t cbCode, UINT maxStack, BYTE* pNewILCodeBuffer, BYTE* pNewLocalSig, DWORD cbLocalSig)
+static COR_ILMETHOD_DECODER CreateILHeader(size_t cbCode, UINT maxStack, BYTE* pNewILCodeBuffer, BYTE* pNewLocalSig, DWORD cbLocalSig)
 {
-    pILHeader->Flags = 0;
-    pILHeader->CodeSize = (DWORD)cbCode;
-    pILHeader->MaxStack = maxStack;
-    pILHeader->EH = 0;
-    pILHeader->Sect = 0;
-    pILHeader->Code = pNewILCodeBuffer;
-    pILHeader->LocalVarSig = pNewLocalSig;
-    pILHeader->cbLocalVarSig = cbLocalSig;
+    COR_ILMETHOD_DECODER ilHeader{};
+    ilHeader.CodeSize = (DWORD)cbCode;
+    ilHeader.MaxStack = maxStack;
+    ilHeader.Code = pNewILCodeBuffer;
+    ilHeader.LocalVarSig = pNewLocalSig;
+    ilHeader.cbLocalVarSig = cbLocalSig;
+    return ilHeader;
 }
 
 //---------------------------------------------------------------------------------------
@@ -321,8 +320,7 @@ ILStubResolver::AllocGeneratedIL(
         : (pNewILCodeBuffer + cbCode);
 
     COR_ILMETHOD_DECODER* pILHeader = &pNewCompileTimeState->m_ILHeader;
-
-    CreateILHeader(pILHeader, cbCode, maxStack, pNewILCodeBuffer, pNewLocalSig, cbLocalSig);
+    *pILHeader = CreateILHeader(cbCode, maxStack, pNewILCodeBuffer, pNewLocalSig, cbLocalSig);
 
     LPVOID pPrevCompileTimeState = InterlockedExchangeT(&m_pCompileTimeState, pNewCompileTimeState);
     CONSISTENCY_CHECK(ILNotYetGenerated == (UINT_PTR)pPrevCompileTimeState);
@@ -359,20 +357,16 @@ COR_ILMETHOD_SECT_EH* ILStubResolver::AllocEHSect(size_t nClauses)
 {
     STANDARD_VM_CONTRACT;
 
-    if (nClauses >= 1)
-    {
-        size_t cbSize = sizeof(COR_ILMETHOD_SECT_EH)
-                        - sizeof(IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT)
-                        + (nClauses * sizeof(IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT));
-        m_pCompileTimeState->m_pEHSect = (COR_ILMETHOD_SECT_EH*) new BYTE[cbSize];
-        CONSISTENCY_CHECK(NULL == m_pCompileTimeState->m_ILHeader.EH);
-        m_pCompileTimeState->m_ILHeader.EH = m_pCompileTimeState->m_pEHSect;
-        return m_pCompileTimeState->m_pEHSect;
-    }
-    else
-    {
+    if (nClauses == 0)
         return NULL;
-    }
+
+    size_t cbSize = sizeof(COR_ILMETHOD_SECT_EH)
+                    - sizeof(IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT)
+                    + (nClauses * sizeof(IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT));
+    m_pCompileTimeState->m_pEHSect = (COR_ILMETHOD_SECT_EH*) new BYTE[cbSize];
+    CONSISTENCY_CHECK(NULL == m_pCompileTimeState->m_ILHeader.EH);
+    m_pCompileTimeState->m_ILHeader.EH = m_pCompileTimeState->m_pEHSect;
+    return m_pCompileTimeState->m_pEHSect;
 }
 
 bool ILStubResolver::UseLoaderHeap()
