@@ -107,7 +107,6 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             }
         }
 
-        Log.LogMessage(MessageImportance.High, $"MF NativeAssets length '{NativeAssets.Length}'");
         foreach (ITaskItem item in NativeAssets)
         {
             var name = Path.GetFileName(item.ItemSpec);
@@ -120,11 +119,8 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
             var itemHash = Utils.ComputeIntegrity(item.ItemSpec);
 
-            Log.LogMessage(MessageImportance.High, $"MF NativeAssets '{name}', '{item.ItemSpec}'");
             if (name.StartsWith("dotnet", StringComparison.OrdinalIgnoreCase) && string.Equals(Path.GetExtension(name), ".wasm", StringComparison.OrdinalIgnoreCase))
             {
-                Log.LogMessage(MessageImportance.High, "MF dotnetwasm");
-
                 if (config.resources.runtimeAssets == null)
                     config.resources.runtimeAssets = new();
 
