@@ -454,8 +454,8 @@ if [[ "$use_baseline_core_run" == true ]]; then
 fi
 
 if [[ "$iosmono" == "true" ]]; then
-    if [[ "$iosllvmbuild" == true ]]; then
-      if [[ "$iosstripsymbols" == true ]]; then
+    if [[ "$iosllvmbuild" == "True" ]]; then
+      if [[ "$iosstripsymbols" == "True" ]]; then
           # LLVM NoSymbols Mono .app
           mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/llvmnosymbols $payload_directory/iosHelloWorld
           mkdir -p $payload_directory/iosHelloWorldZip/llvmnosymbolszip && cp -rv $source_directory/iosHelloWorldZip/llvmnosymbolszip $payload_directory/iosHelloWorldZip
@@ -465,7 +465,7 @@ if [[ "$iosmono" == "true" ]]; then
           mkdir -p $payload_directory/iosHelloWorldZip/llvmsymbolszip && cp -rv $source_directory/iosHelloWorldZip/llvmsymbolszip $payload_directory/iosHelloWorldZip
       fi
     else
-      if [[ "$iosstripsymbols" == true ]]; then
+      if [[ "$iosstripsymbols" == "True" ]]; then
         # NoLLVM NoSymbols Mono .app
         mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nollvmnosymbols $payload_directory/iosHelloWorld
         mkdir -p $payload_directory/iosHelloWorldZip/nollvmnosymbolszip && cp -rv $source_directory/iosHelloWorldZip/nollvmnosymbolszip $payload_directory/iosHelloWorldZip
@@ -478,7 +478,7 @@ if [[ "$iosmono" == "true" ]]; then
 fi
 
 if [[ "$iosnativeaot" == "true" ]]; then
-  if [[ "$iosstripsymbols" == true ]]; then
+  if [[ "$iosstripsymbols" == "True" ]]; then
     # NoSymbols Mono .app
     mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nosymbols $payload_directory/iosHelloWorld
     mkdir -p $payload_directory/iosHelloWorldZip/nosymbols && cp -rv $source_directory/iosHelloWorldZip/nosymbols $payload_directory/iosHelloWorldZip
