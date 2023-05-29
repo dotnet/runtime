@@ -61,8 +61,7 @@ namespace System.IO.Pipes
         /// </param>
         /// <param name="options">PipeOption enum: None, Asynchronous, Write-through, or FirstPipeInstance
         /// Win32 note: this gets passed in with dwOpenMode to CreateNamedPipe. Asynchronous corresponds to
-        /// FILE_FLAG_OVERLAPPED option. PipeOptions.FIRST_PIPE_INSTANCE
-        /// is automatically set based on the number of instances specified.
+        /// FILE_FLAG_OVERLAPPED option.
         /// </param>
         /// <param name="inBufferSize">Incoming buffer size, 0 or higher.
         /// Note: this size is always advisory; OS uses a suggestion.
