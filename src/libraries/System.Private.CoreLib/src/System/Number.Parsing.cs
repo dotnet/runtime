@@ -1350,7 +1350,7 @@ namespace System
                         p++;
                         str++;
 
-                        if (val == '\0')
+                        if (TChar.CastToUInt32(*str) == '\0')
                         {
                             return p;
                         }
