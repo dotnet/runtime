@@ -15,6 +15,7 @@
 
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>Link</TrimMode>
+    <Optimized Condition="'$(ConQfiguration)' == 'Release'">True</Optimized>
 
     <ShouldILStrip>true</ShouldILStrip>
     <EnableDefaultAssembliesToBundle>true</EnableDefaultAssembliesToBundle>
@@ -53,7 +54,7 @@
 
   <Target Name="CopySampleAppToHelixTestDir"
           Condition="'$(ArchiveTests)' == 'true'"
-          DependsOnTargets="_AppleGenerateAppBundle" >
+          AfterTargets="_AppleGenerateAppBundle" >
     <PropertyGroup>
       <!-- Helix properties -->
       <!-- AnyCPU as Platform-->
