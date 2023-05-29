@@ -7,6 +7,11 @@ namespace System.Threading
 {
     internal sealed partial class TimerQueue
     {
+        private TimerQueue(int id)
+        {
+            _id = id;
+        }
+
         private static long TickCount64
         {
             get

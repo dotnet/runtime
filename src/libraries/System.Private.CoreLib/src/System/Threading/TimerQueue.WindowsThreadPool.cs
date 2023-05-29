@@ -16,11 +16,6 @@ namespace System.Threading
         private IntPtr _nativeTimer;
         private readonly int _id;
 
-        private TimerQueue(int id)
-        {
-            _id = id;
-        }
-
 #pragma warning disable IDE0060 // Remove unused parameter
         [UnmanagedCallersOnly]
         private static unsafe void TimerCallbackWindowsThreadPool(void* instance, void* context, void* timer)
