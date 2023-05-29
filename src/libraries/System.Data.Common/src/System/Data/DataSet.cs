@@ -3339,7 +3339,7 @@ namespace System.Data
         }
 
         // SDUB: may be better to rewrite this as nonrecursive?
-        internal DataTable? FindTable(DataTable? baseTable, PropertyDescriptor[] props, int propStart)
+        internal static DataTable? FindTable(DataTable? baseTable, PropertyDescriptor[] props, int propStart)
         {
             if (props.Length < propStart + 1)
             {
