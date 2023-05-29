@@ -1221,17 +1221,14 @@ namespace
     }
 }
 
-bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder)
+HRESULT MethodDesc::GenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder)
 {
     STANDARD_VM_CONTRACT;
-    _ASSERTE(IsIL());
-    _ASSERTE(GetRVA() == 0);
     _ASSERTE(resolver != NULL);
     _ASSERTE(methodILDecoder != NULL);
-
-    //
-    // [TODO] Check if supplied resolver/methodILDecoder are non-null
-    //
+    _ASSERTE(*resolver == NULL && *methodILDecoder == NULL);
+    _ASSERTE(IsIL());
+    _ASSERTE(GetRVA() == 0);
 
     // The UnsafeAccessorAttribute is applied to methods with an
     // RVA of 0 (for example, C#'s extern keyword).
@@ -1239,14 +1236,14 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     ULONG dataLen;
     HRESULT hr = GetCustomAttribute(WellKnownAttribute::UnsafeAccessorAttribute, &data, &dataLen);
     if (hr != S_OK)
-        return false;
+        return E_FAIL;
 
     UnsafeAccessorKind kind;
     SString name;
 
     CustomAttributeParser ca(data, dataLen);
     if (!TryParseUnsafeAccessorAttribute(this, ca, kind, name))
-        return false;
+        return COR_E_BADIMAGEFORMAT;
 
     GenerationContext context{ this };
 
@@ -1275,42 +1272,56 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
         // The name is defined by the runtime and should be empty.
         if (retType.IsNull() || !name.IsEmpty())
         {
-            return false;
+            return COR_E_BADIMAGEFORMAT;
         }
 
         context.TargetType = retType;
         context.IsTargetStatic = false;
-        return TrySetTargetMethodCtor(context)
-            && TryGeneratedMethodAccessor(context, resolver, methodILDecoder);
+        if (!TrySetTargetMethodCtor(context)
+            || !TryGeneratedMethodAccessor(context, resolver, methodILDecoder))
+        {
+            return COR_E_MISSINGMETHOD;
+        }
+        break;
 
     case UnsafeAccessorKind::Method:
     case UnsafeAccessorKind::StaticMethod:
         // Method access requires a target type.
         if (firstArgType.IsNull())
-            return false;
+            return COR_E_BADIMAGEFORMAT;
 
         context.TargetType = firstArgType;
         context.IsTargetStatic = kind == UnsafeAccessorKind::StaticMethod;
-        return TrySetTargetMethod(context, name.GetUTF8())
-            && TryGeneratedMethodAccessor(context, resolver, methodILDecoder);
+        if (!TrySetTargetMethod(context, name.GetUTF8())
+            || !TryGeneratedMethodAccessor(context, resolver, methodILDecoder))
+        {
+            return COR_E_MISSINGMETHOD;
+        }
+        break;
 
     case UnsafeAccessorKind::Field:
     case UnsafeAccessorKind::StaticField:
         // Field access requires a target type and return type.
         if (firstArgType.IsNull() || retType.IsNull())
         {
-            return false;
+            return COR_E_BADIMAGEFORMAT;
         }
 
         context.TargetType = firstArgType;
         context.IsTargetStatic = kind == UnsafeAccessorKind::StaticField;
-        return TrySetTargetField(context, name.GetUTF8())
-            && TryGeneratedFieldAccessor(context, resolver, methodILDecoder);
+        if (!TrySetTargetField(context, name.GetUTF8())
+            || !TryGeneratedFieldAccessor(context, resolver, methodILDecoder))
+        {
+            return COR_E_MISSINGFIELD;
+        }
+        break;
 
     default:
         _ASSERTE(!"Unknown UnsafeAccessorKind");
-        return false;
+        return COR_E_BADIMAGEFORMAT;
     }
+
+    return S_OK;
 }
 
 PrepareCodeConfig::PrepareCodeConfig() {}

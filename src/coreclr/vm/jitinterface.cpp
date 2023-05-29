@@ -7750,7 +7750,7 @@ public:
     }
 };
 
-static bool getMethodInfoHelper(
+static HRESULT getMethodInfoHelper(
     MethodInfoHelperContext& cxt,
     CORINFO_METHOD_INFO* methInfo)
 {
@@ -7827,18 +7827,22 @@ static bool getMethodInfoHelper(
         SigPointer localSig = pResolver->GetLocalSig();
         localSig.GetSignature(&pLocalSig, &cbLocalSig);
     }
-    else if (ftn->TryGenerateUnsafeAccessor(&cxt.TransientResolver, &cxt.Header))
+    else
     {
+        HRESULT hr = ftn->GenerateUnsafeAccessor(&cxt.TransientResolver, &cxt.Header);
+        if (FAILED(hr))
+        {
+            if (hr == E_FAIL)
+                hr = COR_E_BADIMAGEFORMAT;
+            return hr;
+        }
+
         scopeHnd = cxt.CreateScopeHandle();
 
         _ASSERTE(cxt.Header != NULL);
         getMethodInfoILMethodHeaderHelper(cxt.Header, methInfo);
         pLocalSig = cxt.Header->LocalVarSig;
         cbLocalSig = cxt.Header->cbLocalVarSig;
-    }
-    else
-    {
-        return false;
     }
 
     _ASSERTE(scopeHnd != NULL);
@@ -7910,7 +7914,7 @@ static bool getMethodInfoHelper(
         CONV_TO_JITSIG_FLAGS_LOCALSIG,
         &methInfo->locals);
 
-    return true;
+    return S_OK;
 } // getMethodInfoHelper
 
 //---------------------------------------------------------------------------------------
@@ -7936,13 +7940,13 @@ CEEInfo::getMethodInfo(
     MethodInfoHelperContext cxt{ ftn };
     if (ftn->IsDynamicMethod())
     {
-        result = getMethodInfoHelper(cxt, methInfo);
+        result = SUCCEEDED(getMethodInfoHelper(cxt, methInfo));
     }
     else if (!ftn->IsWrapperStub() && ftn->HasILHeader())
     {
         COR_ILMETHOD_DECODER header(ftn->GetILHeader(TRUE), ftn->GetMDImport(), NULL);
         cxt.Header = &header;
-        result = getMethodInfoHelper(cxt, methInfo);
+        result = SUCCEEDED(getMethodInfoHelper(cxt, methInfo));
     }
     else if (ftn->IsIL() && ftn->GetRVA() == 0)
     {
@@ -7955,7 +7959,7 @@ CEEInfo::getMethodInfo(
             cxt.TransientResolver = GetDynamicResolver(detailsMaybe->Scope);
         }
 
-        result = getMethodInfoHelper(cxt, methInfo);
+        result = SUCCEEDED(getMethodInfoHelper(cxt, methInfo));
     }
 
     if (result)
@@ -13060,12 +13064,11 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     }
 #endif // _DEBUG
 
+    HRESULT hr;
     MethodInfoHelperContext cxt{ ftn, ILHeader };
     CORINFO_METHOD_INFO methodInfo;
-    if (!getMethodInfoHelper(cxt, &methodInfo))
-    {
-        _ASSERTE(!"[TODO] What exception to throw?");
-    }
+    if (FAILED(hr = getMethodInfoHelper(cxt, &methodInfo)))
+        ThrowHR(hr);
 
     // If it's generic then we can only enter through an instantiated MethodDesc
     _ASSERTE(!ftn->IsGenericMethodDefinition());
