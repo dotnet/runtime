@@ -8,6 +8,7 @@ import cwraps from "./cwraps";
 import { mono_wasm_new_root } from "./roots";
 import { getI32, getU32 } from "./memory";
 import { NativePointer, CharPtr } from "./types/emscripten";
+import { assert_legacy_interop } from "./pthreads/shared";
 
 export class StringDecoder {
 
@@ -101,13 +102,6 @@ let _interned_string_current_root_buffer: WasmRootBuffer | null = null;
 let _interned_string_current_root_buffer_count = 0;
 export const string_decoder = new StringDecoder();
 export const mono_wasm_empty_string = "";
-
-/**
- * @deprecated Not GC or thread safe
- */
-export function conv_string(mono_obj: MonoString): string | null {
-    return string_decoder.copy(mono_obj);
-}
 
 export function conv_string_root(root: WasmRoot<MonoString>): string | null {
     return string_decoder.copy_root(root);
@@ -255,6 +249,7 @@ export function js_string_to_mono_string_interned(string: string | symbol): Mono
  * @deprecated Not GC or thread safe
  */
 export function js_string_to_mono_string(string: string): MonoString {
+    assert_legacy_interop();
     const temp = mono_wasm_new_root<MonoString>();
     try {
         js_string_to_mono_string_root(string, temp);
@@ -268,6 +263,7 @@ export function js_string_to_mono_string(string: string): MonoString {
  * @deprecated Not GC or thread safe
  */
 export function js_string_to_mono_string_new(string: string): MonoString {
+    assert_legacy_interop();
     const temp = mono_wasm_new_root<MonoString>();
     try {
         js_string_to_mono_string_new_root(string, temp);

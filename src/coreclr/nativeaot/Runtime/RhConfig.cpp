@@ -11,59 +11,119 @@
 
 #include <string.h>
 
-bool RhConfig::ReadConfigValue(_In_z_ const char *name, uint64_t* pValue, bool decimal)
+#define DOTNET_PREFIX _T("DOTNET_")
+#define DOTNET_PREFIX_LEN STRING_LENGTH(DOTNET_PREFIX)
+
+namespace
 {
+    void GetEnvironmentConfigName(const char* name, TCHAR* buffer, uint32_t bufferSize)
+    {
+        assert(DOTNET_PREFIX_LEN + strlen(name) < bufferSize);
+        memcpy(buffer, DOTNET_PREFIX, (DOTNET_PREFIX_LEN) * sizeof(TCHAR));
+    #ifdef TARGET_WINDOWS
+        size_t nameLen = strlen(name);
+        for (size_t i = 0; i < nameLen; i++)
+        {
+            buffer[DOTNET_PREFIX_LEN + i] = name[i];
+        }
+        buffer[DOTNET_PREFIX_LEN + nameLen] = '\0';
+    #else
+        strcpy(buffer + DOTNET_PREFIX_LEN, name);
+    #endif
+    }
+}
+
+bool RhConfig::Environment::TryGetBooleanValue(const char* name, bool* value)
+{
+    uint64_t intValue;
+    if (!TryGetIntegerValue(name, &intValue))
+        return false;
+
+    *value = intValue != 0;
+    return true;
+}
+
+bool RhConfig::Environment::TryGetIntegerValue(const char* name, uint64_t* value, bool decimal)
+{
+    TCHAR variableName[64];
+    GetEnvironmentConfigName(name, variableName, ARRAY_SIZE(variableName));
+
     TCHAR buffer[CONFIG_VAL_MAXLEN + 1]; // hex digits plus a nul terminator.
     const uint32_t cchBuffer = ARRAY_SIZE(buffer);
+    uint32_t cchResult = PalGetEnvironmentVariable(variableName, buffer, cchBuffer);
+    if (cchResult == 0 || cchResult >= cchBuffer)
+        return false;
 
-    uint32_t cchResult = 0;
-    TCHAR variableName[64] = _T("DOTNET_");
-    assert(ARRAY_SIZE("DOTNET_") - 1 + strlen(name) < ARRAY_SIZE(variableName));
-#ifdef TARGET_WINDOWS
-    for (size_t i = 0; i < strlen(name); i++)
+    // Environment variable was set. Convert it to an integer.
+    uint64_t uiResult = 0;
+    for (uint32_t i = 0; i < cchResult; i++)
     {
-        variableName[ARRAY_SIZE("DOTNET_") - 1 + i] = name[i];
-    }
-#else
-    strcat(variableName, name);
-#endif
+        TCHAR ch = buffer[i];
 
-    cchResult = PalGetEnvironmentVariable(variableName, buffer, cchBuffer);
-    if (cchResult != 0 && cchResult < cchBuffer)
-    {
-        // Environment variable was set. Convert it to an integer.
-        uint64_t uiResult = 0;
-        for (uint32_t i = 0; i < cchResult; i++)
+        if (decimal)
         {
-            TCHAR ch = buffer[i];
+            uiResult *= 10;
 
-            if (decimal)
-            {
-                uiResult *= 10;
-
-                if ((ch >= '0') && (ch <= '9'))
-                    uiResult += ch - '0';
-                else
-                    return false; // parse error
-            }
+            if ((ch >= '0') && (ch <= '9'))
+                uiResult += ch - '0';
             else
-            {
-                uiResult *= 16;
-
-                if ((ch >= '0') && (ch <= '9'))
-                    uiResult += ch - '0';
-                else if ((ch >= 'a') && (ch <= 'f'))
-                    uiResult += (ch - 'a') + 10;
-                else if ((ch >= 'A') && (ch <= 'F'))
-                    uiResult += (ch - 'A') + 10;
-                else
-                    return false; // parse error
-            }
+                return false; // parse error
         }
+        else
+        {
+            uiResult *= 16;
 
-        *pValue = uiResult;
+            if ((ch >= '0') && (ch <= '9'))
+                uiResult += ch - '0';
+            else if ((ch >= 'a') && (ch <= 'f'))
+                uiResult += (ch - 'a') + 10;
+            else if ((ch >= 'A') && (ch <= 'F'))
+                uiResult += (ch - 'A') + 10;
+            else
+                return false; // parse error
+        }
+    }
+
+    *value = uiResult;
+    return true;
+}
+
+bool RhConfig::Environment::TryGetStringValue(const char* name, char** value)
+{
+    TCHAR variableName[64];
+    GetEnvironmentConfigName(name, variableName, ARRAY_SIZE(variableName));
+
+    TCHAR buffer[260];
+    uint32_t bufferLen = ARRAY_SIZE(buffer);
+    uint32_t actualLen = PalGetEnvironmentVariable(variableName, buffer, bufferLen);
+    if (actualLen == 0)
+        return false;
+
+    if (actualLen < bufferLen)
+    {
+        *value = PalCopyTCharAsChar(buffer);
         return true;
     }
+
+    // Expand the buffer to get the value
+    bufferLen = actualLen + 1;
+    NewArrayHolder<TCHAR> newBuffer {new (nothrow) TCHAR[bufferLen]};
+    actualLen = PalGetEnvironmentVariable(variableName, newBuffer, bufferLen);
+    if (actualLen >= bufferLen)
+        return false;
+
+#ifdef TARGET_WINDOWS
+    *value = PalCopyTCharAsChar(newBuffer);
+#else
+    *value = newBuffer.Extract();
+#endif
+    return true;
+}
+
+bool RhConfig::ReadConfigValue(_In_z_ const char *name, uint64_t* pValue, bool decimal)
+{
+    if (Environment::TryGetIntegerValue(name, pValue, decimal))
+        return true;
 
     // Check the embedded configuration
     const char *embeddedValue = nullptr;

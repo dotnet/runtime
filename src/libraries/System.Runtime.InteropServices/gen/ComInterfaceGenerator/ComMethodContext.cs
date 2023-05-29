@@ -109,6 +109,7 @@ namespace Microsoft.Interop
                 .WithAttributeLists(List<AttributeListSyntax>())
                 .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(
                     ParseName(OriginalDeclaringInterface.Info.Type.FullTypeName)))
+                .WithParameterList(ParameterList(SeparatedList(GenerationContext.SignatureContext.StubParameters)))
                 .WithExpressionBody(ArrowExpressionClause(
                     ThrowExpression(
                         ObjectCreationExpression(
