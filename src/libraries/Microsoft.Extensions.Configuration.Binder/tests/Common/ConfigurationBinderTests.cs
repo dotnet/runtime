@@ -1661,6 +1661,14 @@ namespace Microsoft.Extensions
                                 ""q2"": {
                                     ""DequeueOnlyMarkedDate"": ""2022-01-20T12:49:03.395150-08:00""
                                 }
+                            },
+                            ""ReadOnlyQueues"": {
+                                ""q1"": {
+                                    ""DequeueOnlyMarkedDate"": ""2023-05-29T12:13:14+04:00""
+                                },
+                                ""q2"": {
+                                    ""DequeueOnlyMarkedDate"": ""2023-06-30T13:14:15+04:00""
+                                }
                             }
                         },
                         {
@@ -1687,6 +1695,7 @@ namespace Microsoft.Extensions
             Assert.NotNull(options);
             Assert.Equal(2, options.Namespaces.Count);
             Assert.Equal(2, options.Namespaces.First().Queues.Count);
+            Assert.Null(options.Namespaces.First().ReadOnlyQueues);
             Assert.Equal(2, options.Namespaces.Skip(1).First().Queues.Count);
             Assert.NotNull(options.Namespaces.Skip(1).First().Queues.Last().Value);
         }

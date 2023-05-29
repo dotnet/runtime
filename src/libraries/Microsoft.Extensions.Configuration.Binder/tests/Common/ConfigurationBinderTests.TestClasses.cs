@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
@@ -318,9 +319,19 @@ namespace Microsoft.Extensions
 
         public class CollectionsBindingWithErrorOnUnknownConfiguration
         {
+            private const string InvalidTestSettingsEnumValue1 = "Option3";
+            private const string InvalidTestSettingsEnumValue2 = "Option4";
+            private const string ValidTestSettingsEnumValue1 = "Option1";
+            private const string ValidTestSettingsEnumValue2 = "Option2";
+
             public class MyModelContainingArray
             {
                 public TestSettingsEnum[] Enums { get; set; }
+            }
+
+            public class MyModelContainingACollection
+            {
+                public Collection<TestSettingsEnum> Enums { get; set; }
             }
 
             public class MyModelContainingADictionary
@@ -328,16 +339,21 @@ namespace Microsoft.Extensions
                 public Dictionary<string, TestSettingsEnum> Enums { get; set; }
             }
 
+            public class MyModelContainingASet
+            {
+                public ISet<TestSettingsEnum> Enums { get; set; }
+            }
+
             [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
             public void WithFlagUnset_NoExceptionIsThrownWhenFailingToParseEnumsInAnArrayAndValidItemsArePreserved()
             {
                 var dic = new Dictionary<string, string>
-                            {
-                                {"Section:Enums:0", "Option1"},
-                                {"Section:Enums:1", "Option3"}, // invalid - ignored
-                                {"Section:Enums:2", "Option4"}, // invalid - ignored
-                                {"Section:Enums:3", "Option2"},
-                            };
+                {
+                    {"Section:Enums:0", ValidTestSettingsEnumValue1},
+                    {"Section:Enums:1", InvalidTestSettingsEnumValue1},
+                    {"Section:Enums:2", InvalidTestSettingsEnumValue2},
+                    {"Section:Enums:3", ValidTestSettingsEnumValue2},
+                };
 
                 var configurationBuilder = new ConfigurationBuilder();
                 configurationBuilder.AddInMemoryCollection(dic);
@@ -351,16 +367,39 @@ namespace Microsoft.Extensions
                 Assert.Equal(TestSettingsEnum.Option2, model.Enums[1]);
             }
 
+            [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+            public void WithFlagUnset_NoExceptionIsThrownWhenFailingToParseEnumsInACollectionAndValidItemsArePreserved()
+            {
+                var dic = new Dictionary<string, string>
+                {
+                    {"Section:Enums:0", ValidTestSettingsEnumValue1},
+                    {"Section:Enums:1", InvalidTestSettingsEnumValue1},
+                    {"Section:Enums:2", InvalidTestSettingsEnumValue2},
+                    {"Section:Enums:3", ValidTestSettingsEnumValue2},
+                };
+
+                var configurationBuilder = new ConfigurationBuilder();
+                configurationBuilder.AddInMemoryCollection(dic);
+                var config = configurationBuilder.Build();
+                var configSection = config.GetSection("Section");
+
+                var model = configSection.Get<MyModelContainingACollection>(o => o.ErrorOnUnknownConfiguration = false);
+
+                Assert.Equal(2, model.Enums.Count);
+                Assert.Equal(TestSettingsEnum.Option1, model.Enums[0]);
+                Assert.Equal(TestSettingsEnum.Option2, model.Enums[1]);
+            }
+
             [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
             public void WithFlagUnset_NoExceptionIsThrownWhenFailingToParseEnumsInADictionaryAndValidItemsArePreserved()
             {
                 var dic = new Dictionary<string, string>
-                            {
-                                {"Section:Enums:First", "Option1"},
-                                {"Section:Enums:Second", "Option3"}, // invalid - ignored
-                                {"Section:Enums:Third", "Option4"}, // invalid - ignored
-                                {"Section:Enums:Fourth", "Option2"},
-                            };
+                {
+                    {"Section:Enums:First", ValidTestSettingsEnumValue1},
+                    {"Section:Enums:Second", InvalidTestSettingsEnumValue1},
+                    {"Section:Enums:Third", InvalidTestSettingsEnumValue2},
+                    {"Section:Enums:Fourth", ValidTestSettingsEnumValue2},
+                };
 
                 var configurationBuilder = new ConfigurationBuilder();
                 configurationBuilder.AddInMemoryCollection(dic);
@@ -375,15 +414,38 @@ namespace Microsoft.Extensions
                 Assert.Equal(TestSettingsEnum.Option2, model.Enums["Fourth"]);
             }
 
+            [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+            public void WithFlagUnset_NoExceptionIsThrownWhenFailingToParseEnumsInASetAndValidItemsArePreserved()
+            {
+                var dic = new Dictionary<string, string>
+                {
+                    {"Section:Enums:0", ValidTestSettingsEnumValue1},
+                    {"Section:Enums:1", InvalidTestSettingsEnumValue1},
+                    {"Section:Enums:2", InvalidTestSettingsEnumValue2},
+                    {"Section:Enums:3", ValidTestSettingsEnumValue2},
+                };
+
+                var configurationBuilder = new ConfigurationBuilder();
+                configurationBuilder.AddInMemoryCollection(dic);
+                var config = configurationBuilder.Build();
+                var configSection = config.GetSection("Section");
+
+                var model = configSection.Get<MyModelContainingASet>(o => o.ErrorOnUnknownConfiguration = false);
+
+                Assert.Equal(2, model.Enums.Count);
+                Assert.Equal(TestSettingsEnum.Option1, model.Enums.ElementAt(0));
+                Assert.Equal(TestSettingsEnum.Option2, model.Enums.ElementAt(1));
+            }
+
             [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
             public void WithFlagSet_AnExceptionIsThrownWhenFailingToParseEnumsInAnArray()
             {
                 var dic = new Dictionary<string, string>
-                            {
-                                {"Section:Enums:0", "Option1"},
-                                {"Section:Enums:1", "Option3"}, // invalid - exception thrown
-                                {"Section:Enums:2", "Option1"},
-                            };
+                {
+                    {"Section:Enums:0", ValidTestSettingsEnumValue1},
+                    {"Section:Enums:1", InvalidTestSettingsEnumValue1},
+                    {"Section:Enums:2", ValidTestSettingsEnumValue1},
+                };
 
                 var configurationBuilder = new ConfigurationBuilder();
                 configurationBuilder.AddInMemoryCollection(dic);
@@ -398,15 +460,61 @@ namespace Microsoft.Extensions
                     exception.Message);
             }
 
+            [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+            public void WithFlagSet_AnExceptionIsThrownWhenFailingToParseEnumsInACollection()
+            {
+                var dic = new Dictionary<string, string>
+                {
+                    {"Section:Enums:0", ValidTestSettingsEnumValue1},
+                    {"Section:Enums:1", InvalidTestSettingsEnumValue1},
+                    {"Section:Enums:2", ValidTestSettingsEnumValue1},
+                };
+
+                var configurationBuilder = new ConfigurationBuilder();
+                configurationBuilder.AddInMemoryCollection(dic);
+                var config = configurationBuilder.Build();
+                var configSection = config.GetSection("Section");
+
+                var exception = Assert.Throws<InvalidOperationException>(
+                    () => configSection.Get<MyModelContainingACollection>(o => o.ErrorOnUnknownConfiguration = true));
+
+                Assert.Equal(
+                    SR.Format(SR.Error_GeneralErrorWhenBinding, nameof(BinderOptions.ErrorOnUnknownConfiguration)),
+                    exception.Message);
+            }
+
+            [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+            public void WithFlagSet_AnExceptionIsThrownWhenFailingToParseEnumsInASet()
+            {
+                var dic = new Dictionary<string, string>
+                {
+                    {"Section:Enums:0", ValidTestSettingsEnumValue1},
+                    {"Section:Enums:1", InvalidTestSettingsEnumValue1},
+                    {"Section:Enums:2", ValidTestSettingsEnumValue1},
+                };
+
+                var configurationBuilder = new ConfigurationBuilder();
+                configurationBuilder.AddInMemoryCollection(dic);
+                var config = configurationBuilder.Build();
+                var configSection = config.GetSection("Section");
+
+                var exception = Assert.Throws<InvalidOperationException>(
+                    () => configSection.Get<MyModelContainingASet>(o => o.ErrorOnUnknownConfiguration = true));
+
+                Assert.Equal(
+                    SR.Format(SR.Error_GeneralErrorWhenBinding, nameof(BinderOptions.ErrorOnUnknownConfiguration)),
+                    exception.Message);
+            }
+
             [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
             public void WithFlagSet_AnExceptionIsThrownWhenFailingToParseEnumsInADictionary()
             {
                 var dic = new Dictionary<string, string>
-                            {
-                                {"Section:Enums:First", "Option1"},
-                                {"Section:Enums:Second", "Option3"}, // invalid - exception thrown
-                                {"Section:Enums:Third", "Option1"},
-                            };
+                {
+                    {"Section:Enums:First", ValidTestSettingsEnumValue1},
+                    {"Section:Enums:Second", InvalidTestSettingsEnumValue1},
+                    {"Section:Enums:Third", ValidTestSettingsEnumValue1},
+                };
 
                 var configurationBuilder = new ConfigurationBuilder();
                 configurationBuilder.AddInMemoryCollection(dic);
@@ -595,6 +703,8 @@ namespace Microsoft.Extensions
             public string Namespace { get; set; }
 
             public Dictionary<string, QueueProperties> Queues { get; set; } = new();
+
+            public Dictionary<string, QueueProperties> ReadOnlyQueues { get; }
         }
 
         public class QueueProperties

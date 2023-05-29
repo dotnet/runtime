@@ -203,6 +203,8 @@ namespace Microsoft.Extensions
 
             public Dictionary<NestedOptions, string> NonStringKeyDictionary { get; set; }
 
+            public IDictionary<NestedOptions, string> NonStringKeyIDictionary { get; set; }
+
             // This cannot be initialized because we cannot
             // activate an interface
             public IDictionary<string, string> StringDictionaryInterface { get; set; }

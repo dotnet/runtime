@@ -290,7 +290,7 @@ namespace Microsoft.Extensions.Configuration
 
             var section = config as IConfigurationSection;
             string? configValue = section?.Value;
-            if (configValue != null && TryConvertValue(type, configValue, section?.Path, out object? convertedValue, out Exception? error))
+            if (configValue != null && TryConvertValue(type, configValue, section!.Path, out object? convertedValue, out Exception? error))
             {
                 if (error != null)
                 {

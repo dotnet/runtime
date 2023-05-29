@@ -827,6 +827,25 @@ namespace Microsoft.Extensions
         }
 
         [Fact]
+        public void NonStringKeyIDictionaryBinding()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"NonStringKeyIDictionary:abc", "val_1"},
+                {"NonStringKeyIDictionary:def", "val_2"},
+                {"NonStringKeyIDictionary:ghi", "val_3"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithDictionary();
+            config.Bind(options);
+            Assert.Null(options.NonStringKeyIDictionary);
+        }
+
+        [Fact]
         public void GetStringArray()
         {
             var input = new Dictionary<string, string>
