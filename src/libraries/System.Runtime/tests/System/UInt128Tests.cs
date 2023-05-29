@@ -463,7 +463,7 @@ namespace System.Tests
                     Assert.Equal(0u, result);
                 }
 
-                Assert.Throws(exceptionType, () => UInt128.Parse(valueUtf8, style, provider));
+                Assert.Throws(exceptionType, () => UInt128.Parse(Encoding.UTF8.GetBytes(value), style, provider));
 
                 Assert.False(UInt128.TryParse(valueUtf8, style, provider, out result));
                 Assert.Equal(0u, result);

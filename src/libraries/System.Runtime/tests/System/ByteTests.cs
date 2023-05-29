@@ -405,7 +405,7 @@ namespace System.Tests
                     Assert.Equal(0u, result);
                 }
 
-                Assert.Throws(exceptionType, () => byte.Parse(valueUtf8, style, provider));
+                Assert.Throws(exceptionType, () => byte.Parse(Encoding.UTF8.GetBytes(value), style, provider));
 
                 Assert.False(byte.TryParse(valueUtf8, style, provider, out result));
                 Assert.Equal(0u, result);

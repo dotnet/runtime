@@ -445,7 +445,7 @@ namespace System.Tests
                     Assert.Equal(0u, result);
                 }
 
-                Assert.Throws(exceptionType, () => ulong.Parse(valueUtf8, style, provider));
+                Assert.Throws(exceptionType, () => ulong.Parse(Encoding.UTF8.GetBytes(value), style, provider));
 
                 Assert.False(ulong.TryParse(valueUtf8, style, provider, out result));
                 Assert.Equal(0u, result);

@@ -476,7 +476,7 @@ namespace System.Tests
                     Assert.Equal(0, result);
                 }
 
-                Assert.Throws(exceptionType, () => Int128.Parse(valueUtf8, style, provider));
+                Assert.Throws(exceptionType, () => Int128.Parse(Encoding.UTF8.GetBytes(value), style, provider));
 
                 Assert.False(Int128.TryParse(valueUtf8, style, provider, out result));
                 Assert.Equal(0, result);

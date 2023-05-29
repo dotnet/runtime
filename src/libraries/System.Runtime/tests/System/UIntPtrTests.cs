@@ -584,7 +584,7 @@ namespace System.Tests
                     Assert.Equal(default, result);
                 }
 
-                Assert.Throws(exceptionType, () => nuint.Parse(valueUtf8, style, provider));
+                Assert.Throws(exceptionType, () => nuint.Parse(Encoding.UTF8.GetBytes(value), style, provider));
 
                 Assert.False(nuint.TryParse(valueUtf8, style, provider, out result));
                 Assert.Equal(default, result);

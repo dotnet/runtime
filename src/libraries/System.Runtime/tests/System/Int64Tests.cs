@@ -458,7 +458,7 @@ namespace System.Tests
                     Assert.Equal(0, result);
                 }
 
-                Assert.Throws(exceptionType, () => long.Parse(valueUtf8, style, provider));
+                Assert.Throws(exceptionType, () => long.Parse(Encoding.UTF8.GetBytes(value), style, provider));
 
                 Assert.False(long.TryParse(valueUtf8, style, provider, out result));
                 Assert.Equal(0, result);

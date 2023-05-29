@@ -1037,7 +1037,7 @@ namespace System.Tests
             if (value != null)
             {
                 ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value);
-                Assert.Throws(exceptionType, () => decimal.Parse(valueUtf8, style, provider));
+                Assert.Throws(exceptionType, () => decimal.Parse(Encoding.UTF8.GetBytes(value), style, provider));
 
                 Assert.False(decimal.TryParse(valueUtf8, style, provider, out decimal result));
                 Assert.Equal(0, result);

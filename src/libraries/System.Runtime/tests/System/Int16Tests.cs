@@ -430,7 +430,7 @@ namespace System.Tests
                     Assert.Equal(0, result);
                 }
 
-                Assert.Throws(exceptionType, () => short.Parse(valueUtf8, style, provider));
+                Assert.Throws(exceptionType, () => short.Parse(Encoding.UTF8.GetBytes(value), style, provider));
 
                 Assert.False(short.TryParse(valueUtf8, style, provider, out result));
                 Assert.Equal(0, result);

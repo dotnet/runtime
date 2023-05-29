@@ -921,7 +921,7 @@ namespace System.Tests
             if (value != null)
             {
                 ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value);
-                Assert.Throws(exceptionType, () => float.Parse(valueUtf8, style, provider));
+                Assert.Throws(exceptionType, () => float.Parse(Encoding.UTF8.GetBytes(value), style, provider));
 
                 Assert.False(float.TryParse(valueUtf8, style, provider, out float result));
                 Assert.Equal(0, result);
