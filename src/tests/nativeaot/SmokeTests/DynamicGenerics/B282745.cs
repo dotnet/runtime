@@ -86,29 +86,33 @@ public static class B282745
         public T o;
         public int i;
         public long l;
+        public long l1;
     }
-    
+
     public class GenericType<T>
     {
         public static void test()
         {
-            int[] lengths = {1,2,3};
+            int[] lengths = {42,2,3};
             SomeGenStruct<T>[,,] array = (SomeGenStruct<T>[,,])Array.CreateInstance(typeof(SomeGenStruct<T>), lengths);
 
-            array[0,0,0].o = default(T);
-            array[0,0,0].i = GetIntPtrOnHeapAsInt();
-            array[0,0,0].l = GetIntPtrOnHeapAsInt();
+            for (int i = 0; i < 42; i++)
+            {
+                array[i,0,0].o = default(T);
+                array[i,0,0].i = GetIntPtrOnHeapAsInt();
+                array[i,0,0].l = GetIntPtrOnHeapAsInt();
 
-            array[0,1,2].o = default(T);
-            array[0,1,2].i = GetIntPtrOnHeapAsInt();
-            array[0,1,2].l = GetIntPtrOnHeapAsLong();
+                array[i,1,2].o = default(T);
+                array[i,1,2].i = GetIntPtrOnHeapAsInt();
+                array[i,1,2].l = GetIntPtrOnHeapAsLong();
 
-            array[0,1,1].o = default(T);
-            array[0,1,1].i = GetIntPtrOnHeapAsInt();
-            array[0,1,1].l = GetIntPtrOnHeapAsLong();
+                array[i,1,1].o = default(T);
+                array[i,1,1].i = GetIntPtrOnHeapAsInt();
+                array[i,1,1].l = GetIntPtrOnHeapAsLong();
+            }
 
             GC.Collect();
-            
+
             GC.KeepAlive(array);
 
         RuntimeTypeHandle arrayTypeHandle = array.GetType().TypeHandle;
