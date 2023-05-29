@@ -15,7 +15,7 @@
 
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>Link</TrimMode>
-    <Optimized Condition="'$(ConQfiguration)' == 'Release'">True</Optimized>
+    <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
 
     <ShouldILStrip>true</ShouldILStrip>
     <EnableDefaultAssembliesToBundle>true</EnableDefaultAssembliesToBundle>
