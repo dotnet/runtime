@@ -41,7 +41,7 @@ export function mono_wasm_change_case_invariant(src: number, srcLength: number, 
                     const surrogate = input.substring(i, i+2);
                     const upperSurrogate = surrogate.toUpperCase();
                     const appendedSurrogate = upperSurrogate.length > 2 ? surrogate : upperSurrogate;
-                    AppendSurrogateToMemory(heapI16, dst, appendedSurrogate, i);
+                    appendSurrogateToMemory(heapI16, dst, appendedSurrogate, i);
 
                 }
                 else
@@ -63,7 +63,7 @@ export function mono_wasm_change_case_invariant(src: number, srcLength: number, 
                     const surrogate = input.substring(i, i+2);
                     const upperSurrogate = surrogate.toLowerCase();
                     const appendedSurrogate = upperSurrogate.length > 2 ? surrogate : upperSurrogate;
-                    AppendSurrogateToMemory(heapI16, dst, appendedSurrogate, i);
+                    appendSurrogateToMemory(heapI16, dst, appendedSurrogate, i);
 
                 }
                 else
@@ -114,7 +114,7 @@ export function mono_wasm_change_case(culture: MonoStringRef, src: number, srcLe
                     const surrogate = input.substring(i, i+2);
                     const upperSurrogate = surrogate.toLocaleUpperCase(cultureName);
                     const appendedSurrogate = upperSurrogate.length > 2 ? surrogate : upperSurrogate;
-                    AppendSurrogateToMemory(heapI16, dst, appendedSurrogate, i);
+                    appendSurrogateToMemory(heapI16, dst, appendedSurrogate, i);
 
                 }
                 else
@@ -137,7 +137,7 @@ export function mono_wasm_change_case(culture: MonoStringRef, src: number, srcLe
                     const surrogate = input.substring(i, i+2);
                     const upperSurrogate = surrogate.toLocaleLowerCase(cultureName);
                     const appendedSurrogate = upperSurrogate.length > 2 ? surrogate : upperSurrogate;
-                    AppendSurrogateToMemory(heapI16, dst, appendedSurrogate, i);
+                    appendSurrogateToMemory(heapI16, dst, appendedSurrogate, i);
                 }
                 else
                 {
@@ -168,7 +168,7 @@ function isSurrogate(str: string, startIdx: number) : boolean
         str[startIdx+1] <= SURROGATE_LOWER_END;
 }
 
-function AppendSurrogateToMemory(heapI16: Uint16Array, dst: number, surrogate: string, idx: number)
+function appendSurrogateToMemory(heapI16: Uint16Array, dst: number, surrogate: string, idx: number)
 {
     setU16_local(heapI16, dst + idx*2, surrogate.charCodeAt(0));
     setU16_local(heapI16, dst + (idx+1)*2, surrogate.charCodeAt(1));
