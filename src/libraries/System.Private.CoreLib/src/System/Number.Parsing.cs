@@ -237,10 +237,10 @@ namespace System
                         state |= StateSign | StateParens;
                         number.IsNegative = true;
                     }
-                    else if (currSymbol != null && (next = MatchChars(p, strEnd, currSymbol)) != null)
+                    else if (!currSymbol.IsEmpty && (next = MatchChars(p, strEnd, currSymbol)) != null)
                     {
                         state |= StateCurrency;
-                        currSymbol = null;
+                        currSymbol = ReadOnlySpan<TChar>.Empty;
                         // We already found the currency symbol. There should not be more currency symbols. Set
                         // currSymbol to NULL so that we won't search it again in the later code path.
                         p = next - 1;
@@ -400,9 +400,9 @@ namespace System
                         {
                             state &= ~StateParens;
                         }
-                        else if (currSymbol != null && (next = MatchChars(p, strEnd, currSymbol)) != null)
+                        else if (!currSymbol.IsEmpty && (next = MatchChars(p, strEnd, currSymbol)) != null)
                         {
-                            currSymbol = null;
+                            currSymbol = ReadOnlySpan<TChar>.Empty;
                             p = next - 1;
                         }
                         else
@@ -1328,7 +1328,7 @@ namespace System
         {
             Debug.Assert((p != null) && (pEnd != null) && (p <= pEnd) && (value != null));
 
-            fixed (TChar* stringPointer = value)
+            fixed (TChar* stringPointer = &MemoryMarshal.GetReference(value))
             {
                 TChar* str = stringPointer;
 
