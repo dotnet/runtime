@@ -15,6 +15,7 @@ namespace System.Threading
     //
     internal partial class TimerQueue
     {
+        private static long TickCount64 => Environment.TickCount64;
         private static List<TimerQueue>? s_scheduledTimers;
         private static List<TimerQueue>? s_scheduledTimersToFire;
         private static long s_shortestDueTimeMs = long.MaxValue;
