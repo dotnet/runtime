@@ -119,7 +119,6 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	riscv_addi (code, RISCV_FP, RISCV_SP, imm);
 	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, RISCV_FP, 0);
 
-
 	/* Save gregs */
 	gregs_regset = ~((1 << RISCV_ZERO) | (1 << RISCV_FP) | (1 << RISCV_SP));
 	code = mono_riscv_emit_store_regarray (code, gregs_regset, RISCV_FP, -gregs_offset, FALSE);

@@ -3074,12 +3074,11 @@ mono_riscv_emit_store_stack (guint8 *code, guint64 regs, int basereg, int offset
 /* Same as mono_riscv_emitstore_regarray, but emit unwind info */
 /* CFA_OFFSET is the offset between the CFA and basereg */
 static __attribute__ ((__warn_unused_result__)) guint8 *
-emit_store_regarray_cfa (
-    MonoCompile *cfg, guint8 *code, guint64 regs, int basereg, int offset, guint64 no_cfa_regset)
+emit_store_regarray_cfa (MonoCompile *cfg, guint8 *code, guint64 regs, int basereg, int offset, guint64 no_cfa_regset)
 {
 	guint32 cfa_regset = regs & ~no_cfa_regset;
-	g_assert(basereg == RISCV_FP);
-	g_assert(offset <= 0);
+	g_assert (basereg == RISCV_FP);
+	g_assert (offset <= 0);
 
 	for (int i = 0; i < 32; ++i) {
 		if (regs & (1 << i)) {
