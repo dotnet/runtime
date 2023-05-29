@@ -104,6 +104,9 @@ run-build-tests:
 run-browser-tests-%:
 	PATH="$(GECKODRIVER):$(CHROMEDRIVER):$(PATH)" XHARNESS_COMMAND="test-browser --browser=$(XHARNESS_BROWSER)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
+build-runtime-tests:
+	$(TOP)/src/tests/build.sh -mono os browser wasm $(CONFIG)
+
 build-debugger-tests-helix:
 	$(DOTNET) build -restore -bl:$(TOP)/artifacts/log/$(CONFIG)/Wasm.Debugger.Tests.binlog \
 	/p:ContinuousIntegrationBuild=true /p:ArchiveTests=true \

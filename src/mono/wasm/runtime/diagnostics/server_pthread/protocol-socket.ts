@@ -10,6 +10,7 @@ import {
 import Magic from "./ipc-protocol/magic";
 import Parser from "./ipc-protocol/base-parser";
 import { assertNever } from "../../types/internal";
+import { mono_log_debug, mono_log_warn } from "../../logging";
 
 export const dotnetDiagnosticsServerProtocolCommandEvent = "dotnet:diagnostics:protocolCommand" as const;
 
@@ -73,14 +74,14 @@ class StatefulParser {
             result = this.tryAppendBuffer(new Uint8Array(buf));
         }
         if (result.success) {
-            console.debug("MONO_WASM: protocol-socket: got result", result);
+            mono_log_debug("protocol-socket: got result", result);
             this.setState(result.newState);
             if (result.command) {
                 const command = result.command;
                 this.emitCommandCallback(command);
             }
         } else {
-            console.warn("MONO_WASM: socket received invalid command header", buf, result.error);
+            mono_log_warn("socket received invalid command header", buf, result.error);
             // FIXME: dispatch error event?
             this.setState({ state: InState.Error });
         }
@@ -139,7 +140,7 @@ class StatefulParser {
             const pos = { pos: Magic.MinimalHeaderSize };
             let result = this.tryParseCompletedBuffer(buf, pos);
             if (overflow) {
-                console.warn("MONO_WASM: additional bytes past command payload", overflow);
+                mono_log_warn("additional bytes past command payload", overflow);
                 if (result.success) {
                     const newResult: ParseResultBinaryCommandOk = { success: true, command: result.command, newState: { state: InState.Error } };
                     result = newResult;
@@ -176,14 +177,14 @@ class ProtocolSocketImpl implements ProtocolSocket {
 
     onMessage(this: ProtocolSocketImpl, ev: MessageEvent<ArrayBuffer | Blob | string>): void {
         const data = ev.data;
-        console.debug("MONO_WASM: protocol socket received message", ev.data);
+        mono_log_debug("protocol socket received message", ev.data);
         if (typeof data === "object" && data instanceof ArrayBuffer) {
             this.onArrayBuffer(data);
         } else if (typeof data === "object" && data instanceof Blob) {
             data.arrayBuffer().then(this.onArrayBuffer.bind(this));
         } else if (typeof data === "string") {
             // otherwise it's string, ignore it.
-            console.debug("MONO_WASM: protocol socket received string message; ignoring it", ev.data);
+            mono_log_debug("protocol socket received string message; ignoring it", ev.data);
         } else {
             assertNever(data);
         }
@@ -194,15 +195,15 @@ class ProtocolSocketImpl implements ProtocolSocket {
     }
 
     onArrayBuffer(this: ProtocolSocketImpl, buf: ArrayBuffer) {
-        console.debug("MONO_WASM: protocol-socket: parsing array buffer", buf);
+        mono_log_debug("protocol-socket: parsing array buffer", buf);
         this.statefulParser.receiveBuffer(buf);
     }
 
     // called by the stateful parser when it has a complete command
     emitCommandCallback(this: this, command: BinaryProtocolCommand): void {
-        console.debug("MONO_WASM: protocol-socket: queueing command", command);
+        mono_log_debug("protocol-socket: queueing command", command);
         queueMicrotask(() => {
-            console.debug("MONO_WASM: dispatching protocol event with command", command);
+            mono_log_debug("dispatching protocol event with command", command);
             this.dispatchProtocolCommandEvent(command);
         });
     }
@@ -219,7 +220,7 @@ class ProtocolSocketImpl implements ProtocolSocket {
         this.sock.addEventListener(type, listener, options);
         if (type === dotnetDiagnosticsServerProtocolCommandEvent) {
             if (this.protocolListeners === 0) {
-                console.debug("MONO_WASM: adding protocol listener, with a message chaser");
+                mono_log_debug("adding protocol listener, with a message chaser");
                 this.sock.addEventListener("message", this.messageListener);
             }
             this.protocolListeners++;
@@ -229,7 +230,7 @@ class ProtocolSocketImpl implements ProtocolSocket {
     removeEventListener<K extends keyof ProtocolSocketEventMap>(type: K, listener: (this: ProtocolSocket, ev: ProtocolSocketEventMap[K]) => any): void;
     removeEventListener(type: string, listener: EventListenerOrEventListenerObject): void {
         if (type === dotnetDiagnosticsServerProtocolCommandEvent) {
-            console.debug("MONO_WASM: removing protocol listener and message chaser");
+            mono_log_debug("removing protocol listener and message chaser");
             this.protocolListeners--;
             if (this.protocolListeners === 0) {
                 this.sock.removeEventListener("message", this.messageListener);

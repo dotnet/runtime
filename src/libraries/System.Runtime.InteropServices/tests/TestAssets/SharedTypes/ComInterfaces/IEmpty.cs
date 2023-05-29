@@ -9,7 +9,7 @@ namespace SharedTypes.ComInterfaces
 {
     [GeneratedComInterface]
     [Guid(_guid)]
-    internal partial interface Empty
+    internal partial interface IEmpty
     {
         public const string _guid = "95D19F50-F2D8-4E61-884B-0A9162EA4646";
     }

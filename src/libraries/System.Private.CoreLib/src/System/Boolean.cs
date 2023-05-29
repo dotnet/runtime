@@ -236,8 +236,14 @@ namespace System
             return Parse(value.AsSpan());
         }
 
-        public static bool Parse(ReadOnlySpan<char> value) =>
-            TryParse(value, out bool result) ? result : throw new FormatException(SR.Format(SR.Format_BadBoolean, new string(value)));
+        public static bool Parse(ReadOnlySpan<char> value)
+        {
+            if (!TryParse(value, out bool result))
+            {
+                ThrowHelper.ThrowFormatException_BadBoolean(value);
+            }
+            return result;
+        }
 
         // Determines whether a String represents true or false.
         //
@@ -267,6 +273,7 @@ namespace System
 
             return TryParseUncommon(value, out result);
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             static bool TryParseUncommon(ReadOnlySpan<char> value, out bool result)
             {
                 // With "true" being 4 characters, even if we trim something from <= 4 chars,

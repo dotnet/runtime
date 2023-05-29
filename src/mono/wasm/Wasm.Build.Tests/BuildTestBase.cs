@@ -62,6 +62,8 @@ namespace Wasm.Build.Tests
             Path.Combine(BuildEnvironment.TestDataPath, "nuget8.config"); // for now - we are still using net7, but with
                                                                           // targetFramework == "net7.0" ? "nuget7.config" : "nuget8.config");
 
+        public const string WebcilInWasmExtension = ".wasm";
+
         static BuildTestBase()
         {
             try
@@ -80,7 +82,9 @@ namespace Wasm.Build.Tests
                 Console.WriteLine($"==============================================================================================");
                 Console.WriteLine($"=============== Running with {(s_buildEnv.IsWorkload ? "Workloads" : "No workloads")} ===============");
                 if (UseWebcil)
-                    Console.WriteLine($"=============== Using .webcil ===============");
+                    Console.WriteLine($"=============== Using webcil-in-wasm ===============");
+                else
+                    Console.WriteLine($"=============== Webcil disabled ===============");
                 Console.WriteLine($"==============================================================================================");
                 Console.WriteLine("");
             }
@@ -341,9 +345,9 @@ namespace Wasm.Build.Tests
                 extraProperties += $"\n<EmccVerbose>{s_isWindows}</EmccVerbose>\n";
             }
 
-            if (UseWebcil)
+            if (!UseWebcil)
             {
-                extraProperties += "<WasmEnableWebcil>true</WasmEnableWebcil>\n";
+                extraProperties += "<WasmEnableWebcil>false</WasmEnableWebcil>\n";
             }
 
             extraItems += "<WasmExtraFilesToDeploy Include='index.html' />";
@@ -506,8 +510,8 @@ namespace Wasm.Build.Tests
             extraProperties += "<TreatWarningsAsErrors>true</TreatWarningsAsErrors>";
             if (runAnalyzers)
                 extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
-            if (UseWebcil)
-                extraProperties += "<WasmEnableWebcil>true</WasmEnableWebcil>";
+            if (!UseWebcil)
+                extraProperties += "<WasmEnableWebcil>false</WasmEnableWebcil>";
 
             // TODO: Can be removed after updated templates propagate in.
             string extraItems = string.Empty;
@@ -531,8 +535,8 @@ namespace Wasm.Build.Tests
                     .EnsureSuccessful();
 
             string projectFile = Path.Combine(_projectDir!, $"{id}.csproj");
-            if (UseWebcil)
-                AddItemsPropertiesToProject(projectFile, "<WasmEnableWebcil>true</WasmEnableWebcil>");
+            if (!UseWebcil)
+                AddItemsPropertiesToProject(projectFile, "<WasmEnableWebcil>false</WasmEnableWebcil>");
             return projectFile;
         }
 
@@ -593,7 +597,7 @@ namespace Wasm.Build.Tests
                 label, // same as the command name
                 $"-bl:{logPath}",
                 $"-p:Configuration={config}",
-                UseWebcil ? "-p:WasmEnableWebcil=true" : string.Empty,
+                !UseWebcil ? "-p:WasmEnableWebcil=false" : string.Empty,
                 "-p:BlazorEnableCompression=false",
                 "-nr:false",
                 setWasmDevel ? "-p:_WasmDevel=true" : string.Empty
@@ -685,7 +689,7 @@ namespace Wasm.Build.Tests
 
             string managedDir = Path.Combine(bundleDir, "managed");
             string bundledMainAppAssembly =
-                useWebcil ? $"{projectName}.webcil" : $"{projectName}.dll";
+                useWebcil ? $"{projectName}{WebcilInWasmExtension}" : $"{projectName}.dll";
             AssertFilesExist(managedDir, new[] { bundledMainAppAssembly });
 
             bool is_debug = config == "Debug";

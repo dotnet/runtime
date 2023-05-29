@@ -160,6 +160,7 @@ set( JIT_SOURCES
   phase.cpp
   promotion.cpp
   promotiondecomposition.cpp
+  promotionliveness.cpp
   rangecheck.cpp
   rationalize.cpp
   redundantbranchopts.cpp
@@ -374,7 +375,6 @@ set( JIT_HEADERS
   targetarm.h
   targetarm64.h
   tinyarray.h
-  titypes.h
   treelifeupdater.h
   typelist.h
   unwind.h

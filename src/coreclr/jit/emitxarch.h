@@ -655,7 +655,10 @@ void emitIns_I_AI(instruction ins, emitAttr attr, int val, ssize_t disp);
 
 void emitIns_R_AR(instruction ins, emitAttr attr, regNumber reg, regNumber base, int disp);
 
-void emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, ssize_t disp);
+void emitIns_R_AI(instruction ins,
+                  emitAttr    attr,
+                  regNumber   ireg,
+                  ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, cnsval_ssize_t disp);
 

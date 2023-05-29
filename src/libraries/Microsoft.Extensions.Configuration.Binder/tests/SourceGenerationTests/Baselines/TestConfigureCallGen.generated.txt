@@ -29,10 +29,10 @@ internal static class GeneratedConfigurationBinder
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    using System;
-    using System.Globalization;
     using Microsoft.Extensions.Configuration;
+    using System;
     using System.Collections.Generic;
+    using System.Globalization;
 
     internal static class Helpers
     {

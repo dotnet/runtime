@@ -344,7 +344,7 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
     if (typeof moduleFactory === "function") {
         const extension = moduleFactory(globalObjectsRoot.api) as any;
         if (extension.ready) {
-            throw new Error("MONO_WASM: Module.ready couldn't be redefined.");
+            throw new Error("Module.ready couldn't be redefined.");
         }
         Object.assign(module, extension);
         deep_merge_module(module, extension);
@@ -353,7 +353,7 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
         deep_merge_module(module, moduleFactory);
     }
     else {
-        throw new Error("MONO_WASM: Can't use moduleFactory callback of createDotnetRuntime function.");
+        throw new Error("Can't use moduleFactory callback of createDotnetRuntime function.");
     }
 
     return module.ENVIRONMENT_IS_PTHREAD

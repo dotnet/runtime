@@ -170,6 +170,13 @@ namespace System.Globalization
         {
             _sortName = culture.SortName;
 
+#if TARGET_BROWSER
+            if (GlobalizationMode.Hybrid)
+            {
+                JsInit(culture.InteropName!);
+                return;
+            }
+#endif
             if (GlobalizationMode.UseNls)
             {
                 NlsInitSortHandle();
@@ -490,6 +497,9 @@ namespace System.Globalization
 #if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
                 JsCompareString(string1, string2, options) :
+#elif TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            GlobalizationMode.Hybrid ?
+                CompareStringNative(string1, string2, options) :
 #endif
                 IcuCompareString(string1, string2, options);
 
@@ -1118,6 +1128,10 @@ namespace System.Globalization
         private unsafe int IndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning) =>
             GlobalizationMode.UseNls ?
                 NlsIndexOfCore(source, target, options, matchLengthPtr, fromBeginning) :
+#if TARGET_BROWSER
+            GlobalizationMode.Hybrid ?
+                JsIndexOfCore(source, target, options, matchLengthPtr, fromBeginning) :
+#endif
                 IcuIndexOfCore(source, target, options, matchLengthPtr, fromBeginning);
 
         /// <summary>
@@ -1624,6 +1638,12 @@ namespace System.Globalization
                     }
                     else
                     {
+#if TARGET_BROWSER
+                if (GlobalizationMode.Hybrid)
+                {
+                    throw new PlatformNotSupportedException(GetPNSEText("SortVersion"));
+                }
+#endif
                         m_SortVersion = GlobalizationMode.UseNls ? NlsGetSortVersion() : IcuGetSortVersion();
                     }
                 }

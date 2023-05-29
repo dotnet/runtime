@@ -1797,6 +1797,7 @@ namespace System.Net.Http
                 ReadBufferedAsyncCore(destination);
         }
 
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
         private async ValueTask<int> ReadBufferedAsyncCore(Memory<byte> destination)
         {
             // This is called when reading the response body.

@@ -5,17 +5,17 @@ internal static class GeneratedConfigurationBinder
 {
     public static void Bind(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::Program.MyClass obj) => global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.BindCore(configuration, ref obj, binderOptions: null);
 
-    public static void Bind(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::Program.MyClass obj, global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>? configureActions) => global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.BindCore(configuration, ref obj, global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.GetBinderOptions(configureActions));
+    public static void Bind(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::Program.MyClass obj, global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>? configureOptions) => global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.BindCore(configuration, ref obj, global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.GetBinderOptions(configureOptions));
 
     public static void Bind(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, string key, global::Program.MyClass obj) => global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.BindCore(configuration.GetSection(key), ref obj, binderOptions: null);
 }
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    using System;
-    using System.Globalization;
     using Microsoft.Extensions.Configuration;
+    using System;
     using System.Collections.Generic;
+    using System.Globalization;
 
     internal static class Helpers
     {
@@ -56,6 +56,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static void BindCore(IConfiguration configuration, ref Program.MyClass2 obj, BinderOptions? binderOptions)
         {
+            if (obj is null)
+            {
+                throw new ArgumentNullException(nameof(obj));
+            }
+
         }
 
         public static void BindCore(IConfiguration configuration, ref Dictionary<string, Program.MyClass2> obj, BinderOptions? binderOptions)
@@ -164,14 +169,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             return false;
         }
 
-        public static BinderOptions? GetBinderOptions(System.Action<BinderOptions>? configureActions)
+        public static BinderOptions? GetBinderOptions(System.Action<BinderOptions>? configureOptions)
         {
-            if (configureActions is null)
+            if (configureOptions is null)
             {
                 return null;
             }
             BinderOptions binderOptions = new();
-            configureActions(binderOptions);
+            configureOptions(binderOptions);
             if (binderOptions.BindNonPublicProperties)
             {
                 throw new global::System.NotSupportedException($"The configuration binding source generator does not support 'BinderOptions.BindNonPublicProperties'.");

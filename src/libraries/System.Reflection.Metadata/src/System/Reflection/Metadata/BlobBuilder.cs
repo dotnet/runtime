@@ -788,7 +788,7 @@ namespace System.Reflection.Metadata
             WriteBytes(buffer.AsSpan(start, byteCount));
         }
 
-        private void WriteBytes(ReadOnlySpan<byte> buffer)
+        internal void WriteBytes(ReadOnlySpan<byte> buffer)
         {
             if (!IsHead)
             {

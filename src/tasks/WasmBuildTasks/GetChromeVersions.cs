@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -13,15 +14,19 @@ using Microsoft.Build.Framework;
 
 using MBU = Microsoft.Build.Utilities;
 
-#nullable enable
-
 namespace Microsoft.WebAssembly.Build.Tasks;
 
 public class GetChromeVersions : MBU.Task
 {
     private const string s_allJsonUrl = "http://omahaproxy.appspot.com/all.json";
     private const string s_snapshotBaseUrl = $"https://storage.googleapis.com/chromium-browser-snapshots";
-    private const int s_versionCheckThresholdDays = 3;
+    private const string s_historyUrl = $"https://omahaproxy.appspot.com/history";
+    private const string s_depsUrlPrefix = $"https://omahaproxy.appspot.com/deps.json?version=";
+    private const int s_versionCheckThresholdDays = 1;
+
+    // start at the branch position found in all.json, and try to
+    // download chrome, and chromedriver. If not found, then try up to
+    // s_numBranchPositionsToTry lower versions
     private const int s_numBranchPositionsToTry = 50;
     private static readonly HttpClient s_httpClient = new();
 
@@ -37,10 +42,7 @@ public class GetChromeVersions : MBU.Task
     [Required, NotNull]
     public string IntermediateOutputPath { get; set; } = string.Empty;
 
-    // start at the branch position found in all.json, and try to
-    // download chrome, and chromedriver. If not found, then try up to
-    // MaxLowerBranchPositionsToCheck lower versions
-    public int MaxLowerBranchPositionsToCheck { get; set; } = 10;
+    public int MaxMajorVersionsToCheck { get; set; } = 2;
 
     [Output]
     public string ChromeVersion { get; set; } = string.Empty;
@@ -63,8 +65,11 @@ public class GetChromeVersions : MBU.Task
 
         try
         {
-            ChromeVersionSpec version = await GetChromeVersionAsync().ConfigureAwait(false);
-            BaseSnapshotUrl = await GetChromeUrlsAsync(version).ConfigureAwait(false);
+            (ChromeVersionSpec version, string baseUrl) = await FindVersionFromHistoryAsync().ConfigureAwait(false);
+            // For using all.json, use this instead:
+            // (ChromeVersionSpec version, string baseUrl) = await FindVersionFromAllJsonAsync().ConfigureAwait(false);
+
+            BaseSnapshotUrl = baseUrl;
             ChromeVersion = version.version;
             V8Version = version.v8_version;
             BranchPosition = version.branch_base_position;
@@ -78,38 +83,92 @@ public class GetChromeVersions : MBU.Task
         }
     }
 
-    private async Task<string> GetChromeUrlsAsync(ChromeVersionSpec version)
+    private async Task<(ChromeVersionSpec versionSpec, string baseSnapshotUrl)> FindVersionFromHistoryAsync()
     {
-        string baseUrl = $"{s_snapshotBaseUrl}/{OSPrefix}";
+        List<string> versionsTried = new();
+        int numMajorVersionsTried = 0;
 
-        int branchPosition = int.Parse(version.branch_base_position);
-        for (int i = 0; i < s_numBranchPositionsToTry; i++)
+        string curMajorVersion = string.Empty;
+        await foreach (string version in GetVersionsAsync())
         {
-            string branchUrl = $"{baseUrl}/{branchPosition}";
-            string url = $"{branchUrl}/REVISIONS";
-
-            Log.LogMessage(MessageImportance.Low, $"Checking if {url} exists ..");
-            HttpResponseMessage response = await s_httpClient
-                                                    .GetAsync(url, HttpCompletionOption.ResponseHeadersRead)
-                                                    .ConfigureAwait(false);
-            if (response.StatusCode == HttpStatusCode.OK)
+            string majorVersion = version[..version.IndexOf('.')];
+            if (curMajorVersion != majorVersion)
             {
-                Log.LogMessage(MessageImportance.Low, $"Found {url}");
-                return branchUrl;
+                if (numMajorVersionsTried >= MaxMajorVersionsToCheck)
+                    break;
+                if (numMajorVersionsTried > 0)
+                    Log.LogMessage(MessageImportance.High, $"Trying older major version {majorVersion} ..");
+                curMajorVersion = majorVersion;
+                numMajorVersionsTried += 1;
+            }
+            versionsTried.Add(version);
+
+            bool isFirstVersion = versionsTried.Count == 1;
+            string depsUrl = s_depsUrlPrefix + version;
+
+            Log.LogMessage(MessageImportance.Low, $"Trying to get details for version {version} from {depsUrl}");
+            Stream depsStream = await s_httpClient.GetStreamAsync(depsUrl).ConfigureAwait(false);
+
+            ChromeDepsVersionSpec? depsVersionSpec = await JsonSerializer
+                                                        .DeserializeAsync<ChromeDepsVersionSpec>(depsStream)
+                                                        .ConfigureAwait(false);
+            if (depsVersionSpec is null)
+            {
+                Log.LogMessage(MessageImportance.Low, $"Could not get deps for version {version} from {depsUrl}.");
+                continue;
             }
 
-            branchPosition += 1;
+            if (!isFirstVersion)
+                Log.LogMessage(MessageImportance.Normal, $"Trying to find snapshot url for version {version} ..");
+
+            ChromeVersionSpec versionSpec = depsVersionSpec.ToChromeVersionSpec(OSIdentifier, Channel);
+            string? baseUrl = await FindSnapshotUrlFromBasePositionAsync(versionSpec, throwIfNotFound: false).ConfigureAwait(false);
+            if (!string.IsNullOrEmpty(baseUrl))
+            {
+                if (numMajorVersionsTried > 1)
+                    Log.LogMessage(MessageImportance.High, $"{Environment.NewLine}Using an *older major* version of chrome: {versionSpec.version} . Failed to find snapshots for other {OSIdentifier} {Channel} versions: {string.Join(", ", versionsTried[..^1])} .{Environment.NewLine}");
+
+                return (versionSpec, baseUrl);
+            }
+
+            Log.LogMessage(MessageImportance.Low, $"Could not find snapshot url for version {version} .");
         }
 
-        throw new LogAsErrorException($"Could not find a chrome snapshot folder under {baseUrl}, " +
-                                        $"for branch positions {version.branch_base_position} to " +
-                                        $"{branchPosition}, for version {version.version}. " +
-                                        "A fixed version+url can be set in eng/testing/ProvisioningVersions.props .");
+        throw new LogAsErrorException($"Could not find a snapshot for {OSIdentifier} {Channel}. Versions tried: {string.Join(", ", versionsTried)} . A fixed version+url can be set in eng/testing/ProvisioningVersions.props .");
+
+        async IAsyncEnumerable<string> GetVersionsAsync()
+        {
+            Stream stream = await GetDownloadFileStreamAsync("history.csv", s_historyUrl).ConfigureAwait(false);
+            using StreamReader sr = new(stream);
+            string prefix = $"{OSIdentifier},{Channel},";
+            int lineNum = 0;
+
+            /*
+                win,stable,113.0.5672.93,2023-05-08 20:43:02.119774
+                win64,stable,113.0.5672.93,2023-05-08 20:43:01.624636
+                mac_arm64,stable,113.0.5672.92,2023-05-08 20:43:01.067910
+            */
+            while (true)
+            {
+                string? line = await sr.ReadLineAsync().ConfigureAwait(false);
+                if (line is null)
+                    break;
+
+                lineNum++;
+                if (!line.StartsWith(prefix, StringComparison.InvariantCultureIgnoreCase))
+                    continue;
+
+                string[] parts = line.Split(',', 4);
+                yield return parts.Length >= 4
+                                ? parts[2]
+                                : throw new LogAsErrorException($"Failed to find at least 4 fields in history csv at line #{lineNum}: {line}");
+            }
+        }
     }
 
-    private async Task<ChromeVersionSpec> GetChromeVersionAsync()
+    private async Task<(ChromeVersionSpec versionSpec, string baseSnapshotUrl)> FindVersionFromAllJsonAsync()
     {
-        using Stream stream = await GetAllJsonContentsAsync().ConfigureAwait(false);
+        using Stream stream = await GetDownloadFileStreamAsync("all.json", s_allJsonUrl).ConfigureAwait(false);
 
         PerOSVersions[]? perOSVersions = await JsonSerializer
                                                     .DeserializeAsync<PerOSVersions[]>(stream)
@@ -141,41 +200,88 @@ public class GetChromeVersions : MBU.Task
                                             availableChannels);
         }
 
-        return foundChromeVersions[0];
+        string? baseSnapshotUrl = await FindSnapshotUrlFromBasePositionAsync(foundChromeVersions[0], throwIfNotFound: true).ConfigureAwait(false);
+        return (foundChromeVersions[0], baseSnapshotUrl!);
     }
 
-    private async Task<Stream> GetAllJsonContentsAsync()
+    private async Task<Stream> GetDownloadFileStreamAsync(string filename, string url)
     {
-        string allJsonPath = Path.Combine(IntermediateOutputPath, "all.json");
+        string filePath = Path.Combine(IntermediateOutputPath, filename);
 
         // Don't download all.json on every build, instead do that
         // only every few days
-        if (File.Exists(allJsonPath) &&
-            (DateTime.UtcNow - File.GetLastWriteTimeUtc(allJsonPath)).TotalDays < s_versionCheckThresholdDays)
+        if (File.Exists(filePath) &&
+            (DateTime.UtcNow - File.GetLastWriteTimeUtc(filePath)).TotalDays < s_versionCheckThresholdDays)
         {
             Log.LogMessage(MessageImportance.Low,
-                                $"{s_allJsonUrl} will not be downloaded again, as ${allJsonPath} " +
+                                $"{url} will not be downloaded again, as ${filePath} " +
                                 $"is less than {s_versionCheckThresholdDays} old.");
         }
         else
         {
             try
             {
-                Log.LogMessage(MessageImportance.Low, $"Downloading {s_allJsonUrl} ...");
-                Stream stream = await s_httpClient.GetStreamAsync(s_allJsonUrl).ConfigureAwait(false);
-                using FileStream fs = File.OpenWrite(allJsonPath);
+                Log.LogMessage(MessageImportance.Low, $"Downloading {url} ...");
+                Stream stream = await s_httpClient.GetStreamAsync(url).ConfigureAwait(false);
+                using FileStream fs = File.OpenWrite(filePath);
                 await stream.CopyToAsync(fs).ConfigureAwait(false);
             }
             catch (HttpRequestException hre)
             {
-                throw new LogAsErrorException($"Failed to download {s_allJsonUrl}: {hre.Message}");
+                throw new LogAsErrorException($"Failed to download {url}: {hre.Message}");
             }
         }
 
-        return File.OpenRead(allJsonPath);
+        return File.OpenRead(filePath);
     }
 
+    private async Task<string?> FindSnapshotUrlFromBasePositionAsync(ChromeVersionSpec version, bool throwIfNotFound = true)
+    {
+        string baseUrl = $"{s_snapshotBaseUrl}/{OSPrefix}";
+
+        int branchPosition = int.Parse(version.branch_base_position);
+        for (int i = 0; i < s_numBranchPositionsToTry; i++)
+        {
+            string branchUrl = $"{baseUrl}/{branchPosition}";
+            string url = $"{branchUrl}/REVISIONS";
+
+            Log.LogMessage(MessageImportance.Low, $"Checking if {url} exists ..");
+            HttpResponseMessage response = await s_httpClient
+                                                    .GetAsync(url, HttpCompletionOption.ResponseHeadersRead)
+                                                    .ConfigureAwait(false);
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
+                Log.LogMessage(MessageImportance.Low, $"Found {url}");
+                return branchUrl;
+            }
+
+            branchPosition += 1;
+        }
+
+        string message = $"Could not find a chrome snapshot folder under {baseUrl}, " +
+                            $"for branch positions {version.branch_base_position} to " +
+                            $"{branchPosition}, for version {version.version}. " +
+                            "A fixed version+url can be set in eng/testing/ProvisioningVersions.props .";
+        if (throwIfNotFound)
+            throw new LogAsErrorException(message);
+        else
+            Log.LogMessage(MessageImportance.Low, message);
+
+        return null;
+    }
 
     private sealed record PerOSVersions(string os, ChromeVersionSpec[] versions);
     private sealed record ChromeVersionSpec(string os, string channel, string version, string branch_base_position, string v8_version);
+    private sealed record ChromeDepsVersionSpec(string chromium_version, string chromium_base_position, string v8_version)
+    {
+        public ChromeVersionSpec ToChromeVersionSpec(string os, string channel) => new
+        (
+            os,
+            channel,
+            chromium_version,
+            chromium_base_position,
+            v8_version
+        );
+    }
+
 }
