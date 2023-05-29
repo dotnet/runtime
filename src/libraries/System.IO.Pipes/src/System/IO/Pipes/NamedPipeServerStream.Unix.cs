@@ -321,14 +321,16 @@ namespace System.IO.Pipes
                     Interop.Sys.Unlink(path); // ignore any failures
                 }
 
+                bool isSocketBound = false;
                 // Start listening for connections on the path.
                 var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
                 try
                 {
                     socket.Bind(new UnixDomainSocketEndPoint(path));
+                    isSocketBound = true;
                     socket.Listen(int.MaxValue);
                 }
-                catch (SocketException) when (isFirstPipeInstance)
+                catch (SocketException) when (isFirstPipeInstance && !isSocketBound)
                 {
                     socket.Dispose();
                     throw new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, path));
