@@ -579,8 +579,7 @@ mono_de_is_jmc_stepping (void)
 	dbg_lock ();
 	for (guint i = 0; i < the_ss_reqs->len; ++i) {
 		SingleStepReq *current_req = (SingleStepReq *)g_ptr_array_index (the_ss_reqs, i);
-		if (current_req->req && current_req->req->nmodifiers == 1 && current_req->req->modifiers[0].kind == MDBGPROT_MOD_KIND_STEP_JMC)
-		{
+		if (current_req->req && current_req->req->nmodifiers == 1 && current_req->req->modifiers[0].kind == MDBGPROT_MOD_KIND_STEP_JMC)	{
 			jmc = TRUE;
 			break;
 		}
@@ -714,8 +713,7 @@ ss_destroy (SingleStepReq *req)
 
 	ss_stop (req);
 
-	if (req->req->nmodifiers == 1 && req->req->modifiers[0].kind == MDBGPROT_MOD_KIND_STEP_JMC)
-	{
+	if (req->req->nmodifiers == 1 && req->req->modifiers[0].kind == MDBGPROT_MOD_KIND_STEP_JMC)	{
 		GSList *l;
 		for (l = req->req->modifiers[0].data.jmc->bps; l; l = l->next) {
 			mono_de_clear_breakpoint ((MonoBreakpoint *)l->data);
@@ -991,8 +989,7 @@ mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls,
 			if (!is_step_out) {
 				do {
 					MonoBreakpoint* bp = (MonoBreakpoint *)jmc_bps->data;
-					if (bp->method == method && bp->il_offset == sp->il_offset)
-					{
+					if (bp->method == method && bp->il_offset == sp->il_offset)	{
 						is_JMC_bp = TRUE;
 						break;
 					}
