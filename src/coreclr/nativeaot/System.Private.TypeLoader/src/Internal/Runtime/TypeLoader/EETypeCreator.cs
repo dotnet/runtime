@@ -550,7 +550,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (numSeries > 0)
                 {
-                    *ptr-- = (short)((bitfield.Count - last + baseOffset - 2) * IntPtr.Size);
+                    *ptr-- = (short)((i - last) * IntPtr.Size);
                     *ptr-- = numPtrs;
 
                     *(void**)gcdesc = (void*)-numSeries;
