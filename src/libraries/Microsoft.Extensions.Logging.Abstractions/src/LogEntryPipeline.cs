@@ -28,22 +28,6 @@ namespace Microsoft.Extensions.Logging
         public bool IsUpToDate { get; set; }
     }
 
-    //public class ScopePipeline
-    //{
-    //    public ScopePipeline(object? userState, bool isEnabled, bool isDynamicLevelCheckRequired)
-    //    {
-    //        UserState = userState;
-    //        IsEnabled = isEnabled;
-    //        IsDynamicLevelCheckRequired = isDynamicLevelCheckRequired;
-    //        IsUpToDate = true;
-    //    }
-
-    //    public object? UserState { get; }
-    //    public bool IsEnabled { get; }
-    //    public bool IsDynamicLevelCheckRequired { get; }
-    //    public bool IsUpToDate { get; set; }
-    //}
-
     public class LogEntryPipeline<TState> : Pipeline
     {
         public LogEntryPipeline(LogEntryHandler<TState> handler, object? userState, bool isEnabled, bool isDynamicLevelCheckRequired) :
