@@ -34,9 +34,6 @@ namespace System
                 {
                     RuntimeTypeHandle typeHandle = type.TypeHandle;
 
-                    if (RuntimeAugments.IsByRefLike(typeHandle))
-                        throw new TargetException();
-
                     if (RuntimeAugments.IsNullable(typeHandle))
                         return null;
 
@@ -89,9 +86,6 @@ namespace System
                 if (numArgs == 0 && type.IsValueType)
                 {
                     RuntimeTypeHandle typeHandle = type.TypeHandle;
-
-                    if (RuntimeAugments.IsByRefLike(typeHandle))
-                        throw new TargetException();
 
                     if (RuntimeAugments.IsNullable(typeHandle))
                         return null;
