@@ -32,12 +32,15 @@ namespace System
             {
                 if (type.IsValueType)
                 {
-                    if (type.IsByRefLike)
+                    RuntimeTypeHandle typeHandle = type.TypeHandle;
+
+                    if (RuntimeAugments.IsByRefLike(typeHandle))
                         throw new TargetException();
 
-                    Debug.Assert(Nullable.GetUnderlyingType(type) == null);
+                    if (RuntimeAugments.IsNullable(typeHandle))
+                        return null;
 
-                    return RuntimeAugments.RawNewObject(type.TypeHandle);
+                    return RuntimeAugments.RawNewObject(typeHandle);
                 }
 
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, type));
@@ -85,12 +88,15 @@ namespace System
             {
                 if (numArgs == 0 && type.IsValueType)
                 {
-                    if (type.IsByRefLike)
+                    RuntimeTypeHandle typeHandle = type.TypeHandle;
+
+                    if (RuntimeAugments.IsByRefLike(typeHandle))
                         throw new TargetException();
 
-                    Debug.Assert(Nullable.GetUnderlyingType(type) == null);
+                    if (RuntimeAugments.IsNullable(typeHandle))
+                        return null;
 
-                    return RuntimeAugments.RawNewObject(type.TypeHandle);
+                    return RuntimeAugments.RawNewObject(typeHandle);
                 }
 
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, type));
