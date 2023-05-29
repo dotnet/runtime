@@ -28,6 +28,8 @@ namespace ILCompiler
             new(new[] { "--optimize-time", "--Ot" }, "Enable optimizations, favor code speed");
         public Option<string[]> MibcFilePaths { get; } =
             new(new[] { "--mibc", "-m" }, Array.Empty<string>, "Mibc file(s) for profile guided optimization");
+        public Option<string[]> SatelliteFilePaths { get; } =
+            new(new[] { "--satellite" }, Array.Empty<string>, "Satellite assemblies associated with inputs/references");
         public Option<bool> EnableDebugInfo { get; } =
             new(new[] { "--debug", "-g" }, "Emit debugging information");
         public Option<bool> UseDwarf5 { get; } =
@@ -173,6 +175,7 @@ namespace ILCompiler
             AddOption(OptimizeSpace);
             AddOption(OptimizeTime);
             AddOption(MibcFilePaths);
+            AddOption(SatelliteFilePaths);
             AddOption(EnableDebugInfo);
             AddOption(UseDwarf5);
             AddOption(NativeLib);

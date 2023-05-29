@@ -391,7 +391,8 @@ namespace ILCompiler
                     featureSwitches,
                     Get(_command.ConditionallyRootedAssemblies),
                     rootedAssemblies,
-                    Get(_command.TrimmedAssemblies));
+                    Get(_command.TrimmedAssemblies),
+                    Get(_command.SatelliteFilePaths));
 
             InteropStateManager interopStateManager = new InteropStateManager(typeSystemContext.GeneratedAssembly);
             InteropStubManager interopStubManager = new UsageBasedInteropStubManager(interopStateManager, pinvokePolicy, logger);
