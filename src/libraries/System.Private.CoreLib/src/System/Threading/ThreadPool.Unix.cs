@@ -9,9 +9,7 @@ namespace System.Threading
 {
     public static partial class ThreadPool
     {
-#if CORECLR
-        private static readonly bool IsWorkerTrackingEnabledInConfig = GetEnableWorkerTracking();
-#elif NATIVEAOT
+#if NATIVEAOT
         private const bool IsWorkerTrackingEnabledInConfig = false;
 #else
         private static readonly bool IsWorkerTrackingEnabledInConfig =
