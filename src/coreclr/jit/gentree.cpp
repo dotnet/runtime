@@ -19745,76 +19745,133 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 {
                     assert((simdSize != 64) || IsBaselineVector512IsaSupportedDebugOnly());
 
-                    CorInfoType    widenSimdBaseJitType;
-                    NamedIntrinsic convertIntrinsic;
-                    var_types      convertedType;
-                    unsigned       convertedSimdSize;
+                    CorInfoType    widenedSimdBaseJitType;
+                    NamedIntrinsic widenIntrinsic;
+                    NamedIntrinsic narrowIntrinsic;
+                    var_types      widenedType;
+                    unsigned       widenedSimdSize;
 
                     if (simdSize == 32 && IsBaselineVector512IsaSupported())
                     {
                         if (simdBaseType == TYP_BYTE)
                         {
-                            widenSimdBaseJitType = CORINFO_TYPE_SHORT;
-                            convertIntrinsic     = NI_AVX512BW_ConvertToVector512Int16;
+                            widenedSimdBaseJitType = CORINFO_TYPE_SHORT;
+                            widenIntrinsic         = NI_AVX512BW_ConvertToVector512Int16;
+                            narrowIntrinsic        = NI_AVX512BW_ConvertToVector256SByte;
                         }
                         else
                         {
-                            widenSimdBaseJitType = CORINFO_TYPE_USHORT;
-                            convertIntrinsic     = NI_AVX512BW_ConvertToVector512UInt16;
+                            widenedSimdBaseJitType = CORINFO_TYPE_USHORT;
+                            widenIntrinsic         = NI_AVX512BW_ConvertToVector512UInt16;
+                            narrowIntrinsic        = NI_AVX512BW_ConvertToVector256Byte;
                         }
 
-                        convertedType     = TYP_SIMD64;
-                        convertedSimdSize = 64;
+                        widenedType     = TYP_SIMD64;
+                        widenedSimdSize = 64;
+
+                        op1 = gtNewSimdHWIntrinsicNode(widenedType, op1, widenIntrinsic, simdBaseJitType,
+                                                       widenedSimdSize);
+
+                        op2 = gtNewSimdHWIntrinsicNode(widenedType, op2, widenIntrinsic, simdBaseJitType,
+                                                       widenedSimdSize);
+
+                        op1 =
+                            gtNewSimdBinOpNode(GT_MUL, widenedType, op1, op2, widenedSimdBaseJitType, widenedSimdSize);
+
+                        return gtNewSimdHWIntrinsicNode(type, op1, narrowIntrinsic, widenedSimdBaseJitType,
+                                                        widenedSimdSize);
                     }
                     else if (simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_AVX2))
                     {
-                        widenSimdBaseJitType = simdBaseType == TYP_BYTE ? CORINFO_TYPE_SHORT : CORINFO_TYPE_USHORT;
-                        convertIntrinsic     = NI_AVX2_ConvertToVector256Int16;
-                        convertedType        = TYP_SIMD32;
-                        convertedSimdSize    = 32;
+                        if (IsBaselineVector512IsaSupported())
+                        {
+                            widenIntrinsic = NI_AVX2_ConvertToVector256Int16;
+
+                            if (simdBaseType == TYP_BYTE)
+                            {
+                                widenedSimdBaseJitType = CORINFO_TYPE_SHORT;
+                                narrowIntrinsic        = NI_AVX512BW_VL_ConvertToVector128SByte;
+                            }
+                            else
+                            {
+                                widenedSimdBaseJitType = CORINFO_TYPE_USHORT;
+                                narrowIntrinsic        = NI_AVX512BW_VL_ConvertToVector128Byte;
+                            }
+
+                            widenedType     = TYP_SIMD32;
+                            widenedSimdSize = 32;
+
+                            op1 = gtNewSimdHWIntrinsicNode(widenedType, op1, widenIntrinsic, simdBaseJitType,
+                                                           widenedSimdSize);
+
+                            op2 = gtNewSimdHWIntrinsicNode(widenedType, op2, widenIntrinsic, simdBaseJitType,
+                                                           widenedSimdSize);
+
+                            op1 = gtNewSimdBinOpNode(GT_MUL, widenedType, op1, op2, widenedSimdBaseJitType,
+                                                     widenedSimdSize);
+
+                            return gtNewSimdHWIntrinsicNode(type, op1, narrowIntrinsic, widenedSimdBaseJitType,
+                                                            widenedSimdSize);
+                        }
+                        else
+                        {
+                            widenedSimdBaseJitType =
+                                simdBaseType == TYP_BYTE ? CORINFO_TYPE_SHORT : CORINFO_TYPE_USHORT;
+                            widenIntrinsic  = NI_AVX2_ConvertToVector256Int16;
+                            widenedType     = TYP_SIMD32;
+                            widenedSimdSize = 32;
+
+                            op1 = gtNewSimdHWIntrinsicNode(widenedType, op1, widenIntrinsic, simdBaseJitType, simdSize);
+
+                            op2 = gtNewSimdHWIntrinsicNode(widenedType, op2, widenIntrinsic, simdBaseJitType, simdSize);
+
+                            op1 = gtNewSimdBinOpNode(GT_MUL, widenedType, op1, op2, widenedSimdBaseJitType,
+                                                     widenedSimdSize);
+
+                            GenTreeVecCon* vecCon1 = gtNewVconNode(widenedType);
+
+                            for (unsigned i = 0; i < (widenedSimdSize / 8); i++)
+                            {
+                                vecCon1->gtSimdVal.u64[i] = 0x00FF00FF00FF00FF;
+                            }
+
+                            // Validate we can't use AVX512F_VL_TernaryLogic here
+                            assert(!compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+
+                            op1 = gtNewSimdBinOpNode(GT_AND, widenedType, op1, vecCon1, widenedSimdBaseJitType,
+                                                     widenedSimdSize);
+                            op2 = fgMakeMultiUse(&op1);
+                            op1 = gtNewSimdHWIntrinsicNode(widenedType, op1, op2, NI_AVX2_PackUnsignedSaturate,
+                                                           CORINFO_TYPE_UBYTE, widenedSimdSize);
+
+                            CorInfoType permuteBaseJitType =
+                                (simdBaseType == TYP_BYTE) ? CORINFO_TYPE_LONG : CORINFO_TYPE_ULONG;
+                            op1 = gtNewSimdHWIntrinsicNode(widenedType, op1, gtNewIconNode(SHUFFLE_WYZX),
+                                                           NI_AVX2_Permute4x64, permuteBaseJitType, widenedSimdSize);
+                            return gtNewSimdGetLowerNode(type, op1, simdBaseJitType, widenedSimdSize);
+                        }
                     }
-                    else
-                    {
-                        widenSimdBaseJitType = simdBaseType == TYP_BYTE ? CORINFO_TYPE_SHORT : CORINFO_TYPE_USHORT;
-                        convertIntrinsic     = NI_Illegal;
-                        convertedType        = TYP_UNDEF;
-                        convertedSimdSize    = 0;
-                    }
 
-                    if (convertedType != TYP_UNDEF)
-                    {
-                        op1 = gtNewSimdHWIntrinsicNode(convertedType, op1, convertIntrinsic, simdBaseJitType, simdSize);
+                    widenedSimdBaseJitType = simdBaseType == TYP_BYTE ? CORINFO_TYPE_SHORT : CORINFO_TYPE_USHORT;
 
-                        op2 = gtNewSimdHWIntrinsicNode(convertedType, op2, convertIntrinsic, simdBaseJitType, simdSize);
+                    // op1Dup = op1
+                    GenTree* op1Dup = fgMakeMultiUse(&op1);
 
-                        op1 = gtNewSimdBinOpNode(GT_MUL, convertedType, op1, op2, widenSimdBaseJitType,
-                                                 convertedSimdSize);
+                    // op2Dup = op2
+                    GenTree* op2Dup = fgMakeMultiUse(&op2);
 
-                        GenTree* dup = fgMakeMultiUse(&op1);
-                        op1          = gtNewSimdNarrowNode(convertedType, op1, dup, simdBaseJitType, convertedSimdSize);
-                        return gtNewSimdGetLowerNode(type, op1, simdBaseJitType, convertedSimdSize);
-                    }
-                    else
-                    {
-                        // op1Dup = op1
-                        GenTree* op1Dup = fgMakeMultiUse(&op1);
+                    // Multiply widened lower parts
+                    op1 = gtNewSimdWidenLowerNode(type, op1, simdBaseJitType, simdSize);
+                    op2 = gtNewSimdWidenLowerNode(type, op2, simdBaseJitType, simdSize);
+                    op1 = gtNewSimdBinOpNode(GT_MUL, type, op1, op2, widenedSimdBaseJitType, simdSize);
 
-                        // op2Dup = op2
-                        GenTree* op2Dup = fgMakeMultiUse(&op2);
+                    // Multiply widened upper parts
+                    op1Dup = gtNewSimdWidenUpperNode(type, op1Dup, simdBaseJitType, simdSize);
+                    op2Dup = gtNewSimdWidenUpperNode(type, op2Dup, simdBaseJitType, simdSize);
+                    op2    = gtNewSimdBinOpNode(GT_MUL, type, op1Dup, op2Dup, widenedSimdBaseJitType, simdSize);
 
-                        // Multiply widened lower parts
-                        op1 = gtNewSimdWidenLowerNode(type, op1, simdBaseJitType, simdSize);
-                        op2 = gtNewSimdWidenLowerNode(type, op2, simdBaseJitType, simdSize);
-                        op1 = gtNewSimdBinOpNode(GT_MUL, type, op1, op2, widenSimdBaseJitType, simdSize);
-
-                        // Multiply widened upper parts
-                        op1Dup = gtNewSimdWidenUpperNode(type, op1Dup, simdBaseJitType, simdSize);
-                        op2Dup = gtNewSimdWidenUpperNode(type, op2Dup, simdBaseJitType, simdSize);
-                        op2    = gtNewSimdBinOpNode(GT_MUL, type, op1Dup, op2Dup, widenSimdBaseJitType, simdSize);
-
-                        // Narrow lower and upper
-                        return gtNewSimdNarrowNode(type, op1, op2, simdBaseJitType, simdSize);
-                    }
+                    // Narrow lower and upper
+                    return gtNewSimdNarrowNode(type, op1, op2, simdBaseJitType, simdSize);
                 }
 
                 case TYP_SHORT:
