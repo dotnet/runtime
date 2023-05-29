@@ -163,7 +163,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
         if (config === "appsettings.json" || config === `appsettings.${applicationEnvironment}.json`) {
             assets.push({
                 name: config,
-                resolvedUrl: loaderHelpers.locateFile(config),
+                resolvedUrl: (document ? document.baseURI : "/") + config,
                 behavior: "vfs",
             });
         }
