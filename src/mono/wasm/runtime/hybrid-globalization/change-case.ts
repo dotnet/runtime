@@ -8,6 +8,11 @@ import { Int32Ptr } from "../types/emscripten";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { localHeapViewU16, setU16_local } from "../memory";
 
+const SURROGATE_HIGHER_START = "\uD800";
+const SURROGATE_HIGHER_END = "\uDBFF";
+const SURROGATE_LOWER_START = "\uDC00";
+const SURROGATE_LOWER_END = "\uDFFF";
+
 export function mono_wasm_change_case_invariant(src: number, srcLength: number, dst: number, dstLength: number, toUpper: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): void {
     const exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
     try {
@@ -24,22 +29,50 @@ export function mono_wasm_change_case_invariant(src: number, srcLength: number, 
 
         // workaround to maintain the ICU-like behavior
         const heapI16 = localHeapViewU16();
+        let jump = 1;
         if (toUpper)
         {
-            for (let i=0; i < input.length; i++)
+            for (let i=0; i < input.length; i+=jump)
             {
-                const upperChar = input[i].toUpperCase();
-                const appendedChar = upperChar.length > 1 ? input[i] : upperChar;
-                setU16_local(heapI16, dst + i*2, appendedChar.charCodeAt(0));
+                // surrogate parts have to enter ToUpper/ToLower together to give correct output
+                if (IsSurrogate(input, i))
+                {
+                    jump = 2;
+                    const surrogate = input.substring(i, i+2);
+                    const upperSurrogate = surrogate.toUpperCase();
+                    const appendedSurrogate = upperSurrogate.length > 2 ? surrogate : upperSurrogate;
+                    AppendSurrogateToMemory(heapI16, dst, appendedSurrogate, i);
+
+                }
+                else
+                {
+                    jump = 1;
+                    const upperChar = input[i].toUpperCase();
+                    const appendedChar = upperChar.length > 1 ? input[i] : upperChar;
+                    setU16_local(heapI16, dst + i*2, appendedChar.charCodeAt(0));
+                }
             }
         }
         else
         {
-            for (let i=0; i < input.length; i++)
+            for (let i=0; i < input.length; i+=jump)
             {
-                const lowerChar = input[i].toLowerCase();
-                const appendedChar = lowerChar.length > 1 ? input[i] : lowerChar;
-                setU16_local(heapI16, dst + i*2, appendedChar.charCodeAt(0));
+                if (IsSurrogate(input, i))
+                {
+                    jump = 2;
+                    const surrogate = input.substring(i, i+2);
+                    const upperSurrogate = surrogate.toLowerCase();
+                    const appendedSurrogate = upperSurrogate.length > 2 ? surrogate : upperSurrogate;
+                    AppendSurrogateToMemory(heapI16, dst, appendedSurrogate, i);
+
+                }
+                else
+                {
+                    jump = 1;
+                    const upperChar = input[i].toLowerCase();
+                    const appendedChar = upperChar.length > 1 ? input[i] : upperChar;
+                    setU16_local(heapI16, dst + i*2, appendedChar.charCodeAt(0));
+                }
             }
         }
     }
@@ -69,22 +102,50 @@ export function mono_wasm_change_case(culture: MonoStringRef, src: number, srcLe
         }
         // workaround to maintain the ICU-like behavior
         const heapI16 = localHeapViewU16();
+        let jump = 1;
         if (toUpper)
         {
-            for (let i=0; i < input.length; i++)
+            for (let i=0; i < input.length; i+=jump)
             {
-                const upperChar = input[i].toLocaleUpperCase(cultureName);
-                const appendedChar = upperChar.length > 1 ? input[i] : upperChar;
-                setU16_local(heapI16, dst + i*2, appendedChar.charCodeAt(0));
+                // surrogate parts have to enter ToUpper/ToLower together to give correct output
+                if (IsSurrogate(input, i))
+                {
+                    jump = 2;
+                    const surrogate = input.substring(i, i+2);
+                    const upperSurrogate = surrogate.toLocaleUpperCase(cultureName);
+                    const appendedSurrogate = upperSurrogate.length > 2 ? surrogate : upperSurrogate;
+                    AppendSurrogateToMemory(heapI16, dst, appendedSurrogate, i);
+
+                }
+                else
+                {
+                    jump = 1;
+                    const upperChar = input[i].toLocaleUpperCase(cultureName);
+                    const appendedChar = upperChar.length > 1 ? input[i] : upperChar;
+                    setU16_local(heapI16, dst + i*2, appendedChar.charCodeAt(0));
+                }
             }
         }
         else
         {
-            for (let i=0; i < input.length; i++)
+            for (let i=0; i < input.length; i+=jump)
             {
-                const lowerChar = input[i].toLocaleLowerCase(cultureName);
-                const appendedChar = lowerChar.length > 1 ? input[i] : lowerChar;
-                setU16_local(heapI16, dst + i*2, appendedChar.charCodeAt(0));
+                // surrogate parts have to enter ToUpper/ToLower together to give correct output
+                if (IsSurrogate(input, i))
+                {
+                    jump = 2;
+                    const surrogate = input.substring(i, i+2);
+                    const upperSurrogate = surrogate.toLocaleLowerCase(cultureName);
+                    const appendedSurrogate = upperSurrogate.length > 2 ? surrogate : upperSurrogate;
+                    AppendSurrogateToMemory(heapI16, dst, appendedSurrogate, i);
+                }
+                else
+                {
+                    jump = 1;
+                    const lowerChar = input[i].toLocaleLowerCase(cultureName);
+                    const appendedChar = lowerChar.length > 1 ? input[i] : lowerChar;
+                    setU16_local(heapI16, dst + i*2, appendedChar.charCodeAt(0));
+                }
             }
         }
         wrap_no_error_root(is_exception, exceptionRoot);
@@ -96,4 +157,19 @@ export function mono_wasm_change_case(culture: MonoStringRef, src: number, srcLe
         cultureRoot.release();
         exceptionRoot.release();
     }
+}
+
+function IsSurrogate(str: string, startIdx: number) : boolean
+{
+    return SURROGATE_HIGHER_START <= str[startIdx] &&
+        str[startIdx] <= SURROGATE_HIGHER_END &&
+        startIdx+1 < str.length &&
+        SURROGATE_LOWER_START <= str[startIdx+1] &&
+        str[startIdx+1] <= SURROGATE_LOWER_END;
+}
+
+function AppendSurrogateToMemory(heapI16: Uint16Array, dst: number, surrogate: string, idx: number)
+{
+    setU16_local(heapI16, dst + idx*2, surrogate.charCodeAt(0));
+    setU16_local(heapI16, dst + (idx+1)*2, surrogate.charCodeAt(1));
 }
