@@ -481,11 +481,11 @@ if [[ "$iosnativeaot" == "true" ]]; then
   if [[ "$iosstripsymbols" == "True" ]]; then
     # NoSymbols Mono .app
     mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nosymbols $payload_directory/iosHelloWorld
-    mkdir -p $payload_directory/iosHelloWorldZip/nosymbols && cp -rv $source_directory/iosHelloWorldZip/nosymbols $payload_directory/iosHelloWorldZip
+    mkdir -p $payload_directory/iosHelloWorldZip/nosymbolszip && cp -rv $source_directory/iosHelloWorldZip/nosymbolszip $payload_directory/iosHelloWorldZip
   else
     # NoSymbols Mono .app
     mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/symbols $payload_directory/iosHelloWorld
-    mkdir -p $payload_directory/iosHelloWorldZip/symbols && cp -rv $source_directory/iosHelloWorldZip/symbols $payload_directory/iosHelloWorldZip
+    mkdir -p $payload_directory/iosHelloWorldZip/symbolszip && cp -rv $source_directory/iosHelloWorldZip/symbolszip $payload_directory/iosHelloWorldZip
   fi
 fi
 
