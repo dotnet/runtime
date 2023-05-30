@@ -14,7 +14,7 @@ import { initialize_marshalers_to_cs } from "./marshal-to-cs";
 import { initialize_marshalers_to_js } from "./marshal-to-js";
 import { init_polyfills_async } from "./polyfills";
 import * as pthreads_worker from "./pthreads/worker";
-import { string_decoder } from "./strings";
+import { strings_init, utf8ToString } from "./strings";
 import { init_managed_exports } from "./managed-exports";
 import { cwraps_internal } from "./exports-internal";
 import { CharPtr, InstantiateWasmCallBack, InstantiateWasmSuccessCallback } from "./types/emscripten";
@@ -31,6 +31,7 @@ import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legac
 import { BINDING, MONO } from "./net6-legacy/globals";
 import { mono_log_debug, mono_log_warn } from "./logging";
 import { install_synchronization_context } from "./pthreads/shared";
+import { localHeapViewU8 } from "./memory";
 
 
 // default size if MonoConfig.pthreadPoolSize is undefined
@@ -269,11 +270,6 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         bindings_init();
         if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
-
-        setTimeout(() => {
-            // when there are free CPU cycles
-            string_decoder.init_fields();
-        });
 
         if (runtimeHelpers.config.startupOptions && INTERNAL.resourceLoader) {
             if (INTERNAL.resourceLoader.bootConfig.debugBuild && INTERNAL.resourceLoader.bootConfig.cacheBootResources) {
@@ -517,8 +513,9 @@ async function mono_wasm_before_memory_snapshot() {
     if (runtimeHelpers.loadedMemorySnapshot) {
         // get the bytes after we re-sized the memory, so that we don't have too much memory in use at the same time
         const memoryBytes = await getMemorySnapshot();
-        mono_assert(memoryBytes!.byteLength === Module.HEAP8.byteLength, "Loaded memory is not the expected size");
-        Module.HEAP8.set(new Int8Array(memoryBytes!), 0);
+        const heapU8 = localHeapViewU8();
+        mono_assert(memoryBytes!.byteLength === heapU8.byteLength, "Loaded memory is not the expected size");
+        heapU8.set(new Uint8Array(memoryBytes!), 0);
         mono_log_debug("Loaded WASM linear memory from browser cache");
 
         // all things below are loaded from the snapshot
@@ -551,7 +548,7 @@ async function mono_wasm_before_memory_snapshot() {
     if (runtimeHelpers.config.startupMemoryCache) {
         // this would install the mono_jiterp_do_jit_call_indirect
         cwraps.mono_jiterp_update_jit_call_dispatcher(-1);
-        await storeMemorySnapshot(Module.HEAP8.buffer);
+        await storeMemorySnapshot(localHeapViewU8().buffer);
         runtimeHelpers.storeMemorySnapshotPending = false;
     }
 
@@ -585,6 +582,7 @@ export function bindings_init(): void {
     runtimeHelpers.mono_wasm_bindings_is_ready = true;
     try {
         const mark = startMeasure();
+        strings_init();
         init_managed_exports();
         if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop && !ENVIRONMENT_IS_PTHREAD) {
             init_legacy_exports();
@@ -607,14 +605,14 @@ export function mono_wasm_asm_loaded(assembly_name: CharPtr, assembly_ptr: numbe
     // Only trigger this codepath for assemblies loaded after app is ready
     if (runtimeHelpers.mono_wasm_runtime_is_ready !== true)
         return;
-
-    const assembly_name_str = assembly_name !== CharPtrNull ? Module.UTF8ToString(assembly_name).concat(".dll") : "";
-    const assembly_data = new Uint8Array(Module.HEAPU8.buffer, assembly_ptr, assembly_len);
+    const heapU8 = localHeapViewU8();
+    const assembly_name_str = assembly_name !== CharPtrNull ? utf8ToString(assembly_name).concat(".dll") : "";
+    const assembly_data = new Uint8Array(heapU8.buffer, assembly_ptr, assembly_len);
     const assembly_b64 = toBase64StringImpl(assembly_data);
 
     let pdb_b64;
     if (pdb_ptr) {
-        const pdb_data = new Uint8Array(Module.HEAPU8.buffer, pdb_ptr, pdb_len);
+        const pdb_data = new Uint8Array(heapU8.buffer, pdb_ptr, pdb_len);
         pdb_b64 = toBase64StringImpl(pdb_data);
     }
 

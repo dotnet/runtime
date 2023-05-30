@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { MonoMethod } from "./types/internal";
-import { Module } from "./globals";
 import { NativePointer } from "./types/emscripten";
 import {
     getU16, getI16,
-    getU32_unaligned, getI32_unaligned, getF32_unaligned, getF64_unaligned,
+    getU32_unaligned, getI32_unaligned, getF32_unaligned, getF64_unaligned, localHeapViewU8,
 } from "./memory";
 import {
     WasmOpcode, WasmSimdOpcode,
@@ -3056,7 +3055,7 @@ function emit_simd(
             if (builder.options.enableSimd && getIsWasmSimdSupported()) {
                 builder.local("pLocals");
                 builder.v128_const(
-                    Module.HEAPU8.slice(<any>ip + 4, <any>ip + 4 + sizeOfV128)
+                    localHeapViewU8().slice(<any>ip + 4, <any>ip + 4 + sizeOfV128)
                 );
                 append_simd_store(builder, ip);
             } else {

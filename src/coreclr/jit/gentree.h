@@ -5447,6 +5447,8 @@ struct GenTreeCall final : public GenTree
 
     void AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candidateInfo);
 
+    void RemoveGDVCandidateInfo(Compiler* comp, uint8_t index);
+
     void ClearInlineInfo()
     {
         SetSingleInlineCandidateInfo(nullptr);
@@ -5542,8 +5544,12 @@ struct GenTreeCall final : public GenTree
     union {
         // only used for CALLI unmanaged calls (CT_INDIRECT)
         GenTree* gtCallCookie;
+
         // gtInlineCandidateInfo is only used when inlining methods
-        InlineCandidateInfo*                 gtInlineCandidateInfo;
+        InlineCandidateInfo* gtInlineCandidateInfo;
+        // gtInlineCandidateInfoList is used when we have more than one GDV candidate
+        jitstd::vector<InlineCandidateInfo*>* gtInlineCandidateInfoList;
+
         HandleHistogramProfileCandidateInfo* gtHandleHistogramProfileCandidateInfo;
         LateDevirtualizationInfo*            gtLateDevirtualizationInfo;
         CORINFO_GENERIC_HANDLE compileTimeHelperArgumentHandle; // Used to track type handle argument of dynamic helpers

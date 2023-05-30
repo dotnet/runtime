@@ -2194,7 +2194,12 @@ void GenTreeCall::SetSingleInlineCandidateInfo(InlineCandidateInfo* candidateInf
 InlineCandidateInfo* GenTreeCall::GetGDVCandidateInfo(uint8_t index)
 {
     assert(index < gtInlineInfoCount);
-    return &gtInlineCandidateInfo[index];
+    if (gtInlineInfoCount > 1)
+    {
+        // In this case we should access it through gtInlineCandidateInfoList
+        return gtInlineCandidateInfoList->at(index);
+    }
+    return gtInlineCandidateInfo;
 }
 
 //-------------------------------------------------------------------------
@@ -2212,20 +2217,54 @@ void GenTreeCall::AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candi
 
     if (gtInlineInfoCount == 0)
     {
+        // Most calls are monomorphic, so we don't need to allocate a vector
         gtInlineCandidateInfo = candidateInfo;
     }
     else if (gtInlineInfoCount == 1)
     {
-        gtInlineCandidateInfo =
-            new (comp, CMK_Inlining) InlineCandidateInfo[MAX_GDV_TYPE_CHECKS]{*gtInlineCandidateInfo, *candidateInfo};
+        // Upgrade gtInlineCandidateInfo to gtInlineCandidateInfoList (vector)
+        CompAllocator        allocator      = comp->getAllocator(CMK_Inlining);
+        InlineCandidateInfo* firstCandidate = gtInlineCandidateInfo;
+        gtInlineCandidateInfoList           = new (allocator) jitstd::vector<InlineCandidateInfo*>(allocator);
+        gtInlineCandidateInfoList->push_back(firstCandidate);
+        gtInlineCandidateInfoList->push_back(candidateInfo);
     }
     else
     {
-        gtInlineCandidateInfo[gtInlineInfoCount] = *candidateInfo;
+        gtInlineCandidateInfoList->push_back(candidateInfo);
     }
-
     gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT;
     gtInlineInfoCount++;
+}
+
+//-------------------------------------------------------------------------
+// RemoveGDVCandidateInfo: Remove a guarded devirtualization (GDV) candidate info
+//     by its index. Index must not be greater than gtInlineInfoCount
+//     the call will be marked as "has no inline candidates" if the last candidate is removed
+//
+// Arguments:
+//     comp    - Compiler instance
+//     index   - GDV candidate to remove
+//
+void GenTreeCall::RemoveGDVCandidateInfo(Compiler* comp, uint8_t index)
+{
+    assert(index < gtInlineInfoCount);
+
+    if (gtInlineInfoCount == 1)
+    {
+        // No longer have any inline candidates
+        ClearInlineInfo();
+        assert(gtInlineInfoCount == 0);
+        return;
+    }
+    gtInlineCandidateInfoList->erase(gtInlineCandidateInfoList->begin() + index);
+    gtInlineInfoCount--;
+
+    // Downgrade gtInlineCandidateInfoList to gtInlineCandidateInfo
+    if (gtInlineInfoCount == 1)
+    {
+        gtInlineCandidateInfo = gtInlineCandidateInfoList->at(0);
+    }
 }
 
 //-------------------------------------------------------------------------
