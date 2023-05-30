@@ -293,6 +293,52 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void RecursiveDelete_DirectoryWithJunction()
+        {
+            DirectoryInfo junctionTarget = Directory.CreateDirectory(GetTestFilePath());
+
+            string fileInJunctionTarget = Path.Combine(junctionTarget.FullName, GetTestFileName());
+            File.WriteAllText(fileInJunctionTarget, "");
+
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+
+            string junctionPath = Path.Combine(testDir.FullName, GetTestFileName());
+            MountHelper.CreateJunction(junctionPath, junctionTarget.FullName);
+
+            Assert.True(Directory.Exists(junctionTarget.FullName));
+            Assert.True(File.Exists(fileInJunctionTarget));
+            Assert.True(Directory.Exists(testDir.FullName));
+            Assert.True(Directory.Exists(junctionPath));
+
+            Delete(testDir.FullName, true);
+
+            Assert.True(Directory.Exists(junctionTarget.FullName));
+            Assert.True(File.Exists(fileInJunctionTarget));
+            Assert.False(Directory.Exists(testDir.FullName));
+            Assert.False(Directory.Exists(junctionPath));
+        }
+        
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void RecursiveDelete_DirectoryWithVolumeMountPoint()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+
+            string mountPoint = Path.Combine(testDir.FullName, GetTestFileName());
+            Directory.CreateDirectory(mountPoint);
+            MountHelper.Mount(Directory.GetCurrentDirectory().Substring(0, 2), mountPoint);
+
+            Assert.True(Directory.Exists(mountPoint));
+            Assert.True(Directory.Exists(testDir.FullName));
+
+            Delete(testDir.FullName, true);
+
+            Assert.False(Directory.Exists(mountPoint));
+            Assert.False(Directory.Exists(testDir.FullName));
+        }
+
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Recursive delete throws IOException if directory contains in-use file
         public void RecursiveDelete_ShouldThrowIOExceptionIfContainedFileInUse()
         {

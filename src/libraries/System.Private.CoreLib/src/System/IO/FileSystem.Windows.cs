@@ -357,13 +357,13 @@ namespace System.IO
                         else
                         {
                             // Name surrogate reparse point, don't recurse, simply remove the directory.
-                            // If a mount point, we have to delete the mount point first.
+                            // If a volume mount point, we have to delete the mount point first.
                             if (findData.dwReserved0 == Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_MOUNT_POINT)
                             {
                                 // Mount point. Unmount using full path plus a trailing '\'.
                                 // (Note: This doesn't remove the underlying directory)
                                 string mountPoint = Path.Join(fullPath, fileName, PathInternal.DirectorySeparatorCharAsString);
-                                if (!Interop.Kernel32.DeleteVolumeMountPoint(mountPoint) && exception == null)
+                                if (PathInternal.IsDevice(GetImmediateLinkTarget(mountPoint, true, false, true)) && !Interop.Kernel32.DeleteVolumeMountPoint(mountPoint) && exception == null)
                                 {
                                     errorCode = Marshal.GetLastPInvokeError();
                                     if (errorCode != Interop.Errors.ERROR_SUCCESS &&
