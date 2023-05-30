@@ -603,8 +603,11 @@ namespace System.Threading.Tests
             Assert.Equal(ThreadCount * IterationCount * Increment, Interlocked.Read(ref value));
         }
 
-        private Action MemoryBarrierDelegate = Interlocked.MemoryBarrier;
-        private delegate* <void> MemoryBarrierPointer = &Interlocked.MemoryBarrier;
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Action MemoryBarrierDelegate => Interlocked.MemoryBarrier;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static delegate* <void> MemoryBarrierPointer => &Interlocked.MemoryBarrier;
 
         [Fact()]
         public void MemoryBarrierIntrinsic()
