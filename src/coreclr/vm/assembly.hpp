@@ -380,6 +380,8 @@ public:
     }
 #endif
 
+    static void AddDiagnosticStartupHookPath(LPCWSTR wszPath);
+
 
 protected:
 #ifdef FEATURE_COMINTEROP
@@ -425,6 +427,9 @@ private:
 #ifndef DACCESS_COMPILE
     ReleaseHolder<FriendAssemblyDescriptor> GetFriendAssemblyInfo();
 #endif
+
+    void RunManagedStartup();
+
 public:
     void UpdateCachedFriendAssemblyInfo();
 private:
@@ -464,6 +469,7 @@ private:
     IsInstrumentedStatus    m_isInstrumentedStatus;
 #endif // FEATURE_READYTORUN
 
+    static LPCWSTR s_wszDiagnosticStartupHookPaths;
 };
 
 #ifndef DACCESS_COMPILE

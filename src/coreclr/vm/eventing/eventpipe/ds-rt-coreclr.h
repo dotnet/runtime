@@ -329,6 +329,8 @@ ds_rt_disable_perfmap (void)
 #endif // FEATURE_PERFMAP
 }
 
+static ep_char16_t * _ds_rt_coreclr_diagnostic_startup_hook_paths = NULL;
+
 static
 uint32_t
 ds_rt_apply_startup_hook (const ep_char16_t *startup_hook_path)
@@ -343,19 +345,7 @@ ds_rt_apply_startup_hook (const ep_char16_t *startup_hook_path)
 	}
 	else
 	{
-		// Prepend the new startup hook to the existing list of diagnostic startup hooks
-		SString new_paths(reinterpret_cast<LPCWSTR>(startup_hook_path));
-
-		SString old_paths;
-		if (HostInformation::GetProperty(HOST_PROPERTY_DIAGNOSTIC_STARTUP_HOOKS, old_paths) &&
-			!old_paths.IsEmpty())
-		{
-			new_paths.Append(PATH_SEPARATOR_STR_W);
-			new_paths.Append(old_paths);
-		}
-
-		if (!HostInformation::SetProperty(HOST_PROPERTY_DIAGNOSTIC_STARTUP_HOOKS, new_paths))
-			return DS_IPC_E_FAIL;
+		Assembly::AddDiagnosticStartupHookPath(reinterpret_cast<LPCWSTR>(startup_hook_path));
 	}
 
 	return DS_IPC_S_OK;

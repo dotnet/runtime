@@ -28,17 +28,16 @@ namespace System
 
         // Parse a string specifying a list of assemblies and types
         // containing a startup hook, and call each hook in turn.
-        private static void ProcessStartupHooks()
+        private static void ProcessStartupHooks(string diagnosticStartupHooks)
         {
             if (!IsSupported)
                 return;
 
             List<string> startupHookParts = new();
 
-            string? diagnosticStartupHooksVariable = AppContext.GetData("DIAGNOSTIC_STARTUP_HOOKS") as string;
-            if (null != diagnosticStartupHooksVariable)
+            if (!string.IsNullOrEmpty(diagnosticStartupHooks))
             {
-                startupHookParts.AddRange(diagnosticStartupHooksVariable.Split(Path.PathSeparator));
+                startupHookParts.AddRange(diagnosticStartupHooks.Split(Path.PathSeparator));
             }
 
             string? startupHooksVariable = AppContext.GetData("STARTUP_HOOKS") as string;
