@@ -161,6 +161,7 @@ namespace System.Text.Json.Serialization.Tests
 
             yield return new object[] { typeof(ClassWithIntPtr), s_intPtrType, "IntPtr" };
         }
+
         private class ClassWithSpan
         {
             public Span<byte> Span => Array.Empty<byte>();
