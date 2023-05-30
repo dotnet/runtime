@@ -335,6 +335,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             CodeSnippets codeSnippets = new(new GeneratedComInterfaceAttributeProvider());
             yield return new object[] { ID(), codeSnippets.DerivedComInterfaceType };
             yield return new object[] { ID(), codeSnippets.ComInterfaceParameters };
+            yield return new object[] { ID(), codeSnippets.ComInterfaceInheritanceWithParametersWithAttributes };
         }
 
         [Theory]
