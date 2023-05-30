@@ -12781,6 +12781,9 @@ namespace System.Runtime.CompilerServices
     {
         object? Value { get; set; }
     }
+    public sealed partial class IsUnmanagedAttribute : Attribute
+    {
+    }
     public static partial class IsVolatile
     {
     }
@@ -12833,6 +12836,26 @@ namespace System.Runtime.CompilerServices
     public sealed partial class ModuleInitializerAttribute : System.Attribute
     {
         public ModuleInitializerAttribute() { }
+    }
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Event | AttributeTargets.Parameter | AttributeTargets.ReturnValue | AttributeTargets.GenericParameter, AllowMultiple = false, Inherited = false)]
+    public sealed partial class NullableAttribute : Attribute
+    {
+        public readonly byte[] NullableFlags;
+        public NullableAttribute(byte value) { }
+
+        public NullableAttribute(byte[] value) { }
+    }
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Interface | AttributeTargets.Delegate, AllowMultiple = false, Inherited = false)]
+    public sealed partial class NullableContextAttribute : Attribute
+    {
+        public readonly byte Flag;
+        public NullableContextAttribute(byte value) { }
+    }
+    [AttributeUsage(AttributeTargets.Module, AllowMultiple = false, Inherited = false)]
+    public sealed partial class NullablePublicOnlyAttribute : Attribute
+    {
+        public readonly bool IncludesInternals;
+        public NullablePublicOnlyAttribute(bool value) { }
     }
     public partial struct PoolingAsyncValueTaskMethodBuilder
     {
@@ -12945,6 +12968,10 @@ namespace System.Runtime.CompilerServices
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+    }
+    [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
+    public sealed partial class ScopedRefAttribute : Attribute
+    {
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
     public sealed partial class SkipLocalsInitAttribute : System.Attribute
