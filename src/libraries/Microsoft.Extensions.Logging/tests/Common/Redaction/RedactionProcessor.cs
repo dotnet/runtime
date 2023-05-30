@@ -491,7 +491,7 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
         }
     }
 
-    internal struct RedactedValues<T> : IReadOnlyList<KeyValuePair<string, object?>>
+    internal readonly struct RedactedValues<T> : IReadOnlyList<KeyValuePair<string, object?>>
     {
         public RedactedValues(RedactedLogMetadata<T> metadata, in T originalState)
         {
@@ -499,39 +499,58 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
             OriginalState = originalState;
         }
 
-        public RedactedLogMetadata<T> Metadata;
-        public T OriginalState;
-
-        private IReadOnlyList<KeyValuePair<string, object?>> _originalStateValues;
-        public IReadOnlyList<KeyValuePair<string, object?>> OriginalStateValues => _originalStateValues ??= OriginalState as IReadOnlyList<KeyValuePair<string, object?>>;
+        public readonly RedactedLogMetadata<T> Metadata;
+        public readonly T OriginalState;
 
         public override string ToString() => Metadata.FormatMessage(this);
 
         public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
         {
-            for (var i = 0; i < Count; i++)
+            var nested = OriginalState as IReadOnlyList<KeyValuePair<string, object?>>;
+            if (nested == null)
             {
-                yield return this[i];
+                yield break;
+            }
+            for (var i = 0; i < nested.Count; i++)
+            {
+                yield return GetRedactedValue(i, nested[i]);
             }
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        public int Count => OriginalStateValues != null ? OriginalStateValues.Count : 0;
+        public int Count
+        {
+            get
+            {
+                var nested = OriginalState as IReadOnlyList<KeyValuePair<string, object?>>;
+                return nested?.Count ?? 0;
+            }
+        }
 
         public KeyValuePair<string, object?> this[int index]
         {
             get
             {
-                var originalValue = OriginalStateValues[index];
-                var redactor = Metadata.GetPropertyRedactor(index);
-                if (redactor == null)
+                var nested = OriginalState as IReadOnlyList<KeyValuePair<string, object?>>;
+                if (nested == null)
                 {
-                    return originalValue;
+                    throw new IndexOutOfRangeException(nameof(index));
                 }
-                string? unredactedValue = originalValue.Value?.ToString();
-                return new KeyValuePair<string, object?>(originalValue.Key, redactor.Redact(unredactedValue));
+                var originalValue = nested[index];
+                return GetRedactedValue(index, originalValue);
             }
+        }
+
+        private readonly KeyValuePair<string, object?> GetRedactedValue(int index, KeyValuePair<string, object?> originalValue)
+        {
+            var redactor = Metadata.GetPropertyRedactor(index);
+            if (redactor == null)
+            {
+                return originalValue;
+            }
+            string? unredactedValue = originalValue.Value?.ToString();
+            return new KeyValuePair<string, object?>(originalValue.Key, redactor.Redact(unredactedValue));
         }
 
         public static readonly Func<RedactedValues<T>, Exception?, string> Callback = (state, e) => state.ToString();
