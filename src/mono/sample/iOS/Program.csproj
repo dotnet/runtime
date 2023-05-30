@@ -17,7 +17,7 @@
     <TrimMode>Link</TrimMode>
     <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
 
-    <ShouldILStrip>true</ShouldILStrip>
+    <ShouldILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(UseMonoJustInterp)' != 'true'" >true</ShouldILStrip>
     <EnableDefaultAssembliesToBundle>true</EnableDefaultAssembliesToBundle>
     <AppleGenerateAppBundle>true</AppleGenerateAppBundle>
     <GenerateXcodeProject>true</GenerateXcodeProject>
