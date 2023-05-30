@@ -735,7 +735,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         writer.WriteNumberValue(value.Ticks / TicksPerMicroseconds);
                     }
                 }
-            }";
+            }
+            """;
 
             MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
 
