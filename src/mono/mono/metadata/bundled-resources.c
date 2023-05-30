@@ -6,7 +6,6 @@
 #include <stdbool.h>
 
 #include <mono/metadata/bundled-resources-internals.h>
-#include <mono/metadata/cil-coff.h>
 #include <mono/metadata/webcil-loader.h>
 
 static GHashTable *bundled_resources = NULL;
@@ -66,11 +65,14 @@ mono_bundled_resources_value_destroy_func (void *resource)
 		value->free_bundled_resource_func (resource);
 }
 
-#ifdef ENABLE_WEBCIL
 static bool
 is_known_assembly_extension (const char *ext)
 {
+#ifdef ENABLE_WEBCIL
 	return !strcmp (ext, ".dll") || !strcmp (ext, ".webcil") || !strcmp (ext, MONO_WEBCIL_IN_WASM_EXTENSION);
+#else
+    return !strcmp (ext, ".dll") || !strcmp (ext, MONO_WEBCIL_IN_WASM_EXTENSION);
+#endif
 }
 
 static gboolean
@@ -114,7 +116,6 @@ resource_id_hash (const char *id)
 
 	return hash;
 }
-#endif // ENABLE_WEBCIL
 
 //---------------------------------------------------------------------------------------
 //
@@ -138,13 +139,8 @@ resource_id_hash (const char *id)
 void
 mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t len)
 {
-	if (!bundled_resources) {
-#ifdef ENABLE_WEBCIL
+	if (!bundled_resources)
 		bundled_resources = g_hash_table_new_full ((GHashFunc)resource_id_hash, (GEqualFunc)resource_id_equal, NULL, mono_bundled_resources_value_destroy_func);
-#else
-		bundled_resources = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, mono_bundled_resources_value_destroy_func);
-#endif
-	}
 
 	bool assemblyAdded = false;
 	bool satelliteAssemblyAdded = false;
