@@ -608,6 +608,10 @@
       Condition="'@(LegacyPayloads)' != ''"
       SourceDirectory="@(LegacyPayloads->Metadata('PayloadDirectory'))"
       DestinationFile="$(LegacyPayloadsRootDirectory)\%(LegacyPayloads.PayloadGroup).zip" />
+
+    <Copy
+      SourceFiles="$(ArtifactsDir)helix\tests\$(OSPlatformConfig)\*.zip"
+      DestinationFolder="$(LegacyPayloadsRootDirectory)" />
   </Target>
 
   <Target Name="ZipMergedPayloadDirectory" AfterTargets="PrepareMergedTestPayloadDirectories" Condition="'$(TargetsBrowser)' == 'true'">
