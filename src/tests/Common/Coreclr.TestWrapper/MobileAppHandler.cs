@@ -22,6 +22,11 @@ namespace CoreclrTestLib
         // 91 - ADB_FAILURE
         private static readonly int[] _knownExitCodes = new int[] { 78, 81, 82, 83, 84, 86, 88, 89, 90, 91 };
 
+        public int CompileMobileApp(string platform, string category, string testBinaryBase, string reportBase, string targetOS)
+        {
+            return HandleMobileApp("compile", platform, category, testBinaryBase, reportBase, targetOS);
+        }
+
         public int InstallMobileApp(string platform, string category, string testBinaryBase, string reportBase, string targetOS)
         {
             return HandleMobileApp("install", platform, category, testBinaryBase, reportBase, targetOS);
@@ -54,7 +59,7 @@ namespace CoreclrTestLib
                     platformValueFlag = false;
                 }
 
-                if ((action != "install") && (action != "uninstall"))
+                if ((action != "compile") && (action != "install") && (action != "uninstall"))
                 {
                     outputWriter.WriteLine($"Incorrect value of action. Provided {action}. Valid strings are install and uninstall.");
                     actionValueFlag = false;
@@ -108,6 +113,11 @@ namespace CoreclrTestLib
                         else // action is uninstall
                         {
                             cmdStr += $" --app=net.dot.{category}";
+                        }
+
+                        if (action == "compile")
+                        {
+                            cmdStr = $"./build-apple-app.sh";
                         }
                     }
 

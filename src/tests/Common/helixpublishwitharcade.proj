@@ -602,6 +602,7 @@
         <PayloadGroup>$([MSBuild]::MakeRelative($(LegacyPayloadsRootDirectory), %(FullPath)))</PayloadGroup>
         <PayloadDirectory>%(FullPath)</PayloadDirectory>
       </LegacyPayloads>
+      <PublishPayloads Include="$(ArtifactsDir)helix\tests\$(OSPlatformConfig)\*.zip" />
     </ItemGroup>
 
     <ZipDirectory
@@ -610,7 +611,7 @@
       DestinationFile="$(LegacyPayloadsRootDirectory)\%(LegacyPayloads.PayloadGroup).zip" />
 
     <Copy
-      SourceFiles="$(ArtifactsDir)helix\tests\$(OSPlatformConfig)\*.zip"
+      SourceFiles="@(PublishPayloads)"
       DestinationFolder="$(LegacyPayloadsRootDirectory)" />
   </Target>
 

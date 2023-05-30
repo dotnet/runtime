@@ -219,6 +219,9 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                 string operatingSystem = Environment.GetEnvironmentVariable("OS")%3B
                 runningInWindows = (operatingSystem != null && operatingSystem.StartsWith("Windows"))%3B
 
+                retCode = handler.CompileMobileApp(%22$(MobilePlatform)%22, category, testBinaryBase, reportBase, %22$(TargetOS)%22.ToLowerInvariant())%3B
+                Assert.True(retCode == 0, "Failed to AOT compile mobile app.")%3B
+
                 retCode = handler.InstallMobileApp(%22$(MobilePlatform)%22, category, testBinaryBase, reportBase, %22$(TargetOS)%22.ToLowerInvariant())%3B
                 Assert.True(retCode == 0, "Failed to install mobile app.")%3B
             }
