@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using Microsoft.Extensions.Configuration.Binder.Extensions;
 using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.Configuration
@@ -547,20 +548,9 @@ namespace Microsoft.Extensions.Configuration
             // IDictionary<K,V> is guaranteed to have exactly two parameters
             Type keyType = dictionaryType.GenericTypeArguments[0];
             Type valueType = dictionaryType.GenericTypeArguments[1];
-            bool keyTypeIsEnum = keyType.IsEnum;
-            bool keyTypeIsInteger =
-                keyType == typeof(sbyte) ||
-                keyType == typeof(byte) ||
-                keyType == typeof(short) ||
-                keyType == typeof(ushort) ||
-                keyType == typeof(int) ||
-                keyType == typeof(uint) ||
-                keyType == typeof(long) ||
-                keyType == typeof(ulong);
 
-            if (keyType != typeof(string) && !keyTypeIsEnum && !keyTypeIsInteger)
+            if (!IsSupportedDictionaryType(keyType))
             {
-                // We only support string, enum and integer (except nint-IntPtr and nuint-UIntPtr) keys
                 return null;
             }
 
@@ -621,24 +611,15 @@ namespace Microsoft.Extensions.Configuration
             Type keyType = dictionaryType.GenericTypeArguments[0];
             Type valueType = dictionaryType.GenericTypeArguments[1];
             bool keyTypeIsEnum = keyType.IsEnum;
-            bool keyTypeIsInteger =
-                keyType == typeof(sbyte) ||
-                keyType == typeof(byte) ||
-                keyType == typeof(short) ||
-                keyType == typeof(ushort) ||
-                keyType == typeof(int) ||
-                keyType == typeof(uint) ||
-                keyType == typeof(long) ||
-                keyType == typeof(ulong);
 
-            if (keyType != typeof(string) && !keyTypeIsEnum && !keyTypeIsInteger)
+            if (!IsSupportedDictionaryType(keyType))
             {
-                // We only support string, enum and integer (except nint-IntPtr and nuint-UIntPtr) keys
                 return;
             }
 
             MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue", DeclaredOnlyLookup)!;
             PropertyInfo indexerProperty = dictionaryType.GetProperty("Item", DeclaredOnlyLookup)!;
+            bool keyTypeIsInteger = keyType.IsInteger();
 
             foreach (IConfigurationSection child in config.GetChildren())
             {
@@ -1057,6 +1038,22 @@ namespace Microsoft.Extensions.Configuration
             }
 
             return property.Name;
+        }
+
+        private static bool IsSupportedDictionaryType(Type keyType)
+        {
+            bool returnValue;
+
+            if (keyType != typeof(string) && !keyType.IsEnum && !keyType.IsInteger())
+            {
+                returnValue = false;
+            }
+            else
+            {
+                returnValue = true;
+            }
+
+            return returnValue;
         }
     }
 }
