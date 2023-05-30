@@ -297,50 +297,30 @@ namespace Microsoft.Extensions.Configuration
                                 {
                                     if (!TryBindAsDictionary(type, bindingPoint, config, options))
                                     {
-                                        // If we don't have an instance, try to create one
-                                        if (bindingPoint.Value is null)
+                                        if ((bindingPoint.Value is not null)
+                                            || TryCreateValueByDefault(type, bindingPoint, config, options))
                                         {
-                                            // if the binding point doesn't let us set a new instance, there's nothing more we can do
-                                            if (bindingPoint.IsReadOnly)
-                                            {
-                                                return;
-                                            }
+                                            Debug.Assert(bindingPoint.Value is not null);
 
-                                            Type? interfaceGenericType = type.IsInterface && type.IsConstructedGenericType ? type.GetGenericTypeDefinition() : null;
+                                            // At this point we know that we have a non-null bindingPoint.Value, we just have to populate the items
+                                            // using the IDictionary<> or ICollection<> interfaces, or properties using reflection.
+                                            Type? dictionaryInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
 
-                                            if (interfaceGenericType is not null &&
-                                                (interfaceGenericType == typeof(ICollection<>) || interfaceGenericType == typeof(IList<>)))
+                                            if (dictionaryInterface != null)
                                             {
-                                                // For ICollection<T> and IList<T> we bind them to mutable List<T> type.
-                                                Type genericType = typeof(List<>).MakeGenericType(type.GenericTypeArguments[0]);
-                                                bindingPoint.SetValue(Activator.CreateInstance(genericType));
+                                                BindDictionary(bindingPoint.Value, dictionaryInterface, config, options);
                                             }
                                             else
                                             {
-                                                bindingPoint.SetValue(CreateInstance(type, config, options));
-                                            }
-                                        }
-
-                                        Debug.Assert(bindingPoint.Value is not null);
-
-                                        // At this point we know that we have a non-null bindingPoint.Value, we just have to populate the items
-                                        // using the IDictionary<> or ICollection<> interfaces, or properties using reflection.
-                                        Type? dictionaryInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
-
-                                        if (dictionaryInterface != null)
-                                        {
-                                            BindDictionary(bindingPoint.Value, dictionaryInterface, config, options);
-                                        }
-                                        else
-                                        {
-                                            Type? collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), type);
-                                            if (collectionInterface != null)
-                                            {
-                                                BindCollection(bindingPoint.Value, collectionInterface, config, options);
-                                            }
-                                            else
-                                            {
-                                                BindProperties(bindingPoint.Value, config, options);
+                                                Type? collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), type);
+                                                if (collectionInterface != null)
+                                                {
+                                                    BindCollection(bindingPoint.Value, collectionInterface, config, options);
+                                                }
+                                                else
+                                                {
+                                                    BindProperties(bindingPoint.Value, config, options);
+                                                }
                                             }
                                         }
                                     }
@@ -1148,6 +1128,43 @@ namespace Microsoft.Extensions.Configuration
                     {
                         bindingPoint.SetValue(newValue);
                     }
+                }
+
+                returnValue = true;
+            }
+            else
+            {
+                returnValue = false;
+            }
+
+            return returnValue;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
+        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
+        private static bool TryCreateValueByDefault(
+            Type type,
+            BindingPoint bindingPoint,
+            IConfiguration config,
+            BinderOptions options)
+        {
+            bool returnValue;
+
+            if (!bindingPoint.IsReadOnly)
+            {
+                Type? interfaceGenericType = type.IsInterface && type.IsConstructedGenericType ? type.GetGenericTypeDefinition() : null;
+
+                if (interfaceGenericType is not null &&
+                    (interfaceGenericType == typeof(ICollection<>) || interfaceGenericType == typeof(IList<>)))
+                {
+                    // For ICollection<T> and IList<T> we bind them to mutable List<T> type.
+                    Type genericType = typeof(List<>).MakeGenericType(type.GenericTypeArguments[0]);
+                    bindingPoint.SetValue(Activator.CreateInstance(genericType));
+                }
+                else
+                {
+                    bindingPoint.SetValue(CreateInstance(type, config, options));
                 }
 
                 returnValue = true;
