@@ -1133,6 +1133,89 @@ namespace
                 || cxt.Kind == UnsafeAccessorKind::Method
                 || cxt.Kind == UnsafeAccessorKind::StaticMethod);
 
+        TypeHandle targetType = cxt.TargetType.IsByRef()
+            ? cxt.TargetType.GetTypeParam()
+            : cxt.TargetType;
+
+        // Following the iteration pattern found in MemberLoader::FindMethod().
+        // Reverse order is recommended - see comments in MemberLoader::FindMethod().
+        CorElementType declCorType;
+        CorElementType maybeCorType;
+        TypeHandle declType;
+        TypeHandle maybeType;
+
+        // [TODO] Do we care about EnC scenarios?
+        MethodTable::MethodIterator iter(targetType.GetMethodTable());
+        iter.MoveToEnd();
+        for (; iter.IsValid(); iter.Prev())
+        {
+            MethodDesc* curr = iter.GetDeclMethodDesc();
+
+            // Check the target and current method match static/instance state.
+            if (cxt.IsTargetStatic != (!!curr->IsStatic()))
+                continue;
+
+            // Check for matching name
+            if (strcmp(methodName, curr->GetNameThrowing()) != 0)
+                continue;
+
+            // Reset reading the declaration signature
+            cxt.SigReader.Reset();
+
+            MetaSig currSig(curr);
+
+            // Validate calling convention.
+            if (cxt.SigReader.GetCallingConvention() != currSig.GetCallingConvention())
+                continue;
+
+            // Validate the return type and prepare for validating the
+            // new signature's argument list.
+            UINT argCount = cxt.SigReader.NumFixedArgs();
+            if (cxt.Kind == UnsafeAccessorKind::Constructor)
+            {
+                // Constructors must return void.
+                if (currSig.GetReturnType() != ELEMENT_TYPE_VOID)
+                    continue;
+            }
+            else
+            {
+                declCorType = cxt.SigReader.GetReturnTypeNormalized(&declType);
+                maybeCorType = currSig.GetReturnTypeNormalized(&maybeType);
+                if (declCorType != maybeCorType)
+                    continue;
+                if (declType != maybeType)
+                    continue;
+
+                // Non-constructor accessors skip the first argument
+                // when validating the target argument list.
+                cxt.SigReader.SkipArg();
+                argCount--;
+            }
+
+            // Validate argument count matches.
+            if (argCount != currSig.NumFixedArgs())
+                continue;
+
+            // Validate arguments match.
+            for (; argCount > 0; --argCount)
+            {
+                declCorType = cxt.SigReader.PeekArgNormalized(&declType);
+                maybeCorType = currSig.PeekArgNormalized(&maybeType);
+                if (declCorType != maybeCorType)
+                    break;
+                if (declType != maybeType)
+                    break;
+                cxt.SigReader.NextArg();
+                currSig.NextArg();
+            }
+
+            // If we validated all arguments, we have a match.
+            if (argCount != 0)
+                continue;
+
+            cxt.TargetMethod = curr;
+            return true;
+        }
         return false;
     }
 
@@ -1142,7 +1225,7 @@ namespace
         _ASSERTE(!cxt.TargetType.IsNull());
         _ASSERTE(cxt.Kind == UnsafeAccessorKind::Constructor);
 
-        PTR_MethodTable pMT = cxt.TargetType.AsMethodTable();
+        PTR_MethodTable pMT = cxt.TargetType.GetMethodTable();
 
         // Special case the default constructor case.
         if (cxt.SigReader.NumFixedArgs() == 0
@@ -1170,7 +1253,7 @@ namespace
         TypeHandle targetType = cxt.TargetType.IsByRef()
             ? cxt.TargetType.GetTypeParam()
             : cxt.TargetType;
-        _ASSERTE(!fieldType.IsByRef());
+        _ASSERTE(!targetType.IsByRef());
 
         // [TODO] Do we care about EnC scenarios?
         ApproxFieldDescIterator fdIterator(
