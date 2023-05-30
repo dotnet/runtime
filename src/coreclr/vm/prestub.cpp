@@ -1106,8 +1106,8 @@ namespace
     {
         GenerationContext(UnsafeAccessorKind kind, MethodDesc* pMD)
             : Kind{ kind }
-            , TargetDeclaration{ pMD }
-            , SigReader{ pMD }
+            , Declaration{ pMD }
+            , DeclarationSig{ pMD }
             , TargetType{}
             , IsTargetStatic{ false }
             , TargetMethod{}
@@ -1115,8 +1115,8 @@ namespace
         { }
 
         UnsafeAccessorKind Kind;
-        MethodDesc* TargetDeclaration;
-        MetaSig SigReader;
+        MethodDesc* Declaration;
+        MetaSig DeclarationSig;
         TypeHandle TargetType;
         bool IsTargetStatic;
         MethodDesc* TargetMethod;
@@ -1137,14 +1137,14 @@ namespace
             ? cxt.TargetType.GetTypeParam()
             : cxt.TargetType;
 
-        // Following the iteration pattern found in MemberLoader::FindMethod().
-        // Reverse order is recommended - see comments in MemberLoader::FindMethod().
         CorElementType declCorType;
         CorElementType maybeCorType;
         TypeHandle declType;
         TypeHandle maybeType;
 
         // [TODO] Do we care about EnC scenarios?
+        // Following the iteration pattern found in MemberLoader::FindMethod().
+        // Reverse order is recommended - see comments in MemberLoader::FindMethod().
         MethodTable::MethodIterator iter(targetType.GetMethodTable());
         iter.MoveToEnd();
         for (; iter.IsValid(); iter.Prev())
@@ -1160,17 +1160,17 @@ namespace
                 continue;
 
             // Reset reading the declaration signature
-            cxt.SigReader.Reset();
+            cxt.DeclarationSig.Reset();
 
             MetaSig currSig(curr);
 
             // Validate calling convention.
-            if (cxt.SigReader.GetCallingConvention() != currSig.GetCallingConvention())
+            if (cxt.DeclarationSig.GetCallingConvention() != currSig.GetCallingConvention())
                 continue;
 
-            // Validate the return type and prepare for validating the
-            // new signature's argument list.
-            UINT argCount = cxt.SigReader.NumFixedArgs();
+            // Validate the return type and prepare for validating
+            // the current signature's argument list.
+            UINT argCount = cxt.DeclarationSig.NumFixedArgs();
             if (cxt.Kind == UnsafeAccessorKind::Constructor)
             {
                 // Constructors must return void.
@@ -1179,7 +1179,7 @@ namespace
             }
             else
             {
-                declCorType = cxt.SigReader.GetReturnTypeNormalized(&declType);
+                declCorType = cxt.DeclarationSig.GetReturnTypeNormalized(&declType);
                 maybeCorType = currSig.GetReturnTypeNormalized(&maybeType);
                 if (declCorType != maybeCorType)
                     continue;
@@ -1188,7 +1188,7 @@ namespace
 
                 // Non-constructor accessors skip the first argument
                 // when validating the target argument list.
-                cxt.SigReader.SkipArg();
+                cxt.DeclarationSig.SkipArg();
                 argCount--;
             }
 
@@ -1199,13 +1199,13 @@ namespace
             // Validate arguments match.
             for (; argCount > 0; --argCount)
             {
-                declCorType = cxt.SigReader.PeekArgNormalized(&declType);
+                declCorType = cxt.DeclarationSig.PeekArgNormalized(&declType);
                 maybeCorType = currSig.PeekArgNormalized(&maybeType);
                 if (declCorType != maybeCorType)
                     break;
                 if (declType != maybeType)
                     break;
-                cxt.SigReader.NextArg();
+                cxt.DeclarationSig.NextArg();
                 currSig.NextArg();
             }
 
@@ -1228,7 +1228,7 @@ namespace
         PTR_MethodTable pMT = cxt.TargetType.GetMethodTable();
 
         // Special case the default constructor case.
-        if (cxt.SigReader.NumFixedArgs() == 0
+        if (cxt.DeclarationSig.NumFixedArgs() == 0
             && pMT->HasDefaultConstructor())
         {
             cxt.TargetMethod = pMT->GetDefaultConstructor();
@@ -1283,14 +1283,14 @@ namespace
         NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
 
         // Initialize the resolver target details.
-        ilResolver->SetStubMethodDesc(cxt.TargetDeclaration);
+        ilResolver->SetStubMethodDesc(cxt.Declaration);
         ilResolver->SetStubTargetMethodDesc(cxt.TargetMethod);
 
         // [TODO] Handle generics
         SigTypeContext emptyContext;
         ILStubLinker sl(
-            cxt.TargetDeclaration->GetModule(),
-            cxt.TargetDeclaration->GetSignature(),
+            cxt.Declaration->GetModule(),
+            cxt.Declaration->GetSignature(),
             &emptyContext,
             cxt.TargetMethod,
             (ILStubLinkerFlags)ILSTUB_LINKER_FLAG_NONE);
@@ -1302,13 +1302,13 @@ namespace
         // used to look up the target member to access and ignored
         // during dispatch.
         UINT beginIndex = cxt.IsTargetStatic ? 1 : 0;
-        UINT stubArgCount = cxt.SigReader.NumFixedArgs();
+        UINT stubArgCount = cxt.DeclarationSig.NumFixedArgs();
         for (UINT i = beginIndex; i < stubArgCount; ++i)
             pCode->EmitLDARG(i);
 
         // Provide access to the target member
         UINT targetArgCount = stubArgCount - beginIndex;
-        UINT targetRetCount = cxt.SigReader.IsReturnTypeVoid() ? 0 : 1;
+        UINT targetRetCount = cxt.DeclarationSig.IsReturnTypeVoid() ? 0 : 1;
         switch (cxt.Kind)
         {
         case UnsafeAccessorKind::Constructor:
@@ -1395,18 +1395,18 @@ HRESULT MethodDesc::GenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     //  * Static member access - examine type of first parameter
     TypeHandle retType;
     TypeHandle firstArgType;
-    retType = context.SigReader.GetRetTypeHandleThrowing();
-    UINT argCount = context.SigReader.NumFixedArgs();
+    retType = context.DeclarationSig.GetRetTypeHandleThrowing();
+    UINT argCount = context.DeclarationSig.NumFixedArgs();
     if (argCount > 0)
     {
-        context.SigReader.NextArg();
-        firstArgType = context.SigReader.GetLastTypeHandleThrowing();
+        context.DeclarationSig.NextArg();
+        firstArgType = context.DeclarationSig.GetLastTypeHandleThrowing();
     }
 
     // Using the kind type, perform the following:
-    //  1) Validate the basic type information from the signature
-    //  2) Resolve the name to the appropriate member
-    //  3) Generate the IL for the accessor
+    //  1) Validate the basic type information from the signature.
+    //  2) Resolve the name to the appropriate member.
+    //  3) Generate the IL for the accessor.
     switch (context.Kind)
     {
     case UnsafeAccessorKind::Constructor:
@@ -1471,7 +1471,7 @@ HRESULT MethodDesc::GenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
 
     default:
         _ASSERTE(!"Unknown UnsafeAccessorKind");
-        return COR_E_BADIMAGEFORMAT;
+        return E_UNEXPECTED;
     }
 
     return S_OK;
