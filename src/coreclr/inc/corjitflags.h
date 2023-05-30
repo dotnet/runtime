@@ -87,7 +87,9 @@ public:
 
 #if defined(TARGET_ARM)
         CORJIT_FLAG_SOFTFP_ABI              = 43, // On ARM should enable armel calling convention
-#else // !defined(TARGET_ARM)
+#elif defined(TARGET_X86) || defined(TARGET_AMD64)
+        CORJIT_FLAG_VECTOR512_THROTTLING    = 43, // On Xarch, 512-bit vector usage may incur CPU frequency throttling
+#else
         CORJIT_FLAG_UNUSED16                = 43,
 #endif // !defined(TARGET_ARM)
 

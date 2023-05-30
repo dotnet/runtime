@@ -172,7 +172,6 @@ enum TargetHandleType : BYTE
 struct BasicBlock;
 enum BasicBlockFlags : unsigned __int64;
 struct InlineCandidateInfo;
-struct GuardedDevirtualizationCandidateInfo;
 struct HandleHistogramProfileCandidateInfo;
 struct LateDevirtualizationInfo;
 
@@ -1680,16 +1679,13 @@ public:
         }
 #endif
 #if defined(TARGET_ARM64)
-        if (OperIs(GT_CCMP, GT_CINCCC))
+        if (OperIs(GT_CCMP, GT_SELECT_INCCC, GT_SELECT_INVCC, GT_SELECT_NEGCC))
         {
             return true;
         }
 #endif
         return OperIs(GT_JCC, GT_SETCC, GT_SELECTCC);
     }
-
-    bool OperIsStoreLclVar(unsigned* pLclNum = nullptr);
-    bool OperIsStoreLcl(unsigned* pLclNum);
 
 #ifdef DEBUG
     static const GenTreeDebugOperKind gtDebugOperKindTable[];
@@ -1737,6 +1733,10 @@ public:
 #if defined(TARGET_ARM)
             case GT_PUTARG_REG:
 #endif // defined(TARGET_ARM)
+#if defined(TARGET_ARM64)
+            case GT_SELECT_NEGCC:
+            case GT_SELECT_INCCC:
+#endif // defined(TARGET_ARM64)
 
                 return true;
             default:
@@ -1804,7 +1804,7 @@ public:
 
     inline GenTree* gtEffectiveVal(bool commaOnly = false);
 
-    inline GenTree* gtCommaAssignVal();
+    inline GenTree* gtCommaStoreVal();
 
     // Return the child of this node if it is a GT_RELOAD or GT_COPY; otherwise simply return the node itself
     inline GenTree* gtSkipReloadOrCopy();
@@ -2222,10 +2222,8 @@ public:
     // Returns "true" iff "this" is a phi-related node (i.e. a GT_PHI_ARG, GT_PHI, or a PhiDefn).
     bool IsPhiNode();
 
-    // Returns "true" iff "*this" is an assignment (GT_ASG) tree that defines an SSA name (lcl = phi(...));
+    // Returns "true" iff "*this" is a store (GT_STORE_LCL_VAR) tree that defines an SSA name (lcl = phi(...));
     bool IsPhiDefn();
-
-    // Returns "true" iff "*this" is a statement containing an assignment that defines an SSA name (lcl = phi(...));
 
     // Because of the fact that we hid the assignment operator of "BitSet" (in DEBUG),
     // we can't synthesize an assignment operator.
@@ -2349,14 +2347,11 @@ public:
 // the PHI node's type must be the same as the local variable's type.
 //
 // The PHI node does not represent a definition by itself, it is always
-// the RHS of a GT_ASG node. The LHS of the ASG node is always a GT_LCL_VAR
-// node, that is a definition for the same local variable referenced by
-// all the used PHI_ARG nodes:
+// the value operand of a STORE_LCL_VAR node. The local store node itself
+// is the definition for the same local variable referenced by all the
+// used PHI_ARG nodes:
 //
-//   ASG(LCL_VAR(lcl7), PHI(PHI_ARG(lcl7), PHI_ARG(lcl7), PHI_ARG(lcl7)))
-//
-// PHI nodes are also present in LIR, where GT_STORE_LCL_VAR replaces the
-// ASG node.
+//   STORE_LCL_VAR<V01>(PHI(PHI_ARG(V01), PHI_ARG(V01), PHI_ARG(V01)))
 //
 // The order of the PHI_ARG uses is not currently relevant and it may be
 // the same or not as the order of the predecessor blocks.
@@ -2803,7 +2798,6 @@ class GenTreeUseEdgeIterator final
     // Advance functions for special nodes
     void AdvanceCmpXchg();
     void AdvanceArrElem();
-    void AdvanceArrOffset();
     void AdvanceStoreDynBlk();
     void AdvanceFieldList();
     void AdvancePhi();
@@ -3138,7 +3132,7 @@ struct GenTreeIntCon : public GenTreeIntConCommon
     {
     }
 
-    void FixupInitBlkValue(var_types asgType);
+    void FixupInitBlkValue(var_types type);
 
 #if DEBUGGABLE_GENTREE
     GenTreeIntCon() : GenTreeIntConCommon()
@@ -3845,16 +3839,16 @@ struct GenTreeBox : public GenTreeUnOp
     }
     // This is the statement that contains the assignment tree when the node is an inlined GT_BOX on a value
     // type
-    Statement* gtAsgStmtWhenInlinedBoxValue;
+    Statement* gtDefStmtWhenInlinedBoxValue;
     // And this is the statement that copies from the value being boxed to the box payload
     Statement* gtCopyStmtWhenInlinedBoxValue;
 
     GenTreeBox(var_types  type,
                GenTree*   boxOp,
-               Statement* asgStmtWhenInlinedBoxValue,
+               Statement* defStmtWhenInlinedBoxValue,
                Statement* copyStmtWhenInlinedBoxValue)
         : GenTreeUnOp(GT_BOX, type, boxOp)
-        , gtAsgStmtWhenInlinedBoxValue(asgStmtWhenInlinedBoxValue)
+        , gtDefStmtWhenInlinedBoxValue(defStmtWhenInlinedBoxValue)
         , gtCopyStmtWhenInlinedBoxValue(copyStmtWhenInlinedBoxValue)
     {
     }
@@ -5376,11 +5370,6 @@ struct GenTreeCall final : public GenTree
         gtCallMoreFlags &= ~GTF_CALL_M_GUARDED_DEVIRT;
     }
 
-    void SetGuardedDevirtualizationCandidate()
-    {
-        gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT;
-    }
-
     void SetIsGuarded()
     {
         gtCallMoreFlags |= GTF_CALL_M_GUARDED;
@@ -5434,6 +5423,40 @@ struct GenTreeCall final : public GenTree
     bool IsOptimizingRetBufAsLocal() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_RETBUFFARG_LCLOPT) != 0;
+    }
+
+    InlineCandidateInfo* GetSingleInlineCandidateInfo()
+    {
+        // gtInlineInfoCount can be 0 (not an inline candidate) or 1
+        if (gtInlineInfoCount == 0)
+        {
+            assert(!IsInlineCandidate());
+            assert(gtInlineCandidateInfo == nullptr);
+            return nullptr;
+        }
+        else if (gtInlineInfoCount > 1)
+        {
+            assert(!"Call has multiple inline candidates");
+        }
+        return gtInlineCandidateInfo;
+    }
+
+    void SetSingleInlineCandidateInfo(InlineCandidateInfo* candidateInfo);
+
+    InlineCandidateInfo* GetGDVCandidateInfo(uint8_t index);
+
+    void AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candidateInfo);
+
+    void RemoveGDVCandidateInfo(Compiler* comp, uint8_t index);
+
+    void ClearInlineInfo()
+    {
+        SetSingleInlineCandidateInfo(nullptr);
+    }
+
+    uint8_t GetInlineCandidatesCount()
+    {
+        return gtInlineInfoCount;
     }
 
     //-----------------------------------------------------------------------------------------
@@ -5506,10 +5529,13 @@ struct GenTreeCall final : public GenTree
         return mayUseDispatcher && shouldUseDispatcher ? CFGCallKind::Dispatch : CFGCallKind::ValidateAndCall;
     }
 
-    GenTreeCallFlags     gtCallMoreFlags;  // in addition to gtFlags
-    gtCallTypes          gtCallType : 3;   // value from the gtCallTypes enumeration
-    var_types            gtReturnType : 5; // exact return type
-    CORINFO_CLASS_HANDLE gtRetClsHnd;      // The return type handle of the call if it is a struct; always available
+    GenTreeCallFlags gtCallMoreFlags;  // in addition to gtFlags
+    gtCallTypes      gtCallType : 3;   // value from the gtCallTypes enumeration
+    var_types        gtReturnType : 5; // exact return type
+
+    uint8_t gtInlineInfoCount; // number of inline candidates for the given call
+
+    CORINFO_CLASS_HANDLE gtRetClsHnd; // The return type handle of the call if it is a struct; always available
     union {
         void*                gtStubCallStubAddr; // GTF_CALL_VIRT_STUB - these are never inlined
         CORINFO_CLASS_HANDLE gtInitClsHnd;       // Used by static init helpers, represents a class they init
@@ -5518,11 +5544,14 @@ struct GenTreeCall final : public GenTree
     union {
         // only used for CALLI unmanaged calls (CT_INDIRECT)
         GenTree* gtCallCookie;
+
         // gtInlineCandidateInfo is only used when inlining methods
-        InlineCandidateInfo*                  gtInlineCandidateInfo;
-        GuardedDevirtualizationCandidateInfo* gtGuardedDevirtualizationCandidateInfo;
-        HandleHistogramProfileCandidateInfo*  gtHandleHistogramProfileCandidateInfo;
-        LateDevirtualizationInfo*             gtLateDevirtualizationInfo;
+        InlineCandidateInfo* gtInlineCandidateInfo;
+        // gtInlineCandidateInfoList is used when we have more than one GDV candidate
+        jitstd::vector<InlineCandidateInfo*>* gtInlineCandidateInfoList;
+
+        HandleHistogramProfileCandidateInfo* gtHandleHistogramProfileCandidateInfo;
+        LateDevirtualizationInfo*            gtLateDevirtualizationInfo;
         CORINFO_GENERIC_HANDLE compileTimeHelperArgumentHandle; // Used to track type handle argument of dynamic helpers
         void*                  gtDirectCallAddress; // Used to pass direct call address between lower and codegen
     };
@@ -6217,7 +6246,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;
 
-    unsigned GetResultOpNumForFMA(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3);
+    unsigned GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3);
 
     ClassLayout* GetLayout(Compiler* compiler) const;
 
@@ -6973,7 +7002,7 @@ struct GenTreeArrElem : public GenTree
     unsigned char gtArrRank;                  // Rank of the array
 
     unsigned char gtArrElemSize; // !!! Caution, this is an "unsigned char", it is used only
-                                 // on the optimization path of array intrisics.
+                                 // on the optimization path of array intrinsics.
                                  // It stores the size of array elements WHEN it can fit
                                  // into an "unsigned char".
                                  // This has caused VSW 571394.
@@ -6993,122 +7022,6 @@ struct GenTreeArrElem : public GenTree
     }
 #if DEBUGGABLE_GENTREE
     GenTreeArrElem() : GenTree()
-    {
-    }
-#endif
-};
-
-//--------------------------------------------
-//
-// GenTreeArrIndex (gtArrIndex): Expression to bounds-check the index for one dimension of a
-//    multi-dimensional or non-zero-based array, and compute the effective index
-//    (i.e. subtracting the lower bound).
-//
-// Notes:
-//    This node is similar in some ways to GenTreeBoundsChk, which ONLY performs the check.
-//    The reason that this node incorporates the check into the effective index computation is
-//    to avoid duplicating the codegen, as the effective index is required to compute the
-//    offset anyway.
-//    TODO-CQ: Enable optimization of the lower bound and length by replacing this:
-//                /--*  <arrObj>
-//                +--*  <index0>
-//             +--* ArrIndex[i, ]
-//    with something like:
-//                   /--*  <arrObj>
-//                /--*  ArrLowerBound[i, ]
-//                |  /--*  <arrObj>
-//                +--*  ArrLen[i, ]    (either generalize GT_ARR_LENGTH or add a new node)
-//                +--*  <index0>
-//             +--* ArrIndex[i, ]
-//    which could, for example, be optimized to the following when known to be within bounds:
-//                /--*  TempForLowerBoundDim0
-//                +--*  <index0>
-//             +--* - (GT_SUB)
-//
-struct GenTreeArrIndex : public GenTreeOp
-{
-    // The array object - may be any expression producing an Array reference, but is likely to be a lclVar.
-    GenTree*& ArrObj()
-    {
-        return gtOp1;
-    }
-    // The index expression - may be any integral expression.
-    GenTree*& IndexExpr()
-    {
-        return gtOp2;
-    }
-    unsigned char gtCurrDim; // The current dimension
-    unsigned char gtArrRank; // Rank of the array
-
-    GenTreeArrIndex(var_types type, GenTree* arrObj, GenTree* indexExpr, unsigned char currDim, unsigned char arrRank)
-        : GenTreeOp(GT_ARR_INDEX, type, arrObj, indexExpr), gtCurrDim(currDim), gtArrRank(arrRank)
-    {
-        gtFlags |= GTF_EXCEPT;
-    }
-#if DEBUGGABLE_GENTREE
-protected:
-    friend GenTree;
-    // Used only for GenTree::GetVtableForOper()
-    GenTreeArrIndex() : GenTreeOp()
-    {
-    }
-#endif
-};
-
-//--------------------------------------------
-//
-// GenTreeArrOffset (gtArrOffset): Expression to compute the accumulated offset for the address
-//    of an element of a multi-dimensional or non-zero-based array.
-//
-// Notes:
-//    The result of this expression is (gtOffset * dimSize) + gtIndex
-//    where dimSize is the length/stride/size of the dimension, and is obtained from gtArrObj.
-//    This node is generated in conjunction with the GenTreeArrIndex node, which computes the
-//    effective index for a single dimension.  The sub-trees can be separately optimized, e.g.
-//    within a loop body where the expression for the 0th dimension may be invariant.
-//
-//    Here is an example of how the tree might look for a two-dimension array reference:
-//                /--*  const 0
-//                |  /--* <arrObj>
-//                |  +--* <index0>
-//                +--* ArrIndex[i, ]
-//                +--*  <arrObj>
-//             /--| arrOffs[i, ]
-//             |  +--*  <arrObj>
-//             |  +--*  <index1>
-//             +--* ArrIndex[*,j]
-//             +--*  <arrObj>
-//          /--| arrOffs[*,j]
-//    TODO-CQ: see comment on GenTreeArrIndex for how its representation may change.  When that
-//    is done, we will also want to replace the <arrObj> argument to arrOffs with the
-//    ArrLen as for GenTreeArrIndex.
-//
-struct GenTreeArrOffs : public GenTree
-{
-    GenTree* gtOffset;       // The accumulated offset for lower dimensions - must be TYP_I_IMPL, and
-                             // will either be a CSE temp, the constant 0, or another GenTreeArrOffs node.
-    GenTree* gtIndex;        // The effective index for the current dimension - must be non-negative
-                             // and can be any expression (though it is likely to be either a GenTreeArrIndex,
-                             // node, a lclVar, or a constant).
-    GenTree* gtArrObj;       // The array object - may be any expression producing an Array reference,
-                             // but is likely to be a lclVar.
-    unsigned char gtCurrDim; // The current dimension
-    unsigned char gtArrRank; // Rank of the array
-
-    GenTreeArrOffs(
-        var_types type, GenTree* offset, GenTree* index, GenTree* arrObj, unsigned char currDim, unsigned char rank)
-        : GenTree(GT_ARR_OFFSET, type)
-        , gtOffset(offset)
-        , gtIndex(index)
-        , gtArrObj(arrObj)
-        , gtCurrDim(currDim)
-        , gtArrRank(rank)
-    {
-        assert(index->gtFlags & GTF_EXCEPT);
-        gtFlags |= GTF_EXCEPT;
-    }
-#if DEBUGGABLE_GENTREE
-    GenTreeArrOffs() : GenTree()
     {
     }
 #endif
@@ -8750,7 +8663,11 @@ struct GenTreeOpCC : public GenTreeOp
     GenTreeOpCC(genTreeOps oper, var_types type, GenCondition condition, GenTree* op1 = nullptr, GenTree* op2 = nullptr)
         : GenTreeOp(oper, type, op1, op2 DEBUGARG(/*largeNode*/ FALSE)), gtCondition(condition)
     {
+#ifdef TARGET_ARM64
+        assert(OperIs(GT_SELECTCC, GT_SELECT_INCCC, GT_SELECT_INVCC, GT_SELECT_NEGCC));
+#else
         assert(OperIs(GT_SELECTCC));
+#endif
     }
 
 #if DEBUGGABLE_GENTREE
@@ -8812,7 +8729,7 @@ inline bool GenTree::OperIsBlkOp()
     {
         return true;
     }
-    if (OperIs(GT_ASG) || OperIsStore())
+    if (OperIsStore())
     {
         return varTypeIsStruct(this);
     }
@@ -8836,46 +8753,6 @@ inline bool GenTree::OperIsInitBlkOp()
 inline bool GenTree::OperIsCopyBlkOp()
 {
     return OperIsBlkOp() && !OperIsInitBlkOp();
-}
-
-inline bool GenTree::OperIsStoreLclVar(unsigned* pLclNum) // TODO-ASG: delete.
-{
-    if (OperIs(GT_STORE_LCL_VAR))
-    {
-        if (pLclNum != nullptr)
-        {
-            *pLclNum = AsLclVar()->GetLclNum();
-        }
-        return true;
-    }
-    if (OperIs(GT_ASG) && gtGetOp1()->OperIs(GT_LCL_VAR))
-    {
-        if (pLclNum != nullptr)
-        {
-            *pLclNum = gtGetOp1()->AsLclVar()->GetLclNum();
-        }
-        return true;
-    }
-
-    *pLclNum = BAD_VAR_NUM;
-    return false;
-}
-
-inline bool GenTree::OperIsStoreLcl(unsigned* pLclNum) // TODO-ASG: delete.
-{
-    if (OperIsLocalStore())
-    {
-        *pLclNum = AsLclVarCommon()->GetLclNum();
-        return true;
-    }
-    if (OperIs(GT_ASG) && gtGetOp1()->OperIsLocal())
-    {
-        *pLclNum = gtGetOp1()->AsLclVarCommon()->GetLclNum();
-        return true;
-    }
-
-    *pLclNum = BAD_VAR_NUM;
-    return false;
 }
 
 //------------------------------------------------------------------------
@@ -9214,7 +9091,6 @@ inline GenTree* GenTree::gtGetOp1() const
         case GT_RSZ:
         case GT_ROL:
         case GT_ROR:
-        case GT_ASG:
         case GT_EQ:
         case GT_NE:
         case GT_LT:
@@ -9261,8 +9137,8 @@ inline GenTree* GenTree::gtGetOp2IfPresent() const
 
 inline GenTree*& GenTree::Data()
 {
-    assert(OperIsStore() || OperIs(GT_STORE_DYN_BLK, GT_ASG));
-    return OperIsLocalStore() ? AsLclVarCommon()->Data() : static_cast<GenTreeOp*>(this)->gtOp2;
+    assert(OperIsStore() || OperIs(GT_STORE_DYN_BLK));
+    return OperIsLocalStore() ? AsLclVarCommon()->Data() : AsIndir()->Data();
 }
 
 inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)
@@ -9286,7 +9162,7 @@ inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)
 }
 
 //-------------------------------------------------------------------------
-// gtCommaAssignVal - find value being assigned to a comma wrapped store
+// gtCommaStoreVal - find value being assigned to a comma wrapped store
 //
 // Returns:
 //    tree representing value being stored if this tree represents a
@@ -9294,7 +9170,7 @@ inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)
 //
 //    original tree, if not.
 //
-inline GenTree* GenTree::gtCommaAssignVal()
+inline GenTree* GenTree::gtCommaStoreVal()
 {
     GenTree* result = this;
 

@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 interface I<T>
 {
@@ -14,7 +15,7 @@ sealed class J<T> : I<T>
     public int E(T t) { return 3; }
 }
 
-class Z
+public class Z
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static bool F0<T>(I<T> i)
@@ -28,7 +29,8 @@ class Z
         return j is I<string>;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var j0 = new J<object>();
         var j1 = new J<string>();

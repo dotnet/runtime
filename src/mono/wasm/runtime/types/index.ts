@@ -92,7 +92,7 @@ export type MonoConfig = {
 export interface ResourceRequest {
     name: string, // the name of the asset, including extension.
     behavior: AssetBehaviours, // determines how the asset will be handled once loaded
-    resolvedUrl?: string;
+    resolvedUrl?: string; // this should be absolute url to the asset
     hash?: string;
 }
 
@@ -102,7 +102,7 @@ export interface LoadingResource {
     response: Promise<Response>;
 }
 
-// Types of assets that can be in the mono-config.js/mono-config.json file (taken from /src/tasks/WasmAppBuilder/WasmAppBuilder.cs)
+// Types of assets that can be in the _framework/blazor.boot.json file (taken from /src/tasks/WasmAppBuilder/WasmAppBuilder.cs)
 export interface AssetEntry extends ResourceRequest {
     /**
      * If specified, overrides the path of the asset in the virtual filesystem and similar data structures once downloaded.
@@ -174,6 +174,8 @@ export type APIType = {
     getAssemblyExports(assemblyName: string): Promise<any>,
     setModuleImports(moduleName: string, moduleImports: any): void,
     getConfig: () => MonoConfig,
+
+    // memory management
     setHeapB32: (offset: NativePointer, value: number | boolean) => void,
     setHeapU8: (offset: NativePointer, value: number) => void,
     setHeapU16: (offset: NativePointer, value: number) => void,
@@ -198,6 +200,15 @@ export type APIType = {
     getHeapI64Big: (offset: NativePointer) => bigint,
     getHeapF32: (offset: NativePointer) => number,
     getHeapF64: (offset: NativePointer) => number,
+    localHeapViewI8: () => Int8Array,
+    localHeapViewI16: () => Int16Array,
+    localHeapViewI32: () => Int32Array,
+    localHeapViewI64Big: () => BigInt64Array,
+    localHeapViewU8: () => Uint8Array,
+    localHeapViewU16: () => Uint16Array,
+    localHeapViewU32: () => Uint32Array,
+    localHeapViewF32: () => Float32Array,
+    localHeapViewF64: () => Float64Array,
 }
 
 export type RuntimeAPI = {

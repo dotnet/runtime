@@ -14,15 +14,22 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace BenchmarksGame
 {
     public class SpectralNorm_1
     {
-        public static int Main(String[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
-            int n = 100;
-            if (args.Length > 0) n = Int32.Parse(args[0]);
+            return Test(null);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int Test(int? arg)
+        {
+            int n = arg ?? 100;
 
             double norm = new SpectralNorm_1().Bench(n);
             Console.WriteLine("{0:f9}", norm);

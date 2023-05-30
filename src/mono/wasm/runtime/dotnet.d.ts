@@ -18,14 +18,23 @@ declare interface Int32Ptr extends NativePointer {
     __brand: "Int32Ptr";
 }
 declare interface EmscriptenModule {
+    /** @deprecated Please use growableHeapI8() instead.*/
     HEAP8: Int8Array;
+    /** @deprecated Please use growableHeapI16() instead.*/
     HEAP16: Int16Array;
+    /** @deprecated Please use growableHeapI32() instead. */
     HEAP32: Int32Array;
+    /** @deprecated Please use growableHeapI64() instead. */
     HEAP64: BigInt64Array;
+    /** @deprecated Please use growableHeapU8() instead. */
     HEAPU8: Uint8Array;
+    /** @deprecated Please use growableHeapU16() instead. */
     HEAPU16: Uint16Array;
+    /** @deprecated Please use growableHeapU32() instead */
     HEAPU32: Uint32Array;
+    /** @deprecated Please use growableHeapF32() instead */
     HEAPF32: Float32Array;
+    /** @deprecated Please use growableHeapF64() instead. */
     HEAPF64: Float64Array;
     _malloc(size: number): VoidPtr;
     _free(ptr: VoidPtr): void;
@@ -39,6 +48,7 @@ declare interface EmscriptenModule {
     getValue(ptr: number, type: string, noSafe?: number | boolean): number;
     UTF8ToString(ptr: CharPtr, maxBytesToRead?: number): string;
     UTF8ArrayToString(u8Array: Uint8Array, idx?: number, maxBytesToRead?: number): string;
+    stringToUTF8Array(str: string, heap: Uint8Array, outIdx: number, maxBytesToWrite: number): void;
     FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
     FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
     addFunction(fn: Function, signature: string): number;
@@ -231,6 +241,15 @@ type APIType = {
     getHeapI64Big: (offset: NativePointer) => bigint;
     getHeapF32: (offset: NativePointer) => number;
     getHeapF64: (offset: NativePointer) => number;
+    localHeapViewI8: () => Int8Array;
+    localHeapViewI16: () => Int16Array;
+    localHeapViewI32: () => Int32Array;
+    localHeapViewI64Big: () => BigInt64Array;
+    localHeapViewU8: () => Uint8Array;
+    localHeapViewU16: () => Uint16Array;
+    localHeapViewU32: () => Uint32Array;
+    localHeapViewF32: () => Float32Array;
+    localHeapViewF64: () => Float64Array;
 };
 type RuntimeAPI = {
     /**

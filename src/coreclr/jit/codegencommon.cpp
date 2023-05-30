@@ -5827,7 +5827,7 @@ void CodeGen::genFnProlog()
         //
         extraFrameSize = compiler->compCalleeRegsPushed * REGSIZE_BYTES;
     }
-#endif // TARGET_ARM64
+#endif // TARGET_AMD64
 
     if (doubleAlignOrFramePointerUsed())
     {

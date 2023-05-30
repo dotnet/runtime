@@ -117,9 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="AbstractOrInterfaceNotSupported" xml:space="preserve">
-    <value>Abstract or interface types are not supported: '{0}'.</value>
-  </data>
   <data name="CollectionNotSupported" xml:space="preserve">
     <value>The collection type is not supported: '{0}'.</value>
   </data>
@@ -135,11 +132,14 @@
   <data name="LanguageVersionIsNotSupportedTitle" xml:space="preserve">
     <value>Language version is required to be at least C# 11</value>
   </data>
+  <data name="MissingPublicInstanceConstructor" xml:space="preserve">
+    <value>Cannot create instance of type '{0}' because it is missing a public instance constructor.</value>
+  </data>
   <data name="MultiDimArraysNotSupported" xml:space="preserve">
     <value>Multidimensional arrays are not supported: '{0}'.</value>
   </data>
-  <data name="NeedPublicParameterlessConstructor" xml:space="preserve">
-    <value>Only objects with public parameterless constructors are supported: '{0}'.</value>
+  <data name="MultipleParameterizedConstructors" xml:space="preserve">
+    <value>Cannot create instance of type '{0}' because it has multiple public parameterized constructors.</value>
   </data>
   <data name="NullableUnderlyingTypeNotSupported" xml:space="preserve">
     <value>Nullable underlying type is not supported: '{0}'.</value>

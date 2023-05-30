@@ -540,6 +540,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowFormatException_BadBoolean(ReadOnlySpan<char> value)
+        {
+            throw new FormatException(SR.Format(SR.Format_BadBoolean, new string(value)));
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRangeException_PrecisionTooLarge()
         {
             throw new ArgumentOutOfRangeException("precision", SR.Format(SR.Argument_PrecisionTooLarge, StandardFormat.MaxPrecision));

@@ -65,7 +65,6 @@ namespace Microsoft.Workload.Build.Tasks
                     throw new LogAsErrorException($"Cannot find {nameof(LocalNuGetsPath)}={LocalNuGetsPath} . " +
                                                     "Set it to the Shipping packages directory in artifacts.");
 
-                ExecuteHackForRenamedManifest();
                 if (!InstallAllManifests())
                     return false;
 
@@ -118,8 +117,6 @@ namespace Microsoft.Workload.Build.Tasks
                     if (!ExecuteInternal(req) && !req.IgnoreErrors)
                         return false;
 
-                    OverrideWebAssemblySdkPack(req.TargetPath, LocalNuGetsPath);
-
                     File.WriteAllText(req.StampPath, string.Empty);
                 }
 
@@ -134,26 +131,6 @@ namespace Microsoft.Workload.Build.Tasks
             {
                 if (!string.IsNullOrEmpty(_tempDir) && Directory.Exists(_tempDir))
                     Directory.Delete(_tempDir, recursive: true);
-            }
-        }
-
-        private static void OverrideWebAssemblySdkPack(string targetPath, string localNuGetsPath)
-        {
-            string nupkgName = "Microsoft.NET.Sdk.WebAssembly.Pack";
-            string? nupkg = Directory.EnumerateFiles(localNuGetsPath, $"{nupkgName}.*.nupkg").FirstOrDefault();
-            if (nupkg == null)
-                return;
-
-            string nupkgVersion = Path.GetFileNameWithoutExtension(nupkg).Substring(nupkgName.Length + 1);
-
-            string bundledVersions = Directory.EnumerateFiles(targetPath, @"Microsoft.NETCoreSdk.BundledVersions.props", SearchOption.AllDirectories).Single();
-            var document = XDocument.Load(bundledVersions);
-            if (document != null)
-            {
-                foreach (var element in document.Descendants("KnownWebAssemblySdkPack"))
-                    element.SetAttributeValue("WebAssemblySdkPackVersion", nupkgVersion);
-
-                document.Save(bundledVersions);
             }
         }
 
@@ -175,29 +152,6 @@ namespace Microsoft.Workload.Build.Tasks
             UpdateAppRef(req.TargetPath, req.Version);
 
             return !Log.HasLoggedErrors;
-        }
-
-        private void ExecuteHackForRenamedManifest()
-        {
-            // HACK - Because the microsoft.net.workload.mono.toolchain is being renamed to microsoft.net.workload.mono.toolchain.current
-            // but the sdk doesn't have the change yet.
-            string? txtPath = Directory.EnumerateFiles(Path.Combine(SdkWithNoWorkloadInstalledPath, "sdk"), "IncludedWorkloadManifests.txt",
-                                            new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 2})
-                                .FirstOrDefault();
-            if (txtPath is null)
-                throw new LogAsErrorException($"Could not find IncludedWorkloadManifests.txt in {SdkWithNoWorkloadInstalledPath}");
-
-            string stampPath = Path.Combine(Path.GetDirectoryName(txtPath)!, ".stamp");
-            if (File.Exists(stampPath))
-                return;
-
-            var lines = File.ReadAllLines(txtPath)
-                            .Select(line => line == "microsoft.net.workload.mono.toolchain"
-                                                ? "microsoft.net.workload.mono.toolchain.current"
-                                                : line);
-            File.WriteAllLines(txtPath, lines);
-
-            File.WriteAllText(stampPath, "");
         }
 
         private bool InstallAllManifests()
