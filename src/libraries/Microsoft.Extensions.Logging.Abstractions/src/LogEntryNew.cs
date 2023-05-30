@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Logging
     public interface ILogEntryProcessor
     {
         LogEntryHandler<TState> GetLogEntryHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired);
-        ScopeHandler<TState> GetScopeHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired) where TState : notnull;
+        ScopeHandler<TState> GetScopeHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled) where TState : notnull;
         bool IsEnabled(LogLevel logLevel);
     }
 

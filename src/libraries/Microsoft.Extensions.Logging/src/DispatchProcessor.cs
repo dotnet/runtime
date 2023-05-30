@@ -51,10 +51,9 @@ namespace Microsoft.Extensions.Logging
             return new DynamicDispatchToLoggers<TState>(this, metadata?.GetStringMessageFormatter());
         }
 
-        public ScopeHandler<TState> GetScopeHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicCheckRequired) where TState : notnull
+        public ScopeHandler<TState> GetScopeHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled) where TState : notnull
         {
             enabled = true;
-            dynamicCheckRequired = false;
             return new DynamicDispatchScopeToLoggers<TState>(this);
         }
 

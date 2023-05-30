@@ -66,9 +66,9 @@ namespace Microsoft.Extensions.Logging
             return _propCollection.GetLogEntryHandler<TState>(_nextProcessor, metadata, out enabled, out dynamicEnabledCheckRequired);
         }
 
-        public ScopeHandler<TState> GetScopeHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired) where TState : notnull
+        public ScopeHandler<TState> GetScopeHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled) where TState : notnull
         {
-            return _nextProcessor.GetScopeHandler<TState>(metadata, out enabled, out dynamicEnabledCheckRequired);
+            return _nextProcessor.GetScopeHandler<TState>(metadata, out enabled);
         }
 
         public bool IsEnabled(LogLevel logLevel)

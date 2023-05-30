@@ -44,15 +44,14 @@ namespace Microsoft.Extensions.Logging
 
     public class ScopePipeline<TState> : Pipeline where TState : notnull
     {
-        public ScopePipeline(ScopeHandler<TState> handler, object? userState, bool isEnabled, bool isDynamicLevelCheckRequired) :
-            base(userState, isEnabled, isDynamicLevelCheckRequired)
+        public ScopePipeline(ScopeHandler<TState> handler, object? userState, bool isEnabled) :
+            base(userState, isEnabled, isDynamicLevelCheckRequired: false)
         {
             _firstHandler = handler;
         }
 
         private readonly ScopeHandler<TState> _firstHandler;
 
-        public bool IsEnabledDynamic(LogLevel level) => _firstHandler.IsEnabled(level);
         public IDisposable? HandleScope(ref TState scope) => _firstHandler.HandleBeginScope(ref scope);
     }
 }

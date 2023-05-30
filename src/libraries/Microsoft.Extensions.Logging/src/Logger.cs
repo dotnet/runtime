@@ -197,8 +197,8 @@ namespace Microsoft.Extensions.Logging
             {
                 if (!Pipelines.TryGetValue(key, out pipeline))
                 {
-                    ScopeHandler<TState> handler = Processor.GetScopeHandler<TState>(metadata, out bool enabled, out bool dynamicCheckRequired);
-                    pipeline = new ScopePipeline<TState>(handler, userState, enabled, dynamicCheckRequired);
+                    ScopeHandler<TState> handler = Processor.GetScopeHandler<TState>(metadata, out bool enabled);
+                    pipeline = new ScopePipeline<TState>(handler, userState, enabled);
                     // in a multi-threaded race it is possible to create new pipelines after the versioned state is already disposed
                     // if this happens the pipeline is immediately marked as being not up-to-date.
                     pipeline.IsUpToDate = _isUpToDate;
@@ -229,7 +229,7 @@ namespace Microsoft.Extensions.Logging
                 throw new NotImplementedException();
             }
 
-            public ScopeHandler<TState> GetScopeHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired) where TState : notnull
+            public ScopeHandler<TState> GetScopeHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled) where TState : notnull
             {
                 throw new NotImplementedException();
             }

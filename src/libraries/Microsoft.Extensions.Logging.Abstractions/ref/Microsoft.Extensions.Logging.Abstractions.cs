@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Logging
     public partial interface ILogEntryProcessor
     {
         Microsoft.Extensions.Logging.LogEntryHandler<TState> GetLogEntryHandler<TState>(Microsoft.Extensions.Logging.ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired);
-        Microsoft.Extensions.Logging.ScopeHandler<TState> GetScopeHandler<TState>(Microsoft.Extensions.Logging.ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired) where TState : notnull;
+        Microsoft.Extensions.Logging.ScopeHandler<TState> GetScopeHandler<TState>(Microsoft.Extensions.Logging.ILogMetadata<TState>? metadata, out bool enabled) where TState : notnull;
         bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel);
     }
     public partial interface ILogEntryProcessorFactory
@@ -265,9 +265,8 @@ namespace Microsoft.Extensions.Logging
     }
     public partial class ScopePipeline<TState> : Microsoft.Extensions.Logging.Pipeline where TState : notnull
     {
-        public ScopePipeline(Microsoft.Extensions.Logging.ScopeHandler<TState> handler, object? userState, bool isEnabled, bool isDynamicLevelCheckRequired) : base (default(object), default(bool), default(bool)) { }
+        public ScopePipeline(Microsoft.Extensions.Logging.ScopeHandler<TState> handler, object? userState, bool isEnabled) : base (default(object), default(bool), default(bool)) { }
         public System.IDisposable? HandleScope(ref TState scope) { throw null; }
-        public bool IsEnabledDynamic(Microsoft.Extensions.Logging.LogLevel level) { throw null; }
     }
 }
 namespace Microsoft.Extensions.Logging.Abstractions

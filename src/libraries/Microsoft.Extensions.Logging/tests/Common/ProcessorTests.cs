@@ -101,9 +101,9 @@ namespace Microsoft.Extensions.Logging.Test
                 return new TestLogEntryHandler<TState>(nextHandler, _handleLogEntryCallback);
             }
 
-            public ScopeHandler<TState> GetScopeHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired) where TState : notnull
+            public ScopeHandler<TState> GetScopeHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled) where TState : notnull
             {
-                var nextHandler = _nextProcessor.GetScopeHandler<TState>(metadata, out enabled, out dynamicEnabledCheckRequired);
+                var nextHandler = _nextProcessor.GetScopeHandler<TState>(metadata, out enabled);
                 return new TestScopeHandler<TState>(nextHandler, _handleLogEntryCallback);
             }
 
