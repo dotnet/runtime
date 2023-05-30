@@ -1,5 +1,7 @@
 - [Introduction to vectorization with Vector128 and Vector256](#introduction-to-vectorization-with-vector128-and-vector256)
   * [Code structure](#code-structure)
+    + [Checking for Hardware Acceleration](#checking-for-hardware-acceleration)
+    + [Example Code Structure](#example-code-structure)
     + [Testing](#testing)
     + [Benchmarking](#benchmarking)
       - [Custom config](#custom-config)
@@ -18,7 +20,7 @@
     + [Edge cases](#edge-cases)
     + [Scalar solution](#scalar-solution)
     + [Vectorized solution](#vectorized-solution)
-  * [Toolchain](#toolchain)
+  * [Tool-Chain](#tool-chain)
     + [Creation](#creation)
     + [Bit operations](#bit-operations)
     + [Equality](#equality)
@@ -27,6 +29,7 @@
     + [Conversion](#conversion)
     + [Widening and Narrowing](#widening-and-narrowing)
     + [Shuffle](#shuffle)
+      - [Vector256.Shuffle vs Avx2.Shuffle](#vector256shuffle-vs-avx2shuffle)
   * [Summary](#summary)
     + [Best practices](#best-practices)
 
@@ -309,6 +312,8 @@ AMD Ryzen Threadripper PRO 3945WX 12-Cores, 1 CPU, 24 logical and 12 physical co
 | Contains | Vector128 | 1024 | 104.544 ns | 1.2792 ns |  0.73 |     335 B |
 | Contains | Vector256 | 1024 |  55.769 ns | 0.6720 ns |  0.39 |     391 B |
 ```
+
+**Note:** as you can see, even such simple method like [Contains](https://learn.microsoft.com/dotnet/api/system.memoryextensions.contains) **did not observe a perfect performance boost**: x8 for `Vector256` (256/32) and x4 for `Vector128` (128/32). To understand why, we would need to use a profiler that provides information on CPU instruction level, which depending on the hardware could be [Intel VTune](https://www.intel.com/content/www/us/en/developer/tools/oneapi/vtune-profiler.html) or [amd uprof](https://developer.amd.com/amd-uprof/).
 
 The results should be very stable (flat distributions), but on the other hand we are measuring the performance of the best case scenario (the input is large, aligned and its entire contents are searched through, as the value is never found).
 
@@ -1142,16 +1147,16 @@ The main goal of the new `Vector128` and `Vector256` APIs is to make writing fas
 - If you have already vectorized your code, but only for `x64/x86` or `arm64/arm`, you can use the  new APIs to have a single, cross-platform implementation.
 - If you have already vectorized your code with `Vector<T>` you can use the new APIs to check if they can produce better code-gen.
 - If you are not familiar with hardware specific instructions or you are about to vectorize a scalar algorithm, you should start with the new `Vector128` and `Vector256` APIs. Get a solid and working implementation and eventually consider using hardware-specific methods for performance critical code paths.
+- Both managed references and unsafe pointers are dangerous to use incorrectly and each comes with their own tradeoff.
 
 ### Best practices
 
 1. Implement tests that cover all code paths, including Access Violations.
 2. Run tests for all hardware acceleration scenarios, use the existing environment variables to do that.
 3. Implement benchmarks that mimic real life scenarios, do not increase the complexity of your code when it's not beneficial for your end users.
-4. Prefer managed references over unsafe pointers to avoid pinning and safety issues.
-5. Use `ref MemoryMarshal.GetReference(span)` instead `ref span[0]` and `ref MemoryMarshal.GetArrayDataReference(array)` instead `ref array[0]` to handle empty buffers correctly.
-6. Prefer `LoadUnsafe(ref T, nuint elementOffset)` and `StoreUnsafe(this Vector128<T> source, ref T destination, nuint elementOffset)` over other methods for loading and storing vectors as they avoid pinning and the need of doing pointer arithmetic. Be aware of unsigned integer overflow!
-7. Always handle the vectorized loop remainder.
-8. When storing values in memory, be aware of a potential buffer overlap.
-9. When writing a vectorized algorithm, start with writing the tests for edge cases, then implement a scalar solution and afterwards try to express what the scalar code is doing with Vector128/256 APIs.
-10. Vector types provide APIs for creating, loading, storing, comparing, converting, reinterpreting, widening, narrowing and shuffling vectors. It's also possible to perform equality checks, various bit and math operations. Don't try to memorize all the details, treat these APIs as a cookbook that you come back to when needed.
+4. Use `ref MemoryMarshal.GetReference(span)` instead `ref span[0]` and `ref MemoryMarshal.GetArrayDataReference(array)` instead `ref array[0]` to handle empty buffers correctly.
+5. Prefer `LoadUnsafe(ref T, nuint elementOffset)` and `StoreUnsafe(this Vector128<T> source, ref T destination, nuint elementOffset)` over other methods for loading and storing vectors as they avoid pinning and the need of doing pointer arithmetic. Be aware of unsigned integer overflow!
+6. Always handle the vectorized loop remainder.
+7. When storing values in memory, be aware of a potential buffer overlap.
+8. When writing a vectorized algorithm, start with writing the tests for edge cases, then implement a scalar solution and afterwards try to express what the scalar code is doing with Vector128/256 APIs.
+9. Vector types provide APIs for creating, loading, storing, comparing, converting, reinterpreting, widening, narrowing and shuffling vectors. It's also possible to perform equality checks, various bit and math operations. Don't try to memorize all the details, treat these APIs as a cookbook that you come back to when needed.
