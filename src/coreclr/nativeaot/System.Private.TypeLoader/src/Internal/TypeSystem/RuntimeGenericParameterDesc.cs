@@ -9,6 +9,7 @@ namespace Internal.TypeSystem
         private readonly int _index;
         private readonly TypeSystemContext _context;
         private readonly GenericVariance _variance;
+        private TypeSystemEntity _associatedTypeOrMethod;
 
         public RuntimeGenericParameterDesc(GenericParameterKind kind, int index, TypeSystemContext context, GenericVariance variance)
         {
@@ -25,5 +26,12 @@ namespace Internal.TypeSystem
         public override TypeSystemContext Context => _context;
 
         public override GenericVariance Variance => _variance;
+
+        public override TypeSystemEntity AssociatedTypeOrMethod => _associatedTypeOrMethod;
+
+        internal void SetAssociatedTypeOrMethod(TypeSystemEntity associatedTypeOrMethod)
+        {
+            _associatedTypeOrMethod = associatedTypeOrMethod;
+        }
     }
 }

@@ -76,6 +76,8 @@ namespace Internal.TypeSystem
 
         public override GenericConstraints Constraints => _genericParam.Constraints;
 
+        public override TypeSystemEntity AssociatedTypeOrMethod => _genericParam.AssociatedTypeOrMethod;
+
         public override IEnumerable<TypeDesc> TypeConstraints
         {
             get

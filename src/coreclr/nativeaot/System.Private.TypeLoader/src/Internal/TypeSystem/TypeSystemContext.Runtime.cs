@@ -213,6 +213,10 @@ namespace Internal.TypeSystem
                     }
 
                     returnedType = new NoMetadataType(this, rtth, null, new Instantiation(genericParameters), rtth.GetHashCode());
+                    for (int i = 0; i < genericParameters.Length; i++)
+                    {
+                        ((RuntimeGenericParameterDesc)genericParameters[i]).SetAssociatedTypeOrMethod(returnedType);
+                    }
                 }
             }
             else if (RuntimeAugments.IsGenericType(rtth))
