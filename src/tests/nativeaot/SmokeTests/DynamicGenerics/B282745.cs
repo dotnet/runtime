@@ -86,15 +86,59 @@ public static class B282745
         public T o;
         public int i;
         public long l;
-        public long l1;
     }
-
+    
     public class GenericType<T>
     {
         public static void test()
         {
-            int[] lengths = {42,2,3};
+            int[] lengths = {1,2,3};
             SomeGenStruct<T>[,,] array = (SomeGenStruct<T>[,,])Array.CreateInstance(typeof(SomeGenStruct<T>), lengths);
+
+            array[0,0,0].o = default(T);
+            array[0,0,0].i = GetIntPtrOnHeapAsInt();
+            array[0,0,0].l = GetIntPtrOnHeapAsInt();
+
+            array[0,1,2].o = default(T);
+            array[0,1,2].i = GetIntPtrOnHeapAsInt();
+            array[0,1,2].l = GetIntPtrOnHeapAsLong();
+
+            array[0,1,1].o = default(T);
+            array[0,1,1].i = GetIntPtrOnHeapAsInt();
+            array[0,1,1].l = GetIntPtrOnHeapAsLong();
+
+            GC.Collect();
+            
+            GC.KeepAlive(array);
+
+        RuntimeTypeHandle arrayTypeHandle = array.GetType().TypeHandle;
+#if INTERNAL_CONTRACTS
+            Assert.IsTrue(RuntimeAugments.IsDynamicType(arrayTypeHandle));
+#endif
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    [TestMethod]
+    public static void testMDArrayWithPointerLikeValuesOfKnownStructType()
+    {
+        GenericType<object>.test();
+    }
+
+    struct SomeGenStruct1<T>
+    {
+        public T o;
+        public int i;
+        public long l;
+        public long l1;
+    }
+
+    public class GenericType1<T>
+    {
+        public static void test()
+        {
+            int[] lengths = { 42, 2, 3 };
+            SomeGenStruct1<T>[,,] array = (SomeGenStruct1<T>[,,])Array.CreateInstance(typeof(SomeGenStruct1<T>), lengths);
 
             for (int i = 0; i < 42; i++)
             {
@@ -112,10 +156,10 @@ public static class B282745
             }
 
             GC.Collect();
-
+ 
             GC.KeepAlive(array);
 
-        RuntimeTypeHandle arrayTypeHandle = array.GetType().TypeHandle;
+            RuntimeTypeHandle arrayTypeHandle = array.GetType().TypeHandle;
 #if INTERNAL_CONTRACTS
             Assert.IsTrue(RuntimeAugments.IsDynamicType(arrayTypeHandle));
 #endif
@@ -124,9 +168,9 @@ public static class B282745
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     [TestMethod]
-    public static void testMDArrayWithPointerLikeValuesOfKnownStructType()
+    public static void testMDArrayWithPointerLikeValuesOfKnownStructTypeLargerType()
     {
-        GenericType<object>.test();
+        GenericType1<object>.test();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
