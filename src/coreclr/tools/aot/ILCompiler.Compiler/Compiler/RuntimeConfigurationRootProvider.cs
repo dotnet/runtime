@@ -16,16 +16,18 @@ namespace ILCompiler
     /// </summary>
     public class RuntimeConfigurationRootProvider : ICompilationRootProvider
     {
-        private readonly RuntimeConfigurationBlobNode _node;
+        private readonly string _blobName;
+        private readonly IReadOnlyCollection<string> _runtimeOptions;
 
         public RuntimeConfigurationRootProvider(string blobName, IReadOnlyCollection<string> runtimeOptions)
         {
-            _node = new RuntimeConfigurationBlobNode(blobName, runtimeOptions);
+            _blobName = blobName;
+            _runtimeOptions = runtimeOptions;
         }
 
         void ICompilationRootProvider.AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
-            rootProvider.AddCompilationRoot(_node, "Runtime configuration");
+            rootProvider.AddCompilationRoot(new RuntimeConfigurationBlobNode(_blobName, _runtimeOptions), "Runtime configuration");
         }
 
         private sealed class RuntimeConfigurationBlobNode : DehydratableObjectNode, ISymbolDefinitionNode
