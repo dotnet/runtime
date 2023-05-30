@@ -266,38 +266,20 @@ mono_jiterp_cast_v2 (
 	MonoClass *klass, MintOpcode opcode
 ) {
 	if (!obj) {
-		*destination = 0;
+		*destination = NULL;
 		return 1;
-	}
-
-	if (obj->vtable->klass == klass) {
+		// FIXME push/pop LMF
+	} else if (!mono_jiterp_isinst (obj, klass)) {
+		// FIXME: do not swallow the error
+		if (opcode == MINT_ISINST) {
+			*destination = NULL;
+			return 1;
+		} else
+			return 0; // bailout
+	} else {
 		*destination = obj;
 		return 1;
 	}
-
-	switch (opcode) {
-		case MINT_CASTCLASS:
-		case MINT_ISINST: {
-			if (obj) {
-				// FIXME push/pop LMF
-				if (!mono_jiterp_isinst (obj, klass)) { // FIXME: do not swallow the error
-					if (opcode == MINT_ISINST)
-						*destination = NULL;
-					else {
-						return 0; // bailout
-					}
-				} else {
-					*destination = obj;
-				}
-			} else {
-				*destination = NULL;
-			}
-			return 1;
-		}
-	}
-
-	g_assert_not_reached();
-	return 0;
 }
 
 EMSCRIPTEN_KEEPALIVE void

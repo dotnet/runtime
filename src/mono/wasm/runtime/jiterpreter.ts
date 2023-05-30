@@ -266,7 +266,6 @@ function getTraceImports() {
         importDef("castv2", getRawCwrap("mono_jiterp_cast_v2")),
         importDef("hasparent", getRawCwrap("mono_jiterp_has_parent_fast")),
         importDef("imp_iface", getRawCwrap("mono_jiterp_implements_interface")),
-        // importDef("isinst", getRawCwrap("mono_jiterp_isinst")),
         importDef("try_unbox", getRawCwrap("mono_jiterp_try_unbox_ref")),
         importDef("box", getRawCwrap("mono_jiterp_box_ref")),
         importDef("localloc", getRawCwrap("mono_jiterp_localloc")),
