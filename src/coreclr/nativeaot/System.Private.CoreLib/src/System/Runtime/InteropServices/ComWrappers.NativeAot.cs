@@ -410,36 +410,57 @@ namespace System.Runtime.InteropServices
             }
 
             private ManagedObjectWrapper* _wrapper;
-            private object _wrappedObject;
+            private object? _strongWrappedObject;
+            private GCHandle _weakWrappedObject;
+            private bool _exposed;
 
             public ManagedObjectWrapperHolder(ManagedObjectWrapper* wrapper, object wrappedObject)
             {
                 _wrapper = wrapper;
-                _wrappedObject = wrappedObject;
-            }
-
-            public void InitializeHandle()
-            {
-                IntPtr handle = RuntimeImports.RhHandleAllocRefCounted(this);
-                IntPtr prev = Interlocked.CompareExchange(ref _wrapper->HolderHandle, handle, IntPtr.Zero);
-                if (prev != IntPtr.Zero)
-                {
-                    RuntimeImports.RhHandleFree(handle);
-                }
+                _strongWrappedObject = wrappedObject;
+                _weakWrappedObject = GCHandle.Alloc(wrappedObject, GCHandleType.WeakTrackResurrection);
+                _wrapper->HolderHandle = RuntimeImports.RhHandleAllocRefCounted(this);
             }
 
             public unsafe IntPtr ComIp => _wrapper->As(in ComWrappers.IID_IUnknown);
 
-            public object WrappedObject => _wrappedObject;
+            // If the wrapped object is resurrected, restore our strong reference.
+            public object WrappedObject => _strongWrappedObject ??= _weakWrappedObject.Target!;
 
-            public uint AddRef() => _wrapper->AddRef();
+            public uint AddRef()
+            {
+                uint ret = _wrapper->AddRef();
+                if (ret == 1)
+                {
+                    _exposed = true;
+                    // In case the wrapped object was resurrected,
+                    // restore our strong reference to it.
+                    _strongWrappedObject ??= _weakWrappedObject.Target!;
+                }
+                return ret;
+            }
 
             ~ManagedObjectWrapperHolder()
             {
+                // release our strong reference to the object
+                _strongWrappedObject = null;
+
+                if (_exposed && _weakWrappedObject.Target != null)
+                {
+                    // The wrapped object has not been fully collected, so it is still
+                    // potentially reachable via the CWT. Keep ourselves alive in case
+                    // the wrapped object is resurrected.
+                    GC.ReRegisterForFinalize(this);
+                    return;
+                }
+
                 // Release GC handle created when MOW was built.
                 if (_wrapper->Destroy())
                 {
                     NativeMemory.Free(_wrapper);
+                    _wrapper = null;
+                    if (_weakWrappedObject.IsAllocated)
+                        _weakWrappedObject.Free();
                 }
                 else
                 {
@@ -519,19 +540,12 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(instance);
 
-            ManagedObjectWrapperHolder? ccwValue;
-            if (_ccwTable.TryGetValue(instance, out ccwValue))
-            {
-                ccwValue.AddRef();
-                return ccwValue.ComIp;
-            }
-
-            ccwValue = _ccwTable.GetValue(instance, (c) =>
+            ManagedObjectWrapperHolder ccwValue = _ccwTable.GetValue(instance, (c) =>
             {
                 ManagedObjectWrapper* value = CreateCCW(c, flags);
                 return new ManagedObjectWrapperHolder(value, c);
             });
-            ccwValue.InitializeHandle();
+            ccwValue.AddRef();
             return ccwValue.ComIp;
         }
 
@@ -581,7 +595,7 @@ namespace System.Runtime.InteropServices
             }
 
             mow->HolderHandle = IntPtr.Zero;
-            mow->RefCount = 1;
+            mow->RefCount = 0;
             mow->UserDefinedCount = userDefinedCount;
             mow->UserDefined = userDefined;
             mow->Flags = (CreateComInterfaceFlagsEx)flags;
