@@ -215,8 +215,7 @@ namespace System.Threading
         /// the call to <see cref="MemoryBarrier"/> execute after memory accesses that follow the call to <see cref="MemoryBarrier"/>.
         /// </summary>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void MemoryBarrier();
+        public static void MemoryBarrier() => MemoryBarrier();
 
         /// <summary>
         /// Synchronizes memory access as follows:

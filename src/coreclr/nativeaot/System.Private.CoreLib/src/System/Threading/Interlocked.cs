@@ -198,10 +198,7 @@ namespace System.Threading
 
         #region MemoryBarrier
         [Intrinsic]
-        public static void MemoryBarrier()
-        {
-            RuntimeImports.MemoryBarrier();
-        }
+        public static void MemoryBarrier() => MemoryBarrier();
         #endregion
 
         #region ReadMemoryBarrier
