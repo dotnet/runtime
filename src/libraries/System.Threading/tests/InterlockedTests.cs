@@ -604,20 +604,20 @@ namespace System.Threading.Tests
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Action MemoryBarrierDelegate => Interlocked.MemoryBarrier;
+        private static Action MemoryBarrierDelegate() => Interlocked.MemoryBarrier;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static delegate* <void> MemoryBarrierPointer => &Interlocked.MemoryBarrier;
+        private static delegate* <void> MemoryBarrierPointer() => &Interlocked.MemoryBarrier;
 
         [Fact()]
         public void MemoryBarrierIntrinsic()
         {
             // Interlocked.MemoryBarrier is a self-referring intrinsic
             // we should be able to call it through a delegate.
-            MemoryBarrierDelegate();
+            MemoryBarrierDelegate()();
 
             // through a method pointer
-            MemoryBarrierPointer();
+            MemoryBarrierPointer()();
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
