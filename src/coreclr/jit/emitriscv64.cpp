@@ -501,7 +501,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
             break;
         case INS_jal:
             assert(isGeneralRegisterOrR0(reg));
-            assert(imm >= -1048576 && imm < 1048576);
+            assert(isValidSimm21(imm));
 
             code |= reg << 7;
             code |= ((imm >> 12) & 0xff) << 12;
@@ -667,6 +667,8 @@ void emitter::emitIns_R_R_I(
     {
         assert(isGeneralRegister(reg1));
         assert(isGeneralRegister(reg2));
+        assert(isValidSimm13(imm));
+        assert(!(imm & 3));
         code |= reg1 << 15;
         code |= reg2 << 20;
         code |= ((imm >> 11) & 0x1) << 7;
@@ -1021,7 +1023,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
     assert(dst != nullptr);
     //
     // INS_OPTS_J: placeholders.  1-ins: if the dst outof-range will be replaced by INS_OPTS_JALR.
-    //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu/beqz/bnez/b/bl  dst
+    // jal/j/jalr/bnez/beqz/beq/bne/blt/bge/bltu/bgeu dst
 
     assert(dst->bbFlags & BBF_HAS_LABEL);
 
@@ -1621,18 +1623,18 @@ void emitter::emitJumpDistBind()
 #endif // DEBUG
 
     // NOTE:
-    //  bit0 of isLinkingEnd_LA: indicating whether updating the instrDescJmp's size with the type INS_OPTS_J;
-    //  bit1 of isLinkingEnd_LA: indicating not needed updating the size while emitTotalCodeSize <= (0x7fff << 2) or had
+    //  bit0 of isLinkingEnd: indicating whether updating the instrDescJmp's size with the type INS_OPTS_J;
+    //  bit1 of isLinkingEnd: indicating not needed updating the size while emitTotalCodeSize <= 0xfff or had
     //  updated;
-    unsigned int isLinkingEnd_LA = emitTotalCodeSize <= (0x7fff << 2) ? 2 : 0;
+    unsigned int isLinkingEnd = emitTotalCodeSize <= 0xfff ? 2 : 0;
 
     UNATIVE_OFFSET ssz = 0; // relative small jump's delay-slot.
     // small  jump max. neg distance
     NATIVE_OFFSET nsd = B_DIST_SMALL_MAX_NEG;
     // small  jump max. pos distance
-    NATIVE_OFFSET psd =
-        B_DIST_SMALL_MAX_POS -
-        emitCounts_INS_OPTS_J * (3 << 2); // the max placeholder sizeof(INS_OPTS_JALR) - sizeof(INS_OPTS_J).
+    NATIVE_OFFSET maxPlaceholderSize =
+        emitCounts_INS_OPTS_J * (6 << 2); // the max placeholder sizeof(INS_OPTS_JALR) - sizeof(INS_OPTS_J)
+    NATIVE_OFFSET psd = B_DIST_SMALL_MAX_POS - maxPlaceholderSize;
 
 /*****************************************************************************/
 /* If the default small encoding is not enough, we start again here.     */
@@ -1836,7 +1838,7 @@ AGAIN:
             assert(jmpDist >= 0); // Forward jump
             assert(!(jmpDist & 0x3));
 
-            if (isLinkingEnd_LA & 0x2)
+            if (isLinkingEnd & 0x2)
             {
                 jmp->idAddr()->iiaSetJmpOffset(jmpDist);
             }
@@ -1845,30 +1847,40 @@ AGAIN:
                 instruction ins = jmp->idIns();
                 assert((INS_jal <= ins) && (ins <= INS_bgeu));
 
-                if (ins > INS_jalr) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
+                if (ins > INS_jalr ||
+                    (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
                 {
-                    if ((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000)
+                    if (isValidSimm13(jmpDist + maxPlaceholderSize))
                     {
+                        continue;
+                    }
+                    else if (isValidSimm21(jmpDist + maxPlaceholderSize))
+                    {
+                        // convert to opposite branch and jal
                         extra = 4;
                     }
                     else
                     {
-                        assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
-                        extra = 8;
+                        // convert to opposite branch and jalr
+                        extra = 4 * 6;
                     }
                 }
-                else if (ins > INS_j && ins < INS_jalr) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
+                else if (ins == INS_jal || ins == INS_j)
                 {
-                    if (jmpDist + emitCounts_INS_OPTS_J * 4 < 0x200000)
+                    if (isValidSimm21(jmpDist + maxPlaceholderSize))
+                    {
                         continue;
-
-                    extra = 4;
-                    assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
+                    }
+                    else
+                    {
+                        // convert to jalr
+                        extra = 4 * 5;
+                    }
                 }
                 else
                 {
-                    assert(ins == INS_j || ins == INS_jal || ins == INS_jalr);
-                    assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
+                    assert(ins == INS_jalr);
+                    assert((jmpDist + maxPlaceholderSize) < 0x800);
                     continue;
                 }
 
@@ -1879,7 +1891,7 @@ AGAIN:
                 adjIG += (UNATIVE_OFFSET)extra;
                 emitTotalCodeSize += (UNATIVE_OFFSET)extra;
                 jmpIG->igFlags |= IGF_UPD_ISZ;
-                isLinkingEnd_LA |= 0x1;
+                isLinkingEnd |= 0x1;
             }
             continue;
         }
@@ -1923,7 +1935,7 @@ AGAIN:
             assert(jmpDist >= 0); // Backward jump
             assert(!(jmpDist & 0x3));
 
-            if (isLinkingEnd_LA & 0x2)
+            if (isLinkingEnd & 0x2)
             {
                 jmp->idAddr()->iiaSetJmpOffset(-jmpDist); // Backward jump is negative!
             }
@@ -1932,30 +1944,40 @@ AGAIN:
                 instruction ins = jmp->idIns();
                 assert((INS_jal <= ins) && (ins <= INS_bgeu));
 
-                if (ins > INS_jalr) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
+                if (ins > INS_jalr ||
+                    (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
                 {
-                    if ((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000)
+                    if (isValidSimm13(jmpDist + maxPlaceholderSize))
                     {
+                        continue;
+                    }
+                    else if (isValidSimm21(jmpDist + maxPlaceholderSize))
+                    {
+                        // convert to opposite branch and jal
                         extra = 4;
                     }
                     else
                     {
-                        assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
-                        extra = 8;
+                        // convert to opposite branch and jalr
+                        extra = 4 * 6;
                     }
                 }
-                else if (ins < INS_jalr && ins > INS_j) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
+                else if (ins == INS_jal || ins == INS_j)
                 {
-                    if (jmpDist + emitCounts_INS_OPTS_J * 4 < 0x200000)
+                    if (isValidSimm21(jmpDist + maxPlaceholderSize))
+                    {
                         continue;
-
-                    extra = 4;
-                    assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
+                    }
+                    else
+                    {
+                        // convert to jalr
+                        extra = 4 * 5;
+                    }
                 }
                 else
                 {
-                    assert(ins == INS_jal || ins == INS_jalr);
-                    assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
+                    assert(ins == INS_jalr);
+                    assert((jmpDist + maxPlaceholderSize) < 0x800);
                     continue;
                 }
 
@@ -1966,17 +1988,17 @@ AGAIN:
                 adjIG += (UNATIVE_OFFSET)extra;
                 emitTotalCodeSize += (UNATIVE_OFFSET)extra;
                 jmpIG->igFlags |= IGF_UPD_ISZ;
-                isLinkingEnd_LA |= 0x1;
+                isLinkingEnd |= 0x1;
             }
             continue;
         }
     } // end for each jump
 
-    if ((isLinkingEnd_LA & 0x3) < 0x2)
+    if ((isLinkingEnd & 0x3) < 0x2)
     {
         // indicating the instrDescJmp's size of the type INS_OPTS_J had updated
         // after the first round and should iterate again to update.
-        isLinkingEnd_LA = 0x2;
+        isLinkingEnd = 0x2;
 
         // Adjust offsets of any remaining blocks.
         for (; lstIG;)
@@ -2430,77 +2452,156 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 assert((imm & 0x3) == 0);
 
                 ins = jmp->idIns();
-                assert(jmp->idCodeSize() > 4); // The original INS_OPTS_JIRL: not used by now!!!
+                assert(jmp->idCodeSize() > 4); // The original INS_OPTS_JALR: not used by now!!!
                 switch (jmp->idCodeSize())
                 {
                     case 8:
                     {
-                        regNumber reg2 = id->idReg2();
+                        assert((INS_blt <= ins && ins <= INS_bgeu) || (INS_beq == ins) || (INS_bne == ins) ||
+                               (INS_bnez == ins) || (INS_beqz == ins));
+                        assert(isValidSimm21(imm));
+                        assert((emitInsCode(INS_bne) & 0xefff) == emitInsCode(INS_beq));
+                        assert((emitInsCode(INS_bge) & 0xefff) == emitInsCode(INS_blt));
+                        assert((emitInsCode(INS_bgeu) & 0xefff) == emitInsCode(INS_bltu));
 
-                        if ((INS_beq == ins) || (INS_bne == ins))
-                        {
-                            if ((-0x1000 <= imm) && (imm < 0x1000))
-                            {
-                                code = emitInsCode(INS_xor);
-                                code |= (code_t)codeGen->rsGetRsvdReg() << 7;
-                                code |= (code_t)reg1 << 15;
-                                code |= (code_t)reg2 << 20;
+                        regNumber reg2 = REG_R0;
+                        if (INS_beqz != ins && INS_bnez != ins)
+                            reg2 = id->idReg2();
+                        code     = emitInsCode(ins) ^ 0x1000;
+                        code |= (code_t)reg1 << 15; /* rj */
+                        code |= (code_t)reg2 << 20; /* rd */
+                        code |= 0x8 << 7;
+                        *(code_t*)dstRW = code;
+                        dstRW += 4;
 
-                                *(code_t*)dstRW = code;
-                                dstRW += 4;
+                        code = emitInsCode(INS_jal);
+                        code |= ((imm >> 12) & 0xff) << 12;
+                        code |= ((imm >> 11) & 0x1) << 20;
+                        code |= ((imm >> 1) & 0x3ff) << 21;
+                        code |= ((imm >> 20) & 0x1) << 31;
 
-                                code = emitInsCode(ins);
-                                code |= (code_t)codeGen->rsGetRsvdReg() << 15;
-                                code |= ((imm >> 11) & 0x1) << 7;
-                                code |= ((imm >> 1) & 0xf) << 8;
-                                code |= ((imm >> 5) & 0x3f) << 25;
-                                code |= ((imm >> 12) & 0x1) << 31;
-                                *(code_t*)dstRW = code;
-                                dstRW += 4;
-                            }
-                            else
-                            {
-                                assert((-0x100000 <= imm) && (imm < 0x100000));
-                                assert((emitInsCode(INS_bne) & 0xefff) == emitInsCode(INS_beq));
+                        *(code_t*)dstRW = code;
+                        dstRW += 4;
+                        break;
+                    }
+                    case 24:
+                    {
+                        assert(ins == INS_j || ins == INS_jal);
+                        // Make target address with offset, then jump (JALR) with the target address
+                        imm               = imm - 2 * 4;
+                        regNumber tmpReg1 = REG_RA;
+                        ssize_t   high    = ((imm + 0x80000000) >> 32) & 0xffffffff;
+                        code              = emitInsCode(INS_lui);
+                        code |= (code_t)tmpReg1 << 7;
+                        code |= ((code_t)((high + 0x800) >> 12) & 0xfffff) << 12;
 
-                                code = emitInsCode(ins) ^ 0x1000;
-                                code |= (code_t)reg1 << 15; /* rj */
-                                code |= (code_t)reg2 << 20; /* rd */
-                                code |= 0x8 << 7;
-                                *(code_t*)dstRW = code;
-                                dstRW += 4;
+                        *(code_t*)dstRW = code;
+                        dstRW += 4;
 
-                                code = emitInsCode(INS_jal);
-                                code |= ((imm >> 12) & 0xff) << 12;
-                                code |= ((imm >> 11) & 0x1) << 20;
-                                code |= ((imm >> 1) & 0x3ff) << 21;
-                                code |= ((imm >> 20) & 0x1) << 31;
+                        code = emitInsCode(INS_addi);
+                        code |= (code_t)tmpReg1 << 7;
+                        code |= (code_t)tmpReg1 << 15;
+                        code |= (code_t)(high & 0xfff) << 20;
+                        *(code_t*)dstRW = code;
+                        dstRW += 4;
 
-                                *(code_t*)dstRW = code;
-                                dstRW += 4;
-                            }
-                        }
-                        else if ((INS_blt <= ins) && (ins <= INS_bgeu))
-                        {
-                            assert((-0x100000 <= imm) && (imm < 0x100000));
-                            assert((emitInsCode(INS_bge) & 0xefff) == emitInsCode(INS_blt));
-                            assert((emitInsCode(INS_bgeu) & 0xefff) == emitInsCode(INS_bltu));
+                        code = emitInsCode(INS_slli);
+                        code |= (code_t)tmpReg1 << 7;
+                        code |= (code_t)tmpReg1 << 15;
+                        code |= (code_t)32 << 20;
+                        *(code_t*)dstRW = code;
+                        dstRW += 4;
 
-                            code = emitInsCode(ins) ^ 0x1000;
-                            code |= (code_t)reg1 << 15; /* rj */
-                            code |= (code_t)reg2 << 20; /* rd */
-                            code |= 0x8 << 7;
-                            *(code_t*)dstRW = code;
-                            dstRW += 4;
+                        regNumber tmpReg2 = codeGen->rsGetRsvdReg();
+                        ssize_t   low     = imm & 0xffffffff;
+                        code              = emitInsCode(INS_auipc);
+                        code |= (code_t)tmpReg2 << 7;
+                        code |= ((code_t)((low + 0x800) >> 12) & 0xfffff) << 12;
 
-                            code = emitInsCode(INS_jal);
-                            code |= ((imm >> 12) & 0xff) << 12;
-                            code |= ((imm >> 11) & 0x1) << 20;
-                            code |= ((imm >> 1) & 0x3ff) << 21;
-                            code |= ((imm >> 20) & 0x1) << 31;
-                            *(code_t*)dstRW = code;
-                            dstRW += 4;
-                        }
+                        *(code_t*)dstRW = code;
+                        dstRW += 4;
+
+                        code = emitInsCode(INS_add);
+                        code |= (code_t)tmpReg2 << 7;
+                        code |= (code_t)tmpReg1 << 15;
+                        code |= (code_t)tmpReg2 << 20;
+                        *(code_t*)dstRW = code;
+                        dstRW += 4;
+
+                        code = emitInsCode(INS_jalr);
+                        code |= (code_t)REG_RA << 7; // use REG_RA for returning
+                        code |= (code_t)tmpReg2 << 15;
+                        code |= (code_t)(low & 0xfff) << 20;
+                        *(code_t*)dstRW = code;
+                        dstRW += 4;
+                        break;
+                    }
+                    case 28:
+                    {
+                        assert((INS_blt <= ins && ins <= INS_bgeu) || (INS_beq == ins) || (INS_bne == ins) ||
+                               (INS_bnez == ins) || (INS_beqz == ins));
+                        assert((emitInsCode(INS_bne) & 0xefff) == emitInsCode(INS_beq));
+                        assert((emitInsCode(INS_bge) & 0xefff) == emitInsCode(INS_blt));
+                        assert((emitInsCode(INS_bgeu) & 0xefff) == emitInsCode(INS_bltu));
+
+                        regNumber reg2 = REG_R0;
+                        if (INS_beqz != ins && INS_bnez != ins)
+                            reg2 = id->idReg2();
+                        code     = emitInsCode(ins) ^ 0x1000;
+                        code |= (code_t)reg1 << 15; /* rj */
+                        code |= (code_t)reg2 << 20; /* rd */
+                        code |= 28 << 7;
+                        *(code_t*)dstRW = code;
+                        dstRW += 4;
+
+                        // Make target address with offset, then jump (JALR) with the target address
+                        imm               = imm - 2 * 4;
+                        regNumber tmpReg1 = REG_RA;
+                        ssize_t   high    = ((imm + 0x80000000) >> 32) & 0xffffffff;
+                        code              = emitInsCode(INS_lui);
+                        code |= (code_t)tmpReg1 << 7;
+                        code |= ((code_t)((high + 0x800) >> 12) & 0xfffff) << 12;
+
+                        *(code_t*)dstRW = code;
+                        dstRW += 4;
+
+                        code = emitInsCode(INS_addi);
+                        code |= (code_t)tmpReg1 << 7;
+                        code |= (code_t)tmpReg1 << 15;
+                        code |= (code_t)(high & 0xfff) << 20;
+                        *(code_t*)dstRW = code;
+                        dstRW += 4;
+
+                        code = emitInsCode(INS_slli);
+                        code |= (code_t)tmpReg1 << 7;
+                        code |= (code_t)tmpReg1 << 15;
+                        code |= (code_t)32 << 20;
+                        *(code_t*)dstRW = code;
+                        dstRW += 4;
+
+                        regNumber tmpReg2 = codeGen->rsGetRsvdReg();
+                        ssize_t   low     = imm & 0xffffffff;
+                        code              = emitInsCode(INS_auipc);
+                        code |= (code_t)tmpReg2 << 7;
+                        code |= ((code_t)((low + 0x800) >> 12) & 0xfffff) << 12;
+
+                        *(code_t*)dstRW = code;
+                        dstRW += 4;
+
+                        code = emitInsCode(INS_add);
+                        code |= (code_t)tmpReg2 << 7;
+                        code |= (code_t)tmpReg1 << 15;
+                        code |= (code_t)tmpReg2 << 20;
+                        *(code_t*)dstRW = code;
+                        dstRW += 4;
+
+                        code = emitInsCode(INS_jalr);
+                        code |= (code_t)REG_RA << 7; // use REG_RA for returning
+                        code |= (code_t)tmpReg2 << 15;
+                        code |= (code_t)(low & 0xfff) << 20;
+                        *(code_t*)dstRW = code;
+                        dstRW += 4;
+
                         break;
                     }
 
@@ -2515,7 +2616,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case INS_OPTS_J_cond:
         {
             ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset(); // get jmp's offset relative delay-slot.
-            assert((OFFSET_DIST_SMALL_MAX_NEG << 2) <= imm && imm <= (OFFSET_DIST_SMALL_MAX_POS << 2));
+            assert(isValidSimm13(imm));
             assert(!(imm & 1));
 
             ins  = id->idIns();
@@ -2533,7 +2634,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
         break;
         case INS_OPTS_J:
-            //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu/beqz/bnez/b/bl  dstRW-relative.
+            // jal/j/jalr/bnez/beqz/beq/bne/blt/bge/bltu/bgeu dstRW-relative.
             {
                 ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset(); // get jmp's offset relative delay-slot.
                 assert((imm & 3) == 0);
@@ -2542,6 +2643,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code = emitInsCode(ins);
                 if (ins == INS_jal)
                 {
+                    assert(isValidSimm21(imm));
                     code |= ((imm >> 12) & 0xff) << 12;
                     code |= ((imm >> 11) & 0x1) << 20;
                     code |= ((imm >> 1) & 0x3ff) << 21;
@@ -2550,6 +2652,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 }
                 else if (ins == INS_j)
                 {
+                    assert(isValidSimm21(imm));
                     code |= ((imm >> 12) & 0xff) << 12;
                     code |= ((imm >> 11) & 0x1) << 20;
                     code |= ((imm >> 1) & 0x3ff) << 21;
@@ -2557,10 +2660,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 }
                 else if (ins == INS_jalr)
                 {
+                    assert(isValidSimm12(imm));
                     code |= ((code_t)(imm & 0xfff) << 20);
+                    code |= ((code_t)id->idReg1()) << 7;
+                    code |= ((code_t)id->idReg2()) << 15;
                 }
                 else if (ins == INS_bnez || ins == INS_beqz)
                 {
+                    assert(isValidSimm13(imm));
                     code |= (code_t)id->idReg1() << 15;
                     code |= ((imm >> 11) & 0x1) << 7;
                     code |= ((imm >> 1) & 0xf) << 8;
@@ -2569,6 +2676,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 }
                 else if ((INS_beq <= ins) && (ins <= INS_bgeu))
                 {
+                    assert(isValidSimm13(imm));
                     code |= ((code_t)id->idReg1()) << 15;
                     code |= ((code_t)id->idReg2()) << 20;
                     code |= ((imm >> 11) & 0x1) << 7;
@@ -2578,7 +2686,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 }
                 else
                 {
-                    NYI_RISCV64("unimplemented on RISCV64 yet");
+                    unreached();
                 }
 
                 *(code_t*)dstRW = code;
