@@ -166,7 +166,7 @@
     <PropertyGroup>
       <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
       <HelixCommandPrefix Condition="'$(WindowsShell)' == 'true' and @(HelixCommandPrefixEnvVarItem->Count()) > 0" >$(HelixCommandPrefix) @(HelixCommandPrefixEnvVarItem -> 'set &quot;%(Identity)&quot;', ' &amp; ')</HelixCommandPrefix>
-      <HelixCommandPrefix Condition="'$(WindowsShell)' != 'true' and @(HelixCommandPrefixEnvVarItem->Count()) > 0 ">$(HelixCommandPrefix) @(HelixCommandPrefixEnvVarItem, ' ')</HelixCommandPrefix>
+      <HelixCommandPrefix Condition="'$(WindowsShell)' != 'true' and @(HelixCommandPrefixEnvVarItem->Count()) > 0 ">$(HelixCommandPrefix) export @(HelixCommandPrefixEnvVarItem, ' ')</HelixCommandPrefix>
       <IncludeHelixCorrelationPayload Condition="'$(IncludeHelixCorrelationPayload)' == '' and '$(HelixCorrelationPayload)' != ''">true</IncludeHelixCorrelationPayload>
     </PropertyGroup>
 
