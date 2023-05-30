@@ -299,7 +299,7 @@ namespace Microsoft.Interop
             string detailsMessage)
         {
             _diagnostics.Add(
-                attributeData.CreateDiagnostic(
+                attributeData.CreateDiagnosticInfo(
                     GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnMethod,
                     methodName,
                     detailsMessage));
@@ -317,7 +317,7 @@ namespace Microsoft.Interop
             string detailsMessage)
         {
             _diagnostics.Add(
-                attributeData.CreateDiagnostic(
+                attributeData.CreateDiagnosticInfo(
                     GeneratorDiagnostics.InvalidExceptionMarshallingConfiguration,
                     methodName,
                     detailsMessage));
@@ -337,14 +337,14 @@ namespace Microsoft.Interop
             if (unsupportedValue == null)
             {
                 _diagnostics.Add(
-                    attributeData.CreateDiagnostic(
+                    attributeData.CreateDiagnosticInfo(
                         GeneratorDiagnostics.ConfigurationNotSupported,
                         configurationName));
             }
             else
             {
                 _diagnostics.Add(
-                    attributeData.CreateDiagnostic(
+                    attributeData.CreateDiagnosticInfo(
                         GeneratorDiagnostics.ConfigurationValueNotSupported,
                         unsupportedValue,
                         configurationName));
@@ -383,7 +383,7 @@ namespace Microsoft.Interop
                 if (info.IsManagedReturnPosition)
                 {
                     _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
+                        diagnosticLocation.CreateDiagnosticInfo(
                             GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails,
                             notSupportedDetails!,
                             elementName));
@@ -391,7 +391,7 @@ namespace Microsoft.Interop
                 else
                 {
                     _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
+                        diagnosticLocation.CreateDiagnosticInfo(
                             GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails,
                             notSupportedDetails!,
                             elementName));
@@ -405,7 +405,7 @@ namespace Microsoft.Interop
                 if (info.IsManagedReturnPosition)
                 {
                     _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
+                        diagnosticLocation.CreateDiagnosticInfo(
                             GeneratorDiagnostics.ReturnConfigurationNotSupported,
                             nameof(System.Runtime.InteropServices.MarshalAsAttribute),
                             elementName));
@@ -413,7 +413,7 @@ namespace Microsoft.Interop
                 else
                 {
                     _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
+                        diagnosticLocation.CreateDiagnosticInfo(
                             GeneratorDiagnostics.ParameterConfigurationNotSupported,
                             nameof(System.Runtime.InteropServices.MarshalAsAttribute),
                             elementName));
@@ -425,7 +425,7 @@ namespace Microsoft.Interop
                 if (info.IsManagedReturnPosition)
                 {
                     _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
+                        diagnosticLocation.CreateDiagnosticInfo(
                             GeneratorDiagnostics.ReturnTypeNotSupported,
                             info.ManagedType.DiagnosticFormattedName,
                             elementName));
@@ -433,7 +433,7 @@ namespace Microsoft.Interop
                 else
                 {
                     _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
+                        diagnosticLocation.CreateDiagnosticInfo(
                             GeneratorDiagnostics.ParameterTypeNotSupported,
                             info.ManagedType.DiagnosticFormattedName,
                             elementName));
@@ -447,7 +447,7 @@ namespace Microsoft.Interop
             params string[] reasonArgs)
         {
             _diagnostics.Add(
-                attributeData.CreateDiagnostic(
+                attributeData.CreateDiagnosticInfo(
                     GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported,
                     new LocalizableResourceString(reasonResourceName, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR), reasonArgs)));
         }

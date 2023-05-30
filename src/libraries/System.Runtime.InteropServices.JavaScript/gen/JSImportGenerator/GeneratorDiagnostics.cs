@@ -38,7 +38,7 @@ namespace Microsoft.Interop
             params string[] reasonArgs)
         {
             _diagnostics.Add(
-                attributeData.CreateDiagnostic(
+                attributeData.CreateDiagnosticInfo(
                     GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported,
                     new LocalizableResourceString(reasonResourceName, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR), reasonArgs)));
         }
@@ -57,14 +57,14 @@ namespace Microsoft.Interop
             if (unsupportedValue == null)
             {
                 _diagnostics.Add(
-                    attributeData.CreateDiagnostic(
+                    attributeData.CreateDiagnosticInfo(
                         GeneratorDiagnostics.ConfigurationNotSupported,
                         configurationName));
             }
             else
             {
                 _diagnostics.Add(
-                    attributeData.CreateDiagnostic(
+                    attributeData.CreateDiagnosticInfo(
                         GeneratorDiagnostics.ConfigurationValueNotSupported,
                         unsupportedValue,
                         configurationName));
@@ -104,7 +104,7 @@ namespace Microsoft.Interop
                 if (info.IsManagedReturnPosition)
                 {
                     _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
+                        diagnosticLocation.CreateDiagnosticInfo(
                             GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails,
                             diagnosticProperties,
                             notSupportedDetails!,
@@ -113,7 +113,7 @@ namespace Microsoft.Interop
                 else
                 {
                     _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
+                        diagnosticLocation.CreateDiagnosticInfo(
                             GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails,
                             diagnosticProperties,
                             notSupportedDetails!,
@@ -128,7 +128,7 @@ namespace Microsoft.Interop
                 if (info.IsManagedReturnPosition)
                 {
                     _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
+                        diagnosticLocation.CreateDiagnosticInfo(
                             GeneratorDiagnostics.ReturnConfigurationNotSupported,
                             diagnosticProperties,
                             nameof(System.Runtime.InteropServices.MarshalAsAttribute),
@@ -137,7 +137,7 @@ namespace Microsoft.Interop
                 else
                 {
                     _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
+                        diagnosticLocation.CreateDiagnosticInfo(
                             GeneratorDiagnostics.ParameterConfigurationNotSupported,
                             diagnosticProperties,
                             nameof(System.Runtime.InteropServices.MarshalAsAttribute),
@@ -150,7 +150,7 @@ namespace Microsoft.Interop
                 if (info.IsManagedReturnPosition)
                 {
                     _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
+                        diagnosticLocation.CreateDiagnosticInfo(
                             GeneratorDiagnostics.ReturnTypeNotSupported,
                             diagnosticProperties,
                             info.ManagedType.DiagnosticFormattedName,
@@ -159,7 +159,7 @@ namespace Microsoft.Interop
                 else
                 {
                     _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
+                        diagnosticLocation.CreateDiagnosticInfo(
                             GeneratorDiagnostics.ParameterTypeNotSupported,
                             diagnosticProperties,
                             info.ManagedType.DiagnosticFormattedName,
