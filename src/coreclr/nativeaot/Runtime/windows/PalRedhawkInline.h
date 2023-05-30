@@ -125,8 +125,6 @@ EXTERN_C void __faststorefence();
 #pragma intrinsic(__faststorefence)
 #define PalMemoryBarrier() __faststorefence()
 
-#define PalReadMemoryBarrier() __nop()
-
 #elif defined(HOST_ARM)
 
 EXTERN_C void __yield(void);
@@ -141,8 +139,6 @@ FORCEINLINE void PalYieldProcessor()
 
 #define PalMemoryBarrier() __dmb(_ARM_BARRIER_ISH)
 
-#define PalReadMemoryBarrier() __dmb(_ARM_BARRIER_ISH)
-
 #elif defined(HOST_ARM64)
 
 EXTERN_C void __yield(void);
@@ -156,8 +152,6 @@ FORCEINLINE void PalYieldProcessor()
 }
 
 #define PalMemoryBarrier() __dmb(_ARM64_BARRIER_ISH)
-
-#define PalReadMemoryBarrier() __dmb(_ARM64_BARRIER_ISHLD)
 
 #else
 #error Unsupported architecture

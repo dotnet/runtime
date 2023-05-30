@@ -237,7 +237,6 @@ public:
         static FCDECL2_IV(INT64, ExchangeAdd64, INT64 *location, INT64 value);
 
         static FCDECL0(void, FCMemoryBarrier);
-        static FCDECL0(void, FCMemoryBarrierLoad);
 };
 
 extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide();

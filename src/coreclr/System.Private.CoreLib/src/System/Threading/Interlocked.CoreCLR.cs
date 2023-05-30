@@ -224,8 +224,7 @@ namespace System.Threading
         /// the call to <see cref="ReadMemoryBarrier"/> execute after memory accesses that follow the call to <see cref="ReadMemoryBarrier"/>.
         /// </summary>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ReadMemoryBarrier();
+        internal static void ReadMemoryBarrier() => ReadMemoryBarrier();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Interlocked_MemoryBarrierProcessWide")]
         private static partial void _MemoryBarrierProcessWide();

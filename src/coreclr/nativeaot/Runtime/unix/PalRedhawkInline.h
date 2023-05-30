@@ -102,11 +102,6 @@ FORCEINLINE void PalMemoryBarrier()
     __sync_synchronize();
 }
 
-FORCEINLINE void PalReadMemoryBarrier()
-{
-    __atomic_thread_fence(__ATOMIC_ACQUIRE);
-}
-
 #define PalDebugBreak() abort()
 
 FORCEINLINE int32_t PalGetLastError()

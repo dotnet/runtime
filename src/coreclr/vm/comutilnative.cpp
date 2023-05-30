@@ -1646,15 +1646,6 @@ FCIMPL0(void, COMInterlocked::FCMemoryBarrier)
 }
 FCIMPLEND
 
-FCIMPL0(void, COMInterlocked::FCMemoryBarrierLoad)
-{
-    FCALL_CONTRACT;
-
-    VolatileLoadBarrier();
-    FC_GC_POLL();
-}
-FCIMPLEND
-
 #include <optdefault.h>
 
 extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide()

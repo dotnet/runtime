@@ -206,10 +206,7 @@ namespace System.Threading
 
         #region ReadMemoryBarrier
         [Intrinsic]
-        internal static void ReadMemoryBarrier()
-        {
-            RuntimeImports.ReadMemoryBarrier();
-        }
+        internal static void ReadMemoryBarrier() => ReadMemoryBarrier();
         #endregion
 
         #region Read
