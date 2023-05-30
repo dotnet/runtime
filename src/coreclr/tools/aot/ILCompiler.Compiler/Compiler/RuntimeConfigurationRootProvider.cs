@@ -2,6 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Text;
+
+using ILCompiler.DependencyAnalysis;
+
+using Internal.Text;
 
 namespace ILCompiler
 {
@@ -11,41 +16,111 @@ namespace ILCompiler
     /// </summary>
     public class RuntimeConfigurationRootProvider : ICompilationRootProvider
     {
-        private readonly string _blobName;
-        private readonly IReadOnlyCollection<string> _runtimeOptions;
+        private readonly RuntimeConfigurationBlobNode _node;
 
         public RuntimeConfigurationRootProvider(string blobName, IReadOnlyCollection<string> runtimeOptions)
         {
-            _blobName = blobName;
-            _runtimeOptions = runtimeOptions;
+            _node = new RuntimeConfigurationBlobNode(blobName, runtimeOptions);
         }
 
         void ICompilationRootProvider.AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
-            rootProvider.RootReadOnlyDataBlob(GetRuntimeOptionsBlob(), 4, "Runtime configuration information", _blobName);
+            rootProvider.AddCompilationRoot(_node, "Runtime configuration");
         }
 
-        private byte[] GetRuntimeOptionsBlob()
+        private sealed class RuntimeConfigurationBlobNode : DehydratableObjectNode, ISymbolDefinitionNode
         {
-            ArrayBuilder<byte> options = default(ArrayBuilder<byte>);
+            private readonly string _blobName;
+            private readonly IReadOnlyCollection<string> _runtimeOptions;
 
-            int count = _runtimeOptions.Count;
-
-            options.Add((byte)count);
-            options.Add((byte)(count >> 8));
-            options.Add((byte)(count >> 0x10));
-            options.Add((byte)(count >> 0x18));
-
-            foreach (string option in _runtimeOptions)
+            public RuntimeConfigurationBlobNode(string blobName, IReadOnlyCollection<string> runtimeOptions)
             {
-                byte[] optionBytes = System.Text.Encoding.UTF8.GetBytes(option);
-                options.Append(optionBytes);
-
-                // Emit a null to separate the next option
-                options.Add(0);
+                _blobName = blobName;
+                _runtimeOptions = runtimeOptions;
             }
 
-            return options.ToArray();
+            public int Offset => 0;
+
+            public override bool IsShareable => false;
+
+            public override int ClassCode => 7864454;
+
+            public override bool StaticDependenciesAreComputed => true;
+
+            public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+            {
+                sb.Append(_blobName);
+            }
+
+            protected override ObjectNodeSection GetDehydratedSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
+
+            protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
+
+            protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)
+            {
+                var builder = new ObjectDataBuilder(factory.TypeSystemContext.Target, relocsOnly);
+                builder.AddSymbol(this);
+
+                var settings = new List<KeyValuePair<string, ISymbolNode>>();
+
+                // Put values in a dictionary - we expect many "true" strings, for example.
+                var valueDict = new Dictionary<string, ISymbolNode>();
+                int valueIndex = 0;
+                foreach (string line in _runtimeOptions)
+                {
+                    int indexOfEquals = line.IndexOf("=");
+                    if (indexOfEquals > 0)
+                    {
+                        string key = line.Substring(0, indexOfEquals);
+                        string value = line.Substring(indexOfEquals + 1);
+
+                        if (!valueDict.TryGetValue(value, out ISymbolNode valueNode))
+                        {
+                            valueNode = factory.ReadOnlyDataBlob(
+                                new Utf8String(_blobName + "_value_" + valueIndex++),
+                                Utf8NullTerminatedBytes(value),
+                                alignment: 1);
+                            valueDict.Add(value, valueNode);
+                        }
+
+                        settings.Add(new KeyValuePair<string, ISymbolNode>(key, valueNode));
+                    }
+                }
+
+                // The format is:
+                // * Number of entries (T)
+                // * N times pointer to key
+                // * N times pointer to value
+                builder.EmitNaturalInt(settings.Count);
+
+                for (int i = 0; i < settings.Count; i++)
+                {
+                    ISymbolNode node = factory.ReadOnlyDataBlob(
+                                new Utf8String(_blobName + "_key_" + i),
+                                Utf8NullTerminatedBytes(settings[i].Key),
+                                alignment: 1);
+                    builder.EmitPointerReloc(node);
+                }
+
+                for (int i = 0; i < settings.Count; i++)
+                {
+                    builder.EmitPointerReloc(settings[i].Value);
+                }
+
+                static byte[] Utf8NullTerminatedBytes(string s)
+                {
+                    byte[] result = new byte[Encoding.UTF8.GetByteCount(s) + 1];
+                    Encoding.UTF8.GetBytes(s, result);
+                    return result;
+                }
+
+                return builder.ToObjectData();
+            }
+
+            public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+            {
+                return _blobName.CompareTo(((RuntimeConfigurationBlobNode)other)._blobName);
+            }
         }
     }
 }
