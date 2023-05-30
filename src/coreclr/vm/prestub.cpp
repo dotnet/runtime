@@ -1104,15 +1104,17 @@ namespace
 
     struct GenerationContext final
     {
-        GenerationContext(MethodDesc* pMD)
-            : TargetDeclaration{ pMD }
+        GenerationContext(UnsafeAccessorKind kind, MethodDesc* pMD)
+            : Kind{ kind }
+            , TargetDeclaration{ pMD }
             , SigReader{ pMD }
             , TargetType{}
-            , IsTargetStatic{}
+            , IsTargetStatic{ false }
             , TargetMethod{}
             , TargetField{}
         { }
 
+        UnsafeAccessorKind Kind;
         MethodDesc* TargetDeclaration;
         MetaSig SigReader;
         TypeHandle TargetType;
@@ -1123,10 +1125,13 @@ namespace
 
     bool TrySetTargetMethod(
         GenerationContext& cxt,
-        LPCUTF8 name)
+        LPCUTF8 methodName)
     {
         STANDARD_VM_CONTRACT;
-        _ASSERTE(name != NULL);
+        _ASSERTE(methodName != NULL);
+        _ASSERTE(cxt.Kind == UnsafeAccessorKind::Constructor
+                || cxt.Kind == UnsafeAccessorKind::Method
+                || cxt.Kind == UnsafeAccessorKind::StaticMethod);
 
         return false;
     }
@@ -1135,6 +1140,7 @@ namespace
     {
         STANDARD_VM_CONTRACT;
         _ASSERTE(!cxt.TargetType.IsNull());
+        _ASSERTE(cxt.Kind == UnsafeAccessorKind::Constructor);
 
         PTR_MethodTable pMT = cxt.TargetType.AsMethodTable();
 
@@ -1153,16 +1159,18 @@ namespace
 
     bool TrySetTargetField(
         GenerationContext& cxt,
-        LPCUTF8 name)
+        LPCUTF8 fieldName,
+        TypeHandle fieldType)
     {
         STANDARD_VM_CONTRACT;
-        _ASSERTE(!cxt.TargetType.IsNull());
-        _ASSERTE(name != NULL);
+        _ASSERTE(fieldName != NULL);
+        _ASSERTE(cxt.Kind == UnsafeAccessorKind::Field
+                || cxt.Kind == UnsafeAccessorKind::StaticField);
 
         return false;
     }
 
-    bool TryGeneratedMethodAccessor(
+    bool TryGenerateAccessor(
         GenerationContext& cxt,
         DynamicResolver** resolver,
         COR_ILMETHOD_DECODER** methodILDecoder)
@@ -1185,7 +1193,47 @@ namespace
             (ILStubLinkerFlags)ILSTUB_LINKER_FLAG_NONE);
 
         ILCodeStream* pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
-        pCode->EmitNEWOBJ(pCode->GetToken(cxt.TargetMethod), 0);
+
+        // Load stub arguments.
+        // When the target is static, the first argument is only
+        // used to look up the target member to access and ignored
+        // during dispatch.
+        UINT beginIndex = cxt.IsTargetStatic ? 1 : 0;
+        UINT stubArgCount = cxt.SigReader.NumFixedArgs();
+        for (UINT i = beginIndex; i < stubArgCount; ++i)
+            pCode->EmitLDARG(i);
+
+        // Provide access to the target member
+        UINT targetArgCount = stubArgCount - beginIndex;
+        UINT targetRetCount = cxt.SigReader.IsReturnTypeVoid() ? 0 : 1;
+        switch (cxt.Kind)
+        {
+        case UnsafeAccessorKind::Constructor:
+            _ASSERTE(cxt.TargetMethod != NULL);
+            pCode->EmitNEWOBJ(pCode->GetToken(cxt.TargetMethod), targetArgCount);
+            break;
+        case UnsafeAccessorKind::Method:
+            _ASSERTE(cxt.TargetMethod != NULL);
+            pCode->EmitCALLVIRT(pCode->GetToken(cxt.TargetMethod), targetArgCount, targetRetCount);
+            break;
+        case UnsafeAccessorKind::StaticMethod:
+            _ASSERTE(cxt.TargetMethod != NULL);
+            pCode->EmitCALL(pCode->GetToken(cxt.TargetMethod), targetArgCount, targetRetCount);
+            break;
+        case UnsafeAccessorKind::Field:
+            _ASSERTE(cxt.TargetField != NULL);
+            pCode->EmitLDFLDA(pCode->GetToken(cxt.TargetField));
+            break;
+        case UnsafeAccessorKind::StaticField:
+            _ASSERTE(cxt.TargetField != NULL);
+            pCode->EmitLDSFLDA(pCode->GetToken(cxt.TargetField));
+            break;
+        default:
+            _ASSERTE(!"Unknown UnsafeAccessorKind");
+            return false;
+        }
+
+        // Return from the generated stub
         pCode->EmitRET();
 
         {
@@ -1209,15 +1257,6 @@ namespace
 
         ilResolver.SuppressRelease();
         return true;
-    }
-
-    bool TryGeneratedFieldAccessor(
-        GenerationContext& cxt,
-        DynamicResolver** resolver,
-        COR_ILMETHOD_DECODER** methodILDecoder)
-    {
-        STANDARD_VM_CONTRACT;
-        return false;
     }
 }
 
@@ -1245,7 +1284,7 @@ HRESULT MethodDesc::GenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     if (!TryParseUnsafeAccessorAttribute(this, ca, kind, name))
         return COR_E_BADIMAGEFORMAT;
 
-    GenerationContext context{ this };
+    GenerationContext context{ kind, this };
 
     // Parse the signature to determine the type to use:
     //  * Constructor access - examine the return type
@@ -1253,18 +1292,19 @@ HRESULT MethodDesc::GenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     //  * Static member access - examine type of first parameter
     TypeHandle retType;
     TypeHandle firstArgType;
-    retType = context.SigReader.GetRetTypeHandleNT();
+    retType = context.SigReader.GetRetTypeHandleThrowing();
     UINT argCount = context.SigReader.NumFixedArgs();
     if (argCount > 0)
     {
         context.SigReader.NextArg();
-        firstArgType = context.SigReader.GetLastTypeHandleNT();
+        firstArgType = context.SigReader.GetLastTypeHandleThrowing();
     }
 
     // Using the kind type, perform the following:
-    //  1) Resolve the name to the appropriate token type
-    //  2) Generate the IL for the accessor
-    switch (kind)
+    //  1) Validate the basic type information from the signature
+    //  2) Resolve the name to the appropriate member
+    //  3) Generate the IL for the accessor
+    switch (context.Kind)
     {
     case UnsafeAccessorKind::Constructor:
         // A return type is required for a constructor, otherwise
@@ -1276,9 +1316,8 @@ HRESULT MethodDesc::GenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
         }
 
         context.TargetType = retType;
-        context.IsTargetStatic = false;
         if (!TrySetTargetMethodCtor(context)
-            || !TryGeneratedMethodAccessor(context, resolver, methodILDecoder))
+            || !TryGenerateAccessor(context, resolver, methodILDecoder))
         {
             return COR_E_MISSINGMETHOD;
         }
@@ -1293,7 +1332,7 @@ HRESULT MethodDesc::GenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
         context.TargetType = firstArgType;
         context.IsTargetStatic = kind == UnsafeAccessorKind::StaticMethod;
         if (!TrySetTargetMethod(context, name.GetUTF8())
-            || !TryGeneratedMethodAccessor(context, resolver, methodILDecoder))
+            || !TryGenerateAccessor(context, resolver, methodILDecoder))
         {
             return COR_E_MISSINGMETHOD;
         }
@@ -1301,16 +1340,27 @@ HRESULT MethodDesc::GenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
 
     case UnsafeAccessorKind::Field:
     case UnsafeAccessorKind::StaticField:
-        // Field access requires a target type and return type.
-        if (firstArgType.IsNull() || retType.IsNull())
+        // Field access requires a single argument for target type and a return type.
+        if (argCount != 1 || firstArgType.IsNull() || retType.IsNull())
+        {
+            return COR_E_BADIMAGEFORMAT;
+        }
+
+        // The return type must be byref.
+        // If the non-static field access is for a
+        // value type, the instance must be byref.
+        if (!retType.IsByRef()
+            || (kind == UnsafeAccessorKind::Field
+                && firstArgType.IsValueType()
+                && !firstArgType.IsByRef()))
         {
             return COR_E_BADIMAGEFORMAT;
         }
 
         context.TargetType = firstArgType;
         context.IsTargetStatic = kind == UnsafeAccessorKind::StaticField;
-        if (!TrySetTargetField(context, name.GetUTF8())
-            || !TryGeneratedFieldAccessor(context, resolver, methodILDecoder))
+        if (!TrySetTargetField(context, name.GetUTF8(), retType.GetTypeParam())
+            || !TryGenerateAccessor(context, resolver, methodILDecoder))
         {
             return COR_E_MISSINGFIELD;
         }
