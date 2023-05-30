@@ -196,16 +196,6 @@ namespace System.Threading
 
         #endregion
 
-        #region MemoryBarrier
-        [Intrinsic]
-        public static void MemoryBarrier() => MemoryBarrier();
-        #endregion
-
-        #region ReadMemoryBarrier
-        [Intrinsic]
-        internal static void ReadMemoryBarrier() => ReadMemoryBarrier();
-        #endregion
-
         #region Read
         public static long Read(ref long location)
         {
