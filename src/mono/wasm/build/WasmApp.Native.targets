@@ -690,8 +690,6 @@
     <MarshalingPInvokeScanner Assemblies ="@(AssembliesToScan)">
       <Output TaskParameter="IncompatibleAssemblies" ItemName="MonoLightweightMarshallerIncompatibleAssemblies" />
     </MarshalingPInvokeScanner>
-
-    <Message Importance="High" Text="*** INCOMPATIBLE ASSEMBLIES *** @(MonoLightweightMarshallerIncompatibleAssemblies)" />
   </Target>
 
   <!-- '$(ArchiveTests)' != 'true' is to skip on CI for now -->
