@@ -407,7 +407,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
         {
             // We will use lea so displacement and not immediate will be relocatable
             size = EA_SET_FLG(EA_REMOVE_FLG(size, EA_CNS_RELOC_FLG), EA_DSP_RELOC_FLG);
-            GetEmitter()->emitIns_R_AI(INS_lea, size, reg, imm);
+            GetEmitter()->emitIns_R_AI(INS_lea, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
         }
         else
         {
@@ -517,7 +517,13 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             else if (val64.IsZero())
             {
-                emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg);
+                // Use VEX version because it's smaller (for zmm0-zmm15) than EVEX to zero a zmm register and still
+                // zeros the entire register:
+                //
+                //   xorps zmm0, zmm0, zmm0 (6 bytes)
+                //   xorps ymm0, ymm0, ymm0 (4 bytes)
+                //
+                emit->emitIns_SIMD_R_R_R(INS_xorps, EA_32BYTE, targetReg, targetReg, targetReg);
             }
             else
             {
@@ -1010,7 +1016,26 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     // the same code as above
     else if (op2reg == targetReg)
     {
-        noway_assert(GenTree::OperIsCommutative(oper));
+
+#ifdef DEBUG
+        unsigned lclNum1 = (unsigned)-1;
+        unsigned lclNum2 = (unsigned)-2;
+
+        GenTree* op1Skip = op1->gtSkipReloadOrCopy();
+        GenTree* op2Skip = op2->gtSkipReloadOrCopy();
+
+        if (op1Skip->OperIsLocalRead())
+        {
+            lclNum1 = op1Skip->AsLclVarCommon()->GetLclNum();
+        }
+        if (op2Skip->OperIsLocalRead())
+        {
+            lclNum2 = op2Skip->AsLclVarCommon()->GetLclNum();
+        }
+
+        assert(GenTree::OperIsCommutative(oper) || (lclNum1 == lclNum2));
+#endif
+
         dst = op2;
         src = op1;
     }
@@ -2553,12 +2578,7 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
     regNumber src  = genConsumeReg(srcIndir->Addr());
     unsigned  size = tree->Size();
 
-    unsigned simdSize = compiler->roundDownSIMDSize(size);
-    if (size <= ZMM_RECOMMENDED_THRESHOLD)
-    {
-        // Only use ZMM for large data due to possible CPU throttle issues
-        simdSize = min(YMM_REGSIZE_BYTES, simdSize);
-    }
+    const unsigned simdSize = compiler->roundDownSIMDSize(size);
     if ((size >= simdSize) && (simdSize > 0))
     {
         // Number of SIMD regs needed to save the whole src to regs.
@@ -3131,12 +3151,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     {
         regNumber srcXmmReg = node->GetSingleTempReg(RBM_ALLFLOAT);
         unsigned  regSize   = compiler->roundDownSIMDSize(size);
-        if (size < ZMM_RECOMMENDED_THRESHOLD)
-        {
-            // Involve ZMM only for large data due to possible downclocking.
-            regSize = min(regSize, YMM_REGSIZE_BYTES);
-        }
-        var_types loadType = compiler->getSIMDTypeForSize(regSize);
+        var_types loadType  = compiler->getSIMDTypeForSize(regSize);
         simd_t    vecCon;
         memset(&vecCon, (uint8_t)src->AsIntCon()->IconValue(), sizeof(simd_t));
         genSetRegToConst(srcXmmReg, loadType, &vecCon);
@@ -3394,11 +3409,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
         // Get the largest SIMD register available if the size is large enough
         unsigned regSize = compiler->roundDownSIMDSize(size);
-        if (size < ZMM_RECOMMENDED_THRESHOLD)
-        {
-            // Involve ZMM only for large data due to possible downclocking.
-            regSize = min(regSize, YMM_REGSIZE_BYTES);
-        }
 
         auto emitSimdMovs = [&]() {
             if (srcLclNum != BAD_VAR_NUM)
@@ -5405,6 +5415,9 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
                     switch (intrinsicId)
                     {
+                        case NI_Vector128_ToScalar:
+                        case NI_Vector256_ToScalar:
+                        case NI_Vector512_ToScalar:
                         case NI_SSE2_ConvertToInt32:
                         case NI_SSE2_ConvertToUInt32:
                         case NI_SSE2_X64_ConvertToInt64:

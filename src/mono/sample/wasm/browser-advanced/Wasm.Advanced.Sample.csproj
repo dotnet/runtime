@@ -4,7 +4,7 @@
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <PublishTrimmed>true</PublishTrimmed>
     <WasmEnableLegacyJsInterop>false</WasmEnableLegacyJsInterop>
-    <WasmEnableWebcil>true</WasmEnableWebcil>
+    <WasmEnableWebcil>false</WasmEnableWebcil>
     <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
     <EmccEnableAssertions>true</EmccEnableAssertions>
     <EmccEnvironment>web,worker</EmccEnvironment>

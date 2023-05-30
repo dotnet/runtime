@@ -297,10 +297,18 @@ CONFIG_INTEGER(JitStressEvexEncoding, W("JitStressEvexEncoding"), 0) // Enable E
 
 // clang-format off
 
+CONFIG_INTEGER(PreferredVectorBitWidth,     W("PreferredVectorBitWidth"),   0) // The preferred width, in bits, to use for any implicit vectorization emitted. A value less than 128 is treated as the system default.
+
 //
 // Hardware Intrinsic ISAs; keep in sync with clrconfigvalues.h
 //
-CONFIG_INTEGER(EnableHWIntrinsic,  W("EnableHWIntrinsic"),  1) // Allows Base+ hardware intrinsics to be disabled
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+//TODO: should implement LoongArch64's features.
+//TODO-RISCV64-CQ: should implement RISCV64's features.
+CONFIG_INTEGER(EnableHWIntrinsic,           W("EnableHWIntrinsic"),         0) // Allows Base+ hardware intrinsics to be disabled
+#else
+CONFIG_INTEGER(EnableHWIntrinsic,           W("EnableHWIntrinsic"),         1) // Allows Base+ hardware intrinsics to be disabled
+#endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 CONFIG_INTEGER(EnableAES,                   W("EnableAES"),                 1) // Allows AES+ hardware intrinsics to be disabled
@@ -516,6 +524,11 @@ CONFIG_INTEGER(JitEnableRemoveEmptyTry, W("JitEnableRemoveEmptyTry"), 1)
 
 // Overall master enable for Guarded Devirtualization.
 CONFIG_INTEGER(JitEnableGuardedDevirtualization, W("JitEnableGuardedDevirtualization"), 1)
+
+#define MAX_GDV_TYPE_CHECKS 5
+// Number of types to probe for polymorphic virtual call-sites to devirtualize them,
+// Max number is MAX_GDV_TYPE_CHECKS defined above ^
+CONFIG_INTEGER(JitGuardedDevirtualizationMaxTypeChecks, W("JitGuardedDevirtualizationMaxTypeChecks"), 3)
 
 // Various policies for GuardedDevirtualization
 CONFIG_INTEGER(JitGuardedDevirtualizationChainLikelihood, W("JitGuardedDevirtualizationChainLikelihood"), 0x4B) // 75

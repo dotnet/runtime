@@ -961,19 +961,7 @@ Module * Assembly::FindModuleByTypeRef(
 
 void Assembly::CacheManifestExportedTypes(AllocMemTracker *pamTracker)
 {
-    CONTRACT_VOID
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACT_END;
-
-    // Prejitted assemblies are expected to have their table prebuilt.
-    // If not, we do it here at load time (as if we would jit the assembly).
-
-    if (m_pModule->IsPersistedObject(m_pModule->m_pAvailableClasses))
-        RETURN;
+    STANDARD_VM_CONTRACT;
 
     mdToken mdExportedType;
 
@@ -987,24 +975,13 @@ void Assembly::CacheManifestExportedTypes(AllocMemTracker *pamTracker)
         m_pClassLoader->AddExportedTypeHaveLock(GetModule(),
                                                 mdExportedType,
                                                 pamTracker);
-
-    RETURN;
 }
 
-//<TODO>@TODO: if module is not signed it needs to acquire the
-//permissions from the assembly.</TODO>
 void Assembly::PrepareModuleForAssembly(Module* module, AllocMemTracker *pamTracker)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(CheckPointer(module));
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
-    if (module->m_pAvailableClasses != NULL && !module->IsPersistedObject(module->m_pAvailableClasses))
+    if (module->m_pAvailableClasses != NULL)
     {
         // ! We intentionally do not take the AvailableClass lock here. It creates problems at
         // startup and we haven't yet published the module yet so nobody should be searching it.

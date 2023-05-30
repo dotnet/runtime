@@ -27,8 +27,14 @@ namespace Microsoft.Interop
             return _inner.Create(info, context);
         }
 
+        // Necessary for API compatibility with preview 4 SDK
         public NoMarshallingInfoErrorMarshallingFactory(IMarshallingGeneratorFactory inner)
-            : this(inner, DefaultTypeToErrorMessageMap)
+            : this(inner, DefaultTypeToErrorMessageMap("LibraryImportAttribute"))
+        {
+        }
+
+        public NoMarshallingInfoErrorMarshallingFactory(IMarshallingGeneratorFactory inner, string stringMarshallingAttribute)
+            : this(inner, DefaultTypeToErrorMessageMap(stringMarshallingAttribute))
         {
         }
 
@@ -40,10 +46,10 @@ namespace Microsoft.Interop
 
         public ImmutableDictionary<ManagedTypeInfo, string> CustomTypeToErrorMessageMap { get; }
 
-        private static ImmutableDictionary<ManagedTypeInfo, string> DefaultTypeToErrorMessageMap { get; } =
-            ImmutableDictionary.CreateRange(new Dictionary<ManagedTypeInfo, string>
+        private static ImmutableDictionary<ManagedTypeInfo, string> DefaultTypeToErrorMessageMap(string stringMarshallingAttribute)
+            => ImmutableDictionary.CreateRange(new Dictionary<ManagedTypeInfo, string>
             {
-                { SpecialTypeInfo.String, SR.MarshallingStringOrCharAsUndefinedNotSupported },
+                { SpecialTypeInfo.String, string.Format(SR.MarshallingStringOrCharAsUndefinedNotSupported, stringMarshallingAttribute) },
                 { SpecialTypeInfo.Boolean, SR.MarshallingBoolAsUndefinedNotSupported },
             });
     }
