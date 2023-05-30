@@ -2186,9 +2186,7 @@ namespace System.Diagnostics.Tracing
                 EventName = eventName,
                 Message = msg,
                 Payload = new ReadOnlyCollection<object?>(new object[] { msg }),
-#pragma warning disable CA1861 // Prefer 'static readonly' fields over local constant array arguments
                 PayloadNames = s_errorPayloadNames ??= new ReadOnlyCollection<string>(new string[] { "message" })
-#pragma warning restore CA1861 // TODO: https://github.com/dotnet/roslyn-analyzers/issues/6629
             };
 
             for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)
