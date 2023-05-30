@@ -237,13 +237,12 @@ EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_has_parent_fast (
 	MonoClass *klass, MonoClass *parent
 ) {
-	// HACK: Support null check fusion: a null obj will produce a null obj->vtable->klass,
-	//  so we can return 1 to make the cast "succeed" and store null to the destination
-	// Based on instrumentation, null pointers flowing into this location are not very common
-	if (!klass)
-		return 1;
-	else
-		return mono_class_has_parent_fast (klass, parent);
+	// klass may be 0 if null check fusion is active, but that's fine:
+	// (m_class_get_idepth (0) >= m_class_get_idepth (parent)) in the fast check
+	// will fail since the idepth of the null ptr is going to be 0, and
+	//  we know parent->idepth >= 1 due to the [m_class_get_idepth (parent) - 1]
+	// We still need to check for a null pointer and return 1 to support fusion
+	return mono_class_has_parent_fast (klass, parent) || (klass == 0);
 }
 
 EMSCRIPTEN_KEEPALIVE int
