@@ -49,7 +49,6 @@
       DOTNET_JitStress;
       DOTNET_JitStressProcedureSplitting;
       DOTNET_JitStressRegs;
-      DOTNET_JitEnablePhysicalPromotion;
       DOTNET_TailcallStress;
       DOTNET_ReadyToRun;
       DOTNET_ZapDisable;
@@ -215,8 +214,8 @@
     <TestEnvironment Include="jitpartialcompilation" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" />
     <TestEnvironment Include="jitpartialcompilation_pgo" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" TieredPGO="1" />
     <TestEnvironment Include="jitobjectstackallocation" JitObjectStackAllocation="1" TieredCompilation="0" />
-    <TestEnvironment Include="jitphysicalpromotion" JitEnablePhysicalPromotion="1" TieredCompilation="0" />
-    <TestEnvironment Include="jitphysicalpromotion_full" JitEnablePhysicalPromotion="1" JitStressModeNames="STRESS_PHYSICAL_PROMOTION_COST STRESS_NO_OLD_PROMOTION" TieredCompilation="0" />
+    <TestEnvironment Include="jitphysicalpromotion" JitStressModeNames="STRESS_PHYSICAL_PROMOTION" TieredCompilation="0" />
+    <TestEnvironment Include="jitphysicalpromotion_full" JitStressModeNames="STRESS_PHYSICAL_PROMOTION STRESS_PHYSICAL_PROMOTION_COST STRESS_NO_OLD_PROMOTION" TieredCompilation="0" />
     <TestEnvironment Include="jitcfg" JitForceControlFlowGuard="1" />
     <TestEnvironment Include="jitcfg_dispatcher_always" JitForceControlFlowGuard="1" JitCFGUseDispatcher="1" />
     <TestEnvironment Include="jitcfg_dispatcher_never" JitForceControlFlowGuard="1" JitCFGUseDispatcher="0" />

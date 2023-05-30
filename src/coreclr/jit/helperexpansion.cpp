@@ -24,11 +24,12 @@ static void* GetConstantPointer(Compiler* comp, GenTree* tree)
 // Save expression to a local and append it as the last statement in exprBlock
 static GenTree* SpillExpression(Compiler* comp, GenTree* expr, BasicBlock* exprBlock, DebugInfo& debugInfo)
 {
-    unsigned const tmpNum  = comp->lvaGrabTemp(true DEBUGARG("spilling expr"));
-    Statement*     asgStmt = comp->fgNewStmtAtEnd(exprBlock, comp->gtNewTempAssign(tmpNum, expr), debugInfo);
-    comp->gtSetStmtInfo(asgStmt);
-    comp->fgSetStmtSeq(asgStmt);
-    return comp->gtNewLclvNode(tmpNum, genActualType(expr));
+    unsigned const tmpNum = comp->lvaGrabTemp(true DEBUGARG("spilling expr"));
+    Statement*     stmt   = comp->fgNewStmtAtEnd(exprBlock, comp->gtNewTempStore(tmpNum, expr), debugInfo);
+    comp->gtSetStmtInfo(stmt);
+    comp->fgSetStmtSeq(stmt);
+
+    return comp->gtNewLclVarNode(tmpNum);
 };
 
 //------------------------------------------------------------------------------
@@ -184,7 +185,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
 
     GenTreeLclVar* rtLookupLcl = nullptr;
 
-    // Mostly for Tier0: if the current statement is ASG(LCL, RuntimeLookup)
+    // Mostly for Tier0: if the current statement is STORE_LCL_VAR(RuntimeLookup)
     // we can drop it and use that LCL as the destination
     if (stmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR) && (stmt->GetRootNode()->AsLclVar()->Data() == *callUse))
     {
@@ -617,7 +618,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     //      ...
     //
     // maxThreadStaticBlocksCondBB (BBJ_COND):                          [weight: 1.0]
-    //      asgTlsValue = tls_access_code
+    //      tlsValue = tls_access_code
     //      if (maxThreadStaticBlocks < typeIndex)
     //          goto fallbackBb;
     //

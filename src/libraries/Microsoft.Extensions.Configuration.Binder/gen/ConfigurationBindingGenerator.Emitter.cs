@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 
@@ -72,6 +73,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 EmitGetCoreMethod();
                 EmitGetValueCoreMethod();
                 EmitBindCoreMethods();
+                EmitInitializeMethods();
                 EmitHelperMethods();
 
                 _writer.WriteBlockEnd(); // End helper class.
@@ -93,7 +95,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 EmitCheckForNullArgument_WithBlankLine(Identifier.configuration, useFullyQualifiedNames: true);
 
-                foreach (TypeSpec type in _generationSpec.RootConfigTypes[BinderMethodSpecifier.Configure])
+                foreach (TypeSpec type in _generationSpec.ConfigTypes[BinderMethodSpecifier.Configure])
                 {
                     string typeDisplayString = type.FullyQualifiedDisplayString;
 
@@ -121,28 +123,28 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     EmitBlankLineIfRequired();
                     _writer.WriteLine($"public static T? {Identifier.Get}<T>(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}) => " +
-                        $"(T?)({expressionForGetCore}({Identifier.configuration}, typeof(T), {Identifier.configureActions}: null) ?? default(T));");
+                        $"(T?)({expressionForGetCore}({Identifier.configuration}, typeof(T), {Identifier.configureOptions}: null) ?? default(T));");
                 }
 
                 if (_generationSpec.ShouldEmitMethods(BinderMethodSpecifier.Get_T_BinderOptions))
                 {
                     EmitBlankLineIfRequired();
-                    _writer.WriteLine($"public static T? {Identifier.Get}<T>(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.ActionOfBinderOptions}? {Identifier.configureActions}) => " +
-                        $"(T?)({expressionForGetCore}({Identifier.configuration}, typeof(T), {Identifier.configureActions}) ?? default(T));");
+                    _writer.WriteLine($"public static T? {Identifier.Get}<T>(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.ActionOfBinderOptions}? {Identifier.configureOptions}) => " +
+                        $"(T?)({expressionForGetCore}({Identifier.configuration}, typeof(T), {Identifier.configureOptions}) ?? default(T));");
                 }
 
                 if (_generationSpec.ShouldEmitMethods(BinderMethodSpecifier.Get_TypeOf))
                 {
                     EmitBlankLineIfRequired();
                     _writer.WriteLine($"public static object? {Identifier.Get}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.Type} {Identifier.type}) => " +
-                        $"{expressionForGetCore}({Identifier.configuration}, {Identifier.type}, {Identifier.configureActions}: null);");
+                        $"{expressionForGetCore}({Identifier.configuration}, {Identifier.type}, {Identifier.configureOptions}: null);");
                 }
 
                 if (_generationSpec.ShouldEmitMethods(BinderMethodSpecifier.Get_TypeOf_BinderOptions))
                 {
                     EmitBlankLineIfRequired();
-                    _writer.WriteLine($"public static object? {Identifier.Get}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.Type} {Identifier.type}, {FullyQualifiedDisplayName.ActionOfBinderOptions}? {Identifier.configureActions}) => " +
-                        $"{expressionForGetCore}({Identifier.configuration}, {Identifier.type}, {Identifier.configureActions});");
+                    _writer.WriteLine($"public static object? {Identifier.Get}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.Type} {Identifier.type}, {FullyQualifiedDisplayName.ActionOfBinderOptions}? {Identifier.configureOptions}) => " +
+                        $"{expressionForGetCore}({Identifier.configuration}, {Identifier.type}, {Identifier.configureOptions});");
                 }
             }
 
@@ -186,16 +188,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                Dictionary<BinderMethodSpecifier, HashSet<TypeSpec>> rootConfigTypes = _generationSpec.RootConfigTypes;
+                Dictionary<BinderMethodSpecifier, HashSet<TypeSpec>> rootConfigTypes = _generationSpec.ConfigTypes;
 
                 if (rootConfigTypes.TryGetValue(BinderMethodSpecifier.Bind_instance, out HashSet<TypeSpec>? typeSpecs))
                 {
                     foreach (TypeSpec type in typeSpecs)
                     {
-                        EmitBlankLineIfRequired();
-                        _writer.WriteLine(
-                            $"public static void {Identifier.Bind}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {type.FullyQualifiedDisplayString} {Identifier.obj}) => " +
-                                $"{FullyQualifiedDisplayName.Helpers}.{Identifier.BindCore}({Identifier.configuration}, ref {Identifier.obj}, {Identifier.binderOptions}: null);");
+                        EmitMethodImplementation(
+                            type,
+                            additionalParams: GetObjParameter(type),
+                            configExpression: Identifier.configuration,
+                            configureOptions: false);
                     }
                 }
 
@@ -203,10 +206,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     foreach (TypeSpec type in typeSpecs)
                     {
-                        EmitBlankLineIfRequired();
-                        _writer.WriteLine(
-                            $"public static void {Identifier.Bind}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {type.FullyQualifiedDisplayString} {Identifier.obj}, {FullyQualifiedDisplayName.ActionOfBinderOptions}? {Identifier.configureActions}) => " +
-                                $"{FullyQualifiedDisplayName.Helpers}.{Identifier.BindCore}({Identifier.configuration}, ref {Identifier.obj}, {Expression.GetBinderOptions}({Identifier.configureActions}));");
+                        EmitMethodImplementation(
+                            type,
+                            additionalParams: $"{GetObjParameter(type)}, {FullyQualifiedDisplayName.ActionOfBinderOptions}? {Identifier.configureOptions}",
+                            configExpression: Identifier.configuration,
+                            configureOptions: true);
                     }
                 }
 
@@ -214,18 +218,34 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     foreach (TypeSpec type in typeSpecs)
                     {
-                        EmitBlankLineIfRequired();
-                        _writer.WriteLine($"public static void {Identifier.Bind}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, string {Identifier.key}, {type.FullyQualifiedDisplayString} {Identifier.obj}) => " +
-                            $"{FullyQualifiedDisplayName.Helpers}.{Identifier.BindCore}({Identifier.configuration}.{Identifier.GetSection}({Identifier.key}), ref {Identifier.obj}, {Identifier.binderOptions}: null);");
+                        EmitMethodImplementation(
+                            type,
+                            additionalParams: $"string {Identifier.key}, {GetObjParameter(type)}",
+                            configExpression: $"{Identifier.configuration}.{Identifier.GetSection}({Identifier.key})",
+                            configureOptions: false);
                     }
                 }
+
+                void EmitMethodImplementation(TypeSpec type, string additionalParams, string configExpression, bool configureOptions)
+                {
+                    string binderOptionsArg = configureOptions ? $"{Expression.GetBinderOptions}({Identifier.configureOptions})" : $"{Identifier.binderOptions}: null";
+                    string returnExpression = type.CanInitialize
+                        ? $"{FullyQualifiedDisplayName.Helpers}.{Identifier.BindCore}({configExpression}, ref {Identifier.obj}, {binderOptionsArg})"
+                        : GetInitException(type.InitExceptionMessage);
+
+                    EmitBlankLineIfRequired();
+                    _writer.WriteLine($"public static void {Identifier.Bind}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {additionalParams}) => "
+                        + $"{returnExpression};");
+                }
+
+                string GetObjParameter(TypeSpec type) => $"{type.FullyQualifiedDisplayString} {Identifier.obj}";
             }
             #endregion
 
             #region Helper class in source-generation namespace.
             private void EmitHelperUsingStatements()
             {
-                foreach (string @namespace in _generationSpec.Namespaces)
+                foreach (string @namespace in _generationSpec.TypeNamespaces)
                 {
                     _writer.WriteLine($"using {@namespace};");
                 }
@@ -238,22 +258,27 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                _writer.WriteBlockStart($"public static object? {Identifier.GetCore}(this {Identifier.IConfiguration} {Identifier.configuration}, Type {Identifier.type}, Action<{Identifier.BinderOptions}>? {Identifier.configureActions})");
+                _writer.WriteBlockStart($"public static object? {Identifier.GetCore}(this {Identifier.IConfiguration} {Identifier.configuration}, Type {Identifier.type}, Action<{Identifier.BinderOptions}>? {Identifier.configureOptions})");
 
                 EmitCheckForNullArgument_WithBlankLine(Identifier.configuration);
 
-                _writer.WriteLine($"{Identifier.BinderOptions}? {Identifier.binderOptions} = {Identifier.GetBinderOptions}({Identifier.configureActions});");
+                _writer.WriteLine($"{Identifier.BinderOptions}? {Identifier.binderOptions} = {Identifier.GetBinderOptions}({Identifier.configureOptions});");
                 _writer.WriteBlankLine();
 
                 EmitIConfigurationHasValueOrChildrenCheck(voidReturn: false);
 
-                if (_generationSpec.RootConfigTypes.TryGetValue(BinderMethodSpecifier.Get, out HashSet<TypeSpec>? types))
+                if (_generationSpec.ConfigTypes.TryGetValue(BinderMethodSpecifier.Get, out HashSet<TypeSpec>? types))
                 {
                     foreach (TypeSpec type in types)
                     {
                         _writer.WriteBlockStart($"if (type == typeof({type.MinimalDisplayString}))");
-                        EmitBindLogicFromRootMethod(type, Identifier.obj, InitializationKind.Declaration);
-                        _writer.WriteLine($"return {Identifier.obj};");
+
+                        if (type.InitializationStrategy is InitializationStrategy.None || !EmitInitException(type))
+                        {
+                            EmitBindLogicFromRootMethod(type, Identifier.obj, InitializationKind.Declaration);
+                            _writer.WriteLine($"return {Identifier.obj};");
+                        }
+
                         _writer.WriteBlockEnd();
                         _writer.WriteBlankLine();
                     }
@@ -282,12 +307,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 _writer.WriteBlankLine();
 
-                foreach (TypeSpec type in _generationSpec.RootConfigTypes[BinderMethodSpecifier.GetValue])
+                foreach (TypeSpec type in _generationSpec.ConfigTypes[BinderMethodSpecifier.GetValue])
                 {
                     TypeSpec effectiveType = (type as NullableSpec)?.UnderlyingType ?? type;
                     _writer.WriteBlockStart($"if (type == typeof({type.MinimalDisplayString}))");
                     EmitBindLogicFromString(
-                        (ParsableFromStringTypeSpec)effectiveType,
+                        (ParsableFromStringSpec)effectiveType,
                         Identifier.obj,
                         Expression.sectionValue,
                         Expression.sectionPath,
@@ -308,7 +333,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                foreach (TypeSpec type in _generationSpec.RootConfigTypes[BinderMethodSpecifier.BindCore])
+                foreach (TypeSpec type in _generationSpec.ConfigTypes[BinderMethodSpecifier.BindCore])
                 {
                     if (type.SpecKind is TypeSpecKind.ParsableFromString)
                     {
@@ -322,10 +347,167 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitBindCoreMethod(TypeSpec type)
             {
+                Debug.Assert(type.CanInitialize);
+
                 string objParameterExpression = $"ref {type.MinimalDisplayString} {Identifier.obj}";
                 _writer.WriteBlockStart(@$"public static void {Identifier.BindCore}({Identifier.IConfiguration} {Identifier.configuration}, {objParameterExpression}, {Identifier.BinderOptions}? {Identifier.binderOptions})");
                 EmitBindCoreImpl(type);
                 _writer.WriteBlockEnd();
+            }
+
+            private void EmitInitializeMethods()
+            {
+                if (!_generationSpec.ShouldEmitMethods(BinderMethodSpecifier.Initialize))
+                {
+                    return;
+                }
+
+                foreach (ObjectSpec type in _generationSpec.ConfigTypes[BinderMethodSpecifier.Initialize])
+                {
+                    EmitBlankLineIfRequired();
+                    EmitInitializeMethod(type);
+                }
+            }
+
+            private void EmitInitializeMethod(ObjectSpec type)
+            {
+                Debug.Assert(type.CanInitialize);
+
+                List<ParameterSpec> ctorParams = type.ConstructorParameters;
+                IEnumerable<PropertySpec> initOnlyProps = type.Properties.Values.Where(prop => prop.SetOnInit);
+                string displayString = type.MinimalDisplayString;
+
+                _writer.WriteBlockStart($"public static {displayString} {type.InitializeMethodDisplayString}({Identifier.IConfiguration} {Identifier.configuration}, {Identifier.BinderOptions}? {Identifier.binderOptions})");
+
+                foreach (ParameterSpec parameter in ctorParams)
+                {
+                    if (!parameter.HasExplicitDefaultValue)
+                    {
+                        _writer.WriteLine($@"({parameter.Type.MinimalDisplayString} {Identifier.Value}, bool {Identifier.HasConfig}) {parameter.Name} = ({parameter.DefaultValue}, false);");
+                    }
+                    else
+                    {
+                        _writer.WriteLine($@"{parameter.Type.MinimalDisplayString} {parameter.Name} = {parameter.DefaultValue};");
+                    }
+                }
+
+                foreach (PropertySpec property in initOnlyProps)
+                {
+                    if (property.MatchingCtorParam is null)
+                    {
+                        _writer.WriteLine($@"{property.Type.MinimalDisplayString} {property.Name} = default!;");
+                    }
+                }
+
+                _writer.WriteBlankLine();
+
+                _writer.WriteBlock($$"""
+                        foreach ({{Identifier.IConfigurationSection}} {{Identifier.section}} in {{Identifier.configuration}}.{{Identifier.GetChildren}}())
+                        {
+                            switch ({{Expression.sectionKey}})
+                            {
+                    """);
+
+                List<string> argumentList = new();
+
+                foreach (ParameterSpec parameter in ctorParams)
+                {
+                    EmitMemberBindLogic(parameter.Name, parameter.Type, parameter.ConfigurationKeyName, configValueMustExist: !parameter.HasExplicitDefaultValue);
+                    argumentList.Add(GetExpressionForArgument(parameter));
+                }
+
+                foreach (PropertySpec property in initOnlyProps)
+                {
+                    if (property.ShouldBind() && property.MatchingCtorParam is null)
+                    {
+                        EmitMemberBindLogic(property.Name, property.Type, property.ConfigurationKeyName);
+                    }
+                }
+
+                _writer.WriteBlock("""
+                    default:
+                    {
+                        continue;
+                    }
+                }
+            }
+            """);
+
+                _precedingBlockExists = true;
+
+                foreach (ParameterSpec parameter in ctorParams)
+                {
+                    if (!parameter.HasExplicitDefaultValue)
+                    {
+                        string parameterName = parameter.Name;
+
+                        EmitBlankLineIfRequired();
+                        _writer.WriteBlock($$"""
+                        if (!{{parameterName}}.{{Identifier.HasConfig}})
+                        {
+                            throw new {{GetInvalidOperationDisplayName()}}("{{string.Format(ExceptionMessages.ParameterHasNoMatchingConfig, type.Name, parameterName)}}");
+                        }
+                        """);
+                    }
+                }
+
+                EmitBlankLineIfRequired();
+
+                string returnExpression = $"return new {displayString}({string.Join(", ", argumentList)})";
+                if (!initOnlyProps.Any())
+                {
+                    _writer.WriteLine($"{returnExpression};");
+                }
+                else
+                {
+                    _writer.WriteBlockStart(returnExpression);
+                    foreach (PropertySpec property in initOnlyProps)
+                    {
+                        string propertyName = property.Name;
+                        string initValue = propertyName + (property.MatchingCtorParam is null or ParameterSpec { HasExplicitDefaultValue: true } ? string.Empty : $".{Identifier.Value}");
+                        _writer.WriteLine($@"{propertyName} = {initValue},");
+                    }
+                    _writer.WriteBlockEnd(";");
+                }
+
+                // End method.
+                _writer.WriteBlockEnd();
+
+                #region Local helpers
+                void EmitMemberBindLogic(string memberName, TypeSpec memberType, string configurationKeyName, bool configValueMustExist = false)
+                {
+                    string lhs = memberName + (configValueMustExist ? $".{Identifier.Value}" : string.Empty);
+
+                    _writer.WriteBlockStart($@"case ""{configurationKeyName}"":");
+                    EmitMemberBindLogicCore(memberType, lhs);
+
+                    if (configValueMustExist)
+                    {
+                        _writer.WriteLine($"{memberName}.{Identifier.HasConfig} = true;");
+                    }
+
+                    _writer.WriteBlockEnd();
+                    _writer.WriteLine("break;");
+
+                    void EmitMemberBindLogicCore(TypeSpec type, string lhs)
+                    {
+                        TypeSpecKind kind = type.SpecKind;
+
+                        if (kind is TypeSpecKind.Nullable)
+                        {
+                            EmitMemberBindLogicCore(((NullableSpec)type).UnderlyingType, lhs);
+                        }
+                        else if (kind is TypeSpecKind.ParsableFromString)
+                        {
+                            EmitBindLogicFromString((ParsableFromStringSpec)type, lhs, Expression.sectionValue, Expression.sectionPath);
+                        }
+                        else if (!EmitInitException(type))
+                        {
+                            EmitBindCoreCall(type, lhs, Identifier.section, InitializationKind.SimpleAssignment);
+                        }
+                    }
+                }
+                #endregion
             }
 
             private void EmitHelperMethods()
@@ -354,7 +536,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (_generationSpec.PrimitivesForHelperGen.Count > 0)
                 {
-                    foreach (ParsableFromStringTypeSpec type in _generationSpec.PrimitivesForHelperGen)
+                    foreach (ParsableFromStringSpec type in _generationSpec.PrimitivesForHelperGen)
                     {
                         EmitBlankLineIfRequired();
                         EmitPrimitiveParseMethod(type);
@@ -393,15 +575,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private void EmitGetBinderOptionsHelper()
             {
                 _writer.WriteBlock($$"""
-                    public static {{Identifier.BinderOptions}}? {{Identifier.GetBinderOptions}}(System.Action<BinderOptions>? {{Identifier.configureActions}})
+                    public static {{Identifier.BinderOptions}}? {{Identifier.GetBinderOptions}}(System.Action<BinderOptions>? {{Identifier.configureOptions}})
                     {
-                        if ({{Identifier.configureActions}} is null)
+                        if ({{Identifier.configureOptions}} is null)
                         {
                             return null;
                         }
 
                         {{Identifier.BinderOptions}} {{Identifier.binderOptions}} = new();
-                        {{Identifier.configureActions}}({{Identifier.binderOptions}});
+                        {{Identifier.configureOptions}}({{Identifier.binderOptions}});
 
                         if ({{Identifier.binderOptions}}.BindNonPublicProperties)
                         {
@@ -413,7 +595,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     """);
             }
 
-            private void EmitPrimitiveParseMethod(ParsableFromStringTypeSpec type)
+            private void EmitPrimitiveParseMethod(ParsableFromStringSpec type)
             {
                 string innerExceptionTypeDisplayString;
                 string cultureInfoTypeDisplayString;
@@ -487,8 +669,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         }
                 }
 
-                string exceptionTypeDisplayString = _useFullyQualifiedNames ? FullyQualifiedDisplayName.InvalidOperationException : Identifier.InvalidOperationException;
-
                 _writer.WriteBlock($$"""
                     public static {{typeDisplayString}} {{type.ParseMethodName}}(string {{Identifier.stringValue}}, Func<string?> {{Identifier.getPath}})
                     {
@@ -503,7 +683,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         }
                         catch ({{innerExceptionTypeDisplayString}} {{Identifier.exception}})
                         {
-                            throw new {{exceptionTypeDisplayString}}($"{{exceptionArg1}}", {{Identifier.exception}});
+                            throw new {{GetInvalidOperationDisplayName()}}($"{{exceptionArg1}}", {{Identifier.exception}});
                         }
                     }
                     """);
@@ -516,13 +696,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 switch (type.SpecKind)
                 {
                     case TypeSpecKind.Enumerable:
+                    case TypeSpecKind.Dictionary:
+                    case TypeSpecKind.Object:
                         {
-                            EmitBindCoreImplForEnumerable((EnumerableSpec)type);
+                            Debug.Assert(type.CanInitialize);
+                            EmitCheckForNullArgument_WithBlankLine_IfRequired(type.IsValueType);
+                            EmitBindCoreImplForComplexType(type);
                         }
                         break;
-                    case TypeSpecKind.Dictionary:
+                    case TypeSpecKind.Nullable:
                         {
-                            EmitBindCoreImplForDictionary((DictionarySpec)type);
+                            EmitBindCoreImpl(((NullableSpec)type).UnderlyingType);
                         }
                         break;
                     case TypeSpecKind.IConfigurationSection:
@@ -531,33 +715,29 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             _writer.WriteLine($"{Identifier.obj} = {Identifier.section};");
                         }
                         break;
-                    case TypeSpecKind.Object:
-                        {
-                            EmitBindCoreImplForObject((ObjectSpec)type);
-                        }
-                        break;
-                    case TypeSpecKind.Nullable:
-                        {
-                            EmitBindCoreImpl(((NullableSpec)type).UnderlyingType);
-                        }
-                        break;
                     default:
                         Debug.Fail("Invalid type kind", type.SpecKind.ToString());
                         break;
                 }
             }
 
-            private void EmitBindCoreImplForEnumerable(EnumerableSpec type)
+            private void EmitBindCoreImplForComplexType(TypeSpec type)
             {
-                EmitCheckForNullArgument_WithBlankLine_IfRequired(type.IsValueType);
-
-                if (type.PopulationStrategy is CollectionPopulationStrategy.Array)
+                if (type.InitializationStrategy is InitializationStrategy.Array)
                 {
-                    EmitPopulationImplForArray(type);
+                    EmitPopulationImplForArray((EnumerableSpec)type);
+                }
+                else if (type is EnumerableSpec enumerable)
+                {
+                    EmitPopulationImplForEnumerableWithAdd(enumerable);
+                }
+                else if (type is DictionarySpec dictionary)
+                {
+                    EmitBindCoreImplForDictionary(dictionary);
                 }
                 else
                 {
-                    EmitPopulationImplForEnumerableWithAdd(type);
+                    EmitBindCoreImplForObject((ObjectSpec)type);
                 }
             }
 
@@ -589,7 +769,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (elementType.SpecKind is TypeSpecKind.ParsableFromString)
                 {
-                    ParsableFromStringTypeSpec stringParsableType = (ParsableFromStringTypeSpec)elementType;
+                    ParsableFromStringSpec stringParsableType = (ParsableFromStringSpec)elementType;
                     if (stringParsableType.StringParsableTypeKind is StringParsableTypeKind.ConfigValue)
                     {
                         string tempVarName = GetIncrementalVarName(Identifier.stringValue);
@@ -614,14 +794,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitBindCoreImplForDictionary(DictionarySpec type)
             {
-                EmitCheckForNullArgument_WithBlankLine_IfRequired(type.IsValueType);
+                TypeSpec elementType = type.ElementType;
 
                 EmitCollectionCastIfRequired(type, out string objIdentifier);
 
                 _writer.WriteBlockStart($"foreach ({Identifier.IConfigurationSection} {Identifier.section} in {Identifier.configuration}.{Identifier.GetChildren}())");
 
-                ParsableFromStringTypeSpec keyType = type.KeyType;
-                TypeSpec elementType = type.ElementType;
+                ParsableFromStringSpec keyType = type.KeyType;
 
                 // Parse key
                 if (keyType.StringParsableTypeKind is StringParsableTypeKind.ConfigValue)
@@ -644,7 +823,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     if (elementType.SpecKind == TypeSpecKind.ParsableFromString)
                     {
-                        ParsableFromStringTypeSpec stringParsableType = (ParsableFromStringTypeSpec)elementType;
+                        ParsableFromStringSpec stringParsableType = (ParsableFromStringSpec)elementType;
                         if (stringParsableType.StringParsableTypeKind is StringParsableTypeKind.ConfigValue)
                         {
                             string tempVarName = GetIncrementalVarName(Identifier.stringValue);
@@ -665,6 +844,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
                     else // For complex types:
                     {
+                        Debug.Assert(elementType.CanInitialize);
+
                         bool isValueType = elementType.IsValueType;
                         string expressionForElementIsNotNull = $"{Identifier.element} is not null";
                         string elementTypeDisplayString = elementType.MinimalDisplayString + (elementType.IsValueType ? string.Empty : "?");
@@ -684,13 +865,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                         if (elementType is CollectionSpec
                             {
-                                ConstructionStrategy: ConstructionStrategy.ParameterizedConstructor or ConstructionStrategy.ToEnumerableMethod
+                                InitializationStrategy: InitializationStrategy.ParameterizedConstructor or InitializationStrategy.ToEnumerableMethod
                             } collectionSpec)
                         {
                             // This is a read-only collection. If the element exists and is not null,
                             // we need to copy its contents into a new instance & then append/bind to that.
 
-                            string initExpression = collectionSpec.ConstructionStrategy is ConstructionStrategy.ParameterizedConstructor
+                            string initExpression = collectionSpec.InitializationStrategy is InitializationStrategy.ParameterizedConstructor
                                 ? $"new {collectionSpec.ConcreteType.MinimalDisplayString}({Identifier.element})"
                                 : $"{Identifier.element}.{collectionSpec.ToEnumerableMethodCall!}";
 
@@ -712,13 +893,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitBindCoreImplForObject(ObjectSpec type)
             {
-                Dictionary<string, PropertySpec> properties = type.Properties;
-                if (properties.Count == 0)
+                if (type.Properties.Count == 0)
                 {
                     return;
                 }
-
-                EmitCheckForNullArgument_WithBlankLine_IfRequired(type.IsValueType);
 
                 string listOfStringDisplayName = "List<string>";
                 _writer.WriteLine($"{listOfStringDisplayName}? {Identifier.temp} = null;");
@@ -726,17 +904,21 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _writer.WriteBlockStart($"foreach ({Identifier.IConfigurationSection} {Identifier.section} in {Identifier.configuration}.{Identifier.GetChildren}())");
                 _writer.WriteBlockStart($"switch ({Expression.sectionKey})");
 
-                foreach (PropertySpec property in properties.Values)
+                foreach (PropertySpec property in type.Properties.Values)
                 {
                     _writer.WriteBlockStart($@"case ""{property.ConfigurationKeyName}"":");
 
+                    bool success = true;
                     if (property.ShouldBind())
                     {
-                        EmitBindCoreImplForProperty(property, property.Type!, parentType: type);
+                        success = EmitBindCoreImplForProperty(property, property.Type, parentType: type);
                     }
 
                     _writer.WriteBlockEnd();
-                    _writer.WriteLine("break;");
+                    if (success)
+                    {
+                        _writer.WriteLine("break;");
+                    }
                 }
 
                 _writer.WriteBlock($$"""
@@ -768,7 +950,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             }
 
-            private void EmitBindCoreImplForProperty(PropertySpec property, TypeSpec propertyType, TypeSpec parentType)
+            private bool EmitBindCoreImplForProperty(PropertySpec property, TypeSpec propertyType, TypeSpec parentType)
             {
                 string configurationKeyName = property.ConfigurationKeyName;
 
@@ -786,19 +968,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             if (canSet)
                             {
                                 EmitBindLogicFromString(
-                                    (ParsableFromStringTypeSpec)propertyType,
+                                    (ParsableFromStringSpec)propertyType,
                                     expressionForPropertyAccess,
                                     expressionForConfigValueIndexer,
                                     expressionForConfigValuePath: Expression.sectionPath);
                             }
-                        }
-                        break;
-                    case TypeSpecKind.Array:
-                        {
-                            EmitBindCoreCallForProperty(
-                                property,
-                                propertyType,
-                                expressionForPropertyAccess);
                         }
                         break;
                     case TypeSpecKind.IConfigurationSection:
@@ -814,10 +988,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         break;
                     default:
                         {
+                            if (EmitInitException(propertyType))
+                            {
+                                return false;
+                            }
+
                             EmitBindCoreCallForProperty(property, propertyType, expressionForPropertyAccess);
                         }
                         break;
                 }
+
+                return true;
             }
 
             private void EmitBindLogicFromRootMethod(TypeSpec type, string expressionForMemberAccess, InitializationKind initKind)
@@ -828,22 +1009,25 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     EmitBindLogicFromRootMethod(((NullableSpec)type).UnderlyingType, expressionForMemberAccess, initKind);
                 }
-                else if (kind is TypeSpecKind.ParsableFromString)
+                else
                 {
-                    if (initKind is InitializationKind.Declaration)
+                    if (kind is TypeSpecKind.ParsableFromString)
                     {
-                        EmitCastToIConfigurationSection();
-                        _writer.WriteLine($"{GetTypeDisplayString(type)} {expressionForMemberAccess} = default!;");
+                        if (initKind is InitializationKind.Declaration)
+                        {
+                            EmitCastToIConfigurationSection();
+                            _writer.WriteLine($"{GetTypeDisplayString(type)} {expressionForMemberAccess} = default!;");
+                        }
+                        else
+                        {
+                            EmitCastToIConfigurationSection();
+                        }
+                        EmitBindLogicFromString((ParsableFromStringSpec)type, expressionForMemberAccess, Expression.sectionValue, Expression.sectionPath);
                     }
                     else
                     {
-                        EmitCastToIConfigurationSection();
+                        EmitBindCoreCall(type, expressionForMemberAccess, Identifier.configuration, initKind);
                     }
-                    EmitBindLogicFromString((ParsableFromStringTypeSpec)type, expressionForMemberAccess, Expression.sectionValue, Expression.sectionPath);
-                }
-                else
-                {
-                    EmitBindCoreCall(type, expressionForMemberAccess, Identifier.configuration, initKind);
                 }
             }
 
@@ -853,6 +1037,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string expressionForConfigArg,
                 InitializationKind initKind)
             {
+                Debug.Assert(type.CanInitialize);
+
                 string tempVarName = GetIncrementalVarName(Identifier.temp);
                 if (initKind is InitializationKind.AssignmentWithNullCheck)
                 {
@@ -921,30 +1107,33 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         _writer.WriteLine($"{expressionForPropertyAccess} = {tempVarName};");
                     }
                 }
-                else if (canGet)
-                {
-                    _writer.WriteLine($"{effectivePropertyTypeDisplayString} {tempVarName} = {expressionForPropertyAccess};");
-                    EmitObjectInit(effectivePropertyType, tempVarName, InitializationKind.AssignmentWithNullCheck);
-                    _writer.WriteLine($@"{Identifier.BindCore}({Identifier.section}, ref {tempVarName}, {Identifier.binderOptions});");
-
-                    if (canSet)
-                    {
-                        _writer.WriteLine($"{expressionForPropertyAccess} = {tempVarName};");
-                    }
-                }
                 else
                 {
-                    Debug.Assert(canSet);
-                    EmitObjectInit(effectivePropertyType, tempVarName, InitializationKind.Declaration);
-                    _writer.WriteLine($@"{Identifier.BindCore}({Identifier.section}, ref {tempVarName}, {Identifier.binderOptions});");
-                    _writer.WriteLine($"{expressionForPropertyAccess} = {tempVarName};");
+                    if (canGet)
+                    {
+                        _writer.WriteLine($"{effectivePropertyTypeDisplayString} {tempVarName} = {expressionForPropertyAccess};");
+                        EmitObjectInit(effectivePropertyType, tempVarName, InitializationKind.AssignmentWithNullCheck);
+                        _writer.WriteLine($@"{Identifier.BindCore}({Identifier.section}, ref {tempVarName}, {Identifier.binderOptions});");
+
+                        if (canSet)
+                        {
+                            _writer.WriteLine($"{expressionForPropertyAccess} = {tempVarName};");
+                        }
+                    }
+                    else
+                    {
+                        Debug.Assert(canSet);
+                        EmitObjectInit(effectivePropertyType, tempVarName, InitializationKind.Declaration);
+                        _writer.WriteLine($@"{Identifier.BindCore}({Identifier.section}, ref {tempVarName}, {Identifier.binderOptions});");
+                        _writer.WriteLine($"{expressionForPropertyAccess} = {tempVarName};");
+                    }
                 }
 
                 _writer.WriteBlockEnd();
             }
 
             private void EmitBindLogicFromString(
-                ParsableFromStringTypeSpec type,
+                ParsableFromStringSpec type,
                 string expressionForMemberAccess,
                 string expressionForConfigStringValue,
                 string expressionForConfigValuePath,
@@ -968,38 +1157,42 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return;
             }
 
-            private void EmitObjectInit(TypeSpec type, string expressionForMemberAccess, InitializationKind initKind)
+            private bool EmitObjectInit(TypeSpec type, string expressionForMemberAccess, InitializationKind initKind)
             {
+                Debug.Assert(type.CanInitialize);
+
                 if (initKind is InitializationKind.None)
                 {
-                    return;
+                    // Reachable?
+                    return true;
                 }
 
                 string expressionForInit;
                 CollectionSpec? collectionType = type as CollectionSpec;
 
-                string typeDisplayString;
+                string effectiveDisplayString = GetTypeDisplayString(type);
                 if (collectionType is not null)
                 {
-                    if (collectionType is EnumerableSpec { PopulationStrategy: CollectionPopulationStrategy.Array })
+                    if (collectionType is EnumerableSpec { InitializationStrategy: InitializationStrategy.Array })
                     {
-                        typeDisplayString = GetTypeDisplayString(type);
-                        expressionForInit = $"new {_arrayBracketsRegex.Replace(typeDisplayString, "[0]", 1)}";
+                        expressionForInit = $"new {_arrayBracketsRegex.Replace(effectiveDisplayString, "[0]", 1)}";
                     }
                     else
                     {
-                        typeDisplayString = GetTypeDisplayString(collectionType.ConcreteType ?? collectionType);
-                        expressionForInit = $"new {typeDisplayString}()";
+                        effectiveDisplayString = GetTypeDisplayString(collectionType.ConcreteType ?? collectionType);
+                        expressionForInit = $"new {effectiveDisplayString}()";
                     }
                 }
-                else if (type.ConstructionStrategy is ConstructionStrategy.ParameterlessConstructor)
+                else if (type.InitializationStrategy is InitializationStrategy.ParameterlessConstructor)
                 {
-                    typeDisplayString = GetTypeDisplayString(type);
-                    expressionForInit = $"new {typeDisplayString}()";
+                    expressionForInit = $"new {effectiveDisplayString}()";
                 }
                 else
                 {
-                    return;
+                    Debug.Assert(type.InitializationStrategy is InitializationStrategy.ParameterizedConstructor);
+                    string expressionForConfigSection = initKind is InitializationKind.Declaration ? Identifier.configuration : Identifier.section;
+                    string initMethodIdentifier = GetHelperMethodDisplayString(((ObjectSpec)type).InitializeMethodDisplayString);
+                    expressionForInit = $"{initMethodIdentifier}({expressionForConfigSection}, {Identifier.binderOptions});";
                 }
 
                 if (initKind == InitializationKind.Declaration)
@@ -1009,14 +1202,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else if (initKind == InitializationKind.AssignmentWithNullCheck)
                 {
-                    ConstructionStrategy? collectionConstructionStratey = collectionType?.ConstructionStrategy;
-                    if (collectionConstructionStratey is ConstructionStrategy.ParameterizedConstructor)
+                    if (collectionType is CollectionSpec
+                        {
+                            InitializationStrategy: InitializationStrategy.ParameterizedConstructor or InitializationStrategy.ToEnumerableMethod
+                        })
                     {
-                        _writer.WriteLine($"{expressionForMemberAccess} = {expressionForMemberAccess} is null ? {expressionForInit} : new {typeDisplayString}({expressionForMemberAccess});");
-                    }
-                    else if (collectionConstructionStratey is ConstructionStrategy.ToEnumerableMethod)
-                    {
-                        _writer.WriteLine($"{expressionForMemberAccess} = {expressionForMemberAccess} is null ? {expressionForInit} : {expressionForMemberAccess}.{collectionType.ToEnumerableMethodCall!};");
+                        if (collectionType.InitializationStrategy is InitializationStrategy.ParameterizedConstructor)
+                        {
+                            _writer.WriteLine($"{expressionForMemberAccess} = {expressionForMemberAccess} is null ? {expressionForInit} : new {effectiveDisplayString}({expressionForMemberAccess});");
+                        }
+                        else
+                        {
+                            _writer.WriteLine($"{expressionForMemberAccess} = {expressionForMemberAccess} is null ? {expressionForInit} : {expressionForMemberAccess}.{collectionType.ToEnumerableMethodCall!};");
+                        }
                     }
                     else
                     {
@@ -1025,8 +1223,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else
                 {
+                    Debug.Assert(initKind is InitializationKind.SimpleAssignment);
                     _writer.WriteLine($"{expressionForMemberAccess} = {expressionForInit};");
                 }
+
+                return true;
             }
 
             private void EmitCollectionCastIfRequired(CollectionSpec type, out string objIdentifier)

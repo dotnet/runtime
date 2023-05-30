@@ -7827,7 +7827,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
         {
             assert(srcRegNum != varDsc->GetOtherArgReg());
 
-            regNumber tmp_reg = REG_NA;
+            regNumber tmpReg = REG_NA;
 
             bool FPbased;
             int  baseOffset = compiler->lvaFrameAddress(varNum, &FPbased);
@@ -7839,13 +7839,13 @@ void CodeGen::genFnPrologCalleeRegArgs()
             }
             else
             {
-                assert(tmp_reg == REG_NA);
+                assert(tmpReg == REG_NA);
 
-                tmp_reg = REG_RA;
-                GetEmitter()->emitIns_I_la(EA_PTRSIZE, tmp_reg, baseOffset);
-                // The last parameter `int offs` of the `emitIns_S_R` is negtive,
-                // it means the offset imm had been stored within the `REG_RA`.
-                GetEmitter()->emitIns_S_R_R(ins_Store(storeType, true), size, srcRegNum, tmp_reg, varNum, -8);
+                tmpReg = REG_RA;
+                // Prepare tmpReg to possible future use
+                GetEmitter()->emitIns_I_la(EA_PTRSIZE, tmpReg, baseOffset);
+                GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, tmpReg, tmpReg, FPbased ? REG_FPBASE : REG_SPBASE);
+                GetEmitter()->emitIns_S_R_R(ins_Store(storeType), size, srcRegNum, tmpReg, varNum, 0);
             }
 
             regArgMaskLive &= ~genRegMask(srcRegNum);
@@ -7882,27 +7882,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                 // if the struct passed by two register, then store the second register `varDsc->GetOtherArgReg()`.
                 if (srcRegNum == varDsc->GetOtherArgReg())
                 {
-                    if (emitter::isValidSimm12(baseOffset))
-                    {
-                        GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, varNum, slotSize);
-                    }
-                    else
-                    {
-                        if (tmp_reg == REG_NA)
-                        {
-                            GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_RA, baseOffset);
-                            // The last parameter `int offs` of the `emitIns_S_R` is negtive,
-                            // it means the offset imm had been stored within the `REG_RA`.
-                            GetEmitter()->emitIns_S_R_R(ins_Store(storeType, true), size, srcRegNum, REG_RA, varNum,
-                                                        -slotSize - 8);
-                        }
-                        else
-                        {
-                            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_RA, REG_RA, slotSize);
-                            GetEmitter()->emitIns_S_R_R(ins_Store(storeType, true), size, srcRegNum, REG_RA, varNum,
-                                                        -slotSize - 8);
-                        }
-                    }
+                    GetEmitter()->emitIns_S_R_R(ins_Store(storeType), size, srcRegNum, tmpReg, varNum, slotSize);
                     regArgMaskLive &= ~genRegMask(srcRegNum); // maybe do this later is better!
                 }
                 else if (varDsc->lvIsSplit)
@@ -7928,25 +7908,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                         GetEmitter()->emitIns_R_R_I(INS_ld, size, REG_SCRATCH, REG_SCRATCH, 0);
                     }
 
-                    if (emitter::isValidSimm12(baseOffset))
-                    {
-                        GetEmitter()->emitIns_S_R(INS_sd, size, REG_SCRATCH, varNum, TARGET_POINTER_SIZE);
-                    }
-                    else
-                    {
-                        if (tmp_reg == REG_NA)
-                        {
-                            GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_RA, baseOffset);
-                            // The last parameter `int offs` of the `emitIns_S_R` is negtive,
-                            // it means the offset imm had been stored within the `REG_RA`.
-                            GetEmitter()->emitIns_S_R_R(INS_sd, size, REG_SCRATCH, REG_RA, varNum, -8);
-                        }
-                        else
-                        {
-                            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_RA, REG_RA, TARGET_POINTER_SIZE);
-                            GetEmitter()->emitIns_S_R_R(INS_sd, size, REG_SCRATCH, REG_RA, varNum, -slotSize - 8);
-                        }
-                    }
+                    GetEmitter()->emitIns_S_R_R(ins_Store(storeType), size, REG_SCRATCH, tmpReg, varNum, slotSize);
                 }
             }
 

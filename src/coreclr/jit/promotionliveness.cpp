@@ -74,15 +74,14 @@ void PromotionLiveness::Run()
 {
     m_structLclToTrackedIndex = new (m_compiler, CMK_Promotion) unsigned[m_aggregates.size()]{};
     unsigned trackedIndex     = 0;
-    for (size_t lclNum = 0; lclNum < m_aggregates.size(); lclNum++)
+    for (AggregateInfo* agg : m_aggregates)
     {
-        AggregateInfo* agg = m_aggregates[lclNum];
         if (agg == nullptr)
         {
             continue;
         }
 
-        m_structLclToTrackedIndex[lclNum] = trackedIndex;
+        m_structLclToTrackedIndex[agg->LclNum] = trackedIndex;
         // TODO: We need a scalability limit on these, we cannot always track
         // the remainder and all fields.
         // Remainder.
@@ -93,7 +92,7 @@ void PromotionLiveness::Run()
 #ifdef DEBUG
         // Mark the struct local (remainder) and fields as tracked for DISPTREE to properly
         // show last use information.
-        m_compiler->lvaGetDesc((unsigned)lclNum)->lvTrackedWithoutIndex = true;
+        m_compiler->lvaGetDesc(agg->LclNum)->lvTrackedWithoutIndex = true;
         for (size_t i = 0; i < agg->Replacements.size(); i++)
         {
             m_compiler->lvaGetDesc(agg->Replacements[i].LclNum)->lvTrackedWithoutIndex = true;
@@ -352,11 +351,11 @@ bool PromotionLiveness::PerBlockLiveness(BasicBlock* block)
 
     BasicBlockLiveness& bbInfo = m_bbInfo[block->bbNum];
     BitVecOps::ClearD(m_bvTraits, bbInfo.LiveOut);
-    for (BasicBlock* succ : block->GetAllSuccs(m_compiler))
-    {
+    block->VisitAllSuccs(m_compiler, [=, &bbInfo](BasicBlock* succ) {
         BitVecOps::UnionD(m_bvTraits, bbInfo.LiveOut, m_bbInfo[succ->bbNum].LiveIn);
         m_hasPossibleBackEdge |= succ->bbNum <= block->bbNum;
-    }
+        return BasicBlockVisit::Continue;
+    });
 
     BitVecOps::LivenessD(m_bvTraits, m_liveIn, bbInfo.VarDef, bbInfo.VarUse, bbInfo.LiveOut);
 
@@ -830,9 +829,8 @@ void PromotionLiveness::DumpVarSet(BitVec set, BitVec allVars)
     printf("{");
 
     const char* sep = "";
-    for (size_t i = 0; i < m_aggregates.size(); i++)
+    for (AggregateInfo* agg : m_aggregates)
     {
-        AggregateInfo* agg = m_aggregates[i];
         if (agg == nullptr)
         {
             continue;
@@ -840,18 +838,18 @@ void PromotionLiveness::DumpVarSet(BitVec set, BitVec allVars)
 
         for (size_t j = 0; j <= agg->Replacements.size(); j++)
         {
-            unsigned index = (unsigned)(m_structLclToTrackedIndex[i] + j);
+            unsigned index = (unsigned)(m_structLclToTrackedIndex[agg->LclNum] + j);
 
             if (BitVecOps::IsMember(m_bvTraits, set, index))
             {
                 if (j == 0)
                 {
-                    printf("%sV%02u(remainder)", sep, (unsigned)i);
+                    printf("%sV%02u(remainder)", sep, agg->LclNum);
                 }
                 else
                 {
                     const Replacement& rep = agg->Replacements[j - 1];
-                    printf("%sV%02u.[%03u..%03u)", sep, (unsigned)i, rep.Offset,
+                    printf("%sV%02u.[%03u..%03u)", sep, agg->LclNum, rep.Offset,
                            rep.Offset + genTypeSize(rep.AccessType));
                 }
                 sep = " ";

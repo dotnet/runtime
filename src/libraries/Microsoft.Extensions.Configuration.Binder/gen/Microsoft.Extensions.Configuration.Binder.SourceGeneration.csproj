@@ -23,23 +23,23 @@
     <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
     <Compile Include="ConfigurationBindingGenerator.cs" />
     <Compile Include="ConfigurationBindingGenerator.Emitter.cs" />
-    <Compile Include="Helpers\Emitter.Helpers.cs" />
-    <Compile Include="Helpers\ParserDiagnostics.cs" />
     <Compile Include="ConfigurationBindingGenerator.Parser.cs" />
+    <Compile Include="Helpers\Emitter.Helpers.cs" />
     <Compile Include="Helpers\ExceptionMessages.cs" />
     <Compile Include="Helpers\KnownTypeSymbols.cs" />
+    <Compile Include="Helpers\ParserDiagnostics.cs" />
+    <Compile Include="Helpers\SourceWriter.cs" />
     <Compile Include="Model\BinderInvocationOperation.cs" />
     <Compile Include="Model\BinderMethodSpecifier.cs" />
-    <Compile Include="Model\SourceGenerationSpec.cs" />
-    <Compile Include="Helpers\SourceWriter.cs" />
     <Compile Include="Model\CollectionSpec.cs" />
-    <Compile Include="Model\ConstructionStrategy.cs" />
-    <Compile Include="Model\ConfigurationSectionTypeSpec.cs" />
+    <Compile Include="Model\ConfigurationSectionSpec.cs" />
+    <Compile Include="Model\InitializationStrategy.cs" />
     <Compile Include="Model\NullableSpec.cs" />
     <Compile Include="Model\ObjectSpec.cs" />
-    <Compile Include="Model\ParsableFromStringTypeSpec.cs" />
+    <Compile Include="Model\ParameterSpec.cs" />
+    <Compile Include="Model\ParsableFromStringSpec.cs" />
     <Compile Include="Model\PropertySpec.cs" />
-    <Compile Include="Model\TypeSpecKind.cs" />
+    <Compile Include="Model\SourceGenerationSpec.cs" />
     <Compile Include="Model\TypeSpec.cs" />
   </ItemGroup>
 </Project>

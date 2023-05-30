@@ -14,13 +14,14 @@
 
 #ifndef DACCESS_COMPILE
 
+#include <sal.h>
+
 class RhConfig
 {
 
 #define CONFIG_INI_NOT_AVAIL (void*)0x1  //signal for ini file failed to load
 #define CONFIG_KEY_MAXLEN 50             //arbitrary max length of config keys increase if needed
 #define CONFIG_VAL_MAXLEN 16              //64 bit uint in hex
-
 private:
     struct ConfigPair
     {
@@ -34,10 +35,22 @@ private:
     //NOTE: g_embeddedSettings is only set in ReadEmbeddedSettings and must be set atomically only once
     //      using PalInterlockedCompareExchangePointer to avoid races when initializing
     void* volatile g_embeddedSettings = NULL;
+    void* volatile g_embeddedKnobs = NULL;
 
 public:
+    class Environment
+    {
+    public: // static
+        static bool TryGetBooleanValue(const char* name, bool* value);
+        static bool TryGetIntegerValue(const char* name, uint64_t* value, bool decimal = false);
+
+        // Get environment variable configuration as a string. On success, the caller owns the returned string value.
+        static bool TryGetStringValue(const char* name, char** value);
+    };
 
     bool ReadConfigValue(_In_z_ const char* wszName, uint64_t* pValue, bool decimal = false);
+    bool ReadKnobUInt64Value(_In_z_ const char* wszName, uint64_t* pValue);
+    bool ReadKnobBooleanValue(_In_z_ const char* wszName, bool* pValue);
 
 #define DEFINE_VALUE_ACCESSOR(_name, defaultVal)        \
     uint64_t Get##_name()                                 \
@@ -91,11 +104,11 @@ private:
     //NOTE: if the method fails configPair is left in an uninitialized state
     bool ParseConfigLine(_Out_ ConfigPair* configPair, _In_z_ const char * line);
 
-    void ReadEmbeddedSettings();
+    void ReadEmbeddedSettings(void *volatile * embeddedSettings, void* compilerEmbeddedSettingsBlob);
 
     // Gets a pointer to the embedded configuration value. Memory is held by the callee.
     // Returns true if the variable was found, false otherwise
-    bool GetEmbeddedVariable(_In_z_ const char* configName, _Out_ const char** configValue);
+    bool GetEmbeddedVariable(void *volatile * embeddedSettings, void* compilerEmbeddedSettingsBlob, _In_z_ const char* configName, bool caseSensitive, _Out_ const char** configValue);
 
     uint32_t  m_uiConfigValuesRead;
     uint64_t  m_uiConfigValues[RCV_Count];

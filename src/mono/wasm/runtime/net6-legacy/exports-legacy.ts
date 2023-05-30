@@ -8,8 +8,8 @@ import { mono_wasm_load_bytes_into_heap, setB32, setI8, setI16, setI32, setI52, 
 import { mono_wasm_new_root_buffer, mono_wasm_new_root, mono_wasm_new_external_root, mono_wasm_release_roots } from "../roots";
 import { mono_run_main, mono_run_main_and_exit } from "../run";
 import { mono_wasm_setenv } from "../startup";
-import { js_string_to_mono_string, conv_string, js_string_to_mono_string_root, conv_string_root } from "../strings";
-import { mono_array_to_js_array, unbox_mono_obj, unbox_mono_obj_root, mono_array_root_to_js_array } from "./cs-to-js";
+import { stringToMonoStringRoot, monoStringToString } from "../strings";
+import { mono_array_to_js_array, unbox_mono_obj, unbox_mono_obj_root, mono_array_root_to_js_array, conv_string } from "./cs-to-js";
 import { js_typed_array_to_array, js_to_mono_obj, js_typed_array_to_array_root, js_to_mono_obj_root } from "./js-to-cs";
 import { mono_bind_static_method, mono_call_assembly_entry_point } from "./method-calls";
 import { mono_wasm_load_runtime } from "../startup";
@@ -17,6 +17,7 @@ import { BINDINGType, MONOType } from "./export-types";
 import { mono_wasm_load_data_archive } from "../assets";
 import { mono_method_resolve } from "./method-binding";
 import { runtimeHelpers } from "../globals";
+import { js_string_to_mono_string } from "./strings";
 
 export function export_mono_api(): MONOType {
     return {
@@ -96,10 +97,10 @@ export function export_binding_api(): BINDINGType {
 
         mono_obj_array_new_ref: <any>null,
         mono_obj_array_set_ref: <any>null,
-        js_string_to_mono_string_root,
+        js_string_to_mono_string_root: stringToMonoStringRoot,
         js_typed_array_to_array_root,
         js_to_mono_obj_root,
-        conv_string_root,
+        conv_string_root: monoStringToString,
         unbox_mono_obj_root,
         mono_array_root_to_js_array,
     };
