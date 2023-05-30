@@ -27,6 +27,11 @@ Affected public APIs:
 - TextInfo.ToTitleCase.
 
 Case change with invariant culture uses `toUpperCase` / `toLoweCase` functions that do not guarantee a full match with the original invariant culture.
+Hybrid case change, same as ICU-based, does not support code points expansion e.g. "straße" -> "STRAßE".
+
+- Final sigma behavior correction:
+
+ICU-based case change does not respect final-sigma rule, but hybrid does, so "ΒΌΛΟΣ" -> "βόλος", not "βόλοσ".
 
 **String comparison**
 

@@ -28,6 +28,8 @@ namespace ILCompiler
             new(new[] { "--optimize-time", "--Ot" }, "Enable optimizations, favor code speed");
         public Option<string[]> MibcFilePaths { get; } =
             new(new[] { "--mibc", "-m" }, Array.Empty<string>, "Mibc file(s) for profile guided optimization");
+        public Option<string[]> SatelliteFilePaths { get; } =
+            new(new[] { "--satellite" }, Array.Empty<string>, "Satellite assemblies associated with inputs/references");
         public Option<bool> EnableDebugInfo { get; } =
             new(new[] { "--debug", "-g" }, "Emit debugging information");
         public Option<bool> UseDwarf5 { get; } =
@@ -92,6 +94,8 @@ namespace ILCompiler
             new(new[] { "--feature" }, Array.Empty<string>, "Feature switches to apply (format: 'Namespace.Name=[true|false]'");
         public Option<string[]> RuntimeOptions { get; } =
             new(new[] { "--runtimeopt" }, Array.Empty<string>, "Runtime options to set");
+        public Option<string[]> RuntimeKnobs { get; } =
+            new(new[] { "--runtimeknob" }, Array.Empty<string>, "Runtime knobs to set");
         public Option<int> Parallelism { get; } =
             new(new[] { "--parallelism" }, result =>
             {
@@ -173,6 +177,7 @@ namespace ILCompiler
             AddOption(OptimizeSpace);
             AddOption(OptimizeTime);
             AddOption(MibcFilePaths);
+            AddOption(SatelliteFilePaths);
             AddOption(EnableDebugInfo);
             AddOption(UseDwarf5);
             AddOption(NativeLib);
@@ -205,6 +210,7 @@ namespace ILCompiler
             AddOption(AppContextSwitches);
             AddOption(FeatureSwitches);
             AddOption(RuntimeOptions);
+            AddOption(RuntimeKnobs);
             AddOption(Parallelism);
             AddOption(InstructionSet);
             AddOption(Guard);
