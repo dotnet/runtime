@@ -2028,8 +2028,6 @@ namespace Mono.Options
         {
         }
 
-        private static readonly string[] s_help = new string[] { "--help" };
-
         public override int Invoke(IEnumerable<string> arguments)
         {
             var extra = new List<string>(arguments ?? Array.Empty<string>());
@@ -2070,7 +2068,9 @@ namespace Mono.Options
                 command.Options.WriteOptionDescriptions(CommandSet.Out);
                 return 0;
             }
-            return command.Invoke(s_help);
+#pragma warning disable CA1861 // Avoid constant arrays as arguments. Only invoked when --help is passed.
+            return command.Invoke(new[] { "--help" });
+#pragma warning restore CA1861
         }
 
         private List<KeyValuePair<string, Command>> GetCommands()
