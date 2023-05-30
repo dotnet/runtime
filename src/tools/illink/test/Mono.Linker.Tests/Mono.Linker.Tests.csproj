@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Arcade uses by default xunit as test runner, illink uses nunit instead. -->
+    <TestRunnerName>NUnit</TestRunnerName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,8 +18,6 @@
     <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" PrivateAssets="All" Publish="True" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisVersion)" />
     <ProjectReference Include="$(RepoRoot)\src\coreclr\tools\ILVerification\ILVerification.csproj" />
-    <PackageReference Include="nunit" Version="$(NUnitVersion)" />
-    <PackageReference Include="NUnit3TestAdapter" Version="$(NUnitTestAdapterVersion)" />
     <!-- This reference is purely so that the ILLink can resolve this
          dependency of mscorlib. It is not actually required to build
          the tests. -->

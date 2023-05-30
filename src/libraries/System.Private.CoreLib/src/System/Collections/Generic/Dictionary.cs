@@ -1,9 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
 namespace System.Collections.Generic
@@ -82,7 +85,7 @@ namespace System.Collections.Generic
         public Dictionary(IDictionary<TKey, TValue> dictionary) : this(dictionary, null) { }
 
         public Dictionary(IDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey>? comparer) :
-            this(dictionary != null ? dictionary.Count : 0, comparer)
+            this(dictionary?.Count ?? 0, comparer)
         {
             if (dictionary == null)
             {
@@ -105,15 +108,15 @@ namespace System.Collections.Generic
             AddRange(collection);
         }
 
-        private void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> collection)
+        private void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> enumerable)
         {
-            // It is likely that the passed-in dictionary is Dictionary<TKey,TValue>. When this is the case,
+            // It is likely that the passed-in enumerable is Dictionary<TKey,TValue>. When this is the case,
             // avoid the enumerator allocation and overhead by looping through the entries array directly.
             // We only do this when dictionary is Dictionary<TKey,TValue> and not a subclass, to maintain
             // back-compat with subclasses that may have overridden the enumerator behavior.
-            if (collection.GetType() == typeof(Dictionary<TKey, TValue>))
+            if (enumerable.GetType() == typeof(Dictionary<TKey, TValue>))
             {
-                Dictionary<TKey, TValue> source = (Dictionary<TKey, TValue>)collection;
+                Dictionary<TKey, TValue> source = (Dictionary<TKey, TValue>)enumerable;
 
                 if (source.Count == 0)
                 {
@@ -149,13 +152,36 @@ namespace System.Collections.Generic
                 return;
             }
 
-            // Fallback path for IEnumerable that isn't a non-subclassed Dictionary<TKey,TValue>.
-            foreach (KeyValuePair<TKey, TValue> pair in collection)
+            // We similarly special-case KVP<>[] and List<KVP<>>, as they're commonly used to seed dictionaries, and
+            // we want to avoid the enumerator costs (e.g. allocation) for them as well. Extract a span if possible.
+            ReadOnlySpan<KeyValuePair<TKey, TValue>> span;
+            if (enumerable is KeyValuePair<TKey, TValue>[] array)
+            {
+                span = array;
+            }
+            else if (enumerable.GetType() == typeof(List<KeyValuePair<TKey, TValue>>))
+            {
+                span = CollectionsMarshal.AsSpan((List<KeyValuePair<TKey, TValue>>)enumerable);
+            }
+            else
+            {
+                // Fallback path for all other enumerables
+                foreach (KeyValuePair<TKey, TValue> pair in enumerable)
+                {
+                    Add(pair.Key, pair.Value);
+                }
+                return;
+            }
+
+            // We got a span. Add the elements to the dictionary.
+            foreach (KeyValuePair<TKey, TValue> pair in span)
             {
                 Add(pair.Key, pair.Value);
             }
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected Dictionary(SerializationInfo info, StreamingContext context)
         {
             // We can't do anything with the keys and values until the entire graph has been deserialized
@@ -342,6 +368,8 @@ namespace System.Collections.Generic
             Count == 0 ? GenericEmptyEnumerator<KeyValuePair<TKey, TValue>>.Instance :
             GetEnumerator();
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
@@ -1317,7 +1345,7 @@ namespace System.Collections.Generic
 #if TARGET_64BIT
             return ref buckets[HashHelpers.FastMod(hashCode, (uint)buckets.Length, _fastModMultiplier)];
 #else
-            return ref buckets[hashCode % (uint)buckets.Length];
+            return ref buckets[(uint)hashCode % buckets.Length];
 #endif
         }
 

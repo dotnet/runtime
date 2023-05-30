@@ -52,8 +52,8 @@ BOOL IsStructMarshalable(TypeHandle th);
 bool IsFieldBlittable(
     Module* pModule,
     mdFieldDef fd,
-    SigPointer fieldSig,
-    const SigTypeContext* pTypeContext,
+    CorElementType corElemType,
+    TypeHandle valueTypeHandle,
     ParseNativeTypeFlags flags
 );
 
@@ -92,7 +92,20 @@ public:
         return m_category;
     }
 
-    PTR_MethodTable GetNestedNativeMethodTable() const;
+    PTR_MethodTable GetNestedNativeMethodTable() const
+    {
+        CONTRACT(PTR_MethodTable)
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+            PRECONDITION(IsNestedType());
+            POSTCONDITION(CheckPointer(RETVAL));
+        }
+        CONTRACT_END;
+
+        RETURN nestedTypeAndCount.m_pNestedType;
+    }
 
     ULONG GetNumElements() const
     {

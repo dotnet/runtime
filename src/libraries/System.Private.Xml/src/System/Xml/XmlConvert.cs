@@ -311,12 +311,7 @@ namespace System.Xml
         /// </devdoc>
         public static string VerifyName(string name)
         {
-            ArgumentNullException.ThrowIfNull(name);
-
-            if (name.Length == 0)
-            {
-                throw new ArgumentNullException(nameof(name), SR.Xml_EmptyName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             // parse name
             int endPos = ValidateNames.ParseNameNoNamespaces(name, 0);
@@ -374,12 +369,7 @@ namespace System.Xml
 
         internal static string VerifyNCName(string name, ExceptionType exceptionType)
         {
-            ArgumentNullException.ThrowIfNull(name);
-
-            if (name.Length == 0)
-            {
-                throw new ArgumentNullException(nameof(name), SR.Xml_EmptyLocalName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             int end = ValidateNames.ParseNCName(name, 0);
 
@@ -474,7 +464,7 @@ namespace System.Xml
 
         internal static Exception? TryVerifyNMTOKEN(string name)
         {
-            if (name == null || name.Length == 0)
+            if (string.IsNullOrEmpty(name))
             {
                 return new XmlException(SR.Xml_EmptyName, string.Empty);
             }
@@ -1403,7 +1393,7 @@ namespace System.Xml
 
         internal static void VerifyCharData(string? data, ExceptionType invCharExceptionType, ExceptionType invSurrogateExceptionType)
         {
-            if (data == null || data.Length == 0)
+            if (string.IsNullOrEmpty(data))
             {
                 return;
             }

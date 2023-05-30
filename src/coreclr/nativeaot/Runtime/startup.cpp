@@ -51,7 +51,6 @@ extern RhConfig * g_pRhConfig;
 EXTERN_C bool g_fHasFastFxsave;
 bool g_fHasFastFxsave = false;
 
-CrstStatic g_CastCacheLock;
 CrstStatic g_ThunkPoolLock;
 
 #if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64)
@@ -133,8 +132,8 @@ static bool InitDLL(HANDLE hPalInstance)
     InitializeYieldProcessorNormalizedCrst();
 
 #ifdef STRESS_LOG
-    uint32_t dwTotalStressLogSize = g_pRhConfig->GetTotalStressLogSize();
-    uint32_t dwStressLogLevel = g_pRhConfig->GetStressLogLevel();
+    uint32_t dwTotalStressLogSize = (uint32_t)g_pRhConfig->GetTotalStressLogSize();
+    uint32_t dwStressLogLevel = (uint32_t)g_pRhConfig->GetStressLogLevel();
 
     unsigned facility = (unsigned)LF_ALL;
     unsigned dwPerThreadChunks = (dwTotalStressLogSize / 24) / STRESSLOG_CHUNK_SIZE;
@@ -170,10 +169,7 @@ static bool InitDLL(HANDLE hPalInstance)
         return false;
 #endif
 
-    if (!g_CastCacheLock.InitNoThrow(CrstType::CrstCastCache))
-        return false;
-
-    if (!g_ThunkPoolLock.InitNoThrow(CrstType::CrstCastCache))
+    if (!g_ThunkPoolLock.InitNoThrow(CrstType::CrstThunkPool))
         return false;
 
     return true;
@@ -303,6 +299,15 @@ bool DetectCPUFeatures()
                                                             g_cpuFeatures |= XArchIntrinsicConstants_Avx512dq_vl;
                                                         }
                                                     }
+
+                                                    if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                  // AVX512VBMI
+                                                    {
+                                                        g_cpuFeatures |= XArchIntrinsicConstants_Avx512Vbmi;
+                                                        if (isAVX512_VLSupported)
+                                                        {
+                                                            g_cpuFeatures |= XArchIntrinsicConstants_Avx512Vbmi_vl;
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
@@ -377,7 +382,7 @@ bool InitGSCookie()
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
 #ifdef FEATURE_READONLY_GS_COOKIE
-    // The GS cookie is stored in a read only data segment    
+    // The GS cookie is stored in a read only data segment
     if (!PalVirtualProtect((void*)pGSCookiePtr, sizeof(GSCookie), PAGE_READWRITE))
     {
         return false;
@@ -464,27 +469,29 @@ static void UninitDLL()
 #ifdef _WIN32
 // This is set to the thread that initiates and performs the shutdown and may run
 // after other threads are rudely terminated. So far this is a Windows-specific concern.
-// 
+//
 // On POSIX OSes a process typically lives as long as any of its threads are alive or until
 // the process is terminated via `exit()` or a signal. Thus there is no such distinction
 // between threads.
 Thread* g_threadPerformingShutdown = NULL;
+#endif
 
 static void __cdecl OnProcessExit()
 {
+#ifdef _WIN32
     // The process is exiting and the current thread is performing the shutdown.
     // When this thread exits some threads may be already rudely terminated.
     // It would not be a good idea for this thread to wait on any locks
     // or run managed code at shutdown, so we will not try detaching it.
     Thread* currentThread = ThreadStore::RawGetCurrentThread();
     g_threadPerformingShutdown = currentThread;
+#endif
 
 #ifdef FEATURE_PERFTRACING
     EventPipeAdapter_Shutdown();
     DiagnosticServerAdapter_Shutdown();
 #endif
 }
-#endif
 
 void RuntimeThreadShutdown(void* thread)
 {
@@ -521,7 +528,7 @@ extern "C" bool RhInitialize()
     if (!PalInit())
         return false;
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(FEATURE_PERFTRACING)
     atexit(&OnProcessExit);
 #endif
 

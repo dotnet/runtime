@@ -8,8 +8,8 @@
     <Platform Condition="'$(Platform)' == ''">$(TargetArchitecture)</Platform>
     <DefineConstants Condition="'$(Configuration)' == 'Debug'">$(DefineConstants),DEBUG,TRACE</DefineConstants>
     <DefineConstants Condition="'$(Configuration)' == 'Release'">$(DefineConstants),TRACE</DefineConstants>
-    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(EnsureRuntimeIdentifierSet)' == 'true'">$(OutputRid)</RuntimeIdentifier>
-    <TestTargetRid Condition="'$(TestTargetRid)' == ''">$(OutputRid)</TestTargetRid>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(EnsureRuntimeIdentifierSet)' == 'true'">$(OutputRID)</RuntimeIdentifier>
+    <TestTargetRid Condition="'$(TestTargetRid)' == ''">$(OutputRID)</TestTargetRid>
     <!-- Never use the NuGet fallback folder that comes with the SDK we use to build.
       The NuGet fallback folder can/will contain packages we are building in this repo, and we
       want to ensure we use the correct packages. -->

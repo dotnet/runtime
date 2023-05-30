@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { assertNever } from "../../types";
+import { assertNever } from "../../types/internal";
 import { VoidPtr } from "../../types/emscripten";
-import { Module } from "../../imports";
 import type { CommonSocket } from "./common-socket";
+import { mono_log_debug, mono_log_warn } from "../../logging";
+import { localHeapViewU8 } from "../../memory";
 enum ListenerState {
     Sending,
     Closed,
@@ -20,7 +21,7 @@ class SocketGuts {
         const buf = new ArrayBuffer(size);
         const view = new Uint8Array(buf);
         // Can we avoid this copy?
-        view.set(new Uint8Array(Module.HEAPU8.buffer, data as unknown as number, size));
+        view.set(new Uint8Array(localHeapViewU8().buffer, data as unknown as number, size));
         this.socket.send(buf);
     }
 }
@@ -38,7 +39,7 @@ export class EventPipeSocketConnection {
     }
 
     close(): void {
-        console.debug("MONO_WASM: EventPipe session stream closing websocket");
+        mono_log_debug("EventPipe session stream closing websocket");
         switch (this._state) {
             case ListenerState.Error:
                 return;
@@ -68,7 +69,7 @@ export class EventPipeSocketConnection {
         switch (this._state) {
             case ListenerState.Sending:
                 /* unexpected message */
-                console.warn("MONO_WASM: EventPipe session stream received unexpected message from websocket", event);
+                mono_log_warn("EventPipe session stream received unexpected message from websocket", event);
                 // TODO notify runtime that the connection had an error
                 this._state = ListenerState.Error;
                 break;
@@ -99,7 +100,7 @@ export class EventPipeSocketConnection {
     }
 
     private _onError(event: Event) {
-        console.debug("MONO_WASM: EventPipe session stream websocket error", event);
+        mono_log_debug("EventPipe session stream websocket error", event);
         this._state = ListenerState.Error;
         this.stream.close();
         // TODO: notify runtime that connection had an error

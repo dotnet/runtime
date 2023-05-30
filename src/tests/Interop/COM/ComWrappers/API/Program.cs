@@ -11,9 +11,10 @@ namespace ComWrappersTests
     using System.Runtime.InteropServices;
 
     using ComWrappersTests.Common;
+    using TestLibrary;
     using Xunit;
 
-    class Program
+    class Program : IDisposable
     {
         class TestComWrappers : ComWrappers
         {
@@ -83,12 +84,23 @@ namespace ComWrappersTests
 
             protected override object CreateObject(IntPtr externalComObject, CreateObjectFlags flag)
             {
-                var iid = typeof(ITrackerObject).GUID;
+                var iTrackerObjectIid = typeof(ITrackerObject).GUID;
                 IntPtr iTrackerComObject;
-                int hr = Marshal.QueryInterface(externalComObject, ref iid, out iTrackerComObject);
-                Assert.Equal(0, hr);
+                int hr = Marshal.QueryInterface(externalComObject, ref iTrackerObjectIid, out iTrackerComObject);
+                if (hr == 0)
+                {
+                    return new ITrackerObjectWrapper(iTrackerComObject);
+                }
+                var iTestIid = typeof(ITest).GUID;
+                IntPtr iTest;
+                hr = Marshal.QueryInterface(externalComObject, ref iTestIid, out iTest);
+                if (hr == 0)
+                {
+                    return new ITestObjectWrapper(iTest);
+                }
 
-                return new ITrackerObjectWrapper(iTrackerComObject);
+                Assert.Fail("The COM object should support ITrackerObject or ITest for all tests in this test suite.");
+                return null;
             }
 
             public const int ReleaseObjectsCallAck = unchecked((int)-1);
@@ -110,6 +122,8 @@ namespace ComWrappersTests
             }
         }
 
+        public void Dispose() => ForceGC();
+
         static void ForceGC()
         {
             // Trigger the GC multiple times and then
@@ -122,7 +136,9 @@ namespace ComWrappersTests
             }
         }
 
-        static void ValidateComInterfaceCreation()
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [Fact]
+        public void ValidateComInterfaceCreation()
         {
             Console.WriteLine($"Running {nameof(ValidateComInterfaceCreation)}...");
 
@@ -155,7 +171,9 @@ namespace ComWrappersTests
             Assert.Equal(0, count);
         }
 
-        static void ValidateComInterfaceCreationRoundTrip()
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [Fact]
+        public void ValidateComInterfaceCreationRoundTrip()
         {
             Console.WriteLine($"Running {nameof(ValidateComInterfaceCreationRoundTrip)}...");
 
@@ -168,14 +186,159 @@ namespace ComWrappersTests
             Assert.NotEqual(IntPtr.Zero, comWrapper);
 
             var testObjUnwrapped = wrappers.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.Unwrap);
-            Assert.Equal(testObj, testObjUnwrapped);
+            Assert.Same(testObj, testObjUnwrapped);
 
             // Release the wrapper
             int count = Marshal.Release(comWrapper);
             Assert.Equal(0, count);
         }
 
-        static void ValidateFallbackQueryInterface()
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [Fact]
+        public void ValidateComInterfaceUnwrapWrapperSpecific()
+        {
+            Console.WriteLine($"Running {nameof(ValidateComInterfaceUnwrapWrapperSpecific)}...");
+
+            var testObj = new Test();
+
+            var wrappers = new TestComWrappers();
+
+            // Allocate a wrapper for the object
+            IntPtr comWrapper = wrappers.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.None);
+            Assert.NotEqual(IntPtr.Zero, comWrapper);
+
+            // Make sure that unwrapping the wrapper in the same ComWrappers context gets back the same object
+            var testObjUnwrapped = GetUnwrappedObjectHandleForComInstance(wrappers, comWrapper);
+            AssertSameInstanceAndFreeHandle(testObj, testObjUnwrapped);
+
+            // Make sure that unwrapping the wrapper in a different ComWrappers context gets back a different object
+            var wrappers2 = new TestComWrappers();
+            var testObjWrapper2 = GetUnwrappedObjectHandleForComInstance(wrappers2, comWrapper);
+            AssertNotSameInstanceAndFreeHandle(testObj, testObjWrapper2);
+
+            // Make sure that unwrapping a wrapper from a different ComWrappers context in a context that has created a CCW
+            // for the object only unwraps the wrapper from that context, not from any context.
+            var wrappers3 = new TestComWrappers();
+            IntPtr comWrapper3 = wrappers3.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.None);
+
+            Assert.NotEqual(IntPtr.Zero, comWrapper3);
+            Assert.NotEqual(comWrapper, comWrapper3);
+
+            var testObjWrapper3 = GetUnwrappedObjectHandleForComInstance(wrappers3, comWrapper);
+            AssertNotSameInstanceAndFreeHandle(testObj, testObjWrapper3);
+            AssertSameInstanceAndFreeHandle(testObj, GetUnwrappedObjectHandleForComInstance(wrappers3, comWrapper3));
+
+            // Force a GC to release the new managed object wrappers we made
+            ForceGC();
+
+            // Release the COM wrappers
+            int count = Marshal.Release(comWrapper);
+            count = Marshal.Release(comWrapper3);
+            Assert.Equal(0, count);
+
+            // Make sure that all possible references to the CCW over the RCW are never on the same frame
+            // as the rest of the test (to ensure that the GC does collect it).
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static GCHandle GetUnwrappedObjectHandleForComInstance(ComWrappers wrapper, nint comWrapper)
+            {
+                var obj = wrapper.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.Unwrap);
+                return GCHandle.Alloc(obj);
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void AssertSameInstanceAndFreeHandle(object obj, GCHandle handle)
+            {
+                Assert.True(handle.IsAllocated);
+                Assert.Same(obj, handle.Target);
+                handle.Free();
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void AssertNotSameInstanceAndFreeHandle(object obj, GCHandle handle)
+            {
+                Assert.True(handle.IsAllocated);
+                Assert.NotSame(obj, handle.Target);
+                handle.Free();
+            }
+        }
+
+        [Fact]
+        public void ValidateComObjectExtendsManagedLifetime()
+        {
+            Console.WriteLine($"Running {nameof(ValidateComObjectExtendsManagedLifetime)}...");
+
+            // Cleanup any existing objects
+            ForceGC();
+            Assert.Equal(0, Test.InstanceCount);
+
+            // Allocate a wrapper for the object
+            IntPtr comWrapper = CreateObjectAndGetComInterface();
+            Assert.NotEqual(IntPtr.Zero, comWrapper);
+
+            // GC should not free object
+            Assert.Equal(1, Test.InstanceCount);
+            ForceGC();
+            Assert.Equal(1, Test.InstanceCount);
+
+            // Release the wrapper
+            int count = Marshal.Release(comWrapper);
+            Assert.Equal(0, count);
+
+            // Check that the object is no longer rooted.
+            ForceGC();
+            Assert.Equal(0, Test.InstanceCount);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static IntPtr CreateObjectAndGetComInterface()
+            {
+                var wrappers = new TestComWrappers();
+                return wrappers.GetOrCreateComInterfaceForObject(new Test(), CreateComInterfaceFlags.None);
+            }
+        }
+
+        // Just because one use of a COM interface returned from GetOrCreateComInterfaceForObject
+        // hits zero ref count does not mean future calls to GetOrCreateComInterfaceForObject
+        // should return an unusable object.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [Fact]
+        public void ValidateCreatingAComInterfaceForObjectAfterTheFirstIsFree()
+        {
+            Console.WriteLine($"Running {nameof(ValidateCreatingAComInterfaceForObjectAfterTheFirstIsFree)}...");
+
+            var wrappers = new TestComWrappers();
+            var testInstance = new Test();
+
+            CallSetValue(wrappers, testInstance, 1);
+            CallSetValue(wrappers, testInstance, 2);
+
+            GC.KeepAlive(testInstance);
+
+            unsafe static void CallSetValue(TestComWrappers wrappers, Test testInstance, int value)
+            {
+                IntPtr nativeInstance = wrappers.GetOrCreateComInterfaceForObject(testInstance, CreateComInterfaceFlags.None);
+                Assert.NotEqual(IntPtr.Zero, nativeInstance);
+
+                var iid = typeof(ITest).GUID;
+                IntPtr itestPtr;
+                Assert.Equal(0, Marshal.QueryInterface(nativeInstance, ref iid, out itestPtr));
+
+                var inst = Marshal.PtrToStructure<VtblPtr>(itestPtr);
+                var vtbl = Marshal.PtrToStructure<ITestVtbl>(inst.Vtbl);
+                var setValue = (delegate* unmanaged<IntPtr, int, int>)vtbl.SetValue;
+
+                Assert.Equal(0, setValue(itestPtr, value));
+                Assert.Equal(value, testInstance.GetValue());
+
+                // release for QueryInterface
+                Assert.Equal(1, Marshal.Release(itestPtr));
+                // release for GetOrCreateComInterfaceForObject
+                Assert.Equal(0, Marshal.Release(itestPtr));
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [Fact]
+        public void ValidateFallbackQueryInterface()
         {
             Console.WriteLine($"Running {nameof(ValidateFallbackQueryInterface)}...");
 
@@ -208,7 +371,8 @@ namespace ComWrappersTests
             Assert.Equal(0, count);
         }
 
-        static void ValidateCreateObjectCachingScenario()
+        [Fact]
+        public void ValidateCreateObjectCachingScenario()
         {
             Console.WriteLine($"Running {nameof(ValidateCreateObjectCachingScenario)}...");
 
@@ -228,7 +392,45 @@ namespace ComWrappersTests
             Assert.NotEqual(trackerObj1, trackerObj3);
         }
 
-        static void ValidateMappingAPIs()
+        // Verify that if a GC nulls the contents of a weak GCHandle but has not yet
+        // run finializers to remove that GCHandle from the cache, the state of the system is valid.
+        [Fact]
+        public void ValidateCreateObjectWeakHandleCacheCleanUp()
+        {
+            Console.WriteLine($"Running {nameof(ValidateCreateObjectWeakHandleCacheCleanUp)}...");
+
+            var cw = new TestComWrappers();
+
+            // Get an object from a tracker runtime.
+            IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
+
+            // Create the first native object wrapper and run the GC.
+            CreateObject(cw, trackerObjRaw);
+
+            // Only attempt to run the GC, don't wait for the finalizer. We do this
+            // because of the multiple phase clean-up for ComWrappers caches.
+            // See weak GC handles in the NativeAOT scenario.
+            GC.Collect();
+
+            // Try to create another wrapper for the same object. The above GC
+            // may have collected parts of the ComWrapper cache, but not fully
+            // cleared the contents of the cache.
+            CreateObject(cw, trackerObjRaw);
+            ForceGC();
+
+            Marshal.Release(trackerObjRaw);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void CreateObject(ComWrappers cw, IntPtr trackerObj)
+            {
+                var obj = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObj, CreateObjectFlags.None);
+                Assert.NotNull(obj);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [Fact]
+        public void ValidateMappingAPIs()
         {
             Console.WriteLine($"Running {nameof(ValidateMappingAPIs)}...");
 
@@ -281,7 +483,9 @@ namespace ComWrappersTests
             Marshal.Release(unmanagedObjIUnknown);
         }
 
-        static void ValidateWrappersInstanceIsolation()
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [Fact]
+        public void ValidateWrappersInstanceIsolation()
         {
             Console.WriteLine($"Running {nameof(ValidateWrappersInstanceIsolation)}...");
 
@@ -325,7 +529,8 @@ namespace ComWrappersTests
             Marshal.Release(trackerObjRaw);
         }
 
-        static void ValidatePrecreatedExternalWrapper()
+        [Fact]
+        public void ValidatePrecreatedExternalWrapper()
         {
             Console.WriteLine($"Running {nameof(ValidatePrecreatedExternalWrapper)}...");
 
@@ -365,7 +570,8 @@ namespace ComWrappersTests
                 });
         }
 
-        static void ValidateExternalWrapperCacheCleanUp()
+        [Fact]
+        public void ValidateExternalWrapperCacheCleanUp()
         {
             Console.WriteLine($"Running {nameof(ValidateExternalWrapperCacheCleanUp)}...");
 
@@ -415,7 +621,8 @@ namespace ComWrappersTests
             }
         }
 
-        static void ValidateSuppliedInnerNotAggregation()
+        [Fact]
+        public void ValidateSuppliedInnerNotAggregation()
         {
             Console.WriteLine($"Running {nameof(ValidateSuppliedInnerNotAggregation)}...");
 
@@ -432,7 +639,8 @@ namespace ComWrappersTests
                 });
         }
 
-        static void ValidateIUnknownImpls()
+        [Fact]
+        public void ValidateIUnknownImpls()
             => TestComWrappers.ValidateIUnknownImpls();
 
         class BadComWrappers : ComWrappers
@@ -485,7 +693,8 @@ namespace ComWrappersTests
             }
         }
 
-        static void ValidateBadComWrapperImpl()
+        [Fact]
+        public void ValidateBadComWrapperImpl()
         {
             Console.WriteLine($"Running {nameof(ValidateBadComWrapperImpl)}...");
 
@@ -530,7 +739,8 @@ namespace ComWrappersTests
             Marshal.Release(trackerObjRaw);
         }
 
-        static void ValidateRuntimeTrackerScenario()
+        [Fact]
+        public void ValidateRuntimeTrackerScenario()
         {
             Console.WriteLine($"Running {nameof(ValidateRuntimeTrackerScenario)}...");
 
@@ -577,7 +787,8 @@ namespace ComWrappersTests
             ForceGC();
         }
 
-        static void ValidateQueryInterfaceAfterManagedObjectCollected()
+        [Fact]
+        public void ValidateQueryInterfaceAfterManagedObjectCollected()
         {
             Console.WriteLine($"Running {nameof(ValidateQueryInterfaceAfterManagedObjectCollected)}...");
 
@@ -661,7 +872,9 @@ namespace ComWrappersTests
             }
         }
 
-        static void ValidateAggregationWithComObject()
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/85137", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+        [Fact]
+        public void ValidateAggregationWithComObject()
         {
             Console.WriteLine($"Running {nameof(ValidateAggregationWithComObject)}...");
 
@@ -676,7 +889,9 @@ namespace ComWrappersTests
             Assert.Equal(0, allocTracker.GetCount());
         }
 
-        static void ValidateAggregationWithReferenceTrackerObject()
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/85137", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+        [Fact]
+        public void ValidateAggregationWithReferenceTrackerObject()
         {
             Console.WriteLine($"Running {nameof(ValidateAggregationWithReferenceTrackerObject)}...");
 
@@ -694,38 +909,6 @@ namespace ComWrappersTests
             ForceGC();
 
             Assert.Equal(0, allocTracker.GetCount());
-        }
-
-        static int Main()
-        {
-            try
-            {
-                ValidateComInterfaceCreation();
-                ValidateComInterfaceCreationRoundTrip();
-                ValidateFallbackQueryInterface();
-                ValidateCreateObjectCachingScenario();
-                ValidateMappingAPIs();
-                ValidateWrappersInstanceIsolation();
-                ValidatePrecreatedExternalWrapper();
-                ValidateExternalWrapperCacheCleanUp();
-                ValidateSuppliedInnerNotAggregation();
-                ValidateIUnknownImpls();
-                ValidateBadComWrapperImpl();
-                ValidateRuntimeTrackerScenario();
-                ValidateQueryInterfaceAfterManagedObjectCollected();
-                ValidateAggregationWithComObject();
-                ValidateAggregationWithReferenceTrackerObject();
-
-                // Ensure all objects have been cleaned up.
-                ForceGC();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Test Failure: {e}");
-                return 101;
-            }
-
-            return 100;
         }
     }
 }

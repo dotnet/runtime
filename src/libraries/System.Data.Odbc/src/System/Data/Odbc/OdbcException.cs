@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Text;
 
@@ -34,6 +35,9 @@ namespace System.Data.Odbc
             HResult = HResults.OdbcException;
         }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
         private OdbcException(SerializationInfo si, StreamingContext sc) : base(si, sc)
         {
             // Ignoring ODBC32.RETCODE
@@ -49,6 +53,10 @@ namespace System.Data.Odbc
             }
         }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(SerializationInfo si, StreamingContext context)
         {
             base.GetObjectData(si, context);

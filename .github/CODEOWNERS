@@ -30,7 +30,7 @@
 /src/mono/mono/metadata/*-win* @lateralusX @lambdageek
 /src/mono/mono/metadata/handle* @lambdageek @vargaz
 /src/mono/mono/metadata/monitor* @brzvlad @vargaz
-/src/mono/mono/metadata/sgen* @brzvlad @vargaz @naricc
+/src/mono/mono/metadata/sgen* @brzvlad @vargaz @lambdageek
 /src/mono/mono/metadata/thread* @lateralusX @lambdageek
 /src/mono/mono/metadata/w32* @lateralusX @lambdageek
 
@@ -49,7 +49,7 @@
 /src/mono/mono/mini/interp/*jiterp* @kg
 
 /src/mono/mono/profiler @BrzVlad @lambdageek
-/src/mono/mono/sgen @BrzVlad @lambdageek @naricc
+/src/mono/mono/sgen @BrzVlad @lambdageek @SamMonoRT
 
 /src/mono/mono/utils @vargaz @lambdageek
 /src/mono/mono/utils/*-win* @lateralusX @lambdageek

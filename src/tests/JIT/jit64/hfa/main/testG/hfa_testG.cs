@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace HFATest
 {
@@ -15,7 +16,8 @@ namespace HFATest
         const float CONST_FLOAT32 = (float)12874.00;
         const double CONST_FLOAT64 = (double)-57168.00;
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
 
             HFA01 hfa01;

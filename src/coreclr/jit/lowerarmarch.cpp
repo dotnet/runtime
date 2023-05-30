@@ -114,7 +114,10 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_TEST_NE:
                 return emitter::emitIns_valid_imm_for_alu(immVal, size);
             case GT_JCMP:
-                assert(((parentNode->gtFlags & GTF_JCMP_TST) == 0) ? (immVal == 0) : isPow2(immVal));
+                assert(immVal == 0);
+                return true;
+            case GT_JTEST:
+                assert(isPow2(immVal));
                 return true;
 #elif defined(TARGET_ARM)
             case GT_EQ:
@@ -148,7 +151,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 
 #ifdef TARGET_ARM64
 //------------------------------------------------------------------------
-// IsContainableBinaryOp: Is the child node a binary op that is containable from the parent node?
+// IsContainableUnaryOrBinaryOp: Is the child node a unary/binary op that is containable from the parent node?
 //
 // Return Value:
 //    True if the child node can be contained.
@@ -156,10 +159,20 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 // Notes:
 //    This can handle the decision to emit 'madd' or 'msub'.
 //
-bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) const
+bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childNode) const
 {
+#ifdef DEBUG
     // The node we're checking should be one of the two child nodes
-    assert((parentNode->gtGetOp1() == childNode) || (parentNode->gtGetOp2() == childNode));
+    if (parentNode->OperIsBinary())
+    {
+        assert((parentNode->gtGetOp1() == childNode) || (parentNode->gtGetOp2() == childNode));
+    }
+    else
+    {
+        assert(parentNode->OperIsUnary());
+        assert((parentNode->gtGetOp1() == childNode));
+    }
+#endif // DEBUG
 
     // We cannot contain if the parent node
     // * is contained
@@ -173,7 +186,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
     if (!varTypeIsIntegral(parentNode))
         return false;
 
-    if (parentNode->gtGetOp1()->isContained() || parentNode->gtGetOp2()->isContained())
+    if (parentNode->gtGetOp1()->isContained() || (parentNode->OperIsBinary() && parentNode->gtGetOp2()->isContained()))
         return false;
 
     if (parentNode->OperMayOverflow() && parentNode->gtOverflow())
@@ -252,7 +265,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
             return false;
         }
 
-        if (parentNode->OperIs(GT_ADD, GT_SUB, GT_AND))
+        if (parentNode->OperIs(GT_ADD, GT_SUB, GT_AND, GT_NEG))
         {
             // These operations can still report flags
 
@@ -269,7 +282,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
             return false;
         }
 
-        if (parentNode->OperIs(GT_CMP, GT_OR, GT_XOR))
+        if (parentNode->OperIs(GT_CMP, GT_OR, GT_XOR) || parentNode->OperIsCompare())
         {
             if (IsInvariantInRange(childNode, parentNode))
             {
@@ -279,6 +292,33 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
         }
 
         // TODO: Handle CMN, NEG/NEGS, BIC/BICS, EON, MVN, ORN, TST
+        return false;
+    }
+
+    if (childNode->OperIs(GT_NEG))
+    {
+        // If we have a contained LSH, RSH or RSZ, we can still contain NEG if the parent is a EQ or NE.
+        if (childNode->gtGetOp1()->isContained() && !childNode->gtGetOp1()->OperIs(GT_LSH, GT_RSH, GT_RSZ))
+        {
+            // Cannot contain if the childs op1 is already contained
+            return false;
+        }
+
+        if ((parentNode->gtFlags & GTF_SET_FLAGS) != 0)
+        {
+            // Cannot contain if the parent operation needs to set flags
+            return false;
+        }
+
+        // EQ and NE are the only valid comparison ops that can contain NEG.
+        if (parentNode->OperIs(GT_EQ, GT_NE))
+        {
+            if (IsInvariantInRange(childNode, parentNode))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -512,7 +552,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     GenTree* src     = blkNode->Data();
     unsigned size    = blkNode->Size();
 
-    const bool isDstAddrLocal = dstAddr->OperIsLocalAddr();
+    const bool isDstAddrLocal = dstAddr->OperIs(GT_LCL_ADDR);
 
     if (blkNode->OperIsInitBlkOp())
     {
@@ -520,11 +560,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         {
             src->SetContained();
             src = src->AsUnOp()->gtGetOp1();
-        }
-
-        if (blkNode->OperIs(GT_STORE_OBJ))
-        {
-            blkNode->SetOper(GT_STORE_BLK);
         }
 
         if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memset)) &&
@@ -575,43 +610,25 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
         src->SetContained();
 
-        if (src->OperIs(GT_IND))
+        if (src->OperIs(GT_LCL_VAR))
         {
-            GenTree* srcAddr = src->AsIndir()->Addr();
-            // TODO-Cleanup: Make sure that GT_IND lowering didn't mark the source address as contained.
-            // Sometimes the GT_IND type is a non-struct type and then GT_IND lowering may contain the
-            // address, not knowing that GT_IND is part of a block op that has containment restrictions.
-            srcAddr->ClearContained();
-        }
-        else
-        {
-            if (src->OperIs(GT_LCL_VAR))
-            {
-                // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
-                const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
-                comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
-            }
+            // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
+            const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
+            comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
 
+        bool     doCpObj              = !blkNode->OperIs(GT_STORE_DYN_BLK) && blkNode->GetLayout()->HasGCPtr();
         unsigned copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
-        if (blkNode->OperIs(GT_STORE_OBJ))
+        if (doCpObj && isDstAddrLocal && (size <= copyBlockUnrollLimit))
         {
-            if (!blkNode->AsObj()->GetLayout()->HasGCPtr())
-            {
-                blkNode->SetOper(GT_STORE_BLK);
-            }
-            else if (isDstAddrLocal && (size <= copyBlockUnrollLimit))
-            {
-                blkNode->SetOper(GT_STORE_BLK);
-                blkNode->gtBlkOpGcUnsafe = true;
-            }
+            doCpObj                  = false;
+            blkNode->gtBlkOpGcUnsafe = true;
         }
 
-        if (blkNode->OperIs(GT_STORE_OBJ))
+        if (doCpObj)
         {
             assert((dstAddr->TypeGet() == TYP_BYREF) || (dstAddr->TypeGet() == TYP_I_IMPL));
-
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
         }
         else if (blkNode->OperIs(GT_STORE_BLK) && (size <= copyBlockUnrollLimit))
         {
@@ -647,7 +664,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
     assert(size < INT32_MAX);
 
-    if (addr->OperIsLocalAddr())
+    if (addr->OperIs(GT_LCL_ADDR))
     {
         addr->SetContained();
         return;
@@ -701,7 +718,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 
     if (src->TypeIs(TYP_STRUCT))
     {
-        // STRUCT args (FIELD_LIST / OBJ / LCL_VAR / LCL_FLD) will always be contained.
+        // STRUCT args (FIELD_LIST / BLK / LCL_VAR / LCL_FLD) will always be contained.
         MakeSrcContained(putArgNode, src);
 
         if (src->OperIs(GT_LCL_VAR))
@@ -857,8 +874,11 @@ void Lowering::LowerModPow2(GenTree* node)
         BlockRange().InsertAfter(cnsZero, cmp);
         LowerNode(cmp);
 
-        mod->ChangeOper(GT_CNEG_LT);
-        mod->gtOp1 = trueExpr;
+        mod->ChangeOper(GT_SELECT_NEGCC);
+        GenTreeOpCC* node = mod->AsOpCC();
+        node->gtOp1       = trueExpr;
+        node->gtOp2       = nullptr;
+        node->gtCondition = GenCondition::SLT;
     }
     else
     {
@@ -883,9 +903,11 @@ void Lowering::LowerModPow2(GenTree* node)
         BlockRange().InsertAfter(cns2, falseExpr);
         LowerNode(falseExpr);
 
-        mod->ChangeOper(GT_CSNEG_MI);
-        mod->gtOp1 = trueExpr;
-        mod->gtOp2 = falseExpr;
+        mod->SetOper(GT_SELECT_NEGCC);
+        GenTreeOpCC* node = mod->AsOpCC();
+        node->gtOp1       = trueExpr;
+        node->gtOp2       = falseExpr;
+        node->gtCondition = GenCondition::S;
     }
 
     ContainCheckNode(mod);
@@ -2003,10 +2025,10 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
             MakeSrcContained(indirNode, addr);
         }
     }
-    else if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+    else if (addr->OperIs(GT_LCL_ADDR))
     {
         // These nodes go into an addr mode:
-        // - GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR is a stack addr mode.
+        // - GT_LCL_ADDR is a stack addr mode.
         MakeSrcContained(indirNode, addr);
     }
 #ifdef TARGET_ARM64
@@ -2015,6 +2037,10 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         // These nodes go into an addr mode:
         // - GT_CLS_VAR_ADDR turns into a constant.
         // make this contained, it turns into a constant that goes into an addr mode
+        MakeSrcContained(indirNode, addr);
+    }
+    else if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
+    {
         MakeSrcContained(indirNode, addr);
     }
 #endif // TARGET_ARM64
@@ -2046,7 +2072,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
 #ifdef TARGET_ARM64
     if (comp->opts.OptimizationEnabled())
     {
-        if (IsContainableBinaryOp(node, op2))
+        if (IsContainableUnaryOrBinaryOp(node, op2))
         {
             if (op2->OperIs(GT_CAST))
             {
@@ -2058,7 +2084,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
             return;
         }
 
-        if (node->OperIsCommutative() && IsContainableBinaryOp(node, op1))
+        if (node->OperIsCommutative() && IsContainableUnaryOrBinaryOp(node, op1))
         {
             if (op1->OperIs(GT_CAST))
             {
@@ -2264,7 +2290,40 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
-    CheckImmedAndMakeContained(cmp, cmp->gtOp2);
+    GenTree* op1 = cmp->gtGetOp1();
+    GenTree* op2 = cmp->gtGetOp2();
+
+    if (CheckImmedAndMakeContained(cmp, op2))
+        return;
+
+    if (cmp->OperIsCompare() && CheckImmedAndMakeContained(cmp, op1))
+    {
+        std::swap(cmp->gtOp1, cmp->gtOp2);
+        cmp->SetOper(cmp->SwapRelop(cmp->gtOper));
+        return;
+    }
+
+#ifdef TARGET_ARM64
+    if (comp->opts.OptimizationEnabled() && (cmp->OperIsCompare() || cmp->OperIs(GT_CMP)))
+    {
+        if (IsContainableUnaryOrBinaryOp(cmp, op2))
+        {
+            MakeSrcContained(cmp, op2);
+            return;
+        }
+
+        if (IsContainableUnaryOrBinaryOp(cmp, op1))
+        {
+            MakeSrcContained(cmp, op1);
+            std::swap(cmp->gtOp1, cmp->gtOp2);
+            if (cmp->OperIsCompare())
+            {
+                cmp->SetOper(cmp->SwapRelop(cmp->gtOper));
+            }
+            return;
+        }
+    }
+#endif
 }
 
 #ifdef TARGET_ARM64
@@ -2488,6 +2547,163 @@ void Lowering::ContainCheckNeg(GenTreeOp* neg)
         if (IsInvariantInRange(childNode, neg))
         {
             MakeSrcContained(neg, childNode);
+        }
+    }
+    else if (comp->opts.OptimizationEnabled() && childNode->OperIs(GT_LSH, GT_RSH, GT_RSZ) &&
+             IsContainableUnaryOrBinaryOp(neg, childNode))
+    {
+        MakeSrcContained(neg, childNode);
+    }
+}
+
+//----------------------------------------------------------------------------------------------
+// TryLowerCselToCinvOrCneg: Try converting SELECT/SELECTCC to SELECT_INV/SELECT_INVCC. Conversion is possible only if
+// one of the operands of the select node is inverted.
+//
+// Arguments:
+//     select - The select node that is now SELECT or SELECTCC
+//     cond   - The condition node that SELECT or SELECTCC uses
+//
+void Lowering::TryLowerCselToCinvOrCneg(GenTreeOp* select, GenTree* cond)
+{
+    assert(select->OperIs(GT_SELECT, GT_SELECTCC));
+
+    bool     shouldReverseCondition;
+    GenTree* invertedOrNegatedVal;
+    GenTree* nonInvertedOrNegatedVal;
+    GenTree* nodeToRemove;
+
+    GenTree*   trueVal  = select->gtOp1;
+    GenTree*   falseVal = select->gtOp2;
+    const bool isCneg   = trueVal->OperIs(GT_NEG) || falseVal->OperIs(GT_NEG);
+
+    assert(trueVal->OperIs(GT_NOT, GT_NEG) || falseVal->OperIs(GT_NOT, GT_NEG));
+
+    if (trueVal->OperIs(GT_NOT) || trueVal->OperIs(GT_NEG))
+    {
+        shouldReverseCondition  = true;
+        invertedOrNegatedVal    = trueVal->gtGetOp1();
+        nonInvertedOrNegatedVal = falseVal;
+        nodeToRemove            = trueVal;
+    }
+    else
+    {
+        shouldReverseCondition  = false;
+        invertedOrNegatedVal    = falseVal->gtGetOp1();
+        nonInvertedOrNegatedVal = trueVal;
+        nodeToRemove            = falseVal;
+    }
+
+    if (shouldReverseCondition && !cond->OperIsCompare() && select->OperIs(GT_SELECT))
+    {
+        // Non-compare nodes add additional GT_NOT node after reversing.
+        // This would remove gains from this optimisation so don't proceed.
+        return;
+    }
+
+    if (!(IsInvariantInRange(invertedOrNegatedVal, select) && IsInvariantInRange(nonInvertedOrNegatedVal, select)))
+    {
+        return;
+    }
+
+    // As the select node would handle the negation/inversion, the op is not required.
+    // If a value is contained in the negate/invert op, it cannot be contained anymore.
+    BlockRange().Remove(nodeToRemove);
+    invertedOrNegatedVal->ClearContained();
+    select->gtOp1 = nonInvertedOrNegatedVal;
+    select->gtOp2 = invertedOrNegatedVal;
+
+    if (select->OperIs(GT_SELECT))
+    {
+        if (shouldReverseCondition)
+        {
+            GenTree* revCond = comp->gtReverseCond(cond);
+            assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
+        }
+        select->SetOper(isCneg ? GT_SELECT_NEG : GT_SELECT_INV);
+        JITDUMP("Converted to: %s\n", isCneg ? "SELECT_NEG" : "SELECT_INV");
+        DISPTREERANGE(BlockRange(), select);
+        JITDUMP("\n");
+    }
+    else
+    {
+        GenTreeOpCC* selectcc   = select->AsOpCC();
+        GenCondition selectCond = selectcc->gtCondition;
+        if (shouldReverseCondition)
+        {
+            // Reverse the condition so that op2 will be selected
+            selectcc->gtCondition = GenCondition::Reverse(selectCond);
+        }
+        selectcc->SetOper(isCneg ? GT_SELECT_NEGCC : GT_SELECT_INVCC);
+        JITDUMP("Converted to: %s\n", isCneg ? "SELECT_NEGCC" : "SELECT_INVCC");
+        DISPTREERANGE(BlockRange(), selectcc);
+        JITDUMP("\n");
+    }
+}
+
+//----------------------------------------------------------------------------------------------
+// TryLowerCselToCinc: Try converting SELECT/SELECTCC to SELECT_INC/SELECT_INCCC. Conversion is possible only if both
+// the trueVal and falseVal are integral constants and abs(trueVal - falseVal) = 1.
+//
+// Arguments:
+//     select - The select node that is now SELECT or SELECTCC
+//     cond   - The condition node that SELECT or SELECTCC uses
+//
+void Lowering::TryLowerCselToCinc(GenTreeOp* select, GenTree* cond)
+{
+    assert(select->OperIs(GT_SELECT, GT_SELECTCC));
+
+    GenTree* trueVal  = select->gtOp1;
+    GenTree* falseVal = select->gtOp2;
+    size_t   op1Val   = (size_t)trueVal->AsIntCon()->IconValue();
+    size_t   op2Val   = (size_t)falseVal->AsIntCon()->IconValue();
+
+    if ((op1Val + 1 == op2Val) || (op2Val + 1 == op1Val))
+    {
+        const bool shouldReverseCondition = (op1Val + 1 == op2Val);
+
+        if (select->OperIs(GT_SELECT))
+        {
+            if (shouldReverseCondition)
+            {
+                // Reverse the condition so that op2 will be selected
+                if (!cond->OperIsCompare())
+                {
+                    // Non-compare nodes add additional GT_NOT node after reversing.
+                    // This would remove gains from this optimisation so don't proceed.
+                    return;
+                }
+                GenTree* revCond = comp->gtReverseCond(cond);
+                assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
+            }
+            BlockRange().Remove(select->gtOp2, true);
+            select->gtOp2 = nullptr;
+            select->SetOper(GT_SELECT_INC);
+            JITDUMP("Converted to: GT_SELECT_INC\n");
+            DISPTREERANGE(BlockRange(), select);
+            JITDUMP("\n");
+        }
+        else
+        {
+            GenTreeOpCC* selectcc   = select->AsOpCC();
+            GenCondition selectCond = selectcc->gtCondition;
+
+            if (shouldReverseCondition)
+            {
+                // Reverse the condition so that op2 will be selected
+                selectcc->gtCondition = GenCondition::Reverse(selectCond);
+            }
+            else
+            {
+                std::swap(selectcc->gtOp1, selectcc->gtOp2);
+            }
+
+            BlockRange().Remove(selectcc->gtOp2, true);
+            selectcc->gtOp2 = nullptr;
+            selectcc->SetOper(GT_SELECT_INCCC);
+            JITDUMP("Converted to: GT_SELECT_INCCC\n");
+            DISPTREERANGE(BlockRange(), selectcc);
+            JITDUMP("\n");
         }
     }
 }

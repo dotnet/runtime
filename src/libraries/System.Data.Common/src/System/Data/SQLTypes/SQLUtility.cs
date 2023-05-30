@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace System.Data.SqlTypes
@@ -41,10 +42,13 @@ namespace System.Data.SqlTypes
             HResult = HResults.SqlType;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected SqlTypeException(SerializationInfo si, StreamingContext sc) : base(SqlTypeExceptionSerialization(si, sc), sc)
         {
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private static SerializationInfo SqlTypeExceptionSerialization(SerializationInfo? si, StreamingContext sc)
         {
             if ((null != si) && (1 == si.MemberCount))
@@ -76,10 +80,13 @@ namespace System.Data.SqlTypes
             HResult = HResults.SqlNullValue;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         private SqlNullValueException(SerializationInfo si, StreamingContext sc) : base(SqlNullValueExceptionSerialization(si, sc), sc)
         {
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private static SerializationInfo SqlNullValueExceptionSerialization(SerializationInfo si, StreamingContext sc)
         {
             if ((null != si) && (1 == si.MemberCount))
@@ -111,10 +118,13 @@ namespace System.Data.SqlTypes
             HResult = HResults.SqlTruncate;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         private SqlTruncateException(SerializationInfo si, StreamingContext sc) : base(SqlTruncateExceptionSerialization(si, sc), sc)
         {
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private static SerializationInfo SqlTruncateExceptionSerialization(SerializationInfo si, StreamingContext sc)
         {
             if ((null != si) && (1 == si.MemberCount))
@@ -146,6 +156,7 @@ namespace System.Data.SqlTypes
             HResult = HResults.SqlNullValue;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private SqlNotFilledException(SerializationInfo si, StreamingContext sc) : base(si, sc)
         {
         }
@@ -170,6 +181,7 @@ namespace System.Data.SqlTypes
             HResult = HResults.SqlNullValue;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private SqlAlreadyFilledException(SerializationInfo si, StreamingContext sc) : base(si, sc)
         {
         }

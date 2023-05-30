@@ -31,6 +31,8 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(3, stats.Quantiles[0].Value);
             Assert.Equal(0.95, stats.Quantiles[1].Quantile);
             Assert.Equal(5, stats.Quantiles[1].Value);
+            Assert.Equal(5, stats.Count);
+            Assert.Equal(15, stats.Sum);
         }
 
         [Fact]
@@ -49,6 +51,8 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(1, stats.Quantiles[0].Value);
             Assert.Equal(1.0, stats.Quantiles[1].Quantile);
             Assert.Equal(5, stats.Quantiles[1].Value);
+            Assert.Equal(5, stats.Count);
+            Assert.Equal(15, stats.Sum);
         }
 
         [Fact]
@@ -63,6 +67,8 @@ namespace System.Diagnostics.Metrics.Tests
             aggregator.Update(5);
             var stats = (HistogramStatistics)aggregator.Collect();
             Assert.Equal(0, stats.Quantiles.Length);
+            Assert.Equal(5, stats.Count);
+            Assert.Equal(15, stats.Sum);
         }
 
         [Fact]
@@ -81,6 +87,8 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(1, stats.Quantiles[0].Value);
             Assert.Equal(100, stats.Quantiles[1].Quantile);
             Assert.Equal(5, stats.Quantiles[1].Value);
+            Assert.Equal(5, stats.Count);
+            Assert.Equal(15, stats.Sum);
         }
 
         [Fact]
@@ -99,6 +107,8 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(1, stats.Quantiles[0].Value);
             Assert.Equal(0.9, stats.Quantiles[1].Quantile);
             Assert.Equal(5, stats.Quantiles[1].Value);
+            Assert.Equal(5, stats.Count);
+            Assert.Equal(15, stats.Sum);
         }
 
         [Fact]
@@ -121,6 +131,8 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(0.5, stats.Quantiles[0].Quantile);
             Assert.Equal(100, stats.Quantiles[0].Value);
             Assert.True(Math.Abs(100.01 - stats.Quantiles[0].Value) <= 100.01 * quantiles.MaxRelativeError);
+            Assert.Equal(10, stats.Count);
+            Assert.Equal(950.22, stats.Sum);
         }
 
         [Fact]
@@ -146,6 +158,8 @@ namespace System.Diagnostics.Metrics.Tests
             //At default error of 0.001 result of 100 would be acceptable, but with higher precision it is not
             Assert.True(100 < stats.Quantiles[0].Value);
             Assert.True(Math.Abs(100.01 - stats.Quantiles[0].Value) <= 100.01 * quantiles.MaxRelativeError);
+            Assert.Equal(10, stats.Count);
+            Assert.Equal(950.22, stats.Sum);
         }
 
         [Fact]
@@ -157,6 +171,8 @@ namespace System.Diagnostics.Metrics.Tests
 
             Assert.NotNull(stats);
             Assert.Equal(0, stats.Quantiles.Length);
+            Assert.Equal(0, stats.Count);
+            Assert.Equal(0, stats.Sum);
         }
 
         [Fact]
@@ -171,6 +187,8 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(1, stats.Quantiles.Length);
             Assert.Equal(0.5, stats.Quantiles[0].Quantile);
             Assert.Equal(99, stats.Quantiles[0].Value);
+            Assert.Equal(1, stats.Count);
+            Assert.Equal(99, stats.Sum);
         }
 
         [Fact]
@@ -188,6 +206,8 @@ namespace System.Diagnostics.Metrics.Tests
 
             Assert.NotNull(stats);
             Assert.Equal(0, stats.Quantiles.Length);
+            Assert.Equal(0, stats.Count);
+            Assert.Equal(0, stats.Sum);
         }
 
         [Fact]
@@ -198,6 +218,8 @@ namespace System.Diagnostics.Metrics.Tests
             var stats = (HistogramStatistics)aggregator.Collect();
             Assert.NotNull(stats);
             Assert.Equal(0, stats.Quantiles.Length);
+            Assert.Equal(0, stats.Count);
+            Assert.Equal(0, stats.Sum);
 
             aggregator.Update(1);
             aggregator.Update(2);
@@ -210,6 +232,8 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(1, stats.Quantiles.Length);
             Assert.Equal(0.5, stats.Quantiles[0].Quantile);
             Assert.Equal(3, stats.Quantiles[0].Value);
+            Assert.Equal(5, stats.Count);
+            Assert.Equal(15, stats.Sum);
         }
 
         [Fact]
@@ -228,6 +252,8 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(1, stats.Quantiles.Length);
             Assert.Equal(0.5, stats.Quantiles[0].Quantile);
             Assert.Equal(3, stats.Quantiles[0].Value);
+            Assert.Equal(5, stats.Count);
+            Assert.Equal(15, stats.Sum);
 
             aggregator.Update(9);
             aggregator.Update(8);
@@ -240,6 +266,8 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(1, stats.Quantiles.Length);
             Assert.Equal(0.5, stats.Quantiles[0].Quantile);
             Assert.Equal(7, stats.Quantiles[0].Value);
+            Assert.Equal(5, stats.Count);
+            Assert.Equal(35, stats.Sum);
         }
 
         [Fact]
@@ -259,6 +287,8 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(1, stats.Quantiles.Length);
             Assert.Equal(0.5, stats.Quantiles[0].Quantile);
             Assert.Equal(-3, stats.Quantiles[0].Value);
+            Assert.Equal(5, stats.Count);
+            Assert.Equal(-15, stats.Sum);
         }
 
         [Fact]
@@ -278,6 +308,8 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(1, stats.Quantiles.Length);
             Assert.Equal(0.5, stats.Quantiles[0].Quantile);
             Assert.Equal(0, stats.Quantiles[0].Value);
+            Assert.Equal(5, stats.Count);
+            Assert.Equal(0, stats.Sum);
         }
 
         [Fact]
@@ -297,6 +329,8 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(1, stats.Quantiles.Length);
             Assert.Equal(0.5, stats.Quantiles[0].Quantile);
             Assert.Equal(-0.5, stats.Quantiles[0].Value);
+            Assert.Equal(5, stats.Count);
+            Assert.Equal(99825.1769, stats.Sum);
         }
 
         [Fact]
@@ -318,6 +352,26 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(100, stats.Quantiles[0].Value);
             Assert.Equal(1, stats.Quantiles[1].Quantile);
             Assert.Equal(100, stats.Quantiles[1].Value);
+            Assert.Equal(1, stats.Count);
+            Assert.Equal(100, stats.Sum);
+        }
+
+        [Fact]
+        public void FilterOnlyNaNAndInfinities()
+        {
+            QuantileAggregation quantiles = new QuantileAggregation(0, 1);
+            ExponentialHistogramAggregator aggregator = new ExponentialHistogramAggregator(quantiles);
+
+            aggregator.Update(double.NaN);
+            aggregator.Update(-double.NaN);
+            aggregator.Update(double.PositiveInfinity);
+            aggregator.Update(double.NegativeInfinity);
+            var stats = (HistogramStatistics)aggregator.Collect();
+
+            Assert.NotNull(stats);
+            Assert.Equal(0, stats.Quantiles.Length);
+            Assert.Equal(0, stats.Count);
+            Assert.Equal(0, stats.Sum);
         }
     }
 }

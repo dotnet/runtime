@@ -2,14 +2,49 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en" target-language="it" original="../Strings.resx">
     <body>
+      <trans-unit id="CollectionNotSupported">
+        <source>The collection type is not supported: '{0}'.</source>
+        <target state="translated">Il tipo di raccolta non è supportato: '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DictionaryKeyNotSupported">
+        <source>The dictionary key type is not supported: '{0}'.</source>
+        <target state="translated">Il tipo di chiave del dizionario non è supportato: '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ElementTypeNotSupported">
+        <source>The collection element type is not supported: '{0}'.</source>
+        <target state="translated">Il tipo di elemento della raccolta non è supportato: '{0}'.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="Language VersionIsNotSupportedMessageFormat">
         <source>The project's language version has to be at least 'C# 11'.</source>
-        <target state="new">The project's language version has to be at least 'C# 11'.</target>
+        <target state="translated">La versione del linguaggio del progetto deve essere almeno 'C# 11'.</target>
         <note />
       </trans-unit>
       <trans-unit id="LanguageVersionIsNotSupportedTitle">
         <source>Language version is required to be at least C# 11</source>
-        <target state="new">Language version is required to be at least C# 11</target>
+        <target state="translated">La versione del linguaggio deve essere almeno C# 11</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingPublicInstanceConstructor">
+        <source>Cannot create instance of type '{0}' because it is missing a public instance constructor.</source>
+        <target state="new">Cannot create instance of type '{0}' because it is missing a public instance constructor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultiDimArraysNotSupported">
+        <source>Multidimensional arrays are not supported: '{0}'.</source>
+        <target state="translated">Matrici multidimensionali non supportate: '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleParameterizedConstructors">
+        <source>Cannot create instance of type '{0}' because it has multiple public parameterized constructors.</source>
+        <target state="new">Cannot create instance of type '{0}' because it has multiple public parameterized constructors.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NullableUnderlyingTypeNotSupported">
+        <source>Nullable underlying type is not supported: '{0}'.</source>
+        <target state="translated">Il tipo sottostante che ammette i valori Null non è supportato: '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="PropertyNotSupportedMessageFormat">
@@ -19,17 +54,17 @@
       </trans-unit>
       <trans-unit id="PropertyNotSupportedTitle">
         <source>Did not generate binding logic for a property on a type</source>
-        <target state="new">Did not generate binding logic for a property on a type</target>
+        <target state="translated">Non è stata generata la logica di binding per una proprietà in un tipo</target>
         <note />
       </trans-unit>
-      <trans-unit id="TypeNotSupportedMessageFormat">
-        <source>Type '{0}' is not supported: {1}.</source>
-        <target state="translated">Il tipo '{0}' non è supportato: {1}.</target>
+      <trans-unit id="TypeNotSupported">
+        <source>The type is not supported: '{0}'.</source>
+        <target state="translated">Il tipo non è supportato: '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitle">
         <source>Did not generate binding logic for a type</source>
-        <target state="new">Did not generate binding logic for a type</target>
+        <target state="translated">Non è stata generata la logica di binding per un tipo.</target>
         <note />
       </trans-unit>
     </body>

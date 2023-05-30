@@ -143,9 +143,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
     // setting the GTF_REUSE_REG_VAL flag.
     if (treeNode->IsReuseRegVal())
     {
-        // For now, this is only used for constant nodes.
-        assert(treeNode->OperIs(GT_CNS_INT, GT_CNS_DBL, GT_CNS_VEC));
-        JITDUMP("  TreeNode is marked ReuseReg\n");
+        genCodeForReuseVal(treeNode);
         return;
     }
 
@@ -259,9 +257,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForBitCast(treeNode->AsOp());
             break;
 
-        case GT_LCL_FLD_ADDR:
-        case GT_LCL_VAR_ADDR:
-            genCodeForLclAddr(treeNode->AsLclVarCommon());
+        case GT_LCL_ADDR:
+            genCodeForLclAddr(treeNode->AsLclFld());
             break;
 
         case GT_LCL_FLD:
@@ -318,11 +315,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_BFIZ:
             genCodeForBfiz(treeNode->AsOp());
             break;
-
-        case GT_CSNEG_MI:
-        case GT_CNEG_LT:
-            genCodeForCond(treeNode->AsOp());
-            break;
 #endif // TARGET_ARM64
 
         case GT_JMP:
@@ -358,18 +350,23 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
 #ifdef TARGET_ARM64
+        case GT_SELECT_NEG:
+        case GT_SELECT_INV:
+        case GT_SELECT_INC:
         case GT_SELECT:
             genCodeForSelect(treeNode->AsConditional());
             break;
 
+        case GT_SELECT_NEGCC:
+        case GT_SELECT_INVCC:
+        case GT_SELECT_INCCC:
         case GT_SELECTCC:
             genCodeForSelect(treeNode->AsOp());
             break;
-#endif
 
-#ifdef TARGET_ARM64
         case GT_JCMP:
-            genCodeForJumpCompare(treeNode->AsOp());
+        case GT_JTEST:
+            genCodeForJumpCompare(treeNode->AsOpCC());
             break;
 
         case GT_CCMP:
@@ -510,7 +507,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #endif
             break;
 
-        case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
@@ -522,14 +518,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_SWITCH_TABLE:
             genTableBasedSwitch(treeNode);
-            break;
-
-        case GT_ARR_INDEX:
-            genCodeForArrIndex(treeNode->AsArrIndex());
-            break;
-
-        case GT_ARR_OFFSET:
-            genCodeForArrOffset(treeNode->AsArrOffs());
             break;
 
 #ifdef TARGET_ARM
@@ -889,7 +877,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         }
         else
         {
-            noway_assert(source->OperIsLocalRead() || source->OperIs(GT_OBJ));
+            noway_assert(source->OperIsLocalRead() || source->OperIs(GT_BLK));
 
             var_types targetType = source->TypeGet();
             noway_assert(varTypeIsStruct(targetType));
@@ -917,10 +905,10 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 // This struct must live on the stack frame.
                 assert(varDsc->lvOnFrame && !varDsc->lvRegister);
             }
-            else // we must have a GT_OBJ
+            else // we must have a GT_BLK
             {
-                layout  = source->AsObj()->GetLayout();
-                addrReg = genConsumeReg(source->AsObj()->Addr());
+                layout  = source->AsBlk()->GetLayout();
+                addrReg = genConsumeReg(source->AsBlk()->Addr());
 
 #ifdef TARGET_ARM64
                 // If addrReg equal to loReg, swap(loReg, hiReg)
@@ -1247,11 +1235,11 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             firstRegToPlace = 0;
             valueReg        = treeNode->GetRegNumByIdx(0);
         }
-        else // we must have a GT_OBJ
+        else // we must have a GT_BLK
         {
-            layout   = source->AsObj()->GetLayout();
-            addrReg  = genConsumeReg(source->AsObj()->Addr());
-            addrType = source->AsObj()->Addr()->TypeGet();
+            layout   = source->AsBlk()->GetLayout();
+            addrReg  = genConsumeReg(source->AsBlk()->Addr());
+            addrType = source->AsBlk()->Addr()->TypeGet();
 
             regNumber allocatedValueReg = REG_NA;
             if (treeNode->gtNumRegs == 1)
@@ -1543,101 +1531,6 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 }
 
 //------------------------------------------------------------------------
-// genCodeForArrIndex: Generates code to bounds check the index for one dimension of an array reference,
-//                     producing the effective index by subtracting the lower bound.
-//
-// Arguments:
-//    arrIndex - the node for which we're generating code
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
-{
-    emitter*  emit      = GetEmitter();
-    GenTree*  arrObj    = arrIndex->ArrObj();
-    GenTree*  indexNode = arrIndex->IndexExpr();
-    regNumber arrReg    = genConsumeReg(arrObj);
-    regNumber indexReg  = genConsumeReg(indexNode);
-    regNumber tgtReg    = arrIndex->GetRegNum();
-    noway_assert(tgtReg != REG_NA);
-
-    // We will use a temp register to load the lower bound and dimension size values.
-
-    regNumber tmpReg = arrIndex->GetSingleTempReg();
-    assert(tgtReg != tmpReg);
-
-    unsigned dim  = arrIndex->gtCurrDim;
-    unsigned rank = arrIndex->gtArrRank;
-    unsigned offset;
-
-    offset = compiler->eeGetMDArrayLowerBoundOffset(rank, dim);
-    emit->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, arrReg, offset);
-    emit->emitIns_R_R_R(INS_sub, EA_4BYTE, tgtReg, indexReg, tmpReg);
-
-    offset = compiler->eeGetMDArrayLengthOffset(rank, dim);
-    emit->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, arrReg, offset);
-    emit->emitIns_R_R(INS_cmp, EA_4BYTE, tgtReg, tmpReg);
-
-    genJumpToThrowHlpBlk(EJ_hs, SCK_RNGCHK_FAIL);
-
-    genProduceReg(arrIndex);
-}
-
-//------------------------------------------------------------------------
-// genCodeForArrOffset: Generates code to compute the flattened array offset for
-//    one dimension of an array reference:
-//        result = (prevDimOffset * dimSize) + effectiveIndex
-//    where dimSize is obtained from the arrObj operand
-//
-// Arguments:
-//    arrOffset - the node for which we're generating code
-//
-// Return Value:
-//    None.
-//
-// Notes:
-//    dimSize and effectiveIndex are always non-negative, the former by design,
-//    and the latter because it has been normalized to be zero-based.
-
-void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
-{
-    GenTree*  offsetNode = arrOffset->gtOffset;
-    GenTree*  indexNode  = arrOffset->gtIndex;
-    regNumber tgtReg     = arrOffset->GetRegNum();
-
-    noway_assert(tgtReg != REG_NA);
-
-    if (!offsetNode->IsIntegralConst(0))
-    {
-        emitter*  emit      = GetEmitter();
-        regNumber offsetReg = genConsumeReg(offsetNode);
-        regNumber indexReg  = genConsumeReg(indexNode);
-        regNumber arrReg    = genConsumeReg(arrOffset->gtArrObj);
-        noway_assert(offsetReg != REG_NA);
-        noway_assert(indexReg != REG_NA);
-        noway_assert(arrReg != REG_NA);
-
-        regNumber tmpReg = arrOffset->GetSingleTempReg();
-
-        unsigned dim    = arrOffset->gtCurrDim;
-        unsigned rank   = arrOffset->gtArrRank;
-        unsigned offset = compiler->eeGetMDArrayLengthOffset(rank, dim);
-
-        // Load tmpReg with the dimension size and evaluate
-        // tgtReg = offsetReg*tmpReg + indexReg.
-        emit->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, arrReg, offset);
-        emit->emitIns_R_R_R_R(INS_MULADD, EA_PTRSIZE, tgtReg, tmpReg, offsetReg, indexReg);
-    }
-    else
-    {
-        regNumber indexReg = genConsumeReg(indexNode);
-        inst_Mov(TYP_INT, tgtReg, indexReg, /* canSkip */ true);
-    }
-    genProduceReg(arrOffset);
-}
-
-//------------------------------------------------------------------------
 // genCodeForShift: Generates the code sequence for a GenTree node that
 // represents a bit shift or rotate operation (<<, >>, >>>, rol, ror).
 //
@@ -1676,14 +1569,14 @@ void CodeGen::genCodeForShift(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// genCodeForLclAddr: Generates the code for GT_LCL_FLD_ADDR/GT_LCL_VAR_ADDR.
+// genCodeForLclAddr: Generates the code for GT_LCL_ADDR.
 //
 // Arguments:
 //    lclAddrNode - the node.
 //
-void CodeGen::genCodeForLclAddr(GenTreeLclVarCommon* lclAddrNode)
+void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
 {
-    assert(lclAddrNode->OperIs(GT_LCL_FLD_ADDR, GT_LCL_VAR_ADDR));
+    assert(lclAddrNode->OperIs(GT_LCL_ADDR));
 
     var_types targetType = lclAddrNode->TypeGet();
     emitAttr  size       = emitTypeSize(targetType);
@@ -1900,7 +1793,7 @@ void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
     // genConsumeBlockOp takes care of this for us.
     genConsumeBlockOp(cpBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
 
-    if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpBlkNode->IsVolatile())
     {
         // issue a full memory barrier before a volatile CpBlk operation
         instGen_MemoryBarrier();
@@ -1908,7 +1801,7 @@ void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
 
     genEmitHelperCall(CORINFO_HELP_MEMCPY, 0, EA_UNKNOWN);
 
-    if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpBlkNode->IsVolatile())
     {
         // issue a load barrier after a volatile CpBlk operation
         instGen_MemoryBarrier(BARRIER_LOAD_ONLY);
@@ -2568,7 +2461,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     }
     else
     {
-        assert(dstAddr->OperIsLocalAddr());
+        assert(dstAddr->OperIs(GT_LCL_ADDR));
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
         dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
@@ -2735,7 +2628,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     }
     else
     {
-        assert(dstAddr->OperIsLocalAddr());
+        assert(dstAddr->OperIs(GT_LCL_ADDR));
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
         dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
@@ -2768,7 +2661,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         }
         else
         {
-            assert(srcAddr->OperIsLocalAddr());
+            assert(srcAddr->OperIs(GT_LCL_ADDR));
             srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
             srcOffset = srcAddr->AsLclVarCommon()->GetLclOffs();
         }
@@ -3193,7 +3086,7 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
     // genConsumeBlockOp takes care of this for us.
     genConsumeBlockOp(initBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
 
-    if (initBlkNode->gtFlags & GTF_BLK_VOLATILE)
+    if (initBlkNode->IsVolatile())
     {
         // issue a full memory barrier before a volatile initBlock Operation
         instGen_MemoryBarrier();
@@ -4462,28 +4355,24 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 }
 
 //------------------------------------------------------------------------
-// genCodeForStoreBlk: Produce code for a GT_STORE_OBJ/GT_STORE_DYN_BLK/GT_STORE_BLK node.
+// genCodeForStoreBlk: Produce code for a GT_STORE_DYN_BLK/GT_STORE_BLK node.
 //
 // Arguments:
 //    tree - the node
 //
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 {
-    assert(blkOp->OperIs(GT_STORE_OBJ, GT_STORE_DYN_BLK, GT_STORE_BLK));
-
-    if (blkOp->OperIs(GT_STORE_OBJ))
-    {
-        assert(!blkOp->gtBlkOpGcUnsafe);
-        assert(blkOp->OperIsCopyBlkOp());
-        assert(blkOp->AsObj()->GetLayout()->HasGCPtr());
-        genCodeForCpObj(blkOp->AsObj());
-        return;
-    }
+    assert(blkOp->OperIs(GT_STORE_DYN_BLK, GT_STORE_BLK));
 
     bool isCopyBlk = blkOp->OperIsCopyBlkOp();
 
     switch (blkOp->gtBlkOpKind)
     {
+        case GenTreeBlk::BlkOpKindCpObjUnroll:
+            assert(!blkOp->gtBlkOpGcUnsafe);
+            genCodeForCpObj(blkOp->AsBlk());
+            break;
+
         case GenTreeBlk::BlkOpKindHelper:
             assert(!blkOp->gtBlkOpGcUnsafe);
             if (isCopyBlk)
@@ -5642,82 +5531,4 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
     compiler->unwindEndEpilog();
 }
-
-// return size
-// alignmentWB is out param
-unsigned CodeGenInterface::InferOpSizeAlign(GenTree* op, unsigned* alignmentWB)
-{
-    unsigned alignment = 0;
-    unsigned opSize    = 0;
-
-    if (op->gtType == TYP_STRUCT || op->OperIsCopyBlkOp())
-    {
-        opSize = InferStructOpSizeAlign(op, &alignment);
-    }
-    else
-    {
-        alignment = genTypeAlignments[op->TypeGet()];
-        opSize    = genTypeSizes[op->TypeGet()];
-    }
-
-    assert(opSize != 0);
-    assert(alignment != 0);
-
-    (*alignmentWB) = alignment;
-    return opSize;
-}
-
-// return size
-// alignmentWB is out param
-unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignmentWB)
-{
-    unsigned alignment = 0;
-    unsigned opSize    = 0;
-
-    while (op->gtOper == GT_COMMA)
-    {
-        op = op->AsOp()->gtOp2;
-    }
-
-    if (op->gtOper == GT_OBJ)
-    {
-        CORINFO_CLASS_HANDLE clsHnd = op->AsObj()->GetLayout()->GetClassHandle();
-        opSize                      = op->AsObj()->GetLayout()->GetSize();
-        alignment = roundUp(compiler->info.compCompHnd->getClassAlignmentRequirement(clsHnd), TARGET_POINTER_SIZE);
-    }
-    else if (op->gtOper == GT_LCL_VAR)
-    {
-        const LclVarDsc* varDsc = compiler->lvaGetDesc(op->AsLclVarCommon());
-        assert(varDsc->lvType == TYP_STRUCT);
-        opSize = varDsc->lvSize();
-#ifndef TARGET_64BIT
-        if (varDsc->lvStructDoubleAlign)
-        {
-            alignment = TARGET_POINTER_SIZE * 2;
-        }
-        else
-#endif // !TARGET_64BIT
-        {
-            alignment = TARGET_POINTER_SIZE;
-        }
-    }
-    else if (op->gtOper == GT_MKREFANY)
-    {
-        opSize    = TARGET_POINTER_SIZE * 2;
-        alignment = TARGET_POINTER_SIZE;
-    }
-    else
-    {
-        assert(!"Unhandled gtOper");
-        opSize    = TARGET_POINTER_SIZE;
-        alignment = TARGET_POINTER_SIZE;
-    }
-
-    assert(opSize != 0);
-    assert(alignment != 0);
-
-    (*alignmentWB) = alignment;
-    return opSize;
-}
-
 #endif // TARGET_ARMARCH

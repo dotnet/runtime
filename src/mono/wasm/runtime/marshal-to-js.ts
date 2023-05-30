@@ -1,22 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { createPromiseController, assertIsControllablePromise, getPromiseController } from "./promise-controller";
 import cwraps from "./cwraps";
 import { _lookup_js_owned_object, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, setup_managed_proxy } from "./gc-handles";
-import { Module, runtimeHelpers } from "./imports";
+import { Module, createPromiseController, loaderHelpers, runtimeHelpers } from "./globals";
 import {
     ManagedObject, ManagedError,
     get_arg_gc_handle, get_arg_js_handle, get_arg_type, get_arg_i32, get_arg_f64, get_arg_i52, get_arg_i16, get_arg_u8, get_arg_f32,
     get_arg_b8, get_arg_date, get_arg_length, set_js_handle, get_arg, set_arg_type,
     get_signature_arg2_type, get_signature_arg1_type, cs_to_js_marshalers,
     get_signature_res_type, get_arg_u16, array_element_size, get_string_root,
-    ArraySegment, Span, MemoryViewType, get_signature_arg3_type, MarshalerType, get_arg_i64_big, get_arg_intptr, get_arg_element_type, JavaScriptMarshalerArgSize
+    ArraySegment, Span, MemoryViewType, get_signature_arg3_type, get_arg_i64_big, get_arg_intptr, get_arg_element_type, JavaScriptMarshalerArgSize
 } from "./marshal";
-import { conv_string_root } from "./strings";
-import { mono_assert, JSHandleNull, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToJs } from "./types";
+import { monoStringToString } from "./strings";
+import { JSHandleNull, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToJs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
 import { get_marshaler_to_cs_by_type } from "./marshal-to-cs";
+import { localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
 
 export function initialize_marshalers_to_js(): void {
     if (cs_to_js_marshalers.size == 0) {
@@ -69,10 +69,11 @@ export function bind_arg_marshal_to_js(sig: JSMarshalerType, marshaler_type: Mar
         marshaler_type = marshaler_type_res;
     }
     const converter = get_marshaler_to_js_by_type(marshaler_type)!;
+    const element_type = get_signature_arg1_type(sig);
 
     const arg_offset = index * JavaScriptMarshalerArgSize;
     return (args: JSMarshalerArguments) => {
-        return converter(<any>args + arg_offset, sig, res_marshaler, arg1_marshaler, arg2_marshaler, arg3_marshaler);
+        return converter(<any>args + arg_offset, element_type, res_marshaler, arg1_marshaler, arg2_marshaler, arg3_marshaler);
     };
 }
 
@@ -177,7 +178,7 @@ function _marshal_datetime_to_js(arg: JSMarshalerArgument): Date | null {
     return get_arg_date(arg);
 }
 
-function _marshal_delegate_to_js(arg: JSMarshalerArgument, _?: JSMarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs): Function | null {
+function _marshal_delegate_to_js(arg: JSMarshalerArgument, _?: MarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs): Function | null {
     const type = get_arg_type(arg);
     if (type === MarshalerType.None) {
         return null;
@@ -197,7 +198,7 @@ function _marshal_delegate_to_js(arg: JSMarshalerArgument, _?: JSMarshalerType, 
     return result;
 }
 
-export function marshal_task_to_js(arg: JSMarshalerArgument, _?: JSMarshalerType, res_converter?: MarshalerToJs): Promise<any> | null {
+export function marshal_task_to_js(arg: JSMarshalerArgument, _?: MarshalerType, res_converter?: MarshalerToJs): Promise<any> | null {
     const type = get_arg_type(arg);
     if (type === MarshalerType.None) {
         return null;
@@ -217,19 +218,17 @@ export function marshal_task_to_js(arg: JSMarshalerArgument, _?: JSMarshalerType
     }
 
     const js_handle = get_arg_js_handle(arg);
-    // console.log("_marshal_task_to_js A" + js_handle);
     if (js_handle == JSHandleNull) {
         // this is already resolved void
         return new Promise((resolve) => resolve(undefined));
     }
     const promise = mono_wasm_get_jsobj_from_js_handle(js_handle);
     mono_assert(!!promise, () => `ERR28: promise not found for js_handle: ${js_handle} `);
-    assertIsControllablePromise<any>(promise);
-    const promise_control = getPromiseController(promise);
+    loaderHelpers.assertIsControllablePromise<any>(promise);
+    const promise_control = loaderHelpers.getPromiseController(promise);
 
     const orig_resolve = promise_control.resolve;
     promise_control.resolve = (argInner: JSMarshalerArgument) => {
-        // console.log("_marshal_task_to_js R" + js_handle);
         const type = get_arg_type(argInner);
         if (type === MarshalerType.None) {
             orig_resolve(null);
@@ -280,8 +279,8 @@ export function mono_wasm_marshal_promise(args: JSMarshalerArguments): void {
         // resolve existing promise
         const promise = mono_wasm_get_jsobj_from_js_handle(js_handle);
         mono_assert(!!promise, () => `ERR25: promise not found for js_handle: ${js_handle} `);
-        assertIsControllablePromise(promise);
-        const promise_control = getPromiseController(promise);
+        loaderHelpers.assertIsControllablePromise(promise);
+        const promise_control = loaderHelpers.getPromiseController(promise);
 
         if (exc_type !== MarshalerType.None) {
             const reason = marshal_exception_to_js(exc);
@@ -303,7 +302,7 @@ export function marshal_string_to_js(arg: JSMarshalerArgument): string | null {
     }
     const root = get_string_root(arg);
     try {
-        const value = conv_string_root(root);
+        const value = monoStringToString(root);
         return value;
     } finally {
         root.release();
@@ -385,9 +384,8 @@ function _marshal_cs_object_to_js(arg: JSMarshalerArgument): any {
     return converter(arg);
 }
 
-function _marshal_array_to_js(arg: JSMarshalerArgument, sig?: JSMarshalerType): Array<any> | TypedArray | null {
-    mono_assert(!!sig, "Expected valid sig parameter");
-    const element_type = get_signature_arg1_type(sig);
+function _marshal_array_to_js(arg: JSMarshalerArgument, element_type?: MarshalerType): Array<any> | TypedArray | null {
+    mono_assert(!!element_type, "Expected valid element_type parameter");
     return _marshal_array_to_js_impl(arg, element_type);
 }
 
@@ -425,15 +423,15 @@ function _marshal_array_to_js_impl(arg: JSMarshalerArgument, element_type: Marsh
         }
     }
     else if (element_type == MarshalerType.Byte) {
-        const sourceView = Module.HEAPU8.subarray(<any>buffer_ptr, buffer_ptr + length);
+        const sourceView = localHeapViewU8().subarray(<any>buffer_ptr, buffer_ptr + length);
         result = sourceView.slice();//copy
     }
     else if (element_type == MarshalerType.Int32) {
-        const sourceView = Module.HEAP32.subarray(buffer_ptr >> 2, (buffer_ptr >> 2) + length);
+        const sourceView = localHeapViewI32().subarray(buffer_ptr >> 2, (buffer_ptr >> 2) + length);
         result = sourceView.slice();//copy
     }
     else if (element_type == MarshalerType.Double) {
-        const sourceView = Module.HEAPF64.subarray(buffer_ptr >> 3, (buffer_ptr >> 3) + length);
+        const sourceView = localHeapViewF64().subarray(buffer_ptr >> 3, (buffer_ptr >> 3) + length);
         result = sourceView.slice();//copy
     }
     else {
@@ -443,10 +441,9 @@ function _marshal_array_to_js_impl(arg: JSMarshalerArgument, element_type: Marsh
     return result;
 }
 
-function _marshal_span_to_js(arg: JSMarshalerArgument, sig?: JSMarshalerType): Span {
-    mono_assert(!!sig, "Expected valid sig parameter");
+function _marshal_span_to_js(arg: JSMarshalerArgument, element_type?: MarshalerType): Span {
+    mono_assert(!!element_type, "Expected valid element_type parameter");
 
-    const element_type = get_signature_arg1_type(sig);
     const buffer_ptr = get_arg_intptr(arg);
     const length = get_arg_length(arg);
     let result: Span | null = null;
@@ -465,10 +462,9 @@ function _marshal_span_to_js(arg: JSMarshalerArgument, sig?: JSMarshalerType): S
     return result;
 }
 
-function _marshal_array_segment_to_js(arg: JSMarshalerArgument, sig?: JSMarshalerType): ArraySegment {
-    mono_assert(!!sig, "Expected valid sig parameter");
+function _marshal_array_segment_to_js(arg: JSMarshalerArgument, element_type?: MarshalerType): ArraySegment {
+    mono_assert(!!element_type, "Expected valid element_type parameter");
 
-    const element_type = get_signature_arg1_type(sig);
     const buffer_ptr = get_arg_intptr(arg);
     const length = get_arg_length(arg);
     let result: ArraySegment | null = null;

@@ -81,7 +81,6 @@ __Compiler=clang
 __CommonMSBuildArgs=
 __ConfigureOnly=0
 __CrossBuild=0
-__DistroRid=""
 __PgoInstrument=0
 __PgoOptDataPath=""
 __PgoOptimize=0
@@ -107,6 +106,9 @@ source "$__ProjectRoot"/_build-commons.sh
 __LogsDir="$__RootBinDir/log/$__BuildType"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 __ConfigTriplet="$__TargetOS.$__TargetArch.$__BuildType"
+if [[ "$__TargetOS" == "linux-bionic" ]]; then
+    __ConfigTriplet="linux.$__TargetArch.$__BuildType"
+fi
 __BinDir="$__RootBinDir/bin/coreclr/$__ConfigTriplet"
 __ArtifactsObjDir="$__RepoRootDir/artifacts/obj"
 __ArtifactsIntermediatesDir="$__ArtifactsObjDir/coreclr"
@@ -114,7 +116,7 @@ __IntermediatesDir="$__ArtifactsIntermediatesDir/$__ConfigTriplet"
 
 export __IntermediatesDir __ArtifactsIntermediatesDir
 
-if [[ "$__TargetArch" != "$__HostArch" ]]; then
+if [[ "$__ExplicitHostArch" == 1 ]]; then
     __IntermediatesDir="$__IntermediatesDir/$__HostArch"
     __BinDir="$__BinDir/$__HostArch"
 fi

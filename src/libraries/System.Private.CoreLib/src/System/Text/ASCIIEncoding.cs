@@ -322,8 +322,26 @@ namespace System.Text
             }
         }
 
+        /// <inheritdoc/>
+        public override unsafe bool TryGetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, out int bytesWritten)
+        {
+            fixed (char* charsPtr = &MemoryMarshal.GetReference(chars))
+            fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
+            {
+                int written = GetBytesCommon(charsPtr, chars.Length, bytesPtr, bytes.Length, throwForDestinationOverflow: false);
+                if (written >= 0)
+                {
+                    bytesWritten = written;
+                    return true;
+                }
+
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe int GetBytesCommon(char* pChars, int charCount, byte* pBytes, int byteCount)
+        private unsafe int GetBytesCommon(char* pChars, int charCount, byte* pBytes, int byteCount, bool throwForDestinationOverflow = true)
         {
             // Common helper method for all non-EncoderNLS entry points to GetBytes.
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
@@ -347,7 +365,7 @@ namespace System.Text
             {
                 // Simple narrowing conversion couldn't operate on entire buffer - invoke fallback.
 
-                return GetBytesWithFallback(pChars, charCount, pBytes, byteCount, charsConsumed, bytesWritten);
+                return GetBytesWithFallback(pChars, charCount, pBytes, byteCount, charsConsumed, bytesWritten, throwForDestinationOverflow);
             }
         }
 
@@ -360,7 +378,7 @@ namespace System.Text
             return bytesWritten;
         }
 
-        private protected sealed override unsafe int GetBytesWithFallback(ReadOnlySpan<char> chars, int originalCharsLength, Span<byte> bytes, int originalBytesLength, EncoderNLS? encoder)
+        private protected sealed override unsafe int GetBytesWithFallback(ReadOnlySpan<char> chars, int originalCharsLength, Span<byte> bytes, int originalBytesLength, EncoderNLS? encoder, bool throwForDestinationOverflow = true)
         {
             // We special-case EncoderReplacementFallback if it's telling us to write a single ASCII char,
             // since we believe this to be relatively common and we can handle it more efficiently than
@@ -406,7 +424,7 @@ namespace System.Text
             }
             else
             {
-                return base.GetBytesWithFallback(chars, originalCharsLength, bytes, originalBytesLength, encoder);
+                return base.GetBytesWithFallback(chars, originalCharsLength, bytes, originalBytesLength, encoder, throwForDestinationOverflow);
             }
         }
 
@@ -595,8 +613,26 @@ namespace System.Text
             }
         }
 
+        /// <inheritdoc/>
+        public override unsafe bool TryGetChars(ReadOnlySpan<byte> bytes, Span<char> chars, out int charsWritten)
+        {
+            fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
+            fixed (char* charsPtr = &MemoryMarshal.GetReference(chars))
+            {
+                int written = GetCharsCommon(bytesPtr, bytes.Length, charsPtr, chars.Length, throwForDestinationOverflow: false);
+                if (written >= 0)
+                {
+                    charsWritten = written;
+                    return true;
+                }
+
+                charsWritten = 0;
+                return false;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe int GetCharsCommon(byte* pBytes, int byteCount, char* pChars, int charCount)
+        private unsafe int GetCharsCommon(byte* pBytes, int byteCount, char* pChars, int charCount, bool throwForDestinationOverflow = true)
         {
             // Common helper method for all non-DecoderNLS entry points to GetChars.
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
@@ -620,7 +656,7 @@ namespace System.Text
             {
                 // Simple narrowing conversion couldn't operate on entire buffer - invoke fallback.
 
-                return GetCharsWithFallback(pBytes, byteCount, pChars, charCount, bytesConsumed, charsWritten);
+                return GetCharsWithFallback(pBytes, byteCount, pChars, charCount, bytesConsumed, charsWritten, throwForDestinationOverflow);
             }
         }
 
@@ -631,7 +667,7 @@ namespace System.Text
             return bytesConsumed;
         }
 
-        private protected sealed override unsafe int GetCharsWithFallback(ReadOnlySpan<byte> bytes, int originalBytesLength, Span<char> chars, int originalCharsLength, DecoderNLS? decoder)
+        private protected sealed override unsafe int GetCharsWithFallback(ReadOnlySpan<byte> bytes, int originalBytesLength, Span<char> chars, int originalCharsLength, DecoderNLS? decoder, bool throwForDestinationOverflow = true)
         {
             // We special-case DecoderReplacementFallback if it's telling us to write a single BMP char,
             // since we believe this to be relatively common and we can handle it more efficiently than
@@ -676,7 +712,7 @@ namespace System.Text
             }
             else
             {
-                return base.GetCharsWithFallback(bytes, originalBytesLength, chars, originalCharsLength, decoder);
+                return base.GetCharsWithFallback(bytes, originalBytesLength, chars, originalCharsLength, decoder, throwForDestinationOverflow);
             }
         }
 

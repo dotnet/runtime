@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk.IL">
-  <PropertyGroup>
-    <DebugType>PdbOnly</DebugType>
-    <Optimize>False</Optimize>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="trashreg.il" />
-  </ItemGroup>
-</Project>

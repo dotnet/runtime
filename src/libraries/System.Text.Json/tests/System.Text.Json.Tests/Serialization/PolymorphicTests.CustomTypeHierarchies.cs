@@ -5,7 +5,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Reflection;
 using System.Text.Encodings.Web;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
@@ -19,7 +18,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [MemberData(nameof(Get_PolymorphicClass_TestData_Serialization))]
         public Task PolymorphicClass_TestData_Serialization(PolymorphicClass.TestData testData)
-            => TestMultiContextSerialization(testData.Value, testData.ExpectedJson, testData.ExpectedSerializationException);
+            => TestMultiContextSerialization(testData.Value, testData.ExpectedJson, testData.ExpectedSerializationException, contexts: ~SerializedValueContext.BoxedValue);
 
         public static IEnumerable<object[]> Get_PolymorphicClass_TestData_Serialization()
             => PolymorphicClass.GetSerializeTestData().Select(entry => new object[] { entry });
@@ -87,7 +86,8 @@ namespace System.Text.Json.Serialization.Tests
                 testData.Value,
                 testData.ExpectedJson,
                 testData.ExpectedSerializationException,
-                options: PolymorphicClass.CustomConfigWithBaseTypeFallback);
+                options: PolymorphicClass.CustomConfigWithBaseTypeFallback,
+                contexts: ~SerializedValueContext.BoxedValue);
 
         public static IEnumerable<object[]> Get_PolymorphicClass_CustomConfigWithBaseTypeFallback_TestData_Serialization()
             => PolymorphicClass.GetSerializeTestData_CustomConfigWithBaseTypeFallback().Select(entry => new object[] { entry });
@@ -163,7 +163,8 @@ namespace System.Text.Json.Serialization.Tests
                 testData.Value,
                 testData.ExpectedJson,
                 testData.ExpectedSerializationException,
-                options: PolymorphicClass.CustomConfigWithNearestAncestorFallback);
+                options: PolymorphicClass.CustomConfigWithNearestAncestorFallback,
+                contexts: ~SerializedValueContext.BoxedValue);
 
         public static IEnumerable<object[]> Get_PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestData_Serialization()
             => PolymorphicClass.GetSerializeTestData_CustomConfigWithNearestAncestorFallback().Select(entry => new object[] { entry });
@@ -898,7 +899,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             string expectedJson = @"{""$type"":""derivedClass""}";
             PolymorphicClass_WithDerivedPolymorphicClass value = new PolymorphicClass_WithDerivedPolymorphicClass.DerivedClass();
-            await TestMultiContextSerialization(value, expectedJson);
+            await TestMultiContextSerialization(value, expectedJson, contexts: ~SerializedValueContext.BoxedValue);
         }
 
         [Fact]
@@ -925,7 +926,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             // Derived class with conflicting configuration
             [JsonDerivedType(typeof(DerivedClass), "baseClass")]
-            [JsonDerivedType(typeof(DerivedClass.DerivedClass2), "derivedClass")]
+            [JsonDerivedType(typeof(DerivedClass2), "derivedClass")]
             public class DerivedClass : PolymorphicClass_WithDerivedPolymorphicClass
             {
                 public class DerivedClass2 : DerivedClass
@@ -936,7 +937,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(PolymorphicClass_WithBaseTypeDiscriminator.GetTestData), MemberType = typeof(PolymorphicClass_WithBaseTypeDiscriminator))]
-        public async Task PolymorphicClass_BoxedSerialization_DoesNotUseTypeDiscriminators(PolymorphicClass_WithBaseTypeDiscriminator value, string expectedJson)
+        public async Task PolymorphicClass_BoxedSerialization_UsesTypeDiscriminators(PolymorphicClass_WithBaseTypeDiscriminator value, string expectedJson)
         {
             await TestMultiContextSerialization<object>(value, expectedJson);
         }
@@ -954,8 +955,8 @@ namespace System.Text.Json.Serialization.Tests
 
             public static IEnumerable<object[]> GetTestData()
             {
-                yield return WrapArgs(new PolymorphicClass_WithBaseTypeDiscriminator { Number = 42 }, @"{""Number"" : 42 }");
-                yield return WrapArgs(new DerivedClass { Number = 42, String = "str" }, @"{""Number"" : 42, ""String"" : ""str"" }");
+                yield return WrapArgs(new PolymorphicClass_WithBaseTypeDiscriminator { Number = 42 }, @"{ ""$type"" : ""baseType"", ""Number"" : 42 }");
+                yield return WrapArgs(new DerivedClass { Number = 42, String = "str" }, @"{ ""$type"" : ""derivedType"", ""Number"" : 42, ""String"" : ""str"" }");
 
                 static object[] WrapArgs(PolymorphicClass_WithBaseTypeDiscriminator value, string expectedJson)
                     => new object[] { value, expectedJson };

@@ -110,11 +110,13 @@ DEFINE_BOOL(jiterpreter_use_constants, "jiterpreter-use-constants", FALSE, "Use 
 DEFINE_BOOL(jiterpreter_eliminate_null_checks, "jiterpreter-eliminate-null-checks", TRUE, "Attempt to eliminate redundant null checks in traces")
 // enables performing backward branches without exiting traces
 DEFINE_BOOL(jiterpreter_backward_branches_enabled, "jiterpreter-backward-branches-enabled", TRUE, "Enable performing backward branches without exiting traces")
+// Attempt to use WASM v128 opcodes to implement SIMD interpreter opcodes
+DEFINE_BOOL(jiterpreter_enable_simd, "jiterpreter-simd-enabled", TRUE, "Attempt to use WebAssembly SIMD support")
 // When compiling a jit_call wrapper, bypass sharedvt wrappers if possible by inlining their
 //  logic into the compiled wrapper and calling the target AOTed function with native call convention
 DEFINE_BOOL(jiterpreter_direct_jit_call, "jiterpreter-direct-jit-calls", TRUE, "Bypass gsharedvt wrappers when compiling JIT call wrappers")
 // any trace that doesn't have at least this many meaningful (non-nop) opcodes in it will be rejected
-DEFINE_INT(jiterpreter_minimum_trace_length, "jiterpreter-minimum-trace-length", 10, "Reject traces shorter than this number of meaningful opcodes")
+DEFINE_INT(jiterpreter_minimum_trace_value, "jiterpreter-minimum-trace-value", 18, "Reject traces that perform less than this amount of (approximate) work")
 // ensure that we don't create trace entry points too close together
 DEFINE_INT(jiterpreter_minimum_distance_between_traces, "jiterpreter-minimum-distance-between-traces", 4, "Don't insert entry points closer together than this")
 // once a trace entry point is inserted, we only actually JIT code for it once it's been hit this many times
@@ -144,6 +146,12 @@ DEFINE_INT(jiterpreter_interp_entry_queue_flush_threshold, "jiterpreter-interp-e
 // Each wasm byte likely maps to multiple bytes of native code, so it's important for this limit not to be too high
 DEFINE_INT(jiterpreter_wasm_bytes_limit, "jiterpreter-wasm-bytes-limit", 6 * 1024 * 1024, "Disable jiterpreter code generation once this many bytes of WASM have been generated")
 #endif // HOST_BROWSER
+
+#if defined(TARGET_WASM) || defined(TARGET_IOS)  || defined(TARGET_TVOS) || defined (TARGET_MACCAT)
+DEFINE_BOOL_READONLY(experimental_gshared_mrgctx, "experimental-gshared-mrgctx", TRUE, "Use a mrgctx for all gshared methods")
+#else
+DEFINE_BOOL(experimental_gshared_mrgctx, "experimental-gshared-mrgctx", FALSE, "Use a mrgctx for all gshared methods")
+#endif
 
 /* Cleanup */
 #undef DEFINE_OPTION_FULL

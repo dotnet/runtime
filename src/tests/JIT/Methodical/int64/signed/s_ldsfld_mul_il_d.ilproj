@@ -6,6 +6,7 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="s_ldsfld_mul_d.il" />
     <Compile Include="s_ldsfld_mul.il" />
   </ItemGroup>
 </Project>

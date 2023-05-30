@@ -57,7 +57,6 @@
     <Compile Include="$(RuntimeSerializationSources)\ScopedKnownTypes.cs" />
     <Compile Include="$(RuntimeSerializationSources)\SerializationOption.cs" />
     <Compile Include="$(RuntimeSerializationSources)\SpecialTypeDataContract.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\SurrogateDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlFormatGeneratorStatics.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlFormatReaderGenerator.cs" />
@@ -163,6 +162,7 @@
     <Reference Include="System.Reflection.Emit.Lightweight" />
     <Reference Include="System.Reflection.Primitives" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Intrinsics" />
     <Reference Include="System.Runtime.Serialization.Formatters" />
     <Reference Include="System.Runtime.Serialization.Primitives" />
     <Reference Include="System.Text.Encoding.Extensions" />

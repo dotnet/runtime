@@ -209,12 +209,14 @@ namespace ILCompiler
                 }
 
                 string[] runtimeOptions = Get(_command.RuntimeOptions);
+                string[] runtimeKnobs = Get(_command.RuntimeKnobs);
                 if (nativeLib)
                 {
                     // Set owning module of generated native library startup method to compiler generated module,
                     // to ensure the startup method is included in the object file during multimodule mode build
                     compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, CreateInitializerList(typeSystemContext)));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
+                    compilationRoots.Add(new RuntimeKnobsRootProvider(runtimeKnobs));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
                     if (SplitExeInitialization)
                     {
@@ -225,6 +227,7 @@ namespace ILCompiler
                 {
                     compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext), generateLibraryAndModuleInitializers: !SplitExeInitialization));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
+                    compilationRoots.Add(new RuntimeKnobsRootProvider(runtimeKnobs));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
                     if (SplitExeInitialization)
                     {
@@ -348,8 +351,7 @@ namespace ILCompiler
             UsageBasedMetadataGenerationOptions metadataGenerationOptions = default;
             if (supportsReflection)
             {
-                mdBlockingPolicy = Get(_command.NoMetadataBlocking) ?
-                    new NoMetadataBlockingPolicy() : new BlockedInternalsBlockingPolicy(typeSystemContext);
+                mdBlockingPolicy = new NoMetadataBlockingPolicy();
 
                 resBlockingPolicy = new ManifestResourceBlockingPolicy(logger, featureSwitches);
 
@@ -392,7 +394,8 @@ namespace ILCompiler
                     featureSwitches,
                     Get(_command.ConditionallyRootedAssemblies),
                     rootedAssemblies,
-                    Get(_command.TrimmedAssemblies));
+                    Get(_command.TrimmedAssemblies),
+                    Get(_command.SatelliteFilePaths));
 
             InteropStateManager interopStateManager = new InteropStateManager(typeSystemContext.GeneratedAssembly);
             InteropStubManager interopStubManager = new UsageBasedInteropStubManager(interopStateManager, pinvokePolicy, logger);
@@ -484,6 +487,15 @@ namespace ILCompiler
                 {
                     preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, scanResults.GetPreinitializationPolicy());
                     builder.UsePreinitializationManager(preinitManager);
+                }
+
+                // If we have a scanner, we can inline threadstatics storage using the information
+                // we collected at scanning time.
+                // Inlined storage implies a single type manager, thus we do not do it in multifile case.
+                // This could be a command line switch if we really wanted to.
+                if (!multiFile)
+                {
+                    builder.UseInlinedThreadStatics(scanResults.GetInlinedThreadStatics());
                 }
             }
 
@@ -630,11 +642,9 @@ namespace ILCompiler
         {
             ModuleDesc systemModule = context.SystemModule;
 
-            TypeDesc foundType = systemModule.GetTypeByCustomAttributeTypeName(typeName, false, (typeDefName, module, throwIfNotFound) =>
-            {
-                return (MetadataType)context.GetCanonType(typeDefName)
-                    ?? CustomAttributeTypeNameParser.ResolveCustomAttributeTypeDefinitionName(typeDefName, module, throwIfNotFound);
-            });
+            TypeDesc foundType = systemModule.GetTypeByCustomAttributeTypeName(typeName, false,
+                (module, typeDefName) => (MetadataType)module.Context.GetCanonType(typeDefName));
+
             if (foundType == null)
                 throw new CommandLineException($"Type '{typeName}' not found");
 

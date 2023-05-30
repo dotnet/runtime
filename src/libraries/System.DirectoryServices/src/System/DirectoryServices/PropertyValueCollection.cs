@@ -33,7 +33,7 @@ namespace System.DirectoryServices
             _changeList = ArrayList.Synchronized(tempList);
             _allowMultipleChange = entry.allowMultipleChange;
             string tempPath = entry.Path;
-            if (tempPath == null || tempPath.Length == 0)
+            if (string.IsNullOrEmpty(tempPath))
             {
                 // user does not specify path, so we bind to default naming context using LDAP provider.
                 _needNewBehavior = true;

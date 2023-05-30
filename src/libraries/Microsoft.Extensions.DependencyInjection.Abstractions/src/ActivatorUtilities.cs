@@ -129,10 +129,14 @@ namespace Microsoft.Extensions.DependencyInjection
             Type[] argumentTypes)
         {
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
-            if (!RuntimeFeature.IsDynamicCodeSupported)
+            if (!RuntimeFeature.IsDynamicCodeCompiled)
             {
-                // Create a reflection-based factory when dynamic code isn't supported, e.g. app is published with NativeAOT.
-                // Reflection-based factory is faster than interpreted expressions and doesn't pull in System.Linq.Expressions dependency.
+                // Create a reflection-based factory when dynamic code is not compiled\jitted as would be the case with
+                // NativeAOT, iOS or WASM.
+                // For NativeAOT and iOS, using the reflection-based factory is faster than reflection-fallback interpreted
+                // expressions and also doesn't pull in the large System.Linq.Expressions dependency.
+                // For WASM, although it has the ability to use expressions (with dynamic code) and interpet the dynamic code
+                // efficiently, the size savings of not using System.Linq.Expressions is more important than CPU perf.
                 return CreateFactoryReflection(instanceType, argumentTypes);
             }
 #endif
@@ -163,10 +167,9 @@ namespace Microsoft.Extensions.DependencyInjection
                 Type[] argumentTypes)
         {
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
-            if (!RuntimeFeature.IsDynamicCodeSupported)
+            if (!RuntimeFeature.IsDynamicCodeCompiled)
             {
-                // Create a reflection-based factory when dynamic code isn't supported, e.g. app is published with NativeAOT.
-                // Reflection-based factory is faster than interpreted expressions and doesn't pull in System.Linq.Expressions dependency.
+                // See the comment above in the non-generic CreateFactory() for why we use 'IsDynamicCodeCompiled' here.
                 var factory = CreateFactoryReflection(typeof(T), argumentTypes);
                 return (serviceProvider, arguments) => (T)factory(serviceProvider, arguments);
             }
@@ -311,6 +314,11 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return (IServiceProvider serviceProvider, object?[]? arguments) =>
             {
+                if (serviceProvider is null)
+                {
+                    throw new ArgumentNullException(nameof(serviceProvider));
+                }
+
                 object?[] constructorArguments = new object?[parameters.Length];
                 for (int i = 0; i < parameters.Length; i++)
                 {
@@ -527,7 +535,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             public object CreateInstance(IServiceProvider provider)
             {
-                for (int index = 0; index != _parameters.Length; index++)
+                for (int index = 0; index < _parameters.Length; index++)
                 {
                     if (_parameterValues[index] == null)
                     {

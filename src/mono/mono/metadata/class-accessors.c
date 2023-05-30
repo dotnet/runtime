@@ -620,11 +620,10 @@ MonoClassMetadataUpdateInfo*
 mono_class_get_metadata_update_info (MonoClass *klass)
 {
 	switch (m_class_get_class_kind (klass)) {
-	case MONO_CLASS_GTD:
-		return NULL;
 	case MONO_CLASS_DEF:
-		return (MonoClassMetadataUpdateInfo *)get_pointer_property (klass, PROP_METADATA_UPDATE_INFO);
+	case MONO_CLASS_GTD:
 	case MONO_CLASS_GINST:
+		return (MonoClassMetadataUpdateInfo *)get_pointer_property (klass, PROP_METADATA_UPDATE_INFO);
 	case MONO_CLASS_GPARAM:
 	case MONO_CLASS_ARRAY:
 	case MONO_CLASS_POINTER:
@@ -643,13 +642,13 @@ mono_class_set_metadata_update_info (MonoClass *klass, MonoClassMetadataUpdateIn
 {
 	switch (m_class_get_class_kind (klass)) {
 	case MONO_CLASS_GTD:
-		g_assertf (0, "%s: EnC metadata update info on generic types is not supported", __func__);
-		break;
 	case MONO_CLASS_DEF:
+	case MONO_CLASS_GINST:
 		set_pointer_property (klass, PROP_METADATA_UPDATE_INFO, value);
 		return;
-	case MONO_CLASS_GINST:
 	case MONO_CLASS_GPARAM:
+		/* metadata-update: this shouldn't happen */
+		g_assert_not_reached();
 	case MONO_CLASS_POINTER:
 	case MONO_CLASS_GC_FILLER:
 		g_assert_not_reached ();
@@ -664,11 +663,12 @@ mono_class_has_metadata_update_info (MonoClass *klass)
 {
 	switch (m_class_get_class_kind (klass)) {
 	case MONO_CLASS_GTD:
-		return FALSE;
 	case MONO_CLASS_DEF:
 		return get_pointer_property (klass, PROP_METADATA_UPDATE_INFO) != NULL;
 	case MONO_CLASS_GINST:
 	case MONO_CLASS_GPARAM:
+		/* metadata-update: this shouldn't happen */
+		g_assert_not_reached();
 	case MONO_CLASS_POINTER:
 	case MONO_CLASS_GC_FILLER:
 		return FALSE;

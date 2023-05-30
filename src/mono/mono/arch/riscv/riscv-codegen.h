@@ -293,7 +293,8 @@ enum {
 	 (RISCV_BITS ((ins), 12, 8) << 12) | (RISCV_SIGN ((ins)) << 20))
 
 // Check a value for validity as an immediate.
-
+#define RISCV_VALID_IMM(value)	 \
+	(((gint32)value) == (value))
 #define RISCV_VALID_I_IMM(value) \
 	(RISCV_DECODE_I_IMM (RISCV_ENCODE_I_IMM ((value))) == (value))
 #define RISCV_VALID_S_IMM(value) \
@@ -612,6 +613,20 @@ enum {
 		                  (RISCV_BITS ((ordering), 0, 2) << 25) | \
 		                  ((funct5) << 27)); \
 	} while (0)
+
+static G_GNUC_UNUSED inline gboolean
+riscv_is_jal_disp (void *code, void *target)
+{
+	gint64 disp = ((char *)(target) - (char *)(code)) / 2;
+
+	return (disp > -(1 << 19)) && (disp < (1 << 19));
+}
+
+static G_GNUC_UNUSED inline gsize
+riscv_get_jal_disp (void *code, void *target)
+{
+	return ((char *)(target) - (char *)(code)) & 0xfffffffe;
+}
 
 /*
  * NOTE: When you add new codegen macros or change existing ones, you must
