@@ -5,7 +5,7 @@ import type { DotnetModuleInternal, MonoConfigInternal } from "../../types/inter
 import type { AssetBehaviours, AssetEntry, LoadingResource, WebAssemblyBootResourceType, WebAssemblyStartOptions } from "../../types";
 import type { BootJsonData } from "../../types/blazor";
 
-import { INTERNAL, loaderHelpers } from "../globals";
+import { ENVIRONMENT_IS_WEB, INTERNAL, loaderHelpers } from "../globals";
 import { BootConfigResult } from "./BootConfig";
 import { WebAssemblyResourceLoader } from "./WebAssemblyResourceLoader";
 import { hasDebuggingEnabled } from "./_Polyfill";
@@ -17,12 +17,15 @@ export async function loadBootConfig(config: MonoConfigInternal, module: DotnetM
     const bootConfigPromise = BootConfigResult.initAsync(config.startupOptions?.loadBootResource, config.applicationEnvironment);
     const bootConfigResult: BootConfigResult = await bootConfigPromise;
     await initializeBootConfig(bootConfigResult, module, config.startupOptions);
-    setupModuleForBlazor(module);
 }
 
 export async function initializeBootConfig(bootConfigResult: BootConfigResult, module: DotnetModuleInternal, startupOptions?: Partial<WebAssemblyStartOptions>) {
     INTERNAL.resourceLoader = resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, startupOptions ?? {});
     mapBootConfigToMonoConfig(loaderHelpers.config, bootConfigResult.applicationEnvironment);
+
+    if (ENVIRONMENT_IS_WEB) {
+        setupModuleForBlazor(module);
+    }
 }
 
 let resourcesLoaded = 0;
@@ -72,7 +75,6 @@ export function setupModuleForBlazor(module: DotnetModuleInternal) {
     };
 
     loaderHelpers.downloadResource = downloadResource; // polyfills were already assigned
-    module.disableDotnet6Compatibility = false;
 }
 
 function appendUniqueQuery(attemptUrl: string): string {
