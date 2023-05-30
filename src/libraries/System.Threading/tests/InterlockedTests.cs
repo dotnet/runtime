@@ -603,20 +603,18 @@ namespace System.Threading.Tests
             Assert.Equal(ThreadCount * IterationCount * Increment, Interlocked.Read(ref value));
         }
 
-        static Action mb;
-        static delegate* <void> pMb;
+        private Action MemoryBarrierDelegate = Interlocked.MemoryBarrier;
+        private delegate* <void> MemoryBarrierPointer = &Interlocked.MemoryBarrier;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact()]
         public void MemoryBarrierIntrinsic()
         {
             // Interlocked.MemoryBarrier is a self-referring intrinsic
             // we should be able to call it through a delegate.
-            mb = Interlocked.MemoryBarrier;
-            mb();
+            MemoryBarrierDelegate();
 
             // through a method pointer
-            pMb = &Interlocked.MemoryBarrier;
-            pMb();
+            MemoryBarrierPointer();
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
