@@ -483,17 +483,17 @@ namespace Microsoft.Extensions.Configuration
                 return constructor.Invoke(parameterValues);
             }
 
-            object? instance;
+            object instance;
             try
             {
-                instance = Activator.CreateInstance(Nullable.GetUnderlyingType(type) ?? type);
+                instance = Activator.CreateInstance(Nullable.GetUnderlyingType(type) ?? type)!;
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException(SR.Format(SR.Error_FailedToActivate, type), ex);
             }
 
-            return instance ?? throw new InvalidOperationException(SR.Format(SR.Error_FailedToActivate, type));
+            return instance;
         }
 
         private static bool DoAllParametersHaveEquivalentProperties(ParameterInfo[] parameters,
