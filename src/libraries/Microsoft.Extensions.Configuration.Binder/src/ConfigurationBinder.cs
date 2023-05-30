@@ -295,74 +295,53 @@ namespace Microsoft.Extensions.Configuration
                             {
                                 if (!TryBindAsSet(type, bindingPoint, config, options))
                                 {
-                                    // -----------------------------------------------------------------------------------------------------------------------------
-                                    //                         |  bindingPoint |  bindingPoint |
-                                    //       Interface         |     Value     |   IsReadOnly  |  Behavior
-                                    // -----------------------------------------------------------------------------------------------------------------------------
-                                    //  IDictionary<T>         |   not null    |  true/false   | Use the Value instance to populate the configuration
-                                    //  IDictionary<T>         |     null      |     false     | Create Dictionary<T> instance to populate the configuration
-                                    //  IDictionary<T>         |     null      |     true      | nothing
-                                    //  IReadOnlyDictionary<T> | null/not null |     false     | Create Dictionary<K,V> instance, copy over existing values, and populate the configuration
-                                    //  IReadOnlyDictionary<T> | null/not null |     true      | nothing
-                                    // -----------------------------------------------------------------------------------------------------------------------------
-                                    if (TypeIsADictionaryInterface(type))
+                                    if (!TryBindAsDictionary(type, bindingPoint, config, options))
                                     {
-                                        if (!bindingPoint.IsReadOnly || bindingPoint.Value is not null)
+                                        // If we don't have an instance, try to create one
+                                        if (bindingPoint.Value is null)
                                         {
-                                            object? newValue = BindDictionaryInterface(bindingPoint.Value, type, config, options);
-                                            if (!bindingPoint.IsReadOnly && newValue != null)
+                                            // if the binding point doesn't let us set a new instance, there's nothing more we can do
+                                            if (bindingPoint.IsReadOnly)
                                             {
-                                                bindingPoint.SetValue(newValue);
+                                                return;
+                                            }
+
+                                            Type? interfaceGenericType = type.IsInterface && type.IsConstructedGenericType ? type.GetGenericTypeDefinition() : null;
+
+                                            if (interfaceGenericType is not null &&
+                                                (interfaceGenericType == typeof(ICollection<>) || interfaceGenericType == typeof(IList<>)))
+                                            {
+                                                // For ICollection<T> and IList<T> we bind them to mutable List<T> type.
+                                                Type genericType = typeof(List<>).MakeGenericType(type.GenericTypeArguments[0]);
+                                                bindingPoint.SetValue(Activator.CreateInstance(genericType));
+                                            }
+                                            else
+                                            {
+                                                bindingPoint.SetValue(CreateInstance(type, config, options));
                                             }
                                         }
 
-                                        return;
-                                    }
+                                        Debug.Assert(bindingPoint.Value is not null);
 
-                                    // If we don't have an instance, try to create one
-                                    if (bindingPoint.Value is null)
-                                    {
-                                        // if the binding point doesn't let us set a new instance, there's nothing more we can do
-                                        if (bindingPoint.IsReadOnly)
+                                        // At this point we know that we have a non-null bindingPoint.Value, we just have to populate the items
+                                        // using the IDictionary<> or ICollection<> interfaces, or properties using reflection.
+                                        Type? dictionaryInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
+
+                                        if (dictionaryInterface != null)
                                         {
-                                            return;
-                                        }
-
-                                        Type? interfaceGenericType = type.IsInterface && type.IsConstructedGenericType ? type.GetGenericTypeDefinition() : null;
-
-                                        if (interfaceGenericType is not null &&
-                                            (interfaceGenericType == typeof(ICollection<>) || interfaceGenericType == typeof(IList<>)))
-                                        {
-                                            // For ICollection<T> and IList<T> we bind them to mutable List<T> type.
-                                            Type genericType = typeof(List<>).MakeGenericType(type.GenericTypeArguments[0]);
-                                            bindingPoint.SetValue(Activator.CreateInstance(genericType));
+                                            BindDictionary(bindingPoint.Value, dictionaryInterface, config, options);
                                         }
                                         else
                                         {
-                                            bindingPoint.SetValue(CreateInstance(type, config, options));
-                                        }
-                                    }
-
-                                    Debug.Assert(bindingPoint.Value is not null);
-
-                                    // At this point we know that we have a non-null bindingPoint.Value, we just have to populate the items
-                                    // using the IDictionary<> or ICollection<> interfaces, or properties using reflection.
-                                    Type? dictionaryInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
-
-                                    if (dictionaryInterface != null)
-                                    {
-                                        BindDictionary(bindingPoint.Value, dictionaryInterface, config, options);
-                                    }
-                                    else
-                                    {
-                                        Type? collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), type);
-                                        if (collectionInterface != null)
-                                        {
-                                            BindCollection(bindingPoint.Value, collectionInterface, config, options);
-                                        }
-                                        else
-                                        {
-                                            BindProperties(bindingPoint.Value, config, options);
+                                            Type? collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), type);
+                                            if (collectionInterface != null)
+                                            {
+                                                BindCollection(bindingPoint.Value, collectionInterface, config, options);
+                                            }
+                                            else
+                                            {
+                                                BindProperties(bindingPoint.Value, config, options);
+                                            }
                                         }
                                     }
                                 }
@@ -1051,6 +1030,48 @@ namespace Microsoft.Extensions.Configuration
             if (type == typeof(IConfigurationSection))
             {
                 bindingPoint.TrySetValue(config);
+                returnValue = true;
+            }
+            else
+            {
+                returnValue = false;
+            }
+
+            return returnValue;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
+        [RequiresUnreferencedCode(TrimmingWarningMessage)]
+        private static bool TryBindAsDictionary(
+            Type type,
+            BindingPoint bindingPoint,
+            IConfiguration config,
+            BinderOptions options)
+        {
+            bool returnValue;
+
+            // -----------------------------------------------------------------------------------------------------------------------------
+            //                         |  bindingPoint |  bindingPoint |
+            //       Interface         |     Value     |   IsReadOnly  |  Behavior
+            // -----------------------------------------------------------------------------------------------------------------------------
+            //  IDictionary<T>         |   not null    |  true/false   | Use the Value instance to populate the configuration
+            //  IDictionary<T>         |     null      |     false     | Create Dictionary<T> instance to populate the configuration
+            //  IDictionary<T>         |     null      |     true      | nothing
+            //  IReadOnlyDictionary<T> | null/not null |     false     | Create Dictionary<K,V> instance, copy over existing values, and populate the configuration
+            //  IReadOnlyDictionary<T> | null/not null |     true      | nothing
+            // -----------------------------------------------------------------------------------------------------------------------------
+            if (TypeIsADictionaryInterface(type))
+            {
+                if (!bindingPoint.IsReadOnly || bindingPoint.Value is not null)
+                {
+                    object? newValue = BindDictionaryInterface(bindingPoint.Value, type, config, options);
+                    if (!bindingPoint.IsReadOnly && newValue != null)
+                    {
+                        bindingPoint.SetValue(newValue);
+                    }
+                }
+
                 returnValue = true;
             }
             else
