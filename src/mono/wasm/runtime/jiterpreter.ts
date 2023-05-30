@@ -263,7 +263,8 @@ function getTraceImports() {
         importDef("entry", getRawCwrap("mono_jiterp_increase_entry_count")),
         importDef("value_copy", getRawCwrap("mono_jiterp_value_copy")),
         importDef("gettype", getRawCwrap("mono_jiterp_gettype_ref")),
-        importDef("cast", getRawCwrap("mono_jiterp_cast_ref")),
+        importDef("castv2", getRawCwrap("mono_jiterp_cast_v2")),
+        // importDef("isinst", getRawCwrap("mono_jiterp_isinst")),
         importDef("try_unbox", getRawCwrap("mono_jiterp_try_unbox_ref")),
         importDef("box", getRawCwrap("mono_jiterp_box_ref")),
         importDef("localloc", getRawCwrap("mono_jiterp_localloc")),
@@ -500,7 +501,7 @@ function initialize_builder(builder: WasmBuilder) {
         WasmValtype.i32, true
     );
     builder.defineType(
-        "cast",
+        "castv2",
         {
             "destination": WasmValtype.i32,
             "source": WasmValtype.i32,
@@ -1046,6 +1047,14 @@ export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
     mono_log_info(`// jitted ${counters.bytesGenerated} bytes; ${counters.tracesCompiled} traces (${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%) (${tracesRejected} rejected); ${counters.jitCallsCompiled} jit_calls; ${counters.entryWrappersCompiled} interp_entries`);
     mono_log_info(`// cknulls eliminated: ${nullChecksEliminatedText}, fused: ${nullChecksFusedText}; back-branches ${backBranchesEmittedText}; ${directJitCallsText}`);
     mono_log_info(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm.`);
+    const exactMatch = cwraps.mono_jiterp_get_cast_counter(0),
+        inexactMatch = cwraps.mono_jiterp_get_cast_counter(1),
+        nullPtr = cwraps.mono_jiterp_get_cast_counter(2),
+        failedCast = cwraps.mono_jiterp_get_cast_counter(3),
+        totalCasts = exactMatch + inexactMatch + failedCast + nullPtr,
+        successRate = exactMatch / totalCasts * 100,
+        nullRate = nullPtr / totalCasts * 100;
+    mono_log_info(`// ${exactMatch} (${successRate.toFixed(1)}%) of ${totalCasts} casts were exact matches (${inexactMatch} inexact) and ${nullPtr} (${nullRate.toFixed(1)}%) were null`);
     if (concise)
         return;
 

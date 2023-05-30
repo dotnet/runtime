@@ -233,17 +233,33 @@ mono_jiterp_gettype_ref (
 		return 0;
 }
 
+#define CC_EXACT_KLASS_MATCH 0
+#define CC_INEXACT_KLASS_MATCH 1
+#define CC_NULL_PTR 2
+#define CC_FAILED_CAST 3
+static int64_t cast_counters[4] = { 0 };
+
+EMSCRIPTEN_KEEPALIVE double
+mono_jiterp_get_cast_counter (int type) {
+	if ((type < 0) || (type > 3))
+		return 1.0 / 0.0;
+	return cast_counters[type];
+}
+
 EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_cast_ref (
-	MonoObject **destination, MonoObject **source,
+mono_jiterp_cast_v2 (
+	MonoObject **destination, MonoObject *obj,
 	MonoClass *klass, MintOpcode opcode
 ) {
-	if (!klass)
-		return 0;
-
-	MonoObject *obj = *source;
 	if (!obj) {
 		*destination = 0;
+		cast_counters[CC_NULL_PTR]++;
+		return 1;
+	}
+
+	if (obj->vtable->klass == klass) {
+		*destination = obj;
+		cast_counters[CC_EXACT_KLASS_MATCH]++;
 		return 1;
 	}
 
@@ -255,14 +271,20 @@ mono_jiterp_cast_ref (
 				if (!mono_jiterp_isinst (obj, klass)) { // FIXME: do not swallow the error
 					if (opcode == MINT_ISINST)
 						*destination = NULL;
-					else
+					else {
+						cast_counters[CC_FAILED_CAST]++;
 						return 0; // bailout
+					}
 				} else {
 					*destination = obj;
 				}
 			} else {
 				*destination = NULL;
 			}
+			if (destination)
+				cast_counters[CC_INEXACT_KLASS_MATCH]++;
+			else
+				cast_counters[CC_FAILED_CAST]++;
 			return 1;
 		}
 		case MINT_CASTCLASS_INTERFACE:
@@ -282,11 +304,18 @@ mono_jiterp_cast_ref (
 			if (!isinst) {
 				if (opcode == MINT_ISINST_INTERFACE)
 					*destination = NULL;
-				else
+				else {
+					cast_counters[CC_FAILED_CAST]++;
 					return 0; // bailout
+				}
 			} else {
 				*destination = obj;
 			}
+
+			if (destination)
+				cast_counters[CC_INEXACT_KLASS_MATCH]++;
+			else
+				cast_counters[CC_FAILED_CAST]++;
 			return 1;
 		}
 		case MINT_CASTCLASS_COMMON:
@@ -297,14 +326,20 @@ mono_jiterp_cast_ref (
 				if (!isinst) {
 					if (opcode == MINT_ISINST_COMMON)
 						*destination = NULL;
-					else
+					else {
+						cast_counters[CC_FAILED_CAST]++;
 						return 0; // bailout
+					}
 				} else {
 					*destination = obj;
 				}
 			} else {
 				*destination = NULL;
 			}
+			if (destination)
+				cast_counters[CC_INEXACT_KLASS_MATCH]++;
+			else
+				cast_counters[CC_FAILED_CAST]++;
 			return 1;
 		}
 	}
@@ -1170,6 +1205,8 @@ mono_jiterp_trace_transfer (
 #define JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS_COUNT 11
 #define JITERP_MEMBER_CLAUSE_DATA_OFFSETS 12
 #define JITERP_MEMBER_PARAMS_COUNT 13
+#define JITERP_MEMBER_VTABLE 14
+#define JITERP_MEMBER_VTABLE_KLASS 15
 
 // we use these helpers at JIT time to figure out where to do memory loads and stores
 EMSCRIPTEN_KEEPALIVE size_t
@@ -1203,6 +1240,10 @@ mono_jiterp_get_member_offset (int member) {
 			return offsetof (MonoSpanOfVoid, _length);
 		case JITERP_MEMBER_SPAN_DATA:
 			return offsetof (MonoSpanOfVoid, _reference);
+		case JITERP_MEMBER_VTABLE:
+			return offsetof (MonoObject, vtable);
+		case JITERP_MEMBER_VTABLE_KLASS:
+			return offsetof (MonoVTable, klass);
 		default:
 			g_assert_not_reached();
 	}
