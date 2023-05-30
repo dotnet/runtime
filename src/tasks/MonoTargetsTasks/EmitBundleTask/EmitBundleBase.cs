@@ -62,7 +62,15 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             var registeredName = bundledResource.GetMetadata("RegisteredName");
             if (string.IsNullOrEmpty(registeredName))
             {
-                registeredName = Path.GetFileName(bundledResource.ItemSpec);
+                string culture = bundledResource.GetMetadata("Culture");
+                if (!string.IsNullOrEmpty(culture))
+                {
+                    registeredName = culture + "/" + Path.GetFileName(bundledResource.ItemSpec);
+                }
+                else
+                {
+                    registeredName = Path.GetFileName(bundledResource.ItemSpec);
+                }
                 bundledResource.SetMetadata("RegisteredName", registeredName);
             }
 
@@ -253,7 +261,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             {
                 preloadedStruct = satelliteAssemblyTemplate;
                 preloadedStruct.Replace("%Culture%", tuple.culture);
-                resourceId = $"{tuple.culture}/{tuple.registeredName}";
+                resourceId = tuple.registeredName;
                 preallocatedSatelliteAssemblies.Add($"    (MonoBundledResource *)&{tuple.resourceName}");
                 satelliteAssembliesCount += 1;
             }
