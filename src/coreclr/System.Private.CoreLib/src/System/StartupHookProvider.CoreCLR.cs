@@ -20,7 +20,7 @@ namespace System
 #endif
 
             if (IsSupported)
-                ProcessStartupHooks(pDiagnosticStartupHooks == null ? string.Empty : new string(pDiagnosticStartupHooks));
+                ProcessStartupHooks(new string(pDiagnosticStartupHooks));
         }
     }
 }
