@@ -371,10 +371,13 @@ namespace System.Numerics
             {
                 return HexNumberToBigInteger(ref bigNumber, out result);
             }
-            else
+
+            if ((style & NumberStyles.AllowBinarySpecifier) != 0)
             {
-                return NumberToBigInteger(ref bigNumber, out result);
+                return BinNumberToBigInteger(ref bigNumber, out result);
             }
+
+            return NumberToBigInteger(ref bigNumber, out result);
         }
 
         internal static BigInteger ParseBigInteger(string value, NumberStyles style, NumberFormatInfo info)
