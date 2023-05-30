@@ -70,6 +70,21 @@ public class BootJsonData
     /// Gets or sets configuration extensions.
     /// </summary>
     public Dictionary<string, Dictionary<string, object>> extensions { get; set; }
+
+    /// <summary>
+    /// Gets or sets environment variables.
+    /// </summary>
+    public object environmentVariables { get; set; }
+
+    /// <summary>
+    /// Gets or sets diagnostic tracing.
+    /// </summary>
+    public object diagnosticTracing { get; set; }
+
+    /// <summary>
+    /// Gets or sets pthread pool size.
+    /// </summary>
+    public object pthreadPoolSize { get; set; }
 }
 
 public class ResourcesData

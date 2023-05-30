@@ -71,7 +71,6 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         var config = new BootJsonData()
         {
             config = new(),
-            extensions = new(),
             entryAssembly = MainAssemblyName,
             icuDataMode = InvariantGlobalization ? ICUDataMode.Invariant : HybridGlobalization ? ICUDataMode.Hybrid : ICUDataMode.Sharded
         };
@@ -305,12 +304,22 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             if (!TryParseExtraConfigValue(extra, out object? valueObject))
                 return false;
 
-            extraConfiguration[name] = valueObject;
+            if (name == "environmentVariables")
+                config.environmentVariables = valueObject;
+            else if (name == "diagnosticTracing")
+                config.diagnosticTracing = valueObject;
+            else if (name == "pthreadPoolSize")
+                config.pthreadPoolSize = valueObject;
+            else
+                extraConfiguration[name] = valueObject;
         }
 
         if (extraConfiguration.Count > 0)
         {
-            config.extensions["extra"] = extraConfiguration;
+            config.extensions = new()
+            {
+                ["extra"] = extraConfiguration
+            };
         }
 
         string tmpMonoConfigPath = Path.GetTempFileName();
