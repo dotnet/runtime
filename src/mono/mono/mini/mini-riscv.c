@@ -1167,6 +1167,7 @@ mono_arch_opcode_needs_emulation (MonoCompile *cfg, int opcode)
 	case OP_ICONV_TO_R8:
 	case OP_LCONV_TO_R8:
 	case OP_FCONV_TO_R8:
+	case OP_FCONV_TO_I8:
 #endif
 		return !mono_arch_is_soft_float ();
 	default:
@@ -1673,6 +1674,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_ICONV_TO_R4:
 	case OP_RCONV_TO_R8:
 #ifdef TARGET_RISCV64
+	case OP_LXOR_IMM:
 	case OP_LNEG:
 
 	case OP_ICONV_TO_I4:
@@ -1691,6 +1693,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_ICONV_TO_R8:
 	case OP_LCONV_TO_R8:
 	case OP_FCONV_TO_R8:
+	case OP_FCONV_TO_I8:
 #endif
 	case OP_IAND:
 	case OP_IAND_IMM:
@@ -1704,6 +1707,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_ISHL:
 	case OP_ISHL_IMM:
 	case OP_LSHL_IMM:
+	case OP_ISHR:
 	case OP_ISHR_UN:
 	case OP_LSHR_UN:
 	case OP_ISHR_IMM:
@@ -2022,14 +2026,15 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOR:
 		case OP_ISHL:
 		case OP_SHL_IMM:
+		case OP_ISHL_IMM:
 		case OP_LSHL_IMM:
+		case OP_ISHR:
+		case OP_ISHR_UN:
 		case OP_SHR_IMM:
 		case OP_ISHR_IMM:
 		case OP_SHR_UN_IMM:
-		case OP_ISHR_UN:
-		case OP_LSHR_UN:
 		case OP_ISHR_UN_IMM:
-		case OP_ISHL_IMM:
+		case OP_LSHR_UN:
 		case OP_LSHR_IMM:
 		case OP_LSHR_UN_IMM:
 		case OP_LOCALLOC:
@@ -2630,6 +2635,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOR_IMM:
 		case OP_XOR_IMM:
 		case OP_IXOR_IMM:
+		case OP_LXOR_IMM:
 			if (!RISCV_VALID_I_IMM ((gint32)(gssize)(ins->inst_imm)))
 				mono_decompose_op_imm (cfg, bb, ins);
 			break;
@@ -3736,8 +3742,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (riscv_stdext_m);
 			riscv_mulw (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
-#endif
 		case OP_LMUL:
+#endif
 			g_assert (riscv_stdext_m);
 			riscv_mul (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
@@ -3804,6 +3810,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_XOR_IMM:
 		case OP_IXOR_IMM:
+		case OP_LXOR_IMM:
 			riscv_xori (code, ins->dreg, ins->sreg1, ins->inst_imm);
 			break;
 		case OP_IOR:
@@ -3825,6 +3832,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_RISCV_SLTIU:
 			riscv_sltiu (code, ins->dreg, ins->sreg1, ins->inst_imm);
+			break;
+		case OP_ISHR:
+#ifdef TARGET_RISCV64
+			riscv_sraw (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_LSHR:
+#endif
+			riscv_sra (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_ISHR_UN:
 #ifdef TARGET_RISCV64
