@@ -23,9 +23,14 @@
     <PublishTestAsSelfContainedAfterTargets>BuildiOSApp</PublishTestAsSelfContainedAfterTargets>
     <BundleTestAppleAppDependsOn>GenerateRunScript</BundleTestAppleAppDependsOn>
     <RuntimeTests>true</RuntimeTests>
-    <OutDir>$(ArtifactsDir)/tests/coreclr/obj/$(TargetOS).$(Platform).$(Configuration)/Managed/build/iOSApps/tracing_eventpipe/</OutDir>
   </PropertyGroup>
   <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" />
+
+  <Target Name="_CustomGenerateRunScriptProps" BeforeTargets="GenerateRunScript">
+    <PropertyGroup>
+      <CustomRunScriptOutputPath>$(ArtifactsDir)/tests/coreclr/obj/$(TargetOS).$(Platform).$(Configuration)/Managed/build/iOSApps/$(TestProjectName)/AppBundle</CustomRunScriptOutputPath>
+    </PropertyGroup>
+  </Target>
 
   <!-- Default priority building values. -->
   <PropertyGroup>
