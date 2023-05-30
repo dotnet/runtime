@@ -235,7 +235,7 @@ void emitter::emitIns(instruction ins)
 }
 
 /*****************************************************************************
- *  emitter::emitIns_S_R(), emitIns_S_R_R() and emitter::emitIns_R_S():
+ *  emitter::emitIns_S_R(), emitter::emitIns_S_R_R() and emitter::emitIns_R_S():
  *
  *  Add an Load/Store instruction(s): base+offset and base-addr-computing if needed.
  *  For referencing a stack-based local variable and a register
@@ -251,6 +251,7 @@ void emitter::emitIns_S_R_R(instruction ins, emitAttr attr, regNumber reg1, regN
     ssize_t imm;
 
     assert(tmpReg != codeGen->rsGetRsvdReg());
+    assert(reg1 != codeGen->rsGetRsvdReg());
 
     emitAttr size = EA_SIZE(attr);
 
@@ -259,10 +260,10 @@ void emitter::emitIns_S_R_R(instruction ins, emitAttr attr, regNumber reg1, regN
     {
         case INS_sd:
         case INS_sw:
-        case INS_fsw:
-        case INS_fsd:
-        case INS_sb:
         case INS_sh:
+        case INS_sb:
+        case INS_fsd:
+        case INS_fsw:
             break;
 
         default:
@@ -277,39 +278,34 @@ void emitter::emitIns_S_R_R(instruction ins, emitAttr attr, regNumber reg1, regN
     bool FPbased;
 
     base = emitComp->lvaFrameAddress(varx, &FPbased);
-    imm  = offs < 0 ? -offs - 8 : base + offs;
 
-    regNumber reg3 = FPbased ? REG_FPBASE : REG_SPBASE;
-    regNumber reg2 = offs < 0 ? tmpReg : reg3;
-    assert(reg2 != REG_NA && reg2 != codeGen->rsGetRsvdReg());
-    assert(reg1 != codeGen->rsGetRsvdReg());
+    regNumber regBase = FPbased ? REG_FPBASE : REG_SPBASE;
+    regNumber reg2;
 
-    // regNumber reg2 = reg3;
-    offs = offs < 0 ? -offs - 8 : offs;
-
-    if ((-2048 <= imm) && (imm < 2048))
+    if (tmpReg == REG_NA)
     {
-        // regs[1] = reg2;
+        reg2 = regBase;
+        imm  = base + offs;
     }
     else
     {
-        // ssize_t imm3 = imm & 0x800;
-        // ssize_t imm2 = imm + imm3;
-
-        assert(isValidSimm20((imm + 0x800) >> 12));
-        emitIns_R_I(INS_lui, EA_PTRSIZE, codeGen->rsGetRsvdReg(), (imm + 0x800) >> 12);
-
-        emitIns_R_R_R(INS_add, EA_PTRSIZE, codeGen->rsGetRsvdReg(), codeGen->rsGetRsvdReg(), reg2);
-        // imm2 = imm2 & 0x7ff;
-        // imm  = imm3 ? imm2 - imm3 : imm2;
-        imm  = imm & 0xfff;
-        reg2 = codeGen->rsGetRsvdReg();
+        reg2 = tmpReg;
+        imm  = offs;
     }
 
-    if (tmpReg != REG_NA)
+    assert(reg2 != REG_NA && reg2 != codeGen->rsGetRsvdReg());
+
+    if (!isValidSimm12(imm))
     {
-        emitIns_R_R_R(INS_add, attr, reg2, reg2, reg3);
-        imm = 0;
+        // If immediate does not fit to store immediate 12 bits, construct necessary value in rsRsvdReg()
+        // and keep tmpReg hint value unchanged.
+        assert(isValidSimm20((imm + 0x800) >> 12));
+
+        emitIns_R_I(INS_lui, EA_PTRSIZE, codeGen->rsGetRsvdReg(), (imm + 0x800) >> 12);
+        emitIns_R_R_R(INS_add, EA_PTRSIZE, codeGen->rsGetRsvdReg(), codeGen->rsGetRsvdReg(), reg2);
+
+        imm  = imm & 0xfff;
+        reg2 = codeGen->rsGetRsvdReg();
     }
 
     instrDesc* id = emitNewInstr(attr);
