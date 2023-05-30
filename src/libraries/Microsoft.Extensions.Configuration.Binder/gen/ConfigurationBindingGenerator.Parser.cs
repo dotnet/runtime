@@ -7,7 +7,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 
@@ -141,7 +140,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 ITypeSymbol? type = ResolveType(objectArg.Value)?.WithNullableAnnotation(NullableAnnotation.None);
 
-                if (!ValidateRootConfigType(overload, type, binderOperation.Location))
+                if (!IsValidRootConfigType(overload, type, binderOperation.Location))
                 {
                     return;
                 }
@@ -220,7 +219,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
                 }
 
-                if (!ValidateRootConfigType(overload, type, binderOperation.Location))
+                if (!IsValidRootConfigType(overload, type, binderOperation.Location))
                 {
                     return;
                 }
@@ -280,7 +279,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
                 }
 
-                if (!ValidateRootConfigType(overload, type, binderOperation.Location))
+                if (!IsValidRootConfigType(overload, type, binderOperation.Location))
                 {
                     return;
                 }
@@ -306,7 +305,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     ITypeSymbol? type = targetMethod.TypeArguments[0].WithNullableAnnotation(NullableAnnotation.None);
 
-                    if (!ValidateRootConfigType(BinderMethodSpecifier.Configure, type, binderOperation.Location))
+                    if (!IsValidRootConfigType(BinderMethodSpecifier.Configure, type, binderOperation.Location))
                     {
                         return;
                     }
@@ -315,7 +314,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            private bool ValidateRootConfigType(BinderMethodSpecifier overload, ITypeSymbol? type, Location? location)
+            private bool IsValidRootConfigType(BinderMethodSpecifier overload, ITypeSymbol? type, Location? location)
             {
                 if (overload is BinderMethodSpecifier.None)
                 {
@@ -323,8 +322,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 if (type is null ||
-                    type.TypeKind is TypeKind.TypeParameter ||
-                    type.SpecialType is SpecialType.System_Object or SpecialType.System_Void)
+                    type.SpecialType is SpecialType.System_Object or SpecialType.System_Void ||
+                    type.TypeKind is TypeKind.TypeParameter or TypeKind.Pointer or TypeKind.Error ||
+                    type.IsRefLikeType ||
+                    ContainsGenericParameters(type))
                 {
                     _context.ReportDiagnostic(Diagnostic.Create(Diagnostics.CouldNotDetermineTypeInfo, location));
                     return false;
@@ -335,11 +336,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void AddRootConfigType(BinderMethodSpecifier methodGroup, BinderMethodSpecifier overload, ITypeSymbol type, Location? location)
             {
-                if (type is INamedTypeSymbol namedType && ContainsGenericParameters(namedType))
-                {
-                    return;
-                }
-
                 if (GetOrCreateTypeSpec(type, location) is TypeSpec spec)
                 {
                     RegisterConfigType(spec, overload);
@@ -1034,16 +1030,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return SymbolEqualityComparer.Default.Equals(type, @interface);
             }
 
-            public static bool ContainsGenericParameters(INamedTypeSymbol type)
+            public static bool ContainsGenericParameters(ITypeSymbol type)
             {
-                if (!type.IsGenericType)
+                if (type is not INamedTypeSymbol { IsGenericType: true } genericType)
                 {
                     return false;
                 }
 
-                foreach (ITypeSymbol typeArg in type.TypeArguments)
+                foreach (ITypeSymbol typeArg in genericType.TypeArguments)
                 {
-                    if (typeArg.TypeKind == TypeKind.TypeParameter)
+                    if (typeArg.TypeKind is TypeKind.TypeParameter or TypeKind.Error ||
+                        ContainsGenericParameters(typeArg))
                     {
                         return true;
                     }

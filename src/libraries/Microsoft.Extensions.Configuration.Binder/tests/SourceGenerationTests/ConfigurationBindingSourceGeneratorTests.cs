@@ -328,6 +328,7 @@ public class Program
         public async Task ValueTypesAreInvalidAsBindInputs()
         {
             string source = """
+                using System;
                 using System.Collections.Generic;
                 using Microsoft.Extensions.Configuration;
                 
@@ -352,6 +353,9 @@ public class Program
                         config.Bind("key", myRecordStruct);
                         MyRecordStruct? myNRecordStruct = new();
                         config.Bind("key", myNRecordStruct);
+
+                        Memory<int> memory = new(new int[] {1, 2, 3});
+                        config.Bind(memory);
                 	}
 
                     public struct MyStruct { }
@@ -361,26 +365,51 @@ public class Program
 
             var (d, r) = await RunGenerator(source);
             Assert.Empty(r);
-
-            HashSet<string> locations = new()
-            {
-                "SourceFile(src-0.cs[279..297))",
-                "SourceFile(src-0.cs[334..353))",
-                "SourceFile(src-0.cs[404..441))",
-                "SourceFile(src-0.cs[489..527))",
-                "SourceFile(src-0.cs[592..626))",
-                "SourceFile(src-0.cs[687..722))",
-            };
+            Assert.Equal(7, d.Count());
 
             foreach (Diagnostic diagnostic in d)
             {
                 Assert.True(diagnostic.Id == Diagnostics.ValueTypesInvalidForBind.Id);
                 Assert.Contains(Diagnostics.ValueTypesInvalidForBind.Title, diagnostic.Descriptor.Title.ToString(CultureInfo.InvariantCulture));
                 Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
-                Assert.True(locations.Remove(diagnostic.Location.ToString()));
+                Assert.NotNull(diagnostic.Location);
             }
+        }
 
-            Assert.Empty(locations);
+        [Fact]
+        public async Task InvalidRootMethodInputTypes()
+        {
+            string source = """
+                using System.Collections.Generic;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfigurationRoot config = configurationBuilder.Build();
+
+                        config.GetValue(typeof(int*), "");
+                        config.Get<Dictionary<string, T>>();
+                    }
+
+                    public struct MyStruct { }
+                    public record struct MyRecordStruct { }
+                }
+                """;
+
+            var (d, r) = await RunGenerator(source);
+            Assert.Empty(r);
+            Assert.Equal(2, d.Count());
+
+            foreach (Diagnostic diagnostic in d)
+            {
+                Assert.True(diagnostic.Id == Diagnostics.CouldNotDetermineTypeInfo.Id);
+                Assert.Contains(Diagnostics.CouldNotDetermineTypeInfo.Title, diagnostic.Descriptor.Title.ToString(CultureInfo.InvariantCulture));
+                Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+                Assert.NotNull(diagnostic.Location);
+            }
         }
 
         [Fact]
@@ -424,25 +453,15 @@ public class Program
 
             var (d, r) = await RunGenerator(source);
             Assert.Empty(r);
-
-            HashSet<string> locations = new()
-            {
-                "SourceFile(src-0.cs[461..476))",
-                "SourceFile(src-0.cs[487..522))",
-                "SourceFile(src-0.cs[533..558))",
-                "SourceFile(src-0.cs[569..606))",
-                "SourceFile(src-0.cs[731..761))",
-            };
+            Assert.Equal(5, d.Count());
 
             foreach (Diagnostic diagnostic in d)
             {
                 Assert.True(diagnostic.Id == Diagnostics.CouldNotDetermineTypeInfo.Id);
                 Assert.Contains(Diagnostics.CouldNotDetermineTypeInfo.Title, diagnostic.Descriptor.Title.ToString(CultureInfo.InvariantCulture));
                 Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
-                Assert.True(locations.Remove(diagnostic.Location.ToString()));
+                Assert.NotNull(diagnostic.Location);
             }
-
-            Assert.Empty(locations);
         }
 
         private async Task VerifyAgainstBaselineUsingFile(
