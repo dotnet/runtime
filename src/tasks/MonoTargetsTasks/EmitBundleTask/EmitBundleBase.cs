@@ -57,25 +57,23 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
     public override bool Execute()
     {
         List<ITaskItem> bundledResources = new(FilesToBundle.Length);
-        foreach (ITaskItem file in FilesToBundle)
+        foreach (ITaskItem bundledResource in FilesToBundle)
         {
-            ITaskItem bundledResource = file;
-
-            var registeredName = file.GetMetadata("RegisteredName");
+            var registeredName = bundledResource.GetMetadata("RegisteredName");
             if (string.IsNullOrEmpty(registeredName))
             {
-                registeredName = Path.GetFileName(file.ItemSpec);
-                file.SetMetadata("RegisteredName", registeredName);
+                registeredName = Path.GetFileName(bundledResource.ItemSpec);
+                bundledResource.SetMetadata("RegisteredName", registeredName);
             }
 
-            string resourceDataSymbol = $"bundled_resource_{ToSafeSymbolName(Utils.ComputeHash(file.ItemSpec))}";
+            string resourceDataSymbol = $"bundled_resource_{ToSafeSymbolName(Utils.ComputeHash(bundledResource.ItemSpec))}";
             if (resourceDataSymbolDictionary.ContainsKey(registeredName))
             {
                 throw new LogAsErrorException($"Multiple resources have the same RegisteredName '{registeredName}'. Ensure {nameof(FilesToBundle)} 'RegisteredName' metadata are set and unique.");
             }
             resourceDataSymbolDictionary.Add(registeredName, resourceDataSymbol);
 
-            file.SetMetadata("DestinationFile", Path.Combine(OutputDirectory, resourceDataSymbol + GetDestinationFileExtension()));
+            bundledResource.SetMetadata("DestinationFile", Path.Combine(OutputDirectory, resourceDataSymbol + GetDestinationFileExtension()));
 
             string[] resourcesWithDataSymbol;
             if (resourcesForDataSymbolDictionary.TryGetValue(resourceDataSymbol, out string[]? resourcesAlreadyWithDataSymbol))
