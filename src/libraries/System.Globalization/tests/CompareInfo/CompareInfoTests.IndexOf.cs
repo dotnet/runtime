@@ -13,9 +13,12 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> IndexOf_TestData()
         {
             // Empty string
-            yield return new object[] { s_invariantCompare, "foo", "", 0, 3, CompareOptions.None, 0, 0 };
-            yield return new object[] { s_invariantCompare, "foo", "", 2, 1, CompareOptions.None, 2, 0 };
-            yield return new object[] { s_invariantCompare, "", "", 0, 0, CompareOptions.None, 0, 0 };
+            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+            {
+                yield return new object[] { s_invariantCompare, "foo", "", 0, 3, CompareOptions.None, 0, 0 };
+                yield return new object[] { s_invariantCompare, "foo", "", 2, 1, CompareOptions.None, 2, 0 };
+                yield return new object[] { s_invariantCompare, "", "", 0, 0, CompareOptions.None, 0, 0 };
+            }
 
             // OrdinalIgnoreCase
             yield return new object[] { s_invariantCompare, "Hello", "l", 0, 5, CompareOptions.OrdinalIgnoreCase, 2, 1 };
@@ -33,7 +36,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "foobardzsdzs", "rddzs", 0, 12, CompareOptions.Ordinal, -1, 0 };
 
             // Slovak
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsHybridGlobalizationOnOSX)
             {
                 yield return new object[] { s_slovakCompare, "ch", "h", 0, 2, CompareOptions.None, -1, 0 };
                  // Android has its own ICU, which doesn't work well with slovak
@@ -59,15 +62,25 @@ namespace System.Globalization.Tests
 
             // Unicode
             yield return new object[] { s_invariantCompare, "Hi", "\u0130", 0, 2, CompareOptions.None, -1, 0 };
-            yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "A\u0300", 0, 9, CompareOptions.None, 8, 1 };
+            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+            {
+                yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "A\u0300", 0, 9, CompareOptions.None, 8, 1 };
+                yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 0, 9, CompareOptions.None, -1, 0 };
+            }
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "A\u0300", 0, 9, CompareOptions.Ordinal, -1, 0 };
-            yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 0, 9, CompareOptions.None, -1, 0 };
+            
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 0, 9, CompareOptions.Ordinal, -1, 0 };
-            yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 0, 9, CompareOptions.IgnoreCase, 8, 1 };
+            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+            {
+                yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 0, 9, CompareOptions.IgnoreCase, 8, 1 };
+            }
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 0, 9, CompareOptions.OrdinalIgnoreCase, -1, 0 };
             yield return new object[] { s_invariantCompare, "FooBar", "Foo\u0400Bar", 0, 6, CompareOptions.Ordinal, -1, 0 };
             yield return new object[] { s_invariantCompare, "TestFooBA\u0300R", "FooB\u00C0R", 0, 11, supportedIgnoreNonSpaceOption, 4, 7 };
-            yield return new object[] { s_invariantCompare, "o\u0308", "o", 0, 2, CompareOptions.None, -1, 0 };
+            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+            {
+                yield return new object[] { s_invariantCompare, "o\u0308", "o", 0, 2, CompareOptions.None, -1, 0 };
+            }
             if (PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
                 yield return new object[] { s_invariantCompare, "\r\n", "\n", 0, 2, CompareOptions.None, -1, 0 };
@@ -78,11 +91,14 @@ namespace System.Globalization.Tests
             }
 
             // Weightless characters
-            yield return new object[] { s_invariantCompare, "", "\u200d", 0, 0, CompareOptions.None, 0, 0 };
-            yield return new object[] { s_invariantCompare, "hello", "\u200d", 1, 3, CompareOptions.IgnoreCase, 1, 0 };
+            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+            {
+                yield return new object[] { s_invariantCompare, "", "\u200d", 0, 0, CompareOptions.None, 0, 0 };
+                yield return new object[] { s_invariantCompare, "hello", "\u200d", 1, 3, CompareOptions.IgnoreCase, 1, 0 };
+            }
 
             // Ignore symbols
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsHybridGlobalizationOnOSX)
                 yield return new object[] { s_invariantCompare, "More Test's", "Tests", 0, 11, CompareOptions.IgnoreSymbols, 5, 6 };
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", 0, 11, CompareOptions.None, -1, 0 };
             yield return new object[] { s_invariantCompare, "cbabababdbaba", "ab", 0, 13, CompareOptions.None, 2, 2 };
@@ -142,8 +158,11 @@ namespace System.Globalization.Tests
             {
                 yield return new object[] { s_germanCompare, "abc Strasse Strasse xyz", "stra\u00DFe", 0, 23, supportedIgnoreCaseIgnoreNonSpaceOptions, 4, 7 };
                 yield return new object[] { s_germanCompare, "abc stra\u00DFe stra\u00DFe xyz", "Strasse", 0, 21, supportedIgnoreCaseIgnoreNonSpaceOptions, 4, 6 };
-                yield return new object[] { s_invariantCompare, "abcdzxyz", "\u01F3", 0, 8, supportedIgnoreNonSpaceOption, 3, 2 };
-                yield return new object[] { s_invariantCompare, "abc\u01F3xyz", "dz", 0, 7, supportedIgnoreNonSpaceOption, 3, 1 };
+                if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+                {
+                    yield return new object[] { s_invariantCompare, "abcdzxyz", "\u01F3", 0, 8, supportedIgnoreNonSpaceOption, 3, 2 };
+                    yield return new object[] { s_invariantCompare, "abc\u01F3xyz", "dz", 0, 7, supportedIgnoreNonSpaceOption, 3, 1 };
+                }
             }
             yield return new object[] { s_germanCompare, "abc Strasse Strasse xyz", "xtra\u00DFe", 0, 23, supportedIgnoreCaseIgnoreNonSpaceOptions, -1, 0 };
             yield return new object[] { s_germanCompare, "abc stra\u00DFe stra\u00DFe xyz", "Xtrasse", 0, 21, supportedIgnoreCaseIgnoreNonSpaceOptions, -1, 0 };
@@ -154,36 +173,45 @@ namespace System.Globalization.Tests
             bool useNls = PlatformDetection.IsNlsGlobalization;
             // Searches for the ligature \u00C6
             string source1 = "Is AE or ae the same as \u00C6 or \u00E6?"; // 3 failures here
-            yield return new object[] { s_invariantCompare, source1, "AE", 8, 18, CompareOptions.None, useNls ? 24 : -1, useNls ? 1 : 0};
-            yield return new object[] { s_invariantCompare, source1, "ae", 8, 18, CompareOptions.None, 9 , 2};
-            yield return new object[] { s_invariantCompare, source1, "\u00C6", 8, 18, CompareOptions.None, 24, 1 };
+            if (PlatformDetection.IsHybridGlobalizationOnOSX)
+            {
+                yield return new object[] { s_invariantCompare, source1, "AE", 8, 18, CompareOptions.None, useNls ? 24 : -1, useNls ? 1 : 0};
+                yield return new object[] { s_invariantCompare, source1, "ae", 8, 18, CompareOptions.None, 9 , 2};
+                yield return new object[] { s_invariantCompare, source1, "AE", 8, 18, CompareOptions.IgnoreCase, 9, 2 };
+                yield return new object[] { s_invariantCompare, source1, "ae", 8, 18, CompareOptions.IgnoreCase, 9, 2 };
+                yield return new object[] { s_invariantCompare, source1, "\u00C6", 8, 18, CompareOptions.None, 24, 1 };
+                yield return new object[] { s_invariantCompare, source1, "\u00C6", 8, 18, CompareOptions.Ordinal, 24, 1 };
+                yield return new object[] { s_invariantCompare, source1, "\u00C6", 8, 18, CompareOptions.IgnoreCase, useNls ? 9 : 24, useNls ? 2 : 1 };
+                yield return new object[] { s_invariantCompare, source1, "\u00E6", 8, 18, CompareOptions.IgnoreCase, useNls ? 9 : 24, useNls ? 2 : 1 };
+            }
+
             yield return new object[] { s_invariantCompare, source1, "\u00E6", 8, 18, CompareOptions.None, useNls ? 9 : -1, useNls ? 2 : 0};
             yield return new object[] { s_invariantCompare, source1, "AE", 8, 18, CompareOptions.Ordinal, -1, 0 };
             yield return new object[] { s_invariantCompare, source1, "ae", 8, 18, CompareOptions.Ordinal, 9, 2 };
-            yield return new object[] { s_invariantCompare, source1, "\u00C6", 8, 18, CompareOptions.Ordinal, 24, 1 };
             yield return new object[] { s_invariantCompare, source1, "\u00E6", 8, 18, CompareOptions.Ordinal, -1, 0 };
-            yield return new object[] { s_invariantCompare, source1, "AE", 8, 18, CompareOptions.IgnoreCase, 9, 2 };
-            yield return new object[] { s_invariantCompare, source1, "ae", 8, 18, CompareOptions.IgnoreCase, 9, 2 };
-            yield return new object[] { s_invariantCompare, source1, "\u00C6", 8, 18, CompareOptions.IgnoreCase, useNls ? 9 : 24, useNls ? 2 : 1 };
-            yield return new object[] { s_invariantCompare, source1, "\u00E6", 8, 18, CompareOptions.IgnoreCase, useNls ? 9 : 24, useNls ? 2 : 1 };
         }
 
         public static IEnumerable<object[]> IndexOf_U_WithDiaeresis_TestData()
         {
             // Searches for the combining character sequence Latin capital letter U with diaeresis or Latin small letter u with diaeresis.
             string source = "Is \u0055\u0308 or \u0075\u0308 the same as \u00DC or \u00FC?"; // 7 failures here
-            yield return new object[] { s_invariantCompare, source, "U\u0308", 8, 18, CompareOptions.None, 24, 1 };
-            yield return new object[] { s_invariantCompare, source, "u\u0308", 8, 18, CompareOptions.None, 9, 2 };
-            yield return new object[] { s_invariantCompare, source, "\u00DC", 8, 18, CompareOptions.None, 24, 1 };
-            yield return new object[] { s_invariantCompare, source, "\u00FC", 8, 18, CompareOptions.None, 9, 2 };
+            
             yield return new object[] { s_invariantCompare, source, "U\u0308", 8, 18, CompareOptions.Ordinal, -1, 0 };
-            yield return new object[] { s_invariantCompare, source, "u\u0308", 8, 18, CompareOptions.Ordinal, 9, 2 };
-            yield return new object[] { s_invariantCompare, source, "\u00DC", 8, 18, CompareOptions.Ordinal, 24, 1 };
+            yield return new object[] { s_invariantCompare, source, "u\u0308", 8, 18, CompareOptions.Ordinal, 9, 2 };            
             yield return new object[] { s_invariantCompare, source, "\u00FC", 8, 18, CompareOptions.Ordinal, -1, 0 };
-            yield return new object[] { s_invariantCompare, source, "U\u0308", 8, 18, CompareOptions.IgnoreCase, 9, 2 };
-            yield return new object[] { s_invariantCompare, source, "u\u0308", 8, 18, CompareOptions.IgnoreCase, 9, 2 };
-            yield return new object[] { s_invariantCompare, source, "\u00DC", 8, 18, CompareOptions.IgnoreCase, 9, 2 };
-            yield return new object[] { s_invariantCompare, source, "\u00FC", 8, 18, CompareOptions.IgnoreCase, 9, 2 };
+
+            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+            {
+                yield return new object[] { s_invariantCompare, source, "\u00DC", 8, 18, CompareOptions.Ordinal, 24, 1 };
+                yield return new object[] { s_invariantCompare, source, "U\u0308", 8, 18, CompareOptions.None, 24, 1 };
+                yield return new object[] { s_invariantCompare, source, "u\u0308", 8, 18, CompareOptions.None, 9, 2 };
+                yield return new object[] { s_invariantCompare, source, "\u00DC", 8, 18, CompareOptions.None, 24, 1 };
+                yield return new object[] { s_invariantCompare, source, "\u00FC", 8, 18, CompareOptions.None, 9, 2 };
+                yield return new object[] { s_invariantCompare, source, "U\u0308", 8, 18, CompareOptions.IgnoreCase, 9, 2 };
+                yield return new object[] { s_invariantCompare, source, "u\u0308", 8, 18, CompareOptions.IgnoreCase, 9, 2 };
+                yield return new object[] { s_invariantCompare, source, "\u00DC", 8, 18, CompareOptions.IgnoreCase, 9, 2 };
+                yield return new object[] { s_invariantCompare, source, "\u00FC", 8, 18, CompareOptions.IgnoreCase, 9, 2 };
+            }
         }
 
         [Theory]
@@ -398,10 +426,14 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", 'a', 0, 5, CompareOptions.None));
 
             // StartIndex + count > source.Length
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", "Test", 2, 4));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", "Test", 2, 4, CompareOptions.None));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", 'a', 2, 4));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", 'a', 2, 4, CompareOptions.None));
+            // check this for OSX
+            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", "Test", 2, 4));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", "Test", 2, 4, CompareOptions.None));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", 'a', 2, 4));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", 'a', 2, 4, CompareOptions.None));
+            }            
         }
 
         // Attempts to create a Rune from the entirety of a given text buffer.

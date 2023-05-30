@@ -8,6 +8,10 @@
 #include "pal_errors.h"
 
 typedef struct SortHandle SortHandle;
+typedef struct _Range {
+    int32_t location;
+    int32_t length;
+} Range;
 
 PALEXPORT ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandle** ppSortHandle);
 
@@ -70,4 +74,14 @@ PALEXPORT int32_t GlobalizationNative_CompareStringNative(const uint16_t* locale
                                                           const uint16_t* lpStr2,
                                                           int32_t cwStr2Length,
                                                           int32_t options);
+
+PALEXPORT Range GlobalizationNative_IndexOfNative(const uint16_t* localeName,
+                                                  int32_t lNameLength,
+                                                  const uint16_t* lpTarget,
+                                                  int32_t cwTargetLength,
+                                                  const uint16_t* lpSource,
+                                                  int32_t cwSourceLength,
+                                                  int32_t options,
+                                                  int32_t fromBeginning);                                                  
+
 #endif

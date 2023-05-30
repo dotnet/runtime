@@ -193,6 +193,17 @@ namespace System.Globalization
                         throw new Exception((string)ex_result);
                     return result;
                 }
+#elif TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                {
+                    NSRange result = Interop.Globalization.IndexOfNative(m_name, m_name.Length, b, target.Length, a, source.Length, options, fromBeginning);
+                    System.Diagnostics.Debug.WriteLine("Collation function IndexOfOrdinalHelper is callled from CompareInfo.Icu.cs matchedLength = "+ result.Length + " result = " + result.Location);
+                    if (matchLengthPtr == null)
+                        matchLengthPtr = &result.Length;
+                    *matchLengthPtr = result.Length;
+                    System.Diagnostics.Debug.WriteLine("Collation function IndexOfOrdinalHelper is callled from CompareInfo.Icu.cs *matchLengthPtr = "+ *matchLengthPtr);
+                    return result.Location;
+                }
 #endif
                 if (fromBeginning)
                     return Interop.Globalization.IndexOf(_sortHandle, b, target.Length, a, source.Length, options, matchLengthPtr);
@@ -291,6 +302,17 @@ namespace System.Globalization
                     if (exception != 0)
                         throw new Exception((string)ex_result);
                     return result;
+                }
+#elif TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                {
+                    NSRange result = Interop.Globalization.IndexOfNative(m_name, m_name.Length, b, target.Length, a, source.Length, options, fromBeginning);
+                    System.Diagnostics.Debug.WriteLine("Collation function IndexOfOrdinalHelper is callled from CompareInfo.Icu.cs matchedLength = "+ result.Length + " result = " + result.Location);
+                    if (matchLengthPtr == null)
+                       matchLengthPtr = &result.Length;
+                    *matchLengthPtr = result.Length;
+                    System.Diagnostics.Debug.WriteLine("Collation function IndexOfOrdinalHelper is callled from CompareInfo.Icu.cs *matchLengthPtr = "+ *matchLengthPtr);
+                    return result.Location;
                 }
 #endif
                 if (fromBeginning)

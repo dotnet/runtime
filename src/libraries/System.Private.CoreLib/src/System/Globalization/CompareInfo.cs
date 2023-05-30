@@ -176,6 +176,12 @@ namespace System.Globalization
                 JsInit(culture.InteropName!);
                 return;
             }
+#elif TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                InitNative(culture.InteropName!);
+                return;
+            }
 #endif
             if (GlobalizationMode.UseNls)
             {
@@ -887,7 +893,14 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (!source.TryGetSpan(startIndex, count, out ReadOnlySpan<char> sourceSpan))
+            int sourceLength = count;
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                sourceLength -= startIndex;
+            }
+#endif
+            if (!source.TryGetSpan(startIndex, sourceLength, out ReadOnlySpan<char> sourceSpan))
             {
                 // Bounds check failed - figure out exactly what went wrong so that we can
                 // surface the correct argument exception.
@@ -912,6 +925,8 @@ namespace System.Globalization
 
         public unsafe int IndexOf(string source, string value, int startIndex, int count, CompareOptions options)
         {
+            //IndexOf(source, value, startIndex, count, options)
+            System.Diagnostics.Debug.WriteLine("Collation IndexOf is called from CompareInfo.cs");
             if (source == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
@@ -920,8 +935,15 @@ namespace System.Globalization
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
-
-            if (!source.TryGetSpan(startIndex, count, out ReadOnlySpan<char> sourceSpan))
+            System.Diagnostics.Debug.WriteLine("Collation IndexOf is called from CompareInfo.cs count = " + count + " startIndex = " + startIndex);
+            int sourceLength = count;
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                sourceLength -= startIndex;
+            }
+#endif
+            if (!source.TryGetSpan(startIndex, sourceLength, out ReadOnlySpan<char> sourceSpan))
             {
                 // Bounds check failed - figure out exactly what went wrong so that we can
                 // surface the correct argument exception.
@@ -1131,6 +1153,9 @@ namespace System.Globalization
 #if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
                 JsIndexOfCore(source, target, options, matchLengthPtr, fromBeginning) :
+#elif TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            GlobalizationMode.Hybrid ?
+                IndexOfCoreNative(source, target, options, matchLengthPtr, fromBeginning) :
 #endif
                 IcuIndexOfCore(source, target, options, matchLengthPtr, fromBeginning);
 
@@ -1249,7 +1274,14 @@ namespace System.Globalization
 
             startIndex = startIndex - count + 1; // this will be the actual index where we begin our search
 
-            if (!source.TryGetSpan(startIndex, count, out ReadOnlySpan<char> sourceSpan))
+            int sourceLength = count;
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                sourceLength -= startIndex;
+            }
+#endif
+            if (!source.TryGetSpan(startIndex, sourceLength, out ReadOnlySpan<char> sourceSpan))
             {
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
@@ -1309,7 +1341,14 @@ namespace System.Globalization
 
             startIndex = startIndex - count + 1; // this will be the actual index where we begin our search
 
-            if (!source.TryGetSpan(startIndex, count, out ReadOnlySpan<char> sourceSpan))
+            int sourceLength = count;
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                sourceLength -= startIndex;
+            }
+#endif
+            if (!source.TryGetSpan(startIndex, sourceLength, out ReadOnlySpan<char> sourceSpan))
             {
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
