@@ -35,13 +35,15 @@ namespace System.Formats.Asn1.Tests.Reader
         [Fact]
         public static void Clone_CopiesCurrentState()
         {
-            // SetOf {
-            //   UtcTime 500405000012Z
-            //   Null
+            // Sequence {
+            //   SetOf {
+            //     UtcTime 500405000012Z
+            //     Null
+            //   }
             // }
             // Verify the options are preserved in the clone by observing them:
             // this is an incorrectly sorted SET OF with a date of 50/04/05 that should be 2050, not 1950.
-            ReadOnlyMemory<byte> asn = "3111170D3530303430353030303031325A0500".HexToByteArray();
+            ReadOnlyMemory<byte> asn = "30133111170D3530303430353030303031325A0500".HexToByteArray();
 
             AsnReaderOptions options = new AsnReaderOptions
             {
@@ -49,7 +51,10 @@ namespace System.Formats.Asn1.Tests.Reader
                 SkipSetSortOrderVerification = true,
             };
 
-            AsnReader reader = new AsnReader(asn, AsnEncodingRules.DER, options);
+            AsnReader sequence = new AsnReader(asn, AsnEncodingRules.DER, options);
+            AsnReader reader = sequence.ReadSequence();
+            sequence.ThrowIfNotEmpty();
+
             AsnReader clone = reader.Clone();
             Assert.Equal(reader.RuleSet, clone.RuleSet);
 
