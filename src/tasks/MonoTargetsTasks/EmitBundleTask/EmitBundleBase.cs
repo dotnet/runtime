@@ -21,6 +21,10 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
     private Dictionary<string, string[]> resourcesForDataSymbolDictionary= new();
 
+    /// Truncate encoded hashes used in file names and symbols to 24 characters.
+    /// Represents a 128-bit hash output encoded in base64 format.
+    private const int MaxEncodedHashLength = 24;
+
     /// Must have DestinationFile metadata, which is the output filename
     /// Could have RegisteredName, otherwise it would be the filename.
     /// RegisteredName should be prefixed with namespace in form of unix like path. For example: "/usr/share/zoneinfo/"
@@ -74,7 +78,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                 bundledResource.SetMetadata("RegisteredName", registeredName);
             }
 
-            string resourceDataSymbol = $"bundled_resource_{ToSafeSymbolName(Utils.ComputeHash(bundledResource.ItemSpec))}";
+            string resourceDataSymbol = $"bundled_resource_{ToSafeSymbolName(TruncateEncodedHash(Utils.ComputeHashEx(bundledResource.ItemSpec, Utils.HashAlgorithmType.SHA256, Utils.HashEncodingType.Base64Safe), MaxEncodedHashLength))}";
             if (resourceDataSymbolDictionary.ContainsKey(registeredName))
             {
                 throw new LogAsErrorException($"Multiple resources have the same RegisteredName '{registeredName}'. Ensure {nameof(FilesToBundle)} 'RegisteredName' metadata are set and unique.");
@@ -389,6 +393,14 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
         }
 
         return sb.ToString();
+    }
+
+    private static string TruncateEncodedHash(string encodedHash, int maxEncodedHashLength)
+    {
+        if (string.IsNullOrEmpty(encodedHash))
+            return string.Empty;
+
+        return encodedHash.Substring(0, Math.Min(encodedHash.Length, maxEncodedHashLength));
     }
 
     // Equivalent to "isalnum"
