@@ -204,9 +204,9 @@ namespace System.Diagnostics.Metrics
         [Event(17, Keywords = Keywords.TimeSeriesValues)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                             Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
-        public void MultipleSessionsConfiguredIncorrectlyError(string uniqueIdentifier, string expectedMaxHistograms, string actualMaxHistograms, string expectedMaxTimeSeries, string actualMaxTimeSeries, string expectedRefreshInterval, string actualRefreshInterval)
+        public void MultipleSessionsConfiguredIncorrectlyError(string clientId, string expectedMaxHistograms, string actualMaxHistograms, string expectedMaxTimeSeries, string actualMaxTimeSeries, string expectedRefreshInterval, string actualRefreshInterval)
         {
-            WriteEvent(17, uniqueIdentifier, expectedMaxHistograms, actualMaxHistograms, expectedMaxTimeSeries, actualMaxTimeSeries, expectedRefreshInterval, actualRefreshInterval);
+            WriteEvent(17, clientId, expectedMaxHistograms, actualMaxHistograms, expectedMaxTimeSeries, actualMaxTimeSeries, expectedRefreshInterval, actualRefreshInterval);
         }
 
         /// <summary>
@@ -229,7 +229,7 @@ namespace System.Diagnostics.Metrics
         {
             private AggregationManager? _aggregationManager;
             private string _sessionId = "";
-            private HashSet<string> _sharedSessionIds = new HashSet<string>();
+            private HashSet<string> _sharedSessionClientIds = new HashSet<string>();
             private int _sharedSessionRefCount;
 
             public CommandHandler(MetricsEventSource parent)
@@ -284,7 +284,7 @@ namespace System.Diagnostics.Metrics
                                 _aggregationManager.Dispose();
                                 _aggregationManager = null;
                                 _sessionId = string.Empty;
-                                _sharedSessionIds.Clear();
+                                _sharedSessionClientIds.Clear();
                                 return;
                             }
 
@@ -341,12 +341,12 @@ namespace System.Diagnostics.Metrics
                                 else
                                 {
                                     // In theory this should be required as part of the contract to do shared -> not currently safe with !
-                                    if (command.Arguments!.TryGetValue("UniqueIdentifier", out string? uniqueIdentifier))
+                                    if (command.Arguments!.TryGetValue("ClientId", out string? clientId))
                                     {
                                         lock (_aggregationManager)
                                         {
-                                            // Use UniqueIdentifier to identify the session that is not configured correctly (since the sessionId is just SHARED)
-                                            Parent.MultipleSessionsConfiguredIncorrectlyError(uniqueIdentifier!, _aggregationManager.MaxHistograms.ToString(), maxHistograms.ToString(), _aggregationManager.MaxTimeSeries.ToString(), maxTimeSeries.ToString(), _aggregationManager.CollectionPeriod.TotalSeconds.ToString(), refreshInterval.ToString());
+                                            // Use ClientId to identify the session that is not configured correctly (since the sessionId is just SHARED)
+                                            Parent.MultipleSessionsConfiguredIncorrectlyError(clientId!, _aggregationManager.MaxHistograms.ToString(), maxHistograms.ToString(), _aggregationManager.MaxTimeSeries.ToString(), maxTimeSeries.ToString(), _aggregationManager.CollectionPeriod.TotalSeconds.ToString(), refreshInterval.ToString());
                                         }
                                     }
 
@@ -374,7 +374,7 @@ namespace System.Diagnostics.Metrics
                                 _aggregationManager.Dispose();
                                 _aggregationManager = null;
                                 _sessionId = string.Empty;
-                                _sharedSessionIds.Clear();
+                                _sharedSessionClientIds.Clear();
                                 return;
                             }
                         }
@@ -480,18 +480,18 @@ namespace System.Diagnostics.Metrics
                 }
             }
 
-            private void IncrementRefCount(string uniqueIdentifier, EventCommandEventArgs command)
+            private void IncrementRefCount(string clientId, EventCommandEventArgs command)
             {
-                // Could be unsafe if UniqueIdentifier protocol isn't followed
-                if (command.Arguments!.TryGetValue("UniqueIdentifier", out string? uniqueIdentifierArg))
+                // Could be unsafe if ClientId protocol isn't followed
+                if (command.Arguments!.TryGetValue("ClientId", out string? clientIdArg))
                 {
-                    uniqueIdentifier = uniqueIdentifierArg!;
+                    clientId = clientIdArg!;
                 }
 
-                if (!_sharedSessionIds.Contains(uniqueIdentifier))
+                if (!_sharedSessionClientIds.Contains(clientId))
                 {
-                    _sharedSessionIds.Add(uniqueIdentifier);
-                    _sharedSessionRefCount += 1;
+                    _sharedSessionClientIds.Add(clientId);
+                    Interlocked.Increment(ref _sharedSessionRefCount);
                 }
             }
 
@@ -506,6 +506,28 @@ namespace System.Diagnostics.Metrics
                 Parent.Message($"Invalid {argumentName} provided. Using existing shared value {currentValue}"); // do we want to make this assumption - basically, if there's any ambiguity or an invalid parameter is provided, we set the value to be the SHARED one (instead of failing). More flexible, but do we want that?
 
                 parsedValue = currentValue;
+                return true;
+            }
+
+            private bool GetRefreshIntervalSecs(IDictionary<string, string>? arguments, string valueDescriptor, double defaultValue, out double refreshIntervalSeconds)
+            {
+                if (arguments!.TryGetValue("RefreshInterval", out string? refreshInterval))
+                {
+                    Parent.Message($"RefreshInterval argument received: {refreshInterval}");
+                    if (!double.TryParse(refreshInterval, out refreshIntervalSeconds))
+                    {
+                        Parent.Message($"Failed to parse RefreshInterval. Using {valueDescriptor} {defaultValue}s.");
+                        refreshIntervalSeconds = defaultValue;
+                        return false;
+                    }
+                }
+                else
+                {
+                    Parent.Message($"No RefreshInterval argument received. Using {valueDescriptor} {defaultValue}s.");
+                    refreshIntervalSeconds = defaultValue;
+                    return false;
+                }
+
                 return true;
             }
 
