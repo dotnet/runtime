@@ -322,6 +322,24 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
             """;
 
+        public string ComInterfaceInheritanceWithParametersWithAttributes => $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            {{GeneratedComInterface}}
+            partial interface IComInterface
+            {
+                void Method([MarshalUsing(typeof(Utf8StringMarshaller))] string myString);
+            }
+            {{GeneratedComInterface}}
+            partial interface IComInterface1 : IComInterface
+            {
+                void Method2([MarshalUsing(typeof(Utf8StringMarshaller))] string myString);
+            }
+
+            """;
+
         public class ManagedToUnmanaged : IVirtualMethodIndexSignatureProvider
         {
             public MarshalDirection Direction => MarshalDirection.ManagedToUnmanaged;
