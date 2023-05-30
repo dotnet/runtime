@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Threading.Tests
 {
-    public class InterlockedTests
+    public unsafe class InterlockedTests
     {
         [Fact]
         public void InterlockedAdd_Int32()
@@ -601,6 +601,22 @@ namespace System.Threading.Tests
 
             Assert.Equal(ThreadCount, completedThreadCount);
             Assert.Equal(ThreadCount * IterationCount * Increment, Interlocked.Read(ref value));
+        }
+
+        static Action mb;
+        static delegate* <void> pMb;
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void MemoryBarrierIntrinsic()
+        {
+            // Interlocked.MemoryBarrier is a self-referring intrinsic
+            // we should be able to call it through a delegate.
+            mb = Interlocked.MemoryBarrier;
+            mb();
+
+            // through a method pointer
+            pMb = &Interlocked.MemoryBarrier;
+            pMb();
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
