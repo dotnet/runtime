@@ -18,7 +18,7 @@ export function hasDebuggingEnabled(bootConfig: BootJsonData): boolean {
 
     const navigatorUA = navigator as MonoNavigatorUserAgent;
     const brands = navigatorUA.userAgentData && navigatorUA.userAgentData.brands;
-    const currentBrowserIsChromeOrEdge = brands
+    const currentBrowserIsChromeOrEdge = brands && brands.length > 0
         ? brands.some(b => b.brand === "Google Chrome" || b.brand === "Microsoft Edge" || b.brand === "Chromium")
         : (window as any).chrome;
 
