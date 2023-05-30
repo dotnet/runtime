@@ -2763,6 +2763,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
+    <Target>T:System.Runtime.InteropServices.Marshalling.NativeMarshallingAttribute:[T:System.AttributeUsageAttribute]</Target>
+    <Left>net7.0/System.Runtime.dll</Left>
+    <Right>net8.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
     <Target>M:System.Reflection.Metadata.MetadataUpdateHandlerAttribute.#ctor(System.Type)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net7.0/System.Runtime.Loader.dll</Left>
     <Right>net8.0/System.Runtime.Loader.dll</Right>
@@ -2850,5 +2856,23 @@
     <Target>M:System.Runtime.Serialization.SerializationObjectManager.RegisterObject(System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
     <Left>net7.0/System.Runtime.Serialization.Formatters.dll</Left>
     <Right>net8.0/System.Runtime.Serialization.Formatters.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Type.GetEnumValues:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>net7.0/mscorlib.dll</Left>
+    <Right>net8.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Type.GetEnumValues:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>net7.0/netstandard.dll</Left>
+    <Right>net8.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Type.GetEnumValues:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>net7.0/System.Runtime.dll</Left>
+    <Right>net8.0/System.Runtime.dll</Right>
   </Suppression>
 </Suppressions>

@@ -11,7 +11,7 @@ namespace Microsoft.Interop
     {
         public override bool SingleFrameSpansNativeContext => false;
 
-        public override bool AdditionalTemporaryStateLivesAcrossStages => false;
+        public override bool AdditionalTemporaryStateLivesAcrossStages => true;
 
         private readonly TargetFramework _framework;
         private readonly Version _frameworkVersion;

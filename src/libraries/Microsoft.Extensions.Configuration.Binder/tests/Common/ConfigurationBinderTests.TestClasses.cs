@@ -113,6 +113,11 @@ namespace Microsoft.Extensions
             }
         }
 
+        public class ClassWithPrimaryCtor(string color, int length)
+        {
+            public string Color { get; } = color;
+            public int Length { get; } = length;
+        }
 
         public record RecordTypeOptions(string Color, int Length);
 
@@ -323,7 +328,7 @@ namespace Microsoft.Extensions
                 public Dictionary<string, TestSettingsEnum> Enums { get; set; }
             }
 
-            [Fact]
+            [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
             public void WithFlagUnset_NoExceptionIsThrownWhenFailingToParseEnumsInAnArrayAndValidItemsArePreserved()
             {
                 var dic = new Dictionary<string, string>
@@ -346,7 +351,7 @@ namespace Microsoft.Extensions
                 Assert.Equal(TestSettingsEnum.Option2, model.Enums[1]);
             }
 
-            [Fact]
+            [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
             public void WithFlagUnset_NoExceptionIsThrownWhenFailingToParseEnumsInADictionaryAndValidItemsArePreserved()
             {
                 var dic = new Dictionary<string, string>
@@ -370,7 +375,7 @@ namespace Microsoft.Extensions
                 Assert.Equal(TestSettingsEnum.Option2, model.Enums["Fourth"]);
             }
 
-            [Fact]
+            [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
             public void WithFlagSet_AnExceptionIsThrownWhenFailingToParseEnumsInAnArray()
             {
                 var dic = new Dictionary<string, string>
@@ -393,7 +398,7 @@ namespace Microsoft.Extensions
                     exception.Message);
             }
 
-            [Fact]
+            [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
             public void WithFlagSet_AnExceptionIsThrownWhenFailingToParseEnumsInADictionary()
             {
                 var dic = new Dictionary<string, string>
@@ -578,6 +583,25 @@ namespace Microsoft.Extensions
         {
             public string MyString { get; set; }
             public List<ClassWithIndirectSelfReference> MyList { get; set; }
+        }
+
+        public class DistributedQueueConfig
+        {
+            public List<QueueNamespaces> Namespaces { get; set; }
+        }
+
+        public class QueueNamespaces
+        {
+            public string Namespace { get; set; }
+
+            public Dictionary<string, QueueProperties> Queues { get; set; } = new();
+        }
+
+        public class QueueProperties
+        {
+            public DateTimeOffset? CreationDate { get; set; }
+
+            public DateTimeOffset? DequeueOnlyMarkedDate { get; set; } = default(DateTimeOffset);
         }
 
         public record RecordWithPrimitives

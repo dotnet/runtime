@@ -352,9 +352,9 @@ void InitializeCurrentProcessCpuCount()
     // process affinity and CPU quota limit.
 
     const unsigned int MAX_PROCESSOR_COUNT = 0xffff;
-    uint32_t configValue;
+    uint64_t configValue;
 
-    if (g_pRhConfig->ReadConfigValue(_T("PROCESSOR_COUNT"), &configValue, true /* decimal */) &&
+    if (g_pRhConfig->ReadConfigValue("PROCESSOR_COUNT", &configValue, true /* decimal */) &&
         0 < configValue && configValue <= MAX_PROCESSOR_COUNT)
     {
         count = configValue;
@@ -736,6 +736,13 @@ REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
     // write() has __attribute__((warn_unused_result)) in glibc, for which gcc 11+ issue `-Wunused-result` even with `(void)write(..)`,
     // so we use additional NOT(!) operator to force unused-result suppression.
     (void)!write(STDERR_FILENO, message, strlen(message));
+}
+
+REDHAWK_PALEXPORT char* PalCopyTCharAsChar(const TCHAR* toCopy)
+{
+    NewArrayHolder<char> copy {new (nothrow) char[strlen(toCopy) + 1]};
+    strcpy(copy, toCopy);
+    return copy.Extract();
 }
 
 static int W32toUnixAccessControl(uint32_t flProtect)
@@ -1256,7 +1263,7 @@ extern "C" uint64_t PalQueryPerformanceFrequency()
     return GCToOSInterface::QueryPerformanceFrequency();
 }
 
-extern "C" uint64_t PalGetCurrentThreadIdForLogging()
+extern "C" uint64_t PalGetCurrentOSThreadId()
 {
 #if defined(__linux__)
     return (uint64_t)syscall(SYS_gettid);

@@ -696,15 +696,17 @@ void interceptor_ICJI::getFieldInfo(
 }
 
 uint32_t interceptor_ICJI::getThreadLocalFieldInfo(
-          CORINFO_FIELD_HANDLE field)
+          CORINFO_FIELD_HANDLE field,
+          bool isGCtype)
 {
-    return original_ICorJitInfo->getThreadLocalFieldInfo(field);
+    return original_ICorJitInfo->getThreadLocalFieldInfo(field, isGCtype);
 }
 
 void interceptor_ICJI::getThreadLocalStaticBlocksInfo(
-          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo,
+          bool isGCType)
 {
-    original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo);
+    original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo, isGCType);
 }
 
 bool interceptor_ICJI::isFieldStatic(
@@ -807,37 +809,6 @@ CorInfoHFAElemType interceptor_ICJI::getHFAType(
           CORINFO_CLASS_HANDLE hClass)
 {
     return original_ICorJitInfo->getHFAType(hClass);
-}
-
-JITINTERFACE_HRESULT interceptor_ICJI::GetErrorHRESULT(
-          struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    return original_ICorJitInfo->GetErrorHRESULT(pExceptionPointers);
-}
-
-uint32_t interceptor_ICJI::GetErrorMessage(
-          char16_t* buffer,
-          uint32_t bufferLength)
-{
-    return original_ICorJitInfo->GetErrorMessage(buffer, bufferLength);
-}
-
-int interceptor_ICJI::FilterException(
-          struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    return original_ICorJitInfo->FilterException(pExceptionPointers);
-}
-
-void interceptor_ICJI::ThrowExceptionForJitResult(
-          JITINTERFACE_HRESULT result)
-{
-    original_ICorJitInfo->ThrowExceptionForJitResult(result);
-}
-
-void interceptor_ICJI::ThrowExceptionForHelper(
-          const CORINFO_HELPER_DESC* throwHelper)
-{
-    original_ICorJitInfo->ThrowExceptionForHelper(throwHelper);
 }
 
 bool interceptor_ICJI::runWithErrorTrap(

@@ -42,7 +42,7 @@ typedef struct
 	int local;
 	/* The offset from the execution stack start where this is stored. Used by the fast offset allocator */
 	int offset;
-	/* Saves how much stack this is using. It is a multiple of MINT_VT_ALIGNMENT */
+	/* Saves how much stack this is using. It is a multiple of MINT_STACK_SLOT_SIZE*/
 	int size;
 } StackInfo;
 
@@ -50,6 +50,7 @@ typedef struct
 #define LOCAL_VALUE_LOCAL 1
 #define LOCAL_VALUE_I4 2
 #define LOCAL_VALUE_I8 3
+#define LOCAL_VALUE_NON_NULL 4
 
 // LocalValue contains data to construct an InterpInst that is equivalent with the contents
 // of the stack slot / local / argument.

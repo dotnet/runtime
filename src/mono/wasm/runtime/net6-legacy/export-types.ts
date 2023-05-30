@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { MemOffset, MonoArray, MonoObject, MonoObjectRef, MonoString, NumberOrPointer, WasmRoot, WasmRootBuffer } from "../types";
+import type { MemOffset, MonoArray, MonoObject, MonoObjectRef, MonoString, NumberOrPointer, WasmRoot, WasmRootBuffer } from "../types/internal";
 import type { VoidPtr } from "../types/emscripten";
 
 /**
@@ -106,10 +106,6 @@ export type MONOType = {
      * @deprecated Please use config.assets instead
      */
     mono_wasm_load_data_archive: (data: Uint8Array, prefix: string) => boolean;
-    /**
-     * @deprecated Please use configSrc instead
-     */
-    mono_wasm_load_config: (configFilePath: string) => Promise<void>;
     /**
      * @deprecated Please use [JSImportAttribute] or [JSExportAttribute] for interop instead.
      */

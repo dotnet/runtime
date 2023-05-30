@@ -676,19 +676,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_I386)
     set(VM_HEADERS_WKS_ARCH_ASM
         ${ARCH_SOURCES_DIR}/asmconstants.h
     )
-elseif(CLR_CMAKE_TARGET_ARCH_ARM)
-    set(VM_SOURCES_WKS_ARCH_ASM
-        ${ARCH_SOURCES_DIR}/asmhelpers.asm
-        ${ARCH_SOURCES_DIR}/CrtHelpers.asm
-        ${ARCH_SOURCES_DIR}/ehhelpers.asm
-        ${ARCH_SOURCES_DIR}/patchedcode.asm
-        ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
-        ${ARCH_SOURCES_DIR}/thunktemplates.asm
-    )
-
-    set(VM_HEADERS_WKS_ARCH_ASM
-        ${ARCH_SOURCES_DIR}/asmconstants.h
-    )
 elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
     set(VM_SOURCES_WKS_ARCH_ASM
         ${ARCH_SOURCES_DIR}/AsmHelpers.asm

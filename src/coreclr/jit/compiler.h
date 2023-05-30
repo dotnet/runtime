@@ -66,10 +66,6 @@ inline var_types genActualType(T value);
 #include "simd.h"
 #include "simdashwintrinsic.h"
 
-// This is only used locally in the JIT to indicate that
-// a verification block should be inserted
-#define SEH_VERIFICATION_EXCEPTION 0xe0564552 // VER
-
 /*****************************************************************************
  *                  Forward declarations
  */
@@ -240,7 +236,7 @@ public:
 
     LclSsaVarDsc(BasicBlock* block, GenTreeLclVarCommon* defNode) : m_block(block)
     {
-        SetAssignment(defNode);
+        SetDefNode(defNode);
     }
 
     BasicBlock* GetBlock() const
@@ -253,14 +249,12 @@ public:
         m_block = block;
     }
 
-    // TODO-ASG: rename to "GetDefNode".
-    GenTreeLclVarCommon* GetAssignment() const
+    GenTreeLclVarCommon* GetDefNode() const
     {
         return m_defNode;
     }
 
-    // TODO-ASG: rename to "SetDefNode".
-    void SetAssignment(GenTreeLclVarCommon* defNode)
+    void SetDefNode(GenTreeLclVarCommon* defNode)
     {
         assert((defNode == nullptr) || defNode->OperIsLocalStore());
         m_defNode = defNode;
@@ -517,6 +511,10 @@ public:
     {
         return lvTracked && lvType != TYP_STRUCT;
     }
+#ifdef DEBUG
+    unsigned char lvTrackedWithoutIndex : 1; // Tracked but has no lvVarIndex (i.e. only valid GTF_VAR_DEATH flags, used
+                                             // by physical promotion)
+#endif
     unsigned char lvPinned : 1; // is this a pinned variable?
 
     unsigned char lvMustInit : 1; // must be initialized
@@ -626,21 +624,8 @@ public:
 
 #ifdef FEATURE_SIMD
     unsigned char lvUsedInSIMDIntrinsic : 1; // This tells lclvar is used for simd intrinsic
-    unsigned char lvSimdBaseJitType : 5;     // Note: this only packs because CorInfoType has less than 32 entries
+#endif                                       // FEATURE_SIMD
 
-    CorInfoType GetSimdBaseJitType() const
-    {
-        return (CorInfoType)lvSimdBaseJitType;
-    }
-
-    void SetSimdBaseJitType(CorInfoType simdBaseJitType)
-    {
-        assert(simdBaseJitType < (1 << 5));
-        lvSimdBaseJitType = (unsigned char)simdBaseJitType;
-    }
-
-    var_types GetSimdBaseType() const;
-#endif                             // FEATURE_SIMD
     unsigned char lvRegStruct : 1; // This is a reg-sized non-field-addressed struct.
 
     unsigned char lvClassIsExact : 1; // lvClassHandle is the exact type
@@ -953,11 +938,6 @@ public:
         return lvUsedInSIMDIntrinsic;
     }
 #else
-    // If feature_simd not enabled, return false
-    bool lvIsSIMDType() const
-    {
-        return false;
-    }
     bool lvIsUsedInSIMDIntrinsic() const
     {
         return false;
@@ -1111,7 +1091,6 @@ public:
     bool lvNormalizeOnLoad() const
     {
         return varTypeIsSmall(TypeGet()) &&
-               // lvIsStructField is treated the same as the aliased local, see fgDoNormalizeOnStore.
                // OSR exposed locals were normalize on load in the Tier0 frame so must be so for OSR too.
                (lvIsParam || m_addrExposed || lvIsStructField || lvIsOSRExposedLocal);
     }
@@ -1119,7 +1098,6 @@ public:
     bool lvNormalizeOnStore() const
     {
         return varTypeIsSmall(TypeGet()) &&
-               // lvIsStructField is treated the same as the aliased local, see fgDoNormalizeOnStore.
                // OSR exposed locals were normalize on load in the Tier0 frame so must be so for OSR too.
                !(lvIsParam || m_addrExposed || lvIsStructField || lvIsOSRExposedLocal);
     }
@@ -1860,7 +1838,7 @@ struct FuncInfoDsc
 
 struct TempInfo
 {
-    GenTree* asg;
+    GenTree* store;
     GenTree* load;
 };
 
@@ -2088,7 +2066,7 @@ public:
     DWORD expensiveDebugCheckLevel;
 #endif
 
-    GenTree* impAssignMultiRegTypeToVar(GenTree*             op,
+    GenTree* impStoreMultiRegValueToVar(GenTree*             op,
                                         CORINFO_CLASS_HANDLE hClass DEBUGARG(CorInfoCallConvExtension callConv));
 
 #ifdef TARGET_X86
@@ -2522,9 +2500,13 @@ public:
 
     GenTreeLclVar* gtNewStoreLclVarNode(unsigned lclNum, GenTree* data);
 
-    GenTreeLclFld* gtNewStoreLclFldNode(unsigned lclNum, var_types type, unsigned offset, GenTree* data);
+    GenTreeLclFld* gtNewStoreLclFldNode(
+        unsigned lclNum, var_types type, ClassLayout* layout, unsigned offset, GenTree* data);
 
-    GenTree* gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile = false);
+    GenTreeLclFld* gtNewStoreLclFldNode(unsigned lclNum, var_types type, unsigned offset, GenTree* data)
+    {
+        return gtNewStoreLclFldNode(lclNum, type, (type == TYP_STRUCT) ? data->GetLayout(this) : nullptr, offset, data);
+    }
 
     GenTree* gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg);
 
@@ -2760,6 +2742,16 @@ public:
     GenTree* gtNewSimdSumNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
+#if defined(TARGET_XARCH)
+    GenTree* gtNewSimdTernaryLogicNode(var_types   type,
+                                       GenTree*    op1,
+                                       GenTree*    op2,
+                                       GenTree*    op3,
+                                       GenTree*    op4,
+                                       CorInfoType simdBaseJitType,
+                                       unsigned    simdSize);
+#endif // TARGET_XARCH
+
     GenTree* gtNewSimdUnOpNode(genTreeOps  op,
                                var_types   type,
                                GenTree*    op1,
@@ -2824,8 +2816,6 @@ public:
         return gtNewFieldAddrNode(varTypeIsGC(obj) ? TYP_BYREF : TYP_I_IMPL, fldHnd, obj, offset);
     }
 
-    GenTreeIndir* gtNewFieldIndirNode(var_types type, ClassLayout* layout, GenTreeFieldAddr* addr);
-
     GenTreeIndexAddr* gtNewIndexAddr(GenTree*             arrayOp,
                                      GenTree*             indexOp,
                                      var_types            elemType,
@@ -2847,6 +2837,8 @@ public:
     GenTreeMDArr* gtNewMDArrLen(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
 
     GenTreeMDArr* gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
+
+    void gtInitializeStoreNode(GenTree* store, GenTree* data);
 
     void gtInitializeIndirNode(GenTreeIndir* indir, GenTreeFlags indirFlags);
 
@@ -2881,19 +2873,22 @@ public:
         return gtNewStoreValueNode(layout->GetType(), layout, addr, data, indirFlags);
     }
 
+    GenTree* gtNewStoreValueNode(var_types type, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY)
+    {
+        return gtNewStoreValueNode(type, nullptr, addr, data, indirFlags);
+    }
+
     GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
 
     var_types gtTypeForNullCheck(GenTree* tree);
     void gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block);
 
-    GenTreeOp* gtNewAssignNode(GenTree* dst, GenTree* src);
-
-    GenTree* gtNewTempAssign(unsigned         tmp,
-                             GenTree*         val,
-                             unsigned         curLevel   = CHECK_SPILL_NONE,
-                             Statement**      pAfterStmt = nullptr,
-                             const DebugInfo& di         = DebugInfo(),
-                             BasicBlock*      block      = nullptr);
+    GenTree* gtNewTempStore(unsigned         tmp,
+                            GenTree*         val,
+                            unsigned         curLevel   = CHECK_SPILL_NONE,
+                            Statement**      pAfterStmt = nullptr,
+                            const DebugInfo& di         = DebugInfo(),
+                            BasicBlock*      block      = nullptr);
 
     GenTree* gtNewRefCOMfield(GenTree*                objPtr,
                               CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -3033,6 +3028,8 @@ public:
     bool gtStoreDefinesField(
         LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFieldStoreSize);
 
+    void gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq);
+
     // Return true if call is a recursive call; return false otherwise.
     // Note when inlining, this looks for calls back to the root method.
     bool gtIsRecursiveCall(GenTreeCall* call)
@@ -3096,6 +3093,7 @@ public:
 
     void gtDispConst(GenTree* tree);
     void gtDispLeaf(GenTree* tree, IndentStack* indentStack);
+    void gtDispLocal(GenTreeLclVarCommon* tree, IndentStack* indentStack);
     void gtDispNodeName(GenTree* tree);
 #if FEATURE_MULTIREG_RET
     unsigned gtDispMultiRegCount(GenTree* tree);
@@ -3493,7 +3491,7 @@ public:
     unsigned lvaLclSize(unsigned varNum);
     unsigned lvaLclExactSize(unsigned varNum);
 
-    bool lvaHaveManyLocals() const;
+    bool lvaHaveManyLocals(float percent = 1.0f) const;
 
     unsigned lvaGrabTemp(bool shortLifetime DEBUGARG(const char* reason));
     unsigned lvaGrabTemps(unsigned cnt DEBUGARG(const char* reason));
@@ -3830,7 +3828,6 @@ protected:
     void impResolveToken(const BYTE* addr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoTokenKind kind);
 
     void impPushOnStack(GenTree* tree, typeInfo ti);
-    void       impPushNullObjRefOnStack();
     StackEntry impPopStack();
     void impPopStack(unsigned n);
     StackEntry& impStackTop(unsigned n = 0);
@@ -3891,11 +3888,13 @@ protected:
     GenTree* impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE ownerCls);
     GenTree* impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueType);
 
-    GenTree* impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                        CORINFO_ACCESS_FLAGS    access,
-                                        CORINFO_FIELD_INFO*     pFieldInfo,
-                                        var_types               lclTyp,
-                                        /* OUT */ bool*         pIsHoistable = nullptr);
+    GenTree* impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                         CORINFO_ACCESS_FLAGS    access,
+                                         CORINFO_FIELD_INFO*     pFieldInfo,
+                                         var_types               lclTyp,
+                                         GenTreeFlags*           pIndirFlags,
+                                         bool*                   pIsHoistable = nullptr);
+    void impAnnotateFieldIndir(GenTreeIndir* indir);
 
     static void impBashVarAddrsToI(GenTree* tree1, GenTree* tree2 = nullptr);
 
@@ -3920,7 +3919,7 @@ protected:
     };
     GenTree* impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* sig, unsigned methodFlags);
     GenTree* impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* sig, unsigned methodFlags);
-    GenTree* impExpandHalfConstEquals(GenTreeLclVar*   data,
+    GenTree* impExpandHalfConstEquals(GenTreeLclVarCommon*   data,
                                       GenTree*         lengthFld,
                                       bool             checkForNull,
                                       bool             startsWith,
@@ -3928,16 +3927,16 @@ protected:
                                       int              len,
                                       int              dataOffset,
                                       StringComparison cmpMode);
-    GenTree* impCreateCompareInd(GenTreeLclVar*        obj,
+    GenTree* impCreateCompareInd(GenTreeLclVarCommon*        obj,
                                  var_types             type,
                                  ssize_t               offset,
                                  ssize_t               value,
                                  StringComparison      ignoreCase,
                                  StringComparisonJoint joint = Eq);
     GenTree* impExpandHalfConstEqualsSWAR(
-        GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode);
+        GenTreeLclVarCommon* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode);
     GenTree* impExpandHalfConstEqualsSIMD(
-        GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode);
+        GenTreeLclVarCommon* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode);
     GenTreeStrCon* impGetStrConFromSpan(GenTree* span);
 
     GenTree* impIntrinsic(GenTree*                newobjThis,
@@ -3945,9 +3944,10 @@ protected:
                           CORINFO_METHOD_HANDLE   method,
                           CORINFO_SIG_INFO*       sig,
                           unsigned                methodFlags,
-                          int                     memberRef,
+                          CORINFO_RESOLVED_TOKEN* pResolvedToken,
                           bool                    readonlyCall,
                           bool                    tailCall,
+                          bool                    callvirt,
                           CORINFO_RESOLVED_TOKEN* pContstrainedResolvedToken,
                           CORINFO_THIS_TRANSFORM  constraintCallThisTransform,
                           NamedIntrinsic*         pIntrinsicName,
@@ -3967,7 +3967,8 @@ protected:
     GenTree* impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
                                     CORINFO_CLASS_HANDLE  clsHnd,
                                     CORINFO_METHOD_HANDLE method,
-                                    CORINFO_SIG_INFO*     sig);
+                                    CORINFO_SIG_INFO*     sig,
+        CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     GenTree* impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                                         CORINFO_CLASS_HANDLE  clsHnd,
@@ -4048,24 +4049,23 @@ public:
     void impAppendStmt(Statement* stmt);
     void impInsertStmtBefore(Statement* stmt, Statement* stmtBefore);
     Statement* impAppendTree(GenTree* tree, unsigned chkLevel, const DebugInfo& di, bool checkConsumedDebugInfo = true);
-    void impAssignTempGen(unsigned         lclNum,
-                          GenTree*         val,
-                          unsigned         curLevel   = CHECK_SPILL_NONE,
-                          Statement**      pAfterStmt = nullptr,
-                          const DebugInfo& di         = DebugInfo(),
-                          BasicBlock*      block      = nullptr);
+    void impStoreTemp(unsigned         lclNum,
+                      GenTree*         val,
+                      unsigned         curLevel,
+                      Statement**      pAfterStmt = nullptr,
+                      const DebugInfo& di         = DebugInfo(),
+                      BasicBlock*      block      = nullptr);
     Statement* impExtractLastStmt();
     GenTree* impCloneExpr(GenTree*             tree,
                           GenTree**            clone,
                           unsigned             curLevel,
                           Statement** pAfterStmt DEBUGARG(const char* reason));
-    GenTree* impAssignStruct(GenTree*         dest,
-                             GenTree*         src,
+    GenTree* impStoreStruct(GenTree*         store,
                              unsigned         curLevel,
                              Statement**      pAfterStmt = nullptr,
                              const DebugInfo& di         = DebugInfo(),
                              BasicBlock*      block      = nullptr);
-    GenTree* impAssignStructPtr(GenTree* dest, GenTree* src, unsigned curLevel);
+    GenTree* impStoreStructPtr(GenTree* destAddr, GenTree* value, unsigned curLevel);
 
     GenTree* impGetStructAddr(GenTree* structVal, unsigned curLevel, bool willDeref);
 
@@ -4320,7 +4320,6 @@ private:
     BYTE impSpillCliqueGetMember(SpillCliqueDir predOrSucc, BasicBlock* blk);
     void impSpillCliqueSetMember(SpillCliqueDir predOrSucc, BasicBlock* blk, BYTE val);
 
-    void impPushVar(GenTree* op, typeInfo tiRetVal);
     GenTreeLclVar* impCreateLocalNode(unsigned lclNum DEBUGARG(IL_OFFSET offset));
     void impLoadVar(unsigned lclNum, IL_OFFSET offset);
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
@@ -4365,6 +4364,7 @@ private:
                         InlineResult*         inlineResult);
 
     void impCheckCanInline(GenTreeCall*           call,
+                           uint8_t                candidateIndex,
                            CORINFO_METHOD_HANDLE  fncHandle,
                            unsigned               methAttr,
                            CORINFO_CONTEXT_HANDLE exactContextHnd,
@@ -4393,10 +4393,12 @@ private:
                                 IL_OFFSET              ilOffset);
 
     void impMarkInlineCandidateHelper(GenTreeCall*           call,
+                                      uint8_t                candidateIndex,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
                                       bool                   exactContextNeedsRuntimeLookup,
                                       CORINFO_CALL_INFO*     callInfo,
-                                      IL_OFFSET              ilOffset);
+                                      IL_OFFSET              ilOffset,
+                                      InlineResult*          inlineResult);
 
     bool impTailCallRetTypeCompatible(bool                     allowWidening,
                                       var_types                callerRetType,
@@ -4848,9 +4850,6 @@ public:
     void fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkNodes();
-
-    PhaseStatus fgRationalizeAssignments();
-    GenTree* fgRationalizeAssignment(GenTreeOp* assignment);
 
     // Do "simple lowering."  This functionality is (conceptually) part of "general"
     // lowering that is distributed between fgMorph and the lowering phase of LSRA.
@@ -5568,7 +5567,6 @@ public:
     inline void fgConvertBBToThrowBB(BasicBlock* block);
 
     bool fgCastNeeded(GenTree* tree, var_types toType);
-    GenTree* fgDoNormalizeOnStore(GenTree* tree);
 
     // The following check for loops that don't execute calls
     bool fgLoopCallMarked;
@@ -5897,12 +5895,12 @@ private:
                                     unsigned* indexOut,
                                     unsigned* simdSizeOut,
                                     bool      ignoreUsedInSIMDIntrinsic = false);
-    bool fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* stmt);
-    void impMarkContiguousSIMDFieldAssignments(Statement* stmt);
+    bool fgMorphCombineSIMDFieldStores(BasicBlock* block, Statement* stmt);
+    void impMarkContiguousSIMDFieldStores(Statement* stmt);
 
-    // fgPreviousCandidateSIMDFieldAsgStmt is only used for tracking previous simd field assignment
-    // in function: Compiler::impMarkContiguousSIMDFieldAssignments.
-    Statement* fgPreviousCandidateSIMDFieldAsgStmt;
+    // fgPreviousCandidateSIMDFieldStoreStmt is only used for tracking previous simd field assignment
+    // in function: Compiler::impMarkContiguousSIMDFieldStores.
+    Statement* fgPreviousCandidateSIMDFieldStoreStmt;
 
 #endif // FEATURE_SIMD
     GenTree* fgMorphIndexAddr(GenTreeIndexAddr* tree);
@@ -5913,12 +5911,12 @@ private:
     void fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg);
     void fgMarkGlobalUses(Statement* stmt);
 
-    GenTree* fgMorphLocal(GenTreeLclVarCommon* lclNode);
+    GenTree* fgMorphLeafLocal(GenTreeLclVarCommon* lclNode);
 #ifdef TARGET_X86
     GenTree* fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon* lclNode);
 #endif // TARGET_X86
     GenTree* fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode);
-    GenTree* fgMorphLocalVar(GenTree* tree);
+    GenTree* fgMorphExpandLocal(GenTreeLclVarCommon* lclNode);
 
 public:
     bool fgAddrCouldBeNull(GenTree* addr);
@@ -5985,7 +5983,7 @@ public:
 private:
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
     void fgTryReplaceStructLocalWithField(GenTree* tree);
-    GenTree* fgOptimizeIndir(GenTreeIndir* indir);
+    GenTree* fgMorphFinalizeIndir(GenTreeIndir* indir);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeCastOnStore(GenTree* store);
     GenTree* fgOptimizeBitCast(GenTreeUnOp* bitCast);
@@ -6011,7 +6009,6 @@ private:
     GenTree* fgMorphConst(GenTree* tree);
 
     GenTreeOp* fgMorphCommutative(GenTreeOp* tree);
-    GenTree* fgMorphCastedBitwiseOp(GenTreeOp* tree);
 
     GenTree* fgMorphReduceAddOps(GenTree* tree);
 
@@ -6403,7 +6400,7 @@ public:
         GenTree*   lpIterTree;          // The "i = i <op> const" tree
         unsigned   lpIterVar() const;   // iterator variable #
         int        lpIterConst() const; // the constant with which the iterator is incremented
-        genTreeOps lpIterOper() const;  // the type of the operation on the iterator (ASG_ADD, ASG_SUB, etc.)
+        genTreeOps lpIterOper() const;  // the type of the operation on the iterator (ADD, SUB, etc.)
         void       VERIFY_lpIterTree() const;
 
         var_types lpIterOperType() const; // For overflow instructions
@@ -6977,7 +6974,7 @@ public:
     // VN based copy propagation.
 
     // In DEBUG builds, we'd like to know the tree that the SSA definition was pushed for.
-    // While for ordinary SSA defs it will be available (as an ASG) in the SSA descriptor,
+    // While for ordinary SSA defs it will be available (as a store) in the SSA descriptor,
     // for locals which will use "definitions from uses", it will not be, so we store it
     // in this class instead.
     class CopyPropSsaDef
@@ -7642,19 +7639,20 @@ public:
     GenTree* optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
     GenTree* optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
-    GenTree* optAssertionProp_Asg(ASSERT_VALARG_TP assertions, GenTreeOp* asg, Statement* stmt);
+    GenTree* optAssertionProp_LocalStore(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* store, Statement* stmt);
+    GenTree* optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenTreeBlk* store, Statement* stmt);
     GenTree* optAssertionProp_Return(ASSERT_VALARG_TP assertions, GenTreeUnOp* ret, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt);
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);
     GenTree* optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
-    GenTree* optAssertionProp_ConditionalOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Update(GenTree* newTree, GenTree* tree, Statement* stmt);
     GenTree* optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call);
+    bool optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir);
 
     // Implied assertion functions.
     void optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& activeAssertions);
@@ -7829,7 +7827,6 @@ public:
     void eeGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                         CORINFO_ACCESS_FLAGS    flags,
                         CORINFO_FIELD_INFO*     pResult);
-    uint32_t eeGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field);
 
     // Get the flags
 
@@ -8601,11 +8598,6 @@ private:
         return false;
     }
 
-    bool isSIMDClass(typeInfo* pTypeInfo)
-    {
-        return pTypeInfo->IsStruct() && isSIMDClass(pTypeInfo->GetClassHandleForValueClass());
-    }
-
     bool isHWSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
     {
 #ifdef FEATURE_HW_INTRINSICS
@@ -8619,23 +8611,9 @@ private:
         return false;
     }
 
-    bool isHWSIMDClass(typeInfo* pTypeInfo)
-    {
-#ifdef FEATURE_HW_INTRINSICS
-        return pTypeInfo->IsStruct() && isHWSIMDClass(pTypeInfo->GetClassHandleForValueClass());
-#else
-        return false;
-#endif
-    }
-
     bool isSIMDorHWSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
     {
         return isSIMDClass(clsHnd) || isHWSIMDClass(clsHnd);
-    }
-
-    bool isSIMDorHWSIMDClass(typeInfo* pTypeInfo)
-    {
-        return isSIMDClass(pTypeInfo) || isHWSIMDClass(pTypeInfo);
     }
 
     // Get the base (element) type and size in bytes for a SIMD type. Returns CORINFO_TYPE_UNDEF
@@ -8675,8 +8653,13 @@ private:
 
     // Get the number of bytes in a System.Numeric.Vector<T> for the current compilation.
     // Note - cannot be used for System.Runtime.Intrinsic
-    unsigned getSIMDVectorRegisterByteLength()
+    unsigned getVectorTByteLength()
     {
+        // We need to report the ISA dependency to the VM so that scenarios
+        // such as R2R work correctly for larger vector sizes, so we always
+        // do `compExactlyDependsOn` for such cases.
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
 #if defined(TARGET_XARCH)
         if (compExactlyDependsOn(InstructionSet_AVX2))
         {
@@ -8690,21 +8673,21 @@ private:
 #elif defined(TARGET_ARM64)
         return FP_REGSIZE_BYTES;
 #else
-        assert(!"getSIMDVectorRegisterByteLength() unimplemented on target arch");
+        assert(!"getVectorTByteLength() unimplemented on target arch");
         unreached();
 #endif
     }
 
     // The minimum and maximum possible number of bytes in a SIMD vector.
 
-    // maxSIMDStructBytes
+    // getMaxVectorByteLength
     // The minimum SIMD size supported by System.Numeric.Vectors or System.Runtime.Intrinsic
     // Arm.AdvSimd:  16-byte Vector<T> and Vector128<T>
     // X86.SSE:      16-byte Vector<T> and Vector128<T>
     // X86.AVX:      16-byte Vector<T> and Vector256<T>
     // X86.AVX2:     32-byte Vector<T> and Vector256<T>
     // X86.AVX512F:  32-byte Vector<T> and Vector512<T>
-    unsigned int maxSIMDStructBytes() const
+    uint32_t getMaxVectorByteLength() const
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         if (compOpportunisticallyDependsOn(InstructionSet_AVX))
@@ -8725,9 +8708,26 @@ private:
 #elif defined(TARGET_ARM64)
         return FP_REGSIZE_BYTES;
 #else
-        assert(!"maxSIMDStructBytes() unimplemented on target arch");
+        assert(!"getMaxVectorByteLength() unimplemented on target arch");
         unreached();
 #endif
+    }
+
+    //------------------------------------------------------------------------
+    // getPreferredVectorByteLength: Gets the preferred length, in bytes, to use for vectorization
+    //
+    uint32_t getPreferredVectorByteLength() const
+    {
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+        uint32_t preferredVectorByteLength = opts.preferredVectorByteLength;
+
+        if (preferredVectorByteLength != 0)
+        {
+            return min(getMaxVectorByteLength(), preferredVectorByteLength);
+        }
+#endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
+
+        return getMaxVectorByteLength();
     }
 
     //------------------------------------------------------------------------
@@ -8745,22 +8745,25 @@ private:
     //    It's only supposed to be used for scenarios where we can
     //    perform an overlapped load/store.
     //
-    unsigned int roundUpSIMDSize(unsigned size)
+    uint32_t roundUpSIMDSize(unsigned size)
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-        unsigned maxSimdSize = maxSIMDStructBytes();
-        assert(maxSimdSize <= ZMM_REGSIZE_BYTES);
-        if (size <= XMM_REGSIZE_BYTES && maxSimdSize > XMM_REGSIZE_BYTES)
+        uint32_t maxSize = getPreferredVectorByteLength();
+        assert(maxSize <= ZMM_REGSIZE_BYTES);
+
+        if ((size <= XMM_REGSIZE_BYTES) && (maxSize > XMM_REGSIZE_BYTES))
         {
             return XMM_REGSIZE_BYTES;
         }
-        if (size <= YMM_REGSIZE_BYTES && maxSimdSize > YMM_REGSIZE_BYTES)
+
+        if ((size <= YMM_REGSIZE_BYTES) && (maxSize > YMM_REGSIZE_BYTES))
         {
             return YMM_REGSIZE_BYTES;
         }
-        return maxSimdSize;
+
+        return maxSize;
 #elif defined(TARGET_ARM64)
-        assert(maxSIMDStructBytes() == FP_REGSIZE_BYTES);
+        assert(getMaxVectorByteLength() == FP_REGSIZE_BYTES);
         return FP_REGSIZE_BYTES;
 #else
         assert(!"roundUpSIMDSize() unimplemented on target arch");
@@ -8780,33 +8783,36 @@ private:
     // Arguments:
     //    size   - size of the data to process with SIMD
     //
-    unsigned int roundDownSIMDSize(unsigned size)
+    uint32_t roundDownSIMDSize(unsigned size)
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-        unsigned maxSimdSize = maxSIMDStructBytes();
-        assert(maxSimdSize <= ZMM_REGSIZE_BYTES);
-        if (size >= maxSimdSize)
+        uint32_t maxSize = getPreferredVectorByteLength();
+        assert(maxSize <= ZMM_REGSIZE_BYTES);
+
+        if (size >= maxSize)
         {
             // Size is bigger than max SIMD size the current target supports
-            return maxSimdSize;
+            return maxSize;
         }
-        if (size >= YMM_REGSIZE_BYTES && maxSimdSize >= YMM_REGSIZE_BYTES)
+
+        if ((size >= YMM_REGSIZE_BYTES) && (maxSize >= YMM_REGSIZE_BYTES))
         {
             // Size is >= YMM but not enough for ZMM -> YMM
             return YMM_REGSIZE_BYTES;
         }
+
         // Return 0 if size is even less than XMM, otherwise - XMM
-        return size >= XMM_REGSIZE_BYTES ? XMM_REGSIZE_BYTES : 0;
+        return (size >= XMM_REGSIZE_BYTES) ? XMM_REGSIZE_BYTES : 0;
 #elif defined(TARGET_ARM64)
-        assert(maxSIMDStructBytes() == FP_REGSIZE_BYTES);
-        return size >= FP_REGSIZE_BYTES ? FP_REGSIZE_BYTES : 0;
+        assert(getMaxVectorByteLength() == FP_REGSIZE_BYTES);
+        return (size >= FP_REGSIZE_BYTES) ? FP_REGSIZE_BYTES : 0;
 #else
         assert(!"roundDownSIMDSize() unimplemented on target arch");
         unreached();
 #endif
     }
 
-    unsigned int minSIMDStructBytes()
+    uint32_t getMinVectorByteLength()
     {
         return emitTypeSize(TYP_SIMD8);
     }
@@ -8889,8 +8895,10 @@ public:
 #if defined(FEATURE_SIMD)
         if (canUseSimd)
         {
-            maxRegSize = maxSIMDStructBytes();
+            maxRegSize = getPreferredVectorByteLength();
+
 #if defined(TARGET_XARCH)
+            assert(maxRegSize <= ZMM_REGSIZE_BYTES);
             threshold = maxRegSize;
 #elif defined(TARGET_ARM64)
             // ldp/stp instructions can load/store two 16-byte vectors at once, e.g.:
@@ -8948,7 +8956,7 @@ public:
     bool structSizeMightRepresentSIMDType(size_t structSize)
     {
 #ifdef FEATURE_SIMD
-        return (structSize >= minSIMDStructBytes()) && (structSize <= maxSIMDStructBytes());
+        return (structSize >= getMinVectorByteLength()) && (structSize <= getMaxVectorByteLength());
 #else
         return false;
 #endif // FEATURE_SIMD
@@ -9182,7 +9190,6 @@ public:
     bool compLocallocOptimized;        // Does the method have an optimized localloc
     bool compQmarkUsed;                // Does the method use GT_QMARK/GT_COLON
     bool compQmarkRationalized;        // Is it allowed to use a GT_QMARK/GT_COLON node.
-    bool compAssignmentRationalized;   // Have the ASG nodes been turned into their store equivalents?
     bool compHasBackwardJump;          // Does the method (or some inlinee) have a lexically backwards jump?
     bool compHasBackwardJumpInHandler; // Does the method have a lexically backwards jump in a handler?
     bool compSwitchedToOptimized;      // Codegen initially was Tier0 but jit switched to FullOpts
@@ -9274,7 +9281,9 @@ public:
 
         codeOptimize compCodeOpt; // what type of code optimizations
 
-        bool compUseCMOV;
+#if defined(TARGET_XARCH)
+        uint32_t preferredVectorByteLength;
+#endif // TARGET_XARCH
 
 // optimize maximally and/or favor speed over size?
 
@@ -9407,11 +9416,19 @@ public:
             return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
         }
 
-        bool CanBeInstrumentedOrIsOptimized() const
+        bool DoEarlyBlockMerging() const
         {
-            return IsInstrumented() || (jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
-                                        jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS)) ||
-                   jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
+            if (jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC) || jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_CODE))
+            {
+                return false;
+            }
+
+            if (jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT) && !jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
+            {
+                return false;
+            }
+
+            return true;
         }
 
         // true if we should use the PINVOKE_{BEGIN,END} helpers instead of generating
@@ -9603,9 +9620,6 @@ public:
 #endif // ARM_SOFTFP
 #endif // CONFIGURABLE_ARM_ABI
 
-        // Use early multi-dimensional array operator expansion (expand after loop optimizations; before lowering).
-        bool compJitEarlyExpandMDArrays;
-
         // Collect 64 bit counts for PGO data.
         bool compCollect64BitCounts;
 
@@ -9700,7 +9714,6 @@ public:
         STRESS_MODE(MAKE_CSE)                                                                   \
         STRESS_MODE(LEGACY_INLINE)                                                              \
         STRESS_MODE(CLONE_EXPR)                                                                 \
-        STRESS_MODE(USE_CMOV)                                                                   \
         STRESS_MODE(FOLD)                                                                       \
         STRESS_MODE(MERGED_RETURNS)                                                             \
         STRESS_MODE(BB_PROFILE)                                                                 \
@@ -9756,7 +9769,8 @@ public:
 // clang-format on
 
 #ifdef DEBUG
-    static const LPCWSTR s_compStressModeNames[STRESS_COUNT + 1];
+    static const LPCWSTR s_compStressModeNamesW[STRESS_COUNT + 1];
+    static const char*   s_compStressModeNames[STRESS_COUNT + 1];
     BYTE                 compActiveStressModes[STRESS_COUNT];
 #endif // DEBUG
 
@@ -9764,6 +9778,7 @@ public:
 
     bool compStressCompile(compStressArea stressArea, unsigned weightPercentage);
     bool compStressCompileHelper(compStressArea stressArea, unsigned weightPercentage);
+    static unsigned compStressAreaHash(compStressArea area);
 
 #ifdef DEBUG
 
@@ -9922,22 +9937,6 @@ public:
         unsigned                     compStmtOffsetsCount;
         ICorDebugInfo::BoundaryTypes compStmtOffsetsImplicit;
 
-#define CPU_X86 0x0100 // The generic X86 CPU
-#define CPU_X86_PENTIUM_4 0x0110
-
-#define CPU_X64 0x0200       // The generic x64 CPU
-#define CPU_AMD_X64 0x0210   // AMD x64 CPU
-#define CPU_INTEL_X64 0x0240 // Intel x64 CPU
-
-#define CPU_ARM 0x0300   // The generic ARM CPU
-#define CPU_ARM64 0x0400 // The generic ARM64 CPU
-
-#define CPU_LOONGARCH64 0x0800 // The generic LOONGARCH64 CPU
-
-#define CPU_RISCV64 0x1000 // The generic RISCV64 CPU
-
-        unsigned genCPU; // What CPU are we running on
-
         // Number of class profile probes in this method
         unsigned compHandleHistogramProbeCount;
 
@@ -9946,6 +9945,14 @@ public:
 #endif
 
     } info;
+
+#if defined(DEBUG)
+    // Are we running a replay under SuperPMI?
+    bool RunningSuperPmiReplay() const
+    {
+        return info.compMethodSuperPMIIndex != -1;
+    }
+#endif // DEBUG
 
     ReturnTypeDesc compRetTypeDesc; // ABI return type descriptor for the method
 
@@ -10301,7 +10308,6 @@ public:
     static EnregisterStats s_enregisterStats;
 #endif // TRACK_ENREG_STATS
 
-    bool compIsForImportOnly();
     bool compIsForInlining() const;
     bool compDonotInline();
 
@@ -10421,7 +10427,7 @@ protected:
     void compSetProcessor();
     void compInitDebuggingInfo();
     void compSetOptimizationLevel();
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
     bool compRsvdRegCheck(FrameLayoutState curState);
 #endif
     void compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFlags* compileFlags);
@@ -10493,12 +10499,7 @@ public:
                              CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
 
     typeInfo verParseArgSigToTypeInfo(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
-    bool verIsByRefLike(const typeInfo& ti);
 
-    void DECLSPEC_NORETURN verRaiseVerifyException(INDEBUG(const char* reason) DEBUGARG(const char* file)
-                                                       DEBUGARG(unsigned line));
-    void verRaiseVerifyExceptionIfNeeded(INDEBUG(const char* reason) DEBUGARG(const char* file)
-                                             DEBUGARG(unsigned line));
     bool verCheckTailCallConstraint(OPCODE                  opcode,
                                     CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                     CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken);
@@ -11119,28 +11120,6 @@ public:
                     {
                         return result;
                     }
-                }
-                break;
-            }
-
-            case GT_ARR_OFFSET:
-            {
-                GenTreeArrOffs* const arrOffs = node->AsArrOffs();
-
-                result = WalkTree(&arrOffs->gtOffset, arrOffs);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
-                }
-                result = WalkTree(&arrOffs->gtIndex, arrOffs);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
-                }
-                result = WalkTree(&arrOffs->gtArrObj, arrOffs);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
                 }
                 break;
             }

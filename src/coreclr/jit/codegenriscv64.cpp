@@ -3351,11 +3351,11 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     if (varTypeIsFloating(op1Type))
     {
         assert(tree->OperIs(GT_LT, GT_LE, GT_EQ, GT_NE, GT_GT, GT_GE));
-        bool      IsUnordered = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
+        bool      isUnordered = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
         regNumber regOp1      = op1->GetRegNum();
         regNumber regOp2      = op2->GetRegNum();
 
-        if (IsUnordered)
+        if (isUnordered)
         {
             BasicBlock* skipLabel = nullptr;
             if (tree->OperIs(GT_LT))
@@ -4693,14 +4693,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genTableBasedSwitch(treeNode);
             break;
 
-        case GT_ARR_INDEX:
-            genCodeForArrIndex(treeNode->AsArrIndex());
-            break;
-
-        case GT_ARR_OFFSET:
-            genCodeForArrOffset(treeNode->AsArrOffs());
-            break;
-
         case GT_IL_OFFSET:
             // Do nothing; these nodes are simply markers for debug info.
             break;
@@ -5149,8 +5141,15 @@ void CodeGen::genPutArgReg(GenTreeOp* tree)
     GenTree* op1 = tree->gtOp1;
     genConsumeReg(op1);
 
+    if (varTypeIsFloating(tree) && emitter::isGeneralRegister(targetReg))
+    {
+        // Pass the float args by integer register
+        targetType = emitActualTypeSize(targetType) == EA_4BYTE ? TYP_INT : TYP_LONG;
+    }
+
     // If child node is not already in the register we need, move it
-    GetEmitter()->emitIns_Mov(ins_Copy(targetType), emitActualTypeSize(targetType), targetReg, op1->GetRegNum(), true);
+    GetEmitter()->emitIns_Mov(ins_Copy(op1->GetRegNum(), targetType), emitActualTypeSize(targetType), targetReg,
+                              op1->GetRegNum(), true);
     genProduceReg(tree);
 }
 
@@ -5430,42 +5429,6 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
     genConsumeRegs(tree->gtOp1);
 
     GetEmitter()->emitInsLoadStoreOp(ins_Load(tree->TypeGet()), emitActualTypeSize(tree), REG_R0, tree);
-}
-
-//------------------------------------------------------------------------
-// genCodeForArrIndex: Generates code to bounds check the index for one dimension of an array reference,
-//                     producing the effective index by subtracting the lower bound.
-//
-// Arguments:
-//    arrIndex - the node for which we're generating code
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
-{
-    NYI_RISCV64("genCodeForArrIndex-----unimplemented/unused on RISCV64 yet----");
-}
-
-//------------------------------------------------------------------------
-// genCodeForArrOffset: Generates code to compute the flattened array offset for
-//    one dimension of an array reference:
-//        result = (prevDimOffset * dimSize) + effectiveIndex
-//    where dimSize is obtained from the arrObj operand
-//
-// Arguments:
-//    arrOffset - the node for which we're generating code
-//
-// Return Value:
-//    None.
-//
-// Notes:
-//    dimSize and effectiveIndex are always non-negative, the former by design,
-//    and the latter because it has been normalized to be zero-based.
-
-void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
-{
-    NYI_RISCV64("genCodeForArrOffset-----unimplemented/unused on RISCV64 yet----");
 }
 
 //------------------------------------------------------------------------
@@ -5919,7 +5882,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 
     if (size >= 2 * REGSIZE_BYTES)
     {
-        regNumber tempReg2 = rsGetRsvdReg();
+        regNumber tempReg2 = REG_RA;
 
         for (unsigned regSize = 2 * REGSIZE_BYTES; size >= regSize;
              size -= regSize, srcOffset += regSize, dstOffset += regSize)
@@ -7864,7 +7827,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
         {
             assert(srcRegNum != varDsc->GetOtherArgReg());
 
-            regNumber tmp_reg = REG_NA;
+            regNumber tmpReg = REG_NA;
 
             bool FPbased;
             int  baseOffset = compiler->lvaFrameAddress(varNum, &FPbased);
@@ -7876,13 +7839,13 @@ void CodeGen::genFnPrologCalleeRegArgs()
             }
             else
             {
-                assert(tmp_reg == REG_NA);
+                assert(tmpReg == REG_NA);
 
-                tmp_reg = REG_RA;
-                GetEmitter()->emitIns_I_la(EA_PTRSIZE, tmp_reg, baseOffset);
-                // The last parameter `int offs` of the `emitIns_S_R` is negtive,
-                // it means the offset imm had been stored within the `REG_RA`.
-                GetEmitter()->emitIns_S_R_R(ins_Store(storeType, true), size, srcRegNum, tmp_reg, varNum, -8);
+                tmpReg = REG_RA;
+                // Prepare tmpReg to possible future use
+                GetEmitter()->emitIns_I_la(EA_PTRSIZE, tmpReg, baseOffset);
+                GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, tmpReg, tmpReg, FPbased ? REG_FPBASE : REG_SPBASE);
+                GetEmitter()->emitIns_S_R_R(ins_Store(storeType), size, srcRegNum, tmpReg, varNum, 0);
             }
 
             regArgMaskLive &= ~genRegMask(srcRegNum);
@@ -7919,27 +7882,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                 // if the struct passed by two register, then store the second register `varDsc->GetOtherArgReg()`.
                 if (srcRegNum == varDsc->GetOtherArgReg())
                 {
-                    if (emitter::isValidSimm12(baseOffset))
-                    {
-                        GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, varNum, slotSize);
-                    }
-                    else
-                    {
-                        if (tmp_reg == REG_NA)
-                        {
-                            GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_RA, baseOffset);
-                            // The last parameter `int offs` of the `emitIns_S_R` is negtive,
-                            // it means the offset imm had been stored within the `REG_RA`.
-                            GetEmitter()->emitIns_S_R_R(ins_Store(storeType, true), size, srcRegNum, REG_RA, varNum,
-                                                        -slotSize - 8);
-                        }
-                        else
-                        {
-                            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_RA, REG_RA, slotSize);
-                            GetEmitter()->emitIns_S_R_R(ins_Store(storeType, true), size, srcRegNum, REG_RA, varNum,
-                                                        -slotSize - 8);
-                        }
-                    }
+                    GetEmitter()->emitIns_S_R_R(ins_Store(storeType), size, srcRegNum, tmpReg, varNum, slotSize);
                     regArgMaskLive &= ~genRegMask(srcRegNum); // maybe do this later is better!
                 }
                 else if (varDsc->lvIsSplit)
@@ -7965,25 +7908,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                         GetEmitter()->emitIns_R_R_I(INS_ld, size, REG_SCRATCH, REG_SCRATCH, 0);
                     }
 
-                    if (emitter::isValidSimm12(baseOffset))
-                    {
-                        GetEmitter()->emitIns_S_R(INS_sd, size, REG_SCRATCH, varNum, TARGET_POINTER_SIZE);
-                    }
-                    else
-                    {
-                        if (tmp_reg == REG_NA)
-                        {
-                            GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_RA, baseOffset);
-                            // The last parameter `int offs` of the `emitIns_S_R` is negtive,
-                            // it means the offset imm had been stored within the `REG_RA`.
-                            GetEmitter()->emitIns_S_R_R(INS_sd, size, REG_SCRATCH, REG_RA, varNum, -8);
-                        }
-                        else
-                        {
-                            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_RA, REG_RA, TARGET_POINTER_SIZE);
-                            GetEmitter()->emitIns_S_R_R(INS_sd, size, REG_SCRATCH, REG_RA, varNum, -slotSize - 8);
-                        }
-                    }
+                    GetEmitter()->emitIns_S_R_R(ins_Store(storeType), size, REG_SCRATCH, tmpReg, varNum, slotSize);
                 }
             }
 

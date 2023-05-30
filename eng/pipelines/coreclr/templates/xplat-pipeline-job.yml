@@ -76,18 +76,6 @@ jobs:
     - name: crossDacArtifactPath
       value: $(Build.SourcesDirectory)/artifacts/$(buildCrossDacArtifactName)
 
-    - name: buildMuslDacRootFolderPath
-      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/alpine.$(archType).$(buildConfigUpper)'
-
-    - name: buildMuslDacStagingPath
-      value: '$(crossDacArtifactPath)/Linux_musl.$(archType).$(buildConfigUpper)'
-
-    - name: buildLinuxDacRootFolderPath
-      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/Linux.$(archType).$(buildConfigUpper)'
-
-    - name: buildLinuxDacStagingPath
-      value: '$(crossDacArtifactPath)/Linux.$(archType).$(buildConfigUpper)'
-
     # We need this because both mono and coreclr build currently depends on CoreClr
     - name: coreClrProductArtifactName
       value: 'CoreCLRProduct_${{ parameters.pgoType }}_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'

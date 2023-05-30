@@ -18,6 +18,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace BenchmarksGame
 {
@@ -25,9 +26,16 @@ namespace BenchmarksGame
     {
         public const int MinDepth = 4;
 
-        public static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
-            var n = args.Length == 0 ? 0 : int.Parse(args[0]);
+            return Test(null);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static int Test(int? arg)
+        {
+            var n = arg ?? 0;
 
             int check = Bench(n, true);
             int expected = 4398;

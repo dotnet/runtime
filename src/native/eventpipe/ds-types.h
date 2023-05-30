@@ -23,6 +23,7 @@ typedef struct _DiagnosticsGenerateCoreDumpCommandPayload DiagnosticsGenerateCor
 typedef struct _DiagnosticsGenerateCoreDumpResponsePayload DiagnosticsGenerateCoreDumpResponsePayload;
 typedef struct _DiagnosticsSetEnvironmentVariablePayload DiagnosticsSetEnvironmentVariablePayload;
 typedef struct _DiagnosticsGetEnvironmentVariablePayload DiagnosticsGetEnvironmentVariablePayload;
+typedef struct _DiagnosticsEnablePerfmapPayload DiagnosticsEnablePerfmapPayload;
 typedef struct _DiagnosticsIpcHeader DiagnosticsIpcHeader;
 typedef struct _DiagnosticsIpcMessage DiagnosticsIpcMessage;
 typedef struct _DiagnosticsListenPort DiagnosticsListenPort;
@@ -71,7 +72,9 @@ typedef enum {
 	DS_PROCESS_COMMANDID_RESUME_RUNTIME = 0x01,
 	DS_PROCESS_COMMANDID_GET_PROCESS_ENV = 0x02,
 	DS_PROCESS_COMMANDID_SET_ENV_VAR = 0x03,
-	DS_PROCESS_COMMANDID_GET_PROCESS_INFO_2 = 0x04
+	DS_PROCESS_COMMANDID_GET_PROCESS_INFO_2 = 0x04,
+	DS_PROCESS_COMMANDID_ENABLE_PERFMAP = 0x05,
+	DS_PROCESS_COMMANDID_DISABLE_PERFMAP = 0x06
 	// future
 } DiagnosticsProcessCommandId;
 

@@ -29,13 +29,13 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			ISymbol owningSymbol)
 		{
 			CalledMethod = calledMethod;
-			Instance = instance.Clone ();
+			Instance = instance.DeepCopy ();
 			if (arguments.IsEmpty) {
 				Arguments = ImmutableArray<MultiValue>.Empty;
 			} else {
 				var builder = ImmutableArray.CreateBuilder<MultiValue> ();
 				foreach (var argument in arguments) {
-					builder.Add (argument.Clone ());
+					builder.Add (argument.DeepCopy ());
 				}
 				Arguments = builder.ToImmutableArray ();
 			}

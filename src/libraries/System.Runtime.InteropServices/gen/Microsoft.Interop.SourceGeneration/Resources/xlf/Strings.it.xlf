@@ -98,8 +98,8 @@
         <note />
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
-        <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
-        <target state="translated">Il marshalling di stringa o carattere senza informazioni di marshalling esplicite non è supportato. Specificare 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' o 'MarshalAsAttribute'.</target>
+        <source>Marshalling string or char without explicit marshalling information is not supported. Specify '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="new">Marshalling string or char without explicit marshalling information is not supported. Specify '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">

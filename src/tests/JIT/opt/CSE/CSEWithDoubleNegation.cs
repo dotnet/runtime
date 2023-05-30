@@ -3,14 +3,16 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace CSEWithDoubleNegation
 {
-    class DoNotMorphAwayCSEThatRepresentsDoubleNegation
+    public class DoNotMorphAwayCSEThatRepresentsDoubleNegation
     {
         private static int _static = 0;
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             if (DoubleNeg() != 22)
             {

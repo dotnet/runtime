@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_DblVar
 {
     const int Pass = 100;
@@ -17,7 +18,8 @@ public class BringUpTest_DblVar
        return z; 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         double y = DblVar(1d, 1d);
         Console.WriteLine(y);

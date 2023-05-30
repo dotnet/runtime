@@ -8,7 +8,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly ldobj_I { }
+.assembly ASSEMBLY_NAME { }
 .assembly extern xunit.core {}
 .namespace JitTest_ldobj_I_ldobj_il
 {

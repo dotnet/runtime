@@ -11,7 +11,6 @@ const DISABLE_LEGACY_JS_INTEROP = process.env.DISABLE_LEGACY_JS_INTEROP === "1";
 function setup(disableLegacyJsInterop) {
     const pthreadReplacements = {};
     const dotnet_replacements = {
-        scriptUrl: import.meta.url,
         fetch: globalThis.fetch,
         require,
         updateMemoryViews,
@@ -27,30 +26,21 @@ function setup(disableLegacyJsInterop) {
     #else
     const ENVIRONMENT_IS_PTHREAD = false;
     #endif
-    if (ENVIRONMENT_IS_NODE) {
-        dotnet_replacements.requirePromise = import(/* webpackIgnore: true */'module').then(mod => mod.createRequire(import.meta.url));
-        dotnet_replacements.requirePromise.then(someRequire => {
-            require = someRequire;
-        });
-    }
 
-    __dotnet_runtime.passEmscriptenInternals({
-        isWorker: ENVIRONMENT_IS_WORKER,
-        isShell: ENVIRONMENT_IS_SHELL,
+    Module.__dotnet_runtime.passEmscriptenInternals({
         isPThread: ENVIRONMENT_IS_PTHREAD,
         disableLegacyJsInterop,
         quit_, ExitStatus
     });
+    Module.__dotnet_runtime.initializeReplacements(dotnet_replacements);
 
     #if USE_PTHREADS
     if (ENVIRONMENT_IS_PTHREAD) {
         Module.config = {};
-        __dotnet_runtime.initializeReplacements(dotnet_replacements);
-        __dotnet_runtime.configureWorkerStartup(Module);
+        Module.__dotnet_runtime.configureWorkerStartup(Module);
     } else {
         #endif
-        __dotnet_runtime.initializeReplacements(dotnet_replacements);
-        __dotnet_runtime.configureEmscriptenStartup(Module);
+        Module.__dotnet_runtime.configureEmscriptenStartup(Module);
         #if USE_PTHREADS
     }
     #endif
@@ -58,6 +48,7 @@ function setup(disableLegacyJsInterop) {
     updateMemoryViews = dotnet_replacements.updateMemoryViews;
     noExitRuntime = dotnet_replacements.noExitRuntime;
     fetch = dotnet_replacements.fetch;
+    require = dotnet_replacements.require;
     _scriptDir = __dirname = scriptDirectory = dotnet_replacements.scriptDirectory;
     #if USE_PTHREADS
     PThread.loadWasmModuleToWorker = pthreadReplacements.loadWasmModuleToWorker;
@@ -79,7 +70,7 @@ const DotnetSupportLib = {
 // --- keep in sync with exports.ts ---
 let linked_functions = [
     // mini-wasm.c
-    "mono_set_timeout",
+    "mono_wasm_schedule_timer",
 
     // mini-wasm-debugger.c
     "mono_wasm_asm_loaded",
@@ -120,6 +111,11 @@ let linked_functions = [
     "mono_wasm_compare_string",
     "mono_wasm_starts_with",
     "mono_wasm_ends_with",
+    "mono_wasm_index_of",
+    "mono_wasm_is_normalized",
+    "mono_wasm_normalize_string",
+    "mono_wasm_to_Unicode",
+    "mono_wasm_to_ASCII",
 
     "icudt68_dat",
 ];

@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.CSharp;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -195,6 +194,42 @@ namespace Microsoft.Interop
                     FunctionPointerCallingConvention(Token(SyntaxKind.UnmanagedKeyword), callConv.IsEmpty ? null : FunctionPointerUnmanagedCallingConventionList(SeparatedList(callConv))),
                     FunctionPointerParameterList(SeparatedList(functionPointerParameters)));
             return functionPointerType;
+        }
+
+        public static ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> GenerateCallConvSyntaxFromAttributes(AttributeData? suppressGCTransitionAttribute, AttributeData? unmanagedCallConvAttribute, ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> defaultCallingConventions)
+        {
+            const string CallConvsField = "CallConvs";
+            ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax>.Builder callingConventions = ImmutableArray.CreateBuilder<FunctionPointerUnmanagedCallingConventionSyntax>();
+
+            // We'll always support adding SuppressGCTransition to other calling convention options.
+            if (suppressGCTransitionAttribute is not null)
+            {
+                callingConventions.Add(FunctionPointerUnmanagedCallingConvention(Identifier("SuppressGCTransition")));
+            }
+
+            // UnmanagedCallConvAttribute overrides the default calling convention rules.
+            if (unmanagedCallConvAttribute is not null)
+            {
+                foreach (KeyValuePair<string, TypedConstant> arg in unmanagedCallConvAttribute.NamedArguments)
+                {
+                    if (arg.Key == CallConvsField)
+                    {
+                        foreach (TypedConstant callConv in arg.Value.Values)
+                        {
+                            ITypeSymbol callConvSymbol = (ITypeSymbol)callConv.Value!;
+                            if (callConvSymbol.Name.StartsWith("CallConv", StringComparison.Ordinal))
+                            {
+                                callingConventions.Add(FunctionPointerUnmanagedCallingConvention(Identifier(callConvSymbol.Name.Substring("CallConv".Length))));
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                callingConventions.AddRange(defaultCallingConventions);
+            }
+            return callingConventions.ToImmutable();
         }
     }
 }

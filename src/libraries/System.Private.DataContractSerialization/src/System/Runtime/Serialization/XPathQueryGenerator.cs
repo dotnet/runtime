@@ -144,7 +144,7 @@ namespace System.Runtime.Serialization
             public string SetNamespace(string ns)
             {
                 string? prefix = _namespaces.LookupPrefix(ns);
-                if (prefix == null || prefix.Length == 0)
+                if (string.IsNullOrEmpty(prefix))
                 {
                     prefix = "xg" + (_nextPrefix++).ToString(NumberFormatInfo.InvariantInfo);
                     Namespaces.AddNamespace(prefix, ns);
