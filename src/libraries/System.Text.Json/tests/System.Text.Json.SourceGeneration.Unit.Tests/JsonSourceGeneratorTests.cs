@@ -704,39 +704,39 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             byte[] referencedImage = CompilationHelper.CreateAssemblyImage(referencedCompilation);
 
             string source = """
-            using ReferencedAssembly;
-            using System;
-            using System.Text.Json;
-            using System.Text.Json.Serialization;
-            namespace Test
-            {
-                [JsonSourceGenerationOptions]
-                [JsonSerializable(typeof(Sample))]
-                public partial class SourceGenerationContext : JsonSerializerContext
+                using ReferencedAssembly;
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+                namespace Test
                 {
-                }
-                public class Sample
-                {
-                    [JsonConverter(typeof(DateTimeOffsetToTimestampJsonConverter))]
-                    public DateTimeOffset Start { get; set; }
-                    [JsonConverter(typeof(DateTimeOffsetToTimestampJsonConverter))]
-                    public DateTimeOffset? End { get; set; } // Without this property, this is fine
-                }
-                public class DateTimeOffsetToTimestampJsonConverter : JsonConverter<DateTimeOffset>
-                {
-                    internal const long TicksPerMicroseconds = 10;
-                    public override DateTimeOffset Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                    [JsonSourceGenerationOptions]
+                    [JsonSerializable(typeof(Sample))]
+                    public partial class SourceGenerationContext : JsonSerializerContext
                     {
-                        var value = reader.GetInt64();
-                        return new DateTimeOffset(value * TicksPerMicroseconds, TimeSpan.Zero);
                     }
-                    public override void Write(Utf8JsonWriter writer, DateTimeOffset value, JsonSerializerOptions options)
+                    public class Sample
                     {
-                        writer.WriteNumberValue(value.Ticks / TicksPerMicroseconds);
+                        [JsonConverter(typeof(DateTimeOffsetToTimestampJsonConverter))]
+                        public DateTimeOffset Start { get; set; }
+                        [JsonConverter(typeof(DateTimeOffsetToTimestampJsonConverter))]
+                        public DateTimeOffset? End { get; set; } // Without this property, this is fine
+                    }
+                    public class DateTimeOffsetToTimestampJsonConverter : JsonConverter<DateTimeOffset>
+                    {
+                        internal const long TicksPerMicroseconds = 10;
+                        public override DateTimeOffset Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                        {
+                            var value = reader.GetInt64();
+                            return new DateTimeOffset(value * TicksPerMicroseconds, TimeSpan.Zero);
+                        }
+                        public override void Write(Utf8JsonWriter writer, DateTimeOffset value, JsonSerializerOptions options)
+                        {
+                            writer.WriteNumberValue(value.Ticks / TicksPerMicroseconds);
+                        }
                     }
                 }
-            }
-            """;
+                """;
 
             MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
 
