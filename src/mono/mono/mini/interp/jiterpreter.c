@@ -247,6 +247,20 @@ mono_jiterp_has_parent_fast (
 }
 
 EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_implements_interface (
+	MonoObject *obj, MonoVTable *vtable, MonoClass *klass
+) {
+	// FIXME: Perform some of this work at JIT time
+	// If null check fusion is active, vtable->max_interface_id will be 0
+	if (MONO_VTABLE_IMPLEMENTS_INTERFACE (vtable, m_class_get_interface_id (klass)))
+		return 1;
+	else if (m_class_is_array_special_interface (klass))
+		return mono_jiterp_isinst (obj, klass);
+	else // HACK: Support null check fusion by returning 1 if the obj ptr was null
+		return (obj == 0);
+}
+
+EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_cast_v2 (
 	MonoObject **destination, MonoObject *obj,
 	MonoClass *klass, MintOpcode opcode
@@ -280,53 +294,9 @@ mono_jiterp_cast_v2 (
 			}
 			return 1;
 		}
-		case MINT_CASTCLASS_INTERFACE:
-		case MINT_ISINST_INTERFACE: {
-			gboolean isinst;
-			// FIXME: Perform some of this work at JIT time
-			if (MONO_VTABLE_IMPLEMENTS_INTERFACE (obj->vtable, m_class_get_interface_id (klass))) {
-				isinst = TRUE;
-			} else if (m_class_is_array_special_interface (klass)) {
-				/* slow path */
-				// FIXME push/pop LMF
-				isinst = mono_jiterp_isinst (obj, klass); // FIXME: do not swallow the error
-			} else {
-				isinst = FALSE;
-			}
-
-			if (!isinst) {
-				if (opcode == MINT_ISINST_INTERFACE)
-					*destination = NULL;
-				else {
-					return 0; // bailout
-				}
-			} else {
-				*destination = obj;
-			}
-
-			return 1;
-		}
-		case MINT_CASTCLASS_COMMON:
-		case MINT_ISINST_COMMON: {
-			if (obj) {
-				gboolean isinst = mono_class_has_parent_fast (obj->vtable->klass, klass);
-
-				if (!isinst) {
-					if (opcode == MINT_ISINST_COMMON)
-						*destination = NULL;
-					else {
-						return 0; // bailout
-					}
-				} else {
-					*destination = obj;
-				}
-			} else {
-				*destination = NULL;
-			}
-			return 1;
-		}
 	}
 
+	g_assert_not_reached();
 	return 0;
 }
 

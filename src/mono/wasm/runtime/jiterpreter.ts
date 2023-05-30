@@ -265,6 +265,7 @@ function getTraceImports() {
         importDef("gettype", getRawCwrap("mono_jiterp_gettype_ref")),
         importDef("castv2", getRawCwrap("mono_jiterp_cast_v2")),
         importDef("hasparent", getRawCwrap("mono_jiterp_has_parent_fast")),
+        importDef("imp_iface", getRawCwrap("mono_jiterp_implements_interface")),
         // importDef("isinst", getRawCwrap("mono_jiterp_isinst")),
         importDef("try_unbox", getRawCwrap("mono_jiterp_try_unbox_ref")),
         importDef("box", getRawCwrap("mono_jiterp_box_ref")),
@@ -516,6 +517,15 @@ function initialize_builder(builder: WasmBuilder) {
         {
             "klass": WasmValtype.i32,
             "parent": WasmValtype.i32,
+        },
+        WasmValtype.i32, true
+    );
+    builder.defineType(
+        "imp_iface",
+        {
+            "obj": WasmValtype.i32,
+            "vtable": WasmValtype.i32,
+            "klass": WasmValtype.i32,
         },
         WasmValtype.i32, true
     );
