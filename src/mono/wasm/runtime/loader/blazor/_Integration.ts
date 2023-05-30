@@ -75,6 +75,14 @@ export function setupModuleForBlazor(module: DotnetModuleInternal) {
     module.disableDotnet6Compatibility = false;
 }
 
+function appendUniqueQuery(attemptUrl: string): string {
+    if (loaderHelpers.assetUniqueQuery) {
+        attemptUrl = attemptUrl + loaderHelpers.assetUniqueQuery;
+    }
+
+    return attemptUrl;
+}
+
 export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, applicationEnvironment: string) {
     const resources = resourceLoader.bootConfig.resources;
 
@@ -109,13 +117,13 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     for (const name in resources.runtimeAssets) {
         const asset = resources.runtimeAssets[name] as AssetEntry;
         asset.name = name;
-        asset.resolvedUrl = loaderHelpers.locateFile(name);
+        asset.resolvedUrl = appendUniqueQuery(loaderHelpers.locateFile(name));
         assets.push(asset);
     }
     for (const name in resources.assembly) {
         const asset: AssetEntry = {
             name,
-            resolvedUrl: loaderHelpers.locateFile(name),
+            resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name)),
             hash: resources.assembly[name],
             behavior: "assembly",
         };
@@ -125,7 +133,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
         for (const name in resources.pdb) {
             const asset: AssetEntry = {
                 name,
-                resolvedUrl: loaderHelpers.locateFile(name),
+                resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name)),
                 hash: resources.pdb[name],
                 behavior: "pdb",
             };
@@ -151,7 +159,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
             continue;
         }
 
-        const resolvedUrl = loaderHelpers.locateFile(name);
+        const resolvedUrl = appendUniqueQuery(loaderHelpers.locateFile(name));
         const asset: AssetEntry = {
             name,
             resolvedUrl,
@@ -166,7 +174,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
         if (config === "appsettings.json" || config === `appsettings.${applicationEnvironment}.json`) {
             assets.push({
                 name: config,
-                resolvedUrl: (document ? document.baseURI : "/") + config,
+                resolvedUrl: appendUniqueQuery((document ? document.baseURI : "/") + config),
                 behavior: "vfs",
             });
         }
@@ -176,6 +184,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
         for (const name in resources.vfs[virtualPath]) {
             const asset: AssetEntry = {
                 name,
+                resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name)),
                 hash: resources.vfs[virtualPath][name],
                 behavior: "vfs",
             };

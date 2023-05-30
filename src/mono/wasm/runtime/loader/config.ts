@@ -94,6 +94,7 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
             const loadedAnyConfig: any = (await configResponse.json()) || {};
             if (loadedAnyConfig.resources) {
                 // If we found boot config schema
+                normalizeConfig();
                 await initializeBootConfig(BootConfigResult.fromFetchResponse(configResponse, loadedAnyConfig as BootJsonData, loaderHelpers.config.applicationEnvironment), module, loaderHelpers.config.startupOptions);
             } else {
                 // Otherwise we found mono config schema
