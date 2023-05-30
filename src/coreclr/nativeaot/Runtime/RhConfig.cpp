@@ -136,7 +136,7 @@ bool RhConfig::ReadConfigValue(_In_z_ const char *name, uint64_t* pValue, bool d
 
     // Check the embedded configuration
     const char *embeddedValue = nullptr;
-    if (GetEmbeddedVariable(&g_embeddedSettings, &g_compilerEmbeddedSettingsBlob, name, &embeddedValue))
+    if (GetEmbeddedVariable(&g_embeddedSettings, &g_compilerEmbeddedSettingsBlob, name, true, &embeddedValue))
     {
         *pValue = strtoull(embeddedValue, NULL, decimal ? 10 : 16);
         return true;
@@ -148,7 +148,7 @@ bool RhConfig::ReadConfigValue(_In_z_ const char *name, uint64_t* pValue, bool d
 bool RhConfig::ReadKnobUInt64Value(_In_z_ const char *name, uint64_t* pValue)
 {
     const char *embeddedValue = nullptr;
-    if (GetEmbeddedVariable(&g_embeddedKnobs, &g_compilerEmbeddedKnobsBlob, name, &embeddedValue))
+    if (GetEmbeddedVariable(&g_embeddedKnobs, &g_compilerEmbeddedKnobsBlob, name, false, &embeddedValue))
     {
         *pValue = strtoull(embeddedValue, NULL, 10);
         return true;
@@ -160,7 +160,7 @@ bool RhConfig::ReadKnobUInt64Value(_In_z_ const char *name, uint64_t* pValue)
 bool RhConfig::ReadKnobBooleanValue(_In_z_ const char *name, bool* pValue)
 {
     const char *embeddedValue = nullptr;
-    if (GetEmbeddedVariable(&g_embeddedKnobs, &g_compilerEmbeddedKnobsBlob, name, &embeddedValue))
+    if (GetEmbeddedVariable(&g_embeddedKnobs, &g_compilerEmbeddedKnobsBlob, name, false, &embeddedValue))
     {
         *pValue = strcmp(embeddedValue, "true") == 0;
         return true;
@@ -169,7 +169,7 @@ bool RhConfig::ReadKnobBooleanValue(_In_z_ const char *name, bool* pValue)
     return false;
 }
 
-bool RhConfig::GetEmbeddedVariable(void *volatile * embeddedSettings, void* compilerEmbeddedSettingsBlob, _In_z_ const char* configName, _Out_ const char** configValue)
+bool RhConfig::GetEmbeddedVariable(void *volatile * embeddedSettings, void* compilerEmbeddedSettingsBlob, _In_z_ const char* configName, bool caseSensitive, _Out_ const char** configValue)
 {
     // Read the config if we haven't yet
     if (*embeddedSettings == NULL)
@@ -185,10 +185,11 @@ bool RhConfig::GetEmbeddedVariable(void *volatile * embeddedSettings, void* comp
 
     const ConfigPair* configPairs = (const ConfigPair*)*embeddedSettings;
 
-    // Find the first name which matches (case sensitive to be compat with CoreCLR)
+    // Find the first name which matches
     for (uint32_t iSettings = 0; iSettings < ((CompilerEmbeddedSettingsBlob*)compilerEmbeddedSettingsBlob)->Size; iSettings++)
     {
-        if (strcmp(configName, configPairs[iSettings].Key) == 0)
+        if ((caseSensitive && strcmp(configName, configPairs[iSettings].Key) == 0)
+            || (!caseSensitive && _stricmp(configName, configPairs[iSettings].Key) == 0))
         {
             *configValue = configPairs[iSettings].Value;
             return true;

@@ -93,7 +93,7 @@ namespace ILCompiler
         public Option<string[]> RuntimeOptions { get; } =
             new(new[] { "--runtimeopt" }, Array.Empty<string>, "Runtime options to set");
         public Option<string[]> RuntimeKnobs { get; } =
-            new(new[] { "--runtimeknobs" }, Array.Empty<string>, "Runtime knobs to set");
+            new(new[] { "--runtimeknob" }, Array.Empty<string>, "Runtime knobs to set");
         public Option<int> Parallelism { get; } =
             new(new[] { "--parallelism" }, result =>
             {

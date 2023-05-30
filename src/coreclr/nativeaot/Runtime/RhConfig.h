@@ -108,7 +108,7 @@ private:
 
     // Gets a pointer to the embedded configuration value. Memory is held by the callee.
     // Returns true if the variable was found, false otherwise
-    bool GetEmbeddedVariable(void *volatile * embeddedSettings, void* compilerEmbeddedSettingsBlob, _In_z_ const char* configName, _Out_ const char** configValue);
+    bool GetEmbeddedVariable(void *volatile * embeddedSettings, void* compilerEmbeddedSettingsBlob, _In_z_ const char* configName, bool caseSensitive, _Out_ const char** configValue);
 
     uint32_t  m_uiConfigValuesRead;
     uint64_t  m_uiConfigValues[RCV_Count];
