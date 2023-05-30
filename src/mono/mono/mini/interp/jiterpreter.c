@@ -239,6 +239,7 @@ mono_jiterp_has_parent_fast (
 ) {
 	// HACK: Support null check fusion: a null obj will produce a null obj->vtable->klass,
 	//  so we can return 1 to make the cast "succeed" and store null to the destination
+	// Based on instrumentation, null pointers flowing into this location are not very common
 	if (!klass)
 		return 1;
 	else

@@ -865,25 +865,32 @@ export function generateWasmBody(
 
                 builder.block(); // depth x -> 0 (opcode block)
 
-                builder.block(); // depth 0 -> 1 (null check block)
-                // src
-                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
-                builder.local("temp_ptr", WasmOpcode.tee_local);
-
-                // Null ptr check: If the ptr is non-null, skip this block
-                builder.appendU8(WasmOpcode.br_if);
-                builder.appendULeb(0);
-                builder.local("pLocals");
-                builder.i32_const(0);
-                append_stloc_tail(builder, destOffset, WasmOpcode.i32_store);
-                // at the end of this block (depth 0) we skip to the end of the opcode block (depth 1)
-                //  because we successfully zeroed the destination register
-                builder.appendU8(WasmOpcode.br);
-                builder.appendULeb(1);
-                builder.endBlock(); // depth 1 -> 0 (end null check block)
+                if (builder.options.zeroPageOptimization && isZeroPageReserved()) {
+                    // Null check fusion is possible, so (obj->vtable)->klass will be 0 for !obj
+                    append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                    builder.local("temp_ptr", WasmOpcode.tee_local);
+                    counters.nullChecksFused++;
+                } else {
+                    builder.block(); // depth 0 -> 1 (null check block)
+                    // src
+                    append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                    builder.local("temp_ptr", WasmOpcode.tee_local);
+                    // Null ptr check: If the ptr is non-null, skip this block
+                    builder.appendU8(WasmOpcode.br_if);
+                    builder.appendULeb(0);
+                    builder.local("pLocals");
+                    builder.i32_const(0);
+                    append_stloc_tail(builder, destOffset, WasmOpcode.i32_store);
+                    // at the end of this block (depth 0) we skip to the end of the opcode block (depth 1)
+                    //  because we successfully zeroed the destination register
+                    builder.appendU8(WasmOpcode.br);
+                    builder.appendULeb(1);
+                    builder.endBlock(); // depth 1 -> 0 (end null check block)
+                    // Put ptr back on the stack
+                    builder.local("temp_ptr");
+                }
 
                 // If we're here the null check passed and we now need to type-check
-                builder.local("temp_ptr");
                 builder.appendU8(WasmOpcode.i32_load); // obj->vtable
                 builder.appendMemarg(getMemberOffset(JiterpMember.VTable), 0); // fixme: alignment
                 builder.appendU8(WasmOpcode.i32_load); // (obj->vtable)->klass
