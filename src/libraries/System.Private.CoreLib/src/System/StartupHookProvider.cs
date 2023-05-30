@@ -33,6 +33,10 @@ namespace System
             if (!IsSupported)
                 return;
 
+            string? startupHooksVariable = AppContext.GetData("STARTUP_HOOKS") as string;
+            if (null == startupHooksVariable && string.IsNullOrEmpty(diagnosticStartupHooks))
+                return;
+
             List<string> startupHookParts = new();
 
             if (!string.IsNullOrEmpty(diagnosticStartupHooks))
@@ -40,15 +44,9 @@ namespace System
                 startupHookParts.AddRange(diagnosticStartupHooks.Split(Path.PathSeparator));
             }
 
-            string? startupHooksVariable = AppContext.GetData("STARTUP_HOOKS") as string;
             if (null != startupHooksVariable)
             {
                 startupHookParts.AddRange(startupHooksVariable.Split(Path.PathSeparator));
-            }
-
-            if (startupHookParts.Count == 0)
-            {
-                return;
             }
 
             ReadOnlySpan<char> disallowedSimpleAssemblyNameChars = stackalloc char[4]
