@@ -1167,6 +1167,26 @@ namespace
         _ASSERTE(cxt.Kind == UnsafeAccessorKind::Field
                 || cxt.Kind == UnsafeAccessorKind::StaticField);
 
+        TypeHandle targetType = cxt.TargetType.IsByRef()
+            ? cxt.TargetType.GetTypeParam()
+            : cxt.TargetType;
+        _ASSERTE(!fieldType.IsByRef());
+
+        // [TODO] Do we care about EnC scenarios?
+        ApproxFieldDescIterator fdIterator(
+            targetType.GetMethodTable(),
+            (cxt.IsTargetStatic ? ApproxFieldDescIterator::STATIC_FIELDS : ApproxFieldDescIterator::INSTANCE_FIELDS));
+        PTR_FieldDesc pField;
+        while ((pField = fdIterator.Next()) != NULL)
+        {
+            // Validate the name and target type match.
+            if (strcmp(fieldName, pField->GetName()) == 0
+                && fieldType == pField->LookupFieldTypeHandle())
+            {
+                cxt.TargetField = pField;
+                return true;
+            }
+        }
         return false;
     }
 
