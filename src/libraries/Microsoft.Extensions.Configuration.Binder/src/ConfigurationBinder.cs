@@ -211,6 +211,37 @@ namespace Microsoft.Extensions.Configuration
             return defaultValue;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
+        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
+        private static void BindByDefault(
+            Type type,
+            BindingPoint bindingPoint,
+            IConfiguration config,
+            BinderOptions options)
+        {
+            Debug.Assert(bindingPoint.Value is not null);
+
+            Type? dictionaryInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
+
+            if (dictionaryInterface != null)
+            {
+                BindDictionary(bindingPoint.Value, dictionaryInterface, config, options);
+            }
+            else
+            {
+                Type? collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), type);
+                if (collectionInterface != null)
+                {
+                    BindCollection(bindingPoint.Value, collectionInterface, config, options);
+                }
+                else
+                {
+                    BindProperties(bindingPoint.Value, config, options);
+                }
+            }
+        }
+
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static void BindProperties(object instance, IConfiguration configuration, BinderOptions options)
@@ -300,28 +331,7 @@ namespace Microsoft.Extensions.Configuration
                                         if ((bindingPoint.Value is not null)
                                             || TryCreateValueByDefault(type, bindingPoint, config, options))
                                         {
-                                            Debug.Assert(bindingPoint.Value is not null);
-
-                                            // At this point we know that we have a non-null bindingPoint.Value, we just have to populate the items
-                                            // using the IDictionary<> or ICollection<> interfaces, or properties using reflection.
-                                            Type? dictionaryInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
-
-                                            if (dictionaryInterface != null)
-                                            {
-                                                BindDictionary(bindingPoint.Value, dictionaryInterface, config, options);
-                                            }
-                                            else
-                                            {
-                                                Type? collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), type);
-                                                if (collectionInterface != null)
-                                                {
-                                                    BindCollection(bindingPoint.Value, collectionInterface, config, options);
-                                                }
-                                                else
-                                                {
-                                                    BindProperties(bindingPoint.Value, config, options);
-                                                }
-                                            }
+                                            BindByDefault(type, bindingPoint, config, options);
                                         }
                                     }
                                 }
