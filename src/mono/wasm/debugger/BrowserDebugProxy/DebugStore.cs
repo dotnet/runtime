@@ -1225,8 +1225,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal sealed partial class SourceFile
     {
-        [GeneratedRegex(@"([:/])")]
-        private static partial Regex RegexForEscapeFileName();
+#pragma warning disable SYSLIB1045
+        private static readonly Regex regexForEscapeFileName = new Regex(@"([:/])");
+#pragma warning restore SYSLIB1045
 
         private readonly Dictionary<int, MethodInfo> methods;
         private readonly AssemblyInfo assembly;
@@ -1328,7 +1329,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static string EscapePathForUri(string path)
         {
             var builder = new StringBuilder();
-            foreach (var part in RegexForEscapeFileName().Split(path))
+            foreach (var part in regexForEscapeFileName.Split(path))
             {
                 if (part == ":" || part == "/")
                     builder.Append(part);
