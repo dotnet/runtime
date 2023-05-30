@@ -28,6 +28,7 @@
 #     c    all caller-saved registers
 
 nop: len:4
+relaxed_nop: len:4
 not_reached: len:0
 not_null: src1:i len:0
 dummy_use: src1:i len:0
@@ -132,6 +133,7 @@ r4_conv_to_i4: dest:i src1:f len:4
 float_conv_to_i4: dest:i src1:f len:4
 float_conv_to_r4: dest:f src1:f len:4
 float_ceq: dest:i src1:f src2:f len:4
+float_cle: dest:i src1:f src2:f len:4
 float_clt: dest:i src1:f src2:f len:4
 float_clt_un: dest:i src1:f src2:f len:4
 r4_clt: dest:i src1:f src2:f len:4
@@ -164,6 +166,7 @@ long_and_imm: dest:i src1:i len:4
 long_or: dest:i src1:i src2:i len:4
 long_xor: dest:i src1:i src2:i len:4
 long_or_imm: dest:i src1:i len:4
+long_shl: dest:i src1:i src2:i len:4
 long_shl_imm: dest:i src1:i len:4
 long_shr_un: dest:i src1:i src2:i len:4
 long_shr_imm: dest:i src1:i len:4

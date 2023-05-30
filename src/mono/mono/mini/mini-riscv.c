@@ -241,7 +241,7 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 			NOT_IMPLEMENTED;
 		for (int i = 0; i < sig->param_count; ++i)
 			if (!mono_is_regsize_var (sig->params [i]))
-				NOT_IMPLEMENTED;
+				return NULL;
 
 		code = cache [sig->param_count];
 		if (code)
@@ -1671,6 +1671,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_ICONV_TO_U2:
 	case OP_RCONV_TO_I4:
 	case OP_FCONV_TO_I4:
+	case OP_ICONV_TO_R_UN:
 	case OP_ICONV_TO_R4:
 	case OP_RCONV_TO_R8:
 #ifdef TARGET_RISCV64
@@ -1684,6 +1685,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_LCONV_TO_U:
 	case OP_LCONV_TO_I:
 	case OP_LCONV_TO_U1:
+	case OP_LCONV_TO_I2:
 	case OP_LCONV_TO_U2:
 	case OP_LCONV_TO_I4:
 	case OP_LCONV_TO_U4:
@@ -1705,6 +1707,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_LOR_IMM:
 	case OP_LXOR:
 	case OP_ISHL:
+	case OP_LSHL:
 	case OP_ISHL_IMM:
 	case OP_LSHL_IMM:
 	case OP_ISHR:
@@ -2025,6 +2028,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IOR:
 		case OP_LOR:
 		case OP_ISHL:
+		case OP_LSHL:
 		case OP_SHL_IMM:
 		case OP_ISHL_IMM:
 		case OP_LSHL_IMM:
@@ -2044,6 +2048,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_NOT_NULL:
 		case OP_DUMMY_USE:
 		case OP_NOP:
+		case OP_RELAXED_NOP:
 
 		/* skip custom OP code*/
 		case OP_RISCV_BEQ:
@@ -2150,8 +2155,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->next->sreg1 = ins->dreg;
 					ins->next->sreg2 = RISCV_ZERO;
 				} else if (ins->next->opcode == OP_FBGT || ins->next->opcode == OP_FBGT_UN) {
-					// fcmp rd, rs1, rs2; fbgt rd -> fcgt rd, rs1, rs2; bne rd, X0
-					// fcgt rd, rs1, rs2 -> flt.d rd, rs2, rs1
+					// fcmp rd, rs1, rs2; fbgt rd -> fclt rd, rs2, rs1; bne rd, X0
 					ins->opcode = OP_FCLT;
 					ins->dreg = mono_alloc_ireg (cfg);
 					int tmp_reg = ins->sreg1;
@@ -2161,7 +2165,19 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->next->opcode = OP_RISCV_BNE;
 					ins->next->sreg1 = ins->dreg;
 					ins->next->sreg2 = RISCV_ZERO;
-				} else {
+				} 
+				else if(ins->next->opcode == OP_FBGE || ins->next->opcode == OP_FBGE_UN) {
+					// fcmp rd, rs1, rs2; fbge rd -> fcle rd, rs2, rs1; bne rd, X0
+					ins->opcode = OP_FCLE;
+					ins->dreg = mono_alloc_ireg (cfg);
+					int tmp_reg = ins->sreg1;
+					ins->sreg1 = ins->sreg2;
+					ins->sreg2 = tmp_reg;
+
+					ins->next->opcode = OP_RISCV_BNE;
+					ins->next->sreg1 = ins->dreg;
+					ins->next->sreg2 = RISCV_ZERO;
+				}else {
 					g_print ("Unhandaled op %s following after OP_FCOMPARE\n", mono_inst_name (ins->next->opcode));
 					NOT_IMPLEMENTED;
 				}
@@ -2518,7 +2534,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					NULLIFY_INS (ins);
 				} else if (ins->next->opcode == OP_IL_SEQ_POINT || ins->next->opcode == OP_MOVE ||
 				           ins->next->opcode == OP_LOAD_MEMBASE || ins->next->opcode == OP_NOP ||
-				           ins->next->opcode == OP_LOADI4_MEMBASE || ins->next->opcode == OP_BR ) {
+				           ins->next->opcode == OP_LOADI4_MEMBASE || ins->next->opcode == OP_BR ||
+						   ins->next->opcode == OP_LOADI8_MEMBASE) {
 					/**
 					 * there is compare without branch OP followed
 					 *
@@ -2597,7 +2614,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_MUL_IMM:
 		case OP_IMUL_IMM: 
-		case OP_LMUL_IMM: {
+		case OP_LMUL_IMM: 
+		case OP_IDIV_IMM: {
 			g_assert (riscv_stdext_m);
 			NEW_INS_BEFORE (cfg, ins, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
@@ -2618,6 +2636,19 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			case OP_LMUL_IMM:
 				ins->opcode = OP_LMUL;
+				break;
+			case OP_DIV_IMM:
+#ifdef TARGET_RISCV64
+				ins->opcode = OP_LDIV;
+#else
+				ins->opcode = OP_IDIV;
+#endif
+				break;
+			case OP_IDIV_IMM:
+				ins->opcode = OP_IDIV;
+				break;
+			case OP_LDIV_IMM:
+				ins->opcode = OP_LDIV;
 				break;
 			}
 			break;
@@ -3657,7 +3688,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 
 		case OP_NOP:
-			code = mono_riscv_emit_nop (code);
+		case OP_RELAXED_NOP:
+			// code = mono_riscv_emit_nop (code);
 			break;
 		case OP_MOVE:
 #ifdef TARGET_RISCV64
@@ -4068,6 +4100,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (riscv_stdext_f || riscv_stdext_d);
 			if (riscv_stdext_d)
 				riscv_flt_d (code, ins->dreg, ins->sreg1, ins->sreg2);
+			else
+				NOT_IMPLEMENTED;
+			break;
+		}
+		case OP_FCLE:{
+			g_assert (riscv_stdext_f || riscv_stdext_d);
+			if (riscv_stdext_d)
+				riscv_fle_d (code, ins->dreg, ins->sreg1, ins->sreg2);
 			else
 				NOT_IMPLEMENTED;
 			break;
