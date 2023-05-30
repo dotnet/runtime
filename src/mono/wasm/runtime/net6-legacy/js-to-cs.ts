@@ -6,9 +6,9 @@ import { legacy_c_functions as cwraps } from "../cwraps";
 import { js_owned_gc_handle_symbol, assert_not_disposed, cs_owned_js_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, mono_wasm_release_cs_owned_object, teardown_managed_proxy, mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
 import { Module } from "../globals";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
-import { setI32_unchecked, setU32_unchecked, setF64, setB32 } from "../memory";
+import { setI32_unchecked, setU32_unchecked, setF64, setB32, localHeapViewU8 } from "../memory";
 import { mono_wasm_new_root, mono_wasm_release_roots, mono_wasm_new_external_root } from "../roots";
-import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root } from "../strings";
+import { stringToMonoStringRoot, stringToInternedMonoStringRoot } from "../strings";
 import { MonoObject, is_nullish, MonoClass, MonoArray, MonoObjectNull, JSHandle, MonoObjectRef, JSHandleNull, JSHandleDisposed, WasmRoot } from "../types/internal";
 import { TypedArray, Int32Ptr } from "../types/emscripten";
 import { has_backing_array_buffer } from "./buffers";
@@ -89,10 +89,10 @@ export function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, s
             return;
         }
         case typeof js_obj === "string":
-            js_string_to_mono_string_root(js_obj, <any>result);
+            stringToMonoStringRoot(js_obj, <any>result);
             return;
         case typeof js_obj === "symbol":
-            js_string_to_mono_string_interned_root(js_obj, <any>result);
+            stringToInternedMonoStringRoot(js_obj, <any>result);
             return;
         case typeof js_obj === "boolean":
             setB32(legacyHelpers._box_buffer, js_obj);
@@ -150,10 +150,13 @@ function _extract_mono_obj_root(should_add_in_flight: boolean, js_obj: any, resu
 
 // https://github.com/Planeshifter/emscripten-examples/blob/master/01_PassingArrays/sum_post.js
 function js_typedarray_to_heap(typedArray: TypedArray) {
+    assert_legacy_interop();
     const numBytes = typedArray.length * typedArray.BYTES_PER_ELEMENT;
     const ptr = Module._malloc(numBytes);
-    const heapBytes = new Uint8Array(Module.HEAPU8.buffer, <any>ptr, numBytes);
+    const heapU8 = localHeapViewU8();
+    const heapBytes = new Uint8Array(heapU8.buffer, <any>ptr, numBytes);
     heapBytes.set(new Uint8Array(typedArray.buffer, typedArray.byteOffset, numBytes));
+    // WARNING: returned memory view will get stale when linear memory grows on another thread. This is legacy interop so we don't try to fix it. The view will be fine when used in synchronous calls.
     return heapBytes;
 }
 

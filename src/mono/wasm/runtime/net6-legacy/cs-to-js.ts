@@ -10,7 +10,7 @@ import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { ManagedObject } from "../marshal";
 import { getU32, getI32, getF32, getF64, setI32_unchecked } from "../memory";
 import { mono_wasm_new_root, mono_wasm_new_external_root } from "../roots";
-import { conv_string_root, string_decoder } from "../strings";
+import { monoStringToString, monoStringToStringUnsafe } from "../strings";
 import { legacyManagedExports } from "./corebindings";
 import { legacyHelpers } from "./globals";
 import { js_to_mono_obj_root } from "./js-to-cs";
@@ -54,7 +54,7 @@ function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<a
             throw new Error("int64 not available");
         case MarshalType.STRING:
         case MarshalType.STRING_INTERNED:
-            return conv_string_root(root);
+            return monoStringToString(root);
         case MarshalType.VT:
             throw new Error("no idea on how to unbox value types");
         case MarshalType.DELEGATE:
@@ -228,7 +228,7 @@ export function mono_wasm_create_cs_owned_object_ref(core_name: MonoStringRef, a
         nameRoot = mono_wasm_new_external_root<MonoString>(core_name),
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
-        const js_name = conv_string_root(nameRoot);
+        const js_name = monoStringToString(nameRoot);
         if (!js_name) {
             wrap_error_root(is_exception, "Invalid name @" + nameRoot.value, resultRoot);
             return;
@@ -351,5 +351,5 @@ export function get_js_owned_object_by_gc_handle_ref(gc_handle: GCHandle, result
  */
 export function conv_string(mono_obj: MonoString): string | null {
     assert_legacy_interop();
-    return string_decoder.copy(mono_obj);
+    return monoStringToStringUnsafe(mono_obj);
 }

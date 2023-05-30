@@ -98,8 +98,8 @@
         <note />
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
-        <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
-        <target state="translated">不支持封送没有显式封送信息的字符串或字符。请指定 \"LibraryImportAttribute.StringMarshalling\"、 \"LibraryImportAttribute.StringMarshallingCustomType\"、\"MarshalUsingAttribute\" 或 \"MarshalAsAttribute\"。</target>
+        <source>Marshalling string or char without explicit marshalling information is not supported. Specify '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="new">Marshalling string or char without explicit marshalling information is not supported. Specify '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
