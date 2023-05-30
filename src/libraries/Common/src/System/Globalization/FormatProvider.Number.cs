@@ -440,11 +440,11 @@ namespace System.Globalization
                 int digEnd = 0;
                 while (true)
                 {
-                    if (char.IsAsciiDigit(ch) || (((options & NumberStyles.AllowHexSpecifier) != 0) && char.IsBetween((char)(ch | 0x20), 'a', 'f')))
+                    if ((options & NumberStyles.AllowBinarySpecifier) == 0 ? char.IsAsciiDigit(ch) || ((options & NumberStyles.AllowHexSpecifier) != 0 && char.IsBetween((char)(ch | 0x20), 'a', 'f')) : char.IsBetween(ch, '0', '1'))
                     {
                         state |= StateDigits;
 
-                        if (ch != '0' || (state & StateNonZero) != 0 || (bigNumber && ((options & NumberStyles.AllowHexSpecifier) != 0)))
+                        if (ch != '0' || (state & StateNonZero) != 0 || (bigNumber && (options & (NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) != 0))
                         {
                             if (digCount < maxParseDigits)
                             {
