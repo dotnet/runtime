@@ -187,6 +187,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
                 resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name)),
                 hash: resources.vfs[virtualPath][name],
                 behavior: "vfs",
+                virtualPath
             };
             assets.push(asset);
         }
