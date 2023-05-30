@@ -233,17 +233,16 @@ mono_jiterp_gettype_ref (
 		return 0;
 }
 
-#define CC_EXACT_KLASS_MATCH 0
-#define CC_INEXACT_KLASS_MATCH 1
-#define CC_NULL_PTR 2
-#define CC_FAILED_CAST 3
-static int64_t cast_counters[4] = { 0 };
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_get_cast_counter (int type) {
-	if ((type < 0) || (type > 3))
-		return 1.0 / 0.0;
-	return cast_counters[type];
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_has_parent_fast (
+	MonoClass *klass, MonoClass *parent
+) {
+	// HACK: Support null check fusion: a null obj will produce a null obj->vtable->klass,
+	//  so we can return 1 to make the cast "succeed" and store null to the destination
+	if (!klass)
+		return 1;
+	else
+		return mono_class_has_parent_fast (klass, parent);
 }
 
 EMSCRIPTEN_KEEPALIVE int
@@ -253,13 +252,11 @@ mono_jiterp_cast_v2 (
 ) {
 	if (!obj) {
 		*destination = 0;
-		cast_counters[CC_NULL_PTR]++;
 		return 1;
 	}
 
 	if (obj->vtable->klass == klass) {
 		*destination = obj;
-		cast_counters[CC_EXACT_KLASS_MATCH]++;
 		return 1;
 	}
 
@@ -272,7 +269,6 @@ mono_jiterp_cast_v2 (
 					if (opcode == MINT_ISINST)
 						*destination = NULL;
 					else {
-						cast_counters[CC_FAILED_CAST]++;
 						return 0; // bailout
 					}
 				} else {
@@ -281,10 +277,6 @@ mono_jiterp_cast_v2 (
 			} else {
 				*destination = NULL;
 			}
-			if (destination)
-				cast_counters[CC_INEXACT_KLASS_MATCH]++;
-			else
-				cast_counters[CC_FAILED_CAST]++;
 			return 1;
 		}
 		case MINT_CASTCLASS_INTERFACE:
@@ -305,17 +297,12 @@ mono_jiterp_cast_v2 (
 				if (opcode == MINT_ISINST_INTERFACE)
 					*destination = NULL;
 				else {
-					cast_counters[CC_FAILED_CAST]++;
 					return 0; // bailout
 				}
 			} else {
 				*destination = obj;
 			}
 
-			if (destination)
-				cast_counters[CC_INEXACT_KLASS_MATCH]++;
-			else
-				cast_counters[CC_FAILED_CAST]++;
 			return 1;
 		}
 		case MINT_CASTCLASS_COMMON:
@@ -327,7 +314,6 @@ mono_jiterp_cast_v2 (
 					if (opcode == MINT_ISINST_COMMON)
 						*destination = NULL;
 					else {
-						cast_counters[CC_FAILED_CAST]++;
 						return 0; // bailout
 					}
 				} else {
@@ -336,10 +322,6 @@ mono_jiterp_cast_v2 (
 			} else {
 				*destination = NULL;
 			}
-			if (destination)
-				cast_counters[CC_INEXACT_KLASS_MATCH]++;
-			else
-				cast_counters[CC_FAILED_CAST]++;
 			return 1;
 		}
 	}

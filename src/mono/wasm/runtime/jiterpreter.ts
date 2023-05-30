@@ -264,6 +264,7 @@ function getTraceImports() {
         importDef("value_copy", getRawCwrap("mono_jiterp_value_copy")),
         importDef("gettype", getRawCwrap("mono_jiterp_gettype_ref")),
         importDef("castv2", getRawCwrap("mono_jiterp_cast_v2")),
+        importDef("hasparent", getRawCwrap("mono_jiterp_has_parent_fast")),
         // importDef("isinst", getRawCwrap("mono_jiterp_isinst")),
         importDef("try_unbox", getRawCwrap("mono_jiterp_try_unbox_ref")),
         importDef("box", getRawCwrap("mono_jiterp_box_ref")),
@@ -507,6 +508,14 @@ function initialize_builder(builder: WasmBuilder) {
             "source": WasmValtype.i32,
             "klass": WasmValtype.i32,
             "opcode": WasmValtype.i32,
+        },
+        WasmValtype.i32, true
+    );
+    builder.defineType(
+        "hasparent",
+        {
+            "klass": WasmValtype.i32,
+            "parent": WasmValtype.i32,
         },
         WasmValtype.i32, true
     );
@@ -767,6 +776,7 @@ function generate_wasm(
                 locals: {
                     "disp": WasmValtype.i32,
                     "temp_ptr": WasmValtype.i32,
+                    "temp_ptr2": WasmValtype.i32,
                     "cknull_ptr": WasmValtype.i32,
                     "math_lhs32": WasmValtype.i32,
                     "math_rhs32": WasmValtype.i32,
@@ -1047,14 +1057,6 @@ export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
     mono_log_info(`// jitted ${counters.bytesGenerated} bytes; ${counters.tracesCompiled} traces (${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%) (${tracesRejected} rejected); ${counters.jitCallsCompiled} jit_calls; ${counters.entryWrappersCompiled} interp_entries`);
     mono_log_info(`// cknulls eliminated: ${nullChecksEliminatedText}, fused: ${nullChecksFusedText}; back-branches ${backBranchesEmittedText}; ${directJitCallsText}`);
     mono_log_info(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm.`);
-    const exactMatch = cwraps.mono_jiterp_get_cast_counter(0),
-        inexactMatch = cwraps.mono_jiterp_get_cast_counter(1),
-        nullPtr = cwraps.mono_jiterp_get_cast_counter(2),
-        failedCast = cwraps.mono_jiterp_get_cast_counter(3),
-        totalCasts = exactMatch + inexactMatch + failedCast + nullPtr,
-        successRate = exactMatch / totalCasts * 100,
-        nullRate = nullPtr / totalCasts * 100;
-    mono_log_info(`// ${exactMatch} (${successRate.toFixed(1)}%) of ${totalCasts} casts were exact matches (${inexactMatch} inexact) and ${nullPtr} (${nullRate.toFixed(1)}%) were null`);
     if (concise)
         return;
 

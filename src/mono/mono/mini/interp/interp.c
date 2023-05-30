@@ -8717,7 +8717,7 @@ mono_jiterp_frame_data_allocator_alloc (FrameDataAllocator *stack, InterpFrame *
 	return frame_data_allocator_alloc(stack, frame, size);
 }
 
-MONO_ALWAYS_INLINE gboolean
+EMSCRIPTEN_KEEPALIVE MONO_ALWAYS_INLINE gboolean
 mono_jiterp_isinst (MonoObject* object, MonoClass* klass)
 {
 	return mono_interp_isinst (object, klass);

@@ -851,10 +851,11 @@ export function generateWasmBody(
             case MintOpcode.MINT_CASTCLASS:
             case MintOpcode.MINT_ISINST: {
                 const klass = get_imethod_data(frame, getArgU16(ip, 3)),
-                    /*
                     canDoFastCheck = (opcode === MintOpcode.MINT_CASTCLASS_COMMON) ||
                         (opcode === MintOpcode.MINT_ISINST_COMMON),
-                        */
+                    bailoutOnFailure = (opcode === MintOpcode.MINT_CASTCLASS) ||
+                        (opcode === MintOpcode.MINT_CASTCLASS_COMMON) /* ||
+                        (opcode === MintOpcode.MINT_CASTCLASS_INTERFACE) */,
                     destOffset = getArgU16(ip, 1);
                 if (!klass) {
                     record_abort(traceIp, ip, traceName, "null-klass");
@@ -862,9 +863,9 @@ export function generateWasmBody(
                     continue;
                 }
 
-                builder.block(); // depth x -> 0
-                builder.block(); // depth 0 -> 1
+                builder.block(); // depth x -> 0 (opcode block)
 
+                builder.block(); // depth 0 -> 1 (null check block)
                 // src
                 append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
                 builder.local("temp_ptr", WasmOpcode.tee_local);
@@ -879,7 +880,7 @@ export function generateWasmBody(
                 //  because we successfully zeroed the destination register
                 builder.appendU8(WasmOpcode.br);
                 builder.appendULeb(1);
-                builder.endBlock(); // depth 1 -> 0
+                builder.endBlock(); // depth 1 -> 0 (end null check block)
 
                 // If we're here the null check passed and we now need to type-check
                 builder.local("temp_ptr");
@@ -887,6 +888,9 @@ export function generateWasmBody(
                 builder.appendMemarg(getMemberOffset(JiterpMember.VTable), 0); // fixme: alignment
                 builder.appendU8(WasmOpcode.i32_load); // (obj->vtable)->klass
                 builder.appendMemarg(getMemberOffset(JiterpMember.VTableKlass), 0); // fixme: alignment
+                // Stash obj->vtable->klass so we can do a fast has_parent check later
+                if (canDoFastCheck)
+                    builder.local("temp_ptr2", WasmOpcode.tee_local);
                 builder.i32_const(klass);
                 builder.appendU8(WasmOpcode.i32_eq);
                 builder.block(WasmValtype.void, WasmOpcode.if_); // if A
@@ -899,26 +903,50 @@ export function generateWasmBody(
                 // Fast type-check failed, so call the helper function
                 builder.appendU8(WasmOpcode.else_); // else A
 
-                // &dest
-                append_ldloca(builder, getArgU16(ip, 1), 4);
-                // src
-                builder.local("temp_ptr");
-                // klass
-                builder.ptr_const(klass);
-                // opcode
-                builder.i32_const(opcode);
-                builder.callImport("castv2");
+                if (canDoFastCheck) {
+                    builder.local("temp_ptr2"); // obj->vtable->klass
+                    builder.ptr_const(klass);
+                    builder.callImport("hasparent");
 
-                // Check whether the cast operation failed
-                builder.appendU8(WasmOpcode.i32_eqz);
-                builder.block(WasmValtype.void, WasmOpcode.if_); // if B
-                // Cast failed so bail out
-                append_exit(builder, ip, exitOpcodeCounter, BailoutReason.CastFailed);
-                builder.endBlock(); // endif B
+                    builder.block(WasmValtype.void, WasmOpcode.if_); // if B
+                    // mono_class_has_parent_fast returned 1 so *destination = obj
+                    builder.local("pLocals");
+                    builder.local("temp_ptr");
+                    append_stloc_tail(builder, destOffset, WasmOpcode.i32_store);
+                    builder.appendU8(WasmOpcode.else_); // else B
+                    // mono_class_has_parent_fast returned 0
+                    if (bailoutOnFailure) {
+                        // so bailout
+                        append_exit(builder, ip, exitOpcodeCounter, BailoutReason.CastFailed);
+                    } else {
+                        // this is isinst, so write 0 to destination instead
+                        builder.local("pLocals");
+                        builder.i32_const(0);
+                        append_stloc_tail(builder, destOffset, WasmOpcode.i32_store);
+                    }
+                    builder.endBlock(); // endif B
+                } else {
+                    // &dest
+                    append_ldloca(builder, getArgU16(ip, 1), 4);
+                    // src
+                    builder.local("temp_ptr");
+                    // klass
+                    builder.ptr_const(klass);
+                    // opcode
+                    builder.i32_const(opcode);
+                    builder.callImport("castv2");
+
+                    // Check whether the cast operation failed
+                    builder.appendU8(WasmOpcode.i32_eqz);
+                    builder.block(WasmValtype.void, WasmOpcode.if_); // if B
+                    // Cast failed so bail out
+                    append_exit(builder, ip, exitOpcodeCounter, BailoutReason.CastFailed);
+                    builder.endBlock(); // endif B
+                }
 
                 builder.endBlock(); // endif A
 
-                builder.endBlock(); // depth 0 -> x
+                builder.endBlock(); // depth 0 -> x (end opcode block)
 
                 break;
             }
