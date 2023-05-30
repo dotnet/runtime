@@ -610,6 +610,7 @@
       SourceDirectory="@(LegacyPayloads->Metadata('PayloadDirectory'))"
       DestinationFile="$(LegacyPayloadsRootDirectory)\%(LegacyPayloads.PayloadGroup).zip" />
 
+    <Message Importance="High" Text="PublishPayloads: @(PublishPayloads)" />
     <Copy
       SourceFiles="@(PublishPayloads)"
       DestinationFolder="$(LegacyPayloadsRootDirectory)" />
