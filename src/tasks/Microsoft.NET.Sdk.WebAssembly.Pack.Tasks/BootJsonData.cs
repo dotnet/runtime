@@ -7,6 +7,8 @@ using ResourceHashesByNameDictionary = System.Collections.Generic.Dictionary<str
 
 namespace Microsoft.NET.Sdk.WebAssembly;
 
+#nullable disable
+
 /// <summary>
 /// Defines the structure of a Blazor boot JSON file
 /// </summary>
@@ -68,10 +70,30 @@ public class BootJsonData
     /// Gets or sets configuration extensions.
     /// </summary>
     public Dictionary<string, Dictionary<string, object>> extensions { get; set; }
+
+    /// <summary>
+    /// Gets or sets environment variables.
+    /// </summary>
+    public object environmentVariables { get; set; }
+
+    /// <summary>
+    /// Gets or sets diagnostic tracing.
+    /// </summary>
+    public object diagnosticTracing { get; set; }
+
+    /// <summary>
+    /// Gets or sets pthread pool size.
+    /// </summary>
+    public int pthreadPoolSize { get; set; }
 }
 
 public class ResourcesData
 {
+    /// <summary>
+    /// Gets a hash of all resources
+    /// </summary>
+    public string hash { get; set; }
+
     /// <summary>
     /// .NET Wasm runtime resources (dotnet.wasm, dotnet.js) etc.
     /// </summary>
@@ -119,6 +141,9 @@ public class ResourcesData
     [DataMember(EmitDefaultValue = false)]
     public Dictionary<string, AdditionalAsset> runtimeAssets { get; set; }
 
+    [DataMember(EmitDefaultValue = false)]
+    public Dictionary<string, ResourceHashesByNameDictionary> vfs { get; set; }
+
 }
 
 public enum ICUDataMode : int
@@ -144,14 +169,16 @@ public enum ICUDataMode : int
     /// Load custom icu file provided by the developer.
     /// </summary>
     Custom = 3,
+
+    Hybrid = 4
 }
 
 [DataContract]
 public class AdditionalAsset
 {
     [DataMember(Name = "hash")]
-    public string Hash { get; set; }
+    public string hash { get; set; }
 
     [DataMember(Name = "behavior")]
-    public string Behavior { get; set; }
+    public string behavior { get; set; }
 }

@@ -328,8 +328,8 @@ public class GenerateWasmBootJson : Task
             Log.LogMessage(MessageImportance.Low, "Added resource '{0}' to the list of additional assets in the manifest.", resource.ItemSpec);
             additionalResources.Add(resourceName, new AdditionalAsset
             {
-                Hash = $"sha256-{resource.GetMetadata("FileHash")}",
-                Behavior = behavior
+                hash = $"sha256-{resource.GetMetadata("FileHash")}",
+                behavior = behavior
             });
         }
     }
