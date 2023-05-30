@@ -703,7 +703,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             // Emit the image of the referenced assembly.
             byte[] referencedImage = CompilationHelper.CreateAssemblyImage(referencedCompilation);
 
-            string source = @"
+            string source = """
             using ReferencedAssembly;
             using System;
             using System.Text.Json;
