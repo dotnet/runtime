@@ -72,7 +72,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         {
             config = new(),
             entryAssembly = MainAssemblyName,
-            icuDataMode = InvariantGlobalization ? ICUDataMode.Invariant : HybridGlobalization ? ICUDataMode.Hybrid : ICUDataMode.Sharded
+            icuDataMode = InvariantGlobalization ? ICUDataMode.Invariant : HybridGlobalization ? ICUDataMode.Hybrid : ICUDataMode.All
         };
 
         // Create app
