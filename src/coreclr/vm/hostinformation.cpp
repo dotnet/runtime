@@ -40,11 +40,3 @@ bool HostInformation::GetProperty(_In_z_ const char* name, SString& value)
 
     return lenActual > 0 && lenActual <= len;
 }
-
-bool HostInformation::SetProperty(_In_z_ const char* name, const SString& value)
-{
-    if (s_hostContract == nullptr || s_hostContract->set_runtime_property == nullptr)
-        return false;
-
-    return s_hostContract->set_runtime_property(name, value.GetUTF8(), s_hostContract->context);
-}
