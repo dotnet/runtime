@@ -164,16 +164,16 @@ namespace System.Globalization
                 }
 
                 byteOffset += 8;
-                length -= 4;
+                length -= 8;
             }
 #endif
             uint valueAu32 = 0;
             uint valueBu32 = 0;
-            // Read 2 chars (32 bits) at a time from each string
+            // Read 4 chars (32 bits) at a time from each string
 #if TARGET_64BIT
-            if ((uint)length >= 2)
+            if ((uint)length >= 4)
 #else
-            while ((uint)length >= 2)
+            while ((uint)length >= 4)
 #endif
             {
                 valueAu32 = Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref charA, byteOffset));
@@ -197,17 +197,24 @@ namespace System.Globalization
                 }
 
                 byteOffset += 4;
-                length -= 2;
+                length -= 4;
             }
 
             if (length != 0)
             {
-                Debug.Assert(length == 1);
+                // We have 1, 2, or 3 bytes remaining. We want to backtrack
+                // so we read exactly 4 bytes and then do one final iteration.
 
-                valueAu32 = Unsafe.AddByteOffset(ref charA, byteOffset);
-                valueBu32 = Unsafe.AddByteOffset(ref charB, byteOffset);
+                Debug.Assert(length <= 3);
+                int backtrack = 4 - length;
 
-                if ((valueAu32 | valueBu32) > 0x7Fu)
+                length += backtrack;
+                byteOffset -= backtrack;
+
+                valueAu32 = Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref charA, byteOffset));
+                valueBu32 = Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref charB, byteOffset));
+
+                if (!Utf8Utility.AllBytesInUInt32AreAscii(valueAu32 | valueBu32))
                 {
                     goto NonAscii32; // one of the inputs contains non-ASCII data
                 }
@@ -217,13 +224,13 @@ namespace System.Globalization
                     return true; // exact match
                 }
 
-                valueAu32 |= 0x20u;
-                if ((uint)(valueAu32 - 'a') > (uint)('z' - 'a'))
+                if (!Utf8Utility.UInt32OrdinalIgnoreCaseAscii(valueAu32, valueBu32))
                 {
-                    return false; // not exact match, and first input isn't in [A-Za-z]
+                    return false;
                 }
 
-                return valueAu32 == (valueBu32 | 0x20u);
+                byteOffset += 4;
+                length -= 4;
             }
 
             Debug.Assert(length == 0);
