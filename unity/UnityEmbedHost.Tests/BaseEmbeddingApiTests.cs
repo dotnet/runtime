@@ -59,9 +59,24 @@ public abstract class BaseEmbeddingApiTests
 
         fixed (byte* p = msg_bytes, n = name_bytes, ns = namespace_bytes)
         {
-            ex = (Exception)ClrHost.exception_from_name_msg(assembly, (sbyte*)ns, (sbyte*)n, (sbyte*)p).ToManagedRepresentation();
+            ex = ClrHost.exception_from_name_msg(assembly, (sbyte*)ns, (sbyte*)n, (sbyte*)p);
         }
-        Assert.That(msg, Is.EqualTo(ex.Message));
+        Assert.That(ex.Message, Is.EqualTo(msg));
+    }
+
+    [Test]
+    public unsafe void ExceptionFromClassWorksNullMessage()
+    {
+        byte[] name_bytes = "Exception"u8.ToArray();
+        byte[] namespace_bytes = "System"u8.ToArray();
+        Exception ex;
+        IntPtr assembly = ClrHost.class_get_image(typeof(Exception));
+
+        fixed (byte* n = name_bytes, ns = namespace_bytes)
+        {
+            ex = ClrHost.exception_from_name_msg(assembly, (sbyte*)ns, (sbyte*)n, null);
+        }
+        Assert.That(ex.Message, Is.EqualTo(string.Empty));
     }
 
 #pragma warning disable CS0612
