@@ -11,47 +11,41 @@ namespace ILCompiler
     /// </summary>
     public class RuntimeConfigurationRootProvider : ICompilationRootProvider
     {
-        private readonly IEnumerable<string> _runtimeOptions;
+        private readonly string _blobName;
+        private readonly IReadOnlyCollection<string> _runtimeOptions;
 
-        public RuntimeConfigurationRootProvider(IEnumerable<string> runtimeOptions)
+        public RuntimeConfigurationRootProvider(string blobName, IReadOnlyCollection<string> runtimeOptions)
         {
+            _blobName = blobName;
             _runtimeOptions = runtimeOptions;
         }
 
         void ICompilationRootProvider.AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
-            rootProvider.RootReadOnlyDataBlob(GetRuntimeOptionsBlob(), 4, "Runtime configuration information", "g_compilerEmbeddedSettingsBlob");
+            rootProvider.RootReadOnlyDataBlob(GetRuntimeOptionsBlob(), 4, "Runtime configuration information", _blobName);
         }
 
-        protected byte[] GetRuntimeOptionsBlob()
+        private byte[] GetRuntimeOptionsBlob()
         {
-            const int HeaderSize = 4;
-
             ArrayBuilder<byte> options = default(ArrayBuilder<byte>);
 
-            // Reserve space for the header
-            options.ZeroExtend(HeaderSize);
+            int count = _runtimeOptions.Count;
+
+            options.Add((byte)count);
+            options.Add((byte)(count >> 8));
+            options.Add((byte)(count >> 0x10));
+            options.Add((byte)(count >> 0x18));
 
             foreach (string option in _runtimeOptions)
             {
-                byte[] optionBytes = System.Text.Encoding.ASCII.GetBytes(option);
+                byte[] optionBytes = System.Text.Encoding.UTF8.GetBytes(option);
                 options.Append(optionBytes);
 
                 // Emit a null to separate the next option
                 options.Add(0);
             }
 
-            byte[] result = options.ToArray();
-
-            int length = options.Count - HeaderSize;
-
-            // Encode the size of the blob into the header
-            result[0] = (byte)length;
-            result[1] = (byte)(length >> 8);
-            result[2] = (byte)(length >> 0x10);
-            result[3] = (byte)(length >> 0x18);
-
-            return result;
+            return options.ToArray();
         }
     }
 }

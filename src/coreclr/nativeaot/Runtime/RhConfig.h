@@ -52,6 +52,10 @@ public:
     bool ReadKnobUInt64Value(_In_z_ const char* wszName, uint64_t* pValue);
     bool ReadKnobBooleanValue(_In_z_ const char* wszName, bool* pValue);
 
+    void GetKnobNames(const char** pBuffer, uint32_t count);
+    void GetKnobValues(const char** pBuffer, uint32_t count);
+    uint32_t GetKnobCount();
+
 #define DEFINE_VALUE_ACCESSOR(_name, defaultVal)        \
     uint64_t Get##_name()                                 \
     {                                                   \

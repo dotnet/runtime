@@ -38,6 +38,7 @@
 #include "GCMemoryHelpers.h"
 #include "GCMemoryHelpers.inl"
 #include "yieldprocessornormalized.h"
+#include "RhConfig.h"
 
 COOP_PINVOKE_HELPER(void, RhDebugBreak, ())
 {
@@ -420,6 +421,28 @@ COOP_PINVOKE_HELPER(void, RhSetThreadExitCallback, (void * pCallback))
 COOP_PINVOKE_HELPER(int32_t, RhGetProcessCpuCount, ())
 {
     return PalGetProcessCpuCount();
+}
+
+COOP_PINVOKE_HELPER(uint32_t, RhGetKnobValues, (Array * pResultKeyArray, Array * pResultValueArray))
+{
+    // Note that we depend on the fact that this is a COOP helper to make writing into an unpinned array safe.
+
+    // If a result array is passed then it should be an array type with pointer-sized components that are not
+    // GC-references.
+    ASSERT(!pResultKeyArray || pResultKeyArray->get_EEType()->IsArray());
+    ASSERT(!pResultKeyArray || !pResultKeyArray->get_EEType()->HasReferenceFields());
+    ASSERT(!pResultKeyArray || pResultKeyArray->get_EEType()->RawGetComponentSize() == sizeof(void*));
+    ASSERT(!pResultKeyArray || pResultValueArray->get_EEType()->IsArray());
+    ASSERT(!pResultKeyArray || !pResultValueArray->get_EEType()->HasReferenceFields());
+    ASSERT(!pResultKeyArray || pResultValueArray->get_EEType()->RawGetComponentSize() == sizeof(void*));
+
+    if (pResultKeyArray)
+    {
+        g_pRhConfig->GetKnobNames((const char**)pResultKeyArray->GetArrayData(), pResultKeyArray->GetArrayLength());
+        g_pRhConfig->GetKnobValues((const char**)pResultValueArray->GetArrayData(), pResultValueArray->GetArrayLength());
+    }
+
+    return g_pRhConfig->GetKnobCount();
 }
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)

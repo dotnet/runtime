@@ -122,7 +122,7 @@ bool RhConfig::Environment::TryGetStringValue(const char* name, char** value)
 
 struct CompilerEmbeddedSettingsBlob
 {
-    uint32_t Size;
+    uint32_t Count;
     char Data[1];
 };
 
@@ -169,6 +169,41 @@ bool RhConfig::ReadKnobBooleanValue(_In_z_ const char *name, bool* pValue)
     return false;
 }
 
+void RhConfig::GetKnobNames(const char** pBuffer, uint32_t count)
+{
+    // Read the config if we haven't yet
+    if (g_embeddedKnobs == NULL)
+    {
+        ReadEmbeddedSettings(&g_embeddedKnobs, &g_compilerEmbeddedKnobsBlob);
+    }
+
+    const ConfigPair* configPairs = (const ConfigPair*)g_embeddedKnobs;
+    for (uint32_t i = 0; i < count && i < ((CompilerEmbeddedSettingsBlob*)&g_compilerEmbeddedKnobsBlob)->Count; i++)
+    {
+        pBuffer[i] = configPairs[i].Key;
+    }
+}
+
+void RhConfig::GetKnobValues(const char** pBuffer, uint32_t count)
+{
+    // Read the config if we haven't yet
+    if (g_embeddedKnobs == NULL)
+    {
+        ReadEmbeddedSettings(&g_embeddedKnobs, &g_compilerEmbeddedKnobsBlob);
+    }
+
+    const ConfigPair* configPairs = (const ConfigPair*)g_embeddedKnobs;
+    for (uint32_t i = 0; i < count && i < ((CompilerEmbeddedSettingsBlob*)&g_compilerEmbeddedKnobsBlob)->Count; i++)
+    {
+        pBuffer[i] = configPairs[i].Value;
+    }
+}
+
+uint32_t RhConfig::GetKnobCount()
+{
+    return ((CompilerEmbeddedSettingsBlob*)&g_compilerEmbeddedKnobsBlob)->Count;
+}
+
 bool RhConfig::GetEmbeddedVariable(void *volatile * embeddedSettings, void* compilerEmbeddedSettingsBlob, _In_z_ const char* configName, bool caseSensitive, _Out_ const char** configValue)
 {
     // Read the config if we haven't yet
@@ -186,7 +221,7 @@ bool RhConfig::GetEmbeddedVariable(void *volatile * embeddedSettings, void* comp
     const ConfigPair* configPairs = (const ConfigPair*)*embeddedSettings;
 
     // Find the first name which matches
-    for (uint32_t iSettings = 0; iSettings < ((CompilerEmbeddedSettingsBlob*)compilerEmbeddedSettingsBlob)->Size; iSettings++)
+    for (uint32_t iSettings = 0; iSettings < ((CompilerEmbeddedSettingsBlob*)compilerEmbeddedSettingsBlob)->Count; iSettings++)
     {
         if ((caseSensitive && strcmp(configName, configPairs[iSettings].Key) == 0)
             || (!caseSensitive && _stricmp(configName, configPairs[iSettings].Key) == 0))
@@ -204,11 +239,11 @@ void RhConfig::ReadEmbeddedSettings(void *volatile * embeddedSettings, void* com
 {
     if (*embeddedSettings == NULL)
     {
-        uint32_t size = ((CompilerEmbeddedSettingsBlob*)compilerEmbeddedSettingsBlob)->Size;
+        uint32_t count = ((CompilerEmbeddedSettingsBlob*)compilerEmbeddedSettingsBlob)->Count;
         char* data = ((CompilerEmbeddedSettingsBlob*)compilerEmbeddedSettingsBlob)->Data;
 
         //if reading the file contents failed set embeddedSettings to CONFIG_INI_NOT_AVAIL
-        if (size == 0)
+        if (count == 0)
         {
             //only set if another thread hasn't initialized the buffer yet, otherwise ignore and let the first setter win
             PalInterlockedCompareExchangePointer(embeddedSettings, CONFIG_INI_NOT_AVAIL, NULL);
@@ -216,7 +251,7 @@ void RhConfig::ReadEmbeddedSettings(void *volatile * embeddedSettings, void* com
             return;
         }
 
-        ConfigPair* iniBuff = new (nothrow) ConfigPair[size];
+        ConfigPair* iniBuff = new (nothrow) ConfigPair[count];
         if (iniBuff == NULL)
         {
             //only set if another thread hasn't initialized the buffer yet, otherwise ignore and let the first setter win
@@ -230,20 +265,19 @@ void RhConfig::ReadEmbeddedSettings(void *volatile * embeddedSettings, void* com
         char* currLine;
 
         //while we haven't reached the max number of config pairs, or the end of the file, read the next line
-        while (iBuff < size)
+        while (iIniBuff < count)
         {
             currLine = &data[iBuff];
 
             //find the end of the line
-            while ((data[iBuff] != '\0') && (iBuff < size))
+            while ((data[iBuff] != '\0'))
                 iBuff++;
 
             //parse the line
-            //only increment iIniBuff if the parsing succeeded otherwise reuse the config struct
-            if (ParseConfigLine(&iniBuff[iIniBuff], currLine))
-            {
-                iIniBuff++;
-            }
+            bool success = ParseConfigLine(&iniBuff[iIniBuff], currLine);
+            ASSERT(success);
+
+            iIniBuff++;
 
             //advance to the next line;
             iBuff++;
