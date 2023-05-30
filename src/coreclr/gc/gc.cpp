@@ -24976,7 +24976,7 @@ void gc_heap::check_heap_count ()
 
             // the middle element is the median overhead percentage
             float median_percent_overhead = percent_overhead[1];
-            dprintf (6666, ("median overhead: %d%%", median_percent_overhead));
+            dprintf (6666, ("median overhead: %d%%", (int)median_percent_overhead));
 
             // estimate the space cost of adding a heap as the min gen0 size
             size_t heap_space_cost_per_heap = dd_min_size (hp0_dd0);
