@@ -191,10 +191,6 @@ bool IntegralRange::Contains(int64_t value) const
             }
             break;
 
-        case GT_QMARK:
-            return Union(ForNode(node->AsQmark()->ThenNode(), compiler),
-                         ForNode(node->AsQmark()->ElseNode(), compiler));
-
         case GT_CAST:
             return ForCastOutput(node->AsCast(), compiler);
 
@@ -2235,15 +2231,10 @@ AssertionIndex Compiler::optAssertionGenPhiDefn(GenTree* tree)
  */
 void Compiler::optAssertionGen(GenTree* tree)
 {
-    tree->ClearAssertion();
-
-    // If there are QMARKs in the IR, we won't generate assertions
-    // for conditionally executed code.
+    // We do not expect to see qmark/colon
     //
-    if (optLocalAssertionProp && ((tree->gtFlags & GTF_COLON_COND) != 0))
-    {
-        return;
-    }
+    assert((tree->gtFlags & GTF_COLON_COND) == 0);
+    tree->ClearAssertion();
 
 #ifdef DEBUG
     optAssertionPropCurrentTree = tree;

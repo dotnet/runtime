@@ -439,52 +439,11 @@ void Compiler::fgPerBlockLocalVarLiveness()
         {
             assert(fgIsDoingEarlyLiveness && (fgNodeThreading == NodeThreading::AllLocals));
 
-            if (compQmarkUsed)
+            for (Statement* stmt : block->Statements())
             {
-                for (Statement* stmt : block->Statements())
+                for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
                 {
-                    GenTree* dst;
-                    GenTree* qmark = fgGetTopLevelQmark(stmt->GetRootNode(), &dst);
-                    if (qmark == nullptr)
-                    {
-                        for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-                        {
-                            fgMarkUseDef(lcl);
-                        }
-                    }
-                    else
-                    {
-                        // Assigned local should be the very last local.
-                        assert((dst == nullptr) ||
-                               ((stmt->GetTreeListEnd() == dst) && ((dst->gtFlags & GTF_VAR_DEF) != 0)));
-
-                        // Conservatively ignore defs that may be conditional
-                        // but would otherwise still interfere with the
-                        // lifetimes we compute here. We generally do not
-                        // handle qmarks very precisely here -- last uses may
-                        // not be marked as such due to interference with other
-                        // qmark arms.
-                        for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-                        {
-                            bool isUse = ((lcl->gtFlags & GTF_VAR_DEF) == 0) || ((lcl->gtFlags & GTF_VAR_USEASG) != 0);
-                            // We can still handle the pure def at the top level.
-                            bool conditional = lcl != dst;
-                            if (isUse || !conditional)
-                            {
-                                fgMarkUseDef(lcl);
-                            }
-                        }
-                    }
-                }
-            }
-            else
-            {
-                for (Statement* stmt : block->Statements())
-                {
-                    for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-                    {
-                        fgMarkUseDef(lcl);
-                    }
+                    fgMarkUseDef(lcl);
                 }
             }
         }
@@ -2651,7 +2610,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
             compCurStmt = nullptr;
             VARSET_TP keepAliveVars(VarSetOps::Union(this, volatileVars, compCurBB->bbScope));
 
-            Statement* firstStmt = block->firstStmt();
+            Statement* const firstStmt = block->firstStmt();
 
             if (firstStmt == nullptr)
             {
@@ -2662,54 +2621,18 @@ void Compiler::fgInterBlockLocalVarLiveness()
 
             while (true)
             {
-                Statement* prevStmt = stmt->GetPrevStmt();
+                Statement* const prevStmt = stmt->GetPrevStmt();
 
-                GenTree* dst   = nullptr;
-                GenTree* qmark = nullptr;
-                if (compQmarkUsed)
+                for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr;)
                 {
-                    qmark = fgGetTopLevelQmark(stmt->GetRootNode(), &dst);
-                }
-
-                if (qmark != nullptr)
-                {
-                    for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr;)
+                    assert(cur->OperIsAnyLocal());
+                    if (!fgComputeLifeLocal(life, keepAliveVars, cur))
                     {
-                        assert(cur->OperIsAnyLocal());
-                        bool isDef = ((cur->gtFlags & GTF_VAR_DEF) != 0) && ((cur->gtFlags & GTF_VAR_USEASG) == 0);
-                        bool conditional = cur != dst;
-                        // Ignore conditional defs that would otherwise
-                        // (incorrectly) interfere with liveness in other
-                        // branches of the qmark.
-                        if (isDef && conditional)
-                        {
-                            cur = cur->gtPrev;
-                            continue;
-                        }
-
-                        if (!fgComputeLifeLocal(life, keepAliveVars, cur))
-                        {
-                            cur = cur->gtPrev;
-                            continue;
-                        }
-
-                        assert(cur == dst);
-                        cur = fgTryRemoveDeadStoreEarly(stmt, cur->AsLclVarCommon());
+                        cur = cur->gtPrev;
+                        continue;
                     }
-                }
-                else
-                {
-                    for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr;)
-                    {
-                        assert(cur->OperIsAnyLocal());
-                        if (!fgComputeLifeLocal(life, keepAliveVars, cur))
-                        {
-                            cur = cur->gtPrev;
-                            continue;
-                        }
 
-                        cur = fgTryRemoveDeadStoreEarly(stmt, cur->AsLclVarCommon());
-                    }
+                    cur = fgTryRemoveDeadStoreEarly(stmt, cur->AsLclVarCommon());
                 }
 
                 if (stmt == firstStmt)

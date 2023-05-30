@@ -8372,8 +8372,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
        o Perform optional postorder morphing if optimizing
      */
 
-    bool isQmarkColon = false;
-
     AssertionIndex origAssertionCount = DUMMY_INIT(0);
     AssertionDsc*  origAssertionTab   = DUMMY_INIT(NULL);
 
@@ -8414,7 +8412,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
         }
         break;
 
-        case GT_QMARK:
         case GT_JTRUE:
 
             noway_assert(op1);
@@ -8424,7 +8421,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 /* Mark the comparison node with GTF_RELOP_JMP_USED so it knows that it does
                    not need to materialize the result as a 0 or 1. */
 
-                /* We also mark it as DONT_CSE, as we don't handle QMARKs with nonRELOP op1s */
+                /* We also mark it as DONT_CSE, as we don't handle JTRUEs with nonRELOP op1s ??? */
                 op1->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
 
                 // Request that the codegen for op1 sets the condition flags
@@ -8440,13 +8437,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 GenTree* effOp1 = op1->gtEffectiveVal();
                 noway_assert((effOp1->gtOper == GT_CNS_INT) &&
                              (effOp1->IsIntegralConst(0) || effOp1->IsIntegralConst(1)));
-            }
-            break;
-
-        case GT_COLON:
-            if (optLocalAssertionProp)
-            {
-                isQmarkColon = true;
             }
             break;
 
@@ -8812,9 +8802,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 // Small-typed return values are normalized by the callee
                 op1 = gtNewCastNode(TYP_INT, op1, false, info.compRetType);
 
-                // Propagate GTF_COLON_COND
-                op1->gtFlags |= (tree->gtFlags & GTF_COLON_COND);
-
                 tree->AsOp()->gtOp1 = fgMorphTree(op1);
 
                 // Propagate side effect flags
@@ -8927,27 +8914,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
 
     if (op1 != nullptr)
     {
-        // If we are entering the "then" part of a Qmark-Colon we must
-        // save the state of the current copy assignment table
-        // so that we can restore this state when entering the "else" part
-        if (isQmarkColon)
-        {
-            noway_assert(optLocalAssertionProp);
-            if (optAssertionCount)
-            {
-                noway_assert(optAssertionCount <= optMaxAssertionCount); // else ALLOCA() is a bad idea
-                unsigned tabSize   = optAssertionCount * sizeof(AssertionDsc);
-                origAssertionTab   = (AssertionDsc*)ALLOCA(tabSize);
-                origAssertionCount = optAssertionCount;
-                memcpy(origAssertionTab, optAssertionTabPrivate, tabSize);
-            }
-            else
-            {
-                origAssertionCount = 0;
-                origAssertionTab   = nullptr;
-            }
-        }
-
         MorphAddrContext indMac;
         if (tree->OperIsIndir()) // TODO-CQ: add more operators here (e. g. atomics).
         {
@@ -8982,27 +8948,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             // this indirection will now be responsible for null-checking (implicitly).
             tree->gtFlags &= ~GTF_IND_NONFAULTING;
         }
-
-        // If we are exiting the "then" part of a Qmark-Colon we must
-        // save the state of the current copy assignment table
-        // so that we can merge this state with the "else" part exit
-        if (isQmarkColon)
-        {
-            noway_assert(optLocalAssertionProp);
-            if (optAssertionCount)
-            {
-                noway_assert(optAssertionCount <= optMaxAssertionCount); // else ALLOCA() is a bad idea
-                unsigned tabSize   = optAssertionCount * sizeof(AssertionDsc);
-                thenAssertionTab   = (AssertionDsc*)ALLOCA(tabSize);
-                thenAssertionCount = optAssertionCount;
-                memcpy(thenAssertionTab, optAssertionTabPrivate, tabSize);
-            }
-            else
-            {
-                thenAssertionCount = 0;
-                thenAssertionTab   = nullptr;
-            }
-        }
     }
 
     /*-------------------------------------------------------------------------
@@ -9011,93 +8956,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
 
     if (op2 != nullptr)
     {
-        // If we are entering the "else" part of a Qmark-Colon we must
-        // reset the state of the current copy assignment table
-        if (isQmarkColon)
-        {
-            noway_assert(optLocalAssertionProp);
-            optAssertionReset(0);
-            if (origAssertionCount)
-            {
-                size_t tabSize = origAssertionCount * sizeof(AssertionDsc);
-                memcpy(optAssertionTabPrivate, origAssertionTab, tabSize);
-                optAssertionReset(origAssertionCount);
-            }
-        }
-
         tree->AsOp()->gtOp2 = op2 = fgMorphTree(op2);
-
-        // If we are exiting the "else" part of a Qmark-Colon we must
-        // merge the state of the current copy assignment table with
-        // that of the exit of the "then" part.
-        if (isQmarkColon)
-        {
-            noway_assert(optLocalAssertionProp);
-            // If either exit table has zero entries then
-            // the merged table also has zero entries
-            if (optAssertionCount == 0 || thenAssertionCount == 0)
-            {
-                optAssertionReset(0);
-            }
-            else
-            {
-                size_t tabSize = optAssertionCount * sizeof(AssertionDsc);
-                if ((optAssertionCount != thenAssertionCount) ||
-                    (memcmp(thenAssertionTab, optAssertionTabPrivate, tabSize) != 0))
-                {
-                    // Yes they are different so we have to find the merged set
-                    // Iterate over the assertion table removing any entries
-                    // that do not have an exact match in the thenAssertionTab
-                    AssertionIndex index = 1;
-                    while (index <= optAssertionCount)
-                    {
-                        AssertionDsc* curAssertion = optGetAssertion(index);
-
-                        for (unsigned j = 0; j < thenAssertionCount; j++)
-                        {
-                            AssertionDsc* thenAssertion = &thenAssertionTab[j];
-
-                            // Do the left sides match?
-                            if ((curAssertion->op1.lcl.lclNum == thenAssertion->op1.lcl.lclNum) &&
-                                (curAssertion->assertionKind == thenAssertion->assertionKind))
-                            {
-                                // Do the right sides match?
-                                if ((curAssertion->op2.kind == thenAssertion->op2.kind) &&
-                                    (curAssertion->op2.lconVal == thenAssertion->op2.lconVal))
-                                {
-                                    goto KEEP;
-                                }
-                                else
-                                {
-                                    goto REMOVE;
-                                }
-                            }
-                        }
-                    //
-                    // If we fall out of the loop above then we didn't find
-                    // any matching entry in the thenAssertionTab so it must
-                    // have been killed on that path so we remove it here
-                    //
-                    REMOVE:
-                        // The data at optAssertionTabPrivate[i] is to be removed
-                        CLANG_FORMAT_COMMENT_ANCHOR;
-#ifdef DEBUG
-                        if (verbose)
-                        {
-                            printf("The QMARK-COLON ");
-                            printTreeID(tree);
-                            printf(" removes assertion candidate #%d\n", index);
-                        }
-#endif
-                        optAssertionRemove(index);
-                        continue;
-                    KEEP:
-                        // The data at optAssertionTabPrivate[i] is to be kept
-                        index++;
-                    }
-                }
-            }
-        }
     }
 
 #ifndef TARGET_64BIT
@@ -9137,15 +8996,6 @@ DONE_MORPHING_CHILDREN:
 
     GenTree* oldTree = tree;
 
-    GenTree* qmarkOp1 = nullptr;
-    GenTree* qmarkOp2 = nullptr;
-
-    if ((tree->OperGet() == GT_QMARK) && (tree->AsOp()->gtOp2->OperGet() == GT_COLON))
-    {
-        qmarkOp1 = oldTree->AsOp()->gtOp2->AsOp()->gtOp1;
-        qmarkOp2 = oldTree->AsOp()->gtOp2->AsOp()->gtOp2;
-    }
-
     if (opts.OptimizationEnabled())
     {
         // Try to fold it, maybe we get lucky,
@@ -9155,7 +9005,7 @@ DONE_MORPHING_CHILDREN:
     if (oldTree != tree)
     {
         /* if gtFoldExpr returned op1 or op2 then we are done */
-        if ((tree == op1) || (tree == op2) || (tree == qmarkOp1) || (tree == qmarkOp2))
+        if ((tree == op1) || (tree == op2))
         {
             return tree;
         }
@@ -9651,16 +9501,6 @@ DONE_MORPHING_CHILDREN:
             }
             break;
 
-        case GT_COLON:
-            if (fgGlobalMorph)
-            {
-                /* Mark the nodes that are conditionally executed */
-                fgWalkTreePre(&tree, gtMarkColonCond);
-            }
-            /* Since we're doing this postorder we clear this if it got set by a child */
-            fgRemoveRestOfBlock = false;
-            break;
-
         case GT_COMMA:
 
             /* Special case: trees that don't produce a value */
@@ -9807,8 +9647,7 @@ DONE_MORPHING_CHILDREN:
     // Propagate comma throws.
     // If we are in the Valuenum CSE phase then don't morph away anything as these
     // nodes may have CSE defs/uses in them.
-    if (fgGlobalMorph && (oper != GT_COLON) &&
-        /* TODO-ASG-Cleanup: delete this zero-diff quirk */ !GenTree::OperIsStore(oper))
+    if (fgGlobalMorph && /* TODO-ASG-Cleanup: delete this zero-diff quirk */ !GenTree::OperIsStore(oper))
     {
         if ((op1 != nullptr) && fgIsCommaThrow(op1, true))
         {
@@ -11354,11 +11193,9 @@ GenTree* Compiler::fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow,
     // Comma throw propagation does not preserve VNs, and deletes nodes.
     assert(fgGlobalMorph);
     assert(fgIsCommaThrow(commaThrow));
+    assert((commaThrow->gtFlags & GTF_COLON_COND) == 0);
 
-    if ((commaThrow->gtFlags & GTF_COLON_COND) == 0)
-    {
-        fgRemoveRestOfBlock = true;
-    }
+    fgRemoveRestOfBlock = true;
 
     if ((precedingSideEffects & GTF_ALL_EFFECT) == 0)
     {
@@ -13244,7 +13081,7 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(cons
                 printf("Removing the rest of block as unreachable:\n");
             }
 #endif
-            noway_assert((morph->gtFlags & GTF_COLON_COND) == 0);
+            assert((morph->gtFlags & GTF_COLON_COND) == 0);
             fgRemoveRestOfBlock = true;
         }
     }
@@ -13490,7 +13327,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
             /* Use the call as the new stmt */
             morphedTree = morphedTree->AsOp()->gtOp1;
             noway_assert(morphedTree->gtOper == GT_CALL);
-            noway_assert((morphedTree->gtFlags & GTF_COLON_COND) == 0);
+            assert((morphedTree->gtFlags & GTF_COLON_COND) == 0);
 
             fgRemoveRestOfBlock = true;
         }
@@ -13634,8 +13471,7 @@ void Compiler::fgMorphBlocks()
         {
             //
             // Clear out any currently recorded assertion candidates
-            // before processing each basic block,
-            // also we must  handle QMARK-COLON specially
+            // before processing each basic block.
             //
             optAssertionReset(0);
         }

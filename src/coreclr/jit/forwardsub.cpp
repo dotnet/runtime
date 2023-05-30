@@ -593,35 +593,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
     JITDUMP(" [%06u] is last use of [%06u] (V%02u) ", dspTreeID(fsv.GetNode()), dspTreeID(defNode), lclNum);
 
-    // Qmarks must replace top-level uses. Also, restrict to STORE_LCL_VAR.
-    // And also to where neither local is normalize on store, otherwise
-    // something downstream may add a cast over the qmark.
-    //
-    GenTree* const nextRootNode = nextStmt->GetRootNode();
-    if (fwdSubNode->OperIs(GT_QMARK))
-    {
-        if ((fsv.GetParentNode() != nextRootNode) || !nextRootNode->OperIs(GT_STORE_LCL_VAR))
-        {
-            JITDUMP(" can't fwd sub qmark as use is not top level STORE_LCL_VAR\n");
-            return false;
-        }
-
-        if (varDsc->lvNormalizeOnStore())
-        {
-            JITDUMP(" can't fwd sub qmark as V%02u is normalize on store\n", lclNum);
-            return false;
-        }
-
-        const unsigned   dstLclNum = nextRootNode->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* const dstVarDsc = lvaGetDesc(dstLclNum);
-
-        if (dstVarDsc->lvNormalizeOnStore())
-        {
-            JITDUMP(" can't fwd sub qmark as V%02u is normalize on store\n", dstLclNum);
-            return false;
-        }
-    }
-
     // If next statement already has a large tree, hold off
     // on making it even larger.
     //

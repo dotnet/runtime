@@ -131,40 +131,11 @@ void PromotionLiveness::ComputeUseDefSets()
         BitVecOps::AssignNoCopy(m_bvTraits, bb.LiveIn, BitVecOps::MakeEmpty(m_bvTraits));
         BitVecOps::AssignNoCopy(m_bvTraits, bb.LiveOut, BitVecOps::MakeEmpty(m_bvTraits));
 
-        if (m_compiler->compQmarkUsed)
+        for (Statement* stmt : block->Statements())
         {
-            for (Statement* stmt : block->Statements())
+            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
             {
-                GenTree* dst;
-                GenTree* qmark = m_compiler->fgGetTopLevelQmark(stmt->GetRootNode(), &dst);
-                if (qmark == nullptr)
-                {
-                    for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-                    {
-                        MarkUseDef(lcl, bb.VarUse, bb.VarDef);
-                    }
-                }
-                else
-                {
-                    for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-                    {
-                        // Skip liveness updates/marking for defs; they may be conditionally executed.
-                        if ((lcl->gtFlags & GTF_VAR_DEF) == 0)
-                        {
-                            MarkUseDef(lcl, bb.VarUse, bb.VarDef);
-                        }
-                    }
-                }
-            }
-        }
-        else
-        {
-            for (Statement* stmt : block->Statements())
-            {
-                for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-                {
-                    MarkUseDef(lcl, bb.VarUse, bb.VarDef);
-                }
+                MarkUseDef(lcl, bb.VarUse, bb.VarDef);
             }
         }
 
@@ -529,29 +500,12 @@ void PromotionLiveness::FillInLiveness()
 
         while (true)
         {
-            GenTree* qmark = nullptr;
-            if (m_compiler->compQmarkUsed)
+            for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr; cur = cur->gtPrev)
             {
-                GenTree* dst;
-                qmark = m_compiler->fgGetTopLevelQmark(stmt->GetRootNode(), &dst);
-            }
-
-            if (qmark == nullptr)
-            {
-                for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr; cur = cur->gtPrev)
+                // Skip liveness updates/marking for defs; they may be conditionally executed.
+                if ((cur->gtFlags & GTF_VAR_DEF) == 0)
                 {
                     FillInLiveness(life, volatileVars, cur->AsLclVarCommon());
-                }
-            }
-            else
-            {
-                for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr; cur = cur->gtPrev)
-                {
-                    // Skip liveness updates/marking for defs; they may be conditionally executed.
-                    if ((cur->gtFlags & GTF_VAR_DEF) == 0)
-                    {
-                        FillInLiveness(life, volatileVars, cur->AsLclVarCommon());
-                    }
                 }
             }
 
