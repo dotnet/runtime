@@ -825,6 +825,34 @@ namespace System.Reflection.Metadata
 		Assert.Null(parms[3].DefaultValue);
 		Assert.Equal(string.Empty, parms[4].DefaultValue);
             });
-	} 
+	}
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestGenericAddStaticField()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField<>).Assembly;
+
+                var x = new System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField<string>();
+
+                x.TestMethod();
+
+                Assert.Equal ("abcd", x.GetField);
+
+                var y = new System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField<double>();
+
+                Assert.Equal (0.0, y.GetField);
+                
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                x.TestMethod();
+
+                string result = x.GetField;
+                Assert.Equal("4567", result);
+
+                Assert.Equal(0.0, y.GetField);
+            });
+        }
     }
 }
