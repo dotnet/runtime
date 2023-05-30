@@ -2591,14 +2591,30 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_MUL_IMM:
-		case OP_IMUL_IMM: {
+		case OP_IMUL_IMM: 
+		case OP_LMUL_IMM: {
 			g_assert (riscv_stdext_m);
 			NEW_INS_BEFORE (cfg, ins, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
 			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
 			ins->inst_imm = 0;
-			ins->opcode = OP_IMUL;
+			switch (ins->opcode)
+			{
+			case OP_MUL_IMM:
+#ifdef TARGET_RISCV64
+				ins->opcode = OP_LMUL;
+#else
+				ins->opcode = OP_IMUL;
+#endif
+				break;
+			case OP_IMUL_IMM:
+				ins->opcode = OP_IMUL;
+				break;
+			case OP_LMUL_IMM:
+				ins->opcode = OP_LMUL;
+				break;
+			}
 			break;
 		}
 		case OP_IREM_IMM:
@@ -3716,6 +3732,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_sub (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_IMUL:
+#ifdef TARGET_RISCV64
+			g_assert (riscv_stdext_m);
+			riscv_mulw (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+#endif
 		case OP_LMUL:
 			g_assert (riscv_stdext_m);
 			riscv_mul (code, ins->dreg, ins->sreg1, ins->sreg2);
