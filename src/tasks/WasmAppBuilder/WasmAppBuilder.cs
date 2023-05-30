@@ -295,7 +295,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         }
         else if (PThreadPoolSize > -1)
         {
-            extraConfiguration["pthreadPoolSize"] = PThreadPoolSize;
+            config.pthreadPoolSize = PThreadPoolSize;
         }
 
         foreach (ITaskItem extra in ExtraConfig ?? Enumerable.Empty<ITaskItem>())
@@ -308,8 +308,6 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 config.environmentVariables = valueObject;
             else if (name == "diagnosticTracing")
                 config.diagnosticTracing = valueObject;
-            else if (name == "pthreadPoolSize")
-                config.pthreadPoolSize = valueObject;
             else
                 extraConfiguration[name] = valueObject;
         }
