@@ -288,46 +288,6 @@ namespace Microsoft.Extensions.Logging
                     message: "An error occurred while writing to logger(s).", innerExceptions: exceptions);
             }
 
-
-
-            //Processors should also handle scopes
-            //ScopeLogger[]? loggers = ScopeLoggers;
-            //ScopeLogger[]? loggers = null;
-
-            //if (loggers == null)
-            //{
-            //    return NullScope.Instance;
-            //}
-
-            //if (loggers.Length == 1)
-            //{
-            //    return loggers[0].CreateScope(state);
-            //}
-
-            //var scope = new Scope(loggers.Length);
-            //List<Exception>? exceptions = null;
-            //for (int i = 0; i < loggers.Length; i++)
-            //{
-            //    ref readonly ScopeLogger scopeLogger = ref loggers[i];
-
-            //    try
-            //    {
-            //        scope.SetDisposable(i, scopeLogger.CreateScope(state));
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        exceptions ??= new List<Exception>();
-            //        exceptions.Add(ex);
-            //    }
-            //}
-
-            //if (exceptions != null && exceptions.Count > 0)
-            //{
-            //    ThrowLoggingError(exceptions);
-            //}
-
-            //return scope;
-
             public override bool IsEnabled(LogLevel level) => _processor.IsEnabled(level);
         }
     }

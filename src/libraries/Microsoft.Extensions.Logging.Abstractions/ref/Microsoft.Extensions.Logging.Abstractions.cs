@@ -71,10 +71,6 @@ namespace Microsoft.Extensions.Logging
     {
         Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName);
     }
-    public partial interface ILoggerStateWithMetadata<TState>
-    {
-        Microsoft.Extensions.Logging.ILogMetadata<TState> Metadata { get; }
-    }
     public partial interface ILogger<out TCategoryName> : Microsoft.Extensions.Logging.ILogger
     {
     }

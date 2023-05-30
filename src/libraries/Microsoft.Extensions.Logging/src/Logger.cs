@@ -33,12 +33,7 @@ namespace Microsoft.Extensions.Logging
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
-            ILogMetadata<TState>? metadata = null;
-            if (state is ILoggerStateWithMetadata<TState>)
-            {
-                metadata = ((ILoggerStateWithMetadata<TState>)state).Metadata;
-            }
-            LogEntryPipeline<TState> pipeline = GetLoggingPipeline<TState>(metadata, this)!;
+            LogEntryPipeline<TState> pipeline = GetLoggingPipeline<TState>(metadata: null, this)!;
             if (!pipeline.IsEnabled || (pipeline.IsDynamicLevelCheckRequired && !pipeline.IsEnabledDynamic(logLevel)))
             {
                 return;
@@ -59,12 +54,7 @@ namespace Microsoft.Extensions.Logging
 
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull
         {
-            ILogMetadata<TState>? metadata = null;
-            if (state is ILoggerStateWithMetadata<TState>)
-            {
-                metadata = ((ILoggerStateWithMetadata<TState>)state).Metadata;
-            }
-            ScopePipeline<TState>? pipeline = GetScopePipeline<TState>(metadata, this);
+            ScopePipeline<TState>? pipeline = GetScopePipeline<TState>(metadata: null, this);
             if (pipeline is null || !pipeline.IsEnabled)
             {
                 return null;

@@ -63,12 +63,6 @@ namespace Microsoft.Extensions.Logging
         public abstract IDisposable? HandleBeginScope(ref TState state);
     }
 
-    //TODO: Not sure if we need to keep this?
-    public interface ILoggerStateWithMetadata<TState>
-    {
-        public ILogMetadata<TState> Metadata { get; }
-    }
-
     public struct LogPropertyInfo
     {
         public LogPropertyInfo(string name, object[]? metadata)
