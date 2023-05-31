@@ -767,12 +767,25 @@ struct ProcInfoCacheEntry
 {
     PCODE pc;
     volatile size_t version;
-    unw_proc_info_t procInfo;
+
+    //    unw_proc_info_t procInfo;
+    uint32_t    start_offset;     /* start address of function relative to pc */
+    uint32_t    end_offset;       /* end address of function relative to pc */
+
+    uint32_t    format;           /* compact unwind encoding, or zero if none */
+    uint32_t    unwind_info_size; /* size of DWARF unwind info, or zero if none */
+    unw_word_t  lsda;             /* address of language specific data area, */
+    unw_word_t  handler;          /* personality routine, or zero if not used */
+    unw_word_t  unwind_info;      /* address of DWARF unwind info, or zero */
+
+#ifdef __APPLE__
+    unw_word_t  extra;            /* mach_header of mach-o image containing func */
+#endif
 };
 
-// we use static array with 512 entries as a cache
-// that is about 45Kb  (assuming unw_proc_info_t is 9 * 8 bytes) and what we can reasonably afford.
-static const int CACHE_BITS = 9;
+// we use static array with 1024 entries as a cache.
+// that is about 57Kb and what we can reasonably afford.
+static const int CACHE_BITS = 10;
 static ProcInfoCacheEntry cache[1 << CACHE_BITS];
 #endif
 
@@ -783,6 +796,10 @@ static ProcInfoCacheEntry cache[1 << CACHE_BITS];
 static void SetCachedProcInfo(PCODE pc, unw_proc_info_t* procInfo)
 {
 #if TARGET_64BIT
+
+    if ((procInfo->end_ip - procInfo->start_ip) > UINT32_MAX)
+        return;
+
     // randomize the addresses a bit and narrow the range to the cache size.
     int idx = (int)((pc * 11400714819323198485llu) >> (64 - CACHE_BITS));
 
@@ -793,20 +810,30 @@ static void SetCachedProcInfo(PCODE pc, unw_proc_info_t* procInfo)
         return;
 
     size_t origVersion = pEntry->version;
-    // if version is odd, someone is writing into it, will try again next time.
+    // if version is odd, someone is writing into it, we will try again next time.
     if (origVersion & 1)
         return;
 
-    // claim the entry by making the version odd
+    // claim the entry by incrementing the version
     if (!__atomic_compare_exchange_n(&pEntry->version, &origVersion, origVersion + 1, true, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED))
     {
         return;
     }
 
     pEntry->pc = pc;
-    pEntry->procInfo = *procInfo;
+    pEntry->start_offset = (uint32_t)(pc - procInfo->start_ip);
+    pEntry->end_offset = (uint32_t)(procInfo->end_ip - pc);
+    pEntry->format = procInfo->format;
+    pEntry->unwind_info_size = procInfo->unwind_info_size;
+    pEntry->lsda = procInfo->lsda;
+    pEntry->handler = procInfo->handler;
+    pEntry->unwind_info = procInfo->unwind_info;
 
-    // make the version even again after filling the entry
+#ifdef __APPLE__
+    pEntry->extra = procInfo->extra;
+#endif
+
+    // increment the version again after filling the entry
     __atomic_store_n(&pEntry->version, origVersion + 2, __ATOMIC_RELEASE);
 #endif
 }
@@ -822,7 +849,19 @@ static bool TryGetCachedProcInfo(PCODE pc, unw_proc_info_t* procInfo)
     size_t version = __atomic_load_n(&pEntry->version, __ATOMIC_ACQUIRE);
     if (pc == pEntry->pc)
     {
-        *procInfo = pEntry->procInfo;
+        procInfo->start_ip = pc - pEntry->start_offset;
+        procInfo->end_ip = pc + pEntry->end_offset;
+
+        procInfo->format = pEntry->format;
+        procInfo->unwind_info_size = pEntry->unwind_info_size;
+        procInfo->lsda = pEntry->lsda;
+        procInfo->handler = pEntry->handler;
+        procInfo->unwind_info = pEntry->unwind_info;
+
+#ifdef __APPLE__
+        procInfo->extra = pEntry->extra;
+#endif
+
         // make sure all reads are done before reading the version second time
         __atomic_thread_fence(__ATOMIC_ACQUIRE);
 
