@@ -13,6 +13,27 @@ public class CoreCLRHostNativeWrappersGenerator
 {
     public const string ManagedWrapperOptionsAttributeName = "ManagedWrapperOptionsAttribute";
 
+    enum WrapperVariant
+    {
+        /// <summary>
+        /// Friendly wrapper that takes managed types and returns managed types rather than having to deal with IntPtrs.
+        /// </summary>
+        Friendly,
+
+        /// <summary>
+        /// A wrapper that has the same signature as the embedding api
+        /// </summary>
+        Raw,
+
+        /// <summary>
+        /// A wrapper that has the same signature as the friendly wrapper, but returns the result as a raw IntPtr
+        /// This is helpful in a few situations
+        /// 1) When you need to pass the result to another embedding api
+        /// 2) When you need to assert a null return and don't want the conversion back to managed because it will throw or crash
+        /// </summary>
+        RawReturnOnly
+    }
+
     public static void Run(GeneratorExecutionContext context, IMethodSymbol[] callbackMethods)
     {
         WriteCoreCLRHostNativeWrappers(context, callbackMethods);
@@ -55,11 +76,18 @@ namespace Unity.CoreCLRHelpers;
         sb.AppendLine($"unsafe partial interface {className}");
         sb.AppendLine("{");
 
-        foreach (var methodSymbol in MethodsToGenerateWrappersFor(callbackMethods))
+        var methodsToGenerateWrappersFor = MethodsToGenerateWrappersFor(callbackMethods).ToArray();
+        foreach (var methodSymbol in methodsToGenerateWrappersFor)
         {
-            string signature = FormatMethodParametersForManagedWrapperMethodSignature(methodSymbol);
-            sb.AppendLine($"    {ManagedWrapperType(methodSymbol.ReturnType, methodSymbol.GetReturnTypeAttributes())} {methodSymbol.Name}({signature});");
+            sb.AppendLine($"    {FormatSignature(methodSymbol, WrapperVariant.Raw)};");
             sb.AppendLine();
+        }
+
+        // Now write default interface implementations for the friendly and raw return only variants
+        foreach (var methodSymbol in methodsToGenerateWrappersFor)
+        {
+            AppendWrapperDefaultInterfaceImplementation(sb, methodSymbol, WrapperVariant.Friendly);
+            AppendWrapperDefaultInterfaceImplementation(sb, methodSymbol, WrapperVariant.RawReturnOnly);
         }
 
         sb.Append("}");
@@ -86,10 +114,7 @@ namespace Unity.CoreCLRHelpers;
         foreach (var methodSymbol in MethodsToGenerateWrappersFor(callbackMethods))
         {
             var apiName = useNativeName ? methodSymbol.NativeWrapperName() : methodSymbol.Name;
-            string signature = FormatMethodParametersForManagedWrapperMethodSignature(methodSymbol);
-            sb.AppendLine($"    public {ManagedWrapperType(methodSymbol.ReturnType, methodSymbol.GetReturnTypeAttributes())} {methodSymbol.Name}({signature})");
-            sb.AppendLine($"        => {FormatManagedCast(methodSymbol)}{apiClassName}.{apiName}({FormatMethodParametersNamesForNiceManaged(methodSymbol)}){FormatToManagedRepresentation(methodSymbol)};");
-            sb.AppendLine();
+            AppendWrapperMethodImplementation(sb, methodSymbol, WrapperVariant.Raw, apiClassName, apiName);
         }
 
         sb.Append("}");
@@ -97,21 +122,61 @@ namespace Unity.CoreCLRHelpers;
             SourceText.From(sb.ToString(), Encoding.UTF8));
     }
 
+    static string WrapperVariantPostFix(WrapperVariant wrapperVariant)
+    {
+        switch (wrapperVariant)
+        {
+            case WrapperVariant.Friendly:
+                return string.Empty;
+            case WrapperVariant.Raw:
+                return "_raw";
+            case WrapperVariant.RawReturnOnly:
+                return "_raw_return_only";
+            default:
+                throw new ArgumentException($"Unhandled {nameof(WrapperVariant)} value of {wrapperVariant}");
+        }
+    }
+
+    static void AppendWrapperDefaultInterfaceImplementation(StringBuilder sb, IMethodSymbol methodSymbol, WrapperVariant wrapperVariant)
+    {
+        sb.AppendLine($"    public {FormatSignature(methodSymbol, wrapperVariant)}");
+        sb.AppendLine($"        => {FormatManagedCast(methodSymbol, wrapperVariant)}{methodSymbol.Name}_raw({FormatMethodParametersNamesForNiceManaged(methodSymbol, wrapperVariant, callingAnotherWrapper: true)}){FormatToManagedRepresentation(methodSymbol, wrapperVariant)};");
+        sb.AppendLine();
+    }
+
+    static void AppendWrapperMethodImplementation(StringBuilder sb, IMethodSymbol methodSymbol, WrapperVariant wrapperVariant, string apiClassName, string apiName)
+    {
+        sb.AppendLine($"    public {FormatSignature(methodSymbol, wrapperVariant)}");
+        sb.AppendLine($"        => {FormatManagedCast(methodSymbol, wrapperVariant)}{apiClassName}.{apiName}({FormatMethodParametersNamesForNiceManaged(methodSymbol, wrapperVariant, callingAnotherWrapper: false)}){FormatToManagedRepresentation(methodSymbol, wrapperVariant)};");
+        sb.AppendLine();
+    }
+
+    static string FormatSignature(IMethodSymbol methodSymbol, WrapperVariant wrapperVariant)
+    {
+        string signature = FormatMethodParametersForManagedWrapperMethodSignature(methodSymbol, wrapperVariant);
+        var methodName = $"{methodSymbol.Name}{WrapperVariantPostFix(wrapperVariant)}";
+        return $"{ManagedWrapperReturnType(methodSymbol, wrapperVariant)} {methodName}({signature})";
+    }
+
     static IEnumerable<IMethodSymbol> MethodsToGenerateWrappersFor(IMethodSymbol[] callbackMethods)
         => callbackMethods.Where(m => m.ManagedWrapperOptions() != ManagedWrapperOptions.Exclude);
 
-    static string FormatMethodParametersForManagedWrapperMethodSignature(IMethodSymbol methodSymbol) =>
+    static string FormatMethodParametersForManagedWrapperMethodSignature(IMethodSymbol methodSymbol, WrapperVariant wrapperVariant) =>
         methodSymbol.Parameters
             .Where(p =>  p.ManagedWrapperOptions() != ManagedWrapperOptions.Exclude)
-            .Select(p => $"{ManagedWrapperType(p)} {p.Name}")
+            .Select(p => $"{ManagedWrapperType(p, wrapperVariant)} {p.Name}")
             .AggregateWithCommaSpace();
 
-    static string ManagedWrapperType(IParameterSymbol parameterSymbol)
-        => ManagedWrapperType(parameterSymbol.Type, parameterSymbol.GetAttributes());
+    static string ManagedWrapperReturnType(IMethodSymbol methodSymbol, WrapperVariant wrapperVariant)
+        => ManagedWrapperType(methodSymbol.ReturnType, methodSymbol.GetReturnTypeAttributes(),
+            wrapperVariant == WrapperVariant.RawReturnOnly ? WrapperVariant.Raw : wrapperVariant);
 
-    static string ManagedWrapperType(ITypeSymbol typeSymbol, ImmutableArray<AttributeData> providerAttributes)
+    static string ManagedWrapperType(IParameterSymbol parameterSymbol, WrapperVariant wrapperVariant)
+        => ManagedWrapperType(parameterSymbol.Type, parameterSymbol.GetAttributes(), wrapperVariant);
+
+    static string ManagedWrapperType(ITypeSymbol typeSymbol, ImmutableArray<AttributeData> providerAttributes, WrapperVariant wrapperVariant)
     {
-        if (providerAttributes.ManagedWrapperOptions() == ManagedWrapperOptions.AsIs)
+        if (providerAttributes.ManagedWrapperOptions() == ManagedWrapperOptions.AsIs || wrapperVariant == WrapperVariant.Raw)
             return typeSymbol.ToString();
 
         if (providerAttributes.ManagedWrapperOptions() == ManagedWrapperOptions.Custom)
@@ -140,11 +205,17 @@ namespace Unity.CoreCLRHelpers;
         return typeSymbol.ToString();
     }
 
-    static string FormatMethodParametersNamesForNiceManaged(IMethodSymbol methodSymbol) =>
-        methodSymbol.Parameters.Select(FormatToNativeRepresentation)
+    static string FormatMethodParametersNamesForNiceManaged(IMethodSymbol methodSymbol, WrapperVariant wrapperVariant, bool callingAnotherWrapper)
+    {
+        var parameters = callingAnotherWrapper
+            ? methodSymbol.Parameters.Where(p => p.ManagedWrapperOptions() != ManagedWrapperOptions.Exclude)
+            : methodSymbol.Parameters;
+        return parameters
+            .Select(p => FormatToNativeRepresentation(p, wrapperVariant))
             .AggregateWithCommaSpace();
+    }
 
-    static string FormatToNativeRepresentation(IParameterSymbol parameterSymbol)
+    static string FormatToNativeRepresentation(IParameterSymbol parameterSymbol, WrapperVariant wrapperVariant)
     {
         var managedWrapperOptions = parameterSymbol.ManagedWrapperOptions();
         if (managedWrapperOptions == ManagedWrapperOptions.Exclude)
@@ -155,7 +226,7 @@ namespace Unity.CoreCLRHelpers;
             return "null";
         }
 
-        if (managedWrapperOptions == ManagedWrapperOptions.AsIs)
+        if (managedWrapperOptions == ManagedWrapperOptions.AsIs || wrapperVariant == WrapperVariant.Raw)
             return parameterSymbol.Name;
 
         switch (parameterSymbol.NativeWrapperTypeFor())
@@ -175,9 +246,9 @@ namespace Unity.CoreCLRHelpers;
         return parameterSymbol.Name;
     }
 
-    static string FormatToManagedRepresentation(IMethodSymbol methodSymbol)
+    static string FormatToManagedRepresentation(IMethodSymbol methodSymbol, WrapperVariant wrapperVariant)
     {
-        if (methodSymbol.ManagedWrapperOptionsForReturnType() == ManagedWrapperOptions.AsIs)
+        if (methodSymbol.ManagedWrapperOptionsForReturnType() == ManagedWrapperOptions.AsIs || wrapperVariant == WrapperVariant.Raw || wrapperVariant == WrapperVariant.RawReturnOnly)
             return string.Empty;
 
         switch (methodSymbol.NativeWrapperTypeForReturnType())
@@ -194,8 +265,11 @@ namespace Unity.CoreCLRHelpers;
         return string.Empty;
     }
 
-    private static string FormatManagedCast(IMethodSymbol methodSymbol)
+    private static string FormatManagedCast(IMethodSymbol methodSymbol, WrapperVariant wrapperVariant)
     {
+        if (wrapperVariant == WrapperVariant.Raw || wrapperVariant == WrapperVariant.RawReturnOnly)
+            return string.Empty;
+
         switch (methodSymbol.NativeWrapperTypeForReturnType())
         {
             case "MonoArray*":
