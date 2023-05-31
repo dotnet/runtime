@@ -849,6 +849,7 @@ export function generateWasmBody(
             case MintOpcode.MINT_CASTCLASS_INTERFACE:
             case MintOpcode.MINT_ISINST_INTERFACE: {
                 const klass = get_imethod_data(frame, getArgU16(ip, 3)),
+                    isSpecialInterface = cwraps.mono_jiterp_is_special_interface(<any>klass),
                     bailoutOnFailure = (opcode === MintOpcode.MINT_CASTCLASS_INTERFACE),
                     destOffset = getArgU16(ip, 1);
                 if (!klass) {
@@ -884,14 +885,18 @@ export function generateWasmBody(
                     builder.local("temp_ptr");
                 }
 
-                // load a second copy of obj to build the helper arglist (obj, vtable, klass)
-                builder.local("temp_ptr");
+                // the special interface version signature is (obj, vtable, klass), but
+                //  the fast signature is (vtable, klass)
+                if (isSpecialInterface) {
+                    // load a second copy of obj to build the helper arglist (obj, vtable, klass)
+                    builder.local("temp_ptr");
+                }
 
                 builder.appendU8(WasmOpcode.i32_load); // obj->vtable
                 builder.appendMemarg(getMemberOffset(JiterpMember.VTable), 0); // fixme: alignment
 
                 builder.ptr_const(klass);
-                builder.callImport("imp_iface");
+                builder.callImport(isSpecialInterface ? "imp_iface_s" : "imp_iface");
 
                 builder.block(WasmValtype.void, WasmOpcode.if_); // if cast succeeded
                 builder.local("pLocals");

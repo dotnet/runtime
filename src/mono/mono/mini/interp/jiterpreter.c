@@ -247,6 +247,21 @@ mono_jiterp_has_parent_fast (
 
 EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_implements_interface (
+	MonoVTable *vtable, MonoClass *klass
+) {
+	// FIXME: Perform some of this work at JIT time
+	// If null check fusion is active, vtable->max_interface_id will be 0
+	return MONO_VTABLE_IMPLEMENTS_INTERFACE (vtable, m_class_get_interface_id (klass)) || (vtable == NULL);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_is_special_interface (MonoClass *klass)
+{
+	return m_class_is_array_special_interface (klass);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_implements_special_interface (
 	MonoObject *obj, MonoVTable *vtable, MonoClass *klass
 ) {
 	// FIXME: Perform some of this work at JIT time
@@ -255,12 +270,12 @@ mono_jiterp_implements_interface (
 		return 1;
 	// For special interfaces we need to do a more complex check to see whether the
 	//  cast to the interface is valid in case obj is an array.
-	// It's not safe to assume that mono_jiterp_isinst will handle nulls, and we don't
-	//  want to waste time running the full isinst machinery on nulls anyway, so nullcheck
-	else if (m_class_is_array_special_interface (klass) && obj)
+	// mono_jiterp_isinst will *not* handle nulls for us, and we don't want
+	//  to waste time running the full isinst machinery on nulls anyway, so nullcheck
+	else if (obj)
 		return mono_jiterp_isinst (obj, klass);
 	else // HACK: Support null check fusion by returning 1 if the obj ptr was null
-		return (obj == 0);
+		return 1;
 }
 
 EMSCRIPTEN_KEEPALIVE int

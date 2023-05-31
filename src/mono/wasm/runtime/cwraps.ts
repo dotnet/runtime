@@ -131,6 +131,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_get_arg_offset", "number", ["number", "number", "number"]],
     [true, "mono_jiterp_get_opcode_info", "number", ["number", "number"]],
     [true, "mono_wasm_is_zero_page_reserved", "number", []],
+    [true, "mono_jiterp_is_special_interface", "number", ["number"]],
     ...legacy_interop_cwraps
 ];
 
@@ -257,6 +258,7 @@ export interface t_Cwraps {
     mono_jiterp_get_arg_offset(imethod: number, sig: number, index: number): number;
     mono_jiterp_get_opcode_info(opcode: number, type: number): number;
     mono_wasm_is_zero_page_reserved(): number;
+    mono_jiterp_is_special_interface(klass: number): number;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};
