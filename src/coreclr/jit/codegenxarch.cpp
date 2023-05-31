@@ -5854,6 +5854,10 @@ void CodeGen::genCall(GenTreeCall* call)
         assert(compiler->canUseVexEncoding());
         instGen(INS_vzeroupper);
     }
+    else if (call->IsHelperCall(compiler, CORINFO_HELP_DBL2ULNG))
+    {
+        instGen(INS_vzeroupper);
+    }
 
     genCallInstruction(call X86_ARG(stackArgBytes));
 
