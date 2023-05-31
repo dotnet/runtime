@@ -63,13 +63,13 @@ namespace Microsoft.Extensions.Logging
 
         public static ILoggingBuilder AddProcessor<T>(this ILoggingBuilder builder, Func<ILogEntryProcessor, T> getProcessor) where T : ILogEntryProcessor
         {
-            builder.Services.TryAddSingleton<IProcessorFactory>(new ProcessorFactory<T>(getProcessor));
+            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IProcessorFactory, ProcessorFactory<T>>(sp => new ProcessorFactory<T>(getProcessor)));
             return builder;
         }
 
         public static ILoggingBuilder AddProcessor<T>(this ILoggingBuilder builder, Func<IServiceProvider, ILogEntryProcessor, T> getProcessor) where T : ILogEntryProcessor
         {
-            builder.Services.TryAddSingleton<IProcessorFactory>(sp => new ProcessorFactory<T>((next) => getProcessor(sp, next)));
+            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IProcessorFactory, ProcessorFactory<T>>(sp => new ProcessorFactory<T>((next) => getProcessor(sp, next))));
             return builder;
         }
     }

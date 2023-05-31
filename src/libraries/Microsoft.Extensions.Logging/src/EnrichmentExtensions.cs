@@ -108,7 +108,7 @@ namespace Microsoft.Extensions.Logging
 
         internal override LogEntryHandler<TState> GetLogEntryHandler<TState>(ILogEntryProcessor nextProcessor, ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired)
         {
-            var enrichmentMetadata = metadata != null ? new EnrichmentLogMetadata<TState>(metadata) : null;
+            var enrichmentMetadata = metadata != null ? new EnrichmentLogMetadata<TState>(metadata, Name0) : null;
             LogEntryHandler<EnrichmentPropertyValues<TState, T0>> nextHandler =
                 nextProcessor.GetLogEntryHandler<EnrichmentPropertyValues<TState, T0>>(enrichmentMetadata, out enabled, out dynamicEnabledCheckRequired);
             return new EnrichmentHandler<TState>(nextHandler, this);
@@ -137,17 +137,19 @@ namespace Microsoft.Extensions.Logging
 
         private sealed class EnrichmentLogMetadata<TState> : ILogMetadata<EnrichmentPropertyValues<TState, T0>>
         {
-            private ILogMetadata<TState> _innerMetadata { get; }
+            private readonly ILogMetadata<TState> _innerMetadata;
+            private readonly string _name0;
 
-            public EnrichmentLogMetadata(ILogMetadata<TState> innerMetadata)
+            public EnrichmentLogMetadata(ILogMetadata<TState> innerMetadata, string name0)
             {
                 _innerMetadata = innerMetadata;
+                _name0 = name0;
             }
 
             public LogLevel LogLevel => _innerMetadata.LogLevel;
             public EventId EventId => _innerMetadata.EventId;
             public string OriginalFormat => _innerMetadata.OriginalFormat;
-            public int PropertyCount => _innerMetadata.PropertyCount;
+            public int PropertyCount => _innerMetadata.PropertyCount + 1;
             public void AppendFormattedMessage(in EnrichmentPropertyValues<TState, T0> state, IBufferWriter<char> buffer) => _innerMetadata.AppendFormattedMessage(state.NestedProperties, buffer);
             public Action<EnrichmentPropertyValues<TState, T0>, IBufferWriter<char>> GetMessageFormatter(PropertyCustomFormatter[] customFormatters)
             {
@@ -159,7 +161,22 @@ namespace Microsoft.Extensions.Logging
                 FormatPropertyListAction<TState> formatter = _innerMetadata.GetPropertyListFormatter(propertyFormatterFactory);
                 return new FormatPropertyListAction<EnrichmentPropertyValues<TState, T0>>((in EnrichmentPropertyValues<TState, T0> s, ref BufferWriter<byte> w) => formatter(in s.NestedProperties, ref w));
             }
-            public LogPropertyInfo GetPropertyInfo(int index) => _innerMetadata.GetPropertyInfo(index);
+            public LogPropertyInfo GetPropertyInfo(int index)
+            {
+                if (index < _innerMetadata.PropertyCount)
+                {
+                    return _innerMetadata.GetPropertyInfo(index);
+                }
+                var i = index - _innerMetadata.PropertyCount;
+                if (i == 0)
+                {
+                    return new LogPropertyInfo(_name0, null);
+                }
+                else
+                {
+                    throw new IndexOutOfRangeException(nameof(index));
+                }
+            }
             public Func<EnrichmentPropertyValues<TState, T0>, Exception?, string> GetStringMessageFormatter()
             {
                 var formatter = _innerMetadata.GetStringMessageFormatter();
@@ -193,7 +210,7 @@ namespace Microsoft.Extensions.Logging
 
         internal override LogEntryHandler<TState> GetLogEntryHandler<TState>(ILogEntryProcessor nextProcessor, ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired)
         {
-            var enrichmentMetadata = metadata != null ? new EnrichmentLogMetadata<TState>(metadata) : null;
+            var enrichmentMetadata = metadata != null ? new EnrichmentLogMetadata<TState>(metadata, Name0, Name1) : null;
             LogEntryHandler<EnrichmentPropertyValues<TState, T0, T1>> nextHandler =
                 nextProcessor.GetLogEntryHandler<EnrichmentPropertyValues<TState, T0, T1>>(enrichmentMetadata, out enabled, out dynamicEnabledCheckRequired);
             return new EnrichmentHandler<TState>(nextHandler, this);
@@ -226,17 +243,21 @@ namespace Microsoft.Extensions.Logging
 
         private sealed class EnrichmentLogMetadata<TState> : ILogMetadata<EnrichmentPropertyValues<TState, T0, T1>>
         {
-            private ILogMetadata<TState> _innerMetadata { get; }
+            private readonly ILogMetadata<TState> _innerMetadata;
+            private readonly string _name0;
+            private readonly string _name1;
 
-            public EnrichmentLogMetadata(ILogMetadata<TState> innerMetadata)
+            public EnrichmentLogMetadata(ILogMetadata<TState> innerMetadata, string name0, string name1)
             {
                 _innerMetadata = innerMetadata;
+                _name0 = name0;
+                _name1 = name1;
             }
 
             public LogLevel LogLevel => _innerMetadata.LogLevel;
             public EventId EventId => _innerMetadata.EventId;
             public string OriginalFormat => _innerMetadata.OriginalFormat;
-            public int PropertyCount => _innerMetadata.PropertyCount;
+            public int PropertyCount => _innerMetadata.PropertyCount + 2;
             public void AppendFormattedMessage(in EnrichmentPropertyValues<TState, T0, T1> state, IBufferWriter<char> buffer) => _innerMetadata.AppendFormattedMessage(state.NestedProperties, buffer);
             public Action<EnrichmentPropertyValues<TState, T0, T1>, IBufferWriter<char>> GetMessageFormatter(PropertyCustomFormatter[] customFormatters)
             {
@@ -248,7 +269,26 @@ namespace Microsoft.Extensions.Logging
                 FormatPropertyListAction<TState> formatter = _innerMetadata.GetPropertyListFormatter(propertyFormatterFactory);
                 return new FormatPropertyListAction<EnrichmentPropertyValues<TState, T0, T1>>((in EnrichmentPropertyValues<TState, T0, T1> s, ref BufferWriter<byte> w) => formatter(in s.NestedProperties, ref w));
             }
-            public LogPropertyInfo GetPropertyInfo(int index) => _innerMetadata.GetPropertyInfo(index);
+            public LogPropertyInfo GetPropertyInfo(int index)
+            {
+                if (index < _innerMetadata.PropertyCount)
+                {
+                    return _innerMetadata.GetPropertyInfo(index);
+                }
+                var i = index - _innerMetadata.PropertyCount;
+                if (i == 0)
+                {
+                    return new LogPropertyInfo(_name0, null);
+                }
+                else if (i == 1)
+                {
+                    return new LogPropertyInfo(_name1, null);
+                }
+                else
+                {
+                    throw new IndexOutOfRangeException(nameof(index));
+                }
+            }
             public Func<EnrichmentPropertyValues<TState, T0, T1>, Exception?, string> GetStringMessageFormatter()
             {
                 var formatter = _innerMetadata.GetStringMessageFormatter();
@@ -282,7 +322,7 @@ namespace Microsoft.Extensions.Logging
 
         internal override LogEntryHandler<TState> GetLogEntryHandler<TState>(ILogEntryProcessor nextProcessor, ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired)
         {
-            var enrichmentMetadata = metadata != null ? new EnrichmentLogMetadata<TState>(metadata) : null;
+            var enrichmentMetadata = metadata != null ? new EnrichmentLogMetadata<TState>(metadata, Name0, Name1, OverflowProperties) : null;
             LogEntryHandler<UnboundedEnrichmentPropertyValues<TState, T0, T1>> nextHandler =
                 nextProcessor.GetLogEntryHandler<UnboundedEnrichmentPropertyValues<TState, T0, T1>>(enrichmentMetadata, out enabled, out dynamicEnabledCheckRequired);
             return new EnrichmentHandler<TState>(nextHandler, this);
@@ -325,16 +365,22 @@ namespace Microsoft.Extensions.Logging
         private sealed class EnrichmentLogMetadata<TState> : ILogMetadata<UnboundedEnrichmentPropertyValues<TState, T0, T1>>
         {
             private ILogMetadata<TState> _innerMetadata { get; }
+            private readonly string _name0;
+            private readonly string _name1;
+            private readonly List<(string, Func<object?>)> _overflowProperties;
 
-            public EnrichmentLogMetadata(ILogMetadata<TState> innerMetadata)
+            public EnrichmentLogMetadata(ILogMetadata<TState> innerMetadata, string name0, string name1, List<(string, Func<object?>)> overflowProperties)
             {
                 _innerMetadata = innerMetadata;
+                _name0 = name0;
+                _name1 = name1;
+                _overflowProperties = overflowProperties;
             }
 
             public LogLevel LogLevel => _innerMetadata.LogLevel;
             public EventId EventId => _innerMetadata.EventId;
             public string OriginalFormat => _innerMetadata.OriginalFormat;
-            public int PropertyCount => _innerMetadata.PropertyCount;
+            public int PropertyCount => _innerMetadata.PropertyCount + 2 + _overflowProperties.Count;
             public void AppendFormattedMessage(in UnboundedEnrichmentPropertyValues<TState, T0, T1> state, IBufferWriter<char> buffer) => _innerMetadata.AppendFormattedMessage(state.NestedProperties, buffer);
             public Action<UnboundedEnrichmentPropertyValues<TState, T0, T1>, IBufferWriter<char>> GetMessageFormatter(PropertyCustomFormatter[] customFormatters)
             {
@@ -346,7 +392,26 @@ namespace Microsoft.Extensions.Logging
                 FormatPropertyListAction<TState> formatter = _innerMetadata.GetPropertyListFormatter(propertyFormatterFactory);
                 return new FormatPropertyListAction<UnboundedEnrichmentPropertyValues<TState, T0, T1>>((in UnboundedEnrichmentPropertyValues<TState, T0, T1> s, ref BufferWriter<byte> w) => formatter(in s.NestedProperties, ref w));
             }
-            public LogPropertyInfo GetPropertyInfo(int index) => _innerMetadata.GetPropertyInfo(index);
+            public LogPropertyInfo GetPropertyInfo(int index)
+            {
+                if (index < _innerMetadata.PropertyCount)
+                {
+                    return _innerMetadata.GetPropertyInfo(index);
+                }
+                var i = index - _innerMetadata.PropertyCount;
+                if (i == 0)
+                {
+                    return new LogPropertyInfo(_name0, null);
+                }
+                else if (i == 1)
+                {
+                    return new LogPropertyInfo(_name1, null);
+                }
+                else
+                {
+                    return new LogPropertyInfo(_overflowProperties[i - 2].Item1, null);
+                }
+            }
             public Func<UnboundedEnrichmentPropertyValues<TState, T0, T1>, Exception?, string> GetStringMessageFormatter()
             {
                 var formatter = _innerMetadata.GetStringMessageFormatter();
@@ -382,13 +447,15 @@ namespace Microsoft.Extensions.Logging
             get
             {
                 var nested = NestedProperties as IReadOnlyList<KeyValuePair<string, object?>>;
-                if (index == 0)
+                if (nested != null && index < nested.Count)
+                {
+                    return nested[index];
+                }
+
+                var i = index - nested?.Count ?? 0;
+                if (i == 0)
                 {
                     return Prop0;
-                }
-                else if (nested != null)
-                {
-                    return nested[index - 1];
                 }
                 else
                 {
@@ -406,8 +473,6 @@ namespace Microsoft.Extensions.Logging
 
         public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
         {
-            yield return Prop0;
-
             var nested = NestedProperties as IReadOnlyList<KeyValuePair<string, object?>>;
             if (nested != null)
             {
@@ -416,6 +481,8 @@ namespace Microsoft.Extensions.Logging
                     yield return item;
                 }
             }
+
+            yield return Prop0;
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -450,17 +517,19 @@ namespace Microsoft.Extensions.Logging
             get
             {
                 var nested = NestedProperties as IReadOnlyList<KeyValuePair<string, object?>>;
-                if (index == 0)
+                if (nested != null && index < nested.Count)
+                {
+                    return nested[index];
+                }
+
+                var i = index - nested?.Count ?? 0;
+                if (i == 0)
                 {
                     return Prop0;
                 }
-                else if (index == 1)
+                else if (i == 1)
                 {
                     return Prop1;
-                }
-                else if (nested != null)
-                {
-                    return nested[index - 1];
                 }
                 else
                 {
@@ -478,9 +547,6 @@ namespace Microsoft.Extensions.Logging
 
         public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
         {
-            yield return Prop0;
-            yield return Prop1;
-
             var nested = NestedProperties as IReadOnlyList<KeyValuePair<string, object?>>;
             if (nested != null)
             {
@@ -489,6 +555,9 @@ namespace Microsoft.Extensions.Logging
                     yield return nested[i];
                 }
             }
+
+            yield return Prop0;
+            yield return Prop1;
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -525,29 +594,23 @@ namespace Microsoft.Extensions.Logging
             get
             {
                 var nested = NestedProperties as IReadOnlyList<KeyValuePair<string, object?>>;
-                if (index == 0)
+                if (nested != null && index < nested.Count)
+                {
+                    return nested[index];
+                }
+
+                var i = index - nested?.Count ?? 0;
+                if (i == 0)
                 {
                     return Prop0;
                 }
-                else if (index == 1)
+                else if (i == 1)
                 {
                     return Prop1;
                 }
                 else
                 {
-                    var i = index - 2;
-                    if (i < ExtraValues.Length)
-                    {
-                        return ExtraValues[i];
-                    }
-                    else if (nested != null)
-                    {
-                        return nested[i - ExtraValues.Length];
-                    }
-                    else
-                    {
-                        throw new IndexOutOfRangeException(nameof(index));
-                    }
+                    return ExtraValues[i - 2];
                 }
             }
         }
@@ -561,13 +624,6 @@ namespace Microsoft.Extensions.Logging
 
         public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
         {
-            yield return Prop0;
-            yield return Prop1;
-            for (var i = 0; i < ExtraValues.Length; i++)
-            {
-                yield return ExtraValues[i];
-            }
-
             var nested = NestedProperties as IReadOnlyList<KeyValuePair<string, object?>>;
             if (nested != null)
             {
@@ -575,6 +631,13 @@ namespace Microsoft.Extensions.Logging
                 {
                     yield return nested[i];
                 }
+            }
+
+            yield return Prop0;
+            yield return Prop1;
+            for (var i = 0; i < ExtraValues.Length; i++)
+            {
+                yield return ExtraValues[i];
             }
         }
 
