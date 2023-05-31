@@ -162,12 +162,11 @@ private:
         //
         // --ppCounter;
         GenTree* ppCounterBefore = compiler->gtNewLclvNode(ppCounterLclNum, TYP_INT);
-        GenTree* ppCounterAfter  = compiler->gtNewLclvNode(ppCounterLclNum, TYP_INT);
         GenTree* one             = compiler->gtNewIconNode(1, TYP_INT);
         GenTree* ppCounterSub    = compiler->gtNewOperNode(GT_SUB, TYP_INT, ppCounterBefore, one);
-        GenTree* ppCounterAsg    = compiler->gtNewAssignNode(ppCounterAfter, ppCounterSub);
+        GenTree* ppCounterUpdate = compiler->gtNewStoreLclVarNode(ppCounterLclNum, ppCounterSub);
 
-        compiler->fgNewStmtAtEnd(block, ppCounterAsg);
+        compiler->fgNewStmtAtEnd(block, ppCounterUpdate);
 
         // if (ppCounter > 0), bypass helper call
         GenTree* ppCounterUpdated = compiler->gtNewLclvNode(ppCounterLclNum, TYP_INT);
@@ -201,10 +200,9 @@ private:
         }
 
         GenTree* initialCounterNode = compiler->gtNewIconNode(initialCounterValue, TYP_INT);
-        GenTree* ppCounterRef       = compiler->gtNewLclvNode(ppCounterLclNum, TYP_INT);
-        GenTree* ppCounterAsg       = compiler->gtNewAssignNode(ppCounterRef, initialCounterNode);
+        GenTree* ppCounterStore     = compiler->gtNewStoreLclVarNode(ppCounterLclNum, initialCounterNode);
 
-        compiler->fgNewStmtNearEnd(block, ppCounterAsg);
+        compiler->fgNewStmtNearEnd(block, ppCounterStore);
     }
 
     //------------------------------------------------------------------------

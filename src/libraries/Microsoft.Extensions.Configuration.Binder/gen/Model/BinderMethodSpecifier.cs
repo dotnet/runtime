@@ -74,6 +74,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         // Binding helpers
         BindCore = 0x1000,
         HasChildren = 0x4000,
+        Initialize = 0x8000,
 
         // Method groups
         Bind = Bind_instance | Bind_instance_BinderOptions | Bind_key_instance,

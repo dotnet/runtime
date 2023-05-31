@@ -171,6 +171,22 @@ namespace System.Text.Json.SourceGeneration.Tests
                 }).Dispose();
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void JsonSerializerContext_GeneratedDefault_IsSingleton()
+        {
+            RemoteExecutor.Invoke(
+                static () =>
+                {
+                    const int Count = 30;
+                    var contexts = new MetadataContext[Count];
+                    Parallel.For(0, Count, i => contexts[i] = MetadataContext.Default);
+
+                    Assert.All(contexts, ctx => Assert.Same(MetadataContext.Default, ctx));
+
+                }).Dispose();
+        }
+
         [Fact]
         public static void SupportsReservedLanguageKeywordsAsProperties()
         {

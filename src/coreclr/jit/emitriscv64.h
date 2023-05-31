@@ -81,6 +81,12 @@ bool IsRedundantLdStr(
 /************************************************************************/
 
 public:
+// Returns true if 'value' is a legal signed immediate 13 bit encoding.
+static bool isValidSimm13(ssize_t value)
+{
+    return -(((int)1) << 12) <= value && value < (((int)1) << 12);
+};
+
 // Returns true if 'value' is a legal signed immediate 12 bit encoding.
 static bool isValidSimm12(ssize_t value)
 {
@@ -103,6 +109,12 @@ static bool isValidUimm11(ssize_t value)
 static bool isValidSimm20(ssize_t value)
 {
     return -(((int)1) << 19) <= value && value < (((int)1) << 19);
+};
+
+// Returns true if 'value' is a legal signed immediate 21 bit encoding.
+static bool isValidSimm21(ssize_t value)
+{
+    return -(((int)1) << 20) <= value && value < (((int)1) << 20);
 };
 
 // Returns true if 'value' is a legal signed immediate 32 bit encoding.

@@ -41,7 +41,7 @@ namespace ILCompiler
             }
         }
 
-        private List<MethodDesc> CreateInitializerList(CompilerTypeSystemContext context)
+        private IReadOnlyCollection<MethodDesc> CreateInitializerList(CompilerTypeSystemContext context)
         {
             List<ModuleDesc> assembliesWithInitializers = new List<ModuleDesc>();
 
@@ -55,18 +55,7 @@ namespace ILCompiler
 
             var libraryInitializers = new LibraryInitializers(context, assembliesWithInitializers);
 
-            List<MethodDesc> initializerList = new List<MethodDesc>(libraryInitializers.LibraryInitializerMethods);
-
-            // If there are any AppContext switches the user wishes to enable, generate code that sets them.
-            string[] appContextSwitches = Get(_command.AppContextSwitches);
-            if (appContextSwitches.Length > 0)
-            {
-                MethodDesc appContextInitMethod = new Internal.IL.Stubs.StartupCode.AppContextInitializerMethod(
-                    context.GeneratedAssembly.GetGlobalModuleType(), appContextSwitches);
-                initializerList.Add(appContextInitMethod);
-            }
-
-            return initializerList;
+            return libraryInitializers.LibraryInitializerMethods;
         }
 
         public int Run()
@@ -208,13 +197,17 @@ namespace ILCompiler
                     compilationGroup = new SingleFileCompilationModuleGroup();
                 }
 
+                const string settingsBlobName = "g_compilerEmbeddedSettingsBlob";
+                const string knobsBlobName = "g_compilerEmbeddedKnobsBlob";
                 string[] runtimeOptions = Get(_command.RuntimeOptions);
+                string[] runtimeKnobs = Get(_command.RuntimeKnobs);
                 if (nativeLib)
                 {
                     // Set owning module of generated native library startup method to compiler generated module,
                     // to ensure the startup method is included in the object file during multimodule mode build
                     compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, CreateInitializerList(typeSystemContext)));
-                    compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
+                    compilationRoots.Add(new RuntimeConfigurationRootProvider(settingsBlobName, runtimeOptions));
+                    compilationRoots.Add(new RuntimeConfigurationRootProvider(knobsBlobName, runtimeKnobs));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
                     if (SplitExeInitialization)
                     {
@@ -224,7 +217,8 @@ namespace ILCompiler
                 else if (entrypointModule != null)
                 {
                     compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext), generateLibraryAndModuleInitializers: !SplitExeInitialization));
-                    compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
+                    compilationRoots.Add(new RuntimeConfigurationRootProvider(settingsBlobName, runtimeOptions));
+                    compilationRoots.Add(new RuntimeConfigurationRootProvider(knobsBlobName, runtimeKnobs));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
                     if (SplitExeInitialization)
                     {
@@ -391,7 +385,8 @@ namespace ILCompiler
                     featureSwitches,
                     Get(_command.ConditionallyRootedAssemblies),
                     rootedAssemblies,
-                    Get(_command.TrimmedAssemblies));
+                    Get(_command.TrimmedAssemblies),
+                    Get(_command.SatelliteFilePaths));
 
             InteropStateManager interopStateManager = new InteropStateManager(typeSystemContext.GeneratedAssembly);
             InteropStubManager interopStubManager = new UsageBasedInteropStubManager(interopStateManager, pinvokePolicy, logger);

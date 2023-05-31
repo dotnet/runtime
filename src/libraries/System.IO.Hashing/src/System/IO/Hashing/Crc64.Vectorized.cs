@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.InteropServices;
+using static System.IO.Hashing.VectorHelper;
 
 namespace System.IO.Hashing
 {
@@ -72,7 +73,7 @@ namespace System.IO.Hashing
                 // Load and XOR the initial CRC value
                 // CRC value does not need to be byte-reflected, but it needs to be moved to the high part of the register.
                 // because data will be byte-reflected and will align with initial crc at correct place.
-                x0 ^= VectorHelper.ShiftLowerToUpper(Vector128.CreateScalar(crc));
+                x0 ^= ShiftLowerToUpper(Vector128.CreateScalar(crc));
 
                 kConstants = Vector128.Create(0x5cf79dea9ac37d6UL, 0x001067e571d7d5c2UL); // k3, k4
 
@@ -81,36 +82,36 @@ namespace System.IO.Hashing
                 {
                     Vector128<ulong> y1 = LoadFromSource(ref srcRef, 0);
                     Vector128<ulong> y2 = LoadFromSource(ref srcRef, 16);
-                    x0 = VectorHelper.FoldPolynomialPair(y1, x0, kConstants);
-                    x1 = VectorHelper.FoldPolynomialPair(y2, x1, kConstants);
+                    x0 = FoldPolynomialPair(y1, x0, kConstants);
+                    x1 = FoldPolynomialPair(y2, x1, kConstants);
 
                     y1 = LoadFromSource(ref srcRef, 32);
                     y2 = LoadFromSource(ref srcRef, 48);
-                    x2 = VectorHelper.FoldPolynomialPair(y1, x2, kConstants);
-                    x3 = VectorHelper.FoldPolynomialPair(y2, x3, kConstants);
+                    x2 = FoldPolynomialPair(y1, x2, kConstants);
+                    x3 = FoldPolynomialPair(y2, x3, kConstants);
 
                     y1 = LoadFromSource(ref srcRef, 64);
                     y2 = LoadFromSource(ref srcRef, 80);
-                    x4 = VectorHelper.FoldPolynomialPair(y1, x4, kConstants);
-                    x5 = VectorHelper.FoldPolynomialPair(y2, x5, kConstants);
+                    x4 = FoldPolynomialPair(y1, x4, kConstants);
+                    x5 = FoldPolynomialPair(y2, x5, kConstants);
 
                     y1 = LoadFromSource(ref srcRef, 96);
                     y2 = LoadFromSource(ref srcRef, 112);
-                    x6 = VectorHelper.FoldPolynomialPair(y1, x6, kConstants);
-                    x7 = VectorHelper.FoldPolynomialPair(y2, x7, kConstants);
+                    x6 = FoldPolynomialPair(y1, x6, kConstants);
+                    x7 = FoldPolynomialPair(y2, x7, kConstants);
 
                     srcRef = ref Unsafe.Add(ref srcRef, Vector128<byte>.Count * 8);
                     length -= Vector128<byte>.Count * 8;
                 } while (length >= Vector128<byte>.Count * 8);
 
                 // Fold into 128-bits in x7
-                x7 = VectorHelper.FoldPolynomialPair(x7, x0, Vector128.Create(0xe464f4df5fb60ac1UL, 0xb649c5b35a759cf2UL)); // k9, k10
-                x7 = VectorHelper.FoldPolynomialPair(x7, x1, Vector128.Create(0x9af04e1eff82d0ddUL, 0x6e82e609297f8fe8UL)); // k11, k12
-                x7 = VectorHelper.FoldPolynomialPair(x7, x2, Vector128.Create(0x97c516e98bd2e73UL, 0xb76477b31e22e7bUL)); // k13, k14
-                x7 = VectorHelper.FoldPolynomialPair(x7, x3, Vector128.Create(0x5f6843ca540df020UL, 0xddf4b6981205b83fUL)); // k15, k16
-                x7 = VectorHelper.FoldPolynomialPair(x7, x4, Vector128.Create(0x54819d8713758b2cUL, 0x4a6b90073eb0af5aUL)); // k17, k18
-                x7 = VectorHelper.FoldPolynomialPair(x7, x5, Vector128.Create(0x571bee0a227ef92bUL, 0x44bef2a201b5200cUL)); // k19, k20
-                x7 = VectorHelper.FoldPolynomialPair(x7, x6, Vector128.Create(0x5f5c3c7eb52fab6UL, 0x4eb938a7d257740eUL)); // k1, k2
+                x7 = FoldPolynomialPair(x7, x0, Vector128.Create(0xe464f4df5fb60ac1UL, 0xb649c5b35a759cf2UL)); // k9, k10
+                x7 = FoldPolynomialPair(x7, x1, Vector128.Create(0x9af04e1eff82d0ddUL, 0x6e82e609297f8fe8UL)); // k11, k12
+                x7 = FoldPolynomialPair(x7, x2, Vector128.Create(0x97c516e98bd2e73UL, 0xb76477b31e22e7bUL)); // k13, k14
+                x7 = FoldPolynomialPair(x7, x3, Vector128.Create(0x5f6843ca540df020UL, 0xddf4b6981205b83fUL)); // k15, k16
+                x7 = FoldPolynomialPair(x7, x4, Vector128.Create(0x54819d8713758b2cUL, 0x4a6b90073eb0af5aUL)); // k17, k18
+                x7 = FoldPolynomialPair(x7, x5, Vector128.Create(0x571bee0a227ef92bUL, 0x44bef2a201b5200cUL)); // k19, k20
+                x7 = FoldPolynomialPair(x7, x6, Vector128.Create(0x5f5c3c7eb52fab6UL, 0x4eb938a7d257740eUL)); // k1, k2
             }
             else
             {
@@ -122,7 +123,7 @@ namespace System.IO.Hashing
                 // Load and XOR the initial CRC value
                 // CRC value does not need to be byte-reflected, but it needs to be moved to the high part of the register.
                 // because the data will be byte-reflected and will align with initial crc at correct place.
-                x7 ^= VectorHelper.ShiftLowerToUpper(Vector128.CreateScalar(crc));
+                x7 ^= ShiftLowerToUpper(Vector128.CreateScalar(crc));
 
                 srcRef = ref Unsafe.Add(ref srcRef, Vector128<byte>.Count);
                 length -= Vector128<byte>.Count;
@@ -131,7 +132,7 @@ namespace System.IO.Hashing
             // Single fold blocks of 16, if any, into x7
             while (length >= Vector128<byte>.Count)
             {
-                x7 = VectorHelper.FoldPolynomialPair(LoadFromSource(ref srcRef, 0), x7,
+                x7 = FoldPolynomialPair(LoadFromSource(ref srcRef, 0), x7,
                     Vector128.Create(0x5f5c3c7eb52fab6UL, 0x4eb938a7d257740eUL)); // k1, k2
 
                 srcRef = ref Unsafe.Add(ref srcRef, Vector128<byte>.Count);
@@ -139,14 +140,14 @@ namespace System.IO.Hashing
             }
 
             // Compute CRC of a 128-bit value and fold to the upper 64-bits
-            x7 = VectorHelper.CarrylessMultiplyLeftUpperRightLower(x7, Vector128.CreateScalar(0x5f5c3c7eb52fab6UL)) ^ // k5
-                 VectorHelper.ShiftLowerToUpper(x7);
+            x7 = CarrylessMultiplyLeftUpperRightLower(x7, Vector128.CreateScalar(0x5f5c3c7eb52fab6UL)) ^ // k5
+                 ShiftLowerToUpper(x7);
 
             // Barrett reduction
             kConstants = Vector128.Create(0x578d29d06cc4f872UL, 0x42f0e1eba9ea3693UL); // k7, k8
             Vector128<ulong> temp = x7;
-            x7 = VectorHelper.CarrylessMultiplyLeftUpperRightLower(x7, kConstants) ^ (x7 & Vector128.Create(0UL, ~0UL));
-            x7 = VectorHelper.CarrylessMultiplyUpper(x7, kConstants);
+            x7 = CarrylessMultiplyLeftUpperRightLower(x7, kConstants) ^ (x7 & Vector128.Create(0UL, ~0UL));
+            x7 = CarrylessMultiplyUpper(x7, kConstants);
             x7 ^= temp;
 
             // Process the remaining bytes, if any
