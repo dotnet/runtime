@@ -305,7 +305,7 @@ mono_class_setup_fields (MonoClass *klass)
 	}
 
 	if (m_class_is_inlinearray (klass) && m_class_inlinearray_value (klass) <= 0)
-		mono_class_set_type_load_failure (klass, "Inline array length property must be positive.");
+		mono_class_set_deferred_type_load_failure_callback (klass, "Inline array length property must be positive.");
 
 	/* Get the real size */
 	explicit_size = mono_metadata_packing_from_typedef (klass->image, klass->type_token, &packing_size, &real_size);
@@ -376,8 +376,8 @@ mono_class_setup_fields (MonoClass *klass)
 				break;
 			}
 			if (m_class_is_inlinearray (klass)) {
-				mono_class_set_type_load_failure (klass, "Inline array struct must not have explicit layout.");
-				break;
+				if (mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct must not have explicit layout."))
+					break;
 			}
 		}
 		if (mono_type_has_exceptions (field->type)) {
@@ -2276,12 +2276,15 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				if (m_class_is_inlinearray (klass)) {
 					// Limit the max size of array instance to 1MiB
 					const guint32 struct_max_size = 1024 * 1024;
+					guint32 initial_size = size;
 					// If size overflows, it returns 0
 					size *= m_class_inlinearray_value (klass);
 					inlined_fields++;
 					if(size == 0 || size > struct_max_size) {
-						mono_class_set_type_load_failure (klass, "Inline array struct size out of bounds, abnormally large.");
-						break;
+						if (mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct size out of bounds, abnormally large."))
+							break;
+						else
+							size = initial_size;
 					}
 				}
 
@@ -2312,7 +2315,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			}
 		}
 		if (m_class_is_inlinearray (klass) && inlined_fields != 1)
-			mono_class_set_type_load_failure (klass, "Inline array struct must have a single field.");
+			mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct must have a single field.");
 		break;
 	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT: {
 		real_size = 0;
@@ -2992,6 +2995,14 @@ mono_class_init_internal (MonoClass *klass)
 		mono_class_init_internal (klass->parent);
 
 	has_cached_info = mono_class_get_cached_class_info (klass, &cached_info);
+
+	/*
+	 * If the class has a deferred failure, ignore the cached info and
+	 * let the runtime go on the slow path of trying to setup the class
+	 * layout at runtime.
+	*/
+	if (has_cached_info && cached_info.has_deferred_failure)
+		has_cached_info = FALSE;
 
 	/* Compute instance size etc. */
 	init_sizes_with_info (klass, has_cached_info ? &cached_info : NULL);
