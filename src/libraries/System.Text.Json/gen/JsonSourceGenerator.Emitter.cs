@@ -33,6 +33,7 @@ namespace System.Text.Json.SourceGeneration
             private const string PropInitMethodNameSuffix = "PropInit";
             private const string TryGetTypeInfoForRuntimeCustomConverterMethodName = "TryGetTypeInfoForRuntimeCustomConverter";
             private const string ExpandConverterMethodName = "ExpandConverter";
+            private const string GetConverterForNullablePropertyMethodName = "GetConverterForNullableProperty";
             private const string SerializeHandlerPropName = "SerializeHandler";
             private const string OptionsLocalVariableName = "options";
             private const string ValueVarName = "value";
@@ -80,6 +81,11 @@ namespace System.Text.Json.SourceGeneration
             private readonly Dictionary<string, string> _propertyNames = new();
 
             /// <summary>
+            /// Indicates that the type graph contains a nullable property with a design-time custom converter declaration.
+            /// </summary>
+            private bool _emitGetConverterForNullablePropertyMethod;
+
+            /// <summary>
             /// The SourceText emit implementation filled by the individual Roslyn versions.
             /// </summary>
             private partial void AddSource(string hintName, SourceText sourceText);
@@ -88,6 +94,7 @@ namespace System.Text.Json.SourceGeneration
             {
                 Debug.Assert(_typeIndex.Count == 0);
                 Debug.Assert(_propertyNames.Count == 0);
+                Debug.Assert(!_emitGetConverterForNullablePropertyMethod);
 
                 foreach (TypeGenerationSpec spec in contextGenerationSpec.GeneratedTypes)
                 {
@@ -106,7 +113,7 @@ namespace System.Text.Json.SourceGeneration
                 string contextName = contextGenerationSpec.ContextType.Name;
 
                 // Add root context implementation.
-                AddSource($"{contextName}.g.cs", GetRootJsonContextImplementation(contextGenerationSpec));
+                AddSource($"{contextName}.g.cs", GetRootJsonContextImplementation(contextGenerationSpec, _emitGetConverterForNullablePropertyMethod));
 
                 // Add GetJsonTypeInfo override implementation.
                 AddSource($"{contextName}.GetJsonTypeInfo.g.cs", GetGetTypeInfoImplementation(contextGenerationSpec));
@@ -114,6 +121,7 @@ namespace System.Text.Json.SourceGeneration
                 // Add property name initialization.
                 AddSource($"{contextName}.PropertyNames.g.cs", GetPropertyNameInitialization(contextGenerationSpec));
 
+                _emitGetConverterForNullablePropertyMethod = false;
                 _propertyNames.Clear();
                 _typeIndex.Clear();
             }
@@ -539,7 +547,7 @@ namespace System.Text.Json.SourceGeneration
                 return CompleteSourceFileAndReturnText(writer);
             }
 
-            private static void GeneratePropMetadataInitFunc(SourceWriter writer, string propInitMethodName, TypeGenerationSpec typeGenerationSpec)
+            private void GeneratePropMetadataInitFunc(SourceWriter writer, string propInitMethodName, TypeGenerationSpec typeGenerationSpec)
             {
                 Debug.Assert(typeGenerationSpec.PropertyGenSpecs != null);
                 ImmutableEquatableArray<PropertyGenerationSpec> properties = typeGenerationSpec.PropertyGenSpecs;
@@ -585,9 +593,15 @@ namespace System.Text.Json.SourceGeneration
                         ? $"{JsonIgnoreConditionTypeRef}.{property.DefaultIgnoreCondition.Value}"
                         : "null";
 
-                    string converterInstantiationExpr = property.ConverterType != null
-                        ? $"({JsonConverterTypeRef}<{propertyTypeFQN}>){ExpandConverterMethodName}(typeof({propertyTypeFQN}), new {property.ConverterType.FullyQualifiedName}(), {OptionsLocalVariableName})"
-                        : "null";
+                    string? converterInstantiationExpr = null;
+                    if (property.ConverterType != null)
+                    {
+                        TypeRef? nullableUnderlyingType = _typeIndex[property.PropertyType].NullableUnderlyingType;
+                        _emitGetConverterForNullablePropertyMethod |= nullableUnderlyingType != null;
+                        converterInstantiationExpr = nullableUnderlyingType != null
+                            ? $"{GetConverterForNullablePropertyMethodName}<{nullableUnderlyingType.FullyQualifiedName}>(new {property.ConverterType.FullyQualifiedName}(), {OptionsLocalVariableName})"
+                            : $"({JsonConverterTypeRef}<{propertyTypeFQN}>){ExpandConverterMethodName}(typeof({propertyTypeFQN}), new {property.ConverterType.FullyQualifiedName}(), {OptionsLocalVariableName})";
+                    }
 
                     writer.WriteLine($$"""
                         var {{InfoVarName}}{{i}} = new {{JsonPropertyInfoValuesTypeRef}}<{{propertyTypeFQN}}>()
@@ -596,7 +610,7 @@ namespace System.Text.Json.SourceGeneration
                             IsPublic = {{FormatBool(property.IsPublic)}},
                             IsVirtual = {{FormatBool(property.IsVirtual)}},
                             DeclaringType = typeof({{property.DeclaringType.FullyQualifiedName}}),
-                            Converter = {{converterInstantiationExpr}},
+                            Converter = {{converterInstantiationExpr ?? "null"}},
                             Getter = {{getterValue}},
                             Setter = {{setterValue}},
                             IgnoreCondition = {{ignoreConditionNamedArg}},
@@ -1007,7 +1021,7 @@ namespace System.Text.Json.SourceGeneration
                     """);
             }
 
-            private static SourceText GetRootJsonContextImplementation(ContextGenerationSpec contextSpec)
+            private static SourceText GetRootJsonContextImplementation(ContextGenerationSpec contextSpec, bool emitGetConverterForNullablePropertyMethod)
             {
                 string contextTypeRef = contextSpec.ContextType.FullyQualifiedName;
                 string contextTypeName = contextSpec.ContextType.Name;
@@ -1048,7 +1062,7 @@ namespace System.Text.Json.SourceGeneration
 
                 writer.WriteLine();
 
-                GenerateConverterHelpers(writer);
+                GenerateConverterHelpers(writer, emitGetConverterForNullablePropertyMethod);
 
                 return CompleteSourceFileAndReturnText(writer);
             }
@@ -1082,7 +1096,7 @@ namespace System.Text.Json.SourceGeneration
                     """);
             }
 
-            private static void GenerateConverterHelpers(SourceWriter writer)
+            private static void GenerateConverterHelpers(SourceWriter writer, bool emitGetConverterForNullablePropertyMethod)
             {
                 // The generic type parameter could capture type parameters from containing types,
                 // so use a name that is unlikely to be used.
@@ -1109,15 +1123,20 @@ namespace System.Text.Json.SourceGeneration
                             {{JsonConverterTypeRef}}? converter = options.Converters[i];
                             if (converter?.CanConvert(type) == true)
                             {
-                                return {{ExpandConverterMethodName}}(type, converter, options);
+                                return {{ExpandConverterMethodName}}(type, converter, options, validateCanConvert: false);
                             }
                         }
 
                         return null;
                     }
 
-                    private static {{JsonConverterTypeRef}} {{ExpandConverterMethodName}}({{TypeTypeRef}} type, {{JsonConverterTypeRef}} converter, {{JsonSerializerOptionsTypeRef}} options)
+                    private static {{JsonConverterTypeRef}} {{ExpandConverterMethodName}}({{TypeTypeRef}} type, {{JsonConverterTypeRef}} converter, {{JsonSerializerOptionsTypeRef}} options, bool validateCanConvert = true)
                     {
+                        if (validateCanConvert && !converter.CanConvert(type))
+                        {
+                            throw new {{InvalidOperationExceptionTypeRef}}(string.Format("{{ExceptionMessages.IncompatibleConverterType}}", converter.GetType(), type));
+                        }
+                    
                         if (converter is {{JsonConverterFactoryTypeRef}} factory)
                         {
                             converter = factory.CreateConverter(type, options);
@@ -1126,15 +1145,29 @@ namespace System.Text.Json.SourceGeneration
                                 throw new {{InvalidOperationExceptionTypeRef}}(string.Format("{{ExceptionMessages.InvalidJsonConverterFactoryOutput}}", factory.GetType()));
                             }
                         }
-
-                        if (!converter.CanConvert(type))
-                        {
-                            throw new {{InvalidOperationExceptionTypeRef}}(string.Format("{{ExceptionMessages.IncompatibleConverterType}}", converter.GetType(), type));
-                        }
                     
                         return converter;
                     }
                     """);
+
+                if (emitGetConverterForNullablePropertyMethod)
+                {
+                    writer.WriteLine($$"""
+
+                        private static {{JsonConverterTypeRef}}<{{TypeParameter}}?> {{GetConverterForNullablePropertyMethodName}}<{{TypeParameter}}>({{JsonConverterTypeRef}} converter, {{JsonSerializerOptionsTypeRef}} options)
+                            where {{TypeParameter}} : struct
+                        {
+                            if (converter.CanConvert(typeof({{TypeParameter}}?)))
+                            {
+                                return ({{JsonConverterTypeRef}}<{{TypeParameter}}?>){{ExpandConverterMethodName}}(typeof({{TypeParameter}}?), converter, options, validateCanConvert: false);
+                            }
+                    
+                            converter = {{ExpandConverterMethodName}}(typeof({{TypeParameter}}), converter, options);
+                            {{JsonTypeInfoTypeRef}}<{{TypeParameter}}> typeInfo = {{JsonMetadataServicesTypeRef}}.{{CreateValueInfoMethodName}}<{{TypeParameter}}>(options, converter);
+                            return {{JsonMetadataServicesTypeRef}}.GetNullableConverter<{{TypeParameter}}>(typeInfo);
+                        }
+                        """);
+                }
             }
 
             private static SourceText GetGetTypeInfoImplementation(ContextGenerationSpec contextSpec)

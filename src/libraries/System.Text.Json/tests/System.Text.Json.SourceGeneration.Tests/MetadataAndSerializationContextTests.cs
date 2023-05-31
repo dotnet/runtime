@@ -45,6 +45,8 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(StructWithCustomConverterProperty))]
     [JsonSerializable(typeof(ClassWithCustomConverterFactoryProperty))]
     [JsonSerializable(typeof(StructWithCustomConverterFactoryProperty))]
+    [JsonSerializable(typeof(ClassWithCustomConverterNullableProperty))]
+    [JsonSerializable(typeof(ClassWithCustomConverterFactoryNullableProperty))]
     [JsonSerializable(typeof(ClassWithBadCustomConverter))]
     [JsonSerializable(typeof(StructWithBadCustomConverter))]
     [JsonSerializable(typeof(PersonStruct?))]
