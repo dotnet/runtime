@@ -52,6 +52,7 @@ public:
         CanSkipCSEvaluation = 0x8,
     };
 
+    virtual ~DynamicResolver() { }
 
     // set up and clean up for jitting
     virtual void FreeCompileTimeState() = 0;
