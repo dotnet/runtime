@@ -569,9 +569,9 @@ namespace System.Text.Json.SourceGeneration
                     string getterValue = property switch
                     {
                         { DefaultIgnoreCondition: JsonIgnoreCondition.Always } => "null",
-                        { CanUseGetter: true } => $"static (obj) => (({declaringTypeFQN})obj).{propertyName}",
+                        { CanUseGetter: true } => $"static obj => (({declaringTypeFQN})obj).{propertyName}",
                         { CanUseGetter: false, HasJsonInclude: true }
-                            => $"""static (obj) => throw new {InvalidOperationExceptionTypeRef}("{string.Format(ExceptionMessages.InaccessibleJsonIncludePropertiesNotSupported, typeGenerationSpec.TypeRef.Name, propertyName)}")""",
+                            => $"""static _ => throw new {InvalidOperationExceptionTypeRef}("{string.Format(ExceptionMessages.InaccessibleJsonIncludePropertiesNotSupported, typeGenerationSpec.TypeRef.Name, propertyName)}")""",
                         _ => "null"
                     };
 
@@ -838,7 +838,7 @@ namespace System.Text.Json.SourceGeneration
 
                 const string ArgsVarName = "args";
 
-                StringBuilder sb = new($"static ({ArgsVarName}) => new {typeGenerationSpec.TypeRef.FullyQualifiedName}(");
+                StringBuilder sb = new($"static {ArgsVarName} => new {typeGenerationSpec.TypeRef.FullyQualifiedName}(");
 
                 if (parameters.Count > 0)
                 {
