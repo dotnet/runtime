@@ -41,7 +41,7 @@ namespace System.Reflection
                 // Why don't we just use "&"?
                 if (t.IsByRef)
                 {
-                    sb.Append(typeName.TrimEnd(new char[] { '&' }));
+                    sb.Append(typeName.TrimEnd('&'));
                     sb.Append(" ByRef");
                 }
                 else
