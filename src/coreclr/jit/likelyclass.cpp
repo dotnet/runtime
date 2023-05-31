@@ -244,24 +244,23 @@ static unsigned getLikelyClassesOrMethods(LikelyClassMethodRecord*              
 
                     const UINT32 numberOfClasses = min(knownHandles, maxLikelyClasses);
 
-                    double roundingError = 0.0;
+                    UINT32 totalLikelihood = 0;
                     for (size_t hIdx = 0; hIdx < numberOfClasses; hIdx++)
                     {
-                        LikelyClassMethodHistogramEntry const hc         = sortedEntries[hIdx];
-                        const double                          likelihood = hc.m_count * 100.0 / h.m_totalCount;
-                        pLikelyEntries[hIdx].handle                      = hc.m_handle;
-                        pLikelyEntries[hIdx].likelihood                  = (UINT32)likelihood;
-
-                        // Accumulate the rounding error
-                        roundingError += likelihood - (double)(UINT32)likelihood;
+                        LikelyClassMethodHistogramEntry const hc = sortedEntries[hIdx];
+                        pLikelyEntries[hIdx].handle              = hc.m_handle;
+                        pLikelyEntries[hIdx].likelihood          = hc.m_count * 100 / h.m_totalCount;
+                        totalLikelihood += pLikelyEntries[hIdx].likelihood;
                     }
 
-                    // Distribute the rounding error, just apply it to the first entry
-                    // so we can avoid marking fallback case as e.g. 1% likely while in fact it's 0.
-                    if (roundingError >= 1.0)
+                    assert(totalLikelihood <= 100);
+
+                    // Distribute the rounding error and just apply it to the first entry.
+                    // Assume that there is no error If we have unknown handles.
+                    if ((numberOfClasses > 0) && (numberOfClasses == h.m_totalCount))
                     {
-                        assert(numberOfClasses > 0);
-                        pLikelyEntries[0].likelihood += (UINT32)roundingError;
+                        assert(totalLikelihood > 0);
+                        pLikelyEntries[0].likelihood += 100 - totalLikelihood;
                         assert(pLikelyEntries[0].likelihood <= 100);
                     }
 
