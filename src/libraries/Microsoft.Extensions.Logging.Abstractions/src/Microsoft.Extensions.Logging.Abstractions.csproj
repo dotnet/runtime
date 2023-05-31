@@ -37,6 +37,8 @@ Microsoft.Extensions.Logging.Abstractions.NullLogger</PackageDescription>
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
+
     <ProjectReference Include="..\gen\Microsoft.Extensions.Logging.Generators.Roslyn3.11.csproj"
                       ReferenceOutputAssembly="false"
                       PackAsAnalyzer="true"
