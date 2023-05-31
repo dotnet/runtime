@@ -555,7 +555,7 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetKnobValues")]
-        internal static extern unsafe uint RhGetKnobValues(byte*[] keyArray, byte*[] valueArray);
+        internal static extern unsafe uint RhGetKnobValues(out byte** keyArray, out byte** valueArray);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetOSModuleFromPointer")]

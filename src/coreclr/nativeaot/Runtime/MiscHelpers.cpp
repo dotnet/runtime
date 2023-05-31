@@ -423,25 +423,10 @@ COOP_PINVOKE_HELPER(int32_t, RhGetProcessCpuCount, ())
     return PalGetProcessCpuCount();
 }
 
-COOP_PINVOKE_HELPER(uint32_t, RhGetKnobValues, (Array * pResultKeyArray, Array * pResultValueArray))
+COOP_PINVOKE_HELPER(uint32_t, RhGetKnobValues, (char *** pResultKeys, char *** pResultValues))
 {
-    // Note that we depend on the fact that this is a COOP helper to make writing into an unpinned array safe.
-
-    // If a result array is passed then it should be an array type with pointer-sized components that are not
-    // GC-references.
-    ASSERT(!pResultKeyArray || pResultKeyArray->get_EEType()->IsArray());
-    ASSERT(!pResultKeyArray || !pResultKeyArray->get_EEType()->HasReferenceFields());
-    ASSERT(!pResultKeyArray || pResultKeyArray->get_EEType()->RawGetComponentSize() == sizeof(void*));
-    ASSERT(!pResultKeyArray || pResultValueArray->get_EEType()->IsArray());
-    ASSERT(!pResultKeyArray || !pResultValueArray->get_EEType()->HasReferenceFields());
-    ASSERT(!pResultKeyArray || pResultValueArray->get_EEType()->RawGetComponentSize() == sizeof(void*));
-
-    if (pResultKeyArray)
-    {
-        g_pRhConfig->GetKnobNames((const char**)pResultKeyArray->GetArrayData(), pResultKeyArray->GetArrayLength());
-        g_pRhConfig->GetKnobValues((const char**)pResultValueArray->GetArrayData(), pResultValueArray->GetArrayLength());
-    }
-
+    *pResultKeys = g_pRhConfig->GetKnobNames();
+    *pResultValues = g_pRhConfig->GetKnobValues();
     return g_pRhConfig->GetKnobCount();
 }
 

@@ -163,20 +163,14 @@ bool RhConfig::ReadKnobBooleanValue(_In_z_ const char *name, bool* pValue)
     return false;
 }
 
-void RhConfig::GetKnobNames(const char** pBuffer, uint32_t count)
+char** RhConfig::GetKnobNames()
 {
-    for (uint32_t i = 0; i < count && i < g_compilerEmbeddedKnobsBlob.GetCount(); i++)
-    {
-        pBuffer[i] = g_compilerEmbeddedKnobsBlob.GetKeyAt(i);
-    }
+    return g_compilerEmbeddedKnobsBlob.GetKeys();
 }
 
-void RhConfig::GetKnobValues(const char** pBuffer, uint32_t count)
+char** RhConfig::GetKnobValues()
 {
-    for (uint32_t i = 0; i < count && i < g_compilerEmbeddedKnobsBlob.GetCount(); i++)
-    {
-        pBuffer[i] = g_compilerEmbeddedKnobsBlob.GetValueAt(i);
-    }
+    return g_compilerEmbeddedKnobsBlob.GetValues();
 }
 
 uint32_t RhConfig::GetKnobCount()

@@ -12,11 +12,7 @@ namespace System
     {
         private static unsafe Dictionary<string, object?> InitializeDataStore()
         {
-            uint count = RuntimeImports.RhGetKnobValues(null, null);
-
-            byte*[] keys = new byte*[count];
-            byte*[] values = new byte*[count];
-            RuntimeImports.RhGetKnobValues(keys, values);
+            uint count = RuntimeImports.RhGetKnobValues(out byte** keys, out byte** values);
 
             var dataStore = new Dictionary<string, object?>((int)count);
             for (int i = 0; i < count; i++)

@@ -28,6 +28,8 @@ public:
         uint32_t GetCount() { return m_count; }
         char* GetKeyAt(int32_t index) { return m_first[index]; }
         char* GetValueAt(int32_t index) { return m_first[m_count + index]; }
+        char** GetKeys() { return m_first; }
+        char** GetValues() { return &m_first[m_count]; }
     };
 
     class Environment
@@ -44,8 +46,8 @@ public:
     bool ReadKnobUInt64Value(_In_z_ const char* wszName, uint64_t* pValue);
     bool ReadKnobBooleanValue(_In_z_ const char* wszName, bool* pValue);
 
-    void GetKnobNames(const char** pBuffer, uint32_t count);
-    void GetKnobValues(const char** pBuffer, uint32_t count);
+    char** GetKnobNames();
+    char** GetKnobValues();
     uint32_t GetKnobCount();
 
 #define DEFINE_VALUE_ACCESSOR(_name, defaultVal)        \
