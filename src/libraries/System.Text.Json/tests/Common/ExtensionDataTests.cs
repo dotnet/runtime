@@ -520,6 +520,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(Dictionary<string, JsonElement>), typeof(JsonElementOverflowConverter), typeof(JsonElement))]
         [InlineData(typeof(CustomOverflowDictionary<object>), typeof(CustomObjectDictionaryOverflowConverter), typeof(object))]
         [InlineData(typeof(CustomOverflowDictionary<JsonElement>), typeof(CustomJsonElementDictionaryOverflowConverter), typeof(JsonElement))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86973", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void ExtensionProperty_IgnoresCustomSerializerWithOptions(Type overflowType, Type converterType, Type elementType)
         {
             typeof(ExtensionDataTests)
@@ -559,6 +560,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ClassWithJsonElementExtensionDataWithAttributedConverter), typeof(Dictionary<string, JsonElement>), typeof(JsonElement))]
         [InlineData(typeof(ClassWithCustomElementExtensionDataWithAttributedConverter), typeof(CustomOverflowDictionary<object>), typeof(object))]
         [InlineData(typeof(ClassWithCustomJsonElementExtensionDataWithAttributedConverter), typeof(CustomOverflowDictionary<JsonElement>), typeof(JsonElement))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86973", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void ExtensionProperty_IgnoresCustomSerializerWithExplicitConverter(Type attributedType, Type dictionaryType, Type elementType)
         {
             typeof(ExtensionDataTests)

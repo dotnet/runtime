@@ -449,13 +449,13 @@ namespace System.Text.Json.Serialization.Tests
 
             if (input.First().Contains(1))
             {
-                Assert.Equal(new HashSet<int> { 1, 2 }, input.First());
-                Assert.Equal(new HashSet<int> { 3, 4 }, input.Last());
+                Assert.True(input.First().SetEquals(new[] { 1, 2 }));
+                Assert.True(input.Last().SetEquals(new[] { 3, 4 }));
             }
             else
             {
-                Assert.Equal(new HashSet<int> { 3, 4 }, input.First());
-                Assert.Equal(new HashSet<int> { 1, 2 }, input.Last());
+                Assert.True(input.First().SetEquals(new[] { 3, 4 }));
+                Assert.True(input.Last().SetEquals(new[] { 1, 2 }));
             }
         }
 
@@ -649,13 +649,13 @@ namespace System.Text.Json.Serialization.Tests
 
             if (input.First().Contains(1))
             {
-                Assert.Equal(new HashSet<int> { 1, 2 }, input.First());
-                Assert.Equal(new HashSet<int> { 3, 4 }, input.Last());
+                Assert.True(input.First().SetEquals(new[] { 1, 2 }));
+                Assert.True(input.Last().SetEquals(new[] { 3, 4 }));
             }
             else
             {
-                Assert.Equal(new HashSet<int> { 3, 4 }, input.First());
-                Assert.Equal(new HashSet<int> { 1, 2 }, input.Last());
+                Assert.True(input.First().SetEquals(new[] { 3, 4 }));
+                Assert.True(input.Last().SetEquals(new[] { 1, 2 }));
             }
 
             GenericHashSetWrapper<StringHashSetWrapper> input2 = new GenericHashSetWrapper<StringHashSetWrapper>(new List<StringHashSetWrapper>
@@ -707,8 +707,8 @@ namespace System.Text.Json.Serialization.Tests
 
             // Because order isn't guaranteed, roundtrip data to ensure write was accurate.
             input = await Serializer.DeserializeWrapper<HashSet<int>[]>(json);
-            Assert.Equal(new HashSet<int> { 1, 2 }, input.First());
-            Assert.Equal(new HashSet<int> { 3, 4 }, input.Last());
+            Assert.True(input.First().SetEquals(new[] { 1, 2}));
+            Assert.True(input.Last().SetEquals(new[] { 3, 4 }));
         }
 
         [Fact]

@@ -461,8 +461,12 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (data is JsonElement element)
                 {
-                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
-                    obj.Verify();
+                    if (!PlatformDetection.IsNativeAot)
+                    {
+                        // The reflection-based validation baseline is not available in Native AOT
+                        SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
+                        obj.Verify();
+                    }
                 }
                 else
                 {
@@ -510,8 +514,12 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (data is JsonElement element)
                 {
-                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
-                    obj.Verify();
+                    if (!PlatformDetection.IsNativeAot)
+                    {
+                        // The reflection-based validation baseline is not available in Native AOT
+                        SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
+                        obj.Verify();
+                    }
                 }
                 else
                 {
@@ -561,8 +569,12 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (data is JsonElement element)
                 {
-                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
-                    obj.Verify();
+                    if (!PlatformDetection.IsNativeAot)
+                    {
+                        // The reflection-based validation baseline is not available in Native AOT
+                        SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
+                        obj.Verify();
+                    }
                 }
                 else
                 {

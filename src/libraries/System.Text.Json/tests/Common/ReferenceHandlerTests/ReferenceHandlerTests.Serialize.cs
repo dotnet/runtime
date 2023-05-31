@@ -30,6 +30,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("Newtonsoft.Json baseline not supported in Native AOT", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public async Task ExtensionDataDictionaryHandlesPreserveReferences()
         {
             Employee bob = new Employee { Name = "Bob" };

@@ -16,6 +16,7 @@ namespace System.Text.Json.Serialization.Tests
     {
         [Theory]
         [MemberData(nameof(GetAsyncEnumerableSources))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86973", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public async Task WriteRootLevelAsyncEnumerable<TElement>(IEnumerable<TElement> source, int delayInterval, int bufferSize)
         {
             if (StreamingSerializer?.IsAsyncSerializer != true)
@@ -41,6 +42,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(GetAsyncEnumerableSources))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86973", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public async Task WriteNestedAsyncEnumerable<TElement>(IEnumerable<TElement> source, int delayInterval, int bufferSize)
         {
             if (StreamingSerializer?.IsAsyncSerializer != true)
@@ -66,6 +68,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(GetAsyncEnumerableSources))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86973", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public async Task WriteNestedAsyncEnumerable_DTO<TElement>(IEnumerable<TElement> source, int delayInterval, int bufferSize)
         {
             if (StreamingSerializer?.IsAsyncSerializer != true)
@@ -91,6 +94,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(GetAsyncEnumerableSources))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86973", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public async Task WriteNestedAsyncEnumerable_Nullable<TElement>(IEnumerable<TElement> source, int delayInterval, int bufferSize)
         {
             if (StreamingSerializer?.IsAsyncSerializer != true)
@@ -177,6 +181,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(GetAsyncEnumerableSources))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86973", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public async Task WriteSequentialNestedAsyncEnumerables<TElement>(IEnumerable<TElement> source, int delayInterval, int bufferSize)
         {
             if (StreamingSerializer?.IsAsyncSerializer != true)
@@ -202,6 +207,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(GetAsyncEnumerableSources))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86973", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public async Task WriteAsyncEnumerableOfAsyncEnumerables<TElement>(IEnumerable<TElement> source, int delayInterval, int bufferSize)
         {
             if (StreamingSerializer?.IsAsyncSerializer != true)

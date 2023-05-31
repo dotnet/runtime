@@ -42,7 +42,14 @@ namespace System.Text.Json.Serialization.Tests
             set => _list[index] = (T)value;
         }
 
+        [JsonConstructor]
         public StructList() { }
+
+        public StructList(IEnumerable<T> values)
+        {
+            _list.AddRange(values);
+            _count = _list.Count;
+        }
 
         public void Add(T item)
         {
@@ -261,7 +268,14 @@ namespace System.Text.Json.Serialization.Tests
         // we track count separately to make sure tests are not passing by accident because we use reference to list inside of struct
         private int _count;
 
+        [JsonConstructor]
         public StructDictionary() { }
+
+        public StructDictionary(IEnumerable<KeyValuePair<TKey, TValue>> entries)
+        {
+            _dict = entries.ToDictionary(kv => kv.Key, kv => kv.Value);
+            _count = _dict.Count;
+        }
 
         public TValue this[TKey key]
         {
@@ -498,6 +512,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(StructCollection<int>?), true)]
         [InlineData(typeof(StructSet<int>?), true)]
         [InlineData(typeof(StructDictionary<string, int>?), false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86973", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public Task CreationHandlingSetWithAttribute_PopulatedPropertyDeserializeInitiallyNull(Type type, bool isArray)
         {
             return (Task)typeof(JsonCreationHandlingTests)

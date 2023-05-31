@@ -23,6 +23,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(GetUnsupportedValues))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86973", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public async Task DeserializeUnsupportedType<T>(ValueWrapper<T> wrapper)
         {
             _ = wrapper; // only used to instantiate T
@@ -57,6 +58,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(GetUnsupportedValues))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86973", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public async Task SerializeUnsupportedType<T>(ValueWrapper<T> wrapper)
         {
             T value = wrapper.value;

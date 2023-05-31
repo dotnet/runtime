@@ -624,13 +624,13 @@ namespace System.Text.Json.Serialization.Tests
 
             if (result.First().Contains(1))
             {
-                Assert.Equal(new HashSet<int> { 1, 2 }, result.First());
-                Assert.Equal(new HashSet<int> { 3, 4 }, result.Last());
+                Assert.True(result.First().SetEquals(new []{ 1, 2 }));
+                Assert.True(result.Last().SetEquals(new []{ 3, 4 }));
             }
             else
             {
-                Assert.Equal(new HashSet<int> { 3, 4 }, result.First());
-                Assert.Equal(new HashSet<int> { 1, 2 }, result.Last());
+                Assert.True(result.First().SetEquals(new[] { 3, 4 }));
+                Assert.True(result.Last().SetEquals(new[] { 1, 2 }));
             }
         }
 
