@@ -8535,7 +8535,7 @@ void emitter::emitIns_SIMD_R_R_R_S(
     assert((op2Reg != targetReg) || (op1Reg == targetReg));
 
     emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
-    emitIns_R_R_S(ins, attr, targetReg, op2Reg, varx, offs, INS_OPTS_NONE);
+    emitIns_R_R_S(ins, attr, targetReg, op2Reg, varx, offs);
 }
 
 //------------------------------------------------------------------------
