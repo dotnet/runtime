@@ -204,6 +204,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         GetTypeFromToken = 11,
         GetMethodFromToken = 12,
         HasDebugInfo = 13,
+        HasDebugInfoLoaded = 18
     }
 
     internal enum CmdModule {
@@ -910,6 +911,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 logger.LogDebug($"Unable to find assembly: {assemblyId}");
                 return null;
             }
+            if (!asm.HasSymbols)
+                return null;
 
             var method = asm.GetMethodByToken(methodToken);
 
@@ -2481,8 +2484,19 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
+        public async Task<bool> HasDebugInfoLoadedByRuntime(string assemblyName, CancellationToken token)
+        {
+            var assemblyId = await GetAssemblyId(assemblyName, token);
+            using var commandParamsWriter1 = new MonoBinaryWriter();
+            commandParamsWriter1.Write(assemblyId);
+            using var retDebuggerCmdReader1 = await SendDebuggerAgentCommand(CmdAssembly.HasDebugInfoLoaded, commandParamsWriter1, token);
+            return retDebuggerCmdReader1.ReadByte() == 1;
+        }
+
         public async Task<byte[][]> GetBytesFromAssemblyAndPdb(string assemblyName, CancellationToken token)
         {
+            if (proxy.JustMyCode && !(await HasDebugInfoLoadedByRuntime(assemblyName, token)))
+                return new byte[2][];
             using var commandParamsWriter = new MonoBinaryWriter();
             byte[] assembly_buf = null;
             byte[] pdb_buf = null;
