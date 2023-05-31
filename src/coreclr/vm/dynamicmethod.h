@@ -59,8 +59,12 @@ public:
                                TypeHandle *typeOwner) = 0;
     virtual ChunkAllocator* GetJitMetaHeap() = 0;
 
-    // Quick check for SecurityControlFlags::SkipVisibilityChecks.
-    virtual bool SuppressVisibilityChecks() = 0;
+    // API to check if visibility checks are needed.
+    // If the API requires checks, the callers should use
+    // the potentially expensive GetJitContext() API.
+    // If it returns "false", there is no need for any
+    // further visibility checks.
+    virtual bool RequiresSuppressVisibilityChecks() = 0;
 
     //
     // code info data
@@ -124,7 +128,7 @@ public:
     void GetJitContext(SecurityControlFlags * securityControlFlags,
                        TypeHandle * typeOwner);
     ChunkAllocator* GetJitMetaHeap();
-    bool SuppressVisibilityChecks();
+    bool RequiresSuppressVisibilityChecks();
 
     BYTE* GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, CorInfoOptions *pOptions, unsigned* pEHSize);
     SigPointer GetLocalSig();
@@ -366,10 +370,15 @@ inline DynamicResolver* GetDynamicResolver(CORINFO_MODULE_HANDLE module)
     return (DynamicResolver*)(((size_t)module) & ~((size_t)CORINFO_MODULE_HANDLE_TYPE_MASK));
 }
 
-inline bool IsAllAccessScope(CORINFO_MODULE_HANDLE module)
+inline bool RequiresAccessCheck(CORINFO_MODULE_HANDLE module)
 {
     LIMITED_METHOD_CONTRACT;
-    return IsDynamicScope(module) && GetDynamicResolver(module)->SuppressVisibilityChecks();
+
+    // Non-dynamic scopes always require access checks.
+    if (!IsDynamicScope(module))
+        return true;
+
+    return GetDynamicResolver(module)->RequiresSuppressVisibilityChecks();
 }
 
 inline Module* GetModule(CORINFO_MODULE_HANDLE scope)

@@ -26,7 +26,7 @@ public:
     void GetJitContext(SecurityControlFlags* pSecurityControlFlags,
                        TypeHandle* pTypeOwner);
     ChunkAllocator* GetJitMetaHeap();
-    bool SuppressVisibilityChecks();
+    bool RequiresSuppressVisibilityChecks();
 
     BYTE* GetCodeInfo(unsigned* pCodeSize, unsigned* pStackSize, CorInfoOptions* pOptions, unsigned* pEHSize);
     SigPointer GetLocalSig();

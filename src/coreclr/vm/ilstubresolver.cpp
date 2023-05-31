@@ -80,7 +80,7 @@ ChunkAllocator* ILStubResolver::GetJitMetaHeap()
     return NULL;
 }
 
-bool ILStubResolver::SuppressVisibilityChecks()
+bool ILStubResolver::RequiresSuppressVisibilityChecks()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -88,10 +88,12 @@ bool ILStubResolver::SuppressVisibilityChecks()
     SecurityControlFlags securityControlFlags;
     TypeHandle typeOwner;
     GetJitContext(&securityControlFlags, &typeOwner);
+
+    // Verify we can return false below because we skip visibility checks
     _ASSERTE((securityControlFlags & DynamicResolver::SkipVisibilityChecks) == DynamicResolver::SkipVisibilityChecks);
 #endif // _DEBUG
 
-    return true;
+    return false;
 }
 
 SigPointer

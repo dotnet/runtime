@@ -161,7 +161,7 @@ inline CORINFO_MODULE_HANDLE GetScopeHandle(MethodDesc* method)
 }
 
 //This is common refactored code from within several of the access check functions.
-BOOL ModifyCheckForDynamicMethod(DynamicResolver *pResolver,
+static BOOL ModifyCheckForDynamicMethod(DynamicResolver *pResolver,
                                  TypeHandle *pOwnerTypeForSecurity,
                                  AccessCheckOptions::AccessCheckType *pAccessCheckType,
                                  DynamicResolver** ppAccessContext)
@@ -5474,7 +5474,7 @@ void CEEInfo::getCallInfo(
     pResult->accessAllowed = CORINFO_ACCESS_ALLOWED;
     MethodDesc* callerMethod = (MethodDesc*)callerHandle;
     if ((flags & CORINFO_CALLINFO_SECURITYCHECKS)
-        && !(IsAllAccessScope(pResolvedToken->tokenScope)))
+        && RequiresAccessCheck(pResolvedToken->tokenScope))
     {
         //Our type system doesn't always represent the target exactly with the MethodDesc.  In all cases,
         //carry around the parent MethodTable for both Caller and Callee.
@@ -5516,8 +5516,7 @@ void CEEInfo::getCallInfo(
                 // is not part of instantiation. We have to special case it.
                 pCalleeForSecurity = calleeTypeForSecurity.GetMethodTable()->GetParallelMethodDesc(pCalleeForSecurity);
             }
-            else
-            if (pResolvedToken->pMethodSpec != NULL)
+            else if (pResolvedToken->pMethodSpec != NULL)
             {
                 uint32_t nGenericMethodArgs = 0;
                 CQuickBytes qbGenericMethodArgs;
@@ -5550,8 +5549,7 @@ void CEEInfo::getCallInfo(
 
                 pCalleeForSecurity = MethodDesc::FindOrCreateAssociatedMethodDesc(pMD, calleeTypeForSecurity.GetMethodTable(), FALSE, Instantiation(genericMethodArgs, nGenericMethodArgs), FALSE);
             }
-            else
-            if (pResolvedToken->pTypeSpec != NULL)
+            else if (pResolvedToken->pTypeSpec != NULL)
             {
                 pCalleeForSecurity = MethodDesc::FindOrCreateAssociatedMethodDesc(pMD, calleeTypeForSecurity.GetMethodTable(), FALSE, Instantiation(), TRUE);
             }

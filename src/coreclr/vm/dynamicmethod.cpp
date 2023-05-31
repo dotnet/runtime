@@ -1104,14 +1104,10 @@ ChunkAllocator* LCGMethodResolver::GetJitMetaHeap()
     return &m_jitMetaHeap;
 }
 
-bool LCGMethodResolver::SuppressVisibilityChecks()
+bool LCGMethodResolver::RequiresSuppressVisibilityChecks()
 {
     LIMITED_METHOD_CONTRACT;
-
-    SecurityControlFlags securityControlFlags;
-    TypeHandle typeOwner;
-    GetJitContext(&securityControlFlags, &typeOwner);
-    return (securityControlFlags & DynamicResolver::SkipVisibilityChecks) == DynamicResolver::SkipVisibilityChecks;
+    return true;
 }
 
 BYTE* LCGMethodResolver::GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, CorInfoOptions *pOptions, unsigned *pEHSize)
