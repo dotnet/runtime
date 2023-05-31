@@ -117,7 +117,8 @@ namespace CoreclrTestLib
 
                         if (action == "compile")
                         {
-                            cmdStr = $"./build-apple-app.sh";
+                            // Temporary patch, test the CI
+                            cmdStr = $"ls -la && ./build-apple-app.sh";
                         }
                     }
 

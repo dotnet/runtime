@@ -60,7 +60,6 @@
   </Target>
 
   -->
-
   <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.props" Condition=" '$(UsesHelixSdk)' == 'true' " />
   <Import Sdk="Microsoft.Build.NoTargets" Project="Sdk.props" Condition=" '$(UsesHelixSdk)' != 'true' " />
 
@@ -148,7 +147,7 @@
       <_BuildInParallel Condition=" '@(_ProjectsToBuild->Count())' &gt; '1' ">true</_BuildInParallel>
     </PropertyGroup>
 
-    <MSBuild Projects="@(_ProjectsToBuild)" Targets="Test" BuildInParallel="$(_BuildInParallel)" StopOnFirstFailure="false" Properties="UsesHelixSdk=true" />
+    <MSBuild Projects="@(_ProjectsToBuild)" Targets="printItems" BuildInParallel="$(_BuildInParallel)" StopOnFirstFailure="false" Properties="UsesHelixSdk=true" />
   </Target>
 
   <!-- Choose a suitable runtime RID for Helix to restore the dotnet cli -->
@@ -280,9 +279,15 @@
 
     <ItemGroup>
       <ReducedLegacyPayloadFilesFinal Remove="$(PublishedMergedPayloadsToExclude)" />
+      <PublishPayloads Include="$(ArtifactsDir)helix\tests\$(OSPlatformConfig)\*.zip" />
     </ItemGroup>
 
     <Copy SourceFiles="@(ReducedLegacyPayloadFilesFinal)" DestinationFiles="@(ReducedLegacyPayloadFilesFinal->'$(LegacyPayloadsRootDirectory)%(FileRelativeToPayloadsRootDirectory)')" />
+    <!-- Temporary patch, test the CI -->
+    <RemoveDir Directories="$(LegacyPayloadsRootDirectory)/$(_PayloadGroup)" />
+    <MakeDir Directories="$(LegacyPayloadsRootDirectory)/$(_PayloadGroup)" />
+    <Unzip SourceFiles="%(PublishPayloads.FullPath)" DestinationFolder="$(LegacyPayloadsRootDirectory)/$(_PayloadGroup)" />
+    <Message Importance="High" Text="PublishPayloads: @(PublishPayloads)" />
   </Target>
 
   <Target Name="PrepareCorrelationPayloadDirectory">
@@ -602,18 +607,12 @@
         <PayloadGroup>$([MSBuild]::MakeRelative($(LegacyPayloadsRootDirectory), %(FullPath)))</PayloadGroup>
         <PayloadDirectory>%(FullPath)</PayloadDirectory>
       </LegacyPayloads>
-      <PublishPayloads Include="$(ArtifactsDir)helix\tests\$(OSPlatformConfig)\*.zip" />
     </ItemGroup>
 
     <ZipDirectory
       Condition="'@(LegacyPayloads)' != ''"
       SourceDirectory="@(LegacyPayloads->Metadata('PayloadDirectory'))"
       DestinationFile="$(LegacyPayloadsRootDirectory)\%(LegacyPayloads.PayloadGroup).zip" />
-
-    <Message Importance="High" Text="PublishPayloads: @(PublishPayloads)" />
-    <Copy
-      SourceFiles="@(PublishPayloads)"
-      DestinationFolder="$(LegacyPayloadsRootDirectory)" />
   </Target>
 
   <Target Name="ZipMergedPayloadDirectory" AfterTargets="PrepareMergedTestPayloadDirectories" Condition="'$(TargetsBrowser)' == 'true'">
