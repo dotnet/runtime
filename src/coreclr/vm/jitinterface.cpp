@@ -7750,7 +7750,7 @@ public:
     }
 };
 
-static HRESULT getMethodInfoHelper(
+static void getMethodInfoHelper(
     MethodInfoHelperContext& cxt,
     CORINFO_METHOD_INFO* methInfo)
 {
@@ -7829,13 +7829,8 @@ static HRESULT getMethodInfoHelper(
     }
     else
     {
-        HRESULT hr = ftn->GenerateUnsafeAccessor(&cxt.TransientResolver, &cxt.Header);
-        if (FAILED(hr))
-        {
-            if (hr == E_FAIL)
-                hr = COR_E_BADIMAGEFORMAT;
-            return hr;
-        }
+        if (!ftn->TryGenerateUnsafeAccessor(&cxt.TransientResolver, &cxt.Header))
+            ThrowHR(COR_E_BADIMAGEFORMAT);
 
         scopeHnd = cxt.CreateScopeHandle();
 
@@ -7913,8 +7908,6 @@ static HRESULT getMethodInfoHelper(
         &context,
         CONV_TO_JITSIG_FLAGS_LOCALSIG,
         &methInfo->locals);
-
-    return S_OK;
 } // getMethodInfoHelper
 
 //---------------------------------------------------------------------------------------
@@ -7940,13 +7933,15 @@ CEEInfo::getMethodInfo(
     MethodInfoHelperContext cxt{ ftn };
     if (ftn->IsDynamicMethod())
     {
-        result = SUCCEEDED(getMethodInfoHelper(cxt, methInfo));
+        getMethodInfoHelper(cxt, methInfo);
+        result = true;
     }
     else if (!ftn->IsWrapperStub() && ftn->HasILHeader())
     {
         COR_ILMETHOD_DECODER header(ftn->GetILHeader(TRUE), ftn->GetMDImport(), NULL);
         cxt.Header = &header;
-        result = SUCCEEDED(getMethodInfoHelper(cxt, methInfo));
+        getMethodInfoHelper(cxt, methInfo);
+        result = true;
     }
     else if (ftn->IsIL() && ftn->GetRVA() == 0)
     {
@@ -7959,7 +7954,8 @@ CEEInfo::getMethodInfo(
             cxt.TransientResolver = GetDynamicResolver(detailsMaybe->Scope);
         }
 
-        result = SUCCEEDED(getMethodInfoHelper(cxt, methInfo));
+        getMethodInfoHelper(cxt, methInfo);
+        result = true;
     }
 
     if (result)
@@ -13064,11 +13060,9 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     }
 #endif // _DEBUG
 
-    HRESULT hr;
     MethodInfoHelperContext cxt{ ftn, ILHeader };
     CORINFO_METHOD_INFO methodInfo;
-    if (FAILED(hr = getMethodInfoHelper(cxt, &methodInfo)))
-        ThrowHR(hr);
+    getMethodInfoHelper(cxt, &methodInfo);
 
     // If it's generic then we can only enter through an instantiated MethodDesc
     _ASSERTE(!ftn->IsGenericMethodDefinition());

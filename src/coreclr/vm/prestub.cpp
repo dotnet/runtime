@@ -1363,7 +1363,7 @@ namespace
     }
 }
 
-HRESULT MethodDesc::GenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder)
+bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(resolver != NULL);
@@ -1378,14 +1378,14 @@ HRESULT MethodDesc::GenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     ULONG dataLen;
     HRESULT hr = GetCustomAttribute(WellKnownAttribute::UnsafeAccessorAttribute, &data, &dataLen);
     if (hr != S_OK)
-        return E_FAIL;
+        return false;
 
     UnsafeAccessorKind kind;
     SString name;
 
     CustomAttributeParser ca(data, dataLen);
     if (!TryParseUnsafeAccessorAttribute(this, ca, kind, name))
-        return COR_E_BADIMAGEFORMAT;
+        ThrowHR(COR_E_BADIMAGEFORMAT);
 
     GenerationContext context{ kind, this };
 
@@ -1415,14 +1415,14 @@ HRESULT MethodDesc::GenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
         // The name is defined by the runtime and should be empty.
         if (retType.IsNull() || !name.IsEmpty())
         {
-            return COR_E_BADIMAGEFORMAT;
+            ThrowHR(COR_E_BADIMAGEFORMAT);
         }
 
         context.TargetType = retType;
         if (!TrySetTargetMethodCtor(context)
             || !TryGenerateAccessor(context, resolver, methodILDecoder))
         {
-            return COR_E_MISSINGMETHOD;
+            ThrowHR(COR_E_MISSINGMETHOD);
         }
         break;
 
@@ -1430,14 +1430,14 @@ HRESULT MethodDesc::GenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     case UnsafeAccessorKind::StaticMethod:
         // Method access requires a target type.
         if (firstArgType.IsNull())
-            return COR_E_BADIMAGEFORMAT;
+            ThrowHR(COR_E_BADIMAGEFORMAT);
 
         context.TargetType = firstArgType;
         context.IsTargetStatic = kind == UnsafeAccessorKind::StaticMethod;
         if (!TrySetTargetMethod(context, name.GetUTF8())
             || !TryGenerateAccessor(context, resolver, methodILDecoder))
         {
-            return COR_E_MISSINGMETHOD;
+            ThrowHR(COR_E_MISSINGMETHOD);
         }
         break;
 
@@ -1446,7 +1446,7 @@ HRESULT MethodDesc::GenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
         // Field access requires a single argument for target type and a return type.
         if (argCount != 1 || firstArgType.IsNull() || retType.IsNull())
         {
-            return COR_E_BADIMAGEFORMAT;
+            ThrowHR(COR_E_BADIMAGEFORMAT);
         }
 
         // The return type must be byref.
@@ -1457,7 +1457,7 @@ HRESULT MethodDesc::GenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
                 && firstArgType.IsValueType()
                 && !firstArgType.IsByRef()))
         {
-            return COR_E_BADIMAGEFORMAT;
+            ThrowHR(COR_E_BADIMAGEFORMAT);
         }
 
         context.TargetType = firstArgType;
@@ -1465,16 +1465,16 @@ HRESULT MethodDesc::GenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
         if (!TrySetTargetField(context, name.GetUTF8(), retType.GetTypeParam())
             || !TryGenerateAccessor(context, resolver, methodILDecoder))
         {
-            return COR_E_MISSINGFIELD;
+            ThrowHR(COR_E_MISSINGFIELD);
         }
         break;
 
     default:
         _ASSERTE(!"Unknown UnsafeAccessorKind");
-        return E_UNEXPECTED;
+        ThrowHR(E_UNEXPECTED);
     }
 
-    return S_OK;
+    return true;
 }
 
 PrepareCodeConfig::PrepareCodeConfig() {}
