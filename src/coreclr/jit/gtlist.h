@@ -260,7 +260,6 @@ GTNODE(SELECT_INVCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(SELECT_NEG       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 // Variant of SELECT_NEG that reuses flags computed by a previous node with the specified condition.
 GTNODE(SELECT_NEGCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
->>>>>>> dotnet/main
 #endif
 
 //-----------------------------------------------------------------------------
