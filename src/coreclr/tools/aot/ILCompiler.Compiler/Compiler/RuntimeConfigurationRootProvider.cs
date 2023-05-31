@@ -63,7 +63,7 @@ namespace ILCompiler
                 var builder = new ObjectDataBuilder(factory.TypeSystemContext.Target, relocsOnly);
                 builder.AddSymbol(this);
 
-                var settings = new List<KeyValuePair<string, ISymbolNode>>();
+                var settings = new Dictionary<string, ISymbolNode>();
 
                 // Put values in a dictionary - we expect many "true" strings, for example.
                 var valueDict = new Dictionary<string, ISymbolNode>();
@@ -85,7 +85,7 @@ namespace ILCompiler
                             valueDict.Add(value, valueNode);
                         }
 
-                        settings.Add(new KeyValuePair<string, ISymbolNode>(key, valueNode));
+                        settings[key] = valueNode;
                     }
                 }
 
@@ -95,18 +95,19 @@ namespace ILCompiler
                 // * N times pointer to value
                 builder.EmitNaturalInt(settings.Count);
 
-                for (int i = 0; i < settings.Count; i++)
+                int i = 0;
+                foreach (string key in settings.Keys)
                 {
                     ISymbolNode node = factory.ReadOnlyDataBlob(
-                                new Utf8String(_blobName + "_key_" + i),
-                                Utf8NullTerminatedBytes(settings[i].Key),
+                                new Utf8String(_blobName + "_key_" + i++),
+                                Utf8NullTerminatedBytes(key),
                                 alignment: 1);
                     builder.EmitPointerReloc(node);
                 }
 
-                for (int i = 0; i < settings.Count; i++)
+                foreach (ISymbolNode value in settings.Values)
                 {
-                    builder.EmitPointerReloc(settings[i].Value);
+                    builder.EmitPointerReloc(value);
                 }
 
                 static byte[] Utf8NullTerminatedBytes(string s)
