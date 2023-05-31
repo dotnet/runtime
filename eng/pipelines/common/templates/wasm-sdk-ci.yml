@@ -44,7 +44,7 @@ jobs:
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
-      nameSuffix: WasmBuildTests
+      nameSuffix: SdkTestsForWasm
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs) /p:WorkloadsTestPreviousVersions=$(workloadsTestPreviousVersionsVar)
       timeoutInMinutes: 180
       condition: >-
@@ -65,6 +65,7 @@ jobs:
               ls -l artifacts/bin/redist/$(_BuildConfig);
               ls -l artifacts/bin/redist/$(_BuildConfig)/dotnet/;
               ls -l artifacts/bin/redist/$(_BuildConfig)/dotnet/dotnet;
+              export RestoreAdditionalProjectSources=$(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping;
               ./build.sh -c $(_BuildConfig) -restore -test --projects $PWD/src/Tests/Microsoft.NET.Sdk.BlazorWebAssembly.Tests/Microsoft.NET.Sdk.BlazorWebAssembly.Tests.csproj /bl
             workingDirectory: $(Pipeline.Workspace)
             displayName: Build tests
