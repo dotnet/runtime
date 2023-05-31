@@ -5943,36 +5943,11 @@ mono_class_has_failure (const MonoClass *klass)
 	return m_class_has_failure ((MonoClass*)klass) != 0;
 }
 
-
-/**
- * mono_class_set_type_load_failure:
- * \param klass class in which the failure was detected
- * \param fmt \c printf -style error message string.
- *
- * Collect detected failure informaion in the class for later processing.
- * The error is stored as a MonoErrorBoxed as with mono_error_set_type_load_class()
- * Note that only the first failure is kept.
- *
- * LOCKING: Acquires the loader lock.
- *
- * \returns FALSE if a failure was already set on the class, or TRUE otherwise.
- */
 gboolean
-mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...)
+mono_class_has_deferred_failure (const MonoClass *klass)
 {
-	ERROR_DECL (prepare_error);
-	va_list args;
-
-	if (mono_class_has_failure (klass))
-		return FALSE;
-
-	va_start (args, fmt);
-	mono_error_vset_type_load_class (prepare_error, klass, fmt, args);
-	va_end (args);
-
-	MonoErrorBoxed *box = mono_error_box (prepare_error, m_class_get_image (klass));
-	mono_error_cleanup (prepare_error);
-	return mono_class_set_failure (klass, box);
+	g_assert (klass != NULL);
+	return m_class_has_deferred_failure ((MonoClass*)klass) != 0;
 }
 
 /**
