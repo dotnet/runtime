@@ -775,7 +775,6 @@ struct ProcInfoCacheEntry
     uint32_t    format;           /* compact unwind encoding, or zero if none */
     uint32_t    unwind_info_size; /* size of DWARF unwind info, or zero if none */
     unw_word_t  lsda;             /* address of language specific data area, */
-    unw_word_t  handler;          /* personality routine, or zero if not used */
     unw_word_t  unwind_info;      /* address of DWARF unwind info, or zero */
 
 #ifdef __APPLE__
@@ -784,7 +783,7 @@ struct ProcInfoCacheEntry
 };
 
 // we use static array with 1024 entries as a cache.
-// that is about 57Kb and what we can reasonably afford.
+// that is about 49Kb and what we can reasonably afford.
 static const int CACHE_BITS = 10;
 static ProcInfoCacheEntry cache[1 << CACHE_BITS];
 #endif
@@ -826,7 +825,6 @@ static void SetCachedProcInfo(PCODE pc, unw_proc_info_t* procInfo)
     pEntry->format = procInfo->format;
     pEntry->unwind_info_size = procInfo->unwind_info_size;
     pEntry->lsda = procInfo->lsda;
-    pEntry->handler = procInfo->handler;
     pEntry->unwind_info = procInfo->unwind_info;
 
 #ifdef __APPLE__
@@ -855,7 +853,7 @@ static bool TryGetCachedProcInfo(PCODE pc, unw_proc_info_t* procInfo)
         procInfo->format = pEntry->format;
         procInfo->unwind_info_size = pEntry->unwind_info_size;
         procInfo->lsda = pEntry->lsda;
-        procInfo->handler = pEntry->handler;
+        procInfo->handler = 0;  // not used in our scenarios
         procInfo->unwind_info = pEntry->unwind_info;
 
 #ifdef __APPLE__
