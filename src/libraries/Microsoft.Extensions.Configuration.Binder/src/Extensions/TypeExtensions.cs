@@ -25,5 +25,25 @@ namespace Microsoft.Extensions.Configuration.Binder.Extensions
 
             return returnValue;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool TryGetGenericTypeDefinition(this Type type,
+            out Type? genericTypeDefinition)
+        {
+            bool returnValue;
+
+            if (type.IsGenericType)
+            {
+                genericTypeDefinition = type.GetGenericTypeDefinition();
+                returnValue = true;
+            }
+            else
+            {
+                genericTypeDefinition = null;
+                returnValue = false;
+            }
+
+            return returnValue;
+        }
     }
 }

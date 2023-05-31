@@ -530,8 +530,8 @@ namespace Microsoft.Extensions.Configuration
             Type dictionaryType,
             IConfiguration config, BinderOptions options)
         {
-            Debug.Assert(dictionaryType.IsGenericType &&
-                         (dictionaryType.GetGenericTypeDefinition() == typeof(IDictionary<,>) || dictionaryType.GetGenericTypeDefinition() == typeof(Dictionary<,>)));
+            Debug.Assert(dictionaryType.TryGetGenericTypeDefinition(out Type? genericTypeDefinition)
+                && (genericTypeDefinition == typeof(IDictionary<,>) || genericTypeDefinition == typeof(Dictionary<,>)));
 
             Type keyType = dictionaryType.GenericTypeArguments[0];
             Type valueType = dictionaryType.GenericTypeArguments[1];
@@ -765,7 +765,8 @@ namespace Microsoft.Extensions.Configuration
                 return true;
             }
 
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+            if (type.TryGetGenericTypeDefinition(out Type? genericTypeDefinition)
+                && genericTypeDefinition == typeof(Nullable<>))
             {
                 if (string.IsNullOrEmpty(value))
                 {
@@ -854,8 +855,8 @@ namespace Microsoft.Extensions.Configuration
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
             Type actual)
         {
-            if (actual.IsGenericType &&
-                actual.GetGenericTypeDefinition() == expected)
+            if (actual.TryGetGenericTypeDefinition(out Type? genericTypeDefinition)
+                && genericTypeDefinition == expected)
             {
                 return actual;
             }
@@ -863,8 +864,8 @@ namespace Microsoft.Extensions.Configuration
             Type[] interfaces = actual.GetInterfaces();
             foreach (Type interfaceType in interfaces)
             {
-                if (interfaceType.IsGenericType &&
-                    interfaceType.GetGenericTypeDefinition() == expected)
+                if (interfaceType.TryGetGenericTypeDefinition(out Type? genericTypeDefinitionOfInterfaceType)
+                    && genericTypeDefinitionOfInterfaceType == expected)
                 {
                     return interfaceType;
                 }
