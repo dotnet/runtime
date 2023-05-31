@@ -824,7 +824,7 @@ namespace Wasm.Build.Tests
             return result;
         }
 
-        protected void AssertBlazorBundle(string config, bool isPublish, bool dotnetWasmFromRuntimePack, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir = null)
+        protected void AssertBlazorBundle(string config, bool isPublish, bool dotnetWasmFromRuntimePack, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir = null, bool expectFingerprinting = false)
         {
             binFrameworkDir ??= FindBlazorBinFrameworkDir(config, isPublish, targetFramework);
 
@@ -856,12 +856,12 @@ namespace Wasm.Build.Tests
                     Assert.True(File.Exists(absolutePath), $"Expected to find '{absolutePath}'");
                 }
 
-                string versionRegex = @"8.0.\d?(-[a-z]+(\.\d\.\d+\.\d)?)?\.([a-z0-9])+";
+                string versionHashRegex = @"\.(?<version>.+)\.(?<hash>[a-zA-Z0-9]+)\.";
                 Assert.Collection(
                     dotnetJsEntries.OrderBy(f => f),
-                    item => { Assert.Equal($"dotnet.js", item); AssertFileExists(item); },
-                    item => { Assert.Matches($"dotnet\\.native\\.{versionRegex}\\.js", item); AssertFileExists(item); },
-                    item => { Assert.Matches($"dotnet\\.runtime\\.{versionRegex}\\.js", item); AssertFileExists(item); }
+                    item => { Assert.Equal(expectFingerprinting ? $"dotnet{versionHashRegex}js" : "dotnet.js", item); AssertFileExists(item); },
+                    item => { Assert.Matches($"dotnet\\.native{versionHashRegex}js", item); AssertFileExists(item); },
+                    item => { Assert.Matches($"dotnet\\.runtime{versionHashRegex}js", item); AssertFileExists(item); }
                 );
             }
         }

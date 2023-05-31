@@ -67,7 +67,7 @@ public class BuildPublishTests : BuildTestBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
-    public void DefaultTemplate_BuildAndBuildNative_WithWorkload(string config)
+    public void DefaultTemplate_BuildNative_WithWorkload(string config)
     {
         string id = $"blz_buildandbuildnative_{config}_{Path.GetRandomFileName()}";
 
