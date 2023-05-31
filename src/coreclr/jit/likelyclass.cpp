@@ -266,7 +266,10 @@ static unsigned getLikelyClassesOrMethods(LikelyClassMethodRecord*              
                     {
                         assert(numberOfClasses > 0);
                         pLikelyEntries[0].likelihood += (UINT32)totalLikelihoodDbl - totalLikelihoodInt;
+                        assert(pLikelyEntries[0].likelihood <= 100);
                     }
+
+                    assert(totalLikelihoodDbl <= 100.0);
 
                     return numberOfClasses;
                 }
