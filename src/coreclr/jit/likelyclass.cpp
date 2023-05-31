@@ -250,11 +250,11 @@ static unsigned getLikelyClassesOrMethods(LikelyClassMethodRecord*              
 
                     for (size_t hIdx = 0; hIdx < numberOfClasses; hIdx++)
                     {
-                        LikelyClassMethodHistogramEntry const hc = sortedEntries[hIdx];
-                        const double likelihood = hc.m_count * 100.0 / h.m_totalCount;
+                        LikelyClassMethodHistogramEntry const hc         = sortedEntries[hIdx];
+                        const double                          likelihood = hc.m_count * 100.0 / h.m_totalCount;
 
-                        pLikelyEntries[hIdx].handle              = hc.m_handle;
-                        pLikelyEntries[hIdx].likelihood          = (UINT32)likelihood;
+                        pLikelyEntries[hIdx].handle     = hc.m_handle;
+                        pLikelyEntries[hIdx].likelihood = (UINT32)likelihood;
 
                         totalLikelihoodDbl += likelihood;
                         totalLikelihoodInt += (UINT32)likelihood;
