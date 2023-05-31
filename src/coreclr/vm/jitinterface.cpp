@@ -4471,6 +4471,11 @@ static BOOL isMoreSpecificTypeHelper(
         return FALSE;
     }
 
+    if (hnd1.IsTypeDesc() || hnd2.IsTypeDesc())
+    {
+        return FALSE;
+    }
+
     // If we have a mixture of shared and unshared types,
     // consider the unshared type as more specific.
     BOOL isHnd1CanonSubtype = hnd1.IsCanonicalSubtype();
