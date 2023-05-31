@@ -184,6 +184,8 @@ namespace Unity.CoreCLRHelpers;
 
         switch (typeSymbol.NativeWrapperTypeFor(providerAttributes))
         {
+            case "MonoException*":
+                return "Exception";
             case "MonoClass*":
             case "MonoType*":
                 return "Type";
@@ -257,6 +259,7 @@ namespace Unity.CoreCLRHelpers;
             case "MonoArray*":
             case "MonoReflectionMethod*":
             case "MonoReflectionField*":
+            case "MonoException*":
                 return ".ToManagedRepresentation()";
             case "MonoClass*":
                 return ".TypeFromHandleIntPtr()";
@@ -272,6 +275,8 @@ namespace Unity.CoreCLRHelpers;
 
         switch (methodSymbol.NativeWrapperTypeForReturnType())
         {
+            case "MonoException*":
+                return "(Exception)";
             case "MonoArray*":
                 return "(Array)";
             case "MonoReflectionMethod*":
