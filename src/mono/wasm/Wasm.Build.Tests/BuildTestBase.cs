@@ -850,14 +850,19 @@ namespace Wasm.Build.Tests
                 var bootConfig = ParseBootData(bootConfigContent);
                 var dotnetJsEntries = bootConfig.resources.runtime.Keys.Where(k => k.StartsWith("dotnet.") && k.EndsWith(".js")).ToArray();
 
-                Assert.Equal(3, dotnetJsEntries.Length);
-                foreach (var dotnetJs in dotnetJsEntries)
+                AssertFileExists(string fileName)
                 {
-                    Assert.DoesNotContain(dotnetJs, "..");
-
-                    string dotnetJsAbsolutePath = Path.Combine(binFrameworkDir, dotnetJs);
-                    Assert.True(File.Exists(dotnetJsPath), $"Expected to find '{dotnetJsAbsolutePath}'");
+                    string absolutePath = Path.Combine(binFrameworkDir, fileName);
+                    Assert.True(File.Exists(absolutePath), $"Expected to find '{absolutePath}'");
                 }
+
+                string versionRegex = @"8.0.\d?(-[a-z]+(\.\d\.\d+\.\d)?)?\.([a-z0-9])+";
+                Assert.Collection(
+                    dotnetJsEntries,
+                    item => { Assert.Equal($"dotnet.js", item); AssertFileExists(item); },
+                    item => { Assert.Matches($"dotnet\\.native\\.{versionRegex}\\.js", item); AssertFileExists(item); },
+                    item => { Assert.Matches($"dotnet\\.runtime\\.{versionRegex}\\.js", item); AssertFileExists(item); }
+                );
             }
         }
 
