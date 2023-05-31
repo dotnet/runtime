@@ -1498,6 +1498,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			}
 			break;
 		}
+		case ArgVtypeOnStack:
 		case ArgVtypeInIReg:
 		case ArgVtypeByRef: {
 			MonoInst *ins;
@@ -1871,7 +1872,31 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			offset += sizeof (host_mgreg_t);
 			ins->inst_offset = -offset;
 			break;
+		case ArgVtypeByRef:{
+			MonoInst *vtaddr;
+
+			// if (ainfo->gsharedvt) {
+			// 	ins->opcode = OP_REGOFFSET;
+			// 	ins->inst_basereg = cfg->frame_reg;
+			// 	ins->inst_offset = offset;
+			// 	offset += 8;
+			// 	break;
+			// }
+
+			/* The vtype address is in a register, will be copied to the stack in the prolog */
+			MONO_INST_NEW (cfg, vtaddr, 0);
+			vtaddr->opcode = OP_REGOFFSET;
+			vtaddr->inst_basereg = cfg->frame_reg;
+			vtaddr->inst_offset = offset;
+			offset += sizeof (host_mgreg_t);
+
+			/* Need an indirection */
+			ins->opcode = OP_VTARG_ADDR;
+			ins->inst_left = vtaddr;
+			break;
+		}
 		default:
+			g_print ("unable allocate var with type %d.\n", ainfo->storage);
 			NOT_IMPLEMENTED;
 			break;
 		}
@@ -3222,6 +3247,16 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 					code = mono_riscv_emit_store (code, ainfo->reg + 1, ins->inst_basereg,
 					                              ins->inst_offset + sizeof (host_mgreg_t), 0);
 				code = mono_riscv_emit_store (code, ainfo->reg, ins->inst_basereg, ins->inst_offset, 0);
+				break;
+			case ArgVtypeByRef:
+				// if (ainfo->gsharedvt) {
+				// 	g_assert (ins->opcode == OP_GSHAREDVT_ARG_REGOFFSET);
+				// 	arm_strx (code, ainfo->reg, ins->inst_basereg, ins->inst_offset);
+				// } else {
+				g_assert (ins->opcode == OP_VTARG_ADDR);
+				g_assert (ins->inst_left->opcode == OP_REGOFFSET);
+				code = mono_riscv_emit_store (code, ainfo->reg, ins->inst_left->inst_basereg, ins->inst_left->inst_offset, 0);
+				// }
 				break;
 			case ArgOnStack:
 				break;
