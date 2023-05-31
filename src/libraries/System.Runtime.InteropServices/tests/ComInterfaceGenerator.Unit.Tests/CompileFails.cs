@@ -421,6 +421,58 @@ namespace ComInterfaceGenerator.Unit.Tests
         }
 
         [Fact]
+        public async Task VerifyStringMarshallingCustomTypeWithLessVisibilityThanInterfaceWarns()
+        {
+            var gciProvider = new GeneratedComInterfaceAttributeProvider();
+            var group = new List<(string, string, DiagnosticResult[])>()
+            {
+                ("public", "public", new DiagnosticResult[] { }),
+                // Technically we don't support inheriting from a GeneratedComInterface from another assembly, so this should be okay
+                ("public", "internal", new DiagnosticResult[]{ new DiagnosticResult().WithLocation(0) }),
+                ("public", "protected", new DiagnosticResult[]{ new DiagnosticResult().WithLocation(0) }),
+                ("public", "private", new DiagnosticResult[]{ new DiagnosticResult().WithLocation(0) }),
+                ("internal", "public", new DiagnosticResult[] { }),
+                ("internal", "internal", new DiagnosticResult[] { }),
+                ("internal", "protected", new DiagnosticResult[]{ new DiagnosticResult().WithLocation(0) }),
+                ("internal", "private", new DiagnosticResult[]{ new DiagnosticResult().WithLocation(0) }),
+                ("protected", "public", new DiagnosticResult[] { }),
+                ("protected", "internal", new DiagnosticResult[] { }),
+                ("protected", "protected", new DiagnosticResult[] { }),
+                ("protected", "private", new DiagnosticResult[]{ new DiagnosticResult().WithLocation(0) }),
+                ("private", "public", new DiagnosticResult[] { }),
+                ("private", "internal", new DiagnosticResult[] { }),
+                ("private", "protected", new DiagnosticResult[] { }),
+                ("private", "private", new DiagnosticResult[] { }),
+            };
+
+            foreach (var (interfaceVisibility, customTypeVisibility, diagnostics) in group)
+            {
+
+                var source = $$"""
+                public static class Program {
+                    [System.Runtime.InteropServices.Marshalling.CustomMarshaller(typeof(string), MarshalMode.Default, typeof(CustomStringMarshallingType))]
+                    {{customTypeVisibility}} class CustomStringMarshallingType
+                    {
+                        public static string? ConvertToManaged(ushort* unmanaged) => throw new NotImplementedException();
+                        public static ushort* ConvertToUnmanaged(string? managed) => throw new NotImplementedException();
+                        public static void Free(ushort* unmanaged) => throw new NotImplementedException();
+                        public static ref readonly char GetPinnableReference(string? str) => throw new NotImplementedException();
+                    }
+
+                    [System.Runtime.InteropServices.Marshalling.GeneratedComInterface(StringMarshalling.Custom, typeof(CustomStringMarshallingType)]
+                    {{interfaceVisibility}} partial interface {|#{{0}}:IStringMarshalling|}
+                    {
+                        public string GetString();
+                        public void SetString(string value);
+                    }
+                }
+                """;
+
+                await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, diagnostics);
+            }
+        }
+
+        [Fact]
         public async Task VerifyComInterfaceInheritingFromComInterfaceInOtherAssemblyReportsDiagnostic()
         {
             string additionalSource = $$"""

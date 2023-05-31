@@ -477,6 +477,12 @@ namespace Microsoft.Win32
                             int timeout,
                             int flags,
                             ref int returned);
+        [LibraryImport("user32.dll", EntryPoint = "GetClassNameW", SetLastError = true)]
+        internal static partial int GetClassName(IntPtr hWnd, [Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2)] char[] lpClassName, int nMaxCount);
+        [LibraryImport(nameof(int))]
+    public static partial int CountArrayElements(
+        [MarshalUsing(typeof(ArrayMarshaller<,>))] int[] array, // Unlike the V1 system, we'll allow open generics in the V2 system in MarshalUsing since there's an extra generic parameter that the user does not provide.
+        out int numElements);
 
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]

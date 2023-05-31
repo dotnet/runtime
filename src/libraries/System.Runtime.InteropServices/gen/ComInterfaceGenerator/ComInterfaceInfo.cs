@@ -25,7 +25,7 @@ namespace Microsoft.Interop
         Guid InterfaceId,
         LocationInfo DiagnosticLocation)
     {
-        public static DiagnosticOr<(ComInterfaceInfo InterfaceInfo, INamedTypeSymbol Symbol)> From(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, CancellationToken _)
+        public static DiagnosticsOr<(ComInterfaceInfo InterfaceInfo, INamedTypeSymbol Symbol)> From(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, CancellationToken _)
         {
             // Verify the method has no generic types or defined implementation
             // and is not marked static or sealed
@@ -35,7 +35,7 @@ namespace Microsoft.Interop
                 // and is not marked static or sealed
                 if (syntax.TypeParameterList is not null)
                 {
-                    return DiagnosticOr<(ComInterfaceInfo InterfaceInfo, INamedTypeSymbol Symbol)>.From(
+                    return DiagnosticsOr<(ComInterfaceInfo InterfaceInfo, INamedTypeSymbol Symbol)>.From(
                         Diagnostic.Create(
                             GeneratorDiagnostics.InvalidAttributedInterfaceGenericNotSupported,
                             syntax.Identifier.GetLocation(),
@@ -48,7 +48,7 @@ namespace Microsoft.Interop
             {
                 if (!typeDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
                 {
-                    return DiagnosticOr<(ComInterfaceInfo InterfaceInfo, INamedTypeSymbol Symbol)>.From(
+                    return DiagnosticsOr<(ComInterfaceInfo InterfaceInfo, INamedTypeSymbol Symbol)>.From(
                         Diagnostic.Create(
                             GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers,
                             syntax.Identifier.GetLocation(),
@@ -58,15 +58,15 @@ namespace Microsoft.Interop
             }
 
             if (!TryGetGuid(symbol, syntax, out Guid? guid, out Diagnostic? guidDiagnostic))
-                return DiagnosticOr<(ComInterfaceInfo InterfaceInfo, INamedTypeSymbol Symbol)>.From(guidDiagnostic);
+                return DiagnosticsOr<(ComInterfaceInfo InterfaceInfo, INamedTypeSymbol Symbol)>.From(guidDiagnostic);
 
             if (!TryGetBaseComInterface(symbol, syntax, out INamedTypeSymbol? baseSymbol, out Diagnostic? baseDiagnostic))
-                return DiagnosticOr<(ComInterfaceInfo InterfaceInfo, INamedTypeSymbol Symbol)>.From(baseDiagnostic);
+                return DiagnosticsOr<(ComInterfaceInfo InterfaceInfo, INamedTypeSymbol Symbol)>.From(baseDiagnostic);
 
             if (!StringMarshallingIsValid(symbol, syntax, baseSymbol, out Diagnostic? stringMarshallingDiagnostic))
-                return DiagnosticOr<(ComInterfaceInfo InterfaceInfo, INamedTypeSymbol Symbol)>.From(stringMarshallingDiagnostic);
+                return DiagnosticsOr<(ComInterfaceInfo InterfaceInfo, INamedTypeSymbol Symbol)>.From(stringMarshallingDiagnostic);
 
-            return DiagnosticOr<(ComInterfaceInfo InterfaceInfo, INamedTypeSymbol Symbol)>.From(
+            return DiagnosticsOr<(ComInterfaceInfo InterfaceInfo, INamedTypeSymbol Symbol)>.From(
                 (new ComInterfaceInfo(
                     ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol),
                     symbol.ToDisplayString(),
@@ -84,14 +84,25 @@ namespace Microsoft.Interop
             var attrInfo = GeneratedComInterfaceData.From(GeneratedComInterfaceCompilationData.GetAttributeDataFromInterfaceSymbol(symbol));
             if (attrInfo.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling) || attrInfo.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshallingCustomType))
             {
-                if (attrInfo.StringMarshalling is StringMarshalling.Custom && attrInfo.StringMarshallingCustomType is null)
+                if (attrInfo.StringMarshalling is StringMarshalling.Custom)
                 {
-                    stringMarshallingDiagnostic = Diagnostic.Create(
-                        GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface,
-                        syntax.Identifier.GetLocation(),
-                        symbol.ToDisplayString(),
-                        SR.InvalidStringMarshallingConfigurationMissingCustomType);
-                    return false;
+                    if (attrInfo.StringMarshallingCustomType is null)
+                    {
+                        stringMarshallingDiagnostic = Diagnostic.Create(
+                            GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface,
+                            syntax.Identifier.GetLocation(),
+                            symbol.ToDisplayString(),
+                            SR.InvalidStringMarshallingConfigurationMissingCustomType);
+                        return false;
+                    }
+                    if (attrInfo.StringMarshallingCustomTypeAccessibility.CompareTo(symbol.DeclaredAccessibility) < 0)
+                    {
+                        stringMarshallingDiagnostic = Diagnostic.Create(
+                            GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface,
+                            syntax.Identifier.GetLocation(),
+                            symbol.ToDisplayString(),
+                            SR.InvalidStringMarshallingConfigurationMissingCustomType);
+                    }
                 }
                 if (attrInfo.StringMarshalling is not StringMarshalling.Custom && attrInfo.StringMarshallingCustomType is not null)
                 {

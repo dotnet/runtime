@@ -16,15 +16,15 @@ namespace Microsoft.Interop
         /// <summary>
         /// Takes a list of ComInterfaceInfo, and creates a list of ComInterfaceContext.
         /// </summary>
-        public static ImmutableArray<DiagnosticOr<ComInterfaceContext>> GetContexts(ImmutableArray<ComInterfaceInfo> data, CancellationToken _)
+        public static ImmutableArray<DiagnosticsOr<ComInterfaceContext>> GetContexts(ImmutableArray<ComInterfaceInfo> data, CancellationToken _)
         {
             Dictionary<string, ComInterfaceInfo> nameToInterfaceInfoMap = new();
-            var accumulator = ImmutableArray.CreateBuilder<DiagnosticOr<ComInterfaceContext>>(data.Length);
+            var accumulator = ImmutableArray.CreateBuilder<DiagnosticsOr<ComInterfaceContext>>(data.Length);
             foreach (var iface in data)
             {
                 nameToInterfaceInfoMap.Add(iface.ThisInterfaceKey, iface);
             }
-            Dictionary<string, DiagnosticOr<ComInterfaceContext>> nameToContextCache = new();
+            Dictionary<string, DiagnosticsOr<ComInterfaceContext>> nameToContextCache = new();
 
             foreach (var iface in data)
             {
@@ -32,7 +32,7 @@ namespace Microsoft.Interop
             }
             return accumulator.MoveToImmutable();
 
-            DiagnosticOr<ComInterfaceContext> AddContext(ComInterfaceInfo iface)
+            DiagnosticsOr<ComInterfaceContext> AddContext(ComInterfaceInfo iface)
             {
                 if (nameToContextCache.TryGetValue(iface.ThisInterfaceKey, out var cachedValue))
                 {
@@ -41,31 +41,31 @@ namespace Microsoft.Interop
 
                 if (iface.BaseInterfaceKey is null)
                 {
-                    var baselessCtx = DiagnosticOr<ComInterfaceContext>.From(new ComInterfaceContext(iface, null));
+                    var baselessCtx = DiagnosticsOr<ComInterfaceContext>.From(new ComInterfaceContext(iface, null));
                     nameToContextCache[iface.ThisInterfaceKey] = baselessCtx;
                     return baselessCtx;
                 }
 
-                DiagnosticOr<ComInterfaceContext> baseReturnedValue;
+                DiagnosticsOr<ComInterfaceContext> baseReturnedValue;
                 if (
                     // Cached base info is a diagnostic - failure
-                    (nameToContextCache.TryGetValue(iface.BaseInterfaceKey, out var baseCachedValue) && baseCachedValue.IsDiagnostic)
+                    (nameToContextCache.TryGetValue(iface.BaseInterfaceKey, out var baseCachedValue) && baseCachedValue.HasDiagnostic)
                     // Cannot find base ComInterfaceInfo - failure (failed ComInterfaceInfo creation)
                     || !nameToInterfaceInfoMap.TryGetValue(iface.BaseInterfaceKey, out var baseInfo)
                     // Newly calculated base context pair is a diagnostic - failure
-                    || (baseReturnedValue = AddContext(baseInfo)).IsDiagnostic)
+                    || (baseReturnedValue = AddContext(baseInfo)).HasDiagnostic)
                 {
                     // The base has failed generation at some point, so this interface cannot be generated
-                    var diagnostic = DiagnosticOr<ComInterfaceContext>.From(
+                    var diagnostic = DiagnosticsOr<ComInterfaceContext>.From(
                         Diagnostic.Create(
                             GeneratorDiagnostics.BaseInterfaceIsNotGenerated,
                             iface.DiagnosticLocation.AsLocation(), iface.ThisInterfaceKey, iface.BaseInterfaceKey));
                     nameToContextCache[iface.ThisInterfaceKey] = diagnostic;
                     return diagnostic;
                 }
-                DiagnosticOr<ComInterfaceContext> baseContext = baseCachedValue ?? baseReturnedValue;
-                Debug.Assert(baseContext.IsValue);
-                var ctx = DiagnosticOr<ComInterfaceContext>.From(new ComInterfaceContext(iface, baseContext.Value));
+                DiagnosticsOr<ComInterfaceContext> baseContext = baseCachedValue ?? baseReturnedValue;
+                Debug.Assert(baseContext.HasValue);
+                var ctx = DiagnosticsOr<ComInterfaceContext>.From(new ComInterfaceContext(iface, baseContext.Value));
                 nameToContextCache[iface.ThisInterfaceKey] = ctx;
                 return ctx;
             }
