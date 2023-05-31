@@ -56,10 +56,10 @@ namespace Microsoft.Interop
                     || (baseReturnedValue = AddContext(baseInfo)).HasDiagnostic)
                 {
                     // The base has failed generation at some point, so this interface cannot be generated
-                    var diagnostic = DiagnosticsOr<ComInterfaceContext>.From(
-                        Diagnostic.Create(
+                    var diagnostic = DiagnosticOr<ComInterfaceContext>.From(
+                        DiagnosticInfo.Create(
                             GeneratorDiagnostics.BaseInterfaceIsNotGenerated,
-                            iface.DiagnosticLocation.AsLocation(), iface.ThisInterfaceKey, iface.BaseInterfaceKey));
+                            iface.DiagnosticLocation, iface.ThisInterfaceKey, iface.BaseInterfaceKey));
                     nameToContextCache[iface.ThisInterfaceKey] = diagnostic;
                     return diagnostic;
                 }
