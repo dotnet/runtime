@@ -893,14 +893,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            int sourceLength = count;
-#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-            if (GlobalizationMode.Hybrid)
-            {
-                sourceLength -= startIndex;
-            }
-#endif
-            if (!source.TryGetSpan(startIndex, sourceLength, out ReadOnlySpan<char> sourceSpan))
+            if (!source.TryGetSpan(startIndex, count, out ReadOnlySpan<char> sourceSpan))
             {
                 // Bounds check failed - figure out exactly what went wrong so that we can
                 // surface the correct argument exception.
@@ -936,14 +929,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
             System.Diagnostics.Debug.WriteLine("Collation IndexOf is called from CompareInfo.cs count = " + count + " startIndex = " + startIndex);
-            int sourceLength = count;
-#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-            if (GlobalizationMode.Hybrid)
-            {
-                sourceLength -= startIndex;
-            }
-#endif
-            if (!source.TryGetSpan(startIndex, sourceLength, out ReadOnlySpan<char> sourceSpan))
+            if (!source.TryGetSpan(startIndex, count, out ReadOnlySpan<char> sourceSpan))
             {
                 // Bounds check failed - figure out exactly what went wrong so that we can
                 // surface the correct argument exception.
@@ -1273,15 +1259,7 @@ namespace System.Globalization
             }
 
             startIndex = startIndex - count + 1; // this will be the actual index where we begin our search
-
-            int sourceLength = count;
-#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-            if (GlobalizationMode.Hybrid)
-            {
-                sourceLength -= startIndex;
-            }
-#endif
-            if (!source.TryGetSpan(startIndex, sourceLength, out ReadOnlySpan<char> sourceSpan))
+            if (!source.TryGetSpan(startIndex, count, out ReadOnlySpan<char> sourceSpan))
             {
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
@@ -1341,14 +1319,7 @@ namespace System.Globalization
 
             startIndex = startIndex - count + 1; // this will be the actual index where we begin our search
 
-            int sourceLength = count;
-#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-            if (GlobalizationMode.Hybrid)
-            {
-                sourceLength -= startIndex;
-            }
-#endif
-            if (!source.TryGetSpan(startIndex, sourceLength, out ReadOnlySpan<char> sourceSpan))
+            if (!source.TryGetSpan(startIndex, count, out ReadOnlySpan<char> sourceSpan))
             {
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
