@@ -898,6 +898,14 @@ export function generateWasmBody(
                 builder.ptr_const(klass);
                 builder.callImport(isSpecialInterface ? "imp_iface_s" : "imp_iface");
 
+                if (bailoutOnFailure) {
+                    // generate a 1 for null ptrs so we don't bail out and instead write the 0
+                    //  to the destination
+                    builder.local("temp_ptr");
+                    builder.appendU8(WasmOpcode.i32_eqz);
+                    builder.appendU8(WasmOpcode.i32_or);
+                }
+
                 builder.block(WasmValtype.void, WasmOpcode.if_); // if cast succeeded
                 builder.local("pLocals");
                 builder.local("temp_ptr");
@@ -989,6 +997,14 @@ export function generateWasmBody(
                     builder.ptr_const(klass);
                     builder.callImport("hasparent");
 
+                    if (bailoutOnFailure) {
+                        // generate a 1 for null ptrs so we don't bail out and instead write the 0
+                        //  to the destination
+                        builder.local("temp_ptr");
+                        builder.appendU8(WasmOpcode.i32_eqz);
+                        builder.appendU8(WasmOpcode.i32_or);
+                    }
+
                     builder.block(WasmValtype.void, WasmOpcode.if_); // if B
                     // mono_class_has_parent_fast returned 1 so *destination = obj
                     builder.local("pLocals");
@@ -1017,6 +1033,8 @@ export function generateWasmBody(
                     // opcode
                     builder.i32_const(opcode);
                     builder.callImport("castv2");
+
+                    // We don't need to do an explicit null check because mono_jiterp_cast_v2 does it
 
                     // Check whether the cast operation failed
                     builder.appendU8(WasmOpcode.i32_eqz);

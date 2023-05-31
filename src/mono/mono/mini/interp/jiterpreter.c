@@ -241,8 +241,7 @@ mono_jiterp_has_parent_fast (
 	// (m_class_get_idepth (0) >= m_class_get_idepth (parent)) in the fast check
 	// will fail since the idepth of the null ptr is going to be 0, and
 	//  we know parent->idepth >= 1 due to the [m_class_get_idepth (parent) - 1]
-	// We still need to check for a null pointer and return 1 to support fusion
-	return mono_class_has_parent_fast (klass, parent) || (klass == 0);
+	return mono_class_has_parent_fast (klass, parent);
 }
 
 EMSCRIPTEN_KEEPALIVE int
@@ -250,7 +249,7 @@ mono_jiterp_implements_interface (
 	MonoVTable *vtable, MonoClass *klass
 ) {
 	// If null check fusion is active, vtable->max_interface_id will be 0
-	return MONO_VTABLE_IMPLEMENTS_INTERFACE (vtable, m_class_get_interface_id (klass)) || (vtable == NULL);
+	return MONO_VTABLE_IMPLEMENTS_INTERFACE (vtable, m_class_get_interface_id (klass));
 }
 
 EMSCRIPTEN_KEEPALIVE int
@@ -264,16 +263,12 @@ mono_jiterp_implements_special_interface (
 	MonoObject *obj, MonoVTable *vtable, MonoClass *klass
 ) {
 	// If null check fusion is active, vtable->max_interface_id will be 0
-	if (MONO_VTABLE_IMPLEMENTS_INTERFACE (vtable, m_class_get_interface_id (klass)))
-		return 1;
+	return MONO_VTABLE_IMPLEMENTS_INTERFACE (vtable, m_class_get_interface_id (klass)) ||
 	// For special interfaces we need to do a more complex check to see whether the
 	//  cast to the interface is valid in case obj is an array.
 	// mono_jiterp_isinst will *not* handle nulls for us, and we don't want
 	//  to waste time running the full isinst machinery on nulls anyway, so nullcheck
-	else if (obj)
-		return mono_jiterp_isinst (obj, klass);
-	else // HACK: Support null check fusion by returning 1 if the obj ptr was null
-		return 1;
+		(obj && mono_jiterp_isinst (obj, klass));
 }
 
 EMSCRIPTEN_KEEPALIVE int
