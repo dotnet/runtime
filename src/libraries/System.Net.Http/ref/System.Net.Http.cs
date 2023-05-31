@@ -277,8 +277,10 @@ namespace System.Net.Http
         public string Key { get { throw null; } }
     }
 
-    public sealed class HttpRequestOptions : System.Collections.Generic.IDictionary<string, object?>
+    public sealed class HttpRequestOptions : System.Collections.Generic.IDictionary<string, object?>, System.Collections.Generic.IReadOnlyDictionary<string, object?>
     {
+        bool System.Collections.Generic.IReadOnlyDictionary<string, object?>.ContainsKey(string key) { throw null; }
+        int System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, object?>>.Count { get { throw null; } }
         void System.Collections.Generic.IDictionary<string, object?>.Add(string key, object? value) { throw null; }
         System.Collections.Generic.ICollection<string> System.Collections.Generic.IDictionary<string, object?>.Keys { get { throw null; } }
         System.Collections.Generic.ICollection<object?> System.Collections.Generic.IDictionary<string, object?>.Values { get { throw null; } }
@@ -297,6 +299,10 @@ namespace System.Net.Http
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public bool TryGetValue<TValue>(HttpRequestOptionsKey<TValue> key, [MaybeNullWhen(false)] out TValue value) { throw null; }
         public void Set<TValue>(HttpRequestOptionsKey<TValue> key, TValue value) { throw null; }
+        bool System.Collections.Generic.IReadOnlyDictionary<string, object?>.TryGetValue(string key, out object? value) { throw null; }
+        object? System.Collections.Generic.IReadOnlyDictionary<string, object?>.this[string key] { get { throw null; } }
+        System.Collections.Generic.IEnumerable<string> System.Collections.Generic.IReadOnlyDictionary<string, object?>.Keys { get { throw null; } }
+        System.Collections.Generic.IEnumerable<object?> System.Collections.Generic.IReadOnlyDictionary<string, object?>.Values { get { throw null; } }
     }
 
     public partial class HttpResponseMessage : System.IDisposable

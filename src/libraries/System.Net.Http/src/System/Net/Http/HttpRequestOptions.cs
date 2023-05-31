@@ -9,9 +9,13 @@ namespace System.Net.Http
     /// <summary>
     /// Represents a collection of options for an HTTP request.
     /// </summary>
-    public sealed class HttpRequestOptions : IDictionary<string, object?>
+    public sealed class HttpRequestOptions : IDictionary<string, object?>, IReadOnlyDictionary<string, object?>
     {
         private Dictionary<string, object?> Options { get; } = new Dictionary<string, object?>();
+        bool IReadOnlyDictionary<string, object?>.TryGetValue(string key, out object? value) => Options.TryGetValue(key, out value);
+        object? IReadOnlyDictionary<string, object?>.this[string key] => Options[key];
+        IEnumerable<string> IReadOnlyDictionary<string, object?>.Keys => Options.Keys;
+        IEnumerable<object?> IReadOnlyDictionary<string, object?>.Values => Options.Values;
         object? IDictionary<string, object?>.this[string key]
         {
             get
@@ -38,7 +42,9 @@ namespace System.Net.Http
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => ((System.Collections.IEnumerable)Options).GetEnumerator();
         bool IDictionary<string, object?>.Remove(string key) => Options.Remove(key);
         bool ICollection<KeyValuePair<string, object?>>.Remove(KeyValuePair<string, object?> item) => ((IDictionary<string, object?>)Options).Remove(item);
+        bool IReadOnlyDictionary<string, object?>.ContainsKey(string key) => Options.ContainsKey(key);
         bool IDictionary<string, object?>.TryGetValue(string key, out object? value) => Options.TryGetValue(key, out value);
+        int IReadOnlyCollection<KeyValuePair<string, object?>>.Count => Options.Count;
 
         /// <summary>
         /// Initializes a new instance of the HttpRequestOptions class.
