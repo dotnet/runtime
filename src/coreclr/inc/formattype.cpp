@@ -688,8 +688,9 @@ PCCOR_SIGNATURE PrettyPrintType(
                         appendStr(out, "(null)");
                 }
 
-                char sz[Max64BitHexString];
-                sprintf_s(sz, ARRAY_SIZE(sz), " /* MT: %p */", pMT);
+                const char fmt[] = " /* MT: %p */";
+                char sz[Max64BitHexString + ARRAY_SIZE(fmt)];
+                sprintf_s(sz, ARRAY_SIZE(sz), fmt, pMT);
                 appendStr(out, sz);
                 break;
             }
