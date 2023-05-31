@@ -30,6 +30,11 @@ namespace ILCompiler
             {
                 Module = module;
                 _entitiesInCycles = entitiesInCycles;
+                Console.WriteLine("Module: {0}", Module.Assembly.GetName().Name);
+                foreach (TypeSystemEntity entity in _entitiesInCycles)
+                {
+                    Console.WriteLine("-> {0}", entity);
+                }
             }
 
             public bool FormsCycle(TypeSystemEntity owner)
