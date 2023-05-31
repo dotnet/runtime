@@ -921,28 +921,21 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	cinfo->next_farg = RISCV_FA0;
 	add_param (cinfo, &cinfo->ret, sig->ret);
 
-	//  If the reture value would have been passed by reference,
-	// the caller allocates memory for the return value, and
+	// The ABI specify that 
+	// If the reture value would have been passed by reference,
+	// the caller will allocates memory for the return value, and
 	// passes the address as an implicit first parameter.
 
-	switch (cinfo->ret.storage) {
-	case ArgVtypeByRef:
+	// FIXME:
+	// The Mono will treat first parameter as this_pointer
+	// reference to `mono_vcall_trampoline()`. 
+	// They are conflict a bit. 
+	if (cinfo->ret.storage == ArgVtypeByRef) {
 		g_assert (cinfo->ret.reg == RISCV_A0);
 		cinfo->next_arg = RISCV_A1;
-		break;
-
-	case ArgVtypeInIReg:
-	case ArgInIReg:
-	case ArgInFReg:
-	case ArgNone:
-		cinfo->next_arg = RISCV_A0;
-		break;
-
-	default:
-		g_print("Unhandled retyrn type %d\n", cinfo->ret.storage);
-		NOT_IMPLEMENTED;
-		break;
 	}
+	else
+		cinfo->next_arg = RISCV_A0;
 
 	cinfo->next_farg = RISCV_FA0;
 	// reset status
@@ -950,7 +943,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 
 	// add this pointer as first argument if hasthis == true
 	if (sig->hasthis)
-		add_arg (cinfo, cinfo->args + 0, 8, FALSE);
+		add_arg (cinfo, cinfo->args + 0, sizeof(host_mgreg_t), FALSE);
 
 	// other general Arguments
 	guint32 paramStart = 0;
@@ -2211,7 +2204,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 				ins->inst_basereg = -1;
 				ins->inst_offset = 0;
-				ins->opcode = OP_VOIDCALL_REG;
+				// convert OP_.*CALL_MEMBASE into OP_.*CALL_REG
+				ins->opcode -= 1;
 			}
 			break;
 		case OP_CALL_REG:

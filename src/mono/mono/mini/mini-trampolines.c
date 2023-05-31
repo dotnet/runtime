@@ -801,6 +801,15 @@ mono_vcall_trampoline (host_mgreg_t *regs, guint8 *code, int slot, guint8 *tramp
 	this_arg = (MonoObject *)mono_arch_get_this_arg_from_call (regs, code);
 	g_assert (this_arg);
 
+	// FIXME:
+	// The Mono will treat first parameter as this_pointer,
+	// it get conflict with RISC-V ABI. 
+	// more information refer to get_call_info(). 
+#ifdef TARGET_RISCV
+	if (!this_arg->vtable)
+		this_arg = (MonoObject *)mono_arch_get_this_arg_from_call (regs+1, code);
+#endif
+
 	vt = this_arg->vtable;
 
 	if (slot >= 0) {
