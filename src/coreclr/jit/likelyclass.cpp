@@ -244,12 +244,30 @@ static unsigned getLikelyClassesOrMethods(LikelyClassMethodRecord*              
 
                     const UINT32 numberOfClasses = min(knownHandles, maxLikelyClasses);
 
+                    // Accumulate the total likelihood and distribute the rounding error
+                    UINT32 totalLikelihoodInt = 0;
+                    double totalLikelihoodDbl = 0.0;
+
                     for (size_t hIdx = 0; hIdx < numberOfClasses; hIdx++)
                     {
                         LikelyClassMethodHistogramEntry const hc = sortedEntries[hIdx];
+                        const double likelihood = hc.m_count * 100.0 / h.m_totalCount;
+
                         pLikelyEntries[hIdx].handle              = hc.m_handle;
-                        pLikelyEntries[hIdx].likelihood          = hc.m_count * 100 / h.m_totalCount;
+                        pLikelyEntries[hIdx].likelihood          = (UINT32)likelihood;
+
+                        totalLikelihoodDbl += likelihood;
+                        totalLikelihoodInt += (UINT32)likelihood;
                     }
+
+                    // Distribute the rounding error, just apply it to the first entry
+                    // so we can avoid marking fallback case as e.g. 1% likely while in fact it's 0.
+                    if ((UINT32)totalLikelihoodDbl > totalLikelihoodInt)
+                    {
+                        assert(numberOfClasses > 0);
+                        pLikelyEntries[0].likelihood += (UINT32)totalLikelihoodDbl - totalLikelihoodInt;
+                    }
+
                     return numberOfClasses;
                 }
             }
