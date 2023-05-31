@@ -42,7 +42,7 @@ namespace System.Threading.ThreadPools.Tests
         // Tests concurrent calls to ThreadPool.SetMinThreads. Invoked from the static constructor.
         private static void ConcurrentInitializeTest()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutor.Invoke((UsePortableThreadPool) =>
             {
                 int processorCount = Environment.ProcessorCount;
                 var countdownEvent = new CountdownEvent(processorCount);
@@ -51,7 +51,10 @@ namespace System.Threading.ThreadPools.Tests
                     {
                         countdownEvent.Signal();
                         countdownEvent.Wait(ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
-                        Assert.True(ThreadPool.SetMinThreads(processorCount, processorCount));
+                        if (Boolean.Parse(UsePortableThreadPool))
+                        {
+                            Assert.True(ThreadPool.SetMinThreads(processorCount, processorCount));
+                        }
                     };
 
                 var waitForThreadArray = new Action[processorCount];
@@ -66,7 +69,7 @@ namespace System.Threading.ThreadPools.Tests
                 {
                     waitForThread();
                 }
-            }).Dispose();
+            }, UsePortableThreadPool.ToString()).Dispose();
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -97,7 +100,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.True(c <= maxc);
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         [ActiveIssue("https://github.com/mono/mono/issues/15164", TestRuntimes.Mono)]
         public static void SetMinMaxThreadsTest()
         {
@@ -161,7 +164,7 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         public static void SetMinMaxThreadsTest_ChangedInDotNetCore()
         {
             RemoteExecutor.Invoke(() =>
@@ -222,7 +225,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.Equal(expectedMaxc, maxc);
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         public static void SetMinThreadsTo0Test()
         {
             RemoteExecutor.Invoke(() =>
@@ -701,7 +704,7 @@ namespace System.Threading.ThreadPools.Tests
             done.CheckedWait();
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         public static void WorkerThreadStateResetTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -785,7 +788,7 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         public static void SettingMinWorkerThreadsWillCreateThreadsUpToMinimum()
         {
             RemoteExecutor.Invoke(() =>
@@ -1105,7 +1108,7 @@ namespace System.Threading.ThreadPools.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         public void ThreadPoolMinMaxThreadsEventTest()
         {
             // The ThreadPoolMinMaxThreads event is fired when the ThreadPool is created
@@ -1158,5 +1161,13 @@ namespace System.Threading.ThreadPools.Tests
 
         public static bool IsThreadingAndRemoteExecutorSupported =>
             PlatformDetection.IsThreadingSupported && RemoteExecutor.IsSupported;
+
+        private static bool getUseWindowsThreadPool()
+        {
+            AppContext.TryGetSwitch("System.Threading.ThreadPool.UseWindowsThreadPool", out bool UseWindowsThreadPool);
+            return UseWindowsThreadPool;
+        }
+
+        private static bool UsePortableThreadPool { get; } = !getUseWindowsThreadPool();
     }
 }
