@@ -24,7 +24,6 @@ parameters:
 
 jobs:
 
-# Linux arm
 # Browser WebAssembly
 
 - ${{ if containsValue(parameters.platforms, 'browser_wasm') }}:

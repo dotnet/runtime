@@ -1434,6 +1434,7 @@ export const counters = {
     failures: 0,
     bytesGenerated: 0,
     nullChecksEliminated: 0,
+    nullChecksFused: 0,
     backBranchesEmitted: 0,
     backBranchesNotEmitted: 0,
     simdFallback: simdFallbackCounters,
@@ -1777,6 +1778,22 @@ export function bytesFromHex(hex: string): Uint8Array {
     return bytes;
 }
 
+export function isZeroPageReserved(): boolean {
+    // FIXME: This check will always return true on worker threads.
+    // Right now the jiterpreter is disabled when threading is active, so that's not an issue.
+    if (!cwraps.mono_wasm_is_zero_page_reserved())
+        return false;
+
+    // Determine whether emscripten's stack checker or some other troublemaker has
+    //  written junk at the start of memory. The previous cwraps call will have
+    //  checked whether the stack starts at zero or not (on the main thread).
+    // We can't do this in the C helper because emcc/asan might be checking pointers.
+    return (Module.HEAPU32[0] === 0) &&
+        (Module.HEAPU32[1] === 0) &&
+        (Module.HEAPU32[2] === 0) &&
+        (Module.HEAPU32[3] === 0);
+}
+
 export type JiterpreterOptions = {
     enableAll?: boolean;
     enableTraces: boolean;
@@ -1786,6 +1803,7 @@ export type JiterpreterOptions = {
     enableCallResume: boolean;
     enableWasmEh: boolean;
     enableSimd: boolean;
+    zeroPageOptimization: boolean;
     // For locations where the jiterpreter heuristic says we will be unable to generate
     //  a trace, insert an entry point opcode anyway. This enables collecting accurate
     //  stats for options like estimateHeat, but raises overhead.
@@ -1828,6 +1846,7 @@ const optionNames: { [jsName: string]: string } = {
     "enableCallResume": "jiterpreter-call-resume-enabled",
     "enableWasmEh": "jiterpreter-wasm-eh-enabled",
     "enableSimd": "jiterpreter-simd-enabled",
+    "zeroPageOptimization": "jiterpreter-zero-page-optimization",
     "enableStats": "jiterpreter-stats-enabled",
     "disableHeuristic": "jiterpreter-disable-heuristic",
     "estimateHeat": "jiterpreter-estimate-heat",

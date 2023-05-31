@@ -84,7 +84,7 @@ namespace Internal.Reflection.Execution
                 {
                     if (foundMatch)
                     {
-                        exception = new AmbiguousMatchException();
+                        exception = new AmbiguousMatchException(SR.Format(SR.AmbiguousMatchException_Assembly, refName.FullName));
                         return false;
                     }
 
