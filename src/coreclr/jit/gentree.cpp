@@ -2164,12 +2164,12 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBloc
 }
 
 //-------------------------------------------------------------------------
-// SetSingleInlineCadidateInfo: set a single inline candidate info in the current call.
+// SetSingleInlineCandidateInfo: set a single inline candidate info in the current call.
 //
 // Arguments:
 //     candidateInfo - inline candidate info
 //
-void GenTreeCall::SetSingleInlineCadidateInfo(InlineCandidateInfo* candidateInfo)
+void GenTreeCall::SetSingleInlineCandidateInfo(InlineCandidateInfo* candidateInfo)
 {
     if (candidateInfo != nullptr)
     {
@@ -2180,9 +2180,9 @@ void GenTreeCall::SetSingleInlineCadidateInfo(InlineCandidateInfo* candidateInfo
     {
         gtInlineInfoCount = 0;
         gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
-        gtCallMoreFlags &= ~GTF_CALL_M_GUARDED_DEVIRT;
     }
     gtInlineCandidateInfo = candidateInfo;
+    ClearGuardedDevirtualizationCandidate();
 }
 
 //-------------------------------------------------------------------------
@@ -2194,31 +2194,77 @@ void GenTreeCall::SetSingleInlineCadidateInfo(InlineCandidateInfo* candidateInfo
 InlineCandidateInfo* GenTreeCall::GetGDVCandidateInfo(uint8_t index)
 {
     assert(index < gtInlineInfoCount);
-    return &gtInlineCandidateInfo[index];
+    if (gtInlineInfoCount > 1)
+    {
+        // In this case we should access it through gtInlineCandidateInfoList
+        return gtInlineCandidateInfoList->at(index);
+    }
+    return gtInlineCandidateInfo;
 }
 
 //-------------------------------------------------------------------------
 // AddGDVCandidateInfo: Record a guarded devirtualization (GDV) candidate info
-//     for this call. For now, we only support one GDV candidate per call.
+//     for this call. A call can't have more than MAX_GDV_TYPE_CHECKS number of candidates
 //
 // Arguments:
+//     comp          - Compiler instance
 //     candidateInfo - GDV candidate info
 //
-void GenTreeCall::AddGDVCandidateInfo(InlineCandidateInfo* candidateInfo)
+void GenTreeCall::AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candidateInfo)
 {
+    assert(gtInlineInfoCount < MAX_GDV_TYPE_CHECKS);
     assert(candidateInfo != nullptr);
+
     if (gtInlineInfoCount == 0)
     {
+        // Most calls are monomorphic, so we don't need to allocate a vector
         gtInlineCandidateInfo = candidateInfo;
+    }
+    else if (gtInlineInfoCount == 1)
+    {
+        // Upgrade gtInlineCandidateInfo to gtInlineCandidateInfoList (vector)
+        CompAllocator        allocator      = comp->getAllocator(CMK_Inlining);
+        InlineCandidateInfo* firstCandidate = gtInlineCandidateInfo;
+        gtInlineCandidateInfoList           = new (allocator) jitstd::vector<InlineCandidateInfo*>(allocator);
+        gtInlineCandidateInfoList->push_back(firstCandidate);
+        gtInlineCandidateInfoList->push_back(candidateInfo);
     }
     else
     {
-        // Allocate a fixed list of InlineCandidateInfo structs
-        assert(!"multiple GDV candidates are not implemented yet");
+        gtInlineCandidateInfoList->push_back(candidateInfo);
     }
-
     gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT;
     gtInlineInfoCount++;
+}
+
+//-------------------------------------------------------------------------
+// RemoveGDVCandidateInfo: Remove a guarded devirtualization (GDV) candidate info
+//     by its index. Index must not be greater than gtInlineInfoCount
+//     the call will be marked as "has no inline candidates" if the last candidate is removed
+//
+// Arguments:
+//     comp    - Compiler instance
+//     index   - GDV candidate to remove
+//
+void GenTreeCall::RemoveGDVCandidateInfo(Compiler* comp, uint8_t index)
+{
+    assert(index < gtInlineInfoCount);
+
+    if (gtInlineInfoCount == 1)
+    {
+        // No longer have any inline candidates
+        ClearInlineInfo();
+        assert(gtInlineInfoCount == 0);
+        return;
+    }
+    gtInlineCandidateInfoList->erase(gtInlineCandidateInfoList->begin() + index);
+    gtInlineInfoCount--;
+
+    // Downgrade gtInlineCandidateInfoList to gtInlineCandidateInfo
+    if (gtInlineInfoCount == 1)
+    {
+        gtInlineCandidateInfo = gtInlineCandidateInfoList->at(0);
+    }
 }
 
 //-------------------------------------------------------------------------
@@ -6361,11 +6407,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_IL_OFFSET:
             return false;
 
-// Standard unary operators
-#ifdef TARGET_ARM64
-        case GT_CNEG_LT:
-        case GT_CINCCC:
-#endif // TARGET_ARM64
+        // Standard unary operators
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
         case GT_NOT:
@@ -6554,7 +6596,11 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
             }
             return false;
         }
-
+#ifdef TARGET_ARM64
+        case GT_SELECT_NEG:
+        case GT_SELECT_INV:
+        case GT_SELECT_INC:
+#endif
         case GT_SELECT:
         {
             GenTreeConditional* const conditional = this->AsConditional();
@@ -7729,10 +7775,11 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     node->gtCallType    = callType;
     node->gtCallMethHnd = callHnd;
     INDEBUG(node->callSig = nullptr;)
-    node->tailCallInfo    = nullptr;
-    node->gtRetClsHnd     = nullptr;
-    node->gtControlExpr   = nullptr;
-    node->gtCallMoreFlags = GTF_CALL_M_EMPTY;
+    node->tailCallInfo      = nullptr;
+    node->gtRetClsHnd       = nullptr;
+    node->gtControlExpr     = nullptr;
+    node->gtCallMoreFlags   = GTF_CALL_M_EMPTY;
+    node->gtInlineInfoCount = 0;
 
     if (callType == CT_INDIRECT)
     {
@@ -9713,11 +9760,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             m_state = -1;
             return;
 
-// Standard unary operators
-#ifdef TARGET_ARM64
-        case GT_CNEG_LT:
-        case GT_CINCCC:
-#endif // TARGET_ARM64
+        // Standard unary operators
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
         case GT_NOT:
@@ -9829,7 +9872,11 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             m_advance  = &GenTreeUseEdgeIterator::AdvanceCall<CALL_ARGS>;
             AdvanceCall<CALL_ARGS>();
             return;
-
+#ifdef TARGET_ARM64
+        case GT_SELECT_NEG:
+        case GT_SELECT_INV:
+        case GT_SELECT_INC:
+#endif
         case GT_SELECT:
             m_edge = &m_node->AsConditional()->gtCond;
             assert(*m_edge != nullptr);
@@ -9955,8 +10002,15 @@ void GenTreeUseEdgeIterator::AdvanceConditional()
     switch (m_state)
     {
         case 0:
-            m_edge  = &conditional->gtOp1;
-            m_state = 1;
+            m_edge = &conditional->gtOp1;
+            if (conditional->gtOp2 == nullptr)
+            {
+                m_advance = &GenTreeUseEdgeIterator::Terminate;
+            }
+            else
+            {
+                m_state = 1;
+            }
             break;
         case 1:
             m_edge    = &conditional->gtOp2;
@@ -12229,7 +12283,7 @@ void Compiler::gtDispTree(GenTree*     tree,
             printf(" cond=%s", tree->AsOpCC()->gtCondition.Name());
         }
 #ifdef TARGET_ARM64
-        else if (tree->OperIs(GT_CINCCC))
+        else if (tree->OperIs(GT_SELECT_INCCC, GT_SELECT_INVCC, GT_SELECT_NEGCC))
         {
             printf(" cond=%s", tree->AsOpCC()->gtCondition.Name());
         }
@@ -12346,10 +12400,11 @@ void Compiler::gtDispTree(GenTree*     tree,
                 printf(" (FramesRoot last use)");
             }
 
-            if (((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0) && (call->GetInlineCandidateInfo() != nullptr) &&
-                (call->GetInlineCandidateInfo()->exactContextHnd != nullptr))
+            if (((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0) &&
+                (call->GetSingleInlineCandidateInfo() != nullptr) &&
+                (call->GetSingleInlineCandidateInfo()->exactContextHnd != nullptr))
             {
-                printf(" (exactContextHnd=0x%p)", dspPtr(call->GetInlineCandidateInfo()->exactContextHnd));
+                printf(" (exactContextHnd=0x%p)", dspPtr(call->GetSingleInlineCandidateInfo()->exactContextHnd));
             }
 
             gtDispCommonEndLine(tree);
@@ -17864,7 +17919,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 // type class handle in the inline info (for GDV candidates,
                 // this data is valid only for a correct guess, so we cannot
                 // use it).
-                InlineCandidateInfo* inlInfo = call->GetInlineCandidateInfo();
+                InlineCandidateInfo* inlInfo = call->GetSingleInlineCandidateInfo();
                 assert(inlInfo != nullptr);
 
                 // Grab it as our first cut at a return type.

@@ -2091,7 +2091,7 @@ namespace Mono.Options
             return commands;
         }
 
-        private void AddNestedCommands(List<KeyValuePair<string, Command>> commands, string outer, CommandSet value)
+        private static void AddNestedCommands(List<KeyValuePair<string, Command>> commands, string outer, CommandSet value)
         {
             foreach (var v in value)
             {

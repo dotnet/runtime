@@ -166,6 +166,9 @@ echo ===========================================================================
 pushd $EXECUTION_DIR
 [[RunCommands]]
 test_exitcode=$?
+if [[ -s testResults.xml ]]; then
+  has_test_results=1;
+fi;
 popd
 echo ----- end $(date) ----- exit code $test_exitcode ----------------------------------------------------------
 
@@ -230,7 +233,7 @@ popd >/dev/null
 # ======================== END Core File Inspection ==========================
 # The helix work item should not exit with non-zero if tests ran and produced results
 # The special console runner for runtime returns 1 when tests fail
-if [[ "$test_exitcode" == "1" ]]; then
+if [[ "$test_exitcode" == "1" && "$has_test_results" == "1" ]]; then
   if [ -n "$HELIX_WORKITEM_PAYLOAD" ]; then
     exit 0
   fi

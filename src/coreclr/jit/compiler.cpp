@@ -5582,7 +5582,7 @@ void Compiler::generatePatchpointInfo()
     //
     const int totalFrameSize = codeGen->genTotalFrameSize() + TARGET_POINTER_SIZE;
     const int offsetAdjust   = 0;
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     // SP is not manipulated by calls so no frame size adjustment needed.
     // Local Offsets may need adjusting, if FP is at bottom of frame.
     //
@@ -6832,8 +6832,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         {
             frameSizeUpdate = 8;
         }
-#elif defined(TARGET_ARM64)
-        if ((totalFrameSize % 16) != 0)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+        if ((totalFrameSize & 0xf) != 0)
         {
             frameSizeUpdate = 8;
         }

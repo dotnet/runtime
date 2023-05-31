@@ -7880,7 +7880,7 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 	} else {
 		gboolean has_nested = mono_class_get_nested_classes_property (klass) != NULL;
 		encode_value (m_class_get_vtable_size (klass), p, &p);
-		encode_value ((m_class_has_weak_fields (klass) << 9) | (mono_class_is_gtd (klass) ? (1 << 8) : 0) | (no_special_static << 7) | (m_class_has_static_refs (klass) << 6) | (m_class_has_references (klass) << 5) | ((m_class_is_blittable (klass) << 4) | (has_nested ? 1 : 0) << 3) | (m_class_has_cctor (klass) << 2) | (m_class_has_finalize (klass) << 1) | m_class_is_ghcimpl (klass), p, &p);
+		encode_value ((m_class_has_deferred_failure (klass) << 10) | (m_class_has_weak_fields (klass) << 9) | (mono_class_is_gtd (klass) ? (1 << 8) : 0) | (no_special_static << 7) | (m_class_has_static_refs (klass) << 6) | (m_class_has_references (klass) << 5) | ((m_class_is_blittable (klass) << 4) | (has_nested ? 1 : 0) << 3) | (m_class_has_cctor (klass) << 2) | (m_class_has_finalize (klass) << 1) | m_class_is_ghcimpl (klass), p, &p);
 		if (m_class_has_cctor (klass))
 			encode_method_ref (acfg, mono_class_get_cctor (klass), p, &p);
 		if (m_class_has_finalize (klass))

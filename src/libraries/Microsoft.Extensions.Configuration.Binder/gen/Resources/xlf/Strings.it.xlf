@@ -27,14 +27,19 @@
         <target state="translated">La versione del linguaggio deve essere almeno C# 11</target>
         <note />
       </trans-unit>
+      <trans-unit id="MissingPublicInstanceConstructor">
+        <source>Cannot create instance of type '{0}' because it is missing a public instance constructor.</source>
+        <target state="translated">Non è possibile creare un'istanza di tipo '{0}' perché manca un costruttore di istanza pubblica.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MultiDimArraysNotSupported">
         <source>Multidimensional arrays are not supported: '{0}'.</source>
         <target state="translated">Matrici multidimensionali non supportate: '{0}'.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NeedPublicParameterlessConstructor">
-        <source>Only objects with public parameterless constructors are supported: '{0}'.</source>
-        <target state="translated">Sono supportati solo oggetti con costruttori senza parametri pubblici: '{0}'.</target>
+      <trans-unit id="MultipleParameterizedConstructors">
+        <source>Cannot create instance of type '{0}' because it has multiple public parameterized constructors.</source>
+        <target state="translated">Non è possibile creare un'istanza di tipo '{0}' perché contiene più costruttori con parametri pubblici.</target>
         <note />
       </trans-unit>
       <trans-unit id="NullableUnderlyingTypeNotSupported">

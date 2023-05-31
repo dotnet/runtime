@@ -79,6 +79,11 @@ namespace Internal.Reflection.Execution.MethodInvokers
             return result;
         }
 
+        protected sealed override object CreateInstance(object[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
+        {
+            throw NotImplemented.ByDesign;
+        }
+
         internal IntPtr ResolveTarget(RuntimeTypeHandle type)
         {
             return OpenMethodResolver.ResolveMethod(MethodInvokeInfo.VirtualResolveData, type);

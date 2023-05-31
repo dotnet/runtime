@@ -292,7 +292,7 @@ namespace System.Xml.Schema
             return !HasErrors;
         }
 
-        private void CleanupAttribute(XmlSchemaAttribute attribute)
+        private static void CleanupAttribute(XmlSchemaAttribute attribute)
         {
             if (attribute.SchemaType != null)
             {
@@ -301,7 +301,7 @@ namespace System.Xml.Schema
             attribute.AttDef = null;
         }
 
-        private void CleanupAttributeGroup(XmlSchemaAttributeGroup attributeGroup)
+        private static void CleanupAttributeGroup(XmlSchemaAttributeGroup attributeGroup)
         {
             CleanupAttributes(attributeGroup.Attributes);
             attributeGroup.AttributeUses.Clear();
@@ -369,7 +369,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private void CleanupSimpleType(XmlSchemaSimpleType simpleType)
+        private static void CleanupSimpleType(XmlSchemaSimpleType simpleType)
         {
             if (simpleType == XmlSchemaType.GetBuiltInSimpleType(simpleType.TypeCode))
             { //If it is a built-in simple type dont clean up
@@ -405,7 +405,7 @@ namespace System.Xml.Schema
             element.IsLocalTypeDerivationChecked = false; //clear Local element type derivation check
         }
 
-        private void CleanupAttributes(XmlSchemaObjectCollection attributes)
+        private static void CleanupAttributes(XmlSchemaObjectCollection attributes)
         {
             for (int i = 0; i < attributes.Count; ++i)
             {
@@ -1958,14 +1958,14 @@ namespace System.Xml.Schema
             return -1;
         }
 
-        private bool IsParticleEmptiable(XmlSchemaParticle particle)
+        private static bool IsParticleEmptiable(XmlSchemaParticle particle)
         {
             decimal minOccurs;
             CalculateEffectiveTotalRange(particle, out minOccurs, out _);
             return minOccurs == decimal.Zero;
         }
 
-        private void CalculateEffectiveTotalRange(XmlSchemaParticle particle, out decimal minOccurs, out decimal maxOccurs)
+        private static void CalculateEffectiveTotalRange(XmlSchemaParticle particle, out decimal minOccurs, out decimal maxOccurs)
         {
             XmlSchemaChoice? choice = particle as XmlSchemaChoice;
 
@@ -2891,7 +2891,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private bool BuildParticleContentModel(ParticleContentValidator contentValidator, XmlSchemaParticle particle)
+        private static bool BuildParticleContentModel(ParticleContentValidator contentValidator, XmlSchemaParticle particle)
         {
             bool hasWildCard = false;
             if (particle is XmlSchemaElement element)
