@@ -196,14 +196,6 @@ namespace System.Threading
 
         #endregion
 
-        #region MemoryBarrier
-        [Intrinsic]
-        public static void MemoryBarrier()
-        {
-            RuntimeImports.MemoryBarrier();
-        }
-        #endregion
-
         #region Read
         public static long Read(ref long location)
         {
