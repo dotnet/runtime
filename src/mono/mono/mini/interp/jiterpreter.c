@@ -249,7 +249,6 @@ EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_implements_interface (
 	MonoVTable *vtable, MonoClass *klass
 ) {
-	// FIXME: Perform some of this work at JIT time
 	// If null check fusion is active, vtable->max_interface_id will be 0
 	return MONO_VTABLE_IMPLEMENTS_INTERFACE (vtable, m_class_get_interface_id (klass)) || (vtable == NULL);
 }
@@ -264,7 +263,6 @@ EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_implements_special_interface (
 	MonoObject *obj, MonoVTable *vtable, MonoClass *klass
 ) {
-	// FIXME: Perform some of this work at JIT time
 	// If null check fusion is active, vtable->max_interface_id will be 0
 	if (MONO_VTABLE_IMPLEMENTS_INTERFACE (vtable, m_class_get_interface_id (klass)))
 		return 1;

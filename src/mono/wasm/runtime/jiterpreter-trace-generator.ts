@@ -849,7 +849,7 @@ export function generateWasmBody(
             case MintOpcode.MINT_CASTCLASS_INTERFACE:
             case MintOpcode.MINT_ISINST_INTERFACE: {
                 const klass = get_imethod_data(frame, getArgU16(ip, 3)),
-                    isSpecialInterface = cwraps.mono_jiterp_is_special_interface(<any>klass),
+                    isSpecialInterface = cwraps.mono_jiterp_is_special_interface(klass),
                     bailoutOnFailure = (opcode === MintOpcode.MINT_CASTCLASS_INTERFACE),
                     destOffset = getArgU16(ip, 1);
                 if (!klass) {
