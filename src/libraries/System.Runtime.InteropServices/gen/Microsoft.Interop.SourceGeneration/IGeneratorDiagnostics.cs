@@ -32,9 +32,9 @@ namespace Microsoft.Interop
             params object[] args)
         {
             SyntaxReference? syntaxReference = attributeData.ApplicationSyntaxReference;
-            CodeAnalysis.Location location = syntaxReference is not null
+            Location location = syntaxReference is not null
                 ? syntaxReference.SyntaxTree.GetLocation(syntaxReference.Span)
-                : CodeAnalysis.Location.None;
+                : Location.None;
 
             return location.CreateDiagnostic(descriptor, args);
         }
@@ -46,15 +46,15 @@ namespace Microsoft.Interop
             params object[] args)
         {
             SyntaxReference? syntaxReference = attributeData.ApplicationSyntaxReference;
-            CodeAnalysis.Location location = syntaxReference is not null
+            Location location = syntaxReference is not null
                 ? syntaxReference.SyntaxTree.GetLocation(syntaxReference.Span)
-                : CodeAnalysis.Location.None;
+                : Location.None;
 
             return location.CreateDiagnostic(descriptor, properties, args);
         }
 
         public static Diagnostic CreateDiagnostic(
-            this ImmutableArray<CodeAnalysis.Location> locations,
+            this ImmutableArray<Location> locations,
             DiagnosticDescriptor descriptor,
             params object[] args)
         {
@@ -62,14 +62,14 @@ namespace Microsoft.Interop
         }
 
         public static Diagnostic CreateDiagnostic(
-            this ImmutableArray<CodeAnalysis.Location> locations,
+            this ImmutableArray<Location> locations,
             DiagnosticDescriptor descriptor,
             ImmutableDictionary<string, string> properties,
             params object[] args)
         {
-            CodeAnalysis.Location firstLocation = null;
-            List<CodeAnalysis.Location> additionalLocations = null;
-            foreach (CodeAnalysis.Location location in locations)
+            Location firstLocation = null;
+            List<Location> additionalLocations = null;
+            foreach (Location location in locations)
             {
                 if (location.IsInSource)
                 {
@@ -85,30 +85,30 @@ namespace Microsoft.Interop
             }
 
             return firstLocation is null ?
-                Diagnostic.Create(descriptor, CodeAnalysis.Location.None, properties: properties, args) :
+                Diagnostic.Create(descriptor, Location.None, properties: properties, args) :
                 Diagnostic.Create(descriptor, firstLocation, additionalLocations: additionalLocations, properties: properties, messageArgs: args);
         }
 
         public static Diagnostic CreateDiagnostic(
-            this CodeAnalysis.Location location,
+            this Location location,
             DiagnosticDescriptor descriptor,
             params object[] args)
         {
             return Diagnostic.Create(
                 descriptor,
-                location: location.IsInSource ? location : CodeAnalysis.Location.None,
+                location: location.IsInSource ? location : Location.None,
                 messageArgs: args);
         }
 
         public static Diagnostic CreateDiagnostic(
-            this CodeAnalysis.Location location,
+            this Location location,
             DiagnosticDescriptor descriptor,
             ImmutableDictionary<string, string> properties,
             params object[] args)
         {
             return Diagnostic.Create(
                 descriptor,
-                location: location.IsInSource ? location : CodeAnalysis.Location.None,
+                location: location.IsInSource ? location : Location.None,
                 properties: properties,
                 messageArgs: args);
         }
@@ -136,9 +136,9 @@ namespace Microsoft.Interop
             params object[] args)
         {
             SyntaxReference? syntaxReference = attributeData.ApplicationSyntaxReference;
-            CodeAnalysis.Location location = syntaxReference is not null
+            Location location = syntaxReference is not null
                 ? syntaxReference.SyntaxTree.GetLocation(syntaxReference.Span)
-                : CodeAnalysis.Location.None;
+                : Location.None;
 
             return location.CreateDiagnosticInfo(descriptor, args);
         }
@@ -150,15 +150,15 @@ namespace Microsoft.Interop
             params object[] args)
         {
             SyntaxReference? syntaxReference = attributeData.ApplicationSyntaxReference;
-            CodeAnalysis.Location location = syntaxReference is not null
+            Location location = syntaxReference is not null
                 ? syntaxReference.SyntaxTree.GetLocation(syntaxReference.Span)
-                : CodeAnalysis.Location.None;
+                : Location.None;
 
             return location.CreateDiagnosticInfo(descriptor, properties, args);
         }
 
         public static DiagnosticInfo CreateDiagnosticInfo(
-            this ImmutableArray<CodeAnalysis.Location> locations,
+            this ImmutableArray<Location> locations,
             DiagnosticDescriptor descriptor,
             params object[] args)
         {
@@ -166,14 +166,14 @@ namespace Microsoft.Interop
         }
 
         public static DiagnosticInfo CreateDiagnosticInfo(
-            this ImmutableArray<CodeAnalysis.Location> locations,
+            this ImmutableArray<Location> locations,
             DiagnosticDescriptor descriptor,
             ImmutableDictionary<string, string> properties,
             params object[] args)
         {
-            CodeAnalysis.Location firstLocation = null;
-            List<CodeAnalysis.Location> additionalLocations = null;
-            foreach (CodeAnalysis.Location location in locations)
+            Location firstLocation = null;
+            List<Location> additionalLocations = null;
+            foreach (Location location in locations)
             {
                 if (location.IsInSource)
                 {
@@ -189,30 +189,30 @@ namespace Microsoft.Interop
             }
 
             return firstLocation is null ?
-                DiagnosticInfo.Create(descriptor, CodeAnalysis.Location.None, properties: properties, args) :
+                DiagnosticInfo.Create(descriptor, Location.None, properties: properties, args) :
                 DiagnosticInfo.Create(descriptor, firstLocation, additionalLocations: additionalLocations, properties: properties, messageArgs: args);
         }
 
         public static DiagnosticInfo CreateDiagnosticInfo(
-            this CodeAnalysis.Location location,
+            this Location location,
             DiagnosticDescriptor descriptor,
             params object[] args)
         {
             return DiagnosticInfo.Create(
                 descriptor,
-                location: location.IsInSource ? location : CodeAnalysis.Location.None,
+                location: location.IsInSource ? location : Location.None,
                 messageArgs: args);
         }
 
         public static DiagnosticInfo CreateDiagnosticInfo(
-            this CodeAnalysis.Location location,
+            this Location location,
             DiagnosticDescriptor descriptor,
             ImmutableDictionary<string, string> properties,
             params object[] args)
         {
             return DiagnosticInfo.Create(
                 descriptor,
-                location: location.IsInSource ? location : CodeAnalysis.Location.None,
+                location: location.IsInSource ? location : Location.None,
                 properties: properties,
                 messageArgs: args);
         }
