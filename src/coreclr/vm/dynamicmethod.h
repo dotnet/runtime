@@ -59,6 +59,9 @@ public:
                                TypeHandle *typeOwner) = 0;
     virtual ChunkAllocator* GetJitMetaHeap() = 0;
 
+    // Quick check for SecurityControlFlags::SkipVisibilityChecks.
+    virtual bool SuppressVisibilityChecks() = 0;
+
     //
     // code info data
     virtual BYTE * GetCodeInfo(
@@ -121,6 +124,7 @@ public:
     void GetJitContext(SecurityControlFlags * securityControlFlags,
                        TypeHandle * typeOwner);
     ChunkAllocator* GetJitMetaHeap();
+    bool SuppressVisibilityChecks();
 
     BYTE* GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, CorInfoOptions *pOptions, unsigned* pEHSize);
     SigPointer GetLocalSig();
@@ -334,16 +338,13 @@ inline MethodDesc* GetMethod(CORINFO_METHOD_HANDLE methodHandle)
 enum CORINFO_MODULE_HANDLE_TYPES
 {
     // The module handle is a Module
-    CORINFO_NORMAL_MODULE    = 0,
+    CORINFO_NORMAL_MODULE   = 0,
 
     // The module handle is a DynamicResolver
-    CORINFO_DYNAMIC_MODULE   = 1,
-
-    // The module handle permits unrestricted access
-    CORINFO_MODULE_ALLACCESS = 2,
+    CORINFO_DYNAMIC_MODULE  = 1,
 };
 
-#define CORINFO_MODULE_HANDLE_TYPE_MASK (CORINFO_NORMAL_MODULE | CORINFO_DYNAMIC_MODULE | CORINFO_MODULE_ALLACCESS)
+#define CORINFO_MODULE_HANDLE_TYPE_MASK (CORINFO_NORMAL_MODULE | CORINFO_DYNAMIC_MODULE)
 
 inline bool IsDynamicScope(CORINFO_MODULE_HANDLE module)
 {
@@ -351,20 +352,11 @@ inline bool IsDynamicScope(CORINFO_MODULE_HANDLE module)
     return !!(CORINFO_DYNAMIC_MODULE & (((size_t)module) & CORINFO_MODULE_HANDLE_TYPE_MASK));
 }
 
-inline bool IsAllAccessScope(CORINFO_MODULE_HANDLE module)
-{
-    LIMITED_METHOD_CONTRACT;
-    return !!(CORINFO_MODULE_ALLACCESS & (((size_t)module) & CORINFO_MODULE_HANDLE_TYPE_MASK));
-}
-
-inline CORINFO_MODULE_HANDLE MakeDynamicScope(DynamicResolver* pResolver, bool permitAllAccess)
+inline CORINFO_MODULE_HANDLE MakeDynamicScope(DynamicResolver* pResolver)
 {
     LIMITED_METHOD_CONTRACT;
     CONSISTENCY_CHECK(0 == (((size_t)pResolver) & CORINFO_MODULE_HANDLE_TYPE_MASK));
-    uint32_t type = CORINFO_DYNAMIC_MODULE;
-    if (permitAllAccess)
-        type |= CORINFO_MODULE_ALLACCESS;
-    return (CORINFO_MODULE_HANDLE)(((size_t)pResolver) | type);
+    return (CORINFO_MODULE_HANDLE)(((size_t)pResolver) | CORINFO_DYNAMIC_MODULE);
 }
 
 inline DynamicResolver* GetDynamicResolver(CORINFO_MODULE_HANDLE module)
@@ -372,6 +364,12 @@ inline DynamicResolver* GetDynamicResolver(CORINFO_MODULE_HANDLE module)
     LIMITED_METHOD_CONTRACT;
     CONSISTENCY_CHECK(IsDynamicScope(module));
     return (DynamicResolver*)(((size_t)module) & ~((size_t)CORINFO_MODULE_HANDLE_TYPE_MASK));
+}
+
+inline bool IsAllAccessScope(CORINFO_MODULE_HANDLE module)
+{
+    LIMITED_METHOD_CONTRACT;
+    return IsDynamicScope(module) && GetDynamicResolver(module)->SuppressVisibilityChecks();
 }
 
 inline Module* GetModule(CORINFO_MODULE_HANDLE scope)

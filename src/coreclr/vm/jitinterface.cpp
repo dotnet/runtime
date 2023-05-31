@@ -152,7 +152,7 @@ inline CORINFO_MODULE_HANDLE GetScopeHandle(MethodDesc* method)
     LIMITED_METHOD_CONTRACT;
     if (method->IsDynamicMethod())
     {
-        return MakeDynamicScope(method->AsDynamicMethodDesc()->GetResolver(), method->IsILStub());
+        return MakeDynamicScope(method->AsDynamicMethodDesc()->GetResolver());
     }
     else
     {
@@ -7740,7 +7740,7 @@ public:
     CORINFO_MODULE_HANDLE CreateScopeHandle() const
     {
         _ASSERTE(HasTransientMethodDetails());
-        return MakeDynamicScope(TransientResolver, true /* permitAllAccess */);
+        return MakeDynamicScope(TransientResolver);
     }
 
     TransientMethodDetails CreateTransientMethodDetails() const
@@ -7816,7 +7816,7 @@ static HRESULT getMethodInfoHelper(
     else if (ftn->IsDynamicMethod())
     {
         DynamicResolver* pResolver = ftn->AsDynamicMethodDesc()->GetResolver();
-        scopeHnd = MakeDynamicScope(pResolver, ftn->IsILStub());
+        scopeHnd = MakeDynamicScope(pResolver);
 
         unsigned int EHCount;
         methInfo->ILCode = pResolver->GetCodeInfo(&methInfo->ILCodeSize,

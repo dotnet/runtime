@@ -80,6 +80,20 @@ ChunkAllocator* ILStubResolver::GetJitMetaHeap()
     return NULL;
 }
 
+bool ILStubResolver::SuppressVisibilityChecks()
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifdef _DEBUG
+    SecurityControlFlags securityControlFlags;
+    TypeHandle typeOwner;
+    GetJitContext(&securityControlFlags, &typeOwner);
+    _ASSERTE((securityControlFlags & DynamicResolver::SkipVisibilityChecks) == DynamicResolver::SkipVisibilityChecks);
+#endif // _DEBUG
+
+    return true;
+}
+
 SigPointer
 ILStubResolver::GetLocalSig()
 {
