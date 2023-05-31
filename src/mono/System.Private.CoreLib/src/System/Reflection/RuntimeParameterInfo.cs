@@ -119,6 +119,7 @@ namespace System.Reflection
             this.PositionImpl = -1; // since parameter positions are zero-based, return type pos is -1
             this.AttrsImpl = ParameterAttributes.Retval;
             this.marshalAs = marshalAs;
+            this.DefaultValueImpl = DBNull.Value;
         }
 
         // ctor for no metadata MethodInfo in the DynamicMethod and RuntimeMethodInfo cases

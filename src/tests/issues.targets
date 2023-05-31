@@ -2833,6 +2833,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/NativeLibrary/API/NativeLibraryTests/**">
             <Issue>Needs coreclr build</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/InlineArray/InlineArrayInvalid/**">
+            <Issue>https://github.com/dotnet/runtime/issues/86327</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot' or '$(TargetOS)' == 'ios') and '$(TargetArchitecture)' == 'arm64'">
