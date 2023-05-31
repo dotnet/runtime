@@ -10,17 +10,17 @@ namespace System
     [StructLayout(LayoutKind.Sequential)]
     public struct RuntimeTypeHandle
     {
-        private IntPtr _pEEType;
+        private IntPtr _value;
 
-        internal RuntimeTypeHandle(IntPtr pEEType)
+        internal RuntimeTypeHandle(IntPtr value)
         {
-            _pEEType = pEEType;
+            _value = value;
         }
 
         [Intrinsic]
         internal static unsafe IntPtr ToIntPtr(RuntimeTypeHandle handle)
         {
-            return handle._pEEType;
+            return handle._value;
         }
     }
 }
