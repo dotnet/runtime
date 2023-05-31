@@ -858,7 +858,7 @@ namespace Wasm.Build.Tests
 
                 string versionRegex = @"8.0.\d?(-[a-z]+(\.\d\.\d+\.\d)?)?\.([a-z0-9])+";
                 Assert.Collection(
-                    dotnetJsEntries,
+                    dotnetJsEntries.OrderBy(f => f),
                     item => { Assert.Equal($"dotnet.js", item); AssertFileExists(item); },
                     item => { Assert.Matches($"dotnet\\.native\\.{versionRegex}\\.js", item); AssertFileExists(item); },
                     item => { Assert.Matches($"dotnet\\.runtime\\.{versionRegex}\\.js", item); AssertFileExists(item); }
