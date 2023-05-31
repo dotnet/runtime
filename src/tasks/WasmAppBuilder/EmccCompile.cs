@@ -43,7 +43,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
         private int _totalFiles;
         private int _numCompiled;
         private static readonly char[] s_semicolon = new char[] { ';' };
-        private static readonly char[] s_equalTo = new char[] {'='};
+        private static readonly char[] s_equalTo = new char[] { '=' };
 
         public override bool Execute()
         {
