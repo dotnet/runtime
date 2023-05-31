@@ -6204,6 +6204,11 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
                                       CORINFO_CALL_INFO*     callInfo,
                                       IL_OFFSET              ilOffset)
 {
+    if (!opts.OptEnabled(CLFLG_INLINING))
+    {
+        return;
+    }
+
     GenTreeCall* call = callNode->AsCall();
 
     // Call might not have an inline candidate info yet (will be set by impMarkInlineCandidateHelper)
