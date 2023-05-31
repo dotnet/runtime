@@ -1493,7 +1493,7 @@ namespace System.Net.Http
         private ValueTask WriteHexInt32Async(int value, bool async)
         {
             // Try to format into our output buffer directly.
-            if (value.TryFormat(_writeBuffer.AvailableSpan, out int bytesWritten, 'X'))
+            if (value.TryFormat(_writeBuffer.AvailableSpan, out int bytesWritten, "X"))
             {
                 _writeBuffer.Commit(bytesWritten);
                 return default;
