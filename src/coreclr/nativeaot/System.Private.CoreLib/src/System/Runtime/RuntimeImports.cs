@@ -554,6 +554,10 @@ namespace System.Runtime
         internal static extern uint RhGetLoadedOSModules(IntPtr[] resultArray);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetKnobValues")]
+        internal static extern unsafe uint RhGetKnobValues(out byte** keyArray, out byte** valueArray);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetOSModuleFromPointer")]
         internal static extern IntPtr RhGetOSModuleFromPointer(IntPtr pointerVal);
 

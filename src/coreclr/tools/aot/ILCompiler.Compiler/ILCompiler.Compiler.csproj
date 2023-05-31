@@ -579,7 +579,6 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64UnboxingStubNode.cs" />
-    <Compile Include="Compiler\RuntimeKnobsRootProvider.cs" />
     <Compile Include="Compiler\UnmanagedEntryPointsRootProvider.cs" />
     <Compile Include="Compiler\GenericDictionaryLookup.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />
@@ -624,8 +623,6 @@
     <Compile Include="Compiler\XmlObjectDumper.cs" />
     <Compile Include="IL\ILImporter.Scanner.cs" />
     <Compile Include="IL\Stubs\PInvokeILProvider.cs" />
-    <Compile Include="IL\Stubs\StartupCode\AppContextInitializerMethod.cs" />
-    <Compile Include="IL\Stubs\StartupCode\AppContextInitializerMethod.Sorting.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.Sorting.cs" />
     <Compile Include="IL\Stubs\StartupCode\NativeLibraryStartupMethod.cs" />

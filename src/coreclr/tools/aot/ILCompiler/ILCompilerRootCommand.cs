@@ -88,8 +88,6 @@ namespace ILCompiler
             new(new[] { "--methodbodyfolding" }, "Fold identical method bodies");
         public Option<string[]> InitAssemblies { get; } =
             new(new[] { "--initassembly" }, Array.Empty<string>, "Assembly(ies) with a library initializer");
-        public Option<string[]> AppContextSwitches { get; } =
-            new(new[] { "--appcontextswitch" }, Array.Empty<string>, "System.AppContext switches to set (format: 'Key=Value')");
         public Option<string[]> FeatureSwitches { get; } =
             new(new[] { "--feature" }, Array.Empty<string>, "Feature switches to apply (format: 'Namespace.Name=[true|false]'");
         public Option<string[]> RuntimeOptions { get; } =
@@ -207,7 +205,6 @@ namespace ILCompiler
             AddOption(EmitStackTraceData);
             AddOption(MethodBodyFolding);
             AddOption(InitAssemblies);
-            AddOption(AppContextSwitches);
             AddOption(FeatureSwitches);
             AddOption(RuntimeOptions);
             AddOption(RuntimeKnobs);
