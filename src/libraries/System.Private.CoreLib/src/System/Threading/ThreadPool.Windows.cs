@@ -51,6 +51,10 @@ namespace System.Threading
             WindowsThreadPool.BindHandle(osHandle) :
             BindHandlePortableCore(osHandle);
 
+#if !CORECLR
+        private static bool EnsureConfigInitializedCore() => true;
+#endif
+
         internal static bool EnsureConfigInitialized() => EnsureConfigInitializedCore();
 
         internal static void InitializeForThreadPoolThread()

@@ -22,6 +22,10 @@ namespace System.Threading
         internal static bool YieldFromDispatchLoop => false;
 #endif
 
+#if !CORECLR
+        private static bool EnsureConfigInitializedCore() => true;
+#endif
+
         internal static bool EnsureConfigInitialized() => EnsureConfigInitializedCore();
 
         internal static object GetOrCreateThreadLocalCompletionCountObject() =>
