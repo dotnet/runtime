@@ -72,6 +72,7 @@ public static class UnsafeAccessorAttributeTests
     extern static UserDataValue CallPrivateConstructorValue(string a);
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void VerifyCallDefaultCtorClass()
     {
         var local = CallPrivateConstructorClass();
@@ -79,6 +80,7 @@ public static class UnsafeAccessorAttributeTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void VerifyCallCtorClass()
     {
         var local = CallPrivateConstructorClass(PrivateArg);
@@ -87,6 +89,7 @@ public static class UnsafeAccessorAttributeTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void VerifyCallCtorValue()
     {
         var local = CallPrivateConstructorValue(PrivateArg);
@@ -95,6 +98,7 @@ public static class UnsafeAccessorAttributeTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void VerifyAccessStaticFieldClass()
     {
         Assert.Equal(PrivateStatic, GetPrivateStaticField((UserDataClass)null));
@@ -104,6 +108,7 @@ public static class UnsafeAccessorAttributeTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void VerifyAccessFieldClass()
     {
         var local = CallPrivateConstructorClass();
@@ -114,6 +119,7 @@ public static class UnsafeAccessorAttributeTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void VerifyAccessStaticFieldValue()
     {
         Assert.Equal(PrivateStatic, GetPrivateStaticField(new UserDataValue()));
@@ -123,6 +129,7 @@ public static class UnsafeAccessorAttributeTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void VerifyAccessFieldValue()
     {
         UserDataValue local = new();
@@ -133,6 +140,7 @@ public static class UnsafeAccessorAttributeTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void VerifyAccessStaticMethodClass()
     {
         var sr = string.Empty;
@@ -144,6 +152,7 @@ public static class UnsafeAccessorAttributeTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void VerifyAccessMethodClass()
     {
         var sr = string.Empty;
@@ -156,6 +165,7 @@ public static class UnsafeAccessorAttributeTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void VerifyAccessStaticMethodVoidClass()
     {
         GetPrivateStaticMethod((UserDataClass)null);
@@ -165,6 +175,7 @@ public static class UnsafeAccessorAttributeTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void VerifyAccessMethodVoidClass()
     {
         var local = CallPrivateConstructorClass();
@@ -175,6 +186,7 @@ public static class UnsafeAccessorAttributeTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void VerifyAccessStaticMethodValue()
     {
         var sr = string.Empty;
@@ -186,6 +198,7 @@ public static class UnsafeAccessorAttributeTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void VerifyAccessMethodValue()
     {
         var sr = string.Empty;
@@ -198,6 +211,7 @@ public static class UnsafeAccessorAttributeTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void VerifyInvalidUnsafeAccessor()
     {
         Assert.Throws<MissingMethodException>(() => MethodNotFound(null));
