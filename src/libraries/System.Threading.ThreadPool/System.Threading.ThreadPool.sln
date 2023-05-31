@@ -1,7 +1,4 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.6.33712.159
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib", "..\..\coreclr\System.Private.CoreLib\System.Private.CoreLib.csproj", "{BEACD8A1-3C09-450E-931F-561D44986BFB}"
 EndProject
