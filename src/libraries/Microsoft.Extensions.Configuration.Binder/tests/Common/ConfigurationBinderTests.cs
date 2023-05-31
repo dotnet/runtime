@@ -1647,6 +1647,43 @@ namespace Microsoft.Extensions
         }
 
         [Fact]
+        public void EnsureDictionaryInitializedWithOrdinalIgnoreCaseStringComparer()
+        {
+            const string lowercaseKey = "lowercase_key";
+            const string lowercaseValue = "lowercase_value";
+            const string uppercaseKey = "UPPERCASE_KEY";
+            const string uppercaseValue = "UPPERCASE_VALUE";
+
+            var json = $$"""
+            {
+                "modelWithDictionaryConfig": {
+                    "SomeDictionary": {
+                        "{{lowercaseKey}}": "{{lowercaseValue}}",
+                        "{{uppercaseKey}}": "{{uppercaseValue}}"
+                    }
+                }
+            }
+            """;
+
+            var configuration = new ConfigurationBuilder()
+                .AddJsonStream(TestStreamHelpers.StringToStream(json))
+                .Build();
+
+            ModelWithDictionary options = new ModelWithDictionary();
+            configuration.GetSection("modelWithDictionaryConfig").Bind(options);
+
+            Assert.NotNull(options);
+            Assert.Equal(2, options.SomeDictionary.Count);
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+            Assert.IsType(StringComparer.OrdinalIgnoreCase.GetType(), options.SomeDictionary.Comparer);
+            Assert.Contains(lowercaseKey.ToUpper(), options.SomeDictionary as IDictionary<string, string>);
+            Assert.Contains(uppercaseKey.ToLower(), options.SomeDictionary as IDictionary<string, string>);
+            Assert.Equal(lowercaseValue, options.SomeDictionary[lowercaseKey.ToUpper()]);
+            Assert.Equal(uppercaseValue, options.SomeDictionary[uppercaseKey.ToLower()]);
+#endif
+        }
+
+        [Fact]
         public void EnsureSuccessfullyBind()
         {
             var json = @"{

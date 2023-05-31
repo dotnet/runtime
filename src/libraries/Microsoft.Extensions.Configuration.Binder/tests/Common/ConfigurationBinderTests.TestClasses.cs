@@ -698,6 +698,11 @@ namespace Microsoft.Extensions
             public List<QueueNamespaces> Namespaces { get; set; }
         }
 
+        public class ModelWithDictionary
+        {
+            public Dictionary<string, string> SomeDictionary { get; set; }
+        }
+
         public class QueueNamespaces
         {
             public string Namespace { get; set; }

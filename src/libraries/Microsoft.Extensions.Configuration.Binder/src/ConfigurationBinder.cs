@@ -1153,6 +1153,42 @@ namespace Microsoft.Extensions.Configuration
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
+        private static bool TryCreateDictionaryValue(
+            Type type,
+            out object? value)
+        {
+            Type genericDictionaryType;
+            bool returnValue;
+
+            if ((type.TryGetGenericTypeDefinition(out Type? genericType)
+                && (genericType == typeof(Dictionary<,>)))
+                || (TypeIsADictionaryInterface(type)))
+            {
+                genericDictionaryType = typeof(Dictionary<,>).MakeGenericType(
+                    type.GenericTypeArguments[0],
+                    type.GenericTypeArguments[1]);
+                if (type.GenericTypeArguments[0] == typeof(string))
+                {
+                    value = Activator.CreateInstance(genericDictionaryType, StringComparer.OrdinalIgnoreCase);
+                }
+                else
+                {
+                    value = Activator.CreateInstance(genericDictionaryType);
+                }
+
+                returnValue = true;
+            }
+            else
+            {
+                value = null;
+                returnValue = false;
+            }
+
+            return returnValue;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static bool TryCreateValueByDefault(
             Type type,
@@ -1164,18 +1200,19 @@ namespace Microsoft.Extensions.Configuration
 
             if (!bindingPoint.IsReadOnly)
             {
-                Type? interfaceGenericType = type.IsInterface && type.IsConstructedGenericType ? type.GetGenericTypeDefinition() : null;
+                object? value;
 
-                if (interfaceGenericType is not null &&
-                    (interfaceGenericType == typeof(ICollection<>) || interfaceGenericType == typeof(IList<>)))
+                switch (type)
                 {
-                    // For ICollection<T> and IList<T> we bind them to mutable List<T> type.
-                    Type genericType = typeof(List<>).MakeGenericType(type.GenericTypeArguments[0]);
-                    bindingPoint.SetValue(Activator.CreateInstance(genericType));
-                }
-                else
-                {
-                    bindingPoint.SetValue(CreateInstance(type, config, options));
+                    case Type when TryCreateValueByInterface(type, out value):
+                        bindingPoint.SetValue(value);
+                        break;
+                    case Type when TryCreateDictionaryValue(type, out value):
+                        bindingPoint.SetValue(value);
+                        break;
+                    default:
+                        bindingPoint.SetValue(CreateInstance(type, config, options));
+                        break;
                 }
 
                 returnValue = true;
@@ -1183,6 +1220,34 @@ namespace Microsoft.Extensions.Configuration
             else
             {
                 returnValue = false;
+            }
+
+            return returnValue;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
+        private static bool TryCreateValueByInterface(
+            Type type,
+            out object? newValue)
+        {
+            Type? interfaceGenericType;
+            bool returnValue;
+
+            interfaceGenericType = type.IsInterface && type.IsConstructedGenericType ? type.GetGenericTypeDefinition() : null;
+
+            switch (interfaceGenericType)
+            {
+                case Type collectionGeneric when collectionGeneric == typeof(ICollection<>):
+                case Type listGeneric when listGeneric == typeof(IList<>):
+                    Type genericType = typeof(List<>).MakeGenericType(type.GenericTypeArguments[0]);
+                    newValue = Activator.CreateInstance(genericType);
+                    returnValue = true;
+                    break;
+                default:
+                    newValue = null;
+                    returnValue = false;
+                    break;
             }
 
             return returnValue;
