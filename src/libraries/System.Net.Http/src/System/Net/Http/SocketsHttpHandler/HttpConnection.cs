@@ -1503,7 +1503,7 @@ namespace System.Net.Http
             if (async)
             {
                 Span<byte> temp = stackalloc byte[8]; // max length of Int32 as hex
-                bool formatted = value.TryFormat(temp, out bytesWritten, 'X');
+                bool formatted = value.TryFormat(temp, out bytesWritten, "X");
                 Debug.Assert(formatted);
                 return WriteAsync(temp.Slice(0, bytesWritten).ToArray());
             }
