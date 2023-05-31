@@ -850,7 +850,7 @@ namespace Wasm.Build.Tests
                 var bootConfig = ParseBootData(bootConfigContent);
                 var dotnetJsEntries = bootConfig.resources.runtime.Keys.Where(k => k.StartsWith("dotnet.") && k.EndsWith(".js")).ToArray();
 
-                AssertFileExists(string fileName)
+                void AssertFileExists(string fileName)
                 {
                     string absolutePath = Path.Combine(binFrameworkDir, fileName);
                     Assert.True(File.Exists(absolutePath), $"Expected to find '{absolutePath}'");
