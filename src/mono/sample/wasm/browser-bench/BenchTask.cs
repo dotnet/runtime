@@ -92,9 +92,9 @@ public abstract class BenchTask
                 if (oneTs.TotalMilliseconds > 0 && oneTs.TotalMilliseconds*InitialSamples > maxInitMs)
                     initialSamples = (int)(maxInitMs/oneTs.TotalMilliseconds);
 
-                GC.Collect();
-
                 if (initialSamples > 1) {
+                    GC.Collect();
+
                     start = DateTime.Now;
                     for (currentStep = 0; currentStep < initialSamples; currentStep++)
                         if (HasRunStepAsync)
