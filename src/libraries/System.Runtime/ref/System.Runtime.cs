@@ -9037,6 +9037,11 @@ namespace System.Globalization
         AllowBinarySpecifier = 1024,
         BinaryNumber = 1027,
     }
+    public struct NSRange
+    {
+        public int Location;
+        public int Length;
+    }
     public partial class PersianCalendar : System.Globalization.Calendar
     {
         public static readonly int PersianEra;

@@ -13,12 +13,9 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> IndexOf_TestData()
         {
             // Empty string
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
-            {
-                yield return new object[] { s_invariantCompare, "foo", "", 0, 3, CompareOptions.None, 0, 0 };
-                yield return new object[] { s_invariantCompare, "foo", "", 2, 1, CompareOptions.None, 2, 0 };
-                yield return new object[] { s_invariantCompare, "", "", 0, 0, CompareOptions.None, 0, 0 };
-            }
+            yield return new object[] { s_invariantCompare, "foo", "", 0, 3, CompareOptions.None, 0, 0 };
+            yield return new object[] { s_invariantCompare, "foo", "", 2, 1, CompareOptions.None, 2, 0 };
+            yield return new object[] { s_invariantCompare, "", "", 0, 0, CompareOptions.None, 0, 0 };
 
             // OrdinalIgnoreCase
             yield return new object[] { s_invariantCompare, "Hello", "l", 0, 5, CompareOptions.OrdinalIgnoreCase, 2, 1 };
@@ -90,7 +87,7 @@ namespace System.Globalization.Tests
                 yield return new object[] { s_invariantCompare, "\r\n", "\n", 0, 2, CompareOptions.None, 1, 1 };
             }
 
-            // Weightless characters
+            // Weightless characters add support on OSX to handle these case
             if (!PlatformDetection.IsHybridGlobalizationOnOSX)
             {
                 yield return new object[] { s_invariantCompare, "", "\u200d", 0, 0, CompareOptions.None, 0, 0 };
@@ -173,7 +170,7 @@ namespace System.Globalization.Tests
             bool useNls = PlatformDetection.IsNlsGlobalization;
             // Searches for the ligature \u00C6
             string source1 = "Is AE or ae the same as \u00C6 or \u00E6?"; // 3 failures here
-            if (PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
             {
                 yield return new object[] { s_invariantCompare, source1, "AE", 8, 18, CompareOptions.None, useNls ? 24 : -1, useNls ? 1 : 0};
                 yield return new object[] { s_invariantCompare, source1, "ae", 8, 18, CompareOptions.None, 9 , 2};
@@ -433,7 +430,7 @@ namespace System.Globalization.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", "Test", 2, 4, CompareOptions.None));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", 'a', 2, 4));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", 'a', 2, 4, CompareOptions.None));
-            }            
+            }
         }
 
         // Attempts to create a Rune from the entirety of a given text buffer.
