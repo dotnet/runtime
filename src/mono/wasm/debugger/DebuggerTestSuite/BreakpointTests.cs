@@ -213,7 +213,6 @@ namespace DebuggerTests
             { "invoke_add()", "IntAdd", "null", false },
         };
 
-
         [Theory]
         [MemberData(nameof(FalseConditions))]
         [MemberData(nameof(TrueConditions))]

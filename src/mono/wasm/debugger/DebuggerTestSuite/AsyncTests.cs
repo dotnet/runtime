@@ -30,7 +30,6 @@ namespace DebuggerTests
              "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
              wait_for_event_fn: async (pause_location) =>
              {
-
                 var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
                 await CheckProps(frame_locals, new
                 {
