@@ -219,6 +219,8 @@ namespace System.Text
             bool conversionIsWidthPreserving = typeof(TFrom) == typeof(TTo); // JIT turns this into a const
             bool conversionIsToUpper = (typeof(TCasing) == typeof(ToUpperConversion)); // JIT turns this into a const
             uint numInputElementsToConsumeEachVectorizedLoopIteration = (uint)(sizeof(Vector128<byte>) / sizeof(TFrom)); // JIT turns this into a const
+            uint numInputElementsToConsumeEachVectorizedLoopIteration_AVX512 = (uint)(sizeof(Vector512<byte>) / sizeof(TFrom)); // JIT turns this into a const
+
 
             nuint i = 0;
 
@@ -231,9 +233,79 @@ namespace System.Text
                 goto DrainRemaining;
             }
 
-            // Process the input as a series of 128-bit blocks.
+            // Process the input as a series of 512-bit blocks.
+            if (Vector512.IsHardwareAccelerated && elementCount >= numInputElementsToConsumeEachVectorizedLoopIteration_AVX512)
+            {
+                Vector512<TFrom> srcVector = Vector512.LoadUnsafe(ref *pSrc);
+                if (VectorContainsNonAsciiChar(srcVector))
+                {
+                    goto Drain64;
+                }
 
-            if (Vector128.IsHardwareAccelerated && elementCount >= numInputElementsToConsumeEachVectorizedLoopIteration)
+                // Now find matching characters and perform case conversion.
+                // Basically, the (A <= value && value <= Z) check is converted to:
+                // (value - CONST) <= (Z - A), but using signed instead of unsigned arithmetic.
+
+                TFrom SourceSignedMinValue = TFrom.CreateTruncating(1 << (8 * sizeof(TFrom) - 1));
+                Vector512<TFrom> subtractionVector = Vector512.Create(conversionIsToUpper ? (SourceSignedMinValue + TFrom.CreateTruncating('a')) : (SourceSignedMinValue + TFrom.CreateTruncating('A')));
+                Vector512<TFrom> comparisionVector = Vector512.Create(SourceSignedMinValue + TFrom.CreateTruncating(26 /* A..Z or a..z */));
+                Vector512<TFrom> caseConversionVector = Vector512.Create(TFrom.CreateTruncating(0x20)); // works both directions
+
+                Vector512<TFrom> matches = SignedLessThan((srcVector - subtractionVector), comparisionVector);
+                srcVector ^= (matches & caseConversionVector);
+
+                // Now write to the destination.
+
+                ChangeWidthAndWriteTo(srcVector, pDest, 0);
+
+                // Now that the first conversion is out of the way, calculate how
+                // many elements we should skip in order to have future writes be
+                // aligned.
+
+                uint expectedWriteAlignment_AVX512 = numInputElementsToConsumeEachVectorizedLoopIteration_AVX512 * (uint)sizeof(TTo); // JIT turns this into a const
+                i = numInputElementsToConsumeEachVectorizedLoopIteration_AVX512 - ((uint)pDest % expectedWriteAlignment_AVX512) / (uint)sizeof(TTo);
+                Debug.Assert((nuint)(&pDest[i]) % expectedWriteAlignment_AVX512 == 0, "Destination buffer wasn't properly aligned!");
+
+                while (true)
+                {
+                    Debug.Assert(i <= elementCount, "We overran a buffer somewhere.");
+
+                    if ((elementCount - i) < numInputElementsToConsumeEachVectorizedLoopIteration_AVX512)
+                    {
+                        // If we're about to enter the final iteration of the loop, back up so that
+                        // we can read one unaligned block. If we've already consumed all the data,
+                        // jump straight to the end.
+
+                        if (i == elementCount)
+                        {
+                            goto Return;
+                        }
+
+                        i = elementCount - numInputElementsToConsumeEachVectorizedLoopIteration_AVX512;
+                    }
+
+                    // Unaligned read & check for non-ASCII data.
+
+                    srcVector = Vector512.LoadUnsafe(ref *pSrc, i);
+                    if (VectorContainsNonAsciiChar(srcVector))
+                    {
+                        goto Drain64;
+                    }
+
+                    // Now find matching characters and perform case conversion.
+
+                    matches = SignedLessThan((srcVector - subtractionVector), comparisionVector);
+                    srcVector ^= (matches & caseConversionVector);
+
+                    // Now write to the destination.
+                    // We expect this write to be aligned except for the last run through the loop.
+
+                    ChangeWidthAndWriteTo(srcVector, pDest, i);
+                    i += numInputElementsToConsumeEachVectorizedLoopIteration_AVX512;
+                }
+            }
+            // Process the input as a series of 128-bit blocks.
+            else if (Vector128.IsHardwareAccelerated && elementCount >= numInputElementsToConsumeEachVectorizedLoopIteration)
             {
                 // Unaligned read and check for non-ASCII data.
 
@@ -501,6 +573,35 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe void ChangeWidthAndWriteTo<TFrom, TTo>(Vector512<TFrom> vector, TTo* pDest, nuint elementOffset)
+            where TFrom : unmanaged
+            where TTo : unmanaged
+        {
+            if (sizeof(TFrom) == sizeof(TTo))
+            {
+                // no width change needed
+                Vector512.StoreUnsafe(vector.As<TFrom, TTo>(), ref *pDest, elementOffset);
+            }
+            else if (sizeof(TFrom) == 1 && sizeof(TTo) == 2)
+            {
+                // widening operation required
+                Vector512.StoreUnsafe(Vector512.WidenLower(vector.AsByte()), ref *(ushort*)pDest, elementOffset);
+                Vector512.StoreUnsafe(Vector512.WidenUpper(vector.AsByte()), ref *(ushort*)pDest, elementOffset + 32);
+            }
+            else if (sizeof(TFrom) == 2 && sizeof(TTo) == 1)
+            {
+                // narrowing operation required, we know data is all-ASCII so use extract helper
+                Vector512<byte> narrow = ExtractAsciiVector(vector.AsUInt16(), vector.AsUInt16());
+                narrow.StoreLowerUnsafe(ref *(byte*)pDest, elementOffset);
+            }
+            else
+            {
+                Debug.Fail("Unknown types.");
+                throw new NotSupportedException();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe Vector128<T> SignedLessThan<T>(Vector128<T> left, Vector128<T> right)
             where T : unmanaged
         {
@@ -511,6 +612,24 @@ namespace System.Text
             else if (sizeof(T) == 2)
             {
                 return Vector128.LessThan(left.AsInt16(), right.AsInt16()).As<short, T>();
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe Vector512<T> SignedLessThan<T>(Vector512<T> left, Vector512<T> right)
+            where T : unmanaged
+        {
+            if (sizeof(T) == 1)
+            {
+                return Vector512.LessThan(left.AsSByte(), right.AsSByte()).As<sbyte, T>();
+            }
+            else if (sizeof(T) == 2)
+            {
+                return Vector512.LessThan(left.AsInt16(), right.AsInt16()).As<short, T>();
             }
             else
             {

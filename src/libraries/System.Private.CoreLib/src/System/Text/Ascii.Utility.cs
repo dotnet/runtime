@@ -1456,6 +1456,35 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool VectorContainsNonAsciiChar(Vector512<byte> asciiVector)
+        {
+            // max ASCII character is 0b_0111_1111, so the most significant bit (0x80) tells whether it contains non ascii
+
+            // prefer architecture specific intrinsic as they offer better perf
+            return asciiVector.ExtractMostSignificantBits() != 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool VectorContainsNonAsciiChar(Vector512<ushort> utf16Vector)
+        {
+            const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
+            Vector512<ushort> zeroIsAscii = utf16Vector & Vector512.Create(asciiMask);
+            // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
+            return zeroIsAscii != Vector512<ushort>.Zero;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool VectorContainsNonAsciiChar<T>(Vector512<T> vector)
+            where T : unmanaged
+        {
+            Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(ushort));
+
+            return typeof(T) == typeof(byte)
+                ? VectorContainsNonAsciiChar(vector.AsByte())
+                : VectorContainsNonAsciiChar(vector.AsUInt16());
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool AllCharsInVectorAreAscii<T>(Vector128<T> vector)
             where T : unmanaged
         {
@@ -1517,6 +1546,23 @@ namespace System.Text
             else
             {
                 return Vector128.Narrow(vectorFirst, vectorSecond);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector512<byte> ExtractAsciiVector(Vector512<ushort> vectorFirst, Vector512<ushort> vectorSecond)
+        {
+            // Narrows two vectors of words [ w7 w6 w5 w4 w3 w2 w1 w0 ] and [ w7' w6' w5' w4' w3' w2' w1' w0' ]
+            // to a vector of bytes [ b7 ... b0 b7' ... b0'].
+
+            // prefer architecture specific intrinsic as they don't perform additional AND like Vector128.Narrow does
+            if (Avx512BW.IsSupported)
+            {
+                return Avx512BW.PackUnsignedSaturate(vectorFirst.AsInt16(), vectorSecond.AsInt16());
+            }
+            else
+            {
+                return Vector512.Narrow(vectorFirst, vectorSecond);
             }
         }
 
@@ -1654,6 +1700,30 @@ namespace System.Text
             {
                 ushort* pCurrentWriteAddress = (ushort*)pUtf16Buffer;
 
+                if (Vector512.IsHardwareAccelerated && elementCount >= (uint)Vector512<byte>.Count)
+                {
+                    // Calculating the destination address outside the loop results in significant
+                    // perf wins vs. relying on the JIT to fold memory addressing logic into the
+                    // write instructions. See: https://github.com/dotnet/runtime/issues/33002
+                    nuint finalOffsetWhereCanRunLoop = elementCount - (uint)Vector512<byte>.Count;
+
+                    do
+                    {
+                        Vector512<byte> asciiVector = Vector512.Load(pAsciiBuffer + currentOffset);
+                        if (asciiVector.ExtractMostSignificantBits() != 0)
+                        {
+                            break;
+                        }
+
+                        (Vector512<ushort> low, Vector512<ushort> upper) = Vector512.Widen(asciiVector);
+                        low.Store(pCurrentWriteAddress);
+                        upper.Store(pCurrentWriteAddress + Vector512<ushort>.Count);
+
+                        currentOffset += (nuint)Vector512<byte>.Count;
+                        pCurrentWriteAddress += (nuint)Vector512<byte>.Count;
+                    } while (currentOffset <= finalOffsetWhereCanRunLoop);
+
+                }
                 if (Vector256.IsHardwareAccelerated && elementCount >= (uint)Vector256<byte>.Count)
                 {
                     // Calculating the destination address outside the loop results in significant
