@@ -391,7 +391,7 @@ namespace System.Xml.Serialization
                 ilg.BeginMethod(
                     typeof(object),
                     "Deserialize",
-                    s_xmlSerializationReaderType 
+                    s_xmlSerializationReaderType,
                     s_readerString,
                     CodeGenerator.ProtectedOverrideMethodAttributes);
                 MethodInfo readerType_readMethod = CreatedTypes[readerClass].GetMethod(
