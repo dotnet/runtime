@@ -461,9 +461,6 @@ namespace System.IO.Compression
 
             // Rely on Path.GetFullPath for validation of sourceDirectoryName
 
-            // Checking of compressionLevel is passed down to DeflateStream and the IDeflater implementation
-            // as it is a pluggable component that completely encapsulates the meaning of compressionLevel.
-
             sourceDirectoryName = Path.GetFullPath(sourceDirectoryName);
 
             using ZipArchive archive = new ZipArchive(destination, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding);
