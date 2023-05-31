@@ -121,6 +121,15 @@ namespace ComInterfaceGenerator.Tests
             Assert.Equal("Your string: MyUtf8String", stringMarshallingOverride.StringMarshallingUtf8("MyUtf8String"));
             Assert.Equal("Your string: MyLPWStrString", stringMarshallingOverride.MarshalAsLPWString("MyLPWStrString"));
             Assert.Equal("Your string: MyUtf16String", stringMarshallingOverride.MarshalUsingUtf16("MyUtf16String"));
+
+            // Make sure the shadowing methods generated for the derived interface also follow the rules
+            var stringMarshallingOverrideDerived = (IStringMarshallingOverrideDerived)obj;
+            Assert.Equal("Your string: MyUtf8String", stringMarshallingOverrideDerived.StringMarshallingUtf8("MyUtf8String"));
+            Assert.Equal("Your string: MyLPWStrString", stringMarshallingOverrideDerived.MarshalAsLPWString("MyLPWStrString"));
+            Assert.Equal("Your string: MyUtf16String", stringMarshallingOverrideDerived.MarshalUsingUtf16("MyUtf16String"));
+            Assert.Equal("Your string 2: MyUtf8String", stringMarshallingOverrideDerived.StringMarshallingUtf8_2("MyUtf8String"));
+            Assert.Equal("Your string 2: MyLPWStrString", stringMarshallingOverrideDerived.MarshalAsLPWString_2("MyLPWStrString"));
+            Assert.Equal("Your string 2: MyUtf16String", stringMarshallingOverrideDerived.MarshalUsingUtf16_2("MyUtf16String"));
         }
     }
 }
