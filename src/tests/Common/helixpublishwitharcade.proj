@@ -147,7 +147,7 @@
       <_BuildInParallel Condition=" '@(_ProjectsToBuild->Count())' &gt; '1' ">true</_BuildInParallel>
     </PropertyGroup>
 
-    <MSBuild Projects="@(_ProjectsToBuild)" Targets="printItems" BuildInParallel="$(_BuildInParallel)" StopOnFirstFailure="false" Properties="UsesHelixSdk=true" />
+    <MSBuild Projects="@(_ProjectsToBuild)" Targets="Test" BuildInParallel="$(_BuildInParallel)" StopOnFirstFailure="false" Properties="UsesHelixSdk=true" />
   </Target>
 
   <!-- Choose a suitable runtime RID for Helix to restore the dotnet cli -->
