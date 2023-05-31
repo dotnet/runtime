@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { MonoMethod } from "./types/internal";
-import { Module } from "./globals";
 import { NativePointer } from "./types/emscripten";
 import {
     getU16, getI16,
-    getU32_unaligned, getI32_unaligned, getF32_unaligned, getF64_unaligned,
+    getU32_unaligned, getI32_unaligned, getF32_unaligned, getF64_unaligned, localHeapViewU8,
 } from "./memory";
 import {
     WasmOpcode, WasmSimdOpcode,
@@ -154,7 +153,10 @@ function is_backward_branch_target(
 
 const knownConstantValues = new Map<number, number>();
 
-function get_known_constant_value(localOffset: number): number | undefined {
+function get_known_constant_value(builder: WasmBuilder, localOffset: number): number | undefined {
+    if (isAddressTaken(builder, localOffset))
+        return undefined;
+
     return knownConstantValues.get(localOffset);
 }
 
@@ -338,7 +340,7 @@ export function generateWasmBody(
                 const sizeOffset = getArgU16(ip, 3),
                     srcOffset = getArgU16(ip, 2),
                     destOffset = getArgU16(ip, 1),
-                    constantSize = get_known_constant_value(sizeOffset);
+                    constantSize = get_known_constant_value(builder, sizeOffset);
 
                 if (constantSize !== 0) {
                     if (typeof (constantSize) !== "number") {
@@ -389,10 +391,6 @@ export function generateWasmBody(
                 const sizeOffset = getArgU16(ip, 3),
                     valueOffset = getArgU16(ip, 2),
                     destOffset = getArgU16(ip, 1);
-                /*
-                constantSize = get_known_constant_value(sizeOffset),
-                constantValue = get_known_constant_value(valueOffset);
-                */
 
                 // TODO: Handle constant size initblks. Not sure if they matter though
                 // FIXME: This will cause an erroneous bailout if dest and size are both 0
@@ -2342,7 +2340,6 @@ function emit_branch(
 ): boolean {
     const isSafepoint = (opcode >= MintOpcode.MINT_BRFALSE_I4_SP) &&
         (opcode <= MintOpcode.MINT_BLT_UN_I8_IMM_SP);
-    eraseInferredState();
 
     // If the branch is taken we bail out to allow the interpreter to do it.
     // So for brtrue, we want to do 'cond == 0' to produce a bailout only
@@ -3058,7 +3055,7 @@ function emit_simd(
             if (builder.options.enableSimd && getIsWasmSimdSupported()) {
                 builder.local("pLocals");
                 builder.v128_const(
-                    Module.HEAPU8.slice(<any>ip + 4, <any>ip + 4 + sizeOfV128)
+                    localHeapViewU8().slice(<any>ip + 4, <any>ip + 4 + sizeOfV128)
                 );
                 append_simd_store(builder, ip);
             } else {

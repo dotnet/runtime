@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
-using ComInterfaceGenerator.Tests;
+using System.Threading;
 using Xunit;
 
 namespace ComInterfaceGenerator.Tests
@@ -17,8 +18,7 @@ namespace ComInterfaceGenerator.Tests
             [UnmanagedObjectUnwrapperAttribute<VTableGCHandlePair<INativeObject>>]
             internal partial interface INativeObject : IUnmanagedInterfaceType
             {
-
-                private static void** s_vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(INativeObject), sizeof(void*) * 2);
+                private static void** s_vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(INativeObject), sizeof(void*) * 6);
                 static void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation
                 {
                     get
@@ -35,6 +35,22 @@ namespace ComInterfaceGenerator.Tests
                 int GetData();
                 [VirtualMethodIndex(1, ImplicitThisParameter = true)]
                 void SetData(int x);
+                [VirtualMethodIndex(2, ImplicitThisParameter = true)]
+                void ExchangeData(ref int x);
+                [VirtualMethodIndex(3, ImplicitThisParameter = true)]
+                void SumAndSetData(
+                    [MarshalUsing(CountElementName = nameof(numValues))] int[] values,
+                    int numValues,
+                    out int oldValue);
+                [VirtualMethodIndex(4, ImplicitThisParameter = true)]
+                void SumAndSetData(
+                    [MarshalUsing(CountElementName = nameof(numValues))] ref int[] values,
+                    int numValues,
+                    out int oldValue);
+                [VirtualMethodIndex(5, ImplicitThisParameter = true)]
+                void MultiplyWithData(
+                    [MarshalUsing(CountElementName = nameof(numValues))] int[] values,
+                    int numValues);
             }
 
             [NativeMarshalling(typeof(NativeObjectMarshaller))]
@@ -105,16 +121,21 @@ namespace ComInterfaceGenerator.Tests
 
             void* wrapper = VTableGCHandlePair<NativeExportsNE.ImplicitThis.INativeObject>.Allocate(impl);
 
-            Assert.Equal(startingValue, NativeExportsNE.ImplicitThis.GetNativeObjectData(wrapper));
-            NativeExportsNE.ImplicitThis.SetNativeObjectData(wrapper, newValue);
-            Assert.Equal(newValue, NativeExportsNE.ImplicitThis.GetNativeObjectData(wrapper));
-            // Verify that we actually updated the managed instance.
-            Assert.Equal(newValue, impl.GetData());
-
-            VTableGCHandlePair<NativeExportsNE.ImplicitThis.INativeObject>.Free(wrapper);
+            try
+            {
+                Assert.Equal(startingValue, NativeExportsNE.ImplicitThis.GetNativeObjectData(wrapper));
+                NativeExportsNE.ImplicitThis.SetNativeObjectData(wrapper, newValue);
+                Assert.Equal(newValue, NativeExportsNE.ImplicitThis.GetNativeObjectData(wrapper));
+                // Verify that we actually updated the managed instance.
+                Assert.Equal(newValue, impl.GetData());
+            }
+            finally
+            {
+                VTableGCHandlePair<NativeExportsNE.ImplicitThis.INativeObject>.Free(wrapper);
+            }
         }
 
-        class ManagedObjectImplementation : NativeExportsNE.ImplicitThis.INativeObject
+        sealed class ManagedObjectImplementation : NativeExportsNE.ImplicitThis.INativeObject
         {
             private int _data;
 
@@ -123,8 +144,24 @@ namespace ComInterfaceGenerator.Tests
                 _data = value;
             }
 
+            public void ExchangeData(ref int x) => x = Interlocked.Exchange(ref _data, x);
             public int GetData() => _data;
+            public void MultiplyWithData([MarshalUsing(CountElementName = "numValues")] int[] values, int numValues)
+            {
+                for (int i = 0; i < values.Length; i++)
+                {
+                    values[i] *= _data;
+                }
+            }
             public void SetData(int x) => _data = x;
+            public void SumAndSetData([MarshalUsing(CountElementName = "numValues")] int[] values, int numValues, out int oldValue)
+            {
+                int value = values.Sum();
+                oldValue = _data;
+                _data = value;
+            }
+
+            public void SumAndSetData([MarshalUsing(CountElementName = "numValues")] ref int[] values, int numValues, out int oldValue) => SumAndSetData(values, numValues, out oldValue);
         }
     }
 }

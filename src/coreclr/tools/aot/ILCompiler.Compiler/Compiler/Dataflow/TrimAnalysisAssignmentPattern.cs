@@ -22,8 +22,8 @@ namespace ILCompiler.Dataflow
 
         internal TrimAnalysisAssignmentPattern(MultiValue source, MultiValue target, MessageOrigin origin, string reason)
         {
-            Source = source.Clone();
-            Target = target.Clone();
+            Source = source.DeepCopy();
+            Target = target.DeepCopy();
             Origin = origin;
             Reason = reason;
         }

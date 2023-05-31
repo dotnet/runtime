@@ -89,6 +89,7 @@ private:
     void ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
     void ContainCheckNeg(GenTreeOp* neg);
     void TryLowerCselToCinc(GenTreeOp* select, GenTree* cond);
+    void TryLowerCselToCinvOrCneg(GenTreeOp* select, GenTree* cond);
 #endif
     void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTree* node);
@@ -356,8 +357,8 @@ private:
     GenTree* LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
 #if defined(TARGET_XARCH)
     void LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node);
-    void LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node);
-    void LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node);
+    GenTree* LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node);
+    GenTree* LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node);
     GenTree* TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode);

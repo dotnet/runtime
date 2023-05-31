@@ -11,63 +11,132 @@
 
 #include <string.h>
 
-bool RhConfig::ReadConfigValue(_In_z_ const char *name, uint64_t* pValue, bool decimal)
+#define DOTNET_PREFIX _T("DOTNET_")
+#define DOTNET_PREFIX_LEN STRING_LENGTH(DOTNET_PREFIX)
+
+namespace
 {
+    void GetEnvironmentConfigName(const char* name, TCHAR* buffer, uint32_t bufferSize)
+    {
+        assert(DOTNET_PREFIX_LEN + strlen(name) < bufferSize);
+        memcpy(buffer, DOTNET_PREFIX, (DOTNET_PREFIX_LEN) * sizeof(TCHAR));
+    #ifdef TARGET_WINDOWS
+        size_t nameLen = strlen(name);
+        for (size_t i = 0; i < nameLen; i++)
+        {
+            buffer[DOTNET_PREFIX_LEN + i] = name[i];
+        }
+        buffer[DOTNET_PREFIX_LEN + nameLen] = '\0';
+    #else
+        strcpy(buffer + DOTNET_PREFIX_LEN, name);
+    #endif
+    }
+}
+
+bool RhConfig::Environment::TryGetBooleanValue(const char* name, bool* value)
+{
+    uint64_t intValue;
+    if (!TryGetIntegerValue(name, &intValue))
+        return false;
+
+    *value = intValue != 0;
+    return true;
+}
+
+bool RhConfig::Environment::TryGetIntegerValue(const char* name, uint64_t* value, bool decimal)
+{
+    TCHAR variableName[64];
+    GetEnvironmentConfigName(name, variableName, ARRAY_SIZE(variableName));
+
     TCHAR buffer[CONFIG_VAL_MAXLEN + 1]; // hex digits plus a nul terminator.
     const uint32_t cchBuffer = ARRAY_SIZE(buffer);
+    uint32_t cchResult = PalGetEnvironmentVariable(variableName, buffer, cchBuffer);
+    if (cchResult == 0 || cchResult >= cchBuffer)
+        return false;
 
-    uint32_t cchResult = 0;
-    TCHAR variableName[64] = _T("DOTNET_");
-    assert(ARRAY_SIZE("DOTNET_") - 1 + strlen(name) < ARRAY_SIZE(variableName));
-#ifdef TARGET_WINDOWS
-    for (size_t i = 0; i < strlen(name); i++)
+    // Environment variable was set. Convert it to an integer.
+    uint64_t uiResult = 0;
+    for (uint32_t i = 0; i < cchResult; i++)
     {
-        variableName[ARRAY_SIZE("DOTNET_") - 1 + i] = name[i];
-    }
-#else
-    strcat(variableName, name);
-#endif
+        TCHAR ch = buffer[i];
 
-    cchResult = PalGetEnvironmentVariable(variableName, buffer, cchBuffer);
-    if (cchResult != 0 && cchResult < cchBuffer)
-    {
-        // Environment variable was set. Convert it to an integer.
-        uint64_t uiResult = 0;
-        for (uint32_t i = 0; i < cchResult; i++)
+        if (decimal)
         {
-            TCHAR ch = buffer[i];
+            uiResult *= 10;
 
-            if (decimal)
-            {
-                uiResult *= 10;
-
-                if ((ch >= '0') && (ch <= '9'))
-                    uiResult += ch - '0';
-                else
-                    return false; // parse error
-            }
+            if ((ch >= '0') && (ch <= '9'))
+                uiResult += ch - '0';
             else
-            {
-                uiResult *= 16;
-
-                if ((ch >= '0') && (ch <= '9'))
-                    uiResult += ch - '0';
-                else if ((ch >= 'a') && (ch <= 'f'))
-                    uiResult += (ch - 'a') + 10;
-                else if ((ch >= 'A') && (ch <= 'F'))
-                    uiResult += (ch - 'A') + 10;
-                else
-                    return false; // parse error
-            }
+                return false; // parse error
         }
+        else
+        {
+            uiResult *= 16;
 
-        *pValue = uiResult;
+            if ((ch >= '0') && (ch <= '9'))
+                uiResult += ch - '0';
+            else if ((ch >= 'a') && (ch <= 'f'))
+                uiResult += (ch - 'a') + 10;
+            else if ((ch >= 'A') && (ch <= 'F'))
+                uiResult += (ch - 'A') + 10;
+            else
+                return false; // parse error
+        }
+    }
+
+    *value = uiResult;
+    return true;
+}
+
+bool RhConfig::Environment::TryGetStringValue(const char* name, char** value)
+{
+    TCHAR variableName[64];
+    GetEnvironmentConfigName(name, variableName, ARRAY_SIZE(variableName));
+
+    TCHAR buffer[260];
+    uint32_t bufferLen = ARRAY_SIZE(buffer);
+    uint32_t actualLen = PalGetEnvironmentVariable(variableName, buffer, bufferLen);
+    if (actualLen == 0)
+        return false;
+
+    if (actualLen < bufferLen)
+    {
+        *value = PalCopyTCharAsChar(buffer);
         return true;
     }
 
+    // Expand the buffer to get the value
+    bufferLen = actualLen + 1;
+    NewArrayHolder<TCHAR> newBuffer {new (nothrow) TCHAR[bufferLen]};
+    actualLen = PalGetEnvironmentVariable(variableName, newBuffer, bufferLen);
+    if (actualLen >= bufferLen)
+        return false;
+
+#ifdef TARGET_WINDOWS
+    *value = PalCopyTCharAsChar(newBuffer);
+#else
+    *value = newBuffer.Extract();
+#endif
+    return true;
+}
+
+struct CompilerEmbeddedSettingsBlob
+{
+    uint32_t Size;
+    char Data[1];
+};
+
+extern "C" CompilerEmbeddedSettingsBlob g_compilerEmbeddedSettingsBlob;
+extern "C" CompilerEmbeddedSettingsBlob g_compilerEmbeddedKnobsBlob;
+
+bool RhConfig::ReadConfigValue(_In_z_ const char *name, uint64_t* pValue, bool decimal)
+{
+    if (Environment::TryGetIntegerValue(name, pValue, decimal))
+        return true;
+
     // Check the embedded configuration
     const char *embeddedValue = nullptr;
-    if (GetEmbeddedVariable(name, &embeddedValue))
+    if (GetEmbeddedVariable(&g_embeddedSettings, &g_compilerEmbeddedSettingsBlob, name, true, &embeddedValue))
     {
         *pValue = strtoull(embeddedValue, NULL, decimal ? 10 : 16);
         return true;
@@ -76,26 +145,51 @@ bool RhConfig::ReadConfigValue(_In_z_ const char *name, uint64_t* pValue, bool d
     return false;
 }
 
-bool RhConfig::GetEmbeddedVariable(_In_z_ const char* configName, _Out_ const char** configValue)
+bool RhConfig::ReadKnobUInt64Value(_In_z_ const char *name, uint64_t* pValue)
+{
+    const char *embeddedValue = nullptr;
+    if (GetEmbeddedVariable(&g_embeddedKnobs, &g_compilerEmbeddedKnobsBlob, name, false, &embeddedValue))
+    {
+        *pValue = strtoull(embeddedValue, NULL, 10);
+        return true;
+    }
+
+    return false;
+}
+
+bool RhConfig::ReadKnobBooleanValue(_In_z_ const char *name, bool* pValue)
+{
+    const char *embeddedValue = nullptr;
+    if (GetEmbeddedVariable(&g_embeddedKnobs, &g_compilerEmbeddedKnobsBlob, name, false, &embeddedValue))
+    {
+        *pValue = strcmp(embeddedValue, "true") == 0;
+        return true;
+    }
+
+    return false;
+}
+
+bool RhConfig::GetEmbeddedVariable(void *volatile * embeddedSettings, void* compilerEmbeddedSettingsBlob, _In_z_ const char* configName, bool caseSensitive, _Out_ const char** configValue)
 {
     // Read the config if we haven't yet
-    if (g_embeddedSettings == NULL)
+    if (*embeddedSettings == NULL)
     {
-        ReadEmbeddedSettings();
+        ReadEmbeddedSettings(embeddedSettings, compilerEmbeddedSettingsBlob);
     }
 
     // Config wasn't read or reading failed
-    if (g_embeddedSettings == CONFIG_INI_NOT_AVAIL)
+    if (*embeddedSettings == CONFIG_INI_NOT_AVAIL)
     {
         return false;
     }
 
-    const ConfigPair* configPairs = (const ConfigPair*)g_embeddedSettings;
+    const ConfigPair* configPairs = (const ConfigPair*)*embeddedSettings;
 
-    // Find the first name which matches (case insensitive to be compat with environment variable counterpart)
-    for (int iSettings = 0; iSettings < RCV_Count; iSettings++)
+    // Find the first name which matches
+    for (uint32_t iSettings = 0; iSettings < ((CompilerEmbeddedSettingsBlob*)compilerEmbeddedSettingsBlob)->Size; iSettings++)
     {
-        if (_stricmp(configName, configPairs[iSettings].Key) == 0)
+        if ((caseSensitive && strcmp(configName, configPairs[iSettings].Key) == 0)
+            || (!caseSensitive && _stricmp(configName, configPairs[iSettings].Key) == 0))
         {
             *configValue = configPairs[iSettings].Value;
             return true;
@@ -106,32 +200,27 @@ bool RhConfig::GetEmbeddedVariable(_In_z_ const char* configName, _Out_ const ch
     return false;
 }
 
-struct CompilerEmbeddedSettingsBlob
+void RhConfig::ReadEmbeddedSettings(void *volatile * embeddedSettings, void* compilerEmbeddedSettingsBlob)
 {
-    uint32_t Size;
-    char Data[1];
-};
-
-extern "C" CompilerEmbeddedSettingsBlob g_compilerEmbeddedSettingsBlob;
-
-void RhConfig::ReadEmbeddedSettings()
-{
-    if (g_embeddedSettings == NULL)
+    if (*embeddedSettings == NULL)
     {
-        //if reading the file contents failed set g_embeddedSettings to CONFIG_INI_NOT_AVAIL
-        if (g_compilerEmbeddedSettingsBlob.Size == 0)
+        uint32_t size = ((CompilerEmbeddedSettingsBlob*)compilerEmbeddedSettingsBlob)->Size;
+        char* data = ((CompilerEmbeddedSettingsBlob*)compilerEmbeddedSettingsBlob)->Data;
+
+        //if reading the file contents failed set embeddedSettings to CONFIG_INI_NOT_AVAIL
+        if (size == 0)
         {
             //only set if another thread hasn't initialized the buffer yet, otherwise ignore and let the first setter win
-            PalInterlockedCompareExchangePointer(&g_embeddedSettings, CONFIG_INI_NOT_AVAIL, NULL);
+            PalInterlockedCompareExchangePointer(embeddedSettings, CONFIG_INI_NOT_AVAIL, NULL);
 
             return;
         }
 
-        ConfigPair* iniBuff = new (nothrow) ConfigPair[RCV_Count];
+        ConfigPair* iniBuff = new (nothrow) ConfigPair[size];
         if (iniBuff == NULL)
         {
             //only set if another thread hasn't initialized the buffer yet, otherwise ignore and let the first setter win
-            PalInterlockedCompareExchangePointer(&g_embeddedSettings, CONFIG_INI_NOT_AVAIL, NULL);
+            PalInterlockedCompareExchangePointer(embeddedSettings, CONFIG_INI_NOT_AVAIL, NULL);
 
             return;
         }
@@ -141,12 +230,12 @@ void RhConfig::ReadEmbeddedSettings()
         char* currLine;
 
         //while we haven't reached the max number of config pairs, or the end of the file, read the next line
-        while (iIniBuff < RCV_Count && iBuff < g_compilerEmbeddedSettingsBlob.Size)
+        while (iBuff < size)
         {
-            currLine = &g_compilerEmbeddedSettingsBlob.Data[iBuff];
+            currLine = &data[iBuff];
 
             //find the end of the line
-            while ((g_compilerEmbeddedSettingsBlob.Data[iBuff] != '\0') && (iBuff < g_compilerEmbeddedSettingsBlob.Size))
+            while ((data[iBuff] != '\0') && (iBuff < size))
                 iBuff++;
 
             //parse the line
@@ -160,17 +249,9 @@ void RhConfig::ReadEmbeddedSettings()
             iBuff++;
         }
 
-        //initialize the remaining config pairs to "\0"
-        while (iIniBuff < RCV_Count)
-        {
-            iniBuff[iIniBuff].Key[0] = '\0';
-            iniBuff[iIniBuff].Value[0] = '\0';
-            iIniBuff++;
-        }
-
         //if another thread initialized first let the first setter win
         //delete the iniBuff to avoid leaking memory
-        if (PalInterlockedCompareExchangePointer(&g_embeddedSettings, iniBuff, NULL) != NULL)
+        if (PalInterlockedCompareExchangePointer(embeddedSettings, iniBuff, NULL) != NULL)
         {
             delete[] iniBuff;
         }

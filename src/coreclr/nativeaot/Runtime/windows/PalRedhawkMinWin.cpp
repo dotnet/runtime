@@ -24,11 +24,6 @@
 
 #define PalRaiseFailFastException RaiseFailFastException
 
-uint32_t PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t arg3, EVENT_DATA_DESCRIPTOR * arg4)
-{
-    return EventWrite(arg1, arg2, arg3, arg4);
-}
-
 #include "gcenv.h"
 #include "gcenv.ee.h"
 #include "gcconfig.h"
@@ -227,7 +222,7 @@ extern "C" uint64_t PalQueryPerformanceFrequency()
     return GCToOSInterface::QueryPerformanceFrequency();
 }
 
-extern "C" uint64_t PalGetCurrentThreadIdForLogging()
+extern "C" uint64_t PalGetCurrentOSThreadId()
 {
     return GetCurrentThreadId();
 }
@@ -634,6 +629,21 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalEventEnabled(REGHANDLE regHandle, _In_ 
     return !!EventEnabled(regHandle, eventDescriptor);
 }
 
+REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalEventRegister(const GUID * arg1, void * arg2, void * arg3, REGHANDLE * arg4)
+{
+    return EventRegister(arg1, reinterpret_cast<PENABLECALLBACK>(arg2), arg3, arg4);
+}
+
+REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalEventUnregister(REGHANDLE arg1)
+{
+    return EventUnregister(arg1);
+}
+
+REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t arg3, EVENT_DATA_DESCRIPTOR * arg4)
+{
+    return EventWrite(arg1, arg2, arg3, arg4);
+}
+
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalTerminateCurrentProcess(uint32_t arg2)
 {
     TerminateProcess(GetCurrentProcess(), arg2);
@@ -717,6 +727,18 @@ REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
     // message, so there is not much that can be done here.
     DWORD dwBytesWritten;
     WriteFile(GetStdHandle(STD_ERROR_HANDLE), message, (DWORD)strlen(message), &dwBytesWritten, NULL);
+}
+
+REDHAWK_PALEXPORT char* PalCopyTCharAsChar(const TCHAR* toCopy)
+{
+    int len = ::WideCharToMultiByte(CP_UTF8, 0, toCopy, -1, nullptr, 0, nullptr, nullptr);
+    if (len == 0)
+        return nullptr;
+
+    char* converted = new (nothrow) char[len];
+    int written = ::WideCharToMultiByte(CP_UTF8, 0, toCopy, -1, converted, len, nullptr, nullptr);
+    assert(len == written);
+    return converted;
 }
 
 REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, uintptr_t size, uint32_t allocationType, uint32_t protect)
