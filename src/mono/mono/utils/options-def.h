@@ -112,6 +112,8 @@ DEFINE_BOOL(jiterpreter_eliminate_null_checks, "jiterpreter-eliminate-null-check
 DEFINE_BOOL(jiterpreter_backward_branches_enabled, "jiterpreter-backward-branches-enabled", TRUE, "Enable performing backward branches without exiting traces")
 // Attempt to use WASM v128 opcodes to implement SIMD interpreter opcodes
 DEFINE_BOOL(jiterpreter_enable_simd, "jiterpreter-simd-enabled", TRUE, "Attempt to use WebAssembly SIMD support")
+// Since the zero page is unallocated, loading array/string/span lengths from null ptrs will yield zero
+DEFINE_BOOL(jiterpreter_zero_page_optimization, "jiterpreter-zero-page-optimization", TRUE, "Exploit the zero page being unallocated to optimize out null checks")
 // When compiling a jit_call wrapper, bypass sharedvt wrappers if possible by inlining their
 //  logic into the compiled wrapper and calling the target AOTed function with native call convention
 DEFINE_BOOL(jiterpreter_direct_jit_call, "jiterpreter-direct-jit-calls", TRUE, "Bypass gsharedvt wrappers when compiling JIT call wrappers")

@@ -47,7 +47,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 ADSearcher adSearcher = new ADSearcher(de,
                                                       "(&(objectClass=subnet)(objectCategory=subnet)(name=" + Utils.GetEscapedFilterValue(subnetName) + "))",
-                                                      new string[] { "distinguishedName" },
+                                                      ActiveDirectorySite.s_distinguishedName,
                                                       SearchScope.OneLevel,
                                                       false, /* don't need paged search */
                                                       false /* don't need to cache result */);

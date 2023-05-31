@@ -7,7 +7,7 @@ import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { _release_temp_frame } from "../memory";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";
 import { find_entry_point } from "../run";
-import { conv_string_root, js_string_to_mono_string_root } from "../strings";
+import { monoStringToString, stringToMonoStringRoot } from "../strings";
 import { JSHandle, MonoStringRef, MonoObjectRef, MonoArray, MonoString, MonoObject, is_nullish, WasmRoot } from "../types/internal";
 import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { mono_array_root_to_js_array, unbox_mono_obj_root } from "./cs-to-js";
@@ -99,7 +99,7 @@ export function mono_wasm_invoke_js_with_args_ref(js_handle: JSHandle, method_na
         nameRoot = mono_wasm_new_external_root<MonoString>(method_name),
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
-        const js_name = conv_string_root(nameRoot);
+        const js_name = monoStringToString(nameRoot);
         if (!js_name || (typeof (js_name) !== "string")) {
             wrap_error_root(is_exception, "ERR12: Invalid method name object @" + nameRoot.value, resultRoot);
             return;
@@ -136,7 +136,7 @@ export function mono_wasm_get_object_property_ref(js_handle: JSHandle, property_
     const nameRoot = mono_wasm_new_external_root<MonoString>(property_name),
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
-        const js_name = conv_string_root(nameRoot);
+        const js_name = monoStringToString(nameRoot);
         if (!js_name) {
             wrap_error_root(is_exception, "Invalid property name object '" + nameRoot.value + "'", resultRoot);
             return;
@@ -166,7 +166,7 @@ export function mono_wasm_set_object_property_ref(js_handle: JSHandle, property_
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
 
-        const property = conv_string_root(nameRoot);
+        const property = monoStringToString(nameRoot);
         if (!property) {
             wrap_error_root(is_exception, "Invalid property name object '" + property_name + "'", resultRoot);
             return;
@@ -255,7 +255,7 @@ export function mono_wasm_get_global_object_ref(global_name: MonoStringRef, is_e
     const nameRoot = mono_wasm_new_external_root<MonoString>(global_name),
         resultRoot = mono_wasm_new_external_root(result_address);
     try {
-        const js_name = conv_string_root(nameRoot);
+        const js_name = monoStringToString(nameRoot);
 
         let globalObj;
 
@@ -301,7 +301,7 @@ export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo:
     } catch (ex: any) {
         const exceptionJsString = ex.message + "\n" + ex.stack;
         const exceptionRoot = mono_wasm_new_root<MonoString>();
-        js_string_to_mono_string_root(exceptionJsString, exceptionRoot);
+        stringToMonoStringRoot(exceptionJsString, exceptionRoot);
         exceptionRoot.copy_to_address(<any>exceptionMessage);
         exceptionRoot.release();
         return 0;
