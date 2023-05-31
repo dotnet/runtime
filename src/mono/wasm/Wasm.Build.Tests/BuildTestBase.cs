@@ -728,16 +728,16 @@ namespace Wasm.Build.Tests
                         // predefined ICU name can be identical with the icu files from runtime pack
                         switch (predefinedIcudt)
                         {
-                            case "icudt.dat":
+                            case "_framework/icudt.dat":
                                 expectFULL = true;
                                 break;
-                            case "icudt_EFIGS.dat":
+                            case "_framework/icudt_EFIGS.dat":
                                 expectEFIGS = true;
                                 break;
-                            case "icudt_CJK.dat":
+                            case "_framework/icudt_CJK.dat":
                                 expectCJK = true;
                                 break;
-                            case "icudt_no_CJK.dat":
+                            case "_framework/icudt_no_CJK.dat":
                                 expectNOCJK = true;
                                 break;
                         }
@@ -749,29 +749,29 @@ namespace Wasm.Build.Tests
                         expectNOCJK = true;
                         break;
                 }
-                AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: expectFULL);
-                AssertFilesExist(bundleDir, new[] { "icudt_EFIGS.dat" }, expectToExist: expectEFIGS);
-                AssertFilesExist(bundleDir, new[] { "icudt_CJK.dat" }, expectToExist: expectCJK);
-                AssertFilesExist(bundleDir, new[] { "icudt_no_CJK.dat" }, expectToExist: expectNOCJK);
+                AssertFilesExist(bundleDir, new[] { "_framework/icudt.dat" }, expectToExist: expectFULL);
+                AssertFilesExist(bundleDir, new[] { "_framework/icudt_EFIGS.dat" }, expectToExist: expectEFIGS);
+                AssertFilesExist(bundleDir, new[] { "_framework/icudt_CJK.dat" }, expectToExist: expectCJK);
+                AssertFilesExist(bundleDir, new[] { "_framework/icudt_no_CJK.dat" }, expectToExist: expectNOCJK);
             }
         }
 
         protected static void AssertDotNetWasmJs(string bundleDir, bool fromRuntimePack, string targetFramework)
         {
             AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.wasm"),
-                       Path.Combine(bundleDir, "dotnet.native.wasm"),
+                       Path.Combine(bundleDir, "_framework/dotnet.native.wasm"),
                        "Expected dotnet.native.wasm to be same as the runtime pack",
                        same: fromRuntimePack);
 
             AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.js"),
-                       Path.Combine(bundleDir, "dotnet.native.js"),
+                       Path.Combine(bundleDir, "_framework/dotnet.native.js"),
                        "Expected dotnet.native.js to be same as the runtime pack",
                        same: fromRuntimePack);
         }
 
         protected static void AssertDotNetJsSymbols(string bundleDir, bool fromRuntimePack, string targetFramework)
             => AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.js.symbols"),
-                            Path.Combine(bundleDir, "dotnet.native.js.symbols"),
+                            Path.Combine(bundleDir, "_framework/dotnet.native.js.symbols"),
                             same: fromRuntimePack);
 
         protected static void AssertFilesDontExist(string dir, string[] filenames, string? label = null)
