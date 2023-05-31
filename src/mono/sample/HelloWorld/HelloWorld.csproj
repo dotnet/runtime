@@ -46,14 +46,9 @@
       <TrimIndividualMethods>true</TrimIndividualMethods>
     </PropertyGroup>
 
-    <ItemGroup>
-      <MethodTokenFiles Include="$(MethodTokenFilePath)/*.txt" />
-    </ItemGroup>
-
     <ILStrip
       TrimIndividualMethods="$(TrimIndividualMethods)"
-      MethodTokenFiles="@(MethodTokenFiles)"
-      AssemblyPath="$(PublishDir)">
+      MethodTokenFiles="@(BundleAssemblies->'%(MethodTokenFile)')">
     </ILStrip>
   </Target>
 </Project>

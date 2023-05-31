@@ -67,6 +67,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     ///   - LlvmObjectFile (if using LLVM)
     ///   - LlvmBitcodeFile (if using LLVM-only)
     ///   - ExportsFile (used in LibraryMode only)
+    ///   - MethodTokenFile (when using CollectCompiledMethods=true)
     /// </summary>
     [Output]
     public ITaskItem[]? CompiledAssemblies { get; set; }
@@ -738,6 +739,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 string outputFileName = assemblyName + "_compiled_methods.txt";
                 string outputFilePath = Path.Combine(CompiledMethodsOutputPath, outputFileName);
                 aotArgs.Add($"compiled-methods-outfile={outputFilePath}");
+                aotAssembly.SetMetadata("MethodTokenFile", outputFilePath);
             }
         }
 
