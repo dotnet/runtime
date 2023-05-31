@@ -14,7 +14,7 @@ public unsafe class StartupHookTests
 
     private static Type s_startupHookProvider = typeof(object).Assembly.GetType("System.StartupHookProvider", throwOnError: true);
 
-    private static delegate*<void> ProcessStartupHooks = (delegate*<void>)s_startupHookProvider.GetMethod("ProcessStartupHooks", BindingFlags.NonPublic | BindingFlags.Static).MethodHandle.GetFunctionPointer();
+    private static delegate*<string, void> ProcessStartupHooks = (delegate*<string, void>)s_startupHookProvider.GetMethod("ProcessStartupHooks", BindingFlags.NonPublic | BindingFlags.Static).MethodHandle.GetFunctionPointer();
 
     private static bool IsUnsupportedPlatform =
         // these platforms need special setup for startup hooks
@@ -38,7 +38,7 @@ public unsafe class StartupHookTests
         hook.CallCount = 0;
 
         Assert.Equal(0, hook.CallCount);
-        ProcessStartupHooks();
+        ProcessStartupHooks(string.Empty);
         Assert.Equal(1, hook.CallCount);
     }
 
@@ -54,7 +54,7 @@ public unsafe class StartupHookTests
         hook.CallCount = 0;
 
         Assert.Equal(0, hook.CallCount);
-        ProcessStartupHooks();
+        ProcessStartupHooks(string.Empty);
         Assert.Equal(1, hook.CallCount);
     }
 
@@ -73,7 +73,7 @@ public unsafe class StartupHookTests
 
         Assert.Equal(0, hook1.CallCount);
         Assert.Equal(0, hook2.CallCount);
-        ProcessStartupHooks();
+        ProcessStartupHooks(string.Empty);
         Assert.Equal(1, hook1.CallCount);
         Assert.Equal(1, hook2.CallCount);
     }
@@ -89,7 +89,7 @@ public unsafe class StartupHookTests
         AppContext.SetData(StartupHookKey, $"{Hook.Basic.Value}{Path.PathSeparator}{hook}");
         Hook.Basic.CallCount = 0;
 
-        var ex = Assert.Throws<ArgumentException>(() => ProcessStartupHooks());
+        var ex = Assert.Throws<ArgumentException>(() => ProcessStartupHooks(string.Empty));
         Assert.Equal($"Startup hook assembly '{hook}' failed to load. See inner exception for details.", ex.Message);
         Assert.IsType<FileNotFoundException>(ex.InnerException);
 
@@ -109,7 +109,7 @@ public unsafe class StartupHookTests
             AppContext.SetData(StartupHookKey, $"{Hook.Basic.Value}{Path.PathSeparator}{hook}");
             Hook.Basic.CallCount = 0;
 
-            var ex = Assert.Throws<ArgumentException>(() => ProcessStartupHooks());
+            var ex = Assert.Throws<ArgumentException>(() => ProcessStartupHooks(string.Empty));
             Assert.Equal($"Startup hook assembly '{hook}' failed to load. See inner exception for details.", ex.Message);
             var innerEx = ex.InnerException;
             Assert.IsType<BadImageFormatException>(ex.InnerException);
@@ -142,7 +142,7 @@ public unsafe class StartupHookTests
         AppContext.SetData(StartupHookKey, $"{Hook.Basic.Value}{Path.PathSeparator}{name}");
         Hook.Basic.CallCount = 0;
 
-        var ex = Assert.Throws<ArgumentException>(() => ProcessStartupHooks());
+        var ex = Assert.Throws<ArgumentException>(() => ProcessStartupHooks(string.Empty));
         Assert.StartsWith($"The startup hook simple assembly name '{name}' is invalid.", ex.Message);
         if (failsSimpleNameCheck)
         {
@@ -167,7 +167,7 @@ public unsafe class StartupHookTests
         var asm = typeof(StartupHookTests).Assembly;
         string hook = asm.Location;
         AppContext.SetData(StartupHookKey, hook);
-        var ex = Assert.Throws<TypeLoadException>(() => ProcessStartupHooks());
+        var ex = Assert.Throws<TypeLoadException>(() => ProcessStartupHooks(string.Empty));
         Assert.StartsWith($"Could not load type 'StartupHook' from assembly '{asm.GetName().Name}", ex.Message);
     }
 
@@ -177,7 +177,7 @@ public unsafe class StartupHookTests
         Console.WriteLine($"Running {nameof(MissingInitializeMethod)}...");
 
         AppContext.SetData(StartupHookKey, Hook.NoInitializeMethod.Value);
-        var ex = Assert.Throws<MissingMethodException>(() => ProcessStartupHooks());
+        var ex = Assert.Throws<MissingMethodException>(() => ProcessStartupHooks(string.Empty));
         Assert.Equal($"Method 'StartupHook.Initialize' not found.", ex.Message);
     }
 
@@ -196,7 +196,7 @@ public unsafe class StartupHookTests
         Console.WriteLine($"Running {nameof(IncorrectInitializeSignature)}({hook.Name})...");
 
         AppContext.SetData(StartupHookKey, hook.Value);
-        var ex = Assert.Throws<ArgumentException>(() => ProcessStartupHooks());
+        var ex = Assert.Throws<ArgumentException>(() => ProcessStartupHooks(string.Empty));
         Assert.Equal($"The signature of the startup hook 'StartupHook.Initialize' in assembly '{hook.Value}' was invalid. It must be 'public static void Initialize()'.", ex.Message);
     }
 }
