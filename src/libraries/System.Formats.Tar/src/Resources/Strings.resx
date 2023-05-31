@@ -244,7 +244,7 @@
     <value>A metadata entry of type '{0}' was unexpectedly found after a metadata entry of type '{1}'.</value>
   </data>
   <data name="TarUnsupportedFile" xml:space="preserve">
-    <value>The file '{0}' is a type of file not supported for tar archiving.</value>
+    <value>The file type of '{0}' is not supported for tar archiving.</value>
   </data>
   <data name="UnauthorizedAccess_IODenied_NoPathName" xml:space="preserve">
     <value>Access to the path is denied.</value>

@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_DblNeg
 {
     const int Pass = 100;
@@ -13,7 +14,8 @@ public class BringUpTest_DblNeg
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static double DblNeg(double x) { return -x; }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         double y = DblNeg(-1f);
         Console.WriteLine(y);

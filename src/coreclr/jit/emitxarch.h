@@ -99,6 +99,7 @@ static bool IsAvx512OrPriorInstruction(instruction ins);
 static bool IsAVXOnlyInstruction(instruction ins);
 static bool IsAvx512OnlyInstruction(instruction ins);
 static bool IsFMAInstruction(instruction ins);
+static bool IsPermuteVar2xInstruction(instruction ins);
 static bool IsAVXVNNIInstruction(instruction ins);
 static bool IsBMIInstruction(instruction ins);
 static bool IsKInstruction(instruction ins);
@@ -654,7 +655,10 @@ void emitIns_I_AI(instruction ins, emitAttr attr, int val, ssize_t disp);
 
 void emitIns_R_AR(instruction ins, emitAttr attr, regNumber reg, regNumber base, int disp);
 
-void emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, ssize_t disp);
+void emitIns_R_AI(instruction ins,
+                  emitAttr    attr,
+                  regNumber   ireg,
+                  ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, cnsval_ssize_t disp);
 
@@ -710,8 +714,6 @@ void emitIns_SIMD_R_R_S_I(
 #ifdef FEATURE_HW_INTRINSICS
 void emitIns_SIMD_R_R_R_A(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, GenTreeIndir* indir);
-void emitIns_SIMD_R_R_R_AR(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, regNumber base);
 void emitIns_SIMD_R_R_R_C(instruction          ins,
                           emitAttr             attr,
                           regNumber            targetReg,

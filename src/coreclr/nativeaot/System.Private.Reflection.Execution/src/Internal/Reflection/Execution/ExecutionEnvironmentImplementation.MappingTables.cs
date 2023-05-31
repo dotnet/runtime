@@ -159,10 +159,9 @@ namespace Internal.Reflection.Execution
         //
         // This is not equivalent to calling TryGetMultiDimTypeElementType() with a rank of 1!
         //
-        public sealed override unsafe bool TryGetArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, out RuntimeTypeHandle elementTypeHandle)
+        public sealed override RuntimeTypeHandle GetArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle)
         {
-            elementTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(arrayTypeHandle);
-            return true;
+            return RuntimeAugments.GetRelatedParameterTypeHandle(arrayTypeHandle);
         }
 
 
@@ -210,10 +209,9 @@ namespace Internal.Reflection.Execution
         // Preconditions:
         //      pointerTypeHandle is a valid RuntimeTypeHandle of type pointer.
         //
-        public sealed override unsafe bool TryGetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle, out RuntimeTypeHandle targetTypeHandle)
+        public sealed override RuntimeTypeHandle GetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle)
         {
-            targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(pointerTypeHandle);
-            return true;
+            return RuntimeAugments.GetRelatedParameterTypeHandle(pointerTypeHandle);
         }
 
         public override bool TryGetFunctionPointerTypeForComponents(RuntimeTypeHandle returnTypeHandle, RuntimeTypeHandle[] parameterHandles, bool isUnmanaged, out RuntimeTypeHandle functionPointerTypeHandle)
@@ -253,10 +251,9 @@ namespace Internal.Reflection.Execution
         // Preconditions:
         //      byRefTypeHandle is a valid RuntimeTypeHandle of a byref.
         //
-        public sealed override unsafe bool TryGetByRefTypeTargetType(RuntimeTypeHandle byRefTypeHandle, out RuntimeTypeHandle targetTypeHandle)
+        public sealed override unsafe RuntimeTypeHandle GetByRefTypeTargetType(RuntimeTypeHandle byRefTypeHandle)
         {
-            targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(byRefTypeHandle);
-            return true;
+            return RuntimeAugments.GetRelatedParameterTypeHandle(byRefTypeHandle);
         }
 
         //
@@ -746,7 +743,7 @@ namespace Internal.Reflection.Execution
                     continue;
 
                 entryParser.SkipInteger(); // entryMethodHandleOrNameAndSigRaw
-                entryParser.SkipInteger(); // entryDeclaringTypeRaw
+                RuntimeTypeHandle declaringTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
 
                 IntPtr entryMethodEntrypoint = externalReferences.GetFunctionPointerFromIndex(entryParser.GetUnsigned());
                 functionPointers.Add(new FunctionPointerOffsetPair(entryMethodEntrypoint, parserOffset));
@@ -755,17 +752,21 @@ namespace Internal.Reflection.Execution
                 // stack trace resolution - the reverse LdFtn lookup internally used by the reflection
                 // method resolution will work off an IP address on the stack which is an address
                 // within the actual method, not the stub.
-                IntPtr targetAddress = RuntimeAugments.GetCodeTarget(entryMethodEntrypoint);
-                if (targetAddress != IntPtr.Zero && targetAddress != entryMethodEntrypoint)
+                if (RuntimeAugments.IsValueType(declaringTypeHandle))
                 {
-                    functionPointers.Add(new FunctionPointerOffsetPair(targetAddress, parserOffset));
-                }
-                IntPtr targetAddress2;
-                if (TypeLoaderEnvironment.TryGetTargetOfUnboxingAndInstantiatingStub(entryMethodEntrypoint, out targetAddress2) &&
-                    targetAddress2 != entryMethodEntrypoint &&
-                    targetAddress2 != targetAddress)
-                {
-                    functionPointers.Add(new FunctionPointerOffsetPair(targetAddress2, parserOffset));
+                    IntPtr targetAddress = RuntimeAugments.GetCodeTarget(entryMethodEntrypoint);
+                    if (targetAddress != IntPtr.Zero && targetAddress != entryMethodEntrypoint)
+                    {
+                        functionPointers.Add(new FunctionPointerOffsetPair(targetAddress, parserOffset));
+                    }
+
+                    IntPtr targetAddress2;
+                    if (TypeLoaderEnvironment.TryGetTargetOfUnboxingAndInstantiatingStub(entryMethodEntrypoint, out targetAddress2) &&
+                        targetAddress2 != entryMethodEntrypoint &&
+                        targetAddress2 != targetAddress)
+                    {
+                        functionPointers.Add(new FunctionPointerOffsetPair(targetAddress2, parserOffset));
+                    }
                 }
             }
 

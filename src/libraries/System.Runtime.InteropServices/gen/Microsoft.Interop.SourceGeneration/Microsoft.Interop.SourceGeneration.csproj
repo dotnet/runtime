@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <Compile Include="$(CommonPath)Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
+    <Compile Include="$(CommonPath)Roslyn\Hash.cs" Link="Common\Roslyn\Hash.cs" />
     <Compile Include="../../tests/Common/MarshalDirection.cs" />
   </ItemGroup>
 

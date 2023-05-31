@@ -276,7 +276,7 @@
       <BuildWasmAppsJobsList>$(RepositoryEngineeringDir)testing\scenarios\BuildWasmAppsJobsList.txt</BuildWasmAppsJobsList>
       <WorkItemPrefix Condition="'$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
       <WorkItemPrefix Condition="'$(TestUsingWorkloads)' != 'true'">NoWorkload-</WorkItemPrefix>
-      <WorkItemPrefix Condition="'$(TestUsingWebcil)' == 'true'">$(WorkItemPrefix)Webcil-</WorkItemPrefix>
+      <WorkItemPrefix Condition="'$(TestUsingWebcil)' == 'false'">$(WorkItemPrefix)NoWebcil-</WorkItemPrefix>
     </PropertyGroup>
 
     <ItemGroup>

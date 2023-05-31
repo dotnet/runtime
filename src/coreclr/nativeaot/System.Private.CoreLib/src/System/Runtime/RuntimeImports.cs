@@ -201,6 +201,26 @@ namespace System.Runtime
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static unsafe partial void RhEnumerateConfigurationValues(void* configurationContext, delegate* unmanaged<void*, void*, void*, GCConfigurationType, long, void> callback);
 
+        internal struct GCHeapHardLimitInfo
+        {
+            internal ulong HeapHardLimit;
+            internal ulong HeapHardLimitPercent;
+            internal ulong HeapHardLimitSOH;
+            internal ulong HeapHardLimitLOH;
+            internal ulong HeapHardLimitPOH;
+            internal ulong HeapHardLimitSOHPercent;
+            internal ulong HeapHardLimitLOHPercent;
+            internal ulong HeapHardLimitPOHPercent;
+        }
+
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial int RhRefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo);
+
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static unsafe partial int RhEnableNoGCRegionCallback(void* callback, long totalSize);
+
         [LibraryImport(RuntimeLibrary)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static partial long RhGetTotalAllocatedBytesPrecise();

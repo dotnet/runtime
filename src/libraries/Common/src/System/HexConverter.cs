@@ -91,6 +91,8 @@ namespace System
 #if SYSTEM_PRIVATE_CORELIB
         // Converts Vector128<byte> into 2xVector128<byte> ASCII Hex representation
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         internal static (Vector128<byte>, Vector128<byte>) AsciiToHexVector128(Vector128<byte> src, Vector128<byte> hexMap)
         {
             Debug.Assert(Ssse3.IsSupported || AdvSimd.Arm64.IsSupported);
@@ -105,6 +107,8 @@ namespace System
                 Vector128.ShuffleUnsafe(hexMap, highNibbles & Vector128.Create((byte)0xF)));
         }
 
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         private static void EncodeToUtf16_Vector128(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing)
         {
             Debug.Assert(bytes.Length >= Vector128<int>.Count);
@@ -236,6 +240,8 @@ namespace System
         }
 
 #if SYSTEM_PRIVATE_CORELIB
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(Ssse3))]
         public static bool TryDecodeFromUtf16_Vector128(ReadOnlySpan<char> chars, Span<byte> bytes)
         {
             Debug.Assert(Ssse3.IsSupported || AdvSimd.Arm64.IsSupported);

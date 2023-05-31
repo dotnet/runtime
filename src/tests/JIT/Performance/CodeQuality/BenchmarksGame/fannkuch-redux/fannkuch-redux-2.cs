@@ -13,6 +13,8 @@
 */
 
 using System;
+using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace BenchmarksGame
 {
@@ -71,9 +73,16 @@ namespace BenchmarksGame
             } while (true);
         }
 
-        static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
-            int n = (args.Length > 0) ? Int32.Parse(args[0]) : 7;
+            return Test(null);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int Test(int? arg)
+        {
+            int n = arg ?? 7;
             var fr2 = new FannkuchRedux_2();
             var pf = fr2.fannkuch(n);
             Console.Write("{0}\nPfannkuchen({1}) = {2}\n", pf[0], n, pf[1]);

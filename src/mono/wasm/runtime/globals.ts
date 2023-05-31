@@ -32,6 +32,7 @@ export function passEmscriptenInternals(internals: EmscriptenInternals): void {
     runtimeHelpers.ExitStatus = internals.ExitStatus;
 }
 
+// NOTE: this is called AFTER the config is loaded
 export function setRuntimeGlobals(globalObjects: GlobalObjects) {
     if (_runtimeModuleLoaded) {
         throw new Error("Runtime module already loaded");
@@ -44,9 +45,6 @@ export function setRuntimeGlobals(globalObjects: GlobalObjects) {
     exportedRuntimeAPI = globalObjects.api;
 
     Object.assign(runtimeHelpers, {
-        mono_wasm_bindings_is_ready: false,
-        javaScriptExports: {} as any,
-        enablePerfMeasure: true,
         allAssetsInMemory: createPromiseController<void>(),
         dotnetReady: createPromiseController<any>(),
         memorySnapshotSkippedOrDone: createPromiseController<void>(),

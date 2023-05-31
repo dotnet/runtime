@@ -1157,6 +1157,30 @@ FORCEINLINE UINT64 GCInterface::InterlockedAdd (UINT64 *pAugend, UINT64 addend) 
     return newMemValue;
 }
 
+extern "C" enable_no_gc_region_callback_status QCALLTYPE GCInterface_EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize)
+{
+    enable_no_gc_region_callback_status status = enable_no_gc_region_callback_status::succeed;
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    status = GCInterface::EnableNoGCRegionCallback(callback, totalSize);
+    END_QCALL;
+    return status;
+}
+
+enable_no_gc_region_callback_status GCInterface::EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    return GCHeapUtilities::GetGCHeap()->EnableNoGCRegionCallback(callback, totalSize);
+}
+
 FORCEINLINE UINT64 GCInterface::InterlockedSub(UINT64 *pMinuend, UINT64 subtrahend) {
     WRAPPER_NO_CONTRACT;
 
@@ -1211,6 +1235,7 @@ void GCInterface::EnumerateConfigurationValues(void* configurationContext, Enume
 }
 
 GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
+bool g_gcHeapHardLimitInfoSpecified = false;
 
 extern "C" int QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo)
 {
@@ -1220,6 +1245,7 @@ extern "C" int QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapHardLimitInfo heap
 
     BEGIN_QCALL;
     g_gcHeapHardLimitInfo = heapHardLimitInfo;
+    g_gcHeapHardLimitInfoSpecified = true;
     result = GCInterface::RefreshMemoryLimit();
     END_QCALL;
 

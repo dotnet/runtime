@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { MonoConfig, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, WebAssemblyStartOptions } from "../types";
-import type { MonoConfigInternal, GlobalObjects, EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, } from "../types/internal";
+import type { MonoConfigInternal, EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, } from "../types/internal";
 
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, exportedRuntimeAPI, setLoaderGlobals } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, exportedRuntimeAPI, globalObjectsRoot } from "./globals";
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
 import { mono_exit } from "./exit";
 import { setup_proxy_console } from "./logging";
@@ -15,17 +15,6 @@ import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
 
 
-export const globalObjectsRoot: GlobalObjects = {
-    mono: {},
-    binding: {},
-    internal: {},
-    module: {},
-    loaderHelpers: {},
-    runtimeHelpers: {},
-    api: {}
-} as any;
-
-setLoaderGlobals(globalObjectsRoot);
 const module = globalObjectsRoot.module;
 const monoConfig = module.config as MonoConfigInternal;
 
@@ -290,7 +279,7 @@ export class HostBuilder implements DotnetHostBuilder {
         deep_merge_config(monoConfig, {
             startupOptions
         });
-        return this.withConfigSrc("blazor.boot.json");
+        return this;
     }
 
     async create(): Promise<RuntimeAPI> {
@@ -355,7 +344,7 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
     if (typeof moduleFactory === "function") {
         const extension = moduleFactory(globalObjectsRoot.api) as any;
         if (extension.ready) {
-            throw new Error("MONO_WASM: Module.ready couldn't be redefined.");
+            throw new Error("Module.ready couldn't be redefined.");
         }
         Object.assign(module, extension);
         deep_merge_module(module, extension);
@@ -364,7 +353,7 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
         deep_merge_module(module, moduleFactory);
     }
     else {
-        throw new Error("MONO_WASM: Can't use moduleFactory callback of createDotnetRuntime function.");
+        throw new Error("Can't use moduleFactory callback of createDotnetRuntime function.");
     }
 
     return module.ENVIRONMENT_IS_PTHREAD
@@ -402,12 +391,18 @@ function initializeModules(es6Modules: [RuntimeModuleExportsInternal, NativeModu
 }
 
 async function createEmscriptenMain(): Promise<RuntimeAPI> {
+    await init_polyfills(module);
+
     if (!module.configSrc && (!module.config || Object.keys(module.config).length === 0 || !module.config.assets)) {
         // if config file location nor assets are provided
-        module.configSrc = "./mono-config.json";
+        if (loaderHelpers.scriptDirectory.indexOf("/_framework") == -1) {
+            // we are not inside _framework (= wasm template)
+            module.configSrc = "./_framework/blazor.boot.json";
+        } else {
+            // blazor app
+            module.configSrc = "./blazor.boot.json";
+        }
     }
-
-    await init_polyfills(module);
 
     // download config
     await mono_wasm_load_config(module);

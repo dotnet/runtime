@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 internal struct SimpleStruct
 {
@@ -25,9 +26,9 @@ public class SingleInt
     public int i1;
 }
 
-internal class TestStruct
+public class TestStruct
 {
-    public static SimpleStruct aMethod_Inline(SimpleStruct Struct)
+    internal static SimpleStruct aMethod_Inline(SimpleStruct Struct)
     {
         Struct.i = 10;
         Struct.str = "abc";
@@ -36,7 +37,7 @@ internal class TestStruct
         return Struct;
     }
 
-    public static newStruct bMethod_Inline()
+    internal static newStruct bMethod_Inline()
     {
         newStruct nStruct;
         nStruct.S.i = 1;
@@ -47,7 +48,7 @@ internal class TestStruct
         return nStruct;
     }
 
-    public static newStruct cMethod_Inline()
+    internal static newStruct cMethod_Inline()
     {
         newStruct nStruct;
         nStruct.S.i = 1;
@@ -55,13 +56,14 @@ internal class TestStruct
         return nStruct;
     }
 
-    public static void dMethod_Inline()
+    internal static void dMethod_Inline()
     {
         X x;
         x.f = new SingleInt();
         x.f.i1 = 77;
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         SimpleStruct st;
         newStruct newst;

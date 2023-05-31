@@ -24,7 +24,7 @@ CreateDump(const CreateDumpOptions& options)
 #endif
     TRACE("PAGE_SIZE %d\n", PAGE_SIZE);
 
-    if (options.CrashReport && (options.AppModel == AppModelType::SingleFile || options.AppModel != AppModelType::NativeAOT))
+    if (options.CrashReport && (options.AppModel == AppModelType::SingleFile || options.AppModel == AppModelType::NativeAOT))
     {
         printf_error("The app model does not support crash report generation\n");
         goto exit;

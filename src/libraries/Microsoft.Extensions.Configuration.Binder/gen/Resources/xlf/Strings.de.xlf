@@ -2,11 +2,6 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en" target-language="de" original="../Strings.resx">
     <body>
-      <trans-unit id="AbstractOrInterfaceNotSupported">
-        <source>Abstract or interface types are not supported: '{0}'.</source>
-        <target state="translated">Abstrakte Typen oder Schnittstellentypen werden nicht unterstützt: "{0}".</target>
-        <note />
-      </trans-unit>
       <trans-unit id="CollectionNotSupported">
         <source>The collection type is not supported: '{0}'.</source>
         <target state="translated">Der Sammlungstyp wird nicht unterstützt: "{0}".</target>
@@ -32,14 +27,19 @@
         <target state="translated">Die Sprachversion muss mindestens C# 11 sein</target>
         <note />
       </trans-unit>
+      <trans-unit id="MissingPublicInstanceConstructor">
+        <source>Cannot create instance of type '{0}' because it is missing a public instance constructor.</source>
+        <target state="translated">Die Instanz vom Typ "{0}" kann nicht erstellt werden, weil ein öffentlicher Instanzkonstruktor fehlt.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MultiDimArraysNotSupported">
         <source>Multidimensional arrays are not supported: '{0}'.</source>
         <target state="translated">Mehrdimensionale Arrays werden nicht unterstützt: "{0}".</target>
         <note />
       </trans-unit>
-      <trans-unit id="NeedPublicParameterlessConstructor">
-        <source>Only objects with public parameterless constructors are supported: '{0}'.</source>
-        <target state="translated">Nur Objekte mit öffentlichen parameterlosen Konstruktoren werden unterstützt: "{0}".</target>
+      <trans-unit id="MultipleParameterizedConstructors">
+        <source>Cannot create instance of type '{0}' because it has multiple public parameterized constructors.</source>
+        <target state="translated">Die Instanz vom Typ "{0}" kann nicht erstellt werden, weil sie über mehrere öffentliche parametrisierte Konstruktoren verfügt.</target>
         <note />
       </trans-unit>
       <trans-unit id="NullableUnderlyingTypeNotSupported">

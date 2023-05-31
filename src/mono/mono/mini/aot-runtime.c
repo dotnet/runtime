@@ -1269,15 +1269,25 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					ref->method = wrapper;
 				}
 			} else {
-				/*
-				 * These wrappers are associated with a signature, not with a method.
-				 * Since we can't decode them into methods, they need a target method.
-				 */
-				if (!target)
-					return FALSE;
+				MonoClass *klass;
+				MonoMethod *invoke;
+
 
 				if (wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE) {
 					subtype = (WrapperSubtype)decode_value (p, &p);
+					if (subtype == WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL) {
+						klass = decode_klass_ref (module, p, &p, error);
+						invoke = mono_get_delegate_invoke_internal (klass);
+						ref->method = mono_marshal_get_delegate_invoke_internal(invoke, TRUE, FALSE, NULL);
+						break;
+					}
+
+					/*
+					 * These wrappers are associated with a signature, not with a method.
+					 * Since we can't decode them into methods, they need a target method.
+					 */
+					if (!target)
+						return FALSE;
 					info = mono_marshal_get_wrapper_info (target);
 					if (info) {
 						if (info->subtype != subtype)
@@ -1287,7 +1297,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 							return FALSE;
 					}
 				}
-				if (sig_matches_target (module, target, p, &p))
+				if (target && sig_matches_target (module, target, p, &p))
 					ref->method = target;
 				else
 					return FALSE;
@@ -4545,12 +4555,7 @@ mono_aot_can_dedup (MonoMethod *method)
 	/* Use a set of wrappers/instances which work and useful */
 	switch (method->wrapper_type) {
 	case MONO_WRAPPER_RUNTIME_INVOKE:
-#ifdef TARGET_WASM
 		return TRUE;
-#else
-		return FALSE;
-#endif
-		break;
 	case MONO_WRAPPER_OTHER: {
 		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 
