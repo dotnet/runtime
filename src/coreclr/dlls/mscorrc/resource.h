@@ -213,7 +213,6 @@
 #define IDS_EE_MISSING_METHOD                   0x17f8
 
 #define IDS_EE_INTERFACE_NOT_DISPATCH_BASED     0x17f9
-#define IDS_EE_TARGET_MISMATCH                  0x17fa
 
 #define IDS_EE_UNHANDLED_EXCEPTION              0x17fc
 #define IDS_EE_EXCEPTION_TOSTRING_FAILED        0x17fd
