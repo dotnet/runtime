@@ -253,7 +253,11 @@ mono_jiterp_implements_interface (
 	// If null check fusion is active, vtable->max_interface_id will be 0
 	if (MONO_VTABLE_IMPLEMENTS_INTERFACE (vtable, m_class_get_interface_id (klass)))
 		return 1;
-	else if (m_class_is_array_special_interface (klass))
+	// For special interfaces we need to do a more complex check to see whether the
+	//  cast to the interface is valid in case obj is an array.
+	// It's not safe to assume that mono_jiterp_isinst will handle nulls, and we don't
+	//  want to waste time running the full isinst machinery on nulls anyway, so nullcheck
+	else if (m_class_is_array_special_interface (klass) && obj)
 		return mono_jiterp_isinst (obj, klass);
 	else // HACK: Support null check fusion by returning 1 if the obj ptr was null
 		return (obj == 0);
