@@ -822,7 +822,7 @@ namespace Wasm.Build.Tests
             return result;
         }
 
-        protected void AssertBlazorBundle(string config, bool isPublish, bool dotnetWasmFromRuntimePack, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir = null)
+        protected void AssertBlazorBundle(string config, bool isPublish, bool dotnetWasmFromRuntimePack, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir = null, bool expectFingerprinting = false)
         {
             binFrameworkDir ??= FindBlazorBinFrameworkDir(config, isPublish, targetFramework);
 
@@ -832,7 +832,7 @@ namespace Wasm.Build.Tests
                        "Expected dotnet.native.wasm to be same as the runtime pack",
                        same: dotnetWasmFromRuntimePack);
 
-            string? dotnetJsPath = Directory.EnumerateFiles(binFrameworkDir, "dotnet.native.*.js").FirstOrDefault();
+            string? dotnetJsPath = Directory.EnumerateFiles(binFrameworkDir, expectFingerprinting ? "dotnet.native.*.js" : "dotnet.native.js").FirstOrDefault();
             Assert.True(dotnetJsPath != null, $"Could not find blazor's dotnet*js in {binFrameworkDir}");
 
             AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.js"),
