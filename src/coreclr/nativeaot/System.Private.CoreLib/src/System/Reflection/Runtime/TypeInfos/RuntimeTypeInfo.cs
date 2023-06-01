@@ -32,7 +32,6 @@ namespace System.Reflection.Runtime.TypeInfos
     //   - Overrides many "NotImplemented" members in TypeInfo with abstracts so failure to implement
     //     shows up as build error.
     //
-    [DebuggerDisplay("{_debugName}")]
     internal abstract partial class RuntimeTypeInfo : RuntimeType, ICloneable
     {
         protected RuntimeTypeInfo()
@@ -731,21 +730,16 @@ namespace System.Reflection.Runtime.TypeInfos
         // Note: This can be (and is) called multiple times. We do not do this work in the constructor as calling ToString()
         // in the constructor causes some serious recursion issues.
         //
-        internal void EstablishDebugName()
+        internal RuntimeTypeInfo EstablishDebugName()
         {
-            bool populateDebugNames = DeveloperExperienceState.DeveloperExperienceModeEnabled;
 #if DEBUG
-            populateDebugNames = true;
-#endif
-            if (!populateDebugNames)
-                return;
-
             if (_debugName == null)
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
                 _debugName = ToString() ?? "";
             }
-            return;
+#endif
+            return this;
         }
 
         //
@@ -884,6 +878,8 @@ namespace System.Reflection.Runtime.TypeInfos
 
         private volatile TypeClassification _lazyClassification;
 
+#if DEBUG
         private string _debugName;
+#endif
     }
 }

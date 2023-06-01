@@ -48,7 +48,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcRPath Condition="'$(IlcRPath)' == '' and '$(_IsApplePlatform)' == 'true'">@executable_path</IlcRPath>
 
       <EventPipeName>libeventpipe-disabled</EventPipeName>
-      <EventPipeName Condition="'$(EnableNativeEventPipe)' == 'true'">libeventpipe-enabled</EventPipeName>
+      <EventPipeName Condition="'$(EnableNativeEventPipe)' == 'true' or ('$(EventSourceSupport)' == 'true' and '$(_IsApplePlatform)' != 'true')">libeventpipe-enabled</EventPipeName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -62,7 +62,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <ItemGroup>
       <NetCoreAppNativeLibrary Include="System.Native" />
-      <NetCoreAppNativeLibrary Include="System.Globalization.Native" Condition="'$(StaticICULinking)' != 'true'" />
+      <NetCoreAppNativeLibrary Include="System.Globalization.Native" Condition="'$(StaticICULinking)' != 'true' and '$(InvariantGlobalization)' != 'true'" />
       <NetCoreAppNativeLibrary Include="System.IO.Compression.Native" />
       <NetCoreAppNativeLibrary Include="System.Net.Security.Native" />
       <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Apple" Condition="'$(_IsApplePlatform)' == 'true'" />
@@ -78,7 +78,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Include="@(NetCoreAppNativeLibrary->'%(EscapedPath)')" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(StaticICULinking)' == 'true' and '$(NativeLib)' != 'Static'">
+    <ItemGroup Condition="'$(StaticICULinking)' == 'true' and '$(NativeLib)' != 'Static' and '$(InvariantGlobalization)' != 'true'">
       <NativeLibrary Include="$(IntermediateOutputPath)libs/System.Globalization.Native/build/libSystem.Globalization.Native.a" />
       <DirectPInvoke Include="libSystem.Globalization.Native" />
       <StaticICULibs Include="-Wl,-Bstatic" Condition="'$(StaticExecutable)' != 'true'" />
@@ -218,7 +218,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </Exec>
 
     <Exec Command="CC=&quot;$(CppLinker)&quot; &quot;$(IlcHostPackagePath)/native/src/libs/build-local.sh&quot; &quot;$(IlcHostPackagePath)/&quot; &quot;$(IntermediateOutputPath)&quot; System.Globalization.Native"
-        Condition="'$(StaticICULinking)' == 'true'" />
+        Condition="'$(StaticICULinking)' == 'true' and '$(InvariantGlobalization)' != 'true'" />
 
     <Exec Command="CC=&quot;$(CppLinker)&quot; &quot;$(IlcHostPackagePath)/native/src/libs/build-local.sh&quot; &quot;$(IlcHostPackagePath)/&quot; &quot;$(IntermediateOutputPath)&quot; System.Security.Cryptography.Native"
         Condition="'$(StaticOpenSslLinking)' == 'true'" />

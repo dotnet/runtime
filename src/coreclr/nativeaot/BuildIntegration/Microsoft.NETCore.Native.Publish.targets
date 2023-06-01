@@ -5,6 +5,8 @@
           DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
     <ItemGroup>
       <IlcReference Include="@(_ManagedResolvedAssembliesToPublish)" />
+      <IlcSatelliteAssembly Include="@(_SatelliteAssembliesToPublish)" />
+      <IlcSatelliteAssembly Include="@(IntermediateSatelliteAssembliesWithTargetPath)" />
     </ItemGroup>
   </Target>
 
@@ -82,6 +84,7 @@
       FrameworkAssemblies="@(FrameworkAssemblies)">
 
       <Output TaskParameter="ManagedAssemblies" ItemName="_ManagedResolvedAssembliesToPublish" />
+      <Output TaskParameter="SatelliteAssemblies" ItemName="_SatelliteAssembliesToPublish" />
       <Output TaskParameter="AssembliesToSkipPublish" ItemName="_AssembliesToSkipPublish" />
     </ComputeManagedAssembliesToCompileToNative>
 

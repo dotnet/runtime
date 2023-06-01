@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -38,7 +39,8 @@ namespace ComInterfaceGenerator.Unit.Tests
 
         private string UnmanagedObjectUnwrapper(Type t) => _attributeProvider.UnmanagedObjectUnwrapper(t);
 
-        private string GeneratedComInterface => _attributeProvider.GeneratedComInterface;
+        private string GeneratedComInterface(StringMarshalling? stringMarshalling = null, Type? stringMarshallingCustomType = null)
+            => _attributeProvider.GeneratedComInterface(stringMarshalling, stringMarshallingCustomType);
 
         private string UnmanagedCallConv(Type[]? CallConvs = null)
         {
@@ -55,7 +57,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             using System.Runtime.InteropServices.Marshalling;
 
             {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{GeneratedComInterface}}
+            {{GeneratedComInterface()}}
             partial interface INativeAPI
             {
                 {{VirtualMethodIndex(0)}}
@@ -70,7 +72,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             using System.Runtime.InteropServices.Marshalling;
 
             {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{GeneratedComInterface}}
+            {{GeneratedComInterface()}}
             partial interface INativeAPI
             {
                 {{VirtualMethodIndex(0, ImplicitThisParameter: false)}}
@@ -86,7 +88,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             using System.Runtime.InteropServices.Marshalling;
 
             {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{GeneratedComInterface}}
+            {{GeneratedComInterface()}}
             partial interface INativeAPI
             {
 
@@ -122,7 +124,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             [assembly:DisableRuntimeMarshalling]
 
             {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{GeneratedComInterface}}
+            {{GeneratedComInterface()}}
             partial interface INativeAPI
             {
                 {{VirtualMethodIndex(0)}}
@@ -140,7 +142,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             [assembly:DisableRuntimeMarshalling]
 
             {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{GeneratedComInterface}}
+            {{GeneratedComInterface()}}
             partial interface INativeAPI
             {
                 {{VirtualMethodIndex(0, Direction: MarshalDirection.ManagedToUnmanaged)}}
@@ -159,7 +161,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             [assembly:DisableRuntimeMarshalling]
 
             {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{GeneratedComInterface}}
+            {{GeneratedComInterface()}}
             partial interface INativeAPI
             {
                 {{VirtualMethodIndex(0)}}
@@ -175,7 +177,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             using System.Runtime.InteropServices.Marshalling;
 
             {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{GeneratedComInterface}}
+            {{GeneratedComInterface()}}
             partial interface INativeAPI
             {
                 {{VirtualMethodIndex(0, ImplicitThisParameter: false)}}
@@ -193,7 +195,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             [assembly:DisableRuntimeMarshalling]
 
             {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{GeneratedComInterface}}
+            {{GeneratedComInterface()}}
             partial interface INativeAPI
             {
                 {{VirtualMethodIndex(0)}}
@@ -219,7 +221,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             {{preDeclaration}}
 
             {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{GeneratedComInterface}}
+            {{GeneratedComInterface()}}
             partial interface INativeAPI
             {
                 {{VirtualMethodIndex(0, ExceptionMarshalling: ExceptionMarshalling.Com)}}
@@ -236,7 +238,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             {{preDeclaration}}
 
             {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{GeneratedComInterface}}
+            {{GeneratedComInterface()}}
             partial interface INativeAPI
             {
                 {{VirtualMethodIndex(0, ExceptionMarshallingType: Type.GetType(customExceptionType))}}
@@ -250,12 +252,12 @@ namespace ComInterfaceGenerator.Unit.Tests
             using System.Runtime.InteropServices;
             using System.Runtime.InteropServices.Marshalling;
 
-            {{GeneratedComInterface}}
+            {{GeneratedComInterface()}}
             partial interface IComInterface
             {
                 void Method();
             }
-            {{GeneratedComInterface}}
+            {{GeneratedComInterface()}}
             partial interface IComInterface2 : IComInterface
             {
                 void Method2();
@@ -266,25 +268,54 @@ namespace ComInterfaceGenerator.Unit.Tests
             using System.Runtime.InteropServices;
             using System.Runtime.InteropServices.Marshalling;
 
-            {{GeneratedComInterface}}
+            {{GeneratedComInterface()}}
             partial interface IComInterface
             {
                 void Method();
             }
-            {{GeneratedComInterface}}
+            {{GeneratedComInterface()}}
             partial interface IOtherComInterface
             {
                 void MethodA();
             }
-            {{GeneratedComInterface}}
+            {{GeneratedComInterface()}}
             partial interface {|#0:IComInterface2|} : IComInterface, IOtherComInterface
             {
                 void Method2();
             }
             """;
 
+        public string DerivedWithStringMarshalling(params
+            (StringMarshalling StringMarshalling, Type? StringMarshallingCustomType)[] attributeArguments)
+        {
+            List<string> declarations = new();
+            int i = 0;
+            foreach (var args in attributeArguments)
+            {
+                declarations.Add($$"""
+                    {{GeneratedComInterface(args.StringMarshalling, args.StringMarshallingCustomType)}}
+                    internal partial interface {|#{{i}}:IStringMarshalling{{i}}|} {{(i > 0 ? $": IStringMarshalling{i - 1}" : "")}}
+                    {
+                        public string GetString{{i}}();
+                        public void SetString{{i}}(string value);
+                    }
+                """);
+                i++;
+            }
+            return $$"""
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                namespace Test
+                {
+                    {{string.Join("\n\n", declarations)}}
+                }
+                """;
+        }
+
         public string ComInterfaceParameters => BasicParametersAndModifiers("IComInterface2") + $$"""
-            {{GeneratedComInterface}}
+            {{GeneratedComInterface()}}
             partial interface IComInterface2
             {
                 void Method2();

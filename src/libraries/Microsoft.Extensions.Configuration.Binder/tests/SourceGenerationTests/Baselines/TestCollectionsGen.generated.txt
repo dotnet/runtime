@@ -3,27 +3,27 @@
 
 internal static class GeneratedConfigurationBinder
 {
-    public static T? Get<T>(this global::Microsoft.Extensions.Configuration.IConfiguration configuration) => (T?)(global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.GetCore(configuration, typeof(T), configureActions: null) ?? default(T));
+    public static T? Get<T>(this global::Microsoft.Extensions.Configuration.IConfiguration configuration) => (T?)(global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.GetCore(configuration, typeof(T), configureOptions: null) ?? default(T));
 }
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    using System;
-    using System.Globalization;
     using Microsoft.Extensions.Configuration;
+    using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
 
     internal static class Helpers
     {
-        public static object? GetCore(this IConfiguration configuration, Type type, Action<BinderOptions>? configureActions)
+        public static object? GetCore(this IConfiguration configuration, Type type, Action<BinderOptions>? configureOptions)
         {
             if (configuration is null)
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            BinderOptions? binderOptions = GetBinderOptions(configureActions);
+            BinderOptions? binderOptions = GetBinderOptions(configureOptions);
 
             if (!HasValueOrChildren(configuration))
             {
@@ -156,14 +156,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         }
                     }
                     break;
-                    case "ICustomDictionary":
-                    {
-                    }
-                    break;
-                    case "ICustomCollection":
-                    {
-                    }
-                    break;
                     case "IReadOnlyList":
                     {
                         if (HasChildren(section))
@@ -173,10 +165,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             BindCore(section, ref temp7, binderOptions);
                             obj.IReadOnlyList = temp7;
                         }
-                    }
-                    break;
-                    case "UnsupportedIReadOnlyDictionaryUnsupported":
-                    {
                     }
                     break;
                     case "IReadOnlyDictionary":
