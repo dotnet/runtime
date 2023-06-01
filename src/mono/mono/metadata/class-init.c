@@ -304,11 +304,12 @@ mono_class_setup_fields (MonoClass *klass)
 		instance_size = MONO_ABI_SIZEOF (MonoObject);
 	}
 
-	if (m_class_is_inlinearray (klass) && m_class_inlinearray_value (klass) <= 0)
+	if (m_class_is_inlinearray (klass) && m_class_inlinearray_value (klass) <= 0) {
 		if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback)
 			mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array length property must be positive.");
 		else
 			mono_class_set_type_load_failure (klass, "Inline array length property must be positive.");
+	}
 
 	/* Get the real size */
 	explicit_size = mono_metadata_packing_from_typedef (klass->image, klass->type_token, &packing_size, &real_size);
