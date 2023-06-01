@@ -483,7 +483,9 @@ private:
             assert((likelihood >= 0) && (likelihood <= 100));
             JITDUMP("Likelihood of correct guess is %u\n", likelihood);
 
-            if (IsChainingSupported())
+            // TODO: implement chaining for multiple GDV candidates
+            const bool canChainGdv = GetChecksCount() == 1;
+            if (canChainGdv)
             {
                 const bool isChainedGdv = (origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_CHAIN) != 0;
 
@@ -514,12 +516,6 @@ private:
         virtual const char* Name()
         {
             return "GuardedDevirtualization";
-        }
-
-        bool IsChainingSupported()
-        {
-            // TODO: implement chaining for multiple GDV candidates
-            return GetChecksCount() == 1;
         }
 
         //------------------------------------------------------------------------
@@ -853,10 +849,7 @@ private:
             GenTreeCall* call = compiler->gtCloneCandidateCall(origCall);
             call->gtArgs.GetThisArg()->SetEarlyNode(compiler->gtNewLclvNode(thisTemp, TYP_REF));
 
-            if (IsChainingSupported())
-            {
-                call->SetIsGuarded();
-            }
+            call->SetIsGuarded();
 
             JITDUMP("Direct call [%06u] in block " FMT_BB "\n", compiler->dspTreeID(call), block->bbNum);
 
@@ -1018,10 +1011,7 @@ private:
 
             call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
 
-            if (IsChainingSupported())
-            {
-                call->SetIsGuarded();
-            }
+            call->SetIsGuarded();
 
             JITDUMP("Residual call [%06u] moved to block " FMT_BB "\n", compiler->dspTreeID(call), elseBlock->bbNum);
 
