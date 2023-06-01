@@ -49,7 +49,7 @@ public class test86865
         var result = mi.Invoke(null, parms);
         if (result == null)
             return 6;
-        if (parms[2] != 5)
+        if ((int)parms[2] != 5)
             return 7;
 
         return 100;
