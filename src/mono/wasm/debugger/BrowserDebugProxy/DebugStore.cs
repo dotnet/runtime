@@ -847,23 +847,23 @@ namespace Microsoft.WebAssembly.Diagnostics
         private readonly List<SourceFile> sources = new List<SourceFile>();
         internal string Url { get; }
         //The caller must keep the PEReader alive and undisposed throughout the lifetime of the metadata reader
-        private readonly IDisposable peReaderOrWebcilReader;
-        internal MetadataReader asmMetadataReader { get; }
+        private IDisposable peReaderOrWebcilReader;
+        internal MetadataReader asmMetadataReader { get; set; }
         internal MetadataReader pdbMetadataReader { get; set; }
 
         internal List<Tuple<MetadataReader, MetadataReader>> enCMetadataReader  = new List<Tuple<MetadataReader, MetadataReader>>();
         private int debugId;
-        internal int PdbAge { get; }
-        internal System.Guid PdbGuid { get; }
-        internal bool IsPortableCodeView { get;  }
-        internal string PdbName { get; }
-        internal bool CodeViewInformationAvailable { get; }
+        internal int PdbAge { get; set;  }
+        internal System.Guid PdbGuid { get; set; }
+        internal bool IsPortableCodeView { get; set; }
+        internal string PdbName { get; set; }
+        internal bool CodeViewInformationAvailable { get; set; }
         public bool TriedToLoadSymbolsOnDemand { get; set; }
 
         private readonly Dictionary<int, SourceFile> _documentIdToSourceFileTable = new Dictionary<int, SourceFile>();
-        public PdbChecksum[] PdbChecksums { get; }
+        public PdbChecksum[] PdbChecksums { get; set; }
 
-        public static AssemblyInfo FromBytes(MonoProxy monoProxy, SessionId sessionId, byte[] assembly, byte[] pdb, ILogger logger, CancellationToken token)
+        public void LoadInfoFromBytes(MonoProxy monoProxy, SessionId sessionId, byte[] assembly, byte[] pdb, CancellationToken token)
         {
             // First try to read it as a PE file, otherwise try it as a WebCIL file
             using var asmStream = new MemoryStream(assembly);
@@ -872,20 +872,36 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var peReader = new PEReader(asmStream);
                 if (!peReader.HasMetadata)
                     throw new BadImageFormatException();
-                return FromPEReader(monoProxy, sessionId, peReader, pdb, logger, token);
+                FromPEReader(monoProxy, sessionId, peReader, pdb, logger, token);
             }
             catch (BadImageFormatException)
             {
                 // This is a WebAssembly file
                 asmStream.Seek(0, SeekOrigin.Begin);
                 var webcilReader = new WebcilReader(asmStream);
-                return FromWebcilReader(monoProxy, sessionId, webcilReader, pdb, logger, token);
+                FromWebcilReader(monoProxy, sessionId, webcilReader, pdb, logger, token);
             }
+        }
+
+        public static AssemblyInfo FromBytes(MonoProxy monoProxy, SessionId sessionId, byte[] assembly, byte[] pdb, ILogger logger, CancellationToken token)
+        {
+            // First try to read it as a PE file, otherwise try it as a WebCIL file
+            using var asmStream = new MemoryStream(assembly);
+            var assemblyInfo = new AssemblyInfo(logger);
+            assemblyInfo.LoadInfoFromBytes(monoProxy, sessionId, assembly, pdb, token);
+            return assemblyInfo;
         }
 
         public static AssemblyInfo WithoutDebugInfo(ILogger logger)
         {
             return new AssemblyInfo(logger);
+        }
+
+        public static AssemblyInfo WithoutDebugInfo(string name, ILogger logger)
+        {
+            var ret = new AssemblyInfo(logger);
+            ret.Name = name;
+            return ret;
         }
 
         private AssemblyInfo(ILogger logger)
@@ -894,19 +910,17 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.id = Interlocked.Increment(ref next_id);
             this.logger = logger;
         }
-        private static AssemblyInfo FromPEReader(MonoProxy monoProxy, SessionId sessionId, PEReader peReader, byte[] pdb, ILogger logger, CancellationToken token)
+        private void FromPEReader(MonoProxy monoProxy, SessionId sessionId, PEReader peReader, byte[] pdb, ILogger logger, CancellationToken token)
         {
-
             var debugProvider = new PortableExecutableDebugMetadataProvider(peReader);
 
             var asmMetadataReader = PEReaderExtensions.GetMetadataReader(peReader);
             string name = ReadAssemblyName(asmMetadataReader);
             var summary = MetadataDebugSummary.Create(monoProxy, sessionId, name, debugProvider, pdb, token);
 
-            var assemblyInfo = new AssemblyInfo(peReader, name, asmMetadataReader, summary, logger);
-            return assemblyInfo;
+            LoadAssemblyInfo(peReader, name, asmMetadataReader, summary, logger);
         }
-        private static AssemblyInfo FromWebcilReader(MonoProxy monoProxy, SessionId sessionId, WebcilReader wcReader, byte[] pdb, ILogger logger, CancellationToken token)
+        private void FromWebcilReader(MonoProxy monoProxy, SessionId sessionId, WebcilReader wcReader, byte[] pdb, ILogger logger, CancellationToken token)
         {
             var debugProvider = new WebcilDebugMetadataProvider(wcReader);
             var asmMetadataReader = wcReader.GetMetadataReader();
@@ -914,8 +928,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             var summary = MetadataDebugSummary.Create(monoProxy, sessionId, name, debugProvider, pdb, token);
 
-            var assemblyInfo = new AssemblyInfo(wcReader, name, asmMetadataReader, summary, logger);
-            return assemblyInfo;
+            LoadAssemblyInfo(wcReader, name, asmMetadataReader, summary, logger);
         }
 
         private static string ReadAssemblyName(MetadataReader asmMetadataReader)
@@ -924,8 +937,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return asmDef.GetAssemblyName().Name + ".dll";
         }
 
-        private unsafe AssemblyInfo(IDisposable owningReader, string name, MetadataReader asmMetadataReader, MetadataDebugSummary summary, ILogger logger)
-            : this(logger)
+        private unsafe void LoadAssemblyInfo(IDisposable owningReader, string name, MetadataReader asmMetadataReader, MetadataDebugSummary summary, ILogger logger)
         {
             peReaderOrWebcilReader = owningReader;
             var codeViewData = summary.CodeViewData;
@@ -1166,7 +1178,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public Dictionary<string, TypeInfo> TypesByName { get; } = new();
         public Dictionary<int, TypeInfo> TypesByToken { get; } = new();
         public int Id => id;
-        public string Name { get; }
+        public string Name { get; set; }
         public bool HasSymbols => pdbMetadataReader != null;
 
         // "System.Threading", instead of "System.Threading, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
@@ -1189,12 +1201,17 @@ namespace Microsoft.WebAssembly.Diagnostics
             return res;
         }
 
-        internal async Task LoadPDBFromSymbolServer(DebugStore debugStore, CancellationToken token)
+        internal async Task LoadPDBFromSymbolServer(MonoProxy proxy, MonoSDBHelper sdbHelper, SessionId id, DebugStore debugStore, CancellationToken token)
         {
             try
             {
                 if (TriedToLoadSymbolsOnDemand)
                     return;
+                if (asmMetadataReader is null) //it means that the assembly was not loaded before because JMC was enabled
+                {
+                    var ret = await sdbHelper.GetBytesFromAssemblyAndPdb(Name, token);
+                    LoadInfoFromBytes(proxy, id, ret[0], ret[1], token);
+                }
                 var pdbName = Path.GetFileName(PdbName);
                 var pdbGuid = PdbGuid.ToString("N").ToUpperInvariant() + (IsPortableCodeView ? "FFFFFFFF" : PdbAge);
                 var key = $"{pdbName}/{pdbGuid}/{pdbName}";
@@ -1595,6 +1612,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     byte[][] bytes = await step.Data.ConfigureAwait(false);
                     if (bytes[0] == null)
                     {
+                        var unescapedFileName = Uri.UnescapeDataString(step.Url);
+                        assemblies.Add(AssemblyInfo.WithoutDebugInfo(Path.GetFileName(unescapedFileName), logger));
                         logger.LogDebug($"Bytes from assembly {step.Url} is NULL");
                         continue;
                     }
@@ -1790,7 +1809,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             foreach (var asm in assemblies.Where(asm => asm.pdbMetadataReader == null))
             {
                 asm.TriedToLoadSymbolsOnDemand = false; //force to load again because added another symbol server
-                await asm.LoadPDBFromSymbolServer(this, token);
+                await asm.LoadPDBFromSymbolServer(monoProxy, context.SdbAgent, id, this, token);
                 foreach (var source in asm.Sources)
                     await monoProxy.OnSourceFileAdded(id, source, context, token);
             }
