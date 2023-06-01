@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>X86_CpuId_R2R_Baseline</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="CpuId.cs" />
+  </ItemGroup>
+</Project>

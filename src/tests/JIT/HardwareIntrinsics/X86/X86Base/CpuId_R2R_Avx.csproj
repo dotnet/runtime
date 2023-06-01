@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>X86_CpuId_R2R_Avx</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <CrossGen2TestExtraArguments Include="$(CrossGen2TestExtraArguments) --instruction-set:avx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="CpuId.cs" />
+  </ItemGroup>
+</Project>
