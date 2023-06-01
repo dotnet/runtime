@@ -856,12 +856,12 @@ namespace Wasm.Build.Tests
                     Assert.True(File.Exists(absolutePath), $"Expected to find '{absolutePath}'");
                 }
 
-                string versionHashRegex = @"\.(?<version>.+)\.(?<hash>[a-zA-Z0-9]+)\.";
+                string versionHashRegex = @"\d.0.\d?(-[a-z]+(\.\d\.\d+\.\d)?)?\.([a-zA-Z0-9])+";
                 Assert.Collection(
                     dotnetJsEntries.OrderBy(f => f),
-                    item => { Assert.Equal(expectFingerprinting ? $"dotnet{versionHashRegex}js" : "dotnet.js", item); AssertFileExists(item); },
-                    item => { Assert.Matches($"dotnet\\.native{versionHashRegex}js", item); AssertFileExists(item); },
-                    item => { Assert.Matches($"dotnet\\.runtime{versionHashRegex}js", item); AssertFileExists(item); }
+                    item => { Assert.Equal(expectFingerprinting ? $"dotnet\\.{versionHashRegex}\\.js" : "dotnet.js", item); AssertFileExists(item); },
+                    item => { Assert.Matches($"dotnet\\.native\\.{versionHashRegex}\\.js", item); AssertFileExists(item); },
+                    item => { Assert.Matches($"dotnet\\.runtime\\.{versionHashRegex}\\.js", item); AssertFileExists(item); }
                 );
             }
         }
