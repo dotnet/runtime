@@ -1220,6 +1220,7 @@ namespace DebuggerTests
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
         public async Task SkipWasmFunctionsAccordinglyJustMyCode(bool justMyCode)
         {
             await SetJustMyCode(justMyCode);
