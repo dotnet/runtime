@@ -334,6 +334,7 @@
       <_HasDotnetNativeJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.js'">true</_HasDotnetNativeJs>
       <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and Exists('$(WasmIcuDataFileName)')">$(WasmIcuDataFileName)</_WasmIcuDataFileName>
       <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and !Exists('$(WasmIcuDataFileName)')">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)</_WasmIcuDataFileName>
+      <WasmIncludeFullIcuData Condition="'$(WasmIncludeFullIcuData)' == ''">false</WasmIncludeFullIcuData>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(HybridGlobalization)' == 'true' and '$(WasmIcuDataFileName)' == ''">
@@ -403,6 +404,8 @@
       IncludeThreadsWorker="$(_WasmAppIncludeThreadsWorker)"
       PThreadPoolSize="$(_WasmPThreadPoolSize)"
       UseWebcil="$(WasmEnableWebcil)"
+      WasmIncludeFullIcuData="$(WasmIncludeFullIcuData)"
+      WasmIcuDataFileName="$(WasmIcuDataFileName)"
       >
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>

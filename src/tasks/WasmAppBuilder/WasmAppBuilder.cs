@@ -23,6 +23,8 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
     public bool IncludeThreadsWorker { get; set; }
     public int PThreadPoolSize { get; set; }
     public bool UseWebcil { get; set; }
+    public bool WasmIncludeFullIcuData { get; set; }
+    public string? WasmIcuDataFileName { get; set; }
 
     // <summary>
     // Extra json elements to add to _framework/blazor.boot.json
@@ -72,7 +74,15 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         {
             config = new(),
             entryAssembly = MainAssemblyName,
-            icuDataMode = InvariantGlobalization ? ICUDataMode.Invariant : HybridGlobalization ? ICUDataMode.Hybrid : ICUDataMode.All
+            icuDataMode = InvariantGlobalization
+                ? ICUDataMode.Invariant
+                : !string.IsNullOrEmpty(WasmIcuDataFileName)
+                    ? ICUDataMode.Custom
+                    : HybridGlobalization
+                        ? ICUDataMode.Hybrid
+                        : WasmIncludeFullIcuData
+                            ? ICUDataMode.All
+                            : ICUDataMode.Sharded
         };
 
         // Create app
