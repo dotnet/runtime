@@ -18,7 +18,7 @@ namespace Microsoft.Interop
     /// </summary>
     internal sealed record GeneratedComInterfaceData : InteropAttributeData
     {
-        public Accessibility StringMarshallingCustomTypeAccessibility { get; init; }
+        public Accessibility? StringMarshallingCustomTypeAccessibility { get; init; }
         public static GeneratedComInterfaceData From(GeneratedComInterfaceCompilationData generatedComInterfaceAttr)
             => new GeneratedComInterfaceData() with
             {
@@ -28,7 +28,7 @@ namespace Microsoft.Interop
                 StringMarshallingCustomType = generatedComInterfaceAttr.StringMarshallingCustomType is not null
                     ? ManagedTypeInfo.CreateTypeInfoForTypeSymbol(generatedComInterfaceAttr.StringMarshallingCustomType)
                     : null,
-                StringMarshallingCustomTypeAccessibility = generatedComInterfaceAttr.StringMarshallingCustomType.DeclaredAccessibility
+                StringMarshallingCustomTypeAccessibility = generatedComInterfaceAttr.StringMarshallingCustomType?.DeclaredAccessibility
             };
     }
 

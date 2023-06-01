@@ -60,7 +60,7 @@ namespace Microsoft.Interop
             private readonly SequenceEqualImmutableArray<DiagnosticInfo> _diagnostics;
             internal ValueAndDiagnostic(T value, ImmutableArray<DiagnosticInfo> diagnostics) => (_value, _diagnostics) = (value, diagnostics.ToSequenceEqual());
             public override bool HasValue => true;
-            public override bool HasDiagnostic => false;
+            public override bool HasDiagnostic => true;
             public override T Value => _value;
             public override ImmutableArray<DiagnosticInfo> Diagnostics => _diagnostics.Array;
         }

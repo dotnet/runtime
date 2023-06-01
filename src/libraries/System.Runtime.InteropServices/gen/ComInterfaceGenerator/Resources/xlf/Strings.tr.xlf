@@ -133,13 +133,18 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
-        <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="translated">'GeneratedComInterfaceAttribute' özniteliğine sahip arabirimler kısmi olmalı, genel olmamalı ve 'System.Runtime.InteropServices.GuidAttribute' ile bir GUID belirtmelidir.</target>
+        <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must have 'public' or 'internal' accessibility and be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
+        <target state="needs-review-translation">'GeneratedComInterfaceAttribute' özniteliğine sahip arabirimler kısmi olmalı, genel olmamalı ve 'System.Runtime.InteropServices.GuidAttribute' ile bir GUID belirtmelidir.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceIsGeneric">
         <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</source>
         <target state="translated">'{0}' 'GeneratedComInterfaceAttribute' özniteliğine sahip ancak genel.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceNotAccessible">
+        <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but has accessibility '{1}'. The interface must have accessibility 'internal' or 'public' for generated code to access it. Code will not be generated for '{0}'.</source>
+        <target state="new">Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but has accessibility '{1}'. The interface must have accessibility 'internal' or 'public' for generated code to access it. Code will not be generated for '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute">
@@ -210,6 +215,11 @@
       <trans-unit id="MultipleComInterfaceBaseTypesTitle">
         <source>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</source>
         <target state="translated">Belirtilen arabirim 'GeneratedComInterfaceAttribute' özniteliğine sahip iki veya daha fazla arabirimden türetildi.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StringMarshallingCustomTypeNotAccessibleByGeneratedCode">
+        <source>The type '{0}' specified as 'GeneratedComInterfaceAttribute.StringMarshallingCustomType' is not accessible by generated code. The type must have at least 'internal' accessibility. Code will not be generated for '{0}'.</source>
+        <target state="new">The type '{0}' specified as 'GeneratedComInterfaceAttribute.StringMarshallingCustomType' is not accessible by generated code. The type must have at least 'internal' accessibility. Code will not be generated for '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">

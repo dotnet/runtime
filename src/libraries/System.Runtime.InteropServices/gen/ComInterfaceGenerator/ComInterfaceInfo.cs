@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Interop;
-using DiagnosticOrInterfaceInfo = Microsoft.Interop.DiagnosticOr<(Microsoft.Interop.ComInterfaceInfo InterfaceInfo, Microsoft.CodeAnalysis.INamedTypeSymbol Symbol) >;
+using DiagnosticOrInterfaceInfo = Microsoft.Interop.DiagnosticOr<(Microsoft.Interop.ComInterfaceInfo InterfaceInfo, Microsoft.CodeAnalysis.INamedTypeSymbol Symbol)>;
 
 namespace Microsoft.Interop
 {
@@ -59,6 +59,15 @@ namespace Microsoft.Interop
                 }
             }
 
+            if (symbol.DeclaredAccessibility - Accessibility.Internal < 0)
+            {
+                return DiagnosticOrInterfaceInfo.From(DiagnosticInfo.Create(
+                    GeneratorDiagnostics.InvalidAttributedInterfaceNotAccessible,
+                    symbol.Locations[0],
+                    symbol.ToDisplayString(),
+                    symbol.DeclaredAccessibility.ToString().ToLowerInvariant()));
+            }
+
             if (!TryGetGuid(symbol, syntax, out Guid? guid, out DiagnosticInfo? guidDiagnostic))
                 return DiagnosticOrInterfaceInfo.From(guidDiagnostic);
 
@@ -90,27 +99,22 @@ namespace Microsoft.Interop
                 {
                     if (attrInfo.StringMarshallingCustomType is null)
                     {
-                        stringMarshallingDiagnostic = Diagnostic.Create(
+                        stringMarshallingDiagnostic = DiagnosticInfo.Create(
                             GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface,
                             syntax.Identifier.GetLocation(),
                             symbol.ToDisplayString(),
                             SR.InvalidStringMarshallingConfigurationMissingCustomType);
                         return false;
                     }
-                    if (attrInfo.StringMarshallingCustomTypeAccessibility.CompareTo(symbol.DeclaredAccessibility) < 0)
+                    // higher enum value is more accessible
+                    if (attrInfo.StringMarshallingCustomTypeAccessibility - Accessibility.Internal < 0)
                     {
-                        stringMarshallingDiagnostic = Diagnostic.Create(
-                            GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface,
+                        stringMarshallingDiagnostic = DiagnosticInfo.Create(
+                            GeneratorDiagnostics.StringMarshallingCustomTypeNotAccessibleByGeneratedCode,
                             syntax.Identifier.GetLocation(),
-                            symbol.ToDisplayString(),
-                            SR.InvalidStringMarshallingConfigurationMissingCustomType);
+                            attrInfo.StringMarshallingCustomType.FullTypeName.Replace("global::", ""));
+                        return false;
                     }
-                    stringMarshallingDiagnostic = DiagnosticInfo.Create(
-                        GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface,
-                        syntax.Identifier.GetLocation(),
-                        symbol.ToDisplayString(),
-                        SR.InvalidStringMarshallingConfigurationMissingCustomType);
-                    return false;
                 }
                 if (attrInfo.StringMarshalling is not StringMarshalling.Custom && attrInfo.StringMarshallingCustomType is not null)
                 {
