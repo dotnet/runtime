@@ -325,5 +325,23 @@ namespace System.Threading
         public static ulong Or(ref ulong location1, ulong value) =>
             (ulong)Or(ref Unsafe.As<ulong, long>(ref location1), (long)value);
         #endregion
+
+        #region MemoryBarrier
+        /// <summary>
+        /// Synchronizes memory access as follows:
+        /// The processor that executes the current thread cannot reorder instructions in such a way that memory accesses before
+        /// the call to <see cref="MemoryBarrier"/> execute after memory accesses that follow the call to <see cref="MemoryBarrier"/>.
+        /// </summary>
+        [Intrinsic]
+        public static void MemoryBarrier() => MemoryBarrier();
+
+        /// <summary>
+        /// Synchronizes memory access as follows:
+        /// The processor that executes the current thread cannot reorder instructions in such a way that memory reads before
+        /// the call to <see cref="ReadMemoryBarrier"/> execute after memory accesses that follow the call to <see cref="ReadMemoryBarrier"/>.
+        /// </summary>
+        [Intrinsic]
+        internal static void ReadMemoryBarrier() => ReadMemoryBarrier();
+        #endregion
     }
 }

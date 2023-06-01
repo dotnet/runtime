@@ -2596,7 +2596,7 @@ namespace System.Xml.Schema
         {
             if (getParticles)
             {
-                string ContinuationString = SR.Format(SR.Sch_ContinuationString, new string[] { " " });
+                string ContinuationString = SR.Format(SR.Sch_ContinuationString, " ");
                 XmlSchemaParticle? currentParticle;
                 XmlSchemaParticle? nextParticle = null;
                 XmlQualifiedName currentQName;

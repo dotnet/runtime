@@ -24,17 +24,17 @@
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedDescription">
         <source>COM interface source generation requires all base COM interfaces to be valid interfaces. Fix any issues on the base interface to resolve this diagnostic.</source>
-        <target state="new">COM interface source generation requires all base COM interfaces to be valid interfaces. Fix any issues on the base interface to resolve this diagnostic.</target>
+        <target state="translated">La generación de orígenes de interfaz COM requiere que todas las interfaces COM base sean interfaces válidas. Corrija los problemas de la interfaz base para resolver este diagnóstico.</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedMessage">
         <source>COM interface {0} inherits from {1}, which has errors. ComInterfaceGenerator will not generate source for {0}.</source>
-        <target state="new">COM interface {0} inherits from {1}, which has errors. ComInterfaceGenerator will not generate source for {0}.</target>
+        <target state="translated">La interfaz {0} COM hereda de {1}, que tiene errores. ComInterfaceGenerator no generará el origen para {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedTitle">
         <source>The base COM interface failed to generate source. ComInterfaceGenerator will not generate source for this interface.</source>
-        <target state="new">The base COM interface failed to generate source. ComInterfaceGenerator will not generate source for this interface.</target>
+        <target state="translated">La interfaz COM base no pudo generar el origen. ComInterfaceGenerator no generará el origen para esta interfaz.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">
@@ -74,7 +74,7 @@
       </trans-unit>
       <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</source>
-        <target state="new">The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</target>
+        <target state="translated">La configuración de "StringMarshalling" y "StringMarshallingCustomType" debe coincidir con la interfaz COM base.</target>
         <note />
       </trans-unit>
       <trans-unit id="InterfaceTypeNotSupportedMessage">
@@ -169,7 +169,7 @@
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationOnInterfaceMessage">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</source>
-        <target state="new">The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</target>
+        <target state="translated">La configuración de "StringMarshalling" y "StringMarshallingCustomType" en la interfaz "{0}" no es válida. {1}</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationOnMethodMessage">

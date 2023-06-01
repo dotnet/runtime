@@ -681,7 +681,7 @@ void InvokeUtil::ValidateObjectTarget(FieldDesc *pField, TypeHandle enclosingTyp
         return;
 
     if (!pField->IsStatic() && !*target)
-        COMPlusThrow(kTargetException,W("RFLCT.Targ_StatFldReqTarg"));
+        COMPlusThrow(kTargetException,W("RFLCT_Targ_StatFldReqTarg"));
 
     // Verify that the object is of the proper type...
     TypeHandle ty = (*target)->GetTypeHandle();

@@ -207,10 +207,11 @@
                       </opcodes>
                     </task>
 
-                  <task name="Contention" symbol="CLR_CONTENTION_TASK"
+                    <task name="Contention" symbol="CLR_CONTENTION_TASK"
                           value="8" eventGUID="{561410f5-a138-4ab3-945e-516483cddfbc}"
                           message="$(string.RuntimePublisher.ContentionTaskMessage)">
                         <opcodes>
+                            <opcode name="LockCreated" message="$(string.RuntimePublisher.ContentionLockCreatedOpcodeMessage)" symbol="CLR_CONTENTION_LOCK_CREATED_OPCODE" value="11"/>
                         </opcodes>
                     </task>
 
@@ -3114,16 +3115,16 @@
                       </UserData>
                     </template>
 
-                    <template tid="LockCreated">
+                    <template tid="ContentionLockCreated">
                         <data name="LockID" inType="win:Pointer" />
                         <data name="AssociatedObjectID" inType="win:Pointer" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
                         <UserData>
-                            <LockCreated xmlns="myNs">
+                            <ContentionLockCreated xmlns="myNs">
                                 <LockID> %1 </LockID>
                                 <AssociatedObjectID> %2 </AssociatedObjectID>
                                 <ClrInstanceID> %3 </ClrInstanceID>
-                            </LockCreated>
+                            </ContentionLockCreated>
                         </UserData>
                     </template>
 
@@ -3690,10 +3691,10 @@
                            task="Contention"
                            symbol="ContentionStop_V1" message="$(string.RuntimePublisher.ContentionStop_V1EventMessage)"/>
 
-                    <event value="90" version="0" level="win:Informational"  template="LockCreated"
-                           keywords ="ContentionKeyword"  opcode="win:Info"
+                    <event value="90" version="0" level="win:Informational"  template="ContentionLockCreated"
+                           keywords ="ContentionKeyword"  opcode="LockCreated"
                            task="Contention"
-                           symbol="LockCreated" message="$(string.RuntimePublisher.LockCreatedEventMessage)"/>
+                           symbol="ContentionLockCreated" message="$(string.RuntimePublisher.ContentionLockCreatedEventMessage)"/>
 
 
                     <!-- CLR Stack events -->
@@ -8481,7 +8482,7 @@
                 <string id="RuntimePublisher.ContentionStart_V2EventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2;%nLockID=%3;%nAssociatedObjectID=%4;%nLockOwnerThreadID=%5"/>
                 <string id="RuntimePublisher.ContentionStopEventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2"/>
                 <string id="RuntimePublisher.ContentionStop_V1EventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2;DurationNs=%3"/>
-                <string id="RuntimePublisher.LockCreatedEventMessage" value="LockID=%1;%nAssociatedObjectID=%2;%nClrInstanceID=%3"/>
+                <string id="RuntimePublisher.ContentionLockCreatedEventMessage" value="LockID=%1;%nAssociatedObjectID=%2;%nClrInstanceID=%3"/>
                 <string id="RuntimePublisher.DCStartCompleteEventMessage" value="NONE" />
                 <string id="RuntimePublisher.DCEndCompleteEventMessage" value="NONE" />
                 <string id="RuntimePublisher.MethodDCStartEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6" />
@@ -9189,6 +9190,7 @@
                 <string id="RuntimePublisher.CLRStackWalkOpcodeMessage" value="Walk" />
                 <string id="RuntimePublisher.AppDomainMemAllocatedOpcodeMessage" value="MemAllocated" />
                 <string id="RuntimePublisher.AppDomainMemSurvivedOpcodeMessage" value="MemSurvived" />
+                <string id="RuntimePublisher.ContentionLockCreatedOpcodeMessage" value="LockCreated" />
                 <string id="RuntimePublisher.ThreadCreatedOpcodeMessage" value="ThreadCreated" />
                 <string id="RuntimePublisher.ThreadTerminatedOpcodeMessage" value="ThreadTerminated" />
                 <string id="RuntimePublisher.ThreadDomainEnterOpcodeMessage" value="DomainEnter" />
