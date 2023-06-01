@@ -1131,15 +1131,25 @@ namespace System.Numerics
 
             try
             {
-                if (targetSpan && charsIncludeDigits > destination.Length)
+                scoped ValueStringBuilder sb;
+                if (targetSpan)
                 {
-                    charsWritten = 0;
-                    spanSuccess = false;
-                    return null;
-                }
+                    if (charsIncludeDigits > destination.Length)
+                    {
+                        charsWritten = 0;
+                        spanSuccess = false;
+                        return null;
+                    }
 
-                // each byte is typically eight chars
-                ValueStringBuilder sb = charsIncludeDigits > 512 ? new ValueStringBuilder(charsIncludeDigits) : new ValueStringBuilder(stackalloc char[charsIncludeDigits]);
+                    // Because we have ensured destination can take actual char length, so now just use ValueStringBuilder as wrapper so that subsequent logic can be reused by 2 flows (targetSpan and non-targetSpan);
+                    // meanwhile there is no need to copy to destination again after format data for targetSpan flow.
+                    sb = new ValueStringBuilder(destination);
+                }
+                else
+                {
+                    // each byte is typically eight chars
+                    sb = charsIncludeDigits > 512 ? new ValueStringBuilder(charsIncludeDigits) : new ValueStringBuilder(stackalloc char[charsIncludeDigits]);
+                }
 
                 if (digits > charsForBits)
                 {
@@ -1153,10 +1163,12 @@ namespace System.Numerics
                     AppendByte(ref sb, bytes[i]);
                 }
 
+                Debug.Assert(sb.Length == charsIncludeDigits);
+
                 if (targetSpan)
                 {
-                    spanSuccess = sb.TryCopyTo(destination, out charsWritten);
-                    Debug.Assert(spanSuccess);
+                    charsWritten = charsIncludeDigits;
+                    spanSuccess = true;
                     return null;
                 }
 
