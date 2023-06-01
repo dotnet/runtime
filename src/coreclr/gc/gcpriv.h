@@ -4244,7 +4244,8 @@ private:
         {
             uint64_t    elapsed_between_gcs;    // time between gcs in microseconds
             uint64_t    gc_elapsed_time;        // time the gc took
-            uint64_t    msl_wait_time;          // time the allocator spent waiting for the msl lock
+            uint64_t    soh_msl_wait_time;      // time the allocator spent waiting for the soh msl lock
+            uint64_t    uoh_msl_wait_time;      // time the allocator spent waiting for the uoh msl lock
             size_t      allocating_thread_count;// number of allocating threads
             size_t      heap_size;
         };

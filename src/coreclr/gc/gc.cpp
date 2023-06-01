@@ -3173,6 +3173,17 @@ void gc_heap::fire_per_heap_hist_event (gc_history_per_heap* current_gc_data_per
     current_gc_data_per_heap->gen_to_condemn_reasons.print (heap_num);
 }
 
+int percentage (uint64_t part, uint64_t whole)
+{
+    if (whole == 0)
+        return 100;
+    double quotient = (double)part / (double)whole;
+    if (quotient >= 0.99)
+        return 99;
+    else
+        return (int)(quotient*100.0);
+}
+
 void gc_heap::fire_pevents()
 {
     gc_history_global* current_gc_data_global = get_gc_data_global();
@@ -3198,12 +3209,30 @@ void gc_heap::fire_pevents()
     {
         time_info_32[i] = limit_time_to_uint32 (time_info[i]);
     }
+#ifdef DYNAMIC_HEAP_COUNT
+    uint32_t prev_sample_index = (dynamic_heap_count_data.sample_index + dynamic_heap_count_data_t::sample_size - 1) % dynamic_heap_count_data_t::sample_size;
+    assert (prev_sample_index < dynamic_heap_count_data_t::sample_size);
+    dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[prev_sample_index];
+
+    int gc_percentage = percentage (sample.gc_elapsed_time, sample.elapsed_between_gcs);
+    int soh_percentage = percentage (sample.soh_msl_wait_time, sample.elapsed_between_gcs);
+    int uoh_percentage = percentage (sample.uoh_msl_wait_time, sample.elapsed_between_gcs);
+    int num_alloc_threads = (int)min (sample.allocating_thread_count, 1000);
+
+    // pack the 4 numbers into one
+    int metric = num_alloc_threads * (100*100*100) +
+                 uoh_percentage * (100*100) +
+                 soh_percentage * (100) +
+                 gc_percentage;
+#else //DYNAMIC_HEAP_COUNT
+    int metric = current_gc_data_global->gen0_reduction_count;
+#endif //DYNAMIC_HEAP_COUNT
 
     FIRE_EVENT(GCGlobalHeapHistory_V4,
                current_gc_data_global->final_youngest_desired,
                current_gc_data_global->num_heaps,
                current_gc_data_global->condemned_generation,
-               current_gc_data_global->gen0_reduction_count,
+               metric,
                current_gc_data_global->reason,
                current_gc_data_global->global_mechanisms_p,
                current_gc_data_global->pause_mode,
@@ -24891,7 +24920,8 @@ void gc_heap::check_heap_count ()
     if (heap_number == 0)
     {
         // acquire data for the current sample
-        uint64_t    msl_wait_time = 0;
+        uint64_t    soh_msl_wait_time = 0;
+        uint64_t    uoh_msl_wait_time = 0;
         size_t      allocating_thread_count = 0;
         size_t      heap_size = 0;
         for (int i = 0; i < n_heaps; i++)
@@ -24900,10 +24930,10 @@ void gc_heap::check_heap_count ()
 
             allocating_thread_count += hp->alloc_contexts_used;
 
-            msl_wait_time += hp->more_space_lock_soh.msl_wait_time;
+            soh_msl_wait_time += hp->more_space_lock_soh.msl_wait_time;
             hp->more_space_lock_soh.msl_wait_time = 0;
 
-            msl_wait_time += hp->more_space_lock_uoh.msl_wait_time;
+            uoh_msl_wait_time += hp->more_space_lock_uoh.msl_wait_time;
             hp->more_space_lock_uoh.msl_wait_time = 0;
 
             for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
@@ -24921,15 +24951,17 @@ void gc_heap::check_heap_count ()
         // persist data for the current sample
         dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[dynamic_heap_count_data.sample_index];
 
-        sample.msl_wait_time = msl_wait_time;
+        sample.soh_msl_wait_time = soh_msl_wait_time;
+        sample.uoh_msl_wait_time = uoh_msl_wait_time;
         sample.elapsed_between_gcs = dd_time_clock (hp0_dd0) - dd_previous_time_clock (hp0_dd0);
         sample.gc_elapsed_time = dd_gc_elapsed_time (hp0_dd0);
         sample.allocating_thread_count = allocating_thread_count;
         sample.heap_size = heap_size;
 
-        dprintf (6666, ("sample %d: msl_wait_time: %zd, elapsed_between_gcs: %zd, gc_elapsed_time: %d, heap_size: %zd MB",
+        dprintf (6666, ("sample %d: soh_msl_wait_time: %zd, uoh_msl_wait_time: %zd, elapsed_between_gcs: %zd, gc_elapsed_time: %d, heap_size: %zd MB",
             dynamic_heap_count_data.sample_index,
-            sample.msl_wait_time,
+            sample.soh_msl_wait_time,
+            sample.uoh_msl_wait_time,
             sample.elapsed_between_gcs,
             sample.gc_elapsed_time,
             sample.heap_size/(1024*1024)));
@@ -24955,7 +24987,7 @@ void gc_heap::check_heap_count ()
             for (int i = 0; i < dynamic_heap_count_data_t::sample_size; i++)
             {
                 dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[i];
-                uint64_t overhead_time = (sample.msl_wait_time / n_heaps) + sample.gc_elapsed_time;
+                uint64_t overhead_time = ((sample.soh_msl_wait_time + sample.uoh_msl_wait_time)/ n_heaps) + sample.gc_elapsed_time;
                 percent_overhead[i] = overhead_time * 100.0f / sample.elapsed_between_gcs;
                 if (percent_overhead[i] < 0)
                     percent_overhead[i] = 0;
