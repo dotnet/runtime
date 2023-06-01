@@ -138,19 +138,19 @@ The .NET Foundation licenses this file to you under the MIT license.
       <_NETCoreAppRuntimePackPath>%(_NETCoreAppFrameworkReference.RuntimePackPath)/runtimes/$(RuntimeIdentifier)/</_NETCoreAppRuntimePackPath>
       <IlcFrameworkNativePath Condition="'$(IlcFrameworkNativePath)' == '' and '$(PublishAotUsingRuntimePack)' == 'true'">$(_NETCoreAppRuntimePackPath)\native\</IlcFrameworkNativePath>
       <IlcFrameworkNativePath Condition="'$(IlcFrameworkNativePath)' == '' and '$(PublishAotUsingRuntimePack)' != 'true'">$(RuntimePackagePath)\framework\</IlcFrameworkNativePath>
-      <IlcFrameworkSdkPath Condition="'$(IlcFrameworkSdkPath)' == '' and '$(PublishAotUsingRuntimePack)' == 'true'">$(IlcFrameworkNativePath)</IlcFrameworkSdkPath>
-      <IlcFrameworkSdkPath Condition="'$(IlcFrameworkSdkPath)' == '' and '$(PublishAotUsingRuntimePack)' != 'true'">$(IlcSdkPath)</IlcFrameworkSdkPath>
+      <IlcPrivateSdkPath Condition="'$(IlcPrivateSdkPath)' == '' and '$(PublishAotUsingRuntimePack)' == 'true'">$(IlcFrameworkNativePath)</IlcPrivateSdkPath>
+      <IlcPrivateSdkPath Condition="'$(IlcPrivateSdkPath)' == '' and '$(PublishAotUsingRuntimePack)' != 'true'">$(IlcSdkPath)</IlcPrivateSdkPath>
       <IlcMibcPath Condition="'$(IlcMibcPath)' == ''">$(RuntimePackagePath)\mibc\</IlcMibcPath>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(PublishAotUsingRuntimePack)' == 'true'">
-      <PrivateSdkAssemblies Include="$(IlcFrameworkSdkPath)*.dll"/>
+      <PrivateSdkAssemblies Include="$(IlcPrivateSdkPath)*.dll"/>
       <FrameworkAssemblies Include="@(RuntimePackAsset)" Condition="'%(Extension)' == '.dll'" />
       <DefaultFrameworkAssemblies Include="@(FrameworkAssemblies)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(PublishAotUsingRuntimePack)' != 'true'">
-      <PrivateSdkAssemblies Include="$(IlcFrameworkSdkPath)*.dll"/>
+      <PrivateSdkAssemblies Include="$(IlcPrivateSdkPath)*.dll"/>
       <!-- Exclude unmanaged dlls -->
       <FrameworkAssemblies Include="$(IlcFrameworkPath)*.dll" Exclude="$(IlcFrameworkPath)*.Native.dll;$(IlcFrameworkPath)msquic.dll" />
 
