@@ -189,41 +189,6 @@ mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t 
 		bundle_contains_satellite_assemblies = true;
 }
 
-void
-mono_bundled_resources_add_assembly_resource (const char *name, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *))
-{
-	// Check if assembly pdb counterpart had been added via mono_register_symfile_for_assembly
-	MonoBundledAssemblyResource *assembly_resource = mono_bundled_resources_get_assembly_resource (name);
-	if (!assembly_resource) {
-		assembly_resource = g_new0 (MonoBundledAssemblyResource, 1);
-		assembly_resource->resource.type = MONO_BUNDLED_ASSEMBLY;
-		assembly_resource->resource.id = name;
-		assembly_resource->resource.free_bundled_resource_func = free_bundled_resource_func;
-		mono_bundled_resources_add ((MonoBundledResource **)&assembly_resource, 1);
-	} else {
-		// Ensure the MonoBundledAssemblyData has not been initialized
-		g_assert (!assembly_resource->assembly.name && !assembly_resource->assembly.data && assembly_resource->assembly.size == 0);
-	}
-	assembly_resource->assembly.name = name;
-	assembly_resource->assembly.data = data;
-	assembly_resource->assembly.size = size;
-}
-
-void
-mono_bundled_resources_add_satellite_assembly_resource (const char *id, const char *name, const char *culture, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *))
-{
-	MonoBundledSatelliteAssemblyResource *satellite_assembly_resource = mono_bundled_resources_get_satellite_assembly_resource (id);
-	g_assert (!satellite_assembly_resource);
-	satellite_assembly_resource = g_new0 (MonoBundledSatelliteAssemblyResource, 1);
-	satellite_assembly_resource->resource.type = MONO_BUNDLED_SATELLITE_ASSEMBLY;
-	satellite_assembly_resource->resource.id = id;
-	satellite_assembly_resource->resource.free_bundled_resource_func = free_bundled_resource_func;
-	satellite_assembly_resource->satellite_assembly.name = name;
-	satellite_assembly_resource->satellite_assembly.culture = culture;
-	satellite_assembly_resource->satellite_assembly.data = data;
-	satellite_assembly_resource->satellite_assembly.size = size;
-	mono_bundled_resources_add ((MonoBundledResource **)&satellite_assembly_resource, 1);
-}
 
 //---------------------------------------------------------------------------------------
 //
@@ -423,6 +388,76 @@ mono_bundled_resources_get_data_resource_values (const char *id, const uint8_t *
 	*size_out = bundled_data_resource->data.size;
 
 	return true;
+}
+
+void
+mono_bundled_resources_add_assembly_resource (const char *id, const char *name, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *))
+{
+	// Check if assembly pdb counterpart had been added via mono_register_symfile_for_assembly
+	MonoBundledAssemblyResource *assembly_resource = mono_bundled_resources_get_assembly_resource (name);
+	if (!assembly_resource) {
+		assembly_resource = g_new0 (MonoBundledAssemblyResource, 1);
+		assembly_resource->resource.type = MONO_BUNDLED_ASSEMBLY;
+		assembly_resource->resource.id = id;
+		assembly_resource->resource.free_bundled_resource_func = free_bundled_resource_func;
+		mono_bundled_resources_add ((MonoBundledResource **)&assembly_resource, 1);
+	} else {
+		// Ensure the MonoBundledAssemblyData has not been initialized
+		g_assert (!assembly_resource->assembly.name && !assembly_resource->assembly.data && assembly_resource->assembly.size == 0);
+	}
+	assembly_resource->assembly.name = name;
+	assembly_resource->assembly.data = data;
+	assembly_resource->assembly.size = size;
+}
+
+void
+mono_bundled_resources_add_assembly_symbol_resource (const char *id, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *))
+{
+    // Check if assembly dll counterpart had been added via mono_register_bundled_assemblies
+	MonoBundledAssemblyResource *assembly_resource = mono_bundled_resources_get_assembly_resource (id);
+	if (!assembly_resource) {
+		assembly_resource = g_new0 (MonoBundledAssemblyResource, 1);
+		assembly_resource->resource.type = MONO_BUNDLED_ASSEMBLY;
+		assembly_resource->resource.id = id;
+		assembly_resource->resource.free_bundled_resource_func = &mono_bundled_resources_free_bundled_resource_func;
+		mono_bundled_resources_add ((MonoBundledResource **)&assembly_resource, 1);
+	} else {
+		// Ensure the MonoBundledSymbolData has not been initialized
+		g_assert (!assembly_resource->symbol_data.data && assembly_resource->symbol_data.size == 0);
+	}
+	assembly_resource->symbol_data.data = (const uint8_t *)raw_contents;
+	assembly_resource->symbol_data.size = (uint32_t)size;
+}
+
+void
+mono_bundled_resources_add_satellite_assembly_resource (const char *id, const char *name, const char *culture, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *))
+{
+	MonoBundledSatelliteAssemblyResource *satellite_assembly_resource = mono_bundled_resources_get_satellite_assembly_resource (id);
+	g_assert (!satellite_assembly_resource);
+	satellite_assembly_resource = g_new0 (MonoBundledSatelliteAssemblyResource, 1);
+	satellite_assembly_resource->resource.type = MONO_BUNDLED_SATELLITE_ASSEMBLY;
+	satellite_assembly_resource->resource.id = id;
+	satellite_assembly_resource->resource.free_bundled_resource_func = free_bundled_resource_func;
+	satellite_assembly_resource->satellite_assembly.name = name;
+	satellite_assembly_resource->satellite_assembly.culture = culture;
+	satellite_assembly_resource->satellite_assembly.data = data;
+	satellite_assembly_resource->satellite_assembly.size = size;
+	mono_bundled_resources_add ((MonoBundledResource **)&satellite_assembly_resource, 1);
+}
+
+void
+mono_bundled_resources_add_data_resource (const char *id, const char *name, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *))
+{
+	MonoBundledDataResource *data_resource = mono_bundled_resources_get_data_resource (id);
+	g_assert (!data_resource);
+	data_resource = g_new0 (MonoBundledDataResource, 1);
+	data_resource->resource.type = MONO_BUNDLED_DATA;
+	data_resource->resource.id = id;
+	data_resource->resource.free_bundled_resource_func = free_bundled_resource_func;
+	data_resource->data.name = name;
+	data_resource->data.data = data;
+	data_resource->data.size = size;
+	mono_bundled_resources_add ((MonoBundledResource **)&data_resource, 1);
 }
 
 //---------------------------------------------------------------------------------------
