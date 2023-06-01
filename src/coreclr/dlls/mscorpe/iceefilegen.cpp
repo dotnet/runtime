@@ -35,21 +35,12 @@ HRESULT ICeeFileGen::CreateCeeFile (HCEEFILE *ceeFile)
 
 HRESULT ICeeFileGen::CreateCeeFileEx (HCEEFILE *ceeFile, DWORD createFlags)
 {
-    return CreateCeeFileEx2(ceeFile, createFlags, NULL);
-}
-
-//
-// Seed file is used as the base file. The new file data will be "appended" to the seed file
-//
-
-HRESULT ICeeFileGen::CreateCeeFileEx2 (HCEEFILE *ceeFile, DWORD createFlags, LPCWSTR seedFileName)
-{
     if (!ceeFile)
         return E_POINTER;
 
     CeeFileGenWriter *gen = NULL;
     HRESULT hr;
-    IfFailRet(CeeFileGenWriter::CreateNewInstanceEx(NULL, gen, createFlags, seedFileName));
+    IfFailRet(CeeFileGenWriter::CreateNewInstance(NULL, gen, createFlags));
     TESTANDRETURN(gen != NULL, E_OUTOFMEMORY);
     *ceeFile = gen;
 

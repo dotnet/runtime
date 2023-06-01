@@ -180,24 +180,12 @@ inline IMAGE_SYMBOL* GetSymbolEntry(IMAGE_SYMBOL* pHead, SIZE_T idx)
 }
 
 //*****************************************************************************
-// To get a new instance, call CreateNewInstance() or CreateNewInstanceEx() instead of new
+// To get a new instance, call CreateNewInstance() instead of new
 //*****************************************************************************
 
 HRESULT CeeFileGenWriter::CreateNewInstance(CCeeGen *pCeeFileGenFrom,
                                             CeeFileGenWriter* & pGenWriter,
                                             DWORD createFlags)
-{
-    return CreateNewInstanceEx(pCeeFileGenFrom, pGenWriter, createFlags);
-}
-
-//
-// Seed file is used as the base file. The new file data will be "appended" to the seed file
-//
-
-HRESULT CeeFileGenWriter::CreateNewInstanceEx(CCeeGen *pCeeFileGenFrom,
-                                              CeeFileGenWriter* & pGenWriter,
-                                              DWORD createFlags,
-                                              LPCWSTR seedFileName)
 {
     HRESULT hr = S_OK;
     ULONG preallocatedOffset = 0;
@@ -216,7 +204,7 @@ HRESULT CeeFileGenWriter::CreateNewInstanceEx(CCeeGen *pCeeFileGenFrom,
     //workaround
     //What's really the correct thing to be doing here?
     //HRESULT hr = pPEWriter->Init(pCeeFileGenFrom ? pCeeFileGenFrom->getPESectionMan() : NULL);
-    hr = pPEWriter->Init(NULL, createFlags, seedFileName);
+    hr = pPEWriter->Init(NULL, createFlags);
     IfFailGo(hr);
 
     //Create the general PEWriter.
@@ -224,16 +212,13 @@ HRESULT CeeFileGenWriter::CreateNewInstanceEx(CCeeGen *pCeeFileGenFrom,
     hr = pPrivateGenWriter->Init(); // base class member to finish init
     IfFailGo(hr);
 
-    if (!seedFileName) // Use base file's preferred base (if present)
+    if (pPEWriter->isPE32())
     {
-        if (pPEWriter->isPE32())
-        {
-            pPrivateGenWriter->setImageBase((DWORD) CEE_IMAGE_BASE_32);   // use same default as linker
-        }
-        else
-        {
-            pPrivateGenWriter->setImageBase64((ULONGLONG) CEE_IMAGE_BASE_64); // use same default as linker
-        }
+        pPrivateGenWriter->setImageBase((DWORD) CEE_IMAGE_BASE_32);   // use same default as linker
+    }
+    else
+    {
+        pPrivateGenWriter->setImageBase64((ULONGLONG) CEE_IMAGE_BASE_64); // use same default as linker
     }
 
     pPrivateGenWriter->setSubsystem(IMAGE_SUBSYSTEM_WINDOWS_CUI, CEE_IMAGE_SUBSYSTEM_MAJOR_VERSION, CEE_IMAGE_SUBSYSTEM_MINOR_VERSION);

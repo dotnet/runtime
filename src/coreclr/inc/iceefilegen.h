@@ -182,13 +182,6 @@ class ICeeFileGen {
                                                      PIMAGE_SECTION_HEADER *ppSections,
                                                      ULONG *pNumSections);
 
-    // Seed file is a base file which is copied over into the output file
-    // Note that there are restrictions on the seed file (the sections
-    // cannot be relocated), and that the copy is not complete as the new
-    // headers overwrite the seed file headers.
-    virtual HRESULT CreateCeeFileEx2(HCEEFILE *ceeFile, ULONG createFlags,
-                                     LPCWSTR seedFileName = NULL);
-
     virtual HRESULT SetVTableEntry64(HCEEFILE ceeFile, ULONG size, void* ptr);
 };
 
