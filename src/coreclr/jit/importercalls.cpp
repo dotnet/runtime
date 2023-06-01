@@ -6343,7 +6343,7 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
     JITDUMP("Revoking guarded devirtualization candidacy for call [%06u]: target method can't be inlined\n",
             dspTreeID(call));
 
-    call->ClearGuardedDevirtualizationCandidate();
+    call->ClearInlineInfo();
 }
 
 //------------------------------------------------------------------------

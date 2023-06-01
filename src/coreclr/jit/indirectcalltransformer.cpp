@@ -534,12 +534,9 @@ private:
             return call;
         }
 
-        //------------------------------------------------------------------------
-        // ClearFlag: clear guarded devirtualization candidate flag from the original call.
-        //
         virtual void ClearFlag()
         {
-            origCall->ClearGuardedDevirtualizationCandidate();
+            // We remove the GDV flag from the call in the CreateElse
         }
 
         virtual UINT8 GetChecksCount()
@@ -986,6 +983,9 @@ private:
         //
         virtual void CreateElse()
         {
+            // Remove everything related to inlining from the original call
+            origCall->ClearInlineInfo();
+
             elseBlock = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
             elseBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
 
