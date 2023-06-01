@@ -461,12 +461,12 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (data is JsonElement element)
                 {
-                    if (!PlatformDetection.IsNativeAot)
-                    {
-                        // The reflection-based validation baseline is not available in Native AOT
-                        SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
-                        obj.Verify();
-                    }
+#if BUILDING_SOURCE_GENERATOR_TESTS
+                    SimpleTestClass obj = JsonSerializer.Deserialize(element, System.Text.Json.SourceGeneration.Tests.CollectionTests_Default.CollectionTestsContext_Default.Default.SimpleTestClass);
+#else
+                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element);
+#endif
+                    obj.Verify();
                 }
                 else
                 {
@@ -514,12 +514,12 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (data is JsonElement element)
                 {
-                    if (!PlatformDetection.IsNativeAot)
-                    {
-                        // The reflection-based validation baseline is not available in Native AOT
-                        SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
-                        obj.Verify();
-                    }
+#if BUILDING_SOURCE_GENERATOR_TESTS
+                    SimpleTestClass obj = JsonSerializer.Deserialize(element, System.Text.Json.SourceGeneration.Tests.CollectionTests_Default.CollectionTestsContext_Default.Default.SimpleTestClass);
+#else
+                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element);
+#endif
+                    obj.Verify();
                 }
                 else
                 {
@@ -569,12 +569,12 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (data is JsonElement element)
                 {
-                    if (!PlatformDetection.IsNativeAot)
-                    {
-                        // The reflection-based validation baseline is not available in Native AOT
-                        SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
-                        obj.Verify();
-                    }
+#if BUILDING_SOURCE_GENERATOR_TESTS
+                    SimpleTestClass obj = JsonSerializer.Deserialize(element, System.Text.Json.SourceGeneration.Tests.CollectionTests_Default.CollectionTestsContext_Default.Default.SimpleTestClass);
+#else
+                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element);
+#endif
+                    obj.Verify();
                 }
                 else
                 {

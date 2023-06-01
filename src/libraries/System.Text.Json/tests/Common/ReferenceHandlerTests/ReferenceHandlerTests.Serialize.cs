@@ -29,8 +29,7 @@ namespace System.Text.Json.Serialization.Tests
             public Dictionary<string, string> ContactsString { get; set; } = new Dictionary<string, string>() { { "Bob", "555-5555" } };
         }
 
-        [Fact]
-        [ActiveIssue("Newtonsoft.Json baseline not supported in Native AOT", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public async Task ExtensionDataDictionaryHandlesPreserveReferences()
         {
             Employee bob = new Employee { Name = "Bob" };

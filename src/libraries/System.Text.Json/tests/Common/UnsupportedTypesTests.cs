@@ -23,10 +23,11 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(GetUnsupportedValues))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86973", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public async Task DeserializeUnsupportedType<T>(ValueWrapper<T> wrapper)
         {
             _ = wrapper; // only used to instantiate T
+
+            Assert.NotNull(Serializer.GetTypeInfo(typeof(T))); // It should be possible to obtain metadata for the type.
 
             string json = @"""Some string"""; // Any test payload is fine.
 
@@ -58,10 +59,11 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(GetUnsupportedValues))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86973", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public async Task SerializeUnsupportedType<T>(ValueWrapper<T> wrapper)
         {
             T value = wrapper.value;
+
+            Assert.NotNull(Serializer.GetTypeInfo(typeof(T))); // It should be possible to obtain metadata for the type.
 
             Type type = GetNullableOfTUnderlyingType(typeof(T), out bool isNullableOfT);
             string fullName = type.FullName;
@@ -101,18 +103,19 @@ namespace System.Text.Json.Serialization.Tests
             }
 
 #if !BUILDING_SOURCE_GENERATOR_TESTS
-            Type runtimeType = GetNullableOfTUnderlyingType(value.GetType(), out bool _);
+            // The reflection-based serializer will report the runtime type and not the declared type.
+            fullName = GetNullableOfTUnderlyingType(value.GetType(), out bool _).FullName;
+#endif
 
             ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.SerializeWrapper<object>(value));
             exAsStr = ex.ToString();
-            Assert.Contains(runtimeType.FullName, exAsStr);
+            Assert.Contains(fullName, exAsStr);
             Assert.Contains("$", exAsStr);
 
             ClassWithType<object> polyObj = new ClassWithType<object> { Prop = value };
             ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.SerializeWrapper(polyObj));
             exAsStr = ex.ToString();
-            Assert.Contains(runtimeType.FullName, exAsStr);
-#endif
+            Assert.Contains(fullName, exAsStr);
         }
 
         public static IEnumerable<object[]> GetUnsupportedValues()

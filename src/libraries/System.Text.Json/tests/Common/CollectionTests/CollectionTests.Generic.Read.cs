@@ -617,20 +617,19 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50721", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public async Task ReadISetTOfHashSetT()
         {
             ISet<HashSet<int>> result = await Serializer.DeserializeWrapper<ISet<HashSet<int>>>(@"[[1,2],[3,4]]");
 
             if (result.First().Contains(1))
             {
-                Assert.True(result.First().SetEquals(new []{ 1, 2 }));
-                Assert.True(result.Last().SetEquals(new []{ 3, 4 }));
+                AssertExtensions.Equal(new HashSet<int> { 1, 2 }, result.First());
+                AssertExtensions.Equal(new HashSet<int> { 3, 4 }, result.Last());
             }
             else
             {
-                Assert.True(result.First().SetEquals(new[] { 3, 4 }));
-                Assert.True(result.Last().SetEquals(new[] { 1, 2 }));
+                AssertExtensions.Equal(new HashSet<int> { 3, 4 }, result.First());
+                AssertExtensions.Equal(new HashSet<int> { 1, 2 }, result.Last());
             }
         }
 
