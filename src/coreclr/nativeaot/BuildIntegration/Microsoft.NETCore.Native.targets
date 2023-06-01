@@ -43,6 +43,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <UseSystemResourceKeys Condition="$(IlcDisableReflection) == 'true'">true</UseSystemResourceKeys>
     <EventSourceSupport Condition="$(IlcDisableReflection) == 'true'">false</EventSourceSupport>
     <EventSourceSupport Condition="$(EventSourceSupport) == ''">false</EventSourceSupport>
+    <UseWindowsThreadPool Condition="$(UseWindowsThreadPool) == ''">true</UseWindowsThreadPool>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(SuppressAotAnalysisWarnings)' == 'true'">
@@ -255,6 +256,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
       <!-- The managed debugging support in libraries is unused - trim it -->
       <IlcArg Condition="'$(IlcKeepManagedDebuggerSupport)' != 'true'" Include="--feature:System.Diagnostics.Debugger.IsSupported=false" />
+      <IlcArg Condition="'$(UseWindowsThreadPool)' != ''" Include="--feature:System.Diagnostics.Debugger.IsSupported=$(UseWindowsThreadPool)" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />
