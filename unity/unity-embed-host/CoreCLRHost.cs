@@ -263,6 +263,13 @@ static unsafe partial class CoreCLRHost
         [NativeCallbackType("gpointer")] IntPtr val)
         => Marshal.PtrToStructure(val, klass.TypeFromHandleIntPtr()).ToNativeRepresentation();
 
+    [return: NativeCallbackType("MonoException*")]
+    public static IntPtr get_exception_argument_null([NativeCallbackType("const char*")] sbyte* arg)
+    {
+        var ns = new string(arg);
+        return new ArgumentNullException(ns).ToNativeRepresentation();
+    }
+
     [return: NativeCallbackType("MonoObject*")]
     public static IntPtr object_new(
         [ManagedWrapperOptions(ManagedWrapperOptions.Exclude)]
