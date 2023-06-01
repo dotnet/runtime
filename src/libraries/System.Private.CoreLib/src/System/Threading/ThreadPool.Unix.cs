@@ -23,10 +23,8 @@ namespace System.Threading
 #endif
 
 #if !CORECLR
-        private static bool EnsureConfigInitializedCore() => true;
+        private static bool EnsureConfigInitialized() => true;
 #endif
-
-        internal static bool EnsureConfigInitialized() => EnsureConfigInitializedCore();
 
         internal static object GetOrCreateThreadLocalCompletionCountObject() =>
             PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountObject();
