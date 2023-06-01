@@ -65,19 +65,19 @@ namespace System.Runtime.CompilerServices
     public sealed class UnsafeAccessorAttribute : Attribute
     {
         /// <summary>
-        /// Instantiates an <see cref="UnsafeAccessorAttribute"/> providing access to an API of kind <see cref="UnsafeAccessorKind"/>.
+        /// Instantiates an <see cref="UnsafeAccessorAttribute"/> providing access to a member of kind <see cref="UnsafeAccessorKind"/>.
         /// </summary>
-        /// <param name="kind">The kind of the target to provide access.</param>
+        /// <param name="kind">The kind of the target to which access is provided.</param>
         public UnsafeAccessorAttribute(UnsafeAccessorKind kind)
             => Kind = kind;
 
         /// <summary>
-        /// Kind of API to provide access.
+        /// Gets the kind of member to which access is provided.
         /// </summary>
         public UnsafeAccessorKind Kind { get; }
 
         /// <summary>
-        /// Name of the API to provide access.
+        /// Gets or sets the name of the member to which access is provided.
         /// </summary>
         /// <remarks>
         /// The name defaults to the annotated method name if not specified.
