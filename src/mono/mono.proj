@@ -808,7 +808,7 @@
     </ItemGroup>
 
     <!-- AOT compiler cross-build options  -->
-    <ItemGroup Condition="'$(AotHostArchitecture)' != ''">
+    <ItemGroup Condition="'$(AotHostArchitecture)' != '' and '$(MonoCrossDir)' != ''">
       <MonoAOTCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
       <_MonoAotBuildEnv Include="TARGET_BUILD_ARCH=$(AotHostArchitecture)" />
     </ItemGroup>
