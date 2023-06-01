@@ -807,17 +807,19 @@
       <MonoAotCrossOffsetsToolParams Condition="'$(TargetsWasi)' == 'true'" Include="--wasi-sdk=&quot;$([MSBuild]::NormalizePath('$(WASI_SDK_PATH)'))&quot;" />
     </ItemGroup>
 
+    <!-- AOT compiler cross-build options  -->
+    <ItemGroup Condition="'$(AotHostArchitecture)' != ''">
+      <MonoAOTCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
+      <_MonoAotBuildEnv Include="TARGET_BUILD_ARCH=$(AotHostArchitecture)" />
+    </ItemGroup>
+
     <!-- x64 Linux cross build options -->
     <ItemGroup Condition="'$(AotHostArchitecture)' == 'x64' and '$(AotHostOS)' == 'linux'">
-      <MonoAOTCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
-      <_MonoAotBuildEnv Include="TARGET_BUILD_ARCH=x64" />
       <_MonoAotBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/x86_64-linux-gnu/pkgconfig" />
     </ItemGroup>
 
     <!-- ARM Linux cross build options on CI -->
     <ItemGroup Condition="'$(AotHostArchitecture)' == 'arm64' and '$(AotHostOS)' == 'linux'">
-      <MonoAOTCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
-      <_MonoAotBuildEnv Include="TARGET_BUILD_ARCH=arm64" />
       <_MonoAotBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/aarch64-linux-gnu/pkgconfig" />
     </ItemGroup>
 
