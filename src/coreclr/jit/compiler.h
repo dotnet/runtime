@@ -7128,9 +7128,10 @@ public:
     void pickGDV(GenTreeCall*           call,
                  IL_OFFSET              ilOffset,
                  bool                   isInterface,
-                 CORINFO_CLASS_HANDLE*  classGuess,
-                 CORINFO_METHOD_HANDLE* methodGuess,
-                 unsigned*              likelihood);
+                 CORINFO_CLASS_HANDLE*  classGuesses,
+                 CORINFO_METHOD_HANDLE* methodGuesses,
+                 int*                   candidatesCount,
+                 unsigned*              likelihoods);
 
     void considerGuardedDevirtualization(GenTreeCall*            call,
                                          IL_OFFSET               ilOffset,
