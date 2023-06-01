@@ -2329,11 +2329,12 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				instance_size &= ~(min_align - 1);
 			}
 		}
-		if (m_class_is_inlinearray (klass) && inlined_fields != 1)
+		if (m_class_is_inlinearray (klass) && inlined_fields != 1) {
 			if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback)
 				mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct must have a single field.");
 			else
    				mono_class_set_type_load_failure (klass, "Inline array struct must have a single field.");
+		}
 		break;
 	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT: {
 		real_size = 0;
