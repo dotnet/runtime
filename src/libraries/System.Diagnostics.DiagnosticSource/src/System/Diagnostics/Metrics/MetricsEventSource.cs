@@ -46,6 +46,7 @@ namespace System.Diagnostics.Metrics
         public static readonly MetricsEventSource Log = new();
 
         private const string SharedSessionId = "SHARED";
+        private const string ClientIdKey = "ClientId";
 
         public static class Keywords
         {
@@ -290,35 +291,14 @@ namespace System.Diagnostics.Metrics
 
                             bool validShared = true;
 
-                            Func<string, double> parseDouble = (string s) =>
-                            {
-                                if (double.TryParse(s, out double result))
-                                {
-                                    return result;
-                                }
-
-                                return -1;
-                            };
-
-                            Func<string, int> parseInt = (string s) =>
-                            {
-                                if (int.TryParse(s, out int result))
-                                {
-                                    return result;
-                                }
-
-                                return -1;
-                            };
-
                             double refreshInterval;
                             lock (_aggregationManager)
                             {
                                 validShared = SetSharedRefreshIntervalSecs(command.Arguments!, _aggregationManager.CollectionPeriod.TotalSeconds, out refreshInterval) ? validShared : false;
                             }
 
-                            int maxHistograms, maxTimeSeries;
-                            validShared = SetSharedMaxHistograms(command.Arguments!, _aggregationManager.MaxHistograms, out maxHistograms) ? validShared : false;
-                            validShared = SetSharedMaxTimeSeries(command.Arguments!, _aggregationManager.MaxTimeSeries, out maxTimeSeries) ? validShared : false;
+                            validShared = SetSharedMaxHistograms(command.Arguments!, _aggregationManager.MaxHistograms, out int maxHistograms) ? validShared : false;
+                            validShared = SetSharedMaxTimeSeries(command.Arguments!, _aggregationManager.MaxTimeSeries, out int maxTimeSeries) ? validShared : false;
 
                             if (command.Command != EventCommand.Disable)
                             {
@@ -340,7 +320,7 @@ namespace System.Diagnostics.Metrics
                                 else
                                 {
                                     // In theory this should be required as part of the contract to do shared -> not currently safe with !
-                                    if (command.Arguments!.TryGetValue("ClientId", out string? clientId))
+                                    if (command.Arguments!.TryGetValue(ClientIdKey, out string? clientId))
                                     {
                                         lock (_aggregationManager)
                                         {
@@ -435,7 +415,7 @@ namespace System.Diagnostics.Metrics
             private void IncrementRefCount(string clientId, EventCommandEventArgs command)
             {
                 // Could be unsafe if ClientId protocol isn't followed
-                if (command.Arguments!.TryGetValue("ClientId", out string? clientIdArg))
+                if (command.Arguments!.TryGetValue(ClientIdKey, out string? clientIdArg))
                 {
                     clientId = clientIdArg!;
                 }

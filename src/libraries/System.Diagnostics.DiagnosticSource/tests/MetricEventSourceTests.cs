@@ -541,7 +541,7 @@ namespace System.Diagnostics.Metrics.Tests
                 }
             }
 
-            AssertBeginInstrumentReportingEventsPresent(events, c, c);
+            AssertBeginInstrumentReportingEventsPresent(events, c);
             AssertInitialEnumerationCompleteEventPresent(events);
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
