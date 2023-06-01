@@ -10131,9 +10131,7 @@ void emitter::emitRecordCallSite(ULONG                 instrOffset,  /* IN */
 
     if (callSig == nullptr)
     {
-        assert(methodHandle != nullptr);
-
-        if (Compiler::eeGetHelperNum(methodHandle) == CORINFO_HELP_UNDEF)
+        if ((methodHandle != nullptr) && (Compiler::eeGetHelperNum(methodHandle) == CORINFO_HELP_UNDEF))
         {
             emitComp->eeGetMethodSig(methodHandle, &sigInfo);
             callSig = &sigInfo;

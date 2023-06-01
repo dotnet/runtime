@@ -1807,6 +1807,8 @@ EXTERN_C __thread void** t_GCThreadStaticBlocks;
 #include <optsmallperfcritical.h>
 HCIMPL2(void*, JIT_GetSharedNonGCThreadStaticBase, DomainLocalModule *pDomainLocalModule, DWORD dwClassDomainID)
 {
+    // t_NonGCMaxThreadStaticBlocks = 500;
+
     FCALL_CONTRACT;
 
     // Get the ModuleIndex
@@ -1840,7 +1842,6 @@ HCIMPL1(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, UINT32 staticBlockIn
 {
     void* staticBlock = nullptr;
 
-#ifdef HOST_WINDOWS
     FCALL_CONTRACT;
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
@@ -1885,9 +1886,6 @@ HCIMPL1(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, UINT32 staticBlockIn
         t_NonGCMaxThreadStaticBlocks = max(t_NonGCMaxThreadStaticBlocks, staticBlockIndex);
     }
     HELPER_METHOD_FRAME_END();
-#else
-    _ASSERTE(!"JIT_GetSharedNonGCThreadStaticBaseOptimized not supported on non-windows.");
-#endif // HOST_WINDOWS
 
     return staticBlock;
 }
@@ -1938,7 +1936,6 @@ HCIMPL1(void*, JIT_GetSharedGCThreadStaticBaseOptimized, UINT32 staticBlockIndex
 {
     void* staticBlock = nullptr;
 
-#ifdef HOST_WINDOWS
     FCALL_CONTRACT;
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
@@ -1987,9 +1984,6 @@ HCIMPL1(void*, JIT_GetSharedGCThreadStaticBaseOptimized, UINT32 staticBlockIndex
     staticBlock = (void*) pMT->GetGCThreadStaticsBasePointer();
 
     HELPER_METHOD_FRAME_END();
-#else
-    _ASSERTE(!"JIT_GetSharedGCThreadStaticBaseOptimized not supported on non-windows.");
-#endif // HOST_WINDOWS
 
     return staticBlock;
 }

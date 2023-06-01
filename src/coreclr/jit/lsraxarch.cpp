@@ -1329,6 +1329,23 @@ int LinearScan::BuildCall(GenTreeCall* call)
             ctrlExprCandidates = availableIntRegs & ~(RBM_ARG_REGS);
         }
         srcCount += BuildOperandUses(ctrlExpr, ctrlExprCandidates);
+        if (call->gtCallType == CT_INDIRECT)
+        {
+            for (CallArg& arg : call->gtArgs.EarlyArgs())
+            {
+                CallArgABIInformation& abiInfo = arg.AbiInfo;
+                GenTree*               argNode = arg.GetEarlyNode();
+
+                // Each register argument corresponds to one source.
+                if (argNode->OperIsPutArgReg())
+                {
+                    srcCount++;
+                    BuildUse(argNode, genRegMask(argNode->GetRegNum()));
+                    const regNumber argReg = abiInfo.GetRegNum();
+                    assert(argNode->GetRegNum() == argReg);
+                }
+            }
+        }        
     }
 
     buildInternalRegisterUses();

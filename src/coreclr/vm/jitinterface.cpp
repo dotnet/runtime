@@ -76,9 +76,17 @@ __declspec(selectany) __declspec(thread) uint32_t t_GCMaxThreadStaticBlocks;
 __declspec(selectany) __declspec(thread) void** t_NonGCThreadStaticBlocks;
 __declspec(selectany) __declspec(thread) void** t_GCThreadStaticBlocks;
 #else
-EXTERN_C __thread uint32_t t_maxThreadStaticBlocks;
-EXTERN_C __thread void** t_threadStaticBlocks;
+__thread uint32_t t_NonGCMaxThreadStaticBlocks;
+__thread void** t_NonGCThreadStaticBlocks;
+
+__thread uint32_t t_NonGCThreadStaticBlocksSize;
+__thread uint32_t t_GCThreadStaticBlocksSize;
+
+__thread uint32_t t_GCMaxThreadStaticBlocks;
+__thread void** t_GCThreadStaticBlocks;
 #endif
+
+// EXTERN_C UINT_PTR STDCALL GetNonGCMaxThreadStaticBlocksAddr();
 
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
 //
@@ -1488,6 +1496,11 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
     FieldDesc * pField = (FieldDesc*)pResolvedToken->hField;
     MethodTable * pFieldMT = pField->GetApproxEnclosingMethodTable();
 
+
+// #ifndef _MSC_VER
+//     printf("addr: %lu\n", GetNonGCMaxThreadStaticBlocksAddr());
+// #endif
+
     // Helper to use if the field access requires it
     CORINFO_FIELD_ACCESSOR fieldAccessor = (CORINFO_FIELD_ACCESSOR)-1;
     DWORD fieldFlags = 0;
@@ -1570,8 +1583,6 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 fieldAccessor = CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
 
                 pResult->helper = getSharedStaticsHelper(pField, pFieldMT);
-
-#ifdef HOST_WINDOWS
 #ifndef TARGET_ARM
                 // For windows, we convert the TLS access to the optimized helper where we will store
                 // the static blocks in TLS directly and access them via inline code.
@@ -1588,7 +1599,6 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                     pResult->helper = CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
                 }
 #endif // !TARGET_ARM
-#endif // HOST_WINDOWS
             }
             else
             {

@@ -49,12 +49,10 @@ endif
 
 extern JIT_InternalThrow:proc
 
-
 ; Mark start of the code region that we patch at runtime
 LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
         ret
 LEAF_END JIT_PatchedCodeStart, _TEXT
-
 
 ; This is used by the mechanism to hold either the JIT_WriteBarrier_PreGrow
 ; or JIT_WriteBarrier_PostGrow code (depending on the state of the GC). It _WILL_

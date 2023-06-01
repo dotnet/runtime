@@ -5,6 +5,13 @@
 #include "unixasmmacros.inc"
 #include "asmconstants.h"
 
+
+// LPVOID __stdcall GetNonGCThreadStaticBlocksAddr(void)//
+    LEAF_ENTRY GetNonGCThreadStaticBlocksAddr, _TEXT
+        leaq    t_NonGCThreadStaticBlocks@TLSLD(rip), rax
+        ret
+    LEAF_END GetNonGCThreadStaticBlocksAddr, _TEXT
+
 //
 // FramedMethodFrame prolog
 //
