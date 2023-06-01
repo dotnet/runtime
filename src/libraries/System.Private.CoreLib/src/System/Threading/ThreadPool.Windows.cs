@@ -20,8 +20,6 @@ namespace System.Threading
             UseWindowsThreadPool ? false : AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", "DOTNET_ThreadPool_EnableWorkerTracking", false);
 #endif
 
-
-#if !(TARGET_BROWSER && FEATURE_WASM_THREADS)
         // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
         // the runtime may use the thread for processing other work.
         //
@@ -29,7 +27,6 @@ namespace System.Threading
         // considered to be doing long-running work and change thread pool heuristics, such as slowing or halting thread
         // injection.
         internal static bool YieldFromDispatchLoop => UseWindowsThreadPool;
-#endif
 
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
