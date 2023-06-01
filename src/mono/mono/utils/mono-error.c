@@ -30,9 +30,6 @@
 	va_end (args); \
 } while (0)
 
-// Type load failure callback is initialized to mono_class_set_type_load_failure
-TypeLoadFailureCallback mono_class_set_deferred_type_load_failure_callback = mono_class_set_type_load_failure;
-
 static void
 mono_error_set_generic_errorv (MonoError *oerror, const char *name_space, const char *name, const char *msg_format, va_list args);
 
@@ -910,18 +907,4 @@ mono_error_set_first_argument (MonoError *oerror, const char *first_argument)
 	MonoErrorInternal* to = (MonoErrorInternal*)oerror;
 	to->first_argument = g_strdup (first_argument);
 	to->flags |= MONO_ERROR_FREE_STRINGS;
-}
-
-void mono_set_failure_type (FailureType failure_type) {
-	switch (failure_type) {
-		case MONO_CLASS_LOADER_IMMEDIATE_FAILURE:
-			mono_class_set_deferred_type_load_failure_callback = mono_class_set_type_load_failure;
-			break;
-		case MONO_CLASS_LOADER_DEFERRED_FAILURE:
-			mono_class_set_deferred_type_load_failure_callback = mono_class_set_deferred_type_load_failure;
-			break;
-		default:
-			g_assert_not_reached();
-			break;
-	}
 }

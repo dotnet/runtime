@@ -682,6 +682,27 @@ typedef struct {
 
 #define MONO_SIZEOF_METHOD_SIGNATURE (sizeof (struct _MonoMethodSignature) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
 
+typedef enum {
+    MONO_CLASS_LOADER_IMMEDIATE_FAILURE, // Used during runtime to indicate that the failure should be reported
+    MONO_CLASS_LOADER_DEFERRED_FAILURE // Used during AOT compilation to defer failure for execution
+} MonoFailureType;
+
+/**
+ * TypeLoadFailureCallback:
+ * @param klass: Class in which the failure was detected.
+ * @param fmt: printf-style error message string.
+ *
+ * The callback is responsible for processing the failure information provided by the @klass parameter and the error message format string @fmt.
+ * If a deferred failure occurs, the callback should return FALSE to let the AOT compiler proceed with the class layout setup.
+ * Otherwise, if the callback returns TRUE, it indicates that the failure should be reported.
+ *
+ * @returns: TRUE if the failure is handled and the runtime should not proceed with class setup, FALSE if the failure should be deferred for runtime class setup.
+ * 
+ */
+typedef gboolean (*TypeLoadFailureCallback)(MonoClass *klass, const char * fmt, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
+
+extern TypeLoadFailureCallback mono_class_set_deferred_type_load_failure_callback;
+
 static inline gboolean
 image_is_dynamic (MonoImage *image)
 {
@@ -1256,5 +1277,14 @@ mono_metadata_table_to_ptr_table (int table_num)
 
 uint32_t
 mono_metadata_get_method_params (MonoImage *image, uint32_t method_idx, uint32_t *last_param_out);
+
+void
+mono_set_failure_type (MonoFailureType failure_type);
+
+gboolean
+mono_class_set_deferred_type_load_failure (MonoClass *klass, const char * fmt, ...);
+
+gboolean
+mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...);
 
 #endif /* __MONO_METADATA_INTERNALS_H__ */
