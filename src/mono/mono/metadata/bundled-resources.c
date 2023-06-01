@@ -237,7 +237,7 @@ mono_bundled_resources_add_satellite_assembly_resource (const char *id, const ch
 //  MonoBundledResource * - Pointer to the resource in the hashmap with the key `id`
 //
 
-MonoBundledResource *
+static MonoBundledResource *
 mono_bundled_resources_get (const char *id)
 {
 	if (!bundled_resources)
@@ -261,7 +261,7 @@ mono_bundled_resources_get (const char *id)
 // in external contexts to grab assembly and symbol data.
 //
 
-MonoBundledAssemblyResource *
+static MonoBundledAssemblyResource *
 mono_bundled_resources_get_assembly_resource (const char *id)
 {
 	MonoBundledAssemblyResource *assembly =
@@ -287,7 +287,7 @@ mono_bundled_resources_get_assembly_resource (const char *id)
 // in external contexts to grab satellite assembly data.
 //
 
-MonoBundledSatelliteAssemblyResource *
+static MonoBundledSatelliteAssemblyResource *
 mono_bundled_resources_get_satellite_assembly_resource (const char *id)
 {
 	MonoBundledSatelliteAssemblyResource *satellite_assembly =
@@ -313,7 +313,7 @@ mono_bundled_resources_get_satellite_assembly_resource (const char *id)
 // in external contexts to grab data.
 //
 
-MonoBundledDataResource *
+static MonoBundledDataResource *
 mono_bundled_resources_get_data_resource (const char *id)
 {
 	MonoBundledDataResource *data =

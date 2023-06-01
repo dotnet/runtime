@@ -1095,9 +1095,11 @@ mono_register_symfile_for_assembly (const char *assembly_name, const mono_byte *
 static MonoDebugHandle *
 open_symfile_from_bundle (MonoImage *image)
 {
-	MonoBundledAssemblyResource *assembly = mono_bundled_resources_get_assembly_resource (image->module_name);
-	if (assembly && assembly->symbol_data.data)
-		return mono_debug_open_image (image, assembly->symbol_data.data, assembly->symbol_data.size);
+	MonoDebugHandle *handle = NULL;
+	const uint8_t *data = NULL;
+	const uint32_t size = 0;
+	if (mono_bundled_resources_get_assembly_resource_values (image->module_name, &data, &size))
+		handle = mono_debug_open_image (image, data, size);
 
 #ifdef ENABLE_WEBCIL
 	size_t len = strlen (image->module_name);
@@ -1108,20 +1110,22 @@ open_symfile_from_bundle (MonoImage *image)
 		char *module_name_dll_suffix = (char *)g_malloc0 (sizeof(char) * (n + 5));
 		memcpy (module_name_dll_suffix, image->module_name, len);
 		memcpy (module_name_dll_suffix + n, ".dll\0", 5);
-		assembly = mono_bundled_resources_get_assembly_resource (module_name_dll_suffix);
+		if (mono_bundled_resources_get_assembly_resource_values (module_name_dll_suffix, &data, &size))
+			handle = mono_debug_open_image (image, data, size);
+
 		g_free (module_name_dll_suffix);
 	}
-	if (assembly && assembly->symbol_data.data)
-		return mono_debug_open_image (image, assembly->symbol_data.data, assembly->symbol_data.size);
 #endif
 
-	return NULL;
+	return handle;
 }
 
 const mono_byte *
 mono_get_symfile_bytes_from_bundle (const char *assembly_name, int *size)
 {
-	MonoBundledAssemblyResource *assembly = mono_bundled_resources_get_assembly_resource (assembly_name);
+	mono_byte *data = NULL;
+	if (mono_bundled_resources_get_assembly_resource_values (assembly_name, &data, size))
+		return data;
 
 #ifdef ENABLE_WEBCIL
 	if (!assembly) {
@@ -1133,17 +1137,13 @@ mono_get_symfile_bytes_from_bundle (const char *assembly_name, int *size)
 			char *module_name_dll_suffix = (char *)g_malloc0 (sizeof(char) * (n + 5));
 			memcpy (module_name_dll_suffix, assembly_name, len);
 			memcpy (module_name_dll_suffix + n, ".dll\0", 5);
-			assembly = mono_bundled_resources_get_assembly_resource (module_name_dll_suffix);
+			mono_bundled_resources_get_assembly_resource_values (module_name_dll_suffix, &data, size)
 			g_free (module_name_dll_suffix);
 		}
 	}
 #endif
 
-	if (!assembly || assembly->symbol_data.data || assembly->symbol_data.size != 0)
-		return NULL;
-
-	*size = assembly->symbol_data.size;
-	return assembly->symbol_data.data;
+	return data;
 }
 
 void
