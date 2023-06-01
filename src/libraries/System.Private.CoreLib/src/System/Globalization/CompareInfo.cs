@@ -925,7 +925,6 @@ namespace System.Globalization
         public unsafe int IndexOf(string source, string value, int startIndex, int count, CompareOptions options)
         {
             //IndexOf(source, value, startIndex, count, options)
-            System.Diagnostics.Debug.WriteLine("Collation IndexOf is called from CompareInfo.cs");
             if (source == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
@@ -934,7 +933,7 @@ namespace System.Globalization
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
-            System.Diagnostics.Debug.WriteLine("Collation IndexOf is called from CompareInfo.cs count = " + count + " startIndex = " + startIndex);
+
             if (!source.TryGetSpan(startIndex, count, out ReadOnlySpan<char> sourceSpan))
             {
                 // Bounds check failed - figure out exactly what went wrong so that we can

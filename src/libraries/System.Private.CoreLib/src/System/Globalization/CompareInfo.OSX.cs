@@ -45,7 +45,6 @@ namespace System.Globalization
 
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options))
             {
-                System.Diagnostics.Debug.WriteLine("Collation function IndexOfCoreNative if case is callled from CompareInfo.OSX.cs");
                 if ((options & CompareOptions.IgnoreCase) != 0)
                     return IndexOfOrdinalIgnoreCaseHelper(source, target, options, matchLengthPtr, fromBeginning);
                 else

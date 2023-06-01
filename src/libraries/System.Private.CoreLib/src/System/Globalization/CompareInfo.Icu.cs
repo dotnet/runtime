@@ -197,11 +197,9 @@ namespace System.Globalization
                 if (GlobalizationMode.Hybrid)
                 {
                     NSRange result = Interop.Globalization.IndexOfNative(m_name, m_name.Length, b, target.Length, a, source.Length, options, fromBeginning);
-                    System.Diagnostics.Debug.WriteLine("Collation function IndexOfOrdinalHelper is callled from CompareInfo.Icu.cs matchedLength = "+ result.Length + " result = " + result.Location);
                     if (matchLengthPtr == null)
                         matchLengthPtr = &result.Length;
                     *matchLengthPtr = result.Length;
-                    System.Diagnostics.Debug.WriteLine("Collation function IndexOfOrdinalHelper is callled from CompareInfo.Icu.cs *matchLengthPtr = "+ *matchLengthPtr);
                     return result.Location;
                 }
 #endif
@@ -307,11 +305,9 @@ namespace System.Globalization
                 if (GlobalizationMode.Hybrid)
                 {
                     NSRange result = Interop.Globalization.IndexOfNative(m_name, m_name.Length, b, target.Length, a, source.Length, options, fromBeginning);
-                    System.Diagnostics.Debug.WriteLine("Collation function IndexOfOrdinalHelper is callled from CompareInfo.Icu.cs matchedLength = "+ result.Length + " result = " + result.Location);
                     if (matchLengthPtr == null)
                        matchLengthPtr = &result.Length;
                     *matchLengthPtr = result.Length;
-                    System.Diagnostics.Debug.WriteLine("Collation function IndexOfOrdinalHelper is callled from CompareInfo.Icu.cs *matchLengthPtr = "+ *matchLengthPtr);
                     return result.Location;
                 }
 #endif
