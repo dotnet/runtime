@@ -23,7 +23,7 @@ namespace System.Threading
 #endif
 
 #if !CORECLR
-        private static bool EnsureConfigInitialized() => true;
+        internal static bool EnsureConfigInitialized() => true;
 #endif
 
         internal static object GetOrCreateThreadLocalCompletionCountObject() =>

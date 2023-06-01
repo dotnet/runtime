@@ -49,7 +49,7 @@ namespace System.Threading
             BindHandlePortableCore(osHandle);
 
 #if !CORECLR
-        private static bool EnsureConfigInitialized() => true;
+        internal static bool EnsureConfigInitialized() => true;
 #endif
 
         internal static void InitializeForThreadPoolThread()

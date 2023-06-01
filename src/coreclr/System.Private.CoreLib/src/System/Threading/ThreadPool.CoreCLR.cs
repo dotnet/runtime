@@ -21,7 +21,7 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
-        private static bool EnsureConfigInitialized()
+        internal static bool EnsureConfigInitialized()
         {
             return s_initialized;
         }
