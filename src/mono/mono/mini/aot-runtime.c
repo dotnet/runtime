@@ -2508,6 +2508,7 @@ decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, guin
 	info->no_special_static_fields = (flags >> 7) & 0x1;
 	info->is_generic_container = (flags >> 8) & 0x1;
 	info->has_weak_fields = (flags >> 9) & 0x1;
+	info->has_deferred_failure = (flags >> 10) & 0x1;
 
 	if (info->has_cctor) {
 		res = decode_method_ref (module, &ref, buf, &buf, error);
@@ -4555,12 +4556,7 @@ mono_aot_can_dedup (MonoMethod *method)
 	/* Use a set of wrappers/instances which work and useful */
 	switch (method->wrapper_type) {
 	case MONO_WRAPPER_RUNTIME_INVOKE:
-#ifdef TARGET_WASM
 		return TRUE;
-#else
-		return FALSE;
-#endif
-		break;
 	case MONO_WRAPPER_OTHER: {
 		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 

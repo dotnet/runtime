@@ -404,7 +404,7 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
-            if (!info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
+            if (context.Direction == MarshalDirection.ManagedToUnmanaged && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
             {
                 yield break;
             }
@@ -510,20 +510,6 @@ namespace Microsoft.Interop
                     IdentifierName(ShapeMemberNames.LinearCollection.Stateless.GetManagedValuesDestination)),
                 ArgumentList(SingletonSeparatedList(Argument(IdentifierName(managedIdentifier)))));
         }
-
-        public StatementSyntax GetManagedValuesNumElementsAssignment(TypePositionInfo info, StubCodeContext context)
-        {
-            var numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
-            // <numElements> = <GetManagedValuesSource>.Length;
-            return ExpressionStatement(
-                AssignmentExpression(
-                    SyntaxKind.SimpleAssignmentExpression,
-                    IdentifierName(numElementsIdentifier),
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        GetManagedValuesSource(info, context),
-                        IdentifierName("Length"))));
-        }
     }
 
     /// <summary>
@@ -532,26 +518,34 @@ namespace Microsoft.Interop
     internal sealed class StatelessLinearCollectionMarshalling : ICustomTypeMarshallingStrategy
     {
         private readonly ICustomTypeMarshallingStrategy _spaceMarshallingStrategy;
-        private readonly IElementsMarshalling _elementsMarshalling;
+        private readonly ElementsMarshalling _elementsMarshalling;
         private readonly ManagedTypeInfo _unmanagedType;
         private readonly MarshallerShape _shape;
+        private readonly bool _cleanupElementsAndSpace;
 
         public StatelessLinearCollectionMarshalling(
             ICustomTypeMarshallingStrategy spaceMarshallingStrategy,
-            IElementsMarshalling elementsMarshalling,
+            ElementsMarshalling elementsMarshalling,
             ManagedTypeInfo unmanagedType,
-            MarshallerShape shape)
+            MarshallerShape shape,
+            bool cleanupElementsAndSpace)
         {
             _spaceMarshallingStrategy = spaceMarshallingStrategy;
             _elementsMarshalling = elementsMarshalling;
             _unmanagedType = unmanagedType;
             _shape = shape;
+            _cleanupElementsAndSpace = cleanupElementsAndSpace;
         }
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _unmanagedType;
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
         {
+            if (!_cleanupElementsAndSpace)
+            {
+                yield break;
+            }
+
             StatementSyntax elementCleanup = _elementsMarshalling.GenerateElementCleanupStatement(info, context);
 
             if (!elementCleanup.IsKind(SyntaxKind.EmptyStatement))
@@ -569,21 +563,31 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
+            if (context.Direction == MarshalDirection.ManagedToUnmanaged && !info.IsByRef && info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out)
+            {
+                // If the parameter is marshalled by-value [Out], then we don't marshal the contents of the collection.
+                // We do clear the span, so that if the invoke target doesn't fill it, we aren't left with undefined content.
+                yield return _elementsMarshalling.GenerateClearManagedSource(info, context);
+                yield break;
+            }
+
+            if (context.Direction == MarshalDirection.UnmanagedToManaged && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
+            {
+                // If the parameter is marshalled by-value [Out] or [In, Out], then we need to unmarshal the contents of the collection
+                // into the passed-in collection value.
+                yield return _elementsMarshalling.GenerateUnmanagedToManagedByValueOutMarshalStatement(info, context);
+                yield break;
+            }
+
             foreach (var statement in _spaceMarshallingStrategy.GenerateMarshalStatements(info, context))
             {
                 yield return statement;
             }
+
             if (!_shape.HasFlag(MarshallerShape.ToUnmanaged) && !_shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
                 yield break;
 
-            if (!info.IsByRef && info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out)
-            {
-                yield return _elementsMarshalling.GenerateByValueOutMarshalStatement(info, context);
-            }
-            else
-            {
-                yield return _elementsMarshalling.GenerateMarshalStatement(info, context);
-            }
+            yield return _elementsMarshalling.GenerateMarshalStatement(info, context);
         }
 
         public IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(TypePositionInfo info, StubCodeContext context) => _spaceMarshallingStrategy.GenerateNotifyForSuccessfulInvokeStatements(info, context);
@@ -596,9 +600,19 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
-            if (!info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
+            if (context.Direction == MarshalDirection.ManagedToUnmanaged && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
             {
-                yield return _elementsMarshalling.GenerateByValueOutUnmarshalStatement(info, context);
+                // If the parameter is marshalled by-value [Out] or [In, Out], then we need to unmarshal the contents of the collection
+                // into the passed-in collection value.
+                yield return _elementsMarshalling.GenerateManagedToUnmanagedByValueOutUnmarshalStatement(info, context);
+                yield break;
+            }
+
+            if (context.Direction == MarshalDirection.UnmanagedToManaged && !info.IsByRef && info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out)
+            {
+                // If the parameter is marshalled by-value [Out], then we don't marshal the contents of the collection.
+                // We do clear the span, so that if the invoke target doesn't fill it, we aren't left with undefined content.
+                yield return _elementsMarshalling.GenerateClearUnmanagedValuesSource(info, context);
                 yield break;
             }
 

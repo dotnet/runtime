@@ -241,7 +241,6 @@ unsigned argTotalDeferred;
 unsigned argTotalConst;
 
 unsigned argTotalObjPtr;
-unsigned argTotalGTF_ASGinArgs;
 
 unsigned argMaxTempsPerMethod;
 
@@ -529,11 +528,11 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
     switch (structSize)
     {
         case 1:
-            useType = TYP_BYTE;
+            useType = TYP_UBYTE;
             break;
 
         case 2:
-            useType = TYP_SHORT;
+            useType = TYP_USHORT;
             break;
 
 #if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI)
@@ -1919,7 +1918,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compLocallocUsed             = false;
     compLocallocOptimized        = false;
     compQmarkRationalized        = false;
-    compAssignmentRationalized   = false;
     compQmarkUsed                = false;
     compFloatingPointUsed        = false;
 
@@ -4722,8 +4720,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
 
-    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
-
     // Run a simple forward substitution pass.
     //
     DoPhase(this, PHASE_FWD_SUB, &Compiler::fgForwardSub);
@@ -5559,7 +5555,7 @@ void Compiler::generatePatchpointInfo()
     //
     const int totalFrameSize = codeGen->genTotalFrameSize() + TARGET_POINTER_SIZE;
     const int offsetAdjust   = 0;
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     // SP is not manipulated by calls so no frame size adjustment needed.
     // Local Offsets may need adjusting, if FP is at bottom of frame.
     //
@@ -6809,8 +6805,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         {
             frameSizeUpdate = 8;
         }
-#elif defined(TARGET_ARM64)
-        if ((totalFrameSize % 16) != 0)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+        if ((totalFrameSize & 0xf) != 0)
         {
             frameSizeUpdate = 8;
         }

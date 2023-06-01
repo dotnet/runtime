@@ -307,6 +307,7 @@ jobs:
       container: SourceBuild_centos_x64 # Run the unknown-rid build on a platform with a known RID so our RID graph tooling can automatically add it to the RID graph.
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        baseOS: linux
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         isSourceBuild: true

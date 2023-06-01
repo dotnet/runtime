@@ -315,11 +315,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_BFIZ:
             genCodeForBfiz(treeNode->AsOp());
             break;
-
-        case GT_CSNEG_MI:
-        case GT_CNEG_LT:
-            genCodeForCond(treeNode->AsOp());
-            break;
 #endif // TARGET_ARM64
 
         case GT_JMP:
@@ -355,15 +350,16 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
 #ifdef TARGET_ARM64
+        case GT_SELECT_NEG:
+        case GT_SELECT_INV:
+        case GT_SELECT_INC:
         case GT_SELECT:
             genCodeForSelect(treeNode->AsConditional());
             break;
 
-        case GT_CINC:
-        case GT_CINCCC:
-            genCodeForCinc(treeNode->AsOp());
-            break;
-
+        case GT_SELECT_NEGCC:
+        case GT_SELECT_INVCC:
+        case GT_SELECT_INCCC:
         case GT_SELECTCC:
             genCodeForSelect(treeNode->AsOp());
             break;

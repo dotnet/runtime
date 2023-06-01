@@ -10,6 +10,7 @@ import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { AssetEntryInternal } from "./types/internal";
 import { AssetEntry } from "./types";
 import { InstantiateWasmSuccessCallback, VoidPtr } from "./types/emscripten";
+import { utf8BufferToString } from "./strings";
 
 // this need to be run only after onRuntimeInitialized event, when the memory is ready
 export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array): void {
@@ -157,7 +158,7 @@ export function mono_wasm_load_data_archive(data: Uint8Array, prefix: string): b
 
     let manifest;
     try {
-        const manifestContent = Module.UTF8ArrayToString(data, 8, manifestSize);
+        const manifestContent = utf8BufferToString(data, 8, manifestSize);
         manifest = JSON.parse(manifestContent);
         if (!(manifest instanceof Array))
             return false;

@@ -241,11 +241,11 @@ void LIR::Use::ReplaceWith(GenTree* replacement)
 //    lclNum - The local to use for temporary storage. If BAD_VAR_NUM (the
 //             default) is provided, this method will create and use a new
 //             local var.
-//    assign - On return, if non null, contains the created assignment node
+//    pStore - On return, if non null, contains the created store node
 //
 // Return Value: The number of the local var used for temporary storage.
 //
-unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTree** assign)
+unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTree** pStore)
 {
     assert(IsInitialized());
     assert(compiler != nullptr);
@@ -259,7 +259,7 @@ unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTre
         lclNum = compiler->lvaGrabTemp(true DEBUGARG("ReplaceWithLclVar is creating a new local variable"));
     }
 
-    GenTreeLclVar* const store = compiler->gtNewTempAssign(lclNum, node)->AsLclVar();
+    GenTreeLclVar* const store = compiler->gtNewTempStore(lclNum, node)->AsLclVar();
     assert(store != nullptr);
     assert(store->gtOp1 == node);
 
@@ -273,9 +273,9 @@ unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTre
     JITDUMP("ReplaceWithLclVar created store :\n");
     DISPNODE(store);
 
-    if (assign != nullptr)
+    if (pStore != nullptr)
     {
-        *assign = store;
+        *pStore = store;
     }
     return lclNum;
 }

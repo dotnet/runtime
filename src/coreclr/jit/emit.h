@@ -1136,7 +1136,7 @@ protected:
         void idCodeSize(unsigned sz)
         {
             // RISCV64's instrDesc is not always meaning only one instruction.
-            // e.g. the `emitter::emitIns_I_la` for emitting the immediates.
+            // e.g. the `emitter::emitLoadImmediate` for emitting the immediates.
             assert(sz <= 32);
             _idCodeSize = sz;
         }

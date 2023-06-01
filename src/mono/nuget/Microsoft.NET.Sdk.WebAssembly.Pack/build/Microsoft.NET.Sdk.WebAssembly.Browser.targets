@@ -218,7 +218,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmBuildWebCilPath>$(IntermediateOutputPath)webcil</_WasmBuildWebCilPath>
     </PropertyGroup>
 
-    <ConvertDllsToWebCil Candidates="@(_BuildAssetsCandidates)" OutputPath="$(_WasmBuildWebCilPath)" IsEnabled="$(_WasmEnableWebcil)">
+    <ConvertDllsToWebCil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(IntermediateOutputPath)tmp-webcil" OutputPath="$(_WasmBuildWebCilPath)" IsEnabled="$(_WasmEnableWebcil)">
       <Output TaskParameter="WebCilCandidates" ItemName="_WebCilAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ConvertDllsToWebCil>
@@ -391,7 +391,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishWebCilPath>$(IntermediateOutputPath)webcil\publish</_WasmPublishWebCilPath>
     </PropertyGroup>
 
-    <ConvertDllsToWebCil Candidates="@(_NewWasmPublishStaticWebAssets)" OutputPath="$(_WasmPublishWebCilPath)" IsEnabled="$(_WasmEnableWebcil)">
+    <ConvertDllsToWebCil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(ConvertDllsToWebCil)tmp-webcil\publish" OutputPath="$(_WasmPublishWebCilPath)" IsEnabled="$(_WasmEnableWebcil)">
       <Output TaskParameter="WebCilCandidates" ItemName="_NewWebCilPublishStaticWebAssets" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ConvertDllsToWebCil>

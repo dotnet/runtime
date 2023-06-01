@@ -22934,6 +22934,11 @@ BOOL gc_heap::should_proceed_for_no_gc()
     BOOL no_gc_requested = FALSE;
     BOOL get_new_loh_segments = FALSE;
 
+#ifdef MULTIPLE_HEAPS
+    // need to turn off this flag here because of the call to grow_heap_segment below
+    gradual_decommit_in_progress_p = FALSE;
+#endif //MULTIPLE_HEAPS
+
     gc_heap* hp = nullptr;
     if (current_no_gc_region_info.soh_allocation_size)
     {
