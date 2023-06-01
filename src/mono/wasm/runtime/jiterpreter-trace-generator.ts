@@ -913,7 +913,7 @@ export function generateWasmBody(
                 builder.appendU8(WasmOpcode.else_); // else cast failed
                 if (bailoutOnFailure) {
                     // so bailout
-                    append_exit(builder, ip, exitOpcodeCounter, BailoutReason.CastFailed);
+                    append_bailout(builder, ip, BailoutReason.CastFailed);
                 } else {
                     // this is isinst, so write 0 to destination instead
                     builder.local("pLocals");
