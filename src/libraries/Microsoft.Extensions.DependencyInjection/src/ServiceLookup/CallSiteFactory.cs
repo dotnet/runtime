@@ -273,18 +273,53 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     }
                     else
                     {
-                        int slot = 0;
+                        /*
+                         * We cannot assume that services cached in _callSiteCache have a slot matching the order of registered descriptors.
+                         * Consider the following:
+                         *
+                         * serviceCollection.AddTransient<IOpenGenericFoo<IFoo>, ClosedGenericFoo1>();
+                         * serviceCollection.AddTransient(typeof(IOpenGenericFoo<>), typeof(OpenGenericFoo1<>));
+                         *
+                         * var serviceProvider = serviceCollection.BuildServiceProvider();
+                         * var service = serviceProvider.GetService<IOpenGenericFoo<IFoo>>();
+                         * var services = serviceProvider.GetServices<IOpenGenericFoo<IFoo>>();
+                         *
+                         * When service is resolved, we will first call TryCreateExact, which will find and cache ClosedGenericFoo1 with Slot = 0.
+                         *
+                         * When services is resolved, if we loop through descriptors calling TryCreateExact and then TryCreateOpenGeneric,
+                         * we will first find OpenGenericFoo1<> (as it was registered last), call TryCreateOpenGeneric and check the cache
+                         * for a service matching: { Type = IOpenGenericFoo<IFoo>, Slot = 0 }, which will return ClosedGenericFoo1.
+                         *
+                         * Next, we will find the descriptor for ClosedGenericFoo1, call TryCreateExact and check the cache for a service
+                         * matching: { Type = IOpenGenericFoo<IFoo>, Slot = 1 }, which will fail, so we will create, cache, and return a
+                         * new call site for ClosedGenericFoo1.
+                         *
+                         * Finally, we will return an enumerable containing two instances of ClosedGenericFoo1, and no intance of
+                         * OpenGenericFoo1<IFoo>.
+                         *
+                         * To prevent this, we need to check each descriptor against both the service and implentation types of the cached
+                         * services, and adjust our slot value accordingly.
+                         */
+                        List<ServiceCallSite> cachedCallSites = GetCachedCallSitesForService(itemType);
+                        int slot = cachedCallSites.Count;
                         // We are going in reverse so the last service in descriptor list gets slot 0
                         for (int i = _descriptors.Length - 1; i >= 0; i--)
                         {
                             ServiceDescriptor descriptor = _descriptors[i];
-                            ServiceCallSite? callSite = TryCreateExact(descriptor, itemType, callSiteChain, slot) ??
-                                           TryCreateOpenGeneric(descriptor, itemType, callSiteChain, slot, false);
+
+                            ServiceCallSite? callSite = cachedCallSites.Find(scs => CachedCallSiteMatchesDescriptor(scs, descriptor));
+
+                            if (callSite == null)
+                            {
+                                callSite = TryCreateExact(descriptor, itemType, callSiteChain, slot) ??
+                                            TryCreateOpenGeneric(descriptor, itemType, callSiteChain, slot, false);
+
+                                // We only increment slot when we create a new call site
+                                slot = callSite == null ? slot : slot + 1;
+                            }
 
                             if (callSite != null)
                             {
-                                slot++;
-
                                 cacheLocation = GetCommonCacheLocation(cacheLocation, callSite.Cache.Location);
                                 callSites.Add(callSite);
                             }
@@ -309,6 +344,42 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 callSiteChain.Remove(serviceType);
             }
+        }
+
+        private List<ServiceCallSite> GetCachedCallSitesForService(Type serviceType, int slot = DefaultSlot)
+        {
+            var cachedCallSites = new List<ServiceCallSite>();
+            var callSiteKey = new ServiceCacheKey(serviceType, slot);
+
+            while (_callSiteCache.TryGetValue(callSiteKey, out ServiceCallSite? serviceCallSite))
+            {
+                cachedCallSites.Add(serviceCallSite);
+                slot++;
+                callSiteKey = new ServiceCacheKey(serviceType, slot);
+            }
+
+            return cachedCallSites;
+        }
+
+        private static bool CachedCallSiteMatchesDescriptor(ServiceCallSite serviceCallSite, ServiceDescriptor descriptor)
+        {
+            // Check for exact match
+            if (serviceCallSite.ServiceType == descriptor.ServiceType
+                && serviceCallSite.ImplementationType == descriptor.ImplementationType)
+            {
+                return true;
+            }
+
+            // Check for open generic match
+            if (serviceCallSite.ServiceType.IsConstructedGenericType
+                && serviceCallSite.ServiceType.GetGenericTypeDefinition() == descriptor.ServiceType
+                && (serviceCallSite.ImplementationType?.IsGenericType ?? false)
+                && serviceCallSite.ImplementationType?.GetGenericTypeDefinition() == descriptor.ImplementationType)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private static CallSiteResultCacheLocation GetCommonCacheLocation(CallSiteResultCacheLocation locationA, CallSiteResultCacheLocation locationB)

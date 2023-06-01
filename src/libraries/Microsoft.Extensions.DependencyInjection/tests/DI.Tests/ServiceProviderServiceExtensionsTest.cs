@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -249,6 +250,25 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.IsType<Foo1>(service);
         }
 
+        [Fact]
+        public void GetServices_Returns_AllServices_After_Closed_Generic_Is_Cached()
+        {
+            // Arrange
+            var serviceProvider = CreateTestServiceProvider(8);
+
+            // Act
+            var service = serviceProvider.GetService<IOpenGenericFoo<IFoo>>();
+            var services = serviceProvider.GetServices<IOpenGenericFoo<IFoo>>();
+
+            // Assert
+            Assert.True(service is ClosedGenericFoo2);
+            Assert.Contains(services, item => item is ClosedGenericFoo1);
+            Assert.Contains(services, item => item is ClosedGenericFoo2);
+            Assert.Contains(services, item => item is OpenGenericFoo1<IFoo>);
+            Assert.Contains(services, item => item is OpenGenericFoo2<IFoo>);
+            Assert.Equal(4, services.Count());
+        }
+
         private static IServiceProvider CreateTestServiceProvider(int count)
         {
             var serviceCollection = new ServiceCollection();
@@ -273,6 +293,28 @@ namespace Microsoft.Extensions.DependencyInjection
                 serviceCollection.AddTransient<IBar, Bar2>();
             }
 
+            // Note that ClosedGenericFoos are registered before OpenGenericFoos to test the inverse order lookup of
+            // descriptors for resolving enumerables
+            if (count > 4)
+            {
+                serviceCollection.AddTransient<IOpenGenericFoo<IFoo>, ClosedGenericFoo1>();
+            }
+
+            if (count > 5)
+            {
+                serviceCollection.AddTransient<IOpenGenericFoo<IFoo>, ClosedGenericFoo2>();
+            }
+
+            if (count > 6)
+            {
+                serviceCollection.AddTransient(typeof(IOpenGenericFoo<>), typeof(OpenGenericFoo1<>));
+            }
+
+            if (count > 7)
+            {
+                serviceCollection.AddTransient(typeof(IOpenGenericFoo<>), typeof(OpenGenericFoo2<>));
+            }
+
             return serviceCollection.BuildServiceProvider();
         }
 
@@ -287,6 +329,16 @@ namespace Microsoft.Extensions.DependencyInjection
         public class Bar1 : IBar { }
 
         public class Bar2 : IBar { }
+
+        public interface IOpenGenericFoo<T> where T : IFoo { }
+
+        public class OpenGenericFoo1<T> : IOpenGenericFoo<T> where T : IFoo { }
+
+        public class OpenGenericFoo2<T> : IOpenGenericFoo<T> where T : IFoo { }
+
+        public class ClosedGenericFoo1 : IOpenGenericFoo<IFoo> { }
+
+        public class ClosedGenericFoo2 : IOpenGenericFoo<IFoo> { }
 
         private class RequiredServiceSupportingProvider : IServiceProvider, ISupportRequiredService
         {
