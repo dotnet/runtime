@@ -103,6 +103,7 @@ function initRunArgs(runArgs) {
     // default'ing to true for tests, unless debugging
     runArgs.forwardConsole = runArgs.forwardConsole === undefined ? !runArgs.debugging : runArgs.forwardConsole;
     runArgs.memorySnapshot = runArgs.memorySnapshot === undefined ? true : runArgs.memorySnapshot;
+    runArgs.exit = runArgs.exit === undefined ? true : runArgs.exit;
 
     return runArgs;
 }
@@ -136,6 +137,8 @@ function processArguments(incomingArguments, runArgs) {
             runArgs.forwardConsole = false;
         } else if (currentArg == "--no-memory-snapshot") {
             runArgs.memorySnapshot = false;
+        } else if (currentArg == "--no-exit") {
+            runArgs.exit = false;
         } else if (currentArg.startsWith("--fetch-random-delay=")) {
             const arg = currentArg.substring("--fetch-random-delay=".length);
             if (is_browser) {
@@ -336,7 +339,10 @@ async function run() {
 
         // this is subsequent run with the actual tests. It will use whatever was cached in the previous run. 
         // This way, we are testing that the cached version works.
-        mono_exit = exit;
+        mono_exit = (code, reason) => {
+            if (runArgs.exit)
+                exit(code, reason);
+        };
 
         if (runArgs.applicationArguments.length == 0) {
             mono_exit(1, "Missing required --run argument");
