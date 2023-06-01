@@ -85,7 +85,6 @@ namespace System.Diagnostics.Metrics.Tests
                 c.Add(12);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
-                Console.Error.WriteLine("Events: " + string.Join(",", events.Select(item => "'" + item + "'")));
 
                 using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter2"))
                 {
@@ -95,7 +94,6 @@ namespace System.Diagnostics.Metrics.Tests
                     c2.Add(12);
                     listener2.WaitForCollectionStop(s_waitForEventTimeout, 3);
                     events2 = listener2.Events.ToArray();
-                    Console.Error.WriteLine("Events2: " + string.Join(",", events2.Select(item => "'" + item + "'")));
                 }
             }
 
@@ -104,7 +102,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
 
-            AssertBeginInstrumentReportingEventsPresent(events2, c2);
+            AssertBeginInstrumentReportingEventsPresent(events2, c, c2);
             AssertInitialEnumerationCompleteEventPresent(events2);
             AssertCounterEventsPresent(events2, meter2.Name, c2.Name, "", "", ("5", "5"), ("12", "17"));
             AssertCollectStartStopEventsPresent(events2, IntervalSecs, 3);
@@ -130,7 +128,6 @@ namespace System.Diagnostics.Metrics.Tests
                 c.Add(12);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
-                Console.Error.WriteLine("Events: " + string.Join(",", events.Select(item => "'" + item + "'")));
 
                 using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter1", "TestMeter2"))
                 {
@@ -142,7 +139,6 @@ namespace System.Diagnostics.Metrics.Tests
                     c2.Add(12);
                     listener2.WaitForCollectionStop(s_waitForEventTimeout, 3);
                     events2 = listener2.Events.ToArray();
-                    Console.Error.WriteLine("Events2: " + string.Join(",", events2.Select(item => "'" + item + "'")));
                 }
             }
 
@@ -151,7 +147,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
 
-            AssertBeginInstrumentReportingEventsPresent(events2, c2);
+            AssertBeginInstrumentReportingEventsPresent(events2, c, c2);
             AssertInitialEnumerationCompleteEventPresent(events2);
             AssertCounterEventsPresent(events2, meter.Name, c.Name, "", "", ("0", "17"), ("6", "23"), ("13", "36"));
             AssertCounterEventsPresent(events2, meter2.Name, c2.Name, "", "", ("5", "5"), ("12", "17"));
@@ -194,15 +190,14 @@ namespace System.Diagnostics.Metrics.Tests
                 c.Add(13);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 9);
                 events = listener.Events.ToArray();
-                Console.Error.WriteLine("Events: " + string.Join(",", events.Select(item => "'" + item + "'")));
             }
 
-            AssertBeginInstrumentReportingEventsPresent(events, c, c2);
+            AssertBeginInstrumentReportingEventsPresent(events, c, c, c2);
             // AssertInitialEnumerationCompleteEventPresent(events); // Not sure if we want to re-enumerate when we add new providers, but this will break this test for now
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"), ("0", "17"), ("0", "17"), ("0", "17"), ("0", "17"), ("6", "23"), ("13", "36"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 9);
 
-            AssertBeginInstrumentReportingEventsPresent(events2, c2);
+            AssertBeginInstrumentReportingEventsPresent(events2, c, c2);
             AssertInitialEnumerationCompleteEventPresent(events2);
             AssertCounterEventsPresent(events2, meter2.Name, c2.Name, "", "", ("5", "5"), ("12", "17"));
             AssertCollectStartStopEventsPresent(events2, IntervalSecs, 3);
@@ -253,12 +248,12 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 2);
 
-            AssertBeginInstrumentReportingEventsPresent(events2, c2);
+            AssertBeginInstrumentReportingEventsPresent(events2, c, c2);
             AssertInitialEnumerationCompleteEventPresent(events2);
             AssertCounterEventsPresent(events2, meter2.Name, c2.Name, "", "", ("6", "6"));
             AssertCollectStartStopEventsPresent(events2, IntervalSecs, 2);
 
-            AssertBeginInstrumentReportingEventsPresent(events3, c3);
+            AssertBeginInstrumentReportingEventsPresent(events3, c, c2, c3);
             AssertInitialEnumerationCompleteEventPresent(events3);
             AssertCounterEventsPresent(events3, meter3.Name, c3.Name, "", "", ("7", "7"));
             AssertCollectStartStopEventsPresent(events3, IntervalSecs, 2);
@@ -292,7 +287,8 @@ namespace System.Diagnostics.Metrics.Tests
                 }
             }
 
-            AssertBeginInstrumentReportingEventsPresent(events, c, c2);
+            AssertBeginInstrumentReportingEventsPresent(events, c, c, c2);
+            AssertBeginInstrumentReportingEventsPresent(events2, c, c2);
             // AssertInitialEnumerationCompleteEventPresent(events); TBD what behavior we want -> should this be 2?
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
             AssertCounterEventsPresent(events, meter2.Name, c2.Name, "", "", ("6", "6"), ("13", "19"));
@@ -545,12 +541,12 @@ namespace System.Diagnostics.Metrics.Tests
                 }
             }
 
-            AssertBeginInstrumentReportingEventsPresent(events, c);
+            AssertBeginInstrumentReportingEventsPresent(events, c, c);
             AssertInitialEnumerationCompleteEventPresent(events);
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
 
-            //AssertBeginInstrumentReportingEventsPresent(events2, c);
+            AssertBeginInstrumentReportingEventsPresent(events2, c);
             //AssertInitialEnumerationCompleteEventPresent(events2);
             AssertCounterEventsPresent(events2, meter.Name, c.Name, "", "", ("0", "17"), ("5", "22"), ("12", "34"));
             AssertCollectStartStopEventsPresent(events2, IntervalSecs, 3);

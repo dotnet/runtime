@@ -73,25 +73,10 @@ namespace System.Diagnostics.Metrics
             _histogramLimitReached = histogramLimitReached;
             _observableInstrumentCallbackError = observableInstrumentCallbackError;
 
-            _listener = new MeterListener()
-            {
-                InstrumentPublished = (instrument, listener) =>
-                {
-                    _instrumentPublished(instrument);
-                    InstrumentState? state = GetInstrumentState(instrument);
-                    if (state != null)
-                    {
-                        _instrumentList.Add(instrument);
-                        _beginInstrumentMeasurements(instrument);
-                        listener.EnableMeasurementEvents(instrument, state);
-                    }
-                },
-                MeasurementsCompleted = (instrument, cookie) =>
-                {
-                    _endInstrumentMeasurements(instrument);
-                    RemoveInstrumentState(instrument);
-                }
-            };
+            _listener = new MeterListener();
+            _listener.InstrumentPublished += PublishedInstrument;
+            _listener.MeasurementsCompleted += CompletedMeasurements;
+
             _listener.SetMeasurementEventCallback<double>((i, m, l, c) => ((InstrumentState)c!).Update((double)m, l));
             _listener.SetMeasurementEventCallback<float>((i, m, l, c) => ((InstrumentState)c!).Update((double)m, l));
             _listener.SetMeasurementEventCallback<long>((i, m, l, c) => ((InstrumentState)c!).Update((double)m, l));
@@ -130,6 +115,32 @@ namespace System.Diagnostics.Metrics
             return this;
         }
 
+        private void CompletedMeasurements(Instrument instrument, object? cookie)
+        {
+            _endInstrumentMeasurements(instrument);
+            RemoveInstrumentState(instrument);
+        }
+
+        private void PublishedInstrument(Instrument instrument, MeterListener _)
+        {
+            _instrumentPublished(instrument);
+            InstrumentState? state = GetInstrumentState(instrument);
+            if (state != null)
+            {
+                _beginInstrumentMeasurements(instrument);
+
+                if (!_instrumentList.Contains(instrument))
+                {
+                    // This has side effects that prompt MeasurementsCompleted
+                    // to be called if this is called multiple times on an
+                    // instrument in a shared MetricsEventSource.
+                    _listener.EnableMeasurementEvents(instrument, state);
+                }
+
+                _instrumentList.Add(instrument);
+            }
+        }
+
         public void Start()
         {
             // if already started or already stopped we can't be started again
@@ -151,20 +162,15 @@ namespace System.Diagnostics.Metrics
 
         public void Update()
         {
-            var publishedInstruments = Meter.GetPublishedInstruments();
+            using MeterListener tempListener = new MeterListener();
+            tempListener.InstrumentPublished += PublishedInstrument;
+            tempListener.MeasurementsCompleted += CompletedMeasurements;
+            tempListener.Start();
 
-            if (publishedInstruments is not null)
-            {
-                foreach (Instrument instrument in publishedInstruments)
-                {
-                    if (!_instrumentList.Contains(instrument))
-                    {
-                        _listener.InstrumentPublished?.Invoke(instrument, _listener);
-                    }
-                }
-            }
+            // Option 2 - Doesn't create/destroy temporarily MeterListeners
+            //_listener.Update();
 
-            _initialInstrumentEnumerationComplete(); // Do we want this on update?
+            _initialInstrumentEnumerationComplete();
         }
 
         private void CollectWorker(CancellationToken cancelToken)
