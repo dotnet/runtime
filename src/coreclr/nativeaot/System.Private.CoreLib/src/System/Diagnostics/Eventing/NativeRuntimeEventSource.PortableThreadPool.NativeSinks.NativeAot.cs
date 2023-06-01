@@ -16,22 +16,23 @@ namespace System.Diagnostics.Tracing
     // It contains the runtime specific interop to native event sinks.
     internal sealed partial class NativeRuntimeEventSource : EventSource
     {
-//        private const string RuntimeLibrary = "*";
         [NonEvent]
         internal static void LogThreadPoolWorkerThreadStart(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID)
         {
             RuntimeImports.RhNativeRuntimeEventSource_LogThreadPoolWorkerThreadStart(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
         }
 
-        // [NonEvent]
-        // [LibraryImport(RuntimeLibrary)]
-        // [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        // internal static partial void LogThreadPoolWorkerThreadStop(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
+        [NonEvent]
+        internal static void LogThreadPoolWorkerThreadStop(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID)
+        {
+            RuntimeImports.RhNativeRuntimeEventSource_LogThreadPoolWorkerThreadStop(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
+        }
 
-        // [NonEvent]
-        // [LibraryImport(RuntimeLibrary)]
-        // [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        // internal static partial void LogThreadPoolWorkerThreadWait(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
+        [NonEvent]
+        internal static void LogThreadPoolWorkerThreadWait(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID)
+        {
+            RuntimeImports.RhNativeRuntimeEventSource_LogThreadPoolWorkerThreadWait(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
+        }
 
         // [NonEvent]
         // [LibraryImport(RuntimeLibrary)]

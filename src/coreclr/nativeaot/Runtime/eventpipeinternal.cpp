@@ -180,4 +180,8 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_WaitForSessionSig
     return EventPipeAdapter::WaitForSessionSignal(sessionID, timeoutMs);
 }
 
+EXTERN_C NATIVEAOT_API void __cdecl RhNativeRuntimeEventSource_LogThreadPoolWorkerThreadStart(uint32_t activeWorkerThreadCount, uint32_t retiredWorkerThreadCount, uint16_t clrInstanceID)
+{
+    FireEtwThreadPoolWorkerThreadStart(activeWorkerThreadCount, retiredWorkerThreadCount, clrInstanceID);
+}
 #endif // FEATURE_PERFTRACING

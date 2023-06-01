@@ -92,7 +92,6 @@ list(APPEND GEN_EVENTPIPE_SOURCES
 
 list(APPEND AOT_EVENTPIPE_MANAGED_TO_NATIVE_SOURCES
    ${RUNTIME_DIR}/eventpipeinternal.cpp
-   ${RUNTIME_DIR}/nativeeventsource.cpp
    ${RUNTIME_DIR}/eventpipeadapter.h
    ${RUNTIME_DIR}/diagnosticserveradapter.h
    ${RUNTIME_DIR}/EnabledEventPipeInterface.cpp
