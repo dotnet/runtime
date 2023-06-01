@@ -5,6 +5,7 @@
 #include <glib.h>
 #include <stdbool.h>
 
+#include <mono/metadata/appdomain.h>
 #include <mono/metadata/bundled-resources-internals.h>
 #include <mono/metadata/webcil-loader.h>
 
@@ -22,6 +23,8 @@ static bool bundle_contains_satellite_assemblies = false;
 void
 mono_bundled_resources_free (void)
 {
+	g_assert (mono_runtime_is_shutting_down ());
+
 	g_hash_table_destroy (bundled_resources);
 	bundled_resources = NULL;
 
@@ -159,6 +162,9 @@ resource_id_hash (const char *id)
 void
 mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t len)
 {
+	MonoDomain *domain = mono_get_root_domain ();
+	g_assert (!domain);
+
 	if (!bundled_resources)
 		bundled_resources = g_hash_table_new_full ((GHashFunc)resource_id_hash, (GEqualFunc)resource_id_equal, NULL, mono_bundled_resources_value_destroy_func);
 
