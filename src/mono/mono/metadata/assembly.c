@@ -3141,21 +3141,7 @@ mono_register_bundled_assemblies (const MonoBundledAssembly **assemblies)
 {
 	for (int i = 0; assemblies [i]; ++i) {
 		const MonoBundledAssembly *assembly = assemblies [i];
-		// Check if assembly pdb counterpart had been added via mono_register_symfile_for_assembly
-		MonoBundledAssemblyResource *assembly_resource = mono_bundled_resources_get_assembly_resource (assembly->name);
-		if (!assembly_resource) {
-			assembly_resource = g_new0 (MonoBundledAssemblyResource, 1);
-			assembly_resource->resource.type = MONO_BUNDLED_ASSEMBLY;
-			assembly_resource->resource.id = assembly->name;
-			assembly_resource->resource.free_bundled_resource_func = mono_bundled_resources_free_bundled_resource_func;
-			mono_bundled_resources_add ((MonoBundledResource **)&assembly_resource, 1);
-		} else {
-			// Ensure the MonoBundledAssemblyData has not been initialized
-			g_assert (!assembly_resource->assembly.name && !assembly_resource->assembly.data && assembly_resource->assembly.size == 0);
-		}
-		assembly_resource->assembly.name = assembly->name;
-		assembly_resource->assembly.data = (const uint8_t *)assembly->data;
-		assembly_resource->assembly.size = (uint32_t)assembly->size;
+		mono_bundled_resources_add_assembly_resource (assembly->name, (const uint8_t *)assembly->data, (uint32_t)assembly->size, mono_bundled_resources_free_bundled_resource_func);
 	}
 }
 
@@ -3186,17 +3172,8 @@ mono_register_bundled_satellite_assemblies (const MonoBundledSatelliteAssembly *
 	for (int i = 0; satellite_assemblies [i]; ++i) {
 		const MonoBundledSatelliteAssembly *satellite_assembly = satellite_assemblies [i];
 		char *id = g_strconcat (satellite_assembly->culture, "/", satellite_assembly->name, (const char*)NULL);
-		MonoBundledSatelliteAssemblyResource *satellite_assembly_resource = mono_bundled_resources_get_satellite_assembly_resource (id);
-		g_assert (!satellite_assembly_resource);
-		satellite_assembly_resource = g_new0 (MonoBundledSatelliteAssemblyResource, 1);
-		satellite_assembly_resource->resource.type = MONO_BUNDLED_SATELLITE_ASSEMBLY;
-		satellite_assembly_resource->resource.id = id;
-		satellite_assembly_resource->resource.free_bundled_resource_func = mono_bundled_resources_free_bundled_resource_func;
-		satellite_assembly_resource->satellite_assembly.name = satellite_assembly->name;
-		satellite_assembly_resource->satellite_assembly.culture = satellite_assembly->culture;
-		satellite_assembly_resource->satellite_assembly.data = (const uint8_t *)satellite_assembly->data;
-		satellite_assembly_resource->satellite_assembly.size = (uint32_t)satellite_assembly->size;
-		mono_bundled_resources_add ((MonoBundledResource **)&satellite_assembly_resource, 1);
+		g_assert (id);
+		mono_bundled_resources_add_satellite_assembly_resource (id, satellite_assembly->name, satellite_assembly->culture, (const uint8_t *)satellite_assembly->data, (uint32_t)satellite_assembly->size, mono_bundled_resources_free_bundled_resource_func);
 	}
 }
 

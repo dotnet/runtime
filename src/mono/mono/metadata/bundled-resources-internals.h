@@ -68,7 +68,16 @@ void
 mono_bundled_resources_free_bundled_resource_func (void *resource);
 
 void
+mono_wasm_free_bundled_resource_func (void *resource);
+
+void
 mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t len);
+
+void
+mono_bundled_resources_add_assembly_resource (const char *name, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *));
+
+void
+mono_bundled_resources_add_satellite_assembly_resource (const char *id, const char *name, const char *culture, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *));
 
 MonoBundledResource *
 mono_bundled_resources_get (const char *id);

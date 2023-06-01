@@ -72,6 +72,10 @@ extern void mono_register_icu_bundle (void);
 #endif /* INVARIANT_GLOBALIZATION */
 #endif /* WASM_SINGLE_FILE */
 
+extern void mono_wasm_free_bundled_resource_func (void *resource);
+extern void mono_bundled_resources_add_assembly_resource (const char *name, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *));
+extern void mono_bundled_resources_add_satellite_assembly_resource (const char *id, const char *name, const char *culture, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *));
+
 extern const char* dotnet_wasi_getentrypointassemblyname();
 int32_t mono_wasi_load_icu_data(const void* pData);
 void load_icu_data (void);
@@ -125,21 +129,9 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 		mono_register_symfile_for_assembly (new_name, data, size);
 		return 1;
 	}
-	// Check if assembly pdb counterpart had been added via mono_register_symfile_for_assembly
-	MonoBundledAssemblyResource *assembly_resource = mono_bundled_resources_get_assembly_resource (name);
-	if (!assembly_resource) {
-		assembly_resource = g_new0 (MonoBundledAssemblyResource, 1);
-		assembly_resource->resource.type = MONO_BUNDLED_ASSEMBLY;
-		assembly_resource->resource.id = name;
-		assembly_resource->resource.free_bundled_resource_func = mono_wasm_free_bundled_resource_func;
-		mono_bundled_resources_add ((MonoBundledResource **)&assembly_resource, 1);
-	} else {
-		// Ensure the MonoBundledAssemblyData has not been initialized
-		g_assert (!assembly_resource->assembly.name && !assembly_resource->assembly.data && assembly_resource->assembly.size == 0);
-	}
-	assembly_resource->assembly.name = strdup (name);
-	assembly_resource->assembly.data = (const uint8_t *)data;
-	assembly_resource->assembly.size = (uint32_t)size;
+	const char *assembly_name = strdup (name);
+	assert (assembly_name);
+	mono_bundled_resources_add_assembly_resource (assembly_name, data, size, mono_wasm_free_bundled_resource_func);
 	return mono_has_pdb_checksum ((char*)data, size);
 }
 
@@ -152,18 +144,16 @@ char* gai_strerror(int code) {
 void
 mono_wasm_add_satellite_assembly (const char *name, const char *culture, const unsigned char *data, unsigned int size)
 {
-	char *id = g_strconcat (culture, "/", name, (const char*)NULL);
-	MonoBundledSatelliteAssemblyResource *satellite_assembly_resource = mono_bundled_resources_get_satellite_assembly_resource (id);
-	g_assert (!satellite_assembly_resource);
-	satellite_assembly_resource = g_new0 (MonoBundledSatelliteAssemblyResource, 1);
-	satellite_assembly_resource->resource.type = MONO_BUNDLED_SATELLITE_ASSEMBLY;
-	satellite_assembly_resource->resource.id = id;
-	satellite_assembly_resource->resource.free_bundled_resource_func = mono_wasm_free_bundled_resource_func;
-	satellite_assembly_resource->satellite_assembly.name = strdup (name);
-	satellite_assembly_resource->satellite_assembly.culture = strdup (culture);
-	satellite_assembly_resource->satellite_assembly.data = (const uint8_t *)data;
-	satellite_assembly_resource->satellite_assembly.size = (uint32_t)size;
-	mono_bundled_resources_add ((MonoBundledResource **)&satellite_assembly_resource, 1);
+	int id_len = strlen (culture) + 1 + strlen (name); // +1 is for the "/"
+	char *id = (char *)malloc (sizeof (char) * (id_len + 1)); // +1 is for the terminating null character
+	assert (id);
+	int num_char = snprintf (id, (id_len + 1), "%s/%s", culture, name);
+	assert (num_char > 0 && num_char == id_len);
+	const char *satellite_assembly_name = strdup (name);
+	assert (satellite_assembly_name);
+	const char *satellite_assembly_culture = strdup (culture);
+	assert (satellite_assembly_culture);
+	mono_bundled_resources_add_satellite_assembly_resource (id, satellite_assembly_name, satellite_assembly_culture, data, size, mono_wasm_free_bundled_resource_func);
 }
 
 static void *sysglobal_native_handle;
