@@ -407,8 +407,8 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
             }
-            if (_nodeFactory.OptimizationFlags.SkipTypeValidation.HasValue &&
-                _nodeFactory.OptimizationFlags.SkipTypeValidation.Value)
+            bool automaticTypeValidation = _nodeFactory.OptimizationFlags.TypeValidation == TypeValidationRule.Automatic || _nodeFactory.OptimizationFlags.TypeValidation == TypeValidationRule.AutomaticWithLogging;
+            if (_nodeFactory.OptimizationFlags.TypeValidation == TypeValidationRule.SkipTypeValidation)
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
             }
@@ -430,7 +430,7 @@ namespace ILCompiler
                 flags,
                 _nodeFactory.OptimizationFlags,
                 _nodeFactory.ImageBase,
-                _nodeFactory.OptimizationFlags.SkipTypeValidation.HasValue ? null : inputModule);
+                automaticTypeValidation ? inputModule : null);
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance);
             DependencyAnalyzerBase<NodeFactory> componentGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(componentFactory, comparer);

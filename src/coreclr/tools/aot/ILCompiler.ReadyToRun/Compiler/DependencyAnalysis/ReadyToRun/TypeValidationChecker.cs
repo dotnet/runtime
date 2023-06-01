@@ -66,6 +66,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     failAtEnd = true;
             }
 
+#if DEBUG
+            if (module == module.Context.SystemModule)
+            {
+                // Spot check that the system module ALWAYS succeeds
+                if (failAtEnd)
+                {
+                    throw new InternalCompilerErrorException("System module failed to validate all types");
+                }
+            }
+#endif
+
             return !failAtEnd;
         }
 
@@ -285,7 +296,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     // Validate that generic variance is properly respected in method signatures -- UNIMPLEMENTED
                     // Validate that there are no cyclical method constraints -- UNIMPLEMENTED
                     // Validate that constraints are all acccessible to the method using them -- UNIMPLEMENTED
-
                 }
 
                 // Generic class special rules
@@ -293,9 +303,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Validate that there are no cyclical class or method constraints, and that constraints are all acccessible to the type using them -- UNIMPLEMENTED
 
                 // Override rules
-                // Validate that for every override involving generic methods that the generic method constraints are matching. -- UNIMPLEMENTED
-                // Validate that each override results does not violate accessibility rules
-                
+                // Validate that each override results does not violate accessibility rules -- UNIMPLEMENTED
+
+                HashSet<MethodDesc> overridenDeclMethods = new HashSet<MethodDesc>();
+
                 foreach (var methodImplHandle in typeDef.GetMethodImplementations())
                 {
                     var methodImpl = type.MetadataReader.GetMethodImplementation(methodImplHandle);
@@ -340,43 +351,104 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         return false;
                     }
 
+                    // Validate that multiple MethodImpls don't override the same method
+                    if (!overridenDeclMethods.Add(methodDecl))
+                    {
+                        AddTypeValidationError(type, $"Multiple MethodImpl records override '{methodDecl}'");
+                        return false;
+                    }
+
                     // Validate that the MethodImpl follows MethodImpl accessibility rules -- UNIMPLEMENTED
                 }
 
-                // Validate that all virtual static methods are actually implemented if the type is not abstract
-                // Validate that all virtual instance methods are actually implemented if the type is not abstract
-                if (!type.IsAbstract)
+                var virtualMethodAlgorithm = type.Context.GetVirtualMethodAlgorithmForType(type);
+                VirtualMethodAlgorithm baseTypeVirtualMethodAlgorithm = null;
+                if (type.BaseType != null && !type.IsInterface && !type.IsValueType)
                 {
-                    var virtualMethodAlgorithm = type.Context.GetVirtualMethodAlgorithmForType(type);
-                    foreach (var interfaceImplemented in type.RuntimeInterfaces)
-                    {
-                        foreach (var interfaceMethod in interfaceImplemented.GetVirtualMethods())
-                        {
-                            MethodDesc resolvedMethod;
-                            bool staticInteraceMethod = interfaceMethod.Signature.IsStatic;
-                            if (staticInteraceMethod)
-                            {
-                                resolvedMethod = virtualMethodAlgorithm.ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod, type);
-                            }
-                            else
-                            {
-                                resolvedMethod = type.ResolveInterfaceMethodTarget(interfaceMethod);
-                            }
+                    baseTypeVirtualMethodAlgorithm = type.Context.GetVirtualMethodAlgorithmForType(type.BaseType);
+                }
 
-                            if (null == resolvedMethod || (staticInteraceMethod && resolvedMethod.IsAbstract))
+                foreach (var interfaceImplemented in type.RuntimeInterfaces)
+                {
+                    foreach (var interfaceMethod in interfaceImplemented.GetVirtualMethods())
+                    {
+                        MethodDesc resolvedMethod;
+                        bool staticInterfaceMethod = interfaceMethod.Signature.IsStatic;
+                        if (staticInterfaceMethod)
+                        {
+                            resolvedMethod = virtualMethodAlgorithm.ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod, type);
+                        }
+                        else
+                        {
+                            resolvedMethod = type.ResolveInterfaceMethodTarget(interfaceMethod);
+                        }
+
+                        if (resolvedMethod != null)
+                        {
+                            // Validate that for every override involving generic methods that the generic method constraints are matching
+                            if (!CompareMethodConstraints(interfaceMethod, resolvedMethod))
+                            {
+                                AddTypeValidationError(type, $"Interface method '{interfaceMethod}' overriden by method '{resolvedMethod}' which does not have matching generic constraints");
+                                return false;
+                            }
+                        }
+
+                        // Validate that all virtual static methods are actually implemented if the type is not abstract
+                        // Validate that all virtual instance methods are actually implemented if the type is not abstract
+                        if (!type.IsAbstract)
+                        {
+                            if (null == resolvedMethod || (staticInterfaceMethod && resolvedMethod.IsAbstract))
                             {
                                 if (virtualMethodAlgorithm.ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, type, out var impl) != DefaultInterfaceMethodResolution.DefaultImplementation || impl.IsAbstract)
                                 {
                                     AddTypeValidationError(type, $"Interface method '{interfaceMethod}' does not have implementation");
                                     return false;
                                 }
+
+                                if (impl != null)
+                                {
+                                    // Validate that for every override involving generic methods that the generic method constraints are matching
+                                    if (!CompareMethodConstraints(interfaceMethod, impl))
+                                    {
+                                        AddTypeValidationError(type, $"Interface method '{interfaceMethod}' overriden by method '{impl}' which does not have matching generic constraints");
+                                        return false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                foreach (var virtualMethod in type.EnumAllVirtualSlots())
+                {
+                    var implementationMethod = virtualMethodAlgorithm.FindVirtualFunctionTargetMethodOnObjectType(virtualMethod, type);
+
+                    if (implementationMethod != null)
+                    {
+                        // Validate that for every override involving generic methods that the generic method constraints are matching
+                        if (!CompareMethodConstraints(virtualMethod, implementationMethod))
+                        {
+                            AddTypeValidationError(type, $"Virtual method '{virtualMethod}' overriden by method '{implementationMethod}' which does not have matching generic constraints");
+                            return false;
+                        }
+
+                        // Validate that if the decl method for the virtual is not on the immediate base type, that the intermediate type did not establish a
+                        // covariant return type which requires the implementation method to specify a more specific base type
+                        if ((virtualMethod.OwningType != type.BaseType) && (virtualMethod.OwningType != type) && (baseTypeVirtualMethodAlgorithm != null))
+                        {
+                            var implementationOnBaseType = baseTypeVirtualMethodAlgorithm.FindVirtualFunctionTargetMethodOnObjectType(virtualMethod, type.BaseType);
+                            if (!implementationMethod.Signature.EqualsWithCovariantReturnType(implementationOnBaseType.Signature))
+                            {
+                                AddTypeValidationError(type, $"Virtual method '{virtualMethod}' overriden by method '{implementationMethod}' does not satisfy the covariant return type introduced with '{implementationOnBaseType}'");
+                                return false;
                             }
                         }
                     }
 
-                    foreach (var virtualMethod in type.GetAllVirtualMethods())
+                    // Validate that all virtual static methods are actually implemented if the type is not abstract
+                    // Validate that all virtual instance methods are actually implemented if the type is not abstract
+                    if (!type.IsAbstract)
                     {
-                        var implementationMethod = virtualMethodAlgorithm.FindVirtualFunctionTargetMethodOnObjectType(virtualMethod, type);
                         if (implementationMethod == null || implementationMethod.IsAbstract)
                         {
                             AddTypeValidationError(type, $"Interface method '{virtualMethod}' does not have implementation");
@@ -392,6 +464,59 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // If we throw an exception, clearly type validation skipping was not to be
                 AddTypeValidationError(type, $"due to exception '{ex.ToString()}'");
                 return false;
+            }
+
+            static bool CompareGenericParameterConstraint(MethodDesc declMethod, GenericParameterDesc parameterOfDecl, MethodDesc implMethod, GenericParameterDesc parameterOfImpl)
+            {
+                if (parameterOfImpl.HasDefaultConstructorConstraint)
+                    if (!parameterOfDecl.HasDefaultConstructorConstraint && !parameterOfDecl.HasNotNullableValueTypeConstraint)
+                        return false;
+
+                if (parameterOfImpl.HasNotNullableValueTypeConstraint)
+                    if (!parameterOfDecl.HasNotNullableValueTypeConstraint)
+                        return false;
+
+                if (parameterOfImpl.HasReferenceTypeConstraint)
+                    if (!parameterOfDecl.HasReferenceTypeConstraint)
+                        return false;
+
+                if (parameterOfDecl.HasAcceptByRefLikeConstraint)
+                    if (!parameterOfImpl.HasAcceptByRefLikeConstraint)
+                        return false;
+
+                HashSet<TypeDesc> constraintsOnDecl = new HashSet<TypeDesc>();
+                foreach (var constraint in parameterOfDecl.TypeConstraints)
+                {
+                    constraintsOnDecl.Add(constraint.InstantiateSignature(declMethod.Instantiation, default(Instantiation)));
+                }
+
+                foreach (var constraint in parameterOfImpl.TypeConstraints)
+                {
+                    if (!constraintsOnDecl.Contains(constraint.InstantiateSignature(implMethod.Instantiation, default(Instantiation))))
+                        return false;
+                }
+
+                return true;
+            }
+
+            static bool CompareMethodConstraints(MethodDesc methodDecl, MethodDesc methodImpl)
+            {
+                // Validate that methodDecl's method constraints are at least as stringent as methodImpls
+                // The Decl is permitted to be more stringent.
+
+                if (methodDecl.Instantiation.Length != methodImpl.Instantiation.Length)
+                    return false;
+                for (int i = 0; i < methodDecl.Instantiation.Length; i++)
+                {
+                    var genericParameterDescOnImpl = (GenericParameterDesc)methodImpl.GetTypicalMethodDefinition().Instantiation[i];
+                    var genericParameterDescOnDecl = (GenericParameterDesc)methodDecl.GetTypicalMethodDefinition().Instantiation[i];
+                    if (!CompareGenericParameterConstraint(methodDecl, genericParameterDescOnDecl, methodImpl, genericParameterDescOnImpl))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
             }
 
             Task<bool> ValidateTypeHelper(TypeDesc typeDesc)

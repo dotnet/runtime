@@ -151,16 +151,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // ReadyToRunHeader.Flags
             int flagsInt = (int)_flags;
-            if (_shouldAddSkipTypeValidationFlag.Result.canSkipValidation)
+            if (!relocsOnly)
             {
-                flagsInt |= (int)ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
-            }
-            else
-            {
-//#if DIAGNOSE_TYPE_VALIDATION_RULES
-//                foreach (string reason in _shouldAddSkipTypeValidationFlag.Result.reasons)
-//                    System.Console.WriteLine(reason);
-//#endif
+                if (_shouldAddSkipTypeValidationFlag.Result.canSkipValidation)
+                {
+                    flagsInt |= (int)ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
+                }
+                else
+                {
+                    if (factory.OptimizationFlags.TypeValidation == TypeValidationRule.AutomaticWithLogging)
+                    {
+                        foreach (string reason in _shouldAddSkipTypeValidationFlag.Result.reasons)
+                            System.Console.WriteLine(reason);
+                    }
+                }
             }
             builder.EmitInt(flagsInt);
 

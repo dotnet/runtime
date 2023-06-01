@@ -44,10 +44,18 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
+    public enum TypeValidationRule
+    {
+        Automatic,
+        AutomaticWithLogging,
+        AlwaysValidate,
+        SkipTypeValidation
+    }
+
     public sealed class NodeFactoryOptimizationFlags
     {
         public bool OptimizeAsyncMethods;
-        public bool? SkipTypeValidation;
+        public TypeValidationRule TypeValidation;
     }
 
     // To make the code future compatible to the composite R2R story

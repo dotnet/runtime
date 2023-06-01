@@ -150,6 +150,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public bool HasAcceptByRefLikeConstraint
+        {
+            get
+            {
+                return (Constraints & GenericConstraints.AcceptByRefLike) != 0;
+            }
+        }
+
         public bool IsCovariant
         {
             get

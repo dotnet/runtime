@@ -242,7 +242,8 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
             }
-            if (_nodeFactoryOptimizationFlags.SkipTypeValidation.HasValue && _nodeFactoryOptimizationFlags.SkipTypeValidation.Value)
+            bool automaticTypeValidation = _nodeFactoryOptimizationFlags.TypeValidation == TypeValidationRule.Automatic || _nodeFactoryOptimizationFlags.TypeValidation == TypeValidationRule.AutomaticWithLogging;
+            if (_nodeFactoryOptimizationFlags.TypeValidation == TypeValidationRule.SkipTypeValidation)
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
             }
@@ -259,7 +260,7 @@ namespace ILCompiler
                 flags,
                 _nodeFactoryOptimizationFlags,
                 _imageBase,
-                _nodeFactoryOptimizationFlags.SkipTypeValidation.HasValue ? null : singleModule);
+                automaticTypeValidation ? singleModule : null);
 
             factory.CompositeImageSettings = _compositeImageSettings;
 

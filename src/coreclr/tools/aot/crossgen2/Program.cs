@@ -581,7 +581,7 @@ namespace ILCompiler
 
                     NodeFactoryOptimizationFlags nodeFactoryFlags = new NodeFactoryOptimizationFlags();
                     nodeFactoryFlags.OptimizeAsyncMethods = Get(_command.AsyncMethodOptimization);
-                    nodeFactoryFlags.SkipTypeValidation = Get(_command.SkipTypeValidation);
+                    nodeFactoryFlags.TypeValidation = Get(_command.TypeValidation);
 
                     builder
                         .UseMapFile(Get(_command.Map))
