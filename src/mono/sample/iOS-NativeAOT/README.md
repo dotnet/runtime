@@ -30,7 +30,7 @@ When building for the first time (on a clean checkout) run from this directory t
 make world
 ```
 
-The command performs the following: 
+The command performs the following:
 1. Build all required runtime components and dependencies
 2. Build the sample app and bundle it into an application bundle
 
@@ -47,13 +47,13 @@ When building for the first time (on a clean checkout) run from this directory t
 make world USE_RUNTIME_PACKS=true
 ```
 
-The command performs the following: 
+The command performs the following:
 1. Builds ILCompiler and runtime packages:
     - `Microsoft.DotNet.ILCompiler.8.0.0-dev` (host)
     - `runtime.<host_os>-<host_arch>.Microsoft.DotNet.ILCompiler.8.0.0-dev` (host)
     - `Microsoft.NETCore.App.Runtime.NativeAOT.<target_os>-<target_arch>.8.0.0-dev` (target)
-    
-    NOTE: 
+
+    NOTE:
     - The packages can be found at: `artifacts/packages/<config>/Shipping/*.8.0.0-dev.nupkg`
     - For testing incremental changes make sure to remove the **restored** nuget packages listed above with `8.0.0-dev` from your nuget restore directory (usually `~/.nuget/packages`). Failing to do so, can lead to unexpected behavior, as nuget will refuse to install newly generate package with a same version - `8.0.0-dev`. Something like:
         ```
