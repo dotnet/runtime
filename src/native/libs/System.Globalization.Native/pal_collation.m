@@ -60,17 +60,19 @@ int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName, int3
     }
 
     NSString *firstString = [NSString stringWithCharacters: lpStr1 length: cwStr1Length];
+    NSString *firstCompat = firstString.precomposedStringWithCanonicalMapping;
     NSString *secondString = [NSString stringWithCharacters: lpStr2 length: cwStr2Length];
-    NSRange string1Range = NSMakeRange(0, cwStr1Length);
+    NSString *secondCompat = secondString.precomposedStringWithCanonicalMapping;
+    NSRange stringCompRange = NSMakeRange(0, firstCompat.length);
     NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
     
     // in case mapping is not found
     if (options == 0)
         return -2;
-        
-    return [firstString compare:secondString
+
+    return [firstCompat compare:secondCompat
                         options:options
-                        range:string1Range
+                        range:stringCompRange
                         locale:currentLocale];
 }
 
@@ -87,9 +89,70 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName,
                                         int32_t comparisonOptions,
                                         int32_t fromBeginning)
 {
-    assert(cwTargetLength > 0);
+    assert(cwTargetLength >= 0);
     Range result = {-2, 0};
 
+    NSLocale *currentLocale;
+    if (localeName == NULL || lNameLength == 0)
+    {
+        currentLocale = [NSLocale systemLocale];
+    }
+    else
+    {
+        NSString *locName = [NSString stringWithCharacters: localeName length: lNameLength];
+        currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
+    }
+
+    NSString *searchString = [NSString stringWithCharacters: lpTarget length: cwTargetLength];
+    NSString *searchStrComposed = searchString.precomposedStringWithCanonicalMapping;
+    NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
+    NSString *sourceStrComposed = sourceString.precomposedStringWithCanonicalMapping;
+    // Weightless characters
+    int32_t isEmptyString = [searchStrComposed compare:@""];
+    if (isEmptyString == 0)
+    {
+       result.location = fromBeginning ? 0 : sourceString.length;
+       return result;
+    }
+    NSRange rangeOfReceiverToSearch = NSMakeRange(0, sourceStrComposed.length);
+    NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
+    
+    // in case mapping is not found
+    if (options == 0)
+        return result;
+    if (!fromBeginning)
+        options |= NSBackwardsSearch;
+    
+    NSRange nsRange = [sourceStrComposed rangeOfString:searchStrComposed
+                                         options:options
+                                         range:rangeOfReceiverToSearch
+                                         locale:currentLocale];
+    
+    if (nsRange.location != NSNotFound)
+    {   
+        result.location = nsRange.location;
+        result.length = nsRange.length; //searchString.length > nsRange.length ? searchString.length : nsRange.length;
+    }
+    else
+    {
+        result.location = -1;
+    }
+    
+    return result;
+}
+
+/*
+ Return value is a "Win32 BOOL" (1 = true, 0 = false)
+ */
+int32_t GlobalizationNative_StartsWithNative(const uint16_t* localeName,
+                                            int32_t lNameLength,
+                                            const uint16_t* prefix,
+                                            int32_t prefixLength,
+                                            const uint16_t* source,
+                                            int32_t sourceLength,
+                                            int32_t comparisonOptions)
+                        
+{
     NSLocale *currentLocale;
     if(localeName == NULL || lNameLength == 0)
     {
@@ -101,35 +164,65 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName,
         currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
     }
 
-    NSString *searchString = [NSString stringWithCharacters: lpTarget length: cwTargetLength];
-    NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
-    if ((int32_t)sourceString.length < 0)
-       return result;
-    NSRange rangeOfReceiverToSearch = NSMakeRange(0, (int32_t)sourceString.length);
+    NSString *prefixString = [NSString stringWithCharacters: prefix length: prefixLength];
+    NSString *prefixStrComposed = prefixString.precomposedStringWithCanonicalMapping;
+    NSString *sourceString = [NSString stringWithCharacters: source length: sourceLength];
+    NSString *sourceStrComposed = sourceString.precomposedStringWithCanonicalMapping;
+
+    NSRange sourceRange = NSMakeRange(0, prefixStrComposed.length > sourceStrComposed.length ? sourceStrComposed.length : prefixStrComposed.length);
     NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
     
     // in case mapping is not found
     if (options == 0)
-        return result;
-    if (!fromBeginning)
-        options |= NSBackwardsSearch;
-    
-    NSRange nsRange = [sourceString rangeOfString:searchString
-                                    options:options
-                                    range:rangeOfReceiverToSearch
-                                    locale:currentLocale];
-    
-    if (nsRange.location != NSNotFound)
-    {   
-        result.location = (int32_t)nsRange.location;
-        result.length = (int32_t)nsRange.length;
+        return -2;
+        
+    int32_t result = [sourceStrComposed compare:prefixStrComposed
+                                        options:options
+                                        range:sourceRange
+                                        locale:currentLocale];
+    return result == NSOrderedSame ? 1 : 0;
+}
+
+/*
+ Return value is a "Win32 BOOL" (1 = true, 0 = false)
+ */
+int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName,
+                                            int32_t lNameLength,
+                                            const uint16_t* suffix,
+                                            int32_t suffixLength,
+                                            const uint16_t* source,
+                                            int32_t sourceLength,
+                                            int32_t comparisonOptions)
+                        
+{
+    NSLocale *currentLocale;
+    if(localeName == NULL || lNameLength == 0)
+    {
+        currentLocale = [NSLocale systemLocale];
     }
     else
     {
-        result.location = -1;
+        NSString *locName = [NSString stringWithCharacters: localeName length: lNameLength];
+        currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
     }
+
+    NSString *suffixString = [NSString stringWithCharacters: suffix length: suffixLength];
+    NSString *suffixStrComposed = suffixString.precomposedStringWithCanonicalMapping;
+    NSString *sourceString = [NSString stringWithCharacters: source length: sourceLength];
+    NSString *sourceStrComposed = sourceString.precomposedStringWithCanonicalMapping;
+    int32_t startIndex = suffixStrComposed.length > sourceStrComposed.length ? 0 : sourceStrComposed.length - suffixStrComposed.length;
+    NSRange sourceRange = NSMakeRange(startIndex, sourceStrComposed.length - startIndex);
+    NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
     
-    return result;
+    // in case mapping is not found
+    if (options == 0)
+        return -2;
+        
+    int32_t result = [sourceStrComposed compare:suffixStrComposed
+                                        options:options
+                                        range:sourceRange
+                                        locale:currentLocale];
+    return result == NSOrderedSame ? 1 : 0;
 }
 
 #endif

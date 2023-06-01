@@ -648,6 +648,9 @@ namespace System.Globalization
 #if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
                 JsStartsWith(source, prefix, options) :
+#elif TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            GlobalizationMode.Hybrid ?
+                NativeStartsWith(source, prefix, options) :
 #endif
                 IcuStartsWith(source, prefix, options, matchLengthPtr);
 
@@ -800,6 +803,9 @@ namespace System.Globalization
 #if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
                 JsEndsWith(source, suffix, options) :
+#elif TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            GlobalizationMode.Hybrid ?
+                NativeEndsWith(source, suffix, options) :
 #endif
                 IcuEndsWith(source, suffix, options, matchLengthPtr);
 

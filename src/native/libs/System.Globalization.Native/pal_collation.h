@@ -82,6 +82,22 @@ PALEXPORT Range GlobalizationNative_IndexOfNative(const uint16_t* localeName,
                                                   const uint16_t* lpSource,
                                                   int32_t cwSourceLength,
                                                   int32_t options,
-                                                  int32_t fromBeginning);                                                  
+                                                  int32_t fromBeginning);   
+
+PALEXPORT int32_t GlobalizationNative_StartsWithNative(const uint16_t* localeName,
+                                                       int32_t lNameLength,
+                                                       const uint16_t* lpTarget,
+                                                       int32_t cwTargetLength,
+                                                       const uint16_t* lpSource,
+                                                       int32_t cwSourceLength,
+                                                       int32_t options);
+
+PALEXPORT int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName,
+                                                     int32_t lNameLength,
+                                                     const uint16_t* lpTarget,
+                                                     int32_t cwTargetLength,
+                                                     const uint16_t* lpSource,
+                                                     int32_t cwSourceLength,
+                                                     int32_t options);                                               
 
 #endif

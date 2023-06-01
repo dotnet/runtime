@@ -75,18 +75,15 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "Hi", "\u0130", 1, 2, CompareOptions.IgnoreCase, -1, 0 };
 
             // Unicode
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
-            {
-                yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "A\u0300", 8, 9, CompareOptions.None, 8, 1 };
-                yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 8, 9, CompareOptions.IgnoreCase, 8, 1 };
-                yield return new object[] { s_invariantCompare, "o\u0308", "o", 1, 2, CompareOptions.None, -1, 0 };
-            }
+            yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "A\u0300", 8, 9, CompareOptions.None, 8, 1 };
+            yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 8, 9, CompareOptions.IgnoreCase, 8, 1 };
+            yield return new object[] { s_invariantCompare, "o\u0308", "o", 1, 2, CompareOptions.None, -1, 0 };
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "A\u0300", 8, 9, CompareOptions.Ordinal, -1, 0 };
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 8, 9, CompareOptions.None, -1, 0 };            
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 8, 9, CompareOptions.OrdinalIgnoreCase, -1, 0 };
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 8, 9, CompareOptions.Ordinal, -1, 0 };
             yield return new object[] { s_invariantCompare, "FooBar", "Foo\u0400Bar", 5, 6, CompareOptions.Ordinal, -1, 0 };
-            yield return new object[] { s_invariantCompare, "TestFooBA\u0300R", "FooB\u00C0R", 10, 11, supportedIgnoreNonSpaceOption, 4, 7 };
+            yield return new object[] { s_invariantCompare, "TestFooBA\u0300R", "FooB\u00C0R", 10, 11, supportedIgnoreNonSpaceOption, 4, PlatformDetection.IsHybridGlobalizationOnOSX ? 6 : 7 };
 
             if (PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
@@ -100,7 +97,7 @@ namespace System.Globalization.Tests
             // Weightless characters
             // NLS matches weightless characters at the end of the string
             // ICU matches weightless characters at 1 index prior to the end of the string
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (!PlatformDetection.IsHybridGlobalizationOnOSX) // check this
             {
                 yield return new object[] { s_invariantCompare, "", "\u200d", 0, 0, CompareOptions.None, 0, 0 };
                 yield return new object[] { s_invariantCompare, "", "\u200d", -1, 0, CompareOptions.None, 0, 0 };

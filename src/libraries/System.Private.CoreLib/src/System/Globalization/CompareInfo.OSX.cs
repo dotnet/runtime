@@ -68,6 +68,36 @@ namespace System.Globalization
             }
         }
 
+        private unsafe bool NativeStartsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
+
+            Debug.Assert(!prefix.IsEmpty);
+            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
+
+            fixed (char* pSource = &MemoryMarshal.GetReference(source)) // could be null (or otherwise unable to be dereferenced)
+            fixed (char* pPrefix = &MemoryMarshal.GetReference(prefix))
+            {
+                return Interop.Globalization.StartsWithNative(m_name, m_name.Length, pPrefix, prefix.Length, pSource, source.Length, options);
+            }
+        }
+
+        private unsafe bool NativeEndsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
+
+            Debug.Assert(!suffix.IsEmpty);
+            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
+
+            fixed (char* pSource = &MemoryMarshal.GetReference(source)) // could be null (or otherwise unable to be dereferenced)
+            fixed (char* pSuffix = &MemoryMarshal.GetReference(suffix))
+            {
+                return Interop.Globalization.EndsWithNative(m_name, m_name.Length, pSuffix, suffix.Length, pSource, source.Length, options);
+            }
+        }
+
         private static void AssertComparisonSupported(CompareOptions options)
         {
             if ((options | SupportedCompareOptions) != SupportedCompareOptions)
