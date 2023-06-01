@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.IO.Enumeration;
 using System.Linq;
 using Xunit;
 
@@ -203,6 +203,66 @@ namespace System.Formats.Tar.Tests
 
             Assert.True(File.Exists(path1));
             Assert.True(Path.Exists(path2));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetTestTarFormats))]
+        public void UnseekableStreams_RoundTrip(TestTarFormat testFormat)
+        {
+            using TempDirectory root = new();
+
+            using MemoryStream sourceStream = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, "many_small_files");
+            using WrappedStream sourceUnseekableArchiveStream = new(sourceStream, canRead: true, canWrite: false, canSeek: false);
+
+            TarFile.ExtractToDirectory(sourceUnseekableArchiveStream, root.Path, overwriteFiles: false);
+
+            using MemoryStream destinationStream = new();
+            using WrappedStream destinationUnseekableArchiveStream = new(destinationStream, canRead: true, canWrite: true, canSeek: false);
+            TarFile.CreateFromDirectory(root.Path, destinationUnseekableArchiveStream, includeBaseDirectory: false);
+
+            FileSystemEnumerable<FileSystemInfo> fileSystemEntries = new FileSystemEnumerable<FileSystemInfo>(
+                directory: root.Path,
+                transform: (ref FileSystemEntry entry) => entry.ToFileSystemInfo(),
+                options: new EnumerationOptions() { RecurseSubdirectories = true });
+
+            destinationStream.Position = 0;
+            using TarReader reader = new TarReader(destinationStream, leaveOpen: false);
+
+            // Size of files in many_small_files.tar are expected to be tiny and all equal
+            int bufferLength = 1024;
+            byte[] fileContent = new byte[bufferLength];
+            byte[] dataStreamContent = new byte[bufferLength];
+            TarEntry entry = reader.GetNextEntry();
+            do
+            {
+                Assert.NotNull(entry);
+                string entryPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.Join(root.Path, entry.Name)));
+                FileSystemInfo fsi = fileSystemEntries.SingleOrDefault(file =>
+                    file.FullName == entryPath);
+                Assert.NotNull(fsi);
+                if (entry.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
+                {
+                    Assert.NotNull(entry.DataStream);
+
+                    using Stream fileData = File.OpenRead(fsi.FullName);
+
+                    // If the size of the files in manu_small_files.tar ever gets larger than bufferLength,
+                    // these asserts should fail and the test will need to be updated
+                    AssertExtensions.LessThanOrEqualTo(entry.Length, bufferLength);
+                    AssertExtensions.LessThanOrEqualTo(fileData.Length, bufferLength);
+
+                    Assert.Equal(fileData.Length, entry.Length);
+
+                    Array.Clear(fileContent);
+                    Array.Clear(dataStreamContent);
+
+                    fileData.ReadExactly(fileContent, 0, (int)entry.Length);
+                    entry.DataStream.ReadExactly(dataStreamContent, 0, (int)entry.Length);
+
+                    AssertExtensions.SequenceEqual(fileContent, dataStreamContent);
+                }
+            }
+            while ((entry = reader.GetNextEntry()) != null);
         }
     }
 }
