@@ -49,10 +49,8 @@ namespace System.Threading
             BindHandlePortableCore(osHandle);
 
 #if !CORECLR
-        private static bool EnsureConfigInitializedCore() => true;
+        private static bool EnsureConfigInitialized() => true;
 #endif
-
-        internal static bool EnsureConfigInitialized() => EnsureConfigInitializedCore();
 
         internal static void InitializeForThreadPoolThread()
         {
