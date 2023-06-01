@@ -131,6 +131,8 @@ export type LoaderHelpers = {
     out(message: string): void;
     err(message: string): void;
     getApplicationEnvironment?: (bootConfigResponse: Response) => string | null;
+    setTimeout: (handler: TimerHandler, timeout?: number, ...args: any[]) => number;
+    clearTimeout: (id: number | undefined) => void;
 }
 export type RuntimeHelpers = {
     config: MonoConfigInternal;

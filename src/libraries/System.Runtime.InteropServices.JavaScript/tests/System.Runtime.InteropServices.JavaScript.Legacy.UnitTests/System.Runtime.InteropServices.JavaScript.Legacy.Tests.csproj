@@ -4,9 +4,11 @@
     <TargetFramework>$(NetCoreAppCurrent)-browser</TargetFramework>
     <TestRuntime>true</TestRuntime>
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --web-server-use-cop</WasmXHarnessArgs>
+    <WasmXHarnessMonoArgs>--setenv=XHARNESS_LOG_TEST_START=true --no-memory-snapshot</WasmXHarnessMonoArgs>
     <NoWarn>0612</NoWarn>
     <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
     <DefineConstants Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(DefineConstants);DISABLE_LEGACY_JS_INTEROP</DefineConstants>
+    <Scenario>WasmTestOnBrowser</Scenario>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(WasmEnableLegacyJsInterop)' != 'false'">

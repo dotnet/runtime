@@ -17,7 +17,7 @@ import { BINDINGType, MONOType } from "./export-types";
 import { mono_wasm_load_data_archive } from "../assets";
 import { mono_method_resolve } from "./method-binding";
 import { runtimeHelpers } from "../globals";
-import { js_string_to_mono_string } from "./strings";
+import { stringToMonoStringIntern, stringToMonoStringUnsafe } from "./strings";
 
 export function export_mono_api(): MONOType {
     return {
@@ -77,6 +77,7 @@ export function cwraps_mono_api(mono: MONOType): void {
 
 export function export_internal_api(): any {
     return {
+        stringToMonoStringIntern, // MarshalTests.cs
         mono_method_resolve, //MarshalTests.cs
     };
 }
@@ -88,7 +89,7 @@ export function export_binding_api(): BINDINGType {
         call_assembly_entry_point: mono_call_assembly_entry_point,
         mono_obj_array_new: <any>null,
         mono_obj_array_set: <any>null,
-        js_string_to_mono_string,
+        js_string_to_mono_string: stringToMonoStringUnsafe,
         js_typed_array_to_array,
         mono_array_to_js_array,
         js_to_mono_obj,

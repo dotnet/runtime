@@ -170,7 +170,7 @@ export function stringToMonoStringRoot(string: string, result: WasmRoot<MonoStri
             }
         }
 
-        js_string_to_mono_string_new_root(string, result);
+        stringToMonoStringNewRoot(string, result);
     }
 }
 
@@ -189,7 +189,7 @@ export function stringToInternedMonoStringRoot(string: string | symbol, result: 
     if (typeof (text) !== "string") {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        throw new Error(`Argument to js_string_to_mono_string_interned must be a string but was ${string}`);
+        throw new Error(`Argument to stringToInternedMonoStringRoot must be a string but was ${string}`);
     }
 
     if ((text.length === 0) && _empty_string_ptr) {
@@ -203,11 +203,11 @@ export function stringToInternedMonoStringRoot(string: string | symbol, result: 
         return;
     }
 
-    js_string_to_mono_string_new_root(text, result);
-    _store_string_in_intern_table(text, result, true);
+    stringToMonoStringNewRoot(text, result);
+    storeStringInInternTable(text, result, true);
 }
 
-function _store_string_in_intern_table(string: string, root: WasmRoot<MonoString>, internIt: boolean): void {
+function storeStringInInternTable(string: string, root: WasmRoot<MonoString>, internIt: boolean): void {
     if (!root.value)
         throw new Error("null pointer passed to _store_string_in_intern_table");
 
@@ -245,7 +245,7 @@ function _store_string_in_intern_table(string: string, root: WasmRoot<MonoString
     rootBuffer.copy_value_from_address(index, root.address);
 }
 
-function js_string_to_mono_string_new_root(string: string, result: WasmRoot<MonoString>): void {
+function stringToMonoStringNewRoot(string: string, result: WasmRoot<MonoString>): void {
     const bufferLen = (string.length + 1) * 2;
     const buffer = Module._malloc(bufferLen);
     stringToUTF16(buffer as any, buffer as any + bufferLen, string);
