@@ -30,8 +30,6 @@
 	va_end (args); \
 } while (0)
 
-TypeLoadFailureCallback mono_class_set_deferred_type_load_failure_callback = mono_class_set_type_load_failure;
-
 static void
 mono_error_set_generic_errorv (MonoError *oerror, const char *name_space, const char *name, const char *msg_format, va_list args);
 
@@ -909,74 +907,4 @@ mono_error_set_first_argument (MonoError *oerror, const char *first_argument)
 	MonoErrorInternal* to = (MonoErrorInternal*)oerror;
 	to->first_argument = g_strdup (first_argument);
 	to->flags |= MONO_ERROR_FREE_STRINGS;
-}
-
-/**
- * mono_class_set_deferred_type_load_failure:
- * \param klass class in which the failure was detected
- * \param fmt \c printf -style error message string.
- *
- * Sets a deferred failure in the class and prints a warning message. 
- * The deferred failure allows the runtime to attempt setting up the class layout at runtime.
- *
- * LOCKING: Acquires the loader lock.
- *
- * \returns FALSE
- */
-gboolean
-mono_class_set_deferred_type_load_failure (MonoClass *klass, const char * fmt, ...)
-{
-	if (!mono_class_has_deferred_failure (klass)) {
-		va_list args;
-
-		va_start (args, fmt);
-		g_warning ("Warning: %s", fmt, args);
-		va_end (args);
-
-		mono_class_set_deferred_failure (klass);
-	}
-
-	return FALSE;
-}
-
-/**
- * mono_class_set_type_load_failure:
- * \param klass class in which the failure was detected
- * \param fmt \c printf -style error message string.
- *
- * Collect detected failure informaion in the class for later processing.
- * The error is stored as a MonoErrorBoxed as with mono_error_set_type_load_class()
- * Note that only the first failure is kept.
- *
- * LOCKING: Acquires the loader lock.
- *
- * \returns TRUE
- */
-gboolean
-mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...)
-{
-	if (!mono_class_has_failure (klass)) {
-		ERROR_DECL (prepare_error);
-		va_list args;
-
-		va_start (args, fmt);
-		mono_error_vset_type_load_class (prepare_error, klass, fmt, args);
-		va_end (args);
-
-		MonoErrorBoxed *box = mono_error_box (prepare_error, m_class_get_image (klass));
-		mono_error_cleanup (prepare_error);
-		mono_class_set_failure (klass, box);
-	}
-
-	return TRUE;
-}
-
-void set_failure_type(FailureType failure_type) {
-	if (failure_type == DEFERRED_FAILURE) {
-		mono_class_set_deferred_type_load_failure_callback = mono_class_set_deferred_type_load_failure;
-	} else if (failure_type == IMMEDIATE_FAILURE) {
-		mono_class_set_deferred_type_load_failure_callback = mono_class_set_type_load_failure;
-	} else {
-		g_assert_not_reached ();
-	}
 }
