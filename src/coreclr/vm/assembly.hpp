@@ -427,8 +427,6 @@ private:
 #ifndef DACCESS_COMPILE
     ReleaseHolder<FriendAssemblyDescriptor> GetFriendAssemblyInfo();
 #endif
-
-
 public:
     void UpdateCachedFriendAssemblyInfo();
 private:
