@@ -3091,11 +3091,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             assert(op1->OperIsCompare() || op1->IsIntegralConst(0) || op1->IsIntegralConst(1));
             break;
 
-        case GT_ASG:
-            // Note that this is a weak check - the "op1" location node can be a COMMA.
-            assert(!op1->CanCSE());
-            break;
-
         case GT_IND:
             // Do we have a constant integer address as op1 that is also a handle?
             if (op1->IsIconHandle())
@@ -3141,7 +3136,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
             for (CallArg& arg : call->gtArgs.Args())
             {
-                // TODO-Cleanup: this is a patch for a violation in our GT_ASG propagation.
+                // TODO-Cleanup: this is a patch for a violation in our GTF_ASG propagation.
                 // see https://github.com/dotnet/runtime/issues/13758
                 if (arg.GetEarlyNode() != nullptr)
                 {
@@ -3230,20 +3225,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
     }
 
     tree->VisitOperands([&](GenTree* operand) -> GenTree::VisitResult {
-
-        // ASGs are nodes that produce no value, but have a type (essentially, the type of the location).
-        // Validate that nodes that parent ASGs do not consume values. This check also ensures that code
-        // which updates location types ("gsParamsToShadows" replaces small LCL_VARs with TYP_INT ones)
-        // does not have to worry about propagating the new type "up the tree".
-        //
-        // Uncoditionally allowing COMMA here weakens the assert, but is necessary because the compiler
-        // ("gtExtractSideEffList") can create "typed" "comma lists" with ASGs as second operands.
-        //
-        if (operand->OperIs(GT_ASG))
-        {
-            assert(tree->IsCall() || tree->OperIs(GT_COMMA));
-        }
-
         fgDebugCheckFlags(operand);
         expectedFlags |= (operand->gtFlags & GTF_ALL_EFFECT);
 
@@ -3472,22 +3453,14 @@ void Compiler::fgDebugCheckLinkedLocals()
             GenTree* node = *use;
             if (ShouldLink(node))
             {
-                if ((user != nullptr) && user->OperIs(GT_ASG) && (node == user->gtGetOp1()))
-                {
-                }
-                else if ((user != nullptr) && user->IsCall() &&
-                         (node == m_compiler->gtCallGetDefinedRetBufLclAddr(user->AsCall())))
+                if ((user != nullptr) && user->IsCall() &&
+                    (node == m_compiler->gtCallGetDefinedRetBufLclAddr(user->AsCall())))
                 {
                 }
                 else
                 {
                     m_locals.Push(node);
                 }
-            }
-
-            if (node->OperIs(GT_ASG) && ShouldLink(node->gtGetOp1()))
-            {
-                m_locals.Push(node->gtGetOp1());
             }
 
             if (node->IsCall())

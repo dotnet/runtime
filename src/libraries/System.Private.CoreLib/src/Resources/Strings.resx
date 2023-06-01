@@ -172,17 +172,26 @@
   <data name="AppDomain_Policy_PrincipalTwice" xml:space="preserve">
     <value>Default principal object cannot be set twice.</value>
   </data>
-  <data name="AmbiguousImplementationException_NullMessage" xml:space="preserve">
-    <value>Ambiguous implementation found.</value>
-  </data>
   <data name="Arg_AccessException" xml:space="preserve">
     <value>Cannot access member.</value>
   </data>
   <data name="Arg_AccessViolationException" xml:space="preserve">
     <value>Attempted to read or write protected memory. This is often an indication that other memory is corrupt.</value>
   </data>
-  <data name="Arg_AmbiguousMatchException" xml:space="preserve">
+  <data name="Arg_AmbiguousImplementationException_NoMessage" xml:space="preserve">
+    <value>Ambiguous implementation found.</value>
+  </data>
+  <data name="Arg_AmbiguousMatchException_Attribute" xml:space="preserve">
+    <value>Multiple custom attributes of the same type '{0}' found.</value>
+  </data>
+  <data name="Arg_AmbiguousMatchException_NoMessage" xml:space="preserve">
     <value>Ambiguous match found.</value>
+  </data>
+  <data name="Arg_AmbiguousMatchException_CustomAttributeData" xml:space="preserve">
+    <value>Ambiguous match found for '{0}'.</value>
+  </data>
+  <data name="Arg_AmbiguousMatchException_MemberInfo" xml:space="preserve">
+    <value>Ambiguous match found for '{0} {1}'.</value>
   </data>
   <data name="Arg_ApplicationException" xml:space="preserve">
     <value>Error in the application.</value>
@@ -3299,9 +3308,6 @@
   <data name="Resources_StreamNotValid" xml:space="preserve">
     <value>Stream is not a valid resource file.</value>
   </data>
-  <data name="RFLCT_AmbigCust" xml:space="preserve">
-    <value>Multiple custom attributes of the same type found.</value>
-  </data>
   <data name="InvalidFilterCriteriaException_CritInt" xml:space="preserve">
     <value>An Int32 must be provided for the filter criteria.</value>
   </data>
@@ -4053,10 +4059,10 @@
     <value>AssemblyName.GetAssemblyName() is not supported on this platform.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptions" xml:space="preserve">
-    <value>CompareOptions = {0} are not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.</value>
+    <value>CompareOptions = {0} are not supported when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptionsForCulture" xml:space="preserve">
-    <value>CompareOptions = {0} are not supported for culture = {1} when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.</value>
+    <value>CompareOptions = {0} are not supported for culture = {1} when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithMatchLength" xml:space="preserve">
     <value>Match length calculation is not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this function.</value>

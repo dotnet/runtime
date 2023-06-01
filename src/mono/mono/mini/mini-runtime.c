@@ -1547,7 +1547,6 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		break;
 	case MONO_PATCH_INFO_VTABLE:
 		target = mono_class_vtable_checked (patch_info->data.klass, error);
-		mono_error_assert_ok (error);
 		break;
 	case MONO_PATCH_INFO_DELEGATE_INFO: {
 		MonoDelegateClassMethodPair *del_tramp = patch_info->data.del_tramp;
@@ -2920,7 +2919,7 @@ get_ftnptr_for_method (MonoMethod *method, gboolean need_unbox, MonoError *error
 		res = mini_add_method_trampoline (method, res, mono_method_needs_static_rgctx_invoke (method, TRUE), need_unbox);
 		return res;
 	} else {
-		return mini_llvmonly_load_method_ftndesc (method, FALSE, FALSE, error);
+		return mini_llvmonly_load_method_ftndesc (method, FALSE, need_unbox, error);
 	}
 }
 

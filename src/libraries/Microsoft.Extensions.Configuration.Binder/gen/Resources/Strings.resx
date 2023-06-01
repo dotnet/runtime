@@ -132,11 +132,14 @@
   <data name="LanguageVersionIsNotSupportedTitle" xml:space="preserve">
     <value>Language version is required to be at least C# 11</value>
   </data>
+  <data name="MissingPublicInstanceConstructor" xml:space="preserve">
+    <value>Cannot create instance of type '{0}' because it is missing a public instance constructor.</value>
+  </data>
   <data name="MultiDimArraysNotSupported" xml:space="preserve">
     <value>Multidimensional arrays are not supported: '{0}'.</value>
   </data>
-  <data name="NeedPublicParameterlessConstructor" xml:space="preserve">
-    <value>Only objects with public parameterless constructors are supported: '{0}'.</value>
+  <data name="MultipleParameterizedConstructors" xml:space="preserve">
+    <value>Cannot create instance of type '{0}' because it has multiple public parameterized constructors.</value>
   </data>
   <data name="NullableUnderlyingTypeNotSupported" xml:space="preserve">
     <value>Nullable underlying type is not supported: '{0}'.</value>

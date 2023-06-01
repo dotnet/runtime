@@ -17,6 +17,7 @@ namespace Sample
         {
             measurements = new Measurement[] {
                 new NormalizeMeasurement(),
+                new IsNormalizedMeasurement(),
                 new NormalizeMeasurementASCII(),
                 new TextInfoToLower(),
                 new TextInfoToUpper(),
@@ -79,6 +80,12 @@ namespace Sample
             public override void RunStep() => str.Normalize();
         }
 
+        public class IsNormalizedMeasurement : StringMeasurement
+        {
+            public override string Name => "IsNormalized";
+            public override void RunStep() => str.IsNormalized();
+        }
+
         public abstract class ASCIIStringMeasurement : StringMeasurement
         {
             public override Task BeforeBatch()
@@ -132,6 +139,8 @@ namespace Sample
 
         public abstract class StringsCompare : StringMeasurement
         {
+            public override int InitialSamples => 100;
+
             protected string strAsciiSuffix;
             protected string strAsciiPrefix;
             protected string needleSameAsStrEnd;

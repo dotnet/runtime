@@ -321,7 +321,7 @@ ReturnFromEndOfRecursiveFunction:
             /// <remarks>
             /// "alreadySeen" is actually a stack but we use a List&lt;&gt; because Stack&lt;&gt; doesn't support indexing.
             /// </remarks>
-            private void FindCyclesWorker(Edge edge, List<Edge> alreadySeen, ref int operationCount, Stopwatch previousAlgorithmTimeoutWatch)
+            private static void FindCyclesWorker(Edge edge, List<Edge> alreadySeen, ref int operationCount, Stopwatch previousAlgorithmTimeoutWatch)
             {
                 Vertex vertex = edge.Destination;
 

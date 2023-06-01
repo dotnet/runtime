@@ -42,7 +42,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_parse_runtime_options", null, ["number", "number"]],
     [true, "mono_wasm_strdup", "number", ["string"]],
     [true, "mono_background_exec", null, []],
-    [true, "mono_set_timeout_exec", null, []],
+    [true, "mono_wasm_execute_timer", null, []],
     [true, "mono_wasm_load_icu_data", "number", ["number"]],
     [false, "mono_wasm_add_assembly", "number", ["string", "number", "number"]],
     [true, "mono_wasm_add_satellite_assembly", "void", ["string", "string", "number", "number"]],
@@ -130,6 +130,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_get_simd_opcode", "number", ["number", "number"]],
     [true, "mono_jiterp_get_arg_offset", "number", ["number", "number", "number"]],
     [true, "mono_jiterp_get_opcode_info", "number", ["number", "number"]],
+    [true, "mono_wasm_is_zero_page_reserved", "number", []],
     ...legacy_interop_cwraps
 ];
 
@@ -162,7 +163,7 @@ export interface t_Cwraps {
     mono_wasm_strdup(value: string): number;
     mono_wasm_parse_runtime_options(length: number, argv: VoidPtr): void;
     mono_background_exec(): void;
-    mono_set_timeout_exec(): void;
+    mono_wasm_execute_timer(): void;
     mono_wasm_load_icu_data(offset: VoidPtr): number;
     mono_wasm_add_assembly(name: string, data: VoidPtr, size: number): number;
     mono_wasm_add_satellite_assembly(name: string, culture: string, data: VoidPtr, size: number): void;
@@ -255,6 +256,7 @@ export interface t_Cwraps {
     mono_jiterp_get_simd_opcode(arity: number, index: number): number;
     mono_jiterp_get_arg_offset(imethod: number, sig: number, index: number): number;
     mono_jiterp_get_opcode_info(opcode: number, type: number): number;
+    mono_wasm_is_zero_page_reserved(): number;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};

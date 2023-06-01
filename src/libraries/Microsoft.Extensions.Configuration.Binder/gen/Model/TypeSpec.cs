@@ -15,11 +15,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public TypeSpec(ITypeSymbol type)
         {
+            IsValueType = type.IsValueType;
+            Namespace = type.ContainingNamespace?.ToDisplayString();
             FullyQualifiedDisplayString = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             MinimalDisplayString = type.ToDisplayString(s_minimalDisplayFormat);
-            Namespace = type.ContainingNamespace?.ToDisplayString();
-            IsValueType = type.IsValueType;
+            Name = Namespace + "." + MinimalDisplayString.Replace(".", "+");
         }
+
+        public string Name { get; }
 
         public string FullyQualifiedDisplayString { get; }
 
@@ -31,11 +34,28 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public abstract TypeSpecKind SpecKind { get; }
 
-        public virtual ConstructionStrategy ConstructionStrategy { get; init; }
+        public virtual InitializationStrategy InitializationStrategy { get; set; }
+
+        public virtual string? InitExceptionMessage { get; set; }
+
+        public virtual bool CanInitialize => true;
 
         /// <summary>
-        /// Where in the input compilation we picked up a call to Bind, Get, or Configure.
+        /// Location in the input compilation we picked up a call to Bind, Get, or Configure.
         /// </summary>
         public required Location? Location { get; init; }
+
+        protected bool CanInitCompexType => InitializationStrategy is not InitializationStrategy.None && InitExceptionMessage is null;
+    }
+
+    internal enum TypeSpecKind
+    {
+        Unknown = 0,
+        ParsableFromString = 1,
+        Object = 2,
+        Enumerable = 3,
+        Dictionary = 4,
+        IConfigurationSection = 5,
+        Nullable = 6,
     }
 }

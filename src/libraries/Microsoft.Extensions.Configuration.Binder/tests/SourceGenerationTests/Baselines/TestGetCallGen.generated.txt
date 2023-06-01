@@ -3,32 +3,32 @@
 
 internal static class GeneratedConfigurationBinder
 {
-    public static T? Get<T>(this global::Microsoft.Extensions.Configuration.IConfiguration configuration) => (T?)(global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.GetCore(configuration, typeof(T), configureActions: null) ?? default(T));
+    public static T? Get<T>(this global::Microsoft.Extensions.Configuration.IConfiguration configuration) => (T?)(global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.GetCore(configuration, typeof(T), configureOptions: null) ?? default(T));
 
-    public static T? Get<T>(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>? configureActions) => (T?)(global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.GetCore(configuration, typeof(T), configureActions) ?? default(T));
+    public static T? Get<T>(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>? configureOptions) => (T?)(global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.GetCore(configuration, typeof(T), configureOptions) ?? default(T));
 
-    public static object? Get(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::System.Type type) => global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.GetCore(configuration, type, configureActions: null);
+    public static object? Get(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::System.Type type) => global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.GetCore(configuration, type, configureOptions: null);
 
-    public static object? Get(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::System.Type type, global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>? configureActions) => global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.GetCore(configuration, type, configureActions);
+    public static object? Get(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::System.Type type, global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>? configureOptions) => global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.GetCore(configuration, type, configureOptions);
 }
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    using System;
-    using System.Globalization;
     using Microsoft.Extensions.Configuration;
+    using System;
     using System.Collections.Generic;
+    using System.Globalization;
 
     internal static class Helpers
     {
-        public static object? GetCore(this IConfiguration configuration, Type type, Action<BinderOptions>? configureActions)
+        public static object? GetCore(this IConfiguration configuration, Type type, Action<BinderOptions>? configureOptions)
         {
             if (configuration is null)
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            BinderOptions? binderOptions = GetBinderOptions(configureActions);
+            BinderOptions? binderOptions = GetBinderOptions(configureOptions);
 
             if (!HasValueOrChildren(configuration))
             {
@@ -234,14 +234,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             return false;
         }
 
-        public static BinderOptions? GetBinderOptions(System.Action<BinderOptions>? configureActions)
+        public static BinderOptions? GetBinderOptions(System.Action<BinderOptions>? configureOptions)
         {
-            if (configureActions is null)
+            if (configureOptions is null)
             {
                 return null;
             }
             BinderOptions binderOptions = new();
-            configureActions(binderOptions);
+            configureOptions(binderOptions);
             if (binderOptions.BindNonPublicProperties)
             {
                 throw new global::System.NotSupportedException($"The configuration binding source generator does not support 'BinderOptions.BindNonPublicProperties'.");
