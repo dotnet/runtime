@@ -395,10 +395,7 @@ namespace System
 
         public override int GetHashCode(string obj)
         {
-            if (obj == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.obj);
-            }
+            ArgumentNullException.ThrowIfNull(obj);
             return obj.GetHashCode();
         }
 
@@ -420,50 +417,17 @@ namespace System
 
         public override int Compare(string? x, string? y)
         {
-            if (ReferenceEquals(x, y))
-            {
-                return 0;
-            }
-
-            if (x == null)
-            {
-                return -1;
-            }
-
-            if (y == null)
-            {
-                return 1;
-            }
-
-            return System.Globalization.Ordinal.CompareStringIgnoreCase(ref x.GetRawStringData(), x.Length, ref y.GetRawStringData(), y.Length);
+            return string.Compare(x, y, StringComparison.OrdinalIgnoreCase);
         }
 
         public override bool Equals(string? x, string? y)
         {
-            if (ReferenceEquals(x, y))
-            {
-                return true;
-            }
-
-            if (x is null || y is null)
-            {
-                return false;
-            }
-
-            if (x.Length != y.Length)
-            {
-                return false;
-            }
-
-            return System.Globalization.Ordinal.EqualsIgnoreCase(ref x.GetRawStringData(), ref y.GetRawStringData(), x.Length);
+            return string.Equals(x, y, StringComparison.OrdinalIgnoreCase);
         }
 
         public override int GetHashCode(string obj)
         {
-            if (obj == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.obj);
-            }
+            ArgumentNullException.ThrowIfNull(obj);
             return obj.GetHashCodeOrdinalIgnoreCase();
         }
 
