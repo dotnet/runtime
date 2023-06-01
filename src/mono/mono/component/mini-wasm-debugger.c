@@ -199,7 +199,7 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 		return;
 	}
 
-	if (mono_wasm_assembly_already_added(assembly->aname.name))
+	if (mono_bundled_resources_get_assembly_resource_values(assembly->aname.name, NULL, NULL, NULL, NULL))
 		return;
 
 	if (mono_has_pdb_checksum ((char *) assembly_image->raw_data, assembly_image->raw_data_len)) { //if it's a release assembly we don't need to send to DebuggerProxy

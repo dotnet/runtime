@@ -51,6 +51,23 @@ mono_bundled_resources_free_bundled_resource_func (void *resource)
 	g_free (resource);
 }
 
+static void
+mono_wasm_free_bundled_resource_func (void *resource)
+{
+	MonoBundledResource *bundled_resource = (MonoBundledResource *)resource;
+
+	if (bundled_resource->type == MONO_BUNDLED_ASSEMBLY)
+		g_free ((void *)bundled_resource->assembly.name)
+
+	if (bundled_resource->type == MONO_BUNDLED_SATELLITE_ASSEMBLY) {
+        g_free ((void *)bundled_resource->id);
+		g_free ((void *)bundled_resource->satellite_assembly.name);
+		g_free ((void *)bundled_resource->satellite_assembly.culture);
+	}
+
+	g_free (resource);
+}
+
 //---------------------------------------------------------------------------------------
 //
 // mono_bundled_resources_value_destroy_func frees the memory allocated by the hashtable's

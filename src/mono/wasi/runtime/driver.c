@@ -113,16 +113,6 @@ typedef SgenDescriptor MonoGCDescriptor;
 #include "driver-gen.c"
 #endif
 
-typedef struct WasmAssembly_ WasmAssembly;
-
-struct WasmAssembly_ {
-	MonoBundledAssembly assembly;
-	WasmAssembly *next;
-};
-
-static WasmAssembly *assemblies;
-static int assembly_count;
-
 int
 mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned int size)
 {
@@ -135,25 +125,23 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 		mono_register_symfile_for_assembly (new_name, data, size);
 		return 1;
 	}
-	WasmAssembly *entry = g_new0 (WasmAssembly, 1);
-	entry->assembly.name = strdup (name);
-	entry->assembly.data = data;
-	entry->assembly.size = size;
-	entry->next = assemblies;
-	assemblies = entry;
-	++assembly_count;
+	// Check if assembly pdb counterpart had been added via mono_register_symfile_for_assembly
+	MonoBundledAssemblyResource *assembly_resource = mono_bundled_resources_get_assembly_resource (name);
+	if (!assembly_resource) {
+		assembly_resource = g_new0 (MonoBundledAssemblyResource, 1);
+		assembly_resource->resource.type = MONO_BUNDLED_ASSEMBLY;
+		assembly_resource->resource.id = name;
+		assembly_resource->resource.free_bundled_resource_func = mono_wasm_free_bundled_resource_func;
+		mono_bundled_resources_add ((MonoBundledResource **)&assembly_resource, 1);
+	} else {
+		// Ensure the MonoBundledAssemblyData has not been initialized
+		g_assert (!assembly_resource->assembly.name && !assembly_resource->assembly.data && assembly_resource->assembly.size == 0);
+	}
+	assembly_resource->assembly.name = strdup (name);
+	assembly_resource->assembly.data = (const uint8_t *)data;
+	assembly_resource->assembly.size = (uint32_t)size;
 	return mono_has_pdb_checksum ((char*)data, size);
 }
-
-typedef struct WasmSatelliteAssembly_ WasmSatelliteAssembly;
-
-struct WasmSatelliteAssembly_ {
-	MonoBundledSatelliteAssembly *assembly;
-	WasmSatelliteAssembly *next;
-};
-
-static WasmSatelliteAssembly *satellite_assemblies;
-static int satellite_assembly_count;
 
 char* gai_strerror(int code) {
 	char* result = malloc(256);
@@ -164,11 +152,18 @@ char* gai_strerror(int code) {
 void
 mono_wasm_add_satellite_assembly (const char *name, const char *culture, const unsigned char *data, unsigned int size)
 {
-	WasmSatelliteAssembly *entry = g_new0 (WasmSatelliteAssembly, 1);
-	entry->assembly = mono_create_new_bundled_satellite_assembly (name, culture, data, size);
-	entry->next = satellite_assemblies;
-	satellite_assemblies = entry;
-	++satellite_assembly_count;
+	char *id = g_strconcat (culture, "/", name, (const char*)NULL);
+	MonoBundledSatelliteAssemblyResource *satellite_assembly_resource = mono_bundled_resources_get_satellite_assembly_resource (id);
+	g_assert (!satellite_assembly_resource);
+	satellite_assembly_resource = g_new0 (MonoBundledSatelliteAssemblyResource, 1);
+	satellite_assembly_resource->resource.type = MONO_BUNDLED_SATELLITE_ASSEMBLY;
+	satellite_assembly_resource->resource.id = id;
+	satellite_assembly_resource->resource.free_bundled_resource_func = mono_wasm_free_bundled_resource_func;
+	satellite_assembly_resource->satellite_assembly.name = strdup (name);
+	satellite_assembly_resource->satellite_assembly.culture = strdup (culture);
+	satellite_assembly_resource->satellite_assembly.data = (const uint8_t *)data;
+	satellite_assembly_resource->satellite_assembly.size = (uint32_t)size;
+	mono_bundled_resources_add ((MonoBundledResource **)&satellite_assembly_resource, 1);
 }
 
 static void *sysglobal_native_handle;
@@ -322,23 +317,6 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	addr = wasm_dl_get_native_to_interp (key, extra_arg);
 	MONO_EXIT_GC_UNSAFE;
 	return addr;
-}
-
-void
-mono_wasm_register_bundled_satellite_assemblies (void)
-{
-	/* In legacy satellite_assembly_count is always false */
-	if (satellite_assembly_count) {
-		MonoBundledSatelliteAssembly **satellite_bundle_array =  g_new0 (MonoBundledSatelliteAssembly *, satellite_assembly_count + 1);
-		WasmSatelliteAssembly *cur = satellite_assemblies;
-		int i = 0;
-		while (cur) {
-			satellite_bundle_array [i] = cur->assembly;
-			cur = cur->next;
-			++i;
-		}
-		mono_register_bundled_satellite_assemblies ((const MonoBundledSatelliteAssembly **)satellite_bundle_array);
-	}
 }
 
 #ifndef INVARIANT_GLOBALIZATION
@@ -502,19 +480,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_method_builder_ilgen_init ();
 	mono_sgen_mono_ilgen_init ();
 
-	if (assembly_count) {
-		MonoBundledAssembly **bundle_array = g_new0 (MonoBundledAssembly*, assembly_count + 1);
-		WasmAssembly *cur = assemblies;
-		int i = 0;
-		while (cur) {
-			bundle_array [i] = &cur->assembly;
-			cur = cur->next;
-			++i;
-		}
-		mono_register_bundled_assemblies ((const MonoBundledAssembly **)bundle_array);
-	}
-
-	mono_wasm_register_bundled_satellite_assemblies ();
 	mono_trace_init ();
 	mono_trace_set_log_handler (wasi_trace_logger, NULL);
 
