@@ -1102,7 +1102,7 @@ export function generateWasmBody(
 
                 // Check klass->rank == 0
                 builder.local("temp_ptr2");
-                builder.appendU8(WasmOpcode.i32_load);
+                builder.appendU8(WasmOpcode.i32_load8_u); // rank is a uint8
                 builder.appendMemarg(getMemberOffset(JiterpMember.ClassRank), 0);
                 builder.appendU8(WasmOpcode.i32_eqz);
 
