@@ -1117,60 +1117,64 @@ void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1
     appendToCurIG(id);
 }
 
-void emitter::emitIns_I_la(emitAttr size, regNumber reg, ssize_t imm)
+/*****************************************************************************
+ *
+ *  Emits load of 64-bit constant to register.
+ *
+ */
+void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 {
+    // In the worst case a sequence of 8 instructions will be used:
+    //   LUI + ADDIW + SLLI + ADDI + SLLI + ADDI + SLLI + ADDI
+    //
+    // First 2 instructions (LUI + ADDIW) load up to 31 bit. And followed
+    // sequence of (SLLI + ADDI) is used for loading remaining part by batches
+    // of up to 11 bits.
+    //
+    // Note that LUI, ADDI/W use sign extension so that's why we have to work
+    // with 31 and 11 bit batches there.
+
     assert(!EA_IS_RELOC(size));
     assert(isGeneralRegister(reg));
 
-    // TODO-CQ-RISCV: at least for imm=-2*1024*1024*1024 (and similar ones) code can be simplified to "lui rd, 0x80000"
-
-    if (0 == ((imm + 0x800) >> 31))
+    if (isValidSimm12(imm))
     {
-        if (((imm + 0x800) >> 12) != 0)
-        {
-            emitIns_R_I(INS_lui, size, reg, ((imm + 0x800) >> 12));
-            if ((imm & 0xFFF) != 0)
-            {
-                emitIns_R_R_I(size == EA_4BYTE ? INS_addiw : INS_addi, size, reg, reg, imm & 0xFFF);
-            }
-        }
-        else
-        {
-            emitIns_R_R_I(size == EA_4BYTE ? INS_addiw : INS_addi, size, reg, REG_R0, imm & 0xFFF);
-        }
+        emitIns_R_R_I(INS_addi, size, reg, REG_R0, imm & 0xFFF);
+        return;
+    }
+
+    // TODO-RISCV64: maybe optimized via emitDataConst(), check #86790
+
+    UINT32 msb = BitOperations::BitScanReverse((uint64_t)imm);
+    UINT32 high31;
+    if (msb > 30)
+    {
+        high31 = (imm >> (msb - 30)) & 0x7FffFFff;
     }
     else
     {
-        UINT32    high    = (imm >> 33) & 0x7fffffff;
-        regNumber highReg = reg;
-        if (((high + 0x800) >> 12) != 0)
-        {
-            emitIns_R_I(INS_lui, size, highReg, ((high + 0x800) >> 12));
-            if ((high & 0xFFF) != 0)
-            {
-                emitIns_R_R_I(size == EA_4BYTE ? INS_addiw : INS_addi, size, highReg, highReg, high & 0xFFF);
-            }
-        }
-        else if ((high & 0xFFF) != 0)
-        {
-            emitIns_R_R_I(size == EA_4BYTE ? INS_addiw : INS_addi, size, highReg, REG_R0, high & 0xFFF);
-        }
-        else
-        {
-            highReg = REG_R0;
-        }
-        UINT64 low = imm & 0x1ffffffff;
-        if (highReg != REG_R0)
-        {
-            emitIns_R_R_I(size == EA_4BYTE ? INS_slliw : INS_slli, size, highReg, highReg, 11);
-        }
-        emitIns_R_R_I(size == EA_4BYTE ? INS_addiw : INS_addi, size, reg, highReg, (low >> 22) & 0x7FF);
+        high31 = imm & 0x7FffFFff;
+    }
 
-        emitIns_R_R_I(size == EA_4BYTE ? INS_slliw : INS_slli, size, reg, reg, 11);
-        emitIns_R_R_I(size == EA_4BYTE ? INS_addiw : INS_addi, size, reg, reg, (low >> 11) & 0x7FF);
+    // Since ADDIW use sign extension fo immediate
+    // we have to adjust higher 19 bit loaded by LUI
+    // for case when low part is bigger than 0x800.
+    UINT32 high19 = (high31 + 0x800) >> 12;
 
-        emitIns_R_R_I(size == EA_4BYTE ? INS_slliw : INS_slli, size, reg, reg, 11);
-        emitIns_R_R_I(size == EA_4BYTE ? INS_addiw : INS_addi, size, reg, reg, low & 0x7FF);
+    emitIns_R_I(INS_lui, size, reg, high19);
+    emitIns_R_R_I(INS_addiw, size, reg, reg, high31 & 0xFFF);
+
+    // And load remaining part part by batches of 11 bits size.
+    INT32 remainingShift = msb - 30;
+    while (remainingShift > 0)
+    {
+        UINT32 shift = remainingShift >= 11 ? 11 : remainingShift % 11;
+        emitIns_R_R_I(INS_slli, size, reg, reg, shift);
+
+        UINT32  mask  = 0x7ff >> (11 - shift);
+        ssize_t low11 = (imm >> (remainingShift - shift)) & mask;
+        emitIns_R_R_I(INS_addi, size, reg, reg, low11);
+        remainingShift = remainingShift - shift;
     }
 }
 
@@ -3771,8 +3775,8 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 else // large offset
                 {
                     // First load/store tmpReg with the large offset constant
-                    emitIns_I_la(EA_PTRSIZE, tmpReg,
-                                 offset); // codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
+                    emitLoadImmediate(EA_PTRSIZE, tmpReg,
+                                      offset); // codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
                     // Then add the base register
                     //      rd = rd + base
                     emitIns_R_R_R(INS_add, addType, tmpReg, tmpReg, memBase->GetRegNum());
@@ -3899,7 +3903,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 regNumber tmpReg = indir->GetSingleTempReg();
 
                 // First load/store tmpReg with the large offset constant
-                emitIns_I_la(EA_PTRSIZE, tmpReg, offset);
+                emitLoadImmediate(EA_PTRSIZE, tmpReg, offset);
                 // codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
 
                 // Then load/store dataReg from/to [memBase + tmpReg]
