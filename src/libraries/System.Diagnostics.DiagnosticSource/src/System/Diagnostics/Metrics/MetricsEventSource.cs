@@ -313,13 +313,12 @@ namespace System.Diagnostics.Metrics
                             double refreshInterval;
                             lock (_aggregationManager)
                             {
-                                validShared = ParseArgs(command.Arguments!, parseDouble, "RefreshInterval", _aggregationManager.CollectionPeriod.TotalSeconds, out refreshInterval) ? validShared : false;
+                                validShared = SetSharedRefreshIntervalSecs(command.Arguments!, _aggregationManager.CollectionPeriod.TotalSeconds, out refreshInterval) ? validShared : false;
                             }
 
-                            // Refactor this to share with code down below
                             int maxHistograms, maxTimeSeries;
-                            validShared = ParseArgs(command.Arguments!, parseInt, "MaxHistograms", _aggregationManager.MaxHistograms, out maxHistograms) ? validShared : false;
-                            validShared = ParseArgs(command.Arguments!, parseInt, "MaxTimeSeries", _aggregationManager.MaxTimeSeries, out maxTimeSeries) ? validShared : false;
+                            validShared = SetSharedMaxHistograms(command.Arguments!, _aggregationManager.MaxHistograms, out maxHistograms) ? validShared : false;
+                            validShared = SetSharedMaxTimeSeries(command.Arguments!, _aggregationManager.MaxTimeSeries, out maxTimeSeries) ? validShared : false;
 
                             if (command.Command != EventCommand.Disable)
                             {
@@ -388,60 +387,13 @@ namespace System.Diagnostics.Metrics
 
                         double defaultIntervalSecs = 1;
                         Debug.Assert(AggregationManager.MinCollectionTimeSecs <= defaultIntervalSecs);
-                        double refreshIntervalSecs;
-                        if (command.Arguments!.TryGetValue("RefreshInterval", out string? refreshInterval))
-                        {
-                            Parent.Message($"RefreshInterval argument received: {refreshInterval}");
-                            if (!double.TryParse(refreshInterval, out refreshIntervalSecs))
-                            {
-                                Parent.Message($"Failed to parse RefreshInterval. Using default {defaultIntervalSecs}s.");
-                                refreshIntervalSecs = defaultIntervalSecs;
-                            }
-                            else if (refreshIntervalSecs < AggregationManager.MinCollectionTimeSecs)
-                            {
-                                Parent.Message($"RefreshInterval too small. Using minimum interval {AggregationManager.MinCollectionTimeSecs} seconds.");
-                                refreshIntervalSecs = AggregationManager.MinCollectionTimeSecs;
-                            }
-                        }
-                        else
-                        {
-                            Parent.Message($"No RefreshInterval argument received. Using default {defaultIntervalSecs}s.");
-                            refreshIntervalSecs = defaultIntervalSecs;
-                        }
+                        SetRefreshIntervalSecs(command.Arguments!, AggregationManager.MinCollectionTimeSecs, defaultIntervalSecs, out double refreshIntervalSecs);
 
-                        int defaultMaxTimeSeries = 1000;
-                        int maxTimeSeries;
-                        if (command.Arguments!.TryGetValue("MaxTimeSeries", out string? maxTimeSeriesString))
-                        {
-                            Parent.Message($"MaxTimeSeries argument received: {maxTimeSeriesString}");
-                            if (!int.TryParse(maxTimeSeriesString, out maxTimeSeries))
-                            {
-                                Parent.Message($"Failed to parse MaxTimeSeries. Using default {defaultMaxTimeSeries}");
-                                maxTimeSeries = defaultMaxTimeSeries;
-                            }
-                        }
-                        else
-                        {
-                            Parent.Message($"No MaxTimeSeries argument received. Using default {defaultMaxTimeSeries}");
-                            maxTimeSeries = defaultMaxTimeSeries;
-                        }
+                        const int defaultMaxTimeSeries = 1000;
+                        SetUniqueMaxTimeSeries(command.Arguments!, defaultMaxTimeSeries, out int maxTimeSeries);
 
-                        int defaultMaxHistograms = 20;
-                        int maxHistograms;
-                        if (command.Arguments!.TryGetValue("MaxHistograms", out string? maxHistogramsString))
-                        {
-                            Parent.Message($"MaxHistograms argument received: {maxHistogramsString}");
-                            if (!int.TryParse(maxHistogramsString, out maxHistograms))
-                            {
-                                Parent.Message($"Failed to parse MaxHistograms. Using default {defaultMaxHistograms}");
-                                maxHistograms = defaultMaxHistograms;
-                            }
-                        }
-                        else
-                        {
-                            Parent.Message($"No MaxHistogram argument received. Using default {defaultMaxHistograms}");
-                            maxHistograms = defaultMaxHistograms;
-                        }
+                        const int defaultMaxHistograms = 20;
+                        SetUniqueMaxHistograms(command.Arguments!, defaultMaxHistograms, out int maxHistograms);
 
                         string sessionId = _sessionId;
                         _aggregationManager = new AggregationManager(
@@ -495,17 +447,85 @@ namespace System.Diagnostics.Metrics
                 }
             }
 
-            private bool ParseArgs<T>(IDictionary<string, string>? arguments, Func<string, T> conversion, string argumentName, T currentValue, out T parsedValue) where T : IEquatable<T>
+            private bool SetSharedMaxTimeSeries(IDictionary<string, string>? arguments, int sharedValue, out int maxTimeSeries)
             {
-                if (arguments!.TryGetValue(argumentName, out string? argumentString))
+                return SetMaxValue(arguments, "MaxTimeSeries", "shared value", sharedValue, out maxTimeSeries);
+            }
+
+            private void SetUniqueMaxTimeSeries(IDictionary<string, string>? arguments, int defaultValue, out int maxTimeSeries)
+            {
+                _ = SetMaxValue(arguments, "MaxTimeSeries", "default", defaultValue, out maxTimeSeries);
+            }
+
+            private bool SetSharedMaxHistograms(IDictionary<string, string>? arguments, int sharedValue, out int maxHistograms)
+            {
+                return SetMaxValue(arguments, "MaxHistograms", "shared value", sharedValue, out maxHistograms);
+            }
+
+            private void SetUniqueMaxHistograms(IDictionary<string, string>? arguments, int defaultValue, out int maxHistograms)
+            {
+                _ = SetMaxValue(arguments, "MaxHistograms", "default", defaultValue, out maxHistograms);
+            }
+
+            private bool SetMaxValue(IDictionary<string, string>? arguments, string argumentsKey, string valueDescriptor, int defaultValue, out int maxValue)
+            {
+                if (arguments!.TryGetValue(argumentsKey, out string? maxString))
                 {
-                    parsedValue = conversion(argumentString);
-                    return EqualityComparer<T>.Default.Equals(conversion(argumentString), currentValue);
+                    Parent.Message($"{argumentsKey} argument received: {maxString}");
+                    if (!int.TryParse(maxString, out maxValue))
+                    {
+                        Parent.Message($"Failed to parse {argumentsKey}. Using {valueDescriptor} {defaultValue}");
+                        maxValue = defaultValue;
+                    }
+                    else if (maxValue != defaultValue)
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    Parent.Message($"No {argumentsKey} argument received. Using {valueDescriptor} {defaultValue}");
+                    maxValue = defaultValue;
                 }
 
-                Parent.Message($"Invalid {argumentName} provided. Using existing shared value {currentValue}"); // do we want to make this assumption - basically, if there's any ambiguity or an invalid parameter is provided, we set the value to be the SHARED one (instead of failing). More flexible, but do we want that?
+                return true;
+            }
 
-                parsedValue = currentValue;
+            private void SetRefreshIntervalSecs(IDictionary<string, string>? arguments, double minValue, double defaultValue, out double refreshIntervalSeconds)
+            {
+                double gottenRefreshIntervalSecs;
+                if (GetRefreshIntervalSecs(arguments, "default", defaultValue, out gottenRefreshIntervalSecs))
+                {
+                    if (gottenRefreshIntervalSecs < minValue)
+                    {
+                        Parent.Message($"RefreshInterval too small. Using minimum interval {minValue} seconds.");
+                        refreshIntervalSeconds = minValue;
+                    }
+                    else
+                    {
+                        refreshIntervalSeconds = gottenRefreshIntervalSecs;
+                    }
+                }
+                else
+                {
+                    refreshIntervalSeconds = gottenRefreshIntervalSecs;
+                }
+            }
+
+            private bool SetSharedRefreshIntervalSecs(IDictionary<string, string>? arguments, double sharedValue, out double refreshIntervalSeconds)
+            {
+                double gottenRefreshIntervalSecs;
+                if (GetRefreshIntervalSecs(arguments, "shared value", sharedValue, out gottenRefreshIntervalSecs))
+                {
+                    if (gottenRefreshIntervalSecs != sharedValue)
+                    {
+                        refreshIntervalSeconds = -1;
+                        return false;
+                    }
+                }
+
+                refreshIntervalSeconds = gottenRefreshIntervalSecs;
+
                 return true;
             }
 
