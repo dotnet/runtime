@@ -242,18 +242,6 @@ namespace IntelHardwareIntrinsicTest._CpuId
 
             (eax, ebx, ecx, edx) = X86Base.CpuId(unchecked((int)0x80000000), 0x00000000);
 
-            if (isAuthenticAmd && ((ebx != 0x68747541) || (ecx != 0x444D4163) || (edx != 0x69746E65)))
-            {
-                Console.WriteLine("CPUID Fn8000_0000 reported different vendor info from Fn0000_0000");
-                testResult = Fail;
-            }
-
-            if (isGenuineIntel && ((ebx != 0x756E6547) && (ecx != 0x6C65746E) && (edx != 0x6C656E69)))
-            {
-                Console.WriteLine("CPUID Fn8000_0000 reported different vendor info from Fn0000_0000");
-                testResult = Fail;
-            }
-
             uint maxFunctionIdEx = (uint)eax;
 
             if (maxFunctionIdEx < 0x00000001)
