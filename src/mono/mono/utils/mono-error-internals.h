@@ -320,12 +320,12 @@ void
 mono_error_set_first_argument (MonoError *oerror, const char *first_argument);
 
 typedef enum {
-    DEFERRED_FAILURE, // Used during AOT compilation to defer failure for execution
-    IMMEDIATE_FAILURE // Used during runtime to indicate that the failure should be reported
+    MONO_CLASS_LOADER_IMMEDIATE_FAILURE, // Used during runtime to indicate that the failure should be reported
+    MONO_CLASS_LOADER_DEFERRED_FAILURE // Used during AOT compilation to defer failure for execution
 } FailureType;
 
 void
-set_failure_type (FailureType failure_type);
+mono_set_failure_type (FailureType failure_type);
 
 /**
  * TypeLoadFailureCallback:
