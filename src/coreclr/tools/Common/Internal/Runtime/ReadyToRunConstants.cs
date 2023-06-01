@@ -105,7 +105,6 @@ namespace Internal.ReadyToRunConstants
         MoreThanTwo = 3
     }
 
-
     public enum DictionaryEntryKind
     {
         EmptySlot = 0,

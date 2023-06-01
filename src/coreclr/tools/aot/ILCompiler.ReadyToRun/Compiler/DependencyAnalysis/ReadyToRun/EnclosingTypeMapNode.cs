@@ -49,6 +49,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.AddSymbol(this);
 
             // This map is only valid for assemblies with <= 0xFFFE types defined within
+            Debug.Assert(_metadata.TypeDefinitions.Count <= 0xFFFE);
             builder.EmitUShort(checked((ushort)_metadata.TypeDefinitions.Count));
 
             foreach (var typeDefinitionHandle in _metadata.TypeDefinitions)

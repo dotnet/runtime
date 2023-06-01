@@ -649,9 +649,9 @@ The entry of the hashtable is a counted sequence of compressed unsigned integers
 This section may be included in addition to a InliningInfo2 section.
 
 ## ReadyToRunSectionType.MethodIsGenericMap (v9.0+)
-This optional section holds a bit vector to indicate if the MethodDef's contained within the assembly have generic parameters or not. This allowes determinining if a method is generic or not by querying a bit vector (which is fast, and efficient) as opposed to examining the GenericParameter table, or the signature of the Method.
+This optional section holds a bit vector to indicate if the MethodDefs contained within the assembly have generic parameters or not. This allows determining if a method is generic or not by querying a bit vector (which is fast, and efficient) as opposed to examining the GenericParameter table, or the signature of the Method.
 
-The section begins with a single 32bit integer indicating the number of bits in the bit vector. Following that integer is the actual bit vector of all of the data. The data is grouped into 8 bit bytes, where the least significant bit of the byte is the bit which represents the lowest MethodDef. 
+The section begins with a single 32 bit integer indicating the number of bits in the bit vector. Following that integer is the actual bit vector of all of the data. The data is grouped into 8 bit bytes, where the least significant bit of the byte is the bit which represents the lowest MethodDef.
 
 For instance, the first byte in the bit vector represents the MethodDefs 06000001 to 06000008, and the least signficant bit of that first byte is the bit representing the IsGeneric bit for MethodDef 06000001.
 
@@ -667,7 +667,7 @@ This count is followed by a 16 bit unsigned integer for each TypeDef defined in 
 This optional section represents a condensed view of some generic details about types. This can make it more efficient to load types.
 
 The structure of this section is:
-A single 32bit integer representing the number of entries in the map followed by a series of 4 bit entries, one per type. These 4 bit entries are grouped into bytes, where each byte holds 2 entries, and the entry in the most signficant 4 bits of the byte is the entry representing a lower TypeDef RID.
+A single 32 bit integer representing the number of entries in the map followed by a series of 4 bit entries, one per type. These 4 bit entries are grouped into bytes, where each byte holds 2 entries, and the entry in the most significant 4 bits of the byte is the entry representing a lower TypeDef RID.
 
 TypeGenericInfoMap entries have 4 bits representing 3 different sets of information.
 

@@ -124,6 +124,7 @@ enum class ReadyToRunImportSectionFlags : uint16_t
     PCode    = 0x0004, // Section contains pointers to code
 };
 
+// All values in this enum should within a nibble (4 bits).
 enum class ReadyToRunTypeGenericInfo : uint8_t
 {
     GenericCountMask = 0x3,
@@ -131,6 +132,7 @@ enum class ReadyToRunTypeGenericInfo : uint8_t
     HasVariance = 0x8,
 };
 
+// All values in this enum should fit within 2 bits.
 enum class ReadyToRunGenericInfoGenericCount : uint32_t
 {
     Zero = 0,

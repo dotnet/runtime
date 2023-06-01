@@ -92,7 +92,6 @@ namespace Internal.TypeSystem
         /// </summary>
         public abstract TypeSystemEntity AssociatedTypeOrMethod { get; }
 
-
         /// <summary>
         /// Gets a value indicating the variance of this generic parameter.
         /// </summary>
@@ -126,6 +125,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Does this generic parameter have the NotNullableValueType constraint flag
+        /// </summary>
         public bool HasNotNullableValueTypeConstraint
         {
             get
@@ -134,6 +136,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Does this generic parameter have the ReferenceType constraint flag
+        /// </summary>
         public bool HasReferenceTypeConstraint
         {
             get
@@ -142,6 +147,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Does this generic parameter have the DefaultConstructor constraint flag
+        /// </summary>
         public bool HasDefaultConstructorConstraint
         {
             get
@@ -150,6 +158,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Does this generic parameter have the AcceptByRefLike flag
+        /// </summary>
         public bool HasAcceptByRefLikeConstraint
         {
             get
@@ -158,6 +169,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Is this generic parameter Covariant
+        /// </summary>
         public bool IsCovariant
         {
             get
@@ -166,6 +180,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Is this generic parameter Contravariant
+        /// </summary>
         public bool IsContravariant
         {
             get
