@@ -687,7 +687,7 @@ namespace Wasm.Build.Tests
             AssertFilesExist(bundleDir, new[] { "run-v8.sh" }, expectToExist: hasV8Script);
             AssertIcuAssets();
 
-            string managedDir = Path.Combine(bundleDir, "managed");
+            string managedDir = Path.Combine(bundleDir, "_framework");
             string bundledMainAppAssembly =
                 useWebcil ? $"{projectName}{WebcilInWasmExtension}" : $"{projectName}.dll";
             AssertFilesExist(managedDir, new[] { bundledMainAppAssembly });
