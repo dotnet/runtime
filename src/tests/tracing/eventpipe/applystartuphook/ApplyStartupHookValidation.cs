@@ -39,11 +39,6 @@ namespace Tracing.Tests.ApplyStartupHookValidation
                         IpcAdvertise advertise = IpcAdvertise.Parse(stream);
                         Console.WriteLine($"IpcAdvertise: {advertise}");
 
-                        while (!Debugger.IsAttached)
-                        {
-                            Thread.Sleep(1000);
-                        }
-
                         int processId = (int)advertise.ProcessId;
 
                         // While we are paused in startup, apply startup hook
