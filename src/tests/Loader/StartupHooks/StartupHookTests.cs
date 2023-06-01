@@ -107,13 +107,13 @@ public unsafe class StartupHookTests
         Hook hook1 = Hook.Basic;
         Hook hook2 = Hook.PrivateInitialize;
 
-        AppContext.SetData(StartupHookKey, host2.Value);
+        AppContext.SetData(StartupHookKey, hook2.Value);
         hook1.CallCount = 0;
         hook2.CallCount = 0;
 
         Assert.Equal(0, hook1.CallCount);
         Assert.Equal(0, hook2.CallCount);
-        ProcessStartupHooks(host1.Value);
+        ProcessStartupHooks(hook1.Value);
         Assert.Equal(1, hook1.CallCount);
         Assert.Equal(1, hook2.CallCount);
     }
