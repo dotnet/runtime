@@ -101,4 +101,8 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_WaitForSessionSig
     return FALSE;
 }
 
+EXTERN_C NATIVEAOT_API void __cdecl RhNativeRuntimeEventSource_LogThreadPoolWorkerThreadStart(uint32_t activeWorkerThreadCount, uint32_t retiredWorkerThreadCount, uint16_t clrInstanceID)
+{
+    PalDebugBreak();
+}
 #endif // FEATURE_PERFTRACING

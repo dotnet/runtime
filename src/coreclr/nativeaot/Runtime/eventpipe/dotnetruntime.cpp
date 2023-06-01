@@ -130,6 +130,7 @@ EventPipeEvent *EventPipeEventGCRestartEEEnd_V1 = nullptr;
 EventPipeEvent *EventPipeEventGCRestartEEBegin_V1 = nullptr;
 EventPipeEvent *EventPipeEventGCSuspendEEEnd_V1 = nullptr;
 EventPipeEvent *EventPipeEventGCSuspendEEBegin_V1 = nullptr;
+EventPipeEvent *EventPipeEventThreadPoolWorkerThreadStart = nullptr;
 
 BOOL EventPipeEventEnabledDestroyGCHandle(void)
 {
@@ -1812,6 +1813,49 @@ ULONG EventPipeWriteEventGCSuspendEEBegin_V1(
     return ERROR_SUCCESS;
 }
 
+BOOL EventPipeEventEnabledThreadPoolWorkerThreadStart(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolWorkerThreadStart);
+}
+
+ULONG EventPipeWriteEventThreadPoolWorkerThreadStart(
+    const unsigned int ActiveWorkerThreadCount,
+    const unsigned int RetiredWorkerThreadCount,
+    const unsigned short ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledThreadPoolWorkerThreadStart())
+        return ERROR_SUCCESS;
+
+    size_t size = 32;
+    BYTE stackBuffer[32];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(ActiveWorkerThreadCount, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(RetiredWorkerThreadCount, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventThreadPoolWorkerThreadStart, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+
+    return ERROR_SUCCESS;
+}
+
+
 typedef struct _MCGEN_TRACE_CONTEXT
 {
     TRACEHANDLE            RegistrationHandle;
@@ -1989,4 +2033,5 @@ void InitDotNETRuntime(void)
     EventPipeEventGCRestartEEBegin_V1 = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,7,1,1,EP_EVENT_LEVEL_INFORMATIONAL,false);
     EventPipeEventGCSuspendEEEnd_V1 = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,8,1,1,EP_EVENT_LEVEL_INFORMATIONAL,false);
     EventPipeEventGCSuspendEEBegin_V1 = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,9,1,1,EP_EVENT_LEVEL_INFORMATIONAL,false);
+    EventPipeEventThreadPoolWorkerThreadStart = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,50,65536,0,EP_EVENT_LEVEL_INFORMATIONAL,false);
 }

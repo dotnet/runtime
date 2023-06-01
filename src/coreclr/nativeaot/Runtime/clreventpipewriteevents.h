@@ -366,3 +366,11 @@ ULONG EventPipeWriteEventGCSuspendEEBegin_V1(
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
 );
+BOOL EventPipeEventEnabledThreadPoolWorkerThreadStart(void);
+ULONG EventPipeWriteEventThreadPoolWorkerThreadStart(
+    const unsigned int  ActiveWorkerThreadCount,
+    const unsigned int  RetiredWorkerThreadCount,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);

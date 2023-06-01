@@ -38,8 +38,31 @@ EXTERN_C NATIVEAOT_API uint64_t __cdecl RhEventPipeInternal_Enable(
     /* COR_PRF_EVENTPIPE_PROVIDER_CONFIG */ const void * pProviders,
     uint32_t numProviders)
 {
-    PalDebugBreak();
-    return 0;
+    uint64_t sessionID = 0;
+    // Invalid input!
+    if (circularBufferSizeInMB == 0 ||
+        format >= EP_SERIALIZATION_FORMAT_COUNT ||
+        numProviders == 0 ||
+        pProviders == nullptr)
+    {
+        return 0;
+    }
+
+    EventPipeProviderConfigurationAdapter configAdapter(reinterpret_cast<const COR_PRF_EVENTPIPE_PROVIDER_CONFIG *>(pProviders), numProviders);
+
+    sessionID = EventPipeAdapter::Enable(
+        outputFile,
+        circularBufferSizeInMB,
+        configAdapter,
+        outputFile != NULL ? EP_SESSION_TYPE_FILE : EP_SESSION_TYPE_LISTENER,
+        format,
+        true,
+        nullptr,
+        nullptr,
+        nullptr);
+    EventPipeAdapter::StartStreaming(sessionID);
+
+    return sessionID;
 }
 
 EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_Disable(uint64_t sessionID)
@@ -110,26 +133,51 @@ EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_WriteEventData(
 
 EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_GetSessionInfo(uint64_t sessionID, EventPipeSessionInfo *pSessionInfo)
 {
-    PalDebugBreak();
-    return FALSE;
+    bool retVal = false;
+    if (pSessionInfo != NULL)
+    {
+        EventPipeSession *pSession = EventPipeAdapter::GetSession(sessionID);
+        if (pSession != NULL)
+        {
+            pSessionInfo->StartTimeAsUTCFileTime = EventPipeAdapter::GetSessionStartTime(pSession);
+            pSessionInfo->StartTimeStamp.QuadPart = EventPipeAdapter::GetSessionStartTimestamp(pSession);
+            // @TODO
+            //pSessionInfo->TimeStampFrequency = reinterpret_cast<LARGE_INTEGER>(PalQueryPerformanceFrequency());
+            retVal = true;
+        }
+    }
+    return retVal;
 }
 
 EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_GetNextEvent(uint64_t sessionID, EventPipeEventInstanceData *pInstance)
 {
-    PalDebugBreak();
-    return FALSE;
+    EventPipeEventInstance *pNextInstance = NULL;
+    _ASSERTE(pInstance != NULL);
+
+    pNextInstance = EventPipeAdapter::GetNextEvent(sessionID);
+    if (pNextInstance)
+    {
+        pInstance->ProviderID = EventPipeAdapter::GetEventProvider(pNextInstance);
+        pInstance->EventID = EventPipeAdapter::GetEventID(pNextInstance);
+        pInstance->ThreadID = static_cast<uint32_t>(EventPipeAdapter::GetEventThreadID(pNextInstance));
+        pInstance->TimeStamp.QuadPart = EventPipeAdapter::GetEventTimestamp(pNextInstance);
+        pInstance->ActivityId = *EventPipeAdapter::GetEventActivityID(pNextInstance);
+        pInstance->RelatedActivityId = *EventPipeAdapter::GetEventRelativeActivityID(pNextInstance);
+        pInstance->Payload = EventPipeAdapter::GetEventData(pNextInstance);
+        pInstance->PayloadLength = EventPipeAdapter::GetEventDataLen(pNextInstance);
+    }
+
+    return pNextInstance != NULL;
 }
 
 EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_SignalSession(uint64_t sessionID)
 {
-    PalDebugBreak();
-    return FALSE;
+    return EventPipeAdapter::SignalSession(sessionID);
 }
 
 EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_WaitForSessionSignal(uint64_t sessionID, int32_t timeoutMs)
 {
-    PalDebugBreak();
-    return FALSE;
+    return EventPipeAdapter::WaitForSessionSignal(sessionID, timeoutMs);
 }
 
 #endif // FEATURE_PERFTRACING

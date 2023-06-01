@@ -1,10 +1,11 @@
-
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Work In Progress to add native events to EventPipe
 // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
 // @TODO: Audit native events in NativeAOT Runtime
+#ifndef __CLR_ETW_ALL_MAIN_H__
+#define __CLR_ETW_ALL_MAIN_H__
 
 #include "clreventpipewriteevents.h"
 #include "etwevents.h"
@@ -702,3 +703,19 @@ inline ULONG FireEtwGCSuspendEEBegin_V1(
 #endif
     return status;
 }
+
+inline BOOL EventEnabledThreadPoolWorkerThreadStart(void) {return EventPipeEventEnabledThreadPoolWorkerThreadStart();}// || EventXplatEnabledThreadPoolWorkerThreadStart();}
+
+inline ULONG FireEtwThreadPoolWorkerThreadStart(
+    const unsigned int  ActiveWorkerThreadCount,
+    const unsigned int  RetiredWorkerThreadCount,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventThreadPoolWorkerThreadStart(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID,ActivityId,RelatedActivityId);
+    // status &= FireEtXplatThreadPoolWorkerThreadStart(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID);
+    return status;
+}
+ #endif // __CLR_ETW_ALL_MAIN_H__
