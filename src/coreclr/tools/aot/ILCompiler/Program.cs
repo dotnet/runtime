@@ -29,6 +29,7 @@ namespace ILCompiler
     internal sealed class Program
     {
         private readonly ILCompilerRootCommand _command;
+        private static readonly char[] s_separator = new char[] { ',', ';', ' ' };
 
         public Program(ILCompilerRootCommand command)
         {
@@ -682,7 +683,7 @@ namespace ILCompiler
         {
             foreach (string value in warningCodes)
             {
-                string[] values = value.Split(new char[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] values = value.Split(s_separator, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string id in values)
                 {
                     if (!id.StartsWith("IL", StringComparison.Ordinal) || !ushort.TryParse(id.AsSpan(2), out ushort code))

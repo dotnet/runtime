@@ -1404,7 +1404,7 @@ ISpGrammarResourceLoader
             {
                 // If the base Uri has not been set any other way, then set the base Uri for this file
                 string uri = grammar.Uri.OriginalString;
-                int posSlash = uri.LastIndexOfAny(new char[] { '\\', '/' });
+                int posSlash = uri.LastIndexOfAny(s_slashes);
                 if (posSlash >= 0)
                 {
                     baseUri = new Uri(uri.Substring(0, posSlash + 1), UriKind.RelativeOrAbsolute);
@@ -1489,7 +1489,7 @@ ISpGrammarResourceLoader
                 string ruleName = pbstrMIMEType;
 
                 // The parent is the first
-                string[] ids = pbstrRedirectUrl.Split(new char[] { ' ' }, StringSplitOptions.None);
+                string[] ids = pbstrRedirectUrl.Split(' ', StringSplitOptions.None);
                 System.Diagnostics.Debug.Assert(ids.Length == 2);
 
                 uint parentGrammarId = uint.Parse(ids[0], CultureInfo.InvariantCulture);
@@ -3044,6 +3044,7 @@ ISpGrammarResourceLoader
         private TimeSpan _defaultTimeout = TimeSpan.FromSeconds(30);
 
         private RecognizerBaseThunk _recoThunk;
+        private static readonly char[] s_slashes = new char[] { '\\', '/' };
         #endregion
 
         private sealed class RecognizerBaseThunk : ISpGrammarResourceLoader
