@@ -94,8 +94,8 @@ namespace DebuggerTests
         public async Task DuplicateAssemblyLoadedEventForAssemblyFromBundle(bool load_pdb, int expected_count)
             => await AssemblyLoadedEventTest(
                 "debugger-test",
-                Path.Combine(DebuggerTestAppPath, "managed/debugger-test.dll"),
-                load_pdb ? Path.Combine(DebuggerTestAppPath, "managed/debugger-test.pdb") : null,
+                Path.Combine(DebuggerTestAppPath, "_framework/debugger-test.dll"),
+                load_pdb ? Path.Combine(DebuggerTestAppPath, "_framework/debugger-test.pdb") : null,
                 "/debugger-test.cs",
                 expected_count
             );
