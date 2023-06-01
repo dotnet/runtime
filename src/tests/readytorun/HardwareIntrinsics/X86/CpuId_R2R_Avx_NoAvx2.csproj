@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>X86_CpuId_R2R_Avx2</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -10,9 +11,9 @@
     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
 
-  <ItemGroup>
-    <CrossGen2TestExtraArguments Include="$(CrossGen2TestExtraArguments) --instruction-set:avx2" />
-  </ItemGroup>
+  <PropertyGroup>
+    <CrossGen2TestExtraArguments>$(CrossGen2TestExtraArguments) --instruction-set:avx,-avx2</CrossGen2TestExtraArguments>
+  </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="CpuId.cs" />

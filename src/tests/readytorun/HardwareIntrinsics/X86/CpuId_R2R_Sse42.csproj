@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>X86_CpuId_R2R_Baseline</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -8,6 +9,10 @@
     <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
     <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CrossGen2TestExtraArguments>$(CrossGen2TestExtraArguments) --instruction-set:sse4.2</CrossGen2TestExtraArguments>
   </PropertyGroup>
 
   <ItemGroup>
