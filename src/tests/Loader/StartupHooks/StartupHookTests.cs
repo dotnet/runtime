@@ -78,6 +78,46 @@ public unsafe class StartupHookTests
         Assert.Equal(1, hook2.CallCount);
     }
 
+    [Fact]
+    public static void MultipleValidDiagnosticHooksAndSeparators()
+    {
+        Console.WriteLine($"Running {nameof(MultipleValidDiagnosticHooksAndSeparators)}...");
+
+        Hook hook1 = Hook.Basic;
+        Hook hook2 = Hook.PrivateInitialize;
+        // Use multiple diagnostic hooks with an empty entry and leading/trailing separators
+        string diagnosticStartupHooks = $"{Path.PathSeparator}{hook1.Value}{Path.PathSeparator}{Path.PathSeparator}{hook2.Value}{Path.PathSeparator}";
+
+        AppContext.SetData(StartupHookKey, null);
+        hook1.CallCount = 0;
+        hook2.CallCount = 0;
+
+        Assert.Equal(0, hook1.CallCount);
+        Assert.Equal(0, hook2.CallCount);
+        ProcessStartupHooks(diagnosticStartupHooks);
+        Assert.Equal(1, hook1.CallCount);
+        Assert.Equal(1, hook2.CallCount);
+    }
+
+    [Fact]
+    public static void MultipleValidDiagnosticAndStandardHooks()
+    {
+        Console.WriteLine($"Running {nameof(MultipleValidDiagnosticAndStandardHooks)}...");
+
+        Hook hook1 = Hook.Basic;
+        Hook hook2 = Hook.PrivateInitialize;
+
+        AppContext.SetData(StartupHookKey, host2.Value);
+        hook1.CallCount = 0;
+        hook2.CallCount = 0;
+
+        Assert.Equal(0, hook1.CallCount);
+        Assert.Equal(0, hook2.CallCount);
+        ProcessStartupHooks(host1.Value);
+        Assert.Equal(1, hook1.CallCount);
+        Assert.Equal(1, hook2.CallCount);
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
