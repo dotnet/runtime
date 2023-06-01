@@ -267,7 +267,6 @@ function getTraceImports() {
         importDef("hasparent", getRawCwrap("mono_jiterp_has_parent_fast")),
         importDef("imp_iface", getRawCwrap("mono_jiterp_implements_interface")),
         importDef("imp_iface_s", getRawCwrap("mono_jiterp_implements_special_interface")),
-        importDef("try_unbox", getRawCwrap("mono_jiterp_try_unbox_ref")),
         importDef("box", getRawCwrap("mono_jiterp_box_ref")),
         importDef("localloc", getRawCwrap("mono_jiterp_localloc")),
         ["ckovr_i4", "overflow_check_i4", getRawCwrap("mono_jiterp_overflow_check_i4")],
@@ -534,15 +533,6 @@ function initialize_builder(builder: WasmBuilder) {
             "obj": WasmValtype.i32,
             "vtable": WasmValtype.i32,
             "klass": WasmValtype.i32,
-        },
-        WasmValtype.i32, true
-    );
-    builder.defineType(
-        "try_unbox",
-        {
-            "klass": WasmValtype.i32,
-            "destination": WasmValtype.i32,
-            "source": WasmValtype.i32,
         },
         WasmValtype.i32, true
     );

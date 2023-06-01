@@ -163,35 +163,6 @@ mono_jiterp_object_unbox (MonoObject *obj) {
 	return mono_object_unbox_internal(obj);
 }
 
-EMSCRIPTEN_KEEPALIVE MonoClass*
-mono_jiterp_get_element_class (MonoClass *klass) {
-	g_assert (klass);
-	return m_class_get_element_class (klass);
-}
-
-EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_try_unbox_ref (
-	MonoClass *klass, void **dest, MonoObject **src
-) {
-	if (!klass)
-		return 0;
-
-	MonoObject *o = *src;
-	if (!o)
-		return 0;
-
-	if (
-		!(
-			(m_class_get_rank (o->vtable->klass) == 0) &&
-			(m_class_get_element_class (o->vtable->klass) == m_class_get_element_class (klass))
-		)
-	)
-		return 0;
-
-	*dest = mono_object_unbox_internal(o);
-	return 1;
-}
-
 EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_type_is_byref (MonoType *type) {
 	if (!type)
