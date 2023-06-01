@@ -22,6 +22,11 @@ namespace Microsoft.Interop
         {
         }
 
+        public SequenceEqualImmutableArray<T> Add(T value)
+        {
+            return new SequenceEqualImmutableArray<T>(Array.Add(value));
+        }
+
         public T this[int i] { get => Array[i]; }
 
         public int Length => Array.Length;
