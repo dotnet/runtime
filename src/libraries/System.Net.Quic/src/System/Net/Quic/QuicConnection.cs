@@ -62,9 +62,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         // Validate and fill in defaults for the options.
         options.Validate(nameof(options));
-        return Core(options, cancellationToken);
+        return StartConnectAsync(options, cancellationToken);
 
-        static async ValueTask<QuicConnection> Core(QuicClientConnectionOptions options, CancellationToken cancellationToken)
+        static async ValueTask<QuicConnection> StartConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken)
         {
             QuicConnection connection = new QuicConnection();
             try
@@ -470,11 +470,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
         QuicAddr localAddress = MsQuicHelpers.GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_CONN_LOCAL_ADDRESS);
         _localEndPoint = localAddress.ToIPEndPoint();
 
-        _connectedTcs.TrySetResult();
         if (NetEventSource.Log.IsEnabled())
         {
             NetEventSource.Info(this, $"{this} Connection connected {LocalEndPoint} -> {RemoteEndPoint} for {_negotiatedApplicationProtocol} protocol");
         }
+        _connectedTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventShutdownInitiatedByTransport(ref SHUTDOWN_INITIATED_BY_TRANSPORT_DATA data)
