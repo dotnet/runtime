@@ -2721,6 +2721,11 @@ namespace Internal.JitInterface
             TypeDesc type1 = HandleToObject(cls1);
             TypeDesc type2 = HandleToObject(cls2);
 
+            if (!(type1.IsDefType || type1.IsArray) || !(type2.IsDefType || type2.IsArray))
+            {
+                return false;
+            }
+
             // If we have a mixture of shared and unshared types,
             // consider the unshared type as more specific.
             bool isType1CanonSubtype = type1.IsCanonicalSubtype(CanonicalFormKind.Any);
