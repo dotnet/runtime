@@ -1051,22 +1051,22 @@ namespace System.Text.Json.Serialization.Tests
 
 #if !BUILDING_SOURCE_GENERATOR_TESTS // Anonymous types not supported in source gen
         [Fact]
-        public void AnonymousObject()
+        public async Task AnonymousObject()
         {
             var obj = new { Prop = 5 };
             Type objType = obj.GetType();
 
             // 'Prop' property binds with a ctor arg called 'Prop'.
 
-            object newObj = JsonSerializer.Deserialize("{}", objType);
+            object newObj = await Serializer.DeserializeWrapper("{}", objType);
             Assert.Equal(0, objType.GetProperty("Prop").GetValue(newObj));
 
-            newObj = JsonSerializer.Deserialize(@"{""Prop"":5}", objType);
+            newObj = await Serializer.DeserializeWrapper(@"{""Prop"":5}", objType);
             Assert.Equal(5, objType.GetProperty("Prop").GetValue(newObj));
         }
 
         [Fact]
-        public void AnonymousObject_NamingPolicy()
+        public async Task AnonymousObject_NamingPolicy()
         {
             const string Json = @"{""prop"":5}";
 
@@ -1075,7 +1075,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // 'Prop' property binds with a ctor arg called 'Prop'.
 
-            object newObj = JsonSerializer.Deserialize(Json, objType);
+            object newObj = await Serializer.DeserializeWrapper(Json, objType);
             // Verify no match if no naming policy
             Assert.Equal(0, objType.GetProperty("Prop").GetValue(newObj));
 
@@ -1084,7 +1084,7 @@ namespace System.Text.Json.Serialization.Tests
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             };
 
-            newObj = JsonSerializer.Deserialize(Json, objType, options);
+            newObj = await Serializer.DeserializeWrapper(Json, objType, options);
             // Verify match with naming policy
             Assert.Equal(5, objType.GetProperty("Prop").GetValue(newObj));
         }
