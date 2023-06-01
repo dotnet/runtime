@@ -6947,16 +6947,13 @@ mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...)
 	return TRUE;
 }
 
-// Type load failure callback is initialized to mono_class_set_type_load_failure
-TypeLoadFailureCallback mono_class_set_deferred_type_load_failure_callback = mono_class_set_type_load_failure;
-
 void mono_set_failure_type (MonoFailureType failure_type) {
 	switch (failure_type) {
 		case MONO_CLASS_LOADER_IMMEDIATE_FAILURE:
-			mono_class_set_deferred_type_load_failure_callback = mono_class_set_type_load_failure;
+			mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback = mono_class_set_type_load_failure;
 			break;
 		case MONO_CLASS_LOADER_DEFERRED_FAILURE:
-			mono_class_set_deferred_type_load_failure_callback = mono_class_set_deferred_type_load_failure;
+			mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback = mono_class_set_deferred_type_load_failure;
 			break;
 		default:
 			g_assert_not_reached();
