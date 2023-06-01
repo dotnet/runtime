@@ -10,7 +10,7 @@ import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
 import {
     MintOpcodePtr, WasmValtype, WasmBuilder, addWasmFunctionPointer,
-    _now, elapsedTimes,
+    _now, elapsedTimes, isZeroPageReserved,
     counters, getRawCwrap, importDef,
     JiterpreterOptions, getOptions, recordFailure,
     JiterpMember, getMemberOffset,
@@ -1034,10 +1034,18 @@ export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
     if (!mostRecentOptions.enableStats && (b !== undefined))
         return;
 
-    mono_log_info(`// jitted ${counters.bytesGenerated} bytes; ${counters.tracesCompiled} traces (${counters.traceCandidates} candidates, ${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%); ${counters.jitCallsCompiled} jit_calls (${(counters.directJitCallsCompiled / counters.jitCallsCompiled * 100).toFixed(1)}% direct); ${counters.entryWrappersCompiled} interp_entries`);
-    const backBranchHitRate = (counters.backBranchesEmitted / (counters.backBranchesEmitted + counters.backBranchesNotEmitted)) * 100;
-    const tracesRejected = cwraps.mono_jiterp_get_rejected_trace_count();
-    mono_log_info(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm. ${counters.nullChecksEliminated} cknulls removed. ${counters.backBranchesEmitted} back-branches (${counters.backBranchesNotEmitted} failed, ${backBranchHitRate.toFixed(1)}%), ${tracesRejected} traces rejected`);
+    const backBranchHitRate = (counters.backBranchesEmitted / (counters.backBranchesEmitted + counters.backBranchesNotEmitted)) * 100,
+        tracesRejected = cwraps.mono_jiterp_get_rejected_trace_count(),
+        nullChecksEliminatedText = mostRecentOptions.eliminateNullChecks ? counters.nullChecksEliminated.toString() : "off",
+        nullChecksFusedText = (mostRecentOptions.zeroPageOptimization ? counters.nullChecksFused.toString() + (isZeroPageReserved() ? "" : " (disabled)") : "off"),
+        backBranchesEmittedText = mostRecentOptions.enableBackwardBranches ? `emitted: ${counters.backBranchesEmitted}, failed: ${counters.backBranchesNotEmitted} (${backBranchHitRate.toFixed(1)}%)` : ": off",
+        directJitCallsText = counters.jitCallsCompiled ? (
+            mostRecentOptions.directJitCalls ? `direct jit calls: ${counters.directJitCallsCompiled} (${(counters.directJitCallsCompiled / counters.jitCallsCompiled * 100).toFixed(1)}%)` : "direct jit calls: off"
+        ) : "";
+
+    mono_log_info(`// jitted ${counters.bytesGenerated} bytes; ${counters.tracesCompiled} traces (${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%) (${tracesRejected} rejected); ${counters.jitCallsCompiled} jit_calls; ${counters.entryWrappersCompiled} interp_entries`);
+    mono_log_info(`// cknulls eliminated: ${nullChecksEliminatedText}, fused: ${nullChecksFusedText}; back-branches ${backBranchesEmittedText}; ${directJitCallsText}`);
+    mono_log_info(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm.`);
     if (concise)
         return;
 

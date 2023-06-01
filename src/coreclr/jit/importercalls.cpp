@@ -6204,6 +6204,18 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
                                       CORINFO_CALL_INFO*     callInfo,
                                       IL_OFFSET              ilOffset)
 {
+    if (!opts.OptEnabled(CLFLG_INLINING))
+    {
+        /* XXX Mon 8/18/2008
+         * This assert is misleading.  The caller does not ensure that we have CLFLG_INLINING set before
+         * calling impMarkInlineCandidate.  However, if this assert trips it means that we're an inlinee and
+         * CLFLG_MINOPT is set.  That doesn't make a lot of sense.  If you hit this assert, work back and
+         * figure out why we did not set MAXOPT for this compile.
+         */
+        assert(!compIsForInlining());
+        return;
+    }
+
     GenTreeCall* call = callNode->AsCall();
 
     // Call might not have an inline candidate info yet (will be set by impMarkInlineCandidateHelper)
@@ -6293,17 +6305,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     // Let the strategy know there's another call
     impInlineRoot()->m_inlineStrategy->NoteCall();
 
-    if (!opts.OptEnabled(CLFLG_INLINING))
-    {
-        /* XXX Mon 8/18/2008
-         * This assert is misleading.  The caller does not ensure that we have CLFLG_INLINING set before
-         * calling impMarkInlineCandidate.  However, if this assert trips it means that we're an inlinee and
-         * CLFLG_MINOPT is set.  That doesn't make a lot of sense.  If you hit this assert, work back and
-         * figure out why we did not set MAXOPT for this compile.
-         */
-        assert(!compIsForInlining());
-        return;
-    }
+    assert(opts.OptEnabled(CLFLG_INLINING));
 
     // Don't inline if not optimizing root method
     if (opts.compDbgCode)
