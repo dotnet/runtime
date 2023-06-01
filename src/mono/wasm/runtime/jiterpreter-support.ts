@@ -1742,6 +1742,9 @@ export const enum JiterpMember {
     ParamsCount = 13,
     VTable = 14,
     VTableKlass = 15,
+    ClassRank = 16,
+    ClassElementClass = 17,
+    BoxedValueData = 18,
 }
 
 const memberOffsets: { [index: number]: number } = {};

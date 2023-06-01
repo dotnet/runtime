@@ -163,6 +163,12 @@ mono_jiterp_object_unbox (MonoObject *obj) {
 	return mono_object_unbox_internal(obj);
 }
 
+EMSCRIPTEN_KEEPALIVE MonoClass*
+mono_jiterp_get_element_class (MonoClass *klass) {
+	g_assert (klass);
+	return m_class_get_element_class (klass);
+}
+
 EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_try_unbox_ref (
 	MonoClass *klass, void **dest, MonoObject **src
@@ -1153,6 +1159,9 @@ mono_jiterp_trace_transfer (
 #define JITERP_MEMBER_PARAMS_COUNT 13
 #define JITERP_MEMBER_VTABLE 14
 #define JITERP_MEMBER_VTABLE_KLASS 15
+#define JITERP_MEMBER_CLASS_RANK 16
+#define JITERP_MEMBER_CLASS_ELEMENT_CLASS 17
+#define JITERP_MEMBER_BOXED_VALUE_DATA 18
 
 // we use these helpers at JIT time to figure out where to do memory loads and stores
 EMSCRIPTEN_KEEPALIVE size_t
@@ -1190,6 +1199,13 @@ mono_jiterp_get_member_offset (int member) {
 			return offsetof (MonoObject, vtable);
 		case JITERP_MEMBER_VTABLE_KLASS:
 			return offsetof (MonoVTable, klass);
+		case JITERP_MEMBER_CLASS_RANK:
+			return offsetof (MonoClass, rank);
+		case JITERP_MEMBER_CLASS_ELEMENT_CLASS:
+			return offsetof (MonoClass, element_class);
+		// see mono_object_get_data
+		case JITERP_MEMBER_BOXED_VALUE_DATA:
+			return MONO_ABI_SIZEOF (MonoObject);
 		default:
 			g_assert_not_reached();
 	}

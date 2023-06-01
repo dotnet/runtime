@@ -1014,7 +1014,7 @@ export function generateWasmBody(
                     // mono_class_has_parent_fast returned 0
                     if (bailoutOnFailure) {
                         // so bailout
-                        append_exit(builder, ip, exitOpcodeCounter, BailoutReason.CastFailed);
+                        append_bailout(builder, ip, BailoutReason.CastFailed);
                     } else {
                         // this is isinst, so write 0 to destination instead
                         builder.local("pLocals");
@@ -1040,7 +1040,7 @@ export function generateWasmBody(
                     builder.appendU8(WasmOpcode.i32_eqz);
                     builder.block(WasmValtype.void, WasmOpcode.if_); // if B
                     // Cast failed so bail out
-                    append_exit(builder, ip, exitOpcodeCounter, BailoutReason.CastFailed);
+                    append_bailout(builder, ip, BailoutReason.CastFailed);
                     builder.endBlock(); // endif B
                 }
 
@@ -1062,19 +1062,70 @@ export function generateWasmBody(
                 builder.callImport("box");
                 break;
             }
+
             case MintOpcode.MINT_UNBOX: {
-                builder.block();
-                // MonoClass *c = (MonoClass*)frame->imethod->data_items [ip [3]];
-                builder.ptr_const(get_imethod_data(frame, getArgU16(ip, 3)));
-                // dest, src
-                append_ldloca(builder, getArgU16(ip, 1), 4);
-                append_ldloca(builder, getArgU16(ip, 2), 0);
-                builder.callImport("try_unbox");
-                // If the unbox operation succeeded, continue, otherwise bailout
-                builder.appendU8(WasmOpcode.br_if);
-                builder.appendULeb(0);
+                const klass = get_imethod_data(frame, getArgU16(ip, 3)),
+                    // The type check needs to examine the boxed value's rank and element class
+                    elementClassOffset = getMemberOffset(JiterpMember.ClassElementClass),
+                    destOffset = getArgU16(ip, 1),
+                    // Get the class's element class, which is what we will actually type-check against
+                    elementClass = getU32_unaligned(klass + elementClassOffset);
+
+                if (!klass || !elementClass) {
+                    record_abort(traceIp, ip, traceName, "null-klass");
+                    ip = abort;
+                    continue;
+                }
+
+                if (builder.options.zeroPageOptimization && isZeroPageReserved()) {
+                    // Null check fusion is possible, so (obj->vtable)->klass will be 0 for !obj
+                    append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                    builder.local("temp_ptr", WasmOpcode.tee_local);
+                    counters.nullChecksFused++;
+                } else {
+                    append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true);
+                    builder.local("temp_ptr", WasmOpcode.tee_local);
+                }
+
+                // Fetch the object's klass so we can perform a type check
+                builder.appendU8(WasmOpcode.i32_load); // obj->vtable
+                builder.appendMemarg(getMemberOffset(JiterpMember.VTable), 0); // fixme: alignment
+                builder.appendU8(WasmOpcode.i32_load); // (obj->vtable)->klass
+                builder.appendMemarg(getMemberOffset(JiterpMember.VTableKlass), 0); // fixme: alignment
+
+                // Stash obj->vtable->klass, then check klass->element_class == expected
+                builder.local("temp_ptr2", WasmOpcode.tee_local);
+                builder.appendU8(WasmOpcode.i32_load);
+                builder.appendMemarg(elementClassOffset, 0);
+                builder.i32_const(elementClass);
+                builder.appendU8(WasmOpcode.i32_eq);
+
+                // Check klass->rank == 0
+                builder.local("temp_ptr2");
+                builder.appendU8(WasmOpcode.i32_load);
+                builder.appendMemarg(getMemberOffset(JiterpMember.ClassRank), 0);
+                builder.appendU8(WasmOpcode.i32_eqz);
+
+                // (element_class == expected) && (rank == 0)
+                builder.appendU8(WasmOpcode.i32_and);
+
+                builder.block(WasmValtype.void, WasmOpcode.if_); // if type check passed
+
+                // Type-check passed, so now compute the address of the object's data
+                //  and store the address
+                builder.local("pLocals");
+                builder.local("temp_ptr");
+                builder.i32_const(getMemberOffset(JiterpMember.BoxedValueData));
+                builder.appendU8(WasmOpcode.i32_add);
+                append_stloc_tail(builder, destOffset, WasmOpcode.i32_store);
+
+                builder.appendU8(WasmOpcode.else_); // else type check failed
+
+                //
                 append_bailout(builder, ip, BailoutReason.UnboxFailed);
-                builder.endBlock();
+
+                builder.endBlock(); // endif A
+
                 break;
             }
 
