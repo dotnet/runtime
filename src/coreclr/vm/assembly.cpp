@@ -52,7 +52,7 @@
 //#define STRICT_JITLOCK_ENTRY_LEAK_DETECTION
 //#define STRICT_CLSINITLOCK_ENTRY_LEAK_DETECTION
 
-LPCWSTR Assembly::s_wszDiagnosticStartupHookPaths = nullptr;
+LPCWSTR s_wszDiagnosticStartupHookPaths = nullptr;
 
 #ifndef DACCESS_COMPILE
 
@@ -1417,7 +1417,7 @@ static void RunMainPost()
     }
 }
 
-void Assembly::RunManagedStartup()
+void RunManagedStartup()
 {
     CONTRACTL
     {

@@ -428,7 +428,6 @@ private:
     ReleaseHolder<FriendAssemblyDescriptor> GetFriendAssemblyInfo();
 #endif
 
-    void RunManagedStartup();
 
 public:
     void UpdateCachedFriendAssemblyInfo();
@@ -469,7 +468,6 @@ private:
     IsInstrumentedStatus    m_isInstrumentedStatus;
 #endif // FEATURE_READYTORUN
 
-    static LPCWSTR s_wszDiagnosticStartupHookPaths;
 };
 
 #ifndef DACCESS_COMPILE
