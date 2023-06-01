@@ -621,8 +621,9 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'ios' and '$(IsManualOrRollingBuild)' == 'true'">
-    <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
-                        BuildInParallel="false" />
+    <!-- Tracking issue: https://github.com/dotnet/runtime/pull/86089 -->
+    <!-- <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
+                        BuildInParallel="false" /> -->
     <!-- Tracking issue: https://github.com/dotnet/runtime/issues/80911 -->
     <!-- <ProjectReference Include="$(MonoProjectRoot)sample\iOS-NativeAOT\Program.csproj"
                       BuildInParallel="false" /> -->
