@@ -4855,12 +4855,6 @@ BOOL MetaSig::CompareMethodConstraints(const Substitution *pSubst1,
     IMDInternalImport *pInternalImport1 = pModule1->GetMDImport();
     IMDInternalImport *pInternalImport2 = pModule2->GetMDImport();
 
-    if (!pModule1->m_pTypeGenericInfoMap->IsGeneric(tok1, pInternalImport1))
-    {
-        // The method's generic-ness must match.
-        return !pModule2->m_pTypeGenericInfoMap->IsGeneric(tok2, pInternalImport2);
-    }
-
     HENUMInternalHolder hEnumTyPars1(pInternalImport1);
     HENUMInternalHolder hEnumTyPars2(pInternalImport2);
 

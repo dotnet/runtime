@@ -254,12 +254,19 @@ MethodTableBuilder::LoaderFindMethodInParentClass(
             {
                 if (pMethodConstraintsMatch != NULL)
                 {
-                    // Check the constraints are consistent,
-                    // and return the result to the caller.
-                    // We do this here to avoid recalculating pSubst.
-                    *pMethodConstraintsMatch = MetaSig::CompareMethodConstraints(
-                        methodSig.GetSubstitution(), methodSig.GetModule(), methodSig.GetToken(),
-                        entrySig.GetSubstitution(),  entrySig.GetModule(),  entrySig.GetToken());
+                    if ((*methodSig.GetSignature()) & IMAGE_CEE_CS_CALLCONV_GENERIC)
+                    {
+                        // Check the constraints are consistent,
+                        // and return the result to the caller.
+                        // We do this here to avoid recalculating pSubst.
+                        *pMethodConstraintsMatch = MetaSig::CompareMethodConstraints(
+                            methodSig.GetSubstitution(), methodSig.GetModule(), methodSig.GetToken(),
+                            entrySig.GetSubstitution(),  entrySig.GetModule(),  entrySig.GetToken());
+                    }
+                    else
+                    {
+                        *pMethodConstraintsMatch = TRUE; // If the method isn't generic, just mark that constraints match
+                    }
                 }
 
                 return pEntryMethod;
@@ -6346,10 +6353,13 @@ MethodTableBuilder::MethodImplCompareSignatures(
     }
 
     //now compare the method constraints
-    if (!MetaSig::CompareMethodConstraints(implSig.GetSubstitution(), implSig.GetModule(), implSig.GetToken(),
-                                           declSig.GetSubstitution(), declSig.GetModule(), declSig.GetToken()))
+    if ((*declSig.GetSignature()) & IMAGE_CEE_CS_CALLCONV_GENERIC)
     {
-        BuildMethodTableThrowException(dwConstraintErrorCode, implSig.GetToken());
+        if (!MetaSig::CompareMethodConstraints(implSig.GetSubstitution(), implSig.GetModule(), implSig.GetToken(),
+                                            declSig.GetSubstitution(), declSig.GetModule(), declSig.GetToken()))
+        {
+            BuildMethodTableThrowException(dwConstraintErrorCode, implSig.GetToken());
+        }
     }
 }
 
@@ -6901,7 +6911,7 @@ VOID MethodTableBuilder::ValidateInterfaceMethodConstraints()
             }
 
             // Now compare the method constraints.
-            if (!MetaSig::CompareMethodConstraints(pSubstTgt,
+            if ((pTargetMD->GetClassification() == mcInstantiated) && !MetaSig::CompareMethodConstraints(pSubstTgt,
                                                    pTargetModule,
                                                    pTargetMD->GetMemberDef(),
                                                    &pItf->GetSubstitution(),
