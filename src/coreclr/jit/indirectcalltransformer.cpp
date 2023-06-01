@@ -983,9 +983,6 @@ private:
         //
         virtual void CreateElse()
         {
-            // Remove everything related to inlining from the original call
-            origCall->ClearInlineInfo();
-
             elseBlock = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
             elseBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
 
@@ -1003,6 +1000,9 @@ private:
             }
             // Make sure it didn't overflow
             assert(elseLikelihood <= 100);
+
+            // Remove everything related to inlining from the original call
+            origCall->ClearInlineInfo();
 
             elseBlock->inheritWeightPercentage(currBlock, elseLikelihood);
 
