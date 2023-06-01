@@ -710,10 +710,7 @@ bool IsInterceptableException(Thread *pThread);
 // perform simple checking to see if the current exception is intercepted
 bool CheckThreadExceptionStateForInterception();
 
-#ifndef TARGET_UNIX
-// Currently, only Windows supports ClrUnwindEx (used inside ClrDebuggerDoUnwindAndIntercept)
 #define DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
-#endif // !TARGET_UNIX
 
 #ifdef DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
 // Intercept the current exception and start an unwind.  This function may never return.

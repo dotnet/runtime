@@ -4192,6 +4192,9 @@ void ExceptionTracker::MakeCallbacksRelatedToHandler(
 // Notes:
 //    If the exception is intercepted, this function never returns.
 //
+#ifdef HOST_UNIX
+VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartContext);
+#endif // HOST_UNIX
 
 EXCEPTION_DISPOSITION ClrDebuggerDoUnwindAndIntercept(X86_FIRST_ARG(EXCEPTION_REGISTRATION_RECORD* pCurrentEstablisherFrame)
                                                       EXCEPTION_RECORD* pExceptionRecord)
@@ -4210,7 +4213,16 @@ EXCEPTION_DISPOSITION ClrDebuggerDoUnwindAndIntercept(X86_FIRST_ARG(EXCEPTION_RE
                                                            (PBYTE*)&uInterceptStackFrame,
                                                            NULL, NULL);
 
+#ifdef HOST_UNIX
+    CONTEXT *pContext = pThread->GetExceptionState()->GetContextRecord();
+    PAL_SEHException ex(pThread->GetExceptionState()->GetExceptionRecord(), pContext, /* onStack */ false);
+    ex.TargetIp = INVALID_RESUME_ADDRESS;
+    ex.TargetFrameSp = uInterceptStackFrame;
+    ex.ReturnValue = (UINT_PTR)pThread;
+    UnwindManagedExceptionPass2(ex, pContext);
+#else // HOST_UNIX
     ClrUnwindEx(pExceptionRecord, (UINT_PTR)pThread, INVALID_RESUME_ADDRESS, uInterceptStackFrame);
+#endif // HOST_UNIX
 
     UNREACHABLE();
 }
@@ -4553,6 +4565,27 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
         }
 
     } while (Thread::IsAddressInCurrentStack(sp) && (establisherFrame != ex.TargetFrameSp));
+
+    if ((establisherFrame == ex.TargetFrameSp) && (ex.TargetIp != 0))
+    {
+#ifdef HOST_AMD64
+#define RETURN_REG Rax
+#elif defined(HOST_ARM64)
+#define RETURN_REG X0
+#elif defined(HOST_ARM)
+#define RETURN_REG R0
+#elif defined(HOST_X86)
+#define RETURN_REG Eax
+#else
+#error Missing definition of RETURN_REG for the current architecture
+#endif
+        currentFrameContext->RETURN_REG = ex.ReturnValue;
+        if (ex.GetExceptionRecord()->ExceptionCode != STATUS_UNWIND_CONSOLIDATE)
+        {
+            SetIP(currentFrameContext, ex.TargetIp);
+        }
+        ExceptionTracker::ResumeExecution(currentFrameContext);
+    }
 
     _ASSERTE(!"UnwindManagedExceptionPass2: Unwinding failed. Reached the end of the stack");
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
