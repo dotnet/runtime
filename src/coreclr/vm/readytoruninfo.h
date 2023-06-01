@@ -54,34 +54,34 @@ class ReadyToRun_EnclosingTypeMap
 private:
     uint16_t TypeCount = 0;
 public:
-    static ReadyToRun_EnclosingTypeMap EmptyInstance;
+    const static ReadyToRun_EnclosingTypeMap EmptyInstance;
 
-    mdTypeDef GetEnclosingType(mdTypeDef input, IMDInternalImport* pImport);
-    HRESULT GetEnclosingTypeNoThrow(mdTypeDef input, mdTypeDef *pEnclosingType, IMDInternalImport* pImport);
+    mdTypeDef GetEnclosingType(mdTypeDef input, IMDInternalImport* pImport) const;
+    HRESULT GetEnclosingTypeNoThrow(mdTypeDef input, mdTypeDef *pEnclosingType, IMDInternalImport* pImport) const;
 };
 
 class ReadyToRun_TypeGenericInfoMap
 {
 private:
     uint32_t TypeCount = 0;
-    ReadyToRunTypeGenericInfo GetTypeGenericInfo(mdTypeDef input, bool *foundResult);
+    ReadyToRunTypeGenericInfo GetTypeGenericInfo(mdTypeDef input, bool *foundResult) const;
 public:
-    static ReadyToRun_TypeGenericInfoMap EmptyInstance;
+    const static ReadyToRun_TypeGenericInfoMap EmptyInstance;
 
-    HRESULT IsGenericNoThrow(mdTypeDef input, bool *pIsGeneric, IMDInternalImport* pImport);
-    HRESULT GetGenericArgumentCountNoThrow(mdTypeDef input, uint32_t *pCount, IMDInternalImport* pImport);
-    bool IsGeneric(mdTypeDef input, IMDInternalImport* pImport);
-    uint32_t GetGenericArgumentCount(mdTypeDef input, IMDInternalImport* pImport);
-    bool HasVariance(mdTypeDef input, bool *foundResult);
-    bool HasConstraints(mdTypeDef input, bool *foundResult);
+    HRESULT IsGenericNoThrow(mdTypeDef input, bool *pIsGeneric, IMDInternalImport* pImport) const;
+    HRESULT GetGenericArgumentCountNoThrow(mdTypeDef input, uint32_t *pCount, IMDInternalImport* pImport) const;
+    bool IsGeneric(mdTypeDef input, IMDInternalImport* pImport) const;
+    uint32_t GetGenericArgumentCount(mdTypeDef input, IMDInternalImport* pImport) const;
+    bool HasVariance(mdTypeDef input, bool *foundResult) const;
+    bool HasConstraints(mdTypeDef input, bool *foundResult) const;
 };
 
 class ReadyToRun_MethodIsGenericMap
 {
     uint32_t MethodCount = 0;
 public:
-    static ReadyToRun_MethodIsGenericMap EmptyInstance;
-    bool IsGeneric(mdMethodDef input, bool *foundResult);
+    const static ReadyToRun_MethodIsGenericMap EmptyInstance;
+    bool IsGeneric(mdMethodDef input, bool *foundResult) const;
 };
 
 class ReadyToRunInfo

@@ -565,7 +565,7 @@ public:
         return NULL;
     };
 
-    ReadyToRun_EnclosingTypeMap *m_pEnclosingTypeMap = &ReadyToRun_EnclosingTypeMap::EmptyInstance;
+    const ReadyToRun_EnclosingTypeMap *m_pEnclosingTypeMap = &ReadyToRun_EnclosingTypeMap::EmptyInstance;
 
 #ifndef DACCESS_COMPILE
     // The vtable needs to match between DAC and non-DAC, but we don't want any use of ThrowTypeLoadException in the DAC
@@ -1619,8 +1619,8 @@ public:
     // Self-initializing accessor for domain-independent IJW thunk heap
     LoaderHeap              *GetDllThunkHeap();
 
-    ReadyToRun_MethodIsGenericMap *m_pMethodIsGenericMap = &ReadyToRun_MethodIsGenericMap::EmptyInstance;
-    ReadyToRun_TypeGenericInfoMap *m_pTypeGenericInfoMap = &ReadyToRun_TypeGenericInfoMap::EmptyInstance;
+    const ReadyToRun_MethodIsGenericMap *m_pMethodIsGenericMap = &ReadyToRun_MethodIsGenericMap::EmptyInstance;
+    const ReadyToRun_TypeGenericInfoMap *m_pTypeGenericInfoMap = &ReadyToRun_TypeGenericInfoMap::EmptyInstance;
 
 protected:
 

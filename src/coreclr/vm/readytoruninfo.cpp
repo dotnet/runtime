@@ -1791,11 +1791,11 @@ ModuleBase* CreateNativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInt
 }
 #endif // DACCESS_COMPILE
 
-ReadyToRun_EnclosingTypeMap ReadyToRun_EnclosingTypeMap::EmptyInstance;
-ReadyToRun_TypeGenericInfoMap ReadyToRun_TypeGenericInfoMap::EmptyInstance;
-ReadyToRun_MethodIsGenericMap ReadyToRun_MethodIsGenericMap::EmptyInstance;
+const ReadyToRun_EnclosingTypeMap ReadyToRun_EnclosingTypeMap::EmptyInstance;
+const ReadyToRun_TypeGenericInfoMap ReadyToRun_TypeGenericInfoMap::EmptyInstance;
+const ReadyToRun_MethodIsGenericMap ReadyToRun_MethodIsGenericMap::EmptyInstance;
 
-mdTypeDef ReadyToRun_EnclosingTypeMap::GetEnclosingType(mdTypeDef input, IMDInternalImport* pImport)
+mdTypeDef ReadyToRun_EnclosingTypeMap::GetEnclosingType(mdTypeDef input, IMDInternalImport* pImport) const
 {
     uint32_t rid = RidFromToken(input);
     if ((rid > TypeCount) || (rid == 0))
@@ -1815,7 +1815,7 @@ mdTypeDef ReadyToRun_EnclosingTypeMap::GetEnclosingType(mdTypeDef input, IMDInte
     return TokenFromRid((&TypeCount)[rid], mdtTypeDef);
 }
 
-HRESULT ReadyToRun_EnclosingTypeMap::GetEnclosingTypeNoThrow(mdTypeDef input, mdTypeDef *pEnclosingType, IMDInternalImport* pImport)
+HRESULT ReadyToRun_EnclosingTypeMap::GetEnclosingTypeNoThrow(mdTypeDef input, mdTypeDef *pEnclosingType, IMDInternalImport* pImport) const
 {
     uint32_t rid = RidFromToken(input);
     if ((rid > TypeCount) || (rid == 0))
@@ -1832,7 +1832,7 @@ HRESULT ReadyToRun_EnclosingTypeMap::GetEnclosingTypeNoThrow(mdTypeDef input, md
     return  S_OK;
 }
 
-ReadyToRunTypeGenericInfo ReadyToRun_TypeGenericInfoMap::GetTypeGenericInfo(mdTypeDef input, bool *foundResult)
+ReadyToRunTypeGenericInfo ReadyToRun_TypeGenericInfoMap::GetTypeGenericInfo(mdTypeDef input, bool *foundResult) const
 {
     uint32_t rid = RidFromToken(input);
     if ((rid > TypeCount) || (rid == 0))
@@ -1851,7 +1851,7 @@ ReadyToRunTypeGenericInfo ReadyToRun_TypeGenericInfoMap::GetTypeGenericInfo(mdTy
     return static_cast<ReadyToRunTypeGenericInfo>(entry);
 }
 
-bool ReadyToRun_TypeGenericInfoMap::IsGeneric(mdTypeDef input, IMDInternalImport* pImport)
+bool ReadyToRun_TypeGenericInfoMap::IsGeneric(mdTypeDef input, IMDInternalImport* pImport) const
 {
     bool foundResult;
     ReadyToRunTypeGenericInfo typeGenericInfo = GetTypeGenericInfo(input, &foundResult);
@@ -1864,7 +1864,7 @@ bool ReadyToRun_TypeGenericInfoMap::IsGeneric(mdTypeDef input, IMDInternalImport
     return !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
 }
 
-HRESULT ReadyToRun_TypeGenericInfoMap::IsGenericNoThrow(mdTypeDef input, bool *pIsGeneric, IMDInternalImport* pImport)
+HRESULT ReadyToRun_TypeGenericInfoMap::IsGenericNoThrow(mdTypeDef input, bool *pIsGeneric, IMDInternalImport* pImport) const
 {
     bool foundResult;
     bool result;
@@ -1883,7 +1883,7 @@ HRESULT ReadyToRun_TypeGenericInfoMap::IsGenericNoThrow(mdTypeDef input, bool *p
     return S_OK;
 }
 
-uint32_t ReadyToRun_TypeGenericInfoMap::GetGenericArgumentCount(mdTypeDef input, IMDInternalImport* pImport)
+uint32_t ReadyToRun_TypeGenericInfoMap::GetGenericArgumentCount(mdTypeDef input, IMDInternalImport* pImport) const
 {
     bool foundResult;
     ReadyToRunTypeGenericInfo typeGenericInfo = GetTypeGenericInfo(input, &foundResult);
@@ -1900,7 +1900,7 @@ uint32_t ReadyToRun_TypeGenericInfoMap::GetGenericArgumentCount(mdTypeDef input,
     return count;
 }
 
-HRESULT ReadyToRun_TypeGenericInfoMap::GetGenericArgumentCountNoThrow(mdTypeDef input, uint32_t *pCount, IMDInternalImport* pImport)
+HRESULT ReadyToRun_TypeGenericInfoMap::GetGenericArgumentCountNoThrow(mdTypeDef input, uint32_t *pCount, IMDInternalImport* pImport) const
 {
     HRESULT hr;
     bool foundResult;
@@ -1921,19 +1921,19 @@ HRESULT ReadyToRun_TypeGenericInfoMap::GetGenericArgumentCountNoThrow(mdTypeDef 
     return hr;
 }
 
-bool ReadyToRun_TypeGenericInfoMap::HasVariance(mdTypeDef input, bool *foundResult)
+bool ReadyToRun_TypeGenericInfoMap::HasVariance(mdTypeDef input, bool *foundResult) const
 {
     ReadyToRunTypeGenericInfo typeGenericInfo = GetTypeGenericInfo(input, foundResult);
     return !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::HasVariance);
 }
 
-bool ReadyToRun_TypeGenericInfoMap::HasConstraints(mdTypeDef input, bool *foundResult)
+bool ReadyToRun_TypeGenericInfoMap::HasConstraints(mdTypeDef input, bool *foundResult) const
 {
     ReadyToRunTypeGenericInfo typeGenericInfo = GetTypeGenericInfo(input, foundResult);
     return !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::HasVariance);
 }
 
-bool ReadyToRun_MethodIsGenericMap::IsGeneric(mdMethodDef input, bool *foundResult)
+bool ReadyToRun_MethodIsGenericMap::IsGeneric(mdMethodDef input, bool *foundResult) const
 {
     uint32_t rid = RidFromToken(input);
     if ((rid > MethodCount) || (rid == 0))
