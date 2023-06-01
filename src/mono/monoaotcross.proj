@@ -38,11 +38,11 @@
 
     <MSBuild Targets="Build"
              Projects="$(MSBuildThisFileDirectory)llvm\llvm-init.proj"
-             Properties="TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS);RealTargetArchitecture=$(TargetArchitecture)" />
+             Properties="TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS);AotHostArchitecture=$(TargetArchitecture)" />
 
     <MSBuild Targets="BuildMono"
              Projects="$(MSBuildThisFileDirectory)mono.proj"
-             Properties="RealTargetOS=$(TargetOS);RealTargetArchitecture=$(TargetArchitecture);BuildMonoAOTCrossCompilerOnly=true;SkipMonoCrossJitConfigure=$(SkipMonoCrossJitConfigure);TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
+             Properties="AotHostOS=$(TargetOS);AotHostArchitecture=$(TargetArchitecture);BuildMonoAOTCrossCompilerOnly=true;SkipMonoCrossJitConfigure=$(SkipMonoCrossJitConfigure);TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
 
     <ItemGroup>
       <_MonoAOTCrossFiles Include="$(ArtifactsBinDir)mono\$(MonoAotTargetOS).$(MonoAotTargetArchitecture).$(Configuration)\cross\$(MonoAotTargetRid.ToLower())\**" />

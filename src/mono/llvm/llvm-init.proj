@@ -17,10 +17,10 @@
                       Version="$(MonoLLVMToolsVersion)"
                       PackageArch="$(TargetArchitecture)"
                       Condition="'$(TargetArchitecture)' != ''" />
-    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(RealTargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(AotHostArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
                       Version="$(MonoLLVMToolsVersion)"
-                      PackageArch="$(RealTargetArchitecture)"
-                      Condition="'$(RealTargetArchitecture)' != ''" />
+                      PackageArch="$(AotHostArchitecture)"
+                      Condition="'$(AotHostArchitecture)' != ''" />
     <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
                       Version="$(MonoLLVMToolsVersion)"
                       PackageArch="$(BuildArchitecture)"
@@ -29,10 +29,10 @@
                       Version="$(MonoLLVMSDKVersion)"
                       PackageArch="$(TargetArchitecture)"
                       Condition="'$(TargetArchitecture)' != ''" />
-    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(RealTargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(AotHostArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
                       Version="$(MonoLLVMSDKVersion)"
-                      PackageArch="$(RealTargetArchitecture)"
-                      Condition="'$(RealTargetArchitecture)' != ''" />
+                      PackageArch="$(AotHostArchitecture)"
+                      Condition="'$(AotHostArchitecture)' != ''" />
     <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
                       Version="$(MonoLLVMSDKVersion)"
                       PackageArch="$(BuildArchitecture)"
