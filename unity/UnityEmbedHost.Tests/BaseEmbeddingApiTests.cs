@@ -126,17 +126,17 @@ public abstract class BaseEmbeddingApiTests
     }
 
     [Test]
-    public unsafe void getExceptionArgumentNullWorks()
+    public unsafe void GetExceptionArgumentNullWorks()
     {
         string msg = "An Exception Message";
         byte[] bytes_array = Encoding.UTF8.GetBytes(msg);
-        ArgumentException ex;
+        Exception ex;
         fixed (byte* p = bytes_array)
         {
-            ex = (ArgumentException)ClrHost.get_exception_argument_null( (sbyte*)p).ToManagedRepresentation();
+            ex = ClrHost.get_exception_argument_null((sbyte*)p);
         }
         Assert.That(ex.GetType(), Is.EqualTo(typeof(ArgumentNullException)));
-        Assert.That(msg, Is.EqualTo(ex.ParamName));
+        Assert.That(msg, Is.EqualTo(((ArgumentException)ex).ParamName));
     }
 
     [Test]
