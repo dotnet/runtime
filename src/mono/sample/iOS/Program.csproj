@@ -3,13 +3,13 @@
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
     <AppName>HelloiOS</AppName>
     <MainLibraryFileName>Program.dll</MainLibraryFileName>
     <DevTeamProvisioning Condition="'$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
-    <DeployAndRun Condition="'$(DeployAndRun)' == ''">true</DeployAndRun>
+    <DeployAndRun Condition="'$(DeployAndRun)' == ''">false</DeployAndRun>
     <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''">false</StripDebugSymbols>
     <UseMonoJustInterp Condition="'$(UseMonoJustInterp)' == '' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
 
