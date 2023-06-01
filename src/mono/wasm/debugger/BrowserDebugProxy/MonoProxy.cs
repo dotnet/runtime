@@ -693,7 +693,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             // GetAssemblyByName seems to work on file names
             AssemblyInfo assembly = store.GetAssemblyByName(aname);
-            assembly ??= store.GetAssemblyByName(aname + ".exe");
             assembly ??= store.GetAssemblyByName(aname + ".dll");
             if (assembly == null)
             {

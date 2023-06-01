@@ -340,8 +340,7 @@ namespace BrowserDebugProxy
                     continue;
 
                 MethodInfoWithDebugInformation getterInfo = await sdbHelper.GetMethodInfo(getMethodId, token);
-
-                MethodAttributes getterAttrs = getterInfo is not null ? getterInfo.Info.Attributes : MethodAttributes.Public;
+                MethodAttributes getterAttrs = getterInfo.Info.Attributes;
                 MethodAttributes getterMemberAccessAttrs = getterAttrs & MethodAttributes.MemberAccessMask;
                 MethodAttributes vtableLayout = getterAttrs & MethodAttributes.VtableLayoutMask;
 

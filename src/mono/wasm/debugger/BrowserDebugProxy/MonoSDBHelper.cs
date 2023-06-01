@@ -883,6 +883,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                     logger.LogDebug($"Created assembly without debug information: {assemblyName}");
                 }
             }
+            else
+            {
+                if (asm.asmMetadataReader is null && proxy.JustMyCode) //load on demand
+                {
+                    var bytes = await GetBytesFromAssemblyAndPdb(asm.Name, true, token);
+                    asm.LoadInfoFromBytes(proxy, sessionId, bytes[0], bytes[1], token);
+                }
+            }
             asm.SetDebugId(assemblyId);
             assemblies[assemblyId] = asm;
             return asm;
@@ -911,8 +919,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 logger.LogDebug($"Unable to find assembly: {assemblyId}");
                 return null;
             }
-            if (!asm.HasSymbols)
-                return null;
 
             var method = asm.GetMethodByToken(methodToken);
 
@@ -1918,7 +1924,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     foreach (var methodId in methodIds)
                     {
                         var methodInfoFromRuntime = await GetMethodInfo(methodId, token);
-                        if (methodInfoFromRuntime.Info.GetParametersInfo().Length > 0)
+                        if (methodInfoFromRuntime != null && methodInfoFromRuntime.Info.GetParametersInfo().Length > 0)
                             continue;
                         var retMethod = await InvokeMethod(objectId, methodId, isValueType, token);
                         return retMethod["value"]?["value"].Value<string>();
@@ -2493,9 +2499,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             return retDebuggerCmdReader1.ReadByte() == 1;
         }
 
-        public async Task<byte[][]> GetBytesFromAssemblyAndPdb(string assemblyName, CancellationToken token)
+        public async Task<byte[][]> GetBytesFromAssemblyAndPdb(string assemblyName, bool ignoreJMC, CancellationToken token)
         {
-            if (proxy.JustMyCode && !(await HasDebugInfoLoadedByRuntime(assemblyName, token)))
+            if (!ignoreJMC && proxy.JustMyCode && !(await HasDebugInfoLoadedByRuntime(assemblyName, token)))
                 return new byte[2][];
             using var commandParamsWriter = new MonoBinaryWriter();
             byte[] assembly_buf = null;

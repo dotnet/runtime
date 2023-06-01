@@ -1209,7 +1209,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return;
                 if (asmMetadataReader is null) //it means that the assembly was not loaded before because JMC was enabled
                 {
-                    var ret = await sdbHelper.GetBytesFromAssemblyAndPdb(Name, token);
+                    var ret = await sdbHelper.GetBytesFromAssemblyAndPdb(Name, false, token);
                     LoadInfoFromBytes(proxy, id, ret[0], ret[1], token);
                 }
                 var pdbName = Path.GetFileName(PdbName);
@@ -1594,7 +1594,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             new DebugItem
                             {
                                 Url = file_name,
-                                Data = context.SdbAgent.GetBytesFromAssemblyAndPdb(Path.GetFileName(unescapedFileName), token)
+                                Data = context.SdbAgent.GetBytesFromAssemblyAndPdb(Path.GetFileName(unescapedFileName), false, token)
                             });
                     }
                     catch (Exception e)
@@ -1642,7 +1642,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public SourceFile GetFileById(SourceId id) => AllSources().SingleOrDefault(f => f.SourceId.Equals(id));
 
-        public AssemblyInfo GetAssemblyByName(string name) => assemblies.FirstOrDefault(a => a.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+        public AssemblyInfo GetAssemblyByName(string name) => assemblies.FirstOrDefault(a => Path.GetFileNameWithoutExtension(a.Name).Equals(Path.GetFileNameWithoutExtension(name), StringComparison.InvariantCultureIgnoreCase));
 
         /*
         V8 uses zero based indexing for both line and column.
