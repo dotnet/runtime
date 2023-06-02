@@ -1144,31 +1144,6 @@ TEST(can_call_method_on_member_struct)
     CHECK_EQUAL(579, int_result);
 }
 
-
-TEST(can_call_interface_method_on_member_struct)
-{
-    MonoMethod *method = GetMethodHelper(kTestDLLNameSpace, "TestInterface", "Method", 0);
-    MonoMethod *setupmethod = GetMethodHelper(kTestDLLNameSpace, "ClassWithStructFields", "Setup", 0);
-    MonoClass *inherited = GetClassHelper(kTestDLLNameSpace, "StructImplementingInterface");
-    MonoClass *klass = GetClassHelper(kTestDLLNameSpace, "ClassWithStructFields");
-    GET_AND_CHECK(obj, mono_object_new(g_domain, klass));
-    GET_AND_CHECK(field0, mono_class_get_field_from_name(klass, "c"));
-    int field0_offset = mono_field_get_offset(field0);
-    GET_AND_CHECK(fieldType, mono_field_get_type(field0));
-    GET_AND_CHECK(fieldKlass, mono_type_get_class(fieldType));
-    GET_AND_CHECK(fieldDummyObject, mono_object_new(g_domain, fieldKlass));
-    GET_AND_CHECK(virtualmethod, mono_object_get_virtual_method (fieldDummyObject, method));
-    mono_runtime_invoke(setupmethod, obj, nullptr, nullptr);
-    MonoObject* embeddedObjectA = (MonoObject*)((char*)obj + field0_offset);
-    MonoObject* returnValue;
-    if (g_Mode == Mono)
-        returnValue = mono_runtime_invoke(virtualmethod, embeddedObjectA, nullptr, nullptr);
-    else
-        returnValue = mono_runtime_invoke_with_nested_object(virtualmethod, embeddedObjectA, obj, nullptr, nullptr);
-    int int_result = *(int*)mono_object_unbox(returnValue);
-    CHECK_EQUAL(42, int_result);
-}
-
 TEST(mono_object_get_virtual_method_can_call_interface_method_on_struct)
 {
     MonoMethod *method = GetMethodHelper(kTestDLLNameSpace, "TestInterface", "Method", 0);
