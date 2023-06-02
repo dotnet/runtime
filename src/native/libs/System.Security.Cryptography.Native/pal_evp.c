@@ -68,8 +68,15 @@ int32_t CryptoNative_EvpDigestFinalEx(EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s)
 
 int32_t CryptoNative_EvpDigestFinalXOF(EVP_MD_CTX* ctx, uint8_t* md, uint32_t len)
 {
-    ERR_clear_error();
-    return EVP_DigestFinalXOF(ctx, md, len);
+    #if HAVE_OPENSSL_SHA3
+        if (API_EXISTS(EVP_DigestFinalXOF))
+        {
+            ERR_clear_error();
+            return EVP_DigestFinalXOF(ctx, md, len);
+        }
+    #endif
+
+    return 0;
 }
 
 static EVP_MD_CTX* EvpDup(const EVP_MD_CTX* ctx)
@@ -156,6 +163,36 @@ int32_t CryptoNative_EvpDigestOneShot(const EVP_MD* type, const void* source, in
     }
 
     ret = CryptoNative_EvpDigestFinalEx(ctx, md, mdSize);
+
+    CryptoNative_EvpMdCtxDestroy(ctx);
+    return ret;
+}
+
+int32_t CryptoNative_EvpDigestXOFOneShot(const EVP_MD* type, const void* source, int32_t sourceSize, uint8_t* md, uint32_t len)
+{
+    ERR_clear_error();
+
+    if (type == NULL || sourceSize < 0 || md == NULL)
+    {
+        return 0;
+    }
+
+    EVP_MD_CTX* ctx = CryptoNative_EvpMdCtxCreate(type);
+
+    if (ctx == NULL)
+    {
+        return 0;
+    }
+
+    int32_t ret = EVP_DigestUpdate(ctx, source, (size_t)sourceSize);
+
+    if (ret != SUCCESS)
+    {
+        CryptoNative_EvpMdCtxDestroy(ctx);
+        return 0;
+    }
+
+    ret = CryptoNative_EvpDigestFinalXOF(ctx, md, len);
 
     CryptoNative_EvpMdCtxDestroy(ctx);
     return ret;

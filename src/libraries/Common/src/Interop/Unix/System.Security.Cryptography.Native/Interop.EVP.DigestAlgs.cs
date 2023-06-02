@@ -151,6 +151,8 @@ internal static partial class Interop
                     return EvpSha3_384() != 0;
                 case HashAlgorithmNames.SHA3_512:
                     return EvpSha3_512() != 0;
+                case HashAlgorithmNames.SHAKE128:
+                    return EvpShake128() != 0;
                 default:
                     throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
             }

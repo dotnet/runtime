@@ -37,6 +37,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestOneShot")]
         internal static unsafe partial int EvpDigestOneShot(IntPtr type, byte* source, int sourceSize, byte* md, uint* mdSize);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestXOFOneShot")]
+        private static unsafe partial int EvpDigestXOFOneShot(IntPtr type, byte* source, int sourceSize, byte* md, uint len);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMdSize")]
         internal static partial int EvpMdSize(IntPtr md);
 
@@ -90,6 +93,15 @@ internal static partial class Interop
             fixed (byte* pDestination = destination)
             {
                 return EvpDigestCurrentXOF(ctx, pDestination, (uint)destination.Length);
+            }
+        }
+
+        internal static unsafe int EvpDigestXOFOneShot(IntPtr type, ReadOnlySpan<byte> source, Span<byte> destination)
+        {
+            fixed (byte* pSource = source)
+            fixed (byte* pDestination = destination)
+            {
+                return EvpDigestXOFOneShot(type, pSource, source.Length, pDestination, (uint)destination.Length);
             }
         }
 
