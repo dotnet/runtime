@@ -37,6 +37,7 @@ namespace ILCompiler
         private VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
         private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
         private Int128FieldLayoutAlgorithm _int128FieldLayoutAlgorithm;
+        private RuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
 
         public ReadyToRunCompilerContext(TargetDetails details, SharedGenericsMode genericsMode, bool bubbleIncludesCorelib, InstructionSetSupport instructionSetSupport, CompilerTypeSystemContext oldTypeSystemContext = null)
             : base(details, genericsMode)
@@ -140,7 +141,11 @@ namespace ILCompiler
         /// </summary>
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
         {
-            return BaseTypeRuntimeInterfacesAlgorithm.Instance;
+            if (_arrayOfTRuntimeInterfacesAlgorithm == null)
+            {
+                _arrayOfTRuntimeInterfacesAlgorithm = new SimpleArrayOfTRuntimeInterfacesAlgorithm(SystemModule);
+            }
+            return _arrayOfTRuntimeInterfacesAlgorithm;
         }
 
         TypeDesc _asyncStateMachineBox;

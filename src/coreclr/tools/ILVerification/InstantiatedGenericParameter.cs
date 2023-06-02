@@ -76,7 +76,20 @@ namespace Internal.TypeSystem
 
         public override GenericConstraints Constraints => _genericParam.Constraints;
 
-        public override TypeSystemEntity AssociatedTypeOrMethod => _genericParam.AssociatedTypeOrMethod;
+        public override TypeSystemEntity AssociatedTypeOrMethod
+        {
+            get
+            {
+                if (_genericParam.AssociatedTypeOrMethod is TypeDesc associatedType)
+                {
+                    return associatedType.InstantiateSignature(_typeInstantiation, _methodInstantiation);
+                }
+                else
+                {
+                    return ((MethodDesc)_genericParam.AssociatedTypeOrMethod).InstantiateSignature(_typeInstantiation, _methodInstantiation);
+                }
+            }
+        }
 
         public override IEnumerable<TypeDesc> TypeConstraints
         {

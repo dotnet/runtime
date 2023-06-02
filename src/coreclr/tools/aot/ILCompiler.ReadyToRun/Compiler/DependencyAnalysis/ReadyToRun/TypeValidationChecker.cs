@@ -487,12 +487,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 HashSet<TypeDesc> constraintsOnDecl = new HashSet<TypeDesc>();
                 foreach (var constraint in parameterOfDecl.TypeConstraints)
                 {
-                    constraintsOnDecl.Add(constraint.InstantiateSignature(declMethod.Instantiation, default(Instantiation)));
+                    constraintsOnDecl.Add(constraint.InstantiateSignature(declMethod.OwningType.Instantiation, implMethod.Instantiation).InstantiateSignature(implMethod.OwningType.Instantiation, new Instantiation()));
                 }
 
                 foreach (var constraint in parameterOfImpl.TypeConstraints)
                 {
-                    if (!constraintsOnDecl.Contains(constraint.InstantiateSignature(implMethod.Instantiation, default(Instantiation))))
+                    if (!constraintsOnDecl.Contains(constraint.InstantiateSignature(implMethod.OwningType.Instantiation, implMethod.Instantiation)))
                         return false;
                 }
 

@@ -34,13 +34,46 @@ namespace Internal.TypeSystem.NoMetadata
         // "_baseType == this" means "base type was not initialized yet"
         private DefType _baseType;
 
-        public NoMetadataType(TypeSystemContext context, RuntimeTypeHandle genericTypeDefinition, DefType genericTypeDefinitionAsDefType, Instantiation instantiation, int hashcode)
+        public unsafe NoMetadataType(TypeSystemContext context, RuntimeTypeHandle genericTypeDefinition, int instantiationLength, ReadOnlySpan<Runtime.GenericVariance> runtimeVarianceData, int hashcode)
+        {
+            TypeDesc[] genericParameters;
+            if (instantiationLength == 0)
+            {
+                genericParameters = Array.Empty<TypeDesc>();
+            }
+            else
+            {
+                genericParameters = new TypeDesc[instantiationLength];
+                for (int i = 0; i < genericParameters.Length; i++)
+                {
+                    GenericVariance variance = runtimeVarianceData.Length == 0 ? GenericVariance.None : runtimeVarianceData[i] switch
+                    {
+                        Runtime.GenericVariance.Contravariant => GenericVariance.Contravariant,
+                        Runtime.GenericVariance.Covariant => GenericVariance.Covariant,
+                        Runtime.GenericVariance.NonVariant or Runtime.GenericVariance.ArrayCovariant => GenericVariance.None,
+                        _ => throw new NotImplementedException()
+                    };
+                    genericParameters[i] = new RuntimeGenericParameterDesc(GenericParameterKind.Type, i, this, variance);
+                }
+            }
+
+            Instantiation instantiation = new Instantiation(genericParameters);
+            Init(context, genericTypeDefinition, null, instantiation, hashcode);
+        }
+
+        public unsafe NoMetadataType(TypeSystemContext context, RuntimeTypeHandle genericTypeDefinition, DefType genericTypeDefinitionAsDefType, Instantiation instantiation, int hashcode)
+        {
+            Init(context, genericTypeDefinition, genericTypeDefinitionAsDefType, instantiation, hashcode);
+        }
+
+        private void Init(TypeSystemContext context, RuntimeTypeHandle genericTypeDefinition, DefType genericTypeDefinitionAsDefType, Instantiation instantiation, int hashcode)
         {
             _hashcode = hashcode;
             _context = context;
             _genericTypeDefinition = genericTypeDefinition;
             _genericTypeDefinitionAsDefType = genericTypeDefinitionAsDefType;
             _genericTypeDefinitionAsDefType ??= this;
+
             _instantiation = instantiation;
 
             // Instantiation must either be:

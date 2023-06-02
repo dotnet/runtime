@@ -66,8 +66,6 @@ namespace Internal.TypeSystem
                 flags |= TypeFlags.SignatureTypeVariable;
             }
 
-            flags |= TypeFlags.HasGenericVarianceComputed;
-            flags |= TypeFlags.HasFinalizerComputed;
             flags |= TypeFlags.AttributeCacheComputed;
 
             return flags;

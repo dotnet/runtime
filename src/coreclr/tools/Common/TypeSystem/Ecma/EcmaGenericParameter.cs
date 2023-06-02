@@ -13,7 +13,6 @@ namespace Internal.TypeSystem.Ecma
     {
         private EcmaModule _module;
         private GenericParameterHandle _handle;
-        private TypeSystemEntity _associatedTypeOrMethod;
 
         internal EcmaGenericParameter(EcmaModule module, GenericParameterHandle handle)
         {
@@ -83,15 +82,9 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                TypeSystemEntity tse = Volatile.Read(ref _associatedTypeOrMethod);
-                if (tse == null)
-                {
-                    GenericParameter parameter = _module.MetadataReader.GetGenericParameter(_handle);
+                GenericParameter parameter = _module.MetadataReader.GetGenericParameter(_handle);
 
-                    tse = (TypeSystemEntity)_module.GetObject(parameter.Parent);
-                    Volatile.Write(ref _associatedTypeOrMethod, tse);
-                }
-                return tse;
+                return (TypeSystemEntity)_module.GetObject(parameter.Parent);
             }
         }
 
