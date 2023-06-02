@@ -527,13 +527,17 @@ namespace Wasm.Build.Tests
             return projectfile;
         }
 
-        public string CreateBlazorWasmTemplateProject(string id)
+        public string CreateBlazorWasmTemplateProject(string id, string? targetFramework = null)
         {
+            string extraArgs = string.Empty;
+            if (targetFramework != null)
+                extraArgs += " -f " + targetFramework;
+
             InitBlazorWasmProjectDir(id);
             new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                     .WithWorkingDirectory(_projectDir!)
                     .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                    .ExecuteWithCapturedOutput("new blazorwasm")
+                    .ExecuteWithCapturedOutput($"new blazorwasm{extraArgs}")
                     .EnsureSuccessful();
 
             string projectFile = Path.Combine(_projectDir!, $"{id}.csproj");
@@ -824,7 +828,7 @@ namespace Wasm.Build.Tests
             return result;
         }
 
-        protected void AssertBlazorBundle(string config, bool isPublish, bool dotnetWasmFromRuntimePack, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir = null, bool expectFingerprinting = false)
+        protected void AssertBlazorBundle(string config, bool isPublish, bool dotnetWasmFromRuntimePack, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir = null)
         {
             binFrameworkDir ??= FindBlazorBinFrameworkDir(config, isPublish, targetFramework);
 
@@ -857,12 +861,24 @@ namespace Wasm.Build.Tests
                 }
 
                 string versionHashRegex = @"\.(?<version>.+)\.(?<hash>[a-zA-Z0-9]+)\.";
-                Assert.Collection(
-                    dotnetJsEntries.OrderBy(f => f),
-                    item => { Assert.Equal(expectFingerprinting ? $"dotnet{versionHashRegex}js" : "dotnet.js", item); AssertFileExists(item); },
-                    item => { Assert.Matches($"dotnet\\.native{versionHashRegex}js", item); AssertFileExists(item); },
-                    item => { Assert.Matches($"dotnet\\.runtime{versionHashRegex}js", item); AssertFileExists(item); }
-                );
+
+                // .NET 6/7 has a single dotnet.js with fingerprint, .NET 8 and later has more files with loader without fingerprint
+                if (targetFramework == "net6.0" || targetFramework == "net7.0")
+                {
+                    Assert.Collection(
+                        dotnetJsEntries.OrderBy(f => f),
+                        item => { Assert.Matches($"dotnet{versionHashRegex}js", item); AssertFileExists(item); }
+                    );
+                }
+                else
+                {
+                    Assert.Collection(
+                        dotnetJsEntries.OrderBy(f => f),
+                        item => { Assert.Equal("dotnet.js", item); AssertFileExists(item); },
+                        item => { Assert.Matches($"dotnet\\.native{versionHashRegex}js", item); AssertFileExists(item); },
+                        item => { Assert.Matches($"dotnet\\.runtime{versionHashRegex}js", item); AssertFileExists(item); }
+                    );
+                }
             }
         }
 
