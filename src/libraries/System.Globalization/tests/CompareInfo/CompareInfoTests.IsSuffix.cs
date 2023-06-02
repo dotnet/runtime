@@ -66,7 +66,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "o\u0308o", "o", CompareOptions.Ordinal, true, 1 };
 
             // Weightless comparisons
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
             {
                 yield return new object[] { s_invariantCompare, "", "\u200d", CompareOptions.None, true, 0 };
                 yield return new object[] { s_invariantCompare, "xy\u200d", "y", CompareOptions.None, true, 2 };
@@ -110,7 +110,7 @@ namespace System.Globalization.Tests
             {
                 yield return new object[] { s_hungarianCompare, "foobardzsdzs", "rddzs", CompareOptions.None, false, 0 };
                 yield return new object[] { s_frenchCompare, "\u0153", "oe", CompareOptions.None, false, 0 };
-                if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+                if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
                 {
                     yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uDC00", CompareOptions.None, false, 0 };
                     yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uDC00", CompareOptions.IgnoreCase, false, 0 };
@@ -204,7 +204,7 @@ namespace System.Globalization.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         public void IsSuffixWithAsciiAndIgnoredCharacters()
         {
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
             {
                 Assert.EndsWith("A", "A\0");
                 Assert.EndsWith("A\0", "A");

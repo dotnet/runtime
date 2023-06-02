@@ -45,7 +45,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "interesting", "\u0130", CompareOptions.IgnoreCase, false, 0 };
 
             // Unicode
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
             {
                 yield return new object[] { s_invariantCompare, "\u00C0nimal", "A\u0300", CompareOptions.None, true, 1 };
                 yield return new object[] { s_invariantCompare, "\u00C0nimal", "a\u0300", CompareOptions.None, false, 0 };
@@ -62,14 +62,14 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "o\u0308", "o", CompareOptions.Ordinal, true, 1 };
 
             // Weightless comparisons
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
             {
                 yield return new object[] { s_invariantCompare, "", "\u200d", CompareOptions.None, true, 0 };
                 yield return new object[] { s_invariantCompare, "\u200dxy", "x", CompareOptions.None, true, 2 };
             }
 
             // Surrogates
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
             {
                 yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800\uDC00", CompareOptions.None, true, 2 };
                 yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800\uDC00", CompareOptions.IgnoreCase, true, 2 };
@@ -78,7 +78,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.OrdinalIgnoreCase, true, 1 };
 
             // Malformed Unicode - Invalid Surrogates (there is nothing special about them, they don't have a special treatment)
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
             {
                 yield return new object[] { s_invariantCompare, "\uD800\uD800", "\uD800", CompareOptions.None, true, 1 };
                 yield return new object[] { s_invariantCompare, "\uD800\uD800", "\uD800\uD800", CompareOptions.None, true, 2 };
@@ -112,7 +112,7 @@ namespace System.Globalization.Tests
                 if (!PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsHybridGlobalizationOnOSX)
                     yield return new object[] { s_invariantCompare, "''Tests", "Tests", CompareOptions.IgnoreSymbols, false, 0 };
                 yield return new object[] { s_frenchCompare, "\u0153", "oe", CompareOptions.None, false, 0 };
-                if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+                if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
                 {
                     yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.None, false, 0 };
                     yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.IgnoreCase, false, 0 };
@@ -213,7 +213,7 @@ namespace System.Globalization.Tests
         public void IsPrefixWithAsciiAndIgnoredCharacters()
         {
             // this fails
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
             {
                 Assert.StartsWith("A", "A\0");
                 Assert.StartsWith("A\0", "A");

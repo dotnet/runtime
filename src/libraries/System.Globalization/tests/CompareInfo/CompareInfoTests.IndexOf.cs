@@ -60,14 +60,13 @@ namespace System.Globalization.Tests
             // Unicode
             yield return new object[] { s_invariantCompare, "Hi", "\u0130", 0, 2, CompareOptions.None, -1, 0 };
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "A\u0300", 0, 9, CompareOptions.None, 8, 1 };
-            yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 0, 9, CompareOptions.None, -1, 0 };
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "A\u0300", 0, 9, CompareOptions.Ordinal, -1, 0 };
-            
+            yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 0, 9, CompareOptions.None, -1, 0 };
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 0, 9, CompareOptions.Ordinal, -1, 0 };
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 0, 9, CompareOptions.IgnoreCase, 8, 1 };
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 0, 9, CompareOptions.OrdinalIgnoreCase, -1, 0 };
             yield return new object[] { s_invariantCompare, "FooBar", "Foo\u0400Bar", 0, 6, CompareOptions.Ordinal, -1, 0 };
-            yield return new object[] { s_invariantCompare, "TestFooBA\u0300R", "FooB\u00C0R", 0, 11, supportedIgnoreNonSpaceOption, 4, PlatformDetection.IsHybridGlobalizationOnOSX ? 6 : 7 };
+            yield return new object[] { s_invariantCompare, "TestFooBA\u0300R", "FooB\u00C0R", 0, 11, supportedIgnoreNonSpaceOption, 4, PlatformDetection.IsHybridGlobalizationOnOSX ? 6 : 7 }; // TODO: check this for OSX
             yield return new object[] { s_invariantCompare, "o\u0308", "o", 0, 2, CompareOptions.None, -1, 0 };
             if (PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
@@ -79,7 +78,7 @@ namespace System.Globalization.Tests
             }
 
             // Weightless characters add support on OSX to handle these case
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX) // in C function check for empty string equality
+            if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
             {
                 yield return new object[] { s_invariantCompare, "", "\u200d", 0, 0, CompareOptions.None, 0, 0 };
                 yield return new object[] { s_invariantCompare, "hello", "\u200d", 1, 3, CompareOptions.IgnoreCase, 1, 0 };
@@ -163,16 +162,16 @@ namespace System.Globalization.Tests
             string source1 = "Is AE or ae the same as \u00C6 or \u00E6?"; // 3 failures here
             yield return new object[] { s_invariantCompare, source1, "AE", 8, 18, CompareOptions.None, useNls ? 24 : -1, useNls ? 1 : 0};
             yield return new object[] { s_invariantCompare, source1, "ae", 8, 18, CompareOptions.None, 9 , 2};
-            yield return new object[] { s_invariantCompare, source1, "AE", 8, 18, CompareOptions.IgnoreCase, 9, 2 };
-            yield return new object[] { s_invariantCompare, source1, "ae", 8, 18, CompareOptions.IgnoreCase, 9, 2 };
             yield return new object[] { s_invariantCompare, source1, "\u00C6", 8, 18, CompareOptions.None, 24, 1 };
-            yield return new object[] { s_invariantCompare, source1, "\u00C6", 8, 18, CompareOptions.Ordinal, 24, 1 };
-            yield return new object[] { s_invariantCompare, source1, "\u00C6", 8, 18, CompareOptions.IgnoreCase, useNls ? 9 : 24, useNls ? 2 : 1 };
-            yield return new object[] { s_invariantCompare, source1, "\u00E6", 8, 18, CompareOptions.IgnoreCase, useNls ? 9 : 24, useNls ? 2 : 1 };
             yield return new object[] { s_invariantCompare, source1, "\u00E6", 8, 18, CompareOptions.None, useNls ? 9 : -1, useNls ? 2 : 0};
             yield return new object[] { s_invariantCompare, source1, "AE", 8, 18, CompareOptions.Ordinal, -1, 0 };
             yield return new object[] { s_invariantCompare, source1, "ae", 8, 18, CompareOptions.Ordinal, 9, 2 };
+            yield return new object[] { s_invariantCompare, source1, "\u00C6", 8, 18, CompareOptions.Ordinal, 24, 1 };
             yield return new object[] { s_invariantCompare, source1, "\u00E6", 8, 18, CompareOptions.Ordinal, -1, 0 };
+            yield return new object[] { s_invariantCompare, source1, "AE", 8, 18, CompareOptions.IgnoreCase, 9, 2 };
+            yield return new object[] { s_invariantCompare, source1, "ae", 8, 18, CompareOptions.IgnoreCase, 9, 2 };
+            yield return new object[] { s_invariantCompare, source1, "\u00C6", 8, 18, CompareOptions.IgnoreCase, useNls ? 9 : 24, useNls ? 2 : 1 };
+            yield return new object[] { s_invariantCompare, source1, "\u00E6", 8, 18, CompareOptions.IgnoreCase, useNls ? 9 : 24, useNls ? 2 : 1 };
         }
 
         public static IEnumerable<object[]> IndexOf_U_WithDiaeresis_TestData()
@@ -184,7 +183,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, source, "u\u0308", 8, 18, CompareOptions.Ordinal, 9, 2 };            
             yield return new object[] { s_invariantCompare, source, "\u00FC", 8, 18, CompareOptions.Ordinal, -1, 0 };
 
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX) // check for this in C function
+            if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
             {
                 yield return new object[] { s_invariantCompare, source, "\u00DC", 8, 18, CompareOptions.Ordinal, 24, 1 };
                 yield return new object[] { s_invariantCompare, source, "U\u0308", 8, 18, CompareOptions.None, 24, 1 };
@@ -410,7 +409,7 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", 'a', 0, 5, CompareOptions.None));
 
             // StartIndex + count > source.Length
-            // check this for OSX
+            // TODO: check this for OSX
             if (!PlatformDetection.IsHybridGlobalizationOnOSX)
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", "Test", 2, 4));

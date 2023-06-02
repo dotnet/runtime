@@ -277,7 +277,6 @@ There are some behaviour changes. Below are examples of such cases.
 |   `\u304D\u3083` きゃ  |   `\u30AD\u3083` キゃ  |     None     |             1           |    -1   |  hiragana and katakana characters are ordered differently compared to ICU  |
 |   `\u3070\u3073\uFF8C\uFF9E\uFF8D\uFF9E\u307C` ばびﾌﾞﾍﾞぼ  |   `\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E` バビぶベﾎﾞ  |     None     |   1  |  -1  | hiragana and katakana characters are ordered differently compared to ICU   |
 |   `\u3060` だ  |   `\u30C0` ダ  |     None     |   1  |  -1  |   hiragana and katakana characters are ordered differently compared to ICU |
-|   `\u00C0` À  |   `A\u0300` À  |     None     |   1  |  0  |   This is not same character for native api |
 
 - `StringSort` :
 
@@ -292,7 +291,6 @@ There are some behaviour changes. Below are examples of such cases.
 | **character 1** | **character 2** | **CompareOptions** | **hybrid globalization** | **icu** |                       **comments**                      |
 |:---------------:|:---------------:|--------------------|:------------------------:|:-------:|:-------------------------------------------------------:|
 |   `\u3060` だ |   `\u30C0` ダ  |     IgnoreCase     |   1  |  -1  |  hiragana and katakana characters are ordered differently compared to ICU  |
-|   `\u00C0` À |   `a\u0300` à  |     IgnoreCase     |   1  |  0  |  This is related to above mentioned case under `CompareOptions.None` i.e. `\u00C0` À !=  À `A\u0300`   |
 
 - `IgnoreNonSpace`:
 
@@ -307,3 +305,40 @@ There are some behaviour changes. Below are examples of such cases.
 `IgnoreSymbols`,
 
 `IgnoreKanaType`,
+
+**String starts with / ends with**
+
+Affected public APIs:
+- CompareInfo.IsPrefix
+- CompareInfo.IsSuffix
+- String.StartsWith
+- String.EndsWith
+
+Mapped to Apple Native API `compare:options:range:locale:`(https://developer.apple.com/documentation/foundation/nsstring/1414561-compare?language=objc)
+
+- `IgnoreSymbols`
+
+All `CompareOptions` combinations that include `IgnoreSymbols` throw `PlatformNotSupportedException`.
+
+**String indexing**
+
+Affected public APIs:
+- CompareInfo.IndexOf
+- CompareInfo.LastIndexOf
+- String.IndexOf
+- String.LastIndexOf
+
+Mapped to Apple Native API `rangeOfString:options:range:locale:`(https://developer.apple.com/documentation/foundation/nsstring/1417348-rangeofstring?language=objc)
+
+- `IgnoreSymbols`
+
+All `CompareOptions` combinations that include `IgnoreSymbols` throw `PlatformNotSupportedException`.
+
+**SortKey**
+
+Affected public APIs:
+- CompareInfo.GetSortKey
+- CompareInfo.GetSortKeyLength
+- CompareInfo.GetHashCode
+
+Apple Native API does not have an equivalent, so they throw `PlatformNotSupportedException`.

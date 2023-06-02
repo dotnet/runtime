@@ -45,8 +45,8 @@ static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(
 Function:
 CompareString
 */
-int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName, int32_t lNameLength, const uint16_t* lpStr1, int32_t cwStr1Length, 
-                                                const uint16_t* lpStr2, int32_t cwStr2Length, int32_t comparisonOptions)
+int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName, int32_t lNameLength, const uint16_t* lpSource, int32_t cwSourceLength, 
+                                                const uint16_t* lpTarget, int32_t cwTargetLength, int32_t comparisonOptions)
 {    
     NSLocale *currentLocale;
     if(localeName == NULL || lNameLength == 0)
@@ -59,35 +59,30 @@ int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName, int3
         currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
     }
 
-    NSString *firstString = [NSString stringWithCharacters: lpStr1 length: cwStr1Length];
-    NSString *firstCompat = firstString.precomposedStringWithCanonicalMapping;
-    NSString *secondString = [NSString stringWithCharacters: lpStr2 length: cwStr2Length];
-    NSString *secondCompat = secondString.precomposedStringWithCanonicalMapping;
-    NSRange stringCompRange = NSMakeRange(0, firstCompat.length);
+    NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
+    NSString *sourceStrComposed = sourceString.precomposedStringWithCanonicalMapping;
+    NSString *targetString = [NSString stringWithCharacters: lpTarget length: cwTargetLength];
+    NSString *targetStrComposed = targetString.precomposedStringWithCanonicalMapping;
+
+    NSRange comparisonRange = NSMakeRange(0, sourceStrComposed.length);
     NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
     
     // in case mapping is not found
     if (options == 0)
         return -2;
 
-    return [firstCompat compare:secondCompat
-                        options:options
-                        range:stringCompRange
-                        locale:currentLocale];
+    return [sourceStrComposed compare:targetStrComposed
+                              options:options
+                              range:comparisonRange
+                              locale:currentLocale];
 }
 
 /*
 Function:
 IndexOf
 */
-Range GlobalizationNative_IndexOfNative(const uint16_t* localeName,
-                                        int32_t lNameLength,
-                                        const uint16_t* lpTarget,
-                                        int32_t cwTargetLength,
-                                        const uint16_t* lpSource,
-                                        int32_t cwSourceLength,
-                                        int32_t comparisonOptions,
-                                        int32_t fromBeginning)
+Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNameLength, const uint16_t* lpTarget, int32_t cwTargetLength,
+                                        const uint16_t* lpSource, int32_t cwSourceLength, int32_t comparisonOptions, int32_t fromBeginning)
 {
     assert(cwTargetLength >= 0);
     Range result = {-2, 0};
@@ -107,6 +102,7 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName,
     NSString *searchStrComposed = searchString.precomposedStringWithCanonicalMapping;
     NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
     NSString *sourceStrComposed = sourceString.precomposedStringWithCanonicalMapping;
+
     // Weightless characters
     int32_t isEmptyString = [searchStrComposed compare:@""];
     if (isEmptyString == 0)
@@ -120,6 +116,7 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName,
     // in case mapping is not found
     if (options == 0)
         return result;
+    // last index
     if (!fromBeginning)
         options |= NSBackwardsSearch;
     
@@ -131,7 +128,7 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName,
     if (nsRange.location != NSNotFound)
     {   
         result.location = nsRange.location;
-        result.length = nsRange.length; //searchString.length > nsRange.length ? searchString.length : nsRange.length;
+        result.length = nsRange.length;
     }
     else
     {
@@ -144,13 +141,8 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName,
 /*
  Return value is a "Win32 BOOL" (1 = true, 0 = false)
  */
-int32_t GlobalizationNative_StartsWithNative(const uint16_t* localeName,
-                                            int32_t lNameLength,
-                                            const uint16_t* prefix,
-                                            int32_t prefixLength,
-                                            const uint16_t* source,
-                                            int32_t sourceLength,
-                                            int32_t comparisonOptions)
+int32_t GlobalizationNative_StartsWithNative(const uint16_t* localeName, int32_t lNameLength, const uint16_t* lpPrefix, int32_t cwPrefixLength, 
+                                             const uint16_t* lpSource, int32_t cwSourceLength, int32_t comparisonOptions)
                         
 {
     NSLocale *currentLocale;
@@ -164,9 +156,9 @@ int32_t GlobalizationNative_StartsWithNative(const uint16_t* localeName,
         currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
     }
 
-    NSString *prefixString = [NSString stringWithCharacters: prefix length: prefixLength];
+    NSString *prefixString = [NSString stringWithCharacters: lpPrefix length: cwPrefixLength];
     NSString *prefixStrComposed = prefixString.precomposedStringWithCanonicalMapping;
-    NSString *sourceString = [NSString stringWithCharacters: source length: sourceLength];
+    NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
     NSString *sourceStrComposed = sourceString.precomposedStringWithCanonicalMapping;
 
     NSRange sourceRange = NSMakeRange(0, prefixStrComposed.length > sourceStrComposed.length ? sourceStrComposed.length : prefixStrComposed.length);
@@ -186,13 +178,8 @@ int32_t GlobalizationNative_StartsWithNative(const uint16_t* localeName,
 /*
  Return value is a "Win32 BOOL" (1 = true, 0 = false)
  */
-int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName,
-                                            int32_t lNameLength,
-                                            const uint16_t* suffix,
-                                            int32_t suffixLength,
-                                            const uint16_t* source,
-                                            int32_t sourceLength,
-                                            int32_t comparisonOptions)
+int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t lNameLength, const uint16_t* lpSuffix, int32_t cwSuffixLength,
+                                           const uint16_t* lpSource, int32_t cwSourceLength, int32_t comparisonOptions)
                         
 {
     NSLocale *currentLocale;
@@ -206,10 +193,11 @@ int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName,
         currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
     }
 
-    NSString *suffixString = [NSString stringWithCharacters: suffix length: suffixLength];
+    NSString *suffixString = [NSString stringWithCharacters: lpSuffix length: cwSuffixLength];
     NSString *suffixStrComposed = suffixString.precomposedStringWithCanonicalMapping;
-    NSString *sourceString = [NSString stringWithCharacters: source length: sourceLength];
+    NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
     NSString *sourceStrComposed = sourceString.precomposedStringWithCanonicalMapping;
+
     int32_t startIndex = suffixStrComposed.length > sourceStrComposed.length ? 0 : sourceStrComposed.length - suffixStrComposed.length;
     NSRange sourceRange = NSMakeRange(startIndex, sourceStrComposed.length - startIndex);
     NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
