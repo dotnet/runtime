@@ -1134,6 +1134,27 @@ mono_jiterp_trace_transfer (
 #define JITERP_MEMBER_CLASS_ELEMENT_CLASS 17
 #define JITERP_MEMBER_BOXED_VALUE_DATA 18
 
+// Keep in sync with class-private-definition.h
+typedef struct {
+	/* element class for arrays and enum basetype for enums */
+	MonoClass *element_class;
+	/* used for subtype checks */
+	MonoClass *cast_class;
+
+	/* for fast subtype checks */
+	MonoClass **supertypes;
+	guint16     idepth;
+
+	/* array dimension */
+	guint8     rank;
+
+	/* One of the values from MonoTypeKind */
+	guint8     class_kind;
+
+	int        instance_size; /* object instance size */
+	/* the rest is omitted */
+} MonoClassHeader;
+
 // we use these helpers at JIT time to figure out where to do memory loads and stores
 EMSCRIPTEN_KEEPALIVE size_t
 mono_jiterp_get_member_offset (int member) {
@@ -1171,9 +1192,9 @@ mono_jiterp_get_member_offset (int member) {
 		case JITERP_MEMBER_VTABLE_KLASS:
 			return offsetof (MonoVTable, klass);
 		case JITERP_MEMBER_CLASS_RANK:
-			return offsetof (MonoClass, rank);
+			return offsetof (MonoClassHeader, rank);
 		case JITERP_MEMBER_CLASS_ELEMENT_CLASS:
-			return offsetof (MonoClass, element_class);
+			return offsetof (MonoClassHeader, element_class);
 		// see mono_object_get_data
 		case JITERP_MEMBER_BOXED_VALUE_DATA:
 			return MONO_ABI_SIZEOF (MonoObject);
