@@ -37,7 +37,7 @@ public class test86865
         if (pid == null)
             return 3;
 
-        var fi = pid.GetField("0B77DC554B4A81403D62BE25FB5404020AD451151D4203D544BF60E3FEDBD8AE4", BindingFlags.Static | BindingFlags.NonPublic);
+        var fi = pid.GetField("0B77DC554B4A81403D62BE25FB5404020AD451151D4203D544BF60E3FEDBD8AE", BindingFlags.Static | BindingFlags.NonPublic);
         if (fi == null)
         {
             Console.WriteLine("Could not find the expected array data in <PrivateImplementationDetails>. The available static non-public fields are:");
