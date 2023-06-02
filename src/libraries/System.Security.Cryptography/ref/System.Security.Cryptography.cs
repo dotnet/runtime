@@ -2475,8 +2475,12 @@ namespace System.Security.Cryptography
         public byte[] GetHashAndReset(int outputLength) { throw null; }
         public void GetHashAndReset(System.Span<byte> destination) { }
         public static byte[] HashData(byte[] source, int outputLength) { throw null; }
+        public static byte[] HashData(System.IO.Stream source, int outputLength) { throw null; }
+        public static void HashData(System.IO.Stream source, System.Span<byte> destination) { }
         public static byte[] HashData(System.ReadOnlySpan<byte> source, int outputLength) { throw null; }
         public static void HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.IO.Stream source, int outputLength, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask HashDataAsync(System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public partial class SignatureDescription
     {
