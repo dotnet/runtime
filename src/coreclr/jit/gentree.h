@@ -554,6 +554,7 @@ enum GenTreeFlags : unsigned int
     GTF_MDARRLEN_NONFAULTING    = 0x20000000, // GT_MDARR_LENGTH -- An MD array length operation that cannot fault. Same as GT_IND_NONFAULTING.
 
     GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
+
 };
 
 inline constexpr GenTreeFlags operator ~(GenTreeFlags a)
@@ -6242,6 +6243,8 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsMemoryStore(GenTree** pAddr = nullptr) const;
     bool OperIsMemoryLoadOrStore() const;
     bool OperIsMemoryStoreOrBarrier() const;
+    bool OperIsEmbBroadcastCompatible() const;
+    bool OperIsBroadcastScalar() const;
 
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;
