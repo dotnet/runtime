@@ -550,8 +550,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS,
     CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
     CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
-    GetNonGCMaxThreadStaticBlocksAddr,
-    GetGCMaxThreadStaticBlocksAddr,
 
     /* Debugger */
 
@@ -1732,7 +1730,6 @@ struct CORINFO_THREAD_STATIC_BLOCKS_INFO
 {
 #ifdef _MSC_VER
     CORINFO_CONST_LOOKUP tlsIndex;
-
     uint32_t offsetOfThreadLocalStoragePointer;
     uint32_t offsetOfMaxThreadStaticBlocks;
     uint32_t offsetOfThreadStaticBlocks;

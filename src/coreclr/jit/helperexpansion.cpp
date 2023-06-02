@@ -542,16 +542,9 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 #endif
 
     JITDUMP("offsetOfGCDataPointer= %u\n", threadStaticBlocksInfo.offsetOfGCDataPointer);
-    // assert(false);
 
-    // assert(threadStaticBlocksInfo.tlsIndex.accessType == IAT_VALUE);
-    // if (TargetOS::IsWindows)  {
     assert((eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
            (eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED));
-    // } else {
-    //     assert((eeGetHelperNum(call->gtCallMethHnd) == GetGCMaxThreadStaticBlocksAddr) ||
-    //         (eeGetHelperNum(call->gtCallMethHnd) == GetNonGCMaxThreadStaticBlocksAddr));
-    // }
 
     call->ClearExpTLSFieldAccess();
     assert(call->gtArgs.CountArgs() == 1);
@@ -638,7 +631,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     tlsValue                    = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
     GenTreeCall* tlsRefCall = tlsValue->AsCall();
 
-
+    // This is a syscall indirect call which takes an argument.
+    // Populate and set the ABI apporpriately.
     GenTree* tlsArg = gtNewIconNode(threadStaticBlocksInfo.descrAddrOfMaxThreadStaticBlock, TYP_I_IMPL);
     tlsRefCall->gtArgs.InsertAfterThisOrFirst(this, NewCallArg::Primitive(tlsArg));
 
@@ -655,7 +649,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     unsigned tlsLclNum         = lvaGrabTemp(true DEBUGARG("TLS access"));
     lvaTable[tlsLclNum].lvType = TYP_I_IMPL;
 
-    //TODO: GC vs. Non-GC handling
     GenTree* tlsValueDef    = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
     GenTree* maxThreadStaticBlocksRef = gtNewLclVarNode(tlsLclNum);
     GenTree* maxThreadStaticBlocksValue =

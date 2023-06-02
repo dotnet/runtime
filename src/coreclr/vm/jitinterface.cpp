@@ -87,8 +87,6 @@ __thread uint32_t t_GCThreadStaticBlocksSize;
 extern "C" void* __tls_get_addr(void* ti);
 #endif
 
-// EXTERN_C UINT_PTR STDCALL GetNonGCMaxThreadStaticBlocksAddr();
-
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
 //
 
@@ -1497,11 +1495,6 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
     FieldDesc * pField = (FieldDesc*)pResolvedToken->hField;
     MethodTable * pFieldMT = pField->GetApproxEnclosingMethodTable();
 
-
-// #ifndef _MSC_VER
-//     printf("addr: %lu\n", GetNonGCMaxThreadStaticBlocksAddr());
-// #endif
-
     // Helper to use if the field access requires it
     CORINFO_FIELD_ACCESSOR fieldAccessor = (CORINFO_FIELD_ACCESSOR)-1;
     DWORD fieldFlags = 0;
@@ -1814,6 +1807,16 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isG
 }
 
 #ifndef _MSC_VER
+
+void* getThreadStaticDescriptor(uint8_t* p)
+{
+    _ASSERTE_MSG((p[0] == 0x66 && p[1] == 0x48 && p[2] == 0x8d && p[3] == 0x3d),
+        "Unexpected instruction - this can happen when this is not compiled in .so (e.g. for single file)");
+
+    p += 4;
+    return *(uint32_t*)p + (p + 4);
+}
+
 void* getNonGCMaxThreadStaticDescriptor()
 {
     uint8_t* p;
@@ -1826,14 +1829,7 @@ void* getNonGCMaxThreadStaticDescriptor()
             "callq __tls_get_addr\n"
             : "=b"(p));
 
-    if (p[0] != 0x66 || p[1] != 0x48 || p[2] != 0x8d || p[3] != 0x3d)
-    {
-        printf("Unexpected instruction - this can happen when this is not compiled in .so (e.g. for single file)\n");
-        exit(1);
-    }
-    p += 4;
-
-    return *(uint32_t*)p + (p + 4);
+    return getThreadStaticDescriptor(p);
 }
 
 void* getNonGCThreadStaticBlockDescriptor()
@@ -1848,14 +1844,7 @@ void* getNonGCThreadStaticBlockDescriptor()
             "callq __tls_get_addr\n"
             : "=b"(p));
 
-    if (p[0] != 0x66 || p[1] != 0x48 || p[2] != 0x8d || p[3] != 0x3d)
-    {
-        printf("Unexpected instruction - this can happen when this is not compiled in .so (e.g. for single file)\n");
-        exit(1);
-    }
-    p += 4;
-
-    return *(uint32_t*)p + (p + 4);
+    return getThreadStaticDescriptor(p);
 }
 
 void* getGCMaxThreadStaticDescriptor()
@@ -1870,14 +1859,7 @@ void* getGCMaxThreadStaticDescriptor()
             "callq __tls_get_addr\n"
             : "=b"(p));
 
-    if (p[0] != 0x66 || p[1] != 0x48 || p[2] != 0x8d || p[3] != 0x3d)
-    {
-        printf("Unexpected instruction - this can happen when this is not compiled in .so (e.g. for single file)\n");
-        exit(1);
-    }
-    p += 4;
-
-    return *(uint32_t*)p + (p + 4);
+    return getThreadStaticDescriptor(p);
 }
 
 void* getGCThreadStaticBlockDescriptor()
@@ -1892,14 +1874,7 @@ void* getGCThreadStaticBlockDescriptor()
             "callq __tls_get_addr\n"
             : "=b"(p));
 
-    if (p[0] != 0x66 || p[1] != 0x48 || p[2] != 0x8d || p[3] != 0x3d)
-    {
-        printf("Unexpected instruction - this can happen when this is not compiled in .so (e.g. for single file)\n");
-        exit(1);
-    }
-    p += 4;
-
-    return *(uint32_t*)p + (p + 4);
+    return getThreadStaticDescriptor(p);
 }
 #endif
 
@@ -1941,23 +1916,8 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
         pInfo->descrAddrOfMaxThreadStaticBlock = (size_t)getNonGCMaxThreadStaticDescriptor();
         pInfo->descrAddrOfThreadStaticBlocks = (size_t)getNonGCThreadStaticBlockDescriptor();
     }
-
-    printf("t_NonGCMaxThreadStaticBlocks: %p\n", getNonGCMaxThreadStaticDescriptor());
-    printf("t_NonGCThreadStaticBlocks: %p\n", getNonGCThreadStaticBlockDescriptor());
-    printf("t_GCMaxThreadStaticBlocks: %p\n", getGCMaxThreadStaticDescriptor());
-    printf("t_GCThreadStaticBlocks: %p\n", getGCThreadStaticBlockDescriptor());
-
-    printf("&t_NonGCMaxThreadStaticBlocks = %p\n", &t_NonGCMaxThreadStaticBlocks);
-    printf("&t_NonGCThreadStaticBlocks = %p\n", &t_NonGCThreadStaticBlocks);
-    printf("&t_GCMaxThreadStaticBlocks = %p\n", &t_GCMaxThreadStaticBlocks);
-    printf("&t_GCThreadStaticBlocks = %p\n", &t_GCThreadStaticBlocks);
-
-    printf("sizeof(t_NonGCMaxThreadStaticBlocks): %lu\n", sizeof(t_NonGCMaxThreadStaticBlocks));
-    printf("sizeof(t_GCMaxThreadStaticBlocks): %lu\n", sizeof(t_GCMaxThreadStaticBlocks));
-    printf("sizeof(t_NonGCThreadStaticBlocks): %lu\n", sizeof(t_NonGCThreadStaticBlocks));
-    printf("sizeof(t_GCThreadStaticBlocks): %lu\n", sizeof(t_GCThreadStaticBlocks));
-
 #endif
+
     pInfo->offsetOfGCDataPointer = static_cast<uint32_t>(PtrArray::GetDataOffset());
     
     JIT_TO_EE_TRANSITION_LEAF();

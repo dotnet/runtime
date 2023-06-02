@@ -160,18 +160,6 @@ NESTED_ENTRY ProfileEnterNaked, _TEXT, NoHandler
   ret
 NESTED_END ProfileEnterNaked, _TEXT
 
-// LPVOID __stdcall GetNonGCMaxThreadStaticBlocksAddr(void)//
-LEAF_ENTRY GetNonGCMaxThreadStaticBlocksAddr, _TEXT
-        INLINE_GET_TLS_VAR t_NonGCMaxThreadStaticBlocks
-        ret
-LEAF_END GetNonGCMaxThreadStaticBlocksAddr, _TEXT
-
-// LPVOID __stdcall GetGCMaxThreadStaticBlocksAddr(void)//
-LEAF_ENTRY GetGCMaxThreadStaticBlocksAddr, _TEXT
-        INLINE_GET_TLS_VAR t_GCMaxThreadStaticBlocks
-        ret
-LEAF_END GetGCMaxThreadStaticBlocksAddr, _TEXT
-
 # EXTERN_C void ProfileLeaveNaked(FunctionIDOrClientID functionIDOrClientID, size_t profiledRsp);
 # <NOTE>
 #
