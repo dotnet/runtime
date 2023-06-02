@@ -44,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis
             if (factory.Target.IsWindows)
                 return ObjectNodeSection.FoldableReadOnlyDataSection;
             else
-                return ObjectNodeSection.DataSection;
+                return ObjectNodeSection.FoldableTextSection;
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)

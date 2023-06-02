@@ -70,9 +70,6 @@ namespace ILCompiler.DependencyAnalysis
         private NodeFactory _nodeFactory;
         private readonly bool _isSingleFileCompilation;
 
-        // Unix section containing LSDA data, like EH Info and GC Info
-        public static readonly ObjectNodeSection LsdaSection = new ObjectNodeSection(".dotnet_eh_table", SectionType.ReadOnly);
-
         private UserDefinedTypeDescriptor _userDefinedTypeDescriptor;
 
 #if DEBUG
@@ -610,11 +607,7 @@ namespace ILCompiler.DependencyAnalysis
                 int len = frameInfo.BlobData.Length;
                 byte[] blob = frameInfo.BlobData;
 
-                ObjectNodeSection lsdaSection = LsdaSection;
-                if (ShouldShareSymbol(node))
-                {
-                    lsdaSection = GetSharedSection(lsdaSection, ((ISymbolNode)node).GetMangledName(_nodeFactory.NameMangler));
-                }
+                ObjectNodeSection lsdaSection = GetSharedSection(ObjectNodeSection.TextSection, ((ISymbolNode)node).GetMangledName(_nodeFactory.NameMangler));
                 SwitchSection(_nativeObjectWriter, lsdaSection.Name, GetCustomSectionAttributes(lsdaSection), lsdaSection.ComdatName);
 
                 _sb.Clear().Append("_lsda").Append(i.ToStringInvariant()).Append(_currentNodeZeroTerminatedName);
@@ -900,7 +893,8 @@ namespace ILCompiler.DependencyAnalysis
             ObjectNodeSection section = node.GetSection(_nodeFactory);
             if (section == ObjectNodeSection.FoldableManagedCodeUnixContentSection ||
                 section == ObjectNodeSection.FoldableManagedCodeWindowsContentSection ||
-                section == ObjectNodeSection.FoldableReadOnlyDataSection)
+                section == ObjectNodeSection.FoldableReadOnlyDataSection ||
+                section == ObjectNodeSection.FoldableTextSection)
                 return true;
 
             if (_isSingleFileCompilation)
@@ -959,7 +953,7 @@ namespace ILCompiler.DependencyAnalysis
                     managedCodeSection = ObjectNodeSection.ManagedCodeUnixContentSection;
                     // TODO 2916: managed code section has to be created here, switch is not necessary.
                     objectWriter.SetSection(ObjectNodeSection.ManagedCodeUnixContentSection);
-                    objectWriter.SetSection(LsdaSection);
+                    objectWriter.SetSection(ObjectNodeSection.TextSection);
                 }
                 objectWriter.SetCodeSectionAttribute(managedCodeSection);
 
