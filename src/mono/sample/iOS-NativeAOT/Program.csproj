@@ -12,6 +12,9 @@
     <PublishDir Condition="'$(PublishDir)' == ''">$(OutputPath)/publish</PublishDir>
     <NativeLib>static</NativeLib>
     <CustomNativeMain>true</CustomNativeMain>
+    <!-- Escape NativeAOT bundling targets -->
+    <NativeCompilationDuringPublish>false</NativeCompilationDuringPublish>
+    <IlcCompileDependsOn>Compile;ComputeIlcCompileInputs;SetupOSSpecificProps;PrepareForILLink</IlcCompileDependsOn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PublishAotUsingRuntimePack)' == 'true'">
@@ -29,11 +32,6 @@
   <Import Condition="'$(PublishAotUsingRuntimePack)' != 'true'" Project="$(CoreClrProjectRoot)nativeaot\BuildIntegration\Microsoft.DotNet.ILCompiler.SingleEntry.targets" />
   <UsingTask TaskName="AppleAppBuilderTask"
              AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
-
-  <!-- Escape publish-related targets from NativeAOT -->
-  <Target Name="_ComputeAssembliesToCompileToNative" />
-  <Target Name="ComputeLinkedFilesToPublish" />
-  <Target Name="CopyNativeBinary" />
 
   <!-- Use locally built runtime and ilcompiler packages -->
   <Target Name="UpdateRuntimePackVersion" Condition="'$(PublishAotUsingRuntimePack)' == 'true'" BeforeTargets="ProcessFrameworkReferences">
