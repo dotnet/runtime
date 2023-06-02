@@ -5988,6 +5988,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 
                 if (!info.compCompHnd->resolveVirtualMethod(&dvInfo))
                 {
+                    skipped++;
                     JITDUMP("Can't figure out which method would be invoked, sorry\n");
                     // Maybe other candidates will be resolved.
                     // Although, we no longer can remove the fallback (we never do it currently anyway)
@@ -6012,6 +6013,14 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactMethodAttrs, clsAttrs,
                                                     likelyHood);
             }
+
+            if (skipped == 0)
+            {
+                assert((numExactClasses > 0) && (call->GetInlineCandidatesCount() == numExactClasses));
+                call->gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT_EXACT;
+                // NOTE: we have to drop this flag if we change the number of candidates before we expand.
+            }
+
             return;
         }
     }

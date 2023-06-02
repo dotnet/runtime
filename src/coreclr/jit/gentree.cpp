@@ -2212,6 +2212,7 @@ InlineCandidateInfo* GenTreeCall::GetGDVCandidateInfo(uint8_t index)
 //
 void GenTreeCall::AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candidateInfo)
 {
+    assert((gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT) == 0);
     assert(gtInlineInfoCount < MAX_GDV_TYPE_CHECKS);
     assert(candidateInfo != nullptr);
 
@@ -2248,6 +2249,9 @@ void GenTreeCall::AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candi
 //
 void GenTreeCall::RemoveGDVCandidateInfo(Compiler* comp, uint8_t index)
 {
+    // We change the number of candidates so it's no longer "doesn't need a fallback"
+    gtCallMoreFlags &= ~GTF_CALL_M_GUARDED_DEVIRT_EXACT;
+
     assert(index < gtInlineInfoCount);
 
     if (gtInlineInfoCount == 1)
