@@ -234,19 +234,24 @@ jobs:
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld
           cleanUnpackFolder: false
-          artifactFileName: 'iOSSampleApp.zip'
           ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'False'), eq(parameters.iOSStripSymbols, 'False')) }}:
             artifactName: 'iOSSampleAppNoLLVMSymbols'
+            artifactFileName: 'iOSSampleAppNoLLVMSymbols.zip'
           ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'False'), eq(parameters.iOSStripSymbols, 'True')) }}:
             artifactName: 'iOSSampleAppNoLLVMNoSymbols'
+            artifactFileName: 'iOSSampleAppNoLLVMNoSymbols.zip'
           ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'True'), eq(parameters.iOSStripSymbols, 'False')) }}:
             artifactName: 'iOSSampleAppLLVMSymbols'
+            artifactFileName: 'iOSSampleAppLLVMSymbols.zip'
           ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'True'), eq(parameters.iOSStripSymbols, 'True')) }}:
             artifactName: 'iOSSampleAppLLVMNoSymbols'
+            artifactFileName: 'iOSSampleAppLLVMNoSymbols.zip'
           ${{ if and(eq(parameters.runtimeType, 'iOSNativeAOT'), eq(parameters.iOSStripSymbols, 'False')) }}:
             artifactName: 'iOSSampleAppSymbols'
+            artifactFileName: 'iOSSampleAppSymbols.zip'
           ${{ if and(eq(parameters.runtimeType, 'iOSNativeAOT'), eq(parameters.iOSStripSymbols, 'True')) }}:
             artifactName: 'iOSSampleAppNoSymbols'
+            artifactFileName: 'iOSSampleAppNoSymbols.zip'
           displayName: 'iOS Sample App'
       # same artifact as above but don't extract .zip
       - task: DownloadBuildArtifacts@0
