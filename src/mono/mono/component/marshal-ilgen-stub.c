@@ -9,24 +9,26 @@ marshal_ilgen_available (void)
 	return false;
 }
 
-static int
-stub_emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-		MonoMarshalSpec *spec, int conv_arg,	
-		MonoType **conv_arg_type, MarshalAction action, MonoMarshalLightweightCallbacks* lightweight_cb)
+static void emit_throw_exception (MonoMarshalLightweightCallbacks* lightweight_cb, 
+		MonoMethodBuilder* mb, const char* exc_nspace, const char* exc_name, const char* msg)
 {
-	if (spec && spec->native == MONO_NATIVE_CUSTOM)
-		return conv_arg;
+	lightweight_cb->mb_emit_exception (mb, exc_nspace, exc_name, msg);
+}
 
-	if (spec && spec->native == MONO_NATIVE_ASANY)
-		return conv_arg;
+static int
+stub_emit_marshal_ilgen (EmitMarshalContext* m, int argnum, MonoType* t,
+		MonoMarshalSpec* spec, int conv_arg,	
+		MonoType** conv_arg_type, MarshalAction action, MonoMarshalLightweightCallbacks* lightweight_cb)
+{
+	if (spec) {
+		g_assert (spec->native != MONO_NATIVE_ASANY);
+		g_assert (spec->native != MONO_NATIVE_CUSTOM);
+	}
+	
+	g_assert (!m_type_is_byref(t));
 
 	switch (t->type) {
-	case MONO_TYPE_BOOLEAN:
-		return lightweight_cb->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	case MONO_TYPE_PTR:
-		return lightweight_cb->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-	case MONO_TYPE_CHAR:
-		return lightweight_cb->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_I2:
@@ -42,7 +44,9 @@ stub_emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	case MONO_TYPE_FNPTR:
 		return lightweight_cb->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	default:
-		return conv_arg;
+		emit_throw_exception (lightweight_cb, m->mb, "System", "ApplicationException",
+			g_strdup("Cannot marshal nonblittlable types without marshal-ilgen."));
+		break;
 	}
 
 	return 0;
