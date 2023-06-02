@@ -394,27 +394,27 @@ namespace System.Runtime.Intrinsics.Wasm
 
         // Load
 
-        public static Vector128<sbyte>  LoadVector128(sbyte*  address) { throw new PlatformNotSupportedException(); }
-        public static Vector128<byte>   LoadVector128(byte*   address) { throw new PlatformNotSupportedException(); }
-        public static Vector128<short>  LoadVector128(short*  address) { throw new PlatformNotSupportedException(); }
-        public static Vector128<ushort> LoadVector128(ushort* address) { throw new PlatformNotSupportedException(); }
-        public static Vector128<int>    LoadVector128(int*    address) { throw new PlatformNotSupportedException(); }
-        public static Vector128<uint>   LoadVector128(uint*   address) { throw new PlatformNotSupportedException(); }
-        public static Vector128<long>   LoadVector128(long*   address) { throw new PlatformNotSupportedException(); }
-        public static Vector128<ulong>  LoadVector128(ulong*  address) { throw new PlatformNotSupportedException(); }
-        public static Vector128<float>  LoadVector128(float*  address) { throw new PlatformNotSupportedException(); }
-        public static Vector128<double> LoadVector128(double* address) { throw new PlatformNotSupportedException(); }
-        public static Vector128<nint>   LoadVector128(nint*   address) { throw new PlatformNotSupportedException(); }
-        public static Vector128<nuint>  LoadVector128(nuint*  address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<sbyte>  LoadVector128(sbyte*  address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<byte>   LoadVector128(byte*   address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<short>  LoadVector128(short*  address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ushort> LoadVector128(ushort* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<int>    LoadVector128(int*    address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<uint>   LoadVector128(uint*   address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<long>   LoadVector128(long*   address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ulong>  LoadVector128(ulong*  address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<float>  LoadVector128(float*  address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<double> LoadVector128(double* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<nint>   LoadVector128(nint*   address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<nuint>  LoadVector128(nuint*  address) { throw new PlatformNotSupportedException(); }
 
-        public static Vector128<int>    LoadScalarVector128(int*    address) { throw new PlatformNotSupportedException(); }
-        public static Vector128<uint>   LoadScalarVector128(uint*   address) { throw new PlatformNotSupportedException(); }
-        public static Vector128<long>   LoadScalarVector128(long*   address) { throw new PlatformNotSupportedException(); }
-        public static Vector128<ulong>  LoadScalarVector128(ulong*  address) { throw new PlatformNotSupportedException(); }
-        public static Vector128<float>  LoadScalarVector128(float*  address) { throw new PlatformNotSupportedException(); }
-        public static Vector128<double> LoadScalarVector128(double* address) { throw new PlatformNotSupportedException(); }
-        public static Vector128<nint>   LoadScalarVector128(nint*   address) { throw new PlatformNotSupportedException(); }
-        public static Vector128<nuint>  LoadScalarVector128(nuint*  address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<int>    LoadScalarVector128(int*    address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<uint>   LoadScalarVector128(uint*   address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<long>   LoadScalarVector128(long*   address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ulong>  LoadScalarVector128(ulong*  address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<float>  LoadScalarVector128(float*  address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<double> LoadScalarVector128(double* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<nint>   LoadScalarVector128(nint*   address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<nuint>  LoadScalarVector128(nuint*  address) { throw new PlatformNotSupportedException(); }
 
        // Floating-point sign bit operations
 
