@@ -13,6 +13,9 @@ export interface BootJsonData {
     readonly icuDataMode: ICUDataMode;
     readonly startupMemoryCache: boolean | undefined;
     readonly runtimeOptions: string[] | undefined;
+    readonly environmentVariables?: { [name: string]: string };
+    readonly diagnosticTracing?: { [name: string]: string };
+    readonly pthreadPoolSize: number;
 
     // These properties are tacked on, and not found in the boot.json file
     modifiableAssemblies: string | null;

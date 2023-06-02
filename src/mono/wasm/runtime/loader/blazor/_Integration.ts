@@ -89,7 +89,12 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     const resources = resourceLoader.bootConfig.resources;
 
     const assets: AssetEntry[] = [];
-    const environmentVariables: any = {};
+    const environmentVariables: any = {
+        // From boot config
+        ...(resourceLoader.bootConfig.environmentVariables || {}),
+        // From JavaScript
+        ...(moduleConfig.environmentVariables || {})
+    };
 
     moduleConfig.applicationEnvironment = applicationEnvironment;
 
@@ -97,7 +102,6 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     moduleConfig.assetsHash = resourceLoader.bootConfig.resources.hash;
     moduleConfig.assets = assets;
     moduleConfig.globalizationMode = "icu";
-    moduleConfig.environmentVariables = environmentVariables;
     moduleConfig.debugLevel = hasDebuggingEnabled(resourceLoader.bootConfig) ? 1 : 0;
     moduleConfig.maxParallelDownloads = 1000000; // disable throttling parallel downloads
     moduleConfig.enableDownloadRetry = false; // disable retry downloads
@@ -107,6 +111,8 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     Object.assign(moduleConfig, {
         ...resourceLoader.bootConfig,
     });
+
+    moduleConfig.environmentVariables = environmentVariables;
 
     if (resourceLoader.bootConfig.startupMemoryCache !== undefined) {
         moduleConfig.startupMemoryCache = resourceLoader.bootConfig.startupMemoryCache;
