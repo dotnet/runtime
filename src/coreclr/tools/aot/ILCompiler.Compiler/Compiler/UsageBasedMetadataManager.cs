@@ -11,6 +11,7 @@ using System.Xml.XPath;
 using ILCompiler.Dataflow;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.Logging;
 using ILCompiler.Metadata;
 using ILLink.Shared;
 
@@ -62,6 +63,7 @@ namespace ILCompiler
 
         private readonly HashSet<string> _rootEntireAssembliesModules;
         private readonly HashSet<string> _trimmedAssemblies;
+        private readonly List<string> _satelliteAssemblyFiles;
 
         internal FlowAnnotations FlowAnnotations { get; }
 
@@ -82,7 +84,8 @@ namespace ILCompiler
             IEnumerable<KeyValuePair<string, bool>> featureSwitchValues,
             IEnumerable<string> rootEntireAssembliesModules,
             IEnumerable<string> additionalRootedAssemblies,
-            IEnumerable<string> trimmedAssemblies)
+            IEnumerable<string> trimmedAssemblies,
+            IEnumerable<string> satelliteAssemblyFilePaths)
             : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options)
         {
             _compilationModuleGroup = group;
@@ -97,6 +100,20 @@ namespace ILCompiler
             _rootEntireAssembliesModules = new HashSet<string>(rootEntireAssembliesModules);
             _rootEntireAssembliesModules.UnionWith(additionalRootedAssemblies);
             _trimmedAssemblies = new HashSet<string>(trimmedAssemblies);
+            _satelliteAssemblyFiles = new List<string>(satelliteAssemblyFilePaths);
+        }
+
+        public IEnumerable<EcmaModule> GetSatelliteAssemblies(EcmaAssembly module)
+        {
+            string expectedSimpleName = module.GetName().Name + ".resources";
+            foreach (string filePath in _satelliteAssemblyFiles)
+            {
+                string simpleName = Path.GetFileNameWithoutExtension(filePath);
+                if (simpleName == expectedSimpleName)
+                {
+                    yield return _typeSystemContext.GetMetadataOnlyModuleFromPath(filePath);
+                }
+            }
         }
 
         protected override void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
@@ -137,12 +154,9 @@ namespace ILCompiler
             if (reflectedFieldNode != null)
             {
                 FieldDesc field = reflectedFieldNode.Field;
-                DefType fieldOwningType = field.OwningType;
 
                 // Filter out to those that make sense to have in the mapping tables
-                if (!fieldOwningType.IsGenericDefinition
-                    && !field.IsLiteral
-                    && (!fieldOwningType.IsCanonicalSubtype(CanonicalFormKind.Specific) || !field.IsStatic))
+                if (!field.OwningType.IsGenericDefinition && !field.IsLiteral)
                 {
                     Debug.Assert((GetMetadataCategory(field) & MetadataCategory.RuntimeMapping) != 0);
                     _fieldsWithRuntimeMapping.Add(field);
@@ -496,7 +510,17 @@ namespace ILCompiler
 
         public override void GetDependenciesDueToLdToken(ref DependencyList dependencies, NodeFactory factory, FieldDesc field)
         {
-            if (!IsReflectionBlocked(field))
+            if (!IsReflectionBlocked(field)
+                // Scanning will report many field ldtokens due to InitializeArray/CreateSpan.
+                // We don't consider those reflection because codegen is going to intrinsically
+                // expand them if the pattern match holds. Scanner doesn't replicate the
+                // exact rules that codegen will follow - it will report it all as LDTOKEN
+                // and this can potentially reflection-root things that don't need rooting.
+                // If LDTOKEN with an RVA static field ever becomes an actual user scenario
+                // (outside InitializeArray/CreateSpan) we need to remove this condition, but
+                // we should also replicate the codegen expansion rules in the scanner
+                // so that it doesn't become an unnecessary size regression for the common patterns.
+                && !field.HasRva)
             {
                 dependencies ??= new DependencyList();
                 dependencies.Add(factory.ReflectedField(field), "LDTOKEN field");
@@ -563,6 +587,18 @@ namespace ILCompiler
                 {
                     AddDataflowDependency(ref dependencies, factory, methodIL, "Method has annotated parameters");
                 }
+
+                if (method.IsStaticConstructor)
+                {
+                    if (DiagnosticUtilities.TryGetRequiresAttribute(method, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _))
+                        Logger.LogWarning(new MessageOrigin(method), DiagnosticId.RequiresUnreferencedCodeOnStaticConstructor, method.GetDisplayName());
+
+                    if (DiagnosticUtilities.TryGetRequiresAttribute(method, DiagnosticUtilities.RequiresDynamicCodeAttribute, out _))
+                        Logger.LogWarning(new MessageOrigin(method), DiagnosticId.RequiresDynamicCodeOnStaticConstructor, method.GetDisplayName());
+
+                    if (DiagnosticUtilities.TryGetRequiresAttribute(method, DiagnosticUtilities.RequiresAssemblyFilesAttribute, out _))
+                        Logger.LogWarning(new MessageOrigin(method), DiagnosticId.RequiresAssemblyFilesOnStaticConstructor, method.GetDisplayName());
+                }
             }
 
             if (method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod ecmaMethod)
@@ -574,26 +610,6 @@ namespace ILCompiler
             if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0)
             {
                 GetDependenciesDueToReflectability(ref dependencies, factory, method);
-            }
-        }
-
-        public override void GetConditionalDependenciesDueToMethodGenericDictionary(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc method)
-        {
-            Debug.Assert(!method.IsSharedByGenericInstantiations && method.HasInstantiation && method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method);
-
-            if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) == 0
-                && !IsReflectionBlocked(method))
-            {
-                // Ensure that if SomeMethod<T> is considered reflectable, SomeMethod<ConcreteType> is also reflectable.
-                // We only need this because there's a file format limitation in the reflection mapping tables that
-                // requires generic methods to be concrete (i.e. SomeMethod<__Canon> can never be in the mapping table).
-                // If we ever lift this limitation, this code can be deleted: the reflectability is going to be covered
-                // by GetConditionalDependenciesDueToMethodCodePresence below (we get that callback for SomeMethod<__Canon>).
-                MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
-
-                dependencies ??= new CombinedDependencyList();
-                dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                    factory.ReflectedMethod(method), factory.ReflectedMethod(typicalMethod), "Reflectability of methods is same across genericness"));
             }
         }
 
@@ -639,19 +655,10 @@ namespace ILCompiler
         private IEnumerable<TypeDesc> GetTypesWithRuntimeMapping()
         {
             // All constructed types that are not blocked get runtime mapping
-            foreach (var constructedType in GetTypesWithConstructedEETypes())
+            foreach (var constructedType in GetTypesWithEETypes())
             {
                 if (!IsReflectionBlocked(constructedType))
                     yield return constructedType;
-            }
-
-            // All necessary types for which this is the highest load level that are not blocked
-            // get runtime mapping.
-            foreach (var necessaryType in GetTypesWithEETypes())
-            {
-                if (!ConstructedEETypeNode.CreationAllowed(necessaryType) &&
-                    !IsReflectionBlocked(necessaryType))
-                    yield return necessaryType;
             }
         }
 
@@ -709,15 +716,6 @@ namespace ILCompiler
             }
 
             return null;
-        }
-
-        public override void GetDependenciesForGenericDictionary(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
-        {
-            // Presence of code might trigger the reflectability dependencies.
-            if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0)
-            {
-                GetDependenciesDueToReflectability(ref dependencies, factory, method);
-            }
         }
 
         public bool GeneratesAttributeMetadata(TypeDesc attributeType)

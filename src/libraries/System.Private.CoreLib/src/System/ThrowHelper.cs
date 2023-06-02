@@ -40,6 +40,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Numerics;
+using System.Reflection;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -207,6 +209,12 @@ namespace System
         internal static void ThrowArgumentOutOfRange_TimeSpanTooLong()
         {
             throw new ArgumentOutOfRangeException(null, SR.Overflow_TimeSpanTooLong);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_Range<T>(string parameterName, T value, T minInclusive, T maxInclusive)
+        {
+            throw new ArgumentOutOfRangeException(parameterName, value, SR.Format(SR.ArgumentOutOfRange_Range, minInclusive, maxInclusive));
         }
 
         [DoesNotReturn]
@@ -438,6 +446,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowOutOfMemoryException_StringTooLong()
+        {
+            throw new OutOfMemoryException(SR.OutOfMemory_StringTooLong);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentException_Argument_IncompatibleArrayType()
         {
             throw new ArgumentException(SR.Argument_IncompatibleArrayType);
@@ -522,6 +536,18 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowFormatException_NeedSingleChar()
+        {
+            throw new FormatException(SR.Format_NeedSingleChar);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowFormatException_BadBoolean(ReadOnlySpan<char> value)
+        {
+            throw new FormatException(SR.Format(SR.Format_BadBoolean, new string(value)));
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRangeException_PrecisionTooLarge()
         {
             throw new ArgumentOutOfRangeException("precision", SR.Format(SR.Argument_PrecisionTooLarge, StandardFormat.MaxPrecision));
@@ -570,9 +596,31 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowFormatInvalidString(int offset, ExceptionResource resource)
+        {
+            throw new FormatException(SR.Format(SR.Format_InvalidStringWithOffsetAndReason, offset, GetResourceString(resource)));
+        }
+
+        [DoesNotReturn]
         internal static void ThrowFormatIndexOutOfRange()
         {
             throw new FormatException(SR.Format_IndexOutOfRange);
+        }
+
+        internal static AmbiguousMatchException GetAmbiguousMatchException(MemberInfo memberInfo)
+        {
+            Type? declaringType = memberInfo.DeclaringType;
+            return new AmbiguousMatchException(SR.Format(SR.Arg_AmbiguousMatchException_MemberInfo, declaringType, memberInfo));
+        }
+
+        internal static AmbiguousMatchException GetAmbiguousMatchException(Attribute attribute)
+        {
+            return new AmbiguousMatchException(SR.Format(SR.Arg_AmbiguousMatchException_Attribute, attribute));
+        }
+
+        internal static AmbiguousMatchException GetAmbiguousMatchException(CustomAttributeData customAttributeData)
+        {
+            return new AmbiguousMatchException(SR.Format(SR.Arg_AmbiguousMatchException_CustomAttributeData, customAttributeData));
         }
 
         private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)
@@ -1094,6 +1142,16 @@ namespace System
                     return SR.ArgumentOutOfRange_NotGreaterThanBufferLength;
                 case ExceptionResource.InvalidOperation_SpanOverlappedOperation:
                     return SR.InvalidOperation_SpanOverlappedOperation;
+                case ExceptionResource.InvalidOperation_TimeProviderNullLocalTimeZone:
+                    return SR.InvalidOperation_TimeProviderNullLocalTimeZone;
+                case ExceptionResource.InvalidOperation_TimeProviderInvalidTimestampFrequency:
+                    return SR.InvalidOperation_TimeProviderInvalidTimestampFrequency;
+                case ExceptionResource.Format_UnexpectedClosingBrace:
+                    return SR.Format_UnexpectedClosingBrace;
+                case ExceptionResource.Format_UnclosedFormatItem:
+                    return SR.Format_UnclosedFormatItem;
+                case ExceptionResource.Format_ExpectedAsciiDigit:
+                    return SR.Format_ExpectedAsciiDigit;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1285,5 +1343,10 @@ namespace System
         CancellationTokenSource_Disposed,
         Argument_AlignmentMustBePow2,
         InvalidOperation_SpanOverlappedOperation,
+        InvalidOperation_TimeProviderNullLocalTimeZone,
+        InvalidOperation_TimeProviderInvalidTimestampFrequency,
+        Format_UnexpectedClosingBrace,
+        Format_UnclosedFormatItem,
+        Format_ExpectedAsciiDigit,
     }
 }

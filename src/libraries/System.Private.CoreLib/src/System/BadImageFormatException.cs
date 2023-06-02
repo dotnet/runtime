@@ -10,6 +10,7 @@
 **
 ===========================================================*/
 
+using System.ComponentModel;
 using System.IO;
 using System.Runtime.Serialization;
 
@@ -53,6 +54,8 @@ namespace System
             _fileName = fileName;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected BadImageFormatException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
@@ -60,6 +63,8 @@ namespace System
             _fusionLog = info.GetString("BadImageFormat_FusionLog");
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);

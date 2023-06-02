@@ -121,12 +121,8 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #endif
 
 #ifdef UNICODE
-#define _tcslen wcslen
-#define _tcscpy wcscpy
 #define _tfopen _wfopen
 #else
-#define _tcslen strlen
-#define _tcscpy strcpy
 #define _tfopen fopen
 #endif
 
@@ -225,6 +221,11 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
  #define YieldProcessor() __asm__ volatile( "dbar 0; \n")
  #define MemoryBarrier __sync_synchronize
 #endif // __loongarch64
+
+#ifdef __riscv
+ #define YieldProcessor() asm volatile( ".word 0x0100000f");
+ #define MemoryBarrier __sync_synchronize
+#endif // __riscv
 
 #endif // _MSC_VER
 

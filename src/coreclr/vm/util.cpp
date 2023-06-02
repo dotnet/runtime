@@ -1940,13 +1940,13 @@ HRESULT GetFileVersion(                     // S_OK or error
 
 Volatile<double> NormalizedTimer::s_frequency = -1.0;
 
-void FillStubCodePage(BYTE* pageBase, const void* code, int codeSize, int pageSize)
+void FillStubCodePage(BYTE* pageBase, const void* code, SIZE_T codeSize, SIZE_T pageSize)
 {
-    int totalCodeSize = (pageSize / codeSize) * codeSize;
+    SIZE_T totalCodeSize = (pageSize / codeSize) * codeSize;
 
     memcpy(pageBase, code, codeSize);
 
-    int i;
+    SIZE_T i;
     for (i = codeSize; i < pageSize / 2; i *= 2)
     {
         memcpy(pageBase + i, pageBase, i);

@@ -390,7 +390,7 @@ namespace System.Net.Http
                     _writeBuffer.EnsureAvailableSpace(6);
                     Span<byte> buffer = _writeBuffer.AvailableSpan;
                     buffer[0] = (byte)':';
-                    bool success = Utf8Formatter.TryFormat(requestUri.Port, buffer.Slice(1), out int bytesWritten);
+                    bool success = ((uint)requestUri.Port).TryFormat(buffer.Slice(1), out int bytesWritten);
                     Debug.Assert(success);
                     _writeBuffer.Commit(bytesWritten + 1);
                 }
@@ -696,7 +696,7 @@ namespace System.Net.Http
                     await FillForHeadersAsync(async).ConfigureAwait(false);
                 }
 
-                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop((int)response.StatusCode);
 
                 if (allowExpect100ToContinue != null)
                 {
@@ -1079,7 +1079,7 @@ namespace System.Net.Http
             {
                 ReadOnlySpan<byte> reasonBytes = line.Slice(MinStatusLineLength + 1);
                 string? knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
-                if (knownReasonPhrase != null && ByteArrayHelpers.EqualsOrdinalAscii(knownReasonPhrase, reasonBytes))
+                if (knownReasonPhrase != null && Ascii.Equals(reasonBytes, knownReasonPhrase))
                 {
                     response.SetReasonPhraseWithoutValidation(knownReasonPhrase);
                 }
@@ -1493,7 +1493,7 @@ namespace System.Net.Http
         private ValueTask WriteHexInt32Async(int value, bool async)
         {
             // Try to format into our output buffer directly.
-            if (Utf8Formatter.TryFormat(value, _writeBuffer.AvailableSpan, out int bytesWritten, 'X'))
+            if (value.TryFormat(_writeBuffer.AvailableSpan, out int bytesWritten, "X"))
             {
                 _writeBuffer.Commit(bytesWritten);
                 return default;
@@ -1502,7 +1502,10 @@ namespace System.Net.Http
             // If we don't have enough room, do it the slow way.
             if (async)
             {
-                return WriteAsync(Encoding.ASCII.GetBytes(value.ToString("X", CultureInfo.InvariantCulture)));
+                Span<byte> temp = stackalloc byte[8]; // max length of Int32 as hex
+                bool formatted = value.TryFormat(temp, out bytesWritten, "X");
+                Debug.Assert(formatted);
+                return WriteAsync(temp.Slice(0, bytesWritten).ToArray());
             }
             else
             {
@@ -1797,6 +1800,7 @@ namespace System.Net.Http
                 ReadBufferedAsyncCore(destination);
         }
 
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
         private async ValueTask<int> ReadBufferedAsyncCore(Memory<byte> destination)
         {
             // This is called when reading the response body.

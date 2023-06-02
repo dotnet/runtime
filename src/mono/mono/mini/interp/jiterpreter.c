@@ -164,29 +164,6 @@ mono_jiterp_object_unbox (MonoObject *obj) {
 }
 
 EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_try_unbox_ref (
-	MonoClass *klass, void **dest, MonoObject **src
-) {
-	if (!klass)
-		return 0;
-
-	MonoObject *o = *src;
-	if (!o)
-		return 0;
-
-	if (
-		!(
-			(m_class_get_rank (o->vtable->klass) == 0) &&
-			(m_class_get_element_class (o->vtable->klass) == m_class_get_element_class (klass))
-		)
-	)
-		return 0;
-
-	*dest = mono_object_unbox_internal(o);
-	return 1;
-}
-
-EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_type_is_byref (MonoType *type) {
 	if (!type)
 		return 0;
@@ -234,82 +211,63 @@ mono_jiterp_gettype_ref (
 }
 
 EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_cast_ref (
-	MonoObject **destination, MonoObject **source,
+mono_jiterp_has_parent_fast (
+	MonoClass *klass, MonoClass *parent
+) {
+	// klass may be 0 if null check fusion is active, but that's fine:
+	// (m_class_get_idepth (0) >= m_class_get_idepth (parent)) in the fast check
+	// will fail since the idepth of the null ptr is going to be 0, and
+	//  we know parent->idepth >= 1 due to the [m_class_get_idepth (parent) - 1]
+	return mono_class_has_parent_fast (klass, parent);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_implements_interface (
+	MonoVTable *vtable, MonoClass *klass
+) {
+	// If null check fusion is active, vtable->max_interface_id will be 0
+	return MONO_VTABLE_IMPLEMENTS_INTERFACE (vtable, m_class_get_interface_id (klass));
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_is_special_interface (MonoClass *klass)
+{
+	return m_class_is_array_special_interface (klass);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_implements_special_interface (
+	MonoObject *obj, MonoVTable *vtable, MonoClass *klass
+) {
+	// If null check fusion is active, vtable->max_interface_id will be 0
+	return MONO_VTABLE_IMPLEMENTS_INTERFACE (vtable, m_class_get_interface_id (klass)) ||
+	// For special interfaces we need to do a more complex check to see whether the
+	//  cast to the interface is valid in case obj is an array.
+	// mono_jiterp_isinst will *not* handle nulls for us, and we don't want
+	//  to waste time running the full isinst machinery on nulls anyway, so nullcheck
+		(obj && mono_jiterp_isinst (obj, klass));
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_cast_v2 (
+	MonoObject **destination, MonoObject *obj,
 	MonoClass *klass, MintOpcode opcode
 ) {
-	if (!klass)
-		return 0;
-
-	MonoObject *obj = *source;
 	if (!obj) {
-		*destination = 0;
+		*destination = NULL;
+		return 1;
+		// FIXME push/pop LMF
+	} else if (!mono_jiterp_isinst (obj, klass)) {
+		// FIXME: do not swallow the error
+		if (opcode == MINT_ISINST) {
+			*destination = NULL;
+			return 1;
+		} else
+			return 0; // bailout
+	} else {
+		*destination = obj;
 		return 1;
 	}
-
-	switch (opcode) {
-		case MINT_CASTCLASS:
-		case MINT_ISINST: {
-			if (obj) {
-				// FIXME push/pop LMF
-				if (!mono_jiterp_isinst (obj, klass)) { // FIXME: do not swallow the error
-					if (opcode == MINT_ISINST)
-						*destination = NULL;
-					else
-						return 0; // bailout
-				} else {
-					*destination = obj;
-				}
-			} else {
-				*destination = NULL;
-			}
-			return 1;
-		}
-		case MINT_CASTCLASS_INTERFACE:
-		case MINT_ISINST_INTERFACE: {
-			gboolean isinst;
-			// FIXME: Perform some of this work at JIT time
-			if (MONO_VTABLE_IMPLEMENTS_INTERFACE (obj->vtable, m_class_get_interface_id (klass))) {
-				isinst = TRUE;
-			} else if (m_class_is_array_special_interface (klass)) {
-				/* slow path */
-				// FIXME push/pop LMF
-				isinst = mono_jiterp_isinst (obj, klass); // FIXME: do not swallow the error
-			} else {
-				isinst = FALSE;
-			}
-
-			if (!isinst) {
-				if (opcode == MINT_ISINST_INTERFACE)
-					*destination = NULL;
-				else
-					return 0; // bailout
-			} else {
-				*destination = obj;
-			}
-			return 1;
-		}
-		case MINT_CASTCLASS_COMMON:
-		case MINT_ISINST_COMMON: {
-			if (obj) {
-				gboolean isinst = mono_class_has_parent_fast (obj->vtable->klass, klass);
-
-				if (!isinst) {
-					if (opcode == MINT_ISINST_COMMON)
-						*destination = NULL;
-					else
-						return 0; // bailout
-				} else {
-					*destination = obj;
-				}
-			} else {
-				*destination = NULL;
-			}
-			return 1;
-		}
-	}
-
-	return 0;
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -605,14 +563,38 @@ mono_jiterp_cas_i32 (volatile int32_t *addr, int32_t newVal, int32_t expected)
 EMSCRIPTEN_KEEPALIVE void
 mono_jiterp_cas_i64 (volatile int64_t *addr, int64_t *newVal, int64_t *expected, int64_t *oldVal)
 {
-	*oldVal= mono_atomic_cas_i64 (addr, *newVal, *expected);
+	*oldVal = mono_atomic_cas_i64 (addr, *newVal, *expected);
 }
 
-// should_abort_trace returns one of these codes depending on the opcode and current state
-#define TRACE_IGNORE -1
-#define TRACE_CONTINUE 0
-#define TRACE_ABORT 1
-#define TRACE_CONDITIONAL_ABORT 2
+static int opcode_value_table [MINT_LASTOP] = { 0 };
+static gboolean opcode_value_table_initialized = FALSE;
+
+static void
+initialize_opcode_value_table () {
+	// Default all opcodes to unsupported
+	for (int i = 0; i < MINT_LASTOP; i++)
+		opcode_value_table[i] = -1;
+
+	// Initialize them based on the opcode values
+	#include "jiterpreter-opcode-values.h"
+
+	// Some opcodes are not represented by the table and will instead be handled by the switch below
+
+	#undef OP
+	#undef OPRANGE
+
+	opcode_value_table_initialized = TRUE;
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_get_opcode_value_table_entry (int opcode) {
+	g_assert(opcode >= 0);
+	g_assert(opcode < MINT_LASTOP);
+
+	if (!opcode_value_table_initialized)
+		initialize_opcode_value_table ();
+	return opcode_value_table[opcode];
+}
 
 /*
  * This function provides an approximate answer for "will this instruction cause the jiterpreter
@@ -620,230 +602,59 @@ mono_jiterp_cas_i64 (volatile int64_t *addr, int64_t *newVal, int64_t *expected,
  *  a trace entry instruction at various points in a method. It doesn't need to be exact, it just
  *  needs to provide correct answers often enough so that we avoid generating lots of expensive
  *  trace nops while still ensuring we put entry points where we need them.
- * At present this is around 94-97% accurate, which is more than good enough
  */
 static int
-jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
+jiterp_get_opcode_value (InterpInst *ins, gboolean *inside_branch_block)
 {
+	if (!opcode_value_table_initialized)
+		initialize_opcode_value_table ();
+
 	guint16 opcode = ins->opcode;
+	g_assert(opcode < MINT_LASTOP);
+	int table_value = opcode_value_table[opcode];
+
+	if (table_value == VALUE_ABORT_OUTSIDE_BRANCH_BLOCK) {
+		return *inside_branch_block ? VALUE_LOW : VALUE_ABORT;
+	} else if (table_value == VALUE_ABORT_OUTSIDE_BRANCH_BLOCK) {
+		return *inside_branch_block ? VALUE_NONE : VALUE_ABORT;
+	} else if (table_value == VALUE_BEGIN_BRANCH_BLOCK) {
+		*inside_branch_block = TRUE;
+		return VALUE_NORMAL;
+	}
+
 	switch (opcode) {
 		// Individual instructions that never abort traces.
+		// For complex operations we calculate their value here, for simple
+		//  operations please put them in the values table header
 		// Please keep this in sync with jiterpreter.ts:generate_wasm_body
-		case MINT_TIER_ENTER_METHOD:
-		case MINT_TIER_PATCHPOINT:
-		case MINT_TIER_PREPARE_JITERPRETER:
-		case MINT_TIER_NOP_JITERPRETER:
-		case MINT_TIER_ENTER_JITERPRETER:
-		case MINT_NOP:
-		case MINT_DEF:
-		case MINT_DUMMY_USE:
-		case MINT_IL_SEQ_POINT:
-		case MINT_TIER_PATCHPOINT_DATA:
-		case MINT_MONO_MEMORY_BARRIER:
-		case MINT_SDB_BREAKPOINT:
-		case MINT_SDB_INTR_LOC:
-		case MINT_SDB_SEQ_POINT:
-			return TRACE_IGNORE;
-
-		case MINT_INITLOCAL:
-		case MINT_INITLOCALS:
-		case MINT_LOCALLOC:
-		case MINT_INITOBJ:
-		case MINT_CKNULL:
-		case MINT_LDLOCA_S:
-		case MINT_LDSTR:
-		case MINT_LDFTN:
-		case MINT_LDFTN_ADDR:
-		case MINT_LDPTR:
-		case MINT_CPOBJ_VT:
-		case MINT_LDOBJ_VT:
-		case MINT_STOBJ_VT:
-		case MINT_STOBJ_VT_NOREF:
-		case MINT_CPOBJ_VT_NOREF:
-		case MINT_STRLEN:
-		case MINT_GETCHR:
-		case MINT_GETITEM_SPAN:
-		case MINT_GETITEM_LOCALSPAN:
-		case MINT_INTRINS_SPAN_CTOR:
-		case MINT_INTRINS_GET_TYPE:
-		case MINT_INTRINS_MEMORYMARSHAL_GETARRAYDATAREF:
-		case MINT_CASTCLASS:
-		case MINT_CASTCLASS_COMMON:
-		case MINT_CASTCLASS_INTERFACE:
-		case MINT_ISINST:
-		case MINT_ISINST_COMMON:
-		case MINT_ISINST_INTERFACE:
-		case MINT_BOX:
-		case MINT_BOX_VT:
-		case MINT_UNBOX:
-		case MINT_NEWSTR:
-		case MINT_NEWOBJ_INLINED:
-		case MINT_NEWOBJ_VT_INLINED:
-		case MINT_LD_DELEGATE_METHOD_PTR:
-		case MINT_LDTSFLDA:
-		case MINT_SAFEPOINT:
-		case MINT_INTRINS_GET_HASHCODE:
-		case MINT_INTRINS_TRY_GET_HASHCODE:
-		case MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE:
-		case MINT_INTRINS_ENUM_HASFLAG:
-		case MINT_INTRINS_ORDINAL_IGNORE_CASE_ASCII:
-		case MINT_ADD_MUL_I4_IMM:
-		case MINT_ADD_MUL_I8_IMM:
-		case MINT_ARRAY_RANK:
-		case MINT_ARRAY_ELEMENT_SIZE:
-		case MINT_MONO_CMPXCHG_I4:
-		case MINT_MONO_CMPXCHG_I8:
-		case MINT_CPBLK:
-		case MINT_INITBLK:
-		case MINT_ROL_I4_IMM:
-		case MINT_ROL_I8_IMM:
-		case MINT_ROR_I4_IMM:
-		case MINT_ROR_I8_IMM:
-		case MINT_CLZ_I4:
-		case MINT_CTZ_I4:
-		case MINT_POPCNT_I4:
-		case MINT_LOG2_I4:
-		case MINT_CLZ_I8:
-		case MINT_CTZ_I8:
-		case MINT_POPCNT_I8:
-		case MINT_LOG2_I8:
-		case MINT_SHL_AND_I4:
-		case MINT_SHL_AND_I8:
-			return TRACE_CONTINUE;
-
 		case MINT_BR:
 		case MINT_BR_S:
-		case MINT_LEAVE:
-		case MINT_LEAVE_S:
 		case MINT_CALL_HANDLER:
 		case MINT_CALL_HANDLER_S:
 			// Detect backwards branches
 			if (ins->info.target_bb->il_offset <= ins->il_offset) {
 				if (*inside_branch_block)
-					return TRACE_CONDITIONAL_ABORT;
+					return VALUE_BRANCH;
 				else
-					return mono_opt_jiterpreter_backward_branches_enabled ? TRACE_CONTINUE : TRACE_ABORT;
+					return mono_opt_jiterpreter_backward_branches_enabled ? VALUE_BRANCH : VALUE_ABORT;
 			}
 
 			// NOTE: This is technically incorrect - we are not conditionally executing code. However
 			//  the instructions *following* this may not be executed since we might skip over them.
 			*inside_branch_block = TRUE;
-
-			return TRACE_CONTINUE;
-
-		case MINT_ICALL_V_P:
-		case MINT_ICALL_V_V:
-		case MINT_ICALL_P_P:
-		case MINT_ICALL_P_V:
-		case MINT_ICALL_PP_V:
-		case MINT_ICALL_PP_P:
-		case MINT_MONO_RETHROW:
-		case MINT_THROW:
-			if (*inside_branch_block)
-				return TRACE_CONDITIONAL_ABORT;
-
-			return TRACE_ABORT;
-
-		case MINT_LEAVE_CHECK:
-		case MINT_LEAVE_S_CHECK:
-			return TRACE_ABORT;
-
-		case MINT_ENDFINALLY:
-		case MINT_RETHROW:
-		case MINT_PROF_EXIT:
-		case MINT_PROF_EXIT_VOID:
-			return TRACE_ABORT;
-
-		case MINT_MOV_SRC_OFF:
-		case MINT_MOV_DST_OFF:
-			// These opcodes will turn into supported MOVs later
-			return TRACE_CONTINUE;
+			return VALUE_BRANCH;
 
 		default:
-		if (
-			// branches
-			// FIXME: some of these abort traces because the trace compiler doesn't
-			//  implement them, but they are rare
-			(opcode >= MINT_BRFALSE_I4) &&
-			(opcode <= MINT_BLT_UN_I8_IMM_SP)
-		) {
-			// FIXME: Detect negative displacement and abort appropriately
-			*inside_branch_block = TRUE;
-			return TRACE_CONTINUE;
-		}
-		else if (
-			// calls
-			// FIXME: many of these abort traces unconditionally because the trace
-			//  compiler doesn't implement them, but that's fixable
-			(opcode >= MINT_CALL) &&
-			(opcode <= MINT_CALLI_NAT_FAST)
-			// (opcode <= MINT_JIT_CALL2)
-		)
-			return *inside_branch_block ? TRACE_CONDITIONAL_ABORT : TRACE_ABORT;
-		else if (
-			// returns
-			(opcode >= MINT_RET) &&
-			(opcode <= MINT_RET_U2)
-		)
-			return *inside_branch_block ? TRACE_CONDITIONAL_ABORT : TRACE_ABORT;
-		else if (
-			(opcode >= MINT_LDC_I4_M1) &&
-			(opcode <= MINT_LDC_R8)
-		)
-			return TRACE_CONTINUE;
-		else if (
-			(opcode >= MINT_MOV_I4_I1) &&
-			(opcode <= MINT_MOV_8_4)
-		)
-			return TRACE_CONTINUE;
-		else if (
-			// binops
-			(opcode >= MINT_ADD_I4) &&
-			(opcode <= MINT_CLT_UN_R8)
-		)
-			return TRACE_CONTINUE;
-		else if (
-			// unops and some superinsns
-			// fixme: a lot of these aren't actually implemented. but they're also uncommon
-			(opcode >= MINT_ADD1_I4) &&
-			(opcode <= MINT_SHR_I8_IMM)
-		)
-			return TRACE_CONTINUE;
-		else if (
-			// math intrinsics - we implement most but not all of these
-			(opcode >= MINT_ASIN) &&
-			(opcode <= MINT_MAXF)
-		)
-			return TRACE_CONTINUE;
-		else if (
-			// field operations
-			// the trace compiler currently implements most, but not all of these
-			(opcode >= MINT_LDFLD_I1) &&
-			(opcode <= MINT_LDTSFLDA)
-		)
-			return TRACE_CONTINUE;
-		else if (
-			// indirect operations
-			// there are also a few of these not implemented by the trace compiler yet
-			(opcode >= MINT_LDLOCA_S) &&
-			(opcode <= MINT_STIND_OFFSET_IMM_I8)
-		)
-			return TRACE_CONTINUE;
-		else if (
-			// array operations
-			// some of these like the _I ones aren't implemented yet but are rare
-			(opcode >= MINT_LDELEM_I1) &&
-			(opcode <= MINT_GETITEM_LOCALSPAN)
-		)
-			return TRACE_CONTINUE;
-		else
-			return TRACE_ABORT;
+			return table_value;
 	}
 }
 
 static gboolean
 should_generate_trace_here (InterpBasicBlock *bb) {
-	int current_trace_length = 0;
+	// TODO: Estimate interpreter and jiterpreter side values based on table, and only keep traces
+	//  where the jiterpreter value is better than the interpreter value.
+
+	int current_trace_value = 0;
 	// A preceding trace may have been in a branch block, but we only care whether the current
 	//  trace will have a branch block opened, because that determines whether calls and branches
 	//  will unconditionally abort the trace or not.
@@ -853,24 +664,19 @@ should_generate_trace_here (InterpBasicBlock *bb) {
 		// We scan forward through the entire method body starting from the current block, not just
 		//  the current block (since the actual trace compiler doesn't know about block boundaries).
 		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
-			int category = jiterp_should_abort_trace(ins, &inside_branch_block);
-			switch (category) {
-				case TRACE_ABORT:
-					jiterpreter_abort_counts[ins->opcode]++;
-					return current_trace_length >= mono_opt_jiterpreter_minimum_trace_length;
-				case TRACE_CONDITIONAL_ABORT:
-					// FIXME: Stop traces that contain these early on, as long as we are relatively certain
-					//  that these instructions will be hit (i.e. they are not unlikely branches)
-					break;
-				case TRACE_IGNORE:
-					break;
-				default:
-					current_trace_length++;
-					break;
+			int value = jiterp_get_opcode_value(ins, &inside_branch_block);
+			if (value < 0) {
+				jiterpreter_abort_counts[ins->opcode]++;
+				return current_trace_value >= mono_opt_jiterpreter_minimum_trace_value;
+			} else if (value >= VALUE_SIMD) {
+				// HACK
+				return TRUE;
+			} else if (value > 0) {
+				current_trace_value += value;
 			}
 
 			// Once we know the trace is long enough we can stop scanning.
-			if (current_trace_length >= mono_opt_jiterpreter_minimum_trace_length)
+			if (current_trace_value >= mono_opt_jiterpreter_minimum_trace_value)
 				return TRUE;
 		}
 
@@ -942,6 +748,30 @@ trace_info_alloc () {
 	return index;
 }
 
+static void
+build_address_taken_bitset (TransformData *td, InterpBasicBlock *bb, guint32 bitset_size)
+{
+	for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
+		if (ins->opcode == MINT_LDLOCA_S) {
+			InterpMethod *imethod = td->rtm;
+			InterpLocal *loc = &td->locals[ins->sregs[0]];
+
+			// Allocate on demand so if a method contains no ldlocas we don't allocate the bitset
+			if (!imethod->address_taken_bits)
+				imethod->address_taken_bits = mono_bitset_new (bitset_size, 0);
+
+			// Ensure that every bit in the set corresponding to space occupied by this local
+			//  is set, so that large locals (structs etc) being ldloca'd properly sets the
+			//  whole range covered by the struct as a no-go for optimization.
+			// FIXME: Do this per slot instead of per byte.
+			for (int j = 0; j < loc->size; j++) {
+				guint32 b = (loc->offset + j) / MINT_STACK_SLOT_SIZE;
+				mono_bitset_set (imethod->address_taken_bits, b);
+			}
+		}
+	}
+}
+
 /*
  * Insert jiterpreter entry points at the correct candidate locations:
  * The first basic block of the function,
@@ -959,13 +789,15 @@ jiterp_insert_entry_points (void *_imethod, void *_td)
 	TransformData *td = (TransformData *)_td;
 	// Insert an entry opcode for the next basic block (call resume and first bb)
 	// FIXME: Should we do this based on relationships between BBs instead of insn sequence?
-	gboolean enter_at_next = TRUE;
+	gboolean enter_at_next = TRUE, table_full = FALSE;
 
 	if (!mono_opt_jiterpreter_traces_enabled)
 		return;
 
 	// Start with a high instruction counter so the distance check will pass
 	int instruction_count = mono_opt_jiterpreter_minimum_distance_between_traces;
+	// Pre-calculate how big the address-taken-locals bitset needs to be
+	guint32 bitset_size = td->total_locals_size / MINT_STACK_SLOT_SIZE;
 
 	for (InterpBasicBlock *bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		// Enter trace at top of functions
@@ -977,7 +809,7 @@ jiterp_insert_entry_points (void *_imethod, void *_td)
 		if (mono_opt_jiterpreter_backward_branch_entries_enabled && bb->backwards_branch_target)
 			is_backwards_branch = TRUE;
 
-		gboolean enabled = (is_backwards_branch || is_resume_or_first);
+		gboolean enabled = (is_backwards_branch || is_resume_or_first) && !table_full;
 		// FIXME: This scan will likely proceed forward all the way out of the current block,
 		//  which means that for large methods we will sometimes scan the same instruction
 		//  multiple times and waste some work. At present this is unavoidable because
@@ -1004,7 +836,7 @@ jiterp_insert_entry_points (void *_imethod, void *_td)
 			gint32 trace_index = trace_info_alloc ();
 			if (trace_index < 0) {
 				// We're out of space in the TraceInfo table.
-				return;
+				table_full = TRUE;
 			} else {
 				td->cbb = bb;
 				imethod->contains_traces = TRUE;
@@ -1032,6 +864,14 @@ jiterp_insert_entry_points (void *_imethod, void *_td)
 		//  the new instruction counter will be the number of instructions in the block, so if
 		//  it's big enough we'll be able to insert another entry point right away.
 		instruction_count += bb->in_count;
+
+		build_address_taken_bitset (td, bb, bitset_size);
+	}
+
+	// If we didn't insert any entry points and we allocated the bitset, free it.
+	if (!imethod->contains_traces && imethod->address_taken_bits) {
+		mono_bitset_free (imethod->address_taken_bits);
+		imethod->address_taken_bits = NULL;
 	}
 }
 
@@ -1287,6 +1127,12 @@ mono_jiterp_trace_transfer (
 #define JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS 10
 #define JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS_COUNT 11
 #define JITERP_MEMBER_CLAUSE_DATA_OFFSETS 12
+#define JITERP_MEMBER_PARAMS_COUNT 13
+#define JITERP_MEMBER_VTABLE 14
+#define JITERP_MEMBER_VTABLE_KLASS 15
+#define JITERP_MEMBER_CLASS_RANK 16
+#define JITERP_MEMBER_CLASS_ELEMENT_CLASS 17
+#define JITERP_MEMBER_BOXED_VALUE_DATA 18
 
 // we use these helpers at JIT time to figure out where to do memory loads and stores
 EMSCRIPTEN_KEEPALIVE size_t
@@ -1314,10 +1160,23 @@ mono_jiterp_get_member_offset (int member) {
 			return offsetof (InterpMethod, clause_data_offsets);
 		case JITERP_MEMBER_RMETHOD:
 			return offsetof (JiterpEntryDataHeader, rmethod);
+		case JITERP_MEMBER_PARAMS_COUNT:
+			return offsetof (JiterpEntryDataHeader, params_count);
 		case JITERP_MEMBER_SPAN_LENGTH:
 			return offsetof (MonoSpanOfVoid, _length);
 		case JITERP_MEMBER_SPAN_DATA:
 			return offsetof (MonoSpanOfVoid, _reference);
+		case JITERP_MEMBER_VTABLE:
+			return offsetof (MonoObject, vtable);
+		case JITERP_MEMBER_VTABLE_KLASS:
+			return offsetof (MonoVTable, klass);
+		case JITERP_MEMBER_CLASS_RANK:
+			return offsetof (MonoClass, rank);
+		case JITERP_MEMBER_CLASS_ELEMENT_CLASS:
+			return offsetof (MonoClass, element_class);
+		// see mono_object_get_data
+		case JITERP_MEMBER_BOXED_VALUE_DATA:
+			return MONO_ABI_SIZEOF (MonoObject);
 		default:
 			g_assert_not_reached();
 	}
@@ -1444,6 +1303,16 @@ mono_jiterp_boost_back_branch_target (guint16 *ip) {
 	else
 		g_print ("Entry point #%d at %d was already maxed out\n", trace_index, ip, trace_info->hit_count);
 	*/
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_is_imethod_var_address_taken (InterpMethod *imethod, int offset) {
+	g_assert (imethod);
+	g_assert (offset >= 0);
+	if (!imethod->address_taken_bits)
+		return FALSE;
+
+	return mono_bitset_test (imethod->address_taken_bits, offset / MINT_STACK_SLOT_SIZE);
 }
 
 // HACK: fix C4206

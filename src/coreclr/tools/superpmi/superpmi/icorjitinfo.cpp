@@ -503,6 +503,22 @@ size_t MyICJI::getClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,
     return jitInstance->mc->repGetClassModuleIdForStatics(cls, pModule, ppIndirection);
 }
 
+bool MyICJI::getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE  cls,
+                                         CORINFO_CONST_LOOKUP* addr,
+                                         int*                  offset)
+{
+    jitInstance->mc->cr->AddCall("getIsClassInitedFlagAddress");
+    return jitInstance->mc->repGetIsClassInitedFlagAddress(cls, addr, offset);
+}
+
+bool MyICJI::getStaticBaseAddress(CORINFO_CLASS_HANDLE  cls,
+                                  bool                  isGc,
+                                  CORINFO_CONST_LOOKUP* addr)
+{
+    jitInstance->mc->cr->AddCall("getStaticBaseAddress");
+    return jitInstance->mc->repGetStaticBaseAddress(cls, isGc, addr);
+}
+
 // return the number of bytes needed by an instance of the class
 unsigned MyICJI::getClassSize(CORINFO_CLASS_HANDLE cls)
 {
@@ -743,13 +759,6 @@ bool MyICJI::canCast(CORINFO_CLASS_HANDLE child, // subtype (extends parent)
     return jitInstance->mc->repCanCast(child, parent);
 }
 
-// TRUE if cls1 and cls2 are considered equivalent types.
-bool MyICJI::areTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
-{
-    jitInstance->mc->cr->AddCall("areTypesEquivalent");
-    return jitInstance->mc->repAreTypesEquivalent(cls1, cls2);
-}
-
 // See if a cast from fromClass to toClass will succeed, fail, or needs
 // to be resolved at runtime.
 TypeCompareState MyICJI::compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass)
@@ -906,6 +915,18 @@ void MyICJI::getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 {
     jitInstance->mc->cr->AddCall("getFieldInfo");
     jitInstance->mc->repGetFieldInfo(pResolvedToken, callerHandle, flags, pResult);
+}
+
+uint32_t MyICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCType)
+{
+    jitInstance->mc->cr->AddCall("getThreadLocalFieldInfo");
+    return jitInstance->mc->repGetThreadLocalFieldInfo(field, isGCType);
+}
+
+void MyICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
+{
+    jitInstance->mc->cr->AddCall("getThreadLocalStaticBlocksInfo");
+    jitInstance->mc->repGetThreadLocalStaticBlocksInfo(pInfo, isGCType);
 }
 
 // Returns true iff "fldHnd" represents a static field.
@@ -1121,60 +1142,6 @@ CorInfoHFAElemType MyICJI::getHFAType(CORINFO_CLASS_HANDLE hClass)
 }
 
 /*****************************************************************************
-* ICorErrorInfo contains methods to deal with SEH exceptions being thrown
-* from the corinfo interface.  These methods may be called when an exception
-* with code EXCEPTION_COMPLUS is caught.
-*****************************************************************************/
-
-// Returns the HRESULT of the current exception
-HRESULT MyICJI::GetErrorHRESULT(struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    jitInstance->mc->cr->AddCall("GetErrorHRESULT");
-    LogError("Hit unimplemented GetErrorHRESULT");
-    DebugBreakorAV(76);
-    return 0;
-}
-
-// Fetches the message of the current exception
-// Returns the size of the message (including terminating null). This can be
-// greater than bufferLength if the buffer is insufficient.
-uint32_t MyICJI::GetErrorMessage(_Inout_updates_(bufferLength) char16_t* buffer, uint32_t bufferLength)
-{
-    jitInstance->mc->cr->AddCall("GetErrorMessage");
-    LogError("Hit unimplemented GetErrorMessage");
-    DebugBreakorAV(77);
-    return 0;
-}
-
-// returns EXCEPTION_EXECUTE_HANDLER if it is OK for the compile to handle the
-//                        exception, abort some work (like the inlining) and continue compilation
-// returns EXCEPTION_CONTINUE_SEARCH if exception must always be handled by the EE
-//                    things like ThreadStoppedException ...
-// returns EXCEPTION_CONTINUE_EXECUTION if exception is fixed up by the EE
-
-int MyICJI::FilterException(struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    jitInstance->mc->cr->AddCall("FilterException");
-    int result = jitInstance->mc->repFilterException(pExceptionPointers);
-    return result;
-}
-
-void MyICJI::ThrowExceptionForJitResult(HRESULT result)
-{
-    jitInstance->mc->cr->AddCall("ThrowExceptionForJitResult");
-    LogError("Hit unimplemented ThrowExceptionForJitResult");
-    DebugBreakorAV(80);
-}
-
-// Throws an exception defined by the given throw helper.
-void MyICJI::ThrowExceptionForHelper(const CORINFO_HELPER_DESC* throwHelper)
-{
-    jitInstance->mc->cr->AddCall("ThrowExceptionForHelper");
-    LogError("Hit unimplemented ThrowExceptionForHelper");
-    DebugBreakorAV(81);
-}
-
-/*****************************************************************************
  * ICorStaticInfo contains EE interface methods which return values that are
  * constant from invocation to invocation.  Thus they may be embedded in
  * persisted information like statically generated code. (This is of course
@@ -1270,6 +1237,12 @@ uint32_t MyICJI::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE st
 {
     jitInstance->mc->cr->AddCall("getLoongArch64PassStructInRegisterFlags");
     return jitInstance->mc->repGetLoongArch64PassStructInRegisterFlags(structHnd);
+}
+
+uint32_t MyICJI::getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+{
+    jitInstance->mc->cr->AddCall("getRISCV64PassStructInRegisterFlags");
+    return jitInstance->mc->repGetRISCV64PassStructInRegisterFlags(structHnd);
 }
 
 // Stuff on ICorDynamicInfo
@@ -1481,10 +1454,16 @@ unsigned MyICJI::getClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection
     return jitInstance->mc->repGetClassDomainID(cls, ppIndirection);
 }
 
-bool MyICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
+bool MyICJI::getStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
-    jitInstance->mc->cr->AddCall("getReadonlyStaticFieldValue");
-    return jitInstance->mc->repGetReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+    jitInstance->mc->cr->AddCall("getStaticFieldContent");
+    return jitInstance->mc->repGetStaticFieldContent(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+}
+
+bool MyICJI::getObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset)
+{
+    jitInstance->mc->cr->AddCall("getObjectContent");
+    return jitInstance->mc->repGetObjectContent(obj, buffer, bufferSize, valueOffset);
 }
 
 // return the class handle for the current value of a static field

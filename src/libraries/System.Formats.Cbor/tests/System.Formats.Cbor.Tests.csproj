@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <nullable>enable</nullable>
     <!-- Referenced assembly 'FsCheck' does not have a strong name.-->
     <NoWarn>$(NoWarn);CS8002</NoWarn>

@@ -29,6 +29,7 @@ namespace ILCompiler
     internal sealed class Program
     {
         private readonly ILCompilerRootCommand _command;
+        private static readonly char[] s_separator = new char[] { ',', ';', ' ' };
 
         public Program(ILCompilerRootCommand command)
         {
@@ -41,7 +42,7 @@ namespace ILCompiler
             }
         }
 
-        private List<MethodDesc> CreateInitializerList(CompilerTypeSystemContext context)
+        private IReadOnlyCollection<MethodDesc> CreateInitializerList(CompilerTypeSystemContext context)
         {
             List<ModuleDesc> assembliesWithInitializers = new List<ModuleDesc>();
 
@@ -55,18 +56,7 @@ namespace ILCompiler
 
             var libraryInitializers = new LibraryInitializers(context, assembliesWithInitializers);
 
-            List<MethodDesc> initializerList = new List<MethodDesc>(libraryInitializers.LibraryInitializerMethods);
-
-            // If there are any AppContext switches the user wishes to enable, generate code that sets them.
-            string[] appContextSwitches = Get(_command.AppContextSwitches);
-            if (appContextSwitches.Length > 0)
-            {
-                MethodDesc appContextInitMethod = new Internal.IL.Stubs.StartupCode.AppContextInitializerMethod(
-                    context.GeneratedAssembly.GetGlobalModuleType(), appContextSwitches);
-                initializerList.Add(appContextInitMethod);
-            }
-
-            return initializerList;
+            return libraryInitializers.LibraryInitializerMethods;
         }
 
         public int Run()
@@ -208,13 +198,17 @@ namespace ILCompiler
                     compilationGroup = new SingleFileCompilationModuleGroup();
                 }
 
+                const string settingsBlobName = "g_compilerEmbeddedSettingsBlob";
+                const string knobsBlobName = "g_compilerEmbeddedKnobsBlob";
                 string[] runtimeOptions = Get(_command.RuntimeOptions);
+                string[] runtimeKnobs = Get(_command.RuntimeKnobs);
                 if (nativeLib)
                 {
                     // Set owning module of generated native library startup method to compiler generated module,
                     // to ensure the startup method is included in the object file during multimodule mode build
                     compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, CreateInitializerList(typeSystemContext)));
-                    compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
+                    compilationRoots.Add(new RuntimeConfigurationRootProvider(settingsBlobName, runtimeOptions));
+                    compilationRoots.Add(new RuntimeConfigurationRootProvider(knobsBlobName, runtimeKnobs));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
                     if (SplitExeInitialization)
                     {
@@ -224,7 +218,8 @@ namespace ILCompiler
                 else if (entrypointModule != null)
                 {
                     compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext), generateLibraryAndModuleInitializers: !SplitExeInitialization));
-                    compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
+                    compilationRoots.Add(new RuntimeConfigurationRootProvider(settingsBlobName, runtimeOptions));
+                    compilationRoots.Add(new RuntimeConfigurationRootProvider(knobsBlobName, runtimeKnobs));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
                     if (SplitExeInitialization)
                     {
@@ -348,8 +343,7 @@ namespace ILCompiler
             UsageBasedMetadataGenerationOptions metadataGenerationOptions = default;
             if (supportsReflection)
             {
-                mdBlockingPolicy = Get(_command.NoMetadataBlocking) ?
-                    new NoMetadataBlockingPolicy() : new BlockedInternalsBlockingPolicy(typeSystemContext);
+                mdBlockingPolicy = new NoMetadataBlockingPolicy();
 
                 resBlockingPolicy = new ManifestResourceBlockingPolicy(logger, featureSwitches);
 
@@ -392,7 +386,8 @@ namespace ILCompiler
                     featureSwitches,
                     Get(_command.ConditionallyRootedAssemblies),
                     rootedAssemblies,
-                    Get(_command.TrimmedAssemblies));
+                    Get(_command.TrimmedAssemblies),
+                    Get(_command.SatelliteFilePaths));
 
             InteropStateManager interopStateManager = new InteropStateManager(typeSystemContext.GeneratedAssembly);
             InteropStubManager interopStubManager = new UsageBasedInteropStubManager(interopStateManager, pinvokePolicy, logger);
@@ -484,6 +479,15 @@ namespace ILCompiler
                 {
                     preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, scanResults.GetPreinitializationPolicy());
                     builder.UsePreinitializationManager(preinitManager);
+                }
+
+                // If we have a scanner, we can inline threadstatics storage using the information
+                // we collected at scanning time.
+                // Inlined storage implies a single type manager, thus we do not do it in multifile case.
+                // This could be a command line switch if we really wanted to.
+                if (!multiFile)
+                {
+                    builder.UseInlinedThreadStatics(scanResults.GetInlinedThreadStatics());
                 }
             }
 
@@ -630,11 +634,9 @@ namespace ILCompiler
         {
             ModuleDesc systemModule = context.SystemModule;
 
-            TypeDesc foundType = systemModule.GetTypeByCustomAttributeTypeName(typeName, false, (typeDefName, module, throwIfNotFound) =>
-            {
-                return (MetadataType)context.GetCanonType(typeDefName)
-                    ?? CustomAttributeTypeNameParser.ResolveCustomAttributeTypeDefinitionName(typeDefName, module, throwIfNotFound);
-            });
+            TypeDesc foundType = systemModule.GetTypeByCustomAttributeTypeName(typeName, false,
+                (module, typeDefName) => (MetadataType)module.Context.GetCanonType(typeDefName));
+
             if (foundType == null)
                 throw new CommandLineException($"Type '{typeName}' not found");
 
@@ -681,7 +683,7 @@ namespace ILCompiler
         {
             foreach (string value in warningCodes)
             {
-                string[] values = value.Split(new char[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] values = value.Split(s_separator, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string id in values)
                 {
                     if (!id.StartsWith("IL", StringComparison.Ordinal) || !ushort.TryParse(id.AsSpan(2), out ushort code))

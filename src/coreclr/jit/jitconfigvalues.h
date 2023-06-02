@@ -38,7 +38,6 @@ CONFIG_INTEGER(JitBreakEmitOutputInstr, W("JitBreakEmitOutputInstr"), -1)
 CONFIG_INTEGER(JitBreakMorphTree, W("JitBreakMorphTree"), 0xffffffff)
 CONFIG_INTEGER(JitBreakOnBadCode, W("JitBreakOnBadCode"), 0)
 CONFIG_INTEGER(JitBreakOnMinOpts, W("JITBreakOnMinOpts"), 0) // Halt if jit switches to MinOpts
-CONFIG_INTEGER(JitBreakOnUnsafeCode, W("JitBreakOnUnsafeCode"), 0)
 CONFIG_INTEGER(JitCloneLoops, W("JitCloneLoops"), 1) // If 0, don't clone. Otherwise clone loops for optimizations.
 CONFIG_INTEGER(JitCloneLoopsWithGdvTests, W("JitCloneLoopsWithGdvTests"), 1) // If 0, don't clone loops based on
                                                                              // invariant type/method address tests
@@ -203,7 +202,6 @@ CONFIG_METHODSET(JitForceProcedureSplitting, W("JitForceProcedureSplitting"))
 CONFIG_METHODSET(JitGCDump, W("JitGCDump"))
 CONFIG_METHODSET(JitDebugDump, W("JitDebugDump"))
 CONFIG_METHODSET(JitHalt, W("JitHalt")) // Emits break instruction into jitted code
-CONFIG_METHODSET(JitImportBreak, W("JitImportBreak"))
 CONFIG_METHODSET(JitInclude, W("JitInclude"))
 CONFIG_METHODSET(JitLateDisasm, W("JitLateDisasm"))
 CONFIG_METHODSET(JitMinOptsName, W("JITMinOptsName"))                   // Forces MinOpts for a named function
@@ -271,15 +269,6 @@ CONFIG_INTEGER(RichDebugInfo, W("RichDebugInfo"), 0) // If 1, keep rich debug in
 CONFIG_STRING(WriteRichDebugInfoFile, W("WriteRichDebugInfoFile")) // Write rich debug info in JSON format to this file
 #endif
 
-CONFIG_INTEGER(JitEarlyExpandMDArrays, W("JitEarlyExpandMDArrays"), 1) // Enable early expansion of multi-dimensional
-                                                                       // array access
-
-#ifdef DEBUG
-CONFIG_METHODSET(JitEarlyExpandMDArraysFilter, W("JitEarlyExpandMDArraysFilter")) // Filter functions with early
-                                                                                  // expansion of multi-dimensional
-                                                                                  // array access
-#endif
-
 #if FEATURE_LOOP_ALIGN
 CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 1) // If set, align inner loops
 #else
@@ -308,47 +297,57 @@ CONFIG_INTEGER(JitStressEvexEncoding, W("JitStressEvexEncoding"), 0) // Enable E
 
 // clang-format off
 
+CONFIG_INTEGER(PreferredVectorBitWidth,     W("PreferredVectorBitWidth"),   0) // The preferred width, in bits, to use for any implicit vectorization emitted. A value less than 128 is treated as the system default.
+
 //
 // Hardware Intrinsic ISAs; keep in sync with clrconfigvalues.h
 //
-CONFIG_INTEGER(EnableHWIntrinsic,  W("EnableHWIntrinsic"),  1) // Allows Base+ hardware intrinsics to be disabled
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+//TODO: should implement LoongArch64's features.
+//TODO-RISCV64-CQ: should implement RISCV64's features.
+CONFIG_INTEGER(EnableHWIntrinsic,           W("EnableHWIntrinsic"),         0) // Allows Base+ hardware intrinsics to be disabled
+#else
+CONFIG_INTEGER(EnableHWIntrinsic,           W("EnableHWIntrinsic"),         1) // Allows Base+ hardware intrinsics to be disabled
+#endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
-CONFIG_INTEGER(EnableAES,          W("EnableAES"),          1) // Allows AES+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableAVX,          W("EnableAVX"),          1) // Allows AVX+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableAVX2,         W("EnableAVX2"),         1) // Allows AVX2+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableAVX512BW,     W("EnableAVX512BW"),     1) // Allows AVX512BW+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableAVX512BW_VL,  W("EnableAVX512BW_VL"),  1) // Allows AVX512BW+ AVX512VL+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableAVX512CD,     W("EnableAVX512CD"),     1) // Allows AVX512CD+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableAVX512CD_VL,  W("EnableAVX512CD_VL"),  1) // Allows AVX512CD+ AVX512VL+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableAVX512DQ,     W("EnableAVX512DQ"),     1) // Allows AVX512DQ+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableAVX512DQ_VL,  W("EnableAVX512DQ_VL"),  1) // Allows AVX512DQ+ AVX512VL+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableAVX512F,      W("EnableAVX512F"),      1) // Allows AVX512F+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableAVX512F_VL,   W("EnableAVX512F_VL"),   1) // Allows AVX512BW+ AVX512VL+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableAVXVNNI,      W("EnableAVXVNNI"),      1) // Allows AVX VNNI+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableBMI1,         W("EnableBMI1"),         1) // Allows BMI1+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableBMI2,         W("EnableBMI2"),         1) // Allows BMI2+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableFMA,          W("EnableFMA"),          1) // Allows FMA+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableLZCNT,        W("EnableLZCNT"),        1) // Allows LZCNT+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnablePCLMULQDQ,    W("EnablePCLMULQDQ"),    1) // Allows PCLMULQDQ+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnablePOPCNT,       W("EnablePOPCNT"),       1) // Allows POPCNT+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableSSE,          W("EnableSSE"),          1) // Allows SSE+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableSSE2,         W("EnableSSE2"),         1) // Allows SSE2+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableSSE3,         W("EnableSSE3"),         1) // Allows SSE3+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableSSE3_4,       W("EnableSSE3_4"),       1) // Allows SSE3+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableSSE41,        W("EnableSSE41"),        1) // Allows SSE4.1+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableSSE42,        W("EnableSSE42"),        1) // Allows SSE4.2+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableSSSE3,        W("EnableSSSE3"),        1) // Allows SSSE3+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAES,                   W("EnableAES"),                 1) // Allows AES+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX,                   W("EnableAVX"),                 1) // Allows AVX+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX2,                  W("EnableAVX2"),                1) // Allows AVX2+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512BW,              W("EnableAVX512BW"),            1) // Allows AVX512BW+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512BW_VL,           W("EnableAVX512BW_VL"),         1) // Allows AVX512BW+ AVX512VL+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512CD,              W("EnableAVX512CD"),            1) // Allows AVX512CD+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512CD_VL,           W("EnableAVX512CD_VL"),         1) // Allows AVX512CD+ AVX512VL+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512DQ,              W("EnableAVX512DQ"),            1) // Allows AVX512DQ+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512DQ_VL,           W("EnableAVX512DQ_VL"),         1) // Allows AVX512DQ+ AVX512VL+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512F,               W("EnableAVX512F"),             1) // Allows AVX512F+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512F_VL,            W("EnableAVX512F_VL"),          1) // Allows AVX512BW+ AVX512VL+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512VBMI,            W("EnableAVX512VBMI"),          1) // Allows AVX512VBMI+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512VBMI_VL,         W("EnableAVX512VBMI_VL"),       1) // Allows AVX512VBMI_VL+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVXVNNI,               W("EnableAVXVNNI"),             1) // Allows AVXVNNI+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableBMI1,                  W("EnableBMI1"),                1) // Allows BMI1+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableBMI2,                  W("EnableBMI2"),                1) // Allows BMI2+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableFMA,                   W("EnableFMA"),                 1) // Allows FMA+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableLZCNT,                 W("EnableLZCNT"),               1) // Allows LZCNT+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnablePCLMULQDQ,             W("EnablePCLMULQDQ"),           1) // Allows PCLMULQDQ+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnablePOPCNT,                W("EnablePOPCNT"),              1) // Allows POPCNT+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableSSE,                   W("EnableSSE"),                 1) // Allows SSE+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableSSE2,                  W("EnableSSE2"),                1) // Allows SSE2+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableSSE3,                  W("EnableSSE3"),                1) // Allows SSE3+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableSSE3_4,                W("EnableSSE3_4"),              1) // Allows SSE3+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableSSE41,                 W("EnableSSE41"),               1) // Allows SSE4.1+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableSSE42,                 W("EnableSSE42"),               1) // Allows SSE4.2+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableSSSE3,                 W("EnableSSSE3"),               1) // Allows SSSE3+ hardware intrinsics to be disabled
 #elif defined(TARGET_ARM64)
-CONFIG_INTEGER(EnableArm64AdvSimd, W("EnableArm64AdvSimd"), 1) // Allows Arm64 AdvSimd+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableArm64Aes,     W("EnableArm64Aes"),     1) // Allows Arm64 Aes+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableArm64Atomics, W("EnableArm64Atomics"), 1) // Allows Arm64 Atomics+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableArm64Crc32,   W("EnableArm64Crc32"),   1) // Allows Arm64 Crc32+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableArm64Dczva,   W("EnableArm64Dczva"),   1) // Allows Arm64 Dczva+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableArm64Dp,      W("EnableArm64Dp"),      1) // Allows Arm64 Dp+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableArm64Rdm,     W("EnableArm64Rdm"),     1) // Allows Arm64 Rdm+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableArm64Sha1,    W("EnableArm64Sha1"),    1) // Allows Arm64 Sha1+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableArm64Sha256,  W("EnableArm64Sha256"),  1) // Allows Arm64 Sha256+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableArm64AdvSimd,          W("EnableArm64AdvSimd"),        1) // Allows Arm64 AdvSimd+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableArm64Aes,              W("EnableArm64Aes"),            1) // Allows Arm64 Aes+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableArm64Atomics,          W("EnableArm64Atomics"),        1) // Allows Arm64 Atomics+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableArm64Crc32,            W("EnableArm64Crc32"),          1) // Allows Arm64 Crc32+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableArm64Dczva,            W("EnableArm64Dczva"),          1) // Allows Arm64 Dczva+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableArm64Dp,               W("EnableArm64Dp"),             1) // Allows Arm64 Dp+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableArm64Rdm,              W("EnableArm64Rdm"),            1) // Allows Arm64 Rdm+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableArm64Sha1,             W("EnableArm64Sha1"),           1) // Allows Arm64 Sha1+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableArm64Sha256,           W("EnableArm64Sha256"),         1) // Allows Arm64 Sha256+ hardware intrinsics to be disabled
 #endif
 
 // clang-format on
@@ -431,6 +430,7 @@ CONFIG_STRING(JitEnableVNBasedDeadStoreRemovalRange, W("JitEnableVNBasedDeadStor
 CONFIG_STRING(JitEnableEarlyLivenessRange, W("JitEnableEarlyLivenessRange"))
 CONFIG_STRING(JitOnlyOptimizeRange,
               W("JitOnlyOptimizeRange")) // If set, all methods that do _not_ match are forced into MinOpts
+CONFIG_STRING(JitEnablePhysicalPromotionRange, W("JitEnablePhysicalPromotionRange"))
 
 CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
 CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numbering on method expressions
@@ -525,6 +525,11 @@ CONFIG_INTEGER(JitEnableRemoveEmptyTry, W("JitEnableRemoveEmptyTry"), 1)
 // Overall master enable for Guarded Devirtualization.
 CONFIG_INTEGER(JitEnableGuardedDevirtualization, W("JitEnableGuardedDevirtualization"), 1)
 
+#define MAX_GDV_TYPE_CHECKS 5
+// Number of types to probe for polymorphic virtual call-sites to devirtualize them,
+// Max number is MAX_GDV_TYPE_CHECKS defined above ^
+CONFIG_INTEGER(JitGuardedDevirtualizationMaxTypeChecks, W("JitGuardedDevirtualizationMaxTypeChecks"), 1)
+
 // Various policies for GuardedDevirtualization
 CONFIG_INTEGER(JitGuardedDevirtualizationChainLikelihood, W("JitGuardedDevirtualizationChainLikelihood"), 0x4B) // 75
 CONFIG_INTEGER(JitGuardedDevirtualizationChainStatements, W("JitGuardedDevirtualizationChainStatements"), 4)
@@ -534,11 +539,11 @@ CONFIG_INTEGER(JitRandomGuardedDevirtualization, W("JitRandomGuardedDevirtualiza
 #endif // DEBUG
 
 // Enable insertion of patchpoints into Tier0 methods, switching to optimized where needed.
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 1)
 #else
 CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 // Initial patchpoint counter value used by jitted code
 CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
 // Enable partial compilation for Tier0 methods
@@ -569,6 +574,7 @@ CONFIG_STRING(JitEnablePatchpointRange, W("JitEnablePatchpointRange"))
 
 // Profile instrumentation options
 CONFIG_INTEGER(JitInterlockedProfiling, W("JitInterlockedProfiling"), 0)
+CONFIG_INTEGER(JitScalableProfiling, W("JitScalableProfiling"), 1)
 CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)
 CONFIG_INTEGER(JitMinimalPrejitProfiling, W("JitMinimalPrejitProfiling"), 0)
 
@@ -615,6 +621,9 @@ CONFIG_INTEGER(JitCFGUseDispatcher, W("JitCFGUseDispatcher"), 2)
 
 // Enable tail merging
 CONFIG_INTEGER(JitEnableTailMerge, W("JitEnableTailMerge"), 1)
+
+// Enable physical promotion
+CONFIG_INTEGER(JitEnablePhysicalPromotion, W("JitEnablePhysicalPromotion"), 0)
 
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the

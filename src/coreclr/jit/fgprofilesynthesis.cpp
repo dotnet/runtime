@@ -64,6 +64,10 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
             RandomizeLikelihoods();
             break;
 
+        case ProfileSynthesisOption::RepairLikelihoods:
+            RepairLikelihoods();
+            break;
+
         default:
             assert(!"unexpected profile synthesis option");
             break;
@@ -133,6 +137,7 @@ void ProfileSynthesis::AssignLikelihoods()
             case BBJ_THROW:
             case BBJ_RETURN:
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
                 // No successor cases
                 // (todo: finally ret may have succs)
                 break;
@@ -499,6 +504,7 @@ void ProfileSynthesis::RepairLikelihoods()
             case BBJ_THROW:
             case BBJ_RETURN:
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
                 // No successor cases
                 // Nothing to do.
                 break;
@@ -522,14 +528,28 @@ void ProfileSynthesis::RepairLikelihoods()
             case BBJ_COND:
             case BBJ_SWITCH:
             {
-                weight_t sum = SumOutgoingLikelihoods(block);
+                // Repair if either likelihoods are inconsistent or block weight is zero.
+                //
+                weight_t const sum        = SumOutgoingLikelihoods(block);
+                bool const     consistent = Compiler::fgProfileWeightsEqual(sum, 1.0, epsilon);
+                bool const     zero       = Compiler::fgProfileWeightsEqual(block->bbWeight, 0.0, epsilon);
 
-                if (Compiler::fgProfileWeightsEqual(sum, 1.0, epsilon))
+                if (consistent && !zero)
                 {
+                    // Leave as is.
                     break;
                 }
 
-                JITDUMP("Repairing likelihoods in " FMT_BB ", existing likelihood sum " FMT_WT "\n", block->bbNum, sum);
+                JITDUMP("Repairing likelihoods in " FMT_BB, block->bbNum);
+                if (!consistent)
+                {
+                    JITDUMP("; existing likelihood sum: " FMT_WT, sum);
+                }
+                if (zero)
+                {
+                    JITDUMP("; zero weight block");
+                }
+                JITDUMP("\n");
 
                 if (block->bbJumpKind == BBJ_COND)
                 {
@@ -576,6 +596,7 @@ void ProfileSynthesis::BlendLikelihoods()
             case BBJ_THROW:
             case BBJ_RETURN:
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
                 // No successor cases
                 // Nothing to do.
                 break;
@@ -599,9 +620,12 @@ void ProfileSynthesis::BlendLikelihoods()
             case BBJ_COND:
             case BBJ_SWITCH:
             {
-                // Capture the existing weights and assign new
-                // weights based on heuristics.
-                weight_t sum = SumOutgoingLikelihoods(block, &likelihoods);
+                // Capture the existing weights and assign new likelihoods based on synthesis.
+                //
+                weight_t const sum        = SumOutgoingLikelihoods(block, &likelihoods);
+                bool const     unlikely   = Compiler::fgProfileWeightsEqual(sum, 0.0, epsilon);
+                bool const     consistent = Compiler::fgProfileWeightsEqual(sum, 1.0, epsilon);
+                bool const     zero       = Compiler::fgProfileWeightsEqual(block->bbWeight, 0.0, epsilon);
 
                 if (block->bbJumpKind == BBJ_COND)
                 {
@@ -612,10 +636,12 @@ void ProfileSynthesis::BlendLikelihoods()
                     AssignLikelihoodSwitch(block);
                 }
 
-                if (Compiler::fgProfileWeightsEqual(sum, 0.0, epsilon))
+                if (unlikely || zero)
                 {
-                    // Existing likelihood was zero. Go with the synthesized likelihoods.
-                    JITDUMP("Existing likelihoods in " FMT_BB " were zero, synthesizing new ones\n", block->bbNum);
+                    // Existing likelihood was zero, or profile weight was zero. Just use synthesis likelihoods.
+                    //
+                    JITDUMP("%s in " FMT_BB " was zero, using synthesized likelihoods\n",
+                            unlikely ? "Existing likelihood" : "Block weight", block->bbNum);
                     break;
                 }
 
@@ -624,6 +650,7 @@ void ProfileSynthesis::BlendLikelihoods()
                 if (!Compiler::fgProfileWeightsEqual(sum, 1.0, epsilon))
                 {
                     // Existing likelihood was too low or too high. Scale.
+                    //
                     weight_t scale = 1.0 / sum;
                     JITDUMP("Scaling old likelihoods in " FMT_BB " by " FMT_WT "\n", block->bbNum, scale);
                     for (iter = likelihoods.begin(); iter != likelihoods.end(); iter++)
@@ -1119,17 +1146,122 @@ void ProfileSynthesis::ComputeCyclicProbabilities(SimpleLoop* loop)
     //
     if (cyclicWeight > cappedLikelihood)
     {
+        JITDUMP("Cyclic weight " FMT_WT " > " FMT_WT "(cap) -- will reduce to cap\n", cyclicWeight, cappedLikelihood);
         capped       = true;
         cyclicWeight = cappedLikelihood;
         m_cappedCyclicProbabilities++;
     }
 
-    weight_t cyclicProbability = 1.0 / (1.0 - cyclicWeight);
+    // Note this value is not actually a probability; it is the expected
+    // iteration count of the loop.
+    //
+    weight_t const cyclicProbability = 1.0 / (1.0 - cyclicWeight);
 
     JITDUMP("For loop at " FMT_BB " cyclic weight is " FMT_WT " cyclic probability is " FMT_WT "%s\n",
             loop->m_head->bbNum, cyclicWeight, cyclicProbability, capped ? " [capped]" : "");
 
     loop->m_cyclicProbability = cyclicProbability;
+
+    // Try and adjust loop exit likelihood to reflect capping.
+    // If there are multiple exits we just adjust the first one we can. This is somewhat arbitrary.
+    // If there are no exits, there's nothing we can do.
+    //
+    if (capped && (loop->m_exitEdges.size() > 0))
+    {
+        // Figure out how much flow exits the loop with the capped probablility
+        // and current block frequencies and exit likelihoods.
+        //
+        weight_t cappedExitWeight = 0.0;
+
+        for (FlowEdge* const exitEdge : loop->m_exitEdges)
+        {
+            BasicBlock* const exitBlock          = exitEdge->getSourceBlock();
+            weight_t const    exitBlockFrequency = exitBlock->bbWeight;
+            weight_t const    exitBlockWeight    = exitBlockFrequency * cyclicProbability;
+            weight_t const    exitWeight         = exitEdge->getLikelihood() * exitBlockWeight;
+            cappedExitWeight += exitWeight;
+            JITDUMP("Exit from " FMT_BB " has weight " FMT_WT "\n", exitBlock->bbNum, exitWeight);
+        }
+
+        JITDUMP("Total exit weight " FMT_WT "\n", cappedExitWeight);
+
+        // We should end up with a value less than one since we input one unit of flow into the
+        // loop and are artificially capping the iteration count of the loop, so less weight is
+        // now flowing out than in. However because of rounding we might end up near or a bit over 1.0.
+        //
+        if ((cappedExitWeight + epsilon) < 1.0)
+        {
+            // We want to increase the exit likelihood of one exit block to create
+            // additional flow out of the loop. Figure out how much we need.
+            //
+            weight_t const missingExitWeight = 1.0 - cappedExitWeight;
+            JITDUMP("Loop exit flow deficit from capping is " FMT_WT "\n", missingExitWeight);
+
+            bool adjustedExit = false;
+
+            for (FlowEdge* const exitEdge : loop->m_exitEdges)
+            {
+                // Does this block have enough weight that it can supply all the missing weight?
+                //
+                BasicBlock* const exitBlock          = exitEdge->getSourceBlock();
+                weight_t const    exitBlockFrequency = exitBlock->bbWeight;
+                weight_t const    exitBlockWeight    = exitBlockFrequency * cyclicProbability;
+                weight_t const    currentExitWeight  = exitEdge->getLikelihood() * exitBlockWeight;
+
+                // TODO: we might also want to exclude edges that are exiting from child loops here,
+                // or think harder about what might be appropriate in those cases. Seems like we ought
+                // to adjust an edge's likelihoods at most once.
+                //
+                // Currently we don't know which edges do this.
+                //
+                if ((exitBlock->bbJumpKind == BBJ_COND) && (exitBlockWeight > (missingExitWeight + currentExitWeight)))
+                {
+                    JITDUMP("Will adjust likelihood of the exit edge from loop exit block " FMT_BB
+                            " to reflect capping; current likelihood is " FMT_WT "\n",
+                            exitBlock->bbNum, exitEdge->getLikelihood());
+
+                    BasicBlock* const jump               = exitBlock->bbJumpDest;
+                    BasicBlock* const next               = exitBlock->bbNext;
+                    FlowEdge* const   jumpEdge           = m_comp->fgGetPredForBlock(jump, exitBlock);
+                    FlowEdge* const   nextEdge           = m_comp->fgGetPredForBlock(next, exitBlock);
+                    weight_t const    exitLikelihood     = (missingExitWeight + currentExitWeight) / exitBlockWeight;
+                    weight_t const    continueLikelihood = 1.0 - exitLikelihood;
+
+                    // We are making it more likely that the loop exits, so the new exit likelihood
+                    // should be greater than the old.
+                    //
+                    assert(exitLikelihood > exitEdge->getLikelihood());
+
+                    if (jumpEdge == exitEdge)
+                    {
+                        jumpEdge->setLikelihood(exitLikelihood);
+                        nextEdge->setLikelihood(continueLikelihood);
+                    }
+                    else
+                    {
+                        assert(nextEdge == exitEdge);
+                        jumpEdge->setLikelihood(continueLikelihood);
+                        nextEdge->setLikelihood(exitLikelihood);
+                    }
+                    adjustedExit = true;
+
+                    JITDUMP("New likelihood is  " FMT_WT "\n", exitEdge->getLikelihood());
+                    break;
+                }
+            }
+
+            if (!adjustedExit)
+            {
+                // Possibly we could have fixed things up by adjusting more than one exit?
+                //
+                JITDUMP("Unable to find suitable exit to carry off capped flow\n");
+            }
+        }
+        else
+        {
+            JITDUMP("Exit weight comparable or above 1.0, leaving as is\n");
+        }
+    }
 }
 
 //------------------------------------------------------------------------

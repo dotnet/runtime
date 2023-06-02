@@ -10,7 +10,7 @@ namespace System.Runtime
     public sealed class AmbiguousImplementationException : Exception
     {
         public AmbiguousImplementationException()
-            : base(SR.AmbiguousImplementationException_NullMessage)
+            : base(SR.Arg_AmbiguousImplementationException_NoMessage)
         {
             HResult = HResults.COR_E_AMBIGUOUSIMPLEMENTATION;
         }
@@ -27,6 +27,7 @@ namespace System.Runtime
             HResult = HResults.COR_E_AMBIGUOUSIMPLEMENTATION;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private AmbiguousImplementationException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {

@@ -28,6 +28,8 @@ namespace ILCompiler
             new(new[] { "--optimize-time", "--Ot" }, "Enable optimizations, favor code speed");
         public Option<string[]> MibcFilePaths { get; } =
             new(new[] { "--mibc", "-m" }, Array.Empty<string>, "Mibc file(s) for profile guided optimization");
+        public Option<string[]> SatelliteFilePaths { get; } =
+            new(new[] { "--satellite" }, Array.Empty<string>, "Satellite assemblies associated with inputs/references");
         public Option<bool> EnableDebugInfo { get; } =
             new(new[] { "--debug", "-g" }, "Emit debugging information");
         public Option<bool> UseDwarf5 { get; } =
@@ -68,8 +70,6 @@ namespace ILCompiler
             new(new[] { "--mstat" }, "Generate an mstat file");
         public Option<string> MetadataLogFileName { get; } =
             new(new[] { "--metadatalog" }, "Generate a metadata log file");
-        public Option<bool> NoMetadataBlocking { get; } =
-            new(new[] { "--nometadatablocking" }, "Ignore metadata blocking for internal implementation details");
         public Option<bool> CompleteTypesMetadata { get; } =
             new(new[] { "--completetypemetadata" }, "Generate complete metadata for types");
         public Option<string> ReflectionData { get; } =
@@ -88,12 +88,12 @@ namespace ILCompiler
             new(new[] { "--methodbodyfolding" }, "Fold identical method bodies");
         public Option<string[]> InitAssemblies { get; } =
             new(new[] { "--initassembly" }, Array.Empty<string>, "Assembly(ies) with a library initializer");
-        public Option<string[]> AppContextSwitches { get; } =
-            new(new[] { "--appcontextswitch" }, Array.Empty<string>, "System.AppContext switches to set (format: 'Key=Value')");
         public Option<string[]> FeatureSwitches { get; } =
             new(new[] { "--feature" }, Array.Empty<string>, "Feature switches to apply (format: 'Namespace.Name=[true|false]'");
         public Option<string[]> RuntimeOptions { get; } =
             new(new[] { "--runtimeopt" }, Array.Empty<string>, "Runtime options to set");
+        public Option<string[]> RuntimeKnobs { get; } =
+            new(new[] { "--runtimeknob" }, Array.Empty<string>, "Runtime knobs to set");
         public Option<int> Parallelism { get; } =
             new(new[] { "--parallelism" }, result =>
             {
@@ -175,6 +175,7 @@ namespace ILCompiler
             AddOption(OptimizeSpace);
             AddOption(OptimizeTime);
             AddOption(MibcFilePaths);
+            AddOption(SatelliteFilePaths);
             AddOption(EnableDebugInfo);
             AddOption(UseDwarf5);
             AddOption(NativeLib);
@@ -195,7 +196,6 @@ namespace ILCompiler
             AddOption(MapFileName);
             AddOption(MstatFileName);
             AddOption(MetadataLogFileName);
-            AddOption(NoMetadataBlocking);
             AddOption(CompleteTypesMetadata);
             AddOption(ReflectionData);
             AddOption(ScanReflection);
@@ -205,9 +205,9 @@ namespace ILCompiler
             AddOption(EmitStackTraceData);
             AddOption(MethodBodyFolding);
             AddOption(InitAssemblies);
-            AddOption(AppContextSwitches);
             AddOption(FeatureSwitches);
             AddOption(RuntimeOptions);
+            AddOption(RuntimeKnobs);
             AddOption(Parallelism);
             AddOption(InstructionSet);
             AddOption(Guard);
@@ -267,9 +267,11 @@ namespace ILCompiler
                         // + the original command line arguments
                         // + a rsp file that should work to directly run out of the zip file
 
+#pragma warning disable CA1861 // Avoid constant arrays as arguments. Only executed once during the execution of the program.
                         Helpers.MakeReproPackage(makeReproPath, context.ParseResult.GetValue(OutputFilePath), args, context.ParseResult,
                             inputOptions : new[] { "r", "reference", "m", "mibc", "rdxml", "directpinvokelist", "descriptor" },
                             outputOptions : new[] { "o", "out", "exportsfile" });
+#pragma warning restore CA1861 // Avoid constant arrays as arguments
                     }
 
                     context.ExitCode = new Program(this).Run();

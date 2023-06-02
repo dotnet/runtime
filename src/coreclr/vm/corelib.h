@@ -353,7 +353,7 @@ DEFINE_METHOD(THREAD_START_EXCEPTION,EX_CTOR,               .ctor,              
 DEFINE_CLASS(TYPE_HANDLE,           System,                 RuntimeTypeHandle)
 DEFINE_CLASS(RT_TYPE_HANDLE,        System,                 RuntimeTypeHandle)
 DEFINE_METHOD(RT_TYPE_HANDLE,       PVOID_CTOR,             .ctor,                      IM_RuntimeType_RetVoid)
-DEFINE_METHOD(RT_TYPE_HANDLE,       GETVALUEINTERNAL,       GetValueInternal,           SM_RuntimeTypeHandle_RetIntPtr)
+DEFINE_METHOD(RT_TYPE_HANDLE,       TO_INTPTR,              ToIntPtr,                   SM_RuntimeTypeHandle_RetIntPtr)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(RT_TYPE_HANDLE,       ALLOCATECOMOBJECT,      AllocateComObject,          SM_VoidPtr_RetObj)
 #endif
@@ -543,7 +543,7 @@ DEFINE_CLASS(METHOD_HANDLE_INTERNAL,System,                 RuntimeMethodHandleI
 
 DEFINE_CLASS(METHOD_HANDLE,         System,                 RuntimeMethodHandle)
 DEFINE_FIELD(METHOD_HANDLE,         METHOD,                 m_value)
-DEFINE_METHOD(METHOD_HANDLE,        GETVALUEINTERNAL,       GetValueInternal,           SM_RuntimeMethodHandle_RetIntPtr)
+DEFINE_METHOD(METHOD_HANDLE,        TO_INTPTR,              ToIntPtr,           SM_RuntimeMethodHandle_RetIntPtr)
 
 DEFINE_CLASS(MISSING,               Reflection,             Missing)
 DEFINE_FIELD(MISSING,               VALUE,                  Value)
@@ -1192,8 +1192,10 @@ DEFINE_CLASS(NULLABLE_COMPARER, CollectionsGeneric, NullableComparer`1)
 
 DEFINE_CLASS(INATTRIBUTE, Interop, InAttribute)
 
+DEFINE_CLASS(CASTCACHE, CompilerServices, CastCache)
+DEFINE_FIELD(CASTCACHE, TABLE, s_table)
+
 DEFINE_CLASS(CASTHELPERS, CompilerServices, CastHelpers)
-DEFINE_FIELD(CASTHELPERS, TABLE, s_table)
 DEFINE_METHOD(CASTHELPERS, ISINSTANCEOFANY,  IsInstanceOfAny,             SM_PtrVoid_Obj_RetObj)
 DEFINE_METHOD(CASTHELPERS, ISINSTANCEOFCLASS,IsInstanceOfClass,           SM_PtrVoid_Obj_RetObj)
 DEFINE_METHOD(CASTHELPERS, ISINSTANCEOFINTERFACE,  IsInstanceOfInterface, SM_PtrVoid_Obj_RetObj)

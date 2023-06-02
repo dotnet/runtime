@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Xunit;
@@ -112,6 +113,11 @@ namespace Microsoft.Extensions
             }
         }
 
+        public class ClassWithPrimaryCtor(string color, int length)
+        {
+            public string Color { get; } = color;
+            public int Length { get; } = length;
+        }
 
         public record RecordTypeOptions(string Color, int Length);
 
@@ -322,7 +328,7 @@ namespace Microsoft.Extensions
                 public Dictionary<string, TestSettingsEnum> Enums { get; set; }
             }
 
-            [Fact]
+            [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
             public void WithFlagUnset_NoExceptionIsThrownWhenFailingToParseEnumsInAnArrayAndValidItemsArePreserved()
             {
                 var dic = new Dictionary<string, string>
@@ -345,7 +351,7 @@ namespace Microsoft.Extensions
                 Assert.Equal(TestSettingsEnum.Option2, model.Enums[1]);
             }
 
-            [Fact]
+            [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
             public void WithFlagUnset_NoExceptionIsThrownWhenFailingToParseEnumsInADictionaryAndValidItemsArePreserved()
             {
                 var dic = new Dictionary<string, string>
@@ -369,7 +375,7 @@ namespace Microsoft.Extensions
                 Assert.Equal(TestSettingsEnum.Option2, model.Enums["Fourth"]);
             }
 
-            [Fact]
+            [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
             public void WithFlagSet_AnExceptionIsThrownWhenFailingToParseEnumsInAnArray()
             {
                 var dic = new Dictionary<string, string>
@@ -392,7 +398,7 @@ namespace Microsoft.Extensions
                     exception.Message);
             }
 
-            [Fact]
+            [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
             public void WithFlagSet_AnExceptionIsThrownWhenFailingToParseEnumsInADictionary()
             {
                 var dic = new Dictionary<string, string>
@@ -565,6 +571,89 @@ namespace Microsoft.Extensions
             }
 
             public string? ExposeTestVirtualSet() => _testVirtualSet;
+        }
+
+        public class ClassWithDirectSelfReference
+        {
+            public string MyString { get; set; }
+            public ClassWithDirectSelfReference MyClass { get; set; }
+        }
+
+        public class ClassWithIndirectSelfReference
+        {
+            public string MyString { get; set; }
+            public List<ClassWithIndirectSelfReference> MyList { get; set; }
+        }
+
+        public class DistributedQueueConfig
+        {
+            public List<QueueNamespaces> Namespaces { get; set; }
+        }
+
+        public class QueueNamespaces
+        {
+            public string Namespace { get; set; }
+
+            public Dictionary<string, QueueProperties> Queues { get; set; } = new();
+        }
+
+        public class QueueProperties
+        {
+            public DateTimeOffset? CreationDate { get; set; }
+
+            public DateTimeOffset? DequeueOnlyMarkedDate { get; set; } = default(DateTimeOffset);
+        }
+
+        public record RecordWithPrimitives
+        {
+            public bool Prop0 { get; set; }
+            public byte Prop1 { get; set; }
+            public sbyte Prop2 { get; set; }
+            public char Prop3 { get; set; }
+            public double Prop4 { get; set; }
+            public string Prop5 { get; set; }
+            public int Prop6 { get; set; }
+            public short Prop8 { get; set; }
+            public long Prop9 { get; set; }
+            public float Prop10 { get; set; }
+            public ushort Prop13 { get; set; }
+            public uint Prop14 { get; set; }
+            public ulong Prop15 { get; set; }
+            public object Prop16 { get; set; }
+            public CultureInfo Prop17 { get; set; }
+            public DateTime Prop19 { get; set; }
+            public DateTimeOffset Prop20 { get; set; }
+            public decimal Prop21 { get; set; }
+            public TimeSpan Prop23 { get; set; }
+            public Guid Prop24 { get; set; }
+            public Uri Prop25 { get; set; }
+            public Version Prop26 { get; set; }
+            public DayOfWeek Prop27 { get; set; }
+#if NETCOREAPP
+            public Int128 Prop7 { get; set; }
+            public Half Prop11 { get; set; }
+            public UInt128 Prop12 { get; set; }
+            public DateOnly Prop18 { get; set; }
+            public TimeOnly Prop22 { get; set; }
+#endif
+        }
+
+        public class ClassWithParameterlessAndParameterizedCtor
+        {
+            public ClassWithParameterlessAndParameterizedCtor() => MyInt = 1;
+
+            public ClassWithParameterlessAndParameterizedCtor(int myInt) => MyInt = 10;
+
+            public int MyInt { get; }
+        }
+
+        public struct StructWithParameterlessAndParameterizedCtor
+        {
+            public StructWithParameterlessAndParameterizedCtor() => MyInt = 1;
+
+            public StructWithParameterlessAndParameterizedCtor(int myInt) => MyInt = 10;
+
+            public int MyInt { get; }
         }
     }
 }

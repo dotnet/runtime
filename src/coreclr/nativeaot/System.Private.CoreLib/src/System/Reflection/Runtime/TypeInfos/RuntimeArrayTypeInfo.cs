@@ -40,7 +40,9 @@ namespace System.Reflection.Runtime.TypeInfos
 
         protected sealed override TypeAttributes GetAttributeFlagsImpl()
         {
+#pragma warning disable SYSLIB0050 // TypeAttributes.Serializable is obsolete
             return TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable;
+#pragma warning restore SYSLIB0050
         }
 
         internal sealed override IEnumerable<RuntimeConstructorInfo> SyntheticConstructors
@@ -306,7 +308,7 @@ namespace System.Reflection.Runtime.TypeInfos
         //
         // Helper for jagged array constructors.
         //
-        private Array CreateJaggedArray(RuntimeTypeInfo arrayType, int[] lengths, int index)
+        private static Array CreateJaggedArray(RuntimeTypeInfo arrayType, int[] lengths, int index)
         {
             int length = lengths[index];
             Array jaggedArray = ReflectionCoreExecution.ExecutionEnvironment.NewArray(arrayType.TypeHandle, length);

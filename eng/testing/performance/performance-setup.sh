@@ -37,6 +37,8 @@ logical_machine=
 javascript_engine="v8"
 iosmono=false
 iosllvmbuild=""
+iosstripsymbols=""
+iosnativeaot=false
 maui_version=""
 use_local_commit_time=false
 only_sanity=false
@@ -139,6 +141,18 @@ while (($# > 0)); do
       wasmaot=true
       shift 1
       ;;
+    --nopgo)
+      nopgo=true
+      shift 1
+      ;;
+    --dynamicpgo)
+      dynamicpgo=true
+      shift 1
+      ;;
+    --fullpgo)
+      fullpgo=true
+      shift 1
+      ;;
     --compare)
       compare=true
       shift 1
@@ -159,8 +173,16 @@ while (($# > 0)); do
       iosmono=true
       shift 1
       ;;
+    --iosnativeaot)
+      iosnativeaot=true
+      shift 1
+      ;;
     --iosllvmbuild)
       iosllvmbuild=$2
+      shift 2
+      ;;
+    --iosstripsymbols)
+      iosstripsymbols=$2
       shift 2
       ;;
     --mauiversion)
@@ -210,9 +232,14 @@ while (($# > 0)); do
       echo "  --dotnetversions               Passed as '--dotnet-versions <value>' to the setup script"
       echo "  --alpine                       Set for runs on Alpine"
       echo "  --iosmono                      Set for ios Mono/Maui runs"
+      echo "  --iosnativeaot                 Set for ios Native AOT runs"
       echo "  --iosllvmbuild                 Set LLVM for iOS Mono/Maui runs"
+      echo "  --iosstripsymbols              Set STRIP_DEBUG_SYMBOLS for iOS Mono/Maui runs"
       echo "  --mauiversion                  Set the maui version for Mono/Maui runs"
       echo "  --uselocalcommittime           Pass local runtime commit time to the setup script"
+      echo "  --nopgo                        Set for No PGO runs"
+      echo "  --dynamicpgo                   Set for dynamic PGO runs"
+      echo "  --fullpgo                      Set for Full PGO runs"
       echo ""
       exit 1
       ;;
@@ -255,6 +282,8 @@ if [[ "$internal" == true ]]; then
         queue=OSX.1015.Amd64.Iphone.Perf
     elif [[ "$logical_machine" == "perfampere" ]]; then
         queue=Ubuntu.2004.Arm64.Perf
+    elif [[ "$logical_machine" == "cloudvm" ]]; then
+        queue=Ubuntu.1804.Amd64
     elif [[ "$architecture" == "arm64" ]]; then
         queue=Ubuntu.1804.Arm64.Perf
     else
@@ -312,8 +341,26 @@ if [[ "$monoaot" == "true" ]]; then
 fi
 
 if [[ "$iosmono" == "true" ]]; then
-    configurations="$configurations iOSLlvmBuild=$iosllvmbuild"
+    configurations="$configurations iOSLlvmBuild=$iosllvmbuild iOSStripSymbols=$iosstripsymbols"
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments"
+fi
+
+if [[ "$iosnativeaot" == "true" ]]; then
+    configurations="$configurations iOSStripSymbols=$iosstripsymbols"
+    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments"
+fi
+
+if [[ "$nopgo" == "true" ]]; then
+    configurations="$configurations PGOType=nopgo"
+fi
+
+if [[ "$dynamicpgo" == "true" ]]; then
+    configurations="$configurations PGOType=dynamicpgo"
+fi
+
+if [[ "$fullpgo" == "true" ]]; then
+    configurations="$configurations PGOType=fullpgo"
+    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoAOT"
 fi
 
 cleaned_branch_name="main"
@@ -378,6 +425,16 @@ if [[ -n "$dotnet_versions" ]]; then
     setup_arguments="$setup_arguments --dotnet-versions $dotnet_versions"
 fi
 
+if [[ "$nopgo" == "true" ]]; then
+    setup_arguments="$setup_arguments --no-pgo"
+fi
+if [[ "$dynamicpgo" == "true" ]]; then
+    setup_arguments="$setup_arguments --dynamic-pgo"
+fi
+if [[ "$fullpgo" == "true" ]]; then
+    setup_arguments="$setup_arguments --full-pgo"
+fi
+
 if [[ "$monoaot" == "true" ]]; then
     monoaot_dotnet_path=$payload_directory/monoaot
     mv $monoaot_path $monoaot_dotnet_path
@@ -398,38 +455,38 @@ fi
 
 if [[ "$iosmono" == "true" ]]; then
     if [[ "$iosllvmbuild" == "True" ]]; then
-        if [[ "$kind" != "ios_scenarios_net6" ]]; then
-            # LLVM Mono .app
-            mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/llvm $payload_directory/iosHelloWorld
-            mkdir -p $payload_directory/iosHelloWorldZip/llvmzip && cp -rv $source_directory/iosHelloWorldZip/llvmzip $payload_directory/iosHelloWorldZip
-        fi
+      if [[ "$iosstripsymbols" == "True" ]]; then
+          # LLVM NoSymbols Mono .app
+          mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/llvmnosymbols $payload_directory/iosHelloWorld
+          mkdir -p $payload_directory/iosHelloWorldZip/llvmnosymbolszip && cp -rv $source_directory/iosHelloWorldZip/llvmnosymbolszip $payload_directory/iosHelloWorldZip
+      else
+          # LLVM Symbols Mono .app
+          mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/llvmsymbols $payload_directory/iosHelloWorld
+          mkdir -p $payload_directory/iosHelloWorldZip/llvmsymbolszip && cp -rv $source_directory/iosHelloWorldZip/llvmsymbolszip $payload_directory/iosHelloWorldZip
+      fi
     else
-        # NoLLVM Mono .app, Maui iOS IPA, Maui Maccatalyst, Maui iOS Podcast IPA
-        if [[ "$kind" != "ios_scenarios_net6" ]]; then
-            mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nollvm $payload_directory/iosHelloWorld
-            mkdir -p $payload_directory/iosHelloWorldZip/nollvmzip && cp -rv $source_directory/iosHelloWorldZip/nollvmzip $payload_directory/iosHelloWorldZip
-        fi
-        mkdir -p $payload_directory/MauiMacCatalystDefault && cp -rv $source_directory/MauiMacCatalystDefault/MauiMacCatalystDefault.app $payload_directory/MauiMacCatalystDefault
-        mkdir -p $payload_directory/MauiBlazorMacCatalystDefault && cp -rv $source_directory/MauiBlazorMacCatalystDefault/MauiBlazorMacCatalystDefault.app $payload_directory/MauiBlazorMacCatalystDefault
-        cp -v $source_directory/MauiiOSDefaultIPA/MauiiOSDefault.ipa $payload_directory/MauiiOSDefault.ipa
-        cp -v $source_directory/MauiBlazoriOSDefaultIPA/MauiBlazoriOSDefault.ipa $payload_directory/MauiBlazoriOSDefault.ipa
-        cp -v $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.ipa $payload_directory/MauiiOSPodcast.ipa
-
-        # Get the .app so we can resign in the xharness item
-        cp -v $source_directory/MauiiOSDefaultIPA/MauiiOSDefault.ipa $source_directory/MauiiOSDefaultIPA/MauiiOSDefault.zip
-        unzip -d $source_directory/MauiiOSDefaultIPA $source_directory/MauiiOSDefaultIPA/MauiiOSDefault.zip
-        mv $source_directory/MauiiOSDefaultIPA/Payload/MauiTesting.app $payload_directory/
-
-        # Get the .app so we can resign in the xharness item for Maui Blazor
-        cp -v $source_directory/MauiBlazoriOSDefaultIPA/MauiBlazoriOSDefault.ipa $source_directory/MauiBlazoriOSDefaultIPA/MauiBlazoriOSDefault.zip
-        unzip -d $source_directory/MauiBlazoriOSDefaultIPA $source_directory/MauiBlazoriOSDefaultIPA/MauiBlazoriOSDefault.zip
-        mv $source_directory/MauiBlazoriOSDefaultIPA/Payload/MauiBlazorTesting.app $payload_directory/
-
-        # Get the .app so we can resign in the xharness item for podcast
-        cp -v $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.ipa $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.zip
-        unzip -d $source_directory/MauiiOSPodcastIPA $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.zip
-        mv $source_directory/MauiiOSPodcastIPA/Payload/Microsoft.NetConf2021.Maui.app $payload_directory/
+      if [[ "$iosstripsymbols" == "True" ]]; then
+        # NoLLVM NoSymbols Mono .app
+        mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nollvmnosymbols $payload_directory/iosHelloWorld
+        mkdir -p $payload_directory/iosHelloWorldZip/nollvmnosymbolszip && cp -rv $source_directory/iosHelloWorldZip/nollvmnosymbolszip $payload_directory/iosHelloWorldZip
+      else
+        # NoLLVM Symbols Mono .app
+        mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nollvmsymbols $payload_directory/iosHelloWorld
+        mkdir -p $payload_directory/iosHelloWorldZip/nollvmsymbolszip && cp -rv $source_directory/iosHelloWorldZip/nollvmsymbolszip $payload_directory/iosHelloWorldZip
+      fi
     fi
+fi
+
+if [[ "$iosnativeaot" == "true" ]]; then
+  if [[ "$iosstripsymbols" == "True" ]]; then
+    # NoSymbols Mono .app
+    mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nosymbols $payload_directory/iosHelloWorld
+    mkdir -p $payload_directory/iosHelloWorldZip/nosymbolszip && cp -rv $source_directory/iosHelloWorldZip/nosymbolszip $payload_directory/iosHelloWorldZip
+  else
+    # NoSymbols Mono .app
+    mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/symbols $payload_directory/iosHelloWorld
+    mkdir -p $payload_directory/iosHelloWorldZip/symbolszip && cp -rv $source_directory/iosHelloWorldZip/symbolszip $payload_directory/iosHelloWorldZip
+  fi
 fi
 
 ci=true
@@ -463,6 +520,7 @@ Write-PipelineSetVariable -name "Compare" -value "$compare" -is_multi_job_variab
 Write-PipelineSetVariable -name "MonoDotnet" -value "$using_mono" -is_multi_job_variable false
 Write-PipelineSetVariable -name "WasmDotnet" -value "$using_wasm" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iosllvmbuild" -is_multi_job_variable false
+Write-PipelineSetVariable -Name 'iOSStripSymbols' -Value "$iosstripsymbols" -is_multi_job_variable false
 Write-PipelineSetVariable -name "OnlySanityCheck" -value "$only_sanity" -is_multi_job_variable false
 
 # Put it back to what was set on top of this script

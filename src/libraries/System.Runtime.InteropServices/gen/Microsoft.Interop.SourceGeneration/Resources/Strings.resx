@@ -142,7 +142,7 @@
     <value>Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</value>
   </data>
   <data name="MarshallingStringOrCharAsUndefinedNotSupported" xml:space="preserve">
-    <value>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</value>
+    <value>Marshalling string or char without explicit marshalling information is not supported. Specify '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</value>
   </data>
   <data name="SafeHandleByRefMustBeConcrete" xml:space="preserve">
     <value>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</value>

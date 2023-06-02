@@ -7,6 +7,7 @@ namespace Microsoft.Interop
     {
         public const string DllImportAttribute = "System.Runtime.InteropServices.DllImportAttribute";
         public const string LibraryImportAttribute = "System.Runtime.InteropServices.LibraryImportAttribute";
+        public const string LibraryImportAttribute_ShortName = "LibraryImportAttribute";
         public const string StringMarshalling = "System.Runtime.InteropServices.StringMarshalling";
 
         public const string NativeMarshallingAttribute = "System.Runtime.InteropServices.Marshalling.NativeMarshallingAttribute";
@@ -21,10 +22,10 @@ namespace Microsoft.Interop
         public const string BStrStringMarshaller = "System.Runtime.InteropServices.Marshalling.BStrStringMarshaller";
         public const string Utf16StringMarshaller = "System.Runtime.InteropServices.Marshalling.Utf16StringMarshaller";
         public const string Utf8StringMarshaller = "System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller";
-        public const string SwallowExceptionMarshaller = "System.Runtime.InteropServices.Marshalling.SwallowExceptionMarshaller";
-        public const string ExceptionHResultMarshaller = "System.Runtime.InteropServices.Marshalling.ExceptionHResultMarshaller";
-        public const string ExceptionNaNMarshaller = "System.Runtime.InteropServices.Marshalling.ExceptionNaNMarshaller";
-        public const string ExceptionDefaultMarshaller = "System.Runtime.InteropServices.Marshalling.ExceptionDefaultMarshaller";
+        public const string ExceptionAsVoidMarshaller = "System.Runtime.InteropServices.Marshalling.ExceptionAsVoidMarshaller";
+        public const string ExceptionAsHResultMarshaller = "System.Runtime.InteropServices.Marshalling.ExceptionAsHResultMarshaller";
+        public const string ExceptionAsNaNMarshaller = "System.Runtime.InteropServices.Marshalling.ExceptionAsNaNMarshaller";
+        public const string ExceptionAsDefaultMarshaller = "System.Runtime.InteropServices.Marshalling.ExceptionAsDefaultMarshaller";
 
         public const string LCIDConversionAttribute = "System.Runtime.InteropServices.LCIDConversionAttribute";
 
@@ -34,7 +35,10 @@ namespace Microsoft.Interop
 
         public const string UnmanagedCallersOnlyAttribute = "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute";
 
+        public const string System_Runtime_InteropServices_ComImportAttribute = "System.Runtime.InteropServices.ComImportAttribute";
+
         public const string VirtualMethodIndexAttribute = "System.Runtime.InteropServices.Marshalling.VirtualMethodIndexAttribute";
+        public const string VirtualMethodIndexAttribute_ShortName = "VirtualMethodIndexAttribute";
 
         public const string IUnmanagedVirtualMethodTableProvider = "System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider";
 
@@ -50,6 +54,8 @@ namespace Microsoft.Interop
         public const string System_Activator = "System.Activator";
 
         public const string System_Exception = "System.Exception";
+
+        public const string System_GC = "System.GC";
 
         public const string System_Type = "System.Type";
 
@@ -106,6 +112,7 @@ namespace Microsoft.Interop
         public const string System_Runtime_CompilerServices_RuntimeHelpers = "System.Runtime.CompilerServices.RuntimeHelpers";
 
         public const string GeneratedComInterfaceAttribute = "System.Runtime.InteropServices.Marshalling.GeneratedComInterfaceAttribute";
+        public const string GeneratedComInterfaceAttribute_ShortName = "GeneratedComInterfaceAttribute";
 
         public const string InterfaceTypeAttribute = "System.Runtime.InteropServices.InterfaceTypeAttribute";
 
@@ -118,6 +125,8 @@ namespace Microsoft.Interop
         public const string System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch = "System.Runtime.InteropServices.ComWrappers.ComInterfaceDispatch";
 
         public const string System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry = "System.Runtime.InteropServices.ComWrappers.ComInterfaceEntry";
+
+        public const string System_Runtime_InteropServices_NativeMemory = "System.Runtime.InteropServices.NativeMemory";
 
         public const string StrategyBasedComWrappers = "System.Runtime.InteropServices.Marshalling.StrategyBasedComWrappers";
 
@@ -134,5 +143,11 @@ namespace Microsoft.Interop
         public const string GeneratedComClassAttribute = "System.Runtime.InteropServices.Marshalling.GeneratedComClassAttribute";
         public const string ComExposedClassAttribute = "System.Runtime.InteropServices.Marshalling.ComExposedClassAttribute";
         public const string IComExposedClass = "System.Runtime.InteropServices.Marshalling.IComExposedClass";
+
+        public const string UnreachableException = "System.Diagnostics.UnreachableException";
+
+        public const string System_Runtime_InteropServices_Marshalling_SafeHandleMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller`1";
+
+        public const string System_Runtime_InteropServices_Marshalling_ComInterfaceMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.ComInterfaceMarshaller`1";
     }
 }

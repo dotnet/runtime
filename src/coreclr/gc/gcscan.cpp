@@ -100,7 +100,7 @@ bool GCScan::GcDhReScan(ScanContext* sc)
 void GCScan::GcWeakPtrScan(int condemned, int max_gen, ScanContext* sc)
 {
     // Clear out weak pointers that are no longer live.
-    Ref_CheckReachable(condemned, max_gen, (uintptr_t)sc);
+    Ref_CheckReachable(condemned, max_gen, sc);
 
     // Clear any secondary objects whose primary object is now definitely dead.
     Ref_ScanDependentHandlesForClearing(condemned, max_gen, sc);
@@ -139,7 +139,7 @@ void GCScan::GcScanSizedRefs(promote_func* fn, int condemned, int max_gen, ScanC
 
 void GCScan::GcShortWeakPtrScan(int condemned, int max_gen, ScanContext* sc)
 {
-    Ref_CheckAlive(condemned, max_gen, (uintptr_t)sc);
+    Ref_CheckAlive(condemned, max_gen, sc);
 }
 
 /*
@@ -220,14 +220,14 @@ void GCScan::GcRuntimeStructuresValid (BOOL bValid)
 
 void GCScan::GcDemote (int condemned, int max_gen, ScanContext* sc)
 {
-    Ref_RejuvenateHandles (condemned, max_gen, (uintptr_t)sc);
+    Ref_RejuvenateHandles (condemned, max_gen, sc);
     if (!IsServerHeap() || sc->thread_number == 0)
         GCToEEInterface::SyncBlockCacheDemote(max_gen);
 }
 
 void GCScan::GcPromotionsGranted (int condemned, int max_gen, ScanContext* sc)
 {
-    Ref_AgeHandles(condemned, max_gen, (uintptr_t)sc);
+    Ref_AgeHandles(condemned, max_gen, sc);
     if (!IsServerHeap() || sc->thread_number == 0)
         GCToEEInterface::SyncBlockCachePromotionsGranted(max_gen);
 }

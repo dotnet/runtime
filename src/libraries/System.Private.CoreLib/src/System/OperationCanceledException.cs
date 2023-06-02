@@ -10,6 +10,7 @@
 **
 ===========================================================*/
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Threading;
 
@@ -65,6 +66,8 @@ namespace System
             CancellationToken = token;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected OperationCanceledException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

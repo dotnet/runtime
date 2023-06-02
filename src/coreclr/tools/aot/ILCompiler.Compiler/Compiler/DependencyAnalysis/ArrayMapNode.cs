@@ -12,18 +12,17 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hash table of array types generated into the image.
     /// </summary>
-    internal sealed class ArrayMapNode : ObjectNode, ISymbolDefinitionNode
+    internal sealed class ArrayMapNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private ObjectAndOffsetSymbolNode _endSymbol;
-        private ExternalReferencesTableNode _externalReferences;
+        private readonly ExternalReferencesTableNode _externalReferences;
+        private int? _size;
 
         public ArrayMapNode(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__array_type_map_End", true);
             _externalReferences = externalReferences;
         }
 
-        public ISymbolDefinitionNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -52,20 +51,10 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (var type in factory.MetadataManager.GetTypesWithConstructedEETypes())
             {
-                if (!type.IsSzArray)
+                if (!type.IsArray)
                     continue;
 
                 var arrayType = (ArrayType)type;
-
-                // This optimization is not compatible with canInlineTypeCheck on JIT/EE interface returning
-                // CORINFO_INLINE_TYPECHECK_PASS unconditionally.
-                //
-                // If we're generating a template for this type, we can skip generating the hashtable entry
-                // since the type loader can just create this type at runtime if something needs it. It's
-                // okay to have multiple EETypes for the same array type.
-                // var canonArrayType = arrayType.ConvertToCanonForm(CanonicalFormKind.Specific);
-                // if (arrayType != canonArrayType && factory.NativeLayout.TemplateTypeLayout(canonArrayType).Marked)
-                //     continue;
 
                 // Look at the constructed type symbol. If a constructed type wasn't emitted, then the array map entry isn't valid for use
                 IEETypeNode arrayTypeSymbol = factory.ConstructedTypeSymbol(arrayType);
@@ -78,9 +67,9 @@ namespace ILCompiler.DependencyAnalysis
 
             byte[] hashTableBytes = writer.Save();
 
-            _endSymbol.SetSymbolOffset(hashTableBytes.Length);
+            _size = hashTableBytes.Length;
 
-            return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
+            return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;

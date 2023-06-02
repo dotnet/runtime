@@ -123,11 +123,16 @@ namespace System.Security.Cryptography
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     public sealed partial class AesGcm : System.IDisposable
     {
+        [System.ObsoleteAttribute("AesGcm should indicate the required tag size for encryption and decryption. Use a constructor that accepts the tag size.", DiagnosticId="SYSLIB0053", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public AesGcm(byte[] key) { }
+        public AesGcm(byte[] key, int tagSizeInBytes) { }
+        [System.ObsoleteAttribute("AesGcm should indicate the required tag size for encryption and decryption. Use a constructor that accepts the tag size.", DiagnosticId="SYSLIB0053", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public AesGcm(System.ReadOnlySpan<byte> key) { }
+        public AesGcm(System.ReadOnlySpan<byte> key, int tagSizeInBytes) { }
         public static bool IsSupported { get { throw null; } }
         public static System.Security.Cryptography.KeySizes NonceByteSizes { get { throw null; } }
         public static System.Security.Cryptography.KeySizes TagByteSizes { get { throw null; } }
+        public int? TagSizeInBytes { get { throw null; } }
         public void Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag, byte[] plaintext, byte[]? associatedData = null) { }
         public void Decrypt(System.ReadOnlySpan<byte> nonce, System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> tag, System.Span<byte> plaintext, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { }
         public void Dispose() { }
@@ -542,6 +547,8 @@ namespace System.Security.Cryptography
     public partial class CryptographicUnexpectedOperationException : System.Security.Cryptography.CryptographicException
     {
         public CryptographicUnexpectedOperationException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected CryptographicUnexpectedOperationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public CryptographicUnexpectedOperationException(string? message) { }
         public CryptographicUnexpectedOperationException(string? message, System.Exception? inner) { }
@@ -1314,6 +1321,9 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.HashAlgorithmName SHA1 { get { throw null; } }
         public static System.Security.Cryptography.HashAlgorithmName SHA256 { get { throw null; } }
         public static System.Security.Cryptography.HashAlgorithmName SHA384 { get { throw null; } }
+        public static System.Security.Cryptography.HashAlgorithmName SHA3_256 { get { throw null; } }
+        public static System.Security.Cryptography.HashAlgorithmName SHA3_384 { get { throw null; } }
+        public static System.Security.Cryptography.HashAlgorithmName SHA3_512 { get { throw null; } }
         public static System.Security.Cryptography.HashAlgorithmName SHA512 { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Security.Cryptography.HashAlgorithmName other) { throw null; }
@@ -1447,6 +1457,81 @@ namespace System.Security.Cryptography
         public override byte[] Key { get { throw null; } set { } }
         [System.ObsoleteAttribute("ProduceLegacyHmacValues is obsolete. Producing legacy HMAC values is not supported.", DiagnosticId="SYSLIB0029", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public bool ProduceLegacyHmacValues { get { throw null; } set { } }
+        protected override void Dispose(bool disposing) { }
+        protected override void HashCore(byte[] rgb, int ib, int cb) { }
+        protected override void HashCore(System.ReadOnlySpan<byte> source) { }
+        public static byte[] HashData(byte[] key, byte[] source) { throw null; }
+        public static byte[] HashData(byte[] key, System.IO.Stream source) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source) { throw null; }
+        public static int HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source, System.Span<byte> destination) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source) { throw null; }
+        public static int HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(byte[] key, System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<int> HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected override byte[] HashFinal() { throw null; }
+        public override void Initialize() { }
+        public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
+    public partial class HMACSHA3_256 : System.Security.Cryptography.HMAC
+    {
+        public const int HashSizeInBits = 256;
+        public const int HashSizeInBytes = 32;
+        public HMACSHA3_256() { }
+        public HMACSHA3_256(byte[] key) { }
+        public static bool IsSupported { get { throw null; } }
+        public override byte[] Key { get { throw null; } set { } }
+        protected override void Dispose(bool disposing) { }
+        protected override void HashCore(byte[] rgb, int ib, int cb) { }
+        protected override void HashCore(System.ReadOnlySpan<byte> source) { }
+        public static byte[] HashData(byte[] key, byte[] source) { throw null; }
+        public static byte[] HashData(byte[] key, System.IO.Stream source) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source) { throw null; }
+        public static int HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source, System.Span<byte> destination) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source) { throw null; }
+        public static int HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(byte[] key, System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<int> HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected override byte[] HashFinal() { throw null; }
+        public override void Initialize() { }
+        public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
+    public partial class HMACSHA3_384 : System.Security.Cryptography.HMAC
+    {
+        public const int HashSizeInBits = 384;
+        public const int HashSizeInBytes = 48;
+        public HMACSHA3_384() { }
+        public HMACSHA3_384(byte[] key) { }
+        public static bool IsSupported { get { throw null; } }
+        public override byte[] Key { get { throw null; } set { } }
+        protected override void Dispose(bool disposing) { }
+        protected override void HashCore(byte[] rgb, int ib, int cb) { }
+        protected override void HashCore(System.ReadOnlySpan<byte> source) { }
+        public static byte[] HashData(byte[] key, byte[] source) { throw null; }
+        public static byte[] HashData(byte[] key, System.IO.Stream source) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source) { throw null; }
+        public static int HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source, System.Span<byte> destination) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source) { throw null; }
+        public static int HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(byte[] key, System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<int> HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected override byte[] HashFinal() { throw null; }
+        public override void Initialize() { }
+        public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
+    public partial class HMACSHA3_512 : System.Security.Cryptography.HMAC
+    {
+        public const int HashSizeInBits = 512;
+        public const int HashSizeInBytes = 64;
+        public HMACSHA3_512() { }
+        public HMACSHA3_512(byte[] key) { }
+        public static bool IsSupported { get { throw null; } }
+        public override byte[] Key { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
@@ -1999,6 +2084,9 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.RSAEncryptionPadding OaepSHA1 { get { throw null; } }
         public static System.Security.Cryptography.RSAEncryptionPadding OaepSHA256 { get { throw null; } }
         public static System.Security.Cryptography.RSAEncryptionPadding OaepSHA384 { get { throw null; } }
+        public static System.Security.Cryptography.RSAEncryptionPadding OaepSHA3_256 { get { throw null; } }
+        public static System.Security.Cryptography.RSAEncryptionPadding OaepSHA3_384 { get { throw null; } }
+        public static System.Security.Cryptography.RSAEncryptionPadding OaepSHA3_512 { get { throw null; } }
         public static System.Security.Cryptography.RSAEncryptionPadding OaepSHA512 { get { throw null; } }
         public static System.Security.Cryptography.RSAEncryptionPadding Pkcs1 { get { throw null; } }
         public static System.Security.Cryptography.RSAEncryptionPadding CreateOaep(System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
@@ -2284,6 +2372,54 @@ namespace System.Security.Cryptography
         protected sealed override byte[] HashFinal() { throw null; }
         public sealed override void Initialize() { }
         protected sealed override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
+    public abstract partial class SHA3_256 : System.Security.Cryptography.HashAlgorithm
+    {
+        public const int HashSizeInBits = 256;
+        public const int HashSizeInBytes = 32;
+        protected SHA3_256() { }
+        public static bool IsSupported { get { throw null; } }
+        public static new System.Security.Cryptography.SHA3_256 Create() { throw null; }
+        public static byte[] HashData(byte[] source) { throw null; }
+        public static byte[] HashData(System.IO.Stream source) { throw null; }
+        public static int HashData(System.IO.Stream source, System.Span<byte> destination) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> source) { throw null; }
+        public static int HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static System.Threading.Tasks.ValueTask<int> HashDataAsync(System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static bool TryHashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
+    public abstract partial class SHA3_384 : System.Security.Cryptography.HashAlgorithm
+    {
+        public const int HashSizeInBits = 384;
+        public const int HashSizeInBytes = 48;
+        protected SHA3_384() { }
+        public static bool IsSupported { get { throw null; } }
+        public static new System.Security.Cryptography.SHA3_384 Create() { throw null; }
+        public static byte[] HashData(byte[] source) { throw null; }
+        public static byte[] HashData(System.IO.Stream source) { throw null; }
+        public static int HashData(System.IO.Stream source, System.Span<byte> destination) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> source) { throw null; }
+        public static int HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static System.Threading.Tasks.ValueTask<int> HashDataAsync(System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static bool TryHashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
+    public abstract partial class SHA3_512 : System.Security.Cryptography.HashAlgorithm
+    {
+        public const int HashSizeInBits = 512;
+        public const int HashSizeInBytes = 64;
+        protected SHA3_512() { }
+        public static bool IsSupported { get { throw null; } }
+        public static new System.Security.Cryptography.SHA3_512 Create() { throw null; }
+        public static byte[] HashData(byte[] source) { throw null; }
+        public static byte[] HashData(System.IO.Stream source) { throw null; }
+        public static int HashData(System.IO.Stream source, System.Span<byte> destination) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> source) { throw null; }
+        public static int HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static System.Threading.Tasks.ValueTask<int> HashDataAsync(System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static bool TryHashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public abstract partial class SHA512 : System.Security.Cryptography.HashAlgorithm
     {
@@ -2749,6 +2885,8 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Certificate(byte[] rawData, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(System.IntPtr handle) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public X509Certificate(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(System.Security.Cryptography.X509Certificates.X509Certificate cert) { }
@@ -2846,6 +2984,8 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Certificate2(System.ReadOnlySpan<byte> rawData) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(System.ReadOnlySpan<byte> rawData, System.ReadOnlySpan<char> password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected X509Certificate2(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(System.Security.Cryptography.X509Certificates.X509Certificate certificate) { }

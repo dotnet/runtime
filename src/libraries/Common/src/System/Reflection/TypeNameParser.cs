@@ -167,6 +167,8 @@ namespace System.Reflection
             if (fullName is null)
                 return null;
 
+            fullName = ApplyLeadingDotCompatQuirk(fullName);
+
             if (Peek == TokenType.Plus)
             {
                 string[] nestedNames = new string[1];
@@ -180,6 +182,8 @@ namespace System.Reflection
                     if (nestedName is null)
                         return null;
 
+                    nestedName = ApplyLeadingDotCompatQuirk(nestedName);
+
                     if (nestedNamesCount >= nestedNames.Length)
                         Array.Resize(ref nestedNames, 2 * nestedNamesCount);
                     nestedNames[nestedNamesCount++] = nestedName;
@@ -191,6 +195,19 @@ namespace System.Reflection
             else
             {
                 return new NamespaceTypeName(fullName);
+            }
+
+            // Compat: Ignore leading '.' for type names without namespace. .NET Framework historically ignored leading '.' here. It is likely
+            // that code out there depends on this behavior. For example, type names formed by concatenating namespace and name, without checking for
+            // empty namespace (bug), are going to have superfluous leading '.'.
+            // This behavior means that types that start with '.' are not round-trippable via type name.
+            static string ApplyLeadingDotCompatQuirk(string typeName)
+            {
+#if NETCOREAPP
+                return (typeName.StartsWith('.') && !typeName.AsSpan(1).Contains('.')) ? typeName.Substring(1) : typeName;
+#else
+                return ((typeName.Length > 0) && (typeName[0] == '.') && typeName.LastIndexOf('.') == 0) ? typeName.Substring(1) : typeName;
+#endif
             }
         }
 
@@ -337,7 +354,7 @@ namespace System.Reflection
             if (!StartAssemblyName())
                 return null;
 
-            string assemblyName = new string(_input.Slice(_index));
+            string assemblyName = _input.Slice(_index).ToString();
             _index = _input.Length;
             return assemblyName;
         }
@@ -542,8 +559,10 @@ namespace System.Reflection
                 _rankOrModifier = rankOrModifier;
             }
 
+#if NETCOREAPP
             [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
                 Justification = "Used to implement resolving types from strings.")]
+#endif
             public override Type? ResolveType(ref TypeNameParser parser, string? containingAssemblyIfAny)
             {
                 Type? elementType = _elementTypeName.ResolveType(ref parser, containingAssemblyIfAny);
@@ -576,10 +595,12 @@ namespace System.Reflection
                 _typeArgumentsCount = typeArgumentsCount;
             }
 
+#if NETCOREAPP
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
                 Justification = "Used to implement resolving types from strings.")]
             [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
                 Justification = "Used to implement resolving types from strings.")]
+#endif
             public override Type? ResolveType(ref TypeNameParser parser, string? containingAssemblyIfAny)
             {
                 Type? typeDefinition = _typeDefinition.ResolveType(ref parser, containingAssemblyIfAny);
@@ -603,10 +624,17 @@ namespace System.Reflection
         // Type name escaping helpers
         //
 
+#if NETCOREAPP
         private static ReadOnlySpan<char> CharsToEscape => "\\[]+*&,";
 
         private static bool NeedsEscapingInTypeName(char c)
             => CharsToEscape.Contains(c);
+#else
+        private static char[] CharsToEscape { get; } = "\\[]+*&,".ToCharArray();
+
+        private static bool NeedsEscapingInTypeName(char c)
+            => Array.IndexOf(CharsToEscape, c) >= 0;
+#endif
 
         private static string EscapeTypeName(string name)
         {
@@ -638,6 +666,28 @@ namespace System.Reflection
                 fullName = sb.ToString();
             }
             return fullName;
+        }
+
+        private static (string typeNamespace, string name) SplitFullTypeName(string typeName)
+        {
+            string typeNamespace, name;
+
+            // Matches algorithm from ns::FindSep in src\coreclr\utilcode\namespaceutil.cpp
+            int separator = typeName.LastIndexOf('.');
+            if (separator <= 0)
+            {
+                typeNamespace = "";
+                name = typeName;
+            }
+            else
+            {
+                if (typeName[separator - 1] == '.')
+                    separator--;
+                typeNamespace = typeName.Substring(0, separator);
+                name = typeName.Substring(separator + 1);
+            }
+
+            return (typeNamespace, name);
         }
 
 #if SYSTEM_PRIVATE_CORELIB

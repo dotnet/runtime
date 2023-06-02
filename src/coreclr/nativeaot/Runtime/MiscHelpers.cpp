@@ -38,6 +38,7 @@
 #include "GCMemoryHelpers.h"
 #include "GCMemoryHelpers.inl"
 #include "yieldprocessornormalized.h"
+#include "RhConfig.h"
 
 COOP_PINVOKE_HELPER(void, RhDebugBreak, ())
 {
@@ -361,18 +362,6 @@ COOP_PINVOKE_HELPER(void*, RhGetUniversalTransitionThunk, ())
     return (void*)RhpUniversalTransition;
 }
 
-extern CrstStatic g_CastCacheLock;
-
-EXTERN_C NATIVEAOT_API void __cdecl RhpAcquireCastCacheLock()
-{
-    g_CastCacheLock.Enter();
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhpReleaseCastCacheLock()
-{
-    g_CastCacheLock.Leave();
-}
-
 extern CrstStatic g_ThunkPoolLock;
 
 EXTERN_C NATIVEAOT_API void __cdecl RhpAcquireThunkPoolLock()
@@ -432,6 +421,13 @@ COOP_PINVOKE_HELPER(void, RhSetThreadExitCallback, (void * pCallback))
 COOP_PINVOKE_HELPER(int32_t, RhGetProcessCpuCount, ())
 {
     return PalGetProcessCpuCount();
+}
+
+COOP_PINVOKE_HELPER(uint32_t, RhGetKnobValues, (char *** pResultKeys, char *** pResultValues))
+{
+    *pResultKeys = g_pRhConfig->GetKnobNames();
+    *pResultValues = g_pRhConfig->GetKnobValues();
+    return g_pRhConfig->GetKnobCount();
 }
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)

@@ -105,6 +105,7 @@ void Compiler::fgDebugCheckUpdate()
             {
                 case BBJ_CALLFINALLY:
                 case BBJ_EHFINALLYRET:
+                case BBJ_EHFAULTRET:
                 case BBJ_EHFILTERRET:
                 case BBJ_RETURN:
                 /* for BBJ_ALWAYS is probably just a GOTO, but will have to be treated */
@@ -1994,6 +1995,10 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                 printf("%*s        (finret)", maxBlockNumWidth - 2, "");
                 break;
 
+            case BBJ_EHFAULTRET:
+                printf("%*s        (falret)", maxBlockNumWidth - 2, "");
+                break;
+
             case BBJ_EHFILTERRET:
                 printf("%*s        (fltret)", maxBlockNumWidth - 2, "");
                 break;
@@ -2633,9 +2638,10 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
             assert(CheckEHFinallyRet(blockPred, block));
             return true;
 
+        case BBJ_EHFAULTRET:
         case BBJ_THROW:
         case BBJ_RETURN:
-            assert(!"THROW and RETURN block cannot be in the predecessor list!");
+            assert(!"EHFAULTRET, THROW, and RETURN block cannot be in the predecessor list!");
             break;
 
         case BBJ_SWITCH:
@@ -3066,6 +3072,12 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
     switch (tree->OperGet())
     {
+        case GT_STORE_LCL_VAR:
+        case GT_STORE_LCL_FLD:
+            assert((tree->gtFlags & GTF_VAR_DEF) != 0);
+            assert(((tree->gtFlags & GTF_VAR_USEASG) != 0) == tree->IsPartialLclFld(this));
+            break;
+
         case GT_CATCH_ARG:
             expectedFlags |= GTF_ORDER_SIDEEFF;
             break;
@@ -3077,11 +3089,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
         case GT_QMARK:
             assert(!op1->CanCSE());
             assert(op1->OperIsCompare() || op1->IsIntegralConst(0) || op1->IsIntegralConst(1));
-            break;
-
-        case GT_ASG:
-            // Note that this is a weak check - the "op1" location node can be a COMMA.
-            assert(!op1->CanCSE());
             break;
 
         case GT_IND:
@@ -3129,7 +3136,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
             for (CallArg& arg : call->gtArgs.Args())
             {
-                // TODO-Cleanup: this is a patch for a violation in our GT_ASG propagation.
+                // TODO-Cleanup: this is a patch for a violation in our GTF_ASG propagation.
                 // see https://github.com/dotnet/runtime/issues/13758
                 if (arg.GetEarlyNode() != nullptr)
                 {
@@ -3148,25 +3155,76 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             expectedFlags |= (GTF_GLOB_REF | GTF_ASG);
             break;
 
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+        {
+            GenTreeHWIntrinsic* hwintrinsic = tree->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+
+            if (hwintrinsic->OperIsMemoryLoad())
+            {
+                assert(tree->OperMayThrow(this));
+                expectedFlags |= GTF_GLOB_REF;
+            }
+            else if (hwintrinsic->OperIsMemoryStore())
+            {
+                assert(tree->OperRequiresAsgFlag());
+                assert(tree->OperMayThrow(this));
+                expectedFlags |= GTF_GLOB_REF;
+            }
+            else if (HWIntrinsicInfo::HasSpecialSideEffect(intrinsicId))
+            {
+                switch (intrinsicId)
+                {
+#if defined(TARGET_XARCH)
+                    case NI_SSE_StoreFence:
+                    case NI_SSE2_LoadFence:
+                    case NI_SSE2_MemoryFence:
+                    case NI_X86Serialize_Serialize:
+                    {
+                        assert(tree->OperRequiresAsgFlag());
+                        expectedFlags |= GTF_GLOB_REF;
+                        break;
+                    }
+
+                    case NI_X86Base_Pause:
+                    case NI_SSE_Prefetch0:
+                    case NI_SSE_Prefetch1:
+                    case NI_SSE_Prefetch2:
+                    case NI_SSE_PrefetchNonTemporal:
+                    {
+                        assert(tree->OperRequiresCallFlag(this));
+                        expectedFlags |= GTF_GLOB_REF;
+                        break;
+                    }
+#endif // TARGET_XARCH
+
+#if defined(TARGET_ARM64)
+                    case NI_ArmBase_Yield:
+                    {
+                        assert(tree->OperRequiresCallFlag(this));
+                        expectedFlags |= GTF_GLOB_REF;
+                        break;
+                    }
+#endif // TARGET_ARM64
+
+                    default:
+                    {
+                        assert(!"Unhandled HWIntrinsic with special side effect");
+                        break;
+                    }
+                }
+            }
+
+            break;
+        }
+#endif // FEATURE_HW_INTRINSICS
+
         default:
             break;
     }
 
     tree->VisitOperands([&](GenTree* operand) -> GenTree::VisitResult {
-
-        // ASGs are nodes that produce no value, but have a type (essentially, the type of the location).
-        // Validate that nodes that parent ASGs do not consume values. This check also ensures that code
-        // which updates location types ("gsParamsToShadows" replaces small LCL_VARs with TYP_INT ones)
-        // does not have to worry about propagating the new type "up the tree".
-        //
-        // Uncoditionally allowing COMMA here weakens the assert, but is necessary because the compiler
-        // ("gtExtractSideEffList") can create "typed" "comma lists" with ASGs as second operands.
-        //
-        if (operand->OperIs(GT_ASG))
-        {
-            assert(tree->IsCall() || tree->OperIs(GT_COMMA));
-        }
-
         fgDebugCheckFlags(operand);
         expectedFlags |= (operand->gtFlags & GTF_ALL_EFFECT);
 
@@ -3365,7 +3423,7 @@ void Compiler::fgDebugCheckLinkedLocals()
 
         bool ShouldLink(GenTree* node)
         {
-            return node->OperIsLocal() || node->OperIsLocalAddr();
+            return node->OperIsAnyLocal();
         }
 
     public:
@@ -3395,22 +3453,14 @@ void Compiler::fgDebugCheckLinkedLocals()
             GenTree* node = *use;
             if (ShouldLink(node))
             {
-                if ((user != nullptr) && user->OperIs(GT_ASG) && (node == user->gtGetOp1()))
-                {
-                }
-                else if ((user != nullptr) && user->IsCall() &&
-                         (node == m_compiler->gtCallGetDefinedRetBufLclAddr(user->AsCall())))
+                if ((user != nullptr) && user->IsCall() &&
+                    (node == m_compiler->gtCallGetDefinedRetBufLclAddr(user->AsCall())))
                 {
                 }
                 else
                 {
                     m_locals.Push(node);
                 }
-            }
-
-            if (node->OperIs(GT_ASG) && ShouldLink(node->gtGetOp1()))
-            {
-                m_locals.Push(node->gtGetOp1());
             }
 
             if (node->IsCall())
@@ -3453,7 +3503,7 @@ void Compiler::fgDebugCheckLinkedLocals()
             int nodeIndex = 0;
             for (GenTree* cur = first; cur != nullptr; cur = cur->gtNext)
             {
-                success &= cur->OperIsLocal() || cur->OperIsLocalAddr();
+                success &= cur->OperIsAnyLocal();
                 success &= (nodeIndex < expected->Height()) && (cur == expected->Bottom(nodeIndex));
                 nodeIndex++;
             }
@@ -4104,7 +4154,7 @@ public:
         {
             ProcessDefs(tree);
         }
-        else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_PHI_ARG) && ((tree->gtFlags & GTF_VAR_DEF) == 0))
+        else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_PHI_ARG))
         {
             ProcessUses(tree->AsLclVarCommon());
         }
@@ -4129,6 +4179,89 @@ public:
     void SetBlock(BasicBlock* block)
     {
         m_block = block;
+        CheckPhis(block);
+    }
+
+    void CheckPhis(BasicBlock* block)
+    {
+        Statement* nonPhiStmt = nullptr;
+        for (Statement* const stmt : block->Statements())
+        {
+            // All PhiDefs should appear before any other statements
+            //
+            if (!stmt->IsPhiDefnStmt())
+            {
+                if (nonPhiStmt == nullptr)
+                {
+                    nonPhiStmt = stmt;
+                }
+                continue;
+            }
+
+            if (nonPhiStmt != nullptr)
+            {
+                SetHasErrors();
+                JITDUMP("[error] " FMT_BB " PhiDef " FMT_STMT " appears after non-PhiDef " FMT_STMT "\n", block->bbNum,
+                        stmt->GetID(), nonPhiStmt->GetID());
+            }
+
+            GenTreeLclVar* const phiDefNode = stmt->GetRootNode()->AsLclVar();
+            GenTreePhi* const    phi        = phiDefNode->Data()->AsPhi();
+            assert(phiDefNode->IsPhiDefn());
+
+            // Verify each GT_PHI_ARG is the right local.
+            //
+            // If block does not begin a handler, verify GT_PHI_ARG blocks are unique
+            // (that is, each pred supplies at most one ssa def).
+            //
+            BitVecTraits bitVecTraits(m_compiler->fgBBNumMax + 1, m_compiler);
+            BitVec       phiPreds(BitVecOps::MakeEmpty(&bitVecTraits));
+
+            for (GenTreePhi::Use& use : phi->Uses())
+            {
+                GenTreePhiArg* const phiArgNode = use.GetNode()->AsPhiArg();
+                if (phiArgNode->GetLclNum() != phiDefNode->GetLclNum())
+                {
+                    SetHasErrors();
+                    JITDUMP("[error] Wrong local V%02u in PhiArg [%06u] -- expected V%02u\n", phiArgNode->GetLclNum(),
+                            m_compiler->dspTreeID(phiArgNode), phiDefNode->GetLclNum());
+                }
+
+                // Handlers can have multiple PhiArgs from the same block and implicit preds.
+                // So we can't easily check their PhiArgs.
+                //
+                if (m_compiler->bbIsHandlerBeg(block))
+                {
+                    continue;
+                }
+
+                BasicBlock* const phiArgBlock = phiArgNode->gtPredBB;
+
+                if (phiArgBlock != nullptr)
+                {
+                    if (BitVecOps::IsMember(&bitVecTraits, phiPreds, phiArgBlock->bbNum))
+                    {
+                        SetHasErrors();
+                        JITDUMP("[error] " FMT_BB " [%06u]: multiple PhiArgs for predBlock " FMT_BB "\n", block->bbNum,
+                                m_compiler->dspTreeID(phi), phiArgBlock->bbNum);
+                    }
+
+                    BitVecOps::AddElemD(&bitVecTraits, phiPreds, phiArgBlock->bbNum);
+
+                    // If phiArgBlock is not a pred of block we either have messed up when building
+                    // SSA or made modifications after building SSA and possibly should have pruned
+                    // out or updated this PhiArg.
+                    //
+                    FlowEdge* const edge = m_compiler->fgGetPredForBlock(block, phiArgBlock);
+
+                    if (edge == nullptr)
+                    {
+                        JITDUMP("[info] " FMT_BB " [%06u]: stale PhiArg [%06u] pred block " FMT_BB "\n", block->bbNum,
+                                m_compiler->dspTreeID(phi), m_compiler->dspTreeID(phiArgNode), phiArgBlock->bbNum);
+                    }
+                }
+            }
+        }
     }
 
     void DoChecks()
@@ -4295,7 +4428,7 @@ void Compiler::fgDebugCheckSsa()
         }
     };
 
-    // Visit the blocks that SSA intially renamed
+    // Visit the blocks that SSA initially renamed
     //
     SsaCheckVisitor        scv(this);
     SsaCheckDomTreeVisitor visitor(this, scv);
@@ -4335,6 +4468,7 @@ void Compiler::fgDebugCheckSsa()
 //    - All basic blocks with loop numbers set have a corresponding loop in the table
 //    - All basic blocks without a loop number are not in a loop
 //    - All parents of the loop with the block contain that block
+//    - If optLoopsRequirePreHeaders is true, the loop has a pre-header
 //    - If the loop has a pre-header, it is valid
 //    - The loop flags are valid
 //    - no loop shares `top` with any of its children
@@ -4593,6 +4727,11 @@ void Compiler::fgDebugCheckLoopTable()
             }
         }
 
+        if (optLoopsRequirePreHeaders)
+        {
+            assert((loop.lpFlags & LPFLG_HAS_PREHEAD) != 0);
+        }
+
         // If the loop has a pre-header, ensure the pre-header form is correct.
         if ((loop.lpFlags & LPFLG_HAS_PREHEAD) != 0)
         {
@@ -4652,6 +4791,32 @@ void Compiler::fgDebugCheckLoopTable()
         {
             loop.VERIFY_lpIterTree();
             loop.VERIFY_lpTestTree();
+        }
+
+        // If we have dominators, we check more things:
+        // 1. The pre-header dominates the entry (if pre-headers are required).
+        // 2. The entry dominates the exit.
+        // 3. The IDom tree from the exit reaches the entry.
+        if (fgDomsComputed)
+        {
+            if (optLoopsRequirePreHeaders)
+            {
+                assert(fgDominate(loop.lpHead, loop.lpEntry));
+            }
+
+            if (loop.lpExitCnt == 1)
+            {
+                assert(loop.lpExit != nullptr);
+                assert(fgDominate(loop.lpEntry, loop.lpExit));
+
+                BasicBlock* cur = loop.lpExit;
+                while ((cur != nullptr) && (cur != loop.lpEntry))
+                {
+                    assert(fgDominate(cur, loop.lpExit));
+                    cur = cur->bbIDom;
+                }
+                assert(cur == loop.lpEntry); // We must be able to reach the entry from the exit via the IDom tree.
+            }
         }
     }
 

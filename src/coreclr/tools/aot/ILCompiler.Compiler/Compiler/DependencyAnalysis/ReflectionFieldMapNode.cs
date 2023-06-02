@@ -14,18 +14,17 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a map between reflection metadata and native field offsets.
     /// </summary>
-    internal sealed class ReflectionFieldMapNode : ObjectNode, ISymbolDefinitionNode
+    internal sealed class ReflectionFieldMapNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private ObjectAndOffsetSymbolNode _endSymbol;
+        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
 
         public ReflectionFieldMapNode(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__field_to_offset_map_End", true);
             _externalReferences = externalReferences;
         }
 
-        public ISymbolNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -128,9 +127,15 @@ namespace ILCompiler.DependencyAnalysis
                         case FieldTableFlags.GCStatic:
                         case FieldTableFlags.NonGCStatic:
                             {
+                                uint fieldOffset = (uint)field.Offset.AsInt;
+                                if (field.IsThreadStatic && field.OwningType is MetadataType mt)
+                                {
+                                    fieldOffset += factory.ThreadStaticBaseOffset(mt);
+                                }
+
                                 if (field.OwningType.HasInstantiation)
                                 {
-                                    vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant((uint)(field.Offset.AsInt)));
+                                    vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant(fieldOffset));
                                 }
                                 else
                                 {
@@ -138,22 +143,28 @@ namespace ILCompiler.DependencyAnalysis
 
                                     ISymbolNode staticsNode;
                                     if (field.IsThreadStatic)
+                                    {
                                         staticsNode = factory.TypeThreadStaticIndex(metadataType);
+                                    }
                                     else if (field.HasGCStaticBase)
+                                    {
                                         staticsNode = factory.TypeGCStaticsSymbol(metadataType);
+                                    }
                                     else
+                                    {
                                         staticsNode = factory.TypeNonGCStaticsSymbol(metadataType);
+                                    }
 
                                     if (!field.IsThreadStatic && !field.HasGCStaticBase)
                                     {
-                                        uint index = _externalReferences.GetIndex(staticsNode, field.Offset.AsInt);
+                                        uint index = _externalReferences.GetIndex(staticsNode, (int)fieldOffset);
                                         vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant(index));
                                     }
                                     else
                                     {
                                         uint index = _externalReferences.GetIndex(staticsNode);
                                         vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant(index));
-                                        vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant((uint)(field.Offset.AsInt)));
+                                        vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant(fieldOffset));
                                     }
                                 }
                             }
@@ -171,9 +182,9 @@ namespace ILCompiler.DependencyAnalysis
 
             byte[] hashTableBytes = writer.Save();
 
-            _endSymbol.SetSymbolOffset(hashTableBytes.Length);
+            _size = hashTableBytes.Length;
 
-            return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
+            return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
