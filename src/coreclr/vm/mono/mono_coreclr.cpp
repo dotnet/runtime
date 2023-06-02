@@ -1291,47 +1291,6 @@ extern "C" EXPORT_API MonoType* EXPORT_CC mono_field_get_type_specific(MonoClass
     return MonoType_clr_to_MonoType(typeHandle);
 }
 
-extern "C" EXPORT_API void EXPORT_CC mono_field_get_value(MonoObject *obj, MonoClassField *field, void *value)
-{
-    TRACE_API("%p, %p, %p", obj, field, value);
-
-    // TODO: Add contact
-    // TODO: obj not protected?
-    GCX_COOP();
-    OBJECTREF objectRef = ObjectToOBJECTREF((MonoObject_clr*)obj);
-    GCPROTECT_BEGIN(objectRef); // Is it really necessary in cooperative mode? for a GetInstanceField?
-    {
-        auto field_clr = (MonoClassField_clr*)field;
-        field_clr->GetInstanceField(objectRef, value);
-    }
-    GCPROTECT_END();
-}
-
-extern "C" EXPORT_API void EXPORT_CC mono_field_set_value(MonoObject *obj, MonoClassField *field, void *value)
-{
-    TRACE_API("%p, %p, %p", obj, field, value);
-
-    // TODO: Add contact
-    // TODO: obj not protected?
-    GCX_COOP();
-    OBJECTREF objectRef = ObjectToOBJECTREF((MonoObject_clr*)obj);
-    auto field_clr = ((MonoClassField_clr*)field);
-    GCPROTECT_BEGIN(objectRef); // Is it really necessary in cooperative mode? for a GetInstanceField?
-    {
-        CorElementType fieldType = field_clr->GetFieldType();
-        if (fieldType == ELEMENT_TYPE_CLASS)
-            field_clr->SetInstanceField(objectRef, &value);
-        else
-            field_clr->SetInstanceField(objectRef, value);
-    }
-    GCPROTECT_END();
-}
-
-extern "C" EXPORT_API void EXPORT_CC mono_field_static_get_value(MonoVTable *vt, MonoClassField *field, void *value)
-{
-    ASSERT_NOT_IMPLEMENTED;
-}
-
 extern "C" EXPORT_API void EXPORT_CC mono_gc_collect(int generation)
 {
     FCALL_CONTRACT;

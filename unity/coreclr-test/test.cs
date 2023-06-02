@@ -49,6 +49,11 @@ namespace TestDll
         public string s;
         public bool b;
         public float f;
+
+        public int GetI() => i;
+        public string GetS() => s;
+        public bool GetB() => b;
+        public float GetF() => f;
     }
 
     class AnotherTestAttribute : Attribute

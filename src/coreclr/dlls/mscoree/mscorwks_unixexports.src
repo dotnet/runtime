@@ -103,9 +103,6 @@ mono_field_get_offset
 mono_field_get_parent
 mono_field_get_type
 mono_field_get_type_specific
-mono_field_get_value
-mono_field_set_value
-mono_field_static_get_value
 mono_gc_collect
 mono_gc_collect_a_little
 mono_gc_get_heap_size

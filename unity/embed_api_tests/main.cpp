@@ -971,63 +971,6 @@ TEST(mono_gc_wbarrier_set_field_can_set_reference_field)
     CHECK_EQUAL(obj, returnValue);
 }
 
-TEST(mono_field_set_value_can_set_reference_field)
-{
-    MonoClass* klass = GetClassHelper(kTestDLLNameSpace, "TestClassWithReferenceField");
-    GET_AND_CHECK(obj, mono_object_new(g_domain, klass));
-    GET_AND_CHECK(method, mono_class_get_method_from_name(klass, "GetField", 0));
-    MonoObject* returnValue = mono_runtime_invoke(method, obj, nullptr, nullptr);
-    CHECK(returnValue == nullptr);
-
-    GET_AND_CHECK(field, mono_class_get_field_from_name(klass, "reference"));
-    mono_field_set_value(obj, field, obj);
-
-    returnValue = mono_runtime_invoke(method, obj, nullptr, nullptr);
-    CHECK_EQUAL(obj, returnValue);
-}
-
-TEST(mono_field_get_value_can_get_reference_field)
-{
-    MonoClass* klass = GetClassHelper(kTestDLLNameSpace, "TestClassWithReferenceField");
-    GET_AND_CHECK(obj, mono_object_new(g_domain, klass));
-
-    GET_AND_CHECK(field, mono_class_get_field_from_name(klass, "reference"));
-    int field_offset = mono_field_get_offset(field);
-    mono_gc_wbarrier_set_field(obj, (char*)obj + field_offset, obj);
-
-    MonoObject* returnValue;
-    mono_field_get_value(obj, field, &returnValue);
-    CHECK_EQUAL(obj, returnValue);
-}
-
-TEST(mono_field_set_value_can_set_value_field)
-{
-    MonoClass* klass = GetClassHelper(kTestDLLNameSpace, "TestClassWithFields");
-    GET_AND_CHECK(obj, mono_object_new(g_domain, klass));
-
-    GET_AND_CHECK(field, mono_class_get_field_from_name(klass, "y"));
-    int value = 23;
-    mono_field_set_value(obj, field, &value);
-
-    size_t field_offset = mono_field_get_offset(field);
-    CHECK_EQUAL(23, *(int*)((char*)obj + field_offset));
-}
-
-TEST(mono_field_get_value_can_get_value_field)
-{
-    MonoClass* klass = GetClassHelper(kTestDLLNameSpace, "TestClassWithFields");
-    GET_AND_CHECK(obj, mono_object_new(g_domain, klass));
-
-    GET_AND_CHECK(field, mono_class_get_field_from_name(klass, "y"));
-
-    size_t field_offset = mono_field_get_offset(field);
-    *(int*)((char*)obj + field_offset) = 23;
-
-    MonoObject* returnValue = NULL;
-    mono_field_get_value(obj, field, &returnValue);
-    CHECK_EQUAL((void*)23, returnValue);
-}
-
 TEST(mono_field_get_offset_retrieves_field_offset_from_struct)
 {
     MonoClass* klass = GetClassHelper(kTestDLLNameSpace, "TestStructWithFields");
@@ -1653,13 +1596,6 @@ TEST(mono_custom_attrs_get_attr_can_get_attribute_instance_for_inherited_attribu
     CHECK_EQUAL(klassInheritedTestAttribute, mono_object_get_class(attributeInstance));
 }
 
-void GetFieldHelper(MonoClass *klass, MonoObject *obj, const char* fieldName, void* value)
-{
-    GET_AND_CHECK(field, mono_class_get_field_from_name(klass, fieldName));
-    size_t field_offset = mono_field_get_offset(field);
-    mono_field_get_value(obj, field, value);
-}
-
 TEST(mono_custom_attrs_get_attr_attribute_instance_has_correct_parameters)
 {
     MonoClass *klassClassWithAttribute = GetClassHelper(kTestDLLNameSpace, "ClassWithAttribute");
@@ -1667,23 +1603,27 @@ TEST(mono_custom_attrs_get_attr_attribute_instance_has_correct_parameters)
 
     GET_AND_CHECK(attributeInstance, mono_unity_class_get_attribute(klassClassWithAttribute, klassTestWithParamsAttribute));
 
-    int i;
-    GetFieldHelper(klassTestWithParamsAttribute, attributeInstance, "i", &i);
-    CHECK_EQUAL(42, i);
 
-    MonoString* s;
-    GetFieldHelper(klassTestWithParamsAttribute, attributeInstance, "s", &s);
-    char *utf8 = mono_string_to_utf8(s);
+    GET_AND_CHECK(method, mono_class_get_method_from_name(klassTestWithParamsAttribute, "GetI", 0));
+    MonoObject* returnValue = mono_runtime_invoke(method, attributeInstance, nullptr, nullptr);
+    int int_result = *(int*)mono_object_unbox(returnValue);
+    CHECK_EQUAL(42, int_result);
+
+    GET_AND_CHECK(methodS, mono_class_get_method_from_name(klassTestWithParamsAttribute, "GetS", 0));
+    returnValue = mono_runtime_invoke(methodS, attributeInstance, nullptr, nullptr);
+    char *utf8 = mono_string_to_utf8((MonoString*)returnValue);
     CHECK_EQUAL_STR("foo", utf8);
     mono_unity_g_free(utf8);
 
-    bool b;
-    GetFieldHelper(klassTestWithParamsAttribute, attributeInstance, "b", &b);
-    CHECK_EQUAL(true, b);
+    GET_AND_CHECK(methodB, mono_class_get_method_from_name(klassTestWithParamsAttribute, "GetB", 0));
+    returnValue = mono_runtime_invoke(methodB, attributeInstance, nullptr, nullptr);
+    bool bool_result = *(bool*)mono_object_unbox(returnValue);
+    CHECK_EQUAL(true, bool_result);
 
-    float f;
-    GetFieldHelper(klassTestWithParamsAttribute, attributeInstance, "f", &f);
-    CHECK_EQUAL(1.0f, f);
+    GET_AND_CHECK(methodF, mono_class_get_method_from_name(klassTestWithParamsAttribute, "GetF", 0));
+    returnValue = mono_runtime_invoke(methodF, attributeInstance, nullptr, nullptr);
+    float float_result = *(float*)mono_object_unbox(returnValue);
+    CHECK_EQUAL(1.0f, float_result);
 }
 
 TEST(mono_custom_attrs_has_attr_can_check_method_attribute)
