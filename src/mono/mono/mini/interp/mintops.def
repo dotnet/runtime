@@ -685,6 +685,7 @@ OPDEF(MINT_ARRAY_ELEMENT_SIZE, "array_element_size", 3, 1, 1, MintOpNoArgs)
 
 // Call fast paths
 OPDEF(MINT_CALL_FAST_PATH_RT_FLAG, "call.fp.rt.flag", 6, 0, 0, MintOpNoArgs)
+OPDEF(MINT_CALL_FAST_PATH_RT_FIELD, "call.fp.rt.field", 7, 0, 0, MintOpNoArgs)
 
 /* Calls */
 OPDEF(MINT_CALL, "call", 4, 1, 1, MintOpMethodToken)

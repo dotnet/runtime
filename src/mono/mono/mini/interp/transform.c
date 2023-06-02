@@ -2728,6 +2728,33 @@ interp_try_emit_call_fast_path (TransformData *td, MonoMethod *target_method)
 			ret->data [2] = mask;
 			return ret;
 		}
+
+		const char *field_name = NULL;
+		if (!strcmp (target_method->name, "GetCorElementType")) {
+			mask = 32;
+			field_name = "CorElementType";
+		} else if (!strcmp (target_method->name, "GetAttributes")) {
+			mask = 64;
+			field_name = "TypeAttributes";
+		} else if (!strcmp (target_method->name, "GetDefaultConstructor")) {
+			mask = 128;
+			field_name = "default_ctor";
+		}
+
+		if (mask && field_name) {
+			MonoClassField *rt_cache = mono_class_get_field_from_name_full (target_method->klass, "cache", NULL);
+			g_assert (rt_cache);
+			MonoClass *typecache_klass = mono_class_from_mono_type_internal (rt_cache->type);
+			MonoClassField *tc_cached = mono_class_get_field_from_name_full (typecache_klass, "Cached", NULL);
+			MonoClassField *tc_field = mono_class_get_field_from_name_full (typecache_klass, field_name, NULL);
+			// The interp opcode assumes that these fields are one after the other
+			InterpInst *ret = interp_new_ins (td, MINT_CALL_FAST_PATH_RT_FIELD, mono_interp_oplen [MINT_CALL_FAST_PATH_RT_FIELD]);
+			ret->data [0] = rt_cache->offset;
+			ret->data [1] = tc_cached->offset;
+			ret->data [2] = tc_field->offset;
+			ret->data [3] = mask;
+			return ret;
+		}
 	}
 
 	return NULL;

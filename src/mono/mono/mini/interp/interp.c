@@ -7644,6 +7644,23 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 6;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_CALL_FAST_PATH_RT_FIELD) {
+			MonoObject *rt_obj = LOCAL_VAR (ip [2], MonoObject*);
+			MonoObject *tc_obj = *(MonoObject**)((char*)rt_obj + ip [3]);
+			if (tc_obj) {
+				gint32 cached = *(gint32*)((char*)tc_obj + ip [4]);
+				gint32 mask = ip [6];
+				if (cached & mask) {
+					gpointer field = (char*)tc_obj + ip [5];
+					// We might overcopy here so we have unified path for int32/obj.
+					memcpy (locals + ip [1], field, MINT_STACK_SLOT_SIZE);
+					// Skip also the call
+					ip += 4;
+				}
+			}
+			ip += 7;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_METADATA_UPDATE_LDFLDA) {
 			MonoObject *inst = LOCAL_VAR (ip [2], MonoObject*);
 			MonoType *field_type = frame->imethod->data_items [ip [3]];
