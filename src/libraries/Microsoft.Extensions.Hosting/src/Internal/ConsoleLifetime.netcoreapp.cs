@@ -4,6 +4,9 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
+using Microsoft.Extensions.Internal;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.Hosting.Internal
 {
@@ -12,6 +15,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         private PosixSignalRegistration? _sigIntRegistration;
         private PosixSignalRegistration? _sigQuitRegistration;
         private PosixSignalRegistration? _sigTermRegistration;
+        private Timer? _shutdownDelayTimer;
 
         private partial void RegisterShutdownHandlers()
         {
@@ -26,7 +30,19 @@ namespace Microsoft.Extensions.Hosting.Internal
             Debug.Assert(context.Signal == PosixSignal.SIGINT || context.Signal == PosixSignal.SIGQUIT || context.Signal == PosixSignal.SIGTERM);
 
             context.Cancel = true;
-            ApplicationLifetime.StopApplication();
+
+            if (HostOptions.ShutdownDelay.HasValue)
+            {
+                _shutdownDelayTimer = NonCapturingTimer.Create(state =>
+                {
+                    Logger.LogInformation("Received signal {PosixSignal}. Delaying shutdown for {Delay}", context.Signal, HostOptions.ShutdownDelay.Value);
+                    ((ConsoleLifetime)state!).ApplicationLifetime.StopApplication();
+                }, this, HostOptions.ShutdownDelay.Value, Timeout.InfiniteTimeSpan);
+            }
+            else
+            {
+                ApplicationLifetime.StopApplication();
+            }
         }
 
         private partial void UnregisterShutdownHandlers()
@@ -34,6 +50,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             _sigIntRegistration?.Dispose();
             _sigQuitRegistration?.Dispose();
             _sigTermRegistration?.Dispose();
+            _shutdownDelayTimer?.Dispose();
         }
     }
 }
