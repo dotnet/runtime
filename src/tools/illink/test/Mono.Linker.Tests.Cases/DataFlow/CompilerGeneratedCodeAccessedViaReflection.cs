@@ -29,6 +29,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			SelfMarkingMethods.Test ();
 			DelegateAccess.Test ();
+
+			DAMReflectionAccessToCompilerGeneratedCode.Test ();
 		}
 
 		class BaseTypeWithIteratorStateMachines
@@ -289,8 +291,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static void LambdaWithCorrectParameter ()
 			{
 				var lambda =
-				[ExpectedWarning ("IL2114", "<" + nameof (LambdaWithCorrectParameter) + ">",
-					ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 				([DynamicallyAccessedMembersAttribute (DynamicallyAccessedMemberTypes.All)] Type t) => {
 					t.RequiresAll ();
 				};
@@ -381,8 +381,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (LambdaWithCorrectDataflow) + ">",
 				ProducedBy = Tool.Trimmer)]
-			[ExpectedWarning ("IL2111", "<" + nameof (LambdaWithCorrectParameter) + ">",
-				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[ExpectedWarning ("IL2118", "<" + nameof (LambdaWithProblematicDataflow) + ">",
 				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (LambdaWithCapturedTypeToDAM) + ">",
@@ -676,6 +674,72 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestLambdaThroughDelegate ();
 				TestLocalFunctionThroughDelegate ();
 				TestGenericLocalFunctionThroughDelegate ();
+			}
+		}
+
+		class DAMReflectionAccessToCompilerGeneratedCode
+		{
+			// ldftn access - this MUST warn since the action can be called without the annotation
+			[ExpectedWarning ("IL2111", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			static void Lambda ()
+			{
+				Action<Type> a = ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => {
+					type.GetMethods ();
+				};
+
+				a (typeof (string));
+			}
+
+			static void LambdaOnGeneric<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
+			{
+				Action a = () => {
+					typeof(T).GetMethods ();
+				};
+
+				a ();
+			}
+
+			static void LocalFunction ()
+			{
+				LocalFunctionInner (typeof (string));
+
+				static void LocalFunctionInner ([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
+				{
+					type.GetMethods ();
+				}
+			}
+
+			static void LocalFunctionOnGeneric<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
+			{
+				LocalFunctionInner ();
+
+				static void LocalFunctionInner ()
+				{
+					typeof(T).GetMethods ();
+				}
+			}
+
+			static IEnumerable<int> IteratorOnGeneric<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
+			{
+				yield return 0;
+			}
+
+			static async Task AsyncOnGeneric<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
+			{
+				await Task.Delay (100);
+			}
+
+			static async IAsyncEnumerable<int> AsyncIteratorOnGeneric<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
+			{
+				yield return 0;
+				await Task.Delay (100);
+			}
+
+			[ExpectedWarning ("IL2118", "<" + nameof (LambdaOnGeneric) + ">", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2118", "<" + nameof (LocalFunctionOnGeneric) + ">", ProducedBy = Tool.Trimmer)]
+			public static void Test ()
+			{
+				typeof (DAMReflectionAccessToCompilerGeneratedCode).RequiresAll ();
 			}
 		}
 

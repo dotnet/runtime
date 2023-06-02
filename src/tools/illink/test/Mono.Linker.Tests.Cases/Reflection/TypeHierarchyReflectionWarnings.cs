@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -61,7 +62,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			RUCOnVirtualOnAnnotatedBaseUsedByDerived.Test ();
 			UseByDerived.Test ();
 
-			CompilerGeneratedCode.Test (null);
+			CompilerGeneratedCodeRUC.Test (null);
+			CompilerGeneratedCodeDAM.Test (null);
 		}
 
 		[Kept]
@@ -678,8 +680,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode ("--RUCOnVirtualMethodDerivedAnnotated.Derived.RUCVirtualMethod--")]
-                [ExpectedWarning("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Derived.RUCVirtualMethod--")]
-                public override void RUCVirtualMethod () { }
+				[ExpectedWarning ("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Derived.RUCVirtualMethod--")]
+				public override void RUCVirtualMethod () { }
 			}
 
 			[Kept]
@@ -722,8 +724,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode ("--RUCOnVirtualMethodDerivedAnnotated.Derived.RUCVirtualMethod--")]
-                [ExpectedWarning("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Derived.RUCVirtualMethod--")]
-                public override void RUCVirtualMethod () { }
+				[ExpectedWarning ("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Derived.RUCVirtualMethod--")]
+				public override void RUCVirtualMethod () { }
 			}
 
 			[Kept]
@@ -778,8 +780,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[KeptAttributeAttribute (typeof (RequiresDynamicCodeAttribute))]
 				[KeptAttributeAttribute (typeof (RequiresAssemblyFilesAttribute))]
-                [ExpectedWarning("IL2112", "--Derived.VirtualMethodWithRequires--")]
-                [RequiresUnreferencedCode ("--Derived.VirtualMethodWithRequires--")]
+				[ExpectedWarning ("IL2112", "--Derived.VirtualMethodWithRequires--")]
+				[RequiresUnreferencedCode ("--Derived.VirtualMethodWithRequires--")]
 				[RequiresDynamicCode ("--Derived.VirtualMethodWithRequires--")]
 				[RequiresAssemblyFiles ("--Derived.VirtualMethodWithRequires--")]
 				public override void VirtualMethodWithRequires () { }
@@ -865,7 +867,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 		[KeptMember (".ctor()")]
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
-		class CompilerGeneratedCode
+		class CompilerGeneratedCodeRUC
 		{
 			[Kept]
 			[ExpectedWarning ("IL2026", "LambdaWithRUC")]
@@ -874,6 +876,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				Action<Type> a =
 					[RequiresUnreferencedCode ("LambdaWithRUC")]
 				(Type type) => { type.GetMethods (); };
+
+				a (typeof (string));
 			}
 
 			[Kept]
@@ -890,8 +894,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[KeptAttributeAttribute (typeof(IteratorStateMachineAttribute))]
-			[KeptAttributeAttribute (typeof(RequiresUnreferencedCodeAttribute))]
+			[KeptAttributeAttribute (typeof (IteratorStateMachineAttribute))]
+			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 			[RequiresUnreferencedCode ("IteratorWithRUC")]
 			[ExpectedWarning ("IL2112", "IteratorWithRUC")]
 			static IEnumerable<int> IteratorWithRUC ()
@@ -903,7 +907,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			[KeptAttributeAttribute (typeof (AsyncStateMachineAttribute))]
 			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
-			[KeptAttributeAttribute (typeof(DebuggerStepThroughAttribute))]
+			[KeptAttributeAttribute (typeof (DebuggerStepThroughAttribute))]
 			[RequiresUnreferencedCode ("AsyncWithRUC")]
 			[ExpectedWarning ("IL2112", "AsyncWithRUC")]
 			static async Task AsyncWithRUC ()
@@ -923,7 +927,77 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			public static void Test (CompilerGeneratedCode instance)
+			public static void Test (CompilerGeneratedCodeRUC instance)
+			{
+				instance.GetType ().RequiresAll ();
+			}
+		}
+
+		[Kept]
+		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+		[KeptMember (".ctor()")]
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+		class CompilerGeneratedCodeDAM
+		{
+			[Kept]
+			[ExpectedWarning ("IL2111", nameof (LambdaWithDAM))]
+			static void LambdaWithDAM ()
+			{
+				Action<Type> a =
+					([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => { type.GetMethods (); };
+
+				a (typeof (string));
+			}
+
+			[Kept]
+			static void LocalFunctionWithDAM ()
+			{
+				LocalFunctionWithDAMInner (typeof (string));
+
+				static void LocalFunctionWithDAMInner ([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
+				{
+					type.GetMethods ();
+				}
+			}
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (IteratorStateMachineAttribute))]
+			[ExpectedWarning ("IL2119", nameof (IteratorWithGenericDAM), CompilerGeneratedCode = true, ProducedBy = Tool.Trimmer)]
+			static IEnumerable<bool> IteratorWithGenericDAM<
+				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
+			{
+				foreach (MethodInfo m in typeof (T).GetMethods ())
+					yield return m.IsPublic;
+			}
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (AsyncStateMachineAttribute))]
+			[KeptAttributeAttribute (typeof (DebuggerStepThroughAttribute))]
+			[ExpectedWarning ("IL2119", nameof (AsyncWithGenericDAM), CompilerGeneratedCode = true, ProducedBy = Tool.Trimmer)]
+			static async Task AsyncWithGenericDAM<
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
+			{
+				await Task.Delay (100);
+				typeof (T).GetMethods ();
+			}
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (AsyncIteratorStateMachineAttribute))]
+			[ExpectedWarning("IL2119", nameof(AsyncIteratorWithGenericDAM), CompilerGeneratedCode = true, ProducedBy = Tool.Trimmer)]
+			static async IAsyncEnumerable<bool> AsyncIteratorWithGenericDAM<
+				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
+			{
+				foreach (MethodInfo m in typeof (T).GetMethods ()) {
+					await Task.Delay (100);
+					yield return m.IsPublic;
+				}
+			}
+
+			[Kept]
+			public static void Test (CompilerGeneratedCodeDAM instance)
 			{
 				instance.GetType ().RequiresAll ();
 			}

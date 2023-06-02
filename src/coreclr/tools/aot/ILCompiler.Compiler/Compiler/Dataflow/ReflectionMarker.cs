@@ -256,7 +256,7 @@ namespace ILCompiler.Dataflow
                 return;
 
             bool isReflectionAccessCoveredByDAM = Annotations.ShouldWarnWhenAccessedForReflection(entity);
-            if (isReflectionAccessCoveredByDAM)
+            if (isReflectionAccessCoveredByDAM && ShouldProduceRequiresWarningForReflectionAccess(entity, accessKind))
             {
                 if (entity is MethodDesc)
                     _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, entity.GetDisplayName());
@@ -267,10 +267,6 @@ namespace ILCompiler.Dataflow
             // We decided to not warn on reflection access to compiler-generated methods:
             // https://github.com/dotnet/runtime/issues/85042
 
-            // All override methods should have the same annotations as their base methods
-            // (else we will produce warning IL2046 or IL2092 or some other warning).
-            // When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
-            // PERF: Avoid precomputing this as this method is relatively expensive. Only call it once we're about to produce a warning.
             static bool ShouldProduceRequiresWarningForReflectionAccess(TypeSystemEntity entity, AccessKind accessKind)
             {
                 bool isCompilerGenerated = CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(entity);
@@ -328,7 +324,7 @@ namespace ILCompiler.Dataflow
             }
 
             bool isReflectionAccessCoveredByDAM = Annotations.ShouldWarnWhenAccessedForReflection(entity);
-            if (isReflectionAccessCoveredByDAM)
+            if (isReflectionAccessCoveredByDAM && !isCompilerGenerated)
             {
                 var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithDynamicallyAccessedMembers : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers;
                 _logger.LogWarning(origin, id, _typeHierarchyDataFlowOrigin.GetDisplayName(), entity.GetDisplayName());

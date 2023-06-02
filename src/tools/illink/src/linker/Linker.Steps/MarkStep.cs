@@ -1668,7 +1668,7 @@ namespace Mono.Linker.Steps
 				ReportRequiresUnreferencedCode (method.GetDisplayName (), requiresUnreferencedCode!, new DiagnosticContext (origin, diagnosticsEnabled: true, Context));
 
 			bool isReflectionAccessCoveredByDAM = Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (method);
-			if (isReflectionAccessCoveredByDAM) {
+			if (isReflectionAccessCoveredByDAM && (!isCompilerGenerated || forceRUCCheck)) {
 				// ReflectionMethodBodyScanner handles more cases for data flow annotations
 				// so don't warn for those.
 				switch (dependencyKind) {
@@ -1732,7 +1732,7 @@ namespace Mono.Linker.Steps
 			}
 
 			bool isReflectionAccessCoveredByDAM = Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (member);
-			if (isReflectionAccessCoveredByDAM) {
+			if (isReflectionAccessCoveredByDAM && !isCompilerGenerated) {
 				var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithDynamicallyAccessedMembers : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers;
 				Context.LogWarning (origin, id, type.GetDisplayName (), ((MemberReference) member).GetDisplayName ());
 			}
