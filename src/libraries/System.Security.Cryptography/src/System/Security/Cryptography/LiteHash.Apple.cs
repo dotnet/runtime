@@ -31,7 +31,7 @@ namespace System.Security.Cryptography
 
     internal struct LiteXof : ILiteHash
     {
-        // Nothing uses this for Browser but we need the type.
+        // Nothing uses this for Apple but we need the type.
 #pragma warning disable CA1822 // Member does not access instance data
 #pragma warning disable IDE0060 // Remove unused parameter
         public int HashSizeInBytes => throw new PlatformNotSupportedException();
