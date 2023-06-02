@@ -263,8 +263,10 @@ function getTraceImports() {
         importDef("entry", getRawCwrap("mono_jiterp_increase_entry_count")),
         importDef("value_copy", getRawCwrap("mono_jiterp_value_copy")),
         importDef("gettype", getRawCwrap("mono_jiterp_gettype_ref")),
-        importDef("cast", getRawCwrap("mono_jiterp_cast_ref")),
-        importDef("try_unbox", getRawCwrap("mono_jiterp_try_unbox_ref")),
+        importDef("castv2", getRawCwrap("mono_jiterp_cast_v2")),
+        importDef("hasparent", getRawCwrap("mono_jiterp_has_parent_fast")),
+        importDef("imp_iface", getRawCwrap("mono_jiterp_implements_interface")),
+        importDef("imp_iface_s", getRawCwrap("mono_jiterp_implements_special_interface")),
         importDef("box", getRawCwrap("mono_jiterp_box_ref")),
         importDef("localloc", getRawCwrap("mono_jiterp_localloc")),
         ["ckovr_i4", "overflow_check_i4", getRawCwrap("mono_jiterp_overflow_check_i4")],
@@ -500,7 +502,7 @@ function initialize_builder(builder: WasmBuilder) {
         WasmValtype.i32, true
     );
     builder.defineType(
-        "cast",
+        "castv2",
         {
             "destination": WasmValtype.i32,
             "source": WasmValtype.i32,
@@ -510,11 +512,27 @@ function initialize_builder(builder: WasmBuilder) {
         WasmValtype.i32, true
     );
     builder.defineType(
-        "try_unbox",
+        "hasparent",
         {
             "klass": WasmValtype.i32,
-            "destination": WasmValtype.i32,
-            "source": WasmValtype.i32,
+            "parent": WasmValtype.i32,
+        },
+        WasmValtype.i32, true
+    );
+    builder.defineType(
+        "imp_iface",
+        {
+            "vtable": WasmValtype.i32,
+            "klass": WasmValtype.i32,
+        },
+        WasmValtype.i32, true
+    );
+    builder.defineType(
+        "imp_iface_s",
+        {
+            "obj": WasmValtype.i32,
+            "vtable": WasmValtype.i32,
+            "klass": WasmValtype.i32,
         },
         WasmValtype.i32, true
     );
@@ -766,6 +784,7 @@ function generate_wasm(
                 locals: {
                     "disp": WasmValtype.i32,
                     "temp_ptr": WasmValtype.i32,
+                    "temp_ptr2": WasmValtype.i32,
                     "cknull_ptr": WasmValtype.i32,
                     "math_lhs32": WasmValtype.i32,
                     "math_rhs32": WasmValtype.i32,
