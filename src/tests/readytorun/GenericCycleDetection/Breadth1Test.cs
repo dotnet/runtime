@@ -195,6 +195,9 @@ internal class Program
     [Fact]
     public static int BreadthTest()
     {
-        return Expression<long, int>.Construct(10) * Expression<float, double>.Construct(10);
+        return Expression<long, int>.Construct(2) * Expression<float, double>.Construct(2);
     }
+    
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ReturnTwoAndDontTellJIT() => 2;
 }

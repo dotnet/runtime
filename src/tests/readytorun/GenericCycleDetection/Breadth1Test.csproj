@@ -5,7 +5,7 @@
     <!-- This is an explicit crossgen test -->
     <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
     <!-- Without this flag Crossgen2 crashes after several minutes with arithmetic overflow -->
-    <CrossGen2TestExtraArguments>--enable-generic-cycle-detection --maxgenericcycle:-1</CrossGen2TestExtraArguments>
+    <CrossGen2TestExtraArguments>--enable-generic-cycle-detection --maxgenericcycle:-1 --maxgenericcyclebreadth:1</CrossGen2TestExtraArguments>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
