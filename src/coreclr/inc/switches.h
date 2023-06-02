@@ -168,9 +168,3 @@
 #endif
 
 #define FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
-
-// If defined, support interpretation.
-
-#if !defined(TARGET_UNIX)
-#define FEATURE_STACK_SAMPLING
-#endif // defined (ALLOW_SXS_JIT)
