@@ -538,7 +538,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     JITDUMP("offsetOfThreadStaticBlocks= %u\n", offsetOfThreadStaticBlocksVal);
 #else
     JITDUMP("tlsGetAddrFtnPtr= %u\n", threadStaticBlocksInfo.tlsGetAddrFtnPtr);
-    JITDUMP("descrAddrOfNonGCMaxThreadStaticBlock= %u\n", threadStaticBlocksInfo.descrAddrOfNonGCMaxThreadStaticBlock);
+    JITDUMP("descrAddrOfMaxThreadStaticBlock= %u\n", threadStaticBlocksInfo.descrAddrOfMaxThreadStaticBlock);
 #endif
 
     JITDUMP("offsetOfGCDataPointer= %u\n", threadStaticBlocksInfo.offsetOfGCDataPointer);
@@ -639,7 +639,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     GenTreeCall* tlsRefCall = tlsValue->AsCall();
 
 
-    GenTree* tlsArg = gtNewIconNode(threadStaticBlocksInfo.descrAddrOfNonGCMaxThreadStaticBlock, TYP_I_IMPL);
+    GenTree* tlsArg = gtNewIconNode(threadStaticBlocksInfo.descrAddrOfMaxThreadStaticBlock, TYP_I_IMPL);
     tlsRefCall->gtArgs.InsertAfterThisOrFirst(this, NewCallArg::Primitive(tlsArg));
 
     CallArg* arg0 = tlsRefCall->gtArgs.GetArgByIndex(0);
@@ -661,8 +661,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     GenTree* maxThreadStaticBlocksValue =
         gtNewIndir(TYP_INT, gtCloneExpr(maxThreadStaticBlocksRef), GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
-    GenTree* threadStaticBlocksRef =
-        gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(maxThreadStaticBlocksRef), gtIconNode(16, TYP_I_IMPL));
+    GenTree* threadStaticBlocksRef = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(maxThreadStaticBlocksRef),
+                                                   gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL));
     GenTree* threadStaticBlocksValue =
         gtNewIndir(TYP_I_IMPL, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
