@@ -4658,6 +4658,7 @@ mini_init (const char *filename)
 	callbacks.get_frame_info = mono_get_frame_info;
 	callbacks.get_cached_class_info = mono_aot_get_cached_class_info;
 	callbacks.get_class_from_name = mono_aot_get_class_from_name;
+	callbacks.mono_class_set_deferred_type_load_failure_callback = mono_class_set_type_load_failure;
 
 	if (mono_llvm_only) {
 		callbacks.build_imt_trampoline = mini_llvmonly_get_imt_trampoline;

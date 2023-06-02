@@ -284,7 +284,6 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" Link="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ISortableNode.cs" Link="Compiler\DependencyAnalysis\ISortableNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ISymbolNode.cs" Link="Compiler\DependencyAnalysis\ISymbolNode.cs" />
-    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ObjectAndOffsetSymbolNode.cs" Link="Compiler\DependencyAnalysis\ObjectAndOffsetSymbolNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ObjectDataBuilder.cs" Link="Compiler\DependencyAnalysis\ObjectDataBuilder.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ObjectNode.cs" Link="Compiler\DependencyAnalysis\ObjectNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ObjectNodeSection.cs" Link="Compiler\DependencyAnalysis\ObjectNodeSection.cs" />

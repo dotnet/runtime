@@ -36,6 +36,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
         public bool CanDeriveNewPublicKey { get; } = !PlatformDetection.IsiOS && !PlatformDetection.IstvOS && !PlatformDetection.IsMacCatalyst;
         public bool SupportsRawDerivation => true;
+        public bool SupportsSha3 => PlatformDetection.SupportsSha3;
 
         private static bool IsValueOrFriendlyNameValid(string friendlyNameOrValue)
         {
