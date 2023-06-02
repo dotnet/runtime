@@ -440,7 +440,7 @@ namespace System.Globalization
                 int digEnd = 0;
                 while (true)
                 {
-                    if ((options & NumberStyles.AllowBinarySpecifier) == 0 ? char.IsAsciiDigit(ch) || ((options & NumberStyles.AllowHexSpecifier) != 0 && char.IsBetween((char)(ch | 0x20), 'a', 'f')) : char.IsBetween(ch, '0', '1'))
+                    if ((options & NumberStyles.AllowBinarySpecifier) == 0 ? char.IsAsciiDigit(ch) || ((options & NumberStyles.AllowHexSpecifier) != 0 && char.IsBetween((char)(ch | 0x20), 'a', 'f')) : ch == '0' || ch == '1')
                     {
                         state |= StateDigits;
 
