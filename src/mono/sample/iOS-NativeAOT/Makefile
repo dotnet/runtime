@@ -13,6 +13,11 @@ REPO_DIR=$(realpath $(TOP))
 TASKS_DIR=$(REPO_DIR)/src/tasks
 DOTNET=$(REPO_DIR)/dotnet.sh
 BUILD_SCRIPT=$(REPO_DIR)/build.sh
+ifeq ($(USE_RUNTIME_PACKS),false)
+LOCAL_NUGET_RESTORE_DIR=
+else
+LOCAL_NUGET_RESTORE_DIR=$(realpath .)/packages
+endif
 
 world: build-deps all
 
@@ -45,6 +50,10 @@ all: appbuilder hello-app
 appbuilder:
 	$(DOTNET) build -c $(BUILD_CONFIG) $(TASKS_DIR)/AppleAppBuilder/AppleAppBuilder.csproj
 
+ifeq ($(USE_RUNTIME_PACKS),true)
+hello-app: export NUGET_PACKAGES = $(LOCAL_NUGET_RESTORE_DIR)
+endif
+
 hello-app: clean
 	$(DOTNET) \
 	publish -c $(BUILD_CONFIG) \
@@ -56,4 +65,4 @@ hello-app: clean
 	-bl
 
 clean:
-	rm -rf obj bin *.binlog
+	rm -rf obj bin *.binlog $(LOCAL_NUGET_RESTORE_DIR)

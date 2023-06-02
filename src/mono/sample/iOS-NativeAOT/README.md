@@ -55,12 +55,7 @@ The command performs the following:
 
     NOTE:
     - The packages can be found at: `artifacts/packages/<config>/Shipping/*.8.0.0-dev.nupkg`
-    - For testing incremental changes make sure to remove the **restored** nuget packages listed above with `8.0.0-dev` from your nuget restore directory (usually `~/.nuget/packages`). Failing to do so, can lead to unexpected behavior, as nuget will refuse to install newly generate package with a same version - `8.0.0-dev`. Something like:
-        ```
-        rm -rf ~/.nuget/packages/microsoft.dotnet.ilcompiler/8.0.0-dev 
-        rm -rf ~/.nuget/packages/runtime.osx-arm64.microsoft.dotnet.ilcompiler/8.0.0-dev 
-        rm -rf ~/.nuget/packages/microsoft.netcore.app.runtime.nativeaot.ios-arm64/8.0.0-dev 
-        ```
+    - During the build of the application NuGet is instructed to use the local `./packages` folder (in the current directory) as the folder for restored packages, which should be deleted when testing incremental changes. This is required as the packages built locally always have the same version - `8.0.0-dev`. For convenience, targets in the `Makefile` are automatically removing this folder on a rebuild.
 2. Build the sample app using locally built packages 1) and bundle it into an application bundle
 
 By default the build will use `Debug` build configuration and target `iossimulator`.
