@@ -23,6 +23,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithIntPtrConverter))]
         // Unsupported types:
         [JsonSerializable(typeof(Type))]
+        [JsonSerializable(typeof(ClassWithType<object>))]
         [JsonSerializable(typeof(ClassWithType<Type>))]
         [JsonSerializable(typeof(ConstructorInfo))]
         [JsonSerializable(typeof(ClassWithType<ConstructorInfo>))]
@@ -68,6 +69,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithIntPtrConverter))]
         // Unsupported types:
         [JsonSerializable(typeof(Type))]
+        [JsonSerializable(typeof(ClassWithType<object>))]
         [JsonSerializable(typeof(ClassWithType<Type>))]
         [JsonSerializable(typeof(ConstructorInfo))]
         [JsonSerializable(typeof(ClassWithType<ConstructorInfo>))]

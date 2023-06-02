@@ -700,6 +700,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         // Regression test for https://github.com/dotnet/runtime/issues/61860
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/79311", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void SupportsGenericParameterWithCustomConverterFactory()
         {
             var value = new List<TestEnum> { TestEnum.Cee };
