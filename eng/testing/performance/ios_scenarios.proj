@@ -19,8 +19,6 @@
     <LlvmPath Condition="'$(iOSLlvmBuild)' == 'True'">llvm</LlvmPath>
     <SymbolsPath>symbols</SymbolsPath>
     <SymbolsPath Condition="'$(iOSStripSymbols)' == 'True'">nosymbols</SymbolsPath>
-    <RuntimeFlavor Condition="'$(iOSMono)' == 'True'">Mono</RuntimeFlavor>
-    <RuntimeFlavor Condition="'$(iOSNativeAOT)' == 'True'">Native AOT</RuntimeFlavor>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
@@ -32,19 +30,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <HelixWorkItem Include="SOD - iOS HelloWorld $(RuntimeFlavor) .app Size $(LlvmPath) $(SymbolsPath)">
+    <HelixWorkItem Include="SOD - iOS HelloWorld $(runtimeType) .app Size $(LlvmPath) $(SymbolsPath)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>cd $(ScenarioDirectory)helloios;cp -rf $HELIX_CORRELATION_PAYLOAD/iosHelloWorld ./app;$(Python) pre.py --name app</PreCommands>
       <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
-    <HelixWorkItem Include="SOD - iOS HelloWorld $(RuntimeFlavor) Zip Size $(LlvmPath) $(SymbolsPath)">
+    <HelixWorkItem Include="SOD - iOS HelloWorld $(runtimeType) Zip Size $(LlvmPath) $(SymbolsPath)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>cd $(ScenarioDirectory)helloios;cp -v $HELIX_CORRELATION_PAYLOAD/iosHelloWorldZip/iOSSampleApp.zip .;$(Python) pre.py --name iOSSampleApp.zip</PreCommands>
       <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
-    <XHarnessAppBundleToTest Include="Device Startup - iOS $(RuntimeFlavor) HelloWorld $(LlvmPath) $(SymbolsPath)">
+    <XHarnessAppBundleToTest Include="Device Startup - iOS $(runtimeType) HelloWorld $(LlvmPath) $(SymbolsPath)">
       <AppBundlePath>$(WorkItemDirectory).zip</AppBundlePath>
       <WorkItemTimeout>00:15:00</WorkItemTimeout>
       <TestTarget>ios-device</TestTarget>
