@@ -16,6 +16,9 @@ namespace Sample
         public StringTask()
         {
             measurements = new Measurement[] {
+                new NormalizeMeasurement(),
+                new IsNormalizedMeasurement(),
+                new NormalizeMeasurementASCII(),
                 new TextInfoToLower(),
                 new TextInfoToUpper(),
                 new TextInfoToTitleCase(),
@@ -70,6 +73,20 @@ namespace Sample
                 return Task.CompletedTask;
             }
         }
+        
+        public class NormalizeMeasurement : StringMeasurement
+        {
+            protected int len = 8 * 1024;
+            public override string Name => "Normalize";
+            public override void RunStep() => str.Normalize();
+        }
+
+        public class IsNormalizedMeasurement : StringMeasurement
+        {
+            protected int len = 8 * 1024;
+            public override string Name => "IsNormalized";
+            public override void RunStep() => str.IsNormalized();
+        }
 
         public abstract class ASCIIStringMeasurement : StringMeasurement
         {
@@ -83,6 +100,13 @@ namespace Sample
                 str = new string(data);
                 return Task.CompletedTask;
             }
+        }
+        
+        public class NormalizeMeasurementASCII : ASCIIStringMeasurement
+        {        
+            protected int len = 8 * 1024;
+            public override string Name => "Normalize ASCII";
+            public override void RunStep() => str.Normalize();
         }
 
         public class TextInfoMeasurement : StringMeasurement
