@@ -144,6 +144,9 @@ public class ResourcesData
     [DataMember(EmitDefaultValue = false)]
     public Dictionary<string, ResourceHashesByNameDictionary> vfs { get; set; }
 
+    [DataMember(EmitDefaultValue = false)]
+    public List<string> remoteSources { get; set; }
+
 }
 
 public enum ICUDataMode : int

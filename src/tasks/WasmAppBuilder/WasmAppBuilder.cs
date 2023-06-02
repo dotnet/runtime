@@ -283,7 +283,6 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                     return false;
                 }
 
-                // TODO MF: LoadRemote
                 config.resources.runtime[Path.GetFileName(idfn)] = Utils.ComputeIntegrity(idfn);
             }
         }
@@ -291,10 +290,10 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
         if (RemoteSources?.Length > 0)
         {
-            // TODO MF: RemoteSources
-            //foreach (var source in RemoteSources)
-            //    if (source != null && source.ItemSpec != null)
-            //        config.RemoteSources.Add(source.ItemSpec);
+            config.resources.remoteSources = new();
+            foreach (var source in RemoteSources)
+                if (source != null && source.ItemSpec != null)
+                    config.resources.remoteSources.Add(source.ItemSpec);
         }
 
         var extraConfiguration = new Dictionary<string, object?>();

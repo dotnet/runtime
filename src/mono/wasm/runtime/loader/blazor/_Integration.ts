@@ -93,6 +93,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
 
     moduleConfig.applicationEnvironment = applicationEnvironment;
 
+    moduleConfig.remoteSources = resourceLoader.bootConfig.resources.remoteSources;
     moduleConfig.assetsHash = resourceLoader.bootConfig.resources.hash;
     moduleConfig.assets = assets;
     moduleConfig.globalizationMode = "icu";
@@ -147,6 +148,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     let hasIcuData = false;
     for (const name in resources.runtime) {
         const behavior = behaviorByName(name) as any;
+        let loadRemote = false;
         if (behavior === "icu") {
             if (resourceLoader.bootConfig.icuDataMode === ICUDataMode.Invariant) {
                 continue;
@@ -154,6 +156,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
             if (name !== icuDataResourceName) {
                 continue;
             }
+            loadRemote = true;
             hasIcuData = true;
         } else if (behavior === "js-module-dotnet") {
             continue;
@@ -167,6 +170,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
             resolvedUrl,
             hash: resources.runtime[name],
             behavior,
+            loadRemote
         };
         assets.push(asset);
     }

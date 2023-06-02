@@ -32,6 +32,7 @@ export interface ResourceGroups {
     readonly extensions?: BootJsonDataExtension
     readonly runtimeAssets: ExtendedResourceList;
     readonly vfs?: { [virtualPath: string]: ResourceList };
+    readonly remoteSources?: string[];
 }
 
 export type ResourceList = { [name: string]: string };
