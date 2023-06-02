@@ -304,8 +304,12 @@ mono_class_setup_fields (MonoClass *klass)
 		instance_size = MONO_ABI_SIZEOF (MonoObject);
 	}
 
-	if (m_class_is_inlinearray (klass) && m_class_inlinearray_value (klass) <= 0)
-		mono_class_set_deferred_type_load_failure_callback (klass, "Inline array length property must be positive.");
+	if (m_class_is_inlinearray (klass) && m_class_inlinearray_value (klass) <= 0) {
+		if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback)
+			mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array length property must be positive.");
+		else
+			mono_class_set_type_load_failure (klass, "Inline array length property must be positive.");
+	}
 
 	/* Get the real size */
 	explicit_size = mono_metadata_packing_from_typedef (klass->image, klass->type_token, &packing_size, &real_size);
@@ -376,8 +380,15 @@ mono_class_setup_fields (MonoClass *klass)
 				break;
 			}
 			if (m_class_is_inlinearray (klass)) {
-				if (mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct must not have explicit layout."))
+				if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback) {
+					if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct must not have explicit layout."))
+						break;
+					else
+						; // failure occured during AOT compilation, continue execution
+				} else {
+					mono_class_set_type_load_failure (klass, "Inline array struct must not have explicit layout.");
 					break;
+				}
 			}
 		}
 		if (mono_type_has_exceptions (field->type)) {
@@ -2281,10 +2292,15 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 					size *= m_class_inlinearray_value (klass);
 					inlined_fields++;
 					if(size == 0 || size > struct_max_size) {
-						if (mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct size out of bounds, abnormally large."))
+						if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback) {
+							if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct size out of bounds, abnormally large."))
+								break;
+							else
+								size = initial_size; // failure occured during AOT compilation, continue execution
+						} else {
+							mono_class_set_type_load_failure (klass, "Inline array struct size out of bounds, abnormally large.");
 							break;
-						else
-							size = initial_size;
+						}
 					}
 				}
 
@@ -2314,8 +2330,12 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				instance_size &= ~(min_align - 1);
 			}
 		}
-		if (m_class_is_inlinearray (klass) && inlined_fields != 1)
-			mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct must have a single field.");
+		if (m_class_is_inlinearray (klass) && inlined_fields != 1) {
+			if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback)
+				mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct must have a single field.");
+			else
+   				mono_class_set_type_load_failure (klass, "Inline array struct must have a single field.");
+		}
 		break;
 	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT: {
 		real_size = 0;
