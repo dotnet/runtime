@@ -1782,9 +1782,6 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 }
 
 
-
-#ifdef HOST_WINDOWS
-
 /*********************************************************************/
 uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isGCType)
 {
@@ -1816,13 +1813,79 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isG
     return typeIndex;
 }
 
-#ifdef _MSC_VER
+#ifndef _MSC_VER
 void* getDescriptor()
 {
     uint8_t* p;
     __asm__("leaq 0(%%rip), %%rbx\n"
             "data16\n"
             "leaq t_NonGCMaxThreadStaticBlocks@TLSGD(%%rip), %%rdi\n"
+            "data16\n"
+            "data16\n"
+            "rex64\n"
+            "callq __tls_get_addr\n"
+            : "=b"(p));
+
+    if (p[0] != 0x66 || p[1] != 0x48 || p[2] != 0x8d || p[3] != 0x3d)
+    {
+        printf("Unexpected instruction - this can happen when this is not compiled in .so (e.g. for single file)\n");
+        exit(1);
+    }
+    p += 4;
+
+    return *(uint32_t*)p + (p + 4);
+}
+
+void* getDescriptor2()
+{
+    uint8_t* p;
+    __asm__("leaq 0(%%rip), %%rbx\n"
+            "data16\n"
+            "leaq t_GCMaxThreadStaticBlocks@TLSGD(%%rip), %%rdi\n"
+            "data16\n"
+            "data16\n"
+            "rex64\n"
+            "callq __tls_get_addr\n"
+            : "=b"(p));
+
+    if (p[0] != 0x66 || p[1] != 0x48 || p[2] != 0x8d || p[3] != 0x3d)
+    {
+        printf("Unexpected instruction - this can happen when this is not compiled in .so (e.g. for single file)\n");
+        exit(1);
+    }
+    p += 4;
+
+    return *(uint32_t*)p + (p + 4);
+}
+
+void* getDescriptor3()
+{
+    uint8_t* p;
+    __asm__("leaq 0(%%rip), %%rbx\n"
+            "data16\n"
+            "leaq t_NonGCThreadStaticBlocks@TLSGD(%%rip), %%rdi\n"
+            "data16\n"
+            "data16\n"
+            "rex64\n"
+            "callq __tls_get_addr\n"
+            : "=b"(p));
+
+    if (p[0] != 0x66 || p[1] != 0x48 || p[2] != 0x8d || p[3] != 0x3d)
+    {
+        printf("Unexpected instruction - this can happen when this is not compiled in .so (e.g. for single file)\n");
+        exit(1);
+    }
+    p += 4;
+
+    return *(uint32_t*)p + (p + 4);
+}
+
+void* getDescriptor4()
+{
+    uint8_t* p;
+    __asm__("leaq 0(%%rip), %%rbx\n"
+            "data16\n"
+            "leaq t_GCThreadStaticBlocks@TLSGD(%%rip), %%rdi\n"
             "data16\n"
             "data16\n"
             "rex64\n"
@@ -1868,46 +1931,18 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     }
 #else
     pInfo->tlsGetAddrFtnPtr = (size_t)&__tls_get_addr;
-    pInfo->descrAddrOfNonGCMaxThreadStaticBlock = getDescriptor();
+    pInfo->descrAddrOfNonGCMaxThreadStaticBlock = (size_t)getDescriptor();
+
+    printf("t_NonGCMaxThreadStaticBlocks: %p\n", getDescriptor());
+    printf("t_GCMaxThreadStaticBlocks: %p\n", getDescriptor2());
+    printf("t_NonGCThreadStaticBlocks: %p\n", getDescriptor3());
+    printf("t_GCThreadStaticBlocks: %p\n", getDescriptor4());
 
 #endif
     pInfo->offsetOfGCDataPointer = static_cast<uint32_t>(PtrArray::GetDataOffset());
     
     JIT_TO_EE_TRANSITION_LEAF();
 }
-#else
-
-uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isGCType)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    return 0;
-}
-
-void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    pInfo->tlsIndex.addr = (UINT8*)0;
-
-    pInfo->offsetOfThreadLocalStoragePointer = 0;
-    pInfo->offsetOfThreadStaticBlocks = 0;
-    pInfo->offsetOfMaxThreadStaticBlocks = 0;
-    pInfo->offsetOfGCDataPointer = 0;
-    
-    JIT_TO_EE_TRANSITION_LEAF();
-}
-#endif // HOST_WINDOWS
 
 //---------------------------------------------------------------------------------------
 //

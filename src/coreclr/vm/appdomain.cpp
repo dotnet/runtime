@@ -1769,10 +1769,8 @@ void AppDomain::Create()
     // allocate a Virtual Call Stub Manager for the default domain
     pDomain->InitVSD();
 
-#ifdef HOST_WINDOWS
     // allocate a thread static block to index map
     pDomain->InitThreadStaticBlockTypeMap();
-#endif
 
     pDomain->SetStage(AppDomain::STAGE_OPEN);
     pDomain->CreateDefaultBinder();

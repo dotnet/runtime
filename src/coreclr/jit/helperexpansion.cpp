@@ -528,6 +528,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     uint32_t offsetOfMaxThreadStaticBlocksVal = 0;
     uint32_t offsetOfThreadStaticBlocksVal    = 0;
 
+#ifdef _MSC_VER
     JITDUMP("getThreadLocalStaticBlocksInfo (%s)\n:", isGCThreadStatic ? "GC" : "Non-GC");
     offsetOfMaxThreadStaticBlocksVal = threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks;
     offsetOfThreadStaticBlocksVal    = threadStaticBlocksInfo.offsetOfThreadStaticBlocks;
@@ -536,6 +537,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     JITDUMP("offsetOfThreadLocalStoragePointer= %u\n", threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer);
     JITDUMP("offsetOfMaxThreadStaticBlocks= %u\n", offsetOfMaxThreadStaticBlocksVal);
     JITDUMP("offsetOfThreadStaticBlocks= %u\n", offsetOfThreadStaticBlocksVal);
+#endif
+
     JITDUMP("offsetOfGCDataPointer= %u\n", threadStaticBlocksInfo.offsetOfGCDataPointer);
     // assert(false);
 
@@ -585,54 +588,45 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(0)->GetNode();
     GenTree* tlsValue                        = nullptr;
 
-    if (TargetOS::IsWindows)
+#ifdef _MSC_VER
+    size_t   tlsIndexValue = (size_t)threadStaticBlocksInfo.tlsIndex.addr;
+    GenTree* dllRef        = nullptr;
+
+    if (tlsIndexValue != 0)
     {
-        size_t   tlsIndexValue = (size_t)threadStaticBlocksInfo.tlsIndex.addr;
-        GenTree* dllRef        = nullptr;
-
-        if (tlsIndexValue != 0)
-        {
-            dllRef = gtNewIconHandleNode(tlsIndexValue * TARGET_POINTER_SIZE, GTF_ICON_TLS_HDL);
-        }
-
-        // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
-        tlsValue = gtNewIconHandleNode(threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
-        tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
-
-        if (dllRef != nullptr)
-        {
-            // Add the dllRef to produce thread local storage reference for coreclr
-            tlsValue = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsValue, dllRef);
-        }
-
-        // Base of coreclr's thread local storage
-        tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+        dllRef = gtNewIconHandleNode(tlsIndexValue * TARGET_POINTER_SIZE, GTF_ICON_TLS_HDL);
     }
-    else
+
+    // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
+    tlsValue = gtNewIconHandleNode(threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
+    tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+    if (dllRef != nullptr)
     {
-        //void* (*pTlsGetAddr)(void*) = &__tls_get_addr;
-        GenTree* tls_get_addr_val   = gtNewIconHandleNode((size_t)1, GTF_ICON_FTN_ADDR);
-        tlsValue                    = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
+        // Add the dllRef to produce thread local storage reference for coreclr
+        tlsValue = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsValue, dllRef);
+    }
 
-        GenTreeCall* tlsRefCall = tlsValue->AsCall();
+    // Base of coreclr's thread local storage
+    tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+#else
+    GenTree* tls_get_addr_val   = gtNewIconHandleNode(threadStaticBlocksInfo.tlsGetAddrFtnPtr, GTF_ICON_FTN_ADDR);
+    tlsValue                    = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
+    GenTreeCall* tlsRefCall = tlsValue->AsCall();
 
-        ssize_t xaddr = (ssize_t)5;
-        //getDescriptor();
 
-        GenTree* tlsArg = gtNewIconNode(xaddr, TYP_I_IMPL);
+    GenTree* tlsArg = gtNewIconNode(threadStaticBlocksInfo.descrAddrOfNonGCMaxThreadStaticBlock, TYP_I_IMPL);
+    tlsRefCall->gtArgs.InsertAfterThisOrFirst(this, NewCallArg::Primitive(tlsArg));
 
-        tlsRefCall->gtArgs.InsertAfterThisOrFirst(this, NewCallArg::Primitive(tlsArg));
+    CallArg* arg0 = tlsRefCall->gtArgs.GetArgByIndex(0);
+    arg0->AbiInfo = CallArgABIInformation();
+    arg0->AbiInfo.SetRegNum(0, REG_ARG_0);
 
-        CallArg* arg0 = tlsRefCall->gtArgs.GetArgByIndex(0);
-
-        arg0->AbiInfo = CallArgABIInformation();
-        arg0->AbiInfo.SetRegNum(0, REG_ARG_0);
-
-        tlsRefCall->gtFlags |= GTF_EXCEPT | (tls_get_addr_val->gtFlags & GTF_GLOB_EFFECT);
+    tlsRefCall->gtFlags |= GTF_EXCEPT | (tls_get_addr_val->gtFlags & GTF_GLOB_EFFECT);
 #ifdef UNIX_X86_ABI
-        tlsRefCall->gtFlags &= ~GTF_CALL_POP_ARGS;
-#endif
-    }
+    tlsRefCall->gtFlags &= ~GTF_CALL_POP_ARGS;
+#endif // UNIX_X86_ABI
+#endif // _MSC_VER
 
     // Cache the tls value
     unsigned tlsLclNum         = lvaGrabTemp(true DEBUGARG("TLS access"));
