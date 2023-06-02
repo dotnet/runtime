@@ -1196,7 +1196,7 @@ namespace System.Globalization.Tests
             Assert.Equal(CultureInfo.GetCultureInfo("en-US"), CultureInfo.GetCultureInfo("en-US", predefinedOnly: true));
         }
 
-        [ConditionalFact(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [InlineData(0x0001)]
         [InlineData(0x7c5C)]
         [InlineData(0x03_0404)] // with sort id
