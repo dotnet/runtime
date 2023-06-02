@@ -39,7 +39,13 @@ public class test86865
 
         var fi = pid.GetField("0B77DC554B4A81403D62BE25FB5404020AD451151D4203D544BF60E3FEDBD8AE4", BindingFlags.Static | BindingFlags.NonPublic);
         if (fi == null)
+        {
+            Console.WriteLine("Could not find the expected array data in <PrivateImplementationDetails>. The available static non-public fields are:");
+            foreach (var f in pid.GetFields(BindingFlags.Static | BindingFlags.NonPublic)) {
+                Console.WriteLine($" - '{f}'");
+            }
             return 4;
+        }
 
         var parms = new object[] {
             fi.FieldHandle,
@@ -49,7 +55,7 @@ public class test86865
         var result = mi.Invoke(null, parms);
         if (result == null)
             return 6;
-        if ((int)parms[2] != 5)
+        if ((int)parms[2] != myEnums.Length)
             return 7;
 
         return 100;
@@ -62,4 +68,3 @@ enum MyEnum
     B,
     C
 }
-
