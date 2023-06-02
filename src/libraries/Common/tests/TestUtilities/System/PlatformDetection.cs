@@ -303,6 +303,7 @@ namespace System
         private static readonly Lazy<bool> s_supportsTls12 = new Lazy<bool>(GetTls12Support);
         private static readonly Lazy<bool> s_supportsTls13 = new Lazy<bool>(GetTls13Support);
         private static readonly Lazy<bool> s_sendsCAListByDefault = new Lazy<bool>(GetSendsCAListByDefault);
+        private static readonly Lazy<bool> s_supportsSha3 = new Lazy<bool>(GetSupportsSha3);
 
         public static bool SupportsTls10 => s_supportsTls10.Value;
         public static bool SupportsTls11 => s_supportsTls11.Value;
@@ -310,6 +311,8 @@ namespace System
         public static bool SupportsTls13 => s_supportsTls13.Value;
         public static bool SendsCAListByDefault => s_sendsCAListByDefault.Value;
         public static bool SupportsSendingCustomCANamesInTls => UsesAppleCrypto || IsOpenSslSupported || (PlatformDetection.IsWindows8xOrLater && SendsCAListByDefault);
+        public static bool SupportsSha3 => s_supportsSha3.Value;
+        public static bool DoesNotSupportSha3 => !s_supportsSha3.Value;
 
         private static readonly Lazy<bool> s_largeArrayIsNotSupported = new Lazy<bool>(IsLargeArrayNotSupported);
 
@@ -650,6 +653,26 @@ namespace System
 
             return assemblyConfigurationAttribute != null &&
                 string.Equals(assemblyConfigurationAttribute.Configuration, configuration, StringComparison.InvariantCulture);
+        }
+
+        private static bool GetSupportsSha3()
+        {
+            if (IsOpenSslSupported)
+            {
+                if (OpenSslVersion.Major >= 3)
+                {
+                    return true;
+                }
+
+                return OpenSslVersion.Major == 1 && OpenSslVersion.Minor >= 1 && OpenSslVersion.Build >= 1;
+            }
+
+            if (IsWindowsVersionOrLater(10, 0, 25324))
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }

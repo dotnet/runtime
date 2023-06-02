@@ -7128,9 +7128,10 @@ public:
     void pickGDV(GenTreeCall*           call,
                  IL_OFFSET              ilOffset,
                  bool                   isInterface,
-                 CORINFO_CLASS_HANDLE*  classGuess,
-                 CORINFO_METHOD_HANDLE* methodGuess,
-                 unsigned*              likelihood);
+                 CORINFO_CLASS_HANDLE*  classGuesses,
+                 CORINFO_METHOD_HANDLE* methodGuesses,
+                 int*                   candidatesCount,
+                 unsigned*              likelihoods);
 
     void considerGuardedDevirtualization(GenTreeCall*            call,
                                          IL_OFFSET               ilOffset,
@@ -8653,7 +8654,7 @@ private:
 
     // Get the number of bytes in a System.Numeric.Vector<T> for the current compilation.
     // Note - cannot be used for System.Runtime.Intrinsic
-    unsigned getVectorTByteLength()
+    uint32_t getVectorTByteLength()
     {
         // We need to report the ISA dependency to the VM so that scenarios
         // such as R2R work correctly for larger vector sizes, so we always

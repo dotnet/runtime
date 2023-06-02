@@ -76,7 +76,7 @@ bool CodeGen::genInstrWithConstant(instruction ins,
 
         // first we load the immediate into tmpReg
         assert(!EA_IS_RELOC(size));
-        GetEmitter()->emitIns_I_la(size, tmpReg, imm);
+        GetEmitter()->emitLoadImmediate(size, tmpReg, imm);
         regSet.verifyRegUsed(tmpReg);
 
         // when we are in an unwind code region
@@ -1230,7 +1230,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
     }
     else
     {
-        emit->emitIns_I_la(size, reg, imm);
+        emit->emitLoadImmediate(size, reg, imm);
     }
 
     regSet.verifyRegUsed(reg);
@@ -1556,7 +1556,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             else if (data->IsIntegralConst())
             {
                 ssize_t imm = data->AsIntConCommon()->IconValue();
-                emit->emitIns_I_la(EA_PTRSIZE, rsGetRsvdReg(), imm);
+                emit->emitLoadImmediate(EA_PTRSIZE, rsGetRsvdReg(), imm);
                 dataReg = rsGetRsvdReg();
             }
             else
@@ -1792,7 +1792,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             }
             else
             {
-                emit->emitIns_I_la(EA_PTRSIZE, rsGetRsvdReg(), amount);
+                emit->emitLoadImmediate(EA_PTRSIZE, rsGetRsvdReg(), amount);
                 emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, rsGetRsvdReg());
             }
 
@@ -2077,7 +2077,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             {
                 ssize_t intConst = (int)(divisorOp->AsIntCon()->gtIconVal);
                 divisorReg       = rsGetRsvdReg();
-                emit->emitIns_I_la(EA_PTRSIZE, divisorReg, intConst);
+                emit->emitLoadImmediate(EA_PTRSIZE, divisorReg, intConst);
             }
             // Only for commutative operations do we check src1 and allow it to be a contained immediate
             else if (tree->OperIsCommutative())
@@ -2091,7 +2091,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                     assert(!divisorOp->isContainedIntOrIImmed());
                     ssize_t intConst = (int)(src1->AsIntCon()->gtIconVal);
                     Reg1             = rsGetRsvdReg();
-                    emit->emitIns_I_la(EA_PTRSIZE, Reg1, intConst);
+                    emit->emitLoadImmediate(EA_PTRSIZE, Reg1, intConst);
                 }
             }
             else
@@ -2965,7 +2965,7 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
         else
         {
             // TODO-RISCV64: maybe optimize further.
-            GetEmitter()->emitIns_I_la(EA_PTRSIZE, callTarget, (ssize_t)pAddr);
+            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, callTarget, (ssize_t)pAddr);
             GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, callTarget, callTarget, 0);
         }
         regSet.verifyRegUsed(callTarget);
@@ -3507,7 +3507,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                 }
                 else
                 {
-                    emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
+                    emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
                     emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
                 }
             }
@@ -3523,7 +3523,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                 }
                 else
                 {
-                    emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm + 1);
+                    emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm + 1);
                     emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
                 }
             }
@@ -3541,7 +3541,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                 }
                 else
                 {
-                    emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
+                    emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
                     emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, REG_RA, regOp1);
                 }
             }
@@ -3557,7 +3557,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                 }
                 else
                 {
-                    emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
+                    emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
                     emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
                 }
                 emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
@@ -3575,7 +3575,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                 }
                 else
                 {
-                    emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
+                    emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
                     emit->emitIns_R_R_R(INS_xor, EA_PTRSIZE, targetReg, regOp1, REG_RA);
                     emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_R0, targetReg);
                 }
@@ -3593,7 +3593,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                 }
                 else
                 {
-                    emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
+                    emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
                     emit->emitIns_R_R_R(INS_xor, EA_PTRSIZE, targetReg, regOp1, REG_RA);
                     emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, targetReg, 1);
                 }
@@ -3732,7 +3732,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
                     unreached();
             }
 
-            emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
+            emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
             regs = (int)REG_RA << 5;
         }
 
@@ -4280,7 +4280,7 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTm
     }
     else
     {
-        GetEmitter()->emitIns_I_la(EA_PTRSIZE, regTmp, spDelta);
+        GetEmitter()->emitLoadImmediate(EA_PTRSIZE, regTmp, spDelta);
         GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, regTmp);
     }
 }
@@ -4748,7 +4748,7 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
         }
         else
         {
-            GetEmitter()->emitIns_I_la(EA_PTRSIZE, initReg, ((size_t)compiler->gsGlobalSecurityCookieAddr));
+            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, initReg, ((size_t)compiler->gsGlobalSecurityCookieAddr));
             GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, initReg, initReg, 0);
         }
         regSet.verifyRegUsed(initReg);
@@ -5674,7 +5674,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         }
         else
         {
-            GetEmitter()->emitIns_I_la(EA_PTRSIZE, rsGetRsvdReg(), scale);
+            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, rsGetRsvdReg(), scale);
 
             instruction ins;
             instruction ins2;
@@ -6607,10 +6607,10 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
         {
             const regNumber tempReg = rsGetRsvdReg();
             assert(tempReg != reg);
-            GetEmitter()->emitIns_I_la(EA_8BYTE, tempReg, INT32_MAX);
+            GetEmitter()->emitLoadImmediate(EA_8BYTE, tempReg, INT32_MAX);
             genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, tempReg, nullptr, reg);
 
-            GetEmitter()->emitIns_I_la(EA_8BYTE, tempReg, INT32_MIN);
+            GetEmitter()->emitLoadImmediate(EA_8BYTE, tempReg, INT32_MIN);
             genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, reg, nullptr, tempReg);
         }
         break;
@@ -6625,7 +6625,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
             if (castMaxValue > 2047)
             {
                 assert((castMaxValue == 32767) || (castMaxValue == 65535));
-                GetEmitter()->emitIns_I_la(EA_ATTR(desc.CheckSrcSize()), rsGetRsvdReg(), castMaxValue + 1);
+                GetEmitter()->emitLoadImmediate(EA_ATTR(desc.CheckSrcSize()), rsGetRsvdReg(), castMaxValue + 1);
                 ins = castMinValue == 0 ? INS_bgeu : INS_bge;
                 genJumpToThrowHlpBlk_la(SCK_OVERFLOW, ins, reg, nullptr, rsGetRsvdReg());
             }
@@ -6646,7 +6646,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
                 }
                 else
                 {
-                    GetEmitter()->emitIns_I_la(EA_8BYTE, rsGetRsvdReg(), castMinValue);
+                    GetEmitter()->emitLoadImmediate(EA_8BYTE, rsGetRsvdReg(), castMinValue);
                     GetEmitter()->emitIns_R_R_R(INS_slt, EA_ATTR(desc.CheckSrcSize()), rsGetRsvdReg(), reg,
                                                 rsGetRsvdReg());
                 }
@@ -6985,7 +6985,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
             regNumber tmpReg = lea->GetSingleTempReg();
 
             // First load tmpReg with the large offset constant
-            emit->emitIns_I_la(EA_PTRSIZE, tmpReg, offset);
+            emit->emitLoadImmediate(EA_PTRSIZE, tmpReg, offset);
 
             // Then compute target reg from [memBase + tmpReg]
             emit->emitIns_R_R_R(INS_add, size, lea->GetRegNum(), memBase->GetRegNum(), tmpReg);
@@ -7843,7 +7843,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
 
                 tmpReg = REG_RA;
                 // Prepare tmpReg to possible future use
-                GetEmitter()->emitIns_I_la(EA_PTRSIZE, tmpReg, baseOffset);
+                GetEmitter()->emitLoadImmediate(EA_PTRSIZE, tmpReg, baseOffset);
                 GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, tmpReg, tmpReg, FPbased ? REG_FPBASE : REG_SPBASE);
                 GetEmitter()->emitIns_S_R_R(ins_Store(storeType), size, srcRegNum, tmpReg, varNum, 0);
             }
@@ -7903,7 +7903,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     else
                     {
                         assert(!EA_IS_RELOC(size));
-                        GetEmitter()->emitIns_I_la(size, REG_SCRATCH, genTotalFrameSize());
+                        GetEmitter()->emitLoadImmediate(size, REG_SCRATCH, genTotalFrameSize());
                         GetEmitter()->emitIns_R_R_R(INS_add, size, REG_SCRATCH, REG_SCRATCH, REG_SPBASE);
                         GetEmitter()->emitIns_R_R_I(INS_ld, size, REG_SCRATCH, REG_SCRATCH, 0);
                     }
