@@ -1345,7 +1345,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
                     assert(argNode->GetRegNum() == argReg);
                 }
             }
-        }        
+        }
     }
 
     buildInternalRegisterUses();

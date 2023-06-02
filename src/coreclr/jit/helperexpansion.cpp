@@ -596,9 +596,9 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         gtNewIndir(TYP_I_IMPL, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
 #else
-    GenTree* tls_get_addr_val   = gtNewIconHandleNode(threadStaticBlocksInfo.tlsGetAddrFtnPtr, GTF_ICON_FTN_ADDR);
-    tlsValue                    = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
-    GenTreeCall* tlsRefCall = tlsValue->AsCall();
+    GenTree* tls_get_addr_val = gtNewIconHandleNode(threadStaticBlocksInfo.tlsGetAddrFtnPtr, GTF_ICON_FTN_ADDR);
+    tlsValue                  = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
+    GenTreeCall* tlsRefCall   = tlsValue->AsCall();
 
     // This is a syscall indirect call which takes an argument.
     // Populate and set the ABI apporpriately.
@@ -615,7 +615,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 #endif // UNIX_X86_ABI
 
     // Cache the tls value
-    GenTree* tlsValueDef    = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
+    GenTree* tlsValueDef              = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
     GenTree* maxThreadStaticBlocksRef = gtNewLclVarNode(tlsLclNum);
     GenTree* maxThreadStaticBlocksValue =
         gtNewIndir(TYP_INT, gtCloneExpr(maxThreadStaticBlocksRef), GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
@@ -627,12 +627,10 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
 #endif // _MSC_VER
 
-
     // Create tree for "if (maxThreadStaticBlocks < typeIndex)"
     GenTree* maxThreadStaticBlocksCond =
         gtNewOperNode(GT_LT, TYP_INT, maxThreadStaticBlocksValue, gtCloneExpr(typeThreadStaticBlockIndexValue));
     maxThreadStaticBlocksCond = gtNewOperNode(GT_JTRUE, TYP_VOID, maxThreadStaticBlocksCond);
-
 
     // Create tree to "threadStaticBlockValue = threadStaticBlockBase[typeIndex]"
     typeThreadStaticBlockIndexValue = gtNewOperNode(GT_MUL, TYP_INT, gtCloneExpr(typeThreadStaticBlockIndexValue),
