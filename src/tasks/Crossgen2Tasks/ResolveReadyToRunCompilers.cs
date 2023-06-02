@@ -147,7 +147,7 @@ namespace Microsoft.NET.Build.Tasks
             // Normalize target OS for crossgen invocation
             string targetOS = (_targetPlatform == "win") ? "windows" :
                 // Map linux-{ musl,bionic,etc.} to linux
-                _targetPlatform.StartsWith("linux-") ? "linux" :
+                _targetPlatform.StartsWith("linux-", StringComparison.Ordinal) ? "linux" :
                 _targetPlatform;
 
             // In .NET 5 Crossgen2 supported only the following host->target compilation scenarios:
