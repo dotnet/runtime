@@ -313,7 +313,6 @@
   <!-- RepositoryEngineeringDir isn't set when Installer tests import this file. -->
   <Import Project="$(RepositoryEngineeringDir)native\naming.props" />
   <Import Project="$(RepositoryEngineeringDir)Subsets.props" />
-  <Import Project="$(RepositoryEngineeringDir)Analyzers.props" />
 
   <PropertyGroup>
     <CoreLibSharedDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'System.Private.CoreLib', 'src'))</CoreLibSharedDir>
