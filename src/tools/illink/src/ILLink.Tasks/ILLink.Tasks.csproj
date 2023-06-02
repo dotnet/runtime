@@ -22,6 +22,8 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <IncludeMultiTargetRoslynComponentTargets>false</IncludeMultiTargetRoslynComponentTargets>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddBuildOutputToToolsPackage</TargetsForTfmSpecificContentInPackage>
+    <!-- Disable analyzer to prevent a circular dependency due to PackageReference to the LKG Microsoft.NET.ILLink.Tasks. -->
+    <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>
