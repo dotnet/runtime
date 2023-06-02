@@ -309,12 +309,6 @@ class CCeeGen : public ICeeGenInternal {
     }
 
     virtual HRESULT addNotificationHandler(IUnknown *pHandler);
-
-    //Clone is actually a misnomer here.  This method will copy all of the
-    //instance variables and then do a deep copy (as necessary) of the sections.
-    //Section data will be appended onto any information already in the section.
-    //This is done to support the DynamicIL -> PersistedIL transform.
-    virtual HRESULT cloneInstance(CCeeGen *destination);
 };
 
 // ***** CeeSection inline methods

@@ -125,9 +125,6 @@ class ICeeFileGen {
 
     virtual HRESULT GetIMapTokenIfaceEx(HCEEFILE ceeFile, IMetaDataEmit *emitter, IUnknown **pIMapToken);
 
-    virtual HRESULT CreateCeeFileFromICeeGen(
-        ICeeGenInternal *pFromICeeGen, HCEEFILE *ceeFile, DWORD createFlags = ICEE_CREATE_FILE_PURE_IL); // call this to instantiate a file handle
-
     virtual HRESULT SetManifestEntry(HCEEFILE ceeFile, ULONG size, ULONG offset);
 
     virtual HRESULT ComputeSectionOffset(HCEESECTION section, _In_ char *ptr,

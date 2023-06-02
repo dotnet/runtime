@@ -40,24 +40,10 @@ HRESULT ICeeFileGen::CreateCeeFileEx (HCEEFILE *ceeFile, DWORD createFlags)
 
     CeeFileGenWriter *gen = NULL;
     HRESULT hr;
-    IfFailRet(CeeFileGenWriter::CreateNewInstance(NULL, gen, createFlags));
+    IfFailRet(CeeFileGenWriter::CreateNewInstance(gen, createFlags));
     TESTANDRETURN(gen != NULL, E_OUTOFMEMORY);
     *ceeFile = gen;
 
-    return S_OK;
-}
-
-HRESULT ICeeFileGen::CreateCeeFileFromICeeGen(ICeeGenInternal *pICeeGen, HCEEFILE *ceeFile, DWORD createFlags)
-{
-    if (!ceeFile)
-        return E_POINTER;
-    CCeeGen *genFrom = reinterpret_cast<CCeeGen*>(pICeeGen);
-    CeeFileGenWriter *gen = NULL;
-    HRESULT hr = CeeFileGenWriter::CreateNewInstance(genFrom, gen, createFlags);
-    if (FAILED(hr))
-        return hr;
-    TESTANDRETURN(gen != NULL, E_OUTOFMEMORY);
-    *ceeFile = gen;
     return S_OK;
 }
 

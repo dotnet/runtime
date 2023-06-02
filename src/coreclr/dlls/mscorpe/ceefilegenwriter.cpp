@@ -183,8 +183,7 @@ inline IMAGE_SYMBOL* GetSymbolEntry(IMAGE_SYMBOL* pHead, SIZE_T idx)
 // To get a new instance, call CreateNewInstance() instead of new
 //*****************************************************************************
 
-HRESULT CeeFileGenWriter::CreateNewInstance(CCeeGen *pCeeFileGenFrom,
-                                            CeeFileGenWriter* & pGenWriter,
+HRESULT CeeFileGenWriter::CreateNewInstance(CeeFileGenWriter* & pGenWriter,
                                             DWORD createFlags)
 {
     HRESULT hr = S_OK;
@@ -201,9 +200,6 @@ HRESULT CeeFileGenWriter::CreateNewInstance(CCeeGen *pCeeFileGenFrom,
     if (pPEWriter == NULL)
         IfFailGo(E_OUTOFMEMORY);
 
-    //workaround
-    //What's really the correct thing to be doing here?
-    //HRESULT hr = pPEWriter->Init(pCeeFileGenFrom ? pCeeFileGenFrom->getPESectionMan() : NULL);
     hr = pPEWriter->Init(NULL, createFlags);
     IfFailGo(hr);
 
@@ -231,11 +227,6 @@ HRESULT CeeFileGenWriter::CreateNewInstance(CCeeGen *pCeeFileGenFrom,
 
     hr = pPrivateGenWriter->allocateCorHeader();   // get COR header near front
     IfFailGo(hr);
-
-    //If we were passed a CCeeGen at the beginning, copy it's data now.
-    if (pCeeFileGenFrom) {
-        pCeeFileGenFrom->cloneInstance((CCeeGen*)pPrivateGenWriter);
-    }
 
     hr = pPrivateGenWriter->getSectionCreate(".text0", sdExecute, &corHeaderSection);
     IfFailGo(hr);

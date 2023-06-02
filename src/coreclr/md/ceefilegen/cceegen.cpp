@@ -321,17 +321,6 @@ LExit:
     return hr;
 }
 
-HRESULT CCeeGen::cloneInstance(CCeeGen *destination) { //public, virtual
-    _ASSERTE(destination);
-
-    destination->m_pTokenMap =          m_pTokenMap;
-    destination->m_fTokenMapSupported = m_fTokenMapSupported;
-    destination->m_pRemapHandler =      m_pRemapHandler;
-
-    //Create a deep copy of the section manager (and each of it's sections);
-    return m_peSectionMan->cloneInstance(destination->m_peSectionMan);
-}
-
 HRESULT CCeeGen::Cleanup() // virtual
 {
     HRESULT hr;

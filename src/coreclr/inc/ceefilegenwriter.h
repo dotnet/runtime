@@ -69,8 +69,8 @@ class CeeFileGenWriter : public CCeeGen
     HRESULT allocateIAT();
 public:
     // Create with one of these two methods, not operator new
-    static HRESULT CreateNewInstance(CCeeGen *pCeeFileGenFrom, CeeFileGenWriter* & pGenWriter,
-                                        DWORD createFlags = ICEE_CREATE_FILE_PURE_IL);
+    static HRESULT CreateNewInstance(CeeFileGenWriter* & pGenWriter,
+                                     DWORD createFlags = ICEE_CREATE_FILE_PURE_IL);
 
     virtual HRESULT Cleanup();
 
