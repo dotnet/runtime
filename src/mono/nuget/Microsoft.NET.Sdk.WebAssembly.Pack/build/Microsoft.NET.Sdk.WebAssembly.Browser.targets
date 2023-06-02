@@ -190,11 +190,15 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_ResolveWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild">
     <ItemGroup>
       <_WasmConfigFileCandidates Include="@(StaticWebAsset)" Condition="'%(SourceType)' == 'Discovered'" />
+      <_DotNetJsItem Include="@(ReferenceCopyLocalPaths)" Condition="('%(FileName)' == 'dotnet' or '%(FileName)' == 'dotnet.native') and '%(Extension)' == '.js'" />
 
       <!-- Remove dotnet.js/wasm from runtime pack, in favor of the relinked ones in @(WasmNativeAsset) -->
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
                                Condition="@(WasmNativeAsset->Count()) > 0 and ( '%(FileName)' == 'dotnet' or '%(FileName)' == 'dotnet.native' ) and ('%(Extension)' == '.wasm' or '%(Extension)' == '.js')" />
     </ItemGroup>
+    <PropertyGroup>
+      <_DotNetJsBuildVersion>%(_DotNetJsItem.NuGetPackageVersion)</_DotNetJsBuildVersion>
+    </PropertyGroup>
 
     <ComputeWasmBuildAssets
       Candidates="@(ReferenceCopyLocalPaths->Distinct());@(WasmNativeAsset)"
@@ -205,6 +209,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       ProjectSatelliteAssemblies="@(IntermediateSatelliteAssembliesWithTargetPath)"
       TimeZoneSupport="$(_BlazorEnableTimeZoneSupport)"
       InvariantGlobalization="$(_WasmInvariantGlobalization)"
+      DotNetJsVersion="$(_DotNetJsBuildVersion)"
       CopySymbols="$(_WasmCopyOutputSymbolsToOutputDirectory)"
       OutputPath="$(OutputPath)"
       FingerprintDotNetJs="$(WasmFingerprintDotnetJs)"
