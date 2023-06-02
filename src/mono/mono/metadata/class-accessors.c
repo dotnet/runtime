@@ -581,7 +581,7 @@ mono_class_set_failure (MonoClass *klass, MonoErrorBoxed *boxed_error)
 /**
  * mono_class_set_deferred_failure:
  * \param klass class in which the failure was detected
- 
+
  * This method marks the class with a deferred failure, indicating that a failure was detected but it will be processed during AOT runtime..
  * Note that only the first failure is kept.
  *
@@ -693,6 +693,17 @@ mono_class_has_metadata_update_info (MonoClass *klass)
 		g_assert_not_reached ();
 	}
 }
+
+#if HOST_BROWSER
+void
+mono_jiterp_class_get_member_offsets (guint32 *element_class_offset, guint32 *rank_offset)
+{
+	if (element_class_offset)
+		*element_class_offset = offsetof (MonoClass, element_class);
+	if (rank_offset)
+		*rank_offset = offsetof (MonoClass, rank);
+}
+#endif
 
 
 #ifdef MONO_CLASS_DEF_PRIVATE
