@@ -244,7 +244,7 @@ public:
         return fileTime;
     }
 
-    static inline LONGLONG GetSessionStartTimestamp(EventPipeSession *session)
+    static inline int64_t GetSessionStartTimestamp(EventPipeSession *session)
     {
         STATIC_CONTRACT_NOTHROW;
 
@@ -364,7 +364,7 @@ public:
         return reinterpret_cast<const GUID *>(ep_event_instance_get_related_activity_id_cref(eventInstance));
     }
 
-    static inline const BYTE * GetEventData (EventPipeEventInstance *eventInstance)
+    static inline const uint8_t * GetEventData (EventPipeEventInstance *eventInstance)
     {
         STATIC_CONTRACT_NOTHROW;
         return ep_event_instance_get_data(eventInstance);

@@ -706,7 +706,7 @@ inline ULONG FireEtwGCSuspendEEBegin_V1(
 
 inline BOOL EventEnabledThreadPoolWorkerThreadStart(void) {return EventPipeEventEnabledThreadPoolWorkerThreadStart();}// || EventXplatEnabledThreadPoolWorkerThreadStart();}
 
-inline ULONG FireEtwThreadPoolWorkerThreadStart(
+inline uint32_t FireEtwThreadPoolWorkerThreadStart(
     const unsigned int  ActiveWorkerThreadCount,
     const unsigned int  RetiredWorkerThreadCount,
     const unsigned short  ClrInstanceID,
@@ -714,8 +714,166 @@ inline ULONG FireEtwThreadPoolWorkerThreadStart(
     const GUID * RelatedActivityId = nullptr
 )
 {
-    ULONG status = EventPipeWriteEventThreadPoolWorkerThreadStart(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID,ActivityId,RelatedActivityId);
+    uint32_t status = EventPipeWriteEventThreadPoolWorkerThreadStart(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID,ActivityId,RelatedActivityId);
     // status &= FireEtXplatThreadPoolWorkerThreadStart(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID);
     return status;
 }
+
+inline uint32_t FireEtwThreadPoolWorkerThreadStop(
+    const unsigned int  ActiveWorkerThreadCount,
+    const unsigned int  RetiredWorkerThreadCount,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    uint32_t status = EventPipeWriteEventThreadPoolWorkerThreadStop(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID,ActivityId,RelatedActivityId);
+    // status &= FireEtXplatThreadPoolWorkerThreadStart(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID);
+    return status;
+}
+
+inline uint32_t FireEtwThreadPoolWorkerThreadWait(
+    const unsigned int  ActiveWorkerThreadCount,
+    const unsigned int  RetiredWorkerThreadCount,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    uint32_t status = EventPipeWriteEventThreadPoolWorkerThreadWait(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID,ActivityId,RelatedActivityId);
+    // status &= FireEtXplatThreadPoolWorkerThreadStart(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID);
+    return status;
+}
+
+inline BOOL EventEnabledThreadPoolMinMaxThreads(void) {return EventPipeEventEnabledThreadPoolMinMaxThreads();}
+
+inline uint32_t FireEtwThreadPoolMinMaxThreads(
+    const unsigned short  MinWorkerThreads,
+    const unsigned short  MaxWorkerThreads,
+    const unsigned short  MinIOCompletionThreads,
+    const unsigned short  MaxIOCompletionThreads,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    uint32_t status = EventPipeWriteEventThreadPoolMinMaxThreads(MinWorkerThreads,MaxWorkerThreads,MinIOCompletionThreads,MaxIOCompletionThreads,ClrInstanceID,ActivityId,RelatedActivityId);
+    //status &= FireEtXplatThreadPoolMinMaxThreads(MinWorkerThreads,MaxWorkerThreads,MinIOCompletionThreads,MaxIOCompletionThreads,ClrInstanceID);
+    return status;
+}
+
+inline BOOL EventEnabledThreadPoolWorkerThreadAdjustmentSample(void) {return EventPipeEventEnabledThreadPoolWorkerThreadAdjustmentSample();}
+
+inline uint32_t FireEtwThreadPoolWorkerThreadAdjustmentSample(
+    const double  Throughput,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    uint32_t status = EventPipeWriteEventThreadPoolWorkerThreadAdjustmentSample(Throughput,ClrInstanceID,ActivityId,RelatedActivityId);
+    //status &= FireEtXplatThreadPoolWorkerThreadAdjustmentSample(Throughput,ClrInstanceID);
+    return status;
+}
+
+inline BOOL EventEnabledThreadPoolWorkerThreadAdjustmentAdjustment(void) {return EventPipeEventEnabledThreadPoolWorkerThreadAdjustmentAdjustment();}
+
+inline uint32_t FireEtwThreadPoolWorkerThreadAdjustmentAdjustment(
+    const double  AverageThroughput,
+    const unsigned int  NewWorkerThreadCount,
+    const unsigned int  Reason,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    uint32_t status = EventPipeWriteEventThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput,NewWorkerThreadCount,Reason,ClrInstanceID,ActivityId,RelatedActivityId);
+    //status &= FireEtXplatThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput,NewWorkerThreadCount,Reason,ClrInstanceID);
+    return status;
+}
+
+inline BOOL EventEnabledThreadPoolWorkerThreadAdjustmentStats(void) {return EventPipeEventEnabledThreadPoolWorkerThreadAdjustmentStats();}
+
+inline uint32_t FireEtwThreadPoolWorkerThreadAdjustmentStats(
+    const double  Duration,
+    const double  Throughput,
+    const double  ThreadWave,
+    const double  ThroughputWave,
+    const double  ThroughputErrorEstimate,
+    const double  AverageThroughputErrorEstimate,
+    const double  ThroughputRatio,
+    const double  Confidence,
+    const double  NewControlSetting,
+    const unsigned short  NewThreadWaveMagnitude,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    uint32_t status = EventPipeWriteEventThreadPoolWorkerThreadAdjustmentStats(Duration,Throughput,ThreadWave,ThroughputWave,ThroughputErrorEstimate,AverageThroughputErrorEstimate,ThroughputRatio,Confidence,NewControlSetting,NewThreadWaveMagnitude,ClrInstanceID,ActivityId,RelatedActivityId);
+    //status &= FireEtXplatThreadPoolWorkerThreadAdjustmentStats(Duration,Throughput,ThreadWave,ThroughputWave,ThroughputErrorEstimate,AverageThroughputErrorEstimate,ThroughputRatio,Confidence,NewControlSetting,NewThreadWaveMagnitude,ClrInstanceID);
+    return status;
+}
+
+inline BOOL EventEnabledThreadPoolIOEnqueue(void) {return EventPipeEventEnabledThreadPoolIOEnqueue();}
+
+inline uint32_t FireEtwThreadPoolIOEnqueue(
+    const void*  NativeOverlapped,
+    const void*  Overlapped,
+    const BOOL  MultiDequeues,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    uint32_t status = EventPipeWriteEventThreadPoolIOEnqueue(NativeOverlapped,Overlapped,MultiDequeues,ClrInstanceID,ActivityId,RelatedActivityId);
+    //status &= FireEtXplatThreadPoolIOEnqueue(NativeOverlapped,Overlapped,MultiDequeues,ClrInstanceID);
+    return status;
+}
+
+inline BOOL EventEnabledThreadPoolIODequeue(void) {return EventPipeEventEnabledThreadPoolIODequeue();}
+
+inline uint32_t FireEtwThreadPoolIODequeue(
+    const void*  NativeOverlapped,
+    const void*  Overlapped,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    uint32_t status = EventPipeWriteEventThreadPoolIODequeue(NativeOverlapped,Overlapped,ClrInstanceID,ActivityId,RelatedActivityId);
+    //status &= FireEtXplatThreadPoolIODequeue(NativeOverlapped,Overlapped,ClrInstanceID);
+    return status;
+}
+
+inline BOOL EventEnabledThreadPoolWorkingThreadCount(void) {return EventPipeEventEnabledThreadPoolWorkingThreadCount();}
+
+inline uint32_t FireEtwThreadPoolWorkingThreadCount(
+    const unsigned int  Count,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    uint32_t status = EventPipeWriteEventThreadPoolWorkingThreadCount(Count,ClrInstanceID,ActivityId,RelatedActivityId);
+    //status &= FireEtXplatThreadPoolWorkingThreadCount(Count,ClrInstanceID);
+    return status;
+}
+
+inline BOOL EventEnabledThreadPoolIOPack(void) {return EventPipeEventEnabledThreadPoolIOPack();}
+
+inline uint32_t FireEtwThreadPoolIOPack(
+    const void*  NativeOverlapped,
+    const void*  Overlapped,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    uint32_t status = EventPipeWriteEventThreadPoolIOPack(NativeOverlapped,Overlapped,ClrInstanceID,ActivityId,RelatedActivityId);
+    //status &= FireEtXplatThreadPoolIOPack(NativeOverlapped,Overlapped,ClrInstanceID);
+    return status;
+}
+
+
  #endif // __CLR_ETW_ALL_MAIN_H__

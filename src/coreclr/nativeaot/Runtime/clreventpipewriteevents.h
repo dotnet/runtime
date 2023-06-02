@@ -374,3 +374,93 @@ ULONG EventPipeWriteEventThreadPoolWorkerThreadStart(
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
 );
+BOOL EventPipeEventEnabledThreadPoolWorkerThreadStop(void);
+ULONG EventPipeWriteEventThreadPoolWorkerThreadStop(
+    const unsigned int  ActiveWorkerThreadCount,
+    const unsigned int  RetiredWorkerThreadCount,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledThreadPoolWorkerThreadWait(void);
+ULONG EventPipeWriteEventThreadPoolWorkerThreadWait(
+    const unsigned int  ActiveWorkerThreadCount,
+    const unsigned int  RetiredWorkerThreadCount,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledThreadPoolMinMaxThreads(void);
+ULONG EventPipeWriteEventThreadPoolMinMaxThreads(
+    const unsigned short  MinWorkerThreads,
+    const unsigned short  MaxWorkerThreads,
+    const unsigned short  MinIOCompletionThreads,
+    const unsigned short  MaxIOCompletionThreads,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledThreadPoolWorkerThreadAdjustmentSample(void);
+ULONG EventPipeWriteEventThreadPoolWorkerThreadAdjustmentSample(
+    const double  Throughput,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledThreadPoolWorkerThreadAdjustmentAdjustment(void);
+ULONG EventPipeWriteEventThreadPoolWorkerThreadAdjustmentAdjustment(
+    const double  AverageThroughput,
+    const unsigned int  NewWorkerThreadCount,
+    const unsigned int  Reason,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledThreadPoolWorkerThreadAdjustmentStats(void);
+ULONG EventPipeWriteEventThreadPoolWorkerThreadAdjustmentStats(
+    const double  Duration,
+    const double  Throughput,
+    const double  ThreadWave,
+    const double  ThroughputWave,
+    const double  ThroughputErrorEstimate,
+    const double  AverageThroughputErrorEstimate,
+    const double  ThroughputRatio,
+    const double  Confidence,
+    const double  NewControlSetting,
+    const unsigned short  NewThreadWaveMagnitude,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledThreadPoolIOEnqueue(void);
+ULONG EventPipeWriteEventThreadPoolIOEnqueue(
+    const void*  NativeOverlapped,
+    const void*  Overlapped,
+    const BOOL  MultiDequeues,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledThreadPoolIODequeue(void);
+ULONG EventPipeWriteEventThreadPoolIODequeue(
+    const void*  NativeOverlapped,
+    const void*  Overlapped,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledThreadPoolWorkingThreadCount(void);
+ULONG EventPipeWriteEventThreadPoolWorkingThreadCount(
+    const unsigned int  Count,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledThreadPoolIOPack(void);
+ULONG EventPipeWriteEventThreadPoolIOPack(
+    const void*  NativeOverlapped,
+    const void*  Overlapped,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);

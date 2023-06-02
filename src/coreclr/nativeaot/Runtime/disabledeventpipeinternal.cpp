@@ -101,8 +101,74 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_WaitForSessionSig
     return FALSE;
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl RhNativeRuntimeEventSource_LogThreadPoolWorkerThreadStart(uint32_t activeWorkerThreadCount, uint32_t retiredWorkerThreadCount, uint16_t clrInstanceID)
+EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolWorkerThreadStart(uint32_t activeWorkerThreadCount, uint32_t retiredWorkerThreadCount, uint16_t clrInstanceID)
 {
     PalDebugBreak();
 }
+
+EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolWorkerThreadStop(uint32_t ActiveWorkerThreadCount, uint32_t RetiredWorkerThreadCount, uint16_t ClrInstanceID)
+{
+    PalDebugBreak();
+}
+
+EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolWorkerThreadWait(uint32_t ActiveWorkerThreadCount, uint32_t RetiredWorkerThreadCount, uint16_t ClrInstanceID)
+{
+    PalDebugBreak();
+}
+
+EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolMinMaxThreads(uint16_t MinWorkerThreads, uint16_t MaxWorkerThreads, uint16_t MinIOCompletionThreads, uint16_t MaxIOCompletionThreads, uint16_t ClrInstanceID)
+{
+    PalDebugBreak();
+}
+
+EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolWorkerThreadAdjustmentSample(double Throughput, uint16_t ClrInstanceID)
+{
+    PalDebugBreak();
+}
+
+EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolWorkerThreadAdjustmentAdjustment(double AverageThroughput, uint32_t NewWorkerThreadCount, uint32_t Reason, uint16_t ClrInstanceID)
+{
+    PalDebugBreak();
+}
+
+EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolWorkerThreadAdjustmentStats(
+    double Duration,
+    double Throughput,
+    double ThreadPoolWorkerThreadWait,
+    double ThroughputWave,
+    double ThroughputErrorEstimate,
+    double AverageThroughputErrorEstimate,
+    double ThroughputRatio,
+    double Confidence,
+    double NewControlSetting,
+    uint16_t NewThreadWaveMagnitude,
+    uint16_t ClrInstanceID)
+{
+    PalDebugBreak();
+}
+
+EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolIOEnqueue(
+    uint32_t * NativeOverlapped,
+    uint32_t * Overlapped,
+    bool MultiDequeues,
+    uint16_t ClrInstanceID)
+{
+    PalDebugBreak();
+}
+
+EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolIODequeue(uint32_t * NativeOverlapped, uint32_t * Overlapped, uint16_t ClrInstanceID)
+{
+    PalDebugBreak();
+}
+
+EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolWorkingThreadCount(uint32_t Count, uint16_t ClrInstanceID)
+{
+    PalDebugBreak();
+}
+
+EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolIOPack(uint32_t * NativeOverlapped, uint32_t * Overlapped, uint16_t ClrInstanceID)
+{
+    PalDebugBreak();
+}
+
 #endif // FEATURE_PERFTRACING

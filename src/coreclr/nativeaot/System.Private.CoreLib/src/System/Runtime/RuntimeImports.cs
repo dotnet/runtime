@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
@@ -772,79 +773,71 @@ namespace System.Runtime
 
         [LibraryImport(RuntimeLibrary)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        internal static partial void RhNativeRuntimeEventSource_LogThreadPoolWorkerThreadStart(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
+        internal static partial void RhEventPipeInternal_LogThreadPoolWorkerThreadStart(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        internal static partial void RhNativeRuntimeEventSource_LogThreadPoolWorkerThreadStop(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
+        internal static partial void RhEventPipeInternal_LogThreadPoolWorkerThreadStop(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        internal static partial void RhNativeRuntimeEventSource_LogThreadPoolWorkerThreadWait(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
+        internal static partial void RhEventPipeInternal_LogThreadPoolWorkerThreadWait(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
 
-        // [NonEvent]
-        // [LibraryImport(RuntimeLibrary)]
-        // [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        // internal static partial void LogThreadPoolMinMaxThreads(ushort MinWorkerThreads, ushort MaxWorkerThreads, ushort MinIOCompletionThreads, ushort MaxIOCompletionThreads, ushort ClrInstanceID);
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial void RhEventPipeInternal_LogThreadPoolMinMaxThreads(ushort MinWorkerThreads, ushort MaxWorkerThreads, ushort MinIOCompletionThreads, ushort MaxIOCompletionThreads, ushort ClrInstanceID);
 
-        // [NonEvent]
-        // [LibraryImport(RuntimeLibrary)]
-        // [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        // internal static partial void LogThreadPoolWorkerThreadAdjustmentSample(double Throughput, ushort ClrInstanceID);
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial void RhEventPipeInternal_LogThreadPoolWorkerThreadAdjustmentSample(double Throughput, ushort ClrInstanceID);
 
-        // [NonEvent]
-        // [LibraryImport(RuntimeLibrary)]
-        // [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        // internal static partial void LogThreadPoolWorkerThreadAdjustmentAdjustment(double AverageThroughput, uint NewWorkerThreadCount, NativeRuntimeEventSource.ThreadAdjustmentReasonMap Reason, ushort ClrInstanceID);
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial void RhEventPipeInternal_LogThreadPoolWorkerThreadAdjustmentAdjustment(double AverageThroughput, uint NewWorkerThreadCount, uint Reason, ushort ClrInstanceID);
 
-        // [NonEvent]
-        // [LibraryImport(RuntimeLibrary)]
-        // [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        // internal static partial void LogThreadPoolWorkerThreadAdjustmentStats(
-        //     double Duration,
-        //     double Throughput,
-        //     double ThreadPoolWorkerThreadWait,
-        //     double ThroughputWave,
-        //     double ThroughputErrorEstimate,
-        //     double AverageThroughputErrorEstimate,
-        //     double ThroughputRatio,
-        //     double Confidence,
-        //     double NewControlSetting,
-        //     ushort NewThreadWaveMagnitude,
-        //     ushort ClrInstanceID);
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial void RhEventPipeInternal_LogThreadPoolWorkerThreadAdjustmentStats(
+            double Duration,
+            double Throughput,
+            double ThreadPoolWorkerThreadWait,
+            double ThroughputWave,
+            double ThroughputErrorEstimate,
+            double AverageThroughputErrorEstimate,
+            double ThroughputRatio,
+            double Confidence,
+            double NewControlSetting,
+            ushort NewThreadWaveMagnitude,
+            ushort ClrInstanceID);
 
-        // [NonEvent]
-        // [LibraryImport(RuntimeLibrary)]
-        // [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        // internal static partial void LogThreadPoolIOEnqueue(
-        //     IntPtr NativeOverlapped,
-        //     IntPtr Overlapped,
-        //     [MarshalAs(UnmanagedType.Bool)] bool MultiDequeues,
-        //     ushort ClrInstanceID);
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial void RhEventPipeInternal_LogThreadPoolIOEnqueue(
+            IntPtr NativeOverlapped,
+            IntPtr Overlapped,
+            [MarshalAs(UnmanagedType.Bool)] bool MultiDequeues,
+            ushort ClrInstanceID);
 
-        // [NonEvent]
-        // [LibraryImport(RuntimeLibrary)]
-        // [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        // internal static partial void LogThreadPoolIODequeue(
-        //     IntPtr NativeOverlapped,
-        //     IntPtr Overlapped,
-        //     ushort ClrInstanceID);
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial void RhEventPipeInternal_LogThreadPoolIODequeue(
+            IntPtr NativeOverlapped,
+            IntPtr Overlapped,
+            ushort ClrInstanceID);
 
-        // [NonEvent]
-        // [LibraryImport(RuntimeLibrary)]
-        // [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        // internal static partial void LogThreadPoolWorkingThreadCount(
-        //     uint Count,
-        //     ushort ClrInstanceID
-        // );
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial void RhEventPipeInternal_LogThreadPoolWorkingThreadCount(
+            uint Count,
+            ushort ClrInstanceID
+        );
 
-        // [NonEvent]
-        // [LibraryImport(RuntimeLibrary)]
-        // [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        // internal static partial void LogThreadPoolIOPack(
-        //     IntPtr NativeOverlapped,
-        //     IntPtr Overlapped,
-        //     ushort ClrInstanceID);
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial void RhEventPipeInternal_LogThreadPoolIOPack(
+            IntPtr NativeOverlapped,
+            IntPtr Overlapped,
+            ushort ClrInstanceID);
 #endif // FEATURE_PERFTRACING
 
         //

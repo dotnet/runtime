@@ -131,6 +131,16 @@ EventPipeEvent *EventPipeEventGCRestartEEBegin_V1 = nullptr;
 EventPipeEvent *EventPipeEventGCSuspendEEEnd_V1 = nullptr;
 EventPipeEvent *EventPipeEventGCSuspendEEBegin_V1 = nullptr;
 EventPipeEvent *EventPipeEventThreadPoolWorkerThreadStart = nullptr;
+EventPipeEvent *EventPipeEventThreadPoolWorkerThreadStop = nullptr;
+EventPipeEvent *EventPipeEventThreadPoolWorkerThreadWait = nullptr;
+EventPipeEvent *EventPipeEventThreadPoolMinMaxThreads = nullptr;
+EventPipeEvent *EventPipeEventThreadPoolWorkerThreadAdjustmentSample = nullptr;
+EventPipeEvent *EventPipeEventThreadPoolWorkerThreadAdjustmentAdjustment = nullptr;
+EventPipeEvent *EventPipeEventThreadPoolWorkerThreadAdjustmentStats = nullptr;
+EventPipeEvent *EventPipeEventThreadPoolIOEnqueue = nullptr;
+EventPipeEvent *EventPipeEventThreadPoolIODequeue = nullptr;
+EventPipeEvent *EventPipeEventThreadPoolWorkingThreadCount = nullptr;
+EventPipeEvent *EventPipeEventThreadPoolIOPack = nullptr;
 
 BOOL EventPipeEventEnabledDestroyGCHandle(void)
 {
@@ -1855,6 +1865,435 @@ ULONG EventPipeWriteEventThreadPoolWorkerThreadStart(
     return ERROR_SUCCESS;
 }
 
+BOOL EventPipeEventEnabledThreadPoolWorkerThreadStop(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolWorkerThreadStop);
+}
+
+ULONG EventPipeWriteEventThreadPoolWorkerThreadStop(
+    const unsigned int ActiveWorkerThreadCount,
+    const unsigned int RetiredWorkerThreadCount,
+    const unsigned short ClrInstanceID,
+    const GUID *  ActivityId,
+    const GUID *  RelatedActivityId)
+{
+    if (!EventPipeEventEnabledThreadPoolWorkerThreadStop())
+        return ERROR_SUCCESS;
+
+    size_t size = 32;
+    BYTE stackBuffer[32];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(ActiveWorkerThreadCount, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(RetiredWorkerThreadCount, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventThreadPoolWorkerThreadStop, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledThreadPoolWorkerThreadWait(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolWorkerThreadWait);
+}
+
+ULONG EventPipeWriteEventThreadPoolWorkerThreadWait(
+    const unsigned int ActiveWorkerThreadCount,
+    const unsigned int RetiredWorkerThreadCount,
+    const unsigned short ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledThreadPoolWorkerThreadWait())
+        return ERROR_SUCCESS;
+
+    size_t size = 32;
+    BYTE stackBuffer[32];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(ActiveWorkerThreadCount, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(RetiredWorkerThreadCount, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventThreadPoolWorkerThreadWait, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledThreadPoolMinMaxThreads(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolMinMaxThreads);
+}
+
+ULONG EventPipeWriteEventThreadPoolMinMaxThreads(
+    const unsigned short MinWorkerThreads,
+    const unsigned short MaxWorkerThreads,
+    const unsigned short MinIOCompletionThreads,
+    const unsigned short MaxIOCompletionThreads,
+    const unsigned short ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledThreadPoolMinMaxThreads())
+        return ERROR_SUCCESS;
+
+    size_t size = 32;
+    BYTE stackBuffer[32];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(MinWorkerThreads, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(MaxWorkerThreads, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(MinIOCompletionThreads, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(MaxIOCompletionThreads, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventThreadPoolMinMaxThreads, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledThreadPoolWorkerThreadAdjustmentSample(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolWorkerThreadAdjustmentSample);
+}
+
+ULONG EventPipeWriteEventThreadPoolWorkerThreadAdjustmentSample(
+    const double Throughput,
+    const unsigned short ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledThreadPoolWorkerThreadAdjustmentSample())
+        return ERROR_SUCCESS;
+
+    size_t size = 32;
+    BYTE stackBuffer[32];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(Throughput, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventThreadPoolWorkerThreadAdjustmentSample, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledThreadPoolWorkerThreadAdjustmentAdjustment(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolWorkerThreadAdjustmentAdjustment);
+}
+
+ULONG EventPipeWriteEventThreadPoolWorkerThreadAdjustmentAdjustment(
+    const double AverageThroughput,
+    const unsigned int NewWorkerThreadCount,
+    const unsigned int Reason,
+    const unsigned short ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledThreadPoolWorkerThreadAdjustmentAdjustment())
+        return ERROR_SUCCESS;
+
+    size_t size = 32;
+    BYTE stackBuffer[32];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(AverageThroughput, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(NewWorkerThreadCount, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(Reason, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventThreadPoolWorkerThreadAdjustmentAdjustment, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledThreadPoolWorkerThreadAdjustmentStats(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolWorkerThreadAdjustmentStats);
+}
+
+ULONG EventPipeWriteEventThreadPoolWorkerThreadAdjustmentStats(
+    const double Duration,
+    const double Throughput,
+    const double ThreadWave,
+    const double ThroughputWave,
+    const double ThroughputErrorEstimate,
+    const double AverageThroughputErrorEstimate,
+    const double ThroughputRatio,
+    const double Confidence,
+    const double NewControlSetting,
+    const unsigned short NewThreadWaveMagnitude,
+    const unsigned short ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledThreadPoolWorkerThreadAdjustmentStats())
+        return ERROR_SUCCESS;
+
+    size_t size = 76;
+    BYTE stackBuffer[76];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(Duration, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(Throughput, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ThreadWave, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ThroughputWave, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ThroughputErrorEstimate, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(AverageThroughputErrorEstimate, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ThroughputRatio, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(Confidence, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(NewControlSetting, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(NewThreadWaveMagnitude, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventThreadPoolWorkerThreadAdjustmentStats, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledThreadPoolIOEnqueue(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolIOEnqueue);
+}
+
+ULONG EventPipeWriteEventThreadPoolIOEnqueue(
+    const void* NativeOverlapped,
+    const void* Overlapped,
+    const BOOL MultiDequeues,
+    const unsigned short ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledThreadPoolIOEnqueue())
+        return ERROR_SUCCESS;
+
+    size_t size = 32;
+    BYTE stackBuffer[32];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(NativeOverlapped, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(Overlapped, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(MultiDequeues, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventThreadPoolIOEnqueue, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledThreadPoolIODequeue(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolIODequeue);
+}
+
+ULONG EventPipeWriteEventThreadPoolIODequeue(
+    const void* NativeOverlapped,
+    const void* Overlapped,
+    const unsigned short ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledThreadPoolIODequeue())
+        return ERROR_SUCCESS;
+
+    size_t size = 32;
+    BYTE stackBuffer[32];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(NativeOverlapped, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(Overlapped, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventThreadPoolIODequeue, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledThreadPoolWorkingThreadCount(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolWorkingThreadCount);
+}
+
+ULONG EventPipeWriteEventThreadPoolWorkingThreadCount(
+    const unsigned int Count,
+    const unsigned short ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledThreadPoolWorkingThreadCount())
+        return ERROR_SUCCESS;
+
+    size_t size = 32;
+    BYTE stackBuffer[32];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(Count, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventThreadPoolWorkingThreadCount, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledThreadPoolIOPack(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolIOPack);
+}
+
+ULONG EventPipeWriteEventThreadPoolIOPack(
+    const void* NativeOverlapped,
+    const void* Overlapped,
+    const unsigned short ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledThreadPoolIOPack())
+        return ERROR_SUCCESS;
+
+    size_t size = 32;
+    BYTE stackBuffer[32];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(NativeOverlapped, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(Overlapped, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventThreadPoolIOPack, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+    return ERROR_SUCCESS;
+}
 
 typedef struct _MCGEN_TRACE_CONTEXT
 {
@@ -2034,4 +2473,13 @@ void InitDotNETRuntime(void)
     EventPipeEventGCSuspendEEEnd_V1 = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,8,1,1,EP_EVENT_LEVEL_INFORMATIONAL,false);
     EventPipeEventGCSuspendEEBegin_V1 = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,9,1,1,EP_EVENT_LEVEL_INFORMATIONAL,false);
     EventPipeEventThreadPoolWorkerThreadStart = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,50,65536,0,EP_EVENT_LEVEL_INFORMATIONAL,false);
+    EventPipeEventThreadPoolWorkerThreadStop = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,51,65536,0,EP_EVENT_LEVEL_INFORMATIONAL,false);
+    EventPipeEventThreadPoolWorkerThreadWait = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,57,65536,0,EP_EVENT_LEVEL_INFORMATIONAL,false);
+    EventPipeEventThreadPoolMinMaxThreads = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,59,65536,0,EP_EVENT_LEVEL_INFORMATIONAL,true);
+    EventPipeEventThreadPoolWorkerThreadAdjustmentSample = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,54,65536,0,EP_EVENT_LEVEL_INFORMATIONAL,false);
+    EventPipeEventThreadPoolWorkerThreadAdjustmentAdjustment = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,55,65536,0,EP_EVENT_LEVEL_INFORMATIONAL,false);
+    EventPipeEventThreadPoolWorkerThreadAdjustmentStats = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,56,65536,0,EP_EVENT_LEVEL_VERBOSE,true);
+    EventPipeEventThreadPoolIOEnqueue = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,63,2147549184,0,EP_EVENT_LEVEL_VERBOSE,true);
+    EventPipeEventThreadPoolIODequeue = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,64,2147549184,0,EP_EVENT_LEVEL_VERBOSE,true);
+    EventPipeEventThreadPoolWorkingThreadCount = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,60,65536,0,EP_EVENT_LEVEL_VERBOSE,true);
 }
