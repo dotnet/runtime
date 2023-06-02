@@ -25,7 +25,8 @@
     <UseConsoleUITemplate>false</UseConsoleUITemplate>
 
     <BuildAppBundleAfterTargets>CopyFilesToPublishDirectory</BuildAppBundleAfterTargets>
-    <BuildAppBundleAfterTargets Condition="'$(ArchiveTests)' == 'true'">Build</BuildAppBundleAfterTargets>
+    <BuildAppBundleAfterTargets Condition="'$(ArchiveTests)' == 'true'">CopyFilesToPublishDirectory;Build</BuildAppBundleAfterTargets>
+    <BuildAppBundleDependsOnTargets Condition="'$(ArchiveTests)' == 'true'">Publish</BuildAppBundleDependsOnTargets>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'maccatalyst'">
@@ -43,7 +44,7 @@
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets" />
 
-  <Target Name="BuildAppBundle" AfterTargets="$(BuildAppBundleAfterTargets)" />
+  <Target Name="BuildAppBundle" AfterTargets="$(BuildAppBundleAfterTargets)" DependsOnTargets="$(BuildAppBundleDependsOnTargets)"/>
 
   <Target Name="RunAppBundle"
           AfterTargets="_AppleGenerateAppBundle"
