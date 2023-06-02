@@ -2990,9 +2990,9 @@ ves_icall_RuntimeType_GetNamespace (MonoQCallTypeHandle type_handle, MonoObjectH
 {
 	MonoType *type = type_handle.type;
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
-	
+
 	MonoClass *elem;
-	while (!m_class_is_enumtype (klass) && 
+	while (!m_class_is_enumtype (klass) &&
 		!mono_class_is_nullable (klass) &&
 		(klass != (elem = m_class_get_element_class (klass))))
 		klass = elem;
@@ -6118,6 +6118,11 @@ ves_icall_System_Environment_Exit (int result)
 	exit (result);
 }
 
+#if HOST_BROWSER
+void
+mono_wasm_set_runtime_aborted (const char *msg);
+#endif
+
 void
 ves_icall_System_Environment_FailFast (MonoStringHandle message, MonoExceptionHandle exception, MonoStringHandle errorSource, MonoError *error)
 {
@@ -6131,8 +6136,15 @@ ves_icall_System_Environment_FailFast (MonoStringHandle message, MonoExceptionHa
 
 	if (!MONO_HANDLE_IS_NULL (message)) {
 		char *msg = mono_string_handle_to_utf8 (message, error);
+#if HOST_BROWSER
+		// Don't free the string, it will be retained by the WASM runtime so the
+		//  error message can be propagated out later
+		// This is necessary because g_warning does nothing in WASM
+		mono_wasm_set_runtime_aborted (msg);
+#else
 		g_warning (msg);
 		g_free (msg);
+#endif
 	}
 
 	if (!MONO_HANDLE_IS_NULL (exception)) {

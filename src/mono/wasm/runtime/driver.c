@@ -118,6 +118,9 @@ static int resolved_datetime_class = 0,
 
 int mono_wasm_enable_gc = 1;
 
+int mono_wasm_runtime_aborted = 0;
+const char * mono_wasm_runtime_abort_message = NULL;
+
 /* Not part of public headers */
 #define MONO_ICALL_TABLE_CALLBACKS_VERSION 3
 
@@ -270,6 +273,8 @@ mono_wasm_add_satellite_assembly (const char *name, const char *culture, const u
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_setenv (const char *name, const char *value)
 {
+	assert (name);
+	assert (value);
 	monoeg_g_setenv (strdup (name), strdup (value), 1);
 }
 
@@ -1424,4 +1429,20 @@ EMSCRIPTEN_KEEPALIVE int mono_wasm_is_zero_page_reserved () {
 	// clang/llvm may perform this optimization if --low-memory-unused is set.
 	// https://github.com/emscripten-core/emscripten/issues/19389
 	return (emscripten_stack_get_base() > 512) && (emscripten_stack_get_end() > 512);
+}
+
+//
+EMSCRIPTEN_KEEPALIVE void mono_wasm_set_runtime_aborted (const char *msg) {
+	mono_wasm_runtime_aborted = 1;
+	// If an abort message was already set previously and it wasn't an empty string, don't replace it.
+	if (msg && (!mono_wasm_runtime_abort_message || mono_wasm_runtime_abort_message[0] == 0))
+		mono_wasm_runtime_abort_message = msg;
+}
+
+EMSCRIPTEN_KEEPALIVE int mono_wasm_get_runtime_aborted () {
+	return mono_wasm_runtime_aborted;
+}
+
+EMSCRIPTEN_KEEPALIVE const char * mono_wasm_get_runtime_abort_message () {
+	return mono_wasm_runtime_abort_message;
 }

@@ -22,6 +22,16 @@ import { startMeasure, MeasuredBlock, endMeasure } from "./profiler";
 import { mono_log_debug } from "./logging";
 import { assert_synchronization_context } from "./pthreads/shared";
 
+function assert_runtime_not_exited () {
+    if (cwraps.mono_wasm_get_runtime_aborted()) {
+        const reason = cwraps.mono_wasm_get_runtime_abort_message();
+        const msg = (typeof (reason) === "string") && reason.length
+            ? `The .NET runtime previously exited due to an error: ${reason}`
+            : "The .NET runtime previously exited due to an error.";
+        throw new Error(msg);
+    }
+}
+
 export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, signature_hash: number, signature: JSFunctionSignature, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     assert_synchronization_context();
     const fqn_root = mono_wasm_new_external_root<MonoString>(fully_qualified_name), resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
@@ -88,7 +98,7 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
             bound_fn = bind_fn(closure);
         }
 
-        // this is just to make debugging easier. 
+        // this is just to make debugging easier.
         // It's not CSP compliant and possibly not performant, that's why it's only enabled in debug builds
         // in Release configuration, it would be a trimmed by rollup
         if (BuildConfiguration === "Debug") {
@@ -245,6 +255,7 @@ type BindingClosure = {
 
 export function invoke_method_and_handle_exception(method: MonoMethod, args: JSMarshalerArguments): void {
     assert_synchronization_context();
+    assert_runtime_not_exited();
     const fail = cwraps.mono_wasm_invoke_method_bound(method, args);
     if (fail) throw new Error("ERR24: Unexpected error: " + monoStringToStringUnsafe(fail));
     if (is_args_exception(args)) {
@@ -284,7 +295,9 @@ function _walk_exports_to_set_function(assembly: string, namespace: string, clas
 }
 
 export async function mono_wasm_get_assembly_exports(assembly: string): Promise<any> {
+    mono_assert(typeof (assembly) === "string", "You must pass an assembly name when getting exports");
     mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "The runtime must be initialized.");
+    assert_runtime_not_exited();
     const result = exportsByAssembly.get(assembly);
     if (!result) {
         const mark = startMeasure();

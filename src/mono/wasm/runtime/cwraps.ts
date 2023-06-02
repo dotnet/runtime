@@ -93,6 +93,9 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_get_i32_unaligned", "number", ["number"]],
     [true, "mono_wasm_get_f32_unaligned", "number", ["number"]],
     [true, "mono_wasm_get_f64_unaligned", "number", ["number"]],
+    [false, "mono_wasm_set_runtime_aborted", "void", ["string"]],
+    [false, "mono_wasm_get_runtime_aborted", "number", []],
+    [false, "mono_wasm_get_runtime_abort_message", "string", []],
 
     // jiterpreter
     [true, "mono_jiterp_trace_bailout", "void", ["number"]],
@@ -215,6 +218,9 @@ export interface t_Cwraps {
     mono_wasm_get_i32_unaligned(source: VoidPtr): number;
     mono_wasm_get_f32_unaligned(source: VoidPtr): number;
     mono_wasm_get_f64_unaligned(source: VoidPtr): number;
+    mono_wasm_set_runtime_aborted(reason?: string): void;
+    mono_wasm_get_runtime_aborted(): number;
+    mono_wasm_get_runtime_abort_message(): string;
 
     mono_jiterp_trace_bailout(reason: number): void;
     mono_jiterp_get_trace_bailout_count(reason: number): number;

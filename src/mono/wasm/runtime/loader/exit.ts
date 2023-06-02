@@ -6,6 +6,12 @@ import { mono_log_debug, consoleWebSocket, mono_log_error, mono_log_info_no_pref
 
 export function abort_startup(reason: any, should_exit: boolean): void {
     mono_log_debug("abort_startup");
+    // Someone may have already set an abort message or aborted the runtime.
+    // For example, this will happen in the case of Environment.FailFast.
+    // If we don't have a reason message of our own, see if we can get an existing one.
+    if (!reason)
+        reason = runtimeHelpers.get_runtime_abort_message() || reason;
+    runtimeHelpers.set_runtime_aborted(reason);
     loaderHelpers.allDownloadsQueued.promise_control.reject(reason);
     loaderHelpers.afterConfigLoaded.promise_control.reject(reason);
     loaderHelpers.wasmDownloadPromise.promise_control.reject(reason);

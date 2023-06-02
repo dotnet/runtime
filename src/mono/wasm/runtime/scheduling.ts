@@ -36,12 +36,18 @@ export function prevent_timer_throttling(): void {
 }
 
 function prevent_timer_throttling_tick() {
+    if (cwraps.mono_wasm_get_runtime_aborted())
+        return;
+
     cwraps.mono_wasm_execute_timer();
     pump_count++;
     mono_background_exec_until_done();
 }
 
 function mono_background_exec_until_done() {
+    if (cwraps.mono_wasm_get_runtime_aborted())
+        return;
+
     while (pump_count > 0) {
         --pump_count;
         cwraps.mono_background_exec();
@@ -63,5 +69,8 @@ export function mono_wasm_schedule_timer(shortestDueTimeMs: number): void {
 }
 
 function mono_wasm_schedule_timer_tick() {
+    if (cwraps.mono_wasm_get_runtime_aborted())
+        return;
+
     cwraps.mono_wasm_execute_timer();
 }

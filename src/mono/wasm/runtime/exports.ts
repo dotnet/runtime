@@ -42,6 +42,8 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
     Object.assign(globals.internal, export_internal());
     Object.assign(runtimeHelpers, {
         stringify_as_error_with_stack: mono_wasm_stringify_as_error_with_stack,
+        set_runtime_aborted: set_runtime_aborted.bind(null, module),
+        get_runtime_abort_message: get_runtime_abort_message.bind(null, module),
         instantiate_symbols_asset,
         instantiate_asset,
         jiterpreter_dump_stats,
@@ -123,6 +125,27 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
     list.registerRuntime(exportedRuntimeAPI);
 
     return exportedRuntimeAPI;
+}
+
+function set_runtime_aborted (module: any, reason: any) {
+    if (module && module.ccall) {
+        try {
+            module.ccall("mono_wasm_set_runtime_aborted", "void", ["string"], [reason ? String(reason) : ""]);
+        } catch (exc) {
+            mono_log_warn(`Failed to set runtime aborted flag: ${exc}`);
+        }
+    }
+}
+
+function get_runtime_abort_message (module: any): string {
+    if (module && module.ccall) {
+        try {
+            return module.ccall("mono_wasm_get_runtime_abort_message", "string", [], []);
+        } catch (exc) {
+            mono_log_warn(`Failed to get runtime abort message: ${exc}`);
+        }
+    }
+    return "";
 }
 
 class RuntimeList {
