@@ -49,6 +49,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         // Don't need a dictionary for this, it will have very few elements
         // (guaranteed less than 28, in practice 0-2)
         private static readonly List<Type> s_generatedTypes = new List<Type>(0);
+        private static readonly string[] s_genericTName = new string[] { "T" };
 
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicFields, typeof(VariantArray1))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicFields, typeof(VariantArray2))]
@@ -100,7 +101,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         {
             TypeAttributes attrs = TypeAttributes.NotPublic | TypeAttributes.SequentialLayout;
             TypeBuilder type = UnsafeMethods.DynamicModule.DefineType("VariantArray" + size, attrs, typeof(ValueType));
-            GenericTypeParameterBuilder T = type.DefineGenericParameters(new string[] { "T" })[0];
+            GenericTypeParameterBuilder T = type.DefineGenericParameters(s_genericTName)[0];
             for (int i = 0; i < size; i++)
             {
                 type.DefineField("Element" + i, T, FieldAttributes.Public);

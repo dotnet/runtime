@@ -459,10 +459,7 @@ namespace System.IO.Compression
                 throw new ArgumentOutOfRangeException(nameof(compressionLevel));
             }
 
-            // Rely on Path.GetFullPath for validation of sourceDirectoryName and destinationArchive
-
-            // Checking of compressionLevel is passed down to DeflateStream and the IDeflater implementation
-            // as it is a pluggable component that completely encapsulates the meaning of compressionLevel.
+            // Rely on Path.GetFullPath for validation of sourceDirectoryName
 
             sourceDirectoryName = Path.GetFullPath(sourceDirectoryName);
 

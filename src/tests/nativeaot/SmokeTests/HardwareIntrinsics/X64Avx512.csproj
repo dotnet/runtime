@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>0</CLRTestPriority>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64' OR '$(TargetsOSX)' == 'true'">true</CLRTestTargetUnsupported>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);AVX512_INTRINSICS;VECTORT256_INTRINSICS</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <IlcArg Include="--instruction-set:avx512f,avx512f_vl,avx512bw,avx512bw_vl,avx512cd,avx512cd_vl,avx512dq,avx512dq_vl" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <CLRTestBashPreCommands><![CDATA[
+$(CLRTestBashPreCommands)
+    if [[ "$OSTYPE" == "linux"* ]]; then
+        if ! grep -q '^flags.*avx512' /proc/cpuinfo 2>/dev/null; then
+          echo No support for AVX512, test not applicable.
+          exit 0
+        fi
+    fi
+]]></CLRTestBashPreCommands>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>

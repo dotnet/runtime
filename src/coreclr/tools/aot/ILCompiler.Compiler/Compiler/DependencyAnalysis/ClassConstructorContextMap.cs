@@ -11,18 +11,17 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class ClassConstructorContextMap : ObjectNode, ISymbolDefinitionNode
+    internal sealed class ClassConstructorContextMap : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private ObjectAndOffsetSymbolNode _endSymbol;
+        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
 
         public ClassConstructorContextMap(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__type_to_cctorContext_map_End", true);
             _externalReferences = externalReferences;
         }
 
-        public ISymbolDefinitionNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -74,9 +73,9 @@ namespace ILCompiler.DependencyAnalysis
 
             byte[] hashTableBytes = writer.Save();
 
-            _endSymbol.SetSymbolOffset(hashTableBytes.Length);
+            _size = hashTableBytes.Length;
 
-            return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
+            return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
