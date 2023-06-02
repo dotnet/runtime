@@ -72,9 +72,11 @@ extern void mono_register_icu_bundle (void);
 #endif /* INVARIANT_GLOBALIZATION */
 #endif /* WASM_SINGLE_FILE */
 
-extern void mono_wasm_free_bundled_resource_func (void *resource);
-extern void mono_bundled_resources_add_assembly_resource (const char *name, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *));
-extern void mono_bundled_resources_add_satellite_assembly_resource (const char *id, const char *name, const char *culture, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *));
+extern void mono_wasm_free_bundled_assembly_resource_func (void *resource);
+extern void mono_wasm_free_bundled_satellite_assembly_resource_func (void *resource);
+extern void mono_bundled_resources_add_assembly_resource (const char *id, const char *name, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *), void *free_data);
+extern void mono_bundled_resources_add_assembly_symbol_resource (const char *id, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *), void *free_data);
+extern void mono_bundled_resources_add_satellite_assembly_resource (const char *id, const char *name, const char *culture, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *), void *free_data);
 
 extern const char* dotnet_wasi_getentrypointassemblyname();
 int32_t mono_wasi_load_icu_data(const void* pData);
@@ -126,12 +128,12 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 		char *new_name = strdup (name);
 		//FIXME handle debugging assemblies with .exe extension
 		strcpy (&new_name [len - 3], "dll");
-		mono_register_symfile_for_assembly (new_name, data, size);
+		mono_bundled_resources_add_assembly_symbol_resource (new_name, data, size, mono_wasm_free_bundled_assembly_resource_func, NULL);
 		return 1;
 	}
 	const char *assembly_name = strdup (name);
 	assert (assembly_name);
-	mono_bundled_resources_add_assembly_resource (assembly_name, data, size, mono_wasm_free_bundled_resource_func);
+	mono_bundled_resources_add_assembly_resource (assembly_name, assembly_name, data, size, mono_wasm_free_bundled_assembly_resource_func, NULL);
 	return mono_has_pdb_checksum ((char*)data, size);
 }
 
@@ -153,7 +155,7 @@ mono_wasm_add_satellite_assembly (const char *name, const char *culture, const u
 	assert (satellite_assembly_name);
 	const char *satellite_assembly_culture = strdup (culture);
 	assert (satellite_assembly_culture);
-	mono_bundled_resources_add_satellite_assembly_resource (id, satellite_assembly_name, satellite_assembly_culture, data, size, mono_wasm_free_bundled_resource_func);
+	mono_bundled_resources_add_satellite_assembly_resource (id, satellite_assembly_name, satellite_assembly_culture, data, size, mono_wasm_free_bundled_satellite_assembly_resource_func, NULL);
 }
 
 static void *sysglobal_native_handle;

@@ -1457,9 +1457,10 @@ open_from_bundle_internal (MonoAssemblyLoadContext *alc, const char *filename, M
 	MonoImage *image = NULL;
 	char *name = g_path_get_basename (filename);
 
-	MonoBundledAssemblyResource *assembly = mono_bundled_resources_get_assembly_resource (name);
-	if (assembly)
-		image = mono_image_open_from_data_internal (alc, (char *)assembly->assembly.data, assembly->assembly.size, FALSE, status, FALSE, name, NULL);
+	const uint8_t *data = NULL;
+	uint32_t size = 0;
+	if (mono_bundled_resources_get_assembly_resource_values (name, &data, &size, NULL, NULL))
+		image = mono_image_open_from_data_internal (alc, (char *)data, size, FALSE, status, FALSE, name, NULL);
 
 	g_free (name);
 	return image;
@@ -1474,9 +1475,10 @@ open_from_satellite_bundle (MonoAssemblyLoadContext *alc, const char *filename, 
 	MonoImage *image = NULL;
 	char *bundle_name = g_strconcat (culture, "/", filename, (const char *)NULL);
 
-	MonoBundledSatelliteAssemblyResource *satellite_assembly = mono_bundled_resources_get_satellite_assembly_resource (bundle_name);
-	if (satellite_assembly)
-		image = mono_image_open_from_data_internal (alc, (char *)satellite_assembly->satellite_assembly.data, satellite_assembly->satellite_assembly.size, FALSE, status, FALSE, bundle_name, NULL);
+	const uint8_t *data = NULL;
+	uint32_t size = 0;
+	if (mono_bundled_resources_get_satellite_assembly_resource_values (bundle_name, &data, &size))
+		image = mono_image_open_from_data_internal (alc, (char *)data, size, FALSE, status, FALSE, bundle_name, NULL);
 
 	g_free (bundle_name);
 	return image;
@@ -3131,6 +3133,12 @@ mono_assembly_get_name_internal (MonoAssembly *assembly)
 	return &assembly->aname;
 }
 
+static void
+mono_free_bundled_assembly_func (void *resource)
+{
+    g_free (resource);
+}
+
 /**
  * mono_register_bundled_assemblies:
  * Dynamically allocates MonoBundledAssemblyResources to leverage
@@ -3141,7 +3149,7 @@ mono_register_bundled_assemblies (const MonoBundledAssembly **assemblies)
 {
 	for (int i = 0; assemblies [i]; ++i) {
 		const MonoBundledAssembly *assembly = assemblies [i];
-		mono_bundled_resources_add_assembly_resource (assembly->name, (const uint8_t *)assembly->data, (uint32_t)assembly->size, mono_bundled_resources_free_bundled_resource_func);
+		mono_bundled_resources_add_assembly_resource (assembly->name, assembly->name, (const uint8_t *)assembly->data, (uint32_t)assembly->size, mono_free_bundled_assembly_func, NULL);
 	}
 }
 
@@ -3161,6 +3169,15 @@ mono_create_new_bundled_satellite_assembly (const char *name, const char *cultur
 	return satellite_assembly;
 }
 
+static void
+mono_free_bundled_satellite_assembly_func (void *resource)
+{
+    MonoBundledResource *bundled_resource = (MonoBundledResource *)resource;
+
+    g_free ((void *)bundled_resource->id);
+    g_free (resource);
+}
+
 /**
  * mono_register_bundled_satellite_assemblies:
  * Dynamically allocates MonoBundledSatelliteAssemblyResources to leverage
@@ -3173,7 +3190,7 @@ mono_register_bundled_satellite_assemblies (const MonoBundledSatelliteAssembly *
 		const MonoBundledSatelliteAssembly *satellite_assembly = satellite_assemblies [i];
 		char *id = g_strconcat (satellite_assembly->culture, "/", satellite_assembly->name, (const char*)NULL);
 		g_assert (id);
-		mono_bundled_resources_add_satellite_assembly_resource (id, satellite_assembly->name, satellite_assembly->culture, (const uint8_t *)satellite_assembly->data, (uint32_t)satellite_assembly->size, mono_bundled_resources_free_bundled_resource_func);
+		mono_bundled_resources_add_satellite_assembly_resource (id, satellite_assembly->name, satellite_assembly->culture, (const uint8_t *)satellite_assembly->data, (uint32_t)satellite_assembly->size, mono_free_bundled_satellite_assembly_func, NULL);
 	}
 }
 

@@ -1076,20 +1076,7 @@ mono_is_debugger_attached (void)
 void
 mono_register_symfile_for_assembly (const char *assembly_name, const mono_byte *raw_contents, int size)
 {
-    // Check if assembly dll counterpart had been added via mono_register_bundled_assemblies
-	MonoBundledAssemblyResource *assembly_resource = mono_bundled_resources_get_assembly_resource (assembly_name);
-	if (!assembly_resource) {
-		assembly_resource = g_new0 (MonoBundledAssemblyResource, 1);
-		assembly_resource->resource.type = MONO_BUNDLED_ASSEMBLY;
-		assembly_resource->resource.id = assembly_name;
-		assembly_resource->resource.free_bundled_resource_func = &mono_bundled_resources_free_bundled_resource_func;
-		mono_bundled_resources_add ((MonoBundledResource **)&assembly_resource, 1);
-	} else {
-		// Ensure the MonoBundledSymbolData has not been initialized
-		g_assert (!assembly_resource->symbol_data.data && assembly_resource->symbol_data.size == 0);
-	}
-	assembly_resource->symbol_data.data = (const uint8_t *)raw_contents;
-	assembly_resource->symbol_data.size = (uint32_t)size;
+	mono_bundled_resources_add_assembly_symbol_resource (assembly_name, raw_contents, size, NULL, NULL);
 }
 
 static MonoDebugHandle *
@@ -1097,8 +1084,8 @@ open_symfile_from_bundle (MonoImage *image)
 {
 	MonoDebugHandle *handle = NULL;
 	const uint8_t *data = NULL;
-	const uint32_t size = 0;
-	if (mono_bundled_resources_get_assembly_resource_values (image->module_name, &data, &size))
+	uint32_t size = 0;
+	if (mono_bundled_resources_get_assembly_resource_values (image->module_name, NULL, NULL, &data, &size))
 		handle = mono_debug_open_image (image, data, size);
 
 #ifdef ENABLE_WEBCIL
@@ -1110,7 +1097,7 @@ open_symfile_from_bundle (MonoImage *image)
 		char *module_name_dll_suffix = (char *)g_malloc0 (sizeof(char) * (n + 5));
 		memcpy (module_name_dll_suffix, image->module_name, len);
 		memcpy (module_name_dll_suffix + n, ".dll\0", 5);
-		if (mono_bundled_resources_get_assembly_resource_values (module_name_dll_suffix, &data, &size))
+		if (mono_bundled_resources_get_assembly_resource_values (module_name_dll_suffix, NULL, NULL, &data, &size))
 			handle = mono_debug_open_image (image, data, size);
 
 		g_free (module_name_dll_suffix);
@@ -1123,12 +1110,15 @@ open_symfile_from_bundle (MonoImage *image)
 const mono_byte *
 mono_get_symfile_bytes_from_bundle (const char *assembly_name, int *size)
 {
-	mono_byte *data = NULL;
-	if (mono_bundled_resources_get_assembly_resource_values (assembly_name, &data, size))
-		return data;
+	const uint8_t *symbol_data = NULL;
+	uint32_t symbol_size = 0;
+	if (mono_bundled_resources_get_assembly_resource_values (assembly_name, NULL, NULL, &symbol_data, &symbol_size)) {
+		*size = symbol_size;
+		return (mono_byte *)symbol_data;
+	}
 
 #ifdef ENABLE_WEBCIL
-	if (!assembly) {
+	if (!symbol_data) {
 		size_t len = strlen (assembly_name);
 		char *extension = strrchr (assembly_name, '.');
 		/* if image's module_name ends with an acceptable extension, check if theres a bundled resource with a .dll extension instead */
@@ -1137,13 +1127,14 @@ mono_get_symfile_bytes_from_bundle (const char *assembly_name, int *size)
 			char *module_name_dll_suffix = (char *)g_malloc0 (sizeof(char) * (n + 5));
 			memcpy (module_name_dll_suffix, assembly_name, len);
 			memcpy (module_name_dll_suffix + n, ".dll\0", 5);
-			mono_bundled_resources_get_assembly_resource_values (module_name_dll_suffix, &data, size)
+			mono_bundled_resources_get_assembly_resource_values (module_name_dll_suffix, NULL, NULL, &symbol_data, &symbol_size);
 			g_free (module_name_dll_suffix);
 		}
 	}
 #endif
 
-	return data;
+	*size = symbol_size;
+	return (mono_byte *)symbol_data;
 }
 
 void

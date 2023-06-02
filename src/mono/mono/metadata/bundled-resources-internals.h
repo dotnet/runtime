@@ -19,6 +19,7 @@ typedef struct _MonoBundledResource {
 	MonoBundledResourceType type;
 	const char *id;
 	void (*free_bundled_resource_func)(void *);
+	void *free_data;
 } MonoBundledResource;
 
 typedef struct _MonoBundledData {
@@ -65,19 +66,13 @@ void
 mono_bundled_resources_free (void);
 
 void
-mono_bundled_resources_free_bundled_resource_func (void *resource);
+mono_wasm_free_bundled_assembly_resource_func (void *resource);
 
 void
-mono_wasm_free_bundled_resource_func (void *resource);
+mono_wasm_free_bundled_satellite_assembly_resource_func (void *resource);
 
 void
 mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t len);
-
-void
-mono_bundled_resources_add_assembly_resource (const char *name, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *));
-
-void
-mono_bundled_resources_add_satellite_assembly_resource (const char *id, const char *name, const char *culture, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *));
 
 bool
 mono_bundled_resources_get_assembly_resource_values (const char *id, const uint8_t **data_out, uint32_t *size_out, const uint8_t **symbol_data_out, uint32_t *symbol_size_out);
@@ -87,6 +82,18 @@ mono_bundled_resources_get_satellite_assembly_resource_values (const char *id, c
 
 bool
 mono_bundled_resources_get_data_resource_values (const char *id, const uint8_t **data_out, uint32_t *size_out);
+
+void
+mono_bundled_resources_add_assembly_resource (const char *id, const char *name, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *), void *free_data);
+
+void
+mono_bundled_resources_add_assembly_symbol_resource (const char *id, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *), void *free_data);
+
+void
+mono_bundled_resources_add_satellite_assembly_resource (const char *id, const char *name, const char *culture, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *), void *free_data);
+
+void
+mono_bundled_resources_add_data_resource (const char *id, const char *name, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *), void *free_data);
 
 bool
 mono_bundled_resources_contains_assemblies (void);
