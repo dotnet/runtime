@@ -870,6 +870,11 @@ namespace System.Globalization
             {
                 if (!GlobalizationMode.PredefinedCulturesOnly)
                 {
+                    if (culture is < 1 or > 0xf_ffff)
+                    {
+                        throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupported);
+                    }
+
                     return Invariant;
                 }
 
