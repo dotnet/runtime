@@ -43,7 +43,7 @@
     <Left>lib/netstandard2.0/System.Configuration.ConfigurationManager.dll</Left>
     <Right>lib/net462/System.Configuration.ConfigurationManager.dll</Right>
   </Suppression>
-  <!-- Switched from using the public ObsoleteAttribute to the internal one during .NET 8. -->
+  <!-- Switched from using the public ObsoleteAttribute to the internal one during .NET 8: https://github.com/dotnet/runtime/commit/9d6e592e39e6410760988fcf0370d03c6505959e. -->
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>F:System.Configuration.SettingsSerializeAs.Binary:[T:System.ObsoleteAttribute]</Target>
