@@ -421,6 +421,37 @@ namespace ComInterfaceGenerator.Unit.Tests
         }
 
         [Fact]
+        public async Task VerifyNonPartialInterfaceWarns()
+        {
+            string basic = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+       
+                [GeneratedComInterface]
+                [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
+                public interface {|#0:I|}
+                {
+                    void Method();
+                }
+                """;
+            string containingTypeIsNotPartial = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+       
+                public static class Test
+                {
+                    [GeneratedComInterface]
+                    [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
+                    public partial interface {|#0:I|}
+                    {
+                        void Method();
+                    }
+                }
+                """;
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(basic, new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers).WithLocation(0));
+        }
+
+        [Fact]
         public async Task VerifyComInterfaceInheritingFromComInterfaceInOtherAssemblyReportsDiagnostic()
         {
             string additionalSource = $$"""

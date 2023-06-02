@@ -63,8 +63,8 @@ namespace Microsoft.Interop
 
         private static DiagnosticOr<(ComMethodInfo, IMethodSymbol)> CalculateMethodInfo(ComInterfaceInfo ifaceContext, IMethodSymbol method, CancellationToken ct)
         {
-            ct.ThrowIfCancellationRequested();
-            Debug.Assert(IsComMethodCandidate(method));
+            //ct.ThrowIfCancellationRequested();
+            //Debug.Assert(IsComMethodCandidate(method));
 
             // We only support methods that are defined in the same partial interface definition as the
             // [GeneratedComInterface] attribute.
