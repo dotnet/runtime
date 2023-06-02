@@ -1134,9 +1134,6 @@ mono_jiterp_trace_transfer (
 #define JITERP_MEMBER_CLASS_ELEMENT_CLASS 17
 #define JITERP_MEMBER_BOXED_VALUE_DATA 18
 
-void
-mono_jiterp_class_get_member_offsets (guint32 *element_class_offset, guint32 *rank_offset);
-
 // we use these helpers at JIT time to figure out where to do memory loads and stores
 EMSCRIPTEN_KEEPALIVE size_t
 mono_jiterp_get_member_offset (int member) {
@@ -1176,11 +1173,9 @@ mono_jiterp_get_member_offset (int member) {
 		case JITERP_MEMBER_VTABLE_KLASS:
 			return offsetof (MonoVTable, klass);
 		case JITERP_MEMBER_CLASS_RANK:
-			mono_jiterp_class_get_member_offsets(NULL, &temp);
-			return temp;
+			return m_class_offsetof_rank();
 		case JITERP_MEMBER_CLASS_ELEMENT_CLASS:
-			mono_jiterp_class_get_member_offsets(&temp, NULL);
-			return temp;
+			return m_class_offsetof_element_class();
 		// see mono_object_get_data
 		case JITERP_MEMBER_BOXED_VALUE_DATA:
 			return MONO_ABI_SIZEOF (MonoObject);

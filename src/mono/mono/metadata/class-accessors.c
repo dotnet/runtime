@@ -694,17 +694,6 @@ mono_class_has_metadata_update_info (MonoClass *klass)
 	}
 }
 
-#if HOST_BROWSER
-void
-mono_jiterp_class_get_member_offsets (guint32 *element_class_offset, guint32 *rank_offset)
-{
-	if (element_class_offset)
-		*element_class_offset = offsetof (MonoClass, element_class);
-	if (rank_offset)
-		*rank_offset = offsetof (MonoClass, rank);
-}
-#endif
-
 
 #ifdef MONO_CLASS_DEF_PRIVATE
 #define MONO_CLASS_GETTER(funcname, rettype, optref, argtype, fieldname) rettype funcname (argtype *klass) { return optref klass-> fieldname ; }
