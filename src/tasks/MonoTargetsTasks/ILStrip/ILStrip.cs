@@ -121,28 +121,15 @@ public class ILStrip : Microsoft.Build.Utilities.Task
                 return true;
             }
 
-            string? assemblyPath = Path.GetDirectoryName(assemblyFilePath);
-            string? assemblyName = Path.GetFileNameWithoutExtension(assemblyFilePath);
-            string trimmedAssemblyFilePath;
-            if (string.IsNullOrEmpty(assemblyPath))
-            {
-                trimmedAssemblyFilePath = assemblyName + "_new.dll";
-            }
-            else
-            {
-                trimmedAssemblyFilePath = Path.Combine(assemblyPath, (assemblyName + "_new.dll"));
-            }
-
+            string trimmedAssemblyFilePath = ComputeTrimmedAssemblyPath(assemblyFilePath);
             bool isTrimmed = false;
+
             using (FileStream fs = File.Open(assemblyFilePath, FileMode.Open))
             {
                 PEReader peReader = new PEReader(fs, PEStreamOptions.LeaveOpen);
                 MetadataReader mr = peReader.GetMetadataReader();
 
-                GuidHandle mvidHandle = mr.GetModuleDefinition().Mvid;
-                Guid mvid = mr.GetGuid(mvidHandle);
-                string guidValue = mvid.ToString();
-
+                string guidValue = ComputeGuid(mr);
                 string? expectedGuidValue = sr.ReadLine();
                 if (!string.Equals(guidValue, expectedGuidValue, StringComparison.OrdinalIgnoreCase))
                 {
@@ -153,84 +140,135 @@ public class ILStrip : Microsoft.Build.Utilities.Task
                 string? line = sr.ReadLine();
                 if (!string.IsNullOrEmpty(line))
                 {
-                    using (FileStream os = File.Open(trimmedAssemblyFilePath, FileMode.Create))
-                    {
-                        isTrimmed = true;
-                        fs.Position = 0;
-                        MemoryStream memStream = new MemoryStream((int)fs.Length);
-                        fs.CopyTo(memStream);
-
-                        Dictionary<int, int> token_to_rva = new Dictionary<int, int>();
-                        Dictionary<int, int> method_body_uses = new Dictionary<int, int>();
-
-                        foreach (MethodDefinitionHandle mdefh in mr.MethodDefinitions)
-                        {
-                            int methodToken = MetadataTokens.GetToken(mr, mdefh);
-                            MethodDefinition mdef = mr.GetMethodDefinition(mdefh);
-
-                            int rva = mdef.RelativeVirtualAddress;
-
-                            token_to_rva.Add(methodToken, rva);
-
-                            if (method_body_uses.TryGetValue(rva, out var count))
-                            {
-                                method_body_uses[rva]++;
-                            }
-                            else
-                            {
-                                method_body_uses.Add(rva, 1);
-                            }
-                        }
-
-                        do
-                        {
-                            int methodToken2Trim = Convert.ToInt32(line);
-                            int rva2Trim = token_to_rva[methodToken2Trim];
-                            method_body_uses[rva2Trim]--;
-                        } while ((line = sr.ReadLine()) != null);
-
-                        foreach (var kvp in method_body_uses)
-                        {
-                            int rva = kvp.Key;
-                            int count = kvp.Value;
-                            if (count == 0)
-                            {
-                                MethodBodyBlock mb = peReader.GetMethodBody(rva);
-                                int methodSize = mb.Size;
-                                int sectionIndex = peReader.PEHeaders.GetContainingSectionIndex(rva);
-                                int relativeOffset = rva - peReader.PEHeaders.SectionHeaders[sectionIndex].VirtualAddress;
-                                int actualLoc = peReader.PEHeaders.SectionHeaders[sectionIndex].PointerToRawData + relativeOffset;
-
-                                byte[] zeroBuffer;
-                                zeroBuffer = ArrayPool<byte>.Shared.Rent(methodSize);
-                                for (int i = 0; i < zeroBuffer.Length; i++)
-                                {
-                                    zeroBuffer[i] = 0x0;
-                                }
-
-                                memStream.Position = actualLoc;
-                                int firstbyte = memStream.ReadByte();
-                                int headerFlag = firstbyte & 0b11;
-                                int headerSize = headerFlag == 2 ? 1 : 4;
-
-                                memStream.Position = actualLoc + headerSize;
-                                memStream.Write(zeroBuffer, 0, methodSize - headerSize);
-
-                                ArrayPool<byte>.Shared.Return(zeroBuffer);
-                            }
-                        }
-                        memStream.Position = 0;
-                        memStream.CopyTo(os);
-                    }
+                    isTrimmed = true;
+                    Dictionary<int, int> method_body_uses = ComputeMethodBodyUsage(mr, sr, line);
+                    CreateTrimmedAssembly(peReader, trimmedAssemblyFilePath, fs, method_body_uses);
                 }
             }
             if (isTrimmed)
             {
-                File.Delete(assemblyFilePath);
-                File.Move(trimmedAssemblyFilePath, assemblyFilePath);
+                ReplaceAssemblyWithTrimmedOne(assemblyFilePath, trimmedAssemblyFilePath);
             }
         }
 
         return true;
+    }
+
+    private static string ComputeTrimmedAssemblyPath(string assemblyFilePath)
+    {
+        string? assemblyPath = Path.GetDirectoryName(assemblyFilePath);
+        string? assemblyName = Path.GetFileNameWithoutExtension(assemblyFilePath);
+        if (string.IsNullOrEmpty(assemblyPath))
+        {
+            return (assemblyName + "_new.dll");
+        }
+        else
+        {
+            return Path.Combine(assemblyPath, (assemblyName + "_new.dll"));
+        }
+    }
+
+    private static string ComputeGuid(MetadataReader mr)
+    {
+        GuidHandle mvidHandle = mr.GetModuleDefinition().Mvid;
+        Guid mvid = mr.GetGuid(mvidHandle);
+        return mvid.ToString();
+    }
+
+    private static Dictionary<int, int> ComputeMethodBodyUsage(MetadataReader mr, StreamReader sr, string? line)
+    {
+        Dictionary<int, int> token_to_rva = new Dictionary<int, int>();
+        Dictionary<int, int> method_body_uses = new Dictionary<int, int>();
+
+        foreach (MethodDefinitionHandle mdefh in mr.MethodDefinitions)
+        {
+            int methodToken = MetadataTokens.GetToken(mr, mdefh);
+            MethodDefinition mdef = mr.GetMethodDefinition(mdefh);
+            int rva = mdef.RelativeVirtualAddress;
+
+            token_to_rva.Add(methodToken, rva);
+
+            if (method_body_uses.TryGetValue(rva, out var _))
+            {
+                method_body_uses[rva]++;
+            }
+            else
+            {
+                method_body_uses.Add(rva, 1);
+            }
+        }
+
+        do
+        {
+            int methodToken2Trim = Convert.ToInt32(line, 16);
+            int rva2Trim = token_to_rva[methodToken2Trim];
+            method_body_uses[rva2Trim]--;
+        } while ((line = sr.ReadLine()) != null);
+
+        return method_body_uses;
+    }
+
+    private static void CreateTrimmedAssembly(PEReader peReader, string trimmedAssemblyFilePath, FileStream fs, Dictionary<int, int> method_body_uses)
+    {
+        using (FileStream os = File.Open(trimmedAssemblyFilePath, FileMode.Create))
+        {
+            fs.Position = 0;
+            MemoryStream memStream = new MemoryStream((int)fs.Length);
+            fs.CopyTo(memStream);
+
+            foreach (var kvp in method_body_uses)
+            {
+                int rva = kvp.Key;
+                int count = kvp.Value;
+                if (count == 0)
+                {
+                    int methodSize = ComputeMethodSize(peReader, rva);
+                    int actualLoc = ComputeMethodHash(peReader, rva);
+                    int headerSize = ComputeMethodHeaderSize(memStream, actualLoc);
+                    ZeroOutMethodBody(ref memStream, methodSize, actualLoc, headerSize);
+                }
+            }
+
+            memStream.Position = 0;
+            memStream.CopyTo(os);
+        }
+    }
+
+    private static int ComputeMethodSize(PEReader peReader, int rva)
+    {
+        MethodBodyBlock mb = peReader.GetMethodBody(rva);
+        return mb.Size;
+    }
+
+    private static int ComputeMethodHash(PEReader peReader, int rva)
+    {
+        int sectionIndex = peReader.PEHeaders.GetContainingSectionIndex(rva);
+        int relativeOffset = rva - peReader.PEHeaders.SectionHeaders[sectionIndex].VirtualAddress;
+        return (peReader.PEHeaders.SectionHeaders[sectionIndex].PointerToRawData + relativeOffset);
+    }
+
+    private static int ComputeMethodHeaderSize(MemoryStream memStream, int actualLoc)
+    {
+        memStream.Position = actualLoc;
+        int firstbyte = memStream.ReadByte();
+        int headerFlag = firstbyte & 0b11;
+        return (headerFlag == 2 ? 1 : 4);
+    }
+
+    private static void ZeroOutMethodBody(ref MemoryStream memStream, int methodSize, int actualLoc, int headerSize)
+    {
+        memStream.Position = actualLoc + headerSize;
+
+        byte[] zeroBuffer;
+        zeroBuffer = ArrayPool<byte>.Shared.Rent(methodSize);
+        Array.Clear(zeroBuffer, 0, zeroBuffer.Length);
+        memStream.Write(zeroBuffer, 0, methodSize - headerSize);
+        ArrayPool<byte>.Shared.Return(zeroBuffer);
+    }
+
+    private static void ReplaceAssemblyWithTrimmedOne(string assemblyFilePath, string trimmedAssemblyFilePath)
+    {
+        File.Delete(assemblyFilePath);
+        File.Move(trimmedAssemblyFilePath, assemblyFilePath);
     }
 }
