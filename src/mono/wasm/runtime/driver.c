@@ -57,9 +57,9 @@ extern void mono_register_timezones_bundle (void);
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 static void mono_wasm_init_finalizer_thread (void);
 
-extern void mono_bundled_resources_add_assembly_resource (const char *id, const char *name, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *), void *free_data);
-extern void mono_bundled_resources_add_assembly_symbol_resource (const char *id, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *), void *free_data);
-extern void mono_bundled_resources_add_satellite_assembly_resource (const char *id, const char *name, const char *culture, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *), void *free_data);
+extern void mono_bundled_resources_add_assembly_resource (const char *id, const char *name, const uint8_t *data, uint32_t size, void (*free_func)(void *, void*), void *free_data);
+extern void mono_bundled_resources_add_assembly_symbol_resource (const char *id, const uint8_t *data, uint32_t size, void (*free_func)(void *, void *), void *free_data);
+extern void mono_bundled_resources_add_satellite_assembly_resource (const char *id, const char *name, const char *culture, const uint8_t *data, uint32_t size, void (*free_func)(void *, void*), void *free_data);
 
 #ifndef DISABLE_LEGACY_JS_INTEROP
 
@@ -201,7 +201,7 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 		mono_bundled_resources_add_assembly_symbol_resource (new_name, data, size, bundled_resources_free_func, new_name);
 		return 1;
 	}
-	const char *assembly_name = strdup (name);
+	char *assembly_name = strdup (name);
 	assert (assembly_name);
 	mono_bundled_resources_add_assembly_resource (assembly_name, assembly_name, data, size, bundled_resources_free_func, assembly_name);
 	return mono_has_pdb_checksum ((char*)data, size);
@@ -227,10 +227,10 @@ mono_wasm_add_satellite_assembly (const char *name, const char *culture, const u
 	int num_char = snprintf (id, (id_len + 1), "%s/%s", culture, name);
 	assert (num_char > 0 && num_char == id_len);
 
-	const char *satellite_assembly_name = strdup (name);
+	char *satellite_assembly_name = strdup (name);
 	assert (satellite_assembly_name);
 
-	const char *satellite_assembly_culture = strdup (culture);
+	char *satellite_assembly_culture = strdup (culture);
 	assert (satellite_assembly_culture);
 
 	void **slots = malloc (sizeof (void *) * 4);
