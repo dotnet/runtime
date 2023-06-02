@@ -495,9 +495,9 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         return NI_Illegal;
     }
 
-    bool isIsaSupported = comp->compSupportsHWIntrinsic(isa);
-
+    bool isIsaSupported            = comp->compSupportsHWIntrinsic(isa);
     bool isHardwareAcceleratedProp = (strcmp(methodName, "get_IsHardwareAccelerated") == 0);
+
 #ifdef TARGET_XARCH
     if (isHardwareAcceleratedProp)
     {
@@ -541,22 +541,22 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         //
         // When the target hardware does support the instruction set, we can return a
         // constant true. When it doesn't then we want to report the check as dynamically
-        // supported instead. This allows some targets, such as AOT, to emit a check against
-        // a cached CPU query so lightup can still happen (such as for SSE4.1 when the target
-        // hardware is SSE2).
+        // supported instead if the opportunistic support does exist. This allows some targets,
+        // such as AOT, to emit a check against a cached CPU query so lightup can still happen
+        // (such as for SSE4.1 when the target hardware is SSE2).
         //
         // When the compiler doesn't support ISA or when it does but the target hardware does
         // not and we aren't in a scenario with support for a dynamic check, we want to return false.
 
-        if (isIsaSupported)
+        if (isIsaSupported && comp->compSupportsHWIntrinsic(isa))
         {
-            if (comp->compExactlyDependsOn(isa))
+            if (!comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) || comp->compExactlyDependsOn(isa))
             {
                 return NI_IsSupported_True;
             }
-
-            if (comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+            else
             {
+                assert(comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
                 return NI_IsSupported_Dynamic;
             }
         }

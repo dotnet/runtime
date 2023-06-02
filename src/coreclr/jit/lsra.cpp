@@ -9844,11 +9844,6 @@ void LinearScan::lsraDispNode(GenTree* tree, LsraTupleDumpMode mode, bool hasDes
             printf("  V%02u MEM", varNum);
         }
     }
-    else if (tree->OperIs(GT_ASG))
-    {
-        assert(!tree->gtHasReg(compiler));
-        printf("  asg%s  ", GenTree::OpName(tree->OperGet()));
-    }
     else
     {
         compiler->gtDispNodeName(tree);
@@ -12278,8 +12273,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
                 //
                 bool thisIsSingleReg = isSingleRegister(newRelatedPreferences);
                 if (!thisIsSingleReg ||
-                    (finalRelatedInterval->isLocalVar &&
-                     linearScan->isFree(linearScan->getRegisterRecord(genRegNumFromMask(newRelatedPreferences)))))
+                    linearScan->isFree(linearScan->getRegisterRecord(genRegNumFromMask(newRelatedPreferences))))
                 {
                     relatedPreferences = newRelatedPreferences;
                     // If this Interval has a downstream def without a single-register preference, continue to iterate.

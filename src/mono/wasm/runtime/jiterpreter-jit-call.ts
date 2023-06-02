@@ -5,7 +5,7 @@ import { MonoType, MonoMethod } from "./types/internal";
 import { NativePointer, Int32Ptr, VoidPtr } from "./types/emscripten";
 import { Module, runtimeHelpers } from "./globals";
 import {
-    getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked
+    getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked, receiveWorkerHeapViews
 } from "./memory";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import {
@@ -18,6 +18,7 @@ import {
 } from "./jiterpreter-feature-detect";
 import cwraps from "./cwraps";
 import { mono_log_error, mono_log_info } from "./logging";
+import { utf8ToString } from "./strings";
 
 // Controls miscellaneous diagnostic output.
 const trace = 0;
@@ -98,6 +99,8 @@ class TrampolineInfo {
         method: MonoMethod, rmethod: VoidPtr, cinfo: VoidPtr,
         arg_offsets: VoidPtr, catch_exceptions: boolean
     ) {
+        mono_assert(arg_offsets, "Expected nonzero arg_offsets pointer");
+
         this.method = method;
         this.rmethod = rmethod;
         this.catchExceptions = catch_exceptions;
@@ -147,7 +150,7 @@ class TrampolineInfo {
         if (useFullNames) {
             const pMethodName = method ? cwraps.mono_wasm_method_get_full_name(method) : <any>0;
             try {
-                suffix = Module.UTF8ToString(pMethodName);
+                suffix = utf8ToString(pMethodName);
             } finally {
                 if (pMethodName)
                     Module._free(<any>pMethodName);
@@ -183,6 +186,7 @@ export function mono_interp_invoke_wasm_jit_call_trampoline(
     try {
         thunk(ret_sp, sp, ftndesc, thrown);
     } catch (exc) {
+        receiveWorkerHeapViews();
         setU32_unchecked(thrown, 1);
     }
 }
@@ -262,6 +266,7 @@ export function mono_jiterp_do_jit_call_indirect(
         try {
             jitCallCb(_cb_data);
         } catch (exc) {
+            receiveWorkerHeapViews();
             setU32_unchecked(_thrown, 1);
         }
     };

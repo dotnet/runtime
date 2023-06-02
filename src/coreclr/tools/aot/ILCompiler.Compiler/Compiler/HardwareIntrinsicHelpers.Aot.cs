@@ -102,18 +102,19 @@ namespace ILCompiler
             public const int AvxVnni = 0x2000;
             public const int Movbe = 0x4000;
             public const int Avx512f = 0x8000;
-            public const int Avx512f_vl = 0x0001_0000;
-            public const int Avx512bw = 0x0002_0000;
-            public const int Avx512bw_vl = 0x0004_0000;
-            public const int Avx512cd = 0x0008_0000;
-            public const int Avx512cd_vl = 0x0010_0000;
-            public const int Avx512dq = 0x0020_0000;
-            public const int Avx512dq_vl = 0x0040_0000;
-            public const int Avx512Vbmi = 0x0080_0000;
-            public const int Avx512Vbmi_vl = 0x0100_0000;
-            public const int VectorT128 = 0x0200_0000;
-            public const int VectorT256 = 0x0400_0000;
-            public const int VectorT512 = 0x0800_0000;
+            public const int Avx512f_vl = 0x10000;
+            public const int Avx512bw = 0x20000;
+            public const int Avx512bw_vl = 0x40000;
+            public const int Avx512cd = 0x80000;
+            public const int Avx512cd_vl = 0x100000;
+            public const int Avx512dq = 0x200000;
+            public const int Avx512dq_vl = 0x400000;
+            public const int Avx512Vbmi = 0x800000;
+            public const int Avx512Vbmi_vl = 0x1000000;
+            public const int Serialize = 0x2000000;
+            public const int VectorT128 = 0x4000000;
+            public const int VectorT256 = 0x8000000;
+            public const int VectorT512 = 0x10000000;
 
             public static int FromInstructionSet(InstructionSet instructionSet)
             {
@@ -123,91 +124,68 @@ namespace ILCompiler
 
                 return instructionSet switch
                 {
+                    // Optional ISAs - only available via opt-in or opportunistic light-up
+                    InstructionSet.X64_AES => Aes,
+                    InstructionSet.X64_AES_X64 => Aes,
+                    InstructionSet.X64_PCLMULQDQ => Pclmulqdq,
+                    InstructionSet.X64_PCLMULQDQ_X64 => Pclmulqdq,
+                    InstructionSet.X64_SSE3 => Sse3,
+                    InstructionSet.X64_SSE3_X64 => Sse3,
+                    InstructionSet.X64_SSSE3 => Ssse3,
+                    InstructionSet.X64_SSSE3_X64 => Ssse3,
+                    InstructionSet.X64_SSE41 => Sse41,
+                    InstructionSet.X64_SSE41_X64 => Sse41,
+                    InstructionSet.X64_SSE42 => Sse42,
+                    InstructionSet.X64_SSE42_X64 => Sse42,
+                    InstructionSet.X64_POPCNT => Popcnt,
+                    InstructionSet.X64_POPCNT_X64 => Popcnt,
+                    InstructionSet.X64_AVX => Avx,
+                    InstructionSet.X64_AVX_X64 => Avx,
+                    InstructionSet.X64_FMA => Fma,
+                    InstructionSet.X64_FMA_X64 => Fma,
+                    InstructionSet.X64_AVX2 => Avx2,
+                    InstructionSet.X64_AVX2_X64 => Avx2,
+                    InstructionSet.X64_BMI1 => Bmi1,
+                    InstructionSet.X64_BMI1_X64 => Bmi1,
+                    InstructionSet.X64_BMI2 => Bmi2,
+                    InstructionSet.X64_BMI2_X64 => Bmi2,
+                    InstructionSet.X64_LZCNT => Lzcnt,
+                    InstructionSet.X64_LZCNT_X64 => Lzcnt,
+                    InstructionSet.X64_AVXVNNI => AvxVnni,
+                    InstructionSet.X64_AVXVNNI_X64 => AvxVnni,
+                    InstructionSet.X64_MOVBE => Movbe,
+                    InstructionSet.X64_MOVBE_X64 => Movbe,
+                    InstructionSet.X64_AVX512F => Avx512f,
+                    InstructionSet.X64_AVX512F_X64 => Avx512f,
+                    InstructionSet.X64_AVX512F_VL => Avx512f_vl,
+                    InstructionSet.X64_AVX512F_VL_X64 => Avx512f_vl,
+                    InstructionSet.X64_AVX512BW => Avx512bw,
+                    InstructionSet.X64_AVX512BW_X64 => Avx512bw,
+                    InstructionSet.X64_AVX512BW_VL => Avx512bw_vl,
+                    InstructionSet.X64_AVX512BW_VL_X64 => Avx512bw_vl,
+                    InstructionSet.X64_AVX512CD => Avx512cd,
+                    InstructionSet.X64_AVX512CD_X64 => Avx512cd,
+                    InstructionSet.X64_AVX512CD_VL => Avx512cd_vl,
+                    InstructionSet.X64_AVX512CD_VL_X64 => Avx512cd_vl,
+                    InstructionSet.X64_AVX512DQ => Avx512dq,
+                    InstructionSet.X64_AVX512DQ_X64 => Avx512dq,
+                    InstructionSet.X64_AVX512DQ_VL => Avx512dq_vl,
+                    InstructionSet.X64_AVX512DQ_VL_X64 => Avx512dq_vl,
+                    InstructionSet.X64_AVX512VBMI => Avx512Vbmi,
+                    InstructionSet.X64_AVX512VBMI_X64 => Avx512Vbmi,
+                    InstructionSet.X64_AVX512VBMI_VL => Avx512Vbmi_vl,
+                    InstructionSet.X64_AVX512VBMI_VL_X64 => Avx512Vbmi_vl,
+                    InstructionSet.X64_X86Serialize => Serialize,
+                    InstructionSet.X64_X86Serialize_X64 => Serialize,
+
                     // Baseline ISAs - they're always available
                     InstructionSet.X64_SSE => 0,
                     InstructionSet.X64_SSE_X64 => 0,
-
                     InstructionSet.X64_SSE2 => 0,
                     InstructionSet.X64_SSE2_X64 => 0,
 
                     InstructionSet.X64_X86Base => 0,
                     InstructionSet.X64_X86Base_X64 => 0,
-
-                    // Optional ISAs - only available via opt-in or opportunistic light-up
-                    InstructionSet.X64_AES => Aes,
-                    InstructionSet.X64_AES_X64 => Aes,
-
-                    InstructionSet.X64_PCLMULQDQ => Pclmulqdq,
-                    InstructionSet.X64_PCLMULQDQ_X64 => Pclmulqdq,
-
-                    InstructionSet.X64_SSE3 => Sse3,
-                    InstructionSet.X64_SSE3_X64 => Sse3,
-
-                    InstructionSet.X64_SSSE3 => Ssse3,
-                    InstructionSet.X64_SSSE3_X64 => Ssse3,
-
-                    InstructionSet.X64_SSE41 => Sse41,
-                    InstructionSet.X64_SSE41_X64 => Sse41,
-
-                    InstructionSet.X64_SSE42 => Sse42,
-                    InstructionSet.X64_SSE42_X64 => Sse42,
-
-                    InstructionSet.X64_POPCNT => Popcnt,
-                    InstructionSet.X64_POPCNT_X64 => Popcnt,
-
-                    InstructionSet.X64_AVX => Avx,
-                    InstructionSet.X64_AVX_X64 => Avx,
-
-                    InstructionSet.X64_FMA => Fma,
-                    InstructionSet.X64_FMA_X64 => Fma,
-
-                    InstructionSet.X64_AVX2 => Avx2,
-                    InstructionSet.X64_AVX2_X64 => Avx2,
-
-                    InstructionSet.X64_BMI1 => Bmi1,
-                    InstructionSet.X64_BMI1_X64 => Bmi1,
-
-                    InstructionSet.X64_BMI2 => Bmi2,
-                    InstructionSet.X64_BMI2_X64 => Bmi2,
-
-                    InstructionSet.X64_LZCNT => Lzcnt,
-                    InstructionSet.X64_LZCNT_X64 => Lzcnt,
-
-                    InstructionSet.X64_AVXVNNI => AvxVnni,
-                    InstructionSet.X64_AVXVNNI_X64 => AvxVnni,
-
-                    InstructionSet.X64_MOVBE => Movbe,
-                    InstructionSet.X64_MOVBE_X64 => Movbe,
-
-                    InstructionSet.X64_AVX512F => Avx512f,
-                    InstructionSet.X64_AVX512F_X64 => Avx512f,
-
-                    InstructionSet.X64_AVX512F_VL => Avx512f_vl,
-                    InstructionSet.X64_AVX512F_VL_X64 => Avx512f_vl,
-
-                    InstructionSet.X64_AVX512BW => Avx512bw,
-                    InstructionSet.X64_AVX512BW_X64 => Avx512bw,
-
-                    InstructionSet.X64_AVX512BW_VL => Avx512bw_vl,
-                    InstructionSet.X64_AVX512BW_VL_X64 => Avx512bw_vl,
-
-                    InstructionSet.X64_AVX512CD => Avx512cd,
-                    InstructionSet.X64_AVX512CD_X64 => Avx512cd,
-
-                    InstructionSet.X64_AVX512CD_VL => Avx512cd_vl,
-                    InstructionSet.X64_AVX512CD_VL_X64 => Avx512cd_vl,
-
-                    InstructionSet.X64_AVX512DQ => Avx512dq,
-                    InstructionSet.X64_AVX512DQ_X64 => Avx512dq,
-
-                    InstructionSet.X64_AVX512DQ_VL => Avx512dq_vl,
-                    InstructionSet.X64_AVX512DQ_VL_X64 => Avx512dq_vl,
-
-                    InstructionSet.X64_AVX512VBMI => Avx512Vbmi,
-                    InstructionSet.X64_AVX512VBMI_X64 => Avx512Vbmi,
-
-                    InstructionSet.X64_AVX512VBMI_VL => Avx512Vbmi_vl,
-                    InstructionSet.X64_AVX512VBMI_VL_X64 => Avx512Vbmi_vl,
 
                     // Vector<T> Sizes
                     InstructionSet.X64_VectorT128 => VectorT128,
@@ -240,31 +218,23 @@ namespace ILCompiler
                     // Baseline ISAs - they're always available
                     InstructionSet.ARM64_ArmBase => 0,
                     InstructionSet.ARM64_ArmBase_Arm64 => 0,
-
                     InstructionSet.ARM64_AdvSimd => AdvSimd,
                     InstructionSet.ARM64_AdvSimd_Arm64 => AdvSimd,
 
                     // Optional ISAs - only available via opt-in or opportunistic light-up
                     InstructionSet.ARM64_Aes => Aes,
                     InstructionSet.ARM64_Aes_Arm64 => Aes,
-
                     InstructionSet.ARM64_Crc32 => Crc32,
                     InstructionSet.ARM64_Crc32_Arm64 => Crc32,
-
                     InstructionSet.ARM64_Dp => Dp,
                     InstructionSet.ARM64_Dp_Arm64 => Dp,
-
                     InstructionSet.ARM64_Rdm => Rdm,
                     InstructionSet.ARM64_Rdm_Arm64 => Rdm,
-
                     InstructionSet.ARM64_Sha1 => Sha1,
                     InstructionSet.ARM64_Sha1_Arm64 => Sha1,
-
                     InstructionSet.ARM64_Sha256 => Sha256,
                     InstructionSet.ARM64_Sha256_Arm64 => Sha256,
-
                     InstructionSet.ARM64_Atomics => Atomics,
-
                     InstructionSet.ARM64_Rcpc => Rcpc,
 
                     // Vector<T> Sizes

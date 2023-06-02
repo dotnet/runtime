@@ -361,7 +361,8 @@
       <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssembly" Exclude="$(TestBinDir)**\supportFiles\*.MergedTestAssembly" />
 
       <_MergedWrapperMarker Update="@(_MergedWrapperMarker)">
-        <TestExecutionScriptPath>$([System.IO.Path]::ChangeExtension('%(Identity)', '.$(TestScriptExtension)'))</TestExecutionScriptPath>
+        <TestExecutionScriptPath Condition="'$(TargetsBrowser)' != 'true'">$([System.IO.Path]::ChangeExtension('%(Identity)', '.$(TestScriptExtension)'))</TestExecutionScriptPath>
+        <TestExecutionScriptPath Condition="'$(TargetsBrowser)' == 'true'">%(RootDir)%(Directory)AppBundle/RunTests.$(TestScriptExtension)</TestExecutionScriptPath>
       </_MergedWrapperMarker>
 
       <!-- Exclude merged test wrappers without the test execution script for this target (skipped due to CLRTestTargetUnsupported et al) -->
@@ -429,6 +430,8 @@
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="export TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="chmod +x $(_MergedWrapperRunScriptRelative)" />
+
+      <HelixCommandLines Include="$(_WorkaroundForNuGetMigrations)" />
 
       <!-- Force assemblies to lazy-load for LLVM AOT test runs to enable using tests that fail at AOT time (and as a result can't be AOTd) -->
       <HelixCommandLines Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) -usewatcher --aot-lazy-assembly-load" />
@@ -538,6 +541,7 @@
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="export WasmTestAppArgs=&quot;$WasmTestAppArgs --exclusion-list=TestExclusionList.txt&quot;" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set WasmTestAppArgs=%WasmTestAppArgs% --exclusion-list=TestExclusionList.txt" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="chmod +x $(_MergedWrapperRunScriptRelative)" />
+      <HelixCommandLines Include="$(_WorkaroundForNuGetMigrations)" />
       <HelixCommandLines Include="$(_MergedWrapperRunScriptRelative)" />
     </ItemGroup>
 
@@ -760,9 +764,10 @@
   </ItemGroup>
 
   <!-- create dummy console app to workaround NuGet-Migrations issue: https://github.com/dotnet/runtime/issues/80619 -->
-  <ItemGroup Condition="'$(IncludeDotNetCli)' == 'true' and '$(DotNetCliPackageType)' == 'sdk' and '$(TestWrapperTargetsWindows)' != 'true'">
-    <HelixPreCommand Include="(CONSOLE_TEMP_DIR=&quot;%24(mktemp -d)&quot; %3B &quot;$DOTNET_ROOT/dotnet&quot; new console -o &quot;$CONSOLE_TEMP_DIR&quot; %3B rm -rf &quot;$CONSOLE_TEMP_DIR&quot;) || true" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(IncludeDotNetCli)' == 'true' and '$(DotNetCliPackageType)' == 'sdk' and '$(TestWrapperTargetsWindows)' != 'true'">
+    <_WorkaroundForNuGetMigrations>(CONSOLE_TEMP_DIR=&quot;%24(mktemp -d)&quot; %3B &quot;$DOTNET_ROOT/dotnet&quot; new console -o &quot;$CONSOLE_TEMP_DIR&quot; %3B rm -rf &quot;$CONSOLE_TEMP_DIR&quot;) || true</_WorkaroundForNuGetMigrations>
+    <_WorkaroundForNuGetMigrationsForPrepending>$(_WorkaroundForNuGetMigrations) &amp;&amp;</_WorkaroundForNuGetMigrationsForPrepending>
+  </PropertyGroup>
 
   <PropertyGroup>
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
@@ -901,7 +906,7 @@
   <ItemGroup>
     <HelixWorkItem Include="@(LegacyPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
-      <Command>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
+      <Command>$(_WorkaroundForNuGetMigrationsForPrepending) dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
       <Command Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
       <DownloadFilesFromResults Condition=" '$(SuperPmiCollect)' == 'true' ">coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).mch;coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
@@ -935,7 +940,7 @@
 
     <HelixWorkItem Condition="'$(PALTestsDir)' != '' and '$(TestWrapperTargetsWindows)' != 'true'" Include="PALTests">
       <PayloadArchive>$(LegacyPayloadsRootDirectory)paltests.tar.gz</PayloadArchive>
-      <Command>./runpaltestshelix.sh</Command>
+      <Command>$(_WorkaroundForNuGetMigrationsForPrepending) ./runpaltestshelix.sh</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
     </HelixWorkItem>
   </ItemGroup>

@@ -15,7 +15,11 @@ namespace System
 {
     public static partial class AppContext
     {
-        private static Dictionary<string, object?>? s_dataStore;
+        private static Dictionary<string, object?>? s_dataStore
+#if NATIVEAOT
+            = InitializeDataStore()
+#endif
+            ;
         private static Dictionary<string, bool>? s_switches;
         private static string? s_defaultBaseDirectory;
 

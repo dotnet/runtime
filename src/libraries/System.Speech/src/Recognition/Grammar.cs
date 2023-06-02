@@ -850,7 +850,7 @@ namespace System.Speech.Recognition
                 return Array.Empty<NameValuePair>();
             }
 
-            string[] parameters = initParameters.Split(new char[] { ';' }, StringSplitOptions.None);
+            string[] parameters = initParameters.Split(';', StringSplitOptions.None);
             NameValuePair[] pairs = new NameValuePair[parameters.Length];
 
             for (int i = 0; i < parameters.Length; i++)

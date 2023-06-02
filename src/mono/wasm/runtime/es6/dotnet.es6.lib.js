@@ -70,7 +70,7 @@ const DotnetSupportLib = {
 // --- keep in sync with exports.ts ---
 let linked_functions = [
     // mini-wasm.c
-    "mono_set_timeout",
+    "mono_wasm_schedule_timer",
 
     // mini-wasm-debugger.c
     "mono_wasm_asm_loaded",
@@ -112,6 +112,10 @@ let linked_functions = [
     "mono_wasm_starts_with",
     "mono_wasm_ends_with",
     "mono_wasm_index_of",
+    "mono_wasm_is_normalized",
+    "mono_wasm_normalize_string",
+    "mono_wasm_to_Unicode",
+    "mono_wasm_to_ASCII",
 
     "icudt68_dat",
 ];

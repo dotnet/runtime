@@ -188,11 +188,9 @@ namespace System.Globalization
 #if TARGET_BROWSER
                 if (GlobalizationMode.Hybrid)
                 {
-                    int result = Interop.JsGlobalization.IndexOf(out string exceptionMessage, m_name, b, target.Length, a, source.Length, options, fromBeginning);
-                    if (!string.IsNullOrEmpty(exceptionMessage))
-                    {
-                        throw new Exception(exceptionMessage);
-                    }
+                    int result = Interop.JsGlobalization.IndexOf(m_name, b, target.Length, a, source.Length, options, fromBeginning, out int exception, out object ex_result);
+                    if (exception != 0)
+                        throw new Exception((string)ex_result);
                     return result;
                 }
 #endif
@@ -288,7 +286,12 @@ namespace System.Globalization
             InteropCall:
 #if TARGET_BROWSER
                 if (GlobalizationMode.Hybrid)
-                    return Interop.JsGlobalization.IndexOf(out string exceptionMessage, m_name, b, target.Length, a, source.Length, options, fromBeginning);
+                {
+                    int result = Interop.JsGlobalization.IndexOf(m_name, b, target.Length, a, source.Length, options, fromBeginning, out int exception, out object ex_result);
+                    if (exception != 0)
+                        throw new Exception((string)ex_result);
+                    return result;
+                }
 #endif
                 if (fromBeginning)
                     return Interop.Globalization.IndexOf(_sortHandle, b, target.Length, a, source.Length, options, matchLengthPtr);

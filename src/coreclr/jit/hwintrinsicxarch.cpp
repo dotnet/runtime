@@ -2571,18 +2571,23 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-            op1 = impSIMDPopStack();
-
 #if defined(TARGET_X86)
             if (varTypeIsLong(simdBaseType))
             {
+                if (!compExactlyDependsOn(InstructionSet_SSE41))
+                {
+                    // We need SSE41 to handle long, use software fallback
+                    break;
+                }
                 // Create a GetElement node which handles decomposition
+                op1     = impSIMDPopStack();
                 op2     = gtNewIconNode(0);
                 retNode = gtNewSimdGetElementNode(retType, op1, op2, simdBaseJitType, simdSize);
                 break;
             }
 #endif // TARGET_X86
 
+            op1     = impSIMDPopStack();
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
             break;
         }
@@ -2836,7 +2841,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             // Store the type from signature into SIMD base type for convenience
             divRemIntrinsic->SetSimdBaseJitType(simdBaseJitType);
 
-            retNode = impAssignMultiRegTypeToVar(divRemIntrinsic,
+            retNode = impStoreMultiRegValueToVar(divRemIntrinsic,
                                                  sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
             break;
         }

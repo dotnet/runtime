@@ -257,6 +257,31 @@ namespace System.Text.Json.SourceGeneration.Tests
         public SourceGenSampleEnum MyEnum { get; set; }
     }
 
+    public class ClassWithCustomConverterFactoryNullableProperty
+    {
+        [JsonConverter(typeof(JsonStringEnumConverter))] // This converter is a JsonConverterFactory
+        public SourceGenSampleEnum? MyEnum { get; set; }
+    }
+
+    public class ClassWithCustomConverterNullableProperty
+    {
+        [JsonConverter(typeof(TimeSpanSecondsConverter))]
+        public TimeSpan? TimeSpan { get; set; }
+    }
+
+    public class TimeSpanSecondsConverter : JsonConverter<TimeSpan>
+    {
+        public override TimeSpan Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            return TimeSpan.FromSeconds(reader.GetDouble());
+        }
+
+        public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)
+        {
+            writer.WriteNumberValue(value.TotalSeconds);
+        }
+    }
+
     [JsonConverter(typeof(CustomConverter_StructWithCustomConverter))] // Invalid
     public class ClassWithBadCustomConverter
     {

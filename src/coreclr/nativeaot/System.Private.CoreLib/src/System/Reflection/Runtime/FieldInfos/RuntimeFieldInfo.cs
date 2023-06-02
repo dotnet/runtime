@@ -22,7 +22,6 @@ namespace System.Reflection.Runtime.FieldInfos
     //
     // The Runtime's implementation of fields.
     //
-    [DebuggerDisplay("{_debugName}")]
     internal abstract partial class RuntimeFieldInfo : FieldInfo
     {
         //
@@ -229,18 +228,13 @@ namespace System.Reflection.Runtime.FieldInfos
 
         protected RuntimeFieldInfo WithDebugName()
         {
-            bool populateDebugNames = DeveloperExperienceState.DeveloperExperienceModeEnabled;
 #if DEBUG
-            populateDebugNames = true;
-#endif
-            if (!populateDebugNames)
-                return this;
-
             if (_debugName == null)
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
                 _debugName = MetadataName;
             }
+#endif
             return this;
         }
 
@@ -264,6 +258,8 @@ namespace System.Reflection.Runtime.FieldInfos
 
         private volatile Type _lazyFieldType;
 
+#if DEBUG
         private string _debugName;
+#endif
     }
 }
