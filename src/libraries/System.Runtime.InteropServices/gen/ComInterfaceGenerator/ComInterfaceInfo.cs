@@ -9,6 +9,8 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.Interop;
+using DiagnosticOrInterfaceInfo = Microsoft.Interop.DiagnosticOr<(Microsoft.Interop.ComInterfaceInfo InterfaceInfo, Microsoft.CodeAnalysis.INamedTypeSymbol Symbol) >;
 
 namespace Microsoft.Interop
 {
@@ -23,9 +25,9 @@ namespace Microsoft.Interop
         ContainingSyntaxContext TypeDefinitionContext,
         ContainingSyntax ContainingSyntax,
         Guid InterfaceId,
-        LocationInfo DiagnosticLocation)
+        Location DiagnosticLocation)
     {
-        public static DiagnosticOr<(ComInterfaceInfo InterfaceInfo, INamedTypeSymbol Symbol)> From(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, CancellationToken _)
+        public static DiagnosticOrInterfaceInfo From(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, CancellationToken _)
         {
             // Verify the method has no generic types or defined implementation
             // and is not marked static or sealed
@@ -35,8 +37,8 @@ namespace Microsoft.Interop
                 // and is not marked static or sealed
                 if (syntax.TypeParameterList is not null)
                 {
-                    return DiagnosticOr<(ComInterfaceInfo InterfaceInfo, INamedTypeSymbol Symbol)>.From(
-                        Diagnostic.Create(
+                    return DiagnosticOrInterfaceInfo.From(
+                        DiagnosticInfo.Create(
                             GeneratorDiagnostics.InvalidAttributedInterfaceGenericNotSupported,
                             syntax.Identifier.GetLocation(),
                             symbol.Name));
@@ -48,8 +50,8 @@ namespace Microsoft.Interop
             {
                 if (!typeDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
                 {
-                    return DiagnosticOr<(ComInterfaceInfo InterfaceInfo, INamedTypeSymbol Symbol)>.From(
-                        Diagnostic.Create(
+                    return DiagnosticOrInterfaceInfo.From(
+                        DiagnosticInfo.Create(
                             GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers,
                             syntax.Identifier.GetLocation(),
                             symbol.Name,
@@ -57,16 +59,16 @@ namespace Microsoft.Interop
                 }
             }
 
-            if (!TryGetGuid(symbol, syntax, out Guid? guid, out Diagnostic? guidDiagnostic))
-                return DiagnosticOr<(ComInterfaceInfo InterfaceInfo, INamedTypeSymbol Symbol)>.From(guidDiagnostic);
+            if (!TryGetGuid(symbol, syntax, out Guid? guid, out DiagnosticInfo? guidDiagnostic))
+                return DiagnosticOrInterfaceInfo.From(guidDiagnostic);
 
-            if (!TryGetBaseComInterface(symbol, syntax, out INamedTypeSymbol? baseSymbol, out Diagnostic? baseDiagnostic))
-                return DiagnosticOr<(ComInterfaceInfo InterfaceInfo, INamedTypeSymbol Symbol)>.From(baseDiagnostic);
+            if (!TryGetBaseComInterface(symbol, syntax, out INamedTypeSymbol? baseSymbol, out DiagnosticInfo? baseDiagnostic))
+                return DiagnosticOrInterfaceInfo.From(baseDiagnostic);
 
-            if (!StringMarshallingIsValid(symbol, syntax, baseSymbol, out Diagnostic? stringMarshallingDiagnostic))
-                return DiagnosticOr<(ComInterfaceInfo InterfaceInfo, INamedTypeSymbol Symbol)>.From(stringMarshallingDiagnostic);
+            if (!StringMarshallingIsValid(symbol, syntax, baseSymbol, out DiagnosticInfo? stringMarshallingDiagnostic))
+                return DiagnosticOrInterfaceInfo.From(stringMarshallingDiagnostic);
 
-            return DiagnosticOr<(ComInterfaceInfo InterfaceInfo, INamedTypeSymbol Symbol)>.From(
+            return DiagnosticOrInterfaceInfo.From(
                 (new ComInterfaceInfo(
                     ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol),
                     symbol.ToDisplayString(),
@@ -75,18 +77,18 @@ namespace Microsoft.Interop
                     new ContainingSyntaxContext(syntax),
                     new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
                     guid ?? Guid.Empty,
-                    LocationInfo.From(symbol)),
+                    symbol.Locations[0]),
                 symbol));
         }
 
-        private static bool StringMarshallingIsValid(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, INamedTypeSymbol? baseSymbol, [NotNullWhen(false)] out Diagnostic? stringMarshallingDiagnostic)
+        private static bool StringMarshallingIsValid(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, INamedTypeSymbol? baseSymbol, [NotNullWhen(false)] out DiagnosticInfo? stringMarshallingDiagnostic)
         {
             var attrInfo = GeneratedComInterfaceData.From(GeneratedComInterfaceCompilationData.GetAttributeDataFromInterfaceSymbol(symbol));
             if (attrInfo.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling) || attrInfo.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshallingCustomType))
             {
                 if (attrInfo.StringMarshalling is StringMarshalling.Custom && attrInfo.StringMarshallingCustomType is null)
                 {
-                    stringMarshallingDiagnostic = Diagnostic.Create(
+                    stringMarshallingDiagnostic = DiagnosticInfo.Create(
                         GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface,
                         syntax.Identifier.GetLocation(),
                         symbol.ToDisplayString(),
@@ -95,7 +97,7 @@ namespace Microsoft.Interop
                 }
                 if (attrInfo.StringMarshalling is not StringMarshalling.Custom && attrInfo.StringMarshallingCustomType is not null)
                 {
-                    stringMarshallingDiagnostic = Diagnostic.Create(
+                    stringMarshallingDiagnostic = DiagnosticInfo.Create(
                         GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface,
                         syntax.Identifier.GetLocation(),
                         symbol.ToDisplayString(),
@@ -110,7 +112,7 @@ namespace Microsoft.Interop
                 if ((baseAttrInfo.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling) || baseAttrInfo.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshallingCustomType))
                     && baseAttrInfo != attrInfo)
                 {
-                    stringMarshallingDiagnostic = Diagnostic.Create(
+                    stringMarshallingDiagnostic = DiagnosticInfo.Create(
                         GeneratorDiagnostics.InvalidStringMarshallingMismatchBetweenBaseAndDerived,
                         syntax.Identifier.GetLocation(),
                         symbol.ToDisplayString(),
@@ -125,7 +127,7 @@ namespace Microsoft.Interop
         /// <summary>
         /// Returns true if there is 0 or 1 base Com interfaces (i.e. the inheritance is valid), and returns false when there are 2 or more base Com interfaces and sets <paramref name="diagnostic"/>.
         /// </summary>
-        private static bool TryGetBaseComInterface(INamedTypeSymbol comIface, InterfaceDeclarationSyntax syntax, out INamedTypeSymbol? baseComIface, [NotNullWhen(false)] out Diagnostic? diagnostic)
+        private static bool TryGetBaseComInterface(INamedTypeSymbol comIface, InterfaceDeclarationSyntax syntax, out INamedTypeSymbol? baseComIface, [NotNullWhen(false)] out DiagnosticInfo? diagnostic)
         {
             baseComIface = null;
             foreach (var implemented in comIface.Interfaces)
@@ -136,7 +138,7 @@ namespace Microsoft.Interop
                     {
                         if (baseComIface is not null)
                         {
-                            diagnostic = Diagnostic.Create(
+                            diagnostic = DiagnosticInfo.Create(
                                 GeneratorDiagnostics.MultipleComInterfaceBaseTypes,
                                 syntax.Identifier.GetLocation(),
                                 comIface.ToDisplayString());
@@ -153,7 +155,7 @@ namespace Microsoft.Interop
         /// <summary>
         /// Returns true and sets <paramref name="guid"/> if the guid is present. Returns false and sets diagnostic if the guid is not present or is invalid.
         /// </summary>
-        private static bool TryGetGuid(INamedTypeSymbol interfaceSymbol, InterfaceDeclarationSyntax syntax, [NotNullWhen(true)] out Guid? guid, [NotNullWhen(false)] out Diagnostic? diagnostic)
+        private static bool TryGetGuid(INamedTypeSymbol interfaceSymbol, InterfaceDeclarationSyntax syntax, [NotNullWhen(true)] out Guid? guid, [NotNullWhen(false)] out DiagnosticInfo? diagnostic)
         {
             guid = null;
             AttributeData? guidAttr = null;
@@ -178,7 +180,7 @@ namespace Microsoft.Interop
             // Assume interfaceType is IUnknown for now
             if (guid is null)
             {
-                diagnostic = Diagnostic.Create(
+                diagnostic = DiagnosticInfo.Create(
                     GeneratorDiagnostics.InvalidAttributedInterfaceMissingGuidAttribute,
                     syntax.Identifier.GetLocation(),
                     interfaceSymbol.ToDisplayString());
