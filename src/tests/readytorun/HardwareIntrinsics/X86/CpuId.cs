@@ -157,7 +157,7 @@ namespace IntelHardwareIntrinsicTest._CpuId
                 testResult = Fail;
             }
 
-            isHierarchyDisabled = isAvx2HierarchyDisabled | isFmaHierarchyDisabled;
+            isHierarchyDisabled = isAvx2HierarchyDisabled | isFmaHierarchyDisabled | OperatingSystem.IsMacOS();
 
             for (int i = 0; i < 2; i++)
             {

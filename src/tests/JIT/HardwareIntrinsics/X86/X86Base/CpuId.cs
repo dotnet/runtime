@@ -19,6 +19,7 @@ namespace IntelHardwareIntrinsicTest._CpuId
         const int Fail = 0;
 
         [Fact]
+        [SkipOnMono("Mono does not currently have full support for intrinsics on xarch", TestPlatforms.Any)]
         public unsafe static void CpuId()
         {
             int testResult = Pass;
@@ -161,7 +162,7 @@ namespace IntelHardwareIntrinsicTest._CpuId
                 testResult = Fail;
             }
 
-            isHierarchyDisabled = isAvx2HierarchyDisabled | isFmaHierarchyDisabled;
+            isHierarchyDisabled = isAvx2HierarchyDisabled | isFmaHierarchyDisabled | OperatingSystem.IsMacOS();
 
             for (int i = 0; i < 2; i++)
             {
