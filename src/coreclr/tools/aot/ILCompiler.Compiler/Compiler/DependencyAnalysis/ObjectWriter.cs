@@ -607,7 +607,11 @@ namespace ILCompiler.DependencyAnalysis
                 int len = frameInfo.BlobData.Length;
                 byte[] blob = frameInfo.BlobData;
 
-                ObjectNodeSection lsdaSection = GetSharedSection(ObjectNodeSection.TextSection, ((ISymbolNode)node).GetMangledName(_nodeFactory.NameMangler));
+                ObjectNodeSection lsdaSection = ObjectNodeSection.TextSection;
+                if (ShouldShareSymbol(node))
+                {
+                    lsdaSection = GetSharedSection(lsdaSection, ((ISymbolNode)node).GetMangledName(_nodeFactory.NameMangler));
+                }
                 SwitchSection(_nativeObjectWriter, lsdaSection.Name, GetCustomSectionAttributes(lsdaSection), lsdaSection.ComdatName);
 
                 _sb.Clear().Append("_lsda").Append(i.ToStringInvariant()).Append(_currentNodeZeroTerminatedName);
