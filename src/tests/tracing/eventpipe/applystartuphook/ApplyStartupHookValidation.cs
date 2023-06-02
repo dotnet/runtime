@@ -14,7 +14,6 @@ using System.Threading.Tasks;
 using Microsoft.Diagnostics.NETCore.Client;
 using Microsoft.Diagnostics.Tools.RuntimeClient;
 using Microsoft.Diagnostics.Tracing;
-using TestLibrary;
 using Tracing.Tests.Common;
 
 namespace Tracing.Tests.ApplyStartupHookValidation
@@ -47,19 +46,7 @@ namespace Tracing.Tests.ApplyStartupHookValidation
 
                         string startupHookPath = Hook.Basic.AssemblyPath;
                         Logger.logger.Log($"Applying startup hook during startup suspension: {startupHookPath}");
-                        try
-                        {
-                            client.ApplyStartupHook(startupHookPath);
-
-                            if (TestLibrary.Utilities.IsMonoRuntime)
-                            {
-                                throw new InvalidOperationException($"{nameof(DiagnosticsClient.ApplyStartupHook)} unexceptedly succeeded for target Mono runtime.");
-                            }
-                        }
-                        catch (ServerErrorException) when (TestLibrary.Utilities.IsMonoRuntime)
-                        {
-                            Logger.logger.Log($"{nameof(DiagnosticsClient.ApplyStartupHook)} expectedly failed for target Mono runtime.");
-                        }
+                        client.ApplyStartupHook(startupHookPath);
                     }
 
                     using (Stream stream = await server.AcceptAsync())
