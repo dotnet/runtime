@@ -48,7 +48,7 @@
 
     <ILStrip
       TrimIndividualMethods="$(TrimIndividualMethods)"
-      MethodTokenFiles="@(BundleAssemblies->'%(MethodTokenFile)')">
+      Assemblies="@(BundleAssemblies)">
     </ILStrip>
   </Target>
 </Project>
