@@ -65,18 +65,22 @@ namespace System.Text.Json.Serialization.Tests
 
         public JsonSerializerOptions CreateOptions(
             Action<JsonSerializerOptions> configure = null,
-            bool includeFields = false,
-            List<JsonConverter> customConverters = null,
-            Action<JsonTypeInfo> modifier = null)
+            bool? includeFields = false,
+            List<JsonConverter>? customConverters = null,
+            Action<JsonTypeInfo>? modifier = null,
+            bool makeReadOnly = true)
         {
-            IJsonTypeInfoResolver resolver = DefaultOptions.TypeInfoResolver;
-            resolver = modifier != null ? resolver.WithModifier(modifier) : resolver;
+            var options = new JsonSerializerOptions(DefaultOptions);
 
-            JsonSerializerOptions options = new()
+            if (includeFields != null)
             {
-                TypeInfoResolver = resolver,
-                IncludeFields = includeFields,
-            };
+                options.IncludeFields = includeFields.Value;
+            }
+
+            if (modifier != null && options.TypeInfoResolver != null)
+            {
+                options.TypeInfoResolver = DefaultOptions.TypeInfoResolver.WithModifier(modifier);
+            }
 
             if (customConverters != null)
             {
@@ -88,7 +92,10 @@ namespace System.Text.Json.Serialization.Tests
 
             configure?.Invoke(options);
 
-            options.MakeReadOnly();
+            if (makeReadOnly)
+            {
+                options.MakeReadOnly();
+            }
 
             return options;
         }

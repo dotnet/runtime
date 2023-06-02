@@ -99,7 +99,7 @@
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
         <source>Marshalling string or char without explicit marshalling information is not supported. Specify '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
-        <target state="new">Marshalling string or char without explicit marshalling information is not supported. Specify '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</target>
+        <target state="translated">不支持没有明确封送信息的封送字符串或字符。请指定“{0}.StringMarshalling”、“{0}.StringMarshallingCustomType”、“MarshalUsingAttribute”或“MarshalAsAttribute”。</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">

@@ -706,24 +706,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/debugging/debuginfo/tester/*">
             <Issue>Just-in-time compilation test</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector128/Vector128_r/*">
-            <Issue>Not compatible with multifile testing. Problem with detecting that a JIT intrinsic is reflection-used.</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector128/Vector128_ro/*">
-            <Issue>Not compatible with multifile testing. Problem with detecting that a JIT intrinsic is reflection-used.</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256/Vector256_r/*">
-            <Issue>Not compatible with multifile testing. Problem with detecting that a JIT intrinsic is reflection-used.</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256/Vector256_ro/*">
-            <Issue>Not compatible with multifile testing. Problem with detecting that a JIT intrinsic is reflection-used.</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector512/Vector512_r/*">
-            <Issue>Not compatible with multifile testing. Problem with detecting that a JIT intrinsic is reflection-used.</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector512/Vector512_ro/*">
-            <Issue>Not compatible with multifile testing. Problem with detecting that a JIT intrinsic is reflection-used.</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_r/*">
             <Issue>Not compatible with multifile testing.</Issue>
         </ExcludeList>
@@ -738,9 +720,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/stackoverflow/stackoverflowtester/*">
             <Issue>Specific to CoreCLR</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/coverage/OSThreadId/osthreadid/*">
-            <Issue>Accessing a reflection blocked internal detail</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/TieredCompilation/**">
             <Issue>No crossgen folder under Core_Root</Issue>
@@ -943,9 +922,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ObjectStackAllocation/ObjectStackAllocationTests/*">
             <Issue>Need to pass flag to enable object stack allocation in RyuJIT</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Devirtualization/Comparer_get_Default/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/1136</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/fasta/fasta-1/*">
             <Issue>Multimodule incompatible (GVM)</Issue>
         </ExcludeList>
@@ -999,15 +975,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/**">
             <Issue>CoreCLR test</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/AssemblyDependencyResolver/AssemblyDependencyResolverTests/AssemblyDependencyResolverTests/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/165</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/binding/tracing/BinderTracingTest.Basic/*">
-            <Issue>AOT incompatible</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/binding/tracing/BinderTracingTest.ResolutionFlow/*">
-            <Issue>AOT incompatible</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/DictionaryExpansion/DictionaryExpansion/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/154</Issue>
@@ -1174,6 +1141,27 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Regressions\Regression3_Regressions\*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Assembly.LoadFrom</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/pinvokes_d/**">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Reflection.Emit</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/pinvokes_do/**">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Reflection.Emit</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/stubs_do/**">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Reflection.Emit</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/tailcalls_d/**">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Reflection.Emit</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/tailcalls_do/**">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Reflection.Emit</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/managed/Compilation/Compilation/**">
+            <Issue>expects to see System.Private.CoreLib in CORE_ROOT</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/ComWrappers/GlobalInstance/GlobalInstanceTrackerSupportTests_TargetUnix/**">
+            <Issue>https://github.com/dotnet/runtime/issues/86990</Issue>
+        </ExcludeList>
 
         <!-- Complex constrained calls -->
         <!-- https://github.com/dotnet/runtimelab/issues/1431 -->
@@ -1233,13 +1221,10 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader\classloader\MethodImpl\CovariantReturns\UnitTest\CompatibleWithTest\*" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader\classloader\MethodImpl\CovariantReturns\UnitTest\UnitTest\*" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader\classloader\MethodImpl\CovariantReturns\UnitTest\UnitTest_GVM\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/Loader\classloader\MethodImpl\CovariantReturns\UnitTest\UnitTestDelegates\*" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader\classloader\MethodImpl\CovariantReturns\UnitTest\OverrideMoreDerivedReturn\*" />
 
         <!-- Requires Debug build -->
-        <ExcludeList Include="$(XunitTestBinBase)/JIT\Directed\debugging\poisoning\poison\poison\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT\Methodical\eh\finallyexec\nestedfinallycall_d\*" /> <!-- probably RyuJIT bug: https://github.com/dotnet/runtime/issues/86561 -->
-        <ExcludeList Include="$(XunitTestBinBase)/JIT\Methodical\eh\finallyexec\nestedfinallycall_r\*" /> <!-- probably RyuJIT bug: https://github.com/dotnet/runtime/issues/86561 -->
+        <ExcludeList Include="$(XunitTestBinBase)/JIT\Directed\debugging\poisoning\poison\*" />
     </ItemGroup>
 
     <!-- run.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
@@ -2832,6 +2817,9 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/NativeLibrary/API/NativeLibraryTests/**">
             <Issue>Needs coreclr build</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/InlineArray/InlineArrayInvalid/**">
+            <Issue>https://github.com/dotnet/runtime/issues/86327</Issue>
         </ExcludeList>
     </ItemGroup>
 

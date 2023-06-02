@@ -34,6 +34,7 @@ enum XArchIntrinsicConstants
     XArchIntrinsicConstants_Avx512dq_vl = 0x400000,
     XArchIntrinsicConstants_Avx512Vbmi = 0x800000,
     XArchIntrinsicConstants_Avx512Vbmi_vl = 0x1000000,
+    XArchIntrinsicConstants_Serialize = 0x2000000,
 };
 #endif //HOST_X86 || HOST_AMD64
 

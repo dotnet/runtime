@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #include <emscripten.h>
+#include <emscripten/stack.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -1412,4 +1413,15 @@ EMSCRIPTEN_KEEPALIVE double mono_wasm_get_f64_unaligned (const double *src) {
 
 EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_get_i32_unaligned (const int32_t *src) {
 	return *src;
+}
+
+EMSCRIPTEN_KEEPALIVE int mono_wasm_is_zero_page_reserved () {
+	// If the stack is above the first 512 bytes of memory this indicates that it is safe
+	//  to optimize out null checks for operations that also do a bounds check, like string
+	//  and array element loads. (We already know that Emscripten malloc will never allocate
+	//  data at 0.) This is the default behavior for Emscripten release builds and is
+	//  controlled by the emscripten GLOBAL_BASE option (default value 1024).
+	// clang/llvm may perform this optimization if --low-memory-unused is set.
+	// https://github.com/emscripten-core/emscripten/issues/19389
+	return (emscripten_stack_get_base() > 512) && (emscripten_stack_get_end() > 512);
 }
