@@ -20,6 +20,8 @@ namespace Microsoft.Extensions.DependencyModel
 
         public IEnumerable<string> NonApplicationPaths { get; }
 
+        private static readonly char[] s_semicolon = new[] { ';' };
+
         public DependencyContextPaths(
             string? application,
             string? sharedRuntime,
@@ -40,7 +42,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         internal static DependencyContextPaths Create(string? depsFiles, string? sharedRuntime)
         {
-            string[]? files = depsFiles?.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+            string[]? files = depsFiles?.Split(s_semicolon, StringSplitOptions.RemoveEmptyEntries);
             string? application = files != null && files.Length > 0 ? files[0] : null;
 
             string[]? nonApplicationPaths = files?

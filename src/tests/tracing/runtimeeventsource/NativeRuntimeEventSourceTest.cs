@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
@@ -22,6 +23,13 @@ namespace Tracing.Tests
     {
         private static int Main()
         {
+            // Access ArrayPool.Shared.Rent() before the test to avoid the deadlock reported
+            // in https://github.com/dotnet/runtime/issues/86233. This is a real issue,
+            // but only seen if you have a short lived EventListener and create EventSources
+            // in your OnEventWritten callback so we don't expect customers to hit it.
+            byte[] localBuffer = ArrayPool<byte>.Shared.Rent(10);
+            Console.WriteLine($"buffer length={localBuffer.Length}");
+
             // Create deaf listener
             Listener.Level = EventLevel.Critical;
             Listener.EnableKeywords = EventKeywords.None;
@@ -40,10 +48,12 @@ namespace Tracing.Tests
 
                     using (Listener listener = new())
                     {
+                        CancellationTokenSource cts = new();
+
                         // Trigger the allocator task.
                         Task.Run(() =>
                         {
-                            while (true)
+                            while (!cts.IsCancellationRequested)
                             {
                                 for (int i = 0; i < 1000; i++)
                                 {
@@ -74,6 +84,8 @@ namespace Tracing.Tests
                                 break;
                             }
                         }
+
+                        cts.Cancel();
 
                         Assert2.True("listener.EventCount > 0", listener.EventCount > 0);
 
@@ -264,24 +276,50 @@ namespace Tracing.Tests
             WriteLine("\n");
         }
 
+        private static bool ConsoleForegroundColorNotSupported =>
+            OperatingSystem.IsAndroid() ||
+            OperatingSystem.IsIOS() ||
+            OperatingSystem.IsTvOS() ||
+            OperatingSystem.IsBrowser() ||
+            OperatingSystem.IsWasi();
+
+        private ConsoleColor ConsoleForegroundColor
+        {
+            get
+            {
+                if (ConsoleForegroundColorNotSupported)
+                    return (ConsoleColor)(-1);
+                
+                return Console.ForegroundColor;
+            }
+            set
+            {
+                if (ConsoleForegroundColorNotSupported)
+                    return;
+                
+                Console.ForegroundColor = value;
+            }
+        }
+        
         private void Write(object? o = null, ConsoleColor? consoleColor = null)
         {
-            ConsoleColor foregroundColor = Console.ForegroundColor;
+            ConsoleColor foregroundColor = ConsoleForegroundColor;
 
             if (o is KeyValuePair<int, (string, string)> e)
             {
-                Console.ForegroundColor = ConsoleColor.Cyan;
+                ConsoleForegroundColor = ConsoleColor.Cyan;
+                
                 Console.Write(name);
 
-                Console.ForegroundColor = (e.Value != defaultEventSourceNameName) ? ConsoleColor.Green : ConsoleColor.Red;
+                ConsoleForegroundColor = (e.Value != defaultEventSourceNameName) ? ConsoleColor.Green : ConsoleColor.Red;
             }
             else if (consoleColor != null)
             {
-                Console.ForegroundColor = (ConsoleColor)consoleColor;
+                ConsoleForegroundColor = (ConsoleColor)consoleColor;
             }
             Console.Write(o);
 
-            Console.ForegroundColor = foregroundColor;
+            ConsoleForegroundColor = foregroundColor;
         }
         private void WriteLine(object? o = null, ConsoleColor? consoleColor = null)
         {

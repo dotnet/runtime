@@ -518,7 +518,7 @@ namespace System.Xml.Schema
 
         internal ArrayList ImportedNamespaces => _importedNamespaces ??= new ArrayList();
 
-        internal void GetExternalSchemasList(IList extList, XmlSchema schema)
+        internal static void GetExternalSchemasList(IList extList, XmlSchema schema)
         {
             Debug.Assert(extList != null && schema != null);
             if (extList.Contains(schema))

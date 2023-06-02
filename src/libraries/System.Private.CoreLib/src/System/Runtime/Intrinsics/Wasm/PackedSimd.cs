@@ -1949,5 +1949,129 @@ namespace System.Runtime.Intrinsics.Wasm
         /// </summary>
         [Intrinsic]
         internal static Vector128<ushort> ConvertNarrowingUnsignedSaturate(Vector128<int>  lower, Vector128<int>   upper) => ConvertNarrowingUnsignedSaturate(lower, upper);
+
+        /// <summary>
+        ///   i16x8.extend_low_i8x16_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<short>  SignExtendWideningLower(Vector128<sbyte>  value) => SignExtendWideningLower(value);
+        /// <summary>
+        ///   i16x8.extend_low_i8x16_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ushort> SignExtendWideningLower(Vector128<byte>   value) => SignExtendWideningLower(value);
+        /// <summary>
+        ///   i32x4.extend_low_i16x8_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>    SignExtendWideningLower(Vector128<short>  value) => SignExtendWideningLower(value);
+        /// <summary>
+        ///   i32x4.extend_low_i16x8_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<uint>   SignExtendWideningLower(Vector128<ushort> value) => SignExtendWideningLower(value);
+        /// <summary>
+        ///   i64x2.extend_low_i32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<long>   SignExtendWideningLower(Vector128<int>    value) => SignExtendWideningLower(value);
+        /// <summary>
+        ///   i64x2.extend_low_i32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ulong>  SignExtendWideningLower(Vector128<uint>   value) => SignExtendWideningLower(value);
+
+        /// <summary>
+        ///   i16x8.extend_high_i8x16_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<short>  SignExtendWideningUpper(Vector128<sbyte>  value) => SignExtendWideningUpper(value);
+        /// <summary>
+        ///   i16x8.extend_high_i8x16_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ushort> SignExtendWideningUpper(Vector128<byte>   value) => SignExtendWideningUpper(value);
+        /// <summary>
+        ///   i32x4.extend_high_i16x8_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>    SignExtendWideningUpper(Vector128<short>  value) => SignExtendWideningUpper(value);
+        /// <summary>
+        ///   i32x4.extend_high_i16x8_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<uint>   SignExtendWideningUpper(Vector128<ushort> value) => SignExtendWideningUpper(value);
+        /// <summary>
+        ///   i64x2.extend_high_i32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<long>   SignExtendWideningUpper(Vector128<int>    value) => SignExtendWideningUpper(value);
+        /// <summary>
+        ///   i64x2.extend_high_i32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ulong>  SignExtendWideningUpper(Vector128<uint>   value) => SignExtendWideningUpper(value);
+
+        /// <summary>
+        ///   i16x8.extend_low_i8x16_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<short>  ZeroExtendWideningLower(Vector128<sbyte>  value) => ZeroExtendWideningLower(value);
+        /// <summary>
+        ///   i16x8.extend_low_i8x16_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ushort> ZeroExtendWideningLower(Vector128<byte>   value) => ZeroExtendWideningLower(value);
+        /// <summary>
+        ///   i32x4.extend_low_i16x8_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>    ZeroExtendWideningLower(Vector128<short>  value) => ZeroExtendWideningLower(value);
+        /// <summary>
+        ///   i32x4.extend_low_i16x8_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<uint>   ZeroExtendWideningLower(Vector128<ushort> value) => ZeroExtendWideningLower(value);
+        /// <summary>
+        ///   i64x2.extend_low_i32x4_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<long>   ZeroExtendWideningLower(Vector128<int>    value) => ZeroExtendWideningLower(value);
+        /// <summary>
+        ///   i64x2.extend_low_i32x4_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ulong>  ZeroExtendWideningLower(Vector128<uint>   value) => ZeroExtendWideningLower(value);
+
+        /// <summary>
+        ///   i16x8.extend_high_i8x16_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<short>  ZeroExtendWideningUpper(Vector128<sbyte>  value) => ZeroExtendWideningUpper(value);
+        /// <summary>
+        ///   i16x8.extend_high_i8x16_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ushort> ZeroExtendWideningUpper(Vector128<byte>   value) => ZeroExtendWideningUpper(value);
+        /// <summary>
+        ///   i32x4.extend_high_i16x8_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>    ZeroExtendWideningUpper(Vector128<short>  value) => ZeroExtendWideningUpper(value);
+        /// <summary>
+        ///   i32x4.extend_high_i16x8_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<uint>   ZeroExtendWideningUpper(Vector128<ushort> value) => ZeroExtendWideningUpper(value);
+        /// <summary>
+        ///   i64x2.extend_high_i32x4_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<long>   ZeroExtendWideningUpper(Vector128<int>    value) => ZeroExtendWideningUpper(value);
+        /// <summary>
+        ///   i64x2.extend_high_i32x4_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ulong>  ZeroExtendWideningUpper(Vector128<uint>   value) => ZeroExtendWideningUpper(value);
     }
 }

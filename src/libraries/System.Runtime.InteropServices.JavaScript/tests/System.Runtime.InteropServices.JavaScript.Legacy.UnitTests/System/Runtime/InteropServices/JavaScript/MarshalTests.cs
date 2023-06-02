@@ -612,20 +612,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void ManuallyInternString()
-        {
-            HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
-            Utils.InvokeJS(@"
-                var sym = INTERNAL.mono_intern_string(""interned string 3"");
-                App.call_test_method (""InvokeString"", [ sym ], ""s"");
-                App.call_test_method (""InvokeString2"", [ sym ], ""s"");
-            ");
-            Assert.Equal("interned string 3", HelperMarshal._stringResource);
-            Assert.Equal(HelperMarshal._stringResource, HelperMarshal._stringResource2);
-            Assert.True(Object.ReferenceEquals(HelperMarshal._stringResource, HelperMarshal._stringResource2));
-        }
-
-        [Fact]
         public static void LargeStringsAreNotAutomaticallyLocatedInInternTable()
         {
             HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;

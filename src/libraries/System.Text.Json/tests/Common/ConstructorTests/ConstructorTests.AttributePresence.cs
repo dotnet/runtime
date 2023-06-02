@@ -160,5 +160,16 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(1, point2.X);
             Assert.Equal(2, point2.Y);
         }
+
+        [Fact]
+        public async Task CanDeserializeNullableStructWithCtor()
+        {
+            string json = @"{""X"":1,""Y"":2}";
+
+            Point_2D_Struct_WithAttribute? point2 = await Serializer.DeserializeWrapper<Point_2D_Struct_WithAttribute?>(json);
+            Assert.NotNull(point2);
+            Assert.Equal(1, point2.Value.X);
+            Assert.Equal(2, point2.Value.Y);
+        }
     }
 }

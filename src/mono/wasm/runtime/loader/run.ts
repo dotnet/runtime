@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { MonoConfig, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, WebAssemblyStartOptions } from "../types";
-import type { MonoConfigInternal, GlobalObjects, EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, } from "../types/internal";
+import type { MonoConfigInternal, EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, } from "../types/internal";
 
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, exportedRuntimeAPI, setLoaderGlobals } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, exportedRuntimeAPI, globalObjectsRoot } from "./globals";
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
 import { mono_exit } from "./exit";
 import { setup_proxy_console } from "./logging";
@@ -15,17 +15,6 @@ import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
 
 
-export const globalObjectsRoot: GlobalObjects = {
-    mono: {},
-    binding: {},
-    internal: {},
-    module: {},
-    loaderHelpers: {},
-    runtimeHelpers: {},
-    api: {}
-} as any;
-
-setLoaderGlobals(globalObjectsRoot);
 const module = globalObjectsRoot.module;
 const monoConfig = module.config as MonoConfigInternal;
 
@@ -355,7 +344,7 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
     if (typeof moduleFactory === "function") {
         const extension = moduleFactory(globalObjectsRoot.api) as any;
         if (extension.ready) {
-            throw new Error("MONO_WASM: Module.ready couldn't be redefined.");
+            throw new Error("Module.ready couldn't be redefined.");
         }
         Object.assign(module, extension);
         deep_merge_module(module, extension);
@@ -364,7 +353,7 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
         deep_merge_module(module, moduleFactory);
     }
     else {
-        throw new Error("MONO_WASM: Can't use moduleFactory callback of createDotnetRuntime function.");
+        throw new Error("Can't use moduleFactory callback of createDotnetRuntime function.");
     }
 
     return module.ENVIRONMENT_IS_PTHREAD
