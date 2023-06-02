@@ -31,6 +31,7 @@
 
 bool aot_ipc_get_process_id_disambiguation_key(uint32_t process_id, uint64_t *key);
 
+// Consider moving this code to shared library code. See https://github.com/dotnet/runtime/issues/87069
 bool
 aot_ipc_get_process_id_disambiguation_key(
     uint32_t process_id,
