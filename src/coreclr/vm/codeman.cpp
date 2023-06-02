@@ -1347,84 +1347,6 @@ void EEJitManager::SetCpuInfo()
     //   AMD64 Architecture Programmer’s Manual. Volume 3
     // For more information, please refer to the CPUID instruction in the respective manuals
 
-    // We will set the following flags:
-    //   CORJIT_FLAG_USE_SSE2 is required
-    //      SSE       - EDX bit 25
-    //      SSE2      - EDX bit 26
-    //   CORJIT_FLAG_USE_AES
-    //      CORJIT_FLAG_USE_SSE2
-    //      AES       - ECX bit 25
-    //   CORJIT_FLAG_USE_PCLMULQDQ
-    //      CORJIT_FLAG_USE_SSE2
-    //      PCLMULQDQ - ECX bit 1
-    //   CORJIT_FLAG_USE_SSE3 if the following feature bits are set (input EAX of 1)
-    //      CORJIT_FLAG_USE_SSE2
-    //      SSE3      - ECX bit 0
-    //   CORJIT_FLAG_USE_SSSE3 if the following feature bits are set (input EAX of 1)
-    //      CORJIT_FLAG_USE_SSE3
-    //      SSSE3     - ECX bit 9
-    //   CORJIT_FLAG_USE_SSE41 if the following feature bits are set (input EAX of 1)
-    //      CORJIT_FLAG_USE_SSSE3
-    //      SSE4.1    - ECX bit 19
-    //   CORJIT_FLAG_USE_SSE42 if the following feature bits are set (input EAX of 1)
-    //      CORJIT_FLAG_USE_SSE41
-    //      SSE4.2    - ECX bit 20
-    //   CORJIT_FLAG_USE_MOVBE if the following feature bits are set (input EAX of 1)
-    //      CORJIT_FLAG_USE_SSE42
-    //      MOVBE    - ECX bit 22
-    //   CORJIT_FLAG_USE_POPCNT if the following feature bits are set (input EAX of 1)
-    //      CORJIT_FLAG_USE_SSE42
-    //      POPCNT    - ECX bit 23
-    //   CORJIT_FLAG_USE_AVX if the following feature bits are set (input EAX of 1), and xmmYmmStateSupport returns 1:
-    //      CORJIT_FLAG_USE_SSE42
-    //      OSXSAVE   - ECX bit 27
-    //      AVX       - ECX bit 28
-    //      XGETBV    - XCR0[2:1]    11b
-    //   CORJIT_FLAG_USE_FMA if the following feature bits are set (input EAX of 1), and xmmYmmStateSupport returns 1:
-    //      CORJIT_FLAG_USE_AVX
-    //      FMA       - ECX bit 12
-    //   CORJIT_FLAG_USE_AVX2 if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
-    //      CORJIT_FLAG_USE_AVX
-    //      AVX2      - EBX bit 5
-    //   CORJIT_FLAG_USE_AVXVNNI if the following feature bit is set (input EAX of 0x07 and input ECX of 1):
-    //      CORJIT_FLAG_USE_AVX2
-    //      AVXVNNI   - EAX bit 4
-    //   CORJIT_FLAG_USE_AVX_512F if the following feature bit is set (input EAX of 0x07 and input ECX of 0), and avx512StateSupport returns 1:
-    //      CORJIT_FLAG_USE_AVX2
-    //      AVX512F   - EBX bit 16
-    //      XGETBV    - XRC0[7:5]    111b
-    //   CORJIT_FLAG_USE_AVX_512F_VL if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
-    //      CORJIT_FLAG_USE_AVX512F
-    //      AVX512VL   - EBX bit 31
-    //   CORJIT_FLAG_USE_AVX_512BW if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
-    //      CORJIT_FLAG_USE_AVX512F
-    //      AVX512BW   - EBX bit 30
-    //   CORJIT_FLAG_USE_AVX_512BW_VL if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
-    //      CORJIT_FLAG_USE_AVX512F_VL
-    //      CORJIT_FLAG_USE_AVX_512BW
-    //   CORJIT_FLAG_USE_AVX_512CD if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
-    //      CORJIT_FLAG_USE_AVX512F
-    //      AVX512CD   - EBX bit 28
-    //   CORJIT_FLAG_USE_AVX_512CD_VL if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
-    //      CORJIT_FLAG_USE_AVX512F_VL
-    //      CORJIT_FLAG_USE_AVX_512CD
-    //   CORJIT_FLAG_USE_AVX_512DQ if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
-    //      CORJIT_FLAG_USE_AVX512F
-    //      AVX512DQ   - EBX bit 7
-    //   CORJIT_FLAG_USE_AVX_512DQ_VL if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
-    //      CORJIT_FLAG_USE_AVX512F_VL
-    //      CORJIT_FLAG_USE_AVX_512DQ
-    //   CORJIT_FLAG_USE_AVX_512VBMI if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
-    //      CORJIT_FLAG_USE_AVX512F
-    //      AVX512VBMI - ECX bit 1
-    //   CORJIT_FLAG_USE_BMI1 if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
-    //      BMI1 - EBX bit 3
-    //   CORJIT_FLAG_USE_BMI2 if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
-    //      BMI2 - EBX bit 8
-    //   CORJIT_FLAG_USE_LZCNT if the following feature bits are set (input EAX of 80000001H)
-    //      LZCNT - ECX bit 5
-    // synchronously updating VM and JIT.
-
     union XarchCpuInfo
     {
         struct {
@@ -1516,9 +1438,12 @@ void EEJitManager::SetCpuInfo()
                         CPUCompileFlags.Set(InstructionSet_POPCNT);
                     }
 
-                    if (((cpuidInfo[CPUID_ECX] & (1 << 27)) != 0) && ((cpuidInfo[CPUID_ECX] & (1 << 28)) != 0)) // OSXSAVE & AVX
+                    const int requiredAvxEcxFlags = (1 << 27)                                             // OSXSAVE
+                                                  | (1 << 28);                                            // AVX
+
+                    if ((cpuidInfo[CPUID_ECX] & requiredAvxEcxFlags) == requiredAvxEcxFlags)
                     {
-                        if(DoesOSSupportAVX() && (xmmYmmStateSupport() == 1))                       // XGETBV == 11
+                        if(DoesOSSupportAVX() && (xmmYmmStateSupport() == 1))                             // XGETBV == 11
                         {
                             CPUCompileFlags.Set(InstructionSet_AVX);
 
@@ -1535,50 +1460,50 @@ void EEJitManager::SetCpuInfo()
                                 {
                                     CPUCompileFlags.Set(InstructionSet_AVX2);
 
-                                    if (DoesOSSupportAVX512() && (avx512StateSupport() == 1))      // XGETBV XRC0[7:5] == 111
+                                    if (DoesOSSupportAVX512() && (avx512StateSupport() == 1))             // XGETBV XRC0[7:5] == 111
                                     {
-                                        if ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0)                     // AVX512F
+                                        if ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0)                      // AVX512F
                                         {
                                             CPUCompileFlags.Set(InstructionSet_AVX512F);
 
                                             bool isAVX512_VLSupported = false;
-                                            if ((cpuidInfo[CPUID_EBX] & (1 << 31)) != 0)                 // AVX512VL
+                                            if ((cpuidInfo[CPUID_EBX] & (1 << 31)) != 0)                  // AVX512VL
                                             {
                                                 CPUCompileFlags.Set(InstructionSet_AVX512F_VL);
                                                 isAVX512_VLSupported = true;
                                             }
 
-                                            if ((cpuidInfo[CPUID_EBX] & (1 << 30)) != 0)                 // AVX512BW
+                                            if ((cpuidInfo[CPUID_EBX] & (1 << 30)) != 0)                  // AVX512BW
                                             {
                                                 CPUCompileFlags.Set(InstructionSet_AVX512BW);
-                                                if (isAVX512_VLSupported)                          // AVX512BW_VL
+                                                if (isAVX512_VLSupported)                                 // AVX512BW_VL
                                                 {
                                                     CPUCompileFlags.Set(InstructionSet_AVX512BW_VL);
                                                 }
                                             }
 
-                                            if ((cpuidInfo[CPUID_EBX] & (1 << 28)) != 0)                 // AVX512CD
+                                            if ((cpuidInfo[CPUID_EBX] & (1 << 28)) != 0)                  // AVX512CD
                                             {
                                                 CPUCompileFlags.Set(InstructionSet_AVX512CD);
-                                                if (isAVX512_VLSupported)                          // AVX512CD_VL
+                                                if (isAVX512_VLSupported)                                 // AVX512CD_VL
                                                 {
                                                     CPUCompileFlags.Set(InstructionSet_AVX512CD_VL);
                                                 }
                                             }
 
-                                            if ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0)                 // AVX512DQ
+                                            if ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0)                  // AVX512DQ
                                             {
                                                 CPUCompileFlags.Set(InstructionSet_AVX512DQ);
-                                                if (isAVX512_VLSupported)                          // AVX512DQ_VL
+                                                if (isAVX512_VLSupported)                                 // AVX512DQ_VL
                                                 {
                                                     CPUCompileFlags.Set(InstructionSet_AVX512DQ_VL);
                                                 }
                                             }
 
-                                            if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                  // AVX512VBMI
+                                            if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                   // AVX512VBMI
                                             {
                                                 CPUCompileFlags.Set(InstructionSet_AVX512VBMI);
-                                                if (isAVX512_VLSupported)                          // AVX512VBMI_VL
+                                                if (isAVX512_VLSupported)                                 // AVX512VBMI_VL
                                                 {
                                                     CPUCompileFlags.Set(InstructionSet_AVX512VBMI_VL);
                                                 }
@@ -1610,19 +1535,19 @@ void EEJitManager::SetCpuInfo()
     {
         __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
 
-        if ((cpuidInfo[CPUID_EBX] & (1 << 3)) != 0)                                                           // BMI1
+        if ((cpuidInfo[CPUID_EBX] & (1 << 3)) != 0)                                                       // BMI1
         {
             CPUCompileFlags.Set(InstructionSet_BMI1);
         }
 
-        if ((cpuidInfo[CPUID_EBX] & (1 << 8)) != 0)                                                           // BMI2
+        if ((cpuidInfo[CPUID_EBX] & (1 << 8)) != 0)                                                       // BMI2
         {
             CPUCompileFlags.Set(InstructionSet_BMI2);
         }
 
         if ((cpuidInfo[CPUID_EDX] & (1 << 14)) != 0)
         {
-            CPUCompileFlags.Set(InstructionSet_X86Serialize);                                            // SERIALIZE
+            CPUCompileFlags.Set(InstructionSet_X86Serialize);                                             // SERIALIZE
         }
     }
 
@@ -1633,7 +1558,7 @@ void EEJitManager::SetCpuInfo()
     {
         __cpuid(cpuidInfo, 0x80000001);
 
-        if ((cpuidInfo[CPUID_ECX] & (1 << 5)) != 0)                                                               // LZCNT
+        if ((cpuidInfo[CPUID_ECX] & (1 << 5)) != 0)                                                       // LZCNT
         {
             CPUCompileFlags.Set(InstructionSet_LZCNT);
         }

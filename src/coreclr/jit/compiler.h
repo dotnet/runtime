@@ -8654,7 +8654,7 @@ private:
 
     // Get the number of bytes in a System.Numeric.Vector<T> for the current compilation.
     // Note - cannot be used for System.Runtime.Intrinsic
-    unsigned getVectorTByteLength()
+    uint32_t getVectorTByteLength()
     {
         // We need to report the ISA dependency to the VM so that scenarios
         // such as R2R work correctly for larger vector sizes, so we always

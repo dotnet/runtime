@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
 using System.Reflection;
-using Xunit;
 
 namespace IntelHardwareIntrinsicTest._CpuId
 {
@@ -18,15 +17,13 @@ namespace IntelHardwareIntrinsicTest._CpuId
         const int Pass = 100;
         const int Fail = 0;
 
-        [Fact]
-        [SkipOnMono("Mono does not currently have full support for intrinsics on xarch", TestPlatforms.Any)]
-        public unsafe static void CpuId()
+        public unsafe static int Main()
         {
             int testResult = Pass;
 
             if (!X86Base.IsSupported)
             {
-                return;
+                return testResult;
             }
 
             (int eax, int ebx, int ecx, int edx) = X86Base.CpuId(0x00000000, 0x00000000);
@@ -55,8 +52,7 @@ namespace IntelHardwareIntrinsicTest._CpuId
 
             if (maxFunctionId < 0x00000001)
             {
-                Assert.Equal(Pass, testResult);
-                return;
+                return testResult;
             }
 
             bool isX86BaseDisabled = !GetDotnetEnable("HWINTRINSIC");
@@ -135,8 +131,7 @@ namespace IntelHardwareIntrinsicTest._CpuId
 
             if (maxFunctionId < 0x00000007)
             {
-                Assert.Equal(Pass, testResult);
-                return;
+                return testResult;
             }
 
             (eax, ebx, ecx, edx) = X86Base.CpuId(0x00000007, 0x00000000);
@@ -247,8 +242,7 @@ namespace IntelHardwareIntrinsicTest._CpuId
 
             if (maxFunctionIdEx < 0x00000001)
             {
-                Assert.Equal(Pass, testResult);
-                return;
+                return testResult;
             }
 
             (eax, ebx, ecx, edx) = X86Base.CpuId(unchecked((int)0x80000001), 0x00000000);
@@ -313,8 +307,7 @@ namespace IntelHardwareIntrinsicTest._CpuId
                 testResult = Fail;
             }
 
-            Assert.Equal(Pass, testResult);
-            return;
+            return testResult;
         }
 
         static bool IsBitIncorrect(int register, int bitNumber, Type isa, bool isSupported, string name, ref bool isHierarchyDisabled)
