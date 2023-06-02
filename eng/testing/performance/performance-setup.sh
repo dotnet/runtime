@@ -36,9 +36,10 @@ use_latest_dotnet=false
 logical_machine=
 javascript_engine="v8"
 iosmono=false
+iosnativeaot=false
+runtimetype=""
 iosllvmbuild=""
 iosstripsymbols=""
-iosnativeaot=false
 maui_version=""
 use_local_commit_time=false
 only_sanity=false
@@ -341,12 +342,14 @@ if [[ "$monoaot" == "true" ]]; then
 fi
 
 if [[ "$iosmono" == "true" ]]; then
-    configurations="$configurations iOSLlvmBuild=$iosllvmbuild iOSStripSymbols=$iosstripsymbols"
+    runtimetype="Mono"
+    configurations="$configurations iOSLlvmBuild=$iosllvmbuild iOSStripSymbols=$iosstripsymbols RuntimeType=$runtimetype"
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments"
 fi
 
 if [[ "$iosnativeaot" == "true" ]]; then
-    configurations="$configurations iOSStripSymbols=$iosstripsymbols"
+    runtimetype="NativeAOT"
+    configurations="$configurations iOSStripSymbols=$iosstripsymbols RuntimeType=$runtimetype"
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments"
 fi
 
@@ -492,6 +495,7 @@ Write-PipelineSetVariable -name "MonoDotnet" -value "$using_mono" -is_multi_job_
 Write-PipelineSetVariable -name "WasmDotnet" -value "$using_wasm" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iosllvmbuild" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSStripSymbols' -Value "$iosstripsymbols" -is_multi_job_variable false
+Write-PipelineSetVariable -Name 'RuntimeType' -Value "$runtimetype" -is_multi_job_variable false
 Write-PipelineSetVariable -name "OnlySanityCheck" -value "$only_sanity" -is_multi_job_variable false
 
 # Put it back to what was set on top of this script

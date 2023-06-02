@@ -20,8 +20,6 @@
     <SymbolsPath>symbols</SymbolsPath>
     <SymbolsPath Condition="'$(iOSStripSymbols)' == 'True'">nosymbols</SymbolsPath>
     <LlvmPath>nollvm</LlvmPath>
-    <RuntimeType>Mono AOT</RuntimeType>
-    <RuntimeType Condition="'$(iOSLlvmBuild)' == ''">Native AOT</RuntimeType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
