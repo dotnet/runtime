@@ -34,22 +34,33 @@ namespace System.Security.Cryptography
     {
         private readonly nuint _algorithm;
         private SafeBCryptHashHandle _hashHandle;
-        private const nuint BCRYPT_CSHAKE128_ALG_HANDLE = 0x00000411;
-        private const nuint BCRYPT_CSHAKE256_ALG_HANDLE = 0x00000421;
 
         internal LiteXof(string algorithm)
         {
             _algorithm = algorithm switch
             {
-                HashAlgorithmNames.CSHAKE128 => BCRYPT_CSHAKE128_ALG_HANDLE,
-                HashAlgorithmNames.CSHAKE256 => BCRYPT_CSHAKE256_ALG_HANDLE,
-                _ => throw new CryptographicException(),
+                HashAlgorithmNames.CSHAKE128 => (nuint)Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_CSHAKE128_ALG_HANDLE,
+                HashAlgorithmNames.CSHAKE256 => (nuint)Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_CSHAKE256_ALG_HANDLE,
+                _ => throw FailThrow(algorithm),
             };
 
             Reset();
+
+            static Exception FailThrow(string algorithm)
+            {
+                Debug.Fail($"Unexpected hash algorithm name '{algorithm}'.");
+                return new CryptographicException();
+            }
         }
 
-        public int HashSizeInBytes => throw new NotSupportedException();
+        public int HashSizeInBytes
+        {
+            get
+            {
+                Debug.Fail("Unexpectedly asked for the hash size of a XOF.");
+                throw new CryptographicException();
+            }
+        }
 
         public void Append(ReadOnlySpan<byte> data)
         {
@@ -121,7 +132,6 @@ namespace System.Security.Cryptography
         }
     }
 
-
     internal readonly struct LiteHash : ILiteHash
     {
         private readonly SafeBCryptHashHandle _hashHandle;
@@ -178,7 +188,7 @@ namespace System.Security.Cryptography
 
         public int Finalize(Span<byte> destination)
         {
-            Debug.Assert(destination.Length >= _hashSizeInBytes);
+            Debug.Assert(destination.Length >= _hashSizeInBytes, $"{destination.Length} >= {_hashSizeInBytes}");
 
             NTSTATUS ntStatus = Interop.BCrypt.BCryptFinishHash(_hashHandle, destination, _hashSizeInBytes, dwFlags: 0);
 

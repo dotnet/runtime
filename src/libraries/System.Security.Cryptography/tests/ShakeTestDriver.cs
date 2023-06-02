@@ -1,6 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.IO;
+using Xunit;
+
 namespace System.Security.Cryptography.Tests
 {
     public interface IShakeTrait<TShake> where TShake : IDisposable, new()
@@ -10,19 +14,271 @@ namespace System.Security.Cryptography.Tests
         static abstract void AppendData(TShake shake, byte[] data);
         static abstract void AppendData(TShake shake, ReadOnlySpan<byte> data);
         static abstract byte[] GetHashAndReset(TShake shake, int outputLength);
+        static abstract void GetHashAndReset(TShake shake, Span<byte> destination);
         static abstract byte[] GetCurrentHash(TShake shake, int outputLength);
+        static abstract void GetCurrentHash(TShake shake, Span<byte> destination);
+
+        static abstract byte[] HashData(byte[] source, int outputLength);
+        static abstract byte[] HashData(ReadOnlySpan<byte> source, int outputLength);
+        static abstract void HashData(ReadOnlySpan<byte> source, Span<byte> destination);
     }
 
-    public class Shake128Tests : ShakeTestDriver<Shake128Tests.Traits, Shake128>
+    public abstract class ShakeTestDriver<TShakeTrait, TShake>
+        where TShakeTrait : IShakeTrait<TShake>
+        where TShake : IDisposable, new()
     {
-        public class Traits : IShakeTrait<Shake128>
-        {
-            public static bool IsSupported => Shake128.IsSupported;
+        protected abstract IEnumerable<(string Msg, string Output)> Fips202Kats { get; }
+        public static bool IsSupported => TShakeTrait.IsSupported;
 
-            public static void AppendData(Shake128 shake, byte[] data) => shake.AppendData(data);
-            public static void AppendData(Shake128 shake, ReadOnlySpan<byte> data) => shake.AppendData(data);
-            public static byte[] GetHashAndReset(Shake128 shake, int outputLength) => shake.GetHashAndReset(outputLength);
-            public static byte[] GetCurrentHash(Shake128 shake, int outputLength) => shake.GetCurrentHash(outputLength);
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_Allocated_AllAtOnce()
+        {
+            foreach ((string Msg, string Output) kat in Fips202Kats)
+            {
+                byte[] message = Convert.FromHexString(kat.Msg);
+
+                using (TShake shake = new TShake())
+                {
+                    TShakeTrait.AppendData(shake, message);
+                    byte[] hash = TShakeTrait.GetHashAndReset(shake, kat.Output.Length / 2);
+                    Assert.Equal(kat.Output, Convert.ToHexString(hash), ignoreCase: true);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_Allocated_ByteAtATime()
+        {
+            foreach ((string Msg, string Output) kat in Fips202Kats)
+            {
+                byte[] message = Convert.FromHexString(kat.Msg);
+
+                using (TShake shake = new TShake())
+                {
+                    byte[] arr = new byte[1];
+
+                    for (int i = 0; i < message.Length; i++)
+                    {
+                        arr[0] = message[i];
+                        TShakeTrait.AppendData(shake, arr);
+                    }
+
+                    byte[] hash = TShakeTrait.GetHashAndReset(shake, kat.Output.Length / 2);
+                    Assert.Equal(kat.Output, Convert.ToHexString(hash), ignoreCase: true);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_Allocated_Reused()
+        {
+            foreach ((string Msg, string Output) kat in Fips202Kats)
+            {
+                byte[] message = Convert.FromHexString(kat.Msg);
+
+                using (TShake shake = new TShake())
+                {
+                    TShakeTrait.AppendData(shake, message);
+                    byte[] hash = TShakeTrait.GetHashAndReset(shake, kat.Output.Length / 2);
+                    Assert.Equal(kat.Output, Convert.ToHexString(hash), ignoreCase: true);
+
+                    TShakeTrait.AppendData(shake, message);
+                    hash = TShakeTrait.GetHashAndReset(shake, kat.Output.Length / 2);
+                    Assert.Equal(kat.Output, Convert.ToHexString(hash), ignoreCase: true);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_Allocated_GetCurrentHash()
+        {
+            foreach ((string Msg, string Output) kat in Fips202Kats)
+            {
+                byte[] message = Convert.FromHexString(kat.Msg);
+
+                using (TShake shake = new TShake())
+                {
+                    TShakeTrait.AppendData(shake, message);
+                    byte[] hash = TShakeTrait.GetCurrentHash(shake, kat.Output.Length / 2);
+                    Assert.Equal(kat.Output, Convert.ToHexString(hash), ignoreCase: true);
+
+                    hash = TShakeTrait.GetCurrentHash(shake, kat.Output.Length / 2);
+                    Assert.Equal(kat.Output, Convert.ToHexString(hash), ignoreCase: true);
+
+                    hash = TShakeTrait.GetHashAndReset(shake, kat.Output.Length / 2);
+                    Assert.Equal(kat.Output, Convert.ToHexString(hash), ignoreCase: true);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_OneShot_HashData_ByteArray()
+        {
+            foreach ((string Msg, string Output) kat in Fips202Kats)
+            {
+                byte[] message = Convert.FromHexString(kat.Msg);
+                byte[] hash = TShakeTrait.HashData(message, kat.Output.Length / 2);
+                Assert.Equal(kat.Output, Convert.ToHexString(hash), ignoreCase: true);
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_OneShot_HashData_ByteArray_SpanInput()
+        {
+            foreach ((string Msg, string Output) kat in Fips202Kats)
+            {
+                ReadOnlySpan<byte> message = Convert.FromHexString(kat.Msg);
+                byte[] hash = TShakeTrait.HashData(message, kat.Output.Length / 2);
+                Assert.Equal(kat.Output, Convert.ToHexString(hash), ignoreCase: true);
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_OneShot_HashData_SpanBuffer_JustRight()
+        {
+            foreach ((string Msg, string Output) kat in Fips202Kats)
+            {
+                byte[] message = Convert.FromHexString(kat.Msg);
+                Span<byte> destination = new byte[kat.Output.Length / 2];
+                TShakeTrait.HashData(message, destination);
+                Assert.Equal(kat.Output, Convert.ToHexString(destination), ignoreCase: true);
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_OneShot_HashData_SpanBuffer_LargerWithOffset()
+        {
+            foreach ((string Msg, string Output) kat in Fips202Kats)
+            {
+                byte[] message = Convert.FromHexString(kat.Msg);
+                Span<byte> buffer = new byte[kat.Output.Length / 2 + 2];
+                buffer[0] = 0xFF;
+                buffer[^1] = 0xFF;
+                Span<byte> destination = buffer[1..^1];
+                TShakeTrait.HashData(message, destination);
+                Assert.Equal(kat.Output, Convert.ToHexString(destination), ignoreCase: true);
+                Assert.Equal(0xFF, buffer[0]);
+                Assert.Equal(0xFF, buffer[^1]);
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_OneShot_HashData_SpanBuffer_OverlapExact()
+        {
+            foreach ((string Msg, string Output) kat in Fips202Kats)
+            {
+                byte[] buffer = new byte[Math.Max(kat.Msg.Length, kat.Output.Length) / 2];
+                Span<byte> message = Convert.FromHexString(kat.Msg);
+                message.CopyTo(buffer);
+
+                Span<byte> destination = buffer.AsSpan(0, kat.Output.Length / 2);
+                ReadOnlySpan<byte> source = buffer.AsSpan(0, kat.Msg.Length / 2);
+                TShakeTrait.HashData(source, destination);
+                Assert.Equal(kat.Output, Convert.ToHexString(destination), ignoreCase: true);
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_OneShot_HashData_SpanBuffer_OverlapPartial_MessageBefore()
+        {
+            foreach ((string Msg, string Output) kat in Fips202Kats)
+            {
+                byte[] buffer = new byte[Math.Max(kat.Msg.Length, kat.Output.Length) / 2 + 10];
+                Span<byte> message = Convert.FromHexString(kat.Msg);
+                message.CopyTo(buffer);
+
+                Span<byte> destination = buffer.AsSpan(10, kat.Output.Length / 2);
+                ReadOnlySpan<byte> source = buffer.AsSpan(0, kat.Msg.Length / 2);
+                TShakeTrait.HashData(source, destination);
+                Assert.Equal(kat.Output, Convert.ToHexString(destination), ignoreCase: true);
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_OneShot_HashData_SpanBuffer_OverlapPartial_MessageAfter()
+        {
+            foreach ((string Msg, string Output) kat in Fips202Kats)
+            {
+                byte[] buffer = new byte[Math.Max(kat.Msg.Length, kat.Output.Length) / 2 + 10];
+                Span<byte> message = Convert.FromHexString(kat.Msg);
+                message.CopyTo(buffer.AsSpan(10));
+
+                Span<byte> destination = buffer.AsSpan(0, kat.Output.Length / 2);
+                ReadOnlySpan<byte> source = buffer.AsSpan(10, kat.Msg.Length / 2);
+                TShakeTrait.HashData(source, destination);
+                Assert.Equal(kat.Output, Convert.ToHexString(destination), ignoreCase: true);
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void ArgValidation_OneShot_HashData_OutputLengthNegative()
+        {
+            byte[] source = new byte[1];
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "outputLength",
+                () => TShakeTrait.HashData(source, outputLength: -1));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "outputLength",
+                () => TShakeTrait.HashData(new ReadOnlySpan<byte>(source), outputLength: -1));
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void ArgValidation_OneShot_HashData_SourceNull()
+        {
+            AssertExtensions.Throws<ArgumentNullException>(
+                "source",
+                () => TShakeTrait.HashData((byte[])null, outputLength: 1));
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void ArgValidation_Allocated_GetCurrentHash_OutputLengthNegative()
+        {
+            using (TShake shake = new TShake())
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                    "outputLength",
+                    () => TShakeTrait.GetCurrentHash(shake, outputLength: -1));
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void ArgValidation_Allocated_GetHashAndReset_OutputLengthNegative()
+        {
+            using (TShake shake = new TShake())
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                    "outputLength",
+                    () => TShakeTrait.GetHashAndReset(shake, outputLength: -1));
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void ArgValidation_Allocated_AppendData_DataNull()
+        {
+            using (TShake shake = new TShake())
+            {
+                AssertExtensions.Throws<ArgumentNullException>(
+                    "data",
+                    () => TShakeTrait.AppendData(shake, (byte[])null));
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void ArgValidation_Allocated_UseAfterDispose()
+        {
+            byte[] buffer = new byte[1];
+            TShake shake = new TShake();
+            shake.Dispose();
+            shake.Dispose(); // Assert.NoThrow
+
+            Assert.Throws<ObjectDisposedException>(() => TShakeTrait.AppendData(shake, buffer));
+            Assert.Throws<ObjectDisposedException>(() => TShakeTrait.AppendData(shake, new ReadOnlySpan<byte>(buffer)));
+            Assert.Throws<ObjectDisposedException>(() => TShakeTrait.GetHashAndReset(shake, outputLength: 1));
+            Assert.Throws<ObjectDisposedException>(() => TShakeTrait.GetHashAndReset(shake, buffer.AsSpan()));
+            Assert.Throws<ObjectDisposedException>(() => TShakeTrait.GetCurrentHash(shake, outputLength: 1));
+            Assert.Throws<ObjectDisposedException>(() => TShakeTrait.GetCurrentHash(shake, buffer.AsSpan()));
         }
     }
 }

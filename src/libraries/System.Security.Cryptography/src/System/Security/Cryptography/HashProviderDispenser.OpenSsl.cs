@@ -53,6 +53,11 @@ namespace System.Security.Cryptography
                 return written;
             }
 
+            public static void HashDataXof(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
+            {
+                throw new NotImplementedException();
+            }
+
             public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
             {
                 IntPtr evpType = Interop.Crypto.HashAlgorithmToEvp(hashAlgorithmId);

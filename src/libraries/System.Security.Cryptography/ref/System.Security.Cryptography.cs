@@ -2474,6 +2474,9 @@ namespace System.Security.Cryptography
         public void GetCurrentHash(System.Span<byte> destination) { }
         public byte[] GetHashAndReset(int outputLength) { throw null; }
         public void GetHashAndReset(System.Span<byte> destination) { }
+        public static byte[] HashData(byte[] source, int outputLength) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> source, int outputLength) { throw null; }
+        public static void HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { }
     }
     public partial class SignatureDescription
     {

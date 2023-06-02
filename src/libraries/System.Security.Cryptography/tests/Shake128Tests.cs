@@ -2,78 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using Xunit;
+using System.IO;
 
 namespace System.Security.Cryptography.Tests
 {
-    public abstract class ShakeTestDriver<TShakeTrait, TShake>
-        where TShakeTrait : IShakeTrait<TShake>
-        where TShake : IDisposable, new()
+    public class Shake128Tests : ShakeTestDriver<Shake128Tests.Traits, Shake128>
     {
-        public static bool IsSupported => TShakeTrait.IsSupported;
-
-        [ConditionalFact(nameof(IsSupported))]
-        public void KnownAnswerTests()
+        public class Traits : IShakeTrait<Shake128>
         {
-            foreach ((string Msg, string Output) kat in Fips202Kats)
-            {
-                Verify(Convert.FromHexString(kat.Msg), kat.Output);
-            }
+            public static bool IsSupported => Shake128.IsSupported;
+
+            public static void AppendData(Shake128 shake, byte[] data) => shake.AppendData(data);
+            public static void AppendData(Shake128 shake, ReadOnlySpan<byte> data) => shake.AppendData(data);
+            public static byte[] GetHashAndReset(Shake128 shake, int outputLength) => shake.GetHashAndReset(outputLength);
+            public static void GetHashAndReset(Shake128 shake, Span<byte> destination) => shake.GetHashAndReset(destination);
+            public static byte[] GetCurrentHash(Shake128 shake, int outputLength) => shake.GetCurrentHash(outputLength);
+            public static void GetCurrentHash(Shake128 shake, Span<byte> destination) => shake.GetCurrentHash(destination);
+
+            public static byte[] HashData(byte[] source, int outputLength) => Shake128.HashData(source, outputLength);
+            public static byte[] HashData(ReadOnlySpan<byte> source, int outputLength) => Shake128.HashData(source, outputLength);
+            public static void HashData(ReadOnlySpan<byte> source, Span<byte> destination) => Shake128.HashData(source, destination);
         }
 
-        private void Verify(byte[] message, string output)
-        {
-            // Allocated, all-at-once.
-            using (TShake shake = new TShake())
-            {
-                TShakeTrait.AppendData(shake, message);
-                byte[] hash = TShakeTrait.GetHashAndReset(shake, output.Length / 2);
-                Assert.Equal(output, Convert.ToHexString(hash), ignoreCase: true);
-            }
-
-            // Allocated, one byte at a time.
-            using (TShake shake = new TShake())
-            {
-                byte[] arr = new byte[1];
-
-                for (int i = 0; i < message.Length; i++)
-                {
-                    arr[0] = message[i];
-                    TShakeTrait.AppendData(shake, arr);
-                }
-
-                byte[] hash = TShakeTrait.GetHashAndReset(shake, output.Length / 2);
-                Assert.Equal(output, Convert.ToHexString(hash), ignoreCase: true);
-            }
-
-            // Allocated, reused.
-            using (TShake shake = new TShake())
-            {
-                TShakeTrait.AppendData(shake, message);
-                byte[] hash = TShakeTrait.GetHashAndReset(shake, output.Length / 2);
-                Assert.Equal(output, Convert.ToHexString(hash), ignoreCase: true);
-
-                TShakeTrait.AppendData(shake, message);
-                hash = TShakeTrait.GetHashAndReset(shake, output.Length / 2);
-                Assert.Equal(output, Convert.ToHexString(hash), ignoreCase: true);
-            }
-
-            // Allocated, GetCurrent multiple times.
-            using (TShake shake = new TShake())
-            {
-                TShakeTrait.AppendData(shake, message);
-                byte[] hash = TShakeTrait.GetCurrentHash(shake, output.Length / 2);
-                Assert.Equal(output, Convert.ToHexString(hash), ignoreCase: true);
-
-                hash = TShakeTrait.GetCurrentHash(shake, output.Length / 2);
-                Assert.Equal(output, Convert.ToHexString(hash), ignoreCase: true);
-
-                hash = TShakeTrait.GetHashAndReset(shake, output.Length / 2);
-                Assert.Equal(output, Convert.ToHexString(hash), ignoreCase: true);
-            }
-        }
-
-        private static IEnumerable<(string Msg, string Output)> Fips202Kats
+        protected override IEnumerable<(string Msg, string Output)> Fips202Kats
         {
             get
             {
