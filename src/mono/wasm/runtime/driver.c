@@ -219,11 +219,7 @@ mono_wasm_assembly_already_added (const char *assembly_name)
 
 	WasmAssembly *entry = assemblies;
 	while (entry != NULL) {
-		int entry_name_minus_extn_len = strlen(entry->assembly.name);
-		if (entry->assembly.name[entry_name_minus_extn_len - 4] == '.')
-			entry_name_minus_extn_len -= 4; //.dll (webcil disabled)
-		else
-			entry_name_minus_extn_len -= 5; //.wasm (webcil enabled)
+		int entry_name_minus_extn_len = strrchr (entry->assembly.name, '.') - entry->assembly.name;
 		if (entry_name_minus_extn_len == strlen(assembly_name) && strncmp (entry->assembly.name, assembly_name, entry_name_minus_extn_len) == 0)
 			return 1;
 		entry = entry->next;
