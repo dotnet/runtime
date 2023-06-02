@@ -9,6 +9,7 @@
     <AppName>HelloiOS</AppName>
     <MainLibraryFileName>Program.dll</MainLibraryFileName>
     <DevTeamProvisioning Condition="'$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
     <DeployAndRun Condition="'$(DeployAndRun)' == ''">false</DeployAndRun>
     <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''">false</StripDebugSymbols>
     <UseMonoJustInterp Condition="'$(UseMonoJustInterp)' == '' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
@@ -22,6 +23,9 @@
     <AppleGenerateAppBundle>true</AppleGenerateAppBundle>
     <GenerateXcodeProject>true</GenerateXcodeProject>
     <UseConsoleUITemplate>false</UseConsoleUITemplate>
+
+    <BuildAppBundleAfterTargets>CopyFilesToPublishDirectory</BuildAppBundleAfterTargets>
+    <BuildAppBundleAfterTargets Condition="'$(ArchiveTests)' == 'true'">Build</BuildAppBundleAfterTargets>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'maccatalyst'">
@@ -39,7 +43,7 @@
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets" />
 
-  <Target Name="BuildAppBundle" AfterTargets="CopyFilesToPublishDirectory" />
+  <Target Name="BuildAppBundle" AfterTargets="$(BuildAppBundleAfterTargets)" />
 
   <Target Name="RunAppBundle"
           AfterTargets="_AppleGenerateAppBundle"
