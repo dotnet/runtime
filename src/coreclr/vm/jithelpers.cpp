@@ -1789,13 +1789,13 @@ __declspec(selectany) __declspec(thread) void** t_NonGCThreadStaticBlocks;
 __declspec(selectany) __declspec(thread) void** t_GCThreadStaticBlocks;
 #else
 EXTERN_C __thread uint32_t t_NonGCMaxThreadStaticBlocks;
+EXTERN_C __thread void** t_NonGCThreadStaticBlocks;
+
 EXTERN_C __thread uint32_t t_GCMaxThreadStaticBlocks;
+EXTERN_C __thread void** t_GCThreadStaticBlocks;
 
 EXTERN_C __thread uint32_t t_NonGCThreadStaticBlocksSize;
 EXTERN_C __thread uint32_t t_GCThreadStaticBlocksSize;
-
-EXTERN_C __thread void** t_NonGCThreadStaticBlocks;
-EXTERN_C __thread void** t_GCThreadStaticBlocks;
 #endif
 
 // *** This helper corresponds to both CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE and

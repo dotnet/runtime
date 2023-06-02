@@ -518,10 +518,15 @@ struct Agnostic_GetProfilingHandle
 
 struct Agnostic_GetThreadLocalStaticBlocksInfo
 {
+#ifdef _MSC_VER
     Agnostic_CORINFO_CONST_LOOKUP tlsIndex;
     UINT                          offsetOfThreadLocalStoragePointer;
     UINT                          offsetOfMaxThreadStaticBlocks;
     UINT                          offsetOfThreadStaticBlocks;
+#else
+    DWORDLONG                     tlsGetAddrFtnPtr;
+    DWORDLONG                     descrAddrOfNonGCMaxThreadStaticBlock;
+#endif
     UINT                          offsetOfGCDataPointer;
 };
 

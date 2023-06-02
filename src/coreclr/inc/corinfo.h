@@ -1730,10 +1730,16 @@ struct CORINFO_FIELD_INFO
 
 struct CORINFO_THREAD_STATIC_BLOCKS_INFO
 {
+#ifdef _MSC_VER
     CORINFO_CONST_LOOKUP tlsIndex;
+
     uint32_t offsetOfThreadLocalStoragePointer;
     uint32_t offsetOfMaxThreadStaticBlocks;
     uint32_t offsetOfThreadStaticBlocks;
+#else
+    size_t tlsGetAddrFtnPtr;
+    size_t descrAddrOfNonGCMaxThreadStaticBlock;
+#endif
     uint32_t offsetOfGCDataPointer;
 };
 

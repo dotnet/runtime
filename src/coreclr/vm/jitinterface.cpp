@@ -79,11 +79,12 @@ __declspec(selectany) __declspec(thread) void** t_GCThreadStaticBlocks;
 __thread uint32_t t_NonGCMaxThreadStaticBlocks;
 __thread void** t_NonGCThreadStaticBlocks;
 
-__thread uint32_t t_NonGCThreadStaticBlocksSize;
-__thread uint32_t t_GCThreadStaticBlocksSize;
-
 __thread uint32_t t_GCMaxThreadStaticBlocks;
 __thread void** t_GCThreadStaticBlocks;
+
+__thread uint32_t t_NonGCThreadStaticBlocksSize;
+__thread uint32_t t_GCThreadStaticBlocksSize;
+extern "C" void* __tls_get_addr(void* ti);
 #endif
 
 // EXTERN_C UINT_PTR STDCALL GetNonGCMaxThreadStaticBlocksAddr();
@@ -1815,6 +1816,30 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isG
     return typeIndex;
 }
 
+#ifdef _MSC_VER
+void* getDescriptor()
+{
+    uint8_t* p;
+    __asm__("leaq 0(%%rip), %%rbx\n"
+            "data16\n"
+            "leaq t_NonGCMaxThreadStaticBlocks@TLSGD(%%rip), %%rdi\n"
+            "data16\n"
+            "data16\n"
+            "rex64\n"
+            "callq __tls_get_addr\n"
+            : "=b"(p));
+
+    if (p[0] != 0x66 || p[1] != 0x48 || p[2] != 0x8d || p[3] != 0x3d)
+    {
+        printf("Unexpected instruction - this can happen when this is not compiled in .so (e.g. for single file)\n");
+        exit(1);
+    }
+    p += 4;
+
+    return *(uint32_t*)p + (p + 4);
+}
+#endif
+
 /*********************************************************************/
 void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
 {
@@ -1826,6 +1851,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
 
     JIT_TO_EE_TRANSITION_LEAF();
 
+#ifdef _MSC_VER
     pInfo->tlsIndex.addr = (void*)static_cast<uintptr_t>(_tls_index);
     pInfo->tlsIndex.accessType = IAT_VALUE;
 
@@ -1840,7 +1866,11 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
         pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_NonGCThreadStaticBlocks);
         pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_NonGCMaxThreadStaticBlocks);
     }
-    
+#else
+    pInfo->tlsGetAddrFtnPtr = (size_t)&__tls_get_addr;
+    pInfo->descrAddrOfNonGCMaxThreadStaticBlock = getDescriptor();
+
+#endif
     pInfo->offsetOfGCDataPointer = static_cast<uint32_t>(PtrArray::GetDataOffset());
     
     JIT_TO_EE_TRANSITION_LEAF();
