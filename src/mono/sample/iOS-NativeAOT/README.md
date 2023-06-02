@@ -66,7 +66,7 @@ make world USE_RUNTIME_PACKS=true BUILD_CONFIG=Release TARGET_OS=ios
 
 NOTE: In general, the make variable `USE_RUNTIME_PACKS` controls which scenario will be used during the build (the default value is `false`)
 
-#### To avoid building all the dependencies
+### To avoid building all the dependencies
 
 For future builds, you can run just:
 ``` bash
@@ -81,16 +81,16 @@ make hello-app
 
 NOTE: Pay attention to the scenario you are testing `USE_RUNTIME_PACKS=true or false`
 
-#### Deploy and run
+### Deploy and run
 
-##### Simulator
+#### Simulator
 
 To test the application on a simulator include the following in your make command `DEPLOY_AND_RUN=true` e.g.,:
 ``` bash
 make hello-app DEPLOY_AND_RUN=true
 ```
 
-##### Device
+#### Device
 
 To test the application on a device, a provisioning profile needs to be specified.
 This can be achieved by defining `DevTeamProvisioning` environment variable with a valid team ID (see [developer.apple.com/account/#/membership](https://developer.apple.com/account/#/membership), scroll down to `Team ID`) for example:
@@ -99,7 +99,7 @@ export DevTeamProvisioning=A1B2C3D4E5; make hello-app TARGET_OS=ios DEPLOY_AND_R
 ```
 Assuming `A1B2C3D4E5` is a valid team ID.
 
-#### One-liner
+### One-liners
 
 On a clean dotnet/runtime checkout, from this directory, run:
 
@@ -107,8 +107,14 @@ On a clean dotnet/runtime checkout, from this directory, run:
 export DevTeamProvisioning=A1B2C3D4E5; make world BUILD_CONFIG=Release TARGET_OS=ios DEPLOY_AND_RUN=true
 ```
 
-This command will build everything necessary to run and deploy the application on an iOS device.
+- This command will build everything necessary to run and deploy the application on an iOS device using the locally built internals.
+
+``` bash
+export DevTeamProvisioning=A1B2C3D4E5; make world BUILD_CONFIG=Release TARGET_OS=ios DEPLOY_AND_RUN=true USE_RUNTIME_PACKS=true
+```
+
+- This command will build everything necessary to run and deploy the application on an iOS device using the locally built packages.
 
 ### Custom builds
 
-Check the `Makefile` for individual list of targets and variables to customize the build.
+Check the `Makefile` for individual list of targets and variables to further customize your builds.
