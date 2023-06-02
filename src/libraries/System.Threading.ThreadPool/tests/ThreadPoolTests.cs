@@ -436,8 +436,7 @@ namespace System.Threading.ThreadPools.Tests
 
         public static bool IsMetricsTestSupported => Environment.ProcessorCount >= 3 && IsThreadingAndRemoteExecutorSupported;
 
-        // Temporarily disabling for Windows Threadpool, it fails but still unsure why
-        [ConditionalFact(nameof(IsMetricsTestSupported), nameof(UsePortableThreadPool))]
+        [ConditionalFact(nameof(IsMetricsTestSupported))]
         public void MetricsTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -541,7 +540,8 @@ namespace System.Threading.ThreadPools.Tests
                     Assert.True(totalWorkCountToQueue >= 1);
                     waitForWorkStart = true;
                     scheduleWork();
-                    Assert.True(ThreadPool.ThreadCount >= totalWorkCountToQueue);
+                    int threadCountLowerBound = UsePortableThreadPool ? totalWorkCountToQueue : 0;
+                    Assert.True(ThreadPool.ThreadCount >= threadCountLowerBound);
 
                     int runningWorkItemCount = queuedWorkCount;
 
