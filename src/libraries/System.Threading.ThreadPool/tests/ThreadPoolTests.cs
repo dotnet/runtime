@@ -540,7 +540,7 @@ namespace System.Threading.ThreadPools.Tests
                     Assert.True(totalWorkCountToQueue >= 1);
                     waitForWorkStart = true;
                     scheduleWork();
-                    int threadCountLowerBound = UsePortableThreadPool ? totalWorkCountToQueue : 0;
+                    int threadCountLowerBound = UsePortableThreadPool ? totalWorkCountToQueue : 1;
                     Assert.True(ThreadPool.ThreadCount >= threadCountLowerBound);
 
                     int runningWorkItemCount = queuedWorkCount;

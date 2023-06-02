@@ -13,6 +13,8 @@ namespace System.Threading
             if (!currentThread.IsThreadPoolThread)
             {
                 currentThread.IsThreadPoolThread = true;
+                // when using the Windows Threadpool, this is needed to increment the ThreadCount
+                ThreadPool.InitializeForThreadPoolThread();
             }
             return new ThreadPoolCallbackWrapper
             {

@@ -58,10 +58,6 @@ namespace System.Threading
             {
                 WindowsThreadPool.InitializeForThreadPoolThread();
             }
-            else
-            {
-                InitializeForThreadPoolThreadPortableCore();
-            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -202,8 +198,6 @@ namespace System.Threading
                 return ThreadPool.UseWindowsThreadPool ? WindowsThreadPool.CompletedWorkItemCount : PortableThreadPool.ThreadPoolInstance.CompletedWorkItemCount;
             }
         }
-
-        private static void InitializeForThreadPoolThreadPortableCore() { }
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
