@@ -1813,7 +1813,14 @@ void* getThreadStaticDescriptor(uint8_t* p)
     _ASSERTE_MSG((p[0] == 0x66 && p[1] == 0x48 && p[2] == 0x8d && p[3] == 0x3d),
         "Unexpected instruction - this can happen when this is not compiled in .so (e.g. for single file)");
 
+    // At this point, `p` contains the instruction pointer and is pointing to the above opcodes.
+    // These opcodes are patched by the dynamic linker.
+    // Move beyond the opcodes that we have already checked above.
     p += 4;
+
+    // The descriptor address is located at *p at this point. Ready that and add
+    // it to the instruction pointer to locate the address of `ti` that will be used
+    // to pass to __tls_get_addr during execution.
     return *(uint32_t*)p + (p + 4);
 }
 
