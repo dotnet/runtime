@@ -781,6 +781,9 @@ protected:
         unsigned _idCallRegPtr : 1; // IL indirect calls: addr in reg
         unsigned _idCallAddr : 1;   // IL indirect calls: can make a direct call to iiaAddr
         unsigned _idNoGC : 1;       // Some helpers don't get recorded in GC tables
+#if defined(TARGET_XARCH)
+        unsigned _idEvexbContext : 1; // does EVEX.b need to be set.
+#endif                                //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
         opSize   _idOpSize : 3;    // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
@@ -814,8 +817,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:   46 bits
-        // amd64: 46 bits
+        // x86:   47 bits
+        // amd64: 47 bits
         // arm:   48 bits
         // arm64: 50 bits
         // loongarch64: 46 bits
@@ -830,8 +833,10 @@ protected:
 #define ID_EXTRA_BITFIELD_BITS (16)
 #elif defined(TARGET_ARM64)
 #define ID_EXTRA_BITFIELD_BITS (18)
-#elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
+#elif defined(TARGET_XARCH)
+#define ID_EXTRA_BITFIELD_BITS (15)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -866,8 +871,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here (with/without prev offset, assuming host==target):
-        // x86:   52/48 bits
-        // amd64: 53/48 bits
+        // x86:   53/49 bits
+        // amd64: 54/49 bits
         // arm:   54/50 bits
         // arm64: 57/52 bits
         // loongarch64: 53/48 bits
@@ -1528,6 +1533,19 @@ protected:
         {
             _idNoGC = val;
         }
+
+#ifdef TARGET_XARCH
+        bool idIsEvexbContext() const
+        {
+            return _idEvexbContext != 0;
+        }
+        void idSetEvexbContext()
+        {
+            assert(_idEvexbContext == 0);
+            _idEvexbContext = 1;
+            assert(_idEvexbContext == 1);
+        }
+#endif
 
 #ifdef TARGET_ARMARCH
         bool idIsLclVar() const
@@ -3655,9 +3673,25 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 //
 emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
 {
+
     emitAttr    defaultSize = id->idOpSize();
     instruction ins         = id->idIns();
+    if (id->idIsEvexbContext())
+    {
+        // should have the assumption that Evex.b now stands for the embedded broadcast context.
+        // reference: Section 2.7.5 in Intel 64 and ia-32 architectures software developer's manual volume 2.
+        ssize_t inputSize = GetInputSizeInBytes(id);
+        switch (inputSize)
+        {
+            case 4:
+                return EA_4BYTE;
+            case 8:
+                return EA_8BYTE;
 
+            default:
+                unreached();
+        }
+    }
     switch (ins)
     {
         case INS_pextrb:

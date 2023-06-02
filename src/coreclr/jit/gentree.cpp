@@ -19075,6 +19075,18 @@ bool GenTree::isContainableHWIntrinsic() const
             return true;
         }
 
+        case NI_SSE3_MoveAndDuplicate:
+        case NI_AVX_BroadcastScalarToVector128:
+        case NI_AVX2_BroadcastScalarToVector128:
+        case NI_AVX_BroadcastScalarToVector256:
+        case NI_AVX2_BroadcastScalarToVector256:
+        case NI_AVX512F_BroadcastScalarToVector512:
+        {
+            // These intrinsic operations are contained as part of the operand of embedded broadcast compatible
+            // instruction
+            return true;
+        }
+
         default:
         {
             return false;
@@ -25006,6 +25018,44 @@ bool GenTreeHWIntrinsic::OperIsMemoryStoreOrBarrier() const
     {
         return false;
     }
+}
+
+//------------------------------------------------------------------------
+// OperIsEmbBroadcastCompatible: Checks if the intrinsic is a embedded broadcast compatible inintrsic.
+//
+// Return Value:
+//     true if the intrinsic node lowering instruction is embedded broadcast compatible.
+//
+bool GenTreeHWIntrinsic::OperIsEmbBroadcastCompatible() const
+{
+    return HWIntrinsicInfo::IsEmbBroadcastCompatible(GetHWIntrinsicId());
+}
+
+//------------------------------------------------------------------------
+// OperIsBroadcastScalar: Is this HWIntrinsic a broadcast node from scalar.
+//
+// Return Value:
+//    Whether "this" is a broadcast node from scalar.
+//
+bool GenTreeHWIntrinsic::OperIsBroadcastScalar() const
+{
+#if defined(TARGET_XARCH)
+    NamedIntrinsic intrinsicId = GetHWIntrinsicId();
+    switch (intrinsicId)
+    {
+        case NI_AVX2_BroadcastScalarToVector128:
+        case NI_AVX2_BroadcastScalarToVector256:
+        case NI_AVX_BroadcastScalarToVector128:
+        case NI_AVX_BroadcastScalarToVector256:
+        case NI_SSE3_MoveAndDuplicate:
+        case NI_AVX512F_BroadcastScalarToVector512:
+            return true;
+        default:
+            return false;
+    }
+#else
+    return false;
+#endif
 }
 
 //------------------------------------------------------------------------------
