@@ -12,6 +12,7 @@ namespace System.Security.Cryptography.Tests
 {
     public interface IShakeTrait<TShake> where TShake : IDisposable, new()
     {
+        static abstract TShake Create();
         static abstract bool IsSupported { get; }
         static abstract void AppendData(TShake shake, byte[] data);
         static abstract void AppendData(TShake shake, ReadOnlySpan<byte> data);
@@ -428,7 +429,7 @@ namespace System.Security.Cryptography.Tests
             byte[] source = new byte[1];
             byte[] destination = new byte[1];
 
-            Assert.Throws<PlatformNotSupportedException>(() => new TShake());
+            Assert.Throws<PlatformNotSupportedException>(() => TShakeTrait.Create());
             Assert.Throws<PlatformNotSupportedException>(() => TShakeTrait.HashData(source, outputLength: 1));
             Assert.Throws<PlatformNotSupportedException>(() => TShakeTrait.HashData(new ReadOnlySpan<byte>(source), outputLength: 1));
             Assert.Throws<PlatformNotSupportedException>(() => TShakeTrait.HashData(source, destination));

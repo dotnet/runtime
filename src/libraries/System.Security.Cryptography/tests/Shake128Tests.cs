@@ -12,6 +12,7 @@ namespace System.Security.Cryptography.Tests
     {
         public class Traits : IShakeTrait<Shake128>
         {
+            public static Shake128 Create() => new Shake128();
             public static bool IsSupported => Shake128.IsSupported;
 
             public static void AppendData(Shake128 shake, byte[] data) => shake.AppendData(data);
