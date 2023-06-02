@@ -237,15 +237,15 @@ jobs:
           artifactFileName: 'iOSSampleApp.zip'
           artifactName: 'iOSSampleApp'
           displayName: 'iOS Sample App'
-        # same artifact as above but don't extract .zip
-        - task: DownloadBuildArtifacts@0
-          displayName: 'Download iOS Sample App'
-          inputs:
-            buildType: current
-            downloadType: single
-            downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip'
-            artifactName: 'iOSSampleApp'
-            checkDownloadedFiles: true
+      # same artifact as above but don't extract .zip
+      - task: DownloadBuildArtifacts@0
+        displayName: 'Download iOS Sample App'
+        inputs:
+          buildType: current
+          downloadType: single
+          downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip'
+          artifactName: 'iOSSampleApp'
+          checkDownloadedFiles: true
 
     # Create Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg) $(_crossBuildPropertyArg)
