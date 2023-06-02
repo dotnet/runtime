@@ -239,12 +239,6 @@ HRESULT ICeeFileGen::SetSubsystem(HCEEFILE ceeFile, DWORD subsystem, DWORD major
     return S_OK;
 }
 
-HRESULT ICeeFileGen::GetIMapTokenIface(HCEEFILE ceeFile, IMetaDataEmit *emitter, IUnknown **pIMapToken)
-{
-    _ASSERTE(!"This is an obsolete function!");
-    return E_NOTIMPL;
-}
-
 HRESULT ICeeFileGen::GetMethodRVA(HCEEFILE ceeFile, ULONG codeOffset, ULONG *codeRVA)
 {
     TESTANDRETURNARG(ceeFile != 0);
@@ -369,25 +363,6 @@ HRESULT ICeeFileGen::EmitMetaDataAt (HCEEFILE ceeFile, IMetaDataEmit *emitter, H
     CeeSection* sec = reinterpret_cast<CeeSection*>(section);
 
     return(gen->emitMetaData(emitter, sec, offset, buffer, buffLen));
-}
-
-HRESULT ICeeFileGen::GetIMapTokenIfaceEx(HCEEFILE ceeFile, IMetaDataEmit *emitter, IUnknown **pIMapToken)
-{
-    TESTANDRETURNPOINTER(ceeFile);
-    TESTANDRETURNPOINTER(pIMapToken);
-
-    CeeFileGenWriter *gen = reinterpret_cast<CeeFileGenWriter*>(ceeFile);
-    return gen->getMapTokenIface(pIMapToken);
-}
-
-HRESULT ICeeFileGen::AddNotificationHandler(HCEEFILE ceeFile,
-                                            IUnknown *pHandler)
-{
-    TESTANDRETURNPOINTER(ceeFile);
-    TESTANDRETURNPOINTER(pHandler);
-
-    CeeFileGenWriter *gen = reinterpret_cast<CeeFileGenWriter*>(ceeFile);
-    return gen->addNotificationHandler(pHandler);
 }
 
 HRESULT ICeeFileGen::SetManifestEntry(HCEEFILE ceeFile, ULONG size, ULONG offset)

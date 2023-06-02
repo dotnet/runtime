@@ -115,15 +115,11 @@ class ICeeFileGen {
     virtual HRESULT SetComImageFlags (HCEEFILE ceeFile, DWORD mask);
     virtual HRESULT GetComImageFlags (HCEEFILE ceeFile, DWORD *mask);
 
-    // get IMapToken interface for tracking mapped tokens
-    virtual HRESULT GetIMapTokenIface(HCEEFILE ceeFile, IMetaDataEmit *emitter, IUnknown **pIMapToken);
     virtual HRESULT SetDirectoryEntry (HCEEFILE ceeFile, HCEESECTION section, ULONG num, ULONG size, ULONG offset = 0);
 
     // Write out the metadata in "emitter" to the metadata section in "ceeFile"
     // Use EmitMetaDataAt() for more control
     virtual HRESULT EmitMetaDataEx (HCEEFILE ceeFile, IMetaDataEmit *emitter);
-
-    virtual HRESULT GetIMapTokenIfaceEx(HCEEFILE ceeFile, IMetaDataEmit *emitter, IUnknown **pIMapToken);
 
     virtual HRESULT SetManifestEntry(HCEEFILE ceeFile, ULONG size, ULONG offset);
 
@@ -160,12 +156,6 @@ class ICeeFileGen {
                                     BYTE* buffer, unsigned buffLen);
 
     virtual HRESULT GetFileTimeStamp (HCEEFILE ceeFile, DWORD *pTimeStamp);
-
-    // Add a notification handler. If it implements an interface that
-    // the ICeeFileGen understands, S_OK is returned. Otherwise,
-    // E_NOINTERFACE.
-    virtual HRESULT AddNotificationHandler(HCEEFILE ceeFile,
-                                           IUnknown *pHandler);
 
     virtual HRESULT SetFileAlignment(HCEEFILE ceeFile, ULONG fileAlignment);
 
