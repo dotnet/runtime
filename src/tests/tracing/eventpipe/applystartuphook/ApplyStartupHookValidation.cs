@@ -2,19 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics.Tracing;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Diagnostics.Tracing;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
-using Microsoft.Diagnostics.Tools.RuntimeClient;
-using Tracing.Tests.Common;
 using System.Text;
 using System.Threading;
-using System.IO;
+using System.Threading.Tasks;
 using Microsoft.Diagnostics.NETCore.Client;
+using Microsoft.Diagnostics.Tools.RuntimeClient;
 using Microsoft.Diagnostics.Tracing;
+using TestLibrary;
+using Tracing.Tests.Common;
 
 namespace Tracing.Tests.ApplyStartupHookValidation
 {
@@ -37,7 +38,7 @@ namespace Tracing.Tests.ApplyStartupHookValidation
                     using (Stream stream = await server.AcceptAsync())
                     {
                         IpcAdvertise advertise = IpcAdvertise.Parse(stream);
-                        Console.WriteLine($"IpcAdvertise: {advertise}");
+                        Logger.logger.Log($"IpcAdvertise: {advertise}");
 
                         int processId = (int)advertise.ProcessId;
 
@@ -45,14 +46,26 @@ namespace Tracing.Tests.ApplyStartupHookValidation
                         DiagnosticsClient client = new DiagnosticsClient(processId);
 
                         string startupHookPath = Hook.Basic.AssemblyPath;
-                        Console.WriteLine($"Applying startup hook during startup suspension: {startupHookPath}");
-                        client.ApplyStartupHook(startupHookPath);
+                        Logger.logger.Log($"Applying startup hook during startup suspension: {startupHookPath}");
+                        try
+                        {
+                            client.ApplyStartupHook(startupHookPath);
+
+                            if (TestLibrary.Utilities.IsMonoRuntime)
+                            {
+                                throw new InvalidOperationException($"{nameof(DiagnosticsClient.ApplyStartupHook)} unexceptedly succeeded for target Mono runtime.");
+                            }
+                        }
+                        catch (ServerErrorException) when (TestLibrary.Utilities.IsMonoRuntime)
+                        {
+                            Logger.logger.Log($"{nameof(DiagnosticsClient.ApplyStartupHook)} expectedly failed for target Mono runtime.");
+                        }
                     }
 
                     using (Stream stream = await server.AcceptAsync())
                     {
                         IpcAdvertise advertise = IpcAdvertise.Parse(stream);
-                        Console.WriteLine($"IpcAdvertise: {advertise}");
+                        Logger.logger.Log($"IpcAdvertise: {advertise}");
 
                         Logger.logger.Log($"Send ResumeRuntime Diagnostics IPC Command");
                         // send ResumeRuntime command (0x04=ProcessCommandSet, 0x01=ResumeRuntime commandid)

@@ -7,13 +7,14 @@
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
     <!-- Tracing tests routinely time out with jitstress and gcstress -->
     <GCStressIncompatible>true</GCStressIncompatible>
-    <JitOptimizationSensitive>true</JitOptimizationSensitive>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ApplyStartupHookValidation.cs" />
     <Compile Include="Hook.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="../../../Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
     <ProjectReference Include="../common/common.csproj" />
     <ProjectReference Include="../common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
     <ProjectReference Include="hooks/Basic.csproj" Link="hooks\Basic.dll">
