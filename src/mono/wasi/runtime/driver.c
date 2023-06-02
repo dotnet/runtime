@@ -72,11 +72,9 @@ extern void mono_register_icu_bundle (void);
 #endif /* INVARIANT_GLOBALIZATION */
 #endif /* WASM_SINGLE_FILE */
 
-extern void mono_wasm_free_bundled_assembly_resource_func (void *resource);
-extern void mono_wasm_free_bundled_satellite_assembly_resource_func (void *resource);
-extern void mono_bundled_resources_add_assembly_resource (const char *id, const char *name, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *), void *free_data);
-extern void mono_bundled_resources_add_assembly_symbol_resource (const char *id, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *), void *free_data);
-extern void mono_bundled_resources_add_satellite_assembly_resource (const char *id, const char *name, const char *culture, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *), void *free_data);
+extern void mono_bundled_resources_add_assembly_resource (const char *id, const char *name, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *, void *), void *free_data);
+extern void mono_bundled_resources_add_assembly_symbol_resource (const char *id, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *, void *), void *free_data);
+extern void mono_bundled_resources_add_satellite_assembly_resource (const char *id, const char *name, const char *culture, const uint8_t *data, uint32_t size, void (*free_bundled_resource_func)(void *, void *), void *free_data);
 
 extern const char* dotnet_wasi_getentrypointassemblyname();
 int32_t mono_wasi_load_icu_data(const void* pData);
@@ -119,6 +117,12 @@ typedef SgenDescriptor MonoGCDescriptor;
 #include "driver-gen.c"
 #endif
 
+static void
+bundled_resources_free_func (void *resource, void *free_data)
+{
+	free (free_data);
+}
+
 int
 mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned int size)
 {
@@ -128,12 +132,12 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 		char *new_name = strdup (name);
 		//FIXME handle debugging assemblies with .exe extension
 		strcpy (&new_name [len - 3], "dll");
-		mono_bundled_resources_add_assembly_symbol_resource (new_name, data, size, mono_wasm_free_bundled_assembly_resource_func, NULL);
+		mono_bundled_resources_add_assembly_symbol_resource (new_name, data, size, bundled_resources_free_func, new_name);
 		return 1;
 	}
 	const char *assembly_name = strdup (name);
 	assert (assembly_name);
-	mono_bundled_resources_add_assembly_resource (assembly_name, assembly_name, data, size, mono_wasm_free_bundled_assembly_resource_func, NULL);
+	mono_bundled_resources_add_assembly_resource (assembly_name, assembly_name, data, size, bundled_resources_free_func, assembly_name);
 	return mono_has_pdb_checksum ((char*)data, size);
 }
 
@@ -143,19 +147,40 @@ char* gai_strerror(int code) {
 	return result;
 }
 
+static void
+bundled_resources_free_slots_func (void *resource, void *free_data)
+{
+	if (free_data) {
+		void **slots = (void **)free_data;
+		for (int i = 0; slots [i]; i++)
+			free (slots [i]);
+	}
+}
+
 void
 mono_wasm_add_satellite_assembly (const char *name, const char *culture, const unsigned char *data, unsigned int size)
 {
 	int id_len = strlen (culture) + 1 + strlen (name); // +1 is for the "/"
 	char *id = (char *)malloc (sizeof (char) * (id_len + 1)); // +1 is for the terminating null character
 	assert (id);
+
 	int num_char = snprintf (id, (id_len + 1), "%s/%s", culture, name);
 	assert (num_char > 0 && num_char == id_len);
+
 	const char *satellite_assembly_name = strdup (name);
 	assert (satellite_assembly_name);
+
 	const char *satellite_assembly_culture = strdup (culture);
 	assert (satellite_assembly_culture);
-	mono_bundled_resources_add_satellite_assembly_resource (id, satellite_assembly_name, satellite_assembly_culture, data, size, mono_wasm_free_bundled_satellite_assembly_resource_func, NULL);
+
+	void **slots = malloc (sizeof (void *) * 4);
+	assert (slots);
+	slots [0] = id;
+	slots [1] = satellite_assembly_name;
+	slots [2] = satellite_assembly_culture;
+	slots [3] = NULL;
+
+	mono_bundled_resources_add_satellite_assembly_resource (id, satellite_assembly_name, satellite_assembly_culture, data, size, bundled_resources_free_slots_func, slots);
 }
 
 static void *sysglobal_native_handle;

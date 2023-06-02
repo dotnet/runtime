@@ -3133,12 +3133,6 @@ mono_assembly_get_name_internal (MonoAssembly *assembly)
 	return &assembly->aname;
 }
 
-static void
-mono_free_bundled_assembly_func (void *resource)
-{
-    g_free (resource);
-}
-
 /**
  * mono_register_bundled_assemblies:
  * Dynamically allocates MonoBundledAssemblyResources to leverage
@@ -3149,7 +3143,7 @@ mono_register_bundled_assemblies (const MonoBundledAssembly **assemblies)
 {
 	for (int i = 0; assemblies [i]; ++i) {
 		const MonoBundledAssembly *assembly = assemblies [i];
-		mono_bundled_resources_add_assembly_resource (assembly->name, assembly->name, (const uint8_t *)assembly->data, (uint32_t)assembly->size, mono_free_bundled_assembly_func, NULL);
+		mono_bundled_resources_add_assembly_resource (assembly->name, assembly->name, (const uint8_t *)assembly->data, (uint32_t)assembly->size, NULL, NULL);
 	}
 }
 
@@ -3170,12 +3164,9 @@ mono_create_new_bundled_satellite_assembly (const char *name, const char *cultur
 }
 
 static void
-mono_free_bundled_satellite_assembly_func (void *resource)
+mono_free_bundled_satellite_assembly_func (void *resource, void *free_data)
 {
-    MonoBundledResource *bundled_resource = (MonoBundledResource *)resource;
-
-    g_free ((void *)bundled_resource->id);
-    g_free (resource);
+	g_free (free_data);
 }
 
 /**
@@ -3190,7 +3181,7 @@ mono_register_bundled_satellite_assemblies (const MonoBundledSatelliteAssembly *
 		const MonoBundledSatelliteAssembly *satellite_assembly = satellite_assemblies [i];
 		char *id = g_strconcat (satellite_assembly->culture, "/", satellite_assembly->name, (const char*)NULL);
 		g_assert (id);
-		mono_bundled_resources_add_satellite_assembly_resource (id, satellite_assembly->name, satellite_assembly->culture, (const uint8_t *)satellite_assembly->data, (uint32_t)satellite_assembly->size, mono_free_bundled_satellite_assembly_func, NULL);
+		mono_bundled_resources_add_satellite_assembly_resource (id, satellite_assembly->name, satellite_assembly->culture, (const uint8_t *)satellite_assembly->data, (uint32_t)satellite_assembly->size, mono_free_bundled_satellite_assembly_func, id);
 	}
 }
 
