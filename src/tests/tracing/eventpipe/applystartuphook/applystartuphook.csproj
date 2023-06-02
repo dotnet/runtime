@@ -16,7 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="../common/common.csproj" />
     <ProjectReference Include="../common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
-    <ProjectReference Include="Hooks/Basic.csproj" Link="hooks\Basic.dll">
+    <ProjectReference Include="hooks/Basic.csproj" Link="hooks\Basic.dll">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
