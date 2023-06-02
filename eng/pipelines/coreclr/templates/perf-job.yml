@@ -236,17 +236,17 @@ jobs:
           cleanUnpackFolder: false
           artifactFileName: 'iOSSampleApp.zip'
           - ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'False'), eq(parameters.iOSStripSymbols, 'False')) }}:
-            artifactName: 'iOSSampleAppNoLLVMSymbols'
+          artifactName: 'iOSSampleAppNoLLVMSymbols'
           - ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'False'), eq(parameters.iOSStripSymbols, 'True')) }}:
-            artifactName: 'iOSSampleAppNoLLVMNoSymbols'
+          artifactName: 'iOSSampleAppNoLLVMNoSymbols'
           - ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'True'), eq(parameters.iOSStripSymbols, 'False')) }}:
-            artifactName: 'iOSSampleAppLLVMSymbols'
+          artifactName: 'iOSSampleAppLLVMSymbols'
           - ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'True'), eq(parameters.iOSStripSymbols, 'True')) }}:
-            artifactName: 'iOSSampleAppLLVMNoSymbols'
+          artifactName: 'iOSSampleAppLLVMNoSymbols'
           - ${{ if and(eq(parameters.runtimeType, 'iOSNativeAOT'), eq(parameters.iOSStripSymbols, 'False')) }}:
-            artifactName: 'iOSSampleAppSymbols'
+          artifactName: 'iOSSampleAppSymbols'
           - ${{ if and(eq(parameters.runtimeType, 'iOSNativeAOT'), eq(parameters.iOSStripSymbols, 'True')) }}:
-            artifactName: 'iOSSampleAppNoSymbols'
+          artifactName: 'iOSSampleAppNoSymbols'
           displayName: 'iOS Sample App'
       # same artifact as above but don't extract .zip
       - task: DownloadBuildArtifacts@0
@@ -256,17 +256,17 @@ jobs:
           downloadType: single
           downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip'
           - ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'False'), eq(parameters.iOSStripSymbols, 'False')) }}:
-            artifactName: 'iOSSampleAppNoLLVMSymbols'
+          artifactName: 'iOSSampleAppNoLLVMSymbols'
           - ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'False'), eq(parameters.iOSStripSymbols, 'True')) }}:
-            artifactName: 'iOSSampleAppNoLLVMNoSymbols'
+          artifactName: 'iOSSampleAppNoLLVMNoSymbols'
           - ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'True'), eq(parameters.iOSStripSymbols, 'False')) }}:
-            artifactName: 'iOSSampleAppLLVMSymbols'
+          artifactName: 'iOSSampleAppLLVMSymbols'
           - ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'True'), eq(parameters.iOSStripSymbols, 'True')) }}:
             artifactName: 'iOSSampleAppLLVMNoSymbols'
           - ${{ if and(eq(parameters.runtimeType, 'iOSNativeAOT'), eq(parameters.iOSStripSymbols, 'False')) }}:
-            artifactName: 'iOSSampleAppSymbols'
+          artifactName: 'iOSSampleAppSymbols'
           - ${{ if and(eq(parameters.runtimeType, 'iOSNativeAOT'), eq(parameters.iOSStripSymbols, 'True')) }}:
-            artifactName: 'iOSSampleAppNoSymbols'
+          artifactName: 'iOSSampleAppNoSymbols'
           checkDownloadedFiles: true
 
     # Create Core_Root
