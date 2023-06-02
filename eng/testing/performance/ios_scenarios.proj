@@ -19,7 +19,6 @@
     <LlvmPath Condition="'$(iOSLlvmBuild)' == 'True'">llvm</LlvmPath>
     <SymbolsPath>symbols</SymbolsPath>
     <SymbolsPath Condition="'$(iOSStripSymbols)' == 'True'">nosymbols</SymbolsPath>
-    <LlvmPath>nollvm</LlvmPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
