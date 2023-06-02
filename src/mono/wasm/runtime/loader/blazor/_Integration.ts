@@ -171,6 +171,19 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
         assets.push(asset);
     }
 
+    if (moduleConfig.loadAllSatelliteResources && resources.satelliteResources) {
+        for (const culture in resources.satelliteResources) {
+            for (const name in resources.satelliteResources[culture]) {
+                assets.push({
+                    name,
+                    culture,
+                    behavior: "resource",
+                    hash: resources.satelliteResources[culture][name],
+                });
+            }
+        }
+    }
+
     for (let i = 0; i < resourceLoader.bootConfig.config.length; i++) {
         const config = resourceLoader.bootConfig.config[i];
         if (config === "appsettings.json" || config === `appsettings.${applicationEnvironment}.json`) {

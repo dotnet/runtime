@@ -261,7 +261,10 @@ function configureRuntime(dotnet, runArgs) {
         .withDiagnosticTracing(runArgs.diagnosticTracing)
         .withExitOnUnhandledError()
         .withExitCodeLogging()
-        .withElementOnExit();
+        .withElementOnExit()
+        .withConfig({
+            loadAllSatelliteResources: true
+        });
 
     if (is_node) {
         dotnet
