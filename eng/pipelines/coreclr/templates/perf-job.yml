@@ -229,7 +229,7 @@ jobs:
           displayName: 'Mono Android BDN Apk'
       
     # Download iOSMono and Native AOT tests
-    - ${{ if or(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.runtimeType, 'iOSNativeAOT') }}:
+    - ${{ if or(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.runtimeType, 'iOSNativeAOT')) }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld
