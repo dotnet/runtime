@@ -26,6 +26,17 @@ namespace Internal.Runtime
             if (typeTlsIndex >= 0)
                 return GetUninlinedThreadStaticBaseForType(pModuleData, typeTlsIndex);
 
+            // the inlined storage should be per module. Module must have a symbol.
+            // RhGetInlinedThreadStaticStorage should take the module and figure where the storage is.
+
+            // inlined case - no index (assume -1)
+            // gets reloc'd offset.
+
+            // is the same as current INLINE_TLS, but gets a reloc'd offset, which module data has.
+
+            // 1) TypeManger or module data must define a symbol that loader understands
+            // 2) has a reloc'd offset to it.
+
             ref object? threadStorage = ref RuntimeImports.RhGetInlinedThreadStaticStorage();
             if (threadStorage != null)
                 return threadStorage;

@@ -83,8 +83,16 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            // needed to construct storage.
+            // also need to put in the root, so that we could drop SingleTypeManager thing.
             objData.EmitPointerReloc(factory.TypeManagerIndirection);
+
+            // tls storage ID for uninlined types. used to get the type from the type manager
+            // and slot from the array
             objData.EmitNaturalInt(typeTlsIndex);
+
+            // need to emit TLS reloc for the factory.InlinedTlsRoot
+            // we will pass that to the helper (will use SingletypeManager for now, but later arrange typeman in the TLS)
 
             return objData.ToObjectData();
         }
