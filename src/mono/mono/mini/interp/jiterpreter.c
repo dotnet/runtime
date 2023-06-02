@@ -30,6 +30,7 @@ void jiterp_preserve_module (void);
 #include <mono/metadata/mono-config.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/metadata/gc-internals.h>
+#include <mono/metadata/class-abi-details.h>
 
 #include "interp.h"
 #include "interp-internals.h"
@@ -1137,8 +1138,6 @@ mono_jiterp_trace_transfer (
 // we use these helpers at JIT time to figure out where to do memory loads and stores
 EMSCRIPTEN_KEEPALIVE size_t
 mono_jiterp_get_member_offset (int member) {
-	guint32 temp = 0;
-
 	switch (member) {
 		case JITERP_MEMBER_VT_INITIALIZED:
 			return MONO_STRUCT_OFFSET (MonoVTable, initialized);
