@@ -22,7 +22,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int ClassCode => -1410622237;
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb) => sb.Append(_mangledName);
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+            => sb.Append(nameMangler.CompilationUnitPrefix).Append(_mangledName);
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {

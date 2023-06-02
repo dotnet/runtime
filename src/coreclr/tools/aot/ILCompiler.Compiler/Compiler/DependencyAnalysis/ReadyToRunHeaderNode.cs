@@ -26,9 +26,8 @@ namespace ILCompiler.DependencyAnalysis
 
         private List<HeaderItem> _items = new List<HeaderItem>();
 
-        public void Add(ReadyToRunSectionType id, ObjectNode node)
+        public void Add<T>(ReadyToRunSectionType id, T node) where T : ObjectNode, ISymbolDefinitionNode
         {
-            Debug.Assert(node is ISymbolDefinitionNode);
             _items.Add(new HeaderItem(id, node));
         }
 
