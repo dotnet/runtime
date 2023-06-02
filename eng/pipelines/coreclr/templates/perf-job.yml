@@ -229,44 +229,23 @@ jobs:
           displayName: 'Mono Android BDN Apk'
       
     # Download iOSMono and Native AOT tests
-    - template: /eng/pipelines/common/download-artifact-step.yml
-      parameters:
-        unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld
-        cleanUnpackFolder: false
-        artifactFileName: 'iOSSampleApp.zip'
-        artifactName: 'iOSSampleApp'
-        - ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'False'), eq(parameters.iOSStripSymbols, 'False')) }}:
-          displayName: 'iOS Sample App NoLLVM Symbols'
-        - ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'False'), eq(parameters.iOSStripSymbols, 'True')) }}:
-          displayName: 'iOS Sample App NoLLVM NoSymbols'
-        - ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'True'), eq(parameters.iOSStripSymbols, 'False')) }}:
-          displayName: 'iOS Sample App LLVM Symbols'
-        - ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'True'), eq(parameters.iOSStripSymbols, 'True')) }}:
-          displayName: 'iOS Sample App LLVM NoSymbols'
-        - ${{ if and(eq(parameters.runtimeType, 'iOSNativeAOT'), eq(parameters.iOSStripSymbols, 'False')) }}:
-          displayName: 'iOS Sample App Symbols'
-        - ${{ if and(eq(parameters.runtimeType, 'iOSNativeAOT'), eq(parameters.iOSStripSymbols, 'True')) }}:
-          displayName: 'iOS Sample App NoSymbols'
-      # same artifact as above but don't extract .zip
-      - task: DownloadBuildArtifacts@0
-        - ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'False'), eq(parameters.iOSStripSymbols, 'False')) }}:
-          displayName: 'Download iOS Sample App NoLLVM Symbols'
-        - ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'False'), eq(parameters.iOSStripSymbols, 'True')) }}:
-          displayName: 'Download iOS Sample App NoLLVM NoSymbols'
-        - ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'True'), eq(parameters.iOSStripSymbols, 'False')) }}:
-          displayName: 'Download iOS Sample App LLVM Symbols'
-        - ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'True'), eq(parameters.iOSStripSymbols, 'True')) }}:
-          displayName: 'Download iOS Sample App LLVM NoSymbols'
-        - ${{ if and(eq(parameters.runtimeType, 'iOSNativeAOT'), eq(parameters.iOSStripSymbols, 'False')) }}:
-          displayName: 'Download iOS Sample App Symbols'
-        - ${{ if and(eq(parameters.runtimeType, 'iOSNativeAOT'), eq(parameters.iOSStripSymbols, 'True')) }}:
-          displayName: 'Download iOS Sample App NoSymbols'
-        inputs:
-          buildType: current
-          downloadType: single
-          downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip'
+    - ${{ if or(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.runtimeType, 'iOSNativeAOT') }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld
+          cleanUnpackFolder: false
+          artifactFileName: 'iOSSampleApp.zip'
           artifactName: 'iOSSampleApp'
-          checkDownloadedFiles: true
+          displayName: 'iOS Sample App'
+        # same artifact as above but don't extract .zip
+        - task: DownloadBuildArtifacts@0
+          displayName: 'Download iOS Sample App'
+          inputs:
+            buildType: current
+            downloadType: single
+            downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip'
+            artifactName: 'iOSSampleApp'
+            checkDownloadedFiles: true
 
     # Create Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg) $(_crossBuildPropertyArg)
