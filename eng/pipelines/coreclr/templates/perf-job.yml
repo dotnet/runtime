@@ -309,15 +309,15 @@ jobs:
             artifactFileName: 'iOSSampleAppSymbols.zip'
             artifactName: 'iOSSampleAppSymbols'
             displayName: 'iOS Sample App Symbols'
-      # same artifact as above but don't extract .zip
-      - task: DownloadBuildArtifacts@0
-        displayName: 'Download iOS Sample App Symbols'
-        inputs:
-          buildType: current
-          downloadType: single
-          downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/symbols'
-          artifactName: 'iOSSampleAppSymbols'
-          checkDownloadedFiles: true
+        # same artifact as above but don't extract .zip
+        - task: DownloadBuildArtifacts@0
+          displayName: 'Download iOS Sample App Symbols'
+          inputs:
+            buildType: current
+            downloadType: single
+            downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/symbolszip'
+            artifactName: 'iOSSampleAppSymbols'
+            checkDownloadedFiles: true
       - ${{ if eq(parameters.iOSStripSymbols, 'True') }}:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
@@ -332,7 +332,7 @@ jobs:
           inputs:
             buildType: current
             downloadType: single
-            downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/nosymbols'
+            downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/nosymbolszip'
             artifactName: 'iOSSampleAppNoSymbols'
             checkDownloadedFiles: true
 
