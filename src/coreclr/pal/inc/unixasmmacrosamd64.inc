@@ -363,16 +363,3 @@ C_FUNC(\Name\()_End):
         .cfi_same_value rbp
 
 .endm
-
-.macro INLINE_GET_TLS_VAR Var
-       .att_syntax
-#if defined(__APPLE__)
-        movq    _\Var@TLVP(%rip), %rdi
-        callq   *(%rdi)
-#else
-        leaq    \Var@TLSLD(%rip), %rdi
-        callq   __tls_get_addr@PLT
-        addq    $\Var@DTPOFF, %rax
-#endif
-       .intel_syntax noprefix
-.endm

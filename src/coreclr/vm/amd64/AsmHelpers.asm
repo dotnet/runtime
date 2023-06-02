@@ -20,7 +20,6 @@ endif
 
 GenerateArrayOpStubExceptionCase macro ErrorCaseName, ExceptionName
 
-
 NESTED_ENTRY ErrorCaseName&_RSIRDI_ScratchArea, _TEXT
 
         ; account for scratch area, rsi, rdi already on the stack

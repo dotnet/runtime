@@ -1807,8 +1807,6 @@ EXTERN_C __thread uint32_t t_GCThreadStaticBlocksSize;
 #include <optsmallperfcritical.h>
 HCIMPL2(void*, JIT_GetSharedNonGCThreadStaticBase, DomainLocalModule *pDomainLocalModule, DWORD dwClassDomainID)
 {
-    // t_NonGCMaxThreadStaticBlocks = 500;
-
     FCALL_CONTRACT;
 
     // Get the ModuleIndex

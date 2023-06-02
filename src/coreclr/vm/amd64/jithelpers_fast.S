@@ -10,6 +10,7 @@ LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
         ret
 LEAF_END JIT_PatchedCodeStart, _TEXT
 
+
 // There is an even more optimized version of these helpers possible which takes
 // advantage of knowledge of which way the ephemeral heap is growing to only do 1/2
 // that check (this is more significant in the JIT_WriteBarrier case).

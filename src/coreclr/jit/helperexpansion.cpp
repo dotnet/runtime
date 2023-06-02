@@ -444,36 +444,6 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 
     return fgExpandHelper<&Compiler::fgExpandThreadLocalAccessForCall>(true);
 }
-//
-//extern "C" void* __tls_get_addr(void* ti);
-//__thread int     x;
-//
-//void* getDescriptor()
-//{
-//    uint8_t* p;
-//    __asm__("leaq 0(%%rip), %%rbx\n"
-//            "data16\n"
-//            "leaq x@TLSGD(%%rip), %%rdi\n"
-//            "data16\n"
-//            "data16\n"
-//            "rex64\n"
-//            "callq __tls_get_addr\n"
-//            : "=b"(p));
-//
-//    // printf("p= %x\n", p[0]);
-//    // printf("p= %x\n", p[1]);
-//    // printf("p= %x\n", p[2]);
-//    // printf("p= %x\n", p[3]);
-//    if (p[0] != 0x66 || p[1] != 0x48 || p[2] != 0x8d || p[3] != 0x3d)
-//    {
-//        printf("Unexpected instruction - this can happen when this is not compiled in .so (e.g. for single file)\n");
-//        exit(1);
-//    }
-//    p += 4;
-//
-//    return *(uint32_t*)p + (p + 4);
-//    // return p;
-//}
 
 //------------------------------------------------------------------------------
 // fgExpandThreadLocalAccessForCall : Expand the CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED
@@ -518,8 +488,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     DISPTREE(call);
     JITDUMP("\n");
 
-    bool isGCThreadStatic = false;
-    isGCThreadStatic =
+    bool isGCThreadStatic =
         eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
 
     CORINFO_THREAD_STATIC_BLOCKS_INFO threadStaticBlocksInfo;
@@ -539,6 +508,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 #else
     JITDUMP("tlsGetAddrFtnPtr= %u\n", threadStaticBlocksInfo.tlsGetAddrFtnPtr);
     JITDUMP("descrAddrOfMaxThreadStaticBlock= %u\n", threadStaticBlocksInfo.descrAddrOfMaxThreadStaticBlock);
+    JITDUMP("descrAddrOfThreadStaticBlocks= %u\n", threadStaticBlocksInfo.descrAddrOfThreadStaticBlocks);
 #endif
 
     JITDUMP("offsetOfGCDataPointer= %u\n", threadStaticBlocksInfo.offsetOfGCDataPointer);
@@ -582,6 +552,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(0)->GetNode();
     GenTree* tlsValue                        = nullptr;
+    unsigned tlsLclNum                       = lvaGrabTemp(true DEBUGARG("TLS access"));
+    lvaTable[tlsLclNum].lvType               = TYP_I_IMPL;
 
 #ifdef _MSC_VER
     size_t   tlsIndexValue = (size_t)threadStaticBlocksInfo.tlsIndex.addr;
@@ -606,9 +578,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
     // Cache the tls value
-    unsigned tlsLclNum         = lvaGrabTemp(true DEBUGARG("TLS access"));
-    lvaTable[tlsLclNum].lvType = TYP_I_IMPL;
-
     GenTree* tlsValueDef    = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
     GenTree* tlsLclValueUse = gtNewLclVarNode(tlsLclNum);
 
@@ -646,9 +615,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 #endif // UNIX_X86_ABI
 
     // Cache the tls value
-    unsigned tlsLclNum         = lvaGrabTemp(true DEBUGARG("TLS access"));
-    lvaTable[tlsLclNum].lvType = TYP_I_IMPL;
-
     GenTree* tlsValueDef    = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
     GenTree* maxThreadStaticBlocksRef = gtNewLclVarNode(tlsLclNum);
     GenTree* maxThreadStaticBlocksValue =
