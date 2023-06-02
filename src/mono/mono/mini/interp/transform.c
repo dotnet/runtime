@@ -2696,6 +2696,43 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	return FALSE;
 }
 
+
+static InterpInst*
+interp_try_emit_call_fast_path (TransformData *td, MonoMethod *target_method)
+{
+	if (target_method->klass == mono_defaults.runtimetype_class) {
+		// Keep in sync with RuntimeType.Mono.cs / TypeCache / TypeCacheEntries
+		int mask = 0;
+		if (!strcmp (target_method->name, "get_IsGenericTypeDefinition"))
+			mask = 1;
+		else if (!strcmp (target_method->name, "IsDelegate"))
+			mask = 2;
+		else if (!strcmp (target_method->name, "IsValueTypeImpl"))
+			mask = 4;
+		else if (!strcmp (target_method->name, "get_IsActualEnum"))
+			mask = 8;
+		else if (!strcmp (target_method->name, "get_IsGenericType"))
+			mask = 16;
+
+		if (mask) {
+			MonoClassField *rt_cache = mono_class_get_field_from_name_full (target_method->klass, "cache", NULL);
+			g_assert (rt_cache);
+			MonoClass *typecache_klass = mono_class_from_mono_type_internal (rt_cache->type);
+			MonoClassField *tc_flags = mono_class_get_field_from_name_full (typecache_klass, "Flags", NULL);
+			MonoClassField *tc_cached = mono_class_get_field_from_name_full (typecache_klass, "Cached", NULL);
+			// The interp opcode assumes that these fields are one after the other
+			g_assert (tc_cached->offset == (tc_flags->offset + 4));
+			InterpInst *ret = interp_new_ins (td, MINT_CALL_FAST_PATH_RT_FLAG, mono_interp_oplen [MINT_CALL_FAST_PATH_RT_FLAG]);
+			ret->data [0] = rt_cache->offset;
+			ret->data [1] = tc_flags->offset;
+			ret->data [2] = mask;
+			return ret;
+		}
+	}
+
+	return NULL;
+}
+
 static MonoMethod*
 interp_transform_internal_calls (MonoMethod *method, MonoMethod *target_method, MonoMethodSignature *csignature, gboolean is_virtual)
 {
@@ -3602,8 +3639,12 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		interp_ins_set_dreg (td->last_ins, sp->local);
 	}
 
+	InterpInst *fast_path = NULL;
+	if (target_method && !is_virtual)
+		fast_path = interp_try_emit_call_fast_path (td, target_method);
+
 	g_assert (csignature->call_convention != MONO_CALL_FASTCALL);
-	if ((mono_interp_opt & INTERP_OPT_INLINE) && op == -1 && !is_virtual && target_method && interp_method_check_inlining (td, target_method, csignature)) {
+	if (!fast_path && (mono_interp_opt & INTERP_OPT_INLINE) && op == -1 && !is_virtual && target_method && interp_method_check_inlining (td, target_method, csignature)) {
 		MonoMethodHeader *mheader = interp_method_get_header (target_method, error);
 		return_val_if_nok (error, FALSE);
 
@@ -3855,6 +3896,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	td->ip += 5;
 	if (td->last_ins->flags & INTERP_INST_FLAG_CALL) {
 		td->last_ins->info.call_info->call_args = call_args;
+		td->last_ins->info.call_info->fast_path = fast_path;
 		if (!td->optimized) {
 			g_assert (call_offset != -1);
 			td->last_ins->info.call_info->call_offset = call_offset;
@@ -8300,6 +8342,8 @@ compute_native_offset_estimates (TransformData *td)
 			// Skip dummy opcodes for more precise offset computation
 			if (MINT_IS_NOP (opcode))
 				continue;
+			if (opcode == MINT_CALL && ins->info.call_info->fast_path)
+				noe += get_inst_length (ins->info.call_info->fast_path);
 			noe += get_inst_length (ins);
 			if (!td->optimized)
 				foreach_local_var (td, ins, NULL, alloc_unopt_global_local);
@@ -8546,6 +8590,22 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		*ip++ = GINT_TO_UINT16 (ins->data [1]);
 		*ip++ = GINT_TO_UINT16 (ins->data [2]);
 	} else {
+		if (opcode == MINT_CALL && ins->info.call_info->fast_path) {
+			InterpInst *fast_path = ins->info.call_info->fast_path;
+			// fast_path comes before the call
+			ip [-1] = fast_path->opcode;
+			*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->dreg));
+			*ip++ = GINT_TO_UINT16 (td->param_area_offset + ins->info.call_info->call_offset);
+
+			int left = get_inst_length (fast_path) - GPTRDIFF_TO_INT(ip - start_ip);
+			// Emit the rest of the data
+			for (int i = 0; i < left; i++)
+				*ip++ = fast_path->data [i];
+			// Continue emitting the call instruction
+			start_ip = ip;
+			*ip++ = MINT_CALL;
+		}
+
 		if (mono_interp_op_dregs [opcode])
 			*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->dreg));
 

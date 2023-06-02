@@ -151,6 +151,9 @@ struct _InterpCallInfo {
 	// all source vars for these types of opcodes. This is terminated with -1.
 	int *call_args;
 	int call_offset;
+	// Intrinsic fast path for this call. This instruction must be emitted immediately
+	// before the actual call instruction.
+	InterpInst *fast_path;
 	union {
 		// Array of call dependencies that need to be resolved before
 		GSList *call_deps;

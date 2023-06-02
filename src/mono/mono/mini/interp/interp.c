@@ -7623,6 +7623,27 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
+
+		// Call intrinsic fast paths
+		MINT_IN_CASE(MINT_CALL_FAST_PATH_RT_FLAG) {
+			MonoObject *rt_obj = LOCAL_VAR (ip [2], MonoObject*);
+			MonoObject *tc_obj = *(MonoObject**)((char*)rt_obj + ip [3]);
+			if (tc_obj) {
+				gint32 flags = *(gint32*)((char*)tc_obj + ip [4]);
+				gint32 cached = *(gint32*)((char*)tc_obj + ip [4] + 4);
+				gint32 mask = ip [5];
+				if (cached & mask) {
+					if (flags & mask)
+						LOCAL_VAR (ip [1], gint32) = TRUE;
+					else
+						LOCAL_VAR (ip [1], gint32) = FALSE;
+					// Skip also the call
+					ip += 4;
+				}
+			}
+			ip += 6;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_METADATA_UPDATE_LDFLDA) {
 			MonoObject *inst = LOCAL_VAR (ip [2], MonoObject*);
 			MonoType *field_type = frame->imethod->data_items [ip [3]];
