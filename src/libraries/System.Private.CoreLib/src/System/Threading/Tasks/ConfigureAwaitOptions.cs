@@ -3,7 +3,7 @@
 
 namespace System.Threading.Tasks
 {
-    /// <summary>Options to control the behavior of an await on a <see cref="Task"/>.</summary>
+    /// <summary>Options to control behavior when awaiting.</summary>
     [Flags]
     public enum ConfigureAwaitOptions
     {
@@ -21,11 +21,13 @@ namespace System.Threading.Tasks
         /// <remarks>
         /// If there is no such context/scheduler, or if this option is not specified, the thread on
         /// which the continuation is invoked is unspecified and left up to the determination of the system.
+        /// <see cref="Task.ConfigureAwait(ConfigureAwaitOptions)"/> with a <see cref="ContinueOnCapturedContext"/> argument
+        /// behaves identically to using <see cref="Task.ConfigureAwait(bool)"/> with a <see langword="true"/> argument.
         /// </remarks>
         ContinueOnCapturedContext = 0x1,
 
         /// <summary>
-        /// Avoids throwing an exception at the completion of an await on a <see cref="Task"/> that ends
+        /// Avoids throwing an exception at the completion of awaiting a <see cref="Task"/> that ends
         /// in the <see cref="TaskStatus.Faulted"/> or <see cref="TaskStatus.Canceled"/> state.
         /// </summary>
         /// <remarks>

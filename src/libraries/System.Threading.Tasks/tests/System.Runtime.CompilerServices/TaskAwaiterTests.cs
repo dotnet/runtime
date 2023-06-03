@@ -573,7 +573,7 @@ namespace System.Threading.Tasks.Tests
         public void ConfigureAwaitOptions_SuppressThrowingUnsupportedOnGenericTask()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Task.FromResult(true).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Task.FromResult(true).ConfigureAwait((ConfigureAwaitOptions)0x7));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Task.FromResult(true).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing | ConfigureAwaitOptions.ForceYielding));
         }
 
         [Theory]
@@ -593,7 +593,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ConfigureAwaitOptions_SuppressThrowing_NoExceptionsAreThrown()
         {
             Task t;
@@ -609,6 +609,58 @@ namespace System.Threading.Tasks.Tests
             t.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing | ConfigureAwaitOptions.ForceYielding | ConfigureAwaitOptions.ContinueOnCapturedContext).GetAwaiter().GetResult();
             Assert.Throws<FormatException>(() => t.ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext).GetAwaiter().GetResult());
             Assert.Throws<FormatException>(() => t.ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext | ConfigureAwaitOptions.ForceYielding).GetAwaiter().GetResult());
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(false, ConfigureAwaitOptions.None)]
+        [InlineData(false, ConfigureAwaitOptions.ContinueOnCapturedContext)]
+        [InlineData(true, ConfigureAwaitOptions.None)]
+        [InlineData(true, ConfigureAwaitOptions.ContinueOnCapturedContext)]
+        public static void ConfigureAwaitOptions_ContinueOnCapturedContext_QueuesAccordingly(bool generic, ConfigureAwaitOptions options)
+        {
+            SynchronizationContext origCtx = SynchronizationContext.Current;
+            try
+            {
+                // Create a context that tracks operations, and set it as current
+                var validateCtx = new ValidateCorrectContextSynchronizationContext();
+                Assert.Equal(0, validateCtx.PostCount);
+                SynchronizationContext.SetSynchronizationContext(validateCtx);
+
+                // Create a not-completed task and get an awaiter for it
+                var mres = new ManualResetEventSlim();
+                var tcs = new TaskCompletionSource<object>();
+
+                // Hook up a callback
+                bool postedInContext = false;
+                Action callback = () =>
+                {
+                    postedInContext = ValidateCorrectContextSynchronizationContext.t_isPostedInContext;
+                    mres.Set();
+                };
+                if (generic)
+                {
+                    tcs.Task.ConfigureAwait(options).GetAwaiter().OnCompleted(callback);
+                }
+                else
+                {
+                    ((Task)tcs.Task).ConfigureAwait(options).GetAwaiter().OnCompleted(callback);
+                }
+                Assert.False(mres.IsSet, "Callback should not yet have run.");
+
+                // Complete the task in another context and wait for the callback to run
+                Task.Run(() => tcs.SetResult(null));
+                mres.Wait();
+
+                // Validate the callback ran and in the correct context
+                bool shouldHavePosted = options == ConfigureAwaitOptions.ContinueOnCapturedContext;
+                Assert.Equal(shouldHavePosted ? 1 : 0, validateCtx.PostCount);
+                Assert.Equal(shouldHavePosted, postedInContext);
+            }
+            finally
+            {
+                // Reset back to the original context
+                SynchronizationContext.SetSynchronizationContext(origCtx);
+            }
         }
 
         private static int LineNumber([CallerLineNumber]int lineNumber = 0) => lineNumber;
