@@ -17888,6 +17888,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 {
                     // if we managed to get a class handle it's definitely not null
                     *pIsNonNull = true;
+                    *pIsExact   = true;
                 }
             }
             break;
