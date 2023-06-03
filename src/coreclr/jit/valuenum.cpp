@@ -11331,10 +11331,14 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
 
         if ((cls != NO_CLASS_HANDLE) && isExact)
         {
-            CORINFO_OBJECT_HANDLE typeObj  = info.compCompHnd->getRuntimeTypePointer(cls);
-            ValueNum              handleVN = vnStore->VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL);
-            intrinsic->gtVNPair            = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), arg0VNPx);
-            return;
+            CORINFO_OBJECT_HANDLE typeObj = info.compCompHnd->getRuntimeTypePointer(cls);
+            if (typeObj != nullptr)
+            {
+                setMethodHasFrozenObjects();
+                ValueNum handleVN   = vnStore->VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL);
+                intrinsic->gtVNPair = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), arg0VNPx);
+                return;
+            }
         }
     }
 
