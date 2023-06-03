@@ -441,14 +441,15 @@ namespace System.Globalization.Tests
             Assert.NotEqual(lcid, new CultureInfo(lcid).LCID);
         }
 
+        private static bool SupportRemoteExecutionWithIcu => RemoteExecutor.IsSupported && PlatformDetection.IsIcuGlobalization;
+
         [InlineData("zh-TW-u-co-zhuyin", "zh-TW", "zh-TW_zhuyin")]
-        [InlineData("de-DE-u-co-phonebk", "de-DE", "de-DE_phonebook")]
-        [InlineData("de-u-co-phonebk", "de", "de_phonebook")]
-        [InlineData("de-DE-u-co-phonebk-u-xx", "de-DE-u-xx", "de-DE-u-xx_phonebook")]
+        [InlineData("de-DE-u-co-phonebk", "de-DE", "de-DE_phoneboo")]
+        [InlineData("de-DE-u-co-phonebk-u-xx", "de-DE-u-xx", "de-DE-u-xx_phoneboo")]
         [InlineData("de-DE-u-xx-u-co-phonebk", "de-DE-u-xx-u-co-phonebk", "de-DE-u-xx-u-co-phonebk")]
-        [InlineData("de-DE-t-xx-u-co-phonebk", "de-DE-t-xx-u-co-phonebk", "de-DE-t-xx-u-co-phonebk_phonebook")]
-        [InlineData("de-DE-u-co-phonebk-t-xx", "de-DE-t-xx", "de-DE-t-xx_phonebook")]
-        [InlineData("de-DE-u-co-phonebk-t-xx-u-yy", "de-DE-t-xx-u-yy", "de-DE-t-xx-u-yy_phonebook")]
+        [InlineData("de-DE-t-xx-u-co-phonebk", "de-DE-t-xx-u-co-phonebk", "de-DE-t-xx-u-co-phonebk_phoneboo")]
+        [InlineData("de-DE-u-co-phonebk-t-xx", "de-DE-t-xx", "de-DE-t-xx_phoneboo")]
+        [InlineData("de-DE-u-co-phonebk-t-xx-u-yy", "de-DE-t-xx-u-yy", "de-DE-t-xx-u-yy_phoneboo")]
         [InlineData("de-DE", "de-DE", "de-DE")]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         public void TestCreationWithMangledSortName(string cultureName, string expectedCultureName, string expectedSortName)
@@ -457,6 +458,13 @@ namespace System.Globalization.Tests
 
             Assert.Equal(expectedCultureName, ci.Name);
             Assert.Equal(expectedSortName, ci.CompareInfo.Name);
+        }
+
+        [ConditionalFact(nameof(SupportRemoteExecutionWithIcu))]
+        public void TestNeutralCultureWithCollationName()
+        {
+            Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo("zh-u-co-zhuyin"));
+            Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo("de-u-co-phonebk"));
         }
 
         [InlineData("xx-u-XX", "xx-u-xx")]
@@ -476,7 +484,6 @@ namespace System.Globalization.Tests
         [InlineData("qps-plocm")]
         [InlineData("zh-TW-u-co-zhuyin")]
         [InlineData("de-DE-u-co-phonebk")]
-        [InlineData("de-u-co-phonebk")]
         [InlineData("de-DE-u-co-phonebk-u-xx")]
         [InlineData("de-DE-u-xx-u-co-phonebk")]
         [InlineData("de-DE-t-xx-u-co-phonebk")]
