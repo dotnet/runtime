@@ -24,10 +24,9 @@ namespace System.Globalization
         /// BCP 47 specifications allow for extensions in the locale name, following the format language-script-region-extensions-collation. However,
         /// not all extensions supported by ICU are supported in .NET. In the locale name, extensions are separated from the rest of the name using '-u-' or '-t-'.
         /// In .NET, only the collation extension is supported. If the name includes a collation extension, it will be prefixed with '-u-co-'.
-        /// For example, en-US-u-co-search would be converted to the ICU name en_US@collation=co-search, which would then be translated to the .NET name en-US_search.
-        /// All extensions in the ICU names start with @. When normalizing the name to the .NET format,
-        /// we retain the extensions in the name to ensure differentiation between names with extensions and those without.
-        /// For example, we may have a name like en-US and en-US-u-xx. Although .NET doesn't support the extension xx,
+        /// For example, en-US-u-co-search would be converted to the ICU name en_US@collation=search, which would then be translated to the .NET name en-US_search.
+        /// All extensions in the ICU names start with @. When normalizing the name to the .NET format, we retain the extensions in the name to ensure differentiation
+        /// between names with extensions and those without. For example, we may have a name like en-US and en-US-u-xx. Although .NET doesn't support the extension xx,
         /// we still include it in the name to distinguish it from the name without the extension.
         /// </remarks>
         private static string NormalizeCultureName(string name, string rawName, int extensionsIndex, out int collationStart)
@@ -79,7 +78,7 @@ namespace System.Globalization
                             endOfCollation = name.Length;
                         }
 
-                        int length = endOfCollation - collationIndex;
+                        int length = Math.Min(8, endOfCollation - collationIndex);  // Windows doesn't allow collation names longer than 8 characters
                         if (buffer.Length - bufferIndex >= length + 1 )
                         {
                             collationStart = bufferIndex;
@@ -143,6 +142,11 @@ namespace System.Globalization
             }
             _bNeutral = TwoLetterISOCountryName.Length == 0;
             _sSpecificCulture = _bNeutral ? IcuLocaleData.GetSpecificCultureName(_sRealName) : _sRealName;
+
+            if (_bNeutral && collationStart > 0)
+            {
+                return false; // neutral cultures cannot have collation
+            }
 
             // Remove the sort from sName unless custom culture
             _sName = collationStart < 0 ? _sRealName : _sRealName.Substring(0, collationStart);
