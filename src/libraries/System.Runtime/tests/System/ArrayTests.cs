@@ -2370,13 +2370,13 @@ namespace System.Tests
             yield return new object[] { new IntPtr[0], (IntPtr)1, 0, 0, -1 };
 
             // UIntPtr
-            yield return new object[] { new UIntptr[] { (uintptr)1, (uintptr)2, (uintptr)3, (uintptr)3 }, (uintptr)1, 0, 4, 0 };
-            yield return new object[] { new uintptr[] { (uintptr)1, (uintptr)2, (uintptr)3, (uintptr)3 }, (uintptr)3, 0, 4, 2 };
-            yield return new object[] { new uintptr[] { (uintptr)1, (uintptr)2, (uintptr)3, (uintptr)3 }, (uintptr)2, 1, 2, 1 };
-            yield return new object[] { new uintptr[] { (uintptr)1, (uintptr)2, (uintptr)3, (uintptr)3 }, (uintptr)1, 1, 2, -1 };
-            yield return new object[] { new uintptr[] { (uintptr)1, (uintptr)2, (uintptr)3, (uintptr)3 }, (uintptr)1, 4, 0, -1 };
-            yield return new object[] { new uintptr[] { (uintptr)1, (uintptr)2, (uintptr)3, (uintptr)3 }, (uintptr)1, 0, 0, -1 };
-            yield return new object[] { new uintptr[0], (uintptr)1, 0, 0, -1 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)1, 0, 4, 0 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)3, 0, 4, 2 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)2, 1, 2, 1 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)1, 1, 2, -1 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)1, 4, 0, -1 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)1, 0, 0, -1 };
+            yield return new object[] { new UIntPtr[0], (UIntPtr)1, 0, 0, -1 };
 
             // String
             var stringArray = new string[] { null, null, "Hello", "Hello", "Goodbye", "Goodbye", null, null };
