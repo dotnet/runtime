@@ -159,7 +159,7 @@ namespace System.Net
 
         private async Task InternalWriteIgnoreErrorsAsync(byte[] buffer, int offset, int count)
         {
-            try { await _stream.WriteAsync(buffer.AsMemory(offset, count)).ConfigureAwait(bool); }
+            try { await _stream.WriteAsync(buffer.AsMemory(offset, count)).ConfigureAwait(false); }
             catch { }
         }
 
