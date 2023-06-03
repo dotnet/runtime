@@ -214,10 +214,10 @@ def build_and_run(coreclr_args, output_mch_name):
                             "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart --logBuildOutput"
     elif benchmark_binary.lower().startswith("demobenchmarks"):
         # Disable ReadyToRun so we always JIT R2R methods and collect them
-        collection_command = f"{dotnet_exe} {benchmarks_dll}  -f *CollisionBatcherTaskBenchmarks.* *ConvexCollisionTesterBenchmarks.* *GatherScatterBenchmarks.* " \
-                            " *OneBodyConstraintBenchmarks.* *OneBodyConstraintBenchmarksDeep.* *TwoBodyConstraintBenchmarks.* *TwoBodyConstraintBenchmarksDeep.* " \
-                            " *ThreeBodyConstraintBenchmarks.* *FourBodyConstraintBenchmarks.* *SweepBenchmarks.* *SweepBenchmarksDeep.* *ShapeRayBenchmarksDeep.* " \
-                            f" *ShapePileBenchmark.* *RagdollTubeBenchmark.* --corerun {os.path.join(core_root, corerun_exe)} --envVars DOTNET_JitName:{shim_name} " \
+        collection_command = f"{dotnet_exe} {benchmarks_dll}  -f *CollisionBatcherTaskBenchmarks.* *GroupedCollisionTesterBenchmarks.* *GatherScatterBenchmarks.* " \
+                            " *OneBodyConstraintBenchmarks.* *TwoBodyConstraintBenchmarks.* *ThreeBodyConstraintBenchmarks.* *FourBodyConstraintBenchmarks.* " \
+                            " *SweepBenchmarks.* *ShapeRayBenchmarks.* *ShapePileBenchmark.* *RagdollTubeBenchmark.* " \
+                            f" --corerun {os.path.join(core_root, corerun_exe)} --envVars DOTNET_JitName:{shim_name} " \
                             " DOTNET_ZapDisable:1  DOTNET_ReadyToRun:0 " \
                             "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart --logBuildOutput"
     else:
