@@ -486,7 +486,7 @@ def main(main_args):
     copy_directory(coreclr_args.core_root_directory, core_root_dst_directory, verbose_output=True, match_func=acceptable_copy)
 
     if coreclr_args.collection_name == "benchmarks" or coreclr_args.collection_name == "realworld":
-        # Setup microbenchmarks
+        # Setup benchmarks
         setup_benchmark(workitem_payload_directory, arch)
     else:
         # Setup for pmi/crossgen2 runs

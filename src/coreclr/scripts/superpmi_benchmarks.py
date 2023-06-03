@@ -8,8 +8,9 @@
 #
 # Notes:
 #
-# Script to perform the superpmi collection while executing the Microbenchmarks present
-# in https://github.com/dotnet/performance/tree/master/src/benchmarks/micro.
+# Script to perform the superpmi collection while executing the Microbenchmarks in 
+# https://github.com/dotnet/performance/tree/master/src/benchmarks/micro and real-world in
+# in https://github.com/dotnet/performance/tree/master/src/benchmarks/real-world
 
 import argparse
 import re
@@ -136,7 +137,7 @@ def make_executable(file_name):
     run_command(["ls", "-l", file_name])
 
 def build_and_run(coreclr_args, output_mch_name):
-    """Build the microbenchmarks and run them under "superpmi collect"
+    """Build the microbenchmarks/real-world and run them under "superpmi collect"
 
     Args:
         coreclr_args (CoreClrArguments): Arguments use to drive
@@ -166,11 +167,11 @@ def build_and_run(coreclr_args, output_mch_name):
     if is_windows:
         shim_name = "%JitName%"
         corerun_exe = "CoreRun.exe"
-        script_name = "run_microbenchmarks.bat"
+        script_name = "run_benchmarks.bat"
     else:
         shim_name = "$JitName"
         corerun_exe = "corerun"
-        script_name = "run_microbenchmarks.sh"
+        script_name = "run_benchmarks.sh"
 
     make_executable(dotnet_exe)
 
