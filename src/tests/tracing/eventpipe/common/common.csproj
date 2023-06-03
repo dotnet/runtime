@@ -18,5 +18,6 @@
     <Compile Include="Reverse.cs" />
     <Compile Include="StreamProxy.cs" />
     <ProjectReference Include="Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
+    <ProjectReference Include="$(TestSourceDir)Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 </Project>
