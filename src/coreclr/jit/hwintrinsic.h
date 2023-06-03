@@ -330,6 +330,25 @@ enum class FloatRoundingMode : uint8_t
     NoException = 0x08,
 };
 
+enum class IntComparisonMode : uint8_t
+{
+    Equal = 0,
+    LessThan = 1,
+    LessThanOrEqual = 2,
+    False = 3,
+
+    NotEqual = 4,
+    GreaterThanOrEqual = 5,
+    GreaterThan = 6,
+    True = 7,
+
+    NotGreaterThanOrEqual = LessThan,
+    NotGreaterThan = LessThanOrEqual,
+
+    NotLessThan = GreaterThanOrEqual,
+    NotLessThanOrEqual = GreaterThan
+};
+
 enum class TernaryLogicUseFlags : uint8_t
 {
     // Indicates no flags are present

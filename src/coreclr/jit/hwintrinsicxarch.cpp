@@ -572,12 +572,17 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
         case NI_SSE2_CompareEqual:
         case NI_SSE2_CompareScalarEqual:
         case NI_AVX_CompareEqual:
+        case NI_AVX512F_CompareEqualMask:
         {
-            if (!varTypeIsFloating(simdBaseType))
+            if (varTypeIsFloating(simdBaseType))
             {
-                break;
+                return static_cast<int>(FloatComparisonMode::OrderedEqualNonSignaling);
             }
-            return static_cast<int>(FloatComparisonMode::OrderedEqualNonSignaling);
+            else
+            {
+                // We can emit `vpcmpeqb`, `vpcmpeqw`, `vpcmpeqd`, or `vpcmpeqq`
+            }
+            break;
         }
 
         case NI_SSE_CompareGreaterThan:
@@ -585,24 +590,29 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
         case NI_SSE2_CompareGreaterThan:
         case NI_SSE2_CompareScalarGreaterThan:
         case NI_AVX_CompareGreaterThan:
+        case NI_AVX512F_CompareGreaterThanMask:
         {
-            if (!varTypeIsFloating(simdBaseType))
+            if (varTypeIsFloating(simdBaseType))
             {
-                break;
-            }
+                if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX))
+                {
+                    return static_cast<int>(FloatComparisonMode::OrderedGreaterThanSignaling);
+                }
 
-            if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX))
+                // CompareGreaterThan is not directly supported in hardware without AVX support.
+                // We will return the inverted case here and lowering will itself swap the ops
+                // to ensure the emitted code remains correct. This simplifies the overall logic
+                // here and for other use cases.
+
+                assert(id != NI_AVX_CompareGreaterThan);
+                return static_cast<int>(FloatComparisonMode::OrderedLessThanSignaling);
+            }
+            else if (id == NI_AVX512F_CompareGreaterThanMask)
             {
-                return static_cast<int>(FloatComparisonMode::OrderedGreaterThanSignaling);
+                // TODO-XARCH-CQ: Allow the other integer paths to use the EVEX encoding
+                return static_cast<int>(IntComparisonMode::GreaterThan);
             }
-
-            // CompareGreaterThan is not directly supported in hardware without AVX support.
-            // We will return the inverted case here and lowering will itself swap the ops
-            // to ensure the emitted code remains correct. This simplifies the overall logic
-            // here and for other use cases.
-
-            assert(id != NI_AVX_CompareGreaterThan);
-            return static_cast<int>(FloatComparisonMode::OrderedLessThanSignaling);
+            break;
         }
 
         case NI_SSE_CompareLessThan:
@@ -610,12 +620,18 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
         case NI_SSE2_CompareLessThan:
         case NI_SSE2_CompareScalarLessThan:
         case NI_AVX_CompareLessThan:
+        case NI_AVX512F_CompareLessThanMask:
         {
-            if (!varTypeIsFloating(simdBaseType))
+            if (varTypeIsFloating(simdBaseType))
             {
-                break;
+                return static_cast<int>(FloatComparisonMode::OrderedLessThanSignaling);
             }
-            return static_cast<int>(FloatComparisonMode::OrderedLessThanSignaling);
+            else if (id == NI_AVX512F_CompareLessThanMask)
+            {
+                // TODO-XARCH-CQ: Allow the other integer paths to use the EVEX encoding
+                return static_cast<int>(IntComparisonMode::LessThan);
+            }
+            break;
         }
 
         case NI_SSE_CompareGreaterThanOrEqual:
@@ -623,24 +639,29 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
         case NI_SSE2_CompareGreaterThanOrEqual:
         case NI_SSE2_CompareScalarGreaterThanOrEqual:
         case NI_AVX_CompareGreaterThanOrEqual:
+        case NI_AVX512F_CompareGreaterThanOrEqualMask:
         {
-            if (!varTypeIsFloating(simdBaseType))
+            if (varTypeIsFloating(simdBaseType))
             {
-                break;
-            }
+                if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX))
+                {
+                    return static_cast<int>(FloatComparisonMode::OrderedGreaterThanOrEqualSignaling);
+                }
 
-            if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX))
+                // CompareGreaterThanOrEqual is not directly supported in hardware without AVX support.
+                // We will return the inverted case here and lowering will itself swap the ops
+                // to ensure the emitted code remains correct. This simplifies the overall logic
+                // here and for other use cases.
+
+                assert(id != NI_AVX_CompareGreaterThanOrEqual);
+                return static_cast<int>(FloatComparisonMode::OrderedLessThanOrEqualSignaling);
+            }
+            else
             {
-                return static_cast<int>(FloatComparisonMode::OrderedGreaterThanOrEqualSignaling);
+                assert(id == NI_AVX512F_CompareGreaterThanOrEqualMask);
+                return static_cast<int>(IntComparisonMode::GreaterThanOrEqual);
             }
-
-            // CompareGreaterThanOrEqual is not directly supported in hardware without AVX support.
-            // We will return the inverted case here and lowering will itself swap the ops
-            // to ensure the emitted code remains correct. This simplifies the overall logic
-            // here and for other use cases.
-
-            assert(id != NI_AVX_CompareGreaterThanOrEqual);
-            return static_cast<int>(FloatComparisonMode::OrderedLessThanOrEqualSignaling);
+            break;
         }
 
         case NI_SSE_CompareLessThanOrEqual:
@@ -648,12 +669,18 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
         case NI_SSE2_CompareLessThanOrEqual:
         case NI_SSE2_CompareScalarLessThanOrEqual:
         case NI_AVX_CompareLessThanOrEqual:
+        case NI_AVX512F_CompareLessThanOrEqualMask:
         {
-            if (!varTypeIsFloating(simdBaseType))
+            if (varTypeIsFloating(simdBaseType))
             {
-                break;
+                return static_cast<int>(FloatComparisonMode::OrderedLessThanOrEqualSignaling);
             }
-            return static_cast<int>(FloatComparisonMode::OrderedLessThanOrEqualSignaling);
+            else
+            {
+                assert(id == NI_AVX512F_CompareLessThanOrEqualMask);
+                return static_cast<int>(IntComparisonMode::LessThanOrEqual);
+            }
+            break;
         }
 
         case NI_SSE_CompareNotEqual:
@@ -661,12 +688,18 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
         case NI_SSE2_CompareNotEqual:
         case NI_SSE2_CompareScalarNotEqual:
         case NI_AVX_CompareNotEqual:
+        case NI_AVX512F_CompareNotEqualMask:
         {
-            if (!varTypeIsFloating(simdBaseType))
+            if (varTypeIsFloating(simdBaseType))
             {
-                break;
+                return static_cast<int>(FloatComparisonMode::UnorderedNotEqualNonSignaling);
             }
-            return static_cast<int>(FloatComparisonMode::UnorderedNotEqualNonSignaling);
+            else
+            {
+                assert(id == NI_AVX512F_CompareNotEqualMask);
+                return static_cast<int>(IntComparisonMode::NotEqual);
+            }
+            break;
         }
 
         case NI_SSE_CompareNotGreaterThan:
@@ -675,10 +708,7 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
         case NI_SSE2_CompareScalarNotGreaterThan:
         case NI_AVX_CompareNotGreaterThan:
         {
-            if (!varTypeIsFloating(simdBaseType))
-            {
-                break;
-            }
+            assert(varTypeIsFloating(simdBaseType));
 
             if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
@@ -700,10 +730,7 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
         case NI_SSE2_CompareScalarNotLessThan:
         case NI_AVX_CompareNotLessThan:
         {
-            if (!varTypeIsFloating(simdBaseType))
-            {
-                break;
-            }
+            assert(varTypeIsFloating(simdBaseType));
             return static_cast<int>(FloatComparisonMode::UnorderedNotLessThanSignaling);
         }
 
@@ -713,10 +740,7 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
         case NI_SSE2_CompareScalarNotGreaterThanOrEqual:
         case NI_AVX_CompareNotGreaterThanOrEqual:
         {
-            if (!varTypeIsFloating(simdBaseType))
-            {
-                break;
-            }
+            assert(varTypeIsFloating(simdBaseType));
 
             if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
@@ -738,10 +762,7 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
         case NI_SSE2_CompareScalarNotLessThanOrEqual:
         case NI_AVX_CompareNotLessThanOrEqual:
         {
-            if (!varTypeIsFloating(simdBaseType))
-            {
-                break;
-            }
+            assert(varTypeIsFloating(simdBaseType));
             return static_cast<int>(FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling);
         }
 
@@ -751,10 +772,7 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
         case NI_SSE2_CompareScalarOrdered:
         case NI_AVX_CompareOrdered:
         {
-            if (!varTypeIsFloating(simdBaseType))
-            {
-                break;
-            }
+            assert(varTypeIsFloating(simdBaseType));
             return static_cast<int>(FloatComparisonMode::OrderedNonSignaling);
         }
 
@@ -764,10 +782,7 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
         case NI_SSE2_CompareScalarUnordered:
         case NI_AVX_CompareUnordered:
         {
-            if (!varTypeIsFloating(simdBaseType))
-            {
-                break;
-            }
+            assert(varTypeIsFloating(simdBaseType));
             return static_cast<int>(FloatComparisonMode::UnorderedNonSignaling);
         }
 
@@ -823,36 +838,6 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
         {
             assert(varTypeIsFloating(simdBaseType));
             return static_cast<int>(FloatRoundingMode::ToZero);
-        }
-
-        case NI_AVX512F_CompareEqualMask:
-        {
-            return 0;
-        }
-
-        case NI_AVX512F_CompareLessThanMask:
-        {
-            return 1;
-        }
-
-        case NI_AVX512F_CompareLessThanOrEqualMask:
-        {
-            return 2;
-        }
-
-        case NI_AVX512F_CompareNotEqualMask:
-        {
-            return 4;
-        }
-
-        case NI_AVX512F_CompareGreaterThanOrEqualMask:
-        {
-            return 5;
-        }
-
-        case NI_AVX512F_CompareGreaterThanMask:
-        {
-            return 6;
         }
 
         default:
