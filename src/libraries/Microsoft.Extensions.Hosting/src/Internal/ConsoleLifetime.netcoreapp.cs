@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.Hosting.Internal
@@ -15,7 +14,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         private PosixSignalRegistration? _sigIntRegistration;
         private PosixSignalRegistration? _sigQuitRegistration;
         private PosixSignalRegistration? _sigTermRegistration;
-        private Timer? _shutdownDelayTimer;
+        private ITimer? _shutdownDelayTimer;
 
         private partial void RegisterShutdownHandlers()
         {
@@ -33,7 +32,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             if (HostOptions.ShutdownDelay.HasValue)
             {
-                _shutdownDelayTimer = NonCapturingTimer.Create(state =>
+                _shutdownDelayTimer = TimeProvider.CreateTimer(state =>
                 {
                     Logger.LogInformation("Received {PosixSignal}. Delaying shutdown for {Delay}", context.Signal, HostOptions.ShutdownDelay.Value);
                     ((ConsoleLifetime)state!).ApplicationLifetime.StopApplication();

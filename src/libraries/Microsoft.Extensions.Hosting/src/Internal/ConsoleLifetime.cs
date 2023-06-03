@@ -44,18 +44,23 @@ namespace Microsoft.Extensions.Hosting.Internal
         /// <param name="loggerFactory">An object to configure the logging system and create instances of <see cref="ILogger"/> from the registered <see cref="ILoggerProvider"/>.</param>
         /// <exception cref="ArgumentNullException"><paramref name="options"/> or <paramref name="environment"/> or <paramref name="applicationLifetime"/> or <paramref name="hostOptions"/> or <paramref name="loggerFactory"/> is <see langword="null"/>.</exception>
         public ConsoleLifetime(IOptions<ConsoleLifetimeOptions> options, IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, IOptions<HostOptions> hostOptions, ILoggerFactory loggerFactory)
+            : this(options, environment, applicationLifetime, hostOptions, loggerFactory, TimeProvider.System) { }
+
+        public ConsoleLifetime(IOptions<ConsoleLifetimeOptions> options, IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, IOptions<HostOptions> hostOptions, ILoggerFactory loggerFactory, TimeProvider timeProvider)
         {
             ThrowHelper.ThrowIfNull(options?.Value, nameof(options));
             ThrowHelper.ThrowIfNull(applicationLifetime);
             ThrowHelper.ThrowIfNull(environment);
             ThrowHelper.ThrowIfNull(hostOptions?.Value, nameof(hostOptions));
             ThrowHelper.ThrowIfNull(loggerFactory);
+            ThrowHelper.ThrowIfNull(timeProvider);
 
             Options = options.Value;
             Environment = environment;
             ApplicationLifetime = applicationLifetime;
             HostOptions = hostOptions.Value;
             Logger = loggerFactory.CreateLogger("Microsoft.Hosting.Lifetime");
+            TimeProvider = timeProvider;
         }
 
         private ConsoleLifetimeOptions Options { get; }
@@ -67,6 +72,8 @@ namespace Microsoft.Extensions.Hosting.Internal
         private HostOptions HostOptions { get; }
 
         private ILogger Logger { get; }
+
+        private TimeProvider TimeProvider { get; }
 
         /// <summary>
         /// Registers the application start, application stop and shutdown handlers for this application.
