@@ -98,8 +98,8 @@
         <note />
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
-        <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
-        <target state="translated">Açık sıralama bilgileri olmadan dize veya karakter sıralama desteklenmiyor. 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' veya 'MarshalAsAttribute' belirtin.</target>
+        <source>Marshalling string or char without explicit marshalling information is not supported. Specify '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">Açık hazırlama bilgileri olmadan dize veya karakter hazırlama desteklenmiyor. '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' veya 'MarshalAsAttribute' belirtin.</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">

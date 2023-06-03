@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-browser</TargetFrameworks>
+    <TestRuntime>true</TestRuntime>
+    <HybridGlobalization>true</HybridGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Normalization\NormalizationAll.cs" />
+    <Compile Include="..\Normalization\StringNormalizationTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\Normalization\Data\win8.txt">
+      <LogicalName>NormalizationDataWin8</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\Normalization\Data\win7.txt">
+      <LogicalName>NormalizationDataWin7</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>

@@ -20,13 +20,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
     public record JsonSourceGeneratorResult
     {
         public Compilation NewCompilation { get; set; }
-        public SourceGenerationSpec? SourceGenModel { get; set; }
+        public ImmutableArray<ContextGenerationSpec> ContextGenerationSpecs { get; set; }
         public ImmutableArray<Diagnostic> Diagnostics { get; set; }
 
         public IEnumerable<TypeGenerationSpec> AllGeneratedTypes
-            => SourceGenModel is { } model
-                ? model.ContextGenerationSpecs.SelectMany(ctx => ctx.GeneratedTypes)
-                : Array.Empty<TypeGenerationSpec>();
+            => ContextGenerationSpecs.SelectMany(ctx => ctx.GeneratedTypes);
 
         public void AssertContainsType(string fullyQualifiedName)
             => Assert.Contains(
@@ -118,10 +116,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
         public static JsonSourceGeneratorResult RunJsonSourceGenerator(Compilation compilation)
         {
-            SourceGenerationSpec? generatedSpec = null;
+            var generatedSpecs = ImmutableArray<ContextGenerationSpec>.Empty;
             var generator = new JsonSourceGenerator
             {
-                OnSourceEmitting = spec => generatedSpec = spec
+                OnSourceEmitting = specs => generatedSpecs = specs
             };
 
             CSharpGeneratorDriver driver = CreateJsonSourceGeneratorDriver(generator);
@@ -130,7 +128,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             {
                 NewCompilation = outCompilation,
                 Diagnostics = diagnostics,
-                SourceGenModel = generatedSpec,
+                ContextGenerationSpecs = generatedSpecs,
             };
         }
 

@@ -2508,6 +2508,7 @@ decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, guin
 	info->no_special_static_fields = (flags >> 7) & 0x1;
 	info->is_generic_container = (flags >> 8) & 0x1;
 	info->has_weak_fields = (flags >> 9) & 0x1;
+	info->has_deferred_failure = (flags >> 10) & 0x1;
 
 	if (info->has_cctor) {
 		res = decode_method_ref (module, &ref, buf, &buf, error);

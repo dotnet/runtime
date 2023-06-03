@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import BuildConfiguration from "consts:configuration";
+
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { Module, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_cs } from "./marshal-to-cs";
@@ -10,7 +12,7 @@ import {
     bound_cs_function_symbol, get_signature_version, alloc_stack_frame, get_signature_type,
 } from "./marshal";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "./roots";
-import { conv_string, conv_string_root } from "./strings";
+import { monoStringToString, monoStringToStringUnsafe } from "./strings";
 import { MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMarshalerArguments, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, VoidPtrNull, MonoObjectRefNull, MonoObjectNull } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
 import cwraps from "./cwraps";
@@ -18,8 +20,10 @@ import { assembly_load } from "./class-loader";
 import { wrap_error_root, wrap_no_error_root } from "./invoke-js";
 import { startMeasure, MeasuredBlock, endMeasure } from "./profiler";
 import { mono_log_debug } from "./logging";
+import { assert_synchronization_context } from "./pthreads/shared";
 
 export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, signature_hash: number, signature: JSFunctionSignature, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    assert_synchronization_context();
     const fqn_root = mono_wasm_new_external_root<MonoString>(fully_qualified_name), resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     const mark = startMeasure();
     try {
@@ -27,7 +31,7 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
         mono_assert(version === 1, () => `Signature version ${version} mismatch.`);
 
         const args_count = get_signature_argument_count(signature);
-        const js_fqn = conv_string_root(fqn_root)!;
+        const js_fqn = monoStringToString(fqn_root)!;
         mono_assert(js_fqn, "fully_qualified_name must be string");
 
         mono_log_debug(`Binding [JSExport] ${js_fqn}`);
@@ -82,6 +86,13 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
         }
         else {
             bound_fn = bind_fn(closure);
+        }
+
+        // this is just to make debugging easier. 
+        // It's not CSP compliant and possibly not performant, that's why it's only enabled in debug builds
+        // in Release configuration, it would be a trimmed by rollup
+        if (BuildConfiguration === "Debug") {
+            bound_fn = new Function("fn", "return (function JSExport_" + methodname + "(){ return fn.apply(this, arguments)});")(bound_fn);
         }
 
         (<any>bound_fn)[bound_cs_function_symbol] = true;
@@ -233,8 +244,9 @@ type BindingClosure = {
 }
 
 export function invoke_method_and_handle_exception(method: MonoMethod, args: JSMarshalerArguments): void {
+    assert_synchronization_context();
     const fail = cwraps.mono_wasm_invoke_method_bound(method, args);
-    if (fail) throw new Error("ERR24: Unexpected error: " + conv_string(fail));
+    if (fail) throw new Error("ERR24: Unexpected error: " + monoStringToStringUnsafe(fail));
     if (is_args_exception(args)) {
         const exc = get_arg(args, 0);
         throw marshal_exception_to_js(exc);
@@ -289,7 +301,7 @@ export async function mono_wasm_get_assembly_exports(assembly: string): Promise<
                 try {
                     cwraps.mono_wasm_invoke_method_ref(method, MonoObjectRefNull, VoidPtrNull, outException.address, outResult.address);
                     if (outException.value !== MonoObjectNull) {
-                        const msg = conv_string_root(outResult)!;
+                        const msg = monoStringToString(outResult)!;
                         throw new Error(msg);
                     }
                 }

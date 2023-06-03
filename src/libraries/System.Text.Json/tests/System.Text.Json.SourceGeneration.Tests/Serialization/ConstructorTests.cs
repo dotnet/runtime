@@ -58,6 +58,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(Parameterized_WrapperForICollection))]
         [JsonSerializable(typeof(Point_2D_Struct))]
         [JsonSerializable(typeof(Point_2D_Struct_WithAttribute))]
+        [JsonSerializable(typeof(Point_2D_Struct_WithAttribute?))]
         [JsonSerializable(typeof(ObjWCtorMixedParams))]
         [JsonSerializable(typeof(Person_Class))]
         [JsonSerializable(typeof(Point_2D))]
@@ -140,9 +141,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(LargeType_IgnoredProp_Bind_Param))]
         [JsonSerializable(typeof(ClassWithIgnoredSameType))]
         [JsonSerializable(typeof(ClassWithDefaultCtorParams))]
-#if FIXED  // https://github.com/dotnet/roslyn/issues/66900
+        [JsonSerializable(typeof(StructWithPropertyInit))]
+        [JsonSerializable(typeof(StructWithFieldInit))]
+        [JsonSerializable(typeof(StructWithExplicitParameterlessCtor))]
         [JsonSerializable(typeof(ClassWithManyConstructorParameters))]
-#endif
         [JsonSerializable(typeof(ClassWithInvalidArray))]
         [JsonSerializable(typeof(ClassWithInvalidDictionary))]
         [JsonSerializable(typeof(TypeWithEnumParameters))]
@@ -200,6 +202,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(Parameterized_WrapperForICollection))]
         [JsonSerializable(typeof(Point_2D_Struct))]
         [JsonSerializable(typeof(Point_2D_Struct_WithAttribute))]
+        [JsonSerializable(typeof(Point_2D_Struct_WithAttribute?))]
         [JsonSerializable(typeof(ObjWCtorMixedParams))]
         [JsonSerializable(typeof(Person_Class))]
         [JsonSerializable(typeof(Point_2D))]
@@ -282,9 +285,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(LargeType_IgnoredProp_Bind_Param))]
         [JsonSerializable(typeof(ClassWithIgnoredSameType))]
         [JsonSerializable(typeof(ClassWithDefaultCtorParams))]
-#if FIXED // https://github.com/dotnet/roslyn/issues/66900
+        [JsonSerializable(typeof(StructWithPropertyInit))]
+        [JsonSerializable(typeof(StructWithFieldInit))]
+        [JsonSerializable(typeof(StructWithExplicitParameterlessCtor))]
         [JsonSerializable(typeof(ClassWithManyConstructorParameters))]
-#endif
         [JsonSerializable(typeof(ClassWithInvalidArray))]
         [JsonSerializable(typeof(ClassWithInvalidDictionary))]
         [JsonSerializable(typeof(TypeWithEnumParameters))]
