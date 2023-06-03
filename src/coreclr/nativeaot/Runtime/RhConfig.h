@@ -11,7 +11,7 @@
 // Values can also be embedded in the compiled binary.
 //
 
-#ifndef __RHCONFIG_H__
+#ifndef RHCONFIG_H
 #define RHCONFIG_H
 
 #ifndef DACCESS_COMPILE
