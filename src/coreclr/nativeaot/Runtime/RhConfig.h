@@ -12,7 +12,7 @@
 //
 
 #ifndef __RHCONFIG_H__
-#define __RHCONFIG_H__
+#define RHCONFIG_H
 
 #ifndef DACCESS_COMPILE
 
@@ -111,4 +111,4 @@ extern RhConfig * g_pRhConfig;
 
 #endif //!DACCESS_COMPILE
 
-#endif // __RHCONFIG_H__
+#endif // RHCONFIG_H
