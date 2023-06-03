@@ -97,6 +97,19 @@ ep_rt_aot_entrypoint_assembly_name_get_utf8 (void)
     return reinterpret_cast<const ep_char8_t*>("");
 }
 
+const ep_char8_t *
+ep_rt_aot_diagnostics_command_line_get (void)
+{
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
+    // TODO: revisit commandline for AOT
+#ifdef TARGET_WINDOWS
+    const ep_char16_t* command_line = reinterpret_cast<const ep_char16_t *>(::GetCommandLineW());
+    return ep_rt_utf16_to_utf8_string(command_line, -1);
+#else
+    return "";
+#endif
+}
+
 uint32_t
 ep_rt_aot_atomic_inc_uint32_t (volatile uint32_t *value)
 {
