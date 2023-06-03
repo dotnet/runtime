@@ -34,6 +34,8 @@ parser.add_argument("-log_file", help="Name of the log file")
 parser.add_argument("-partition_count", help="Total number of partitions")
 parser.add_argument("-partition_index", help="Partition index to do the collection for")
 parser.add_argument("-arch", help="Architecture")
+parser.add_argument("-benchmark_path", help="Benchmark's csproj path in dotnet/performance repo")
+parser.add_argument("-benchmark_binary", help="Benchmark binary to execute")
 parser.add_argument("--tiered_compilation", action="store_true", help="Sets DOTNET_TieredCompilation=1 when doing collections.")
 parser.add_argument("--tiered_pgo", action="store_true", help="Sets DOTNET_TieredCompilation=1 and DOTNET_TieredPGO=1 when doing collections.")
 
@@ -91,6 +93,16 @@ def setup_args(args):
                         "Unable to set arch")
 
     coreclr_args.verify(args,
+                        "benchmark_path",
+                        lambda unused: True,
+                        "Unable to set benchmark_path")
+
+    coreclr_args.verify(args,
+                        "benchmark_binary",
+                        lambda unused: True,
+                        "Unable to set benchmark_binary")
+
+    coreclr_args.verify(args,
                         "tiered_compilation",
                         lambda unused: True,
                         "Unable to set tiered_compilation")
@@ -123,7 +135,6 @@ def make_executable(file_name):
              (stat.S_IROTH | stat.S_IXOTH))
     run_command(["ls", "-l", file_name])
 
-
 def build_and_run(coreclr_args, output_mch_name):
     """Build the microbenchmarks and run them under "superpmi collect"
 
@@ -139,13 +150,15 @@ def build_and_run(coreclr_args, output_mch_name):
     log_file = coreclr_args.log_file
     partition_count = coreclr_args.partition_count
     partition_index = coreclr_args.partition_index
+    benchmark_path = coreclr_args.benchmark_path
+    benchmark_binary = coreclr_args.benchmark_binary
     dotnet_directory = os.path.join(performance_directory, "tools", "dotnet", arch)
     dotnet_exe = os.path.join(dotnet_directory, "dotnet")
 
     artifacts_directory = os.path.join(performance_directory, "artifacts")
     artifacts_packages_directory = os.path.join(artifacts_directory, "packages")
-    project_file = os.path.join(performance_directory, "src", "benchmarks", "micro", "MicroBenchmarks.csproj")
-    benchmarks_dll = os.path.join(artifacts_directory, "MicroBenchmarks.dll")
+    project_file = os.path.join(performance_directory, benchmark_path)
+    benchmarks_dll = os.path.join(artifacts_directory, benchmark_binary)
 
     # Workaround https://github.com/dotnet/sdk/issues/23430
     project_file = os.path.realpath(project_file)
