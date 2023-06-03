@@ -40,9 +40,9 @@
       Any tools that contribute to the design-time experience should use the MicrosoftCodeAnalysisVersion_LatestVS property above to ensure
       they do not break the local dev experience.
     -->
-    <MicrosoftCodeAnalysisCSharpVersion>4.7.0-2.23280.4</MicrosoftCodeAnalysisCSharpVersion>
-    <MicrosoftCodeAnalysisVersion>4.7.0-2.23280.4</MicrosoftCodeAnalysisVersion>
-    <MicrosoftNetCompilersToolsetVersion>4.7.0-2.23280.4</MicrosoftNetCompilersToolsetVersion>
+    <MicrosoftCodeAnalysisCSharpVersion>4.7.0-2.23301.9</MicrosoftCodeAnalysisCSharpVersion>
+    <MicrosoftCodeAnalysisVersion>4.7.0-2.23301.9</MicrosoftCodeAnalysisVersion>
+    <MicrosoftNetCompilersToolsetVersion>4.7.0-2.23301.9</MicrosoftNetCompilersToolsetVersion>
   </PropertyGroup>
   <!--
     For source generator support we need to target multiple versions of Roslyn in order to be able to run on older versions of Roslyn.
@@ -81,7 +81,7 @@
   <PropertyGroup>
     <StaticCsVersion>0.2.0</StaticCsVersion>
     <!-- SDK dependencies -->
-    <MicrosoftDotNetApiCompatTaskVersion>8.0.100-preview.2.23107.1</MicrosoftDotNetApiCompatTaskVersion>
+    <MicrosoftDotNetApiCompatTaskVersion>8.0.100-preview.6.23302.2</MicrosoftDotNetApiCompatTaskVersion>
     <!-- Arcade dependencies -->
     <MicrosoftDotNetBuildTasksFeedVersion>8.0.0-beta.23281.3</MicrosoftDotNetBuildTasksFeedVersion>
     <MicrosoftDotNetCodeAnalysisVersion>8.0.0-beta.23281.3</MicrosoftDotNetCodeAnalysisVersion>
@@ -154,12 +154,12 @@
     <SystemWindowsExtensionsTestDataVersion>8.0.0-beta.23280.1</SystemWindowsExtensionsTestDataVersion>
     <MicrosoftDotNetCilStripSourcesVersion>8.0.0-beta.23280.1</MicrosoftDotNetCilStripSourcesVersion>
     <!-- dotnet-optimization dependencies -->
-    <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.23272.4</optimizationwindows_ntx64MIBCRuntimeVersion>
-    <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.23272.4</optimizationwindows_ntx86MIBCRuntimeVersion>
-    <optimizationwindows_ntarm64MIBCRuntimeVersion>1.0.0-prerelease.23272.4</optimizationwindows_ntarm64MIBCRuntimeVersion>
-    <optimizationlinuxx64MIBCRuntimeVersion>1.0.0-prerelease.23272.4</optimizationlinuxx64MIBCRuntimeVersion>
-    <optimizationlinuxarm64MIBCRuntimeVersion>1.0.0-prerelease.23272.4</optimizationlinuxarm64MIBCRuntimeVersion>
-    <optimizationPGOCoreCLRVersion>1.0.0-prerelease.23272.4</optimizationPGOCoreCLRVersion>
+    <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.23301.6</optimizationwindows_ntx64MIBCRuntimeVersion>
+    <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.23301.6</optimizationwindows_ntx86MIBCRuntimeVersion>
+    <optimizationwindows_ntarm64MIBCRuntimeVersion>1.0.0-prerelease.23301.6</optimizationwindows_ntarm64MIBCRuntimeVersion>
+    <optimizationlinuxx64MIBCRuntimeVersion>1.0.0-prerelease.23301.6</optimizationlinuxx64MIBCRuntimeVersion>
+    <optimizationlinuxarm64MIBCRuntimeVersion>1.0.0-prerelease.23301.6</optimizationlinuxarm64MIBCRuntimeVersion>
+    <optimizationPGOCoreCLRVersion>1.0.0-prerelease.23301.6</optimizationPGOCoreCLRVersion>
     <!-- Not auto-updated. -->
     <MicrosoftDiaSymReaderNativeVersion>16.11.23-beta1.23063.1</MicrosoftDiaSymReaderNativeVersion>
     <SystemCommandLineVersion>2.0.0-beta4.22564.1</SystemCommandLineVersion>
@@ -211,7 +211,7 @@
     <!-- ILLink -->
     <MicrosoftNETILLinkTasksVersion>8.0.0-preview.5.23279.2</MicrosoftNETILLinkTasksVersion>
     <!-- Mono Cecil -->
-    <MicrosoftDotNetCecilVersion>0.11.4-alpha.23265.2</MicrosoftDotNetCecilVersion>
+    <MicrosoftDotNetCecilVersion>0.11.4-alpha.23301.1</MicrosoftDotNetCecilVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>8.0.0-preview.6.23280.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
@@ -232,7 +232,7 @@
          Note: when the name is updated, make sure to update dependency name in eng/pipelines/common/xplat-setup.yml
                like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-8_0_100_Transport
     -->
-    <MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion>8.0.0-preview.6.23281.1</MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion>
+    <MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion>8.0.0-preview.6.23301.1</MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion)</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- workloads -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>

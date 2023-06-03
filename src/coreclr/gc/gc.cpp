@@ -14170,7 +14170,7 @@ gc_heap::init_semi_shared()
 #ifdef MULTIPLE_HEAPS
     mark_list_size = min (100*1024, max (8192, soh_segment_size/(2*10*32)));
 #ifdef DYNAMIC_HEAP_COUNT
-    if (GCConfig::GetGCDynamicAdaptation() && GCConfig::GetHeapCount() == 0)
+    if (GCConfig::GetGCDynamicAdaptationMode() == 1 && GCConfig::GetHeapCount() == 0)
     {
         // we'll actually start with one heap in this case
         g_mark_list_total_size = mark_list_size;
@@ -14380,7 +14380,7 @@ gc_heap::init_semi_shared()
 #endif //FEATURE_EVENT_TRACE
 
     conserve_mem_setting  = (int)GCConfig::GetGCConserveMem();
-    if (conserve_mem_setting == 0 && GCConfig::GetGCDynamicAdaptation())
+    if (conserve_mem_setting == 0 && GCConfig::GetGCDynamicAdaptationMode() == 1)
         conserve_mem_setting = 5;
     if (conserve_mem_setting < 0)
         conserve_mem_setting = 0;
@@ -24882,7 +24882,7 @@ void gc_heap::check_heap_count ()
         return;
     }
 
-    if (!GCConfig::GetGCDynamicAdaptation())
+    if (GCConfig::GetGCDynamicAdaptationMode() == 0)
     {
         // don't change the heap count dynamically if the feature isn't explicitly enabled
         return;        
@@ -48067,7 +48067,7 @@ HRESULT GCHeap::Initialize()
     {
 #ifdef DYNAMIC_HEAP_COUNT
         // if no heap count was specified, and we are told to adjust heap count dynamically ...
-        if (GCConfig::GetHeapCount() == 0 && GCConfig::GetGCDynamicAdaptation())
+        if (GCConfig::GetHeapCount() == 0 && GCConfig::GetGCDynamicAdaptationMode() == 1)
         {
             // ... start with only 1 heap
             gc_heap::g_heaps[0]->change_heap_count (1);
@@ -50509,7 +50509,7 @@ size_t gc_heap::get_gen0_min_size()
         int n_heaps = 1;
 #endif //SERVER_GC
 
-        if (GCConfig::GetGCConserveMem() != 0 || GCConfig::GetGCDynamicAdaptation())
+        if (GCConfig::GetGCConserveMem() != 0 || GCConfig::GetGCDynamicAdaptationMode() == 1)
         {
             // if we are asked to be stingy with memory, limit gen 0 size
             gen0size = min (gen0size, (4*1024*1024));
