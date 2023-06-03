@@ -206,11 +206,17 @@ def build_and_run(coreclr_args, output_mch_name):
          "--framework", "net8.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
          "-o", artifacts_directory], _exit_on_fail=True)
 
-    # Disable ReadyToRun so we always JIT R2R methods and collect them
-    collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter \"*\" --corerun {os.path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
-                         f"--partition-index {partition_index} --envVars DOTNET_JitName:{shim_name} " \
-                         " DOTNET_ZapDisable:1  DOTNET_ReadyToRun:0 " \
-                         "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart --logBuildOutput"
+    if benchmark_binary.lower().startswith("microbenchmarks"):
+        # Disable ReadyToRun so we always JIT R2R methods and collect them
+        collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter \"*\" --corerun {os.path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
+                            f"--partition-index {partition_index} --envVars DOTNET_JitName:{shim_name} " \
+                            " DOTNET_ZapDisable:1  DOTNET_ReadyToRun:0 " \
+                            "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart --logBuildOutput"
+    else:
+        # Disable ReadyToRun so we always JIT R2R methods and collect them
+        collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter \"*\" --corerun {os.path.join(core_root, corerun_exe)} --envVars DOTNET_JitName:{shim_name} " \
+                            " DOTNET_ZapDisable:1  DOTNET_ReadyToRun:0 " \
+                            "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart --logBuildOutput"
 
     # Generate the execution script in Temp location
     with TempDir() as temp_location:
