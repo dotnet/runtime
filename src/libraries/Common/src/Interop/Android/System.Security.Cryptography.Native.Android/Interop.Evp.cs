@@ -45,7 +45,7 @@ internal static partial class Interop
             _ = source;
             _ = destination;
             Debug.Fail("Should have validated that XOF is not supported before getting here.");
-            throw new NotSupportedException();
+            throw new PlatformNotSupportedException();
         }
 
         internal static unsafe int EvpDigestFinalXOF(SafeEvpMdCtxHandle ctx, Span<byte> destination)
@@ -54,7 +54,7 @@ internal static partial class Interop
             _ = ctx;
             _ = destination;
             Debug.Fail("Should have validated that XOF is not supported before getting here.");
-            throw new NotSupportedException();
+            throw new PlatformNotSupportedException();
         }
 
         internal static unsafe int EvpDigestCurrentXOF(SafeEvpMdCtxHandle ctx, Span<byte> destination)
@@ -62,7 +62,7 @@ internal static partial class Interop
             // The partial needs to match the OpenSSL parameters.
             _ = ctx;
             _ = destination;
-            throw new NotSupportedException();
+            throw new PlatformNotSupportedException();
         }
 
         internal static readonly int EVP_MAX_MD_SIZE = GetMaxMdSize();
