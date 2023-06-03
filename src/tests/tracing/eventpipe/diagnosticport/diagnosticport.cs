@@ -378,11 +378,6 @@ namespace Tracing.Tests.DiagnosticPortValidation
 
         public static async Task<bool> TEST_CanGetProcessInfo2WhileSuspended()
         {
-            // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-            // https://github.com/dotnet/runtime/issues/83051
-            if (TestLibrary.Utilities.IsNativeAot)
-                return true;
-
             bool fSuccess = true;
             Task<bool> subprocessTask = Utils.RunSubprocess(
                 currentAssembly: Assembly.GetExecutingAssembly(),
@@ -401,10 +396,17 @@ namespace Tracing.Tests.DiagnosticPortValidation
                     Logger.logger.Log($"Received: [{response.Payload.Select(b => b.ToString("X2") + " ").Aggregate(string.Concat)}]");
                     ProcessInfo2 processInfo2 = ProcessInfo2.TryParse(response.Payload);
 
-                    if (Type.GetType("Mono.RuntimeStructs") != null)
+                    if (TestLibrary.Utilities.IsMonoRuntime)
                     {
                         // Mono currently returns empty string if the runtime is suspended before an assembly is loaded
                         Utils.Assert(string.IsNullOrEmpty(processInfo2.ManagedEntrypointAssemblyName));
+                    }
+                    else if (TestLibrary.Utilities.IsNativeAot)
+                    {
+                        // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
+                        // https://github.com/dotnet/runtime/issues/83051
+                        // NativeAOT currently always returns empty string
+                        Utils.Assert(processInfo2.ManagedEntrypointAssemblyName == string.Empty);
                     }
                     else
                     {

@@ -90,10 +90,6 @@ ep_rt_aot_entrypoint_assembly_name_get_utf8 (void)
 {
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement EventPipe assembly name - return filename in nativeaot?
-    PalDebugBreak();
-
-    // fallback to the empty string if we can't get assembly info, e.g., if the runtime is
-    // suspended before an assembly is loaded.
     return reinterpret_cast<const ep_char8_t*>("");
 }
 

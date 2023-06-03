@@ -1391,10 +1391,7 @@ ep_rt_utf8_to_utf16le_string (
     // Shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // Implementation would just use strlen and malloc to make a new buffer, and would then copy the string chars one by one.
     // Assumes that only ASCII is used for ep_char8_t
-    size_t len_utf8 = strlen(str);        
-    if (len_utf8 == 0)
-        return NULL;
-
+    size_t len_utf8 = strlen(str);
     ep_char16_t *str_utf16 = reinterpret_cast<ep_char16_t *>(malloc ((len_utf8 + 1) * sizeof (ep_char16_t)));
     if (!str_utf16)
         return NULL;
