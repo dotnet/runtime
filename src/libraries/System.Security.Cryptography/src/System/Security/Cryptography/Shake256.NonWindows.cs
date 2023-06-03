@@ -3,8 +3,8 @@
 
 namespace System.Security.Cryptography
 {
-    public sealed partial class Shake128 : IDisposable
+    public sealed partial class Shake256 : IDisposable
     {
-        private const string HashAlgorithmId = HashAlgorithmNames.SHAKE128;
+        private const string HashAlgorithmId = HashAlgorithmNames.SHAKE256;
     }
 }

@@ -160,6 +160,7 @@ const EVP_MD *EVP_sha3_256(void);
 const EVP_MD *EVP_sha3_384(void);
 const EVP_MD *EVP_sha3_512(void);
 const EVP_MD *EVP_shake128(void);
+const EVP_MD *EVP_shake256(void);
 int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
 #endif
 
@@ -389,6 +390,7 @@ int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
     LIGHTUP_FUNCTION(EVP_sha3_384) \
     LIGHTUP_FUNCTION(EVP_sha3_512) \
     LIGHTUP_FUNCTION(EVP_shake128) \
+    LIGHTUP_FUNCTION(EVP_shake256) \
     REQUIRED_FUNCTION(EXTENDED_KEY_USAGE_free) \
     REQUIRED_FUNCTION(GENERAL_NAMES_free) \
     REQUIRED_FUNCTION(HMAC) \
@@ -876,6 +878,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_sha3_384 EVP_sha3_384_ptr
 #define EVP_sha3_512 EVP_sha3_512_ptr
 #define EVP_shake128 EVP_shake128_ptr
+#define EVP_shake256 EVP_shake256_ptr
 #define EXTENDED_KEY_USAGE_free EXTENDED_KEY_USAGE_free_ptr
 #define GENERAL_NAMES_free GENERAL_NAMES_free_ptr
 #define HMAC HMAC_ptr

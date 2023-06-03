@@ -163,11 +163,19 @@ PALEXPORT const EVP_MD* CryptoNative_EvpSha3_512(void);
 
 /*
 Function:
-EvpSha3_512
+EvpShake128
 
 Direct shim to EVP_shake128.
 */
 PALEXPORT const EVP_MD* CryptoNative_EvpShake128(void);
+
+/*
+Function:
+EvpShake256
+
+Direct shim to EVP_shake256.
+*/
+PALEXPORT const EVP_MD* CryptoNative_EvpShake256(void);
 
 /*
 Function:

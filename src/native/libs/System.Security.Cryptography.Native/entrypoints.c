@@ -169,6 +169,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_EvpSha3_384)
     DllImportEntry(CryptoNative_EvpSha3_512)
     DllImportEntry(CryptoNative_EvpShake128)
+    DllImportEntry(CryptoNative_EvpShake256)
     DllImportEntry(CryptoNative_ExtendedKeyUsageDestroy)
     DllImportEntry(CryptoNative_GetAsn1IntegerDerSize)
     DllImportEntry(CryptoNative_GetAsn1StringBytes)

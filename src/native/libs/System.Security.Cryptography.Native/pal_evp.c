@@ -286,6 +286,19 @@ const EVP_MD* CryptoNative_EvpShake128(void)
     return NULL;
 }
 
+const EVP_MD* CryptoNative_EvpShake256(void)
+{
+    // No error queue impact.
+#if HAVE_OPENSSL_SHA3
+    if (API_EXISTS(EVP_shake256))
+    {
+        return EVP_shake256();
+    }
+#endif
+
+    return NULL;
+}
+
 int32_t CryptoNative_GetMaxMdSize(void)
 {
     // No error queue impact.
