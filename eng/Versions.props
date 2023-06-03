@@ -81,7 +81,7 @@
   <PropertyGroup>
     <StaticCsVersion>0.2.0</StaticCsVersion>
     <!-- SDK dependencies -->
-    <MicrosoftDotNetApiCompatTaskVersion>8.0.100-preview.6.23301.17</MicrosoftDotNetApiCompatTaskVersion>
+    <MicrosoftDotNetApiCompatTaskVersion>8.0.100-preview.6.23302.2</MicrosoftDotNetApiCompatTaskVersion>
     <!-- Arcade dependencies -->
     <MicrosoftDotNetBuildTasksFeedVersion>8.0.0-beta.23281.3</MicrosoftDotNetBuildTasksFeedVersion>
     <MicrosoftDotNetCodeAnalysisVersion>8.0.0-beta.23281.3</MicrosoftDotNetCodeAnalysisVersion>
@@ -211,7 +211,7 @@
     <!-- ILLink -->
     <MicrosoftNETILLinkTasksVersion>8.0.0-preview.5.23279.2</MicrosoftNETILLinkTasksVersion>
     <!-- Mono Cecil -->
-    <MicrosoftDotNetCecilVersion>0.11.4-alpha.23265.2</MicrosoftDotNetCecilVersion>
+    <MicrosoftDotNetCecilVersion>0.11.4-alpha.23301.1</MicrosoftDotNetCecilVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>8.0.0-preview.6.23280.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
@@ -232,7 +232,7 @@
          Note: when the name is updated, make sure to update dependency name in eng/pipelines/common/xplat-setup.yml
                like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-8_0_100_Transport
     -->
-    <MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion>8.0.0-preview.6.23281.1</MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion>
+    <MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion>8.0.0-preview.6.23301.1</MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion)</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- workloads -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
