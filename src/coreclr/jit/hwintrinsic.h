@@ -332,20 +332,20 @@ enum class FloatRoundingMode : uint8_t
 
 enum class IntComparisonMode : uint8_t
 {
-    Equal = 0,
-    LessThan = 1,
+    Equal           = 0,
+    LessThan        = 1,
     LessThanOrEqual = 2,
-    False = 3,
+    False           = 3,
 
-    NotEqual = 4,
+    NotEqual           = 4,
     GreaterThanOrEqual = 5,
-    GreaterThan = 6,
-    True = 7,
+    GreaterThan        = 6,
+    True               = 7,
 
     NotGreaterThanOrEqual = LessThan,
-    NotGreaterThan = LessThanOrEqual,
+    NotGreaterThan        = LessThanOrEqual,
 
-    NotLessThan = GreaterThanOrEqual,
+    NotLessThan        = GreaterThanOrEqual,
     NotLessThanOrEqual = GreaterThan
 };
 
