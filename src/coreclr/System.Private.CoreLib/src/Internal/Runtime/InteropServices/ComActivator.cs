@@ -620,15 +620,15 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 ref Guid riid,
                 out IntPtr ppvObject)
             {
-                Type interfaceType = BasicClassFactory.GetValidatedInterfaceType(_classType, ref riid, pUnkOuter);
+                Type interfaceType = GetValidatedInterfaceType(_classType, ref riid, pUnkOuter);
 
                 object obj = Activator.CreateInstance(_classType)!;
                 if (pUnkOuter != null)
                 {
-                    obj = BasicClassFactory.CreateAggregatedObject(pUnkOuter, obj);
+                    obj = CreateAggregatedObject(pUnkOuter, obj);
                 }
 
-                ppvObject = BasicClassFactory.GetObjectAsInterface(obj, interfaceType);
+                ppvObject = GetObjectAsInterface(obj, interfaceType);
             }
 
             public void LockServer([MarshalAs(UnmanagedType.Bool)] bool fLock)

@@ -90,7 +90,7 @@ namespace System.Globalization
         internal static bool NlsIsEnsurePredefinedLocaleName(string name)
         {
             Debug.Assert(GlobalizationMode.UseNls);
-            return CultureData.GetLocaleInfoExInt(name, Interop.Kernel32.LOCALE_ICONSTRUCTEDLOCALE) != 1;
+            return GetLocaleInfoExInt(name, Interop.Kernel32.LOCALE_ICONSTRUCTEDLOCALE) != 1;
         }
 
         private string? NlsGetTimeFormatString()
