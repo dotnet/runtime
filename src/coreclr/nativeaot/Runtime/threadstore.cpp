@@ -442,11 +442,6 @@ EXTERN_C ThreadBuffer* RhpGetThread()
     return &tls_CurrentThread;
 }
 
-COOP_PINVOKE_HELPER(Object**, RhGetInlinedThreadStaticStorage, ())
-{
-    return &tls_InlinedThreadStatics.m_threadStaticsBase;
-}
-
 #endif // !DACCESS_COMPILE
 
 #ifdef _WIN32

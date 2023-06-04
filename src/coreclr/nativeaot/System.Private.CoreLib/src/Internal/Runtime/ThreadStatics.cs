@@ -17,31 +17,19 @@ namespace Internal.Runtime
     /// </summary>
     internal static class ThreadStatics
     {
+        [ThreadStatic]
+        private static object t_inlinedThreadStaticBase;
+
         /// <summary>
         /// This method is called from a ReadyToRun helper to get base address of thread
         /// static storage for the given type.
         /// </summary>
         internal static unsafe object GetThreadStaticBaseForType(TypeManagerSlot* pModuleData, int typeTlsIndex)
         {
-            if (typeTlsIndex >= 0)
-                return GetUninlinedThreadStaticBaseForType(pModuleData, typeTlsIndex);
+            if (typeTlsIndex < 0)
+                return t_inlinedThreadStaticBase;
 
-            // the inlined storage should be per module. Module must have a symbol.
-            // RhGetInlinedThreadStaticStorage should take the module and figure where the storage is.
-
-            // inlined case - no index (assume -1)
-            // gets reloc'd offset.
-
-            // is the same as current INLINE_TLS, but gets a reloc'd offset, which module data has.
-
-            // 1) TypeManger or module data must define a symbol that loader understands
-            // 2) has a reloc'd offset to it.
-
-            ref object? threadStorage = ref RuntimeImports.RhGetInlinedThreadStaticStorage();
-            if (threadStorage != null)
-                return threadStorage;
-
-            return GetInlinedThreadStaticBaseSlow(ref threadStorage);
+            return GetUninlinedThreadStaticBaseForType(pModuleData, typeTlsIndex);
         }
 
         [RuntimeExport("RhpGetInlinedThreadStaticBaseSlow")]
@@ -49,6 +37,8 @@ namespace Internal.Runtime
         {
             Debug.Assert(threadStorage == null);
             // Allocate an object that will represent a memory block for all thread static fields
+
+            // TODO: VS fetch the type manager from the threadStorage location
             TypeManagerHandle typeManager = RuntimeImports.RhGetSingleTypeManager();
             object threadStaticBase = AllocateThreadStaticStorageForType(typeManager, 0);
 
@@ -57,6 +47,8 @@ namespace Internal.Runtime
 
             // assign the storage block to the storage variable and return
             threadStorage = threadStaticBase;
+            t_inlinedThreadStaticBase = threadStaticBase;
+
             return threadStaticBase;
         }
 
