@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 
 namespace System.Runtime.Intrinsics
@@ -267,10 +268,26 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> operator *(Vector256<T> left, Vector256<T> right)
         {
-            return Vector256.Create(
-                left._lower * right._lower,
-                left._upper * right._upper
-            );
+            if ((typeof(T) == typeof(ulong) || typeof(T) == typeof(long)) && Avx2.IsSupported)
+            {
+                // xh * yl
+                Vector256<uint> t1 = Avx2.MultiplyLow(Avx2.ShiftRightLogical(left.AsUInt64(), 32).AsUInt32(), right.AsUInt32());
+                // xl * yh
+                Vector256<uint> t2 = Avx2.MultiplyLow(left.AsUInt32(), Avx2.ShiftRightLogical(right.AsUInt64(), 32).AsUInt32());
+                // (xh * yl + xl * yh) * 2^32
+                Vector256<ulong> t3 = Avx2.ShiftLeftLogical((t1.AsUInt64() + t2.AsUInt64()), 32);
+                // xl * yl
+                Vector256<uint> t4 = Avx2.MultiplyLow(left.AsUInt32(), right.AsUInt32());
+                // (xh * yl + xl * yh) * 2^32 + xl * yl
+                return Unsafe.BitCast<Vector256<ulong>, Vector256<T>>(t3 + t4.AsUInt64());
+            }
+            else
+            {
+                return Vector256.Create(
+                    left._lower * right._lower,
+                    left._upper * right._upper
+                );
+            }
         }
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
@@ -282,10 +299,17 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> operator *(Vector256<T> left, T right)
         {
-            return Vector256.Create(
-                left._lower * right,
-                left._upper * right
-            );
+            if ((typeof(T) == typeof(ulong) || typeof(T) == typeof(long)) && Avx2.IsSupported)
+            {
+                return left * Vector256.Create(right);
+            }
+            else
+            {
+                return Vector256.Create(
+                    left._lower * right,
+                    left._upper * right
+                );
+            }
         }
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>

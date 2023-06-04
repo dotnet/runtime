@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 
 namespace System.Runtime.Intrinsics
@@ -269,10 +270,26 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator *(Vector128<T> left, Vector128<T> right)
         {
-            return Vector128.Create(
-                left._lower * right._lower,
-                left._upper * right._upper
-            );
+            if ((typeof(T) == typeof(ulong) || typeof(T) == typeof(long)) && Sse2.IsSupported)
+            {
+                // xh * yl
+                Vector128<ulong> t1 = Sse2.Multiply(Sse2.ShiftRightLogical(left.AsUInt64(), 32).AsUInt32(), right.AsUInt32());
+                // xl * yh
+                Vector128<ulong> t2 = Sse2.Multiply(left.AsUInt32(), Sse2.ShiftRightLogical(right.AsUInt64(), 32).AsUInt32());
+                // (xh * yl + xl * yh) * 2^32
+                Vector128<ulong> t3 = Sse2.ShiftLeftLogical((t1.AsUInt64() + t2.AsUInt64()), 32);
+                // xl * yl
+                Vector128<ulong> t4 = Sse2.Multiply(left.AsUInt32(), right.AsUInt32());
+                // (xh * yl + xl * yh) * 2^32 + xl * yl
+                return Unsafe.BitCast<Vector128<ulong>, Vector128<T>>(t3 + t4);
+            }
+            else
+            {
+                return Vector128.Create(
+                    left._lower * right._lower,
+                    left._upper * right._upper
+                );
+            }
         }
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
@@ -284,10 +301,17 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator *(Vector128<T> left, T right)
         {
-            return Vector128.Create(
-                left._lower * right,
-                left._upper * right
-            );
+            if ((typeof(T) == typeof(ulong) || typeof(T) == typeof(long)) && Sse2.IsSupported)
+            {
+                return left * Vector128.Create(right);
+            }
+            else
+            {
+                return Vector128.Create(
+                    left._lower * right,
+                    left._upper * right
+                );
+            }
         }
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
