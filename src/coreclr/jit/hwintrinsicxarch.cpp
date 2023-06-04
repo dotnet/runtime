@@ -607,7 +607,7 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
                 assert(id != NI_AVX_CompareGreaterThan);
                 return static_cast<int>(FloatComparisonMode::OrderedLessThanSignaling);
             }
-            else if (id == NI_AVX512F_CompareGreaterThanMask)
+            else if ((id == NI_AVX512F_CompareGreaterThanMask) && varTypeIsUnsigned(simdBaseType))
             {
                 // TODO-XARCH-CQ: Allow the other integer paths to use the EVEX encoding
                 return static_cast<int>(IntComparisonMode::GreaterThan);

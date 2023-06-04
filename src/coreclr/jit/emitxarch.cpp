@@ -18856,6 +18856,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_pcmpgtq:
         case INS_psadbw:
         case INS_vdbpsadbw:
+        case INS_vpcmpgtq:
         case INS_vpermps:
         case INS_vpermpd:
         case INS_vpermpd_reg:
