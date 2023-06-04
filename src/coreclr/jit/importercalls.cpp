@@ -6280,12 +6280,6 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 {
     if (!opts.OptEnabled(CLFLG_INLINING))
     {
-        /* XXX Mon 8/18/2008
-         * This assert is misleading.  The caller does not ensure that we have CLFLG_INLINING set before
-         * calling impMarkInlineCandidate.  However, if this assert trips it means that we're an inlinee and
-         * CLFLG_MINOPT is set.  That doesn't make a lot of sense.  If you hit this assert, work back and
-         * figure out why we did not set MAXOPT for this compile.
-         */
         assert(!compIsForInlining());
         return;
     }
@@ -6301,11 +6295,12 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
         assert(call->GetInlineCandidatesCount() > 0);
         for (uint8_t candidateId = 0; candidateId < call->GetInlineCandidatesCount(); candidateId++)
         {
-            InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate", true);
+            InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate for GDV");
 
             // Do the actual evaluation
             impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
                                          ilOffset, &inlineResult);
+            inlineResult.Report();
 
             // Ignore non-inlineable candidates
             // TODO: Consider keeping them to just devirtualize without inlining, at least for interface
@@ -6316,14 +6311,22 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
                 candidateId--;
             }
         }
+
+        // None of the candidates made it, make sure the call is no longer marked as "has inline info"
+        if (call->GetInlineCandidatesCount() == 0)
+        {
+            assert(!call->IsInlineCandidate());
+            assert(!call->IsGuardedDevirtualizationCandidate());
+        }
     }
     else
     {
         const uint8_t candidatesCount = call->GetInlineCandidatesCount();
         assert(candidatesCount <= 1);
-        InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate", true);
+        InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate");
         impMarkInlineCandidateHelper(call, 0, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, ilOffset,
                                      &inlineResult);
+        inlineResult.Report();
     }
 
     // If this call is an inline candidate or is not a guarded devirtualization

@@ -2335,8 +2335,25 @@ bool DiscretionaryPolicy::PropagateNeverToRuntime() const
     //
     switch (m_Observation)
     {
+        // Not-profitable depends on call-site:
         case InlineObservation::CALLEE_NOT_PROFITABLE_INLINE:
+            return false;
+
+        // If we mark no-returns as noinline we won't be able to recognize them
+        // as no-returns in future inlines.
         case InlineObservation::CALLEE_DOES_NOT_RETURN:
+            return false;
+
+        // These also depend on call-sites
+        case InlineObservation::CALLSITE_OVER_BUDGET:
+        case InlineObservation::CALLSITE_TOO_MANY_LOCALS:
+            return false;
+
+        // These thresholds may depend on PGO data (we allow more blocks/bigger IL size
+        // for hot methods so we want to make sure we won't bake 'noinline' just because
+        // some semi-hot callsite didn't expand these thresholds).
+        case InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS:
+        case InlineObservation::CALLEE_TOO_MUCH_IL:
             return false;
 
         default:
