@@ -11308,40 +11308,6 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
 
     vnStore->VNPUnpackExc(intrinsic->AsOp()->gtOp1->gtVNPair, &arg0VNP, &arg0VNPx);
 
-    // Try to fold obj.GetType() if we know the exact type of obj.
-    if (intrinsic->gtIntrinsicName == NI_System_Object_GetType)
-    {
-        bool isExact = false, isNonNull = false;
-
-        // First, let's try to guess the type via gtGetClassHandle
-        CORINFO_CLASS_HANDLE cls = gtGetClassHandle(tree->gtGetOp1(), &isExact, &isNonNull);
-        if (cls == NO_CLASS_HANDLE)
-        {
-            assert(!isExact);
-
-            // If we couldn't get the type via gtGetClassHandle, let's see if the argument is a
-            // object handle via VN.
-            ValueNum arg0VN = arg0VNP.GetLiberal();
-            if (arg0VNP.BothEqual() && vnStore->IsVNObjHandle(arg0VN))
-            {
-                cls     = info.compCompHnd->getObjectType(vnStore->ConstantObjHandle(arg0VN));
-                isExact = true;
-            }
-        }
-
-        if ((cls != NO_CLASS_HANDLE) && isExact)
-        {
-            CORINFO_OBJECT_HANDLE typeObj = info.compCompHnd->getRuntimeTypePointer(cls);
-            if (typeObj != nullptr)
-            {
-                setMethodHasFrozenObjects();
-                ValueNum handleVN   = vnStore->VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL);
-                intrinsic->gtVNPair = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), arg0VNPx);
-                return;
-            }
-        }
-    }
-
     if (intrinsic->AsOp()->gtOp2 != nullptr)
     {
         vnStore->VNPUnpackExc(intrinsic->AsOp()->gtOp2->gtVNPair, &arg1VNP, &arg1VNPx);
@@ -11369,6 +11335,23 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
     else
     {
         assert(intrinsic->gtIntrinsicName == NI_System_Object_GetType);
+
+        // Try to fold obj.GetType() if we know the exact type of obj.
+        bool                 isExact   = false;
+        bool                 isNonNull = false;
+        CORINFO_CLASS_HANDLE cls       = gtGetClassHandle(tree->gtGetOp1(), &isExact, &isNonNull);
+        if ((cls != NO_CLASS_HANDLE) && isExact)
+        {
+            CORINFO_OBJECT_HANDLE typeObj = info.compCompHnd->getRuntimeTypePointer(cls);
+            if (typeObj != nullptr)
+            {
+                setMethodHasFrozenObjects();
+                ValueNum handleVN   = vnStore->VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL);
+                intrinsic->gtVNPair = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), arg0VNPx);
+                return;
+            }
+        }
+
         intrinsic->gtVNPair =
             vnStore->VNPWithExc(vnStore->VNPairForFunc(intrinsic->TypeGet(), VNF_ObjGetType, arg0VNP), arg0VNPx);
     }
