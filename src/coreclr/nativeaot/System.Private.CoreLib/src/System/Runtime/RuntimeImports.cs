@@ -588,10 +588,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetTargetOfUnboxingAndInstantiatingStub")]
         public static extern IntPtr RhGetTargetOfUnboxingAndInstantiatingStub(IntPtr pCode);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetSingleTypeManager")]
-        public static extern TypeManagerHandle RhGetSingleTypeManager();
-
         //
         // EH helpers
         //

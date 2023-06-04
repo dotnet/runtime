@@ -37,9 +37,7 @@ namespace Internal.Runtime
         {
             Debug.Assert(threadStorage == null);
             // Allocate an object that will represent a memory block for all thread static fields
-
-            // TODO: VS fetch the type manager from the threadStorage location
-            TypeManagerHandle typeManager = RuntimeImports.RhGetSingleTypeManager();
+            TypeManagerHandle typeManager = (new object()).GetMethodTable()->TypeManager;
             object threadStaticBase = AllocateThreadStaticStorageForType(typeManager, 0);
 
             // register the storage location with the thread for GC reporting.
@@ -58,13 +56,13 @@ namespace Internal.Runtime
             int moduleIndex = pModuleData->ModuleIndex;
             Debug.Assert(moduleIndex >= 0);
 
-            object[][] threadStorage = RuntimeImports.RhGetThreadStaticStorage();
-            if (threadStorage != null && threadStorage.Length > moduleIndex)
+            object[][] perThreadStorage = RuntimeImports.RhGetThreadStaticStorage();
+            if (perThreadStorage != null && perThreadStorage.Length > moduleIndex)
             {
-                object[] moduleStorage = threadStorage[moduleIndex];
-                if (moduleStorage != null && moduleStorage.Length > typeTlsIndex)
+                object[] perModuleStorage = perThreadStorage[moduleIndex];
+                if (perModuleStorage != null && perModuleStorage.Length > typeTlsIndex)
                 {
-                    object threadStaticBase = moduleStorage[typeTlsIndex];
+                    object threadStaticBase = perModuleStorage[typeTlsIndex];
                     if (threadStaticBase != null)
                     {
                         return threadStaticBase;

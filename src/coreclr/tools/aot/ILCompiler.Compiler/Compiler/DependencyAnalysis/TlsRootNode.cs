@@ -33,9 +33,6 @@ namespace ILCompiler.DependencyAnalysis
             // next
             objData.EmitZeroPointer();
 
-            // type manager
-            objData.EmitPointerReloc(factory.TypeManagerIndirection);
-
             return objData.ToObjectData();
         }
 
