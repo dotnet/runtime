@@ -88,9 +88,9 @@ namespace System.Text.Json.Serialization.Converters
     /// Defines an object converter that supports deserialization via JsonElement/JsonNode representations.
     /// Used as the default in reflection or if object is declared in the JsonSerializerContext type graph.
     /// </summary>
-    internal sealed class DeserializingObjectConverter : ObjectConverter
+    internal sealed class DefaultObjectConverter : ObjectConverter
     {
-        public DeserializingObjectConverter()
+        public DefaultObjectConverter()
         {
             // JsonElement/JsonNode parsing does not support async; force read ahead for now.
             RequiresReadAhead = true;
