@@ -6015,7 +6015,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
             if (call->GetInlineCandidatesCount() == numExactClasses)
             {
                 assert(numExactClasses > 0);
-                call->gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT_EXACT;
+                // call->gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT_EXACT;
                 // NOTE: we have to drop this flag if we change the number of candidates before we expand.
             }
 
