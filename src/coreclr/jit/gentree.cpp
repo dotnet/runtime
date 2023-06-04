@@ -21255,7 +21255,6 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(
             {
                 assert(IsBaselineVector512IsaSupportedDebugOnly());
                 intrinsic = NI_Vector512_op_Equality;
-                break;
             }
             else
             {
