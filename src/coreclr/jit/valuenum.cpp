@@ -11340,7 +11340,7 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
         bool                 isExact   = false;
         bool                 isNonNull = false;
         CORINFO_CLASS_HANDLE cls       = gtGetClassHandle(tree->gtGetOp1(), &isExact, &isNonNull);
-        if ((cls != NO_CLASS_HANDLE) && isExact)
+        if ((cls != NO_CLASS_HANDLE) && isExact && isNonNull)
         {
             CORINFO_OBJECT_HANDLE typeObj = info.compCompHnd->getRuntimeTypePointer(cls);
             if (typeObj != nullptr)
