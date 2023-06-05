@@ -146,7 +146,7 @@ public enum ICUDataMode : int
     Custom = 3,
 
     /// <summary>
-    /// Use the reduced icudt_platform.dat file
+    /// Use the reduced icudt_hybrid.dat file
     /// </summary>
     Hybrid = 4,
 }

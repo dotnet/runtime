@@ -151,9 +151,10 @@ Copyright (c) .NET Foundation. All rights reserved.
     <Warning Condition="'$(InvariantGlobalization)' == 'true' AND '$(BlazorWebAssemblyLoadAllGlobalizationData)' == 'true'" Text="%24(BlazorWebAssemblyLoadAllGlobalizationData) has no effect when %24(InvariantGlobalization) is set to true." />
     <Warning Condition="'$(InvariantGlobalization)' == 'true' AND '$(BlazorIcuDataFileName)' != ''" Text="%24(BlazorIcuDataFileName) has no effect when %24(InvariantGlobalization) is set to true." />
     <Warning Condition="'$(BlazorWebAssemblyLoadAllGlobalizationData)' == 'true' AND '$(BlazorIcuDataFileName)' != ''" Text="%24(BlazorIcuDataFileName) has no effect when %24(BlazorWebAssemblyLoadAllGlobalizationData) is set to true." />
-    <Warning Condition="'$(InvariantGlobalization)' == 'true' AND '$(HybridGlobalization)' != ''" Text="%24(HybridGlobalization) has no effect when %24(InvariantGlobalization) is set to true." />
-    <Warning Condition="'$(BlazorIcuDataFileName)' != '' AND '$(HybridGlobalization)' != ''" Text="%24(BlazorIcuDataFileName) has no effect when %24(HybridGlobalization) is set to true." />
+    <Warning Condition="'$(InvariantGlobalization)' == 'true' AND '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) has no effect when %24(InvariantGlobalization) is set to true." />
+    <Warning Condition="'$(BlazorIcuDataFileName)' != '' AND '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) has no effect when %24(BlazorIcuDataFileName) is set." />
     <PropertyGroup>
+      <HybridGlobalization Condition="'$(BlazorIcuDataFileName)' != ''">false</HybridGlobalization>
       <_BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(InvariantGlobalization)' != 'true'">$(BlazorWebAssemblyLoadAllGlobalizationData)</_BlazorWebAssemblyLoadAllGlobalizationData>
       <_BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(_BlazorWebAssemblyLoadAllGlobalizationData)' == ''">false</_BlazorWebAssemblyLoadAllGlobalizationData>
       <_IsHybridGlobalization Condition="'$(InvariantGlobalization)' != 'true' AND '$(HybridGlobalization)' == 'true'"></_IsHybridGlobalization>
@@ -175,7 +176,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmCopyOutputSymbolsToOutputDirectory Condition="'$(_WasmCopyOutputSymbolsToOutputDirectory)'==''">true</_WasmCopyOutputSymbolsToOutputDirectory>
       <_WasmEnableThreads>$(WasmEnableThreads)</_WasmEnableThreads>
       <_WasmEnableThreads Condition="'$(_WasmEnableThreads)' == ''">false</_WasmEnableThreads>
-      
+
       <_WasmEnableWebcil>$(WasmEnableWebcil)</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' or '$(_TargetingNET80OrLater)' != 'true'">false</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(_WasmEnableWebcil)' == ''">true</_WasmEnableWebcil>
