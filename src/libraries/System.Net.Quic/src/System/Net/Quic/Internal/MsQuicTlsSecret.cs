@@ -28,15 +28,18 @@ internal sealed class MsQuicTlsSecret : IDisposable
                 QUIC_TLS_SECRETS* ptr = handle.GetSecretsBuffer();
                 if (ptr != null)
                 {
-                    int status = MsQuicApi.Api.SetParam(handle, QUIC_PARAM_CONN_TLS_SECRETS, (uint)sizeof(QUIC_TLS_SECRETS), ptr );
+                    int status = MsQuicApi.Api.SetParam(handle, QUIC_PARAM_CONN_TLS_SECRETS, (uint)sizeof(QUIC_TLS_SECRETS), ptr);
 
-                    if (status == QUIC_STATUS_SUCCESS)
+                    if (StatusSucceeded(status))
                     {
                         return new MsQuicTlsSecret(ptr);
                     }
                     else
                     {
-                        NetEventSource.Error(handle, "Failed to set native memory for TLS secret.");
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            NetEventSource.Error(handle, "Failed to set native memory for TLS secret.");
+                        }
                     }
                 }
             }

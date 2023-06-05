@@ -486,14 +486,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
             NetEventSource.Info(this, $"{this} Received event CONNECTED {LocalEndPoint} -> {RemoteEndPoint}");
         }
 
-#if DEBUG
-        if (_tlsSecret != null)
-        {
-            _tlsSecret.WriteSecret();
-            _tlsSecret.Dispose();
-            _tlsSecret = null;
-        }
-#endif
         _connectedTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
     }
