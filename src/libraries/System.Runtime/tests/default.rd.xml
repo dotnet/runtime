@@ -130,7 +130,7 @@
         <Method Name="TestNullRefReturnInvoke" Dynamic="Required All">
           <GenericArgument Name="System.Double, System.Private.CoreLib" />
         </Method>
-        <Method Name="TestRefReturnMethodInvoke" Dynamic="Required All">
+        <Method Name="TestNullRefReturnInvoke" Dynamic="Required All">
           <GenericArgument Name="System.Decimal, System.Private.CoreLib" />
         </Method>
         <Method Name="TestNullRefReturnInvoke" Dynamic="Required All">
@@ -179,7 +179,7 @@
         <Method Name="TestRefReturnPropertyGetValue" Dynamic="Required All">
           <GenericArgument Name="System.Double, System.Private.CoreLib" />
         </Method>
-        <Method Name="TestRefReturnMethodInvoke" Dynamic="Required All">
+        <Method Name="TestRefReturnPropertyGetValue" Dynamic="Required All">
           <GenericArgument Name="System.Decimal, System.Private.CoreLib" />
         </Method>
         <Method Name="TestRefReturnPropertyGetValue" Dynamic="Required All">
