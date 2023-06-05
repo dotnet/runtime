@@ -36,6 +36,7 @@ System.Text.Encodings.Web.JavaScriptEncoder</PackageDescription>
     <Compile Include="System\Text\Encodings\Web\TextEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\TextEncoderSettings.cs" />
     <Compile Include="System\Text\Encodings\Web\ThrowHelper.cs" />
+    <Compile Include="System\Text\Encodings\Web\UnicodeJsonEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\UrlEncoder.cs" />
     <Compile Include="System\Text\Unicode\UnicodeHelpers.cs" />
     <Compile Include="System\Text\Unicode\UnicodeHelpers.generated.cs" />

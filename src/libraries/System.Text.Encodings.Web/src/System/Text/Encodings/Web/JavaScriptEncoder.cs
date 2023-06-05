@@ -36,6 +36,25 @@ namespace System.Text.Encodings.Web
         public static JavaScriptEncoder UnsafeRelaxedJsonEscaping => DefaultJavaScriptEncoder.UnsafeRelaxedEscapingSingleton;
 
         /// <summary>
+        /// Returns a default built-in instance of <see cref="JavaScriptEncoder"/> that allows all Unicode text without additional encoding.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Unlike the <see cref="Default"/>, this encoder instance does not escape HTML-sensitive characters like &lt;, &gt;, &amp;, etc. and hence must be used only
+        /// when the output is escaped correctly when embedded in another language.
+        /// </para>
+        /// <para>
+        /// Unlike the <see cref="Default"/>, the quotation mark is encoded as \" rather than \u0022.
+        /// </para>
+        /// <para>
+        /// Unlike the <see cref="Default"/> (which only allows <see cref="UnicodeRanges.BasicLatin"/>), using this encoder instance allows all permitted Unicode characters to go through unescaped.
+        /// If the output from this instance is embedded inside another language, the caller must ensure that the output is escaped according to that lanugage's rules.
+        /// When using this instance, ensure that the recipient correctly parses text per the JSON specification and supports text containing any Unicode character.
+        /// </para>
+        /// </remarks>
+        public static JavaScriptEncoder Unicode => UnicodeJsonEncoder.Singleton;
+
+        /// <summary>
         /// Creates a new instance of JavaScriptEncoder with provided settings.
         /// </summary>
         /// <param name="settings">Settings used to control how the created <see cref="JavaScriptEncoder"/> encodes, primarily which characters to encode.</param>
