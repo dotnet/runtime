@@ -115,15 +115,30 @@ implication        ,X86   ,AVXVNNI              ,AVX2
 implication        ,X86   ,MOVBE                ,SSE42
 implication        ,X86   ,X86Serialize         ,X86Base
 implication        ,X86   ,AVX512F              ,AVX2
+implication        ,X86   ,AVX512F              ,FMA
 implication        ,X86   ,AVX512F_VL           ,AVX512F
 implication        ,X86   ,AVX512CD             ,AVX512F
+implication        ,X86   ,AVX512CD_VL          ,AVX512CD
 implication        ,X86   ,AVX512CD_VL          ,AVX512F_VL
 implication        ,X86   ,AVX512BW             ,AVX512F
+implication        ,X86   ,AVX512BW_VL          ,AVX512BW
 implication        ,X86   ,AVX512BW_VL          ,AVX512F_VL
 implication        ,X86   ,AVX512DQ             ,AVX512F
+implication        ,X86   ,AVX512DQ_VL          ,AVX512DQ
 implication        ,X86   ,AVX512DQ_VL          ,AVX512F_VL
 implication        ,X86   ,AVX512VBMI           ,AVX512BW
+implication        ,X86   ,AVX512VBMI_VL        ,AVX512VBMI
 implication        ,X86   ,AVX512VBMI_VL        ,AVX512BW_VL
+
+; While the AVX-512 ISAs can be individually lit-up, they really
+; need F, BW, CD, DQ, and VL to be fully functional without adding
+; significant complexity into the JIT. Additionally, unlike AVX/AVX2
+; there was never really any hardware that didn't provide all 5 at
+; once, with the notable exception being Knight's Landing which
+; provided a similar but not quite the same feature.
+implication        ,X86   ,AVX512F              ,AVX512BW_VL
+implication        ,X86   ,AVX512F              ,AVX512CD_VL
+implication        ,X86   ,AVX512F              ,AVX512DQ_VL
 
 ; Definition of X64 instruction sets
 definearch         ,X64   ,64Bit     ,X64, X64
@@ -176,7 +191,7 @@ instructionsetgroup  ,x86-x64                    ,X64 X86  ,sse2
 instructionsetgroup  ,x86-x64-v2                 ,X64 X86  ,sse4.2 popcnt
 instructionsetgroup  ,x86-x64-v3                 ,X64 X86  ,x86-x64-v2 avx2 bmi bmi2 lzcnt movbe fma
 instructionsetgroup  ,skylake                    ,X64 X86  ,x86-x64-v3
-instructionsetgroup  ,x86-x64-v4                 ,X64 X86  ,x86-x64-v3 avx512f avx512f_vl avx512bw avx512bw_vl avx512cd avx512cd_vl
+instructionsetgroup  ,x86-x64-v4                 ,X64 X86  ,x86-x64-v3 avx512f avx512f_vl avx512bw avx512bw_vl avx512cd avx512cd_vl avx512dq avx512dq_vl
 
 instructionsetgroup  ,armv8-a                    ,ARM64    ,neon
 instructionsetgroup  ,armv8.1-a                  ,ARM64    ,armv8-a lse crc rdma

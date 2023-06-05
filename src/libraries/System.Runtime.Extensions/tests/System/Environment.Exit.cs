@@ -45,11 +45,8 @@ namespace System.Tests
         {
             int expectedExitCode = 123;
             const string AppName = "VoidMainWithExitCodeApp.exe";
-            var psi = new ProcessStartInfo();
-            psi.FileName = RemoteExecutor.HostRunner;
-            psi.Arguments = $"{AppName} {expectedExitCode} {mode}";
 
-            using (Process p = Process.Start(psi))
+            using (Process p = Process.Start(RemoteExecutor.HostRunner, new[] { AppName, expectedExitCode.ToString(), mode.ToString() }))
             {
                 p.WaitForExit();
                 Assert.Equal(expectedExitCode, p.ExitCode);

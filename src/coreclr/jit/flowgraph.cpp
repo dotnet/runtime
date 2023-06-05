@@ -1682,9 +1682,8 @@ void Compiler::fgAddSyncMethodEnterExit()
     //
     if (!opts.IsOSR())
     {
-        GenTree* zero     = gtNewZeroConNode(genActualType(typeMonAcquired));
-        GenTree* varNode  = gtNewLclvNode(lvaMonAcquired, typeMonAcquired);
-        GenTree* initNode = gtNewAssignNode(varNode, zero);
+        GenTree* zero     = gtNewZeroConNode(typeMonAcquired);
+        GenTree* initNode = gtNewStoreLclVarNode(lvaMonAcquired, zero);
 
         fgNewStmtAtEnd(fgFirstBB, initNode);
 
@@ -1709,9 +1708,8 @@ void Compiler::fgAddSyncMethodEnterExit()
         lvaCopyThis                  = lvaGrabTemp(true DEBUGARG("Synchronized method copy of this for handler"));
         lvaTable[lvaCopyThis].lvType = TYP_REF;
 
-        GenTree* thisNode = gtNewLclvNode(info.compThisArg, TYP_REF);
-        GenTree* copyNode = gtNewLclvNode(lvaCopyThis, TYP_REF);
-        GenTree* initNode = gtNewAssignNode(copyNode, thisNode);
+        GenTree* thisNode = gtNewLclVarNode(info.compThisArg);
+        GenTree* initNode = gtNewStoreLclVarNode(lvaCopyThis, thisNode);
 
         fgNewStmtAtEnd(tryBegBB, initNode);
     }
@@ -1792,7 +1790,7 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
             lclVar->gtFlags |= (retExpr->gtFlags & GTF_DONT_CSE);
 
             retExpr        = gtNewOperNode(GT_COMMA, lclVar->TypeGet(), tree, lclVar);
-            retExpr        = gtNewOperNode(GT_COMMA, lclVar->TypeGet(), tempInfo.asg, retExpr);
+            retExpr        = gtNewOperNode(GT_COMMA, lclVar->TypeGet(), tempInfo.store, retExpr);
             retNode->gtOp1 = retExpr;
             retNode->AddAllEffectsFlags(retExpr);
         }
@@ -2521,32 +2519,15 @@ PhaseStatus Compiler::fgAddInternal()
             noway_assert(lvaTable[lvaArg0Var].IsAddressExposed() || lvaTable[lvaArg0Var].lvHasILStoreOp ||
                          lva0CopiedForGenericsCtxt);
 
-            var_types thisType = lvaTable[info.compThisArg].TypeGet();
-
-            // Now assign the original input "this" to the temp
-
-            GenTree* tree;
-
-            tree = gtNewLclvNode(lvaArg0Var, thisType);
-
-            tree = gtNewAssignNode(tree,                                     // dst
-                                   gtNewLclvNode(info.compThisArg, thisType) // src
-                                   );
-
-            /* Create a new basic block and stick the assignment in it */
+            // Now assign the original input "this" to the temp.
+            GenTree* store = gtNewStoreLclVarNode(lvaArg0Var, gtNewLclVarNode(info.compThisArg));
 
             fgEnsureFirstBBisScratch();
+            fgNewStmtAtEnd(fgFirstBB, store);
 
-            fgNewStmtAtEnd(fgFirstBB, tree);
-
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("\nCopy \"this\" to lvaArg0Var in first basic block %s\n", fgFirstBB->dspToString());
-                gtDispTree(tree);
-                printf("\n");
-            }
-#endif
+            JITDUMP("\nCopy \"this\" to lvaArg0Var in first basic block %s\n", fgFirstBB->dspToString());
+            DISPTREE(store);
+            JITDUMP("\n");
 
             madeChanges = true;
         }
@@ -2804,155 +2785,6 @@ PhaseStatus Compiler::fgFindOperOrder()
 }
 
 //------------------------------------------------------------------------
-// fgRationalizeAssignments: Rewrite assignment nodes into stores.
-//
-// TODO-ASG: delete.
-//
-PhaseStatus Compiler::fgRationalizeAssignments()
-{
-    class AssignmentRationalizationVisitor : public GenTreeVisitor<AssignmentRationalizationVisitor>
-    {
-    public:
-        enum
-        {
-            DoPreOrder = true
-        };
-
-        AssignmentRationalizationVisitor(Compiler* compiler) : GenTreeVisitor(compiler)
-        {
-        }
-
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-        {
-            GenTree* node = *use;
-
-            // GTF_ASG is sometimes not propagated from setup arg assignments so we have to check for GTF_CALL too.
-            if ((node->gtFlags & (GTF_ASG | GTF_CALL)) == 0)
-            {
-                return fgWalkResult::WALK_SKIP_SUBTREES;
-            }
-
-            if (node->OperIs(GT_ASG))
-            {
-                GenTreeFlags lhsRhsFlags = node->gtGetOp1()->gtFlags | node->gtGetOp2()->gtFlags;
-                *use                     = m_compiler->fgRationalizeAssignment(node->AsOp());
-
-                // TP: return early quickly for simple assignments.
-                if ((lhsRhsFlags & (GTF_ASG | GTF_CALL)) == 0)
-                {
-                    return fgWalkResult::WALK_SKIP_SUBTREES;
-                }
-            }
-
-            return fgWalkResult::WALK_CONTINUE;
-        }
-    };
-
-    AssignmentRationalizationVisitor visitor(this);
-    for (BasicBlock* block : Blocks())
-    {
-        for (Statement* stmt : block->Statements())
-        {
-            GenTree** use = stmt->GetRootNodePointer();
-            if (visitor.PreOrderVisit(use, nullptr) == fgWalkResult::WALK_CONTINUE)
-            {
-                visitor.WalkTree(use, nullptr);
-            }
-        }
-    }
-
-    compAssignmentRationalized = true;
-
-#ifdef DEBUG
-    for (BasicBlock* block : Blocks())
-    {
-        for (Statement* stmt : block->Statements())
-        {
-            assert(!gtTreeContainsOper(stmt->GetRootNode(), GT_ASG));
-        }
-    }
-#endif // DEBUG
-
-    return PhaseStatus::MODIFIED_EVERYTHING;
-}
-
-//------------------------------------------------------------------------
-// fgRationalizeAssignment: Rewrite GT_ASG into a store node.
-//
-// Arguments:
-//    assignment - The assignment node to rewrite
-//
-// Return Value:
-//    Assignment's location, turned into the appropriate store node.
-//
-GenTree* Compiler::fgRationalizeAssignment(GenTreeOp* assignment)
-{
-    assert(assignment->OperGet() == GT_ASG);
-
-    bool     isReverseOp = assignment->IsReverseOp();
-    GenTree* location    = assignment->gtGetOp1();
-    GenTree* value       = assignment->gtGetOp2();
-    if (location->OperIsLocal())
-    {
-        assert((location->gtFlags & GTF_VAR_DEF) != 0);
-    }
-    else if (value->OperIs(GT_LCL_VAR))
-    {
-        assert((value->gtFlags & GTF_VAR_DEF) == 0);
-    }
-
-    if (assignment->OperIsInitBlkOp())
-    {
-        // No SIMD types are allowed for InitBlks (including zero-inits).
-        assert(assignment->TypeIs(TYP_STRUCT) && location->TypeIs(TYP_STRUCT));
-    }
-
-    genTreeOps storeOp;
-    switch (location->OperGet())
-    {
-        case GT_LCL_VAR:
-            storeOp = GT_STORE_LCL_VAR;
-            break;
-        case GT_LCL_FLD:
-            storeOp = GT_STORE_LCL_FLD;
-            break;
-        case GT_BLK:
-            storeOp = GT_STORE_BLK;
-            break;
-        case GT_IND:
-            storeOp = GT_STOREIND;
-            break;
-        default:
-            unreached();
-    }
-
-    JITDUMP("Rewriting GT_ASG(%s, X) to %s(X)\n", GenTree::OpName(location->OperGet()), GenTree::OpName(storeOp));
-
-    GenTree* store = location;
-    store->SetOperRaw(storeOp);
-    store->Data() = value;
-    store->gtFlags |= GTF_ASG;
-    store->AddAllEffectsFlags(value);
-    store->AddAllEffectsFlags(assignment->gtFlags & GTF_GLOB_REF); // TODO-ASG: zero-diff quirk, delete.
-    if (isReverseOp && !store->OperIsLocalStore())
-    {
-        store->SetReverseOp();
-    }
-    store->ClearDoNotCSE();
-    store->CopyRawCosts(assignment);
-
-    if (storeOp == GT_STOREIND)
-    {
-        store->AsStoreInd()->SetRMWStatusDefault();
-    }
-
-    DISPNODE(store);
-    JITDUMP("\n");
-
-    return store;
-}
-
-//------------------------------------------------------------------------
 // fgSimpleLowering: do full walk of all IR, lowering selected operations
 // and computing lvaOutgoingArgSpaceSize.
 //
@@ -2961,13 +2793,6 @@ GenTree* Compiler::fgRationalizeAssignment(GenTreeOp* assignment)
 //
 // Notes:
 //    Lowers GT_ARR_LENGTH, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND, GT_BOUNDS_CHECK.
-//
-//    For target ABIs with fixed out args area, computes upper bound on
-//    the size of this area from the calls in the IR.
-//
-//    Outgoing arg area size is computed here because we want to run it
-//    after optimization (in case calls are removed) and need to look at
-//    all possible calls in the method.
 //
 PhaseStatus Compiler::fgSimpleLowering()
 {

@@ -181,7 +181,34 @@ class FirefoxInspectorClient : InspectorClient
                         // FIXME: unnecessary alloc
                         foreach (JToken? argument in res["resources"]?[0]?["message"]?["arguments"]?.Value<JArray>() ?? new JArray())
                         {
-                            args.Add(JObject.FromObject(new { value = argument.Value<string>()}));
+                            if (argument is null)
+                                continue;
+
+                            string? strValue = null;
+                            if (argument is JObject argObj && argObj["type"]?.Value<string>() == "longString" && argObj["initial"] is JToken argInitialToken)
+                            {
+                                /*
+                                    "arguments" : [
+                                       "mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae",
+                                       {
+                                          "actor" : "server1.conn0.windowGlobal10737418242/longstractor35",
+                                          "initial" : "{\"eventName .... ",
+                                          "length" : 7737462,
+                                          "type" : "longString"
+                                       },
+                                       "{}"
+                                    ]
+                                */
+                                strValue = argInitialToken.Value<string>();
+                            }
+                            else if (argument.Type is JTokenType.String)
+                            {
+                                strValue = argument.Value<string>();
+                            }
+
+                            // fallback
+                            strValue ??= argument.ToString();
+                            args.Add(JObject.FromObject(new { value = strValue }));
                         }
                         res = JObject.FromObject(new
                             {

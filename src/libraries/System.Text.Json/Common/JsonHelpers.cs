@@ -133,7 +133,7 @@ namespace System.Text.Json
                 // Iterate over the adjacency matrix, removing any occurrence of nextIndex.
                 for (int i = 0; i < adjacency.Count; i++)
                 {
-                    if (adjacency[i] is { } childMap && childMap[nextIndex])
+                    if (adjacency[i] is { } childMap && nextIndex < childMap.Length && childMap[nextIndex])
                     {
                         childMap[nextIndex] = false;
 

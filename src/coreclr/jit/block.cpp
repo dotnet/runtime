@@ -69,7 +69,10 @@ unsigned SsaStressHashHelper()
 #endif
 
 EHSuccessorIterPosition::EHSuccessorIterPosition(Compiler* comp, BasicBlock* block)
-    : m_remainingRegSuccs(block->NumSucc(comp)), m_curRegSucc(nullptr), m_curTry(comp->ehGetBlockExnFlowDsc(block))
+    : m_remainingRegSuccs(block->NumSucc(comp))
+    , m_numRegSuccs(m_remainingRegSuccs)
+    , m_curRegSucc(nullptr)
+    , m_curTry(comp->ehGetBlockExnFlowDsc(block))
 {
     // If "block" is a "leave helper" block (the empty BBJ_ALWAYS block that pairs with a
     // preceding BBJ_CALLFINALLY block to implement a "leave" IL instruction), then no exceptions
@@ -96,8 +99,8 @@ void EHSuccessorIterPosition::FindNextRegSuccTry(Compiler* comp, BasicBlock* blo
     // Must now consider the next regular successor, if any.
     while (m_remainingRegSuccs > 0)
     {
+        m_curRegSucc = block->GetSucc(m_numRegSuccs - m_remainingRegSuccs, comp);
         m_remainingRegSuccs--;
-        m_curRegSucc = block->GetSucc(m_remainingRegSuccs, comp);
         if (comp->bbIsTryBeg(m_curRegSucc))
         {
             assert(m_curRegSucc->hasTryIndex()); // Since it is a try begin.
@@ -929,8 +932,8 @@ unsigned JitPtrKeyFuncs<BasicBlock>::GetHashCode(const BasicBlock* ptr)
 // isEmpty: check if block is empty or contains only ignorable statements
 //
 // Return Value:
-//    True if block is empty, or contains only PHI assignments,
-//    or contains zero or more PHI assignments followed by NOPs.
+//    True if block is empty, or contains only PHI stores,
+//    or contains zero or more PHI stores followed by NOPs.
 //
 bool BasicBlock::isEmpty() const
 {
@@ -982,25 +985,15 @@ bool BasicBlock::isValid() const
 Statement* BasicBlock::FirstNonPhiDef() const
 {
     Statement* stmt = firstStmt();
-    if (stmt == nullptr)
-    {
-        return nullptr;
-    }
-    GenTree* tree = stmt->GetRootNode();
-    while ((tree->OperGet() == GT_ASG && tree->AsOp()->gtOp2->OperGet() == GT_PHI) ||
-           (tree->OperGet() == GT_STORE_LCL_VAR && tree->AsOp()->gtOp1->OperGet() == GT_PHI))
+    while ((stmt != nullptr) && stmt->IsPhiDefnStmt())
     {
         stmt = stmt->GetNextStmt();
-        if (stmt == nullptr)
-        {
-            return nullptr;
-        }
-        tree = stmt->GetRootNode();
     }
+
     return stmt;
 }
 
-Statement* BasicBlock::FirstNonPhiDefOrCatchArgAsg() const
+Statement* BasicBlock::FirstNonPhiDefOrCatchArgStore() const
 {
     Statement* stmt = FirstNonPhiDef();
     if (stmt == nullptr)
@@ -1008,8 +1001,7 @@ Statement* BasicBlock::FirstNonPhiDefOrCatchArgAsg() const
         return nullptr;
     }
     GenTree* tree = stmt->GetRootNode();
-    if ((tree->OperGet() == GT_ASG && tree->AsOp()->gtOp2->OperGet() == GT_CATCH_ARG) ||
-        (tree->OperGet() == GT_STORE_LCL_VAR && tree->AsOp()->gtOp1->OperGet() == GT_CATCH_ARG))
+    if (tree->OperIs(GT_STORE_LCL_VAR) && tree->AsLclVar()->Data()->OperIs(GT_CATCH_ARG))
     {
         stmt = stmt->GetNextStmt();
     }

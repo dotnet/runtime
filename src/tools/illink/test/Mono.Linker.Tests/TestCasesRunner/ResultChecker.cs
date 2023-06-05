@@ -93,7 +93,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					PerformOutputAssemblyChecks (original, linkResult.OutputAssemblyPath.Parent);
 					PerformOutputSymbolChecks (original, linkResult.OutputAssemblyPath.Parent);
 
-					if (!HasAttribute (original.MainModule.GetType (linkResult.TestCase.ReconstructedFullTypeName), nameof (SkipKeptItemsValidationAttribute))) {
+					if (!HasActiveSkipKeptItemsValidationAttribute(original.MainModule.GetType (linkResult.TestCase.ReconstructedFullTypeName))) {
 						CreateAssemblyChecker (original, linked, linkResult).Verify ();
 					}
 				}
@@ -103,6 +103,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			} finally {
 				_originalsResolver.Dispose ();
 				_linkedResolver.Dispose ();
+			}
+
+			bool HasActiveSkipKeptItemsValidationAttribute (ICustomAttributeProvider provider)
+			{
+				if (TryGetCustomAttribute (provider, nameof (SkipKeptItemsValidationAttribute), out var attribute)) {
+					object by = attribute.GetPropertyValue (nameof (SkipKeptItemsValidationAttribute.By));
+					return by is null ? true : ((Tool) by).HasFlag (Tool.Trimmer);
+				}
+
+				return false;
 			}
 		}
 
