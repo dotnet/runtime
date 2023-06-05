@@ -101,6 +101,10 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     private bool TrimMethods(ITaskItem assemblyItem)
     {
         string methodTokenFile = assemblyItem.GetMetadata("MethodTokenFile");
+        if (string.IsNullOrEmpty(methodTokenFile))
+        {
+            Log.LogError($"Metadata MethodTokenFile of {assemblyItem.ItemSpec} is empty");
+        }
         if (!File.Exists(methodTokenFile))
         {
             Log.LogMessage(MessageImportance.Low, $"{methodTokenFile} doesn't exist.");
@@ -117,7 +121,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
             if (!File.Exists(assemblyFilePath))
             {
-                Log.LogMessage(MessageImportance.Low, $"{assemblyFilePath} read from {methodTokenFile} doesn't exist.");
+                Log.LogError($"{assemblyFilePath} read from {methodTokenFile} doesn't exist.");
                 return true;
             }
 
@@ -133,7 +137,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
                 string? expectedGuidValue = sr.ReadLine();
                 if (!string.Equals(guidValue, expectedGuidValue, StringComparison.OrdinalIgnoreCase))
                 {
-                    Log.LogMessage(MessageImportance.Low, $"[ILStrip] GUID value of {assemblyFilePath} doesn't match the value listed in {methodTokenFile}.");
+                    Log.LogError($"[ILStrip] GUID value of {assemblyFilePath} doesn't match the value listed in {methodTokenFile}.");
                     return true;
                 }
 
@@ -141,7 +145,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
                 if (!string.IsNullOrEmpty(line))
                 {
                     isTrimmed = true;
-                    Dictionary<int, int> method_body_uses = ComputeMethodBodyUsage(mr, sr, line);
+                    Dictionary<int, int> method_body_uses = ComputeMethodBodyUsage(mr, sr, line, methodTokenFile);
                     CreateTrimmedAssembly(peReader, trimmedAssemblyFilePath, fs, method_body_uses);
                 }
             }
@@ -175,7 +179,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         return mvid.ToString();
     }
 
-    private static Dictionary<int, int> ComputeMethodBodyUsage(MetadataReader mr, StreamReader sr, string? line)
+    private Dictionary<int, int> ComputeMethodBodyUsage(MetadataReader mr, StreamReader sr, string? line, string methodTokenFile)
     {
         Dictionary<int, int> token_to_rva = new();
         Dictionary<int, int> method_body_uses = new();
@@ -201,14 +205,24 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         do
         {
             int methodToken2Trim = Convert.ToInt32(line, 16);
-            int rva2Trim = token_to_rva[methodToken2Trim];
-            method_body_uses[rva2Trim]--;
+            if (methodToken2Trim <= 0)
+            {
+                Log.LogError($"Method token: {line} in {methodTokenFile} is not a valid hex value.");
+            }
+            if (token_to_rva.TryGetValue(methodToken2Trim, out int rva2Trim))
+            {
+                method_body_uses[rva2Trim]--;
+            }
+            else
+            {
+                Log.LogError($"Method token: {line} in {methodTokenFile} can't be found within the assembly.");
+            }
         } while ((line = sr.ReadLine()) != null);
 
         return method_body_uses;
     }
 
-    private static void CreateTrimmedAssembly(PEReader peReader, string trimmedAssemblyFilePath, FileStream fs, Dictionary<int, int> method_body_uses)
+    private void CreateTrimmedAssembly(PEReader peReader, string trimmedAssemblyFilePath, FileStream fs, Dictionary<int, int> method_body_uses)
     {
         using FileStream os = File.Open(trimmedAssemblyFilePath, FileMode.Create);
         {
@@ -226,6 +240,10 @@ public class ILStrip : Microsoft.Build.Utilities.Task
                     int actualLoc = ComputeMethodHash(peReader, rva);
                     int headerSize = ComputeMethodHeaderSize(memStream, actualLoc);
                     ZeroOutMethodBody(ref memStream, methodSize, actualLoc, headerSize);
+                }
+                else if (count < 0)
+                {
+                    Log.LogError($"Method usage count is less than zero for rva: {rva}.");
                 }
             }
 

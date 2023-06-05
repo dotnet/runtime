@@ -21,7 +21,7 @@ publish:
 	-r $(TARGET_OS)-$(MONO_ARCH) \
 	/p:RunAOTCompilation=$(AOT) \
 	/p:StripILCode=$(StripILCode) \
-	/p:MethodTokenFilePath=$(MethodTokenFilePath) \
+	/p:CompiledMethodsOutputDirectory=$(CompiledMethodsOutputDirectory) \
 	'/p:NetTracePath="$(NET_TRACE_PATH)"' \
 	'/p:PgoBinaryPath="$(PGO_BINARY_PATH)"' \
 	'/p:MibcProfilePath="$(MIBC_PROFILE_PATH)"'

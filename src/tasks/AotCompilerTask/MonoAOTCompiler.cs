@@ -738,7 +738,15 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             string assemblyFileName = Path.GetFileName(assembly);
             string assemblyName = assemblyFileName.Replace(".", "_");
             string outputFileName = assemblyName + "_compiled_methods.txt";
-            string outputFilePath = Path.Combine(CompiledMethodsOutputDirectory, outputFileName);
+            string outputFilePath;
+            if (string.IsNullOrEmpty(CompiledMethodsOutputDirectory))
+            {
+                outputFilePath = outputFileName;
+            }
+            else
+            {
+                outputFilePath = Path.Combine(CompiledMethodsOutputDirectory, outputFileName);
+            }
             aotArgs.Add($"compiled-methods-outfile={outputFilePath}");
             aotAssembly.SetMetadata("MethodTokenFile", outputFilePath);
         }
