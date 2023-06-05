@@ -11,7 +11,7 @@ using System.Runtime.Intrinsics;
 using System.Reflection;
 using Xunit;
 
-namespace IntelHardwareIntrinsicTest._CpuId
+namespace XarchHardwareIntrinsicTest._CpuId
 {
     public class Program
     {
@@ -119,12 +119,28 @@ namespace IntelHardwareIntrinsicTest._CpuId
 
             isHierarchyDisabled = isSse42HierarchyDisabled;
 
+            isHierarchyDisabled = isSse42HierarchyDisabled;
+
             if (IsBitIncorrect(ecx, 28, typeof(Avx), Avx.IsSupported, "AVX", ref isHierarchyDisabled))
             {
                 testResult = Fail;
             }
 
             bool isAvxHierarchyDisabled = isHierarchyDisabled;
+
+            if (IsBitIncorrect(ebx, 3, typeof(Bmi1), Bmi1.IsSupported, "BMI1", ref isHierarchyDisabled))
+            {
+                testResult = Fail;
+            }
+
+            isHierarchyDisabled = isAvxHierarchyDisabled;
+
+            if (IsBitIncorrect(ebx, 8, typeof(Bmi2), Bmi2.IsSupported, "BMI2", ref isHierarchyDisabled))
+            {
+                testResult = Fail;
+            }
+
+            isHierarchyDisabled = isAvxHierarchyDisabled;
 
             if (IsBitIncorrect(ecx, 12, typeof(Fma), Fma.IsSupported, "FMA", ref isHierarchyDisabled))
             {
@@ -135,8 +151,7 @@ namespace IntelHardwareIntrinsicTest._CpuId
 
             if (maxFunctionId < 0x00000007)
             {
-                Assert.Equal(Pass, testResult);
-                return;
+                return testResult;
             }
 
             (eax, ebx, ecx, edx) = X86Base.CpuId(0x00000007, 0x00000000);
@@ -150,19 +165,7 @@ namespace IntelHardwareIntrinsicTest._CpuId
 
             bool isAvx2HierarchyDisabled = isHierarchyDisabled;
 
-            if (IsBitIncorrect(ebx, 3, typeof(Bmi1), Bmi1.IsSupported, "BMI1", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
-
-            isHierarchyDisabled = isAvx2HierarchyDisabled;
-
-            if (IsBitIncorrect(ebx, 8, typeof(Bmi2), Bmi2.IsSupported, "BMI2", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
-
-            isHierarchyDisabled = isAvx2HierarchyDisabled | isFmaHierarchyDisabled | OperatingSystem.IsMacOS();
+            isHierarchyDisabled |= (isFmaHierarchyDisabled | OperatingSystem.IsMacOS());
 
             for (int i = 0; i < 2; i++)
             {
