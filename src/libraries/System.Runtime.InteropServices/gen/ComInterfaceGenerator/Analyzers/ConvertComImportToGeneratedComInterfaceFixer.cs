@@ -15,7 +15,7 @@ using Microsoft.CodeAnalysis.Simplification;
 namespace Microsoft.Interop.Analyzers
 {
     [ExportCodeFixProvider(LanguageNames.CSharp)]
-    public sealed class ConvertComImportToGeneratedComInterfaceCodeFixProvider : CodeFixProvider
+    public sealed class ConvertComImportToGeneratedComInterfaceFixer : CodeFixProvider
     {
         public override FixAllProvider? GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
 
