@@ -4474,15 +4474,15 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             // stobj !!T
             // ret
 
-            GenTree* op1 = impPopStack().val;
-            GenTree* op2 = impPopStack().val;
-
             CORINFO_CLASS_HANDLE typeHnd = sig->sigInst.methInst[0];
             ClassLayout*         layout  = nullptr;
             var_types            type    = TypeHandleToVarType(typeHnd, &layout);
             GenTreeFlags         flags   = intrinsic == NI_SRCS_UNSAFE_WriteUnaligned ? GTF_IND_UNALIGNED : GTF_EMPTY;
 
-            GetTree* store = gtNewStoreValueNode(type, layout, op2, op1, flags);
+            GenTree* value = impPopStack().val;
+            GenTree* addr  = impPopStack().val;
+
+            GetTree* store = gtNewStoreValueNode(type, layout, addr, value, flags);
             if (varTypeIsStruct(store))
             {
                 store = impStoreStruct(store, CHECK_SPILL_ALL);
