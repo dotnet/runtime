@@ -47,15 +47,10 @@ namespace System.Linq
 
         List<IGrouping<TKey, TElement>> IIListProvider<IGrouping<TKey, TElement>>.ToList()
         {
-            List<IGrouping<TKey, TElement>> list;
+            var list = new List<IGrouping<TKey, TElement>>(_count);
             if (_count > 0)
             {
-                list = new List<IGrouping<TKey, TElement>>(_count);
                 Fill(_lastGrouping, Enumerable.SetCountAndGetSpan(list, _count));
-            }
-            else
-            {
-                list = new List<IGrouping<TKey, TElement>>();
             }
 
             return list;
