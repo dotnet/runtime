@@ -11,10 +11,10 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Diagnostics.NETCore.Client;
 using Microsoft.Diagnostics.Tools.RuntimeClient;
 using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
+using DiagnosticsClient = Microsoft.Diagnostics.NETCore.Client.DiagnosticsClient;
 
 namespace Tracing.Tests.ApplyStartupHookValidation
 {
@@ -42,15 +42,12 @@ namespace Tracing.Tests.ApplyStartupHookValidation
                         IpcAdvertise advertise = IpcAdvertise.Parse(stream);
                         Logger.logger.Log($"IpcAdvertise: {advertise}");
 
-                        int processId = (int)advertise.ProcessId;
-
-                        // While we are paused in startup, apply startup hook
-                        DiagnosticsClient client = new DiagnosticsClient(processId);
-
                         string startupHookPath = Hook.Basic.AssemblyPath;
-                        Logger.logger.Log($"Applying startup hook during startup suspension: {startupHookPath}");
-                        client.ApplyStartupHook(startupHookPath);
-                        Logger.logger.Log("Finished startup hook application");
+                        Logger.logger.Log($"Send ApplyStartupHook Diagnostic IPC: {startupHookPath}");
+                        IpcMessage message = CreateApplyStartupHookMessage(startupHookPath);
+                        Logger.logger.Log($"Sent: {message.ToString()}");
+                        IpcMessage response = IpcClient.SendMessage(stream, message);
+                        Logger.logger.Log($"Received: {response.ToString()}");
                     }
 
                     Logger.logger.Log("Waiting to accept diagnostic connection.");
@@ -66,7 +63,7 @@ namespace Tracing.Tests.ApplyStartupHookValidation
                         IpcMessage message = new(0x04,0x01);
                         Logger.logger.Log($"Sent: {message.ToString()}");
                         IpcMessage response = IpcClient.SendMessage(stream, message);
-                        Logger.logger.Log($"received: {response.ToString()}");
+                        Logger.logger.Log($"Received: {response.ToString()}");
                     }
                 }
             );
@@ -74,6 +71,15 @@ namespace Tracing.Tests.ApplyStartupHookValidation
             fSuccess &= await subprocessTask;
 
             return fSuccess;
+        }
+
+        private static IpcMessage CreateApplyStartupHookMessage(string startupHookPath)
+        {
+            if (string.IsNullOrEmpty(startupHookPath))
+                throw new ArgumentException($"{nameof(startupHookPath)} required");
+
+            byte[] serializedConfiguration = DiagnosticsClient.SerializePayload(startupHookPath);
+            return new IpcMessage(0x04, 0x07, serializedConfiguration);
         }
 
         public static async Task<int> Main(string[] args)

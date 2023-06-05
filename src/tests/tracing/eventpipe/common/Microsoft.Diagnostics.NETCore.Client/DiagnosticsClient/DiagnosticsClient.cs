@@ -378,7 +378,7 @@ namespace Microsoft.Diagnostics.NETCore.Client
             return TryGetProcessInfo2FromResponse(response2, nameof(GetProcessInfoAsync));
         }
 
-        private static byte[] SerializePayload<T>(T arg)
+        public static byte[] SerializePayload<T>(T arg)
         {
             using (var stream = new MemoryStream())
             using (var writer = new BinaryWriter(stream))
