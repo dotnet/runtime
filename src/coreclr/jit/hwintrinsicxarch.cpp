@@ -1139,16 +1139,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             if (sig->numArgs == 1)
             {
-#if defined(TARGET_X86)
-                if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->IsIntegralConst())
-                {
-                    // TODO-XARCH-CQ: It may be beneficial to emit the movq
-                    // instruction, which takes a 64-bit memory address and
-                    // works on 32-bit x86 systems.
-                    break;
-                }
-#endif // TARGET_X86
-
                 op1     = impPopStack().val;
                 retNode = gtNewSimdCreateBroadcastNode(retType, op1, simdBaseJitType, simdSize);
                 break;
@@ -1283,16 +1273,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-#if defined(TARGET_X86)
-            if (varTypeIsLong(simdBaseType))
-            {
-                // TODO-XARCH-CQ: It may be beneficial to emit the movq
-                // instruction, which takes a 64-bit memory address and
-                // works on 32-bit x86 systems.
-                break;
-            }
-#endif // TARGET_X86
-
             IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), sig->numArgs);
 
             // TODO-CQ: We don't handle contiguous args for anything except TYP_FLOAT today
@@ -1337,17 +1317,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_CreateScalar:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_X86)
-            if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->IsIntegralConst())
-            {
-                // TODO-XARCH-CQ: It may be beneficial to emit the movq
-                // instruction, which takes a 64-bit memory address and
-                // works on 32-bit x86 systems.
-                break;
-            }
-#endif // TARGET_X86
-
             op1     = impPopStack().val;
             retNode = gtNewSimdCreateScalarNode(retType, op1, simdBaseJitType, simdSize);
             break;
@@ -1358,17 +1327,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_CreateScalarUnsafe:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_X86)
-            if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->IsIntegralConst())
-            {
-                // TODO-XARCH-CQ: It may be beneficial to emit the movq
-                // instruction, which takes a 64-bit memory address and
-                // works on 32-bit x86 systems.
-                break;
-            }
-#endif // TARGET_X86
-
             op1     = impPopStack().val;
             retNode = gtNewSimdCreateScalarUnsafeNode(retType, op1, simdBaseJitType, simdSize);
             break;
@@ -2079,7 +2037,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     // TODO-XARCH-CQ: We should support long/ulong multiplication
                     break;
                 }
-// else if simdSize == 64 then above assert would check if baseline isa supported
 
 #if defined(TARGET_X86)
                 // TODO-XARCH-CQ: We need to support 64-bit CreateBroadcast
@@ -2709,34 +2666,47 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             switch (simdBaseType)
             {
-                // Using software fallback if simdBaseType is not supported by hardware
                 case TYP_BYTE:
                 case TYP_UBYTE:
-                case TYP_INT:
-                case TYP_UINT:
-                    if (!compExactlyDependsOn(InstructionSet_SSE41))
+                {
+                    if (!compOpportunisticallyDependsOn(InstructionSet_SSE41))
                     {
                         return nullptr;
                     }
                     break;
+                }
+
+                case TYP_INT:
+                case TYP_UINT:
+                {
+                    // int/uint are "properly" supported by SSE4.1 and
+                    // handled using the TYP_FLOAT logic otherwise
+                    break;
+                }
 
                 case TYP_LONG:
                 case TYP_ULONG:
-                    if (!compExactlyDependsOn(InstructionSet_SSE41_X64))
+                {
+                    if (!compOpportunisticallyDependsOn(InstructionSet_SSE41_X64))
                     {
                         return nullptr;
                     }
                     break;
+                }
 
                 case TYP_DOUBLE:
                 case TYP_FLOAT:
                 case TYP_SHORT:
                 case TYP_USHORT:
+                {
                     // short/ushort/float/double is supported by SSE2
                     break;
+                }
 
                 default:
+                {
                     unreached();
+                }
             }
 
             GenTree* valueOp = impPopStack().val;

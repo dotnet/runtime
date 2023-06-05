@@ -1046,6 +1046,51 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicCreate(node);
         }
 
+#if !defined(TARGET_AMD64)
+        case NI_Vector128_CreateScalarUnsafe:
+        case NI_Vector256_CreateScalarUnsafe:
+        case NI_Vector512_CreateScalarUnsafe:
+        {
+            // On 32-bit for TYP_LONG and TYP_ULONG we want to just treat this as CreateScalar
+            // that will allow several optimizations to still kick in and simplifies the total
+            // amount of handling required.
+
+            var_types simdBaseType = node->GetSimdBaseType();
+
+            if (!varTypeIsLong(simdBaseType))
+            {
+                break;
+            }
+
+            switch (node->GetSimdSize())
+            {
+                case 64:
+                {
+                    assert(intrinsicId == NI_Vector512_CreateScalarUnsafe);
+                    intrinsicId = NI_Vector512_CreateScalar;
+                    break;
+                }
+
+                case 32:
+                {
+                    assert(intrinsicId == NI_Vector256_CreateScalarUnsafe);
+                    intrinsicId = NI_Vector256_CreateScalar;
+                    break;
+                }
+
+                default:
+                {
+                    assert(intrinsicId == NI_Vector128_CreateScalarUnsafe);
+                    intrinsicId = NI_Vector128_CreateScalar;
+                    break;
+                }
+            }
+
+            node->ChangeHWIntrinsicId(intrinsicId);
+            return LowerHWIntrinsicCreate(node);
+        }
+#endif // TARGET_AMD64
+
         case NI_Vector128_Dot:
         case NI_Vector256_Dot:
         {
@@ -2099,14 +2144,17 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
         for (GenTree* arg : node->Operands())
         {
+            GenTreeOp* argOp = arg->AsOp();
+
 #if !defined(TARGET_64BIT)
-            if (arg->OperIsLong())
+            if (argOp->OperIsLong())
             {
-                BlockRange().Remove(arg->AsOp()->gtGetOp1());
-                BlockRange().Remove(arg->AsOp()->gtGetOp2());
+                BlockRange().Remove(argOp->gtGetOp1());
+                BlockRange().Remove(argOp->gtGetOp2());
             }
 #endif // !TARGET_64BIT
-            BlockRange().Remove(arg);
+
+            BlockRange().Remove(argOp);
         }
 
         GenTreeVecCon* vecCon = comp->gtNewVconNode(simdType);
@@ -2199,6 +2247,44 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 {
                     node->ChangeHWIntrinsicId(NI_SSE2_X64_ConvertScalarToVector128UInt64);
                     break;
+                }
+#else
+                case TYP_LONG:
+                case TYP_ULONG:
+                {
+                    // On 32-bit we want to decompose this into a `CreateScalar(op1.lo()).WithElement(op1.hi())`
+                    // TODO-XARCH-CQ: Lower to LoadScalarVector128 if op1 is coming from memory
+
+                    assert(op1->OperIsLong());
+
+                    GenTreeOp* argOp = op1->AsOp();
+                    simdBaseJitType  = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_INT;
+
+                    GenTree* vector = comp->gtNewSimdCreateScalarNode(simdType, op1->gtGetOp1(), simdBaseJitType,
+                                                                      simdSize);
+                    BlockRange().InsertBefore(node, vector);
+
+                    GenTree* index = comp->gtNewIconNode(1);
+                    BlockRange().InsertBefore(node, index);
+
+                    GenTree* result = comp->gtNewSimdWithElementNode(simdType, vector, index, op1->gtGetOp2(),
+                                                                     simdBaseJitType, simdSize);
+                    BlockRange().InsertBefore(node, result);
+
+                    LIR::Use use;
+
+                    if (BlockRange().TryGetUse(node, &use))
+                    {
+                        use.ReplaceWith(result);
+                    }
+                    else
+                    {
+                        result->SetUnusedValue();
+                    }
+                    BlockRange().Remove(node);
+
+                    LowerNode(vector);
+                    return LowerNode(result);
                 }
 #endif // TARGET_AMD64
 
@@ -2555,7 +2641,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 break;
             }
 
-#if defined(TARGET_AMD64)
             case TYP_LONG:
             case TYP_ULONG:
             {
@@ -2587,7 +2672,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 node->ResetHWIntrinsicId(NI_SSE2_UnpackLow, tmp1, tmp2);
                 break;
             }
-#endif // TARGET_AMD64
 
             case TYP_FLOAT:
             {
@@ -3733,25 +3817,40 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
 
     switch (simdBaseType)
     {
-        // Using software fallback if simdBaseType is not supported by hardware
         case TYP_BYTE:
         case TYP_UBYTE:
-        case TYP_INT:
-        case TYP_UINT:
+        {
             assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE41));
             break;
+        }
+
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            if (!comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            {
+                // Emulate these using the TYP_FLOAT handling
+                assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
+                simdBaseType = TYP_FLOAT;
+            }
+            break;
+        }
 
         case TYP_LONG:
         case TYP_ULONG:
+        {
             assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE41_X64));
             break;
+        }
 
         case TYP_DOUBLE:
         case TYP_FLOAT:
         case TYP_SHORT:
         case TYP_USHORT:
+        {
             assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
             break;
+        }
 
         default:
             unreached();
@@ -3963,7 +4062,8 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
             //   ...
             //   tmp1 = Vector128.CreateScalarUnsafe(op3);
 
-            tmp1 = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op3, CORINFO_TYPE_FLOAT, 16);
+            // Use simdBaseJitType so that TYP_INT/TYP_UINT on downlevel hardware gets put in a vector correctly
+            tmp1 = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op3, simdBaseJitType, 16);
             LowerNode(tmp1);
 
             if (!comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
@@ -3980,6 +4080,7 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
                     //   ...
                     //   node  = Sse.MoveScalar(op1, op2);
 
+                    result->SetSimdBaseJitType(CORINFO_TYPE_FLOAT);
                     result->ResetHWIntrinsicId(NI_SSE_MoveScalar, op1, tmp1);
                 }
                 else
@@ -4075,6 +4176,7 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
                         std::swap(op1, op2);
                     }
 
+                    result->SetSimdBaseJitType(CORINFO_TYPE_FLOAT);
                     result->ChangeHWIntrinsicId(NI_SSE_Shuffle, op1, op2, idx);
                 }
                 break;

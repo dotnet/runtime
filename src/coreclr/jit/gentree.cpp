@@ -21619,16 +21619,6 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(var_types   type,
     }
 
 #if defined(TARGET_XARCH)
-#if defined(TARGET_X86)
-    if (varTypeIsLong(simdBaseType) && !op1->IsIntegralConst())
-    {
-        // TODO-XARCH-CQ: It may be beneficial to emit the movq
-        // instruction, which takes a 64-bit memory address and
-        // works on 32-bit x86 systems.
-        unreached();
-    }
-#endif // TARGET_X86
-
     if (simdSize == 64)
     {
         hwIntrinsicID = NI_Vector512_Create;
@@ -21732,16 +21722,6 @@ GenTree* Compiler::gtNewSimdCreateScalarNode(var_types   type,
     }
 
 #if defined(TARGET_XARCH)
-#if defined(TARGET_X86)
-    if (varTypeIsLong(simdBaseType) && !op1->IsIntegralConst())
-    {
-        // TODO-XARCH-CQ: It may be beneficial to emit the movq
-        // instruction, which takes a 64-bit memory address and
-        // works on 32-bit x86 systems.
-        unreached();
-    }
-#endif // TARGET_X86
-
     if (simdSize == 32)
     {
         hwIntrinsicID = NI_Vector256_CreateScalar;
@@ -21877,16 +21857,6 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(var_types   type,
     }
 
 #if defined(TARGET_XARCH)
-#if defined(TARGET_X86)
-    if (varTypeIsLong(simdBaseType) && !op1->IsIntegralConst())
-    {
-        // TODO-XARCH-CQ: It may be beneficial to emit the movq
-        // instruction, which takes a 64-bit memory address and
-        // works on 32-bit x86 systems.
-        unreached();
-    }
-#endif // TARGET_X86
-
     if (simdSize == 32)
     {
         hwIntrinsicID = NI_Vector256_CreateScalarUnsafe;
@@ -24601,25 +24571,36 @@ GenTree* Compiler::gtNewSimdWithElementNode(
 #if defined(TARGET_XARCH)
     switch (simdBaseType)
     {
-        // Using software fallback if simdBaseType is not supported by hardware
         case TYP_BYTE:
         case TYP_UBYTE:
-        case TYP_INT:
-        case TYP_UINT:
+        {
             assert(compIsaSupportedDebugOnly(InstructionSet_SSE41));
             break;
+        }
+
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            // Emulate these using the TYP_FLOAT handling
+            assert(compIsaSupportedDebugOnly(InstructionSet_SSE2));
+            break;
+        }
 
         case TYP_LONG:
         case TYP_ULONG:
+        {
             assert(compIsaSupportedDebugOnly(InstructionSet_SSE41_X64));
             break;
+        }
 
         case TYP_DOUBLE:
         case TYP_FLOAT:
         case TYP_SHORT:
         case TYP_USHORT:
+        {
             assert(compIsaSupportedDebugOnly(InstructionSet_SSE2));
             break;
+        }
 
         default:
             unreached();
