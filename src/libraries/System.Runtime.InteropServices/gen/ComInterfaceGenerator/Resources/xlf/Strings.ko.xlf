@@ -72,6 +72,26 @@
         <target state="translated">지정된 구성은 원본 생성 COM에서 지원되지 않습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ConvertToGeneratedComInterfaceDescription">
+        <source>Use 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</source>
+        <target state="new">Use 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToGeneratedComInterfaceMayRequireCustomMarshalling">
+        <source>Converting this API to 'GeneratedComInterfaceAttribute' will require additional code to provide custom marshallers for some parameters.</source>
+        <target state="new">Converting this API to 'GeneratedComInterfaceAttribute' will require additional code to provide custom marshallers for some parameters.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToGeneratedComInterfaceMessage">
+        <source>Mark the type '{0}' with 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</source>
+        <target state="new">Mark the type '{0}' with 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToGeneratedComInterfaceTitle">
+        <source>Convert to 'GeneratedComInterface'</source>
+        <target state="new">Convert to 'GeneratedComInterface'</target>
+        <note />
+      </trans-unit>
       <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</source>
         <target state="translated">'StringMarshalling' 및 'StringMarshallingCustomType'의 구성은 기본 COM 인터페이스와 일치해야 합니다.</target>

@@ -18,6 +18,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
 
                 [ComImport]
+                [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
                 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
                 public interface [|I|]
                 {
@@ -28,6 +29,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                using System.Runtime.InteropServices;
 
                [GeneratedComInterface]
+               [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
+               [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
                public interface I
                {
                }
@@ -43,6 +46,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                using System.Runtime.InteropServices;
 
                [ComImport]
+               [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
                public interface [|I|]
                {
@@ -54,6 +58,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                using System.Runtime.InteropServices;
 
                [GeneratedComInterface]
+               [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
+               [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
                public interface I
                {
                     void Foo(int a);
@@ -70,6 +76,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                using System.Runtime.InteropServices;
 
                [ComImport]
+               [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
                public interface [|I|]
                {
@@ -81,6 +88,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                using System.Runtime.InteropServices;
 
                [GeneratedComInterface]
+               [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
+               [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
                public interface I
                {
                     [return: MarshalAs(UnmanagedType.VariantBool)]
@@ -98,6 +107,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
 
                 [ComImport]
+                [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
                 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
                 public interface [|I|]
                 {
@@ -110,6 +120,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices.Marshalling;
 
                 [GeneratedComInterface(StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(BStrStringMarshaller))]
+                [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
+                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
                 public interface I
                 {
                     string Foo(string a);
@@ -127,6 +139,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                using System.Runtime.InteropServices;
 
                [ComImport]
+               [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
                public interface I
                {
@@ -146,6 +159,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                using System.Runtime.InteropServices;
 
                [ComImport]
+               [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
                public interface I
                {
@@ -164,6 +178,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                using System.Runtime.InteropServices;
 
                [ComImport]
+               [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
                public interface I
                {
@@ -183,6 +198,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                using System.Runtime.InteropServices;
 
                [ComImport]
+               [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
                public interface I
                {
@@ -201,10 +217,11 @@ namespace ComInterfaceGenerator.Unit.Tests
                using System.Runtime.InteropServices;
 
                [ComImport]
+               [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-               public interface I
+               public interface [|I|]
                {
-                   void Foo([MarshalAs(UnmanagedType.FunctionPointer)] Action a);
+                   void Foo([MarshalAs(UnmanagedType.FunctionPtr)] Action a);
                }
                """;
 
@@ -213,9 +230,11 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices.Marshalling;
 
                 [GeneratedComInterface]
+                [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
+                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
                 public interface I
                 {
-                    void Foo([MarshalAs(UnmanagedType.FunctionPointer)] Action a);
+                    void Foo([MarshalAs(UnmanagedType.FunctionPtr)] Action a);
                 }
                 """;
 
@@ -229,8 +248,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                using System.Runtime.InteropServices;
 
                [ComImport]
+               [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-               public interface I
+               public interface [|I|]
                {
                    void Foo([MarshalAs(UnmanagedType.LPArray, SizeConst = 10)] int[] a);
                }
@@ -241,6 +261,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices.Marshalling;
 
                 [GeneratedComInterface]
+                [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
+                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
                 public interface I
                 {
                     void Foo([MarshalAs(UnmanagedType.LPArray, SizeConst = 10)] int[] a);
@@ -257,15 +279,17 @@ namespace ComInterfaceGenerator.Unit.Tests
                using System.Runtime.InteropServices;
                
                [ComImport]
+               [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-               public interface I
+               public interface [|I|]
                {
                    void Foo(int a);
                }
 
                [ComImport]
+               [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-               public interface J : I
+               public interface [|J|] : I
                {
                    new void Foo(int a);
 
@@ -278,12 +302,16 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices.Marshalling;
                 
                 [GeneratedComInterface]
+                [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
+                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
                 public interface I
                 {
                     void Foo(int a);
                 }
 
                 [GeneratedComInterface]
+                [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
+                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
                 public interface J : I
                 {
                     void Bar(short a);

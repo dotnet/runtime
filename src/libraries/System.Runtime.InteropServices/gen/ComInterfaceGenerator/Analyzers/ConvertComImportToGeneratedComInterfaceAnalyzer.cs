@@ -32,108 +32,132 @@ namespace Microsoft.Interop.Analyzers
 
             context.RegisterCompilationStartAction(context =>
             {
-                INamedTypeSymbol? interfaceTypeAttribute = context.Compilation.GetTypeByMetadataName("System.Runtime.InteropServices.InterfaceTypeAttribute")!;
-                INamedTypeSymbol? generatedComInterfaceAttribute = context.Compilation.GetTypeByMetadataName("System.Runtime.InteropServices.GeneratedComInterfaceAttribute");
+                INamedTypeSymbol? interfaceTypeAttribute = context.Compilation.GetTypeByMetadataName(TypeNames.InterfaceTypeAttribute)!;
+                INamedTypeSymbol? generatedComInterfaceAttribute = context.Compilation.GetTypeByMetadataName(TypeNames.GeneratedComInterfaceAttribute);
 
-                if (generatedComInterfaceAttribute is not null)
+                if (generatedComInterfaceAttribute is null)
                 {
-                    TargetFrameworkSettings targetFramework = context.Options.AnalyzerConfigOptionsProvider.GlobalOptions.GetTargetFrameworkSettings();
-                    var env = new StubEnvironment(
-                        context.Compilation,
-                        targetFramework.TargetFramework,
-                        targetFramework.Version,
-                        context.Compilation.SourceModule.GetAttributes().Any(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute));
+                    return;
+                }
 
-                    context.RegisterSymbolAction(context =>
+                TargetFrameworkSettings targetFramework = context.Options.AnalyzerConfigOptionsProvider.GlobalOptions.GetTargetFrameworkSettings();
+                var env = new StubEnvironment(
+                    context.Compilation,
+                    targetFramework.TargetFramework,
+                    targetFramework.Version,
+                    context.Compilation.SourceModule.GetAttributes().Any(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute));
+
+                context.RegisterSymbolAction(context =>
+                {
+                    INamedTypeSymbol type = (INamedTypeSymbol)context.Symbol;
+                    AttributeData? interfaceTypeAttributeData = type.GetAttributes().FirstOrDefault(a => a.AttributeClass.Equals(interfaceTypeAttribute, SymbolEqualityComparer.Default));
+                    if (type is not { TypeKind: TypeKind.Interface, IsComImport: true }
+                        || interfaceTypeAttributeData.ConstructorArguments.Length == 1 && (int)interfaceTypeAttributeData.ConstructorArguments[0].Value != (int)ComInterfaceType.InterfaceIsIUnknown)
                     {
-                        INamedTypeSymbol type = (INamedTypeSymbol)context.Symbol;
-                        AttributeData? interfaceTypeAttributeData = type.GetAttributes().FirstOrDefault(a => a.AttributeClass.Equals(interfaceTypeAttribute, SymbolEqualityComparer.Default));
-                        if (type is not { TypeKind: TypeKind.Interface, IsComImport: true }
-                            || interfaceTypeAttributeData.ConstructorArguments.Length == 1 && (int)interfaceTypeAttributeData.ConstructorArguments[0].Value == (int)ComInterfaceType.InterfaceIsIUnknown)
+                        return;
+                    }
+
+                    bool mayRequireAdditionalWork = false;
+                    if (type.DeclaringSyntaxReferences.Length > 1)
+                    {
+                        mayRequireAdditionalWork = true;
+                    }
+
+                    foreach (var method in type.GetMembers().OfType<IMethodSymbol>().Where(m => !m.IsStatic && m.IsAbstract))
+                    {
+                        // Ignore types with methods with unsupported returns
+                        if (method.ReturnsByRef || method.ReturnsByRefReadonly)
+                            return;
+                        // Run a basic conversion check like we do for ConvertToLibraryImportAttributeAnalyzer to determine if there will be warnings after the fix.
+
+                        // Use  the method signature to do some of the work the generator will do after conversion.
+                        // If any diagnostics or failures to marshal are reported, then mark this diagnostic with a property signifying that it may require
+                        // later user work.
+                        AnyDiagnosticsSink diagnostics = new();
+                        AttributeData comImportAttribute = type.GetAttributes().First(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_InteropServices_ComImportAttribute);
+                        SignatureContext targetSignatureContext = SignatureContext.Create(
+                            method,
+                            CreateComImportMarshallingInfoParser(env, diagnostics, method, comImportAttribute),
+                            env,
+                            typeof(ConvertComImportToGeneratedComInterfaceAnalyzer).Assembly);
+
+                        var managedToUnmanagedFactory = ComInterfaceGeneratorHelpers.CreateGeneratorFactory(env, MarshalDirection.ManagedToUnmanaged);
+                        var unmanagedToManagedFactory = ComInterfaceGeneratorHelpers.CreateGeneratorFactory(env, MarshalDirection.UnmanagedToManaged);
+
+                        mayRequireAdditionalWork = diagnostics.AnyDiagnostics;
+                        bool anyExplicitlyUnsupportedInfo = false;
+
+                        var managedToNativeStubCodeContext = new ManagedToNativeStubCodeContext(env.TargetFramework, env.TargetFrameworkVersion, "return", "nativeReturn");
+                        var nativeToManagedStubCodeContext = new NativeToManagedStubCodeContext(env.TargetFramework, env.TargetFrameworkVersion, "return", "nativeReturn");
+
+                        var forwarder = new Forwarder();
+                        // We don't actually need the bound generators. We just need them to be attempted to be bound to determine if the generator will be able to bind them.
+                        BoundGenerators generators = BoundGenerators.Create(targetSignatureContext.ElementTypeInformation, new CallbackGeneratorFactory((info, context) =>
                         {
+                            if (s_unsupportedTypeNames.Contains(info.ManagedType.FullTypeName))
+                            {
+                                anyExplicitlyUnsupportedInfo = true;
+                                return forwarder;
+                            }
+                            if (HasUnsupportedMarshalAsInfo(info))
+                            {
+                                anyExplicitlyUnsupportedInfo = true;
+                                return forwarder;
+                            }
+                            if (info.MarshallingAttributeInfo is ExplicitlyUnsupportedMarshallingInfo)
+                            {
+                                anyExplicitlyUnsupportedInfo = true;
+                                return forwarder;
+                            }
+                            // Run both factories and collect any binding failures.
+                            _ = unmanagedToManagedFactory.GeneratorFactory.Create(info, nativeToManagedStubCodeContext);
+                            return managedToUnmanagedFactory.GeneratorFactory.Create(info, managedToNativeStubCodeContext);
+                        }), managedToNativeStubCodeContext, forwarder, out var bindingFailures);
+
+                        mayRequireAdditionalWork |= bindingFailures.Length > 0;
+
+                        if (anyExplicitlyUnsupportedInfo)
+                        {
+                            // If we have any parameters/return value with an explicitly unsupported marshal type or marshalling info,
+                            // don't offer the fix. The amount of work for the user to get to pairity would be too expensive.
                             return;
                         }
+                    }
 
-                        bool mayRequireAdditionalWork = false;
-                        if (type.DeclaringSyntaxReferences.Length > 1)
-                        {
-                            mayRequireAdditionalWork = true;
-                        }
+                    ImmutableDictionary<string, string>.Builder properties = ImmutableDictionary.CreateBuilder<string, string>();
 
-                        foreach (var method in type.GetMembers().OfType<IMethodSymbol>().Where(m => !m.IsStatic && m.IsAbstract))
-                        {
-                            // Ignore types with methods with unsupported returns
-                            if (method.ReturnsByRef || method.ReturnsByRefReadonly)
-                                return;
-                            // Run a basic conversion check like we do for ConvertToLibraryImportAttributeAnalyzer to determine if there will be warnings after the fix.
+                    properties.Add(AnalyzerDiagnostics.Metadata.MayRequireAdditionalWork, mayRequireAdditionalWork.ToString());
 
-                            // Use  the method signature to do some of the work the generator will do after conversion.
-                            // If any diagnostics or failures to marshal are reported, then mark this diagnostic with a property signifying that it may require
-                            // later user work.
-                            AnyDiagnosticsSink diagnostics = new();
-                            AttributeData comImportAttribute = method.GetAttributes().First(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_InteropServices_ComImportAttribute);
-                            SignatureContext targetSignatureContext = SignatureContext.Create(
-                                method,
-                                DefaultMarshallingInfoParser.Create(
-                                    env,
-                                    diagnostics,
-                                    method,
-                                    new GeneratedComInterfaceCompilationData
-                                    {
-                                        StringMarshalling = StringMarshalling.Utf16 // Set the StringMarshalling to Utf16 as a sentinel for "we have string marshalling rules defined". The fixer will apply BStr string marshalling if required.
-                                    },
-                                    comImportAttribute),
-                                env,
-                                typeof(ConvertComImportToGeneratedComInterfaceAnalyzer).Assembly);
-
-                            var managedToUnmanagedFactory = ComInterfaceGeneratorHelpers.CreateGeneratorFactory(env, MarshalDirection.ManagedToUnmanaged);
-                            var unmanagedToManagedFactory = ComInterfaceGeneratorHelpers.CreateGeneratorFactory(env, MarshalDirection.UnmanagedToManaged);
-
-                            mayRequireAdditionalWork = diagnostics.AnyDiagnostics;
-                            bool anyExplicitlyUnsupportedInfo = false;
-
-                            var managedToNativeStubCodeContext = new ManagedToNativeStubCodeContext(env.TargetFramework, env.TargetFrameworkVersion, "return", "nativeReturn");
-                            var nativeToManagedStubCodeContext = new NativeToManagedStubCodeContext(env.TargetFramework, env.TargetFrameworkVersion, "return", "nativeReturn");
-
-                            var forwarder = new Forwarder();
-                            // We don't actually need the bound generators. We just need them to be attempted to be bound to determine if the generator will be able to bind them.
-                            BoundGenerators generators = BoundGenerators.Create(targetSignatureContext.ElementTypeInformation, new CallbackGeneratorFactory((info, context) =>
-                            {
-                                if (s_unsupportedTypeNames.Contains(info.ManagedType.FullTypeName))
-                                {
-                                    anyExplicitlyUnsupportedInfo = true;
-                                    return forwarder;
-                                }
-                                if (HasUnsupportedMarshalAsInfo(info))
-                                {
-                                    anyExplicitlyUnsupportedInfo = true;
-                                    return forwarder;
-                                }
-                                // Run both factories and collect any binding failures.
-                                _ = unmanagedToManagedFactory.GeneratorFactory.Create(info, nativeToManagedStubCodeContext);
-                                return managedToUnmanagedFactory.GeneratorFactory.Create(info, managedToNativeStubCodeContext);
-                            }), managedToNativeStubCodeContext, forwarder, out var bindingFailures);
-
-                            mayRequireAdditionalWork |= bindingFailures.Length > 0;
-
-                            if (anyExplicitlyUnsupportedInfo)
-                            {
-                                // If we have any parameters/return value with an explicitly unsupported marshal type or marshalling info,
-                                // don't offer the fix. The amount of work for the user to get to pairity would be too expensive.
-                                return;
-                            }
-                        }
-
-                        ImmutableDictionary<string, string>.Builder properties = ImmutableDictionary.CreateBuilder<string, string>();
-
-                        properties.Add(AnalyzerDiagnostics.Metadata.MayRequireAdditionalWork, mayRequireAdditionalWork.ToString());
-
-                        context.ReportDiagnostic(type.CreateDiagnostic(ConvertToGeneratedComInterface, properties.ToImmutable(), type.Name));
-                    }, SymbolKind.NamedType);
-                }
+                    context.ReportDiagnostic(type.CreateDiagnostic(ConvertToGeneratedComInterface, properties.ToImmutable(), type.Name));
+                }, SymbolKind.NamedType);
             });
         }
 
+        private static MarshallingInfoParser CreateComImportMarshallingInfoParser(StubEnvironment env, IGeneratorDiagnostics diagnostics, IMethodSymbol method, AttributeData unparsedAttributeData)
+        {
+            var defaultInfo = new DefaultMarshallingInfo(CharEncoding.Utf16, null);
+
+            var useSiteAttributeParsers = ImmutableArray.Create<IUseSiteAttributeParser>(
+                    new MarshalAsAttributeParser(env.Compilation, diagnostics, defaultInfo),
+                    new MarshalUsingAttributeParser(env.Compilation, diagnostics));
+
+            return new MarshallingInfoParser(
+                diagnostics,
+                new MethodSignatureElementInfoProvider(env.Compilation, diagnostics, method, useSiteAttributeParsers),
+                useSiteAttributeParsers,
+                ImmutableArray.Create<IMarshallingInfoAttributeParser>(
+                    new MarshalAsAttributeParser(env.Compilation, diagnostics, defaultInfo),
+                    new MarshalUsingAttributeParser(env.Compilation, diagnostics),
+                    new NativeMarshallingAttributeParser(env.Compilation, diagnostics),
+                    new ComInterfaceMarshallingInfoProvider(env.Compilation)),
+                ImmutableArray.Create<ITypeBasedMarshallingInfoProvider>(
+                    new SafeHandleMarshallingInfoProvider(env.Compilation, method.ContainingType),
+                    new ExplicitlyUnsupportedMarshallingInfoProvider(), // We don't support arrays, so we don't include the array marshalling info provider. Instead, we include our "explicitly unsupported" provider.
+                    new CharMarshallingInfoProvider(defaultInfo),
+                    new StringMarshallingInfoProvider(env.Compilation, diagnostics, unparsedAttributeData, defaultInfo),
+                    new BooleanMarshallingInfoProvider(),
+                    new BlittableTypeMarshallingInfoProvider(env.Compilation)));
+        }
 
         private static bool HasUnsupportedMarshalAsInfo(TypePositionInfo info)
         {
@@ -166,6 +190,14 @@ namespace Microsoft.Interop.Analyzers
             }
 
             public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context) => _func(info, context);
+        }
+
+        private sealed record ExplicitlyUnsupportedMarshallingInfo : MarshallingInfo;
+
+        private sealed class ExplicitlyUnsupportedMarshallingInfoProvider : ITypeBasedMarshallingInfoProvider
+        {
+            public bool CanProvideMarshallingInfoForType(ITypeSymbol type) => type is { TypeKind: TypeKind.Array or TypeKind.Delegate } or { SpecialType: SpecialType.System_Array or SpecialType.System_Object };
+            public MarshallingInfo GetMarshallingInfo(ITypeSymbol type, int indirectionDepth, UseSiteAttributeProvider useSiteAttributes, GetMarshallingInfoCallback marshallingInfoCallback) => new ExplicitlyUnsupportedMarshallingInfo();
         }
     }
 }

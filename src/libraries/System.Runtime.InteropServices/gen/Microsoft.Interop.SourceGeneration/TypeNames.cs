@@ -116,7 +116,7 @@ namespace Microsoft.Interop
 
         public const string InterfaceTypeAttribute = "System.Runtime.InteropServices.InterfaceTypeAttribute";
 
-        public const string ComInterfaceTypeAttribute = "System.Runtime.InteropServices.ComInterfaceType";
+        public const string ComInterfaceType = "System.Runtime.InteropServices.ComInterfaceType";
 
         public const string System_Runtime_InteropServices_GuidAttribute = "System.Runtime.InteropServices.GuidAttribute";
 

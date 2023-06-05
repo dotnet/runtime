@@ -11,7 +11,7 @@ namespace Microsoft.Interop.Analyzers
         {
             public const string Prefix = "SYSLIB";
             public const string InvalidGeneratedComAttributeUsage = Prefix + "1090";
-            public const string ConvertToGeneratedComInterface = Prefix + "1091";
+            public const string ConvertToGeneratedComInterface = Prefix + "1096";
         }
 
         public static class Metadata

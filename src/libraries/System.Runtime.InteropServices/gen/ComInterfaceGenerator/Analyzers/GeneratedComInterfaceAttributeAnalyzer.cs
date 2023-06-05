@@ -59,7 +59,7 @@ namespace Microsoft.Interop.Analyzers
             argument = ctorArg0.ToCSharpString();
             switch (ctorArg0.Type.ToDisplayString())
             {
-                case TypeNames.ComInterfaceTypeAttribute:
+                case TypeNames.ComInterfaceType:
                     interfaceType = (ComInterfaceType)ctorArg0.Value;
                     break;
                 case TypeNames.System_Int16:
