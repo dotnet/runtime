@@ -73,7 +73,7 @@ namespace Sample
                 return Task.CompletedTask;
             }
         }
-        
+
         public class NormalizeMeasurement : StringMeasurement
         {
             protected new int len = 8 * 1024;
@@ -101,7 +101,7 @@ namespace Sample
                 return Task.CompletedTask;
             }
         }
-        
+
         public class NormalizeMeasurementASCII : ASCIIStringMeasurement
         {        
             protected new int len = 8 * 1024;
