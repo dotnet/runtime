@@ -2452,7 +2452,23 @@ namespace System.Threading.Tasks
         /// <returns>An object used to await this task.</returns>
         public ConfiguredTaskAwaitable ConfigureAwait(bool continueOnCapturedContext)
         {
-            return new ConfiguredTaskAwaitable(this, continueOnCapturedContext);
+            return new ConfiguredTaskAwaitable(this, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
+        }
+
+        /// <summary>Configures an awaiter used to await this <see cref="Task"/>.</summary>
+        /// <param name="options">Options used to configure how awaits on this task are performed.</param>
+        /// <returns>An object used to await this task.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The <paramref name="options"/> argument specifies an invalid value.</exception>
+        public ConfiguredTaskAwaitable ConfigureAwait(ConfigureAwaitOptions options)
+        {
+            if ((options & ~(ConfigureAwaitOptions.ContinueOnCapturedContext |
+                             ConfigureAwaitOptions.SuppressThrowing |
+                             ConfigureAwaitOptions.ForceYielding)) != 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.options);
+            }
+
+            return new ConfiguredTaskAwaitable(this, options);
         }
 
         /// <summary>
@@ -2474,7 +2490,7 @@ namespace System.Threading.Tasks
             // Create the best AwaitTaskContinuation object given the request.
             // If this remains null by the end of the function, we can use the
             // continuationAction directly without wrapping it.
-            TaskContinuation? tc = null;
+            TaskContinuation? tc;
 
             // If the user wants the continuation to run on the current "context" if there is one...
             if (continueOnCapturedContext)
@@ -2485,24 +2501,22 @@ namespace System.Threading.Tasks
                 // then ignore it.  This helps with performance by avoiding unnecessary posts and queueing
                 // of work items, but more so it ensures that if code happens to publish the default context
                 // as current, it won't prevent usage of a current task scheduler if there is one.
-                SynchronizationContext? syncCtx = SynchronizationContext.Current;
-                if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
+                if (SynchronizationContext.Current is SynchronizationContext syncCtx && syncCtx.GetType() != typeof(SynchronizationContext))
                 {
                     tc = new SynchronizationContextAwaitTaskContinuation(syncCtx, continuationAction, flowExecutionContext);
+                    goto HaveTaskContinuation;
                 }
-                else
+
+                // If there was no SynchronizationContext, then try for the current scheduler.
+                // We only care about it if it's not the default.
+                if (TaskScheduler.InternalCurrent is TaskScheduler scheduler && scheduler != TaskScheduler.Default)
                 {
-                    // If there was no SynchronizationContext, then try for the current scheduler.
-                    // We only care about it if it's not the default.
-                    TaskScheduler? scheduler = TaskScheduler.InternalCurrent;
-                    if (scheduler != null && scheduler != TaskScheduler.Default)
-                    {
-                        tc = new TaskSchedulerAwaitTaskContinuation(scheduler, continuationAction, flowExecutionContext);
-                    }
+                    tc = new TaskSchedulerAwaitTaskContinuation(scheduler, continuationAction, flowExecutionContext);
+                    goto HaveTaskContinuation;
                 }
             }
 
-            if (tc == null && flowExecutionContext)
+            if (flowExecutionContext)
             {
                 // We're targeting the default scheduler, so we can use the faster path
                 // that assumes the default, and thus we don't need to store it.  If we're flowing
@@ -2510,21 +2524,23 @@ namespace System.Threading.Tasks
                 // Otherwise, we're targeting the default scheduler and we don't need to flow ExecutionContext, so
                 // we don't actually need a continuation object.  We can just store/queue the action itself.
                 tc = new AwaitTaskContinuation(continuationAction, flowExecutionContext: true);
+                goto HaveTaskContinuation;
             }
 
             // Now register the continuation, and if we couldn't register it because the task is already completing,
             // process the continuation directly (in which case make sure we schedule the continuation
             // rather than inlining it, the latter of which could result in a rare but possible stack overflow).
-            if (tc != null)
+            Debug.Assert(!flowExecutionContext, "We already determined we're not required to flow context.");
+            if (!AddTaskContinuation(continuationAction, addBeforeOthers: false))
             {
-                if (!AddTaskContinuation(tc, addBeforeOthers: false))
-                    tc.Run(this, canInlineContinuationTask: false);
+                AwaitTaskContinuation.UnsafeScheduleAction(continuationAction, this);
             }
-            else
+            return;
+
+            HaveTaskContinuation:
+            if (!AddTaskContinuation(tc, addBeforeOthers: false))
             {
-                Debug.Assert(!flowExecutionContext, "We already determined we're not required to flow context.");
-                if (!AddTaskContinuation(continuationAction, addBeforeOthers: false))
-                    AwaitTaskContinuation.UnsafeScheduleAction(continuationAction, this);
+                tc.Run(this, canInlineContinuationTask: false);
             }
         }
 
@@ -2549,32 +2565,25 @@ namespace System.Threading.Tasks
             // method unless you've checked that TplEventSource.Log.IsEnabled() is false (if it becomes true after
             // the check, that's fine, and a natural race condition that's unavoidable).
 
+            // Create the best AwaitTaskContinuation object given the request.
+            // If this remains null by the end of the function, we can use the
+            // continuationAction directly without wrapping it.
+            TaskContinuation? tc;
+
             // If the caller wants to continue on the current context/scheduler and there is one,
             // fall back to using the state machine's delegate.
             if (continueOnCapturedContext)
             {
-                SynchronizationContext? syncCtx = SynchronizationContext.Current;
-                if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
+                if (SynchronizationContext.Current is SynchronizationContext syncCtx && syncCtx.GetType() != typeof(SynchronizationContext))
                 {
-                    var tc = new SynchronizationContextAwaitTaskContinuation(syncCtx, stateMachineBox.MoveNextAction, flowExecutionContext: false);
-                    if (!AddTaskContinuation(tc, addBeforeOthers: false))
-                    {
-                        tc.Run(this, canInlineContinuationTask: false);
-                    }
-                    return;
+                    tc = new SynchronizationContextAwaitTaskContinuation(syncCtx, stateMachineBox.MoveNextAction, flowExecutionContext: false);
+                    goto HaveTaskContinuation;
                 }
-                else
+
+                if (TaskScheduler.InternalCurrent is TaskScheduler scheduler && scheduler != TaskScheduler.Default)
                 {
-                    TaskScheduler? scheduler = TaskScheduler.InternalCurrent;
-                    if (scheduler != null && scheduler != TaskScheduler.Default)
-                    {
-                        var tc = new TaskSchedulerAwaitTaskContinuation(scheduler, stateMachineBox.MoveNextAction, flowExecutionContext: false);
-                        if (!AddTaskContinuation(tc, addBeforeOthers: false))
-                        {
-                            tc.Run(this, canInlineContinuationTask: false);
-                        }
-                        return;
-                    }
+                    tc = new TaskSchedulerAwaitTaskContinuation(scheduler, stateMachineBox.MoveNextAction, flowExecutionContext: false);
+                    goto HaveTaskContinuation;
                 }
             }
 
@@ -2583,6 +2592,13 @@ namespace System.Threading.Tasks
             if (!AddTaskContinuation(stateMachineBox, addBeforeOthers: false))
             {
                 ThreadPool.UnsafeQueueUserWorkItemInternal(stateMachineBox, preferLocal: true);
+            }
+            return;
+
+            HaveTaskContinuation:
+            if (!AddTaskContinuation(tc, addBeforeOthers: false))
+            {
+                tc.Run(this, canInlineContinuationTask: false);
             }
         }
 

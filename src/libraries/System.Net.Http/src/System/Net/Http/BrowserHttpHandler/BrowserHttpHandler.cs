@@ -204,16 +204,14 @@ namespace System.Net.Http
                 {
                     if (request.Content is StringContent)
                     {
-                        string body = await request.Content.ReadAsStringAsync(cancellationToken)
-                            .ConfigureAwait(true);
+                        string body = await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(true);
                         cancellationToken.ThrowIfCancellationRequested();
 
                         promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, body);
                     }
                     else
                     {
-                        byte[] buffer = await request.Content.ReadAsByteArrayAsync(cancellationToken)
-                            .ConfigureAwait(true);
+                        byte[] buffer = await request.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(true);
                         cancellationToken.ThrowIfCancellationRequested();
 
                         promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, buffer);
@@ -225,8 +223,7 @@ namespace System.Net.Http
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();
-                ValueTask<JSObject> wrappedTask = BrowserHttpInterop.CancelationHelper(promise, cancellationToken, abortController);
-                JSObject fetchResponse = await wrappedTask.ConfigureAwait(true);
+                JSObject fetchResponse = await BrowserHttpInterop.CancelationHelper(promise, cancellationToken, abortController).ConfigureAwait(true);
                 return new WasmFetchResponse(fetchResponse, abortRegistration.Value);
             }
             catch (Exception)

@@ -145,16 +145,20 @@ Copyright (c) .NET Foundation. All rights reserved.
       <WasmAssembliesToBundle Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Extension)' == '.dll'" />
     </ItemGroup>
   </Target>
-  
+
   <Target Name="_ResolveGlobalizationConfiguration">
     <Error Condition="'$(BlazorIcuDataFileName)' != '' AND !$([System.IO.Path]::GetFileName('$(BlazorIcuDataFileName)').StartsWith('icudt'))" Text="File name in %24(BlazorIcuDataFileName) has to start with 'icudt'." />
     <Warning Condition="'$(InvariantGlobalization)' == 'true' AND '$(BlazorWebAssemblyLoadAllGlobalizationData)' == 'true'" Text="%24(BlazorWebAssemblyLoadAllGlobalizationData) has no effect when %24(InvariantGlobalization) is set to true." />
     <Warning Condition="'$(InvariantGlobalization)' == 'true' AND '$(BlazorIcuDataFileName)' != ''" Text="%24(BlazorIcuDataFileName) has no effect when %24(InvariantGlobalization) is set to true." />
     <Warning Condition="'$(BlazorWebAssemblyLoadAllGlobalizationData)' == 'true' AND '$(BlazorIcuDataFileName)' != ''" Text="%24(BlazorIcuDataFileName) has no effect when %24(BlazorWebAssemblyLoadAllGlobalizationData) is set to true." />
+    <Warning Condition="'$(InvariantGlobalization)' == 'true' AND '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) has no effect when %24(InvariantGlobalization) is set to true." />
+    <Warning Condition="'$(BlazorIcuDataFileName)' != '' AND '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) has no effect when %24(BlazorIcuDataFileName) is set." />
     <PropertyGroup>
+      <HybridGlobalization Condition="'$(BlazorIcuDataFileName)' != ''">false</HybridGlobalization>
       <_BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(InvariantGlobalization)' != 'true'">$(BlazorWebAssemblyLoadAllGlobalizationData)</_BlazorWebAssemblyLoadAllGlobalizationData>
       <_BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(_BlazorWebAssemblyLoadAllGlobalizationData)' == ''">false</_BlazorWebAssemblyLoadAllGlobalizationData>
-      <_BlazorIcuDataFileName Condition="'$(InvariantGlobalization)' != 'true' AND '$(BlazorWebAssemblyLoadAllGlobalizationData)' != 'true'">$(BlazorIcuDataFileName)</_BlazorIcuDataFileName>
+      <_IsHybridGlobalization Condition="'$(InvariantGlobalization)' != 'true' AND '$(HybridGlobalization)' == 'true'"></_IsHybridGlobalization>
+      <_BlazorIcuDataFileName Condition="'$(InvariantGlobalization)' != 'true' AND '$(BlazorWebAssemblyLoadAllGlobalizationData)' != 'true' AND '$(HybridGlobalization)' != 'true'">$(BlazorIcuDataFileName)</_BlazorIcuDataFileName>
       <_LoadCustomIcuData>false</_LoadCustomIcuData>
       <_LoadCustomIcuData Condition="'$(_BlazorIcuDataFileName)' != ''">true</_LoadCustomIcuData>
     </PropertyGroup>
@@ -172,7 +176,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmCopyOutputSymbolsToOutputDirectory Condition="'$(_WasmCopyOutputSymbolsToOutputDirectory)'==''">true</_WasmCopyOutputSymbolsToOutputDirectory>
       <_WasmEnableThreads>$(WasmEnableThreads)</_WasmEnableThreads>
       <_WasmEnableThreads Condition="'$(_WasmEnableThreads)' == ''">false</_WasmEnableThreads>
-      
+
       <_WasmEnableWebcil>$(WasmEnableWebcil)</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' or '$(_TargetingNET80OrLater)' != 'true'">false</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(_WasmEnableWebcil)' == ''">true</_WasmEnableWebcil>
@@ -333,6 +337,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       LazyLoadedAssemblies="@(BlazorWebAssemblyLazyLoad)"
       InvariantGlobalization="$(InvariantGlobalization)"
       LoadCustomIcuData="$(_LoadCustomIcuData)"
+      IsHybridGlobalization="$(_IsHybridGlobalization)"
       LoadAllICUData="$(_BlazorWebAssemblyLoadAllGlobalizationData)"
       StartupMemoryCache="$(_BlazorWebAssemblyStartupMemoryCache)"
       Jiterpreter="$(_BlazorWebAssemblyJiterpreter)"
@@ -406,15 +411,15 @@ Copyright (c) .NET Foundation. All rights reserved.
       <StaticWebAsset Include="@(_NewWebCilPublishStaticWebAssets)" />
 
       <!-- TODO: Probably doesn't do anything as of now, original https://github.com/dotnet/aspnetcore/pull/34798 -->
-      <PublishBlazorBootStaticWebAsset 
+      <PublishBlazorBootStaticWebAsset
         Include="@(StaticWebAsset)"
-        Condition="'%(AssetKind)' != 'Build' and 
+        Condition="'%(AssetKind)' != 'Build' and
                     (('%(StaticWebAsset.AssetTraitName)' == 'WasmResource' and '%(StaticWebAsset.AssetTraitValue)' != 'manifest' and '%(StaticWebAsset.AssetTraitValue)' != 'boot') or
                     '%(StaticWebAsset.AssetTraitName)' == 'Culture')" />
     </ItemGroup>
   </Target>
 
-  <Target 
+  <Target
     Name="ComputeWasmExtensions"
     AfterTargets="ProcessPublishFilesForWasm"
     DependsOnTargets="$(ComputeBlazorExtensionsDependsOn)" >
@@ -520,6 +525,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       LazyLoadedAssemblies="@(BlazorWebAssemblyLazyLoad)"
       InvariantGlobalization="$(InvariantGlobalization)"
       LoadCustomIcuData="$(_LoadCustomIcuData)"
+      IsHybridGlobalization="$(_IsHybridGlobalization)"
       LoadAllICUData="$(_BlazorWebAssemblyLoadAllGlobalizationData)"
       StartupMemoryCache="$(_BlazorWebAssemblyStartupMemoryCache)"
       Jiterpreter="$(_BlazorWebAssemblyJiterpreter)"

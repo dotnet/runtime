@@ -1329,7 +1329,7 @@ void Compiler::compStartup()
     emitter::emitInit();
 
     // Static vars of ValueNumStore
-    ValueNumStore::InitValueNumStoreStatics();
+    ValueNumStore::ValidateValueNumStoreStatics();
 
     compDisplayStaticSizes(jitstdout);
 }

@@ -172,6 +172,8 @@ enum UnwindStackFrameFlags
     // If this is a reverse P/Invoke frame, do not continue the unwind
     // after extracting the saved transition frame.
     USFF_StopUnwindOnTransitionFrame = 1,
+    // Registers not containing GC roots can be omitted.
+    USFF_GcUnwind = 2,
 };
 
 class ICodeManager

@@ -30,6 +30,7 @@ void jiterp_preserve_module (void);
 #include <mono/metadata/mono-config.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/metadata/gc-internals.h>
+#include <mono/metadata/class-abi-details.h>
 
 #include "interp.h"
 #include "interp-internals.h"
@@ -1171,9 +1172,9 @@ mono_jiterp_get_member_offset (int member) {
 		case JITERP_MEMBER_VTABLE_KLASS:
 			return offsetof (MonoVTable, klass);
 		case JITERP_MEMBER_CLASS_RANK:
-			return offsetof (MonoClass, rank);
+			return m_class_offsetof_rank();
 		case JITERP_MEMBER_CLASS_ELEMENT_CLASS:
-			return offsetof (MonoClass, element_class);
+			return m_class_offsetof_element_class();
 		// see mono_object_get_data
 		case JITERP_MEMBER_BOXED_VALUE_DATA:
 			return MONO_ABI_SIZEOF (MonoObject);

@@ -1602,5 +1602,32 @@ namespace System.Text.Json.Serialization.Tests
 
             public ClassWithIgnoredPropertyDefaultParam(int x, int y = 5) => (X, Y) = (x, y);
         }
+
+        [Fact]
+        public async Task TestClassWithCustomConverterOnCtorParameter_ShouldPassCorrectTypeToConvertParameter()
+        {
+            ClassWithCustomConverterOnCtorParameter result = await Serializer.DeserializeWrapper<ClassWithCustomConverterOnCtorParameter>("""{"Id":"id"}""");
+            Assert.Equal("id", result.Id);
+        }
+
+        public class ClassWithCustomConverterOnCtorParameter
+        {
+            public ClassWithCustomConverterOnCtorParameter(string id) => Id = id;
+
+            [JsonConverter(typeof(CustomCtorParameterConverter))]
+            public string Id { get; }
+        }
+
+        public class CustomCtorParameterConverter : JsonConverter<string>
+        {
+            public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                Assert.Equal(typeof(string), typeToConvert);
+                return reader.GetString();
+            }
+
+            public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options)
+                => writer.WriteStringValue(value);
+        }
     }
 }
