@@ -48,7 +48,7 @@ namespace System.Text
              || (typeof(TLeft) == typeof(byte) && typeof(TRight) == typeof(ushort))
              || (typeof(TLeft) == typeof(ushort) && typeof(TRight) == typeof(ushort)));
 
-            if (!Vector128.IsHardwareAccelerated || length < (uint)Vector128<TRight>.Count)
+            if (!Vector128.IsHardwareAccelerated || length < (uint)Vector128<TLeft>.Count)
             {
                 for (nuint i = 0; i < length; ++i)
                 {
@@ -61,42 +61,30 @@ namespace System.Text
                     }
                 }
             }
-            else if (Avx.IsSupported && length >= (uint)Vector256<TRight>.Count)
+            else if (Avx.IsSupported && length >= (uint)Vector256<TLeft>.Count)
             {
                 ref TLeft currentLeftSearchSpace = ref left;
-                ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, length - TLoader.Count256);
                 ref TRight currentRightSearchSpace = ref right;
-                ref TRight oneVectorAwayFromRightEnd = ref Unsafe.Add(ref currentRightSearchSpace, length - (uint)Vector256<TRight>.Count);
-
-                Vector256<TRight> leftValues;
-                Vector256<TRight> rightValues;
+                ref TRight oneVectorAwayFromRightEnd = ref Unsafe.Add(ref currentRightSearchSpace, length - (uint)Vector256<TLeft>.Count);
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    leftValues = TLoader.Load256(ref currentLeftSearchSpace);
-                    rightValues = Vector256.LoadUnsafe(ref currentRightSearchSpace);
-
-                    if (leftValues != rightValues || !AllCharsInVectorAreAscii(leftValues | rightValues))
+                    if (!TLoader.Compare256(ref currentLeftSearchSpace, ref currentRightSearchSpace))
                     {
                         return false;
                     }
 
-                    currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, Vector256<TRight>.Count);
-                    currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count256);
+                    currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, Vector256<TLeft>.Count);
+                    currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, Vector256<TLeft>.Count);
                 }
                 while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
 
                 // If any elements remain, process the last vector in the search space.
-                if (length % (uint)Vector256<TRight>.Count != 0)
+                if (length % (uint)Vector256<TLeft>.Count != 0)
                 {
-                    leftValues = TLoader.Load256(ref oneVectorAwayFromLeftEnd);
-                    rightValues = Vector256.LoadUnsafe(ref oneVectorAwayFromRightEnd);
-
-                    if (leftValues != rightValues || !AllCharsInVectorAreAscii(leftValues | rightValues))
-                    {
-                        return false;
-                    }
+                    ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref left, length - (uint)Vector256<TLeft>.Count);
+                    return TLoader.Compare256(ref oneVectorAwayFromLeftEnd, ref oneVectorAwayFromRightEnd);
                 }
             }
             else
@@ -363,6 +351,7 @@ namespace System.Text
             static abstract nuint Count256 { get; }
             static abstract Vector128<TRight> Load128(ref TLeft ptr);
             static abstract Vector256<TRight> Load256(ref TLeft ptr);
+            static abstract bool Compare256(ref TLeft left, ref TRight right);
         }
 
         private readonly struct PlainLoader<T> : ILoader<T, T> where T : unmanaged, INumberBase<T>
@@ -371,6 +360,21 @@ namespace System.Text
             public static nuint Count256 => (uint)Vector256<T>.Count;
             public static Vector128<T> Load128(ref T ptr) => Vector128.LoadUnsafe(ref ptr);
             public static Vector256<T> Load256(ref T ptr) => Vector256.LoadUnsafe(ref ptr);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [CompExactlyDependsOn(typeof(Avx))]
+            public static bool Compare256(ref T left, ref T right)
+            {
+                Vector256<T> leftValues = Vector256.LoadUnsafe(ref left);
+                Vector256<T> rightValues = Vector256.LoadUnsafe(ref right);
+
+                if (leftValues != rightValues || !AllCharsInVectorAreAscii(leftValues))
+                {
+                    return false;
+                }
+
+                return true;
+            }
         }
 
         private readonly struct WideningLoader : ILoader<byte, ushort>
@@ -402,6 +406,31 @@ namespace System.Text
             {
                 (Vector128<ushort> lower, Vector128<ushort> upper) = Vector128.Widen(Vector128.LoadUnsafe(ref ptr));
                 return Vector256.Create(lower, upper);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [CompExactlyDependsOn(typeof(Avx))]
+            public static bool Compare256(ref byte left, ref ushort right)
+            {
+                Debug.Assert(Vector256<byte>.Count == Vector256<ushort>.Count * 2);
+
+                Vector256<byte> leftNotWidened = Vector256.LoadUnsafe(ref left);
+                if (!AllCharsInVectorAreAscii(leftNotWidened))
+                {
+                    return false;
+                }
+
+                (Vector256<ushort> lower, Vector256<ushort> upper) = Vector256.Widen(leftNotWidened);
+                Vector256<ushort> rightValues0 = Vector256.LoadUnsafe(ref right);
+                Vector256<ushort> rightValues1 = Vector256.LoadUnsafe(ref Unsafe.Add(ref right, (uint)Vector256<ushort>.Count));
+
+                if (!Vector256<ushort>.AllBitsSet.Equals(
+                    Vector256.BitwiseAnd(Vector256.Equals(lower, rightValues0), Vector256.Equals(upper, rightValues1))))
+                {
+                    return false;
+                }
+
+                return true;
             }
         }
     }
