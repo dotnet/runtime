@@ -117,7 +117,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
             if (!File.Exists(assemblyFilePath))
             {
-                Log.LogMessage(MessageImportance.Low, $"[ILStrip] {assemblyFilePath} doesn't exit.");
+                Log.LogMessage(MessageImportance.Low, $"{assemblyFilePath} read from {methodTokenFile} doesn't exist.");
                 return true;
             }
 
