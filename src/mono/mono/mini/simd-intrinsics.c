@@ -2129,17 +2129,17 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			// Read back.
 			// TODO: on x86, use a LEA
 			MonoInst* scratch = emit_xzero (cfg, args [0]->klass);
-			MonoInst* scratcha;
+			MonoInst* scratcha, *ins;
 			NEW_VARLOADA_VREG (cfg, scratcha, scratch->dreg, fsig->params [0]);
 			MONO_ADD_INS (cfg->cbb, scratcha);
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, mono_type_to_store_membase (cfg, fsig->params [0]), scratcha->dreg, 0, args [0]->dreg);
+			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, fsig->params [0], scratcha->dreg, 0, args [0]->dreg);
 
 			int offset_reg = alloc_lreg (cfg);
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, offset_reg, args [1]->dreg, type_to_width_log2 (arg0_type));
 			int addr_reg = alloc_preg (cfg);
 			MONO_EMIT_NEW_BIALU(cfg, OP_PADD, addr_reg, scratcha->dreg, offset_reg);
 
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, mono_type_to_store_membase (cfg, fsig->params [2]), addr_reg, 0, args [2]->dreg);
+			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, fsig->params [2], addr_reg, 0, args [2]->dreg);
 
 			MonoInst* ret;
 			NEW_LOAD_MEMBASE (cfg, ret, mono_type_to_load_membase (cfg, fsig->ret), scratch->dreg, scratcha->dreg, 0);
@@ -2586,8 +2586,10 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		ins->sreg3 = args [1]->dreg;
 		ins->inst_c1 = MONO_TYPE_R4;
 		ins->dreg = dreg;
-		if (indirect)
+		if (indirect) {
 			EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, args [0]->dreg, 0, dreg);
+			ins->klass = klass;
+		}
 
 		return ins;
 	}
@@ -3589,8 +3591,8 @@ static const IntrinGroup supported_arm_intrinsics [] = {
 	{ "AdvSimd", MONO_CPU_ARM64_NEON, advsimd_methods, sizeof (advsimd_methods) },
 	{ "Aes", MONO_CPU_ARM64_CRYPTO, crypto_aes_methods, sizeof (crypto_aes_methods) },
 	{ "ArmBase", MONO_CPU_ARM64_BASE, armbase_methods, sizeof (armbase_methods), TRUE },
-	{ "Crc32", MONO_CPU_ARM64_CRC, crc32_methods, sizeof (crc32_methods) },
-	{ "Dp", MONO_CPU_ARM64_DP, dp_methods, sizeof (dp_methods) },
+	{ "Crc32", MONO_CPU_ARM64_CRC, crc32_methods, sizeof (crc32_methods), TRUE },
+	{ "Dp", MONO_CPU_ARM64_DP, dp_methods, sizeof (dp_methods), TRUE },
 	{ "Rdm", MONO_CPU_ARM64_RDM, rdm_methods, sizeof (rdm_methods) },
 	{ "Sha1", MONO_CPU_ARM64_CRYPTO, sha1_methods, sizeof (sha1_methods) },
 	{ "Sha256", MONO_CPU_ARM64_CRYPTO, sha256_methods, sizeof (sha256_methods) },
@@ -3976,8 +3978,24 @@ emit_arm64_intrinsics (
 			MonoClass *quad_klass = mono_class_from_mono_type_internal (fsig->params [2]);
 			gboolean is_unsigned = type_is_unsigned (fsig->ret);
 			int iid = is_unsigned ? INTRINS_AARCH64_ADV_SIMD_UDOT : INTRINS_AARCH64_ADV_SIMD_SDOT;
-			MonoInst *quad = emit_simd_ins (cfg, arg_klass, OP_ARM64_SELECT_QUAD, args [2]->dreg, args [3]->dreg);
-			quad->data.op [1].klass = quad_klass;
+
+			MonoInst *quad;
+			if (!COMPILE_LLVM (cfg)) {
+				if (mono_class_value_size (arg_klass, NULL) != 16 || mono_class_value_size (quad_klass, NULL) != 16)
+					return NULL;
+				// FIXME: The c# api has ConstantExpected(Max = (byte)(15)), but the hw only supports
+				// selecting one of the 4 32 bit words
+				if (args [3]->opcode != OP_ICONST || args [3]->inst_c0 < 0 || args [3]->inst_c0 > 3) {
+					// FIXME: Throw the right exception ?
+					mono_emit_jit_icall (cfg, mono_throw_platform_not_supported, NULL);
+					return NULL;
+				}
+				quad = emit_simd_ins (cfg, klass, OP_ARM64_BROADCAST_ELEM, args [2]->dreg, -1);
+				quad->inst_c0 = args [3]->inst_c0;
+			} else {
+				quad = emit_simd_ins (cfg, arg_klass, OP_ARM64_SELECT_QUAD, args [2]->dreg, args [3]->dreg);
+				quad->data.op [1].klass = quad_klass;
+			}
 			MonoInst *ret = emit_simd_ins (cfg, ret_klass, OP_XOP_OVR_X_X_X_X, args [0]->dreg, args [1]->dreg);
 			ret->sreg3 = quad->dreg;
 			ret->inst_c0 = iid;
@@ -5679,7 +5697,7 @@ decompose_vtype_opt_load_arg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *in
 {
 	guint32 *sreg = (guint32*)sreg_int32;
 	MonoInst *src_var = get_vreg_to_inst (cfg, *sreg);
-	if (src_var && src_var->opcode == OP_ARG && src_var->klass && MONO_CLASS_IS_SIMD (cfg, src_var->klass)) {
+	if (src_var && src_var->opcode == OP_ARG && src_var->klass && mini_class_is_simd (cfg, src_var->klass)) {
 		MonoInst *varload_ins, *load_ins;
 		NEW_VARLOADA (cfg, varload_ins, src_var, src_var->inst_vtype);
 		mono_bblock_insert_before_ins (bb, ins, varload_ins);
@@ -5698,7 +5716,7 @@ decompose_vtype_opt_store_arg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *i
 {
 	guint32 *dreg = (guint32*)dreg_int32;
 	MonoInst *dest_var = get_vreg_to_inst (cfg, *dreg);
-	if (dest_var && dest_var->opcode == OP_ARG && dest_var->klass && MONO_CLASS_IS_SIMD (cfg, dest_var->klass)) {
+	if (dest_var && dest_var->opcode == OP_ARG && dest_var->klass && mini_class_is_simd (cfg, dest_var->klass)) {
 		MonoInst *varload_ins, *store_ins;
 		*dreg = alloc_xreg (cfg);
 		NEW_VARLOADA (cfg, varload_ins, dest_var, dest_var->inst_vtype);

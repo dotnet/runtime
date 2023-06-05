@@ -216,49 +216,57 @@ namespace Microsoft.Extensions
             Assert.Equal("val_3", options[KeyUintEnum.ghi]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetSByteDictionary()
         {
             GetIntDictionaryT<sbyte>(0, 1, 2);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetByteDictionary()
         {
             GetIntDictionaryT<byte>(0, 1, 2);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetShortDictionary()
         {
             GetIntDictionaryT<short>(0, 1, 2);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetUShortDictionary()
         {
             GetIntDictionaryT<ushort>(0, 1, 2);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetIntDictionary()
         {
             GetIntDictionaryT<int>(0, 1, 2);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetUIntDictionary()
         {
             GetIntDictionaryT<uint>(0, 1, 2);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetLongDictionary()
         {
             GetIntDictionaryT<long>(0, 1, 2);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetULongDictionary()
         {
             GetIntDictionaryT<ulong>(0, 1, 2);
@@ -944,7 +952,7 @@ namespace Microsoft.Extensions
             Assert.Equal("valx", array[6]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void ArrayInNestedOptionBinding()
         {
             var input = new Dictionary<string, string>
@@ -973,7 +981,7 @@ namespace Microsoft.Extensions
             Assert.Equal(12, options.ObjectArray[1].ArrayInNestedOption[2]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
         public void UnsupportedMultidimensionalArrays()
         {
             var input = new Dictionary<string, string>
@@ -1209,7 +1217,7 @@ namespace Microsoft.Extensions
             Assert.Equal("val_2", InitializedCollectionsOptions.ExistingDictionary["existing_key_2"]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindUninitializedICollection()
         {
             var input = new Dictionary<string, string>
@@ -1275,7 +1283,7 @@ namespace Microsoft.Extensions
             Assert.Equal("ExtraItem", options.IList[4]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindUninitializedIReadOnlyCollection()
         {
             var input = new Dictionary<string, string>
@@ -1303,7 +1311,7 @@ namespace Microsoft.Extensions
             Assert.Equal("valx", array[3]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindUninitializedIReadOnlyList()
         {
             var input = new Dictionary<string, string>
@@ -1331,7 +1339,7 @@ namespace Microsoft.Extensions
             Assert.Equal("valx", array[3]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindUninitializedIDictionary()
         {
             var input = new Dictionary<string, string>
@@ -1382,7 +1390,7 @@ namespace Microsoft.Extensions
         /// <summary>
         /// Replicates scenario from https://github.com/dotnet/runtime/issues/65710
         /// </summary>
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindWithInterdependentProperties()
         {
             var input = new Dictionary<string, string>
@@ -1444,7 +1452,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Yo2", options.NonInstantiatedIEnumerable.ElementAt(1));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindNonInstantiatedISet()
         {
             var dic = new Dictionary<string, string>
@@ -1465,7 +1473,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Yo2", options.NonInstantiatedISet.ElementAt(1));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindISetNoSetter()
         {
             var dic = new Dictionary<string, string>
@@ -1507,7 +1515,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Yo2", options.InstantiatedIReadOnlySet.ElementAt(1));
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindInstantiatedIReadOnlyWithSomeValues()
         {
             var dic = new Dictionary<string, string>
@@ -1714,7 +1722,7 @@ namespace Microsoft.Extensions
             Assert.Equal(4, options.NonInstantiatedReadOnlyDictionary["item4"]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
         public void CanBindNonInstantiatedDictionaryOfISet()
         {
             var dic = new Dictionary<string, string>

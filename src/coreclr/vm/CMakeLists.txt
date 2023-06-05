@@ -578,7 +578,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         dwreport.cpp
         eventreporter.cpp
         rtlfunctions.cpp
-        stacksampler.cpp
     )
 
     list(APPEND VM_HEADERS_WKS
@@ -587,7 +586,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         dwreport.h
         eventreporter.h
         rtlfunctions.h
-        stacksampler.h
     )
 
     # COM interop scenarios

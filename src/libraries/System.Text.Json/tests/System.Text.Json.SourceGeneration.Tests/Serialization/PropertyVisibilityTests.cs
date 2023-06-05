@@ -162,6 +162,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithMissingObjectProperty))]
         [JsonSerializable(typeof(ClassWithInitOnlyProperty))]
         [JsonSerializable(typeof(StructWithInitOnlyProperty))]
+        [JsonSerializable(typeof(StructWithInitOnlyProperty?))]
         [JsonSerializable(typeof(ClassWithCustomNamedInitOnlyProperty))]
         [JsonSerializable(typeof(StructWithCustomNamedInitOnlyProperty))]
         [JsonSerializable(typeof(MyClassWithValueTypeInterfaceProperty))]
@@ -173,6 +174,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(Class_PropertyWith_ProtectedInitOnlySetter))]
         [JsonSerializable(typeof(ClassWithIgnoredPublicProperty))]
         [JsonSerializable(typeof(ClassWithIgnoredPublicPropertyAndNewSlotPrivate))]
+        [JsonSerializable(typeof(ClassWithIgnoredPublicPropertyAndNewSlotPublicAndIgnoredToo))]
         [JsonSerializable(typeof(ClassWithIgnoredPropertyPolicyConflictPublic))]
         [JsonSerializable(typeof(ClassWithIgnoredPropertyNamingConflictPrivate))]
         [JsonSerializable(typeof(ClassWithIgnoredNewSlotProperty))]
@@ -331,7 +333,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
-        public static void PublicContexAndTestClassWithPropertiesWithDifferentAccesibilities()
+        public void PublicContextAndTestClassWithPropertiesWithDifferentAccessibilities()
         {
             JsonSerializerOptions options = new()
             {
@@ -360,7 +362,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
-        public static void PublicContexAndJsonConverter()
+        public void PublicContextAndJsonConverter()
         {
             JsonConverter obj = JsonMetadataServices.BooleanConverter;
 
@@ -371,7 +373,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
-        public static void PublicContexAndJsonSerializerOptions()
+        public void PublicContextAndJsonSerializerOptions()
         {
             JsonSerializerOptions obj = new()
             {
@@ -406,6 +408,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithMissingObjectProperty))]
         [JsonSerializable(typeof(ClassWithInitOnlyProperty))]
         [JsonSerializable(typeof(StructWithInitOnlyProperty))]
+        [JsonSerializable(typeof(StructWithInitOnlyProperty?))]
         [JsonSerializable(typeof(ClassWithCustomNamedInitOnlyProperty))]
         [JsonSerializable(typeof(StructWithCustomNamedInitOnlyProperty))]
         [JsonSerializable(typeof(MyClassWithValueTypeInterfaceProperty))]
@@ -417,6 +420,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(Class_PropertyWith_ProtectedInitOnlySetter))]
         [JsonSerializable(typeof(ClassWithIgnoredPublicProperty))]
         [JsonSerializable(typeof(ClassWithIgnoredPublicPropertyAndNewSlotPrivate))]
+        [JsonSerializable(typeof(ClassWithIgnoredPublicPropertyAndNewSlotPublicAndIgnoredToo))]
         [JsonSerializable(typeof(ClassWithIgnoredPropertyPolicyConflictPublic))]
         [JsonSerializable(typeof(ClassWithIgnoredPropertyNamingConflictPrivate))]
         [JsonSerializable(typeof(ClassWithIgnoredNewSlotProperty))]
