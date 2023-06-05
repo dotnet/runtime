@@ -1425,6 +1425,12 @@ namespace System
                 Vector128<byte> dashesMask = Vector128.Create(0x00002D000000002D, 0x2D000000002D0000).AsByte();
                 if (AdvSimd.Arm64.IsSupported)
                 {
+                    // Arm64 allows shuffling values using a 32-byte wide look-up table consisting of two 128-bit registers.
+                    // Each byte in the second arg represents a value between 0 to 31 that acts as an index in the look-up table.
+                    // Now we can create a "z" vector by selecting 12 values starting from the 9th element (index 0x08) and
+                    // leaving gaps for dashes. Thus, the wider look-up table allows combining two shuffles, as used in the
+                    // generic else-case, into a single instruction on Arm64.
+                    // TODO: Check if the JIT can merge the consecutive table look-ups and avoid the Arm64 specific if-case.
                     Vector128<byte> mid = AdvSimd.Arm64.VectorTableLookup((hexLow, hexHigh),
                         Vector128.Create(0x0D0CFF0B0A0908FF, 0xFF13121110FF0F0E).AsByte());
                     vecZ = (mid | dashesMask);
