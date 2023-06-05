@@ -11,10 +11,13 @@ typedef enum {
 	MONO_BUNDLED_RESOURCE_COUNT
 } MonoBundledResourceType;
 
+typedef void (*free_bundled_resource_func)(void *, void*);
+
 typedef struct _MonoBundledResource {
 	MonoBundledResourceType type;
 	const char *id;
-	void (*free_bundled_resource_func)(void *);
+	free_bundled_resource_func free_func;
+	void *free_data;
 } MonoBundledResource;
 
 typedef struct _MonoBundledData {
