@@ -213,7 +213,7 @@
     <!-- Mono Cecil -->
     <MicrosoftDotNetCecilVersion>0.11.4-alpha.23301.1</MicrosoftDotNetCecilVersion>
     <!-- ICU -->
-    <MicrosoftNETCoreRuntimeICUTransportVersion>8.0.0-preview.6.23280.1</MicrosoftNETCoreRuntimeICUTransportVersion>
+    <MicrosoftNETCoreRuntimeICUTransportVersion>8.0.0-preview.6.23305.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
     <MicrosoftNativeQuicMsQuicVersion>2.1.7</MicrosoftNativeQuicMsQuicVersion>
     <SystemNetMsQuicTransportVersion>8.0.0-alpha.1.23180.2</SystemNetMsQuicTransportVersion>
