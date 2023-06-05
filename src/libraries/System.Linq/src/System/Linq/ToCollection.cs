@@ -258,10 +258,9 @@ namespace System.Linq
         {
             int count = set.Count;
 
-            List<TSource> result;
+            var result = new List<TSource>(count);
             if (count > 0)
             {
-                result = new List<TSource>(count);
                 Span<TSource> span = SetCountAndGetSpan(result, count);
 
                 int index = 0;
@@ -272,10 +271,6 @@ namespace System.Linq
                 }
 
                 Debug.Assert(index == span.Length, "All list elements were not initialized.");
-            }
-            else
-            {
-                result = new List<TSource>();
             }
 
             return result;

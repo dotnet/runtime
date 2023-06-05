@@ -179,20 +179,11 @@ namespace System.Linq
                 int count = GetCount(onlyIfCheap: true);
                 List<TSource> list = count == -1 ? new List<TSource>() : new List<TSource>(count);
 
-                if (_prepended != null)
-                {
-                    Span<TSource> span = SetCountAndGetSpan(list, _prependCount);
-                    _prepended.Fill(span);
-                }
+                _prepended?.Fill(SetCountAndGetSpan(list, _prependCount));
 
                 list.AddRange(_source);
 
-                if (_appended != null)
-                {
-                    int index = list.Count;
-                    Span<TSource> span = SetCountAndGetSpan(list, index + _appendCount);
-                    _appended.FillReversed(span);
-                }
+                _appended?.FillReversed(SetCountAndGetSpan(list, list.Count + _appendCount));
 
                 return list;
             }
