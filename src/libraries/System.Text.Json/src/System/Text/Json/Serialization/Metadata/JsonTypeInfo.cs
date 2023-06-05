@@ -1405,7 +1405,8 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (jsonPropertyInfo.IsIgnored)
                 {
-                    (state.IgnoredProperties ??= new()).Add(memberName, jsonPropertyInfo);
+                    state.IgnoredProperties ??= new();
+                    state.IgnoredProperties[memberName] = jsonPropertyInfo;
                 }
             }
         }
