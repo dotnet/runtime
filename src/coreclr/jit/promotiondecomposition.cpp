@@ -537,12 +537,12 @@ private:
 
         if (m_store->OperIs(GT_STORE_BLK))
         {
-            addr = m_store->AsIndir()->Addr();
+            addr       = m_store->AsIndir()->Addr();
             indirFlags = m_store->gtFlags & GTF_IND_COPYABLE_FLAGS;
         }
         else if (m_src->OperIs(GT_BLK))
         {
-            addr = m_src->AsIndir()->Addr();
+            addr       = m_src->AsIndir()->Addr();
             indirFlags = m_src->gtFlags & GTF_IND_COPYABLE_FLAGS;
         }
 
