@@ -161,7 +161,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// <summary>
     /// Directory to store the aot output when using switch compiled-methods-outfile
     /// </summary>
-    public string? CompiledMethodsOutputPath { get; set; }
+    public string? CompiledMethodsOutputDirectory { get; set; }
 
     /// <summary>
     /// File to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
@@ -447,6 +447,17 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 throw new LogAsErrorException($"Could not find {fullPath} to AOT");
         }
 
+        if (CollectCompiledMethods)
+        {
+            if (string.IsNullOrEmpty(CompiledMethodsOutputDirectory))
+                throw new LogAsErrorException($"{nameof(CompiledMethodsOutputDirectory)} is empty. When {nameof(CollectCompiledMethods)} is set to true, the user needs to provide a directory for {nameof(CompiledMethodsOutputDirectory)}.");
+
+            if (!Directory.Exists(CompiledMethodsOutputDirectory))
+            {
+                Directory.CreateDirectory(CompiledMethodsOutputDirectory);
+            }
+        }
+
         return !Log.HasLoggedErrors;
     }
 
@@ -724,23 +735,12 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         if (CollectCompiledMethods)
         {
-            if (string.IsNullOrEmpty(CompiledMethodsOutputPath))
-            {
-                Log.LogMessage(MessageImportance.Low, $"Skipping collecting the list of aot compiled methods, because the value of {nameof(CompiledMethodsOutputPath)} is empty.");
-            }
-            else
-            {
-                if (!Directory.Exists(CompiledMethodsOutputPath))
-                {
-                    Directory.CreateDirectory(CompiledMethodsOutputPath);
-                }
-                string assemblyFileName = Path.GetFileName(assembly);
-                string assemblyName = assemblyFileName.Replace(".", "_");
-                string outputFileName = assemblyName + "_compiled_methods.txt";
-                string outputFilePath = Path.Combine(CompiledMethodsOutputPath, outputFileName);
-                aotArgs.Add($"compiled-methods-outfile={outputFilePath}");
-                aotAssembly.SetMetadata("MethodTokenFile", outputFilePath);
-            }
+            string assemblyFileName = Path.GetFileName(assembly);
+            string assemblyName = assemblyFileName.Replace(".", "_");
+            string outputFileName = assemblyName + "_compiled_methods.txt";
+            string outputFilePath = Path.Combine(CompiledMethodsOutputDirectory, outputFileName);
+            aotArgs.Add($"compiled-methods-outfile={outputFilePath}");
+            aotAssembly.SetMetadata("MethodTokenFile", outputFilePath);
         }
 
         // compute output mode and file names
