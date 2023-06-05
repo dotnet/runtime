@@ -210,7 +210,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
     private static void CreateTrimmedAssembly(PEReader peReader, string trimmedAssemblyFilePath, FileStream fs, Dictionary<int, int> method_body_uses)
     {
-        using (FileStream os = File.Open(trimmedAssemblyFilePath, FileMode.Create))
+        using FileStream os = File.Open(trimmedAssemblyFilePath, FileMode.Create);
         {
             fs.Position = 0;
             MemoryStream memStream = new MemoryStream((int)fs.Length);
