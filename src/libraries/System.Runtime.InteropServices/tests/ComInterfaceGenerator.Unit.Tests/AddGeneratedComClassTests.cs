@@ -9,6 +9,7 @@ using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpCodeFixVerifier<
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
     public class AddGeneratedComClassTests
     {
         [Fact]
@@ -60,6 +61,10 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
 
                 class C : I
+                {
+                }
+
+                class D : NonComInterface
                 {
                 }
                 """;
