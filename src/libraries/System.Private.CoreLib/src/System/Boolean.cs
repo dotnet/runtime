@@ -106,7 +106,7 @@ namespace System
                 if (destination.Length > 3)
                 {
                     ulong true_val = BitConverter.IsLittleEndian ? 0x65007500720054ul : 0x54007200750065ul; // "True"
-                    MemoryMarshal.Write<ulong>(MemoryMarshal.AsBytes(destination), ref true_val);
+                    MemoryMarshal.Write(MemoryMarshal.AsBytes(destination), ref true_val);
                     charsWritten = 4;
                     return true;
                 }
@@ -116,7 +116,7 @@ namespace System
                 if (destination.Length > 4)
                 {
                     ulong fals_val = BitConverter.IsLittleEndian ? 0x73006C00610046ul : 0x460061006C0073ul; // "Fals"
-                    MemoryMarshal.Write<ulong>(MemoryMarshal.AsBytes(destination), ref fals_val);
+                    MemoryMarshal.Write(MemoryMarshal.AsBytes(destination), ref fals_val);
                     destination[4] = 'e';
                     charsWritten = 5;
                     return true;
