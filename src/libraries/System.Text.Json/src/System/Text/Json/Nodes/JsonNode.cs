@@ -232,6 +232,46 @@ namespace System.Text.Json.Nodes
             }
         }
 
+        /// <summary>
+        /// Clone json node.
+        /// </summary>
+        /// <returns></returns>
+        public abstract JsonNode DeepClone();
+
+        public abstract JsonValueKind GetValueKind();
+
+        public static bool DeepEquals(JsonNode? node1, JsonNode? node2)
+        {
+            if (node1 is null && node2 is null)
+            {
+                return true;
+            }
+
+            if (node1 is null && node2 is not null)
+            {
+                return false;
+            }
+
+            if (node1 is JsonObject jsonObject)
+            {
+                return jsonObject.DeepEquals(node2);
+            }
+
+            if (node1 is JsonArray jsonArray)
+            {
+                return jsonArray.DeepEquals(node2);
+            }
+
+            if (node1 is JsonValue jsonValue)
+            {
+                return jsonValue.DeepEquals(node2);
+            }
+
+            return true;
+        }
+
+        internal abstract bool DeepEquals(JsonNode? node);
+
         internal void AssignParent(JsonNode parent)
         {
             if (Parent != null)

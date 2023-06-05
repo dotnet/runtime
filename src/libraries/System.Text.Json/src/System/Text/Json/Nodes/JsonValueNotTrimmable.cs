@@ -25,5 +25,25 @@ namespace System.Text.Json.Nodes
 
             JsonSerializer.Serialize(writer, _value, options);
         }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The ctor is marked RequiresUnreferencedCode.")]
+        public override JsonNode DeepClone() => JsonSerializer.SerializeToNode(_value)!;
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The ctor is marked RequiresUnreferencedCode.")]
+        internal override bool DeepEquals(JsonNode? node)
+        {
+            JsonNode? jsonNode = JsonSerializer.SerializeToNode(_value);
+            return DeepEquals(jsonNode, node);
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The ctor is marked RequiresUnreferencedCode.")]
+        public override JsonValueKind GetValueKind()
+        {
+            JsonNode? jsonNode = JsonSerializer.SerializeToNode(_value);
+            return jsonNode is null ? JsonValueKind.Null : jsonNode.GetValueKind();
+        }
     }
 }

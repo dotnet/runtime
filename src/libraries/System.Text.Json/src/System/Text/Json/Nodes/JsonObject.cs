@@ -71,6 +71,37 @@ namespace System.Text.Json.Nodes
         }
 
         /// <summary>
+        /// Clone json node.
+        /// </summary>
+        /// <returns></returns>
+        public override JsonNode DeepClone()
+        {
+            if (_jsonElement.HasValue)
+            {
+                return new JsonObject(_jsonElement!.Value.Clone(), Options);
+            }
+
+            var jObject = new JsonObject();
+
+            if (_dictionary is not null)
+            {
+                foreach (var item in _dictionary)
+                {
+                    if (item.Value is not null)
+                    {
+                        jObject.Add(item.Key, item.Value.DeepClone());
+                    }
+                    else
+                    {
+                        jObject.Add(item.Key, null);
+                    }
+                }
+            }
+
+            return jObject;
+        }
+
+        /// <summary>
         ///   Returns the value of a property with the specified name.
         /// </summary>
         /// <param name="propertyName">The name of the property to return.</param>
@@ -108,6 +139,52 @@ namespace System.Text.Json.Nodes
 
                 writer.WriteEndObject();
             }
+        }
+
+        internal override bool DeepEquals(JsonNode? node)
+        {
+            if (node is null)
+            {
+                return false;
+            }
+
+            if (node is JsonArray)
+            {
+                return false;
+            }
+
+            if (node is not JsonObject jsonObject)
+            {
+                return node.DeepEquals(this);
+            }
+
+            InitializeIfRequired();
+            jsonObject.InitializeIfRequired();
+
+            Debug.Assert(_dictionary is not null);
+            Debug.Assert(jsonObject._dictionary is not null);
+
+            if (_dictionary.Count != jsonObject._dictionary.Count)
+            {
+                return false;
+            }
+
+            foreach (KeyValuePair<string, JsonNode?> item in this)
+            {
+                JsonNode? jsonNode = jsonObject._dictionary[item.Key];
+
+                if (!DeepEquals(item.Value, jsonNode))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public override JsonValueKind GetValueKind()
+        {
+            return JsonValueKind.Object;
         }
 
         internal JsonNode? GetItem(string propertyName)

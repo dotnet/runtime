@@ -48,6 +48,48 @@ namespace System.Text.Json.Nodes
             InitializeFromArray(items);
         }
 
+        /// <summary>
+        /// Clone json node.
+        /// </summary>
+        /// <returns></returns>
+        public override JsonNode DeepClone()
+        {
+            if (_jsonElement.HasValue)
+            {
+                return new JsonArray(_jsonElement.Value.Clone());
+            }
+
+            var jsonArray = new JsonArray(Options);
+
+            if (_list is not null)
+            {
+                for (int i = 0; i < _list.Count; i++)
+                {
+                    JsonNode? item = _list[i];
+                    if (item is null)
+                    {
+                        jsonArray.Add(null);
+                    }
+                    else
+                    {
+                        jsonArray.Add(item.DeepClone());
+                    }
+                }
+            }
+
+            return jsonArray;
+        }
+
+        public override JsonValueKind GetValueKind()
+        {
+            return JsonValueKind.Array;
+        }
+
+        internal override bool DeepEquals(JsonNode? node)
+        {
+            return true;
+        }
+
         private void InitializeFromArray(JsonNode?[] items)
         {
             var list = new List<JsonNode?>(items);
