@@ -58,6 +58,7 @@ namespace Microsoft.Interop.Analyzers
                     }
 
                     bool mayRequireAdditionalWork = false;
+                    bool hasStrings = false;
                     if (type.DeclaringSyntaxReferences.Length > 1)
                     {
                         mayRequireAdditionalWork = true;
@@ -104,10 +105,18 @@ namespace Microsoft.Interop.Analyzers
                                 anyExplicitlyUnsupportedInfo = true;
                                 return forwarder;
                             }
-                            if (info.MarshallingAttributeInfo is ExplicitlyUnsupportedMarshallingInfo)
+                            if (info.MarshallingAttributeInfo is TrackedMarshallingInfo(TrackedMarshallingInfoAnnotation.ExplicitlyUnsupported, _))
                             {
                                 anyExplicitlyUnsupportedInfo = true;
                                 return forwarder;
+                            }
+                            if (info.MarshallingAttributeInfo is TrackedMarshallingInfo(TrackedMarshallingInfoAnnotation annotation, var inner))
+                            {
+                                if (annotation == TrackedMarshallingInfoAnnotation.String)
+                                {
+                                    hasStrings = true;
+                                }
+                                info = info with { MarshallingAttributeInfo = inner };
                             }
                             // Run both factories and collect any binding failures.
                             _ = unmanagedToManagedFactory.GeneratorFactory.Create(info, nativeToManagedStubCodeContext);
@@ -127,6 +136,7 @@ namespace Microsoft.Interop.Analyzers
                     ImmutableDictionary<string, string>.Builder properties = ImmutableDictionary.CreateBuilder<string, string>();
 
                     properties.Add(AnalyzerDiagnostics.Metadata.MayRequireAdditionalWork, mayRequireAdditionalWork.ToString());
+                    properties.Add(AnalyzerDiagnostics.Metadata.AddStringMarshalling, hasStrings.ToString());
 
                     context.ReportDiagnostic(type.CreateDiagnostic(ConvertToGeneratedComInterface, properties.ToImmutable(), type.Name));
                 }, SymbolKind.NamedType);
@@ -154,7 +164,7 @@ namespace Microsoft.Interop.Analyzers
                     new SafeHandleMarshallingInfoProvider(env.Compilation, method.ContainingType),
                     new ExplicitlyUnsupportedMarshallingInfoProvider(), // We don't support arrays, so we don't include the array marshalling info provider. Instead, we include our "explicitly unsupported" provider.
                     new CharMarshallingInfoProvider(defaultInfo),
-                    new StringMarshallingInfoProvider(env.Compilation, diagnostics, unparsedAttributeData, defaultInfo),
+                    new TrackingStringMarshallingInfoProvider(new StringMarshallingInfoProvider(env.Compilation, diagnostics, unparsedAttributeData, defaultInfo)), // We need to mark when we see string types to ensure we offer a code-fix that adds the string marshalling info.
                     new BooleanMarshallingInfoProvider(),
                     new BlittableTypeMarshallingInfoProvider(env.Compilation)));
         }
@@ -192,12 +202,32 @@ namespace Microsoft.Interop.Analyzers
             public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context) => _func(info, context);
         }
 
-        private sealed record ExplicitlyUnsupportedMarshallingInfo : MarshallingInfo;
+        private enum TrackedMarshallingInfoAnnotation
+        {
+            ExplicitlyUnsupported,
+            String
+        }
+
+        private sealed record TrackedMarshallingInfo(TrackedMarshallingInfoAnnotation TrackingAnnotation, MarshallingInfo InnerInfo): MarshallingInfo;
+
+        private sealed class TrackingStringMarshallingInfoProvider : ITypeBasedMarshallingInfoProvider
+        {
+            private readonly ITypeBasedMarshallingInfoProvider _stringMarshallingInfoProvider;
+
+            public TrackingStringMarshallingInfoProvider(ITypeBasedMarshallingInfoProvider stringMarshallingInfoProvider)
+            {
+                _stringMarshallingInfoProvider = stringMarshallingInfoProvider;
+            }
+
+            public bool CanProvideMarshallingInfoForType(ITypeSymbol type) => type.SpecialType == SpecialType.System_String;
+            public MarshallingInfo GetMarshallingInfo(ITypeSymbol type, int indirectionDepth, UseSiteAttributeProvider useSiteAttributes, GetMarshallingInfoCallback marshallingInfoCallback)
+                => new TrackedMarshallingInfo(TrackedMarshallingInfoAnnotation.String, _stringMarshallingInfoProvider.GetMarshallingInfo(type, indirectionDepth, useSiteAttributes, marshallingInfoCallback));
+        }
 
         private sealed class ExplicitlyUnsupportedMarshallingInfoProvider : ITypeBasedMarshallingInfoProvider
         {
             public bool CanProvideMarshallingInfoForType(ITypeSymbol type) => type is { TypeKind: TypeKind.Array or TypeKind.Delegate } or { SpecialType: SpecialType.System_Array or SpecialType.System_Object };
-            public MarshallingInfo GetMarshallingInfo(ITypeSymbol type, int indirectionDepth, UseSiteAttributeProvider useSiteAttributes, GetMarshallingInfoCallback marshallingInfoCallback) => new ExplicitlyUnsupportedMarshallingInfo();
+            public MarshallingInfo GetMarshallingInfo(ITypeSymbol type, int indirectionDepth, UseSiteAttributeProvider useSiteAttributes, GetMarshallingInfoCallback marshallingInfoCallback) => new TrackedMarshallingInfo(TrackedMarshallingInfoAnnotation.ExplicitlyUnsupported, NoMarshallingInfo.Instance);
         }
     }
 }

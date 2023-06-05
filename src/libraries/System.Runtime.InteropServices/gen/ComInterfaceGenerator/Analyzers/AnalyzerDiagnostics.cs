@@ -17,6 +17,7 @@ namespace Microsoft.Interop.Analyzers
         public static class Metadata
         {
             public const string MayRequireAdditionalWork = nameof(MayRequireAdditionalWork);
+            public const string AddStringMarshalling = nameof(AddStringMarshalling);
         }
 
         private const string Category = "Interoperability";

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Xunit;
 using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpCodeFixVerifier<
        Microsoft.Interop.Analyzers.ConvertComImportToGeneratedComInterfaceAnalyzer,
-          Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
+          Microsoft.Interop.Analyzers.ConvertComImportToGeneratedComInterfaceCodeFixProvider>;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
@@ -27,6 +27,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             string fixedSource = """
                using System.Runtime.InteropServices;
+               using System.Runtime.InteropServices.Marshalling;
 
                [GeneratedComInterface]
                [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
@@ -56,6 +57,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             string fixedSource = """
                using System.Runtime.InteropServices;
+               using System.Runtime.InteropServices.Marshalling;
 
                [GeneratedComInterface]
                [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
@@ -86,6 +88,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             string fixedSource = """
                using System.Runtime.InteropServices;
+               using System.Runtime.InteropServices.Marshalling;
 
                [GeneratedComInterface]
                [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
@@ -226,6 +229,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                """;
 
             string fixedSource = """
+                using System;
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
@@ -277,7 +281,7 @@ namespace ComInterfaceGenerator.Unit.Tests
         {
             string source = """
                using System.Runtime.InteropServices;
-               
+
                [ComImport]
                [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -300,7 +304,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             string fixedSource = """
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 [GeneratedComInterface]
                 [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
                 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
