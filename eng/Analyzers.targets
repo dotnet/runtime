@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <!-- Disable analyzers in sourcebuild -->
-    <RunAnalyzers Condition="'$(RunAnalyzers)' == '' And '$(DotNetBuildFromSource)' == 'true'">false</RunAnalyzers>
+    <RunAnalyzers Condition="'$(DotNetBuildFromSource)' == 'true'">false</RunAnalyzers>
     <EnableNETAnalyzers Condition="'$(EnableNETAnalyzers)' == ''">$(RunAnalyzers)</EnableNETAnalyzers>
   </PropertyGroup>
   <PropertyGroup Condition="'$(RunAnalyzers)' != 'false'">
