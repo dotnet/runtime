@@ -726,7 +726,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             if (string.IsNullOrEmpty(CompiledMethodsOutputPath))
             {
-                Log.LogMessage(MessageImportance.Low, "Skipping collecting the list of aot compiled methods, cause the value of CompiledMethodsOutputPath is empty.");
+                Log.LogMessage(MessageImportance.Low, $"Skipping collecting the list of aot compiled methods, because the value of {nameof(CompiledMethodsOutputPath)} is empty.");
             }
             else
             {
