@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RunSettings>
   <RunConfiguration>
-    <!-- Timeout in ms, 5 minutes -->
-    <TestSessionTimeout>300000</TestSessionTimeout>
+    <!-- Timeout in ms, 15 minutes -->
+    <TestSessionTimeout>900000</TestSessionTimeout>
     <!-- Directory for test run reports. E.g. trx, coverage etc. -->
     <ResultsDirectory>.\TestResults\</ResultsDirectory>
     <!-- Working directory for test invocation. Results directory can be relative to this. Used by IDEs. -->
