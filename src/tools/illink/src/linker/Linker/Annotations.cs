@@ -530,6 +530,14 @@ namespace Mono.Linker
 			symbolReader.Dispose ();
 		}
 
+		public void CloseAllSymbolReaders ()
+		{
+			foreach (var reader in symbol_readers.Values)
+				reader.Dispose ();
+
+			symbol_readers.Clear ();
+		}
+
 		public object? GetCustomAnnotation (object key, IMetadataTokenProvider item)
 		{
 			if (!custom_annotations.TryGetValue (key, out Dictionary<IMetadataTokenProvider, object>? slots))

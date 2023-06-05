@@ -40,7 +40,7 @@ using Mono.Cecil;
 namespace Mono.Linker.Steps
 {
 
-	public class OutputStep : BaseStep
+	public class OutputStep : BaseParallelPerAssemblyStep
 	{
 		private Dictionary<ushort, TargetArchitecture>? architectureMap;
 
@@ -60,65 +60,73 @@ namespace Mono.Linker.Steps
 			assembliesWritten = new List<string> ();
 		}
 
+		protected override void Initialize (LinkContext context)
+		{
+			SetupArchitectureMap();
+		}
+
 		TargetArchitecture CalculateArchitecture (TargetArchitecture readyToRunArch)
 		{
-			if (architectureMap == null) {
-				architectureMap = new Dictionary<ushort, TargetArchitecture> ();
-				foreach (var os in Enum.GetValues (typeof (NativeOSOverride))) {
-					ushort osVal = (ushort) (NativeOSOverride) os;
-					foreach (var arch in Enum.GetValues (typeof (TargetArchitecture))) {
-						ushort archVal = (ushort) (TargetArchitecture) arch;
-						architectureMap.Add ((ushort) (archVal ^ osVal), (TargetArchitecture) arch);
-					}
-				}
-			}
-
-			if (architectureMap.TryGetValue ((ushort) readyToRunArch, out TargetArchitecture pureILArch)) {
+			if (architectureMap!.TryGetValue ((ushort) readyToRunArch, out TargetArchitecture pureILArch)) {
 				return pureILArch;
 			}
 			throw new BadImageFormatException ("unrecognized module attributes");
 		}
 
-		protected override bool ConditionToProcess ()
+		private void SetupArchitectureMap()
 		{
-			return Context.ErrorsCount == 0;
+			architectureMap = new Dictionary<ushort, TargetArchitecture>();
+			foreach (var os in Enum.GetValues(typeof(NativeOSOverride))) {
+				ushort osVal = (ushort)(NativeOSOverride)os;
+				foreach (var arch in Enum.GetValues(typeof(TargetArchitecture))) {
+					ushort archVal = (ushort)(TargetArchitecture)arch;
+					architectureMap.Add((ushort)(archVal ^ osVal), (TargetArchitecture)arch);
+				}
+			}
 		}
 
-		protected override void Process ()
+		protected override bool ConditionToProcess (LinkContext context)
 		{
-			CheckOutputDirectory ();
-			OutputPInvokes ();
-			Tracer.Finish ();
+			return context.ErrorsCount == 0;
 		}
 
-		protected override void EndProcess ()
+		protected override void BeginProcess (LinkContext context)
 		{
-			if (Context.AssemblyListFile != null) {
-				using (var w = File.CreateText (Context.AssemblyListFile)) {
+			CheckOutputDirectory (context);
+			OutputPInvokes (context);
+			context.Tracer.Finish ();
+		}
+
+		protected override void EndProcess (LinkContext context)
+		{
+			context.Annotations.CloseAllSymbolReaders();
+
+			if (context.AssemblyListFile != null) {
+				using (var w = File.CreateText (context.AssemblyListFile)) {
 					w.WriteLine ("[" + string.Join (", ", assembliesWritten.Select (a => "\"" + a + "\"").ToArray ()) + "]");
 				}
 			}
 		}
 
-		void CheckOutputDirectory ()
+		static void CheckOutputDirectory (LinkContext context)
 		{
-			if (Directory.Exists (Context.OutputDirectory))
+			if (Directory.Exists (context.OutputDirectory))
 				return;
 
-			Directory.CreateDirectory (Context.OutputDirectory);
+			Directory.CreateDirectory (context.OutputDirectory);
 		}
 
-		protected override void ProcessAssembly (AssemblyDefinition assembly)
+		protected override void ProcessAssembly (ParallelSafeLinkContext context, AssemblyDefinition assembly)
 		{
-			OutputAssembly (assembly);
+			OutputAssembly (context, assembly);
 		}
 
-		protected void WriteAssembly (AssemblyDefinition assembly, string directory)
+		protected void WriteAssembly (ParallelSafeLinkContext context, AssemblyDefinition assembly, string directory)
 		{
-			WriteAssembly (assembly, directory, SaveSymbols (assembly));
+			WriteAssembly (context, assembly, directory, SaveSymbols (context, assembly));
 		}
 
-		protected virtual void WriteAssembly (AssemblyDefinition assembly, string directory, WriterParameters writerParameters)
+		protected virtual void WriteAssembly (ParallelSafeLinkContext context, AssemblyDefinition assembly, string directory, WriterParameters writerParameters)
 		{
 			foreach (var module in assembly.Modules) {
 				// Write back pure IL even for crossgen-ed assemblies
@@ -129,7 +137,7 @@ namespace Mono.Linker.Steps
 				}
 			}
 
-			string outputName = GetAssemblyFileName (assembly, directory);
+			string outputName = GetAssemblyFileName (context, assembly, directory);
 			try {
 				assembly.Write (outputName, writerParameters);
 			} catch (Exception e) {
@@ -138,46 +146,43 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		void OutputAssembly (AssemblyDefinition assembly)
+		void OutputAssembly (ParallelSafeLinkContext context, AssemblyDefinition assembly)
 		{
-			string directory = Context.OutputDirectory;
+			string directory = context.OutputDirectory;
 
-			CopyConfigFileIfNeeded (assembly, directory);
+			CopyConfigFileIfNeeded (context, assembly, directory);
 
-			var action = Annotations.GetAction (assembly);
-			Context.LogMessage ($"Output action: '{action,8}' assembly: '{assembly}'.");
+			var action = context.Annotations.GetAction (assembly);
+			context.LogMessage ($"Output action: '{action,8}' assembly: '{assembly}'.");
 
 			switch (action) {
 			case AssemblyAction.Save:
 			case AssemblyAction.Link:
 			case AssemblyAction.AddBypassNGen:
-				WriteAssembly (assembly, directory);
-				CopySatelliteAssembliesIfNeeded (assembly, directory);
-				assembliesWritten.Add (GetOriginalAssemblyFileInfo (assembly).Name);
+				WriteAssembly (context, assembly, directory);
+				CopySatelliteAssembliesIfNeeded (context, assembly, directory);
+				assembliesWritten.Add (GetOriginalAssemblyFileInfo (context, assembly).Name);
 				break;
 			case AssemblyAction.Copy:
-				CloseSymbols (assembly);
-				CopyAssembly (assembly, directory);
-				CopySatelliteAssembliesIfNeeded (assembly, directory);
-				assembliesWritten.Add (GetOriginalAssemblyFileInfo (assembly).Name);
+				CopyAssembly (context, assembly, directory);
+				CopySatelliteAssembliesIfNeeded (context, assembly, directory);
+				assembliesWritten.Add (GetOriginalAssemblyFileInfo (context, assembly).Name);
 				break;
 			case AssemblyAction.Delete:
-				CloseSymbols (assembly);
-				DeleteAssembly (assembly, directory);
+				DeleteAssembly (context, assembly, directory);
 				break;
 			default:
-				CloseSymbols (assembly);
 				break;
 			}
 		}
 
-		private void OutputPInvokes ()
+		private static void OutputPInvokes (LinkContext context)
 		{
-			if (Context.PInvokesListFile == null)
+			if (context.PInvokesListFile == null)
 				return;
 
-			using (var fs = File.Open (Path.Combine (Context.OutputDirectory, Context.PInvokesListFile), FileMode.Create)) {
-				var values = Context.PInvokes.Distinct ().OrderBy (l => l);
+			using (var fs = File.Open (Path.Combine (context.OutputDirectory, context.PInvokesListFile), FileMode.Create)) {
+				var values = context.PInvokes.Distinct ().OrderBy (l => l);
 				// Ignore warning, since we're just enabling analyzer for dogfooding
 #pragma warning disable IL2026
 				var jsonSerializer = new DataContractJsonSerializer (typeof (List<PInvokeInfo>));
@@ -186,9 +191,9 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		protected virtual void DeleteAssembly (AssemblyDefinition assembly, string directory)
+		protected virtual void DeleteAssembly (ParallelSafeLinkContext context, AssemblyDefinition assembly, string directory)
 		{
-			var target = GetAssemblyFileName (assembly, directory);
+			var target = GetAssemblyFileName (context, assembly, directory);
 			if (File.Exists (target)) {
 				File.Delete (target);
 				File.Delete (target + ".mdb");
@@ -197,18 +202,13 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		void CloseSymbols (AssemblyDefinition assembly)
-		{
-			Annotations.CloseSymbolReader (assembly);
-		}
-
-		WriterParameters SaveSymbols (AssemblyDefinition assembly)
+		static WriterParameters SaveSymbols (ParallelSafeLinkContext context, AssemblyDefinition assembly)
 		{
 			var parameters = new WriterParameters {
-				DeterministicMvid = Context.DeterministicOutput
+				DeterministicMvid = context.DeterministicOutput
 			};
 
-			if (!Context.LinkSymbols)
+			if (!context.LinkSymbols)
 				return parameters;
 
 			if (!assembly.MainModule.HasSymbols)
@@ -223,12 +223,12 @@ namespace Mono.Linker.Steps
 		}
 
 
-		void CopySatelliteAssembliesIfNeeded (AssemblyDefinition assembly, string directory)
+		static void CopySatelliteAssembliesIfNeeded (ParallelSafeLinkContext context, AssemblyDefinition assembly, string directory)
 		{
-			if (!Annotations.ProcessSatelliteAssemblies)
+			if (!context.Annotations.ProcessSatelliteAssemblies)
 				return;
 
-			FileInfo original = GetOriginalAssemblyFileInfo (assembly);
+			FileInfo original = GetOriginalAssemblyFileInfo (context, assembly);
 			string resourceFile = GetAssemblyResourceFileName (original.FullName);
 
 			foreach (var subDirectory in Directory.EnumerateDirectories (original.DirectoryName!)) {
@@ -244,18 +244,18 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		void CopyConfigFileIfNeeded (AssemblyDefinition assembly, string directory)
+		void CopyConfigFileIfNeeded (ParallelSafeLinkContext context, AssemblyDefinition assembly, string directory)
 		{
-			string config = GetConfigFile (GetOriginalAssemblyFileInfo (assembly).FullName);
+			string config = GetConfigFile (GetOriginalAssemblyFileInfo (context, assembly).FullName);
 			if (!File.Exists (config))
 				return;
 
-			string target = Path.GetFullPath (GetConfigFile (GetAssemblyFileName (assembly, directory)));
+			string target = Path.GetFullPath (GetConfigFile (GetAssemblyFileName (context, assembly, directory)));
 
 			if (config == target)
 				return;
 
-			File.Copy (config, GetConfigFile (GetAssemblyFileName (assembly, directory)), true);
+			File.Copy (config, GetConfigFile (GetAssemblyFileName (context, assembly, directory)), true);
 		}
 
 		static string GetAssemblyResourceFileName (string assembly)
@@ -268,14 +268,14 @@ namespace Mono.Linker.Steps
 			return assembly + ".config";
 		}
 
-		FileInfo GetOriginalAssemblyFileInfo (AssemblyDefinition assembly)
+		static FileInfo GetOriginalAssemblyFileInfo (ParallelSafeLinkContext context, AssemblyDefinition assembly)
 		{
-			return new FileInfo (Context.GetAssemblyLocation (assembly));
+			return new FileInfo (context.GetAssemblyLocation (assembly));
 		}
 
-		protected virtual void CopyAssembly (AssemblyDefinition assembly, string directory)
+		protected virtual void CopyAssembly (ParallelSafeLinkContext context, AssemblyDefinition assembly, string directory)
 		{
-			FileInfo fi = GetOriginalAssemblyFileInfo (assembly);
+			FileInfo fi = GetOriginalAssemblyFileInfo (context, assembly);
 			string target = Path.GetFullPath (Path.Combine (directory, fi.Name));
 			string source = fi.FullName;
 
@@ -283,7 +283,7 @@ namespace Mono.Linker.Steps
 				return;
 
 			File.Copy (source, target, true);
-			if (!Context.LinkSymbols)
+			if (!context.LinkSymbols)
 				return;
 
 			var mdb = source + ".mdb";
@@ -295,9 +295,9 @@ namespace Mono.Linker.Steps
 				File.Copy (pdb, Path.ChangeExtension (target, "pdb"), true);
 		}
 
-		protected virtual string GetAssemblyFileName (AssemblyDefinition assembly, string directory)
+		protected virtual string GetAssemblyFileName (ParallelSafeLinkContext context, AssemblyDefinition assembly, string directory)
 		{
-			string file = GetOriginalAssemblyFileInfo (assembly).Name;
+			string file = GetOriginalAssemblyFileInfo (context, assembly).Name;
 			return Path.Combine (directory, file);
 		}
 	}
