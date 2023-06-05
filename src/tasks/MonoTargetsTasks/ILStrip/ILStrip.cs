@@ -234,11 +234,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         }
     }
 
-    private static int ComputeMethodSize(PEReader peReader, int rva)
-    {
-        MethodBodyBlock mb = peReader.GetMethodBody(rva);
-        return mb.Size;
-    }
+    private static int ComputeMethodSize(PEReader peReader, int rva) => peReader.GetMethodBody(rva).Size;
 
     private static int ComputeMethodHash(PEReader peReader, int rva)
     {
