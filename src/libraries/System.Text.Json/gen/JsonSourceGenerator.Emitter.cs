@@ -709,11 +709,7 @@ namespace System.Text.Json.SourceGeneration
             {
                 string typeRef = typeGenSpec.TypeRef.FullyQualifiedName;
 
-                if (!TryFilterSerializableProps(
-                    typeGenSpec,
-                    contextSpec,
-                    out Dictionary<string, PropertyGenerationSpec>? serializableProperties,
-                    out bool castingRequiredForProps))
+                if (!TryFilterSerializableProps(typeGenSpec, contextSpec, out Dictionary<string, PropertyGenerationSpec>? serializableProperties))
                 {
                     // Type uses configuration that doesn't support fast-path: emit a stub that just throws.
                     GenerateFastPathFuncHeader(writer, typeGenSpec, serializeMethodName, skipNullCheck: true);
@@ -754,7 +750,13 @@ namespace System.Text.Json.SourceGeneration
                     _propertyNames.TryAdd(runtimePropName, propNameVarName);
 
                     DefaultCheckType defaultCheckType = GetDefaultCheckType(contextSpec, propertyGenSpec);
-                    string? objectExpr = castingRequiredForProps ? $"(({propertyGenSpec.DeclaringType.FullyQualifiedName}){ValueVarName})" : ValueVarName;
+
+                    // For properties whose declared type differs from that of the serialized type
+                    // perform an explicit cast -- this is to account for hidden properties or diamond ambiguity.
+                    string? objectExpr = propertyGenSpec.DeclaringType != typeGenSpec.TypeRef
+                        ? $"(({propertyGenSpec.DeclaringType.FullyQualifiedName}){ValueVarName})"
+                        : ValueVarName;
+
                     string propValueExpr = $"{objectExpr}.{propertyGenSpec.NameSpecifiedInSourceCode}";
 
                     switch (defaultCheckType)
@@ -1353,12 +1355,10 @@ namespace System.Text.Json.SourceGeneration
             public static bool TryFilterSerializableProps(
                     TypeGenerationSpec typeSpec,
                     ContextGenerationSpec contextSpec,
-                    [NotNullWhen(true)] out Dictionary<string, PropertyGenerationSpec>? serializableProperties,
-                    out bool castingRequiredForProps)
+                    [NotNullWhen(true)] out Dictionary<string, PropertyGenerationSpec>? serializableProperties)
             {
                 Debug.Assert(typeSpec.PropertyGenSpecs != null);
 
-                castingRequiredForProps = false;
                 serializableProperties = new Dictionary<string, PropertyGenerationSpec>();
                 HashSet<string>? ignoredMembers = null;
 
@@ -1390,10 +1390,6 @@ namespace System.Text.Json.SourceGeneration
                     {
                         continue;
                     }
-
-                    // Using properties from an interface hierarchy -- require explicit casting when
-                    // getting properties in the fast path to account for possible diamond ambiguities.
-                    castingRequiredForProps |= typeSpec.TypeRef.TypeKind is TypeKind.Interface && propGenSpec.PropertyType != typeSpec.TypeRef;
 
                     string memberName = propGenSpec.MemberName!;
 
@@ -1452,12 +1448,10 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 Debug.Assert(typeSpec.PropertyGenSpecs.Count >= serializableProperties.Count);
-                castingRequiredForProps |= typeSpec.PropertyGenSpecs.Count > serializableProperties.Count;
                 return true;
 
             ReturnFalse:
                 serializableProperties = null;
-                castingRequiredForProps = false;
                 return false;
             }
 
