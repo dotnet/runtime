@@ -14,11 +14,10 @@ namespace System.Globalization
         private const int ICU_ULOC_FULLNAME_CAPACITY = 157;           // max size of locale name
 
         /// <summary>
-        /// This method process the locale name that ICU returns and converts it to the format that .NET expects.
+        /// Process the locale name that ICU returns and convert it to the format that .NET expects.
         /// </summary>
         /// <param name="name">The locale name that ICU returns.</param>
-        /// <param name="rawName">The original locale name that was passed to ICU.</param>
-        /// <param name="extensionsIndex">The index of the extensions in the rawName.</param>
+        /// <param name="extension">The extension part in the original culture name.</param>
         /// <param name="collationStart">The index of the collation in the name.</param>
         /// <remarks>
         /// BCP 47 specifications allow for extensions in the locale name, following the format language-script-region-extensions-collation. However,
@@ -29,7 +28,7 @@ namespace System.Globalization
         /// between names with extensions and those without. For example, we may have a name like en-US and en-US-u-xx. Although .NET doesn't support the extension xx,
         /// we still include it in the name to distinguish it from the name without the extension.
         /// </remarks>
-        private static string NormalizeCultureName(string name, string rawName, int extensionsIndex, out int collationStart)
+        private static string NormalizeCultureName(string name, ReadOnlySpan<char> extension, out int collationStart)
         {
             Debug.Assert(name is not null);
             Debug.Assert(name.Length <= ICU_ULOC_FULLNAME_CAPACITY);
@@ -44,7 +43,7 @@ namespace System.Globalization
                 char c = name[i];
                 if (c == '-' && i < name.Length - 1 && name[i + 1] == '-')
                 {
-                    // ICU change the names like `qps_plocm` to `qps__plocm`
+                    // ICU changes names like `qps_plocm` (one underscore) to `qps__plocm` (two underscores)
                     // The reason this occurs is because, while ICU canonicalizing, ulocimp_getCountry returns an empty string since the country code value is > 3 (rightly so).
                     // But append an extra '-' thinking that country code was in-fact appended (for the empty string value as well).
                     changed = true;
@@ -55,15 +54,9 @@ namespace System.Globalization
                 {
                     changed = true;
 
-                    if (extensionsIndex > 0) // raw culture name has extensions -u- or -t-
+                    if (!extension.IsEmpty && extension.TryCopyTo(buffer.Slice(bufferIndex)))
                     {
-                        int length = rawName.Length - extensionsIndex;
-                        if (buffer.Length - bufferIndex >= length)
-                        {
-                            // append the extensions to the buffer to be part of the culture name
-                            rawName.AsSpan(extensionsIndex).CopyTo(buffer.Slice(bufferIndex));
-                            bufferIndex += length;
-                        }
+                        bufferIndex += extension.Length;
                     }
 
                     int collationIndex = name.IndexOf("collation=", i + 1, StringComparison.Ordinal);
@@ -79,7 +72,7 @@ namespace System.Globalization
                         }
 
                         int length = Math.Min(8, endOfCollation - collationIndex);  // Windows doesn't allow collation names longer than 8 characters
-                        if (buffer.Length - bufferIndex >= length + 1 )
+                        if (buffer.Length - bufferIndex >= length + 1)
                         {
                             collationStart = bufferIndex;
                             buffer[bufferIndex++] = '_';
@@ -97,7 +90,7 @@ namespace System.Globalization
                 }
             }
 
-            return changed ? new (buffer.Slice(0, bufferIndex)) : name;
+            return changed ? new string(buffer.Slice(0, bufferIndex)) : name;
         }
 
         /// <summary>
@@ -133,7 +126,7 @@ namespace System.Globalization
 
             Debug.Assert(_sWindowsName != null);
 
-            _sRealName = NormalizeCultureName(_sWindowsName, _sRealName, indexOfExtensions, out int collationStart);
+            _sRealName = NormalizeCultureName(_sWindowsName, indexOfExtensions > 0 ? _sRealName.AsSpan(indexOfExtensions) : ReadOnlySpan<char>.Empty, out int collationStart);
 
             _iLanguage = LCID;
             if (_iLanguage == 0)
@@ -529,7 +522,7 @@ namespace System.Globalization
                     }
                     else
                     {
-                        if (indexOfExtensions < 0 && i < subject.Length - 2 && (subject[i + 1] == 'u' || subject[i + 1] == 't') && subject[i + 2] == '-') // we have -u- or -t- which is an extension
+                        if (indexOfExtensions < 0 && i < subject.Length - 2 && (subject[i + 1] is 'u' or 't') && subject[i + 2] == '-') // we have -u- or -t- which is an extension
                         {
                             if (subject[i + 1] == 't' || i >= subject.Length - 6 || subject[i + 3] != 'c' || subject[i + 4] != 'o' || subject[i + 5] != '-' ) // not -u-co- collation extension
                             {
