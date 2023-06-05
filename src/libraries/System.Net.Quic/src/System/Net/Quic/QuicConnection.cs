@@ -62,6 +62,22 @@ public sealed partial class QuicConnection : IAsyncDisposable
         // Validate and fill in defaults for the options.
         options.Validate(nameof(options));
         return StartConnectAsync(options, cancellationToken);
+
+        static async ValueTask<QuicConnection> StartConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken)
+        {
+            QuicConnection connection = new QuicConnection();
+            try
+            {
+                await connection.FinishConnectAsync(options, cancellationToken).ConfigureAwait(false);
+            }
+            catch
+            {
+                await connection.DisposeAsync().ConfigureAwait(false);
+                throw;
+            }
+
+            return connection;
+        }
     }
 
     /// <summary>
@@ -214,21 +230,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         _remoteEndPoint = info->RemoteAddress->ToIPEndPoint();
         _localEndPoint = info->LocalAddress->ToIPEndPoint();
-    }
-
-    private static async ValueTask<QuicConnection> StartConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken = default)
-    {
-        QuicConnection connection = new QuicConnection();
-        try
-        {
-            await connection.FinishConnectAsync(options, cancellationToken).ConfigureAwait(false);
-        }
-        catch
-        {
-            await connection.DisposeAsync().ConfigureAwait(false);
-            throw;
-        }
-        return connection;
     }
 
     private async ValueTask FinishConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken = default)
