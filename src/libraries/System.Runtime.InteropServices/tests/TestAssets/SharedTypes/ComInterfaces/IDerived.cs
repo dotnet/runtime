@@ -19,6 +19,7 @@ namespace SharedTypes.ComInterfaces
         internal new const string _guid = "7F0DB364-3C04-4487-9193-4BB05DC7B654";
     }
 
+    [GeneratedComClass]
     internal partial class Derived : GetAndSetInt, IDerived
     {
         string _data = "hello";

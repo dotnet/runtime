@@ -25,6 +25,7 @@ namespace Microsoft.Interop
             public const string MultipleComInterfaceBaseTypes = Prefix + "1093";
             public const string AnalysisFailed = Prefix + "1094";
             public const string BaseInterfaceFailedGeneration = Prefix + "1095";
+            public const string InvalidGeneratedComClassAttributeUsage = Prefix + "1096";
         }
 
         private const string Category = "ComInterfaceGenerator";
@@ -50,6 +51,17 @@ namespace Microsoft.Interop
             DiagnosticSeverity.Error,
             isEnabledByDefault: true,
             description: GetResourceString(nameof(SR.InvalidAttributedMethodDescription)));
+
+        /// <inheritdoc cref="SR.InvalidGeneratedComInterfaceUsageMissingPartialModifier"/>
+        public static readonly DiagnosticDescriptor InvalidAttributedInterfaceMissingPartialModifiers =
+            new DiagnosticDescriptor(
+            Ids.InvalidGeneratedComInterfaceAttributeUsage,
+            GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageTitle)),
+            GetResourceString(nameof(SR.InvalidGeneratedComInterfaceUsageMissingPartialModifier)),
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true,
+            description: GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageDescription)));
 
         /// <inheritdoc cref="SR.InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttributeMessage"/>
         public static readonly DiagnosticDescriptor InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttribute =
@@ -281,6 +293,17 @@ namespace Microsoft.Interop
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.BaseInterfaceCannotBeGeneratedDescription)));
+
+        /// <inheritdoc cref="SR.InvalidGeneratedComClassAttributeUsageMissingPartialModifier"/>
+        public static readonly DiagnosticDescriptor InvalidAttributedClassMissingPartialModifier =
+            new DiagnosticDescriptor(
+            Ids.InvalidGeneratedComClassAttributeUsage,
+            GetResourceString(nameof(SR.InvalidGeneratedComClassAttributeUsageTitle)),
+            GetResourceString(nameof(SR.InvalidGeneratedComClassAttributeUsageMissingPartialModifier)),
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true,
+            description: GetResourceString(nameof(SR.InvalidGeneratedComClassAttributeUsageDescription)));
 
         private readonly List<DiagnosticInfo> _diagnostics = new List<DiagnosticInfo>();
 
