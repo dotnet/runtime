@@ -10596,7 +10596,7 @@ static int __cdecl cmp_mark_list_item (const void* vkey, const void* vdatum)
 #endif // _DEBUG
 
 #ifdef USE_REGIONS
-uint8_t** gc_heap::get_region_mark_list (uint8_t* start, uint8_t* end, uint8_t*** mark_list_end_ptr)
+uint8_t** gc_heap::get_region_mark_list (BOOL& use_mark_list, uint8_t* start, uint8_t* end, uint8_t*** mark_list_end_ptr)
 {
     size_t region_number = get_basic_region_index_for_address (start);
     size_t source_number = region_number;
@@ -10726,6 +10726,13 @@ void gc_heap::merge_mark_lists (size_t total_mark_list_size)
 
             // blast this piece to the mark list
             append_to_mark_list(source[lowest_source], x);
+#ifdef USE_REGIONS
+            if (mark_list_index > mark_list_end)
+            {
+                use_mark_list = false;
+                return nullptr;
+            }
+#endif //USE_REGIONS
             piece_count++;
 
             source[lowest_source] = x;
@@ -10745,6 +10752,13 @@ void gc_heap::merge_mark_lists (size_t total_mark_list_size)
         }
         // we're left with just one source that we copy
         append_to_mark_list(source[0], source_end[0]);
+#ifdef USE_REGIONS
+        if (mark_list_index > mark_list_end)
+        {
+            use_mark_list = false;
+            return nullptr;
+        }
+#endif //USE_REGIONS
         piece_count++;
     }
 
@@ -10801,7 +10815,7 @@ static uint8_t** binary_search (uint8_t** left, uint8_t** right, uint8_t* e)
         return a + l;
 }
 
-uint8_t** gc_heap::get_region_mark_list (uint8_t* start, uint8_t* end, uint8_t*** mark_list_end_ptr)
+uint8_t** gc_heap::get_region_mark_list (BOOL& use_mark_list, uint8_t* start, uint8_t* end, uint8_t*** mark_list_end_ptr)
 {
     // do a binary search over the sorted marked list to find start and end of the
     // mark list for this region
@@ -31610,7 +31624,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
     uint8_t** mark_list_index = nullptr;
     uint8_t** mark_list_next = nullptr;
     if (use_mark_list)
-        mark_list_next = get_region_mark_list (x, end, &mark_list_index);
+        mark_list_next = get_region_mark_list (use_mark_list, x, end, &mark_list_index);
 #else // USE_REGIONS
     assert (!marked (x));
     uint8_t** mark_list_next = &mark_list[0];
@@ -31898,7 +31912,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                 current_brick = brick_of (x);
 #ifdef USE_REGIONS
                 if (use_mark_list)
-                    mark_list_next = get_region_mark_list (x, end, &mark_list_index);
+                    mark_list_next = get_region_mark_list (use_mark_list, x, end, &mark_list_index);
 
                 if (should_sweep_in_plan (seg1))
                 {
@@ -31968,7 +31982,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                     current_brick = brick_of (x);
 
                     if (use_mark_list)
-                        mark_list_next = get_region_mark_list (x, end, &mark_list_index);
+                        mark_list_next = get_region_mark_list (use_mark_list, x, end, &mark_list_index);
 
                     if (should_sweep_in_plan (seg1))
                     {
