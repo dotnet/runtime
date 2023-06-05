@@ -2260,8 +2260,8 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     GenTreeOp* argOp = op1->AsOp();
                     simdBaseJitType  = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_INT;
 
-                    GenTree* vector = comp->gtNewSimdCreateScalarNode(simdType, op1->gtGetOp1(), simdBaseJitType,
-                                                                      simdSize);
+                    GenTree* vector =
+                        comp->gtNewSimdCreateScalarNode(simdType, op1->gtGetOp1(), simdBaseJitType, simdSize);
                     BlockRange().InsertBefore(node, vector);
 
                     GenTree* index = comp->gtNewIconNode(1);

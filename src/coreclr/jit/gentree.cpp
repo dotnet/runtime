@@ -19884,17 +19884,50 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 case TYP_ULONG:
                 {
                     assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
-                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ_VL));
 
-                    if (simdSize != 64)
+                    if (compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
                     {
-                        intrinsic = NI_AVX512DQ_VL_MultiplyLow;
+                        if (simdSize != 64)
+                        {
+                            intrinsic = NI_AVX512DQ_VL_MultiplyLow;
+                        }
+                        else
+                        {
+                            intrinsic = NI_AVX512DQ_MultiplyLow;
+                        }
                     }
                     else
                     {
-                        intrinsic = NI_AVX512DQ_MultiplyLow;
-                    }
+                        // uint op1Lo = op1
+                        // uint op1Hi = op1 >> 32
+                        GenTree* op1Lo = fgMakeMultiUse(&op1);
+                        GenTree* op1Hi =
+                            gtNewSimdBinOpNode(GT_RSZ, type, op1, gtNewIconNode(32), simdBaseJitType, simdSize);
 
+                        // uint op2Lo = op2
+                        // uint op2Hi = op2 >> 32
+                        GenTree* op2Lo = fgMakeMultiUse(&op2);
+                        GenTree* op2Hi =
+                            gtNewSimdBinOpNode(GT_RSZ, type, op2, gtNewIconNode(32), simdBaseJitType, simdSize);
+
+                        // ulong t1 = BigMul(op1Hi, op2Lo)
+                        // ulong t2 = BigMul(op1Lo, op2Hi)
+                        GenTree* t1 = gtNewSimdHWIntrinsicNode(type, op1Hi, fgMakeMultiUse(&op2Lo), NI_SSE2_Multiply,
+                                                               CORINFO_TYPE_ULONG, simdSize);
+                        GenTree* t2 = gtNewSimdHWIntrinsicNode(type, fgMakeMultiUse(&op1Lo), op2Hi, NI_SSE2_Multiply,
+                                                               CORINFO_TYPE_ULONG, simdSize);
+
+                        // ulong t3 = (t1 + t2) << 32
+                        GenTree* t3 = gtNewSimdBinOpNode(GT_ADD, type, t1, t2, simdBaseJitType, simdSize);
+                        t3 = gtNewSimdBinOpNode(GT_LSH, type, t3, gtNewIconNode(32), simdBaseJitType, simdSize);
+
+                        // ulong t4 = BigMul(op1Lo, op2Lo)
+                        GenTree* t4 = gtNewSimdHWIntrinsicNode(type, op1Lo, op2Lo, NI_SSE2_Multiply, CORINFO_TYPE_ULONG,
+                                                               simdSize);
+
+                        // return t3 + t4
+                        return gtNewSimdBinOpNode(GT_ADD, type, t3, t4, simdBaseJitType, simdSize);
+                    }
                     break;
                 }
 

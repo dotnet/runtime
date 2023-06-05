@@ -2030,20 +2030,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-            if (varTypeIsLong(simdBaseType))
-            {
-                if (simdSize != 64 && !compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
-                {
-                    // TODO-XARCH-CQ: We should support long/ulong multiplication
-                    break;
-                }
-
-#if defined(TARGET_X86)
-                // TODO-XARCH-CQ: We need to support 64-bit CreateBroadcast
-                break;
-#endif // TARGET_X86
-            }
-
             CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
             CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
             var_types               argType  = TYP_UNKNOWN;
