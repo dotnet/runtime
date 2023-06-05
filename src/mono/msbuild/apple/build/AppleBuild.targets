@@ -257,7 +257,7 @@
       NativeMainSource="$(NativeMainSource)"
       Optimized="$(Optimized)"
       OutputDirectory="$(AppleBundleDir)"
-      ProjectName="$(AssemblyName)"
+      ProjectName="$(AppName)"
       RuntimeComponents="$(RuntimeComponents)"
       TargetOS="$(TargetOS)"
       ExcludeFromAppDir="@(_ExcludeFromAppDir)"
