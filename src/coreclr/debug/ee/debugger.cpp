@@ -2529,7 +2529,7 @@ void Debugger::JITComplete(NativeCodeVersion nativeCodeVersion, TADDR newAddress
             goto Exit;
         }
 
-        LOG((LF_CORDB, LL_INFO1000000, "D::JITComplete: md:0x%p (%s::%s), address:%p. Created dji:%p\n",
+        LOG((LF_CORDB, LL_INFO1000000, "D::JITComplete: md:%p (%s::%s), address:%p. Created dji:%p\n",
             fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName, newAddress, dji));
 
         // Bind any IL patches to the newly jitted native code.
@@ -3070,7 +3070,7 @@ CodeRegionInfo CodeRegionInfo::GetCodeRegionInfo(DebuggerJitInfo *dji, MethodDes
 
     if (dji && dji->m_addrOfCode)
     {
-        LOG((LF_CORDB, LL_INFO10000, "CRI::GCRI: simple case: CodeRegionInfo* 0x%p\n", &dji->m_codeRegionInfo));
+        LOG((LF_CORDB, LL_INFO10000, "CRI::GCRI: simple case: CodeRegionInfo* %p\n", &dji->m_codeRegionInfo));
         return dji->m_codeRegionInfo;
     }
     else
@@ -3096,7 +3096,7 @@ CodeRegionInfo CodeRegionInfo::GetCodeRegionInfo(DebuggerJitInfo *dji, MethodDes
                      (addr == dac_cast<PTR_CORDB_ADDRESS_TYPE>(g_pEEInterface->GetFunctionAddress(md))));
         }
 
-        LOG((LF_CORDB, LL_INFO10000, "CRI::GCRI: Initializing CodeRegionInfo from 0x%p, md=0x%p\n", addr, md));
+        LOG((LF_CORDB, LL_INFO10000, "CRI::GCRI: Initializing CodeRegionInfo from %p, md=%p\n", addr, md));
         if (addr)
         {
             PCODE pCode = PINSTRToPCODE(dac_cast<TADDR>(addr));
@@ -3130,7 +3130,7 @@ void Debugger::getBoundariesHelper(MethodDesc * md,
 
     if (dmi != NULL)
     {
-        LOG((LF_CORDB,LL_INFO10000,"De::NGB: Got dmi 0x%x\n",dmi));
+        LOG((LF_CORDB,LL_INFO10000,"De::NGB: Got dmi %p\n",dmi));
 
 #if defined(FEATURE_ISYM_READER)
         // Note: we need to make sure to enable preemptive GC here just in case we block in the symbol reader.
@@ -3161,7 +3161,7 @@ void Debugger::getBoundariesHelper(MethodDesc * md,
 
 
                 LOG((LF_CORDB, LL_INFO100000,
-                     "D::NGB: Reader seq pt count is %d\n", n));
+                     "D::NGB: Reader seq pt count is %u\n", n));
 
                 ULONG32 *p;
 
@@ -13922,7 +13922,7 @@ Debugger::InsertToMethodInfoList( DebuggerMethodInfo *dmi )
     }
     else
     {
-        LOG((LF_CORDB, LL_EVERYTHING, "AddMethodInfo being called in D:IAHOL\n"));
+        LOG((LF_CORDB, LL_EVERYTHING, "D:IAHOL: AddMethodInfo called\n"));
         hr = m_pMethodInfos->AddMethodInfo(dmi->m_module,
                                          dmi->m_token,
                                          dmi);

@@ -585,9 +585,9 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
     STANDARD_VM_CONTRACT;
 
     LOG((LF_JIT, LL_INFO1000000,
-        "JitCompileCode(" FMT_ADDR ", ILStub: %s) for %s::%s\n",
-        DBG_ADDR(this),
-        IsILStub() ? " TRUE" : "FALSE",
+        "JitCompileCode(%p, ILStub: %s) for %s::%s\n",
+        this,
+        IsILStub() ? "true" : "false",
         GetMethodTable()->GetDebugClassName(),
         m_pszDebugMethodName));
 
@@ -2477,7 +2477,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     }
 #endif // _DEBUG
 
-    STRESS_LOG1(LF_CLASSLOADER, LL_INFO10000, "Prestubworker: method %pM\n", this);
+    STRESS_LOG1(LF_CLASSLOADER, LL_INFO10000, "DoPrestub: method %p\n", this);
 
 
     GCStress<cfg_any, EeconfigFastGcSPolicy, CoopGcModePolicy>::MaybeTrigger();
