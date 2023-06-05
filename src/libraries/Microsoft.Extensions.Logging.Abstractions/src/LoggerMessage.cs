@@ -5,6 +5,7 @@ using System;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using Microsoft.Extensions.Logging.Abstractions;
 using static Microsoft.Extensions.Logging.LoggerMessage;
 
@@ -219,43 +220,38 @@ namespace Microsoft.Extensions.Logging
 
             void Log(ILogger logger, ref TState state, Exception? exception)
             {
-                LogEntryPipeline<TState>? pipelineSnapshot = pipeline;
-                if (pipelineSnapshot != null && pipelineSnapshot.UserState == logger && pipelineSnapshot.IsUpToDate)
-                {
-                    if (!pipelineSnapshot.IsEnabled ||
-                       (pipelineSnapshot.IsDynamicLevelCheckRequired && needFullEnabledCheck && !pipelineSnapshot.IsEnabledDynamic(metadata.LogLevel)))
-                        return;
-                    LogEntry<TState> entry = new LogEntry<TState>(metadata.LogLevel, category: null!, metadata.EventId, state, exception, null!);
-                    pipelineSnapshot.HandleLogEntry(ref entry);
-                }
-                else
-                {
-                    LogSlowPath(logger, ref state, exception);
-                }
+                LogEntry<TState> entry = new LogEntry<TState>(metadata.LogLevel, category: null!, metadata.EventId, state, exception, null!);
+                LogCore(ref pipeline, logger, metadata, ref entry, needFullEnabledCheck);
+            }
+        }
+
+        private static void LogCore<TState>(ref LogEntryPipeline<TState>? cachedPipeline, ILogger logger, ILogMetadata<TState>? metadata, ref LogEntry<TState> entry, bool needFullEnabledCheck)
+        {
+            if (cachedPipeline == null || cachedPipeline.UserState != logger || cachedPipeline.CancelToken.IsCancellationRequested)
+            {
+                cachedPipeline = GetLogEntryPipeline(metadata, logger);
             }
 
-            void LogSlowPath(ILogger logger, ref TState state, Exception? exception)
+            if (!cachedPipeline.IsEnabled ||
+                   (cachedPipeline.IsDynamicLevelCheckRequired && needFullEnabledCheck && !cachedPipeline.IsEnabledDynamic(entry.LogLevel)))
             {
-                LogEntryPipeline<TState>? pipelineSnapshot = null;
-                LogEntry<TState> entry = new LogEntry<TState>(metadata.LogLevel, category: null!, metadata.EventId, state, exception, null!);
-                if (logger is ILogEntryPipelineFactory)
-                {
-                    pipelineSnapshot = ((ILogEntryPipelineFactory)logger).GetLoggingPipeline(metadata, logger);
-                    pipeline = pipelineSnapshot;
-                }
-                if (pipelineSnapshot != null)
-                {
-                    if (!pipelineSnapshot.IsEnabled ||
-                       (pipelineSnapshot.IsDynamicLevelCheckRequired && needFullEnabledCheck && !pipelineSnapshot.IsEnabledDynamic(metadata.LogLevel)))
-                        return;
-                    pipelineSnapshot.HandleLogEntry(ref entry);
-                }
-                else
-                {
-                    if (needFullEnabledCheck && logger.IsEnabled(metadata.LogLevel))
-                        return;
-                    logger.Log(entry.LogLevel, entry.EventId, entry.State, entry.Exception, metadata.GetStringMessageFormatter());
-                }
+                return;
+            }
+
+            cachedPipeline.HandleLogEntry(ref entry);
+        }
+
+        private static LogEntryPipeline<TState> GetLogEntryPipeline<TState>(ILogMetadata<TState>? metadata, ILogger logger)
+        {
+            if (logger is ILogEntryProcessorFactory)
+            {
+                ProcessorContext context = ((ILogEntryProcessorFactory)logger).GetProcessor();
+                LogEntryHandler<TState> handler = context.Processor.GetLogEntryHandler(metadata, out bool enabled, out bool dynamicEnableCheckRequired);
+                return new LogEntryPipeline<TState>(handler, logger, enabled, dynamicEnableCheckRequired, context.CancellationToken);
+            }
+            else
+            {
+                return new LogEntryPipeline<TState>(new InvokeLoggerLogHandler<TState>(logger), logger, true, true, CancellationToken.None);
             }
         }
 
@@ -290,46 +286,9 @@ namespace Microsoft.Extensions.Logging
 
             void Log(ILogger logger, T1 arg1, T2 arg2, Exception? exception)
             {
-                LogEntryPipeline<LogValues<T1, T2>>? pipelineSnapshot = pipeline;
-                if (pipelineSnapshot != null && pipelineSnapshot.UserState == logger && pipelineSnapshot.IsUpToDate)
-                {
-                    if (!pipelineSnapshot.IsEnabled ||
-                       (pipelineSnapshot.IsDynamicLevelCheckRequired && needFullEnabledCheck && !pipelineSnapshot.IsEnabledDynamic(logLevel)))
-                        return;
-                    LogValues<T1, T2> state = new LogValues<T1, T2>(metadata, arg1, arg2);
-                    LogEntry<LogValues<T1, T2>> entry = new LogEntry<LogValues<T1, T2>>(logLevel, category: null!, eventId, state, exception, LogValues<T1, T2>.Callback);
-                    pipelineSnapshot.HandleLogEntry(ref entry);
-                }
-                else
-                {
-                    LogSlowPath(logger, arg1, arg2, exception);
-                }
-            }
-
-            void LogSlowPath(ILogger logger, T1 arg1, T2 arg2, Exception? exception)
-            {
-                LogEntryPipeline<LogValues<T1, T2>>? pipelineSnapshot = null;
-                if (logger is ILogEntryPipelineFactory)
-                {
-                    pipelineSnapshot = ((ILogEntryPipelineFactory)logger).GetLoggingPipeline(metadata, logger);
-                    pipeline = pipelineSnapshot;
-                }
-                if (pipelineSnapshot != null)
-                {
-                    if (!pipelineSnapshot.IsEnabled ||
-                       (pipelineSnapshot.IsDynamicLevelCheckRequired && needFullEnabledCheck && !pipelineSnapshot.IsEnabledDynamic(logLevel)))
-                        return;
-                    LogValues<T1, T2> state = new LogValues<T1, T2>(metadata, arg1, arg2);
-                    LogEntry<LogValues<T1, T2>> entry = new LogEntry<LogValues<T1, T2>>(logLevel, category: null!, eventId, state, exception, LogValues<T1, T2>.Callback);
-                    pipelineSnapshot.HandleLogEntry(ref entry);
-                }
-                else
-                {
-                    if (needFullEnabledCheck && !logger.IsEnabled(logLevel))
-                        return;
-                    LogValues<T1, T2> state = new LogValues<T1, T2>(metadata, arg1, arg2);
-                    logger.Log(logLevel, eventId, state, exception, LogValues<T1, T2>.Callback);
-                }
+                LogValues<T1, T2> state = new LogValues<T1, T2>(metadata, arg1, arg2);
+                LogEntry<LogValues<T1, T2>> entry = new LogEntry<LogValues<T1, T2>>(logLevel, category: null!, eventId, state, exception, LogValues<T1, T2>.Callback);
+                LogCore(ref pipeline, logger, metadata, ref entry, needFullEnabledCheck);
             }
         }
 

@@ -4,11 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Extensions.Logging
 {
-    internal sealed class Logger : ILogger, ILogEntryPipelineFactory
+    internal sealed class Logger : ILogger, ILogEntryProcessorFactory
     {
         private readonly LoggerFactory _loggerFactory;
 
@@ -21,45 +22,23 @@ namespace Microsoft.Extensions.Logging
 
         public Action ProcessorInvalidated => () => _loggerFactory.OnProcessorInvalidated(this);
 
-        public LogEntryPipeline<TState>? GetLoggingPipeline<TState>(ILogMetadata<TState>? metadata, object? userState)
-        {
-            return VersionedState.GetLoggingPipeline(metadata, userState);
-        }
-
-        public ScopePipeline<TState>? GetScopePipeline<TState>(ILogMetadata<TState>? metadata, object? userState) where TState : notnull
-        {
-            return VersionedState.GetScopePipeline(metadata, userState);
-        }
-
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
-            LogEntryPipeline<TState> pipeline = GetLoggingPipeline<TState>(metadata: null, this)!;
-            if (!pipeline.IsEnabled || (pipeline.IsDynamicLevelCheckRequired && !pipeline.IsEnabledDynamic(logLevel)))
+            LogEntryHandler<TState> handler = VersionedState.GetLogEntryHandler<TState>(null, out bool enabled, out bool dynamicCheckRequired);
+            if(!enabled || (dynamicCheckRequired && !handler.IsEnabled(logLevel)))
             {
                 return;
             }
             LogEntry<TState> logEntry = new LogEntry<TState>(logLevel, category: null!, eventId, state, exception, formatter);
-            pipeline.HandleLogEntry(ref logEntry);
+            handler.HandleLogEntry(ref logEntry);
         }
 
-        public bool IsEnabled(LogLevel level)
-        {
-            ILogEntryProcessor processor = VersionedState.Processor;
-            if (processor != null)
-            {
-                return processor.IsEnabled(level);
-            }
-            return false;
-        }
+        public bool IsEnabled(LogLevel level) => VersionedState.IsEnabled(level);
 
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull
         {
-            ScopePipeline<TState>? pipeline = GetScopePipeline<TState>(metadata: null, this);
-            if (pipeline is null || !pipeline.IsEnabled)
-            {
-                return null;
-            }
-            return pipeline.HandleScope(ref state);
+            ScopeHandler<TState> handler = VersionedState.GetScopeHandler<TState>(null, out bool _);
+            return handler.HandleBeginScope(ref state);
         }
 
         internal static void ThrowLoggingError(List<Exception> exceptions)
@@ -67,6 +46,8 @@ namespace Microsoft.Extensions.Logging
             throw new AggregateException(
                 message: "An error occurred while writing to logger(s).", innerExceptions: exceptions);
         }
+
+        public ProcessorContext GetProcessor() => new ProcessorContext(VersionedState, VersionedState.CancelToken);
     }
 
     internal sealed class Scope : IDisposable
@@ -122,8 +103,44 @@ namespace Microsoft.Extensions.Logging
         }
     }
 
-    internal sealed class VersionedLoggerState
+    internal sealed class VersionedLoggerState : ILogEntryProcessor, IDisposable
     {
+        internal readonly struct HandlerKey
+        {
+            public HandlerKey(bool isLoggingHandler, object typeOrMetadata)
+            {
+                IsLoggingPipeline = isLoggingHandler;
+                TypeOrMetadata = typeOrMetadata;
+            }
+
+            public bool IsLoggingPipeline { get; }
+            public object TypeOrMetadata { get; }
+        }
+
+        internal readonly struct LogEntryHandlerState<TState>
+        {
+            public LogEntryHandlerState(LogEntryHandler<TState> handler, bool enabled, bool dynamicEnableCheckRequired)
+            {
+                Handler = handler;
+                IsEnabled = enabled;
+                IsDynamicEnableCheckRequired = dynamicEnableCheckRequired;
+            }
+            public LogEntryHandler<TState> Handler { get; }
+            public bool IsEnabled { get; }
+            public bool IsDynamicEnableCheckRequired { get; }
+        }
+
+        internal readonly struct ScopeHandlerState<TState> where TState : notnull
+        {
+            public ScopeHandlerState(ScopeHandler<TState> handler, bool enabled)
+            {
+                Handler = handler;
+                IsEnabled = enabled;
+            }
+            public ScopeHandler<TState> Handler { get; }
+            public bool IsEnabled { get; }
+        }
+
         public static readonly VersionedLoggerState Default = new VersionedLoggerState();
 
         public VersionedLoggerState()
@@ -138,75 +155,85 @@ namespace Microsoft.Extensions.Logging
             Loggers = loggers;
             Processor = processor;
             FilterOptions = filterOptions;
-            _isUpToDate = true;
+            _cancelSource = new CancellationTokenSource();
         }
 
-        private bool _isUpToDate;
+        private CancellationTokenSource _cancelSource = new CancellationTokenSource();
+        public CancellationToken CancelToken => _cancelSource.Token;
         public LoggerInformation[] Loggers { get; }
-        public ILogEntryProcessor Processor { get; }
         public LoggerFilterOptions FilterOptions { get; }
-        public Dictionary<PipelineKey, Pipeline> Pipelines { get; } = new Dictionary<PipelineKey, Pipeline>();
+        private ILogEntryProcessor Processor { get; }
 
-        public LogEntryPipeline<TState>? GetLoggingPipeline<TState>(ILogMetadata<TState>? metadata, object? userState)
+        private Dictionary<HandlerKey, object> Handlers { get; } = new Dictionary<HandlerKey, object>();
+
+        public LogEntryHandler<TState> GetLogEntryHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnableCheckRequired)
         {
             // The default versioned state should never be used to create pipelines, it is a shared singleton
             // that exists just to satisfy nullability checks
             Debug.Assert(this != Default);
 
-            Pipeline? pipeline;
-            PipelineKey key = new PipelineKey(isLoggingPipeline: true, (metadata == null) ? typeof(TState) : metadata, terminalProcessor: null, userState: userState);
-            lock (Pipelines)
+            object? handlerObject;
+            LogEntryHandlerState<TState> handlerState;
+            HandlerKey key = new HandlerKey(isLoggingHandler: true, (metadata == null) ? typeof(TState) : metadata);
+            lock (Handlers)
             {
-                if (!Pipelines.TryGetValue(key, out pipeline))
+                if (!Handlers.TryGetValue(key, out handlerObject))
                 {
-                    LogEntryHandler<TState> handler = Processor.GetLogEntryHandler<TState>(metadata, out bool enabled, out bool dynamicCheckRequired);
-                    pipeline = new LogEntryPipeline<TState>(handler, userState, enabled, dynamicCheckRequired);
-                    // in a multi-threaded race it is possible to create new pipelines after the versioned state is already disposed
-                    // if this happens the pipeline is immediately marked as being not up-to-date.
-                    pipeline.IsUpToDate = _isUpToDate;
-                    Pipelines[key] = pipeline;
+                    LogEntryHandler<TState> handler = Processor.GetLogEntryHandler(metadata, out enabled, out dynamicEnableCheckRequired);
+                    handlerState = new LogEntryHandlerState<TState>(handler, enabled, dynamicEnableCheckRequired);
+                    Handlers[key] = handlerState;
+                }
+                else
+                {
+                    handlerState = (LogEntryHandlerState<TState>)handlerObject;
                 }
             }
-            return (LogEntryPipeline<TState>?)pipeline;
+            enabled = handlerState.IsEnabled;
+            dynamicEnableCheckRequired = handlerState.IsDynamicEnableCheckRequired;
+            return handlerState.Handler;
         }
 
-        public ScopePipeline<TState>? GetScopePipeline<TState>(ILogMetadata<TState>? metadata, object? userState) where TState : notnull
+        public ScopeHandler<TState> GetScopeHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled) where TState : notnull
         {
             // The default versioned state should never be used to create pipelines, it is a shared singleton
             // that exists just to satisfy nullability checks
             Debug.Assert(this != Default);
 
-            if (!FilterOptions.CaptureScopes)
+            object? handlerObject;
+            ScopeHandlerState<TState> handlerState;
+            HandlerKey key = new HandlerKey(isLoggingHandler: true, (metadata == null) ? typeof(TState) : metadata);
+            lock (Handlers)
             {
-                return null;
-            }
-
-            Pipeline? pipeline;
-            PipelineKey key = new PipelineKey(isLoggingPipeline: false, (metadata == null) ? typeof(TState) : metadata, terminalProcessor: null, userState: userState);
-            lock (Pipelines)
-            {
-                if (!Pipelines.TryGetValue(key, out pipeline))
+                if (!Handlers.TryGetValue(key, out handlerObject))
                 {
-                    ScopeHandler<TState> handler = Processor.GetScopeHandler<TState>(metadata, out bool enabled);
-                    pipeline = new ScopePipeline<TState>(handler, userState, enabled);
-                    // in a multi-threaded race it is possible to create new pipelines after the versioned state is already disposed
-                    // if this happens the pipeline is immediately marked as being not up-to-date.
-                    pipeline.IsUpToDate = _isUpToDate;
-                    Pipelines[key] = pipeline;
+                    if (FilterOptions.CaptureScopes)
+                    {
+                        ScopeHandler<TState> handler = Processor.GetScopeHandler(metadata, out enabled);
+                        handlerState = new ScopeHandlerState<TState>(handler, enabled);
+                    }
+                    else
+                    {
+                        handlerState = new ScopeHandlerState<TState>(new NullScopeHandler<TState>(), false);
+                    }
+                    Handlers[key] = handlerState;
+                }
+                else
+                {
+                    handlerState = (ScopeHandlerState<TState>)handlerObject;
                 }
             }
-            return (ScopePipeline<TState>?)pipeline;
+            enabled = handlerState.IsEnabled;
+            return handlerState.Handler;
         }
 
-        public void MarkNotUpToDate()
+        public bool IsEnabled(LogLevel logLevel) => Processor.IsEnabled(logLevel);
+        public void Dispose()
         {
-            lock (Pipelines)
+            // the default versioned state is never disposed
+            if (this != Default)
             {
-                _isUpToDate = false;
-                foreach (Pipeline pipeline in Pipelines.Values)
-                {
-                    pipeline.IsUpToDate = false;
-                }
+                _cancelSource.Cancel();
+                _cancelSource.Dispose();
             }
         }
 
@@ -228,6 +255,12 @@ namespace Microsoft.Extensions.Logging
             {
                 return false;
             }
+        }
+
+        private sealed class NullScopeHandler<TState> : ScopeHandler<TState> where TState : notnull
+        {
+            public override IDisposable? HandleBeginScope(ref TState state) => null;
+            public override bool IsEnabled(LogLevel level) => false;
         }
     }
 }

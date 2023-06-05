@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.Logging
@@ -12,10 +13,8 @@ namespace Microsoft.Extensions.Logging
     /// provided <see cref="ILoggerFactory"/>.
     /// </summary>
     /// <typeparam name="T">The type.</typeparam>
-    public class Logger<T> : ILogger<T>, ILogEntryPipelineFactory
+    public class Logger<T> : ILogger<T>, ILogEntryProcessorFactory
     {
-        //private Dictionary<object, object> _metadataPipelines = new Dictionary<object, object>(); // metadata -> LogEntryPipeline<TState>
-        //private Dictionary<Type, object> _noMetadataPipelines = new Dictionary<Type, object>();
         private readonly ILogger _logger;
 
         /// <summary>
@@ -27,6 +26,38 @@ namespace Microsoft.Extensions.Logging
             ThrowHelper.ThrowIfNull(factory);
 
             _logger = factory.CreateLogger(TypeNameHelper.GetTypeDisplayName(typeof(T), includeGenericParameters: false, nestedTypeDelimiter: '.'));
+        }
+
+        private class Processor : ILogEntryProcessor
+        {
+            private ILogger _logger;
+            public Processor(ILogger logger)
+            {
+                _logger = logger;
+            }
+            public LogEntryHandler<TState> GetLogEntryHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired)
+            {
+                enabled = true;
+                dynamicEnabledCheckRequired = true;
+                return new InvokeLoggerLogHandler<TState>(_logger);
+            }
+
+            public ScopeHandler<TState> GetScopeHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled) where TState : notnull
+            {
+                enabled = true;
+                return new InvokeLoggerScopeHandler<TState>(_logger);
+            }
+
+            public bool IsEnabled(LogLevel logLevel) => _logger.IsEnabled(logLevel);
+        }
+
+        public ProcessorContext GetProcessor()
+        {
+            if(_logger is ILogEntryProcessorFactory factory)
+            {
+                return factory.GetProcessor();
+            }
+            return new ProcessorContext(new Processor(_logger), CancellationToken.None);
         }
 
         /// <inheritdoc />
@@ -46,65 +77,6 @@ namespace Microsoft.Extensions.Logging
         {
             _logger.Log(logLevel, eventId, state, exception, formatter);
         }
-
-        ScopePipeline<TState>? ILogEntryPipelineFactory.GetScopePipeline<TState>(ILogMetadata<TState>? metadata, object? userState)
-        {
-            if (_logger is ILogEntryPipelineFactory factory)
-            {
-                return factory.GetScopePipeline(metadata, userState);
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        LogEntryPipeline<TState>? ILogEntryPipelineFactory.GetLoggingPipeline<TState>(ILogMetadata<TState>? metadata, object? userState)
-        {
-            if (_logger is ILogEntryPipelineFactory factory)
-            {
-                return factory.GetLoggingPipeline(metadata, userState);
-            }
-            else
-            {
-                return null;
-            }
-
-            /*
-            if (_logger is not ILogEntryProcessor)
-                return null;
-            object pipeline;
-            if (metadata != null)
-            {
-                lock (_metadataPipelines)
-                {
-                    if (!_metadataPipelines.TryGetValue(metadata, out pipeline))
-                    {
-                        pipeline = BuildPipeline<TState>(metadata);
-                        _metadataPipelines[metadata] = pipeline;
-                    }
-                }
-            }
-            else
-            {
-                lock (_noMetadataPipelines)
-                {
-                    if (!_noMetadataPipelines.TryGetValue(typeof(TState), out pipeline))
-                    {
-                        pipeline = BuildPipeline<TState>(null);
-                        _noMetadataPipelines[typeof(TState)] = pipeline;
-                    }
-                }
-            }
-            return (LogEntryPipeline<TState>)pipeline;
-            */
-        }
-
-        /*
-        private LogEntryPipeline<TState> BuildPipeline<TState>(ILogMetadata<TState>? metadata)
-        {
-            return new LogEntryPipeline<TState>(((ILogEntryProcessor)_logger).GetLogEntryHandler(metadata), this, true, false);
-        }*/
     }
 
 }

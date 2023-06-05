@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.Logging.Testing;
+using Microsoft.Extensions.Logging.Tests;
 using Xunit;
 using Xunit.Sdk;
 
@@ -192,6 +193,51 @@ namespace Microsoft.Extensions.Logging.Test
             AssertLogValues(expectedValues, actualLogValues.ToList());
             Assert.Equal(expectedToString, actualLogValues.ToString());
             Assert.Equal(2, testLogger.IsEnabledCallCount);
+        }
+
+
+        // LoggerMessage.Define should preferentially log via the ILogEntryProcessor APIs when ILogger
+        // implements ILogEntryProcessorFactory
+        //
+        // TODO: this test fails everywhere except two parameters because the other LoggerMessage.Define() APIs
+        // haven't been switched over to use processor API yet. I think most of the work is implementing the
+        // concrete metadata for 0-6 arg variations, potentially refactoring so they can share more.
+        // TODO: Test that LoggerMessage.Define(metadata) invokes processor APIs when present
+        // TODO: Test that Logger<T> invokes processor APIs on the wrapped ILogger if present
+        // TODO: Test that ILogger.Log() extension methods invoke processor APIs on the ILogger if present
+        // TODO: Test that Logger invokes the ILogger sinks with processor APIs if present
+        // TODO: Test all the paths also use the processor APIs when present for scopes.
+        [Theory]
+        [MemberData(nameof(LogMessagesData))]
+        public void LogMessages_UsesLoggerProcessorWhenAvailable(Delegate messageDelegate, int argumentCount)
+        {
+            // Arrange
+            var loggerProcessor = new RecordingProcessor();
+            var testLogger = new TestLoggerWithProcessor(loggerProcessor);
+            var exception = new Exception("TestException");
+            var parameterNames = Enumerable.Range(0, argumentCount).Select(i => "P" + i).ToArray();
+            var parameters = new List<object>();
+            parameters.Add(testLogger);
+            parameters.AddRange(parameterNames);
+            parameters.Add(exception);
+
+            var expectedFormat = "Log " + string.Join(" ", parameterNames.Select(p => "{" + p + "}"));
+            var expectedToString = "Log " + string.Join(" ", parameterNames);
+            var expectedValues = parameterNames.Select(p => new KeyValuePair<string, object>(p, p)).ToList();
+            expectedValues.Add(new KeyValuePair<string, object>("{OriginalFormat}", expectedFormat));
+
+            // Act
+            messageDelegate.DynamicInvoke(parameters.ToArray());
+
+            // Assert
+            Assert.Equal(expectedFormat, loggerProcessor.MetadataOriginalFormat);
+            for(int i = 0; i < parameterNames.Length; i++)
+            {
+                Assert.Equal(parameterNames[i], loggerProcessor.MetadataLogProperties[i].Name);
+            }
+            var actualLogValues = Assert.IsAssignableFrom<IReadOnlyList<KeyValuePair<string, object>>>(loggerProcessor.State);
+            AssertLogValues(expectedValues, actualLogValues.ToList());
+            Assert.Equal(expectedToString, actualLogValues.ToString());
         }
 
         [Theory]

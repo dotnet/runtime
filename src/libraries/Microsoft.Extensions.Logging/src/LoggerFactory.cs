@@ -178,11 +178,11 @@ namespace Microsoft.Extensions.Logging
         {
             Debug.Assert(Monitor.IsEntered(_sync));
             VersionedLoggerState oldState = logger.VersionedState;
-            // Even though we set new versioned state before disposing the old one keep in mind that
+            // Even though we set new versioned state before disposing the old one, keep in mind that
             // it is still possible for a concurrent operation to capture the versioned state before
             // it was replaced and then use it after it was disposed.
             logger.VersionedState = new VersionedLoggerState(loggerInfos, GetProcessor(loggerInfos), _filterOptions);
-            oldState.MarkNotUpToDate();
+            oldState.Dispose();
         }
 
         private ILogEntryProcessor GetProcessor(LoggerInformation[] loggerInfos)
