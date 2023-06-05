@@ -7,7 +7,9 @@ const assemblyName = "Wasm.Browser.Threads.Minimal.Sample.dll";
 
 
 try {
-    const { setModuleImports, getAssemblyExports, runMain } = await dotnet
+    const resolveUrl = (relativeUrl) => (new URL(relativeUrl, window.location.href)).toString()
+
+    const { getAssemblyExports, runMain } = await dotnet
         .withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
         .withElementOnExit()
         .withExitCodeLogging()
@@ -24,7 +26,7 @@ try {
     console.log("smoke: TestCallSetTimeoutOnWorker done");
 
     console.log("smoke: running FetchBackground(blurst.txt)");
-    let s = await exports.Sample.Test.FetchBackground("./blurst.txt");
+    let s = await exports.Sample.Test.FetchBackground(resolveUrl("./blurst.txt"));
     console.log("smoke: FetchBackground(blurst.txt) done");
     if (!s.startsWith("It was the best of times, it was the blurst of times.")) {
         const msg = `Unexpected FetchBackground result ${s}`;
@@ -33,7 +35,7 @@ try {
     }
 
     console.log("smoke: running FetchBackground(missing)");
-    s = await exports.Sample.Test.FetchBackground("./missing.txt");
+    s = await exports.Sample.Test.FetchBackground(resolveUrl("./missing.txt"));
     console.log("smoke: FetchBackground(missing) done");
     if (s !== "not-ok") {
         const msg = `Unexpected FetchBackground(missing) result ${s}`;

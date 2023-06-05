@@ -84,7 +84,7 @@ public class BootJsonData
     /// <summary>
     /// Gets or sets pthread pool size.
     /// </summary>
-    public int pthreadPoolSize { get; set; }
+    public int? pthreadPoolSize { get; set; }
 }
 
 public class ResourcesData

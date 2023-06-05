@@ -117,7 +117,7 @@ export function afterLoadWasmModuleToWorker(worker: Worker): void {
 export function preAllocatePThreadWorkerPool(defaultPthreadPoolSize: number, config: MonoConfig): void {
     const poolSizeSpec = config?.pthreadPoolSize;
     let n: number;
-    if (poolSizeSpec === undefined) {
+    if (poolSizeSpec === undefined || poolSizeSpec === null) {
         n = defaultPthreadPoolSize;
     } else {
         mono_assert(typeof poolSizeSpec === "number", "pthreadPoolSize must be a number");

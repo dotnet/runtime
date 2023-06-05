@@ -54,7 +54,7 @@ namespace Sample
             Console.WriteLine ($"XYZ: Main Thread caught task tid:{Thread.CurrentThread.ManagedThreadId}");
         }
 
-        const string fetchhelper = "./fetchelper.js";
+        const string fetchhelper = "../fetchhelper.js";
 
         [JSImport("responseText", fetchhelper)]
         private static partial Task<string> FetchHelperResponseText(JSObject response, int delayMs);
@@ -66,7 +66,7 @@ namespace Sample
             var t = Task.Run(async () =>
             {
                 Console.WriteLine($"smoke: FetchBackground 2 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
-                var x=JSHost.ImportAsync(fetchhelper, "./fetchhelper.js");
+                var x = JSHost.ImportAsync(fetchhelper, "../fetchhelper.js");
                 Console.WriteLine($"smoke: FetchBackground 3A ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                 using var import = await x;
                 Console.WriteLine($"smoke: FetchBackground 3B ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
