@@ -68,8 +68,8 @@ void InitJITHelpers2();
 
 PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                         COR_ILMETHOD_DECODER* header,
-                        CORJIT_FLAGS flags,
-                        ULONG* sizeOfCode = NULL);
+                        CORJIT_FLAGS* pJitFlags,
+                        ULONG* pSizeOfCode);
 
 void getMethodInfoILMethodHeaderHelper(
     COR_ILMETHOD_DECODER* header,
@@ -558,7 +558,7 @@ public:
 protected:
     SArray<OBJECTHANDLE>*   m_pJitHandles;          // GC handles used by JIT
     MethodDesc*             m_pMethodBeingCompiled; // Top-level method being compiled
-    SArray<TransientMethodDetails>* m_transientDetails;   // Transient details for dynamic codegen scenarios.
+    SArray<TransientMethodDetails, FALSE>* m_transientDetails;   // Transient details for dynamic codegen scenarios.
     Thread *                m_pThread;              // Cached current thread for faster JIT-EE transitions
     CORJIT_FLAGS            m_jitFlags;
 

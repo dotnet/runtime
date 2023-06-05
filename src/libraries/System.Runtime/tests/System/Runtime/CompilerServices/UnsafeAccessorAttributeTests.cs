@@ -212,24 +212,13 @@ public static class UnsafeAccessorAttributeTests
 
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
-    public static void VerifyInvalidUnsafeAccessor()
+    public static unsafe void VerifyInvalidTargetUnsafeAccessor()
     {
         Assert.Throws<MissingMethodException>(() => MethodNotFound(null));
         Assert.Throws<MissingMethodException>(() => StaticMethodNotFound(null));
 
         Assert.Throws<MissingFieldException>(() => FieldNotFound(null));
         Assert.Throws<MissingFieldException>(() => StaticFieldNotFound(null));
-
-        Assert.Throws<BadImageFormatException>(() => FieldReturnMustBeByRefClass((UserDataClass)null));
-        Assert.Throws<BadImageFormatException>(() =>
-        {
-            UserDataValue local = new();
-            FieldReturnMustBeByRefValue(ref local);
-        });
-        Assert.Throws<BadImageFormatException>(() => FieldArgumentMustBeByRef(new UserDataValue()));
-
-        Assert.Throws<BadImageFormatException>(() => FieldMustHaveSingleArgument((UserDataClass)null, 0));
-        Assert.Throws<BadImageFormatException>(() => StaticFieldMustHaveSingleArgument((UserDataClass)null, 0));
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name="_DoesNotExist_")]
         extern static void MethodNotFound(UserDataClass d);
@@ -242,6 +231,26 @@ public static class UnsafeAccessorAttributeTests
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name="_DoesNotExist_")]
         extern static ref string StaticFieldNotFound(UserDataClass d);
+    }
+
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
+    public static unsafe void VerifyInvalidUseUnsafeAccessor()
+    {
+        Assert.Throws<BadImageFormatException>(() => FieldReturnMustBeByRefClass((UserDataClass)null));
+        Assert.Throws<BadImageFormatException>(() =>
+        {
+            UserDataValue local = new();
+            FieldReturnMustBeByRefValue(ref local);
+        });
+        Assert.Throws<BadImageFormatException>(() => FieldArgumentMustBeByRef(new UserDataValue()));
+        Assert.Throws<BadImageFormatException>(() => FieldMustHaveSingleArgument((UserDataClass)null, 0));
+        Assert.Throws<BadImageFormatException>(() => StaticFieldMustHaveSingleArgument((UserDataClass)null, 0));
+        Assert.Throws<BadImageFormatException>(() => InvalidKindValue(null));
+        Assert.Throws<BadImageFormatException>(() => InvalidCtorName());
+        Assert.Throws<BadImageFormatException>(() => InvalidCtorType());
+        Assert.Throws<BadImageFormatException>(() => LookUpFailsOnPointers(null));
+        Assert.Throws<BadImageFormatException>(() => LookUpFailsOnArrays(Array.Empty<int>()));
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name=UserDataValue.FieldName)]
         extern static string FieldReturnMustBeByRefClass(UserDataClass d);
@@ -257,5 +266,20 @@ public static class UnsafeAccessorAttributeTests
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=UserDataValue.StaticFieldName)]
         extern static ref string StaticFieldMustHaveSingleArgument(UserDataClass d, int a);
+
+        [UnsafeAccessor((UnsafeAccessorKind)100, Name=UserDataClass.StaticMethodVoidName)]
+        extern static void InvalidKindValue(UserDataClass d);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor, Name="_ShouldBeNull_")]
+        extern static UserDataClass InvalidCtorName();
+
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        extern static void InvalidCtorType();
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name=nameof(ToString))]
+        extern static string LookUpFailsOnPointers(void* d);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name=nameof(ToString))]
+        extern static string LookUpFailsOnArrays(int[] d);
     }
 }

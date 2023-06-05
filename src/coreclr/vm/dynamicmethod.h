@@ -65,7 +65,11 @@ public:
     // the potentially expensive GetJitContext() API.
     // If it returns "false", there is no need for any
     // further visibility checks.
-    virtual bool RequiresSuppressVisibilityChecks() = 0;
+    virtual bool RequiresAccessCheck() = 0;
+
+    // Return the flags that should be used in JIT compilation
+    // of the associated method.
+    virtual CORJIT_FLAGS GetJitFlags() = 0;
 
     //
     // code info data
@@ -129,7 +133,8 @@ public:
     void GetJitContext(SecurityControlFlags * securityControlFlags,
                        TypeHandle * typeOwner);
     ChunkAllocator* GetJitMetaHeap();
-    bool RequiresSuppressVisibilityChecks();
+    bool RequiresAccessCheck();
+    CORJIT_FLAGS GetJitFlags();
 
     BYTE* GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, CorInfoOptions *pOptions, unsigned* pEHSize);
     SigPointer GetLocalSig();
@@ -379,7 +384,7 @@ inline bool RequiresAccessCheck(CORINFO_MODULE_HANDLE module)
     if (!IsDynamicScope(module))
         return true;
 
-    return GetDynamicResolver(module)->RequiresSuppressVisibilityChecks();
+    return GetDynamicResolver(module)->RequiresAccessCheck();
 }
 
 inline Module* GetModule(CORINFO_MODULE_HANDLE scope)

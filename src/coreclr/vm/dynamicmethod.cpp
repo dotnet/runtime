@@ -1104,10 +1104,15 @@ ChunkAllocator* LCGMethodResolver::GetJitMetaHeap()
     return &m_jitMetaHeap;
 }
 
-bool LCGMethodResolver::RequiresSuppressVisibilityChecks()
+bool LCGMethodResolver::RequiresAccessCheck()
 {
     LIMITED_METHOD_CONTRACT;
     return true;
+}
+
+CORJIT_FLAGS LCGMethodResolver::GetJitFlags()
+{
+    return{};
 }
 
 BYTE* LCGMethodResolver::GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, CorInfoOptions *pOptions, unsigned *pEHSize)

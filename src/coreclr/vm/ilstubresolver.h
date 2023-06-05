@@ -26,7 +26,8 @@ public:
     void GetJitContext(SecurityControlFlags* pSecurityControlFlags,
                        TypeHandle* pTypeOwner);
     ChunkAllocator* GetJitMetaHeap();
-    bool RequiresSuppressVisibilityChecks();
+    bool RequiresAccessCheck();
+    CORJIT_FLAGS GetJitFlags();
 
     BYTE* GetCodeInfo(unsigned* pCodeSize, unsigned* pStackSize, CorInfoOptions* pOptions, unsigned* pEHSize);
     SigPointer GetLocalSig();
@@ -64,7 +65,6 @@ public:
     void SetTokenLookupMap(TokenLookupMap* pMap);
 
     void SetJitFlags(CORJIT_FLAGS jitFlags);
-    CORJIT_FLAGS GetJitFlags();
 
     // This is only set for StructMarshal interop stubs.
     // See callsites for more details.

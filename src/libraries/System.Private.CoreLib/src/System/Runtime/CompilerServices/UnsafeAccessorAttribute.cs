@@ -46,7 +46,7 @@ namespace System.Runtime.CompilerServices
     /// to it. If the matching method or field is not found, the body of the <code>extern</code>
     /// method will throw <see cref="MissingFieldException" /> or <see cref="MissingMethodException" />.
     ///
-    /// For <see cref="UnsafeAccessorKind.Method"/>, <see cref="UnsafeAccessorKind.StaticMethod"/>, 
+    /// For <see cref="UnsafeAccessorKind.Method"/>, <see cref="UnsafeAccessorKind.StaticMethod"/>,
     /// <see cref="UnsafeAccessorKind.Field"/>, and <see cref="UnsafeAccessorKind.StaticField"/>, the type of
     /// the first argument of the annotated <code>extern</code> method identifies the owning type.
     /// The value of the first argument is treated as <code>this</code> pointer for instance fields and methods.

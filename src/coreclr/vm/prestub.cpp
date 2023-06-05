@@ -706,7 +706,6 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 
     PCODE pCode = NULL;
     ULONG sizeOfCode = 0;
-    CORJIT_FLAGS flags;
 
 #ifdef PROFILING_SUPPORTED
     {
@@ -755,7 +754,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         TRACE_LEVEL_VERBOSE,
         CLR_JIT_KEYWORD))
     {
-        pCode = JitCompileCodeLocked(pConfig, pEntry, &sizeOfCode, &flags);
+        pCode = JitCompileCodeLocked(pConfig, pEntry, &sizeOfCode);
     }
     else
     {
@@ -775,7 +774,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
             &methodSignature);
 #endif
 
-        pCode = JitCompileCodeLocked(pConfig, pEntry, &sizeOfCode, &flags);
+        pCode = JitCompileCodeLocked(pConfig, pEntry, &sizeOfCode);
 
         // Interpretted methods skip this notification
 #ifdef FEATURE_INTERPRETER
@@ -908,7 +907,7 @@ namespace
     }
 }
 
-PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry, ULONG* pSizeOfCode, CORJIT_FLAGS* pFlags)
+PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry, ULONG* pSizeOfCode)
 {
     STANDARD_VM_CONTRACT;
 
@@ -921,14 +920,14 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
     COR_ILMETHOD_DECODER ilDecoderTemp;
     COR_ILMETHOD_DECODER* pilHeader = GetAndVerifyILHeader(this, pConfig, &ilDecoderTemp);
 
-    *pFlags = pConfig->GetJitCompilationFlags();
+    CORJIT_FLAGS jitFlags;
     PCODE pOtherCode = NULL;
 
     EX_TRY
     {
         Thread::CurrentPrepareCodeConfigHolder threadPrepareCodeConfigHolder(GetThread(), pConfig);
 
-        pCode = UnsafeJitFunction(pConfig, pilHeader, *pFlags, pSizeOfCode);
+        pCode = UnsafeJitFunction(pConfig, pilHeader, &jitFlags, pSizeOfCode);
     }
     EX_CATCH
     {
@@ -987,7 +986,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
 
 #ifdef FEATURE_TIERED_COMPILATION
     // Finalize the optimization tier before SetNativeCode() is called
-    bool shouldCountCalls = pFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0) && pConfig->FinalizeOptimizationTierForTier0LoadOrJit();
+    bool shouldCountCalls = jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0) && pConfig->FinalizeOptimizationTierForTier0LoadOrJit();
 #endif
 
     // Aside from rejit, performing a SetNativeCodeInterlocked at this point
@@ -1273,7 +1272,7 @@ namespace
         return false;
     }
 
-    bool TryGenerateAccessor(
+    void GenerateAccessor(
         GenerationContext& cxt,
         DynamicResolver** resolver,
         COR_ILMETHOD_DECODER** methodILDecoder)
@@ -1333,7 +1332,6 @@ namespace
             break;
         default:
             _ASSERTE(!"Unknown UnsafeAccessorKind");
-            return false;
         }
 
         // Return from the generated stub
@@ -1353,13 +1351,13 @@ namespace
 
             // Store the token lookup map
             ilResolver->SetTokenLookupMap(sl.GetTokenLookupMap());
+            ilResolver->SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
 
             *resolver = (DynamicResolver*)ilResolver;
             *methodILDecoder = pILHeader;
         }
 
         ilResolver.SuppressRelease();
-        return true;
     }
 }
 
@@ -1385,7 +1383,7 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
 
     CustomAttributeParser ca(data, dataLen);
     if (!TryParseUnsafeAccessorAttribute(this, ca, kind, name))
-        ThrowHR(COR_E_BADIMAGEFORMAT);
+        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
 
     GenerationContext context{ kind, this };
 
@@ -1406,47 +1404,40 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     // Using the kind type, perform the following:
     //  1) Validate the basic type information from the signature.
     //  2) Resolve the name to the appropriate member.
-    //  3) Generate the IL for the accessor.
     switch (context.Kind)
     {
     case UnsafeAccessorKind::Constructor:
         // A return type is required for a constructor, otherwise
         // we don't know the type to construct.
         // The name is defined by the runtime and should be empty.
-        if (retType.IsNull() || !name.IsEmpty())
+        if (context.DeclarationSig.IsReturnTypeVoid() || retType.IsNull() || !name.IsEmpty())
         {
-            ThrowHR(COR_E_BADIMAGEFORMAT);
+            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
         }
 
         context.TargetType = retType;
-        if (!TrySetTargetMethodCtor(context)
-            || !TryGenerateAccessor(context, resolver, methodILDecoder))
-        {
-            ThrowHR(COR_E_MISSINGMETHOD);
-        }
+        if (!TrySetTargetMethodCtor(context))
+            MemberLoader::ThrowMissingMethodException(firstArgType.GetMethodTable(), ".ctor");
         break;
 
     case UnsafeAccessorKind::Method:
     case UnsafeAccessorKind::StaticMethod:
         // Method access requires a target type.
         if (firstArgType.IsNull())
-            ThrowHR(COR_E_BADIMAGEFORMAT);
+            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
 
         context.TargetType = firstArgType;
         context.IsTargetStatic = kind == UnsafeAccessorKind::StaticMethod;
-        if (!TrySetTargetMethod(context, name.GetUTF8())
-            || !TryGenerateAccessor(context, resolver, methodILDecoder))
-        {
-            ThrowHR(COR_E_MISSINGMETHOD);
-        }
+        if (!TrySetTargetMethod(context, name.GetUTF8()))
+            MemberLoader::ThrowMissingMethodException(firstArgType.GetMethodTable(), name.GetUTF8());
         break;
 
     case UnsafeAccessorKind::Field:
     case UnsafeAccessorKind::StaticField:
         // Field access requires a single argument for target type and a return type.
-        if (argCount != 1 || firstArgType.IsNull() || retType.IsNull())
+        if (argCount != 1 || firstArgType.IsNull() || context.DeclarationSig.IsReturnTypeVoid() || retType.IsNull())
         {
-            ThrowHR(COR_E_BADIMAGEFORMAT);
+            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
         }
 
         // The return type must be byref.
@@ -1457,23 +1448,32 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
                 && firstArgType.IsValueType()
                 && !firstArgType.IsByRef()))
         {
-            ThrowHR(COR_E_BADIMAGEFORMAT);
+            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
         }
 
         context.TargetType = firstArgType;
         context.IsTargetStatic = kind == UnsafeAccessorKind::StaticField;
-        if (!TrySetTargetField(context, name.GetUTF8(), retType.GetTypeParam())
-            || !TryGenerateAccessor(context, resolver, methodILDecoder))
-        {
-            ThrowHR(COR_E_MISSINGFIELD);
-        }
+        if (!TrySetTargetField(context, name.GetUTF8(), retType.GetTypeParam()))
+            MemberLoader::ThrowMissingFieldException(firstArgType.GetMethodTable(), name.GetUTF8());
         break;
 
     default:
-        _ASSERTE(!"Unknown UnsafeAccessorKind");
-        ThrowHR(E_UNEXPECTED);
+        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
     }
 
+    // Due to how some types degrade, unsafe access on these
+    // target types is blocked, even if the lookup succeeds.
+    // For example, pointers can become lookups on typeof(uint)'s MethodTable.
+    // Regardless of lookup success, we are going to block
+    // unsafe access for some types.
+    if (context.TargetType.IsArray()
+        || context.TargetType.IsPointer())
+    {
+        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
+    }
+
+    // Generate the IL for the accessor.
+    GenerateAccessor(context, resolver, methodILDecoder);
     return true;
 }
 
@@ -1577,11 +1577,6 @@ CORJIT_FLAGS PrepareCodeConfig::GetJitCompilationFlags()
     STANDARD_VM_CONTRACT;
 
     CORJIT_FLAGS flags;
-    if (m_pMethodDesc->IsILStub())
-    {
-        ILStubResolver* pResolver = m_pMethodDesc->AsDynamicMethodDesc()->GetILStubResolver();
-        flags = pResolver->GetJitFlags();
-    }
 #ifdef FEATURE_TIERED_COMPILATION
     flags.Add(TieredCompilationManager::GetJitFlags(this));
 #endif

@@ -80,7 +80,7 @@ ChunkAllocator* ILStubResolver::GetJitMetaHeap()
     return NULL;
 }
 
-bool ILStubResolver::RequiresSuppressVisibilityChecks()
+bool ILStubResolver::RequiresAccessCheck()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -94,6 +94,12 @@ bool ILStubResolver::RequiresSuppressVisibilityChecks()
 #endif // _DEBUG
 
     return false;
+}
+
+CORJIT_FLAGS ILStubResolver::GetJitFlags()
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_jitFlags;
 }
 
 SigPointer
@@ -474,12 +480,6 @@ void ILStubResolver::SetJitFlags(CORJIT_FLAGS jitFlags)
 {
     LIMITED_METHOD_CONTRACT;
     m_jitFlags = jitFlags;
-}
-
-CORJIT_FLAGS ILStubResolver::GetJitFlags()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_jitFlags;
 }
 
 // static

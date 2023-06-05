@@ -219,7 +219,14 @@ TransientMethodDetails::TransientMethodDetails(TransientMethodDetails&& other)
 
 TransientMethodDetails::~TransientMethodDetails()
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
     // If the supplied scope is dynamic, release resources.
     if (IsDynamicScope(Scope))
     {
@@ -3421,7 +3428,7 @@ void CEEInfo::AddTransientMethodDetails(TransientMethodDetails details)
     _ASSERTE(details.Method != NULL);
 
     if (m_transientDetails == NULL)
-        m_transientDetails = new SArray<TransientMethodDetails>();
+        m_transientDetails = new SArray<TransientMethodDetails, FALSE>();
     m_transientDetails->Append(std::move(details));
 }
 
@@ -12848,11 +12855,14 @@ CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags)
     return flags;
 }
 
-static CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHOD_INFO * methodInfo)
+static CORJIT_FLAGS GetCompileFlags(PrepareCodeConfig* prepareConfig, MethodDesc* ftn, CORINFO_METHOD_INFO* methodInfo)
 {
     STANDARD_VM_CONTRACT;
-
+    _ASSERTE(prepareConfig != NULL);
+    _ASSERTE(ftn != NULL);
     _ASSERTE(methodInfo->regionKind ==  CORINFO_REGION_JIT);
+
+    CORJIT_FLAGS flags = prepareConfig->GetJitCompilationFlags();
 
     //
     // Get the compile flags that are shared between JIT and NGen
@@ -12915,10 +12925,14 @@ static CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINF
         }
     }
 
-    if (ftn->IsILStub() && !g_pConfig->GetTrackDynamicMethodDebugInfo())
+    if (IsDynamicScope(methodInfo->scope))
     {
         // no debug info available for IL stubs
-        flags.Clear(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO);
+        if (!g_pConfig->GetTrackDynamicMethodDebugInfo())
+            flags.Clear(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO);
+
+        DynamicResolver* pResolver = GetDynamicResolver(methodInfo->scope);
+        flags.Add(pResolver->GetJitFlags());
     }
 
 #ifdef ARM_SOFTFP
@@ -12994,11 +13008,12 @@ BOOL g_fAllowRel32 = TRUE;
 // are OK since they discard the return value of this method.
 PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                         _In_opt_ COR_ILMETHOD_DECODER* ILHeader,
-                        CORJIT_FLAGS flags,
-                        ULONG * pSizeOfCode)
+                        _In_ CORJIT_FLAGS* pJitFlags,
+                        _In_opt_ ULONG* pSizeOfCode)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(config != NULL);
+    _ASSERTE(pJitFlags != NULL);
 
     NativeCodeVersion nativeCodeVersion = config->GetCodeVersion();
     MethodDesc* ftn = nativeCodeVersion.GetMethodDesc();
@@ -13068,7 +13083,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     // method attributes and signature are consistant
     _ASSERTE(!!ftn->IsStatic() == ((methodInfo.args.callConv & CORINFO_CALLCONV_HASTHIS) == 0));
 
-    flags = GetCompileFlags(ftn, flags, &methodInfo);
+    *pJitFlags = GetCompileFlags(config, ftn, &methodInfo);
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     BOOL fForceJumpStubOverflow = FALSE;
@@ -13089,7 +13104,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
     while (true)
     {
-        CEEJitInfo jitInfo(ftn, ILHeader, jitMgr, !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
+        CEEJitInfo jitInfo(ftn, ILHeader, jitMgr, !pJitFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 #if defined(TARGET_AMD64)
@@ -13105,7 +13120,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
         // If this is an OSR jit request, grab the OSR info so we can pass it to the jit
-        if (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_OSR))
+        if (pJitFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_OSR))
         {
             unsigned ilOffset = 0;
             PatchpointInfo* patchpointInfo = nativeCodeVersion.GetOSRInfo(&ilOffset);
@@ -13179,7 +13194,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             res = invokeCompileMethod(jitMgr,
                                       &jitInfo,
                                       &methodInfo,
-                                      flags,
+                                      *pJitFlags,
                                       &nativeEntry,
                                       &sizeOfCode);
 
@@ -13222,7 +13237,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         {
             jitInfo.WriteCode(jitMgr);
 #if defined(DEBUGGING_SUPPORTED)
-            if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND))
+            if (!pJitFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND))
             {
                 //
                 // Notify the debugger that we have successfully jitted the function
