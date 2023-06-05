@@ -2412,11 +2412,7 @@ namespace System.Net.Sockets
         {
             Task<int> ti = TaskToAsyncResult.Unwrap<int>(asyncResult);
 
-            if (!ti.IsCompleted)
-            {
-                // TODO https://github.com/dotnet/runtime/issues/17148: Wait without throwing
-                ((IAsyncResult)ti).AsyncWaitHandle.WaitOne();
-            }
+            ((Task)ti).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing).GetAwaiter().GetResult();
 
             if (ti.IsCompletedSuccessfully)
             {

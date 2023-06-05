@@ -914,7 +914,7 @@ UMEntryThunk * UMEntryThunk::Decode(void *pCallback)
     // stubs (see UMEntryThunkCode::Encode below) then we'll return NULL. Luckily in these scenarios our
     // caller will perform a hash lookup on successful return to verify our result in case random unmanaged
     // code happens to look like ours.
-    if ((pCode->m_code[0] == 0x00009f97) && // auipc t6, 0
+    if ((pCode->m_code[0] == 0x00000f97) && // auipc t6, 0
         (pCode->m_code[1] == 0x018fb383) && // ld    t2, 24(t6)
         (pCode->m_code[2] == 0x010fbf83) && // ld    t6, 16(t6)
         (pCode->m_code[3] == 0x000f8067))   // jalr  x0, 0(t6)

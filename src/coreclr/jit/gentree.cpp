@@ -21,13 +21,13 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 const unsigned char GenTree::gtOperKindTable[] = {
-#define GTNODE(en, st, cm, ok) ((ok)&GTK_MASK) + GTK_COMMUTE *cm,
+#define GTNODE(en, st, cm, ivn, ok) ((ok)&GTK_MASK) + GTK_COMMUTE *cm,
 #include "gtlist.h"
 };
 
 #ifdef DEBUG
 const GenTreeDebugOperKind GenTree::gtDebugOperKindTable[] = {
-#define GTNODE(en, st, cm, ok) static_cast<GenTreeDebugOperKind>((ok)&DBK_MASK),
+#define GTNODE(en, st, cm, ivn, ok) static_cast<GenTreeDebugOperKind>((ok)&DBK_MASK),
 #include "gtlist.h"
 };
 #endif // DEBUG
@@ -171,7 +171,7 @@ static void printIndent(IndentStack* indentStack)
 #if defined(DEBUG) || NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS || DUMP_FLOWGRAPHS
 
 static const char* opNames[] = {
-#define GTNODE(en, st, cm, ok) #en,
+#define GTNODE(en, st, cm, ivn, ok) #en,
 #include "gtlist.h"
 };
 
@@ -187,7 +187,7 @@ const char* GenTree::OpName(genTreeOps op)
 #if MEASURE_NODE_SIZE
 
 static const char* opStructNames[] = {
-#define GTNODE(en, st, cm, ok) #st,
+#define GTNODE(en, st, cm, ivn, ok) #st,
 #include "gtlist.h"
 };
 
@@ -214,7 +214,7 @@ unsigned char GenTree::s_gtNodeSizes[GT_COUNT + 1];
 #if NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS
 
 unsigned char GenTree::s_gtTrueSizes[GT_COUNT + 1]{
-#define GTNODE(en, st, cm, ok) sizeof(st),
+#define GTNODE(en, st, cm, ivn, ok) sizeof(st),
 #include "gtlist.h"
 };
 
@@ -12400,11 +12400,21 @@ void Compiler::gtDispTree(GenTree*     tree,
                 printf(" (FramesRoot last use)");
             }
 
-            if (((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0) &&
-                (call->GetSingleInlineCandidateInfo() != nullptr) &&
-                (call->GetSingleInlineCandidateInfo()->exactContextHnd != nullptr))
+            if ((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0)
             {
-                printf(" (exactContextHnd=0x%p)", dspPtr(call->GetSingleInlineCandidateInfo()->exactContextHnd));
+                InlineCandidateInfo* inlineInfo;
+                if (call->IsGuardedDevirtualizationCandidate())
+                {
+                    inlineInfo = call->GetGDVCandidateInfo(0);
+                }
+                else
+                {
+                    inlineInfo = call->GetSingleInlineCandidateInfo();
+                }
+                if ((inlineInfo != nullptr) && (inlineInfo->exactContextHnd != nullptr))
+                {
+                    printf(" (exactContextHnd=0x%p)", dspPtr(inlineInfo->exactContextHnd));
+                }
             }
 
             gtDispCommonEndLine(tree);
@@ -19065,6 +19075,18 @@ bool GenTree::isContainableHWIntrinsic() const
             return true;
         }
 
+        case NI_SSE3_MoveAndDuplicate:
+        case NI_AVX_BroadcastScalarToVector128:
+        case NI_AVX2_BroadcastScalarToVector128:
+        case NI_AVX_BroadcastScalarToVector256:
+        case NI_AVX2_BroadcastScalarToVector256:
+        case NI_AVX512F_BroadcastScalarToVector512:
+        {
+            // These intrinsic operations are contained as part of the operand of embedded broadcast compatible
+            // instruction
+            return true;
+        }
+
         default:
         {
             return false;
@@ -24996,6 +25018,44 @@ bool GenTreeHWIntrinsic::OperIsMemoryStoreOrBarrier() const
     {
         return false;
     }
+}
+
+//------------------------------------------------------------------------
+// OperIsEmbBroadcastCompatible: Checks if the intrinsic is a embedded broadcast compatible inintrsic.
+//
+// Return Value:
+//     true if the intrinsic node lowering instruction is embedded broadcast compatible.
+//
+bool GenTreeHWIntrinsic::OperIsEmbBroadcastCompatible() const
+{
+    return HWIntrinsicInfo::IsEmbBroadcastCompatible(GetHWIntrinsicId());
+}
+
+//------------------------------------------------------------------------
+// OperIsBroadcastScalar: Is this HWIntrinsic a broadcast node from scalar.
+//
+// Return Value:
+//    Whether "this" is a broadcast node from scalar.
+//
+bool GenTreeHWIntrinsic::OperIsBroadcastScalar() const
+{
+#if defined(TARGET_XARCH)
+    NamedIntrinsic intrinsicId = GetHWIntrinsicId();
+    switch (intrinsicId)
+    {
+        case NI_AVX2_BroadcastScalarToVector128:
+        case NI_AVX2_BroadcastScalarToVector256:
+        case NI_AVX_BroadcastScalarToVector128:
+        case NI_AVX_BroadcastScalarToVector256:
+        case NI_SSE3_MoveAndDuplicate:
+        case NI_AVX512F_BroadcastScalarToVector512:
+            return true;
+        default:
+            return false;
+    }
+#else
+    return false;
+#endif
 }
 
 //------------------------------------------------------------------------------
