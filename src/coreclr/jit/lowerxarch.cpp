@@ -7599,7 +7599,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
 
             GenTree* op1 = hwintrinsic->Op(1);
 
-            if (IsSafeToContainMem(parentNode, hwintrinsic, op1))
+            if (IsInvariantInRange(op1, parentNode, hwintrinsic))
             {
                 if (op1->isContained())
                 {
@@ -7706,14 +7706,29 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             if (intrinsicId == NI_SSE3_MoveAndDuplicate)
             {
                 // NI_SSE3_MoveAndDuplicate is for Vector128<double> only.
-                assert(childNode->AsHWIntrinsic()->GetSimdBaseType() == TYP_DOUBLE);
+                assert(hwintrinsic->GetSimdBaseType() == TYP_DOUBLE);
             }
+
             if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL) &&
                 parentNode->OperIsEmbBroadcastCompatible())
             {
-                GenTree* broadcastOperand = childNode->AsHWIntrinsic()->Op(1);
-                bool     childSupportsRegOptional;
-                if (IsContainableHWIntrinsicOp(childNode->AsHWIntrinsic(), broadcastOperand, &childSupportsRegOptional))
+                GenTree* broadcastOperand = hwintrinsic->Op(1);
+
+                if (broadcastOperand->OperIsHWIntrinsic())
+                {
+                    GenTreeHWIntrinsic* hwintrinsicOperand = broadcastOperand->AsHWIntrinsic();
+
+                    if (hwintrinsicOperand->OperIsCreateScalarUnsafe())
+                    {
+                        // CreateScalarUnsafe can contain non-memory operands such as enregistered
+                        // locals, so we want to check if its operand is containable instead. This
+                        // will result in such enregistered locals returning `false`.
+                        broadcastOperand = hwintrinsicOperand->Op(1);
+                    }
+                }
+
+                bool childSupportsRegOptional;
+                if (IsContainableHWIntrinsicOp(hwintrinsic, broadcastOperand, &childSupportsRegOptional))
                 {
                     return true;
                 }
