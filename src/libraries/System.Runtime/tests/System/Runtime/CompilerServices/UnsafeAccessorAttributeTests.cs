@@ -250,7 +250,7 @@ public static class UnsafeAccessorAttributeTests
         Assert.Throws<BadImageFormatException>(() => InvalidCtorName());
         Assert.Throws<BadImageFormatException>(() => InvalidCtorType());
         Assert.Throws<BadImageFormatException>(() => LookUpFailsOnPointers(null));
-        Assert.Throws<BadImageFormatException>(() => LookUpFailsOnArrays(Array.Empty<int>()));
+        Assert.Throws<BadImageFormatException>(() => LookUpFailsOnFunctionPointers(null));
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name=UserDataValue.FieldName)]
         extern static string FieldReturnMustBeByRefClass(UserDataClass d);
@@ -280,6 +280,6 @@ public static class UnsafeAccessorAttributeTests
         extern static string LookUpFailsOnPointers(void* d);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name=nameof(ToString))]
-        extern static string LookUpFailsOnArrays(int[] d);
+        extern static string LookUpFailsOnFunctionPointers(delegate* <void> fptr);
     }
 }

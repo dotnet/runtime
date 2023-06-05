@@ -1136,12 +1136,17 @@ namespace
             ? cxt.TargetType.GetTypeParam()
             : cxt.TargetType;
 
+        // Due to how some types degrade, unsafe access on these
+        // target types is blocked, even if the lookup succeeds.
+        // For example, pointers can become lookups on typeof(uint)'s MethodTable.
+        if (targetType.IsTypeDesc())
+            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
+
         CorElementType declCorType;
         CorElementType maybeCorType;
         TypeHandle declType;
         TypeHandle maybeType;
 
-        // [TODO] Do we care about EnC scenarios?
         // Following the iteration pattern found in MemberLoader::FindMethod().
         // Reverse order is recommended - see comments in MemberLoader::FindMethod().
         MethodTable::MethodIterator iter(targetType.GetMethodTable());
@@ -1254,7 +1259,6 @@ namespace
             : cxt.TargetType;
         _ASSERTE(!targetType.IsByRef());
 
-        // [TODO] Do we care about EnC scenarios?
         ApproxFieldDescIterator fdIterator(
             targetType.GetMethodTable(),
             (cxt.IsTargetStatic ? ApproxFieldDescIterator::STATIC_FIELDS : ApproxFieldDescIterator::INSTANCE_FIELDS));
@@ -1337,6 +1341,7 @@ namespace
         // Return from the generated stub
         pCode->EmitRET();
 
+        // Generate all IL associated data for JIT
         {
             UINT maxStack;
             size_t cbCode = sl.Link(&maxStack);
@@ -1410,7 +1415,7 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
         // A return type is required for a constructor, otherwise
         // we don't know the type to construct.
         // The name is defined by the runtime and should be empty.
-        if (context.DeclarationSig.IsReturnTypeVoid() || retType.IsNull() || !name.IsEmpty())
+        if (context.DeclarationSig.IsReturnTypeVoid() || !name.IsEmpty())
         {
             ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
         }
@@ -1435,7 +1440,7 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     case UnsafeAccessorKind::Field:
     case UnsafeAccessorKind::StaticField:
         // Field access requires a single argument for target type and a return type.
-        if (argCount != 1 || firstArgType.IsNull() || context.DeclarationSig.IsReturnTypeVoid() || retType.IsNull())
+        if (argCount != 1 || firstArgType.IsNull() || context.DeclarationSig.IsReturnTypeVoid())
         {
             ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
         }
@@ -1458,17 +1463,6 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
         break;
 
     default:
-        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
-    }
-
-    // Due to how some types degrade, unsafe access on these
-    // target types is blocked, even if the lookup succeeds.
-    // For example, pointers can become lookups on typeof(uint)'s MethodTable.
-    // Regardless of lookup success, we are going to block
-    // unsafe access for some types.
-    if (context.TargetType.IsArray()
-        || context.TargetType.IsPointer())
-    {
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
     }
 
