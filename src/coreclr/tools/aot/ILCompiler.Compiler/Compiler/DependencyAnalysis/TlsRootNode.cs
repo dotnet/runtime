@@ -13,11 +13,12 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.CompilationUnitPrefix).Append("tls_InlinedThreadStatics");
         }
         public int Offset => 0;
-        public override bool IsShareable => false;
+        public override bool IsShareable => true;
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.TLSSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) =>
+            factory.Target.IsWindows ? ObjectNodeSection.TLSSectionWindows : ObjectNodeSection.TLSSectionUnix;
 
         public override bool StaticDependenciesAreComputed => true;
 
