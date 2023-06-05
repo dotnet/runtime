@@ -76,14 +76,14 @@ namespace Sample
         
         public class NormalizeMeasurement : StringMeasurement
         {
-            protected int len = 8 * 1024;
+            protected new int len = 8 * 1024;
             public override string Name => "Normalize";
             public override void RunStep() => str.Normalize();
         }
 
         public class IsNormalizedMeasurement : StringMeasurement
         {
-            protected int len = 8 * 1024;
+            protected new int len = 8 * 1024;
             public override string Name => "IsNormalized";
             public override void RunStep() => str.IsNormalized();
         }
@@ -104,7 +104,7 @@ namespace Sample
         
         public class NormalizeMeasurementASCII : ASCIIStringMeasurement
         {        
-            protected int len = 8 * 1024;
+            protected new int len = 8 * 1024;
             public override string Name => "Normalize ASCII";
             public override void RunStep() => str.Normalize();
         }
