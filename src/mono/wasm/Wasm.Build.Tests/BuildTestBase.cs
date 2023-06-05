@@ -533,7 +533,7 @@ namespace Wasm.Build.Tests
             new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                     .WithWorkingDirectory(_projectDir!)
                     .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                    .ExecuteWithCapturedOutput($"new blazorwasm")
+                    .ExecuteWithCapturedOutput("new blazorwasm")
                     .EnsureSuccessful();
 
             string projectFile = Path.Combine(_projectDir!, $"{id}.csproj");
