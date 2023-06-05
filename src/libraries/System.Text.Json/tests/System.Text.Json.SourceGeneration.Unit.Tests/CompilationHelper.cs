@@ -484,6 +484,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     public class Location
                     {
                         [JsonInclude]
+                        public int publicField;
+                        [JsonInclude]
+                        internal int internalField;
+                        [JsonInclude]
+                        private int privateField;
+
+                        [JsonInclude]
                         public int Id { get; private set; }
                         [JsonInclude]
                         public string Address1 { get; internal set; }

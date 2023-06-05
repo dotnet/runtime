@@ -81,7 +81,7 @@ namespace System.Threading
 #if TARGET_64BIT
             return (IntPtr)Interlocked.Exchange(ref Unsafe.As<IntPtr, long>(ref location1), (long)value);
 #else
-            return (IntPtr)Interlocked.Exchange(ref Unsafe.As<IntPtr, int>(ref location1), (int)value);
+            return (IntPtr)Exchange(ref Unsafe.As<IntPtr, int>(ref location1), (int)value);
 #endif
 #pragma warning restore CA2020
         }
@@ -98,7 +98,7 @@ namespace System.Threading
 #if TARGET_64BIT
             return (UIntPtr)Interlocked.Exchange(ref Unsafe.As<UIntPtr, long>(ref location1), (long)value);
 #else
-            return (UIntPtr)Interlocked.Exchange(ref Unsafe.As<UIntPtr, int>(ref location1), (int)value);
+            return (UIntPtr)Exchange(ref Unsafe.As<UIntPtr, int>(ref location1), (int)value);
 #endif
         }
         #endregion
@@ -139,7 +139,7 @@ namespace System.Threading
 #if TARGET_64BIT
             return (IntPtr)Interlocked.CompareExchange(ref Unsafe.As<IntPtr, long>(ref location1), (long)value, (long)comparand);
 #else
-            return (IntPtr)Interlocked.CompareExchange(ref Unsafe.As<IntPtr, int>(ref location1), (int)value, (int)comparand);
+            return (IntPtr)CompareExchange(ref Unsafe.As<IntPtr, int>(ref location1), (int)value, (int)comparand);
 #endif
 #pragma warning restore CA2020
         }
@@ -157,7 +157,7 @@ namespace System.Threading
 #if TARGET_64BIT
             return (UIntPtr)Interlocked.CompareExchange(ref Unsafe.As<UIntPtr, long>(ref location1), (long)value, (long)comparand);
 #else
-            return (UIntPtr)Interlocked.CompareExchange(ref Unsafe.As<UIntPtr, int>(ref location1), (int)value, (int)comparand);
+            return (UIntPtr)CompareExchange(ref Unsafe.As<UIntPtr, int>(ref location1), (int)value, (int)comparand);
 #endif
         }
         #endregion

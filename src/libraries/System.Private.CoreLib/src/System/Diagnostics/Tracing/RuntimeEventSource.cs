@@ -60,7 +60,7 @@ namespace System.Diagnostics.Tracing
         {
             // initializing more than once may lead to missing events
             Debug.Assert(s_RuntimeEventSource == null);
-            if (EventSource.IsSupported)
+            if (IsSupported)
                 s_RuntimeEventSource = new RuntimeEventSource();
         }
 
@@ -77,13 +77,13 @@ namespace System.Diagnostics.Tracing
         [Event((int)EventId.AppContextSwitch, Level = EventLevel.Informational, Keywords = Keywords.AppContext)]
         internal void LogAppContextSwitch(string switchName, int value)
         {
-            base.WriteEvent((int)EventId.AppContextSwitch, switchName, value);
+            WriteEvent((int)EventId.AppContextSwitch, switchName, value);
         }
 
         [Event((int)EventId.ProcessorCount, Level = EventLevel.Informational, Keywords = Keywords.ProcessorCount)]
         internal void ProcessorCount(int processorCount)
         {
-            base.WriteEvent((int)EventId.ProcessorCount, processorCount);
+            WriteEvent((int)EventId.ProcessorCount, processorCount);
         }
 
         protected override void OnEventCommand(EventCommandEventArgs command)
@@ -120,11 +120,11 @@ namespace System.Diagnostics.Tracing
                 _gen2SizeCounter ??= new PollingCounter("gen-2-size", this, () => GC.GetGenerationSize(2)) { DisplayName = "Gen 2 Size", DisplayUnits = "B" };
                 _lohSizeCounter ??= new PollingCounter("loh-size", this, () => GC.GetGenerationSize(3)) { DisplayName = "LOH Size", DisplayUnits = "B" };
                 _pohSizeCounter ??= new PollingCounter("poh-size", this, () => GC.GetGenerationSize(4)) { DisplayName = "POH (Pinned Object Heap) Size", DisplayUnits = "B" };
-                _assemblyCounter ??= new PollingCounter("assembly-count", this, () => System.Reflection.Assembly.GetAssemblyCount()) { DisplayName = "Number of Assemblies Loaded" };
+                _assemblyCounter ??= new PollingCounter("assembly-count", this, () => Reflection.Assembly.GetAssemblyCount()) { DisplayName = "Number of Assemblies Loaded" };
 
-                _ilBytesJittedCounter ??= new PollingCounter("il-bytes-jitted", this, () => System.Runtime.JitInfo.GetCompiledILBytes()) { DisplayName = "IL Bytes Jitted", DisplayUnits = "B" };
-                _methodsJittedCounter ??= new PollingCounter("methods-jitted-count", this, () => System.Runtime.JitInfo.GetCompiledMethodCount()) { DisplayName = "Number of Methods Jitted" };
-                _jitTimeCounter ??= new IncrementingPollingCounter("time-in-jit", this, () => System.Runtime.JitInfo.GetCompilationTime().TotalMilliseconds) { DisplayName = "Time spent in JIT", DisplayUnits = "ms", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
+                _ilBytesJittedCounter ??= new PollingCounter("il-bytes-jitted", this, () => Runtime.JitInfo.GetCompiledILBytes()) { DisplayName = "IL Bytes Jitted", DisplayUnits = "B" };
+                _methodsJittedCounter ??= new PollingCounter("methods-jitted-count", this, () => Runtime.JitInfo.GetCompiledMethodCount()) { DisplayName = "Number of Methods Jitted" };
+                _jitTimeCounter ??= new IncrementingPollingCounter("time-in-jit", this, () => Runtime.JitInfo.GetCompilationTime().TotalMilliseconds) { DisplayName = "Time spent in JIT", DisplayUnits = "ms", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
 
                 AppContext.LogSwitchValues(this);
                 ProcessorCount(Environment.ProcessorCount);
