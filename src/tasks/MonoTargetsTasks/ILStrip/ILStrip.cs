@@ -103,7 +103,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         string methodTokenFile = assemblyItem.GetMetadata("MethodTokenFile");
         if (!File.Exists(methodTokenFile))
         {
-            Log.LogMessage(MessageImportance.Low, $"[ILStrip] {methodTokenFile} doesn't exit.");
+            Log.LogMessage(MessageImportance.Low, $"{methodTokenFile} doesn't exist.");
             return true;
         }
 
