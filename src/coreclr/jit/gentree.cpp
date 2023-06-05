@@ -23320,14 +23320,12 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     size_t elementCount = simdSize / elementSize;
 
 #if defined(TARGET_XARCH)
-    uint8_t control   = 0;
-    bool    crossLane = false;
-    bool    needsZero = ((varTypeIsByte(simdBaseType) && !compExactlyDependsOn(InstructionSet_AVX512VBMI_VL)) ||
-                      (varTypeIsShort(simdBaseType) && !compExactlyDependsOn(InstructionSet_AVX512BW_VL))) &&
-                     (simdSize != 64);
-    uint64_t value  = 0;
-    simd_t   vecCns = {};
-    simd_t   mskCns = {};
+    uint8_t  control   = 0;
+    bool     crossLane = false;
+    bool     needsZero = (simdSize != 32) && (simdSize != 64);
+    uint64_t value     = 0;
+    simd_t   vecCns    = {};
+    simd_t   mskCns    = {};
 
     for (size_t index = 0; index < elementCount; index++)
     {
@@ -23467,11 +23465,6 @@ GenTree* Compiler::gtNewSimdShuffleNode(
         }
         else if (elementSize == 1)
         {
-            for (uint32_t i = 0; i < elementCount; i++)
-            {
-                vecCns.u8[i] = (uint8_t)(vecCns.u8[i * elementSize] / elementSize);
-            }
-
             op2                        = gtNewVconNode(type);
             op2->AsVecCon()->gtSimdVal = vecCns;
 
@@ -23517,11 +23510,6 @@ GenTree* Compiler::gtNewSimdShuffleNode(
         }
         else if (elementSize == 1)
         {
-            for (uint32_t i = 0; i < elementCount; i++)
-            {
-                vecCns.u8[i] = (uint8_t)(vecCns.u8[i * elementSize] / elementSize);
-            }
-
             op2                        = gtNewVconNode(type);
             op2->AsVecCon()->gtSimdVal = vecCns;
 
