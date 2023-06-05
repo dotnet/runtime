@@ -24,7 +24,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal string CachePathSymbolServer { get; private set; }
         private readonly HashSet<SessionId> sessions = new HashSet<SessionId>();
         private static readonly string[] s_executionContextIndependentCDPCommandNames = { "DotnetDebugger.setDebuggerProperty", "DotnetDebugger.runTests" };
-        protected Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
+        protected Dictionary<SessionId, List<ExecutionContext>> contexts = new Dictionary<SessionId, List<ExecutionContext>>();
 
         public static HttpClient HttpClient => new HttpClient();
 
@@ -45,7 +45,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal ExecutionContext GetContext(SessionId sessionId)
         {
-            if (contexts.TryGetValue(sessionId, out ExecutionContext context))
+            if (TryGetExecutionContextValue(sessionId, out ExecutionContext context))
                 return context;
 
             throw new ArgumentException($"Invalid Session: \"{sessionId}\"", nameof(sessionId));
@@ -53,16 +53,27 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private bool UpdateContext(SessionId sessionId, ExecutionContext executionContext, out ExecutionContext previousExecutionContext)
         {
-            bool previous = contexts.TryGetValue(sessionId, out previousExecutionContext);
-            contexts[sessionId] = executionContext;
+            bool previous = TryGetExecutionContextValue(sessionId, out previousExecutionContext);
+            if (!previous)
+                contexts[sessionId] = new();
+            contexts[sessionId].Add(executionContext);
             return previous;
+        }
+
+        internal bool TryGetExecutionContextValue(SessionId id, out ExecutionContext executionContext)
+        {
+            executionContext = null;
+            if (!contexts.TryGetValue(id, out List<ExecutionContext> contextList))
+                return false;
+            executionContext = contextList.Last<ExecutionContext>();
+            return true;
         }
 
         internal virtual Task<Result> SendMonoCommand(SessionId id, MonoCommands cmd, CancellationToken token) => SendCommand(id, "Runtime.evaluate", JObject.FromObject(cmd), token);
 
         internal void SendLog(SessionId sessionId, string message, CancellationToken token, string type = "warning")
         {
-            if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+            if (!TryGetExecutionContextValue(sessionId, out ExecutionContext context))
                 return;
             /*var o = JObject.FromObject(new
             {
@@ -151,6 +162,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                         return true;
                     }
+                case "Runtime.executionContextDestroyed":
+                    {
+                        int id = args["executionContextId"].Value<int>();
+                        contexts.TryGetValue(sessionId, out var contextList);
+                        contextList.RemoveAll(x => x.Id == id);
+                        return false;
+                    }
 
                 case "Debugger.paused":
                     {
@@ -188,7 +206,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (args["asyncStackTraceId"] != null)
             {
-                if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+                if (!TryGetExecutionContextValue(sessionId, out ExecutionContext context))
                     return false;
                 if (context.CopyDataFromParentContext())
                 {
@@ -254,7 +272,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         protected void CreateWorkerExecutionContext(SessionId workerSessionId, SessionId originSessionId)
         {
-            if (!contexts.TryGetValue(originSessionId, out ExecutionContext context))
+            if (!TryGetExecutionContextValue(originSessionId, out ExecutionContext context))
             {
                 logger.LogDebug($"Origin sessionId does not exist - {originSessionId}");
                 return;
@@ -264,7 +282,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 logger.LogDebug($"Worker sessionId already exists - {originSessionId}");
                 return;
             }
-            contexts[workerSessionId] = context.CreateChildAsyncExecutionContext(workerSessionId);
+            contexts[workerSessionId] = new();
+            contexts[workerSessionId].Add(context.CreateChildAsyncExecutionContext(workerSessionId));
         }
 
         protected virtual async Task SendResume(SessionId id, CancellationToken token)
@@ -273,7 +292,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
         protected async Task<bool> IsRuntimeAlreadyReadyAlready(SessionId sessionId, CancellationToken token)
         {
-            if (contexts.TryGetValue(sessionId, out ExecutionContext context) && context.IsRuntimeReady)
+            if (TryGetExecutionContextValue(sessionId, out ExecutionContext context) && context.IsRuntimeReady)
                 return true;
 
             Result res = await SendMonoCommand(sessionId, MonoCommands.IsRuntimeReady(RuntimeId), token);
@@ -298,7 +317,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (id == SessionId.Null)
                 await AttachToTarget(id, token);
 
-            if (!contexts.TryGetValue(id, out ExecutionContext context) && !s_executionContextIndependentCDPCommandNames.Contains(method))
+            if (!TryGetExecutionContextValue(id, out ExecutionContext context) && !s_executionContextIndependentCDPCommandNames.Contains(method))
             {
                 if (method == "Debugger.setPauseOnExceptions")
                 {
