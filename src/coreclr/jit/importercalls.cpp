@@ -4482,7 +4482,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             GenTree* value = impPopStack().val;
             GenTree* addr  = impPopStack().val;
 
-            GetTree* store = gtNewStoreValueNode(type, layout, addr, value, flags);
+            GenTree* store = gtNewStoreValueNode(type, layout, addr, value, flags);
             if (varTypeIsStruct(store))
             {
                 store = impStoreStruct(store, CHECK_SPILL_ALL);
