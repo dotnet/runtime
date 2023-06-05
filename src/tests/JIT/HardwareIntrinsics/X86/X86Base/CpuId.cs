@@ -149,7 +149,8 @@ namespace XarchHardwareIntrinsicTest._CpuId
 
             if (maxFunctionId < 0x00000007)
             {
-                return testResult;
+                Assert.Equal(Pass, testResult);
+                return;
             }
 
             (eax, ebx, ecx, edx) = X86Base.CpuId(0x00000007, 0x00000000);
