@@ -113,7 +113,7 @@ namespace System.Xml.Schema
                     SendValidationEvent(SR.Sch_MismatchTargetNamespaceEx, targetNamespace, _rootSchema.TargetNamespace, _rootSchema);
                 }
             }
-            else if (targetNamespace != null && targetNamespace.Length != 0)
+            else if (!string.IsNullOrEmpty(targetNamespace))
             { //if schema.TargetNamespace == null & targetNamespace != null, we will force the schema components into targetNamespace
                 _rootSchema = GetChameleonSchema(targetNamespace, _rootSchema); //Chameleon include at top-level
             }
@@ -632,7 +632,7 @@ namespace System.Xml.Schema
                                 SendValidationEvent(SR.Sch_MismatchTargetNamespaceInclude, externalSchema.TargetNamespace, schema.TargetNamespace, include);
                             }
                         }
-                        else if (targetNamespace != null && targetNamespace.Length != 0)
+                        else if (!string.IsNullOrEmpty(targetNamespace))
                         { //Chameleon redefine
                             externalSchema = GetChameleonSchema(targetNamespace, externalSchema);
                             include.Schema = externalSchema; //Reset the schema property to the cloned schema
@@ -832,7 +832,7 @@ namespace System.Xml.Schema
 
             XmlSchema schemaToUpdate = redefineEntry.schemaToUpdate;
             ArrayList includesOfRedefine = new ArrayList();
-            GetIncludedSet(originalSchema, includesOfRedefine);
+            Preprocessor.GetIncludedSet(originalSchema, includesOfRedefine);
             string targetNS = schemaToUpdate.TargetNamespace ?? string.Empty;
 
             XmlSchemaObjectCollection items = redefine.Items;
@@ -951,7 +951,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private void GetIncludedSet(XmlSchema schema, ArrayList includesList)
+        private static void GetIncludedSet(XmlSchema schema, ArrayList includesList)
         {
             if (includesList.Contains(schema))
             {
@@ -2073,7 +2073,7 @@ namespace System.Xml.Schema
         private void ValidateNameAttribute(XmlSchemaObject xso)
         {
             string? name = xso.NameAttribute;
-            if (name == null || name.Length == 0)
+            if (string.IsNullOrEmpty(name))
             {
                 SendValidationEvent(SR.Sch_InvalidNameAttributeEx, null, SR.Sch_NullValue, xso);
             }

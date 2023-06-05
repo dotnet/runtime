@@ -5,24 +5,6 @@
 
 //! This is not considered public API with backward compatibility guarantees. 
 
-interface DotnetHostBuilder {
-    withConfig(config: MonoConfig): DotnetHostBuilder;
-    withConfigSrc(configSrc: string): DotnetHostBuilder;
-    withApplicationArguments(...args: string[]): DotnetHostBuilder;
-    withEnvironmentVariable(name: string, value: string): DotnetHostBuilder;
-    withEnvironmentVariables(variables: {
-        [i: string]: string;
-    }): DotnetHostBuilder;
-    withVirtualWorkingDirectory(vfsPath: string): DotnetHostBuilder;
-    withDiagnosticTracing(enabled: boolean): DotnetHostBuilder;
-    withDebugging(level: number): DotnetHostBuilder;
-    withMainAssembly(mainAssemblyName: string): DotnetHostBuilder;
-    withApplicationArgumentsFromQuery(): DotnetHostBuilder;
-    withStartupMemoryCache(value: boolean): DotnetHostBuilder;
-    create(): Promise<RuntimeAPI>;
-    run(): Promise<number>;
-}
-
 declare interface NativePointer {
     __brandNativePointer: "NativePointer";
 }
@@ -36,14 +18,23 @@ declare interface Int32Ptr extends NativePointer {
     __brand: "Int32Ptr";
 }
 declare interface EmscriptenModule {
+    /** @deprecated Please use growableHeapI8() instead.*/
     HEAP8: Int8Array;
+    /** @deprecated Please use growableHeapI16() instead.*/
     HEAP16: Int16Array;
+    /** @deprecated Please use growableHeapI32() instead. */
     HEAP32: Int32Array;
+    /** @deprecated Please use growableHeapI64() instead. */
     HEAP64: BigInt64Array;
+    /** @deprecated Please use growableHeapU8() instead. */
     HEAPU8: Uint8Array;
+    /** @deprecated Please use growableHeapU16() instead. */
     HEAPU16: Uint16Array;
+    /** @deprecated Please use growableHeapU32() instead */
     HEAPU32: Uint32Array;
+    /** @deprecated Please use growableHeapF32() instead */
     HEAPF32: Float32Array;
+    /** @deprecated Please use growableHeapF64() instead. */
     HEAPF64: Float64Array;
     _malloc(size: number): VoidPtr;
     _free(ptr: VoidPtr): void;
@@ -57,6 +48,7 @@ declare interface EmscriptenModule {
     getValue(ptr: number, type: string, noSafe?: number | boolean): number;
     UTF8ToString(ptr: CharPtr, maxBytesToRead?: number): string;
     UTF8ArrayToString(u8Array: Uint8Array, idx?: number, maxBytesToRead?: number): string;
+    stringToUTF8Array(str: string, heap: Uint8Array, outIdx: number, maxBytesToWrite: number): void;
     FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
     FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
     addFunction(fn: Function, signature: string): number;
@@ -76,6 +68,22 @@ type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: W
 type InstantiateWasmCallBack = (imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback) => any;
 declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
 
+interface DotnetHostBuilder {
+    withConfig(config: MonoConfig): DotnetHostBuilder;
+    withConfigSrc(configSrc: string): DotnetHostBuilder;
+    withApplicationArguments(...args: string[]): DotnetHostBuilder;
+    withEnvironmentVariable(name: string, value: string): DotnetHostBuilder;
+    withEnvironmentVariables(variables: {
+        [i: string]: string;
+    }): DotnetHostBuilder;
+    withVirtualWorkingDirectory(vfsPath: string): DotnetHostBuilder;
+    withDiagnosticTracing(enabled: boolean): DotnetHostBuilder;
+    withDebugging(level: number): DotnetHostBuilder;
+    withMainAssembly(mainAssemblyName: string): DotnetHostBuilder;
+    withApplicationArgumentsFromQuery(): DotnetHostBuilder;
+    create(): Promise<RuntimeAPI>;
+    run(): Promise<number>;
+}
 type MonoConfig = {
     /**
      * The subfolder containing managed assemblies and pdbs. This is relative to dotnet.js script.
@@ -137,6 +145,14 @@ type MonoConfig = {
      * hash of assets
      */
     assetsHash?: string;
+    /**
+     * application environment
+     */
+    applicationEnvironment?: string;
+    /**
+     * query string to be used for asset loading
+     */
+    assetUniqueQuery?: string;
 };
 interface ResourceRequest {
     name: string;
@@ -177,7 +193,7 @@ interface AssetEntry extends ResourceRequest {
      */
     pendingDownload?: LoadingResource;
 }
-type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads" | "symbols";
+type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads" | "js-module-runtime" | "js-module-dotnet" | "js-module-native" | "symbols";
 type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
 "invariant" | //  operate in invariant globalization mode.
 "hybrid" | // operate in hybrid globalization mode with small ICU files, using native platform functions
@@ -188,6 +204,8 @@ type DotnetModuleConfig = {
     configSrc?: string;
     onConfigLoaded?: (config: MonoConfig) => void | Promise<void>;
     onDotnetReady?: () => void | Promise<void>;
+    onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
+    getApplicationEnvironment?: (bootConfigResponse: Response) => string | null;
     imports?: any;
     exports?: string[];
     downloadResource?: (request: ResourceRequest) => LoadingResource | undefined;
@@ -223,6 +241,15 @@ type APIType = {
     getHeapI64Big: (offset: NativePointer) => bigint;
     getHeapF32: (offset: NativePointer) => number;
     getHeapF64: (offset: NativePointer) => number;
+    localHeapViewI8: () => Int8Array;
+    localHeapViewI16: () => Int16Array;
+    localHeapViewI32: () => Int32Array;
+    localHeapViewI64Big: () => BigInt64Array;
+    localHeapViewU8: () => Uint8Array;
+    localHeapViewU16: () => Uint16Array;
+    localHeapViewU32: () => Uint32Array;
+    localHeapViewF32: () => Float32Array;
+    localHeapViewF64: () => Float64Array;
 };
 type RuntimeAPI = {
     /**
@@ -246,8 +273,7 @@ type ModuleAPI = {
     dotnet: DotnetHostBuilder;
     exit: (code: number, reason?: any) => void;
 };
-declare function createDotnetRuntime(moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): Promise<RuntimeAPI>;
-type CreateDotnetRuntimeType = typeof createDotnetRuntime;
+type CreateDotnetRuntimeType = (moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)) => Promise<RuntimeAPI>;
 
 interface IDisposable {
     dispose(): void;
@@ -273,11 +299,59 @@ interface IMemoryView extends IDisposable {
     get byteLength(): number;
 }
 
+declare function mono_exit(exit_code: number, reason?: any): void;
+
+declare const dotnet: DotnetHostBuilder;
+declare const exit: typeof mono_exit;
+
+interface BootJsonData {
+    readonly entryAssembly: string;
+    readonly resources: ResourceGroups;
+    /** Gets a value that determines if this boot config was produced from a non-published build (i.e. dotnet build or dotnet run) */
+    readonly debugBuild: boolean;
+    readonly linkerEnabled: boolean;
+    readonly cacheBootResources: boolean;
+    readonly config: string[];
+    readonly icuDataMode: ICUDataMode;
+    readonly startupMemoryCache: boolean | undefined;
+    readonly runtimeOptions: string[] | undefined;
+    modifiableAssemblies: string | null;
+    aspnetCoreBrowserTools: string | null;
+}
+type BootJsonDataExtension = {
+    [extensionName: string]: ResourceList;
+};
+interface ResourceGroups {
+    readonly assembly: ResourceList;
+    readonly lazyAssembly: ResourceList;
+    readonly pdb?: ResourceList;
+    readonly runtime: ResourceList;
+    readonly satelliteResources?: {
+        [cultureName: string]: ResourceList;
+    };
+    readonly libraryInitializers?: ResourceList;
+    readonly extensions?: BootJsonDataExtension;
+    readonly runtimeAssets: ExtendedResourceList;
+}
+type ResourceList = {
+    [name: string]: string;
+};
+type ExtendedResourceList = {
+    [name: string]: {
+        hash: string;
+        behavior: string;
+    };
+};
+declare enum ICUDataMode {
+    Sharded = 0,
+    All = 1,
+    Invariant = 2,
+    Custom = 3
+}
+
 declare global {
     function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;
 }
+declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
-declare const dotnet: ModuleAPI["dotnet"];
-declare const exit: ModuleAPI["exit"];
-
-export { AssetEntry, CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, IMemoryView, ModuleAPI, MonoConfig, ResourceRequest, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };
+export { AssetEntry, BootJsonData, CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, ICUDataMode, IMemoryView, ModuleAPI, MonoConfig, ResourceRequest, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };

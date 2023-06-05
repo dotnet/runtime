@@ -645,10 +645,7 @@ namespace System.Runtime.Loader
 
         private static Assembly ValidateAssemblyNameWithSimpleName(Assembly assembly, string? requestedSimpleName)
         {
-            if (string.IsNullOrEmpty(requestedSimpleName))
-            {
-                throw new ArgumentException(SR.ArgumentNull_AssemblyNameName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(requestedSimpleName, "AssemblyName.Name");
 
             // Get the name of the loaded assembly
             string? loadedSimpleName = null;
@@ -720,6 +717,11 @@ namespace System.Runtime.Loader
         private static RuntimeAssembly? OnAssemblyResolve(RuntimeAssembly? assembly, string assemblyFullName)
         {
             return InvokeResolveEvent(AssemblyResolve, assembly, assemblyFullName);
+        }
+
+        internal static void InvokeAssemblyLoadEvent(Assembly assembly)
+        {
+            AssemblyLoad?.Invoke(AppDomain.CurrentDomain, new AssemblyLoadEventArgs(assembly));
         }
 
         [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",

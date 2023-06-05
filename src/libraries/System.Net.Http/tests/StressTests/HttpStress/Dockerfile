@@ -28,6 +28,7 @@ WORKDIR /app
 COPY . .
 
 RUN dotnet build -c $CONFIGURATION \
+    -p:MsQuicInteropIncludes="/live-runtime-artifacts/msquic-interop/*.cs" \
     -p:TargetingPacksTargetsLocation=/live-runtime-artifacts/targetingpacks.targets \
     -p:MicrosoftNetCoreAppRefPackDir=/live-runtime-artifacts/microsoft.netcore.app.ref/ \
     -p:MicrosoftNetCoreAppRuntimePackDir=/live-runtime-artifacts/microsoft.netcore.app.runtime.linux-x64/$CONFIGURATION/

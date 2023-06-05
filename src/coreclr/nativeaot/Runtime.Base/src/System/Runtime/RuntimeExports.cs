@@ -30,6 +30,8 @@ namespace System.Runtime
                 !pEEType->IsInterface &&
                 !pEEType->IsArray &&
                 !pEEType->IsString &&
+                !pEEType->IsPointerType &&
+                !pEEType->IsFunctionPointerType &&
                 !pEEType->IsByRefLike;
             if (!isValid)
                 Debug.Assert(false);
@@ -135,7 +137,7 @@ namespace System.Runtime
 
         private static unsafe bool UnboxAnyTypeCompare(MethodTable* pEEType, MethodTable* ptrUnboxToEEType)
         {
-            if (TypeCast.AreTypesEquivalent(pEEType, ptrUnboxToEEType))
+            if (pEEType == ptrUnboxToEEType)
                 return true;
 
             if (pEEType->ElementType == ptrUnboxToEEType->ElementType)
@@ -171,7 +173,7 @@ namespace System.Runtime
 
                 if (ptrUnboxToEEType->IsNullable)
                 {
-                    isValid = (o == null) || TypeCast.AreTypesEquivalent(o.GetMethodTable(), ptrUnboxToEEType->NullableType);
+                    isValid = (o == null) || o.GetMethodTable() == ptrUnboxToEEType->NullableType;
                 }
                 else
                 {
@@ -218,7 +220,7 @@ namespace System.Runtime
         [RuntimeExport("RhUnboxNullable")]
         public static unsafe void RhUnboxNullable(ref byte data, MethodTable* pUnboxToEEType, object obj)
         {
-            if ((obj != null) && !TypeCast.AreTypesEquivalent(obj.GetMethodTable(), pUnboxToEEType->NullableType))
+            if (obj != null && obj.GetMethodTable() != pUnboxToEEType->NullableType)
             {
                 throw pUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
             }
@@ -392,19 +394,23 @@ namespace System.Runtime
                 case RuntimeHelperKind.IsInst:
                     if (pEEType->IsArray)
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.IsInstanceOfArray;
+                    else if (pEEType->HasGenericVariance)
+                        return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.IsInstanceOf;
                     else if (pEEType->IsInterface)
-                        return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.IsInstanceOfInterface;
-                    else if (pEEType->IsParameterizedType)
+                        return (IntPtr)(delegate*<MethodTable*, object?, object?>)&TypeCast.IsInstanceOfInterface;
+                    else if (pEEType->IsParameterizedType || pEEType->IsFunctionPointerType)
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.IsInstanceOf; // Array handled above; pointers and byrefs handled here
                     else
-                        return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.IsInstanceOfClass;
+                        return (IntPtr)(delegate*<MethodTable*, object?, object?>)&TypeCast.IsInstanceOfClass;
 
                 case RuntimeHelperKind.CastClass:
                     if (pEEType->IsArray)
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCastArray;
+                    else if (pEEType->HasGenericVariance)
+                        return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCast;
                     else if (pEEType->IsInterface)
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCastInterface;
-                    else if (pEEType->IsParameterizedType)
+                    else if (pEEType->IsParameterizedType || pEEType->IsFunctionPointerType)
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCast; // Array handled above; pointers and byrefs handled here
                     else
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCastClass;

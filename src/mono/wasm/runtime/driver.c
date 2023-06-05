@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #include <emscripten.h>
+#include <emscripten/stack.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -57,7 +58,7 @@ extern void mono_wasm_register_timezones_bundle();
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 static void mono_wasm_init_finalizer_thread (void);
 
-#ifdef ENABLE_LEGACY_JS_INTEROP
+#ifndef DISABLE_LEGACY_JS_INTEROP
 
 #define MARSHAL_TYPE_NULL 0
 #define MARSHAL_TYPE_INT 1
@@ -113,7 +114,7 @@ static int resolved_datetime_class = 0,
 	resolved_safehandle_class = 0,
 	resolved_voidtaskresult_class = 0;
 
-#endif /* ENABLE_LEGACY_JS_INTEROP */
+#endif /* DISABLE_LEGACY_JS_INTEROP */
 
 int mono_wasm_enable_gc = 1;
 
@@ -219,7 +220,7 @@ mono_wasm_assembly_already_added (const char *assembly_name)
 
 	WasmAssembly *entry = assemblies;
 	while (entry != NULL) {
-		int entry_name_minus_extn_len = strlen(entry->assembly.name) - 4;
+		int entry_name_minus_extn_len = strrchr (entry->assembly.name, '.') - entry->assembly.name;
 		if (entry_name_minus_extn_len == strlen(assembly_name) && strncmp (entry->assembly.name, assembly_name, entry_name_minus_extn_len) == 0)
 			return 1;
 		entry = entry->next;
@@ -781,7 +782,7 @@ mono_wasm_string_from_utf16_ref (const mono_unichar2 * chars, int length, MonoSt
 	MONO_EXIT_GC_UNSAFE;
 }
 
-#ifdef ENABLE_LEGACY_JS_INTEROP
+#ifndef DISABLE_LEGACY_JS_INTEROP
 
 static int
 class_is_task (MonoClass *klass)
@@ -1215,7 +1216,7 @@ mono_wasm_string_array_new_ref (int size, MonoArray **result)
 	MONO_EXIT_GC_UNSAFE;
 }
 
-#endif /* ENABLE_LEGACY_JS_INTEROP */
+#endif /* DISABLE_LEGACY_JS_INTEROP */
 
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_exec_regression (int verbose_level, char *image)
@@ -1412,4 +1413,15 @@ EMSCRIPTEN_KEEPALIVE double mono_wasm_get_f64_unaligned (const double *src) {
 
 EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_get_i32_unaligned (const int32_t *src) {
 	return *src;
+}
+
+EMSCRIPTEN_KEEPALIVE int mono_wasm_is_zero_page_reserved () {
+	// If the stack is above the first 512 bytes of memory this indicates that it is safe
+	//  to optimize out null checks for operations that also do a bounds check, like string
+	//  and array element loads. (We already know that Emscripten malloc will never allocate
+	//  data at 0.) This is the default behavior for Emscripten release builds and is
+	//  controlled by the emscripten GLOBAL_BASE option (default value 1024).
+	// clang/llvm may perform this optimization if --low-memory-unused is set.
+	// https://github.com/emscripten-core/emscripten/issues/19389
+	return (emscripten_stack_get_base() > 512) && (emscripten_stack_get_end() > 512);
 }

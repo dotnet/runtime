@@ -89,6 +89,7 @@
   <ItemGroup Condition="'$(IsTestProject)' != 'true'">
     <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' == 'illumos'" Include="illumos" />
     <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' == 'solaris'" Include="Solaris" />
+    <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' == 'haiku'" Include="Haiku" />
     <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' != '' and
                                   '$(TargetPlatformIdentifier)' != 'browser' and
                                   '$(TargetPlatformIdentifier)' != 'wasi' and

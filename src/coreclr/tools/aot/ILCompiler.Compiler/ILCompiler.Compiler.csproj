@@ -284,7 +284,6 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" Link="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ISortableNode.cs" Link="Compiler\DependencyAnalysis\ISortableNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ISymbolNode.cs" Link="Compiler\DependencyAnalysis\ISymbolNode.cs" />
-    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ObjectAndOffsetSymbolNode.cs" Link="Compiler\DependencyAnalysis\ObjectAndOffsetSymbolNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ObjectDataBuilder.cs" Link="Compiler\DependencyAnalysis\ObjectDataBuilder.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ObjectNode.cs" Link="Compiler\DependencyAnalysis\ObjectNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ObjectNodeSection.cs" Link="Compiler\DependencyAnalysis\ObjectNodeSection.cs" />
@@ -332,9 +331,9 @@
 
     <Compile Include="Compiler\AnalysisBasedInteropStubManager.cs" />
     <Compile Include="Compiler\AnalysisBasedMetadataManager.cs" />
-    <Compile Include="Compiler\BlockedInternalsBlockingPolicy.cs" />
     <Compile Include="Compiler\BodySubstitution.cs" />
     <Compile Include="Compiler\BodySubstitutionParser.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ByRefTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DehydratableObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DehydratedDataNode.cs" />
     <Compile Include="Compiler\CompilationBuilder.Aot.cs" />
@@ -383,7 +382,7 @@
     <Compile Include="Compiler\Dataflow\TrimAnalysisGenericInstantiationAccessPattern.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisMethodCallPattern.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisPatternStore.cs" />
-    <Compile Include="Compiler\Dataflow\TrimAnalysisReflectionAccessPattern.cs" />
+    <Compile Include="Compiler\Dataflow\TrimAnalysisTokenAccessPattern.cs" />
     <Compile Include="Compiler\Dataflow\TypeNameParser.Dataflow.cs" />
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\TypeNameParser.cs">
       <Link>Compiler\Dataflow\TypeNameParser.cs</Link>
@@ -397,12 +396,13 @@
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedTrimmingDescriptorNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DataflowAnalyzedMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DataflowAnalyzedTypeDefinitionNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\DefaultConstructorMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DynamicDependencyAttributesOnEntityNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldRvaDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\FunctionPointerMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericStaticBaseInfoNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\GenericVarianceNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericVirtualMethodImplNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IndirectionExtensions.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InlineableStringsResourceNode.cs" />
@@ -410,6 +410,7 @@
     <Compile Include="Compiler\DependencyAnalysis\MethodExceptionHandlingInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ModuleInitializerListNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectGetTypeFlowDependenciesNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\PointerTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectedFieldNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectedTypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectionInvokeSupportDependencyAlgorithm.cs" />
@@ -449,6 +450,7 @@
     <Compile Include="Compiler\Logging\NativeAotFatalErrorException.cs" />
     <Compile Include="Compiler\ManifestResourceBlockingPolicy.cs" />
     <Compile Include="Compiler\MethodImportationErrorProvider.cs" />
+    <Compile Include="Compiler\InlinedThreadStatics.cs" />
     <Compile Include="Compiler\MstatObjectDumper.cs" />
     <Compile Include="Compiler\NoMetadataBlockingPolicy.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenObjectNode.cs" />
@@ -470,7 +472,6 @@
     <Compile Include="Compiler\DescriptorMarker.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayMapNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\BlockReflectionTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CallingConventionConverterKey.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CodeBasedDependencyAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingStubMapNode.cs" />
@@ -621,8 +622,6 @@
     <Compile Include="Compiler\XmlObjectDumper.cs" />
     <Compile Include="IL\ILImporter.Scanner.cs" />
     <Compile Include="IL\Stubs\PInvokeILProvider.cs" />
-    <Compile Include="IL\Stubs\StartupCode\AppContextInitializerMethod.cs" />
-    <Compile Include="IL\Stubs\StartupCode\AppContextInitializerMethod.Sorting.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.Sorting.cs" />
     <Compile Include="IL\Stubs\StartupCode\NativeLibraryStartupMethod.cs" />

@@ -507,13 +507,13 @@ void emitterStats(FILE* fout)
 /*****************************************************************************/
 
 const unsigned short emitTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) sze,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) sze,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const unsigned short emitTypeActSz[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) asze,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) asze,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -3673,6 +3673,33 @@ const BYTE emitter::emitFmtToOps[] = {
 const unsigned emitter::emitFmtCount = ArrLen(emitFmtToOps);
 #endif
 
+#if defined(TARGET_XARCH)
+//------------------------------------------------------------------------
+// emitGetSchedInfo: Gets the scheduling information for a given insFmt
+//
+// Arguments:
+//    insFmt - format for which to query scheduling information
+//
+// Return Value:
+//    the scheduling information for insFmt
+//
+const IS_INFO emitter::emitGetSchedInfo(insFormat insFmt)
+{
+    static const IS_INFO emitFmtToSchedInfo[] = {
+#define IF_DEF(en, op1, op2) static_cast<IS_INFO>(op1),
+#include "emitfmts.h"
+    };
+
+    if (insFmt < ArrLen(emitFmtToSchedInfo))
+    {
+        return emitFmtToSchedInfo[insFmt];
+    }
+
+    assert(!"Unsupported insFmt");
+    return IS_NONE;
+}
+#endif // TARGET_XARCH
+
 //------------------------------------------------------------------------
 // Interleaved GC info dumping.
 // We'll attempt to line this up with the opcode, which indented differently for
@@ -6164,7 +6191,7 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* loopHeadIG,
     if (emitComp->opts.compJitAlignLoopAdaptive)
     {
         // For adaptive, adjust the loop size depending on the alignment boundary
-        maxLoopBlocksAllowed = genLog2((unsigned)alignmentBoundary) - 1;
+        maxLoopBlocksAllowed = genLog2(alignmentBoundary) - 1;
         maxLoopSize          = alignmentBoundary * maxLoopBlocksAllowed;
     }
     else

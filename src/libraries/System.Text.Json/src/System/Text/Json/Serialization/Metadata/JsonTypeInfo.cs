@@ -213,17 +213,46 @@ namespace System.Text.Json.Serialization.Metadata
         /// It is required that added <see cref="JsonPropertyInfo"/> entries are unique up to <see cref="JsonPropertyInfo.Name"/>,
         /// however this will only be validated on serialization, once the metadata instance gets locked for further modification.
         /// </remarks>
-        public IList<JsonPropertyInfo> Properties => _properties ??= new(this);
-        private JsonPropertyInfoList? _properties;
+        public IList<JsonPropertyInfo> Properties => PropertyList;
 
-        internal void SortProperties()
+        internal JsonPropertyInfoList PropertyList
         {
-            Debug.Assert(!IsConfigured);
-            Debug.Assert(_properties != null && _properties.Count > 0);
+            get
+            {
+                return _properties ?? CreatePropertyList();
+                JsonPropertyInfoList CreatePropertyList()
+                {
+                    var list = new JsonPropertyInfoList(this);
+                    if (_sourceGenDelayedPropertyInitializer is { } propInit)
+                    {
+                        // .NET 6 source gen backward compatibility -- ensure that the
+                        // property initializer delegate is invoked lazily.
+                        JsonMetadataServices.PopulateProperties(this, list, propInit);
+                    }
 
-            _properties.SortProperties();
-            PropertyCache?.List.StableSortByKey(static propInfo => propInfo.Value.Order);
+                    JsonPropertyInfoList? result = Interlocked.CompareExchange(ref _properties, list, null);
+                    _sourceGenDelayedPropertyInitializer = null;
+                    return result ?? list;
+                }
+            }
         }
+
+        /// <summary>
+        /// Stores the .NET 6-style property initialization delegate for delayed evaluation.
+        /// </summary>
+        internal Func<JsonSerializerContext, JsonPropertyInfo[]>? SourceGenDelayedPropertyInitializer
+        {
+            get => _sourceGenDelayedPropertyInitializer;
+            set
+            {
+                Debug.Assert(!IsReadOnly);
+                Debug.Assert(_properties is null, "must not be set if a property list has been initialized.");
+                _sourceGenDelayedPropertyInitializer = value;
+            }
+        }
+
+        private Func<JsonSerializerContext, JsonPropertyInfo[]>? _sourceGenDelayedPropertyInitializer;
+        private JsonPropertyInfoList? _properties;
 
         /// <summary>
         /// Gets or sets a configuration object specifying polymorphism metadata.
@@ -494,6 +523,49 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal JsonUnmappedMemberHandling EffectiveUnmappedMemberHandling { get; private set; }
 
+        private JsonObjectCreationHandling? _preferredPropertyObjectCreationHandling;
+
+        /// <summary>
+        /// Gets or sets the preferred <see cref="JsonObjectCreationHandling"/> value for properties contained in the type.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonTypeInfo"/> instance has been locked for further modification.
+        ///
+        /// -or-
+        ///
+        /// Unmapped member handling only supported for <see cref="JsonTypeInfoKind.Object"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Specified an invalid <see cref="JsonObjectCreationHandling"/> value.
+        /// </exception>
+        /// <remarks>
+        /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+        /// the value of this callback will be mapped from <see cref="JsonObjectCreationHandlingAttribute"/> annotations on types.
+        /// </remarks>
+        public JsonObjectCreationHandling? PreferredPropertyObjectCreationHandling
+        {
+            get => _preferredPropertyObjectCreationHandling;
+            set
+            {
+                VerifyMutable();
+
+                if (value is not null)
+                {
+                    if (Kind != JsonTypeInfoKind.Object)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
+                    }
+
+                    if (!JsonSerializer.IsValidCreationHandlingValue(value.Value))
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(value));
+                    }
+                }
+
+                _preferredPropertyObjectCreationHandling = value;
+            }
+        }
+
         /// <summary>
         /// Gets or sets the <see cref="IJsonTypeInfoResolver"/> from which this metadata instance originated.
         /// </summary>
@@ -598,6 +670,13 @@ namespace System.Text.Json.Serialization.Metadata
 
             PropertyInfoForTypeInfo.Configure();
 
+            if (PolymorphismOptions != null)
+            {
+                // This needs to be done before ConfigureProperties() is called
+                // JsonPropertyInfo.Configure() must have this value available in order to detect Polymoprhic + cyclic class case
+                PolymorphicTypeResolver = new PolymorphicTypeResolver(Options, PolymorphismOptions, Type, Converter.CanHaveMetadata);
+            }
+
             if (Kind == JsonTypeInfoKind.Object)
             {
                 ConfigureProperties();
@@ -622,12 +701,32 @@ namespace System.Text.Json.Serialization.Metadata
 
             DetermineIsCompatibleWithCurrentOptions();
             CanUseSerializeHandler = HasSerializeHandler && IsCompatibleWithCurrentOptions;
+        }
 
-            if (PolymorphismOptions != null)
+        /// <summary>
+        /// Gets any ancestor polymorphic types that declare
+        /// a type discriminator for the current type. Consulted
+        /// when serializing polymorphic values as objects.
+        /// </summary>
+        internal JsonTypeInfo? AncestorPolymorphicType
+        {
+            get
             {
-                PolymorphicTypeResolver = new PolymorphicTypeResolver(this);
+                Debug.Assert(IsConfigured);
+                Debug.Assert(Type != typeof(object));
+
+                if (!_isAncestorPolymorphicTypeResolved)
+                {
+                    _ancestorPolymorhicType = PolymorphicTypeResolver.FindNearestPolymorphicBaseType(this);
+                    _isAncestorPolymorphicTypeResolved = true;
+                }
+
+                return _ancestorPolymorhicType;
             }
         }
+
+        private JsonTypeInfo? _ancestorPolymorhicType;
+        private volatile bool _isAncestorPolymorphicTypeResolved;
 
         /// <summary>
         /// Determines if the transitive closure of all JsonTypeInfo metadata referenced
@@ -877,85 +976,14 @@ namespace System.Text.Json.Serialization.Metadata
         internal JsonParameterInfoValues[]? ParameterInfoValues { get; set; }
 
         // Untyped, root-level serialization methods
-        internal abstract void SerializeAsObject(Utf8JsonWriter writer, object? rootValue, bool isInvokedByPolymorphicConverter = false);
-        internal abstract Task SerializeAsObjectAsync(Stream utf8Json, object? rootValue, CancellationToken cancellationToken, bool isInvokedByPolymorphicConverter = false);
-        internal abstract void SerializeAsObject(Stream utf8Json, object? rootValue, bool isInvokedByPolymorphicConverter = false);
+        internal abstract void SerializeAsObject(Utf8JsonWriter writer, object? rootValue);
+        internal abstract Task SerializeAsObjectAsync(Stream utf8Json, object? rootValue, CancellationToken cancellationToken);
+        internal abstract void SerializeAsObject(Stream utf8Json, object? rootValue);
 
         // Untyped, root-level deserialization methods
         internal abstract object? DeserializeAsObject(ref Utf8JsonReader reader, ref ReadStack state);
         internal abstract ValueTask<object?> DeserializeAsObjectAsync(Stream utf8Json, CancellationToken cancellationToken);
         internal abstract object? DeserializeAsObject(Stream utf8Json);
-        internal abstract IAsyncEnumerable<object?> DeserializeAsyncEnumerableAsObject(Stream utf8Json, CancellationToken cancellationToken);
-
-        /// <summary>
-        /// Used by the built-in resolvers to add property metadata applying conflict resolution.
-        /// </summary>
-        internal void AddProperty(JsonPropertyInfo jsonPropertyInfo, ref PropertyHierarchyResolutionState state)
-        {
-            Debug.Assert(jsonPropertyInfo.MemberName != null, "MemberName can be null in custom JsonPropertyInfo instances and should never be passed in this method");
-            string memberName = jsonPropertyInfo.MemberName;
-
-            JsonPropertyInfoList properties = _properties ??= new(this);
-
-            if (state.AddedProperties.TryAdd(jsonPropertyInfo.Name, (jsonPropertyInfo, properties.Count)))
-            {
-                properties.Add(jsonPropertyInfo);
-                state.IsPropertyOrderSpecified |= jsonPropertyInfo.Order != 0;
-            }
-            else
-            {
-                // The JsonPropertyNameAttribute or naming policy resulted in a collision.
-                (JsonPropertyInfo other, int index) = state.AddedProperties[jsonPropertyInfo.Name];
-
-                if (other.IsIgnored)
-                {
-                    // Overwrite previously cached property since it has [JsonIgnore].
-                    state.AddedProperties[jsonPropertyInfo.Name] = (jsonPropertyInfo, index);
-                    properties[index] = jsonPropertyInfo;
-                    state.IsPropertyOrderSpecified |= jsonPropertyInfo.Order != 0;
-                }
-                else
-                {
-                    bool ignoreCurrentProperty;
-
-                    if (!Type.IsInterface)
-                    {
-                        ignoreCurrentProperty =
-                            // Does the current property have `JsonIgnoreAttribute`?
-                            jsonPropertyInfo.IsIgnored ||
-                            // Is the current property hidden by the previously cached property
-                            // (with `new` keyword, or by overriding)?
-                            other.MemberName == memberName ||
-                            // Was a property with the same CLR name ignored? That property hid the current property,
-                            // thus, if it was ignored, the current property should be ignored too.
-                            state.IgnoredProperties?.ContainsKey(memberName) == true;
-                    }
-                    else
-                    {
-                        // Unlike classes, interface hierarchies reject all naming conflicts for non-ignored properties.
-                        // Conflicts like this are possible in two cases:
-                        // 1. Diamond ambiguity in property names, or
-                        // 2. Linear interface hierarchies that use properties with DIMs.
-                        //
-                        // Diamond ambiguities are not supported. Assuming there is demand, we might consider
-                        // adding support for DIMs in the future, however that would require adding more APIs
-                        // for the case of source gen.
-
-                        ignoreCurrentProperty = jsonPropertyInfo.IsIgnored;
-                    }
-
-                    if (!ignoreCurrentProperty)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, jsonPropertyInfo.Name);
-                    }
-                }
-            }
-
-            if (jsonPropertyInfo.IsIgnored)
-            {
-                (state.IgnoredProperties ??= new()).Add(memberName, jsonPropertyInfo);
-            }
-        }
 
         internal ref struct PropertyHierarchyResolutionState
         {
@@ -1007,9 +1035,9 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(PropertyCache is null);
             Debug.Assert(ExtensionDataProperty is null);
 
-            IList<JsonPropertyInfo> properties = (IList<JsonPropertyInfo>?)_properties ?? Array.Empty<JsonPropertyInfo>();
-
+            JsonPropertyInfoList properties = PropertyList;
             JsonPropertyDictionary<JsonPropertyInfo> propertyCache = CreatePropertyCache(capacity: properties.Count);
+
             int numberOfRequiredProperties = 0;
             bool arePropertiesSorted = true;
             int previousPropertyOrder = int.MinValue;
@@ -1054,14 +1082,15 @@ namespace System.Text.Json.Serialization.Metadata
                 property.Configure();
             }
 
-            NumberOfRequiredProperties = numberOfRequiredProperties;
-            PropertyCache = propertyCache;
-
             if (!arePropertiesSorted)
             {
                 // Properties have been configured by the user and require sorting.
-                SortProperties();
+                properties.SortProperties();
+                propertyCache.List.StableSortByKey(static propInfo => propInfo.Value.Order);
             }
+
+            NumberOfRequiredProperties = numberOfRequiredProperties;
+            PropertyCache = propertyCache;
 
             // Override global UnmappedMemberHandling configuration
             // if type specifies an extension data property.
@@ -1137,6 +1166,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             ParameterCount = jsonParameters.Length;
             ParameterCache = parameterCache;
+            ParameterInfoValues = null;
         }
 
         internal static void ValidateType(Type type)
@@ -1230,6 +1260,15 @@ namespace System.Text.Json.Serialization.Metadata
 #endif
         }
 
+        internal bool SupportsPolymorphicDeserialization
+        {
+            get
+            {
+                Debug.Assert(IsConfigurationStarted);
+                return PolymorphicTypeResolver?.UsesTypeDiscriminators == true;
+            }
+        }
+
         internal static bool IsValidExtensionDataProperty(Type propertyType)
         {
             return typeof(IDictionary<string, object>).IsAssignableFrom(propertyType) ||
@@ -1248,7 +1287,7 @@ namespace System.Text.Json.Serialization.Metadata
             if (type == typeof(object) && converter.CanBePolymorphic)
             {
                 // System.Object is polymorphic and will not respect Properties
-                Debug.Assert(converter is ObjectConverter);
+                Debug.Assert(converter is ObjectConverter or ObjectConverterSlim);
                 return JsonTypeInfoKind.None;
             }
 
@@ -1268,7 +1307,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        private sealed class JsonPropertyInfoList : ConfigurationList<JsonPropertyInfo>
+        internal sealed class JsonPropertyInfoList : ConfigurationList<JsonPropertyInfo>
         {
             private readonly JsonTypeInfo _jsonTypeInfo;
 
@@ -1277,10 +1316,13 @@ namespace System.Text.Json.Serialization.Metadata
                 _jsonTypeInfo = jsonTypeInfo;
             }
 
-            public override bool IsReadOnly => _jsonTypeInfo.IsReadOnly || _jsonTypeInfo.Kind != JsonTypeInfoKind.Object;
+            public override bool IsReadOnly => _jsonTypeInfo._properties == this && _jsonTypeInfo.IsReadOnly || _jsonTypeInfo.Kind != JsonTypeInfoKind.Object;
             protected override void OnCollectionModifying()
             {
-                _jsonTypeInfo.VerifyMutable();
+                if (_jsonTypeInfo._properties == this)
+                {
+                    _jsonTypeInfo.VerifyMutable();
+                }
 
                 if (_jsonTypeInfo.Kind != JsonTypeInfoKind.Object)
                 {
@@ -1294,7 +1336,78 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             public void SortProperties()
-                => _list.StableSortByKey(static propInfo => propInfo.Order);
+            {
+                _list.StableSortByKey(static propInfo => propInfo.Order);
+            }
+
+            /// <summary>
+            /// Used by the built-in resolvers to add property metadata applying conflict resolution.
+            /// </summary>
+            public void AddPropertyWithConflictResolution(JsonPropertyInfo jsonPropertyInfo, ref PropertyHierarchyResolutionState state)
+            {
+                Debug.Assert(!_jsonTypeInfo.IsConfigured);
+                Debug.Assert(jsonPropertyInfo.MemberName != null, "MemberName can be null in custom JsonPropertyInfo instances and should never be passed in this method");
+                string memberName = jsonPropertyInfo.MemberName;
+
+                if (state.AddedProperties.TryAdd(jsonPropertyInfo.Name, (jsonPropertyInfo, Count)))
+                {
+                    Add(jsonPropertyInfo);
+                    state.IsPropertyOrderSpecified |= jsonPropertyInfo.Order != 0;
+                }
+                else
+                {
+                    // The JsonPropertyNameAttribute or naming policy resulted in a collision.
+                    (JsonPropertyInfo other, int index) = state.AddedProperties[jsonPropertyInfo.Name];
+
+                    if (other.IsIgnored)
+                    {
+                        // Overwrite previously cached property since it has [JsonIgnore].
+                        state.AddedProperties[jsonPropertyInfo.Name] = (jsonPropertyInfo, index);
+                        this[index] = jsonPropertyInfo;
+                        state.IsPropertyOrderSpecified |= jsonPropertyInfo.Order != 0;
+                    }
+                    else
+                    {
+                        bool ignoreCurrentProperty;
+
+                        if (!_jsonTypeInfo.Type.IsInterface)
+                        {
+                            ignoreCurrentProperty =
+                                // Does the current property have `JsonIgnoreAttribute`?
+                                jsonPropertyInfo.IsIgnored ||
+                                // Is the current property hidden by the previously cached property
+                                // (with `new` keyword, or by overriding)?
+                                other.MemberName == memberName ||
+                                // Was a property with the same CLR name ignored? That property hid the current property,
+                                // thus, if it was ignored, the current property should be ignored too.
+                                state.IgnoredProperties?.ContainsKey(memberName) == true;
+                        }
+                        else
+                        {
+                            // Unlike classes, interface hierarchies reject all naming conflicts for non-ignored properties.
+                            // Conflicts like this are possible in two cases:
+                            // 1. Diamond ambiguity in property names, or
+                            // 2. Linear interface hierarchies that use properties with DIMs.
+                            //
+                            // Diamond ambiguities are not supported. Assuming there is demand, we might consider
+                            // adding support for DIMs in the future, however that would require adding more APIs
+                            // for the case of source gen.
+
+                            ignoreCurrentProperty = jsonPropertyInfo.IsIgnored;
+                        }
+
+                        if (!ignoreCurrentProperty)
+                        {
+                            ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(_jsonTypeInfo.Type, jsonPropertyInfo.Name);
+                        }
+                    }
+                }
+
+                if (jsonPropertyInfo.IsIgnored)
+                {
+                    (state.IgnoredProperties ??= new()).Add(memberName, jsonPropertyInfo);
+                }
+            }
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]

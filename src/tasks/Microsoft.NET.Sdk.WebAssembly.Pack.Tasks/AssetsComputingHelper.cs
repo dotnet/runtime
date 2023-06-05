@@ -12,21 +12,33 @@ namespace Microsoft.NET.Sdk.WebAssembly;
 
 public class AssetsComputingHelper
 {
+    private static readonly string[] monoPackageIds = new[]
+    {
+        "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
+        "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm",
+        "Microsoft.NETCore.App.Runtime.Mono.perftrace.browser-wasm",
+    };
+
+    private static readonly string[] dotnetJsSingleThreadNames = new[]
+    {
+        "dotnet",
+        "dotnet.native",
+        "dotnet.runtime"
+    };
+
     public static bool ShouldFilterCandidate(
         ITaskItem candidate,
         bool timezoneSupport,
         bool invariantGlobalization,
         bool copySymbols,
         string customIcuCandidateFilename,
+        bool enableThreads,
         out string reason)
     {
         var extension = candidate.GetMetadata("Extension");
         var fileName = candidate.GetMetadata("FileName");
         var assetType = candidate.GetMetadata("AssetType");
-        var fromMonoPackage = string.Equals(
-            candidate.GetMetadata("NuGetPackageId"),
-            "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
-            StringComparison.Ordinal);
+        bool fromMonoPackage = IsFromMonoPackage(candidate);
 
         reason = extension switch
         {
@@ -45,13 +57,19 @@ public class AssetsComputingHelper
             ".json" when fromMonoPackage && (fileName == "emcc-props" || fileName == "package") => $"{fileName}{extension} is not used by Blazor",
             ".ts" when fromMonoPackage && fileName == "dotnet.d" => "dotnet type definition is not used by Blazor",
             ".ts" when fromMonoPackage && fileName == "dotnet-legacy.d" => "dotnet type definition is not used by Blazor",
-            ".js" when assetType == "native" && fileName != "dotnet" => $"{fileName}{extension} is not used by Blazor",
+            ".js" when assetType == "native" && !(dotnetJsSingleThreadNames.Contains(fileName) || enableThreads && fileName == "dotnet.native.worker") => $"{fileName}{extension} is not used by Blazor",
             ".pdb" when !copySymbols => "copying symbols is disabled",
             ".symbols" when fromMonoPackage => "extension .symbols is not required.",
             _ => null
         };
 
         return reason != null;
+    }
+
+    private static bool IsFromMonoPackage(ITaskItem candidate)
+    {
+        string packageId = candidate.GetMetadata("NuGetPackageId");
+        return monoPackageIds.Contains(packageId, StringComparer.Ordinal);
     }
 
     public static string GetCandidateRelativePath(ITaskItem candidate)

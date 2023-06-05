@@ -1088,7 +1088,7 @@ namespace Mono.Linker.Steps
 					continue;
 
 				if (signature == null) {
-					MarkIndirectlyCalledMethod (m, reason, ScopeStack.CurrentScope.Origin);
+					MarkMethodVisibleToReflection (m, reason, ScopeStack.CurrentScope.Origin);
 					marked = true;
 					continue;
 				}
@@ -1107,7 +1107,7 @@ namespace Mono.Linker.Steps
 				if (!matched)
 					continue;
 
-				MarkIndirectlyCalledMethod (m, reason, ScopeStack.CurrentScope.Origin);
+				MarkMethodVisibleToReflection (m, reason, ScopeStack.CurrentScope.Origin);
 				marked = true;
 			}
 
@@ -1410,10 +1410,13 @@ namespace Mono.Linker.Steps
 
 			MarkExportedTypesTarget.ProcessAssembly (assembly, Context);
 
-			if (ProcessReferencesStep.IsFullyPreservedAction (Annotations.GetAction (assembly))) {
-				if (!Context.TryGetCustomData ("DisableMarkingOfCopyAssemblies", out string? disableMarkingOfCopyAssembliesValue) ||
-					disableMarkingOfCopyAssembliesValue != "true")
+			var action = Annotations.GetAction (assembly);
+			if (ProcessReferencesStep.IsFullyPreservedAction (action)) {
+				if (action != AssemblyAction.Copy ||
+					!Context.TryGetCustomData ("DisableMarkingOfCopyAssemblies", out string? disableMarkingOfCopyAssembliesValue) ||
+					disableMarkingOfCopyAssembliesValue != "true") {
 					MarkEntireAssembly (assembly);
+				}
 				return;
 			}
 
@@ -1625,6 +1628,74 @@ namespace Mono.Linker.Steps
 			MarkField (field, reason, origin);
 		}
 
+		void ReportWarningsForReflectionAccess (in MessageOrigin origin, MethodDefinition method, DependencyKind dependencyKind)
+		{
+			if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (origin.Provider, out _))
+				return;
+
+			bool isReflectionAccessCoveredByRUC;
+			bool isCompilerGenerated = CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (method);
+			bool forceRUCCheck = false;
+			RequiresUnreferencedCodeAttribute? requiresUnreferencedCode;
+			switch (dependencyKind) {
+			case DependencyKind.AttributeProperty:
+				// Property assignment in an attribute instance.
+				// This case is more like a direct method call than reflection, and should
+				// be logically similar to what is done in ReflectionMethodBodyScanner for method calls.
+				isReflectionAccessCoveredByRUC = Annotations.DoesMethodRequireUnreferencedCode (method, out requiresUnreferencedCode);
+				break;
+
+			case DependencyKind.Ldftn:
+			case DependencyKind.Ldvirtftn:
+			case DependencyKind.Ldtoken:
+				// Compiler generated code accessed via a token is considered a "hard" reference
+				// even though we also have to treat it as reflection access.
+				// So we need to enforce RUC check/warn in this case.
+				forceRUCCheck = true;
+				isReflectionAccessCoveredByRUC = Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (method, out requiresUnreferencedCode);
+				break;
+
+			default:
+				// If the method being accessed has warnings suppressed due to Requires attributes,
+				// we need to issue a warning for the reflection access. This is true even for instance
+				// methods, which can be reflection-invoked without ever calling a constructor of the
+				// accessed type.
+				isReflectionAccessCoveredByRUC = Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (method, out requiresUnreferencedCode);
+				break;
+			}
+
+			if (isReflectionAccessCoveredByRUC && (!isCompilerGenerated || forceRUCCheck))
+				ReportRequiresUnreferencedCode (method.GetDisplayName (), requiresUnreferencedCode!, new DiagnosticContext (origin, diagnosticsEnabled: true, Context));
+
+			bool isReflectionAccessCoveredByDAM = Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (method);
+			if (isReflectionAccessCoveredByDAM && (!isCompilerGenerated || forceRUCCheck)) {
+				// ReflectionMethodBodyScanner handles more cases for data flow annotations
+				// so don't warn for those.
+				switch (dependencyKind) {
+				case DependencyKind.AttributeConstructor:
+				case DependencyKind.AttributeProperty:
+					break;
+				default:
+					Context.LogWarning (origin, DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, method.GetDisplayName ());
+					break;
+				}
+			}
+
+			// Warn on reflection access to compiler-generated methods, if the method isn't already unsafe to access via reflection
+			// due to annotations. For the annotation-based warnings, we skip virtual overrides since those will produce warnings on
+			// the base, but for unannotated compiler-generated methods this is not the case, so we must produce these warnings even
+			// for virtual overrides. This ensures that we include the unannotated MoveNext state machine method. Lambdas and local
+			// functions should never be virtual overrides in the first place.
+			bool isCoveredByAnnotations = isReflectionAccessCoveredByRUC || isReflectionAccessCoveredByDAM;
+			switch (dependencyKind) {
+			case DependencyKind.AccessedViaReflection:
+			case DependencyKind.DynamicallyAccessedMember:
+				if (ShouldWarnForReflectionAccessToCompilerGeneratedCode (method, isCoveredByAnnotations))
+					Context.LogWarning (origin, DiagnosticId.CompilerGeneratedMemberAccessedViaReflection, method.GetDisplayName ());
+				break;
+			}
+		}
+
 		void ReportWarningsForTypeHierarchyReflectionAccess (IMemberDefinition member, MessageOrigin origin)
 		{
 			Debug.Assert (member is MethodDefinition or FieldDefinition);
@@ -1650,14 +1721,9 @@ namespace Mono.Linker.Steps
 			if (reportOnMember)
 				origin = new MessageOrigin (member);
 
-
-			// All override methods should have the same annotations as their base methods
-			// (else we will produce warning IL2046 or IL2092 or some other warning).
-			// When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
-			bool skipWarningsForOverride = member is MethodDefinition m && m.IsVirtual && Annotations.GetBaseMethods (m) != null;
-
 			bool isReflectionAccessCoveredByRUC = Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (member, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCodeAttribute);
-			if (isReflectionAccessCoveredByRUC && !skipWarningsForOverride) {
+			bool isCompilerGenerated = CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (member);
+			if (isReflectionAccessCoveredByRUC && !isCompilerGenerated) {
 				var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithRequiresUnreferencedCode : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithRequiresUnreferencedCode;
 				Context.LogWarning (origin, id, type.GetDisplayName (),
 					((MemberReference) member).GetDisplayName (), // The cast is valid since it has to be a method or field
@@ -1666,7 +1732,7 @@ namespace Mono.Linker.Steps
 			}
 
 			bool isReflectionAccessCoveredByDAM = Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (member);
-			if (isReflectionAccessCoveredByDAM && !skipWarningsForOverride) {
+			if (isReflectionAccessCoveredByDAM && !isCompilerGenerated) {
 				var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithDynamicallyAccessedMembers : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers;
 				Context.LogWarning (origin, id, type.GetDisplayName (), ((MemberReference) member).GetDisplayName ());
 			}
@@ -1871,13 +1937,16 @@ namespace Mono.Linker.Steps
 			return MarkType (type, reason, origin);
 		}
 
-		internal void MarkMethodVisibleToReflection (MethodDefinition method, in DependencyInfo reason, in MessageOrigin origin)
+		internal void MarkMethodVisibleToReflection (MethodReference method, in DependencyInfo reason, in MessageOrigin origin)
 		{
-			MarkIndirectlyCalledMethod (method, reason, origin);
-			Annotations.MarkReflectionUsed (method);
+			MarkMethod (method, reason, origin);
+			if (Context.Resolve (method) is MethodDefinition methodDefinition) {
+				Annotations.MarkReflectionUsed (methodDefinition);
+				Annotations.MarkIndirectlyCalledMethod (methodDefinition);
+			}
 		}
 
-		internal void MarkFieldVisibleToReflection (FieldDefinition field, in DependencyInfo reason, in MessageOrigin origin)
+		internal void MarkFieldVisibleToReflection (FieldReference field, in DependencyInfo reason, in MessageOrigin origin)
 		{
 			MarkField (field, reason, origin);
 		}
@@ -2914,12 +2983,6 @@ namespace Mono.Linker.Steps
 				MarkMethod (method, reason, ScopeStack.CurrentScope.Origin);
 		}
 
-		protected internal void MarkIndirectlyCalledMethod (MethodDefinition method, in DependencyInfo reason, in MessageOrigin origin)
-		{
-			MarkMethod (method, reason, origin);
-			Annotations.MarkIndirectlyCalledMethod (method);
-		}
-
 		protected virtual MethodDefinition? MarkMethod (MethodReference reference, DependencyInfo reason, in MessageOrigin origin)
 		{
 			DependencyKind originalReasonKind = reason.Kind;
@@ -3071,74 +3134,20 @@ namespace Mono.Linker.Steps
 			// Don't warn for methods kept due to non-understood DebuggerDisplayAttribute
 			// until https://github.com/dotnet/linker/issues/1873 is fixed.
 			case DependencyKind.KeptForSpecialAttribute:
-				return;
+				break;
 
 			case DependencyKind.DynamicallyAccessedMemberOnType:
 				// DynamicallyAccessedMembers on type gets special treatment so that the warning origin
 				// is the type or the annotated member.
 				ReportWarningsForTypeHierarchyReflectionAccess (method, origin);
-				return;
+				break;
 
 			default:
 				// All other cases have the potential of us missing a warning if we don't report it
 				// It is possible that in some cases we may report the same warning twice, but that's better than not reporting it.
+				ReportWarningsForReflectionAccess (origin, method, dependencyKind);
 				break;
 			};
-
-			if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (origin.Provider, out _))
-				return;
-
-			bool skipWarningsForOverride;
-			bool isReflectionAccessCoveredByRUC;
-			RequiresUnreferencedCodeAttribute? requiresUnreferencedCode;
-			if (dependencyKind == DependencyKind.AttributeProperty) {
-				// Property assignment in an attribute instance.
-				// This case is more like a direct method call than reflection, and should
-				// be logically similar to what is done in ReflectionMethodBodyScanner for method calls.
-				skipWarningsForOverride = false;
-				isReflectionAccessCoveredByRUC = Annotations.DoesMethodRequireUnreferencedCode (method, out requiresUnreferencedCode);
-			} else {
-				// All override methods should have the same annotations as their base methods
-				// (else we will produce warning IL2046 or IL2092 or some other warning).
-				// When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
-				skipWarningsForOverride = dependencyKind == DependencyKind.DynamicallyAccessedMember && method.IsVirtual && Annotations.GetBaseMethods (method) != null;
-				// If the method being accessed has warnings suppressed due to Requires attributes,
-				// we need to issue a warning for the reflection access. This is true even for instance
-				// methods, which can be reflection-invoked without ever calling a constructor of the
-				// accessed type.
-				isReflectionAccessCoveredByRUC = Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (method, out requiresUnreferencedCode);
-			}
-
-			if (isReflectionAccessCoveredByRUC && !skipWarningsForOverride)
-				ReportRequiresUnreferencedCode (method.GetDisplayName (), requiresUnreferencedCode!, new DiagnosticContext (origin, diagnosticsEnabled: true, Context));
-
-			bool isReflectionAccessCoveredByDAM = Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (method);
-			if (isReflectionAccessCoveredByDAM && !skipWarningsForOverride) {
-				// ReflectionMethodBodyScanner handles more cases for data flow annotations
-				// so don't warn for those.
-				switch (dependencyKind) {
-				case DependencyKind.AttributeConstructor:
-				case DependencyKind.AttributeProperty:
-					break;
-				default:
-					Context.LogWarning (origin, DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, method.GetDisplayName ());
-					break;
-				}
-			}
-
-			// Warn on reflection access to compiler-generated methods, if the method isn't already unsafe to access via reflection
-			// due to annotations. For the annotation-based warnings, we skip virtual overrides since those will produce warnings on
-			// the base, but for unannotated compiler-generated methods this is not the case, so we must produce these warnings even
-			// for virtual overrides. This ensures that we include the unannotated MoveNext state machine method. Lambdas and local
-			// functions should never be virtual overrides in the first place.
-			bool isCoveredByAnnotations = isReflectionAccessCoveredByRUC || isReflectionAccessCoveredByDAM;
-			switch (dependencyKind) {
-			case DependencyKind.AccessedViaReflection:
-			case DependencyKind.DynamicallyAccessedMember:
-				if (ShouldWarnForReflectionAccessToCompilerGeneratedCode (method, isCoveredByAnnotations))
-					Context.LogWarning (origin, DiagnosticId.CompilerGeneratedMemberAccessedViaReflection, method.GetDisplayName ());
-				break;
-			}
 		}
 
 		internal static void ReportRequiresUnreferencedCode (string displayName, RequiresUnreferencedCodeAttribute requiresUnreferencedCode, in DiagnosticContext diagnosticContext)
@@ -3216,8 +3225,8 @@ namespace Mono.Linker.Steps
 
 			if (method.HasOverrides) {
 				var assembly = Context.Resolve (method.DeclaringType.Scope);
-				// If this method is in a Copy or CopyUsed assembly, .overrides won't get swept and we need to keep all of them
-				bool markAllOverrides = assembly != null && Annotations.GetAction (assembly) is AssemblyAction.Copy or AssemblyAction.CopyUsed;
+				// If this method is in a Copy, CopyUsed, or Save assembly, .overrides won't get swept and we need to keep all of them
+				bool markAllOverrides = assembly != null && Annotations.GetAction (assembly) is AssemblyAction.Copy or AssemblyAction.CopyUsed or AssemblyAction.Save;
 				foreach (MethodReference @base in method.Overrides) {
 					// Method implementing a static interface method will have an override to it - note instance methods usually don't unless they're explicit.
 					// Calling the implementation method directly has no impact on the interface, and as such it should not mark the interface or its method.
@@ -3692,21 +3701,28 @@ namespace Mono.Linker.Steps
 				break;
 
 			case OperandType.InlineMethod: {
-					DependencyKind dependencyKind = instruction.OpCode.Code switch {
-						Code.Jmp => DependencyKind.DirectCall,
-						Code.Call => DependencyKind.DirectCall,
-						Code.Callvirt => DependencyKind.VirtualCall,
-						Code.Newobj => DependencyKind.Newobj,
-						Code.Ldvirtftn => DependencyKind.Ldvirtftn,
-						Code.Ldftn => DependencyKind.Ldftn,
+					(DependencyKind dependencyKind, bool markForReflectionAccess) = instruction.OpCode.Code switch {
+						Code.Jmp => (DependencyKind.DirectCall, false),
+						Code.Call => (DependencyKind.DirectCall, false),
+						Code.Callvirt => (DependencyKind.VirtualCall, false),
+						Code.Newobj => (DependencyKind.Newobj, false),
+						Code.Ldvirtftn => (DependencyKind.Ldvirtftn, true),
+						Code.Ldftn => (DependencyKind.Ldftn, true),
 						_ => throw new InvalidOperationException ($"unexpected opcode {instruction.OpCode}")
 					};
 
+					MethodReference methodReference = (MethodReference) instruction.Operand;
+
 					requiresReflectionMethodBodyScanner |=
-						ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite (Context, (MethodReference) instruction.Operand);
+						ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite (Context, methodReference);
 
 					ScopeStack.UpdateCurrentScopeInstructionOffset (instruction.Offset);
-					MarkMethod ((MethodReference) instruction.Operand, new DependencyInfo (dependencyKind, method), ScopeStack.CurrentScope.Origin);
+					if (markForReflectionAccess) {
+						MarkMethodVisibleToReflection (methodReference, new DependencyInfo (dependencyKind, method), ScopeStack.CurrentScope.Origin);
+					}
+					else {
+						MarkMethod (methodReference, new DependencyInfo (dependencyKind, method), ScopeStack.CurrentScope.Origin);
+					}
 					break;
 				}
 
@@ -3721,9 +3737,9 @@ namespace Mono.Linker.Steps
 						if (Context.TryResolve (typeReference) is TypeDefinition type)
 							MarkTypeVisibleToReflection (typeReference, type, reason, ScopeStack.CurrentScope.Origin);
 					} else if (token is MethodReference methodReference) {
-						MarkMethod (methodReference, reason, ScopeStack.CurrentScope.Origin);
+						MarkMethodVisibleToReflection (methodReference, reason, ScopeStack.CurrentScope.Origin);
 					} else {
-						MarkField ((FieldReference) token, reason, ScopeStack.CurrentScope.Origin);
+						MarkFieldVisibleToReflection ((FieldReference) token, reason, ScopeStack.CurrentScope.Origin);
 					}
 					break;
 				}

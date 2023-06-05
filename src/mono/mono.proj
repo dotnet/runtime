@@ -360,7 +360,6 @@
     <ItemGroup Condition="'$(TargetsFreeBSD)' == 'true' and '$(MonoCrossDir)' != '' and '$(TargetArchitecture)' == 'arm64'">
       <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
       <_MonoBuildEnv Include="TARGET_BUILD_ARCH=arm64" />
-      <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)usr/local/libdata/pkgconfig" />
     </ItemGroup>
 
     <!-- Windows specific options -->
@@ -738,7 +737,6 @@
       <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(MonoLLVMDir)/$(BuildArchitecture)/lib/libclang.dylib</MonoLibClang>
       <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(MonoLLVMDir)/$(BuildArchitecture)/lib/libclang.so</MonoLibClang>
       <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$([MSBuild]::NormalizePath('$(MonoLLVMDir)', '$(BuildArchitecture)', 'bin', 'libclang.dll'))</MonoLibClang>
-      <PythonCmd Condition="'$(HostOS)' == 'windows'and '$(TargetsBrowser)' == 'true'">setlocal EnableDelayedExpansion &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; !EMSDK_PYTHON!</PythonCmd>
       <_ForceRelease Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(TargetArchitecture)' == 'wasm' and '$(Configuration)' == 'Debug'">true</_ForceRelease>
     </PropertyGroup>
 
@@ -917,7 +915,6 @@
       <_MonoRuntimeFilePath>$(MonoObjDir)out\lib\$(MonoFileName)</_MonoRuntimeFilePath>
       <_MonoRuntimeStaticFilePath Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true'">$(MonoObjDir)out\lib\$(MonoStaticLibFileName)</_MonoRuntimeStaticFilePath>
       <_MonoIncludeInterpStaticFiles Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">true</_MonoIncludeInterpStaticFiles>
-      <_MonoIncludeIcuFiles Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">true</_MonoIncludeIcuFiles>
     </PropertyGroup>
     <PropertyGroup Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">
       <_MonoAotCrossFilePath>$(MonoObjCrossDir)out\bin\$(MonoAotCrossFileName)</_MonoAotCrossFilePath>
@@ -954,10 +951,10 @@
         <Destination>$(RuntimeBinDir)%(_MonoRuntimeComponentsSharedFilePath.Filename)%(_MonoRuntimeComponentsSharedFilePath.Extension)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath)">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRid)\$(MonoAotCrossFileName)</Destination>
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossFileName)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossPdbFilePath)" Condition="Exists('$(_MonoAotCrossPdbFilePath)')">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRid)\$(MonoAotCrossPdbFileName)</Destination>
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossPdbFileName)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(MonoBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\bin\llc$(ExeSuffix)">
         <Destination>$(RuntimeBinDir)\llc$(ExeSuffix)</Destination>
@@ -966,10 +963,10 @@
         <Destination>$(RuntimeBinDir)\opt$(ExeSuffix)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(MonoAOTBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\bin\llc$(ExeSuffix)">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRid)\llc$(ExeSuffix)</Destination>
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\llc$(ExeSuffix)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(MonoAOTBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\bin\opt$(ExeSuffix)">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRid)\opt$(ExeSuffix)</Destination>
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\opt$(ExeSuffix)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoIncludeArtifacts Include="$(MonoObjDir)out\include\**" />
       <_MonoRuntimeArtifacts Condition="'$(MonoComponentsStatic)' != 'true' and Exists('$(MonoObjDir)out\lib\Mono.release.framework')" Include="@(_MonoRuntimeComponentsSharedFilePath)">
@@ -1034,24 +1031,10 @@
       <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-wasm-eh-wasm.a">
         <Destination>$(RuntimeBinDir)libmono-wasm-eh-wasm.a</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoICorDebugArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)dbgshim$(LibSuffix)">
-        <Destination>$(RuntimeBinDir)$(LibPrefix)dbgshim$(LibSuffix)</Destination>
-      </_MonoICorDebugArtifacts>
       <_MonoICorDebugArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)mscordbi$(LibSuffix)">
         <Destination>$(RuntimeBinDir)$(LibPrefix)mscordbi$(LibSuffix)</Destination>
       </_MonoICorDebugArtifacts>
-
-      <_IcuArtifacts  Condition="'$(_MonoIncludeIcuFiles)' == 'true'"
-                      Include="$(_IcuLibdir)\libicuuc.a;
-                               $(_IcuLibdir)\libicui18n.a;
-                               $(_IcuLibdir)\libicudata.a;
-                               $(_IcuLibdir)\*.dat" />
     </ItemGroup>
-
-    <Copy Condition="'$(_MonoIncludeIcuFiles)' == 'true'"
-          SourceFiles="@(_IcuArtifacts)"
-          DestinationFolder="$(RuntimeBinDir)"
-          SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
           DestinationFiles="%(_MonoRuntimeArtifacts.Destination)"

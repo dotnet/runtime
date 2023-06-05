@@ -55,8 +55,7 @@
     <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">FEATURE_COMINTEROP;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
-    <FeatureComWrappers>false</FeatureComWrappers>
-    <FeatureComWrappers Condition="'$(TargetsWindows)' == 'true'">true</FeatureComWrappers>
+    <FeatureComWrappers>true</FeatureComWrappers>
   </PropertyGroup>
   <PropertyGroup>
     <FeatureObjCMarshal>false</FeatureObjCMarshal>
@@ -67,7 +66,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <FeaturePerfTracing>false</FeaturePerfTracing>
-    <FeaturePerfTracing Condition="'$(TargetsWindows)' == 'true'">true</FeaturePerfTracing>
+    <FeaturePerfTracing Condition="'$(TargetsWindows)' == 'true' or ('$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetsMacCatalyst)' != 'true' and '$(TargetstvOS)' != 'true')">true</FeaturePerfTracing>
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">FEATURE_PERFTRACING;$(DefineConstants)</DefineConstants>

@@ -256,6 +256,8 @@ namespace Internal.ReadyToRunConstants
         GenericNonGcTlsBase         = 0x67,
         VirtualFuncPtr              = 0x68,
         IsInstanceOfException       = 0x69,
+        NewMaybeFrozenArray         = 0x6A,
+        NewMaybeFrozenObject        = 0x6B,
 
         // Long mul/div/shift ops
         LMul                        = 0xC0,
@@ -340,9 +342,8 @@ namespace Internal.ReadyToRunConstants
 
         GetRuntimeType,
 
-        AreTypesEquivalent,
-
         CheckCastClass,
+        CheckCastClassSpecial,
         CheckInstanceClass,
         CheckCastArray,
         CheckInstanceArray,

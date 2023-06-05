@@ -31,6 +31,13 @@ namespace ILCompiler.Dataflow
         public FlowAnnotations Annotations { get; }
         public DependencyList Dependencies { get => _dependencies; }
 
+        internal enum AccessKind
+        {
+            Unspecified,
+            DynamicallyAccessedMembersMark,
+            TokenAccess
+        }
+
         public ReflectionMarker(Logger logger, NodeFactory factory, FlowAnnotations annotations, MetadataType? typeHierarchyDataFlowOrigin, bool enabled)
         {
             _logger = logger;
@@ -47,28 +54,28 @@ namespace ILCompiler.Dataflow
 
             foreach (var member in typeDefinition.GetDynamicallyAccessedMembers(requiredMemberTypes, declaredOnly))
             {
-                MarkTypeSystemEntity(origin, member, reason);
+                MarkTypeSystemEntity(origin, member, reason, AccessKind.DynamicallyAccessedMembersMark);
             }
         }
 
-        internal void MarkTypeSystemEntity(in MessageOrigin origin, TypeSystemEntity entity, string reason)
+        internal void MarkTypeSystemEntity(in MessageOrigin origin, TypeSystemEntity entity, string reason, AccessKind accessKind = AccessKind.Unspecified)
         {
             switch (entity)
             {
                 case MethodDesc method:
-                    MarkMethod(origin, method, reason);
+                    MarkMethod(origin, method, reason, accessKind);
                     break;
                 case FieldDesc field:
-                    MarkField(origin, field, reason);
+                    MarkField(origin, field, reason, accessKind);
                     break;
                 case MetadataType nestedType:
-                    MarkType(origin, nestedType, reason);
+                    MarkType(origin, nestedType, reason, accessKind);
                     break;
                 case PropertyPseudoDesc property:
-                    MarkProperty(origin, property, reason);
+                    MarkProperty(origin, property, reason, accessKind);
                     break;
                 case EventPseudoDesc @event:
-                    MarkEvent(origin, @event, reason);
+                    MarkEvent(origin, @event, reason, accessKind);
                     break;
                     // case InterfaceImplementation
                     //  Nothing to do currently as Native AOT will preserve all interfaces on a preserved type
@@ -107,7 +114,7 @@ namespace ILCompiler.Dataflow
             return true;
         }
 
-        internal void MarkType(in MessageOrigin origin, TypeDesc type, string reason)
+        internal void MarkType(in MessageOrigin origin, TypeDesc type, string reason, AccessKind accessKind = AccessKind.Unspecified)
         {
             if (!_enabled)
                 return;
@@ -115,27 +122,27 @@ namespace ILCompiler.Dataflow
             RootingHelpers.TryGetDependenciesForReflectedType(ref _dependencies, Factory, type, reason);
         }
 
-        internal void MarkMethod(in MessageOrigin origin, MethodDesc method, string reason)
+        internal void MarkMethod(in MessageOrigin origin, MethodDesc method, string reason, AccessKind accessKind = AccessKind.Unspecified)
         {
             if (!_enabled)
                 return;
 
-            CheckAndWarnOnReflectionAccess(origin, method);
+            CheckAndWarnOnReflectionAccess(origin, method, accessKind);
 
             RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, Factory, method, reason);
         }
 
-        internal void MarkField(in MessageOrigin origin, FieldDesc field, string reason)
+        internal void MarkField(in MessageOrigin origin, FieldDesc field, string reason, AccessKind accessKind = AccessKind.Unspecified)
         {
             if (!_enabled)
                 return;
 
-            CheckAndWarnOnReflectionAccess(origin, field);
+            CheckAndWarnOnReflectionAccess(origin, field, accessKind);
 
             RootingHelpers.TryGetDependenciesForReflectedField(ref _dependencies, Factory, field, reason);
         }
 
-        internal void MarkProperty(in MessageOrigin origin, PropertyPseudoDesc property, string reason)
+        internal void MarkProperty(in MessageOrigin origin, PropertyPseudoDesc property, string reason, AccessKind accessKind = AccessKind.Unspecified)
         {
             if (!_enabled)
                 return;
@@ -146,7 +153,7 @@ namespace ILCompiler.Dataflow
                 MarkMethod(origin, property.SetMethod, reason);
         }
 
-        private void MarkEvent(in MessageOrigin origin, EventPseudoDesc @event, string reason)
+        private void MarkEvent(in MessageOrigin origin, EventPseudoDesc @event, string reason, AccessKind accessKind = AccessKind.Unspecified)
         {
             if (!_enabled)
                 return;
@@ -209,87 +216,122 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        internal void CheckAndWarnOnReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity)
+        internal void CheckAndWarnOnReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity, AccessKind accessKind = AccessKind.Unspecified)
         {
             if (!_enabled)
                 return;
+
+            if (_typeHierarchyDataFlowOrigin is not null)
+            {
+                ReportWarningsForTypeHierarchyReflectionAccess(origin, entity);
+            }
+            else
+            {
+                ReportWarningsForReflectionAccess(origin, entity, accessKind);
+            }
+        }
+
+        private void ReportWarningsForReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity, AccessKind accessKind)
+        {
+            Debug.Assert(entity is MethodDesc or FieldDesc);
 
             // Note that we're using `ShouldSuppressAnalysisWarningsForRequires` instead of `DoesMemberRequire`.
             // This is because reflection access is actually problematic on all members which are in a "requires" scope
             // so for example even instance methods. See for example https://github.com/dotnet/linker/issues/3140 - it's possible
             // to call a method on a "null" instance via reflection.
-            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out CustomAttributeValue<TypeDesc>? requiresAttribute))
-            {
-                if (_typeHierarchyDataFlowOrigin is not null)
-                {
-                    _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithRequiresUnreferencedCode,
-                        _typeHierarchyDataFlowOrigin.GetDisplayName(),
-                        entity.GetDisplayName(),
-                        MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(requiresAttribute.Value)),
-                        MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(requiresAttribute.Value)));
-                }
-                else
-                {
+            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out CustomAttributeValue<TypeDesc>? requiresAttribute) &&
+                ShouldProduceRequiresWarningForReflectionAccess(entity, accessKind))
                     ReportRequires(origin, entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, requiresAttribute.Value);
-                }
-            }
 
-            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute, out requiresAttribute))
-            {
-                if (_typeHierarchyDataFlowOrigin is not null)
-                {
-                    // For now we decided to not report single-file warnings due to type hierarchy marking.
-                    // It is considered too complex to figure out for the user and the likelihood of this
-                    // causing problems is pretty low.
-                }
-                else
-                {
+            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute, out requiresAttribute) &&
+                ShouldProduceRequiresWarningForReflectionAccess(entity, accessKind))
                     ReportRequires(origin, entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute, requiresAttribute.Value);
-                }
-            }
 
-            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, out requiresAttribute))
-            {
-                if (_typeHierarchyDataFlowOrigin is not null)
-                {
-                    // For now we decided to not report dynamic code warnings due to type hierarchy marking.
-                    // It is considered too complex to figure out for the user and the likelihood of this
-                    // causing problems is pretty low.
-                }
-                else
-                {
+            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, out requiresAttribute) &&
+                ShouldProduceRequiresWarningForReflectionAccess(entity, accessKind))
                     ReportRequires(origin, entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, requiresAttribute.Value);
-                }
-            }
 
-            if (!Annotations.ShouldWarnWhenAccessedForReflection(entity))
+            // Below is about accessing DAM annotated members, so only RUC is applicable as a suppression scope
+            if (_logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute))
                 return;
 
-            if (_typeHierarchyDataFlowOrigin is not null)
+            bool isReflectionAccessCoveredByDAM = Annotations.ShouldWarnWhenAccessedForReflection(entity);
+            if (isReflectionAccessCoveredByDAM && ShouldProduceRequiresWarningForReflectionAccess(entity, accessKind))
             {
-                // Don't check whether the current scope is a RUC type or RUC method because these warnings
-                // are not suppressed in RUC scopes. Here the scope represents the DynamicallyAccessedMembers
-                // annotation on a type, not a callsite which uses the annotation. We always want to warn about
-                // possible reflection access indicated by these annotations.
-                _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers,
-                    _typeHierarchyDataFlowOrigin.GetDisplayName(), entity.GetDisplayName());
+                if (entity is MethodDesc)
+                    _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, entity.GetDisplayName());
+                else
+                    _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, entity.GetDisplayName());
             }
-            else
-            {
-                if (!_logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute))
-                {
-                    if (entity is FieldDesc)
-                    {
-                        _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, entity.GetDisplayName());
-                    }
-                    else
-                    {
-                        Debug.Assert(entity is MethodDesc);
 
-                        _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, entity.GetDisplayName());
-                    }
-                }
+            // We decided to not warn on reflection access to compiler-generated methods:
+            // https://github.com/dotnet/runtime/issues/85042
+
+            static bool ShouldProduceRequiresWarningForReflectionAccess(TypeSystemEntity entity, AccessKind accessKind)
+            {
+                bool isCompilerGenerated = CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(entity);
+
+                // Compiler generated code accessed via a token is considered a "hard" reference
+                // even though we also have to treat it as reflection access.
+                // So we need to enforce RUC check/warn in this case.
+                bool forceRequiresWarning = accessKind == AccessKind.TokenAccess;
+
+                return !isCompilerGenerated || forceRequiresWarning;
             }
+        }
+
+        private void ReportWarningsForTypeHierarchyReflectionAccess(MessageOrigin origin, TypeSystemEntity entity)
+        {
+            Debug.Assert(entity is MethodDesc or FieldDesc);
+
+            // Don't check whether the current scope is a RUC type or RUC method because these warnings
+            // are not suppressed in RUC scopes. Here the scope represents the DynamicallyAccessedMembers
+            // annotation on a type, not a callsite which uses the annotation. We always want to warn about
+            // possible reflection access indicated by these annotations.
+
+            Debug.Assert(_typeHierarchyDataFlowOrigin != null);
+
+            static bool IsDeclaredWithinType(TypeSystemEntity member, TypeDesc type)
+            {
+                TypeDesc owningType = member.GetOwningType();
+                while (owningType != null)
+                {
+                    if (owningType == type)
+                        return true;
+
+                    owningType = owningType.GetOwningType();
+                }
+                return false;
+            }
+
+            var reportOnMember = IsDeclaredWithinType(entity, _typeHierarchyDataFlowOrigin);
+            if (reportOnMember)
+                origin = new MessageOrigin(entity);
+
+            // For now we decided to not report single-file or dynamic-code warnings due to type hierarchy marking.
+            // It is considered too complex to figure out for the user and the likelihood of this
+            // causing problems is pretty low.
+
+            bool isReflectionAccessCoveredByRUC = _logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out CustomAttributeValue<TypeDesc>? requiresUnreferencedCodeAttribute);
+            bool isCompilerGenerated = CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(entity);
+            if (isReflectionAccessCoveredByRUC && !isCompilerGenerated)
+            {
+                var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithRequiresUnreferencedCode : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithRequiresUnreferencedCode;
+                _logger.LogWarning(origin, id, _typeHierarchyDataFlowOrigin.GetDisplayName(),
+                entity.GetDisplayName(),
+                    MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(requiresUnreferencedCodeAttribute!.Value)),
+                    MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeUrl(requiresUnreferencedCodeAttribute!.Value)));
+            }
+
+            bool isReflectionAccessCoveredByDAM = Annotations.ShouldWarnWhenAccessedForReflection(entity);
+            if (isReflectionAccessCoveredByDAM && !isCompilerGenerated)
+            {
+                var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithDynamicallyAccessedMembers : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers;
+                _logger.LogWarning(origin, id, _typeHierarchyDataFlowOrigin.GetDisplayName(), entity.GetDisplayName());
+            }
+
+            // We decided to not warn on reflection access to compiler-generated methods:
+            // https://github.com/dotnet/runtime/issues/85042
         }
 
         private void ReportRequires(in MessageOrigin origin, TypeSystemEntity entity, string requiresAttributeName, in CustomAttributeValue<TypeDesc> requiresAttribute)

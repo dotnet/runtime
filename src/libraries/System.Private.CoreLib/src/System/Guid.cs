@@ -491,7 +491,7 @@ namespace System
                                 result._fg = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness((ushort)uintTmp) : (ushort)uintTmp;
 
                                 // Unlike the other components, this one never allowed 0x or +, so we can parse it as straight hex.
-                                if (Number.TryParseUInt32HexNumberStyle(guidString.Slice(28, 8), NumberStyles.AllowHexSpecifier, out uintTmp) == Number.ParsingStatus.OK) // _h, _i, _j, _k
+                                if (Number.TryParseBinaryIntegerHexNumberStyle(guidString.Slice(28, 8), NumberStyles.AllowHexSpecifier, out uintTmp) == Number.ParsingStatus.OK) // _h, _i, _j, _k
                                 {
                                     result._hijk = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(uintTmp) : uintTmp;
                                     return true;
@@ -1052,6 +1052,7 @@ namespace System
 
         public static bool operator !=(Guid a, Guid b) => !EqualsCore(a, b);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int HexsToChars<TChar>(TChar* guidChars, int a, int b) where TChar : unmanaged, IUtfChar<TChar>
         {
             guidChars[0] = TChar.CastFrom(HexConverter.ToCharLower(a >> 4));
@@ -1380,6 +1381,8 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         private static (Vector128<byte>, Vector128<byte>, Vector128<byte>) FormatGuidVector128Utf8(Guid value, bool useDashes)
         {
             Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);

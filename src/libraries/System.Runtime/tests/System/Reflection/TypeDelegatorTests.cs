@@ -59,7 +59,6 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]          
         public void FunctionPointers()
         {
             Assert.True(new TypeDelegator(typeof(delegate*<void>)).IsFunctionPointer);

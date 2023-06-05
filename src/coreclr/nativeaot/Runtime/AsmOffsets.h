@@ -34,6 +34,13 @@ ASM_CONST(     2,     2, STRING_COMPONENT_SIZE)
 ASM_CONST(     E,    16, STRING_BASE_SIZE)
 ASM_CONST(3FFFFFDF,3FFFFFDF,MAX_STRING_LENGTH)
 
+
+#if defined(HOST_ARM64)
+// Bit position for the ARM64IntrinsicConstants_Atomics flags, to be used with tbz / tbnz instructions
+// ARM64IntrinsicConstants_Atomics = 0x0080
+ASM_CONST(     7,     7, ARM64_ATOMICS_FEATURE_FLAG_BIT)
+#endif
+
 ASM_OFFSET(    0,     0, MethodTable, m_usComponentSize)
 ASM_OFFSET(    0,     0, MethodTable, m_uFlags)
 ASM_OFFSET(    4,     4, MethodTable, m_uBaseSize)
@@ -50,8 +57,6 @@ ASM_OFFSET(    0,    78, Thread, m_uHijackedReturnValueFlags)
 #endif
 ASM_OFFSET(   48,    80, Thread, m_pExInfoStackHead)
 ASM_OFFSET(   4c,    88, Thread, m_threadAbortException)
-
-ASM_OFFSET(   50,    90, Thread, m_pThreadLocalModuleStatics)
 
 ASM_SIZEOF(   14,    20, EHEnum)
 

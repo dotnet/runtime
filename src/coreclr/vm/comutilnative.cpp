@@ -1157,6 +1157,30 @@ FORCEINLINE UINT64 GCInterface::InterlockedAdd (UINT64 *pAugend, UINT64 addend) 
     return newMemValue;
 }
 
+extern "C" enable_no_gc_region_callback_status QCALLTYPE GCInterface_EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize)
+{
+    enable_no_gc_region_callback_status status = enable_no_gc_region_callback_status::succeed;
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    status = GCInterface::EnableNoGCRegionCallback(callback, totalSize);
+    END_QCALL;
+    return status;
+}
+
+enable_no_gc_region_callback_status GCInterface::EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    return GCHeapUtilities::GetGCHeap()->EnableNoGCRegionCallback(callback, totalSize);
+}
+
 FORCEINLINE UINT64 GCInterface::InterlockedSub(UINT64 *pMinuend, UINT64 subtrahend) {
     WRAPPER_NO_CONTRACT;
 
@@ -1208,6 +1232,37 @@ void GCInterface::EnumerateConfigurationValues(void* configurationContext, Enume
 
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
     pHeap->EnumerateConfigurationValues(configurationContext, callback);
+}
+
+GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
+bool g_gcHeapHardLimitInfoSpecified = false;
+
+extern "C" int QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo)
+{
+    QCALL_CONTRACT;
+
+    int result = 0;
+
+    BEGIN_QCALL;
+    g_gcHeapHardLimitInfo = heapHardLimitInfo;
+    g_gcHeapHardLimitInfoSpecified = true;
+    result = GCInterface::RefreshMemoryLimit();
+    END_QCALL;
+
+    return result;
+}
+
+int GCInterface::RefreshMemoryLimit()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    return GCHeapUtilities::GetGCHeap()->RefreshMemoryLimit();
 }
 
 #ifdef HOST_64BIT
@@ -1579,24 +1634,6 @@ FCIMPL2_IV(INT64,COMInterlocked::ExchangeAdd64, INT64 *location, INT64 value)
     }
 
     return InterlockedExchangeAdd64((INT64 *) location, value);
-}
-FCIMPLEND
-
-FCIMPL0(void, COMInterlocked::FCMemoryBarrier)
-{
-    FCALL_CONTRACT;
-
-    MemoryBarrier();
-    FC_GC_POLL();
-}
-FCIMPLEND
-
-FCIMPL0(void, COMInterlocked::FCMemoryBarrierLoad)
-{
-    FCALL_CONTRACT;
-
-    VolatileLoadBarrier();
-    FC_GC_POLL();
 }
 FCIMPLEND
 

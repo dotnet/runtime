@@ -106,6 +106,8 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0049`__ | JsonSerializerOptions.AddContext is obsolete. To register a JsonSerializerContext, use either the TypeInfoResolver or TypeInfoResolverChain properties. |
 |  __`SYSLIB0050`__ | Formatter-based serialization is obsolete and should not be used. |
 |  __`SYSLIB0051`__ | This API supports obsolete formatter-based serialization. It should not be called or extended by application code. |
+|  __`SYSLIB0052`__ | This API supports obsolete mechanisms for Regex extensibility. It is not supported. |
+|  __`SYSLIB0053`__ | AesGcm should indicate the required tag size for encryption and decryption. Use a constructor that accepts the tag size. |
 
 ## Analyzer Warnings
 
@@ -217,8 +219,8 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1100`__ | Configuration binding generator: type is not supported. |
 |  __`SYSLIB1101`__ | Configuration binding generator: property on type is not supported. |
 |  __`SYSLIB1102`__ | Configuration binding generator: project's language version must be at least C# 11.|
-|  __`SYSLIB1103`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
-|  __`SYSLIB1104`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1103`__ | Configuration binding generator: value types are invalid inputs to configuration 'Bind' methods.* |
+|  __`SYSLIB1104`__ | Configuration binding generator: Generator cannot determine the target configuration type.* |
 |  __`SYSLIB1105`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
 |  __`SYSLIB1106`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
 |  __`SYSLIB1107`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
