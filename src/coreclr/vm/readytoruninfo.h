@@ -53,7 +53,10 @@ class ReadyToRun_EnclosingTypeMap
 {
 private:
     uint16_t TypeCount = 0;
+    ReadyToRun_EnclosingTypeMap() = default;
 public:
+    ReadyToRun_EnclosingTypeMap& operator=(const ReadyToRun_EnclosingTypeMap& other) = delete;
+    ReadyToRun_EnclosingTypeMap(const ReadyToRun_EnclosingTypeMap& other) = delete;
     const static ReadyToRun_EnclosingTypeMap EmptyInstance;
 
     mdTypeDef GetEnclosingType(mdTypeDef input, IMDInternalImport* pImport) const;
@@ -65,7 +68,11 @@ class ReadyToRun_TypeGenericInfoMap
 private:
     uint32_t TypeCount = 0;
     ReadyToRunTypeGenericInfo GetTypeGenericInfo(mdTypeDef input, bool *foundResult) const;
+    ReadyToRun_TypeGenericInfoMap() = default;
 public:
+    ReadyToRun_TypeGenericInfoMap& operator=(const ReadyToRun_TypeGenericInfoMap& other) = delete;
+    ReadyToRun_TypeGenericInfoMap(const ReadyToRun_TypeGenericInfoMap& other) = delete;
+
     const static ReadyToRun_TypeGenericInfoMap EmptyInstance;
 
     HRESULT IsGenericNoThrow(mdTypeDef input, bool *pIsGeneric, IMDInternalImport* pImport) const;
@@ -79,7 +86,11 @@ public:
 class ReadyToRun_MethodIsGenericMap
 {
     uint32_t MethodCount = 0;
+    ReadyToRun_MethodIsGenericMap() = default;
 public:
+    ReadyToRun_MethodIsGenericMap& operator=(const ReadyToRun_MethodIsGenericMap& other) = delete;
+    ReadyToRun_MethodIsGenericMap(const ReadyToRun_MethodIsGenericMap& other) = delete;
+
     const static ReadyToRun_MethodIsGenericMap EmptyInstance;
     bool IsGeneric(mdMethodDef input, bool *foundResult) const;
 };

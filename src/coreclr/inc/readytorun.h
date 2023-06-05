@@ -93,7 +93,7 @@ enum class ReadyToRunSectionType : uint32_t
     CrossModuleInlineInfo       = 119, // Added in V6.2
     HotColdMap                  = 120, // Added in V8.0
     MethodIsGenericMap          = 121, // Added in V9.0
-    EnclosingTypeMap               = 122, // Added in V9.0
+    EnclosingTypeMap            = 122, // Added in V9.0
     TypeGenericInfoMap          = 123, // Added in V9.0
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
