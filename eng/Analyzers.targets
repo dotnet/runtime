@@ -7,7 +7,7 @@
   <PropertyGroup Condition="'$(RunAnalyzers)' != 'false'">
     <EnableSingleFileAnalyzer Condition="
       '$(EnableSingleFileAnalyzer)' == '' And
-      $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netcoreapp3.0'))">true</EnableSingleFileAnalyzer>
+      '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">true</EnableSingleFileAnalyzer>
   </PropertyGroup>
   <ItemGroup Condition="'$(RunAnalyzers)' != 'false'">
     <EditorConfigFiles Include="$(MSBuildThisFileDirectory)CodeAnalysis.src.globalconfig" />
