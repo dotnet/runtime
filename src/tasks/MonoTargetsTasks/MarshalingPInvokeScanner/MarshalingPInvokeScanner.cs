@@ -16,6 +16,11 @@ using System.Reflection.PortableExecutable;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
+// For some valuetypes we cannot determine if they are compatible with disabled
+// runtime marshaling without first resolving their base types. In this case we
+// first mark the assembly as Inconclusive and do a second pass over the collected
+// base type references in order to decide. If the base types are System.Enum,
+// then the valuetypes are enumerations, and are compatible.
 internal enum Compatibility
 {
     Compatible,
@@ -60,13 +65,13 @@ internal sealed class MinimalMarshalingTypeCompatibilityProvider : ISignatureTyp
     public HashSet<string> GetInconclusiveTypesForAssembly(string assyName) => _inconclusive.EnumerateForAssembly(assyName);
 
     public Compatibility GetArrayType(Compatibility elementType, ArrayShape shape) => Compatibility.Incompatible;
-    public Compatibility GetByReferenceType(Compatibility elementType) => Compatibility.Compatible;
+    public Compatibility GetByReferenceType(Compatibility elementType) => Compatibility.Incompatible;
     public Compatibility GetFunctionPointerType(MethodSignature<Compatibility> signature) => Compatibility.Compatible;
-    public Compatibility GetGenericInstantiation(Compatibility gennricType, ImmutableArray<Compatibility> typeArguments) => Compatibility.Incompatible;
+    public Compatibility GetGenericInstantiation(Compatibility genericType, ImmutableArray<Compatibility> typeArguments) => genericType;
     public Compatibility GetGenericMethodParameter(object genericContext, int index) => Compatibility.Incompatible;
     public Compatibility GetGenericTypeParameter(object genericContext, int index) => Compatibility.Incompatible;
     public Compatibility GetModifiedType(Compatibility modifier, Compatibility unmodifiedType, bool isRequired) => Compatibility.Incompatible;
-    public Compatibility GetPinnedType(Compatibility elementType) => Compatibility.Compatible; // TODO: really?
+    public Compatibility GetPinnedType(Compatibility elementType) => Compatibility.Compatible;
     public Compatibility GetPointerType(Compatibility elementType) => Compatibility.Compatible;
     public Compatibility GetPrimitiveType(PrimitiveTypeCode typeCode)
     {
@@ -74,7 +79,7 @@ internal sealed class MinimalMarshalingTypeCompatibilityProvider : ISignatureTyp
         {
            PrimitiveTypeCode.Object => Compatibility.Incompatible,
            PrimitiveTypeCode.String => Compatibility.Incompatible,
-           PrimitiveTypeCode.TypedReference => Compatibility.Incompatible, // TODO: really?
+           PrimitiveTypeCode.TypedReference => Compatibility.Incompatible,
            _ => Compatibility.Compatible
         };
     }
@@ -157,10 +162,6 @@ public class MarshalingPInvokeScanner : Task
     [Output]
     public string[]? IncompatibleAssemblies { get; private set; }
 
-    private static readonly char[] s_charsToReplace = new char[] { '.', '-', '+' };
-
-    // Avoid sharing this cache with all the invocations of this task throughout the build
-    private readonly Dictionary<string, string> _symbolNameFixups = new Dictionary<string, string>();
 
     public override bool Execute()
     {
@@ -296,38 +297,5 @@ public class MarshalingPInvokeScanner : Task
         }
 
         return false;
-    }
-
-    public string FixupSymbolName(string name)
-    {
-        if (_symbolNameFixups.TryGetValue(name, out string? fixedName))
-            return fixedName;
-
-        UTF8Encoding utf8 = new();
-        byte[] bytes = utf8.GetBytes(name);
-        StringBuilder sb = new();
-
-        foreach (byte b in bytes)
-        {
-            if ((b >= (byte)'0' && b <= (byte)'9') ||
-                (b >= (byte)'a' && b <= (byte)'z') ||
-                (b >= (byte)'A' && b <= (byte)'Z') ||
-                (b == (byte)'_'))
-            {
-                sb.Append((char)b);
-            }
-            else if (s_charsToReplace.Contains((char)b))
-            {
-                sb.Append('_');
-            }
-            else
-            {
-                sb.Append($"_{b:X}_");
-            }
-        }
-
-        fixedName = sb.ToString();
-        _symbolNameFixups[name] = fixedName;
-        return fixedName;
     }
 }
