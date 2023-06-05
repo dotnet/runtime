@@ -19,6 +19,8 @@ using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 using Microsoft.Playwright;
+using System.Runtime.Serialization.Json;
+using Microsoft.NET.Sdk.WebAssembly;
 
 #nullable enable
 
@@ -714,12 +716,16 @@ namespace Wasm.Build.Tests
                 bool expectCJK = false;
                 bool expectNOCJK = false;
                 bool expectFULL = false;
+                bool expectHYBRID = false;
                 switch (globalizationMode)
                 {
                     case GlobalizationMode.Invariant:
                         break;
                     case GlobalizationMode.FullIcu:
                         expectFULL = true;
+                        break;
+                    case GlobalizationMode.Hybrid:
+                        expectHYBRID = true;
                         break;
                     case GlobalizationMode.PredefinedIcu:
                         if (string.IsNullOrEmpty(predefinedIcudt))
@@ -753,6 +759,7 @@ namespace Wasm.Build.Tests
                 AssertFilesExist(bundleDir, new[] { "icudt_EFIGS.dat" }, expectToExist: expectEFIGS);
                 AssertFilesExist(bundleDir, new[] { "icudt_CJK.dat" }, expectToExist: expectCJK);
                 AssertFilesExist(bundleDir, new[] { "icudt_no_CJK.dat" }, expectToExist: expectNOCJK);
+                AssertFilesExist(bundleDir, new[] { "icudt_hybrid.dat" }, expectToExist: expectHYBRID);
             }
         }
 
@@ -822,7 +829,7 @@ namespace Wasm.Build.Tests
             return result;
         }
 
-        protected void AssertBlazorBundle(string config, bool isPublish, bool dotnetWasmFromRuntimePack, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir = null)
+        protected void AssertBlazorBundle(string config, bool isPublish, bool dotnetWasmFromRuntimePack, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir = null, bool expectFingerprinting = false)
         {
             binFrameworkDir ??= FindBlazorBinFrameworkDir(config, isPublish, targetFramework);
 
@@ -839,6 +846,41 @@ namespace Wasm.Build.Tests
                         dotnetJsPath!,
                         "Expected dotnet.native.js to be same as the runtime pack",
                         same: dotnetWasmFromRuntimePack);
+
+            string bootConfigPath = Path.Combine(binFrameworkDir, "blazor.boot.json");
+            Assert.True(File.Exists(bootConfigPath), $"Expected to find '{bootConfigPath}'");
+
+            using (var bootConfigContent = File.OpenRead(bootConfigPath))
+            {
+                var bootConfig = ParseBootData(bootConfigContent);
+                var dotnetJsEntries = bootConfig.resources.runtime.Keys.Where(k => k.StartsWith("dotnet.") && k.EndsWith(".js")).ToArray();
+
+                void AssertFileExists(string fileName)
+                {
+                    string absolutePath = Path.Combine(binFrameworkDir, fileName);
+                    Assert.True(File.Exists(absolutePath), $"Expected to find '{absolutePath}'");
+                }
+
+                string versionHashRegex = @"\d.0.\d?(-[a-z]+(\.\d\.\d+\.\d)?)?\.([a-zA-Z0-9])+";
+                Assert.Collection(
+                    dotnetJsEntries.OrderBy(f => f),
+                    item => { Assert.Equal(expectFingerprinting ? $"dotnet\\.{versionHashRegex}\\.js" : "dotnet.js", item); AssertFileExists(item); },
+                    item => { Assert.Matches($"dotnet\\.native\\.{versionHashRegex}\\.js", item); AssertFileExists(item); },
+                    item => { Assert.Matches($"dotnet\\.runtime\\.{versionHashRegex}\\.js", item); AssertFileExists(item); }
+                );
+            }
+        }
+
+        private static BootJsonData ParseBootData(Stream stream)
+        {
+            stream.Position = 0;
+            var serializer = new DataContractJsonSerializer(
+                typeof(BootJsonData),
+                new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
+
+            var config = (BootJsonData?)serializer.ReadObject(stream);
+            Assert.NotNull(config);
+            return config;
         }
 
         protected void AssertBlazorBootJson(string config, bool isPublish, bool isNet7AndBelow, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir = null)
@@ -1260,7 +1302,8 @@ namespace Wasm.Build.Tests
     {
         Invariant,       // no icu
         FullIcu,         // full icu data: icudt.dat is loaded
-        PredefinedIcu   // user set WasmIcuDataFileName value and we are loading that file
+        PredefinedIcu,   // user set WasmIcuDataFileName value and we are loading that file
+        Hybrid           // reduced icu, missing data is provided by platform-native functions (web api for wasm)
     };
 
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };

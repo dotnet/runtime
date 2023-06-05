@@ -188,4 +188,28 @@ namespace System.Text.Json
         public static string StripWhitespace(this string value)
             => s_stripWhitespace.Replace(value, string.Empty);
     }
+
+    /// <summary>
+    /// Generic visitor pattern used for safely invoking generic methods in AOT.
+    /// </summary>
+    public abstract class TypeWitness
+    {
+        public abstract TResult Accept<TState, TResult>(ITypeVisitor<TState, TResult> visitor, TState state);
+    }
+
+    /// <summary>
+    /// Generic visitor pattern used for safely invoking generic methods in AOT.
+    /// </summary>
+    public sealed class TypeWitness<T> : TypeWitness
+    {
+        public override TResult Accept<TState, TResult>(ITypeVisitor<TState, TResult> visitor, TState state) => visitor.Visit<T>(state);
+    }
+
+    /// <summary>
+    /// Generic visitor pattern used for safely invoking generic methods in AOT.
+    /// </summary>
+    public interface ITypeVisitor<TState, TResult>
+    {
+        public TResult Visit<T>(TState state);
+    }
 }
