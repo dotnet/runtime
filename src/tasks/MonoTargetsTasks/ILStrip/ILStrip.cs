@@ -124,7 +124,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             string trimmedAssemblyFilePath = ComputeTrimmedAssemblyPath(assemblyFilePath);
             bool isTrimmed = false;
 
-            using (FileStream fs = File.Open(assemblyFilePath, FileMode.Open))
+            using FileStream fs = File.Open(assemblyFilePath, FileMode.Open);
             {
                 PEReader peReader = new PEReader(fs, PEStreamOptions.LeaveOpen);
                 MetadataReader mr = peReader.GetMetadataReader();
