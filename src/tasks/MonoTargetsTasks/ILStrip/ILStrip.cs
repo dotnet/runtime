@@ -107,7 +107,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             return true;
         }
 
-        using (StreamReader sr = new StreamReader(methodTokenFile))
+        using StreamReader sr = new(methodTokenFile);
         {
             string? assemblyFilePath = sr.ReadLine();
             if (string.IsNullOrEmpty(assemblyFilePath))
