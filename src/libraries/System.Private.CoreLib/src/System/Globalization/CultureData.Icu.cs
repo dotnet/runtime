@@ -45,7 +45,8 @@ namespace System.Globalization
                 {
                     // ICU changes names like `qps_plocm` (one underscore) to `qps__plocm` (two underscores)
                     // The reason this occurs is because, while ICU canonicalizing, ulocimp_getCountry returns an empty string since the country code value is > 3 (rightly so).
-                    // But append an extra '-' thinking that country code was in-fact appended (for the empty string value as well).
+                    // But append an extra '_' thinking that country code was in-fact appended (for the empty string value as well).
+                    // Before processing, the name qps__plocm will be converted to its .NET name equivalent, which is qps--plocm.
                     changed = true;
                     buffer[bufferIndex++] = '-';
                     i++;
