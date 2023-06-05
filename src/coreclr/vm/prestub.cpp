@@ -1422,7 +1422,7 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
 
         context.TargetType = retType;
         if (!TrySetTargetMethodCtor(context))
-            MemberLoader::ThrowMissingMethodException(firstArgType.GetMethodTable(), ".ctor");
+            MemberLoader::ThrowMissingMethodException(retType.GetMethodTable(), ".ctor");
         break;
 
     case UnsafeAccessorKind::Method:
