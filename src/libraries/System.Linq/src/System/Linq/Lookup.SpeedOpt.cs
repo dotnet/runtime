@@ -74,7 +74,8 @@ namespace System.Linq
 
                     results[index] = g;
                     ++index;
-                } while (g != lastGrouping);
+                }
+                while (g != lastGrouping);
             }
 
             Debug.Assert(index == results.Length, "All list elements were not initialized.");
