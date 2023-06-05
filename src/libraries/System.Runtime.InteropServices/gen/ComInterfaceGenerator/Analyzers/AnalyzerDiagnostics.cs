@@ -11,9 +11,15 @@ namespace Microsoft.Interop.Analyzers
         {
             public const string Prefix = "SYSLIB";
             public const string InvalidGeneratedComAttributeUsage = Prefix + "1090";
+            public const string ConvertToGeneratedComInterface = Prefix + "1091";
         }
 
-        private const string Category = "ComInterfaceGenerator";
+        public static class Metadata
+        {
+            public const string MayRequireAdditionalWork = nameof(MayRequireAdditionalWork);
+        }
+
+        private const string Category = "Interoperability";
 
         private static LocalizableResourceString GetResourceString(string resourceName)
         {
@@ -29,5 +35,15 @@ namespace Microsoft.Interop.Analyzers
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.InterfaceTypeNotSupportedMessage)));
+
+        public static readonly DiagnosticDescriptor ConvertToGeneratedComInterface =
+            new DiagnosticDescriptor(
+                Ids.ConvertToGeneratedComInterface,
+                GetResourceString(nameof(SR.ConvertToGeneratedComInterfaceTitle)),
+                GetResourceString(nameof(SR.ConvertToGeneratedComInterfaceMessage)),
+                Category,
+                DiagnosticSeverity.Info,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.ConvertToGeneratedComInterfaceDescription)));
     }
 }

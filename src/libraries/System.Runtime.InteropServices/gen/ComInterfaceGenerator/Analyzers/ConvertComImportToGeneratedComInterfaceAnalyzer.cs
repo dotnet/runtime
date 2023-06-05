@@ -1,0 +1,171 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Diagnostics;
+using static Microsoft.Interop.Analyzers.AnalyzerDiagnostics;
+
+namespace Microsoft.Interop.Analyzers
+{
+    [DiagnosticAnalyzer(LanguageNames.CSharp)]
+    public class ConvertComImportToGeneratedComInterfaceAnalyzer : DiagnosticAnalyzer
+    {
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(ConvertToGeneratedComInterface);
+
+        private static readonly HashSet<string> s_unsupportedTypeNames = new()
+        {
+            "global::System.Runtime.InteropServices.CriticalHandle",
+            "global::System.Runtime.InteropServices.HandleRef",
+            "global::System.Text.StringBuilder"
+        };
+
+        public override void Initialize(AnalysisContext context)
+        {
+            context.EnableConcurrentExecution();
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
+
+            context.RegisterCompilationStartAction(context =>
+            {
+                INamedTypeSymbol? interfaceTypeAttribute = context.Compilation.GetTypeByMetadataName("System.Runtime.InteropServices.InterfaceTypeAttribute")!;
+                INamedTypeSymbol? generatedComInterfaceAttribute = context.Compilation.GetTypeByMetadataName("System.Runtime.InteropServices.GeneratedComInterfaceAttribute");
+
+                if (generatedComInterfaceAttribute is not null)
+                {
+                    TargetFrameworkSettings targetFramework = context.Options.AnalyzerConfigOptionsProvider.GlobalOptions.GetTargetFrameworkSettings();
+                    var env = new StubEnvironment(
+                        context.Compilation,
+                        targetFramework.TargetFramework,
+                        targetFramework.Version,
+                        context.Compilation.SourceModule.GetAttributes().Any(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute));
+
+                    context.RegisterSymbolAction(context =>
+                    {
+                        INamedTypeSymbol type = (INamedTypeSymbol)context.Symbol;
+                        AttributeData? interfaceTypeAttributeData = type.GetAttributes().FirstOrDefault(a => a.AttributeClass.Equals(interfaceTypeAttribute, SymbolEqualityComparer.Default));
+                        if (type is not { TypeKind: TypeKind.Interface, IsComImport: true }
+                            || interfaceTypeAttributeData.ConstructorArguments.Length == 1 && (int)interfaceTypeAttributeData.ConstructorArguments[0].Value == (int)ComInterfaceType.InterfaceIsIUnknown)
+                        {
+                            return;
+                        }
+
+                        bool mayRequireAdditionalWork = false;
+                        if (type.DeclaringSyntaxReferences.Length > 1)
+                        {
+                            mayRequireAdditionalWork = true;
+                        }
+
+                        foreach (var method in type.GetMembers().OfType<IMethodSymbol>().Where(m => !m.IsStatic && m.IsAbstract))
+                        {
+                            // Ignore types with methods with unsupported returns
+                            if (method.ReturnsByRef || method.ReturnsByRefReadonly)
+                                return;
+                            // Run a basic conversion check like we do for ConvertToLibraryImportAttributeAnalyzer to determine if there will be warnings after the fix.
+
+                            // Use  the method signature to do some of the work the generator will do after conversion.
+                            // If any diagnostics or failures to marshal are reported, then mark this diagnostic with a property signifying that it may require
+                            // later user work.
+                            AnyDiagnosticsSink diagnostics = new();
+                            AttributeData comImportAttribute = method.GetAttributes().First(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_InteropServices_ComImportAttribute);
+                            SignatureContext targetSignatureContext = SignatureContext.Create(
+                                method,
+                                DefaultMarshallingInfoParser.Create(
+                                    env,
+                                    diagnostics,
+                                    method,
+                                    new GeneratedComInterfaceCompilationData
+                                    {
+                                        StringMarshalling = StringMarshalling.Utf16 // Set the StringMarshalling to Utf16 as a sentinel for "we have string marshalling rules defined". The fixer will apply BStr string marshalling if required.
+                                    },
+                                    comImportAttribute),
+                                env,
+                                typeof(ConvertComImportToGeneratedComInterfaceAnalyzer).Assembly);
+
+                            var managedToUnmanagedFactory = ComInterfaceGeneratorHelpers.CreateGeneratorFactory(env, MarshalDirection.ManagedToUnmanaged);
+                            var unmanagedToManagedFactory = ComInterfaceGeneratorHelpers.CreateGeneratorFactory(env, MarshalDirection.UnmanagedToManaged);
+
+                            mayRequireAdditionalWork = diagnostics.AnyDiagnostics;
+                            bool anyExplicitlyUnsupportedInfo = false;
+
+                            var managedToNativeStubCodeContext = new ManagedToNativeStubCodeContext(env.TargetFramework, env.TargetFrameworkVersion, "return", "nativeReturn");
+                            var nativeToManagedStubCodeContext = new NativeToManagedStubCodeContext(env.TargetFramework, env.TargetFrameworkVersion, "return", "nativeReturn");
+
+                            var forwarder = new Forwarder();
+                            // We don't actually need the bound generators. We just need them to be attempted to be bound to determine if the generator will be able to bind them.
+                            BoundGenerators generators = BoundGenerators.Create(targetSignatureContext.ElementTypeInformation, new CallbackGeneratorFactory((info, context) =>
+                            {
+                                if (s_unsupportedTypeNames.Contains(info.ManagedType.FullTypeName))
+                                {
+                                    anyExplicitlyUnsupportedInfo = true;
+                                    return forwarder;
+                                }
+                                if (HasUnsupportedMarshalAsInfo(info))
+                                {
+                                    anyExplicitlyUnsupportedInfo = true;
+                                    return forwarder;
+                                }
+                                // Run both factories and collect any binding failures.
+                                _ = unmanagedToManagedFactory.GeneratorFactory.Create(info, nativeToManagedStubCodeContext);
+                                return managedToUnmanagedFactory.GeneratorFactory.Create(info, managedToNativeStubCodeContext);
+                            }), managedToNativeStubCodeContext, forwarder, out var bindingFailures);
+
+                            mayRequireAdditionalWork |= bindingFailures.Length > 0;
+
+                            if (anyExplicitlyUnsupportedInfo)
+                            {
+                                // If we have any parameters/return value with an explicitly unsupported marshal type or marshalling info,
+                                // don't offer the fix. The amount of work for the user to get to pairity would be too expensive.
+                                return;
+                            }
+                        }
+
+                        ImmutableDictionary<string, string>.Builder properties = ImmutableDictionary.CreateBuilder<string, string>();
+
+                        properties.Add(AnalyzerDiagnostics.Metadata.MayRequireAdditionalWork, mayRequireAdditionalWork.ToString());
+
+                        context.ReportDiagnostic(type.CreateDiagnostic(ConvertToGeneratedComInterface, properties.ToImmutable(), type.Name));
+                    }, SymbolKind.NamedType);
+                }
+            });
+        }
+
+
+        private static bool HasUnsupportedMarshalAsInfo(TypePositionInfo info)
+        {
+            if (info.MarshallingAttributeInfo is not MarshalAsInfo(UnmanagedType unmanagedType, _))
+                return false;
+
+            return !Enum.IsDefined(typeof(UnmanagedType), unmanagedType)
+                || unmanagedType == UnmanagedType.CustomMarshaler
+                || unmanagedType == UnmanagedType.Interface
+                || unmanagedType == UnmanagedType.IDispatch
+                || unmanagedType == UnmanagedType.IInspectable
+                || unmanagedType == UnmanagedType.IUnknown
+                || unmanagedType == UnmanagedType.SafeArray;
+        }
+
+        private sealed class AnyDiagnosticsSink : IGeneratorDiagnostics
+        {
+            public bool AnyDiagnostics { get; private set; }
+            public void ReportConfigurationNotSupported(AttributeData attributeData, string configurationName, string? unsupportedValue) => AnyDiagnostics = true;
+            public void ReportInvalidMarshallingAttributeInfo(AttributeData attributeData, string reasonResourceName, params string[] reasonArgs) => AnyDiagnostics = true;
+        }
+
+        private sealed class CallbackGeneratorFactory : IMarshallingGeneratorFactory
+        {
+            private readonly Func<TypePositionInfo, StubCodeContext, IMarshallingGenerator> _func;
+
+            public CallbackGeneratorFactory(Func<TypePositionInfo, StubCodeContext, IMarshallingGenerator> func)
+            {
+                _func = func;
+            }
+
+            public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context) => _func(info, context);
+        }
+    }
+}
