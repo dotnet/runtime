@@ -126,7 +126,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
             using FileStream fs = File.Open(assemblyFilePath, FileMode.Open);
             {
-                PEReader peReader = new PEReader(fs, PEStreamOptions.LeaveOpen);
+                using PEReader peReader = new(fs, PEStreamOptions.LeaveOpen);
                 MetadataReader mr = peReader.GetMetadataReader();
 
                 string guidValue = ComputeGuid(mr);
