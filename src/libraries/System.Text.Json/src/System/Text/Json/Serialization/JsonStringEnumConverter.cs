@@ -12,12 +12,12 @@ namespace System.Text.Json.Serialization
     /// <remarks>
     /// Reading is case insensitive, writing can be customized via a <see cref="JsonNamingPolicy" />.
     /// </remarks>
-    [RequiresDynamicCode(
-        "JsonStringEnumConverter cannot be statically analyzed and requires runtime code generation. " +
-        "Consider authoring a custom converter that is not a factory to work around the issue. " +
-        "See https://github.com/dotnet/runtime/issues/73124.")]
     public class JsonStringEnumConverter : JsonConverterFactory
     {
+        private const string RequiresDynamicCodeMessage =
+            "JsonStringEnumConverter cannot be statically analyzed and requires runtime code generation. " +
+            "Native AOT users should only use this type indirectly via JsonConverterAttribute annotations.";
+
         private readonly JsonNamingPolicy? _namingPolicy;
         private readonly EnumConverterOptions _converterOptions;
 
@@ -25,6 +25,7 @@ namespace System.Text.Json.Serialization
         /// Constructor. Creates the <see cref="JsonStringEnumConverter"/> with the
         /// default naming policy and allows integer values.
         /// </summary>
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         public JsonStringEnumConverter()
             : this(namingPolicy: null, allowIntegerValues: true)
         {
@@ -41,6 +42,7 @@ namespace System.Text.Json.Serialization
         /// True to allow undefined enum values. When true, if an enum value isn't
         /// defined it will output as a number rather than a string.
         /// </param>
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         public JsonStringEnumConverter(JsonNamingPolicy? namingPolicy = null, bool allowIntegerValues = true)
         {
             _namingPolicy = namingPolicy;
@@ -56,7 +58,13 @@ namespace System.Text.Json.Serialization
         }
 
         /// <inheritdoc />
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The ctor is marked RequiresDynamicCode.")]
         public sealed override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options) =>
             EnumConverterFactory.Create(typeToConvert, _converterOptions, _namingPolicy, options);
+
+        // The AOT-safe CreateConverter variant invoked by the source generator.
+        internal JsonConverter<T> CreateConverter<T>(JsonSerializerOptions options) where T : struct, Enum
+            => new EnumConverter<T>(_converterOptions, _namingPolicy, options);
     }
 }

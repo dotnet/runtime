@@ -1544,7 +1544,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/79311", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public async Task TestTypeWithEnumParameters()
         {
             // Regression test for https://github.com/dotnet/runtime/issues/68647
