@@ -4481,9 +4481,13 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             ClassLayout*         layout  = nullptr;
             var_types            type    = TypeHandleToVarType(typeHnd, &layout);
             GenTreeFlags         flags   = intrinsic == NI_SRCS_UNSAFE_WriteUnaligned ? GTF_IND_UNALIGNED : GTF_EMPTY;
-            GenTree*             indir   = gtNewLoadValueNode(type, layout, op2, flags);
 
-            return varTypeIsStruct(type) ? impAssignStruct(indir, op1, CHECK_SPILL_ALL) : gtNewAssignNode(indir, op1);
+            GetTree* store = gtNewStoreValueNode(type, layout, op2, op1, flags);
+            if (varTypeIsStruct(store))
+            {
+                store = impStoreStruct(store, CHECK_SPILL_ALL);
+            }
+            return store;
         }
 
         default:
