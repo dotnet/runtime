@@ -179,6 +179,7 @@ The following section types are defined and described later in this document:
 | PgoInstrumentationData    |   117 | Image (added in V5.2)
 | ManifestAssemblyMvids     |   118 | Image (added in V5.3)
 | CrossModuleInlineInfo     |   119 | Image (added in V6.3)
+| HotColdMap                |   120 | Image (added in V8.0)
 
 ## ReadyToRunSectionType.CompilerIdentifier
 
