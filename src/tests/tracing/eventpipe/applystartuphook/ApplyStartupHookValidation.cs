@@ -34,8 +34,11 @@ namespace Tracing.Tests.ApplyStartupHookValidation
                 duringExecution: async (_) =>
                 {
                     ReverseServer server = new ReverseServer(serverName);
+                    Logger.logger.Log("Waiting to accept diagnostic connection.");
                     using (Stream stream = await server.AcceptAsync())
                     {
+                        Logger.logger.Log("Accepted diagnostic connection.");
+
                         IpcAdvertise advertise = IpcAdvertise.Parse(stream);
                         Logger.logger.Log($"IpcAdvertise: {advertise}");
 
@@ -47,10 +50,14 @@ namespace Tracing.Tests.ApplyStartupHookValidation
                         string startupHookPath = Hook.Basic.AssemblyPath;
                         Logger.logger.Log($"Applying startup hook during startup suspension: {startupHookPath}");
                         client.ApplyStartupHook(startupHookPath);
+                        Logger.logger.Log("Finished startup hook application");
                     }
 
+                    Logger.logger.Log("Waiting to accept diagnostic connection.");
                     using (Stream stream = await server.AcceptAsync())
                     {
+                        Logger.logger.Log("Accepted diagnostic connection.");
+
                         IpcAdvertise advertise = IpcAdvertise.Parse(stream);
                         Logger.logger.Log($"IpcAdvertise: {advertise}");
 
