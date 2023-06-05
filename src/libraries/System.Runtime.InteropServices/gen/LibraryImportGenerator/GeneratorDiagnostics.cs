@@ -169,9 +169,9 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksDescription)));
 
-        private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
+        private readonly List<DiagnosticInfo> _diagnostics = new List<DiagnosticInfo>();
 
-        public IEnumerable<Diagnostic> Diagnostics => _diagnostics;
+        public IEnumerable<DiagnosticInfo> Diagnostics => _diagnostics;
 
         /// <summary>
         /// Report diagnostic for invalid configuration for string marshalling.
@@ -185,7 +185,7 @@ namespace Microsoft.Interop
             string detailsMessage)
         {
             _diagnostics.Add(
-                attributeData.CreateDiagnostic(
+                attributeData.CreateDiagnosticInfo(
                     GeneratorDiagnostics.InvalidStringMarshallingConfiguration,
                     methodName,
                     detailsMessage));
@@ -205,14 +205,14 @@ namespace Microsoft.Interop
             if (unsupportedValue == null)
             {
                 _diagnostics.Add(
-                    attributeData.CreateDiagnostic(
+                    attributeData.CreateDiagnosticInfo(
                         GeneratorDiagnostics.ConfigurationNotSupported,
                         configurationName));
             }
             else
             {
                 _diagnostics.Add(
-                    attributeData.CreateDiagnostic(
+                    attributeData.CreateDiagnosticInfo(
                         GeneratorDiagnostics.ConfigurationValueNotSupported,
                         unsupportedValue,
                         configurationName));
@@ -231,7 +231,7 @@ namespace Microsoft.Interop
             string? notSupportedDetails,
             ImmutableDictionary<string, string> diagnosticProperties)
         {
-            Location diagnosticLocation = Location.None;
+            CodeAnalysis.Location diagnosticLocation = CodeAnalysis.Location.None;
             string elementName = string.Empty;
 
             if (info.IsManagedReturnPosition)
@@ -252,7 +252,7 @@ namespace Microsoft.Interop
                 if (info.IsManagedReturnPosition)
                 {
                     _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
+                        diagnosticLocation.CreateDiagnosticInfo(
                             GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails,
                             diagnosticProperties,
                             notSupportedDetails!,
@@ -261,7 +261,7 @@ namespace Microsoft.Interop
                 else
                 {
                     _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
+                        diagnosticLocation.CreateDiagnosticInfo(
                             GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails,
                             diagnosticProperties,
                             notSupportedDetails!,
@@ -276,7 +276,7 @@ namespace Microsoft.Interop
                 if (info.IsManagedReturnPosition)
                 {
                     _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
+                        diagnosticLocation.CreateDiagnosticInfo(
                             GeneratorDiagnostics.ReturnConfigurationNotSupported,
                             diagnosticProperties,
                             nameof(System.Runtime.InteropServices.MarshalAsAttribute),
@@ -285,7 +285,7 @@ namespace Microsoft.Interop
                 else
                 {
                     _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
+                        diagnosticLocation.CreateDiagnosticInfo(
                             GeneratorDiagnostics.ParameterConfigurationNotSupported,
                             diagnosticProperties,
                             nameof(System.Runtime.InteropServices.MarshalAsAttribute),
@@ -298,7 +298,7 @@ namespace Microsoft.Interop
                 if (info.IsManagedReturnPosition)
                 {
                     _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
+                        diagnosticLocation.CreateDiagnosticInfo(
                             GeneratorDiagnostics.ReturnTypeNotSupported,
                             diagnosticProperties,
                             info.ManagedType.DiagnosticFormattedName,
@@ -307,7 +307,7 @@ namespace Microsoft.Interop
                 else
                 {
                     _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
+                        diagnosticLocation.CreateDiagnosticInfo(
                             GeneratorDiagnostics.ParameterTypeNotSupported,
                             diagnosticProperties,
                             info.ManagedType.DiagnosticFormattedName,
@@ -322,7 +322,7 @@ namespace Microsoft.Interop
             params string[] reasonArgs)
         {
             _diagnostics.Add(
-                attributeData.CreateDiagnostic(
+                attributeData.CreateDiagnosticInfo(
                     GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported,
                     new LocalizableResourceString(reasonResourceName, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.LibraryImportGenerator.SR), reasonArgs)));
         }
@@ -336,7 +336,7 @@ namespace Microsoft.Interop
         public void ReportCannotForwardToDllImport(MethodSignatureDiagnosticLocations method, string name, string? value = null)
         {
             _diagnostics.Add(
-                Diagnostic.Create(
+                DiagnosticInfo.Create(
                     CannotForwardToDllImport,
                     method.FallbackLocation,
                     value is null ? name : $"{name}={value}"));

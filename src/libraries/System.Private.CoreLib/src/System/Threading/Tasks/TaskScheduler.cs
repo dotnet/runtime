@@ -532,31 +532,6 @@ namespace System.Threading.Tasks
             // returns the scheduler's GetScheduledTasks
             public IEnumerable<Task>? ScheduledTasks => m_taskScheduler.GetScheduledTasks();
         }
-
-        // TODO https://github.com/dotnet/runtime/issues/20025: Consider exposing publicly.
-        /// <summary>Gets an awaiter used to queue a continuation to this TaskScheduler.</summary>
-        internal TaskSchedulerAwaiter GetAwaiter() => new TaskSchedulerAwaiter(this);
-
-        /// <summary>Awaiter used to queue a continuation to a specified task scheduler.</summary>
-        internal readonly struct TaskSchedulerAwaiter : ICriticalNotifyCompletion
-        {
-            private readonly TaskScheduler _scheduler;
-            public TaskSchedulerAwaiter(TaskScheduler scheduler) => _scheduler = scheduler;
-            public bool IsCompleted => false;
-            public void GetResult() { }
-            public void OnCompleted(Action continuation) => Task.Factory.StartNew(continuation, CancellationToken.None, TaskCreationOptions.DenyChildAttach, _scheduler);
-            public void UnsafeOnCompleted(Action continuation)
-            {
-                if (ReferenceEquals(_scheduler, Default))
-                {
-                    ThreadPool.UnsafeQueueUserWorkItem(s => s(), continuation, preferLocal: true);
-                }
-                else
-                {
-                    OnCompleted(continuation);
-                }
-            }
-        }
     }
 
     /// <summary>
