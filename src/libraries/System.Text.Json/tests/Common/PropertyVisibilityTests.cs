@@ -242,6 +242,22 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async void Ignore_BasePublicPropertyIgnored_ConflictWithDerivedPublicPropertyIgnored()
+        {
+            var obj = new ClassWithIgnoredPublicPropertyAndNewSlotPublicAndIgnoredToo();
+
+            string json = await Serializer.SerializeWrapper(obj);
+
+            Assert.Equal(@"{}", json);
+
+            json = @"{""MyString"":""NewValue""}";
+            obj = await Serializer.DeserializeWrapper<ClassWithIgnoredPublicPropertyAndNewSlotPublicAndIgnoredToo>(json);
+
+            Assert.Equal("DefaultValue", ((ClassWithIgnoredPublicProperty)obj).MyString);
+            Assert.Equal("NewDefaultValue", obj.MyString);
+        }
+
+        [Fact]
         public async Task Ignore_VerifyNoReferenceToGetterAndSetter()
         {
             // Serialize
@@ -810,6 +826,12 @@ namespace System.Text.Json.Serialization.Tests
         public class ClassWithIgnoredPublicPropertyAndNewSlotPrivate : ClassWithIgnoredPublicProperty
         {
             internal new string MyString { get; set; } = "NewDefaultValue";
+        }
+
+        public class ClassWithIgnoredPublicPropertyAndNewSlotPublicAndIgnoredToo : ClassWithIgnoredPublicProperty
+        {
+            [JsonIgnore]
+            public new string MyString { get; set; } = "NewDefaultValue";
         }
 
         public class ClassWithIgnoredPropertyNamingConflictPrivate

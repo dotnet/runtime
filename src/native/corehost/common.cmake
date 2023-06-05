@@ -40,8 +40,6 @@ function(set_common_libs TargetType)
         if((CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD) AND NOT CLR_CMAKE_TARGET_ANDROID)
             target_link_libraries (${DOTNET_PROJECT_NAME} PRIVATE "pthread")
         endif()
-
-        target_link_libraries (${DOTNET_PROJECT_NAME} PRIVATE ${CMAKE_DL_LIBS})
     endif()
 
     if (NOT ${TargetType} STREQUAL "lib-static")
@@ -53,5 +51,7 @@ function(set_common_libs TargetType)
                 target_link_libraries(${DOTNET_PROJECT_NAME} PRIVATE atomic.a)
             endif()
         endif()
+
+        target_link_libraries (${DOTNET_PROJECT_NAME} PRIVATE ${CMAKE_DL_LIBS})
     endif()
 endfunction()

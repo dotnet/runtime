@@ -57,14 +57,37 @@ namespace System.Security.Cryptography
             if (key.Length > _blockSize && _blockSize > 0)
             {
                 // Perform RFC 2104, section 2 key adjustment.
-                modifiedKey = _hashAlgorithmId switch
+                switch (_hashAlgorithmId)
                 {
-                    HashAlgorithmNames.SHA256 => SHA256.HashData(key),
-                    HashAlgorithmNames.SHA384 => SHA384.HashData(key),
-                    HashAlgorithmNames.SHA512 => SHA512.HashData(key),
-                    HashAlgorithmNames.SHA1 => SHA1.HashData(key),
-                    HashAlgorithmNames.MD5 when Helpers.HasMD5 => MD5.HashData(key),
-                    _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, _hashAlgorithmId)),
+                    case HashAlgorithmNames.SHA256:
+                        modifiedKey = SHA256.HashData(key);
+                        break;
+                    case HashAlgorithmNames.SHA384:
+                        modifiedKey = SHA384.HashData(key);
+                        break;
+                    case HashAlgorithmNames.SHA512:
+                        modifiedKey = SHA512.HashData(key);
+                        break;
+                    case HashAlgorithmNames.SHA3_256:
+                        Debug.Assert(SHA3_256.IsSupported);
+                        modifiedKey = SHA3_256.HashData(key);
+                        break;
+                    case HashAlgorithmNames.SHA3_384:
+                        Debug.Assert(SHA3_384.IsSupported);
+                        modifiedKey = SHA3_384.HashData(key);
+                        break;
+                    case HashAlgorithmNames.SHA3_512:
+                        Debug.Assert(SHA3_512.IsSupported);
+                        modifiedKey = SHA3_512.HashData(key);
+                        break;
+                    case HashAlgorithmNames.SHA1:
+                        modifiedKey = SHA1.HashData(key);
+                        break;
+                    case HashAlgorithmNames.MD5 when Helpers.HasMD5:
+                        modifiedKey = MD5.HashData(key);
+                        break;
+                    default:
+                        throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, _hashAlgorithmId));
                 };
             }
 

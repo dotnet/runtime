@@ -32,15 +32,15 @@ namespace Microsoft.Interop
         /// <summary>
         /// Throws <see cref="InvalidOperationException"/> if IsDiagnostic is false
         /// </summary>
-        public abstract Diagnostic Diagnostic { get; }
+        public abstract DiagnosticInfo Diagnostic { get; }
 
         private sealed record Diag : DiagnosticOr<T>
         {
-            private readonly Diagnostic _diagnostic;
-            internal Diag(Diagnostic diagnostic) => _diagnostic = diagnostic;
+            private readonly DiagnosticInfo _diagnostic;
+            internal Diag(DiagnosticInfo diagnostic) => _diagnostic = diagnostic;
             public override bool IsValue => false;
             public override T Value => throw new InvalidOperationException();
-            public override Diagnostic Diagnostic => _diagnostic;
+            public override DiagnosticInfo Diagnostic => _diagnostic;
         }
 
         private sealed record Val : DiagnosticOr<T>
@@ -49,13 +49,13 @@ namespace Microsoft.Interop
             internal Val(T value) => _value = value;
             public override bool IsValue => true;
             public override T Value => _value;
-            public override Diagnostic Diagnostic => throw new InvalidOperationException();
+            public override DiagnosticInfo Diagnostic => throw new InvalidOperationException();
         }
 
         /// <summary>
         /// Create a Diagnostic variant
         /// </summary>
-        public static DiagnosticOr<T> From(Diagnostic diagnostic)
+        public static DiagnosticOr<T> From(DiagnosticInfo diagnostic)
         {
             Debug.Assert(diagnostic is not null);
             return new Diag(diagnostic);
@@ -76,7 +76,7 @@ namespace Microsoft.Interop
         /// <summary>
         /// Splits the elements of <paramref name="provider"/> into a "values" provider and a "diagnositics" provider.
         /// </summary>
-        public static (IncrementalValuesProvider<T>, IncrementalValuesProvider<Diagnostic>) Split<T>(this IncrementalValuesProvider<DiagnosticOr<T>> provider)
+        public static (IncrementalValuesProvider<T>, IncrementalValuesProvider<DiagnosticInfo>) Split<T>(this IncrementalValuesProvider<DiagnosticOr<T>> provider)
         {
             var values = provider.Where(x => x.IsValue).Select(static (x, ct) => x.Value);
             var diagnostics = provider.Where(x => x.IsDiagnostic).Select(static (x, ct) => x.Diagnostic);
@@ -86,7 +86,7 @@ namespace Microsoft.Interop
         /// <summary>
         /// Splits the inner arrays of <paramref name="provider"/> into values and diagnostics.
         /// </summary>
-        public static (IncrementalValuesProvider<SequenceEqualImmutableArray<T>>, IncrementalValuesProvider<Diagnostic>) SplitArrays<T>(this IncrementalValuesProvider<SequenceEqualImmutableArray<DiagnosticOr<T>>> provider)
+        public static (IncrementalValuesProvider<SequenceEqualImmutableArray<T>>, IncrementalValuesProvider<DiagnosticInfo>) SplitArrays<T>(this IncrementalValuesProvider<SequenceEqualImmutableArray<DiagnosticOr<T>>> provider)
         {
             var values = provider.Select((arr, ct) => arr.Where(x => x.IsValue).Select((x, ct) => x.Value).ToSequenceEqualImmutableArray());
             var diagnostics = provider.SelectMany((arr, ct) => arr.Where(x => x.IsDiagnostic).Select((x, ct) => x.Diagnostic));
@@ -96,7 +96,7 @@ namespace Microsoft.Interop
         /// <summary>
         /// Splits the elements of <paramref name="provider"/> into groups depending on whether Item1 is a value or a Diagnostic.
         /// </summary>
-        public static (IncrementalValuesProvider<(T, T2)>, IncrementalValuesProvider<Diagnostic>) Split<T, T2>(this IncrementalValuesProvider<(DiagnosticOr<T>, T2)> provider)
+        public static (IncrementalValuesProvider<(T, T2)>, IncrementalValuesProvider<DiagnosticInfo>) Split<T, T2>(this IncrementalValuesProvider<(DiagnosticOr<T>, T2)> provider)
         {
             var values = provider.Where(x => x.Item1.IsValue).Select(static (x, ct) => (x.Item1.Value, x.Item2));
             var diagnostics = provider.Where(x => !x.Item1.IsValue).Select(static (x, ct) => x.Item1.Diagnostic);

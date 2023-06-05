@@ -5584,25 +5584,25 @@ void Compiler::addFatPointerCandidate(GenTreeCall* call)
 // pickGDV: Use profile information to pick a GDV candidate for a call site.
 //
 // Arguments:
-//    call        - the call
-//    ilOffset    - exact IL offset of the call
-//    isInterface - whether or not the call target is defined on an interface
-//    classGuess  - [out] the class to guess for (mutually exclusive with methodGuess)
-//    methodGuess - [out] the method to guess for (mutually exclusive with classGuess)
-//    likelihood  - [out] an estimate of the likelihood that the guess will succeed
+//    call            - the call
+//    ilOffset        - exact IL offset of the call
+//    isInterface     - whether or not the call target is defined on an interface
+//    classGuesses    - [out] the classes to guess for (mutually exclusive with methodGuess)
+//    methodGuesses   - [out] the methods to guess for (mutually exclusive with classGuess)
+//    candidatesCount - [out] number of guesses
+//    likelihoods     - [out] estimates of the likelihoods that the guesses will succeed
 //
 void Compiler::pickGDV(GenTreeCall*           call,
                        IL_OFFSET              ilOffset,
                        bool                   isInterface,
-                       CORINFO_CLASS_HANDLE*  classGuess,
-                       CORINFO_METHOD_HANDLE* methodGuess,
-                       unsigned*              likelihood)
+                       CORINFO_CLASS_HANDLE*  classGuesses,
+                       CORINFO_METHOD_HANDLE* methodGuesses,
+                       int*                   candidatesCount,
+                       unsigned*              likelihoods)
 {
-    *classGuess  = NO_CLASS_HANDLE;
-    *methodGuess = NO_METHOD_HANDLE;
-    *likelihood  = 0;
+    *candidatesCount = 0;
 
-    const int               maxLikelyClasses = 32;
+    const int               maxLikelyClasses = MAX_GDV_TYPE_CHECKS;
     LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
     unsigned                numberOfClasses = 0;
     if (call->IsVirtualStub() || call->IsVirtualVtable())
@@ -5611,7 +5611,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
             getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
     }
 
-    const int               maxLikelyMethods = 32;
+    const int               maxLikelyMethods = MAX_GDV_TYPE_CHECKS;
     LikelyClassMethodRecord likelyMethods[maxLikelyMethods];
     unsigned                numberOfMethods = 0;
 
@@ -5702,16 +5702,26 @@ void Compiler::pickGDV(GenTreeCall*           call,
         unsigned index = static_cast<unsigned>(random->Next(static_cast<int>(numberOfClasses + numberOfMethods)));
         if (index < numberOfClasses)
         {
-            *classGuess = (CORINFO_CLASS_HANDLE)likelyClasses[index].handle;
-            *likelihood = 100;
-            JITDUMP("Picked random class for GDV: %p (%s)\n", *classGuess, eeGetClassName(*classGuess));
+            classGuesses[0]  = (CORINFO_CLASS_HANDLE)likelyClasses[index].handle;
+            likelihoods[0]   = 100;
+            *candidatesCount = 1;
+            // TODO: report multiple random candidates. For now we don't do it because with the current impl
+            // we might give up on all candidates if one of them is not inlinable, so we don't want to reduce
+            // testing coverage.
+            //
+            JITDUMP("Picked random class for GDV: %p (%s)\n", classGuesses[0], eeGetClassName(classGuesses[0]));
             return;
         }
         else
         {
-            *methodGuess = (CORINFO_METHOD_HANDLE)likelyMethods[index - numberOfClasses].handle;
-            *likelihood  = 100;
-            JITDUMP("Picked random method for GDV: %p (%s)\n", *methodGuess, eeGetMethodFullName(*methodGuess));
+            methodGuesses[0] = (CORINFO_METHOD_HANDLE)likelyMethods[index - numberOfClasses].handle;
+            likelihoods[0]   = 100;
+            *candidatesCount = 1;
+            // TODO: report multiple random candidates. For now we don't do it because with the current impl
+            // we might give up on all candidates if one of them is not inlinable, so we don't want to reduce
+            // testing coverage.
+            //
+            JITDUMP("Picked random method for GDV: %p (%s)\n", methodGuesses[0], eeGetMethodFullName(methodGuesses[0]));
             return;
         }
     }
@@ -5720,25 +5730,68 @@ void Compiler::pickGDV(GenTreeCall*           call,
     // Prefer class guess as it is cheaper
     if (numberOfClasses > 0)
     {
-        unsigned likelihoodThreshold = isInterface ? 25 : 30;
-        if (likelyClasses[0].likelihood >= likelihoodThreshold)
+        const int maxNumberOfGuesses = min(MAX_GDV_TYPE_CHECKS, JitConfig.JitGuardedDevirtualizationMaxTypeChecks());
+        if (maxNumberOfGuesses == 0)
         {
-            *classGuess = (CORINFO_CLASS_HANDLE)likelyClasses[0].handle;
-            *likelihood = likelyClasses[0].likelihood;
+            // DOTNET_JitGuardedDevirtualizationMaxTypeChecks=0 means we don't want to do any guarded devirtualization
+            // Although, we expect users to disable GDV by setting DOTNET_JitEnableGuardedDevirtualization=0
             return;
         }
 
-        JITDUMP("Not guessing for class; likelihood is below %s call threshold %u\n",
-                isInterface ? "interface" : "virtual", likelihoodThreshold);
+        assert((maxNumberOfGuesses > 0) && (maxNumberOfGuesses <= MAX_GDV_TYPE_CHECKS));
+
+        unsigned likelihoodThreshold;
+        if (maxNumberOfGuesses == 1)
+        {
+            // We're allowed to make only a single guess - it means we want to work only with dominating types
+            likelihoodThreshold = isInterface ? 25 : 30;
+        }
+        else if (maxNumberOfGuesses == 2)
+        {
+            // Two guesses - slightly relax the thresholds
+            likelihoodThreshold = isInterface ? 15 : 20;
+        }
+        else
+        {
+            // We're allowed to make more than 2 guesses - pick all types with likelihood >= 10%
+            likelihoodThreshold = 10;
+        }
+
+        // We have 'maxNumberOfGuesses' number of classes available
+        // and we're allowed to make 'maxNumberOfGuesses' number of guesses
+        // Iterate over the available classes to find classes with likelihoods bigger than
+        // a specific threshold
+        //
+        assert(*candidatesCount == 0);
+        unsigned totalGuesses = min((unsigned)maxNumberOfGuesses, numberOfClasses);
+        for (unsigned guessIdx = 0; guessIdx < totalGuesses; guessIdx++)
+        {
+            if (likelyClasses[guessIdx].likelihood >= likelihoodThreshold)
+            {
+                classGuesses[guessIdx] = (CORINFO_CLASS_HANDLE)likelyClasses[guessIdx].handle;
+                likelihoods[guessIdx]  = likelyClasses[guessIdx].likelihood;
+                *candidatesCount       = *candidatesCount + 1;
+                JITDUMP("Accepting type %s with likelihood %u as a candidate\n", eeGetClassName(classGuesses[guessIdx]),
+                        likelihoods[guessIdx])
+            }
+            else
+            {
+                // The candidates are sorted by likelihood so the rest of the
+                // guesses will have even lower likelihoods
+                break;
+            }
+        }
     }
 
     if (numberOfMethods > 0)
     {
+        // For method guessing we only support a single target for now
         unsigned likelihoodThreshold = 30;
         if (likelyMethods[0].likelihood >= likelihoodThreshold)
         {
-            *methodGuess = (CORINFO_METHOD_HANDLE)likelyMethods[0].handle;
-            *likelihood  = likelyMethods[0].likelihood;
+            methodGuesses[0] = (CORINFO_METHOD_HANDLE)likelyMethods[0].handle;
+            likelihoods[0]   = likelyMethods[0].likelihood;
+            *candidatesCount = 1;
             return;
         }
 
@@ -5862,9 +5915,10 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 
     bool hasPgoData = true;
 
-    CORINFO_CLASS_HANDLE  likelyClass  = NO_CLASS_HANDLE;
-    CORINFO_METHOD_HANDLE likelyMethod = NO_METHOD_HANDLE;
-    unsigned              likelihood   = 0;
+    CORINFO_CLASS_HANDLE  likelyClasses[MAX_GDV_TYPE_CHECKS]  = {};
+    CORINFO_METHOD_HANDLE likelyMethodes[MAX_GDV_TYPE_CHECKS] = {};
+    unsigned              likelihoods[MAX_GDV_TYPE_CHECKS]    = {};
+    int                   candidatesCount                     = 0;
 
     // We currently only get likely class guesses when there is PGO data
     // with class profiles.
@@ -5875,8 +5929,10 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
     }
     else
     {
-        pickGDV(call, ilOffset, isInterface, &likelyClass, &likelyMethod, &likelihood);
-        if ((likelyClass == NO_CLASS_HANDLE) && (likelyMethod == NO_METHOD_HANDLE))
+        pickGDV(call, ilOffset, isInterface, likelyClasses, likelyMethodes, &candidatesCount, likelihoods);
+        assert((unsigned)candidatesCount <= MAX_GDV_TYPE_CHECKS);
+        assert((unsigned)candidatesCount <= (unsigned)JitConfig.JitGuardedDevirtualizationMaxTypeChecks());
+        if (candidatesCount == 0)
         {
             hasPgoData = false;
         }
@@ -5933,7 +5989,9 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 if (!info.compCompHnd->resolveVirtualMethod(&dvInfo))
                 {
                     JITDUMP("Can't figure out which method would be invoked, sorry\n");
-                    return;
+                    // Maybe other candidates will be resolved.
+                    // Although, we no longer can remove the fallback (we never do it currently anyway)
+                    break;
                 }
 
                 CORINFO_METHOD_HANDLE exactMethod      = dvInfo.devirtualizedMethod;
@@ -5964,103 +6022,119 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         return;
     }
 
-    uint32_t likelyClassAttribs = 0;
-    if (likelyClass != NO_CLASS_HANDLE)
+    // Iterate over the guesses
+    for (int candidateId = 0; candidateId < candidatesCount; candidateId++)
     {
-        likelyClassAttribs = info.compCompHnd->getClassAttribs(likelyClass);
+        CORINFO_CLASS_HANDLE  likelyClass  = likelyClasses[candidateId];
+        CORINFO_METHOD_HANDLE likelyMethod = likelyMethodes[candidateId];
+        unsigned              likelihood   = likelihoods[candidateId];
 
-        if ((likelyClassAttribs & CORINFO_FLG_ABSTRACT) != 0)
+        uint32_t likelyClassAttribs = 0;
+        if (likelyClass != NO_CLASS_HANDLE)
         {
-            // We may see an abstract likely class, if we have a stale profile.
-            // No point guessing for this.
+            likelyClassAttribs = info.compCompHnd->getClassAttribs(likelyClass);
+
+            if ((likelyClassAttribs & CORINFO_FLG_ABSTRACT) != 0)
+            {
+                // We may see an abstract likely class, if we have a stale profile.
+                // No point guessing for this.
+                //
+                JITDUMP("Not guessing for class; abstract (stale profile)\n");
+
+                // Continue checking other candidates, maybe some of them aren't stale.
+                break;
+            }
+
+            // Figure out which method will be called.
             //
-            JITDUMP("Not guessing for class; abstract (stale profile)\n");
-            return;
+            CORINFO_DEVIRTUALIZATION_INFO dvInfo;
+            dvInfo.virtualMethod               = baseMethod;
+            dvInfo.objClass                    = likelyClass;
+            dvInfo.context                     = *pContextHandle;
+            dvInfo.exactContext                = *pContextHandle;
+            dvInfo.pResolvedTokenVirtualMethod = nullptr;
+
+            const bool canResolve = info.compCompHnd->resolveVirtualMethod(&dvInfo);
+
+            if (!canResolve)
+            {
+                JITDUMP("Can't figure out which method would be invoked, sorry\n");
+
+                // Continue checking other candidates, maybe some of them will succeed.
+                break;
+            }
+
+            likelyMethod = dvInfo.devirtualizedMethod;
         }
 
-        // Figure out which method will be called.
-        //
-        CORINFO_DEVIRTUALIZATION_INFO dvInfo;
-        dvInfo.virtualMethod               = baseMethod;
-        dvInfo.objClass                    = likelyClass;
-        dvInfo.context                     = *pContextHandle;
-        dvInfo.exactContext                = *pContextHandle;
-        dvInfo.pResolvedTokenVirtualMethod = nullptr;
+        uint32_t likelyMethodAttribs = info.compCompHnd->getMethodAttribs(likelyMethod);
 
-        const bool canResolve = info.compCompHnd->resolveVirtualMethod(&dvInfo);
-
-        if (!canResolve)
+        if (likelyClass == NO_CLASS_HANDLE)
         {
-            JITDUMP("Can't figure out which method would be invoked, sorry\n");
-            return;
+            // We don't support multiple candidates for method guessing yet.
+            assert(candidateId == 0);
+
+            // For method GDV do a few more checks that we get for free in the
+            // resolve call above for class-based GDV.
+            if ((likelyMethodAttribs & CORINFO_FLG_STATIC) != 0)
+            {
+                assert((fgPgoSource != ICorJitInfo::PgoSource::Dynamic) || call->IsDelegateInvoke());
+                JITDUMP("Cannot currently handle devirtualizing static delegate calls, sorry\n");
+                break;
+            }
+
+            CORINFO_CLASS_HANDLE definingClass = info.compCompHnd->getMethodClass(likelyMethod);
+            likelyClassAttribs                 = info.compCompHnd->getClassAttribs(definingClass);
+
+            // For instance methods on value classes we need an extended check to
+            // check for the unboxing stub. This is NYI.
+            // Note: For dynamic PGO likelyMethod above will be the unboxing stub
+            // which would fail GDV for other reasons.
+            // However, with static profiles or textual PGO input it is still
+            // possible that likelyMethod is not the unboxing stub. So we do need
+            // this explicit check.
+            if ((likelyClassAttribs & CORINFO_FLG_VALUECLASS) != 0)
+            {
+                JITDUMP("Cannot currently handle devirtualizing delegate calls on value types, sorry\n");
+                break;
+            }
+
+            // Verify that the call target and args look reasonable so that the JIT
+            // does not blow up during inlining/call morphing.
+            //
+            // NOTE: Once we want to support devirtualization of delegate calls to
+            // static methods and remove the check above we will start failing here
+            // for delegates pointing to static methods that have the first arg
+            // bound. For example:
+            //
+            // public static void E(this C c) ...
+            // Action a = new C().E;
+            //
+            // The delegate instance looks exactly like one pointing to an instance
+            // method in this case and the call will have zero args while the
+            // signature has 1 arg.
+            //
+            if (!isCompatibleMethodGDV(call, likelyMethod))
+            {
+                JITDUMP("Target for method-based GDV is incompatible (stale profile?)\n");
+                assert((fgPgoSource != ICorJitInfo::PgoSource::Dynamic) &&
+                       "Unexpected stale profile in dynamic PGO data");
+                break;
+            }
         }
-
-        likelyMethod = dvInfo.devirtualizedMethod;
-    }
-
-    uint32_t likelyMethodAttribs = info.compCompHnd->getMethodAttribs(likelyMethod);
-
-    if (likelyClass == NO_CLASS_HANDLE)
-    {
-        // For method GDV do a few more checks that we get for free in the
-        // resolve call above for class-based GDV.
-        if ((likelyMethodAttribs & CORINFO_FLG_STATIC) != 0)
-        {
-            assert((fgPgoSource != ICorJitInfo::PgoSource::Dynamic) || call->IsDelegateInvoke());
-            JITDUMP("Cannot currently handle devirtualizing static delegate calls, sorry\n");
-            return;
-        }
-
-        CORINFO_CLASS_HANDLE definingClass = info.compCompHnd->getMethodClass(likelyMethod);
-        likelyClassAttribs                 = info.compCompHnd->getClassAttribs(definingClass);
-
-        // For instance methods on value classes we need an extended check to
-        // check for the unboxing stub. This is NYI.
-        // Note: For dynamic PGO likelyMethod above will be the unboxing stub
-        // which would fail GDV for other reasons.
-        // However, with static profiles or textual PGO input it is still
-        // possible that likelyMethod is not the unboxing stub. So we do need
-        // this explicit check.
-        if ((likelyClassAttribs & CORINFO_FLG_VALUECLASS) != 0)
-        {
-            JITDUMP("Cannot currently handle devirtualizing delegate calls on value types, sorry\n");
-            return;
-        }
-
-        // Verify that the call target and args look reasonable so that the JIT
-        // does not blow up during inlining/call morphing.
-        //
-        // NOTE: Once we want to support devirtualization of delegate calls to
-        // static methods and remove the check above we will start failing here
-        // for delegates pointing to static methods that have the first arg
-        // bound. For example:
-        //
-        // public static void E(this C c) ...
-        // Action a = new C().E;
-        //
-        // The delegate instance looks exactly like one pointing to an instance
-        // method in this case and the call will have zero args while the
-        // signature has 1 arg.
-        //
-        if (!isCompatibleMethodGDV(call, likelyMethod))
-        {
-            JITDUMP("Target for method-based GDV is incompatible (stale profile?)\n");
-            assert((fgPgoSource != ICorJitInfo::PgoSource::Dynamic) && "Unexpected stale profile in dynamic PGO data");
-            return;
-        }
-    }
 
 #ifdef DEBUG
-    char buffer[256];
-    JITDUMP("%s call would invoke method %s\n",
-            isInterface ? "interface" : call->IsDelegateInvoke() ? "delegate" : "virtual",
-            eeGetMethodFullName(likelyMethod, true, true, buffer, sizeof(buffer)));
+        char buffer[256];
+        JITDUMP("%s call would invoke method %s\n",
+                isInterface ? "interface" : call->IsDelegateInvoke() ? "delegate" : "virtual",
+                eeGetMethodFullName(likelyMethod, true, true, buffer, sizeof(buffer)));
 #endif
 
-    // Add this as a potential candidate.
-    //
-    addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyMethodAttribs, likelyClassAttribs,
-                                        likelihood);
+        // Add this as a potential candidate.
+        //
+        addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyMethodAttribs, likelyClassAttribs,
+                                            likelihood);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -6269,7 +6343,7 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
     JITDUMP("Revoking guarded devirtualization candidacy for call [%06u]: target method can't be inlined\n",
             dspTreeID(call));
 
-    call->ClearGuardedDevirtualizationCandidate();
+    call->ClearInlineInfo();
 }
 
 //------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
 import { NativePointer, ManagedPointer, VoidPtr } from "./types/emscripten";
 import { Module, runtimeHelpers } from "./globals";
 import { WasmOpcode, WasmSimdOpcode } from "./jiterpreter-opcodes";
@@ -1739,6 +1740,11 @@ export const enum JiterpMember {
     BackwardBranchOffsetsCount = 11,
     ClauseDataOffsets = 12,
     ParamsCount = 13,
+    VTable = 14,
+    VTableKlass = 15,
+    ClassRank = 16,
+    ClassElementClass = 17,
+    BoxedValueData = 18,
 }
 
 const memberOffsets: { [index: number]: number } = {};
@@ -1781,6 +1787,9 @@ export function bytesFromHex(hex: string): Uint8Array {
 export function isZeroPageReserved(): boolean {
     // FIXME: This check will always return true on worker threads.
     // Right now the jiterpreter is disabled when threading is active, so that's not an issue.
+    if (MonoWasmThreads)
+        return false;
+
     if (!cwraps.mono_wasm_is_zero_page_reserved())
         return false;
 

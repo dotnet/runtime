@@ -125,11 +125,17 @@ namespace System.Text.Json.SourceGeneration.Tests
             PersonJsonContext context = PersonJsonContext.Default;
             object person = new Person("John", "Smith");
             string expectedJson = """{"firstName":"John","lastName":"Smith"}""";
-            // Sanity check -- context does not specify object metadata
-            Assert.Null(context.GetTypeInfo(typeof(object)));
+            // Sanity check -- context resolver does not specify object metadata
+            Assert.Null(((IJsonTypeInfoResolver)context).GetTypeInfo(typeof(object), new()));
 
             string json = JsonSerializer.Serialize(person, context.Options);
             Assert.Equal(expectedJson, json);
+
+            json = JsonSerializer.Serialize(person, typeof(object), context);
+            Assert.Equal(expectedJson, json);
+
+            json = JsonSerializer.Serialize(person, context.GetTypeInfo(typeof(object)));
+            Assert.NotNull(context.GetTypeInfo(typeof(object)));
 
             var stream = new Utf8MemoryStream();
             await JsonSerializer.SerializeAsync(stream, person, context.Options);
@@ -700,6 +706,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         // Regression test for https://github.com/dotnet/runtime/issues/61860
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/79311", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void SupportsGenericParameterWithCustomConverterFactory()
         {
             var value = new List<TestEnum> { TestEnum.Cee };

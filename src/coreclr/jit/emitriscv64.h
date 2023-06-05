@@ -32,7 +32,8 @@ void emitDisInsName(code_t code, const BYTE* addr, instrDesc* id);
 #endif // DEBUG
 
 void emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1 = REG_R0, regNumber reg2 = REG_R0);
-void emitIns_I_la(emitAttr attr, regNumber reg, ssize_t imm);
+
+void emitLoadImmediate(emitAttr attr, regNumber reg, ssize_t imm);
 
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */
