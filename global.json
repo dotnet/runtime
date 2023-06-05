@@ -13,6 +13,6 @@
     "Microsoft.DotNet.SharedFramework.Sdk": "8.0.0-beta.23302.3",
     "Microsoft.Build.NoTargets": "3.7.0",
     "Microsoft.Build.Traversal": "3.4.0",
-    "Microsoft.NET.Sdk.IL": "8.0.0-preview.5.23279.2"
+    "Microsoft.NET.Sdk.IL": "8.0.0-preview.6.23304.2"
   }
 }
