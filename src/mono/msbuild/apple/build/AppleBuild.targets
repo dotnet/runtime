@@ -48,6 +48,7 @@
       <BundleDir>$(AppleBundleDir)</BundleDir>
       <_MonoHeaderPath>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</_MonoHeaderPath>
       <_AotModuleTablePath>$(AppleBundleDir)\modules.m</_AotModuleTablePath>
+      <AppName Condition="'$(AppName)' == ''">$(AssemblyName)</AppName>
     </PropertyGroup>
 
     <!-- common linker arguments for app and library builds -->

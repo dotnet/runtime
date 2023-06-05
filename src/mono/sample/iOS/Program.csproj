@@ -7,8 +7,7 @@
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
     <AppName>HelloiOS</AppName>
-    <AssemblyName>$(AppName)</AssemblyName>
-    <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
+    <MainLibraryFileName>Program.dll</MainLibraryFileName>
     <DevTeamProvisioning Condition="'$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
     <DeployAndRun Condition="'$(DeployAndRun)' == ''">false</DeployAndRun>
