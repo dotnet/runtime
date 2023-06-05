@@ -175,6 +175,8 @@ export type RuntimeHelpers = {
     instantiate_asset: (asset: AssetEntry, url: string, bytes: Uint8Array) => void,
     instantiate_symbols_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
     jiterpreter_dump_stats?: (x: boolean) => string,
+    set_runtime_aborted: (reason: any) => void,
+    get_runtime_abort_message: () => string,
 }
 
 export type AOTProfilerOptions = {
