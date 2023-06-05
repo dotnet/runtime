@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -17,7 +15,7 @@ using Microsoft.CodeAnalysis.Simplification;
 namespace Microsoft.Interop.Analyzers
 {
     [ExportCodeFixProvider(LanguageNames.CSharp)]
-    public class ConvertComImportToGeneratedComInterfaceCodeFixProvider : CodeFixProvider
+    public sealed class ConvertComImportToGeneratedComInterfaceCodeFixProvider : CodeFixProvider
     {
         public override FixAllProvider? GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
 
@@ -89,27 +87,51 @@ namespace Microsoft.Interop.Analyzers
 
             foreach (var member in gen.GetMembers(node))
             {
-                var generatedDeclaration = member;
-                if (editor.SemanticModel.GetDeclaredSymbol(member, ct) is IMethodSymbol { IsStatic: false } method)
+                if (gen.GetDeclarationKind(member) != DeclarationKind.Method)
                 {
-                    foreach (IParameterSymbol parameter in method.Parameters)
-                    {
-                        if (parameter.Type.SpecialType == SpecialType.System_Boolean
-                            && !parameter.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
-                        {
-                            var parameters = gen.GetParameters(member);
-                            var parameterSyntax = parameters[parameter.Ordinal];
-                            generatedDeclaration = gen.ReplaceNode(member, parameterSyntax, gen.AddAttributes(parameterSyntax,
-                                                                                              GenerateMarshalAsUnmanagedTypeVariantBoolAttribute(gen)));
-                        }
-                    }
+                    continue;
+                }
 
-                    if (method.ReturnType.SpecialType == SpecialType.System_Boolean
-                        && !method.GetReturnTypeAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
+                var declarationModifiers = gen.GetModifiers(member);
+
+                if (declarationModifiers.IsStatic)
+                {
+                    continue;
+                }
+
+                if (declarationModifiers.IsNew)
+                {
+                    // If this is a shadowing method, then we remove it.
+                    // TODO: Do we want to be smarter here and try to match the number of methods to a base interface, etc.?
+                    editor.RemoveNode(member);
+                    continue;
+                }
+
+                IMethodSymbol method = (IMethodSymbol)editor.SemanticModel.GetDeclaredSymbol(member, ct);
+                var generatedDeclaration = member;
+
+                foreach (IParameterSymbol parameter in method.Parameters)
+                {
+                    if (parameter.Type.SpecialType == SpecialType.System_Boolean
+                        && !parameter.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
                     {
-                        generatedDeclaration = gen.AddReturnAttributes(generatedDeclaration,
-                            GenerateMarshalAsUnmanagedTypeVariantBoolAttribute(gen));
+                        var parameters = gen.GetParameters(member);
+                        var parameterSyntax = parameters[parameter.Ordinal];
+                        generatedDeclaration = gen.ReplaceNode(
+                            member,
+                            parameterSyntax,
+                            gen.AddAttributes(
+                                parameterSyntax,
+                                GenerateMarshalAsUnmanagedTypeVariantBoolAttribute(gen)));
                     }
+                }
+
+                if (method.ReturnType.SpecialType == SpecialType.System_Boolean
+                    && !method.GetReturnTypeAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
+                {
+                    generatedDeclaration = gen.AddReturnAttributes(
+                        generatedDeclaration,
+                        GenerateMarshalAsUnmanagedTypeVariantBoolAttribute(gen));
                 }
                 editor.ReplaceNode(member, generatedDeclaration);
             }

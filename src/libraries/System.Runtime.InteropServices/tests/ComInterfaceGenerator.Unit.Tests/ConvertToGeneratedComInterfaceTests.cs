@@ -281,6 +281,7 @@ namespace ComInterfaceGenerator.Unit.Tests
         {
             string source = """
                using System.Runtime.InteropServices;
+               using System.Runtime.InteropServices.Marshalling;
 
                [ComImport]
                [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
@@ -291,7 +292,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                }
 
                [ComImport]
-               [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
+               [Guid("F59AB2FE-523D-4B28-911C-21363808C51E")]
                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
                public interface [|J|] : I
                {
@@ -314,7 +315,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
 
                 [GeneratedComInterface]
-                [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
+                [Guid("F59AB2FE-523D-4B28-911C-21363808C51E")]
                 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
                 public interface J : I
                 {
