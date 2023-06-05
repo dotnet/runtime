@@ -11,10 +11,12 @@ namespace System.Net.Http.Tests
         [Fact]
         public void HttpRequestOptionsIReadOnlyDictionaryMethods_Should_WorkSameAsIDictionary()
         {
+            const string ExpectedKey = "WebAssemblyEnableStreamingResponse";
+            const bool ExpectedValue = true;
+            const string UnexpectedKey = "hello";
+
             var requestOptions = new HttpRequestOptions();
-            const string expectedKey = "WebAssemblyEnableStreamingResponse";
-            const bool expectedValue = true;
-            requestOptions.Set(new HttpRequestOptionsKey<bool>(expectedKey), expectedValue);
+            requestOptions.Set(new HttpRequestOptionsKey<bool>(ExpectedKey), ExpectedValue);
 
             IReadOnlyDictionary<string, object?> readOnlyDictionary = requestOptions;
             IDictionary<string, object?> dictionary = requestOptions;
@@ -22,24 +24,26 @@ namespace System.Net.Http.Tests
             Assert.Equal(1, readOnlyDictionary.Count);
             Assert.Equal(1, dictionary.Count);
 
-            Assert.True(readOnlyDictionary.ContainsKey(expectedKey));
-            Assert.True(dictionary.ContainsKey(expectedKey));
+            Assert.True(readOnlyDictionary.ContainsKey(ExpectedKey));
+            Assert.True(dictionary.ContainsKey(ExpectedKey));
+            Assert.False(readOnlyDictionary.ContainsKey(UnexpectedKey));
+            Assert.False(dictionary.ContainsKey(UnexpectedKey));
 
-            Assert.True(readOnlyDictionary.TryGetValue(expectedKey, out object? getValueFromReadOnlyDictionary));
-            Assert.True(dictionary.TryGetValue(expectedKey, out object? getValueFromDictionary));
-            Assert.NotNull(getValueFromReadOnlyDictionary);
-            Assert.NotNull(getValueFromDictionary);
-            Assert.Equal(expectedValue, getValueFromReadOnlyDictionary);
-            Assert.Equal(expectedValue, getValueFromDictionary);
+            Assert.True(readOnlyDictionary.TryGetValue(ExpectedKey, out object? getValueFromReadOnlyDictionary));
+            Assert.True(dictionary.TryGetValue(ExpectedKey, out object? getValueFromDictionary));
+            Assert.Equal(ExpectedValue, getValueFromReadOnlyDictionary);
+            Assert.Equal(ExpectedValue, getValueFromDictionary);
 
-            Assert.Equal(expectedValue, readOnlyDictionary[expectedKey]);
-            Assert.Equal(expectedValue, dictionary[expectedKey]);
+            Assert.Equal(ExpectedValue, readOnlyDictionary[ExpectedKey]);
+            Assert.Equal(ExpectedValue, dictionary[ExpectedKey]);
+            Assert.Throws<KeyNotFoundException>(() => readOnlyDictionary[UnexpectedKey]);
+            Assert.Throws<KeyNotFoundException>(() => dictionary[UnexpectedKey]);
 
-            Assert.Collection(readOnlyDictionary.Keys, item => Assert.Equal(expectedKey, item));
-            Assert.Collection(dictionary.Keys, item => Assert.Equal(expectedKey, item));
+            Assert.Collection(readOnlyDictionary.Keys, item => Assert.Equal(ExpectedKey, item));
+            Assert.Collection(dictionary.Keys, item => Assert.Equal(ExpectedKey, item));
 
-            Assert.Collection(readOnlyDictionary.Values, item => Assert.Equal(expectedValue, item));
-            Assert.Collection(dictionary.Values, item => Assert.Equal(expectedValue, item));
+            Assert.Collection(readOnlyDictionary.Values, item => Assert.Equal(ExpectedValue, item));
+            Assert.Collection(dictionary.Values, item => Assert.Equal(ExpectedValue, item));
         }
     }
 }
