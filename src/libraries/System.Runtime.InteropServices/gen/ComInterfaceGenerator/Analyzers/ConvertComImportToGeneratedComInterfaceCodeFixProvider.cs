@@ -87,7 +87,42 @@ namespace Microsoft.Interop.Analyzers
 
             editor.ReplaceNode(comImportAttribute, generatedComInterfaceAttribute);
 
+            foreach (var member in gen.GetMembers(node))
+            {
+                var generatedDeclaration = member;
+                if (editor.SemanticModel.GetDeclaredSymbol(member, ct) is IMethodSymbol { IsStatic: false } method)
+                {
+                    foreach (IParameterSymbol parameter in method.Parameters)
+                    {
+                        if (parameter.Type.SpecialType == SpecialType.System_Boolean
+                            && !parameter.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
+                        {
+                            var parameters = gen.GetParameters(member);
+                            var parameterSyntax = parameters[parameter.Ordinal];
+                            generatedDeclaration = gen.ReplaceNode(member, parameterSyntax, gen.AddAttributes(parameterSyntax,
+                                                                                              GenerateMarshalAsUnmanagedTypeVariantBoolAttribute(gen)));
+                        }
+                    }
+
+                    if (method.ReturnType.SpecialType == SpecialType.System_Boolean
+                        && !method.GetReturnTypeAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
+                    {
+                        generatedDeclaration = gen.AddReturnAttributes(generatedDeclaration,
+                            GenerateMarshalAsUnmanagedTypeVariantBoolAttribute(gen));
+                    }
+                }
+                editor.ReplaceNode(member, generatedDeclaration);
+            }
+
             return editor.GetChangedDocument();
         }
+
+        private static SyntaxNode GenerateMarshalAsUnmanagedTypeVariantBoolAttribute(SyntaxGenerator generator)
+         => generator.Attribute(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute,
+             generator.AttributeArgument(
+                 generator.MemberAccessExpression(
+                     generator.DottedName(TypeNames.System_Runtime_InteropServices_UnmanagedType),
+                     generator.IdentifierName("VariantBool"))));
+
     }
 }

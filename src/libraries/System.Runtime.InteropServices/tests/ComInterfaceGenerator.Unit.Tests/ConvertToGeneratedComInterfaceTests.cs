@@ -95,8 +95,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
                public interface I
                {
-                    [return: MarshalAs(UnmanagedType.VariantBool)]
-                    bool Foo([MarshalAs(UnmanagedType.VariantBool)] bool a);
+                   [return: MarshalAs(UnmanagedType.VariantBool)]
+                   bool Foo([MarshalAs(UnmanagedType.VariantBool)] bool a);
                }
                """;
 
