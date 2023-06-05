@@ -177,8 +177,8 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
     private static Dictionary<int, int> ComputeMethodBodyUsage(MetadataReader mr, StreamReader sr, string? line)
     {
-        Dictionary<int, int> token_to_rva = new Dictionary<int, int>();
-        Dictionary<int, int> method_body_uses = new Dictionary<int, int>();
+        Dictionary<int, int> token_to_rva = new();
+        Dictionary<int, int> method_body_uses = new();
 
         foreach (MethodDefinitionHandle mdefh in mr.MethodDefinitions)
         {
