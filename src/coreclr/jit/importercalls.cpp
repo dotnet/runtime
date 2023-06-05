@@ -4193,7 +4193,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             if (varTypeIsIntegral(valType) && (genTypeSize(valType) < fromSize))
             {
                 unsigned lclNum = lvaGrabTemp(true DEBUGARG("bitcast small type extension"));
-                impAssignTempGen(lclNum, op1, CHECK_SPILL_ALL);
+                impStoreTemp(lclNum, op1, CHECK_SPILL_ALL);
                 addr = gtNewLclVarAddrNode(lclNum, TYP_I_IMPL);
             }
             else
