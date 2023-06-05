@@ -441,8 +441,6 @@ namespace System.Globalization.Tests
             Assert.NotEqual(lcid, new CultureInfo(lcid).LCID);
         }
 
-        private static bool SupportRemoteExecutionWithIcu => RemoteExecutor.IsSupported && PlatformDetection.IsIcuGlobalization;
-
         [InlineData("zh-TW-u-co-zhuyin", "zh-TW", "zh-TW_zhuyin")]
         [InlineData("de-DE-u-co-phonebk", "de-DE", "de-DE_phoneboo")]
         [InlineData("de-DE-u-co-phonebk-u-xx", "de-DE-u-xx", "de-DE-u-xx_phoneboo")]
@@ -460,7 +458,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expectedSortName, ci.CompareInfo.Name);
         }
 
-        [ConditionalFact(nameof(SupportRemoteExecutionWithIcu))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         public void TestNeutralCultureWithCollationName()
         {
             Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo("zh-u-co-zhuyin"));
@@ -478,6 +476,8 @@ namespace System.Globalization.Tests
             Assert.Equal(expectedCultureName, ci.Name);
         }
 
+        private static bool SupportRemoteExecutionWithIcu => RemoteExecutor.IsSupported && PlatformDetection.IsIcuGlobalization;
+
         [InlineData("xx-u-XX")]
         [InlineData("xx-u-XX-u-yy")]
         [InlineData("xx-t-ja-JP")]
@@ -490,7 +490,7 @@ namespace System.Globalization.Tests
         [InlineData("de-DE-u-co-phonebk-t-xx")]
         [InlineData("de-DE-u-co-phonebk-t-xx-u-yy")]
         [InlineData("de-DE")]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [ConditionalTheory(nameof(SupportRemoteExecutionWithIcu))]
         public void TestWithResourceLookup(string cultureName)
         {
             RemoteExecutor.Invoke(name => {
