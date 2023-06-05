@@ -166,11 +166,8 @@ public class XUnitLogChecker
         return SUCCESS;
     }
 
-    static void WriteLineTimestamp(string message)
-    {
-        Console.Write($"[XUnitLogChecker]: {System.DateTime.Now:HH:mm:ss.ff}: ");
-        Console.WriteLine(message);
-    }
+    static void WriteLineTimestamp(string message) =>
+        Console.WriteLine($"[XUnitLogChecker]: {System.DateTime.Now:HH:mm:ss.ff}: {message}");
 
     static IEnumerable<string> TryReadFile(string filePath)
     {
