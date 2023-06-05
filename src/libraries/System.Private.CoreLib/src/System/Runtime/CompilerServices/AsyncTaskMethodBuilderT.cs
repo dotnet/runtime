@@ -109,7 +109,7 @@ namespace System.Runtime.CompilerServices
             else if ((null != (object?)default(TAwaiter)) && (awaiter is IConfiguredTaskAwaiter))
             {
                 ref ConfiguredTaskAwaitable.ConfiguredTaskAwaiter ta = ref Unsafe.As<TAwaiter, ConfiguredTaskAwaitable.ConfiguredTaskAwaiter>(ref awaiter);
-                TaskAwaiter.UnsafeOnCompletedInternal(ta.m_task, box, ta.m_continueOnCapturedContext);
+                TaskAwaiter.UnsafeOnCompletedInternal(ta.m_task, box, (ta.m_options & ConfigureAwaitOptions.ContinueOnCapturedContext) != 0);
             }
             else if ((null != (object?)default(TAwaiter)) && (awaiter is IStateMachineBoxAwareAwaiter))
             {
