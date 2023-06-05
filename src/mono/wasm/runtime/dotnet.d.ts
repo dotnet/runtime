@@ -315,6 +315,13 @@ interface BootJsonData {
     readonly icuDataMode: ICUDataMode;
     readonly startupMemoryCache: boolean | undefined;
     readonly runtimeOptions: string[] | undefined;
+    readonly environmentVariables?: {
+        [name: string]: string;
+    };
+    readonly diagnosticTracing?: {
+        [name: string]: string;
+    };
+    readonly pthreadPoolSize: number;
     modifiableAssemblies: string | null;
     aspnetCoreBrowserTools: string | null;
 }
@@ -336,6 +343,7 @@ interface ResourceGroups {
     readonly vfs?: {
         [virtualPath: string]: ResourceList;
     };
+    readonly remoteSources?: string[];
 }
 type ResourceList = {
     [name: string]: string;
@@ -350,7 +358,8 @@ declare enum ICUDataMode {
     Sharded = 0,
     All = 1,
     Invariant = 2,
-    Custom = 3
+    Custom = 3,
+    Hybrid = 4
 }
 
 declare global {
