@@ -2215,6 +2215,8 @@ private:
 
     PER_HEAP_METHOD bool should_move_heap (GCSpinLock* msl);
 
+    PER_HEAP_METHOD enter_msl_status enter_spin_lock_msl_helper (GCSpinLock* msl);
+
     PER_HEAP_METHOD enter_msl_status enter_spin_lock_msl (GCSpinLock* msl);
 
     PER_HEAP_METHOD size_t get_full_compact_gc_count();

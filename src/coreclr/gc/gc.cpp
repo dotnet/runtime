@@ -1413,7 +1413,7 @@ bool gc_heap::should_move_heap (GCSpinLock* msl)
 
 // All the places where we could be stopped because there was a suspension should call should_move_heap to check if we need to return
 // so we can try another heap or we can continue the allocation on the same heap.
-enter_msl_status gc_heap::enter_spin_lock_msl (GCSpinLock* msl)
+enter_msl_status gc_heap::enter_spin_lock_msl_helper (GCSpinLock* msl)
 {
 retry:
 
@@ -1449,7 +1449,13 @@ retry:
                     }
                     if (VolatileLoad (&msl->lock) != lock_free && !IsGCInProgress ())
                     {
+#ifdef DYNAMIC_HEAP_COUNT
+                        start -= GetHighPrecisionTimeStamp();
+#endif //DYNAMIC_HEAP_COUNT
                         safe_switch_to_thread ();
+#ifdef DYNAMIC_HEAP_COUNT
+                        start += GetHighPrecisionTimeStamp();
+#endif //DYNAMIC_HEAP_COUNT
                     }
                 }
                 else
@@ -1459,17 +1465,33 @@ retry:
             }
             else
             {
+#ifdef DYNAMIC_HEAP_COUNT
+                start -= GetHighPrecisionTimeStamp();
+#endif //DYNAMIC_HEAP_COUNT
                 WaitLongerNoInstru (i);
+#ifdef DYNAMIC_HEAP_COUNT
+                start += GetHighPrecisionTimeStamp();
+#endif //DYNAMIC_HEAP_COUNT
             }
         }
 #ifdef DYNAMIC_HEAP_COUNT
         uint64_t end = GetHighPrecisionTimeStamp();
         Interlocked::ExchangeAdd64 (&msl->msl_wait_time, end - start);
+        dprintf (6666, ("wait for msl lock total time: %zd, total count: %zd, this time: %zd, this count: %u", msl->msl_wait_time, msl->msl_wait_count, end - start, i));
 #endif //DYNAMIC_HEAP_COUNT
         goto retry;
     }
 
     return msl_entered;
+}
+
+inline
+enter_msl_status gc_heap::enter_spin_lock_msl (GCSpinLock* msl)
+{
+    if (Interlocked::CompareExchange (&msl->lock, lock_taken, lock_free) == lock_free)
+        return msl_entered;
+
+    return enter_spin_lock_msl_helper (msl);
 }
 
 //
@@ -24932,9 +24954,11 @@ void gc_heap::check_heap_count ()
 
             soh_msl_wait_time += hp->more_space_lock_soh.msl_wait_time;
             hp->more_space_lock_soh.msl_wait_time = 0;
+            hp->more_space_lock_soh.msl_wait_count = 0;
 
             uoh_msl_wait_time += hp->more_space_lock_uoh.msl_wait_time;
             hp->more_space_lock_uoh.msl_wait_time = 0;
+            hp->more_space_lock_uoh.msl_wait_count = 0;
 
             for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
             {
@@ -25109,6 +25133,7 @@ void gc_heap::check_heap_count ()
     else if (settings.gc_index < prev_change_heap_count_gc_index + 3)
     {
         // reconsider the decision every few gcs
+        dprintf (6666, ("checked heap count at %zd, now at %zd", prev_change_heap_count_gc_index, settings.gc_index));
         return;
     }
 
@@ -25125,6 +25150,7 @@ void gc_heap::check_heap_count ()
     if (dynamic_heap_count_data.new_n_heaps == n_heaps)
     {
         // heap count stays the same, no work to do
+        dprintf (6666, ("heap count stays the same, no work to do %d == %d", dynamic_heap_count_data.new_n_heaps, n_heaps));
         return;
     }
 
@@ -25284,8 +25310,12 @@ bool gc_heap::change_heap_count (int new_n_heaps)
         }
     }
 
-    if (dynamic_heap_count_data.new_n_heaps == n_heaps)
+    // gc_heap::n_heaps may have changed by now, compare to the snapshot *before* the join
+    if (dynamic_heap_count_data.new_n_heaps == old_n_heaps)
+    {
+        dprintf (6666, ("failed to change heap count, no work to do %d == %d", dynamic_heap_count_data.new_n_heaps, old_n_heaps));
         return false;
+    }
 
     if (heap_number == 0)
     {
@@ -50776,7 +50806,18 @@ retry:
         unsigned int i = 0;
         while (lock >= 0)
         {
-            YieldProcessor();           // indicate to the processor that we are spinning
+            if (g_num_processors > 1)
+            {
+                int spin_count = 128 * yp_spin_count_unit;
+                for (int j = 0; j < spin_count; j++)
+                {
+                    if (lock < 0)
+                        break;
+                    YieldProcessor ();           // indicate to the processor that we are spinning
+                }
+            }
+            if (lock < 0)
+                break;
             if (++i & 7)
                 GCToOSInterface::YieldThread (0);
             else
