@@ -931,15 +931,24 @@ namespace System.Buffers
 
             Vector128<byte> lowNibbles = source & Vector128.Create((byte)0xF);
             Vector128<byte> highNibbles = Vector128.ShiftRightLogical(source.AsInt32(), 4).AsByte() & Vector128.Create((byte)0xF);
+            Vector128<byte> bitsets;
 
-            Vector128<byte> row0 = Vector128.ShuffleUnsafe(bitmapLookup0, lowNibbles);
-            Vector128<byte> row1 = Vector128.ShuffleUnsafe(bitmapLookup1, lowNibbles);
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if AdvSimd.Arm64.IsSupported is false
+            if (AdvSimd.Arm64.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
+            {
+                    Vector128<byte> index = highNibbles & Vector128.Create(0x08080808).AsByte() | lowNibbles;
+                    bitsets = AdvSimd.Arm64.VectorTableLookup((bitmapLookup0, bitmapLookup1), index);
+            }
+            else
+            {
+                Vector128<byte> row0 = Vector128.ShuffleUnsafe(bitmapLookup0, lowNibbles);
+                Vector128<byte> row1 = Vector128.ShuffleUnsafe(bitmapLookup1, lowNibbles);
+                Vector128<byte> mask = Vector128.GreaterThan(highNibbles.AsSByte(), Vector128.Create((sbyte)0x7)).AsByte();
+                bitsets = Vector128.ConditionalSelect(mask, row1, row0);
+            }
 
             Vector128<byte> bitmask = Vector128.ShuffleUnsafe(Vector128.Create(0x8040201008040201).AsByte(), highNibbles);
-
-            Vector128<byte> mask = Vector128.GreaterThan(highNibbles.AsSByte(), Vector128.Create((sbyte)0x7)).AsByte();
-            Vector128<byte> bitsets = Vector128.ConditionalSelect(mask, row1, row0);
-
             Vector128<byte> result = Vector128.Equals(bitsets & bitmask, bitmask);
 
             return TNegator.NegateIfNeeded(result);
