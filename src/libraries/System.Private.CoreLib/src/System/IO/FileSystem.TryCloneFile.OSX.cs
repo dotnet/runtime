@@ -19,6 +19,7 @@ namespace System.IO
                     error = Interop.Error.SUCCESS;
                     return true;
                 }
+
                 error = Interop.Sys.GetLastError();
                 return false;
             }
@@ -54,14 +55,11 @@ namespace System.IO
                 {
                     using SafeFileHandle? dstHandle = SafeFileHandle.Open(destFullPath, FileMode.Open, FileAccess.ReadWrite,
                         FileShare.None, FileOptions.None, preallocationSize: 0, createOpenException: CreateOpenExceptionForCopyFile);
-                    if (Interop.Sys.Unlink(destFullPath) < 0)
+                    if (Interop.Sys.Unlink(destFullPath) < 0 &&
+                        Interop.Sys.GetLastError() != Interop.Error.ENOENT)
                     {
-                        Interop.Error errorInfo = Interop.Sys.GetLastError();
-                        if (error != Interop.Error.ENOENT)
-                        {
-                            // Fall back to standard copy as an unexpected error has occurred.
-                            return;
-                        }
+                        // Fall back to standard copy as an unexpected error has occurred.
+                        return;
                     }
                 }
                 catch (FileNotFoundException)
