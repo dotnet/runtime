@@ -17,10 +17,10 @@ namespace System.Globalization.Tests
             // Empty strings
             yield return new object[] { s_invariantCompare, "foo", "", 2, 3, CompareOptions.None, 3, 0 };
             yield return new object[] { s_invariantCompare, "", "", 0, 0, CompareOptions.None, 0, 0 };
-            yield return new object[] { s_invariantCompare, "", "", -1, 0, CompareOptions.None, 0, 0 };
-            yield return new object[] { s_invariantCompare, "", "", 0, -1, CompareOptions.None, 0, 0 };
             yield return new object[] { s_invariantCompare, "", "a", 0, 0, CompareOptions.None, -1, 0 };
+            yield return new object[] { s_invariantCompare, "", "", -1, 0, CompareOptions.None, 0, 0 };
             yield return new object[] { s_invariantCompare, "", "a", -1, 0, CompareOptions.None, -1, 0 };
+            yield return new object[] { s_invariantCompare, "", "", 0, -1, CompareOptions.None, 0, 0 };
             yield return new object[] { s_invariantCompare, "", "a", 0, -1, CompareOptions.None, -1, 0 };
 
             // Start index = source.Length
@@ -73,14 +73,14 @@ namespace System.Globalization.Tests
 
             // Unicode
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "A\u0300", 8, 9, CompareOptions.None, 8, 1 };
-            yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 8, 9, CompareOptions.IgnoreCase, 8, 1 };
-            yield return new object[] { s_invariantCompare, "o\u0308", "o", 1, 2, CompareOptions.None, -1, 0 };
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "A\u0300", 8, 9, CompareOptions.Ordinal, -1, 0 };
-            yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 8, 9, CompareOptions.None, -1, 0 };            
+            yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 8, 9, CompareOptions.None, -1, 0 };
+            yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 8, 9, CompareOptions.IgnoreCase, 8, 1 };
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 8, 9, CompareOptions.OrdinalIgnoreCase, -1, 0 };
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 8, 9, CompareOptions.Ordinal, -1, 0 };
             yield return new object[] { s_invariantCompare, "FooBar", "Foo\u0400Bar", 5, 6, CompareOptions.Ordinal, -1, 0 };
             yield return new object[] { s_invariantCompare, "TestFooBA\u0300R", "FooB\u00C0R", 10, 11, supportedIgnoreNonSpaceOption, 4, PlatformDetection.IsHybridGlobalizationOnOSX ? 6 : 7 }; // TODO: check this for OSX
+            yield return new object[] { s_invariantCompare, "o\u0308", "o", 1, 2, CompareOptions.None, -1, 0 };
 
             if (PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
@@ -98,11 +98,12 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "", "\u200d", -1, 0, CompareOptions.None, 0, 0 };
             yield return new object[] { s_invariantCompare, "hello", "\u200d", 4, 5, CompareOptions.IgnoreCase, 5, 0};
             yield return new object[] { s_invariantCompare, "hello", "\0", 4, 5, CompareOptions.None, useNls ? -1 : 5, 0};
+
             yield return new object[] { s_invariantCompare, "A\u0303", "\u200d", 1, 2, CompareOptions.None, 2, 0};
             yield return new object[] { s_invariantCompare, "A\u0303\u200D", "\u200d", 2, 3, CompareOptions.None, 3, 0};
             yield return new object[] { s_invariantCompare, "\u0001F601", "\u200d", 1, 2, CompareOptions.None, 2, 0}; // \u0001F601 is GRINNING FACE WITH SMILING EYES surrogate character
             yield return new object[] { s_invariantCompare, "AA\u200DA", "\u200d", 3, 4, CompareOptions.None, 4, 0};
-            
+
             // Ignore symbols
             if (!PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsHybridGlobalizationOnOSX)
                 yield return new object[] { s_invariantCompare, "More Test's", "Tests", 10, 11, CompareOptions.IgnoreSymbols, 5, 6 };

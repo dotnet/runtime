@@ -77,7 +77,7 @@ namespace System.Globalization.Tests
                 yield return new object[] { s_invariantCompare, "\r\n", "\n", 0, 2, CompareOptions.None, 1, 1 };
             }
 
-            // Weightless characters add support on OSX to handle these case
+            // Weightless characters
             yield return new object[] { s_invariantCompare, "", "\u200d", 0, 0, CompareOptions.None, 0, 0 };
             yield return new object[] { s_invariantCompare, "hello", "\u200d", 1, 3, CompareOptions.IgnoreCase, 1, 0 };
 

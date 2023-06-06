@@ -45,38 +45,31 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "interesting", "\u0130", CompareOptions.IgnoreCase, false, 0 };
 
             // Unicode
-           
             yield return new object[] { s_invariantCompare, "\u00C0nimal", "A\u0300", CompareOptions.None, true, 1 };
+            yield return new object[] { s_invariantCompare, "\u00C0nimal", "A\u0300", CompareOptions.Ordinal, false, 0 };
             yield return new object[] { s_invariantCompare, "\u00C0nimal", "a\u0300", CompareOptions.None, false, 0 };
             yield return new object[] { s_invariantCompare, "\u00C0nimal", "a\u0300", CompareOptions.IgnoreCase, true, 1 };
-            yield return new object[] { s_invariantCompare, "FooBA\u0300R", "FooB\u00C0R", supportedIgnoreNonSpaceOption, true, 7 };  
-            yield return new object[] { s_invariantCompare, "o\u0308", "o", CompareOptions.None, false, 0 };
-            yield return new object[] { s_invariantCompare, "o\u0000\u0308", "o", CompareOptions.None, true, 1 };
-            yield return new object[] { s_invariantCompare, "\u00C0nimal", "A\u0300", CompareOptions.Ordinal, false, 0 };
             yield return new object[] { s_invariantCompare, "\u00C0nimal", "a\u0300", CompareOptions.Ordinal, false, 0 };
             yield return new object[] { s_invariantCompare, "\u00C0nimal", "a\u0300", CompareOptions.OrdinalIgnoreCase, false, 0 };
             yield return new object[] { s_invariantCompare, "FooBar", "Foo\u0400Bar", CompareOptions.Ordinal, false, 0 };
+            yield return new object[] { s_invariantCompare, "FooBA\u0300R", "FooB\u00C0R", supportedIgnoreNonSpaceOption, true, 7 };  
+            yield return new object[] { s_invariantCompare, "o\u0308", "o", CompareOptions.None, false, 0 };
             yield return new object[] { s_invariantCompare, "o\u0308", "o", CompareOptions.Ordinal, true, 1 };
+            yield return new object[] { s_invariantCompare, "o\u0000\u0308", "o", CompareOptions.None, true, 1 };
 
             // Weightless comparisons
             yield return new object[] { s_invariantCompare, "", "\u200d", CompareOptions.None, true, 0 };
             yield return new object[] { s_invariantCompare, "\u200dxy", "x", CompareOptions.None, true, 2 };
 
             // Surrogates
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
-            {
-                yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800\uDC00", CompareOptions.None, true, 2 };
-                yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800\uDC00", CompareOptions.IgnoreCase, true, 2 };
-            }
+            yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800\uDC00", CompareOptions.None, true, 2 };
+            yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800\uDC00", CompareOptions.IgnoreCase, true, 2 };
             yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.Ordinal, true, 1 };
             yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.OrdinalIgnoreCase, true, 1 };
 
             // Malformed Unicode - Invalid Surrogates (there is nothing special about them, they don't have a special treatment)
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
-            {
-                yield return new object[] { s_invariantCompare, "\uD800\uD800", "\uD800", CompareOptions.None, true, 1 };
-                yield return new object[] { s_invariantCompare, "\uD800\uD800", "\uD800\uD800", CompareOptions.None, true, 2 };
-            }
+            yield return new object[] { s_invariantCompare, "\uD800\uD800", "\uD800", CompareOptions.None, true, 1 };
+            yield return new object[] { s_invariantCompare, "\uD800\uD800", "\uD800\uD800", CompareOptions.None, true, 2 };
 
             // Ignore symbols
             if (!PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsHybridGlobalizationOnOSX)
