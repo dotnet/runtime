@@ -190,7 +190,7 @@ void PromotionLiveness::ComputeUseDefSets()
 //   useSet - The use set to mark in.
 //   defSet - The def set to mark in.
 //
-void PromotionLiveness::MarkUseDef(GenTreeLclVarCommon* lcl, BitSetShortLongRep& useSet, BitSetShortLongRep& defSet)
+void PromotionLiveness::MarkUseDef(GenTreeLclVarCommon* lcl, BitVec& useSet, BitVec& defSet)
 {
     AggregateInfo* agg = m_aggregates[lcl->GetLclNum()];
     if (agg == nullptr)
