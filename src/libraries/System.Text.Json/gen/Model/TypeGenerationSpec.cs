@@ -83,12 +83,6 @@ namespace System.Text.Json.SourceGeneration
 
         public required TypeRef? ConverterType { get; init; }
 
-        /// <summary>
-        /// Indicates that the type has been annotated with the AOT-unsafe JsonStringEnumConverter,
-        /// necessitating substitution with a built-in factory method by the source generator.
-        /// </summary>
-        public required bool ConverterIsJsonStringEnumConverter { get; init; }
-
         public required string? ImmutableCollectionFactoryMethod { get; init; }
     }
 }

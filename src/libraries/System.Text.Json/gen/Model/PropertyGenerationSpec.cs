@@ -137,11 +137,5 @@ namespace System.Text.Json.SourceGeneration
         /// Design-time specified custom converter type.
         /// </summary>
         public required TypeRef? ConverterType { get; init; }
-
-        /// <summary>
-        /// Indicates that the property has been annotated with the AOT-unsafe JsonStringEnumConverter,
-        /// necessitating substitution with a built-in factory method by the source generator.
-        /// </summary>
-        public required bool ConverterIsJsonStringEnumConverter { get; init; }
     }
 }

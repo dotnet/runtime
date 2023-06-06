@@ -520,7 +520,6 @@ namespace System.Text.Json.SourceGeneration
                 string? immutableCollectionFactoryTypeFullName = null;
                 bool foundDesignTimeCustomConverter = false;
                 TypeRef? converterType = null;
-                bool converterIsJsonStringEnumConverter = false;
                 bool implementsIJsonOnSerialized = false;
                 bool implementsIJsonOnSerializing = false;
                 bool isPolymorphic = false;
@@ -550,7 +549,7 @@ namespace System.Text.Json.SourceGeneration
                     }
                     else if (!foundDesignTimeCustomConverter && _knownSymbols.JsonConverterAttributeType.IsAssignableFrom(attributeType))
                     {
-                        converterType = GetConverterTypeFromAttribute(contextType, attributeData, out converterIsJsonStringEnumConverter);
+                        converterType = GetConverterTypeFromAttribute(contextType, type, attributeData);
                         foundDesignTimeCustomConverter = true;
                     }
 
@@ -831,7 +830,6 @@ namespace System.Text.Json.SourceGeneration
                     IsValueTuple = type.IsTupleType,
                     ExtensionDataPropertyType = extensionDataPropertyType,
                     ConverterType = converterType,
-                    ConverterIsJsonStringEnumConverter = converterIsJsonStringEnumConverter,
                     ImplementsIJsonOnSerialized = implementsIJsonOnSerialized,
                     ImplementsIJsonOnSerializing = implementsIJsonOnSerializing,
                     ImmutableCollectionFactoryMethod = DetermineImmutableCollectionFactoryMethod(immutableCollectionFactoryTypeFullName),
@@ -1064,7 +1062,6 @@ namespace System.Text.Json.SourceGeneration
                     out JsonNumberHandling? numberHandling,
                     out JsonObjectCreationHandling? objectCreationHandling,
                     out TypeRef? converterType,
-                    out bool converterIsJsonStringEnumConverter,
                     out int order,
                     out bool isExtensionData,
                     out bool hasJsonRequiredAttribute);
@@ -1124,7 +1121,6 @@ namespace System.Text.Json.SourceGeneration
                     PropertyType = EnqueueType(memberType, generationMode),
                     DeclaringType = declaringType,
                     ConverterType = converterType,
-                    ConverterIsJsonStringEnumConverter = converterIsJsonStringEnumConverter,
                 };
             }
 
@@ -1137,7 +1133,6 @@ namespace System.Text.Json.SourceGeneration
                 out JsonNumberHandling? numberHandling,
                 out JsonObjectCreationHandling? objectCreationHandling,
                 out TypeRef? converterType,
-                out bool converterIsJsonStringEnumConverter,
                 out int order,
                 out bool isExtensionData,
                 out bool hasJsonRequiredAttribute)
@@ -1150,7 +1145,6 @@ namespace System.Text.Json.SourceGeneration
                 numberHandling = default;
                 objectCreationHandling = default;
                 converterType = null;
-                converterIsJsonStringEnumConverter = false;
                 order = 0;
                 isExtensionData = false;
                 hasJsonRequiredAttribute = false;
@@ -1166,7 +1160,7 @@ namespace System.Text.Json.SourceGeneration
 
                     if (converterType is null && _knownSymbols.JsonConverterAttributeType.IsAssignableFrom(attributeType))
                     {
-                        converterType = GetConverterTypeFromAttribute(contextType, attributeData, out converterIsJsonStringEnumConverter);
+                        converterType = GetConverterTypeFromAttribute(contextType, memberInfo, attributeData);
                     }
                     else if (attributeType.ContainingAssembly.Name == SystemTextJsonNamespace)
                     {
@@ -1330,7 +1324,7 @@ namespace System.Text.Json.SourceGeneration
                 }
             }
 
-            private TypeRef? GetConverterTypeFromAttribute(INamedTypeSymbol contextType, AttributeData attributeData, out bool isJsonStringEnumConverter)
+            private TypeRef? GetConverterTypeFromAttribute(INamedTypeSymbol contextType, ISymbol declaringSymbol, AttributeData attributeData)
             {
                 Debug.Assert(_knownSymbols.JsonConverterAttributeType.IsAssignableFrom(attributeData.AttributeClass));
                 var converterType = (INamedTypeSymbol?)attributeData.ConstructorArguments[0].Value;
@@ -1339,11 +1333,16 @@ namespace System.Text.Json.SourceGeneration
                     !_knownSymbols.JsonConverterType.IsAssignableFrom(converterType) ||
                     !converterType.Constructors.Any(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType)))
                 {
-                    isJsonStringEnumConverter = false;
+                    // TODO invalid converter annotation diagnostic
                     return null;
                 }
 
-                isJsonStringEnumConverter = _knownSymbols.JsonStringEnumConverterType.IsAssignableFrom(converterType);
+                if (_knownSymbols.JsonStringEnumConverterType.IsAssignableFrom(converterType))
+                {
+                    // The non-generic JsonStringEnumConverter will not work in NativeAOT but we still want to support it -- emit a warning diagnostic.
+                    ReportDiagnostic(DiagnosticDescriptors.JsonStringEnumConverterNotSupportedInAot, declaringSymbol.GetDiagnosticLocation(), declaringSymbol.ToDisplayString());
+                }
+
                 return new TypeRef(converterType);
             }
 

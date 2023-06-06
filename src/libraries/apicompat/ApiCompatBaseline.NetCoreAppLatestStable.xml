@@ -2552,12 +2552,6 @@
     <Right>net8.0/System.Linq.Queryable.dll</Right>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0014</DiagnosticId>
-    <Target>T:System.Text.Json.Serialization.JsonStringEnumConverter:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
-    <Left>net7.0/System.Text.Json.dll</Left>
-    <Right>net8.0/System.Text.Json.dll</Right>
-  </Suppression>
-  <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
     <Target>M:System.Type.GetEnumValues:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
     <Left>net7.0/mscorlib.dll</Left>

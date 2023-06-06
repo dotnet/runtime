@@ -34,7 +34,6 @@ namespace System.Text.Json.SourceGeneration
             private const string TryGetTypeInfoForRuntimeCustomConverterMethodName = "TryGetTypeInfoForRuntimeCustomConverter";
             private const string ExpandConverterMethodName = "ExpandConverter";
             private const string GetConverterForNullablePropertyMethodName = "GetConverterForNullableProperty";
-            private const string GetStringEnumConverterMethodName = "GetStringEnumConverter";
             private const string SerializeHandlerPropName = "SerializeHandler";
             private const string OptionsLocalVariableName = "options";
             private const string ValueVarName = "value";
@@ -56,7 +55,6 @@ namespace System.Text.Json.SourceGeneration
             private const string Utf8JsonWriterTypeRef = "global::System.Text.Json.Utf8JsonWriter";
             private const string JsonConverterTypeRef = "global::System.Text.Json.Serialization.JsonConverter";
             private const string JsonConverterFactoryTypeRef = "global::System.Text.Json.Serialization.JsonConverterFactory";
-            private const string JsonStringEnumConverterTypeRef = "global::System.Text.Json.Serialization.JsonStringEnumConverter";
             private const string JsonCollectionInfoValuesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues";
             private const string JsonIgnoreConditionTypeRef = "global::System.Text.Json.Serialization.JsonIgnoreCondition";
             private const string JsonNumberHandlingTypeRef = "global::System.Text.Json.Serialization.JsonNumberHandling";
@@ -175,14 +173,6 @@ namespace System.Text.Json.SourceGeneration
                 return writer;
             }
 
-            private static void WriteCompilerDirective(SourceWriter writer, string directive)
-            {
-                int indent = writer.Indentation;
-                writer.Indentation = 0;
-                writer.WriteLine(directive);
-                writer.Indentation = indent;
-            }
-
             private static SourceText CompleteSourceFileAndReturnText(SourceWriter writer)
             {
                 while (writer.Indentation > 0)
@@ -256,19 +246,12 @@ namespace System.Text.Json.SourceGeneration
                 string converterFQN = typeMetadata.ConverterType.FullyQualifiedName;
 
                 GenerateTypeInfoFactoryHeader(writer, typeMetadata);
-                if (typeMetadata.ConverterIsJsonStringEnumConverter)
-                {
-                    WriteCompilerDirective(writer, "#pragma warning disable IL3050 // The JsonStringEnumConverter constructor is marked RequiresDynamicCode");
-                    writer.WriteLine($"{JsonStringEnumConverterTypeRef} stringEnumConverter = new {converterFQN}();");
-                    WriteCompilerDirective(writer, "#pragma warning restore IL3050 // The JsonStringEnumConverter constructor is marked RequiresDynamicCode");
-                    writer.WriteLine($"{JsonConverterTypeRef} converter = {JsonMetadataServicesTypeRef}.{GetStringEnumConverterMethodName}<{typeFQN}>(stringEnumConverter, {OptionsLocalVariableName});");
-                }
-                else
-                {
-                    writer.WriteLine($"{JsonConverterTypeRef} converter = {ExpandConverterMethodName}(typeof({typeFQN}), new {converterFQN}(), {OptionsLocalVariableName});");
-                }
 
-                writer.WriteLine($"{JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeFQN)} ({OptionsLocalVariableName}, converter);");
+                writer.WriteLine($"""
+                    {JsonConverterTypeRef} converter = {ExpandConverterMethodName}(typeof({typeFQN}), new {converterFQN}(), {OptionsLocalVariableName});
+                    {JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeFQN)} ({OptionsLocalVariableName}, converter);
+                    """);
+
                 GenerateTypeInfoFactoryFooter(writer);
 
                 return CompleteSourceFileAndReturnText(writer);
@@ -598,9 +581,6 @@ namespace System.Text.Json.SourceGeneration
                 writer.WriteLine($"var properties = new {JsonPropertyInfoTypeRef}[{properties.Count}];");
                 writer.WriteLine();
 
-                const string JsonStringEnumConverterVarName = "stringEnumConverter";
-                bool isEnumConverterVarDeclared = false;
-
                 for (int i = 0; i < properties.Count; i++)
                 {
                     PropertyGenerationSpec property = properties[i];
@@ -642,29 +622,9 @@ namespace System.Text.Json.SourceGeneration
                         TypeRef? nullableUnderlyingType = _typeIndex[property.PropertyType].NullableUnderlyingType;
                         _emitGetConverterForNullablePropertyMethod |= nullableUnderlyingType != null;
 
-                        if (property.ConverterIsJsonStringEnumConverter)
-                        {
-                            WriteCompilerDirective(writer, "#pragma warning disable IL3050 // The JsonStringEnumConverter constructor is marked RequiresDynamicCode");
-                            if (!isEnumConverterVarDeclared)
-                            {
-                                writer.WriteLine($"{JsonStringEnumConverterTypeRef} {JsonStringEnumConverterVarName} = new {converterFQN}();");
-                                isEnumConverterVarDeclared = true;
-                            }
-                            else
-                            {
-                                writer.WriteLine($"{JsonStringEnumConverterVarName} = new {converterFQN}();");
-                            }
-
-                            WriteCompilerDirective(writer, "#pragma warning restore IL3050 // The JsonStringEnumConverter constructor is marked RequiresDynamicCode");
-                        }
-
-                        converterInstantiationExpr = (nullableUnderlyingType, property.ConverterIsJsonStringEnumConverter) switch
-                        {
-                            (null, false) => $"({JsonConverterTypeRef}<{propertyTypeFQN}>){ExpandConverterMethodName}(typeof({propertyTypeFQN}), new {converterFQN}(), {OptionsLocalVariableName})",
-                            (not null, false) => $"{GetConverterForNullablePropertyMethodName}<{nullableUnderlyingType.FullyQualifiedName}>(new {converterFQN}(), {OptionsLocalVariableName})",
-                            (null, true) => $"{JsonMetadataServicesTypeRef}.{GetStringEnumConverterMethodName}<{propertyTypeFQN}>({JsonStringEnumConverterVarName}, {OptionsLocalVariableName})",
-                            (not null, true) => $"{GetConverterForNullablePropertyMethodName}<{nullableUnderlyingType.FullyQualifiedName}>({JsonMetadataServicesTypeRef}.{GetStringEnumConverterMethodName}<{nullableUnderlyingType.FullyQualifiedName}>({JsonStringEnumConverterVarName}, {OptionsLocalVariableName}), {OptionsLocalVariableName})"
-                        };
+                        converterInstantiationExpr = nullableUnderlyingType != null
+                            ? $"{GetConverterForNullablePropertyMethodName}<{nullableUnderlyingType.FullyQualifiedName}>(new {converterFQN}(), {OptionsLocalVariableName})"
+                            : $"({JsonConverterTypeRef}<{propertyTypeFQN}>){ExpandConverterMethodName}(typeof({propertyTypeFQN}), new {converterFQN}(), {OptionsLocalVariableName})";
                     }
 
                     writer.WriteLine($$"""
