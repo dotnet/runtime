@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -69,17 +70,22 @@ public class BuildPublishTests : BuildTestBase
     [InlineData("Release", false)]
     [InlineData("Debug", true)]
     [InlineData("Release", true)]
-    public void DefaultTemplate_BuildNative_WithWorkload(string config, bool expectFingerprintOnDotnetJs)
+    public void DefaultTemplate_CheckFingerprinting(string config, bool expectFingerprintOnDotnetJs)
     {
         string id = $"blz_buildandbuildnative_{config}_{Path.GetRandomFileName()}";
 
         CreateBlazorWasmTemplateProject(id);
 
-        BlazorBuild(
+        void Execute(Func<BlazorBuildOptions, string[], (CommandResult, string)> target) => target(
             new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs),
-            "/p:WasmBuildNative=true",
-            (expectFingerprintOnDotnetJs ? " /p:WasmFingerprintDotnetJs=true" : string.Empty)
+            new[] {
+                "/p:WasmBuildNative=true",
+                (expectFingerprintOnDotnetJs ? " /p:WasmFingerprintDotnetJs=true" : string.Empty)
+            }
         );
+
+        Execute(BlazorBuild);
+        Execute(BlazorPublish);
     }
 
     // Disabling for now - publish folder can have more than one dotnet*hash*js, and not sure
