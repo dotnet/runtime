@@ -344,12 +344,16 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Location idLocation = compilation.GetSymbolsWithName("Id").First().Locations[0];
             Location address2Location = compilation.GetSymbolsWithName("Address2").First().Locations[0];
             Location countryLocation = compilation.GetSymbolsWithName("Country").First().Locations[0];
+            Location internalFieldLocation = compilation.GetSymbolsWithName("internalField").First().Locations[0];
+            Location privateFieldLocation = compilation.GetSymbolsWithName("privateField").First().Locations[0];
 
             (Location, string)[] expectedWarningDiagnostics = new (Location, string)[]
             {
                 (idLocation, "The member 'Location.Id' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
                 (address2Location, "The member 'Location.Address2' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
-                (countryLocation, "The member 'Location.Country' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.")
+                (countryLocation, "The member 'Location.Country' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
+                (internalFieldLocation, "The member 'Location.internalField' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
+                (privateFieldLocation, "The member 'Location.privateField' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
             };
 
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());

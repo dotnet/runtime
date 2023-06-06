@@ -140,7 +140,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 
     if (op->OperIsCompare() && !varTypeIsFloating(op->gtGetOp1()))
     {
-        // We do not expect any other relops on LA64
+        // We do not expect any other relops on RISCV64
         assert(op->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
 
         cond = GenCondition::FromRelop(op);

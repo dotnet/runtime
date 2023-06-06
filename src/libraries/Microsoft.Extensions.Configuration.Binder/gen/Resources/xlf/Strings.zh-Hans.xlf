@@ -9,12 +9,12 @@
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
         <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls and passing boxed objects.</source>
-        <target state="new">Binding logic was not generated for a binder call. Unsupported input patterns include generic calls and passing boxed objects.</target>
+        <target state="translated">未为联编程序调用生成绑定逻辑。不支持的输入模式包括泛型调用和传递装箱对象。</target>
         <note />
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoTitle">
         <source>The target type for a binder call could not be determined</source>
-        <target state="new">The target type for a binder call could not be determined</target>
+        <target state="translated">联编程序调用的目标类型无法确定</target>
         <note />
       </trans-unit>
       <trans-unit id="DictionaryKeyNotSupported">
@@ -79,12 +79,12 @@
       </trans-unit>
       <trans-unit id="ValueTypesInvalidForBindMessageFormat">
         <source>Binding logic was not generated for a binder call with target type '{0}'. Value types are invalid inputs to configuration 'Bind' methods.</source>
-        <target state="new">Binding logic was not generated for a binder call with target type '{0}'. Value types are invalid inputs to configuration 'Bind' methods.</target>
+        <target state="translated">没有为目标类型为“{0}”的绑定器调用生成绑定逻辑。值类型是配置“Bind”方法的无效输入。</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueTypesInvalidForBindTitle">
         <source>Value types are invalid inputs to configuration 'Bind' methods</source>
-        <target state="new">Value types are invalid inputs to configuration 'Bind' methods</target>
+        <target state="translated">值类型是配置“Bind”方法的无效输入</target>
         <note />
       </trans-unit>
     </body>

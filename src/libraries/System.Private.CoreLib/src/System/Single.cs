@@ -195,7 +195,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool IsNegativeInfinity(float f)
         {
-            return f == float.NegativeInfinity;
+            return f == NegativeInfinity;
         }
 
         /// <summary>Determines whether the specified value is normal.</summary>
@@ -213,7 +213,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool IsPositiveInfinity(float f)
         {
-            return f == float.PositiveInfinity;
+            return f == PositiveInfinity;
         }
 
         /// <summary>Determines whether the specified value is subnormal.</summary>
@@ -1147,21 +1147,21 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<float>.TryConvertFromChecked<TOther>(TOther value, out float result)
         {
-            return TryConvertFrom<TOther>(value, out result);
+            return TryConvertFrom(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<float>.TryConvertFromSaturating<TOther>(TOther value, out float result)
         {
-            return TryConvertFrom<TOther>(value, out result);
+            return TryConvertFrom(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<float>.TryConvertFromTruncating<TOther>(TOther value, out float result)
         {
-            return TryConvertFrom<TOther>(value, out result);
+            return TryConvertFrom(value, out result);
         }
 
         private static bool TryConvertFrom<TOther>(TOther value, out float result)
@@ -1303,14 +1303,14 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<float>.TryConvertToSaturating<TOther>(float value, [MaybeNullWhen(false)] out TOther result)
         {
-            return TryConvertTo<TOther>(value, out result);
+            return TryConvertTo(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<float>.TryConvertToTruncating<TOther>(float value, [MaybeNullWhen(false)] out TOther result)
         {
-            return TryConvertTo<TOther>(value, out result);
+            return TryConvertTo(value, out result);
         }
 
         private static bool TryConvertTo<TOther>(float value, [MaybeNullWhen(false)] out TOther result)

@@ -185,7 +185,7 @@ namespace System
             if (typeCode != TypeCode.Empty)
                 return typeCode;
 
-            typeCode = Type.GetRuntimeTypeCode(this);
+            typeCode = GetRuntimeTypeCode(this);
             Cache.TypeCode = typeCode;
 
             return typeCode;
@@ -291,7 +291,7 @@ namespace System
             }
 
             // Special case for TypeBuilder to be backward-compatible.
-            if (c is System.Reflection.Emit.TypeBuilder)
+            if (c is Reflection.Emit.TypeBuilder)
             {
                 // If c is a subclass of this class, then c can be cast to this type.
                 if (c.IsSubclassOf(this))

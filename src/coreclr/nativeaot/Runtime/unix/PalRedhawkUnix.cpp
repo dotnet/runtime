@@ -1446,7 +1446,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
 #endif
 #ifdef HWCAP_ASIMD
     if (hwCap & HWCAP_ASIMD)
-        *flags |= ARM64IntrinsicConstants_AdvSimd;
+        *flags |= ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128;
 #endif
 #ifdef HWCAP_ASIMDRDM
     if (hwCap & HWCAP_ASIMDRDM)
@@ -1545,7 +1545,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
     // Every ARM64 CPU should support SIMD and FP
     // If the OS have no function to query for CPU capabilities we set just these
 
-    *flags |= ARM64IntrinsicConstants_AdvSimd;
+    *flags |= ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128;
 #endif // HAVE_AUXV_HWCAP_H
 }
 #endif

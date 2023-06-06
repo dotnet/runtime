@@ -765,7 +765,7 @@ namespace System.Runtime.InteropServices
         ///         </item>
         ///     </list>
         /// </returns>
-        /// <exception cref="System.ArgumentException"><paramref name="obj" /> is not a <see cref="NFloat" />.</exception>
+        /// <exception cref="ArgumentException"><paramref name="obj" /> is not a <see cref="NFloat" />.</exception>
         public int CompareTo(object? obj)
         {
             if (obj is NFloat other)
@@ -1375,21 +1375,21 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<NFloat>.TryConvertFromChecked<TOther>(TOther value, out NFloat result)
         {
-            return TryConvertFrom<TOther>(value, out result);
+            return TryConvertFrom(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<NFloat>.TryConvertFromSaturating<TOther>(TOther value, out NFloat result)
         {
-            return TryConvertFrom<TOther>(value, out result);
+            return TryConvertFrom(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<NFloat>.TryConvertFromTruncating<TOther>(TOther value, out NFloat result)
         {
-            return TryConvertFrom<TOther>(value, out result);
+            return TryConvertFrom(value, out result);
         }
 
         private static bool TryConvertFrom<TOther>(TOther value, out NFloat result)
@@ -1621,14 +1621,14 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<NFloat>.TryConvertToSaturating<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
         {
-            return TryConvertTo<TOther>(value, out result);
+            return TryConvertTo(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<NFloat>.TryConvertToTruncating<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
         {
-            return TryConvertTo<TOther>(value, out result);
+            return TryConvertTo(value, out result);
         }
 
         private static bool TryConvertTo<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
