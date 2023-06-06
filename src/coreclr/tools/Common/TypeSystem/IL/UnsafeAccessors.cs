@@ -189,10 +189,10 @@ namespace Internal.IL
                 ? ((ParameterizedType)context.TargetType).ParameterType
                 : context.TargetType;
 
-            // Due to how some types degrade, unsafe access on these
-            // target types is blocked, even if the lookup succeeds.
-            // For example, pointers can become lookups on typeof(uint)'s MethodTable.
-            if (targetType.IsParameterizedType)
+            // Due to how some types degrade, we block on parameterized
+            // types that are represented as TypeDesc. For example ref or pointer.
+            if ((targetType.IsParameterizedType && !targetType.IsArray)
+                || targetType.IsFunctionPointerType)
             {
                 ThrowHelper.ThrowBadImageFormatException(InvalidUnsafeAccessorUsage);
             }

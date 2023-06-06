@@ -1136,9 +1136,8 @@ namespace
             ? cxt.TargetType.GetTypeParam()
             : cxt.TargetType;
 
-        // Due to how some types degrade, unsafe access on these
-        // target types is blocked, even if the lookup succeeds.
-        // For example, pointers can become lookups on typeof(uint)'s MethodTable.
+        // Due to how some types degrade, we block on parameterized
+        // types that are represented as TypeDesc. For example ref or pointer.
         if (targetType.IsTypeDesc())
             ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
 
@@ -1149,7 +1148,7 @@ namespace
 
         // Following the iteration pattern found in MemberLoader::FindMethod().
         // Reverse order is recommended - see comments in MemberLoader::FindMethod().
-        MethodTable::MethodIterator iter(targetType.GetMethodTable());
+        MethodTable::MethodIterator iter(targetType.AsMethodTable());
         iter.MoveToEnd();
         for (; iter.IsValid(); iter.Prev())
         {
@@ -1258,6 +1257,11 @@ namespace
             ? cxt.TargetType.GetTypeParam()
             : cxt.TargetType;
         _ASSERTE(!targetType.IsByRef());
+
+        // Due to how some types degrade, we block on parameterized
+        // types that are represented as TypeDesc. For example ref or pointer.
+        if (targetType.IsTypeDesc())
+            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
 
         ApproxFieldDescIterator fdIterator(
             targetType.GetMethodTable(),
