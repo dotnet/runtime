@@ -2620,14 +2620,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (simdSize == 32)
             {
-                if (!compExactlyDependsOn(InstructionSet_AVX2))
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX2))
                 {
                     // While we could accelerate some functions on hardware with only AVX support
                     // it's likely not worth it overall given that IsHardwareAccelerated reports false
                     break;
                 }
-                else if ((varTypeIsByte(simdBaseType) && !compExactlyDependsOn(InstructionSet_AVX512VBMI_VL)) ||
-                         (varTypeIsShort(simdBaseType) && !compExactlyDependsOn(InstructionSet_AVX512BW_VL)))
+                else if ((varTypeIsByte(simdBaseType) &&
+                          !compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI_VL)) ||
+                         (varTypeIsShort(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL)))
                 {
                     bool crossLane = false;
 
