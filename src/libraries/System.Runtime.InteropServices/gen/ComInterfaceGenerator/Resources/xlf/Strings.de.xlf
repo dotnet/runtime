@@ -2,6 +2,21 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en" target-language="de" original="../Strings.resx">
     <body>
+      <trans-unit id="AddGeneratedComClassAttributeDescription">
+        <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
+        <target state="new">This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AddGeneratedComClassAttributeMessage">
+        <source>Add the 'GeneratedComClassAttribute' to '{0}' to enable passing objects of type '{0}' to COM</source>
+        <target state="new">Add the 'GeneratedComClassAttribute' to '{0}' to enable passing objects of type '{0}' to COM</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AddGeneratedComClassAttributeTitle">
+        <source>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM</source>
+        <target state="new">Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM</target>
+        <note />
+      </trans-unit>
       <trans-unit id="AnalysisFailedDescription">
         <source>The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</source>
         <target state="translated">Die Analyse, die erforderlich ist, um Code für diese Schnittstelle oder Methode zu erzeugen, ist aufgrund eines unerwarteten Codemusters fehlgeschlagen. Wenn Sie eine neue oder unkonventionelle Syntax verwenden, sollten Sie eine andere Syntax verwenden.</target>

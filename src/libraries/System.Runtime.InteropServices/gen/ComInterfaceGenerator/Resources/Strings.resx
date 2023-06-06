@@ -279,4 +279,13 @@
   <data name="ConvertToGeneratedComInterfaceTitle" xml:space="preserve">
     <value>Convert to 'GeneratedComInterface'</value>
   </data>
+  <data name="AddGeneratedComClassAttributeDescription" xml:space="preserve">
+    <value>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</value>
+  </data>
+  <data name="AddGeneratedComClassAttributeMessage" xml:space="preserve">
+    <value>Add the 'GeneratedComClassAttribute' to '{0}' to enable passing objects of type '{0}' to COM</value>
+  </data>
+  <data name="AddGeneratedComClassAttributeTitle" xml:space="preserve">
+    <value>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM</value>
+  </data>
 </root>

@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using static Microsoft.Interop.Analyzers.AnalyzerDiagnostics;
 
 namespace Microsoft.Interop.Analyzers
@@ -32,8 +33,8 @@ namespace Microsoft.Interop.Analyzers
 
             context.RegisterCompilationStartAction(context =>
             {
-                INamedTypeSymbol? interfaceTypeAttribute = context.Compilation.GetTypeByMetadataName(TypeNames.InterfaceTypeAttribute)!;
-                INamedTypeSymbol? generatedComInterfaceAttribute = context.Compilation.GetTypeByMetadataName(TypeNames.GeneratedComInterfaceAttribute);
+                INamedTypeSymbol? interfaceTypeAttribute = context.Compilation.GetBestTypeByMetadataName(TypeNames.InterfaceTypeAttribute)!;
+                INamedTypeSymbol? generatedComInterfaceAttribute = context.Compilation.GetBestTypeByMetadataName(TypeNames.GeneratedComInterfaceAttribute);
 
                 if (generatedComInterfaceAttribute is null)
                 {

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Xunit;
 using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpCodeFixVerifier<
        Microsoft.Interop.Analyzers.AddGeneratedComClassAnalyzer,
-          Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
+       Microsoft.Interop.Analyzers.AddGeneratedComClassFixer>;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
@@ -17,6 +17,7 @@ namespace ComInterfaceGenerator.Unit.Tests
         {
             string source = """
                using System.Runtime.InteropServices;
+               using System.Runtime.InteropServices.Marshalling;
 
                [GeneratedComInterface]
                public interface I
@@ -30,6 +31,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             string fixedSource = """
                 using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
                 
                 [GeneratedComInterface]
                 public interface I
@@ -37,7 +39,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
 
                 [GeneratedComClass]
-                class C : I
+                partial class C : I
                 {
                 }
                 """;
@@ -52,6 +54,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
 
                 [ComImport]
+                [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                 public interface I
                 {
                 }
