@@ -7424,6 +7424,28 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 
 	return ERR_NONE;
 }
+static void
+set_jmc_breakpoint_on_methods (MonoClass *klass, GPtrArray *method_array, Modifier *modifier, EventRequest *req)
+{
+	MonoMethod *m;
+	mono_class_setup_methods (klass);
+	gpointer iter = NULL;
+	while ((m = mono_class_get_methods (klass, &iter))) {
+		bool found = FALSE;
+		guint n = 0;
+		while (n < method_array->len) {
+			if (m == (MonoMethod *)g_ptr_array_index (method_array, n))	{
+				found = TRUE;
+				break;
+			}
+		}
+		if (!found)	{
+			MonoBreakpoint* bp = mono_de_set_breakpoint (m, 0, req, NULL);
+			modifier->data.jmc->bps = g_slist_append (modifier->data.jmc->bps, bp);
+		}
+	} 
+}
+
 static ErrorCode
 jmc_modifier (int *step_thread_id, StepSize *size, StepDepth *depth, Modifier *modifier, EventRequest *req, guint8 *p, guint8 *end, Buffer *buf)
 {
@@ -7477,23 +7499,7 @@ jmc_modifier (int *step_thread_id, StepSize *size, StepDepth *depth, Modifier *m
 					g_ptr_array_add (method_array, current_method);
 			}
 			if (!module_jmc && type_jmc) {
-				MonoMethod *m;
-				mono_class_setup_methods (klass);
-				gpointer iter = NULL;
-				while ((m = mono_class_get_methods (klass, &iter))) {
-					bool found = FALSE;
-					guint n = 0;
-					while (n < method_array->len) {
-						if (m == (MonoMethod *)g_ptr_array_index (method_array, n))	{
-							found = TRUE;
-							break;
-						}
-					}
-					if (!found)	{
-						MonoBreakpoint* bp = mono_de_set_breakpoint (m, 0, req, NULL);
-						modifier->data.jmc->bps = g_slist_append (modifier->data.jmc->bps, bp);
-					}
-				} 
+				set_jmc_breakpoint_on_methods (klass, method_array, modifier, req);
 			}
 			if (module_jmc && !type_jmc)
 				g_ptr_array_add (type_array, klass);
@@ -7507,29 +7513,13 @@ jmc_modifier (int *step_thread_id, StepSize *size, StepDepth *depth, Modifier *m
 					continue;
 				guint o = 0;
 				while (o < type_array->len) {
-					bool found2 = FALSE;
+					bool found = FALSE;
 					if (klass == (MonoClass*) g_ptr_array_index (type_array, o)) {
-						found2 = TRUE;
+						found = TRUE;
 						break;
 					}
-					if (!found2) {
-						MonoMethod *m;
-						mono_class_setup_methods (klass);
-						gpointer iter = NULL;
-						while ((m = mono_class_get_methods (klass, &iter))) {
-							bool found = FALSE;
-							guint n = 0;
-							while (n < method_array->len) {
-								if (m == (MonoMethod *)g_ptr_array_index (method_array, n)) {
-									found = TRUE;
-									break;
-								}
-							}
-							if (!found)	{
-								MonoBreakpoint* bp = mono_de_set_breakpoint (m, 0, req, NULL);
-								modifier->data.jmc->bps = g_slist_append (modifier->data.jmc->bps, bp);
-							}
-						} 
+					if (!found) {
+						set_jmc_breakpoint_on_methods (klass, method_array, modifier, req);
 					}
 				}
 			}
