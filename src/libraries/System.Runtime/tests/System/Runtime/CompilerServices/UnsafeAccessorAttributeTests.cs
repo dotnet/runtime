@@ -99,6 +99,20 @@ public static class UnsafeAccessorAttributeTests
 
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
+    public static void VerifyCallCtorAsMethod()
+    {
+        UserDataClass ud = (UserDataClass)RuntimeHelpers.GetUninitializedObject(typeof(UserDataClass));
+        Assert.Null(ud.Value);
+
+        CallPrivateConstructor(ud, PrivateArg);
+        Assert.Equal(PrivateArg, ud.Value);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name=".ctor")]
+        extern static void CallPrivateConstructor(UserDataClass _this, string a);
+    }
+
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void VerifyAccessStaticFieldClass()
     {
         Assert.Equal(PrivateStatic, GetPrivateStaticField((UserDataClass)null));

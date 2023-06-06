@@ -1230,30 +1230,6 @@ namespace
         return false;
     }
 
-    bool TrySetTargetMethodCtor(GenerationContext& cxt)
-    {
-        STANDARD_VM_CONTRACT;
-        _ASSERTE(!cxt.TargetType.IsNull());
-        _ASSERTE(cxt.Kind == UnsafeAccessorKind::Constructor);
-
-        TypeHandle targetType = cxt.TargetType;
-        _ASSERTE(!targetType.IsTypeDesc());
-
-        PTR_MethodTable pMT = targetType.GetMethodTable();
-
-        // Special case the default constructor case.
-        if (cxt.DeclarationSig.NumFixedArgs() == 0
-            && pMT->HasDefaultConstructor())
-        {
-            cxt.TargetMethod = pMT->GetDefaultConstructor();
-            return true;
-        }
-
-        // Defer to the normal method look up for
-        // cases beyond the default constructor.
-        return TrySetTargetMethod(cxt, ".ctor");
-    }
-
     bool TrySetTargetField(
         GenerationContext& cxt,
         LPCUTF8 fieldName,
@@ -1268,7 +1244,7 @@ namespace
         _ASSERTE(!targetType.IsTypeDesc());
 
         ApproxFieldDescIterator fdIterator(
-            targetType.GetMethodTable(),
+            targetType.AsMethodTable(),
             (cxt.IsTargetStatic ? ApproxFieldDescIterator::STATIC_FIELDS : ApproxFieldDescIterator::INSTANCE_FIELDS));
         PTR_FieldDesc pField;
         while ((pField = fdIterator.Next()) != NULL)
@@ -1422,20 +1398,16 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     case UnsafeAccessorKind::Constructor:
         // A return type is required for a constructor, otherwise
         // we don't know the type to construct.
+        // Types should not be parameterized (that is, byref).
         // The name is defined by the runtime and should be empty.
-        if (context.DeclarationSig.IsReturnTypeVoid() || !name.IsEmpty())
+        if (context.DeclarationSig.IsReturnTypeVoid() || retType.IsByRef() || !name.IsEmpty())
         {
             ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
         }
 
-        // Due to how some types degrade, we block on parameterized
-        // types that are represented as TypeDesc. For example ref or pointer.
-        if (retType.IsTypeDesc())
-            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
-
         context.TargetType = ValidateTargetType(retType);
-        if (!TrySetTargetMethodCtor(context))
-            MemberLoader::ThrowMissingMethodException(context.TargetType.GetMethodTable(), ".ctor");
+        if (!TrySetTargetMethod(context, ".ctor"))
+            MemberLoader::ThrowMissingMethodException(context.TargetType.AsMethodTable(), ".ctor");
         break;
 
     case UnsafeAccessorKind::Method:
@@ -1447,7 +1419,7 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
         context.TargetType = ValidateTargetType(firstArgType);
         context.IsTargetStatic = kind == UnsafeAccessorKind::StaticMethod;
         if (!TrySetTargetMethod(context, name.GetUTF8()))
-            MemberLoader::ThrowMissingMethodException(context.TargetType.GetMethodTable(), name.GetUTF8());
+            MemberLoader::ThrowMissingMethodException(context.TargetType.AsMethodTable(), name.GetUTF8());
         break;
 
     case UnsafeAccessorKind::Field:
@@ -1472,7 +1444,7 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
         context.TargetType = ValidateTargetType(firstArgType);
         context.IsTargetStatic = kind == UnsafeAccessorKind::StaticField;
         if (!TrySetTargetField(context, name.GetUTF8(), retType.GetTypeParam()))
-            MemberLoader::ThrowMissingFieldException(context.TargetType.GetMethodTable(), name.GetUTF8());
+            MemberLoader::ThrowMissingFieldException(context.TargetType.AsMethodTable(), name.GetUTF8());
         break;
 
     default:

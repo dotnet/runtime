@@ -51,24 +51,18 @@ namespace Internal.IL
                 case UnsafeAccessorKind.Constructor:
                     // A return type is required for a constructor, otherwise
                     // we don't know the type to construct.
+                    // Types should not be parameterized (that is, byref).
                     // The name is defined by the runtime and should be empty.
-                    if (retType.IsVoid || !string.IsNullOrEmpty(name))
+                    if (retType.IsVoid || retType.IsByRef || !string.IsNullOrEmpty(name))
                     {
                         ThrowHelper.ThrowBadImageFormatException(InvalidUnsafeAccessorUsage);
                     }
 
-                    // Due to how some types degrade, we block on parameterized
-                    // types. For example ref or pointer.
-                    if ((retType.IsParameterizedType && !retType.IsArray)
-                        || retType.IsFunctionPointer)
-                    {
-                        ThrowHelper.ThrowBadImageFormatException(InvalidUnsafeAccessorUsage);
-                    }
-
+                    const string ctorName = ".ctor";
                     context.TargetType = ValidateTargetType(retType);
-                    if (!TrySetTargetMethodCtor(ref context))
+                    if (!TrySetTargetMethod(ref context, ctorName))
                     {
-                        ThrowHelper.ThrowMissingMethodException(context.TargetType, ".ctor", null);
+                        ThrowHelper.ThrowMissingMethodException(context.TargetType, ctorName, null);
                     }
                     break;
                 case UnsafeAccessorKind.Method:
@@ -286,21 +280,6 @@ namespace Internal.IL
                 return true;
             }
             return false;
-        }
-
-        private static bool TrySetTargetMethodCtor(ref GenerationContext context)
-        {
-            // Special case the default constructor case.
-            if (context.Declaration.Signature.Length == 0
-                && context.TargetType.HasExplicitOrImplicitDefaultConstructor())
-            {
-                context.TargetMethod = context.TargetType.GetDefaultConstructor();
-                return true;
-            }
-
-            // Defer to the normal method look up for
-            // cases beyond the default constructor.
-            return TrySetTargetMethod(ref context, ".ctor");
         }
 
         private static bool TrySetTargetField(ref GenerationContext context, string name, TypeDesc fieldType)
