@@ -1336,7 +1336,7 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
 
         if ((dstRep < dstEndRep) && (srcRep < srcEndRep))
         {
-            if (srcRep->Offset - srcBaseOffs + genTypeSize(srcRep->AccessType) < dstRep->Offset - dstBaseOffs)
+            if (srcRep->Offset - srcBaseOffs + genTypeSize(srcRep->AccessType) <= dstRep->Offset - dstBaseOffs)
             {
                 // This source replacement ends before the next destination replacement starts.
                 // Write it directly to the destination struct local.
@@ -1348,7 +1348,7 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
                 continue;
             }
 
-            if (dstRep->Offset - dstBaseOffs + genTypeSize(dstRep->AccessType) < srcRep->Offset - srcBaseOffs)
+            if (dstRep->Offset - dstBaseOffs + genTypeSize(dstRep->AccessType) <= srcRep->Offset - srcBaseOffs)
             {
                 // Destination replacement ends before the next source replacement starts.
                 // Read it directly from the source struct local.
