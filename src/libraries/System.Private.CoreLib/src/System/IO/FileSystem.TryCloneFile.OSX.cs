@@ -77,8 +77,9 @@ namespace System.IO
                 }
             }
 
-            // Check if it's not supported, if files are on different filesystems, or if the destination file still exists.
-            if (error == Interop.Error.ENOTSUP || error == Interop.Error.EXDEV || error == Interop.Error.EEXIST)
+            if (error is Interop.Error.ENOTSUP // Check if it's not supported,
+                      or Interop.Error.EXDEV   // if files are on different filesystems,
+                      or Interop.Error.EEXIST) // or if the destination file still exists.
             {
                 // Fall back to normal copy.
                 return;
