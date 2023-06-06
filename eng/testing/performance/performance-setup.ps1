@@ -23,9 +23,7 @@ Param(
     [switch] $AndroidMono,
     [switch] $iOSMono,
     [switch] $iOSNativeAOT,
-    [switch] $NoPGO,
-    [switch] $DynamicPGO,
-    [switch] $FullPGO,
+    [switch] $NoDynamicPGO,
     [switch] $iOSLlvmBuild,
     [switch] $iOSStripSymbols,
     [string] $MauiVersion,
@@ -85,17 +83,9 @@ if($MonoDotnet -ne "")
     }
 }
 
-if($NoPGO)
+if($NoDynamicPGO)
 {
-    $Configurations += " PGOType=nopgo"
-}
-elseif($DynamicPGO)
-{
-    $Configurations += " PGOType=dynamicpgo"
-}
-elseif($FullPGO)
-{
-    $Configurations += " PGOType=fullpgo"
+    $Configurations += " PGOType=nodynamicpgo"
 }
 
 if ($iOSMono) {
@@ -116,17 +106,9 @@ if($Branch.Contains("refs/heads/release"))
 $CommonSetupArguments="--channel $CleanedBranchName --queue $Queue --build-number $BuildNumber --build-configs $Configurations --architecture $Architecture"
 $SetupArguments = "--repository https://github.com/$Repository --branch $Branch --get-perf-hash --commit-sha $CommitSha $CommonSetupArguments"
 
-if($NoPGO)
+if($NoDynamicPGO)
 {
-    $SetupArguments = "$SetupArguments --no-pgo"
-}
-elseif($DynamicPGO)
-{
-    $SetupArguments = "$SetupArguments --dynamic-pgo"
-}
-elseif($FullPGO)
-{
-    $SetupArguments = "$SetupArguments --full-pgo"
+    $SetupArguments = "$SetupArguments --no-dynamic-pgo"
 }
 
 if($UseLocalCommitTime)
