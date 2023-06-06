@@ -969,5 +969,72 @@ namespace System.Text.Json.Nodes.Tests
                 Assert.Equal(1, (int)jObj["prop1"]);
             });
         }
+
+        [Fact]
+        public static void DeepClone()
+        {
+            var array = new JsonArray();
+            array.Add(5);
+            array.Add(7);
+
+            var jObject = new JsonObject();
+            jObject["One"] = 1;
+            jObject["Two"] = 2;
+            jObject["String"] = "ABC";
+            jObject["True"] = true;
+            jObject["False"] = false;
+            jObject["Null"] = null;
+            jObject["value"] = JsonValue.Create(10);
+            jObject["array"] = array;
+
+            var clone = jObject.DeepClone().AsObject();
+
+            Assert.True(JsonNode.DeepEquals(jObject, clone));
+
+            Assert.Equal(jObject.Count, clone.Count);
+            Assert.Equal(1, clone["One"].GetValue<int>());
+            Assert.Equal(2, clone["Two"].GetValue<int>());
+            Assert.Equal("ABC", clone["String"].GetValue<string>());
+            Assert.True(clone["True"].GetValue<bool>());
+            Assert.False(clone["False"].GetValue<bool>());
+            Assert.Null(clone["Null"]);
+            Assert.Equal(10, clone["value"].GetValue<int>());
+
+            JsonArray clonedArray = clone["array"].AsArray();
+            Assert.Equal(5, clonedArray[0].GetValue<int>());
+            Assert.Equal(7, clonedArray[1].GetValue<int>());
+
+            string originalJson = jObject.ToJsonString();
+            string clonedJson = clone.ToJsonString();
+
+            Assert.Equal(originalJson, clonedJson);
+        }
+
+        [Fact]
+        public static void DeepClone_FromElement()
+        {
+            using (JsonDocument document = JsonDocument.Parse("{\"One\": 1, \"String\": \"abc\"}"))
+            {
+                JsonObject jObject = JsonObject.Create(document.RootElement);
+                var clone = jObject.DeepClone().AsObject();
+
+                Assert.True(JsonNode.DeepEquals(jObject, clone));
+                Assert.Equal(1, clone["One"].GetValue<int>());
+                Assert.Equal("abc", clone["String"].GetValue<string>());
+            }
+        }
+
+        [Fact]
+        public static void UpdateClonedObjectNotAffectOriginal()
+        {
+            var jObject = new JsonObject();
+            jObject["One"] = 1;
+            jObject["Two"] = 2;
+
+            var clone = jObject.DeepClone().AsObject();
+            clone["One"] = 3;
+
+            Assert.Equal(1, jObject["One"].GetValue<int>());
+        }
     }
 }
