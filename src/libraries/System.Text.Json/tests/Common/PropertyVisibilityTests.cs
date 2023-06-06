@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
@@ -664,6 +665,37 @@ namespace System.Text.Json.Serialization.Tests
 
             serialized = await Serializer.SerializeWrapper(new FurtherDerivedClass_With_IgnoredOverride());
             Assert.Equal(@"{""MyProp"":null}", serialized);
+        }
+
+        [Fact]
+        public async Task CorrectlyIgnorePropertyWithNewModifier()
+        {
+            Class2 instanceOfSecondClassWithSameName,
+                actualDeserializationResult;
+            string actualSerializationResult;
+
+            instanceOfSecondClassWithSameName = new Class2();
+            instanceOfSecondClassWithSameName.class1.Info = "Some content";
+            ((NamespaceBase.Class2)instanceOfSecondClassWithSameName).class1.Info = "Some other content";
+
+            actualSerializationResult = await Serializer.SerializeWrapper(instanceOfSecondClassWithSameName);
+            actualDeserializationResult = await Serializer.DeserializeWrapper<Class2>(actualSerializationResult);
+            Assert.Equal("{}", actualSerializationResult);
+            Assert.Equal(Class1.DefaultValueForInfo, actualDeserializationResult.class1.Info);
+            Assert.Equal(NamespaceBase.Class1.DefaultValueForInfo, ((NamespaceBase.Class2)actualDeserializationResult).class1.Info);
+        }
+
+        public class Class1
+        {
+            public const string DefaultValueForInfo = $"Some default content of {nameof(Info)} property of {nameof(Tests)}";
+
+            public string Info { get; set; } = DefaultValueForInfo;
+        }
+
+        public class Class2 : NamespaceBase.Class2
+        {
+            [JsonIgnore]
+            public new Class1 class1 => new Class1();
         }
 
         public class ClassWithInternalField
@@ -3303,5 +3335,21 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         private enum PrivateEnum { A = 0, B = 1, C = 2 }
+    }
+}
+
+namespace NamespaceBase
+{
+    public class Class1
+    {
+        public const string DefaultValueForInfo = $"Some default content of {nameof(Info)} property of {nameof(NamespaceBase)}";
+
+        public string Info { get; set; } = DefaultValueForInfo;
+    }
+
+    public class Class2
+    {
+        [JsonIgnore]
+        public Class1 class1 => new Class1();
     }
 }
