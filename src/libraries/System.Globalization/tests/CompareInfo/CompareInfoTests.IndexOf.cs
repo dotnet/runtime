@@ -175,14 +175,13 @@ namespace System.Globalization.Tests
         {
             // Searches for the combining character sequence Latin capital letter U with diaeresis or Latin small letter u with diaeresis.
             string source = "Is \u0055\u0308 or \u0075\u0308 the same as \u00DC or \u00FC?"; // 7 failures here
-            
             yield return new object[] { s_invariantCompare, source, "U\u0308", 8, 18, CompareOptions.Ordinal, -1, 0 };
             yield return new object[] { s_invariantCompare, source, "u\u0308", 8, 18, CompareOptions.Ordinal, 9, 2 };            
             yield return new object[] { s_invariantCompare, source, "\u00FC", 8, 18, CompareOptions.Ordinal, -1, 0 };
+            yield return new object[] { s_invariantCompare, source, "\u00DC", 8, 18, CompareOptions.Ordinal, 24, 1 };
 
             if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
             {
-                yield return new object[] { s_invariantCompare, source, "\u00DC", 8, 18, CompareOptions.Ordinal, 24, 1 };
                 yield return new object[] { s_invariantCompare, source, "U\u0308", 8, 18, CompareOptions.None, 24, 1 };
                 yield return new object[] { s_invariantCompare, source, "u\u0308", 8, 18, CompareOptions.None, 9, 2 };
                 yield return new object[] { s_invariantCompare, source, "\u00DC", 8, 18, CompareOptions.None, 24, 1 };
