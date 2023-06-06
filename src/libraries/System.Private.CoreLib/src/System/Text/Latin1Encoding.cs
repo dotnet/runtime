@@ -19,7 +19,7 @@ namespace System.Text
         internal static readonly Latin1EncodingSealed s_default = new Latin1EncodingSealed();
 
         // We only use the best-fit table, of which ASCII is a superset for us.
-        public Latin1Encoding() : base(Encoding.ISO_8859_1)
+        public Latin1Encoding() : base(ISO_8859_1)
         {
         }
 

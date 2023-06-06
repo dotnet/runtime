@@ -344,12 +344,34 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Location idLocation = compilation.GetSymbolsWithName("Id").First().Locations[0];
             Location address2Location = compilation.GetSymbolsWithName("Address2").First().Locations[0];
             Location countryLocation = compilation.GetSymbolsWithName("Country").First().Locations[0];
+            Location internalFieldLocation = compilation.GetSymbolsWithName("internalField").First().Locations[0];
+            Location privateFieldLocation = compilation.GetSymbolsWithName("privateField").First().Locations[0];
 
             (Location, string)[] expectedWarningDiagnostics = new (Location, string)[]
             {
                 (idLocation, "The member 'Location.Id' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
                 (address2Location, "The member 'Location.Address2' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
-                (countryLocation, "The member 'Location.Country' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.")
+                (countryLocation, "The member 'Location.Country' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
+                (internalFieldLocation, "The member 'Location.internalField' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
+                (privateFieldLocation, "The member 'Location.privateField' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
+            };
+
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, expectedWarningDiagnostics, sort: false);
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
+        }
+
+        [Fact]
+        public void PolymorphicClassWarnsOnFastPath()
+        {
+            Compilation compilation = CompilationHelper.CreatePolymorphicClassOnFastPathContext();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            Location myBaseClassLocation = compilation.GetSymbolsWithName("MyBaseClass").First().Locations[0];
+
+            (Location, string)[] expectedWarningDiagnostics = new (Location, string)[]
+            {
+                (myBaseClassLocation, "Type 'HelloWorld.MyBaseClass' is annotated with 'JsonDerivedTypeAttribute' which is not supported in 'JsonSourceGenerationMode.Serialization'."),
             };
 
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());

@@ -227,6 +227,7 @@
     <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.HighLowTemps.g.cs" />
     <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.Int32.g.cs" />
     <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.ListDateTimeOffset.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.MyLinkedList.g.cs" />
     <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.PropertyNames.g.cs" />
     <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.String.g.cs" />
     <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.StringArray.g.cs" />
@@ -241,6 +242,7 @@
     <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.HighLowTemps.g.cs" />
     <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.Int32.g.cs" />
     <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.ListDateTimeOffset.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.MyLinkedList.g.cs" />
     <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.PropertyNames.g.cs" />
     <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.String.g.cs" />
     <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.StringArray.g.cs" />

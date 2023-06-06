@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Security.Principal;
@@ -13,6 +14,8 @@ namespace System.Security.Claims
     /// <summary>
     /// Concrete IPrincipal supporting multiple claims-based identities
     /// </summary>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerTypeProxy(typeof(ClaimsPrincipalDebugProxy))]
     public class ClaimsPrincipal : IPrincipal
     {
         private enum SerializationMask
@@ -566,6 +569,45 @@ namespace System.Security.Claims
         protected virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
+        }
+
+        private string DebuggerToString()
+        {
+            // DebuggerDisplayAttribute is inherited. Use virtual members instead of private fields to gather data.
+            int identitiesCount = 0;
+            foreach (ClaimsIdentity items in Identities)
+            {
+                identitiesCount++;
+            }
+
+            int claimsCount = 0;
+            foreach (Claim item in Claims)
+            {
+                claimsCount++;
+            }
+
+            // Return debug string optimized for the case of one identity.
+            if (identitiesCount == 1 && Identity is ClaimsIdentity claimsIdentity)
+            {
+                return $"Principal {claimsIdentity.DebuggerToString()}";
+            }
+
+            return $"Principal Identities Count: {identitiesCount}, Claims Count: {claimsCount}";
+        }
+
+        private sealed class ClaimsPrincipalDebugProxy
+        {
+            private readonly ClaimsPrincipal _principal;
+
+            public ClaimsPrincipalDebugProxy(ClaimsPrincipal principal)
+            {
+                _principal = principal;
+            }
+
+            // List type has a friendly debugger view
+            public List<Claim> Claims => new List<Claim>(_principal.Claims);
+            public List<ClaimsIdentity> Identities => new List<ClaimsIdentity>(_principal.Identities);
+            public IIdentity? Identity => _principal.Identity;
         }
     }
 }

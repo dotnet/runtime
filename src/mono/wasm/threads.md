@@ -79,15 +79,15 @@ Mono exposes these functions as `mono_threads_wasm_async_run_in_main_thread`, et
 
 ## Background tasks ##
 
-The runtime has a number of tasks that are scheduled with `mono_threads_schedule_background_job`
+The runtime has a number of tasks that are scheduled with `mono_main_thread_schedule_background_job`
 (pumping the threadpool task queue, running GC finalizers, etc).
 
-The background tasks will run on the main thread.  Calling `mono_threads_schedule_background_job` on
+The background tasks will run on the main thread.  Calling `mono_main_thread_schedule_background_job` on
 a worker thread will use `async_run_in_main_thread` to queue up work for the main thread.
 
 ## Debugger tests ##
 
-Debugger supports multithreading when the runtime is built with `WasmEnableThreads=true`. To run the debugger tests in multithreading mode we use:
+To run the debugger tests in the runtime [built with enabled support for multi-threading](#building-the-runtime) we use:
 ```
 dotnet test src/mono/wasm/debugger/DebuggerTestSuite -e RuntimeConfiguration=Debug -e Configuration=Debug -e DebuggerHost=chrome -e WasmEnableThreads=true -e WASM_TESTS_USING_VARIANT=multithreaded
 ```

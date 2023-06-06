@@ -28,6 +28,8 @@ namespace ILCompiler
             new(new[] { "--optimize-time", "--Ot" }, "Enable optimizations, favor code speed");
         public Option<string[]> MibcFilePaths { get; } =
             new(new[] { "--mibc", "-m" }, Array.Empty<string>, "Mibc file(s) for profile guided optimization");
+        public Option<string[]> SatelliteFilePaths { get; } =
+            new(new[] { "--satellite" }, Array.Empty<string>, "Satellite assemblies associated with inputs/references");
         public Option<bool> EnableDebugInfo { get; } =
             new(new[] { "--debug", "-g" }, "Emit debugging information");
         public Option<bool> UseDwarf5 { get; } =
@@ -86,12 +88,12 @@ namespace ILCompiler
             new(new[] { "--methodbodyfolding" }, "Fold identical method bodies");
         public Option<string[]> InitAssemblies { get; } =
             new(new[] { "--initassembly" }, Array.Empty<string>, "Assembly(ies) with a library initializer");
-        public Option<string[]> AppContextSwitches { get; } =
-            new(new[] { "--appcontextswitch" }, Array.Empty<string>, "System.AppContext switches to set (format: 'Key=Value')");
         public Option<string[]> FeatureSwitches { get; } =
             new(new[] { "--feature" }, Array.Empty<string>, "Feature switches to apply (format: 'Namespace.Name=[true|false]'");
         public Option<string[]> RuntimeOptions { get; } =
             new(new[] { "--runtimeopt" }, Array.Empty<string>, "Runtime options to set");
+        public Option<string[]> RuntimeKnobs { get; } =
+            new(new[] { "--runtimeknob" }, Array.Empty<string>, "Runtime knobs to set");
         public Option<int> Parallelism { get; } =
             new(new[] { "--parallelism" }, result =>
             {
@@ -110,6 +112,8 @@ namespace ILCompiler
             }, true, "Maximum number of threads to use during compilation");
         public Option<string> InstructionSet { get; } =
             new(new[] { "--instruction-set" }, "Instruction set to allow or disallow");
+        public Option<int> MaxVectorTBitWidth { get; } =
+            new(new[] { "--max-vectort-bitwidth" }, "Maximum width, in bits, that Vector<T> is allowed to be");
         public Option<string> Guard { get; } =
             new(new[] { "--guard" }, "Enable mitigations. Options: 'cf': CFG (Control Flow Guard, Windows only)");
         public Option<bool> Dehydrate { get; } =
@@ -173,6 +177,7 @@ namespace ILCompiler
             AddOption(OptimizeSpace);
             AddOption(OptimizeTime);
             AddOption(MibcFilePaths);
+            AddOption(SatelliteFilePaths);
             AddOption(EnableDebugInfo);
             AddOption(UseDwarf5);
             AddOption(NativeLib);
@@ -202,11 +207,12 @@ namespace ILCompiler
             AddOption(EmitStackTraceData);
             AddOption(MethodBodyFolding);
             AddOption(InitAssemblies);
-            AddOption(AppContextSwitches);
             AddOption(FeatureSwitches);
             AddOption(RuntimeOptions);
+            AddOption(RuntimeKnobs);
             AddOption(Parallelism);
             AddOption(InstructionSet);
+            AddOption(MaxVectorTBitWidth);
             AddOption(Guard);
             AddOption(Dehydrate);
             AddOption(PreinitStatics);
@@ -264,9 +270,11 @@ namespace ILCompiler
                         // + the original command line arguments
                         // + a rsp file that should work to directly run out of the zip file
 
+#pragma warning disable CA1861 // Avoid constant arrays as arguments. Only executed once during the execution of the program.
                         Helpers.MakeReproPackage(makeReproPath, context.ParseResult.GetValue(OutputFilePath), args, context.ParseResult,
                             inputOptions : new[] { "r", "reference", "m", "mibc", "rdxml", "directpinvokelist", "descriptor" },
                             outputOptions : new[] { "o", "out", "exportsfile" });
+#pragma warning restore CA1861 // Avoid constant arrays as arguments
                     }
 
                     context.ExitCode = new Program(this).Run();

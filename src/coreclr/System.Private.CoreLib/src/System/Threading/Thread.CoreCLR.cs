@@ -248,7 +248,7 @@ namespace System.Threading
             //  Once we CoUninitialize the thread, the OS will still
             //  report the thread as implicitly in the MTA if any
             //  other thread in the process is CoInitialized.
-            if ((state == System.Threading.ApartmentState.Unknown) && (retState == System.Threading.ApartmentState.MTA))
+            if ((state == ApartmentState.Unknown) && (retState == ApartmentState.MTA))
             {
                 return true;
             }

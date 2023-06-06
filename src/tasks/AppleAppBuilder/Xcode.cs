@@ -174,6 +174,7 @@ internal sealed class Xcode
         IEnumerable<string> asmDataFiles,
         IEnumerable<string> asmLinkFiles,
         IEnumerable<string> extraLinkerArgs,
+        IEnumerable<string> excludes,
         string workspace,
         string binDir,
         string monoInclude,
@@ -191,7 +192,7 @@ internal sealed class Xcode
         string? nativeMainSource = null,
         bool useNativeAOTRuntime = false)
     {
-        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, hybridGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource, useNativeAOTRuntime);
+        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, excludes, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, hybridGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource, useNativeAOTRuntime);
         CreateXcodeProject(projectName, cmakeDirectoryPath);
         return Path.Combine(binDir, projectName, projectName + ".xcodeproj");
     }
@@ -236,6 +237,7 @@ internal sealed class Xcode
         IEnumerable<string> asmDataFiles,
         IEnumerable<string> asmLinkFiles,
         IEnumerable<string> extraLinkerArgs,
+        IEnumerable<string> excludes,
         string workspace,
         string binDir,
         string monoInclude,
@@ -254,18 +256,19 @@ internal sealed class Xcode
         bool useNativeAOTRuntime = false)
     {
         // bundle everything as resources excluding native files
-        var excludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib", "libcoreclr.dylib" };
+        var predefinedExcludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib", "libcoreclr.dylib", "icudt_*" };
+        predefinedExcludes = predefinedExcludes.Concat(excludes).ToList();
         if (!preferDylibs)
         {
-            excludes.Add(".dylib");
+            predefinedExcludes.Add(".dylib");
         }
         if (optimized)
         {
-            excludes.Add(".pdb");
+            predefinedExcludes.Add(".pdb");
         }
 
         string[] resources = Directory.GetFileSystemEntries(workspace, "", SearchOption.TopDirectoryOnly)
-            .Where(f => !excludes.Any(e => f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)))
+            .Where(f => !predefinedExcludes.Any(e => (!e.EndsWith('*') && f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)) || (e.EndsWith('*') && Path.GetFileName(f).StartsWith(e.TrimEnd('*'), StringComparison.InvariantCultureIgnoreCase))))
             .ToArray();
 
         if (string.IsNullOrEmpty(nativeMainSource))

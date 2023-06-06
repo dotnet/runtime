@@ -162,6 +162,7 @@ jobs:
       - template: /eng/common/templates/steps/source-build.yml
         parameters:
           platform:
+            baseOS: ${{ parameters.baseOS }}
             buildScript: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
             nonPortable: ${{ parameters.isNonPortableSourceBuild }}
             targetRID: ${{ parameters.targetRid }}

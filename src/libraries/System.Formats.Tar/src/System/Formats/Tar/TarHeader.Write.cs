@@ -25,38 +25,145 @@ namespace System.Formats.Tar
         private const string GnuLongMetadataName = "././@LongLink";
         private const string ArgNameEntry = "entry";
 
-        // Writes the current header as a V7 entry into the archive stream.
-        internal void WriteAsV7(Stream archiveStream, Span<byte> buffer)
+        internal void WriteAs(TarEntryFormat format, Stream archiveStream, Span<byte> buffer)
         {
-            WriteV7FieldsToBuffer(buffer);
+            Debug.Assert(format > TarEntryFormat.Unknown && format <= TarEntryFormat.Gnu);
+            Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
 
-            archiveStream.Write(buffer);
-
-            if (_dataStream != null)
+            if (archiveStream.CanSeek && _dataStream is { CanSeek: false })
             {
-                WriteData(archiveStream, _dataStream, _size);
+                WriteWithUnseekableDataStreamAs(format, archiveStream, buffer);
+            }
+            else // Seek status of archive does not matter
+            {
+                long bytesToWrite = GetTotalDataBytesToWrite();
+                WriteFieldsToBuffer(format, bytesToWrite, buffer);
+                archiveStream.Write(buffer);
+
+                if (_dataStream != null)
+                {
+                    WriteData(archiveStream, _dataStream, _size);
+                }
             }
         }
 
-        // Asynchronously writes the current header as a V7 entry into the archive stream and returns the value of the final checksum.
-        internal async Task WriteAsV7Async(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        internal async Task WriteAsAsync(TarEntryFormat format, Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            Debug.Assert(format > TarEntryFormat.Unknown && format <= TarEntryFormat.Gnu);
+            Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
 
-            WriteV7FieldsToBuffer(buffer.Span);
+            if (archiveStream.CanSeek && _dataStream is { CanSeek: false })
+            {
+                await WriteWithUnseekableDataStreamAsAsync(format, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+            }
+            else // seek status of archive does not matter
+            {
+                long bytesToWrite = GetTotalDataBytesToWrite();
+                WriteFieldsToBuffer(format, bytesToWrite, buffer.Span);
+                await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
+                if (_dataStream != null)
+                {
+                    await WriteDataAsync(archiveStream, _dataStream, _size, cancellationToken).ConfigureAwait(false);
+                }
+            }
+        }
+
+        private void WriteWithUnseekableDataStreamAs(TarEntryFormat format, Stream archiveStream, Span<byte> buffer)
+        {
+            // When the data stream is unseekable, the order in which we write the entry data changes
+            Debug.Assert(archiveStream.CanSeek);
+            Debug.Assert(_dataStream != null);
+            Debug.Assert(!_dataStream.CanSeek);
+
+            // Store the start of the current entry's header, it'll be used later
+            long headerStartPosition = archiveStream.Position;
+
+            ushort dataLocation = format switch
+            {
+                TarEntryFormat.V7 => FieldLocations.V7Data,
+                TarEntryFormat.Ustar or TarEntryFormat.Pax => FieldLocations.PosixData,
+                TarEntryFormat.Gnu => FieldLocations.GnuData,
+                _ => throw new ArgumentOutOfRangeException(nameof(format))
+            };
+
+            // We know the exact location where the data starts depending on the format
+            long dataStartPosition = headerStartPosition + dataLocation;
+
+            // Move to the data start location and write the data
+            archiveStream.Seek(dataLocation, SeekOrigin.Current);
+            _dataStream.CopyTo(archiveStream); // The data gets copied from the current position
+
+            // Get the new archive stream position, and the difference is the size of the data stream
+            long dataEndPosition = archiveStream.Position;
+            long actualLength = dataEndPosition - dataStartPosition;
+
+            // Write the padding now so that we can go back to writing the entry's header metadata
+            WriteEmptyPadding(archiveStream, actualLength);
+
+            // Store the end of the current header, we will write the next one after this position
+            long endOfHeaderPosition = archiveStream.Position;
+
+            // Go back to the start of the entry header to write the rest of the fields
+            archiveStream.Position = headerStartPosition;
+
+            WriteFieldsToBuffer(format, actualLength, buffer);
+            archiveStream.Write(buffer);
+
+            // Finally, move to the end of the header to continue with the next entry
+            archiveStream.Position = endOfHeaderPosition;
+        }
+
+        // Asynchronously writes the entry in the order required to be able to obtain the unseekable data stream size.
+        private async Task WriteWithUnseekableDataStreamAsAsync(TarEntryFormat format, Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        {
+            // When the data stream is unseekable, the order in which we write the entry data changes
+            Debug.Assert(archiveStream.CanSeek);
+            Debug.Assert(_dataStream != null);
+            Debug.Assert(!_dataStream.CanSeek);
+
+            // Store the start of the current entry's header, it'll be used later
+            long headerStartPosition = archiveStream.Position;
+
+            ushort dataLocation = format switch
+            {
+                TarEntryFormat.V7 => FieldLocations.V7Data,
+                TarEntryFormat.Ustar or TarEntryFormat.Pax => FieldLocations.PosixData,
+                TarEntryFormat.Gnu => FieldLocations.GnuData,
+                _ => throw new ArgumentOutOfRangeException(nameof(format))
+            };
+
+            // We know the exact location where the data starts depending on the format
+            long dataStartPosition = headerStartPosition + dataLocation;
+
+            // Move to the data start location and write the data
+            archiveStream.Seek(dataLocation, SeekOrigin.Current);
+            await _dataStream.CopyToAsync(archiveStream, cancellationToken).ConfigureAwait(false); // The data gets copied from the current position
+
+            // Get the new archive stream position, and the difference is the size of the data stream
+            long dataEndPosition = archiveStream.Position;
+            long actualLength = dataEndPosition - dataStartPosition;
+
+            // Write the padding now so that we can go back to writing the entry's header metadata
+            await WriteEmptyPaddingAsync(archiveStream, actualLength, cancellationToken).ConfigureAwait(false);
+
+            // Store the end of the current header, we will write the next one after this position
+            long endOfHeaderPosition = archiveStream.Position;
+
+            // Go back to the start of the entry header to write the rest of the fields
+            archiveStream.Position = headerStartPosition;
+
+            WriteFieldsToBuffer(format, actualLength, buffer.Span);
             await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
-            if (_dataStream != null)
-            {
-                await WriteDataAsync(archiveStream, _dataStream, _size, cancellationToken).ConfigureAwait(false);
-            }
+            // Finally, move to the end of the header to continue with the next entry
+            archiveStream.Position = endOfHeaderPosition;
         }
 
         // Writes the V7 header fields to the specified buffer, calculates and writes the checksum, then returns the final data length.
-        private void WriteV7FieldsToBuffer(Span<byte> buffer)
+        private void WriteV7FieldsToBuffer(long size, Span<byte> buffer)
         {
-            _size = GetTotalDataBytesToWrite();
+            _size = size;
             TarEntryType actualEntryType = TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.V7, _typeFlag);
 
             int tmpChecksum = WriteName(buffer);
@@ -64,44 +171,17 @@ namespace System.Formats.Tar
             _checksum = WriteChecksum(tmpChecksum, buffer);
         }
 
-        // Writes the current header as a Ustar entry into the archive stream.
-        internal void WriteAsUstar(Stream archiveStream, Span<byte> buffer)
-        {
-            WriteUstarFieldsToBuffer(buffer);
-
-            archiveStream.Write(buffer);
-
-            if (_dataStream != null)
-            {
-                WriteData(archiveStream, _dataStream, _size);
-            }
-        }
-
-        // Asynchronously rites the current header as a Ustar entry into the archive stream and returns the value of the final checksum.
-        internal async Task WriteAsUstarAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            WriteUstarFieldsToBuffer(buffer.Span);
-
-            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
-
-            if (_dataStream != null)
-            {
-                await WriteDataAsync(archiveStream, _dataStream, _size, cancellationToken).ConfigureAwait(false);
-            }
-        }
-
         // Writes the Ustar header fields to the specified buffer, calculates and writes the checksum, then returns the final data length.
-        private void WriteUstarFieldsToBuffer(Span<byte> buffer)
+        private void WriteUstarFieldsToBuffer(long size, Span<byte> buffer)
         {
-            _size = GetTotalDataBytesToWrite();
+            _size = size;
             TarEntryType actualEntryType = TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.Ustar, _typeFlag);
 
             int tmpChecksum = WriteUstarName(buffer);
             tmpChecksum += WriteCommonFields(buffer, actualEntryType);
             tmpChecksum += WritePosixMagicAndVersion(buffer);
             tmpChecksum += WritePosixAndGnuSharedFields(buffer);
+
             _checksum = WriteChecksum(tmpChecksum, buffer);
         }
 
@@ -140,13 +220,12 @@ namespace System.Formats.Tar
             // First, we write the preceding extended attributes header
             TarHeader extendedAttributesHeader = new(TarEntryFormat.Pax);
             // Fill the current header's dict
-            _size = GetTotalDataBytesToWrite();
             CollectExtendedAttributesFromStandardFieldsIfNeeded();
             // And pass the attributes to the preceding extended attributes header for writing
             extendedAttributesHeader.WriteAsPaxExtendedAttributes(archiveStream, buffer, ExtendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1);
             buffer.Clear(); // Reset it to reuse it
             // Second, we write this header as a normal one
-            WriteAsPaxInternal(archiveStream, buffer);
+            WriteAs(TarEntryFormat.Pax, archiveStream, buffer);
         }
 
         // Asynchronously writes the current header as a PAX entry into the archive stream.
@@ -159,14 +238,13 @@ namespace System.Formats.Tar
             // First, we write the preceding extended attributes header
             TarHeader extendedAttributesHeader = new(TarEntryFormat.Pax);
             // Fill the current header's dict
-            _size = GetTotalDataBytesToWrite();
             CollectExtendedAttributesFromStandardFieldsIfNeeded();
             // And pass the attributes to the preceding extended attributes header for writing
             await extendedAttributesHeader.WriteAsPaxExtendedAttributesAsync(archiveStream, buffer, ExtendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1, cancellationToken).ConfigureAwait(false);
 
             buffer.Span.Clear(); // Reset it to reuse it
             // Second, we write this header as a normal one
-            await WriteAsPaxInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+            await WriteAsAsync(TarEntryFormat.Pax, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
         }
 
         // Writes the current header as a Gnu entry into the archive stream.
@@ -177,7 +255,7 @@ namespace System.Formats.Tar
             if (_linkName != null && Encoding.UTF8.GetByteCount(_linkName) > FieldLengths.LinkName)
             {
                 TarHeader longLinkHeader = GetGnuLongMetadataHeader(TarEntryType.LongLink, _linkName);
-                longLinkHeader.WriteAsGnuInternal(archiveStream, buffer);
+                longLinkHeader.WriteAs(TarEntryFormat.Gnu, archiveStream, buffer);
                 buffer.Clear(); // Reset it to reuse it
             }
 
@@ -185,12 +263,12 @@ namespace System.Formats.Tar
             if (Encoding.UTF8.GetByteCount(_name) > FieldLengths.Name)
             {
                 TarHeader longPathHeader = GetGnuLongMetadataHeader(TarEntryType.LongPath, _name);
-                longPathHeader.WriteAsGnuInternal(archiveStream, buffer);
+                longPathHeader.WriteAs(TarEntryFormat.Gnu, archiveStream, buffer);
                 buffer.Clear(); // Reset it to reuse it
             }
 
             // Third, we write this header as a normal one
-            WriteAsGnuInternal(archiveStream, buffer);
+            WriteAs(TarEntryFormat.Gnu, archiveStream, buffer);
         }
 
         // Writes the current header as a Gnu entry into the archive stream.
@@ -203,7 +281,7 @@ namespace System.Formats.Tar
             if (_linkName != null && Encoding.UTF8.GetByteCount(_linkName) > FieldLengths.LinkName)
             {
                 TarHeader longLinkHeader = GetGnuLongMetadataHeader(TarEntryType.LongLink, _linkName);
-                await longLinkHeader.WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                await longLinkHeader.WriteAsAsync(TarEntryFormat.Gnu, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                 buffer.Span.Clear(); // Reset it to reuse it
             }
 
@@ -211,12 +289,12 @@ namespace System.Formats.Tar
             if (Encoding.UTF8.GetByteCount(_name) > FieldLengths.Name)
             {
                 TarHeader longPathHeader = GetGnuLongMetadataHeader(TarEntryType.LongPath, _name);
-                await longPathHeader.WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                await longPathHeader.WriteAsAsync(TarEntryFormat.Gnu, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                 buffer.Span.Clear(); // Reset it to reuse it
             }
 
             // Third, we write this header as a normal one
-            await WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+            await WriteAsAsync(TarEntryFormat.Gnu, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
         }
 
         // Creates and returns a GNU long metadata header, with the specified long text written into its data stream.
@@ -237,38 +315,10 @@ namespace System.Formats.Tar
             return longMetadataHeader;
         }
 
-        // Writes the current header as a GNU entry into the archive stream.
-        internal void WriteAsGnuInternal(Stream archiveStream, Span<byte> buffer)
-        {
-            WriteAsGnuSharedInternal(buffer);
-
-            archiveStream.Write(buffer);
-
-            if (_dataStream != null)
-            {
-                WriteData(archiveStream, _dataStream, _size);
-            }
-        }
-
-        // Asynchronously writes the current header as a GNU entry into the archive stream.
-        internal async Task WriteAsGnuInternalAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            WriteAsGnuSharedInternal(buffer.Span);
-
-            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
-
-            if (_dataStream != null)
-            {
-                await WriteDataAsync(archiveStream, _dataStream, _size, cancellationToken).ConfigureAwait(false);
-            }
-        }
-
         // Shared checksum and data length calculations for GNU entry writing.
-        private void WriteAsGnuSharedInternal(Span<byte> buffer)
+        private void WriteGnuFieldsToBuffer(long size, Span<byte> buffer)
         {
-            _size = GetTotalDataBytesToWrite();
+            _size = size;
 
             int tmpChecksum = WriteName(buffer);
             tmpChecksum += WriteCommonFields(buffer, TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.Gnu, _typeFlag));
@@ -283,7 +333,7 @@ namespace System.Formats.Tar
         private void WriteAsPaxExtendedAttributes(Stream archiveStream, Span<byte> buffer, Dictionary<string, string> extendedAttributes, bool isGea, int globalExtendedAttributesEntryNumber)
         {
             WriteAsPaxExtendedAttributesShared(isGea, globalExtendedAttributesEntryNumber, extendedAttributes);
-            WriteAsPaxInternal(archiveStream, buffer);
+            WriteAs(TarEntryFormat.Pax, archiveStream, buffer);
         }
 
         // Asynchronously writes the current header as a PAX Extended Attributes entry into the archive stream and returns the value of the final checksum.
@@ -291,7 +341,7 @@ namespace System.Formats.Tar
         {
             cancellationToken.ThrowIfCancellationRequested();
             WriteAsPaxExtendedAttributesShared(isGea, globalExtendedAttributesEntryNumber, extendedAttributes);
-            return WriteAsPaxInternalAsync(archiveStream, buffer, cancellationToken);
+            return WriteAsAsync(TarEntryFormat.Pax, archiveStream, buffer, cancellationToken);
         }
 
         // Initializes the name, mode and type flag of a PAX extended attributes entry.
@@ -305,49 +355,39 @@ namespace System.Formats.Tar
                 GenerateExtendedAttributeName();
 
             _mode = TarHelpers.GetDefaultMode(_typeFlag);
-            _size = GetTotalDataBytesToWrite();
             _typeFlag = isGea ? TarEntryType.GlobalExtendedAttributes : TarEntryType.ExtendedAttributes;
         }
 
-        // Both the Extended Attributes and Global Extended Attributes entry headers are written in a similar way, just the data changes
-        // This method writes an entry as both entries require, using the data from the current header instance.
-        private void WriteAsPaxInternal(Stream archiveStream, Span<byte> buffer)
-        {
-            WriteAsPaxSharedInternal(buffer);
-
-            archiveStream.Write(buffer);
-
-            if (_dataStream != null)
-            {
-                WriteData(archiveStream, _dataStream, _size);
-            }
-        }
-
-        // Both the Extended Attributes and Global Extended Attributes entry headers are written in a similar way, just the data changes
-        // This method asynchronously writes an entry as both entries require, using the data from the current header instance.
-        private async Task WriteAsPaxInternalAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            WriteAsPaxSharedInternal(buffer.Span);
-
-            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
-
-            if (_dataStream != null)
-            {
-                await WriteDataAsync(archiveStream, _dataStream, _size, cancellationToken).ConfigureAwait(false);
-            }
-        }
-
         // Shared checksum and data length calculations for PAX entry writing.
-        private void WriteAsPaxSharedInternal(Span<byte> buffer)
+        private void WritePaxFieldsToBuffer(long size, Span<byte> buffer)
         {
+            _size = size;
             int tmpChecksum = WriteName(buffer);
             tmpChecksum += WriteCommonFields(buffer, TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.Pax, _typeFlag));
             tmpChecksum += WritePosixMagicAndVersion(buffer);
             tmpChecksum += WritePosixAndGnuSharedFields(buffer);
 
             _checksum = WriteChecksum(tmpChecksum, buffer);
+        }
+
+        // Writes the format-specific fields of the current entry, as well as the entry data length, into the specified buffer.
+        private void WriteFieldsToBuffer(TarEntryFormat format, long bytesToWrite, Span<byte> buffer)
+        {
+            switch (format)
+            {
+                case TarEntryFormat.V7:
+                    WriteV7FieldsToBuffer(bytesToWrite, buffer);
+                    break;
+                case TarEntryFormat.Ustar:
+                    WriteUstarFieldsToBuffer(bytesToWrite, buffer);
+                    break;
+                case TarEntryFormat.Pax:
+                    WritePaxFieldsToBuffer(bytesToWrite, buffer);
+                    break;
+                case TarEntryFormat.Gnu:
+                    WriteGnuFieldsToBuffer(bytesToWrite, buffer);
+                    break;
+            }
         }
 
         // Gnu and pax save in the name byte array only the UTF8 bytes that fit.
@@ -507,18 +547,18 @@ namespace System.Formats.Tar
         }
 
         // Calculates how many data bytes should be written, depending on the position pointer of the stream.
+        // Only works if the stream is seekable.
         private long GetTotalDataBytesToWrite()
         {
-            if (_dataStream != null)
+            if (_dataStream == null)
             {
-                long length = _dataStream.Length;
-                long position = _dataStream.Position;
-                if (position < length)
-                {
-                    return length - position;
-                }
+                return 0;
             }
-            return 0;
+
+            long length = _dataStream.Length;
+            long position = _dataStream.Position;
+
+            return position < length ? length - position : 0;
         }
 
         // Writes the magic and version fields of a ustar or pax entry into the specified spans.
@@ -609,18 +649,38 @@ namespace System.Formats.Tar
         private static void WriteData(Stream archiveStream, Stream dataStream, long actualLength)
         {
             dataStream.CopyTo(archiveStream); // The data gets copied from the current position
+            WriteEmptyPadding(archiveStream, actualLength);
+        }
 
+        // Calculates the padding for the current entry and writes it after the data.
+        private static void WriteEmptyPadding(Stream archiveStream, long actualLength)
+        {
             int paddingAfterData = TarHelpers.CalculatePadding(actualLength);
             if (paddingAfterData != 0)
             {
                 Debug.Assert(paddingAfterData <= TarHelpers.RecordSize);
 
-                Span<byte> padding = stackalloc byte[TarHelpers.RecordSize];
-                padding = padding.Slice(0, paddingAfterData);
-                padding.Clear();
+                Span<byte> zeros = stackalloc byte[TarHelpers.RecordSize];
+                zeros = zeros.Slice(0, paddingAfterData);
+                zeros.Clear();
 
-                archiveStream.Write(padding);
+                archiveStream.Write(zeros);
             }
+        }
+
+        // Calculates the padding for the current entry and asynchronously writes it after the data.
+        private static ValueTask WriteEmptyPaddingAsync(Stream archiveStream, long actualLength, CancellationToken cancellationToken)
+        {
+            int paddingAfterData = TarHelpers.CalculatePadding(actualLength);
+            if (paddingAfterData != 0)
+            {
+                Debug.Assert(paddingAfterData <= TarHelpers.RecordSize);
+
+                byte[] zeros = new byte[paddingAfterData];
+                return archiveStream.WriteAsync(zeros, cancellationToken);
+            }
+
+            return ValueTask.CompletedTask;
         }
 
         // Asynchronously writes the current header's data stream into the archive stream.

@@ -519,8 +519,6 @@ FCFuncStart(gInterlockedFuncs)
     FCFuncElementSig("CompareExchange", &gsig_SM_RefObj_Obj_Obj_RetObj, COMInterlocked::CompareExchangeObject)
     FCFuncElementSig("ExchangeAdd", &gsig_SM_RefInt_Int_RetInt, COMInterlocked::ExchangeAdd32)
     FCFuncElementSig("ExchangeAdd", &gsig_SM_RefLong_Long_RetLong, COMInterlocked::ExchangeAdd64)
-    FCFuncElement("MemoryBarrier", COMInterlocked::FCMemoryBarrier)
-    FCFuncElement("ReadMemoryBarrier", COMInterlocked::FCMemoryBarrierLoad)
 FCFuncEnd()
 
 FCFuncStart(gJitInfoFuncs)

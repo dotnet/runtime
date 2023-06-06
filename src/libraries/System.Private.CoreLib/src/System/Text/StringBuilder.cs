@@ -20,7 +20,7 @@ namespace System.Text
     // object unless specified otherwise.  This class may be used in conjunction with the String
     // class to carry out modifications upon strings.
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed partial class StringBuilder : ISerializable
     {
         // A StringBuilder is internally represented as a linked list of blocks each of which holds
@@ -232,7 +232,7 @@ namespace System.Text
             info.AddValue(ThreadIDField, 0);
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         private void AssertInvariants()
         {
             Debug.Assert(m_ChunkOffset + m_ChunkChars.Length >= m_ChunkOffset, "The length of the string is greater than int.MaxValue.");
@@ -534,7 +534,7 @@ namespace System.Text
             /// <summary>
             /// Implement IEnumerable.GetEnumerator() to return  'this' as the IEnumerator
             /// </summary>
-            [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)] // Only here to make foreach work
+            [EditorBrowsable(EditorBrowsableState.Never)] // Only here to make foreach work
             public ChunkEnumerator GetEnumerator() { return this; }
 
             /// <summary>

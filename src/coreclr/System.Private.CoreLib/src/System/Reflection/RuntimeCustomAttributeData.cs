@@ -928,7 +928,7 @@ namespace System.Reflection
             // if we are asked to go up the hierarchy chain we have to do it now and regardless of the
             // attribute usage for the specific attribute because a derived attribute may override the usage...
             // ... however if the attribute is sealed we can rely on the attribute usage
-            if (!inherit || (caType.IsSealed && !CustomAttribute.GetAttributeUsage(caType).Inherited))
+            if (!inherit || (caType.IsSealed && !GetAttributeUsage(caType).Inherited))
             {
                 object[] attributes = GetCustomAttributes(type.GetRuntimeModule(), type.MetadataToken, pcas.Count, caType);
                 if (pcas.Count > 0) pcas.CopyTo(attributes, attributes.Length - pcas.Count);
@@ -970,7 +970,7 @@ namespace System.Reflection
             // if we are asked to go up the hierarchy chain we have to do it now and regardless of the
             // attribute usage for the specific attribute because a derived attribute may override the usage...
             // ... however if the attribute is sealed we can rely on the attribute usage
-            if (!inherit || (caType.IsSealed && !CustomAttribute.GetAttributeUsage(caType).Inherited))
+            if (!inherit || (caType.IsSealed && !GetAttributeUsage(caType).Inherited))
             {
                 object[] attributes = GetCustomAttributes(method.GetRuntimeModule(), method.MetadataToken, pcas.Count, caType);
                 if (pcas.Count > 0) pcas.CopyTo(attributes, attributes.Length - pcas.Count);

@@ -320,17 +320,6 @@ RETAIL_CONFIG_STRING_INFO(EXTERNAL_AltJitOs, W("AltJitOS"), "Sets target OS for 
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_AltJitExcludeAssemblies, W("AltJitExcludeAssemblies"), "Do not use AltJit on this semicolon-delimited list of assemblies.")
 #endif // defined(ALLOW_SXS_JIT)
 
-#if defined(FEATURE_STACK_SAMPLING)
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_StackSamplingEnabled, W("StackSamplingEnabled"), 0, "Is stack sampling based tracking of evolving hot methods enabled.")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_StackSamplingAfter, W("StackSamplingAfter"), 0, "When to start sampling (for some sort of app steady state), i.e., initial delay for sampling start in milliseconds.")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_StackSamplingEvery, W("StackSamplingEvery"), 100, "How frequent should thread stacks be sampled in milliseconds.")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_StackSamplingNumMethods, W("StackSamplingNumMethods"), 32, "Number of evolving methods to track as hot and JIT them in the background at a given point of execution.")
-#endif // defined(FEATURE_JIT_SAMPLING)
-
-#if defined(ALLOW_SXS_JIT_NGEN)
-RETAIL_CONFIG_STRING_INFO(INTERNAL_AltJitNgen, W("AltJitNgen"), "Enables AltJit for NGEN and selectively limits it to the specified methods.")
-#endif // defined(ALLOW_SXS_JIT_NGEN)
-
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitHostMaxSlabCache, W("JitHostMaxSlabCache"), 0x1000000, "Sets jit host max slab cache size, 16MB default")
 
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitOptimizeType, W("JitOptimizeType"), 0 /* OPT_DEFAULT */, "")
@@ -357,12 +346,6 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitRegisterFP, W("JitRegisterFP"), 3, "Control
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitELTHookEnabled, W("JitELTHookEnabled"), 0, "On ARM, setting this will emit Enter/Leave/TailCall callbacks")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitMemStats, W("JitMemStats"), 0, "Display JIT memory usage statistics")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitVNMapSelBudget, W("JitVNMapSelBudget"), 100, "Max # of MapSelect's considered for a particular top-level invocation.")
-#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64)
-#define EXTERNAL_FeatureSIMD_Default 1
-#else // !(defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64))
-#define EXTERNAL_FeatureSIMD_Default 0
-#endif // !(defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64))
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_SIMD16ByteOnly, W("SIMD16ByteOnly"), 0, "Limit maximum SIMD vector length to 16 bytes (used by x64_arm64_altjit)")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TrackDynamicMethodDebugInfo, W("TrackDynamicMethodDebugInfo"), 0, "Specifies whether debug info should be generated and tracked for dynamic methods")
 
 #ifdef FEATURE_MULTICOREJIT
@@ -577,11 +560,11 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_GainExponent,                    
 #endif // _DEBUG
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TieredCompilation, W("TieredCompilation"), 1, "Enables tiered compilation")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TC_QuickJit, W("TC_QuickJit"), 1, "For methods that would be jitted, enable using quick JIT when appropriate.")
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TC_QuickJitForLoops, W("TC_QuickJitForLoops"), 1, "When quick JIT is enabled, quick JIT may also be used for methods that contain loops.")
-#else // !(defined(TARGET_AMD64) || defined(TARGET_ARM64))
+#else // !(defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TC_QuickJitForLoops, W("TC_QuickJitForLoops"), 0, "When quick JIT is enabled, quick JIT may also be used for methods that contain loops.")
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TC_AggressiveTiering, W("TC_AggressiveTiering"), 0, "Transition through tiers aggressively.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_BackgroundWorkerTimeoutMs, W("TC_BackgroundWorkerTimeoutMs"), TC_BackgroundWorkerTimeoutMs, "How long in milliseconds the background worker thread may remain idle before exiting.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_CallCountThreshold, W("TC_CallCountThreshold"), TC_CallCountThreshold, "Number of times a method must be called in tier 0 after which it is promoted to the next tier.")
@@ -614,7 +597,7 @@ CONFIG_DWORD_INFO(INTERNAL_OSR_HighId, W("OSR_HighId"), 10000000, "High end of e
 RETAIL_CONFIG_STRING_INFO(INTERNAL_PGODataPath, W("PGODataPath"), "Read/Write PGO data from/to the indicated file.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ReadPGOData, W("ReadPGOData"), 0, "Read PGO data")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_WritePGOData, W("WritePGOData"), 0, "Write PGO data")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TieredPGO, W("TieredPGO"), 0, "Instrument Tier0 code and make counts available to Tier1")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TieredPGO, W("TieredPGO"), 1, "Instrument Tier0 code and make counts available to Tier1")
 
 // TieredPGO_InstrumentOnlyHotCode values:
 //
@@ -745,15 +728,17 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_GDBJitEmitDebugFrame, W("GDBJitEmitDebugFrame"
 #endif
 #endif
 
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_MaxVectorTBitWidth,           W("MaxVectorTBitWidth"),        0, "The maximum width, in bits, that Vector<T> is allowed to be. A value less than 128 is treated as the system default.")
+
 //
 // Hardware Intrinsic ISAs; keep in sync with jitconfigvalues.h
 //
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 //TODO: should implement LoongArch64's features.
 //TODO-RISCV64-CQ: should implement RISCV64's features.
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,  W("EnableHWIntrinsic"),  0, "Allows Base+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,            W("EnableHWIntrinsic"),         0, "Allows Base+ hardware intrinsics to be disabled")
 #else
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,  W("EnableHWIntrinsic"),  1, "Allows Base+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,            W("EnableHWIntrinsic"),         1, "Allows Base+ hardware intrinsics to be disabled")
 #endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)

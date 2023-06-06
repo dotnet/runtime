@@ -2651,7 +2651,8 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 			if (count == mono_opt_jiterpreter_jit_call_trampoline_hit_count) {
 				mono_interp_jit_wasm_jit_call_trampoline (
 					rmethod->method, rmethod, cinfo,
-					rmethod->arg_offsets, mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP
+					initialize_arg_offsets(rmethod, mono_method_signature_internal (rmethod->method)),
+					mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP
 				);
 			} else {
 				int excess = count - mono_opt_jiterpreter_jit_call_queue_flush_threshold;
@@ -3801,6 +3802,10 @@ main_loop:
 		MINT_IN_CASE(MINT_INITLOCALS)
 			memset (locals + ip [1], 0, ip [2]);
 			ip += 3;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_NIY)
+			g_printf ("MONO interpreter: NIY encountered in method %s\n", frame->imethod->method->name);
+			g_assert_not_reached ();
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BREAK)
 			++ip;
@@ -8712,6 +8717,7 @@ mono_jiterp_frame_data_allocator_alloc (FrameDataAllocator *stack, InterpFrame *
 	return frame_data_allocator_alloc(stack, frame, size);
 }
 
+// NOTE: This does not perform a null check and passing a null object or klass is an error!
 MONO_ALWAYS_INLINE gboolean
 mono_jiterp_isinst (MonoObject* object, MonoClass* klass)
 {

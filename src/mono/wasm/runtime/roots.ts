@@ -5,7 +5,7 @@ import cwraps from "./cwraps";
 import { Module } from "./globals";
 import { VoidPtr, ManagedPointer, NativePointer } from "./types/emscripten";
 import { MonoObjectRef, MonoObjectRefNull, MonoObject, is_nullish, WasmRoot, WasmRootBuffer } from "./types/internal";
-import { _zero_region } from "./memory";
+import { _zero_region, localHeapViewU32 } from "./memory";
 
 const maxScratchRoots = 8192;
 let _scratch_root_buffer: WasmRootBuffer | null = null;
@@ -217,7 +217,7 @@ export class WasmRootBufferImpl implements WasmRootBuffer {
     get(index: number): ManagedPointer {
         this._check_in_range(index);
         const offset = this.get_address_32(index);
-        return <any>Module.HEAPU32[offset];
+        return <any>localHeapViewU32()[offset];
     }
 
     set(index: number, value: ManagedPointer): ManagedPointer {
@@ -232,7 +232,7 @@ export class WasmRootBufferImpl implements WasmRootBuffer {
     }
 
     _unsafe_get(index: number): number {
-        return Module.HEAPU32[this.__offset32 + index];
+        return localHeapViewU32()[this.__offset32 + index];
     }
 
     _unsafe_set(index: number, value: ManagedPointer | NativePointer): void {
@@ -330,7 +330,7 @@ class WasmJsOwnedRoot<T extends MonoObject> implements WasmRoot<T> {
         // .set performs an expensive write barrier, and that is not necessary in most cases
         //  for clear since clearing a root cannot cause new objects to survive a GC
         const address32 = this.__buffer.get_address_32(this.__index);
-        Module.HEAPU32[address32] = 0;
+        localHeapViewU32()[address32] = 0;
     }
 
     release(): void {
@@ -379,7 +379,7 @@ class WasmExternalRoot<T extends MonoObject> implements WasmRoot<T> {
     }
 
     get(): T {
-        const result = Module.HEAPU32[this.__external_address_32];
+        const result = localHeapViewU32()[this.__external_address_32];
         return <any>result;
     }
 
@@ -425,7 +425,7 @@ class WasmExternalRoot<T extends MonoObject> implements WasmRoot<T> {
     clear(): void {
         // .set performs an expensive write barrier, and that is not necessary in most cases
         //  for clear since clearing a root cannot cause new objects to survive a GC
-        Module.HEAPU32[<any>this.__external_address >>> 2] = 0;
+        localHeapViewU32()[<any>this.__external_address >>> 2] = 0;
     }
 
     release(): void {
