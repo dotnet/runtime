@@ -2178,18 +2178,6 @@ ves_icall_System_Threading_Interlocked_Exchange_Object (MonoObject *volatile*loc
 	mono_gc_wbarrier_generic_nostore_internal ((gpointer)location); // FIXME volatile
 }
 
-gfloat ves_icall_System_Threading_Interlocked_Exchange_Single (gfloat *location, gfloat value)
-{
-	IntFloatUnion val, ret;
-	if (G_UNLIKELY (!location))
-		return (gfloat)set_pending_null_reference_exception ();
-
-	val.fval = value;
-	ret.ival = mono_atomic_xchg_i32((gint32 *) location, val.ival);
-
-	return ret.fval;
-}
-
 gint64
 ves_icall_System_Threading_Interlocked_Exchange_Long (gint64 *location, gint64 value)
 {
@@ -2207,19 +2195,6 @@ ves_icall_System_Threading_Interlocked_Exchange_Long (gint64 *location, gint64 v
 	}
 #endif
 	return mono_atomic_xchg_i64 (location, value);
-}
-
-gdouble
-ves_icall_System_Threading_Interlocked_Exchange_Double (gdouble *location, gdouble value)
-{
-	LongDoubleUnion val, ret;
-	if (G_UNLIKELY (!location))
-		return (gdouble)set_pending_null_reference_exception ();
-
-	val.fval = value;
-	ret.ival = (gint64)mono_atomic_xchg_i64((gint64 *) location, val.ival);
-
-	return ret.fval;
 }
 
 gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *location, gint32 value, gint32 comparand)
@@ -2259,46 +2234,6 @@ ves_icall_System_Threading_Interlocked_CompareExchange_Object (MonoObject *volat
 	//
 	*res = (MonoObject*)mono_atomic_cas_ptr ((volatile gpointer*)location, *value, *comparand);
 	mono_gc_wbarrier_generic_nostore_internal ((gpointer)location); // FIXME volatile
-}
-
-gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single (gfloat *location, gfloat value, gfloat comparand)
-{
-	IntFloatUnion val, ret, cmp;
-	if (G_UNLIKELY (!location))
-		return (gfloat)set_pending_null_reference_exception ();
-
-	val.fval = value;
-	cmp.fval = comparand;
-	ret.ival = mono_atomic_cas_i32((gint32 *) location, val.ival, cmp.ival);
-
-	return ret.fval;
-}
-
-gdouble
-ves_icall_System_Threading_Interlocked_CompareExchange_Double (gdouble *location, gdouble value, gdouble comparand)
-{
-	if (G_UNLIKELY (!location))
-		return (gdouble)set_pending_null_reference_exception ();
-
-#if SIZEOF_VOID_P == 8
-	LongDoubleUnion val, comp, ret;
-
-	val.fval = value;
-	comp.fval = comparand;
-	ret.ival = (gint64)mono_atomic_cas_ptr((gpointer *) location, (gpointer)val.ival, (gpointer)comp.ival);
-
-	return ret.fval;
-#else
-	gdouble old;
-
-	mono_interlocked_lock ();
-	old = *location;
-	if (old == comparand)
-		*location = value;
-	mono_interlocked_unlock ();
-
-	return old;
-#endif
 }
 
 gint64
