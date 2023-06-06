@@ -9,12 +9,12 @@
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
         <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls and passing boxed objects.</source>
-        <target state="new">Binding logic was not generated for a binder call. Unsupported input patterns include generic calls and passing boxed objects.</target>
+        <target state="translated">Nie wygenerowano logiki powiązania dla wywołania integratora. Nieobsługiwane wzorce wejściowe obejmują wywołania ogólne i przekazywanie obiektów w ramce.</target>
         <note />
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoTitle">
         <source>The target type for a binder call could not be determined</source>
-        <target state="new">The target type for a binder call could not be determined</target>
+        <target state="translated">Nie można określić typu docelowego dla wywołania integratora</target>
         <note />
       </trans-unit>
       <trans-unit id="DictionaryKeyNotSupported">
@@ -79,12 +79,12 @@
       </trans-unit>
       <trans-unit id="ValueTypesInvalidForBindMessageFormat">
         <source>Binding logic was not generated for a binder call with target type '{0}'. Value types are invalid inputs to configuration 'Bind' methods.</source>
-        <target state="new">Binding logic was not generated for a binder call with target type '{0}'. Value types are invalid inputs to configuration 'Bind' methods.</target>
+        <target state="translated">Nie wygenerowano logiki powiązania dla wywołania integratora z typem docelowym „{0}”. Typy wartości to nieprawidłowe dane wejściowe do konfiguracji metod „Powiązanie”.</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueTypesInvalidForBindTitle">
         <source>Value types are invalid inputs to configuration 'Bind' methods</source>
-        <target state="new">Value types are invalid inputs to configuration 'Bind' methods</target>
+        <target state="translated">Typy wartości to nieprawidłowe dane wejściowe do konfiguracji metod „Powiązanie”</target>
         <note />
       </trans-unit>
     </body>
