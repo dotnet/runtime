@@ -67,6 +67,38 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
         {
             var resourcePath = bundledResource.ItemSpec;
 
+            bundledResource.SetMetadata("ResourceType", "DataResource");
+            try
+            {
+                using FileStream resourceContents = File.OpenRead(resourcePath);
+                using PEReader resourcePEReader = new(resourceContents);
+                if (resourcePEReader.HasMetadata)
+                {
+                    string? managedAssemblyCulture = null;
+
+                    var resourceMetadataReader = PEReaderExtensions.GetMetadataReader(resourcePEReader);
+                    if (resourceMetadataReader.IsAssembly)
+                    {
+                        bundledResource.SetMetadata("ResourceType", "AssemblyResource");
+                        managedAssemblyCulture = resourceMetadataReader.GetString(resourceMetadataReader.GetAssemblyDefinition().Culture);
+                    }
+
+                    bool isSatelliteAssembly = !string.IsNullOrEmpty(managedAssemblyCulture) && !managedAssemblyCulture!.Equals("neutral", StringComparison.OrdinalIgnoreCase);
+                    if (resourcePath.EndsWith(".resources.dll", StringComparison.InvariantCultureIgnoreCase) || isSatelliteAssembly)
+                    {
+                        bundledResource.SetMetadata("ResourceType", "SatelliteAssemblyResource");
+                        if (isSatelliteAssembly) {
+                            bundledResource.SetMetadata("Culture", managedAssemblyCulture);
+                        }
+                    }
+                }
+            }
+            catch (BadImageFormatException e)
+            {
+                if (resourcePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                    Log.LogMessage(MessageImportance.High, $"Resource '{resourcePath}' was interpreted with ResourceType 'DataResource' but has a '.dll' extension. Error: {e}");
+            }
+
             var registeredName = bundledResource.GetMetadata("RegisteredName");
             if (string.IsNullOrEmpty(registeredName))
             {
@@ -102,37 +134,6 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                 resourcesWithDataSymbol = new[] {registeredName};
             }
             resourcesForDataSymbolDictionary.Add(resourceDataSymbol, resourcesWithDataSymbol);
-
-            bundledResource.SetMetadata("ResourceType", "DataResource");
-            try
-            {
-                using FileStream resourceContents = File.OpenRead(resourcePath);
-                using PEReader resourcePEReader = new(resourceContents);
-                if (resourcePEReader.HasMetadata)
-                {
-                    string? managedAssemblyCulture = null;
-
-                    var resourceMetadataReader = PEReaderExtensions.GetMetadataReader(resourcePEReader);
-                    if (resourceMetadataReader.IsAssembly)
-                    {
-                        bundledResource.SetMetadata("ResourceType", "AssemblyResource");
-                        managedAssemblyCulture = resourceMetadataReader.GetString(resourceMetadataReader.GetAssemblyDefinition().Culture);
-                    }
-
-                    bool isSatelliteAssembly = !string.IsNullOrEmpty(managedAssemblyCulture) && !managedAssemblyCulture!.Equals("neutral", StringComparison.OrdinalIgnoreCase);
-                    if (resourcePath.EndsWith(".resources.dll", StringComparison.InvariantCultureIgnoreCase) || isSatelliteAssembly)
-                    {
-                        bundledResource.SetMetadata("ResourceType", "SatelliteAssemblyResource");
-                        if (isSatelliteAssembly)
-                            bundledResource.SetMetadata("Culture", managedAssemblyCulture);
-                    }
-                }
-            }
-            catch (BadImageFormatException e)
-            {
-                if (resourcePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-                    Log.LogMessage(MessageImportance.High, $"Resource '{resourcePath}' was interpreted with ResourceType 'DataResource' but has a '.dll' extension. Error: {e}");
-            }
 
             bundledResources.Add(bundledResource);
         }
@@ -302,7 +303,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                 case "SatelliteAssemblyResource":
                 {
                     preloadedStruct = satelliteAssemblyTemplate;
-                    preloadedStruct.Replace("%Culture%", tuple.culture);
+                    preloadedStruct = preloadedStruct.Replace("%Culture%", tuple.culture);
                     resourceId = tuple.registeredName;
                     preallocatedSatelliteAssemblies.Add($"    (MonoBundledResource *)&{tuple.resourceName}");
                     satelliteAssembliesCount += 1;
