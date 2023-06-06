@@ -20,12 +20,12 @@ namespace Microsoft.Interop
             public const string InvalidLibraryImportAttributeUsage = Prefix + "1050";
             public const string TypeNotSupported = Prefix + "1051";
             public const string ConfigurationNotSupported = Prefix + "1052";
+            public const string InvalidGeneratedComInterfaceAttributeUsage = Prefix + "1090";
             public const string MethodNotDeclaredInAttributedInterface = Prefix + "1091";
-            public const string InvalidGeneratedComInterfaceAttributeUsage = Prefix + "1092";
-            public const string MultipleComInterfaceBaseTypes = Prefix + "1093";
-            public const string AnalysisFailed = Prefix + "1094";
-            public const string BaseInterfaceFailedGeneration = Prefix + "1095";
-            public const string InvalidGeneratedComClassAttributeUsage = Prefix + "1096";
+            public const string MultipleComInterfaceBaseTypes = Prefix + "1092";
+            public const string AnalysisFailed = Prefix + "1093";
+            public const string BaseInterfaceFailedGeneration = Prefix + "1094";
+            public const string InvalidGeneratedComClassAttributeUsage = Prefix + "1095";
         }
 
         private const string Category = "ComInterfaceGenerator";

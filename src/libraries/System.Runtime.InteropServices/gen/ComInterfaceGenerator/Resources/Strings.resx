@@ -250,7 +250,7 @@
     <value>Analysis of method '{0}' has failed. ComInterfaceGenerator will not generate code for this method.</value>
   </data>
   <data name="AnalysisFailedTitle" xml:space="preserve">
-    <value>Analysis for generation has failed.</value>
+    <value>Analysis for COM interface generation has failed.</value>
   </data>
   <data name="GeneratedComInterfaceStringMarshallingMustMatchBase" xml:space="preserve">
     <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</value>

@@ -2,17 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using SharedTypes.ComInterfaces;
 using Xunit;
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using static ComInterfaceGenerator.Tests.ComInterfaces;
+using System.Collections.Generic;
 
 namespace ComInterfaceGenerator.Tests
 {
@@ -31,25 +26,25 @@ namespace ComInterfaceGenerator.Tests
         public void IGetAndSetInt()
         {
             var obj = CreateWrapper<GetAndSetInt, IGetAndSetInt>();
-            obj.SetInt(0);
-            _ = obj.GetInt();
+            obj.SetInt(1);
+            Assert.Equal(1, obj.GetInt());
         }
-
 
         [Fact]
         public void IDerived()
         {
             var obj = CreateWrapper<Derived, IDerived>();
-            _ = obj.GetInt();
-            obj.SetInt(0);
+            obj.SetInt(1);
+            Assert.Equal(1, obj.GetInt());
             obj.SetName("A");
-            _ = obj.GetName();
+            Assert.Equal("A", obj.GetName());
         }
 
         [Fact]
         public void IBool()
         {
             var obj = CreateWrapper<IBoolImpl, IBool>();
+            Assert.False(obj.Get());
             obj.Set(true);
             Assert.True(obj.Get());
         }
@@ -59,7 +54,7 @@ namespace ComInterfaceGenerator.Tests
         {
             var obj = CreateWrapper<IFloatImpl, IFloat>();
             obj.Set(2.71F);
-            _ = obj.Get();
+            Assert.Equal(2.71F, obj.Get());
         }
 
         [Fact]
@@ -69,22 +64,24 @@ namespace ComInterfaceGenerator.Tests
             int[] data = new int[] { 1, 2, 3 };
             int length = data.Length;
             obj.Set(data, length);
-            _ = obj.Get(out int _);
-            _ = obj.Get2(out var _);
+            Assert.Equal(data, obj.Get(out int _));
+            obj.Get2(out var value);
+            Assert.Equal(data, value);
         }
 
         [Fact]
         public void IJaggedIntArray()
         {
-            int[][] expectedData = new int[][] { new int[] { 1, 2, 3 }, new int[] { 4, 5 }, new int[] { 6, 7, 8, 9 } };
-            int[] expectedWidths = new int[] { 3, 2, 4 };
-            int expectedLength = expectedData.Length;
+            int[][] data = new int[][] { new int[] { 1, 2, 3 }, new int[] { 4, 5 }, new int[] { 6, 7, 8, 9 } };
+            int[] widths = new int[] { 3, 2, 4 };
+            int length = data.Length;
 
             var obj = CreateWrapper<IJaggedIntArrayImpl, IJaggedIntArray>();
 
-            obj.Set(expectedData, expectedWidths, expectedLength);
-            _ = obj.Get(out int[] actualWidths, out int actualLength);
-            _ = obj.Get2(out var _, out var _);
+            obj.Set(data, widths, length);
+            Assert.Equal(data, obj.Get(out _, out _));
+            _ = obj.Get2(out var value, out _);
+            Assert.Equal(data, value);
         }
 
         [Fact]
@@ -96,7 +93,6 @@ namespace ComInterfaceGenerator.Tests
             _ = obj.Get();
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/87139")]
         [Fact]
         public void ICollectionMarshallingFails()
         {
@@ -107,23 +103,6 @@ namespace ComInterfaceGenerator.Tests
             );
             Assert.Throws<ArgumentException>(() =>
                 obj.Set(new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 })
-            );
-        }
-
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/87139")]
-        [Fact]
-        public void IJaggedIntArrayMarshallingFails()
-        {
-            var obj = CreateWrapper<IJaggedIntArrayMarshallingFailsImpl, IJaggedIntArrayMarshallingFails>();
-
-            Assert.Throws<ArgumentException>(() =>
-            _ = obj.Get(out _, out _)
-            );
-            Assert.Throws<ArgumentException>(() =>
-            _ = obj.Get2(out _, out _)
-            );
-            Assert.Throws<ArgumentException>(() =>
-                obj.Set(new int[][] { new int[] { 1 }, new int[] { 1, 2, 3 }, new int[] { 2, 3, 4, 5 } }, new int[] {1, 3, 4}, 3)
             );
         }
     }
@@ -260,10 +239,12 @@ namespace ComInterfaceGenerator.Tests
             }
         }
 
-        [CustomMarshaller(typeof(int), MarshalMode.ElementIn | MarshalMode.ElementOut | MarshalMode.Default, typeof(ThrowOn4thElementMarshalled))]
+        [CustomMarshaller(typeof(int), MarshalMode.ElementIn, typeof(ThrowOn4thElementMarshalled))]
+        [CustomMarshaller(typeof(int), MarshalMode.ElementOut, typeof(ThrowOn4thElementMarshalled))]
         internal static class ThrowOn4thElementMarshalled
         {
             static int _marshalledCount = 0;
+            static int _unmarshalledCount = 0;
             public static nint ConvertToUnmanaged(int managed)
             {
                 if (_marshalledCount++ == 3)
@@ -276,6 +257,11 @@ namespace ComInterfaceGenerator.Tests
 
             public static int ConvertToManaged(nint unmanaged)
             {
+                if (_unmarshalledCount++ == 3)
+                {
+                    _unmarshalledCount = 0;
+                    throw new ArgumentException("The element was the 4th element (with 0-based index 3)");
+                }
                 return (int)unmanaged;
             }
         }
@@ -307,7 +293,7 @@ namespace ComInterfaceGenerator.Tests
         {
             [return: MarshalUsing(CountElementName = nameof(length)),
                 MarshalUsing(ElementIndirectionDepth = 1, CountElementName = nameof(widths)),
-                MarshalUsing(typeof(ThrowOn4thElementMarshalled), ElementIndirectionDepth =2)]
+                MarshalUsing(typeof(ThrowOn4thElementMarshalled), ElementIndirectionDepth = 2)]
             int[][] Get(
                 [MarshalUsing(CountElementName = nameof(length))]
                 out int[] widths,
@@ -316,7 +302,7 @@ namespace ComInterfaceGenerator.Tests
             int Get2(
                 [MarshalUsing(CountElementName = MarshalUsingAttribute.ReturnsCountValue),
                 MarshalUsing(ElementIndirectionDepth = 1, CountElementName = nameof(widths)),
-                MarshalUsing(typeof(ThrowOn4thElementMarshalled), ElementIndirectionDepth =2)]
+                MarshalUsing(typeof(ThrowOn4thElementMarshalled), ElementIndirectionDepth = 2)]
                 out int[][] array,
                 [MarshalUsing(CountElementName = MarshalUsingAttribute.ReturnsCountValue)]
                 out int[] widths);
@@ -324,7 +310,7 @@ namespace ComInterfaceGenerator.Tests
             void Set(
                 [MarshalUsing(CountElementName = nameof(length)),
                 MarshalUsing(ElementIndirectionDepth = 1, CountElementName = nameof(widths)),
-                MarshalUsing(typeof(ThrowOn4thElementMarshalled), ElementIndirectionDepth =2)]
+                MarshalUsing(typeof(ThrowOn4thElementMarshalled), ElementIndirectionDepth = 2)]
                 int[][] array,
                 [MarshalUsing(CountElementName = nameof(length))]
                 int[] widths,
@@ -364,7 +350,7 @@ namespace ComInterfaceGenerator.Tests
         }
 
         [GeneratedComClass]
-        public partial  class IInterfaceImpl: IInterface
+        public partial class IInterfaceImpl : IInterface
         {
             IInt _data = new IIntImpl();
             IInt IInterface.Get() => _data;
