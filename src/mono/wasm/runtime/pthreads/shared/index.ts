@@ -159,9 +159,7 @@ export function mono_wasm_uninstall_js_worker_interop(uninstall_js_synchronizati
 
     forceDisposeProxies(false);
     if (uninstall_js_synchronization_context) {
-        Module.safeSetTimeout(() => {
-            Module.runtimeKeepalivePop();
-        }, 0);
+        Module.runtimeKeepalivePop();
     }
 
     worker_js_synchronization_context_installed = false;

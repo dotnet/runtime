@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         public static Task<T> RunAsync<T>(Func<Task<T>> body)
         {
-            var parentScheduler = TaskScheduler.FromCurrentSynchronizationContext();
+            var parentContext = SynchronizationContext.Current ?? new SynchronizationContext();
             var tcs = new TaskCompletionSource<T>();
             var capturedContext = SynchronizationContext.Current;
             var t = new Thread(() =>
@@ -31,19 +31,16 @@ namespace System.Runtime.InteropServices.JavaScript
                     // the continuation is executed by setTimeout() callback of the thread.
                     res.ContinueWith(t =>
                     {
+                        parentContext.Post((_) => {
+                            if (res.IsFaulted)
+                                tcs.SetException(res.Exception);
+                            else if (t.IsCanceled)
+                                tcs.SetCanceled();
+                            else
+                                tcs.SetResult(res.Result);
+                        }, null);
                         JSHostImplementation.UninstallWebWorkerInterop();
-                        return t;
-                    }, childScheduler)
-                    .ContinueWith((t) =>
-                    {
-                        if (res.IsFaulted)
-                            tcs.SetException(res.Exception);
-                        else if (t.IsCanceled)
-                            tcs.SetCanceled();
-                        else
-                            tcs.SetResult(res.Result);
-
-                    }, parentScheduler);
+                    }, childScheduler);
                 }
                 catch (Exception e)
                 {
@@ -58,7 +55,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static Task RunAsyncVoid(Func<Task> body)
         {
-            var parentScheduler = TaskScheduler.FromCurrentSynchronizationContext();
+            var parentContext = SynchronizationContext.Current ?? new SynchronizationContext();
             var tcs = new TaskCompletionSource();
             var capturedContext = SynchronizationContext.Current;
             var t = new Thread(() =>
@@ -72,18 +69,16 @@ namespace System.Runtime.InteropServices.JavaScript
                     // the continuation is executed by setTimeout() callback of the thread.
                     res.ContinueWith(t =>
                     {
+                        parentContext.Post((_) => {
+                            if (res.IsFaulted)
+                                tcs.SetException(res.Exception);
+                            else if (t.IsCanceled)
+                                tcs.SetCanceled();
+                            else
+                                tcs.SetResult();
+                        }, null);
                         JSHostImplementation.UninstallWebWorkerInterop();
-                        return t;
-                    }, childScheduler)
-                    .ContinueWith((t) =>
-                    {
-                        if (res.IsFaulted)
-                            tcs.SetException(res.Exception);
-                        else if (t.IsCanceled)
-                            tcs.SetCanceled();
-                        else
-                            tcs.SetResult();
-                    }, parentScheduler);
+                    }, childScheduler);
                 }
                 catch (Exception e)
                 {
