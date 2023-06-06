@@ -19,6 +19,7 @@ namespace System.Runtime.InteropServices.JavaScript
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.WebWorker", "System.Runtime.InteropServices.JavaScript")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "work in progress")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern", Justification = "work in progress")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:UnrecognizedReflectionPattern", Justification = "work in progress")]
         public static Task<T> RunAsync<T>(Func<Task<T>> body)
         {
             if(runAsyncMethod == null)
