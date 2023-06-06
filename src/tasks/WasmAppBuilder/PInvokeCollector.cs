@@ -54,10 +54,9 @@ internal sealed class PInvokeComparer : IEqualityComparer<PInvoke>
 }
 
 
-
 internal sealed class PInvokeCollector {
     private readonly Dictionary<Assembly, bool> _assemblyDisableRuntimeMarshallingAttributeCache = new();
-    private TaskLoggingHelper Log { get; set; }
+    private TaskLoggingHelper Log { get; init; }
 
     public PInvokeCollector(TaskLoggingHelper log)
     {
@@ -235,10 +234,7 @@ internal sealed class PInvokeCollector {
 
         return value;
     }
-
-
 }
-
 
 #pragma warning disable CS0649
 internal sealed class PInvokeCallback

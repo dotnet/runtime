@@ -35,7 +35,7 @@ internal sealed class PInvokeTableGenerator
         var pinvokes = new List<PInvoke>();
         var callbacks = new List<PInvokeCallback>();
 
-        PInvokeCollector pinvokeCollector = new PInvokeCollector(Log);
+        PInvokeCollector pinvokeCollector = new(Log);
 
         var resolver = new PathAssemblyResolver(assemblies);
         using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
