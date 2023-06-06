@@ -280,7 +280,7 @@
     </ItemGroup>
     <ItemGroup Condition="'$(TargetsLinux)' == 'true' and '$(MonoAOTEnableLLVM)' == 'true' and '$(TargetArchitecture)' != 'wasm'">
       <_MonoAOTCXXFLAGS Include="-I$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\include\c++\v1" />
-      <_MonoAOTCXXFLAGS Include="-L$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib"
+      <_MonoAOTCXXFLAGS Include="-L$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib" />
       <_MonoAOTCXXFLAGS Include="-stdlib=libc++" />
       <_MonoAOTCXXFLAGS Include="-Wl,-rpath,."/>
     </ItemGroup>
