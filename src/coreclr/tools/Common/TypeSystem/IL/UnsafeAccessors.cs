@@ -52,15 +52,23 @@ namespace Internal.IL
                     // A return type is required for a constructor, otherwise
                     // we don't know the type to construct.
                     // The name is defined by the runtime and should be empty.
-                    if (sig.ReturnType.IsVoid || !string.IsNullOrEmpty(name))
+                    if (retType.IsVoid || !string.IsNullOrEmpty(name))
                     {
                         ThrowHelper.ThrowBadImageFormatException(InvalidUnsafeAccessorUsage);
                     }
 
-                    context.TargetType = retType;
+                    // Due to how some types degrade, we block on parameterized
+                    // types. For example ref or pointer.
+                    if ((retType.IsParameterizedType && !retType.IsArray)
+                        || retType.IsFunctionPointer)
+                    {
+                        ThrowHelper.ThrowBadImageFormatException(InvalidUnsafeAccessorUsage);
+                    }
+
+                    context.TargetType = ValidateTargetType(retType);
                     if (!TrySetTargetMethodCtor(ref context))
                     {
-                        ThrowHelper.ThrowMissingMethodException(retType, ".ctor", null);
+                        ThrowHelper.ThrowMissingMethodException(context.TargetType, ".ctor", null);
                     }
                     break;
                 case UnsafeAccessorKind.Method:
@@ -71,18 +79,18 @@ namespace Internal.IL
                         ThrowHelper.ThrowBadImageFormatException(InvalidUnsafeAccessorUsage);
                     }
 
-                    context.TargetType = firstArgType;
+                    context.TargetType = ValidateTargetType(firstArgType);
                     context.IsTargetStatic = kind == UnsafeAccessorKind.StaticMethod;
                     if (!TrySetTargetMethod(ref context, name))
                     {
-                        ThrowHelper.ThrowMissingMethodException(firstArgType, name, null);
+                        ThrowHelper.ThrowMissingMethodException(context.TargetType, name, null);
                     }
                     break;
 
                 case UnsafeAccessorKind.Field:
                 case UnsafeAccessorKind.StaticField:
                     // Field access requires a single argument for target type and a return type.
-                    if (sig.Length != 1 || sig.ReturnType.IsVoid)
+                    if (sig.Length != 1 || retType.IsVoid)
                     {
                         ThrowHelper.ThrowBadImageFormatException(InvalidUnsafeAccessorUsage);
                     }
@@ -90,7 +98,7 @@ namespace Internal.IL
                     // The return type must be byref.
                     // If the non-static field access is for a
                     // value type, the instance must be byref.
-                    if (!sig.ReturnType.IsByRef
+                    if (!retType.IsByRef
                         || (kind == UnsafeAccessorKind.Field
                             && firstArgType.IsValueType
                             && !firstArgType.IsByRef))
@@ -98,11 +106,11 @@ namespace Internal.IL
                         ThrowHelper.ThrowBadImageFormatException(InvalidUnsafeAccessorUsage);
                     }
 
-                    context.TargetType = firstArgType;
+                    context.TargetType = ValidateTargetType(firstArgType);
                     context.IsTargetStatic = kind == UnsafeAccessorKind.StaticField;
                     if (!TrySetTargetField(ref context, name, retType))
                     {
-                        ThrowHelper.ThrowMissingFieldException(sig.ReturnType, name);
+                        ThrowHelper.ThrowMissingFieldException(context.TargetType, name);
                     }
                     break;
 
@@ -183,19 +191,26 @@ namespace Internal.IL
             public FieldDesc TargetField;
         }
 
-        private static bool TrySetTargetMethod(ref GenerationContext context, string name)
+        private static TypeDesc ValidateTargetType(TypeDesc targetTypeMaybe)
         {
-            TypeDesc targetType = context.TargetType.IsByRef
-                ? ((ParameterizedType)context.TargetType).ParameterType
-                : context.TargetType;
+            TypeDesc targetType = targetTypeMaybe.IsByRef
+                ? ((ParameterizedType)targetTypeMaybe).ParameterType
+                : targetTypeMaybe;
 
             // Due to how some types degrade, we block on parameterized
-            // types that are represented as TypeDesc. For example ref or pointer.
+            // types. For example ref or pointer.
             if ((targetType.IsParameterizedType && !targetType.IsArray)
-                || targetType.IsFunctionPointerType)
+                || targetType.IsFunctionPointer)
             {
                 ThrowHelper.ThrowBadImageFormatException(InvalidUnsafeAccessorUsage);
             }
+
+            return targetType;
+        }
+
+        private static bool TrySetTargetMethod(ref GenerationContext context, string name)
+        {
+            TypeDesc targetType = context.TargetType;
 
             TypeDesc declTypeDesc;
             TypeDesc maybeTypeDesc;
@@ -290,9 +305,7 @@ namespace Internal.IL
 
         private static bool TrySetTargetField(ref GenerationContext context, string name, TypeDesc fieldType)
         {
-            TypeDesc targetType = context.TargetType.IsByRef
-                ? ((ParameterizedType)context.TargetType).ParameterType
-                : context.TargetType;
+            TypeDesc targetType = context.TargetType;
 
             foreach (FieldDesc fd in targetType.GetFields())
             {

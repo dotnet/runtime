@@ -1122,6 +1122,20 @@ namespace
         FieldDesc* TargetField;
     };
 
+    TypeHandle ValidateTargetType(TypeHandle targetTypeMaybe)
+    {
+        TypeHandle targetType = targetTypeMaybe.IsByRef()
+            ? targetTypeMaybe.GetTypeParam()
+            : targetTypeMaybe;
+
+        // Due to how some types degrade, we block on parameterized
+        // types that are represented as TypeDesc. For example ref or pointer.
+        if (targetType.IsTypeDesc())
+            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
+
+        return targetType;
+    }
+
     bool TrySetTargetMethod(
         GenerationContext& cxt,
         LPCUTF8 methodName)
@@ -1132,14 +1146,8 @@ namespace
                 || cxt.Kind == UnsafeAccessorKind::Method
                 || cxt.Kind == UnsafeAccessorKind::StaticMethod);
 
-        TypeHandle targetType = cxt.TargetType.IsByRef()
-            ? cxt.TargetType.GetTypeParam()
-            : cxt.TargetType;
-
-        // Due to how some types degrade, we block on parameterized
-        // types that are represented as TypeDesc. For example ref or pointer.
-        if (targetType.IsTypeDesc())
-            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
+        TypeHandle targetType = cxt.TargetType;
+        _ASSERTE(!targetType.IsTypeDesc());
 
         CorElementType declCorType;
         CorElementType maybeCorType;
@@ -1228,7 +1236,10 @@ namespace
         _ASSERTE(!cxt.TargetType.IsNull());
         _ASSERTE(cxt.Kind == UnsafeAccessorKind::Constructor);
 
-        PTR_MethodTable pMT = cxt.TargetType.GetMethodTable();
+        TypeHandle targetType = cxt.TargetType;
+        _ASSERTE(!targetType.IsTypeDesc());
+
+        PTR_MethodTable pMT = targetType.GetMethodTable();
 
         // Special case the default constructor case.
         if (cxt.DeclarationSig.NumFixedArgs() == 0
@@ -1253,15 +1264,8 @@ namespace
         _ASSERTE(cxt.Kind == UnsafeAccessorKind::Field
                 || cxt.Kind == UnsafeAccessorKind::StaticField);
 
-        TypeHandle targetType = cxt.TargetType.IsByRef()
-            ? cxt.TargetType.GetTypeParam()
-            : cxt.TargetType;
-        _ASSERTE(!targetType.IsByRef());
-
-        // Due to how some types degrade, we block on parameterized
-        // types that are represented as TypeDesc. For example ref or pointer.
-        if (targetType.IsTypeDesc())
-            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
+        TypeHandle targetType = cxt.TargetType;
+        _ASSERTE(!targetType.IsTypeDesc());
 
         ApproxFieldDescIterator fdIterator(
             targetType.GetMethodTable(),
@@ -1424,9 +1428,14 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
             ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
         }
 
-        context.TargetType = retType;
+        // Due to how some types degrade, we block on parameterized
+        // types that are represented as TypeDesc. For example ref or pointer.
+        if (retType.IsTypeDesc())
+            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
+
+        context.TargetType = ValidateTargetType(retType);
         if (!TrySetTargetMethodCtor(context))
-            MemberLoader::ThrowMissingMethodException(retType.GetMethodTable(), ".ctor");
+            MemberLoader::ThrowMissingMethodException(context.TargetType.GetMethodTable(), ".ctor");
         break;
 
     case UnsafeAccessorKind::Method:
@@ -1435,10 +1444,10 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
         if (firstArgType.IsNull())
             ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
 
-        context.TargetType = firstArgType;
+        context.TargetType = ValidateTargetType(firstArgType);
         context.IsTargetStatic = kind == UnsafeAccessorKind::StaticMethod;
         if (!TrySetTargetMethod(context, name.GetUTF8()))
-            MemberLoader::ThrowMissingMethodException(firstArgType.GetMethodTable(), name.GetUTF8());
+            MemberLoader::ThrowMissingMethodException(context.TargetType.GetMethodTable(), name.GetUTF8());
         break;
 
     case UnsafeAccessorKind::Field:
@@ -1460,10 +1469,10 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
             ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
         }
 
-        context.TargetType = firstArgType;
+        context.TargetType = ValidateTargetType(firstArgType);
         context.IsTargetStatic = kind == UnsafeAccessorKind::StaticField;
         if (!TrySetTargetField(context, name.GetUTF8(), retType.GetTypeParam()))
-            MemberLoader::ThrowMissingFieldException(firstArgType.GetMethodTable(), name.GetUTF8());
+            MemberLoader::ThrowMissingFieldException(context.TargetType.GetMethodTable(), name.GetUTF8());
         break;
 
     default:

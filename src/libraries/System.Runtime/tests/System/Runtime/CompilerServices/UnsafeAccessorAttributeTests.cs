@@ -247,6 +247,7 @@ public static class UnsafeAccessorAttributeTests
         Assert.Throws<BadImageFormatException>(() => FieldMustHaveSingleArgument((UserDataClass)null, 0));
         Assert.Throws<BadImageFormatException>(() => StaticFieldMustHaveSingleArgument((UserDataClass)null, 0));
         Assert.Throws<BadImageFormatException>(() => InvalidKindValue(null));
+        Assert.Throws<BadImageFormatException>(() => InvalidCtorSignature());
         Assert.Throws<BadImageFormatException>(() => InvalidCtorName());
         Assert.Throws<BadImageFormatException>(() => InvalidCtorType());
         Assert.Throws<BadImageFormatException>(() => LookUpFailsOnPointers(null));
@@ -269,6 +270,9 @@ public static class UnsafeAccessorAttributeTests
 
         [UnsafeAccessor((UnsafeAccessorKind)100, Name=UserDataClass.StaticMethodVoidName)]
         extern static void InvalidKindValue(UserDataClass d);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        extern static ref UserDataClass InvalidCtorSignature();
 
         [UnsafeAccessor(UnsafeAccessorKind.Constructor, Name="_ShouldBeNull_")]
         extern static UserDataClass InvalidCtorName();
