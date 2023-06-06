@@ -99,8 +99,6 @@ namespace System.Text.Json.Serialization
         }
 
         /// <inheritdoc />
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "The ctor is marked RequiresDynamicCode.")]
         public sealed override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options) =>
             EnumConverterFactory.Create(typeToConvert, _converterOptions, _namingPolicy, options);
     }
