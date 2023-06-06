@@ -89,6 +89,7 @@ namespace System
             ClassLibDidNotTranslateExceptionID = 4,              // "Unable to translate failure into a classlib-specific exception object."
             UnhandledException = 5,                              // "Unhandled exception: a managed exception was not handled before reaching unmanaged code"
             UnhandledExceptionFromPInvoke = 6,                   // "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
+            EnvironmentFailFast = 7,
         }
 
         // This is the classlib-provided fail-fast function that will be invoked whenever the runtime
@@ -100,7 +101,7 @@ namespace System
             RuntimeImports.RhpFallbackFailFast();
         }
 
-        public static void FailFast(string message)
+        public static void FailFastInternal(string message)
         {
             RuntimeImports.RhpFallbackFailFast();
         }
@@ -110,7 +111,7 @@ namespace System
         {
             Exception ex = exceptionObj as Exception;
             if (ex == null)
-                FailFast("Exceptions must derive from the System.Exception class");
+                FailFastInternal("Exceptions must derive from the System.Exception class");
         }
 
         [RuntimeExport("OnFirstChanceException")]

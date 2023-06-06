@@ -27,6 +27,7 @@
 #include "CommonMacros.inl"
 #include "slist.inl"
 #include "MethodTable.inl"
+#include "../../inc/clrversion.h"
 
 #ifdef  FEATURE_GC_STRESS
 enum HijackType { htLoop, htCallsite };
@@ -38,6 +39,12 @@ bool ShouldHijackForGcStress(uintptr_t CallsiteIP, HijackType ht);
 ThreadStore *   RuntimeInstance::GetThreadStore()
 {
     return m_pThreadStore;
+}
+
+COOP_PINVOKE_HELPER(uint8_t *, RhGetRuntimeVersion, (int32_t* pcb))
+{
+    *pcb = sizeof(CLR_PRODUCT_VERSION) - 1;             // don't include the terminating null
+    return (uint8_t*)&CLR_PRODUCT_VERSION;
 }
 
 COOP_PINVOKE_HELPER(uint8_t *, RhFindMethodStartAddress, (void * codeAddr))

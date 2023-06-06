@@ -36,7 +36,7 @@ namespace System
         // another managed helper method, unless you consult with some CLR Watson experts.
         [DoesNotReturn]
         public static void FailFast(string message) =>
-            RuntimeExceptionHelpers.FailFast(message);
+            RuntimeExceptionHelpers.FailFast(message, exception: null);
 
         [DoesNotReturn]
         public static void FailFast(string message, Exception exception) =>

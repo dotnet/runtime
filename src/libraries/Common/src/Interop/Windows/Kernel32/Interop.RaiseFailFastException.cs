@@ -25,23 +25,35 @@ internal partial class Interop
 
     internal partial class Kernel32
     {
-        internal const uint EXCEPTION_NONCONTINUABLE = 0x1;
+        private const uint EXCEPTION_NONCONTINUABLE = 0x1;
 
-        internal const uint FAIL_FAST_GENERATE_EXCEPTION_ADDRESS = 0x1;
+        private const uint FAIL_FAST_GENERATE_EXCEPTION_ADDRESS = 0x1;
+
+        private const uint STATUS_STACK_BUFFER_OVERRUN = 0xC0000409;
+
+        private const uint FAST_FAIL_EXCEPTION_DOTNET_AOT = 72;
 
         //
-        // Wrapper for calling RaiseFailFastException
+        // NativeAOT wrapper for calling RaiseFailFastException
         //
+
         [DoesNotReturn]
-        internal static unsafe void RaiseFailFastException(uint faultCode, IntPtr pExAddress, IntPtr pExContext)
+        internal static unsafe void RaiseFailFastException(uint errorCode, IntPtr pExAddress, IntPtr pExContext, void* pTriageBlock, int cbTriageBlock)
         {
             EXCEPTION_RECORD exceptionRecord;
-            exceptionRecord.ExceptionCode = faultCode;
+            exceptionRecord.ExceptionCode = STATUS_STACK_BUFFER_OVERRUN;
             exceptionRecord.ExceptionFlags = EXCEPTION_NONCONTINUABLE;
             exceptionRecord.ExceptionRecord = IntPtr.Zero;
             exceptionRecord.ExceptionAddress = pExAddress;
-            exceptionRecord.NumberParameters = 0;
-            // don't care about exceptionRecord.ExceptionInformation as we set exceptionRecord.NumberParameters to zero
+            exceptionRecord.NumberParameters = 4;
+            exceptionRecord.ExceptionInformation[0] = FAST_FAIL_EXCEPTION_DOTNET_AOT;
+            exceptionRecord.ExceptionInformation[1] = errorCode;
+#if TARGET_64BIT
+            exceptionRecord.ExceptionInformation[2] = (ulong)pTriageBlock;
+#else
+            exceptionRecord.ExceptionInformation[2] = (uint)pTriageBlock;
+#endif
+            exceptionRecord.ExceptionInformation[3] = (uint)cbTriageBlock;
 
             RaiseFailFastException(
                 &exceptionRecord,

@@ -26,6 +26,10 @@ namespace System.Runtime
     {
         private const string RuntimeLibrary = "*";
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetRuntimeVersion")]
+        internal static extern unsafe byte* RhGetRuntimeVersion(out int cb);
+
         [LibraryImport(RuntimeLibrary)]
         [SuppressGCTransition]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
