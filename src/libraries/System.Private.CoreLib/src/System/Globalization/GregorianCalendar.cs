@@ -165,7 +165,7 @@ namespace System.Globalization
                 d = days;
             }
             long ticks = DateToTicks(y, m, d) + time.Ticks % TicksPerDay;
-            Calendar.CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
+            CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
 
             return new DateTime(ticks);
         }

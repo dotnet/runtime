@@ -41,7 +41,7 @@ namespace System.Collections.Generic
             {
                 // Nullable does not implement IComparable<T?> directly because that would add an extra interface call per comparison.
                 var embeddedType = (RuntimeType)type.GetGenericArguments()[0];
-                result = RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(NullableComparer<int>), embeddedType);
+                result = CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(NullableComparer<int>), embeddedType);
             }
             // The comparer for enums is specialized to avoid boxing.
             else if (type.IsEnum)
@@ -78,7 +78,7 @@ namespace System.Collections.Generic
                 case TypeCode.UInt32:
                 case TypeCode.Int64:
                 case TypeCode.UInt64:
-                    return RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(EnumComparer<>), enumType);
+                    return CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(EnumComparer<>), enumType);
             }
 
             return null;
@@ -153,7 +153,7 @@ namespace System.Collections.Generic
                 case TypeCode.Int64:
                 case TypeCode.UInt64:
                 case TypeCode.UInt16:
-                    return RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(EnumEqualityComparer<>), enumType);
+                    return CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(EnumEqualityComparer<>), enumType);
             }
 
             return null;

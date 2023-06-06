@@ -64,6 +64,18 @@ public class BuildPublishTests : BuildTestBase
         }
     }
 
+    [Theory]
+    [InlineData("Debug")]
+    [InlineData("Release")]
+    public void DefaultTemplate_BuildNative_WithWorkload(string config)
+    {
+        string id = $"blz_buildandbuildnative_{config}_{Path.GetRandomFileName()}";
+
+        CreateBlazorWasmTemplateProject(id);
+
+        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked), "/p:WasmBuildNative=true");
+    }
+
     // Disabling for now - publish folder can have more than one dotnet*hash*js, and not sure
     // how to pick which one to check, for the test
     //[Theory]

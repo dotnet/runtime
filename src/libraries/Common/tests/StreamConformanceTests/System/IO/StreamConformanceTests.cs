@@ -603,15 +603,6 @@ namespace System.IO.Tests
             protected override IEnumerable<Task> GetScheduledTasks() => new Task[0];
         }
 
-        protected readonly struct JumpToThreadPoolAwaiter : ICriticalNotifyCompletion
-        {
-            public JumpToThreadPoolAwaiter GetAwaiter() => this;
-            public bool IsCompleted => false;
-            public void OnCompleted(Action continuation) => ThreadPool.QueueUserWorkItem(_ => continuation());
-            public void UnsafeOnCompleted(Action continuation) => ThreadPool.UnsafeQueueUserWorkItem(_ => continuation(), null);
-            public void GetResult() { }
-        }
-
         protected sealed unsafe class NativeMemoryManager : MemoryManager<byte>
         {
             private readonly int _length;
@@ -2046,9 +2037,7 @@ namespace System.IO.Tests
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ReadAsync_ContinuesOnCurrentSynchronizationContextIfDesired(bool flowExecutionContext, bool? continueOnCapturedContext)
         {
-            await default(JumpToThreadPoolAwaiter); // escape xunit sync ctx
-
-            using StreamPair streams = await CreateConnectedStreamsAsync();
+            using StreamPair streams = await CreateConnectedStreamsAsync().ConfigureAwait(ConfigureAwaitOptions.ForceYielding /* escape xunit sync ctx */);
             foreach ((Stream writeable, Stream readable) in GetReadWritePairs(streams))
             {
                 Assert.Null(SynchronizationContext.Current);
@@ -2130,9 +2119,7 @@ namespace System.IO.Tests
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ReadAsync_ContinuesOnCurrentTaskSchedulerIfDesired(bool flowExecutionContext, bool? continueOnCapturedContext)
         {
-            await default(JumpToThreadPoolAwaiter); // escape xunit sync ctx
-
-            using StreamPair streams = await CreateConnectedStreamsAsync();
+            using StreamPair streams = await CreateConnectedStreamsAsync().ConfigureAwait(ConfigureAwaitOptions.ForceYielding /* escape xunit sync ctx */);
             foreach ((Stream writeable, Stream readable) in GetReadWritePairs(streams))
             {
                 Assert.Null(SynchronizationContext.Current);

@@ -2312,12 +2312,13 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     node->ResetHWIntrinsicId(NI_AVX512BW_BroadcastScalarToVector512, tmp1);
                     break;
                 }
+
                 case TYP_INT:
                 case TYP_UINT:
-                case TYP_LONG:
-                case TYP_ULONG:
                 case TYP_FLOAT:
                 case TYP_DOUBLE:
+                case TYP_LONG:
+                case TYP_ULONG:
                 {
                     assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
                     node->ResetHWIntrinsicId(NI_AVX512F_BroadcastScalarToVector512, tmp1);
@@ -2353,7 +2354,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 LowerNode(tmp1);
 
                 node->ResetHWIntrinsicId(NI_AVX2_BroadcastScalarToVector256, tmp1);
-
                 return LowerNode(node);
             }
 
@@ -2428,7 +2428,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             //   return Avx2.BroadcastScalarToVector128(tmp1);
 
             node->ChangeHWIntrinsicId(NI_AVX2_BroadcastScalarToVector128, tmp1);
-
             return LowerNode(node);
         }
 
@@ -7578,7 +7577,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 canBeContained        = !vecCon->IsAllBitsSet() && !vecCon->IsZero();
             }
         }
-
         return canBeContained;
     }
 
@@ -7699,12 +7697,189 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             return false;
         }
 
+        case NI_SSE3_MoveAndDuplicate:
+        case NI_AVX2_BroadcastScalarToVector128:
+        case NI_AVX2_BroadcastScalarToVector256:
+        case NI_AVX512F_BroadcastScalarToVector512:
+        {
+            // make the broadcast node containable when embedded broadcast can be enabled.
+            if (intrinsicId == NI_SSE3_MoveAndDuplicate)
+            {
+                // NI_SSE3_MoveAndDuplicate is for Vector128<double> only.
+                assert(childNode->AsHWIntrinsic()->GetSimdBaseType() == TYP_DOUBLE);
+            }
+            if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL) &&
+                parentNode->OperIsEmbBroadcastCompatible())
+            {
+                GenTree* broadcastOperand = childNode->AsHWIntrinsic()->Op(1);
+                bool     childSupportsRegOptional;
+                if (IsContainableHWIntrinsicOp(childNode->AsHWIntrinsic(), broadcastOperand, &childSupportsRegOptional))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        case NI_AVX_BroadcastScalarToVector128:
+        case NI_AVX_BroadcastScalarToVector256:
+        {
+            return parentNode->OperIsEmbBroadcastCompatible();
+        }
+
         default:
         {
             assert(!childNode->isContainableHWIntrinsic());
             return false;
         }
     }
+}
+
+//----------------------------------------------------------------------------------------------
+// TryFoldCnsVecForEmbeddedBroadcast:
+//  Unfold the eligible constant vector when embedded broadcast is
+//  available.
+//
+//  Arguments:
+//     parentNode - The hardware intrinsic node
+//     childNode  - The operand node to try contain
+//
+void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode, GenTreeVecCon* childNode)
+{
+    assert(!childNode->IsAllBitsSet());
+    assert(!childNode->IsZero());
+    var_types   simdType            = parentNode->TypeGet();
+    var_types   simdBaseType        = parentNode->GetSimdBaseType();
+    CorInfoType simdBaseJitType     = parentNode->GetSimdBaseJitType();
+    bool        isCreatedFromScalar = true;
+    int         elementCount        = GenTreeVecCon::ElementCount(genTypeSize(simdType), simdBaseType);
+    switch (simdBaseType)
+    {
+        case TYP_FLOAT:
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            uint32_t firstElement = static_cast<uint32_t>(childNode->gtSimdVal.u32[0]);
+            for (int i = 1; i < elementCount; i++)
+            {
+                uint32_t elementToCheck = static_cast<uint32_t>(childNode->gtSimdVal.u32[i]);
+                if (firstElement != elementToCheck)
+                {
+                    isCreatedFromScalar = false;
+                    break;
+                }
+            }
+            break;
+        }
+
+        case TYP_DOUBLE:
+#if defined(TARGET_AMD64)
+        case TYP_LONG:
+        case TYP_ULONG:
+#endif // TARGET_AMD64
+        {
+            uint64_t firstElement = static_cast<uint64_t>(childNode->gtSimdVal.u64[0]);
+            for (int i = 1; i < elementCount; i++)
+            {
+                uint64_t elementToCheck = static_cast<uint64_t>(childNode->gtSimdVal.u64[i]);
+                if (firstElement != elementToCheck)
+                {
+                    isCreatedFromScalar = false;
+                    break;
+                }
+            }
+            break;
+        }
+
+        default:
+            isCreatedFromScalar = false;
+            break;
+    }
+    if (isCreatedFromScalar)
+    {
+        NamedIntrinsic broadcastName = NI_AVX2_BroadcastScalarToVector128;
+        if (simdType == TYP_SIMD32)
+        {
+            broadcastName = NI_AVX2_BroadcastScalarToVector256;
+        }
+        else if (simdType == TYP_SIMD64)
+        {
+            broadcastName = NI_AVX512F_BroadcastScalarToVector512;
+        }
+        else
+        {
+            assert(simdType == TYP_SIMD16);
+        }
+        GenTree* constScalar = nullptr;
+        switch (simdBaseType)
+        {
+            case TYP_FLOAT:
+            {
+                float scalar = static_cast<float>(childNode->gtSimdVal.f32[0]);
+                constScalar  = comp->gtNewDconNode(scalar, simdBaseType);
+                break;
+            }
+            case TYP_DOUBLE:
+            {
+                double scalar = static_cast<double>(childNode->gtSimdVal.f64[0]);
+                constScalar   = comp->gtNewDconNode(scalar, simdBaseType);
+                break;
+            }
+            case TYP_INT:
+            {
+                int32_t scalar = static_cast<int32_t>(childNode->gtSimdVal.i32[0]);
+                constScalar    = comp->gtNewIconNode(scalar, simdBaseType);
+                break;
+            }
+            case TYP_UINT:
+            {
+                uint32_t scalar = static_cast<uint32_t>(childNode->gtSimdVal.u32[0]);
+                constScalar     = comp->gtNewIconNode(scalar, TYP_INT);
+                break;
+            }
+#if defined(TARGET_AMD64)
+            case TYP_LONG:
+            {
+                int64_t scalar = static_cast<int64_t>(childNode->gtSimdVal.i64[0]);
+                constScalar    = comp->gtNewIconNode(scalar, simdBaseType);
+                break;
+            }
+            case TYP_ULONG:
+            {
+                uint64_t scalar = static_cast<uint64_t>(childNode->gtSimdVal.u64[0]);
+                constScalar     = comp->gtNewIconNode(scalar, TYP_LONG);
+                break;
+            }
+#endif // TARGET_AMD64
+            default:
+                unreached();
+        }
+        GenTreeHWIntrinsic* createScalar =
+            comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, constScalar, NI_Vector128_CreateScalarUnsafe, simdBaseJitType,
+                                           16);
+        GenTreeHWIntrinsic* broadcastNode = comp->gtNewSimdHWIntrinsicNode(simdType, createScalar, broadcastName,
+                                                                           simdBaseJitType, genTypeSize(simdType));
+        BlockRange().InsertBefore(childNode, broadcastNode);
+        BlockRange().InsertBefore(broadcastNode, createScalar);
+        BlockRange().InsertBefore(createScalar, constScalar);
+        LIR::Use use;
+        BlockRange().TryGetUse(childNode, &use);
+        use.ReplaceWith(broadcastNode);
+        BlockRange().Remove(childNode);
+        LowerNode(createScalar);
+        LowerNode(broadcastNode);
+        if (varTypeIsFloating(simdBaseType))
+        {
+            MakeSrcContained(broadcastNode, createScalar);
+        }
+        else if (constScalar->TypeIs(TYP_INT, TYP_UINT, TYP_LONG, TYP_ULONG))
+        {
+            MakeSrcContained(broadcastNode, constScalar);
+        }
+        MakeSrcContained(parentNode, broadcastNode);
+        return;
+    }
+    MakeSrcContained(parentNode, childNode);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -8015,13 +8190,29 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (IsContainableHWIntrinsicOp(node, op2, &supportsOp2RegOptional))
                     {
-                        MakeSrcContained(node, op2);
+                        if (op2->OperIs(GT_CNS_VEC) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
+                            node->OperIsEmbBroadcastCompatible())
+                        {
+                            TryFoldCnsVecForEmbeddedBroadcast(node, op2->AsVecCon());
+                        }
+                        else
+                        {
+                            MakeSrcContained(node, op2);
+                        }
                     }
                     else if ((isCommutative || (intrinsicId == NI_BMI2_MultiplyNoFlags) ||
                               (intrinsicId == NI_BMI2_X64_MultiplyNoFlags)) &&
                              IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
                     {
-                        MakeSrcContained(node, op1);
+                        if (op1->OperIs(GT_CNS_VEC) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
+                            node->OperIsEmbBroadcastCompatible())
+                        {
+                            TryFoldCnsVecForEmbeddedBroadcast(node, op1->AsVecCon());
+                        }
+                        else
+                        {
+                            MakeSrcContained(node, op1);
+                        }
 
                         // Swap the operands here to make the containment checks in codegen significantly simpler
                         std::swap(node->Op(1), node->Op(2));

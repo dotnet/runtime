@@ -32,7 +32,7 @@ namespace System.Diagnostics
             }
 
             int count = sortedTags.Count;
-            int size = count / (sizeof(long) * 8) + 1;
+            int size = count / (sizeof(ulong) * 8) + 1;
             BitMapper bitMapper = new BitMapper(size <= 100 ? stackalloc ulong[size] : new ulong[size]);
 
             if (tags2 is ICollection<KeyValuePair<string, object?>> tagsCol)
@@ -124,15 +124,15 @@ namespace System.Diagnostics
         {
             _bitMap = bitMap;
             _bitMap.Clear();
-            _maxIndex = bitMap.Length * sizeof(long) * 8;
+            _maxIndex = bitMap.Length * sizeof(ulong) * 8;
         }
 
         public int MaxIndex => _maxIndex;
 
         private static void GetIndexAndMask(int index, out int bitIndex, out ulong mask)
         {
-            bitIndex = index >> 6;
-            int bit = index & (sizeof(long) * 8 - 1);
+            bitIndex = index >> 6; // divide by 64 == (sizeof(ulong) * 8) bits
+            int bit = index & (sizeof(ulong) * 8 - 1);
             mask = 1UL << bit;
         }
 

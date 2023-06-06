@@ -289,7 +289,7 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.UseNls);
             int geoId = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.GeoId);
-            return geoId == -1 ? CultureData.Invariant.GeoId : geoId;
+            return geoId == -1 ? Invariant.GeoId : geoId;
         }
 
         private const uint DigitSubstitutionMask = 0x0000FFFF;

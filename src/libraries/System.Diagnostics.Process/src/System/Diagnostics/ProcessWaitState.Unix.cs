@@ -532,12 +532,8 @@ namespace System.Diagnostics
                         }
 
                         // Wait
-                        try
-                        {
-                            await Task.Delay(pollingIntervalMs, cancellationToken).ConfigureAwait(false);
-                            pollingIntervalMs = Math.Min(pollingIntervalMs * 2, MaxPollingIntervalMs);
-                        }
-                        catch (OperationCanceledException) { }
+                        await Task.Delay(pollingIntervalMs, cancellationToken).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+                        pollingIntervalMs = Math.Min(pollingIntervalMs * 2, MaxPollingIntervalMs);
                     }
                 }
                 finally

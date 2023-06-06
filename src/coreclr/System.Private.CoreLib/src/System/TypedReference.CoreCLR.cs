@@ -6,10 +6,11 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 
 namespace System
 {
-    [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
+    [NonVersionable] // This only applies to field layout
     public ref partial struct TypedReference
     {
         private readonly ref byte _value;
