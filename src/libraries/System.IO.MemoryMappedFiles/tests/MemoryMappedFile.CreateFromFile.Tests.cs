@@ -379,7 +379,6 @@ namespace System.IO.MemoryMappedFiles.Tests
             new string[] { null, "CreateUniqueMapName()" },
             new long[] { 1, 256, -1 /*pagesize*/, 10000 },
             new MemoryMappedFileAccess[] { MemoryMappedFileAccess.ReadWrite })]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51375", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void ValidArgumentCombinationsWithPath_ModesOpenOrCreate(
             FileMode mode, string mapName, long capacity, MemoryMappedFileAccess access)
         {
@@ -430,7 +429,6 @@ namespace System.IO.MemoryMappedFiles.Tests
             new string[] { null, "CreateUniqueMapName()" },
             new long[] { 1, 256, -1 /*pagesize*/, 10000 },
             new MemoryMappedFileAccess[] { MemoryMappedFileAccess.Read, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileAccess.CopyOnWrite })]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51375", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void ValidArgumentCombinationsWithPath_ModeCreateNew(
             FileMode mode, string mapName, long capacity, MemoryMappedFileAccess access)
         {
@@ -455,7 +453,6 @@ namespace System.IO.MemoryMappedFiles.Tests
         [MemberData(nameof(MemberData_ValidNameCapacityCombinationsWithPath),
             new string[] { null, "CreateUniqueMapName()" },
             new long[] { 1, 256, -1 /*pagesize*/, 10000 })]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51375", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void ValidArgumentCombinationsWithPath_ModeCreate(string mapName, long capacity)
         {
             using (TempFile file = new TempFile(GetTestFilePath(), capacity))
@@ -542,7 +539,6 @@ namespace System.IO.MemoryMappedFiles.Tests
             new MemoryMappedFileAccess[] { MemoryMappedFileAccess.Read, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileAccess.CopyOnWrite },
             new HandleInheritability[] { HandleInheritability.None, HandleInheritability.Inheritable },
             new bool[] { false, true })]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51375", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void ValidArgumentCombinationsWithHandle(
             string mapName, long capacity, MemoryMappedFileAccess access, HandleInheritability inheritability, bool leaveOpen)
         {
@@ -575,7 +571,6 @@ namespace System.IO.MemoryMappedFiles.Tests
             new MemoryMappedFileAccess[] { MemoryMappedFileAccess.Read, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileAccess.CopyOnWrite },
             new HandleInheritability[] { HandleInheritability.None, HandleInheritability.Inheritable },
             new bool[] { false, true })]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51375", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void ValidArgumentCombinationsWithStream(
             string mapName, long capacity, MemoryMappedFileAccess access, HandleInheritability inheritability, bool leaveOpen)
         {
@@ -1049,7 +1044,6 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test the exceptional behavior when attempting to create a map so large it's not supported.
         /// </summary>
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51375", TestPlatforms.Browser)]
         [SkipOnPlatform(TestPlatforms.OSX, "Because of the file-based backing, OS X pops up a warning dialog about being out-of-space (even though we clean up immediately)")]
         [Fact]
         public void TooLargeCapacity()
