@@ -293,7 +293,6 @@ jobs:
                   /p:BuildMonoAotCrossCompilerOnly=true
                   /p:MonoLibClang="/usr/local/lib/libclang.so.16"
                   /p:MonoAOTEnableLLVM=true
-                  /p:MonoAOTLLVMUseCxx11Abi=true
           displayName: "Build Mono LLVM AOT cross compiler"
 
     - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), or(eq(parameters.runtimeVariant, 'llvmaot'), eq(parameters.runtimeVariant, 'llvmfullaot'))) }}:

@@ -272,20 +272,13 @@
       <_MonoCMakeArgs Include="-DMONO_SHARED_LIB_NAME=$(MonoSharedLibName)" />
     </ItemGroup>
 
-    <!-- We build LLVM bits for x64 Linux without C++11 ABI (CentOS 7 has libstdc++ < 5.1) -->
-    <ItemGroup Condition="'$(TargetsLinux)' == 'true' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' != 'true'">
-      <_MonoCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=0" />
+    <ItemGroup Condition="'$(TargetsLinux)' == 'true' and '$(MonoEnableLLVM)' == 'true'">
+      <_MonoCXXFLAGS Include="-I$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\include\c++\v1 -L$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib -stdlib=libc++" />
+      <_MonoCXXFLAGS Include="-Wl,-rpath=."/>
     </ItemGroup>
-    <ItemGroup Condition="'$(TargetsLinux)' == 'true' and '$(MonoAOTEnableLLVM)' == 'true' and '$(MonoAOTLLVMUseCxx11Abi)' != 'true'">
-      <_MonoAOTCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=0" />
-    </ItemGroup>
-
-    <!-- We build LLVM bits for ARM64 Linux with C++11 ABI (Ubuntu 16.04 has libstdc++ > 5.1)-->
-    <ItemGroup Condition="'$(TargetsLinux)' == 'true' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' == 'true'">
-      <_MonoCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=1" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(TargetsLinux)' == 'true' and '$(MonoAOTEnableLLVM)' == 'true' and '$(MonoAOTLLVMUseCxx11Abi)' == 'true'">
-      <_MonoAOTCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=1" />
+    <ItemGroup Condition="'$(TargetsLinux)' == 'true' and '$(MonoAOTEnableLLVM)' == 'true'">
+      <_MonoAOTCXXFLAGS Include="-I$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\include\c++\v1 -L$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib -stdlib=libc++" />
+      <_MonoAOTCXXFLAGS Include="-Wl,-rpath,."/>
     </ItemGroup>
 
     <!-- ARM Linux cross build options on CI -->
@@ -952,6 +945,18 @@
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath)">
         <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossFileName)</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(TargetsLinux)' == 'true' and '$(MonoEnableLLVM)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib\libc++.so.1">
+        <Destination>$(RuntimeBinDir)libc++.so.1</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(TargetsLinux)' == 'true' and '$(MonoEnableLLVM)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib\libc++abi.so.1">
+        <Destination>$(RuntimeBinDir)libc++abi.so.1</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(TargetsLinux)' == 'true' and '$(MonoAOTEnableLLVM)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib\libc++.so.1">
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\libc++.so.1</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(TargetsLinux)' == 'true' and '$(MonoAOTEnableLLVM)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib\libc++abi.so.1">
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\libc++abi.so.1</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossPdbFilePath)" Condition="Exists('$(_MonoAotCrossPdbFilePath)')">
         <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossPdbFileName)</Destination>
