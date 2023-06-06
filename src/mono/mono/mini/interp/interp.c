@@ -6524,7 +6524,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 			guint16 size = ip [5];
 			char *dst_addr = mono_array_addr_with_size_fast ((MonoArray *) o, size, aindex);
-			mono_gc_memmove_atomic (dst_addr, locals + ip [3], size);
+			memcpy (dst_addr, locals + ip [3], size);
 			ip += 6;
 			MINT_IN_BREAK;
 		}
