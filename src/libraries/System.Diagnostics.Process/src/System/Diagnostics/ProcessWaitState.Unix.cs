@@ -260,7 +260,6 @@ namespace System.Diagnostics
         }
 
         /// <summary>Ensures an exited event has been initialized and returns it.</summary>
-        /// <returns></returns>
         internal ManualResetEvent EnsureExitedEvent()
         {
             Debug.Assert(!Monitor.IsEntered(_gate));
@@ -278,12 +277,11 @@ namespace System.Diagnostics
                         if (!_isChild)
                         {
                             // If we haven't exited, we need to spin up an asynchronous operation that
-                            // will completed the exitedEvent when the other process exits. If there's already
-                            // another operation underway, then we'll just tack ours onto the end of it.
-                            _waitInProgress = _waitInProgress == null ?
-                                WaitForExitAsync() :
-                                _waitInProgress.ContinueWith((_, state) => ((ProcessWaitState)state!).WaitForExitAsync(),
-                                    this, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
+                            // will complete the _exitedEvent when the other process exits. If there's already
+                            // another operation underway, then we'll just tack ours onto the end of it; we can't
+                            // be sure it'll actually monitor the process until it exits, as it may have been
+                            // created with a cancelable token.
+                            _waitInProgress = WaitForExitAsync(_waitInProgress, CancellationToken.None);
                         }
                     }
                 }
@@ -324,7 +322,7 @@ namespace System.Diagnostics
 
                 // Is another wait operation in progress?  If so, then we haven't exited,
                 // and that task owns the right to call CheckForNonChildExit.
-                if (_waitInProgress != null)
+                if (_waitInProgress is Task waitInProgress && !waitInProgress.IsCompleted)
                 {
                     exitCode = null;
                     return false;
@@ -420,7 +418,7 @@ namespace System.Diagnostics
                 {
                     bool createdTask = false;
                     CancellationTokenSource? cts = null;
-                    Task waitTask;
+                    Task? waitTask;
 
                     // We're in a polling loop... determine how much time remains
                     int remainingTimeout = millisecondsTimeout == Timeout.Infinite ?
@@ -441,7 +439,7 @@ namespace System.Diagnostics
                         {
                             // If there's currently a wait-in-progress, then we know the other process
                             // hasn't exited (barring races and the polling interval).
-                            if (_waitInProgress != null)
+                            if (_waitInProgress is Task waitInProgress && !waitInProgress.IsCompleted)
                             {
                                 return false;
                             }
@@ -458,17 +456,14 @@ namespace System.Diagnostics
                         // If there's already a wait in progress, we'll do so later
                         // by waiting on that existing task.  Otherwise, we'll spin up
                         // such a task.
-                        if (_waitInProgress != null)
-                        {
-                            waitTask = _waitInProgress;
-                        }
-                        else
+                        waitTask = _waitInProgress;
+                        if (waitTask is null || waitTask.IsCompleted)
                         {
                             createdTask = true;
                             CancellationToken token = remainingTimeout == Timeout.Infinite ?
                                 CancellationToken.None :
                                 (cts = new CancellationTokenSource(remainingTimeout)).Token;
-                            waitTask = WaitForExitAsync(token);
+                            waitTask = WaitForExitAsync(null, token);
                         }
                     } // lock(_gate)
 
@@ -497,54 +492,51 @@ namespace System.Diagnostics
         }
 
         /// <summary>Spawns an asynchronous polling loop for process completion.</summary>
+        /// <param name="previousWaitTask">A task previously configured as the waiting task.</param>
         /// <param name="cancellationToken">A token to monitor to exit the polling loop.</param>
         /// <returns>The task representing the loop.</returns>
-        private Task WaitForExitAsync(CancellationToken cancellationToken = default)
+        /// <remarks>
+        /// If there was a previous waiting task, this method will first wait for it to complete
+        /// before proceeding to poll.  That waiting does not happen with the supplied cancellation
+        /// token, so if the caller is providing a token and a previous task, it should wait on the
+        /// returned task with the token in order to avoid delayed wake-ups.
+        /// </remarks>
+        private async Task WaitForExitAsync(Task? previousWaitTask, CancellationToken cancellationToken)
         {
             Debug.Assert(Monitor.IsEntered(_gate));
-            Debug.Assert(_waitInProgress == null);
             Debug.Assert(!_isChild);
 
-            return _waitInProgress = Task.Run(async delegate // Task.Run used because of potential blocking in CheckForNonChildExit
+            // Wait for the previous waiting task to complete. We need to ensure that this call completes asynchronously,
+            // in order to escape the caller's lock and avoid blocking the caller by any work in the below loop, so
+            // we use ForceYielding.
+            await (previousWaitTask ?? Task.CompletedTask).ConfigureAwait(ConfigureAwaitOptions.ForceYielding | ConfigureAwaitOptions.SuppressThrowing);
+
+            // Arbitrary values chosen to balance delays with polling overhead.  Start with fast polling
+            // to handle quickly completing processes, but fall back to longer polling to minimize
+            // overhead for those that take longer to complete.
+            const int StartingPollingIntervalMs = 1, MaxPollingIntervalMs = 100;
+            int pollingIntervalMs = StartingPollingIntervalMs;
+
+            // Poll until either cancellation is requested or the process exits.
+            while (!cancellationToken.IsCancellationRequested)
             {
-                // Arbitrary values chosen to balance delays with polling overhead.  Start with fast polling
-                // to handle quickly completing processes, but fall back to longer polling to minimize
-                // overhead for those that take longer to complete.
-                const int StartingPollingIntervalMs = 1, MaxPollingIntervalMs = 100;
-                int pollingIntervalMs = StartingPollingIntervalMs;
-
-                try
+                lock (_gate)
                 {
-                    // While we're not canceled
-                    while (!cancellationToken.IsCancellationRequested)
+                    if (!_exited)
                     {
-                        // Poll
-                        lock (_gate)
-                        {
-                            if (!_exited)
-                            {
-                                CheckForNonChildExit();
-                            }
-                            if (_exited) // may have been updated by CheckForNonChildExit
-                            {
-                                return;
-                            }
-                        }
+                        CheckForNonChildExit();
+                    }
 
-                        // Wait
-                        await Task.Delay(pollingIntervalMs, cancellationToken).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
-                        pollingIntervalMs = Math.Min(pollingIntervalMs * 2, MaxPollingIntervalMs);
+                    if (_exited) // may have been updated by CheckForNonChildExit
+                    {
+                        return;
                     }
                 }
-                finally
-                {
-                    // Task is no longer active
-                    lock (_gate)
-                    {
-                        _waitInProgress = null;
-                    }
-                }
-            }, CancellationToken.None);
+
+                // Pause asynchronously to avoid spinning too fast and tying up a thread.
+                await Task.Delay(pollingIntervalMs, cancellationToken).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+                pollingIntervalMs = Math.Min(pollingIntervalMs * 2, MaxPollingIntervalMs);
+            }
         }
 
         private void ChildReaped(int exitCode, bool configureConsole)
