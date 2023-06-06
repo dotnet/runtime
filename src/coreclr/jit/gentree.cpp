@@ -19898,35 +19898,66 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     }
                     else
                     {
-                        // uint op1Lo = op1
-                        // uint op1Hi = op1 >> 32
+                        // This follows the "textbook" algorith for big multiplication and matches
+                        // what we do for Math.BigMul, as an example. We don't, however, mask where
+                        // unnecessary. For example, we do not explicitly mask the upper bits for
+                        // op1Lo or op2Lo because they are used in Sse2.Multiply which ignores the
+                        // upper 32-bits of each input. We do, however, need to mask the upper bits
+                        // for mullLo since that's used in `Sse2.Or` which does preserve such bits
+                        // and for tLo since that's used as part of `Sse2.Add`
+
+                        // ulong op1Lo = (uint)(op1)
+                        // ulong op1Hi = (uint)(op1 >> 32)
                         GenTree* op1Lo = fgMakeMultiUse(&op1);
                         GenTree* op1Hi =
                             gtNewSimdBinOpNode(GT_RSZ, type, op1, gtNewIconNode(32), simdBaseJitType, simdSize);
 
-                        // uint op2Lo = op2
-                        // uint op2Hi = op2 >> 32
+                        // ulong op2Lo = (uint)(op2)
+                        // ulong op2Hi = (uint)(op2 >> 32)
                         GenTree* op2Lo = fgMakeMultiUse(&op2);
                         GenTree* op2Hi =
                             gtNewSimdBinOpNode(GT_RSZ, type, op2, gtNewIconNode(32), simdBaseJitType, simdSize);
 
-                        // ulong t1 = BigMul(op1Hi, op2Lo)
-                        // ulong t2 = BigMul(op1Lo, op2Hi)
-                        GenTree* t1 = gtNewSimdHWIntrinsicNode(type, op1Hi, fgMakeMultiUse(&op2Lo), NI_SSE2_Multiply,
-                                                               CORINFO_TYPE_ULONG, simdSize);
-                        GenTree* t2 = gtNewSimdHWIntrinsicNode(type, fgMakeMultiUse(&op1Lo), op2Hi, NI_SSE2_Multiply,
-                                                               CORINFO_TYPE_ULONG, simdSize);
+                        // ulong mull = op1Lo * op2Lo
+                        GenTree* mull = gtNewSimdHWIntrinsicNode(type, fgMakeMultiUse(&op1Lo), fgMakeMultiUse(&op2Lo),
+                                                                 NI_SSE2_Multiply, CORINFO_TYPE_ULONG, simdSize);
 
-                        // ulong t3 = (t1 + t2) << 32
-                        GenTree* t3 = gtNewSimdBinOpNode(GT_ADD, type, t1, t2, simdBaseJitType, simdSize);
-                        t3 = gtNewSimdBinOpNode(GT_LSH, type, t3, gtNewIconNode(32), simdBaseJitType, simdSize);
+                        // ulong mask = 0x00000000_FFFFFFFF
+                        simd_t simdVal = {};
 
-                        // ulong t4 = BigMul(op1Lo, op2Lo)
-                        GenTree* t4 = gtNewSimdHWIntrinsicNode(type, op1Lo, op2Lo, NI_SSE2_Multiply, CORINFO_TYPE_ULONG,
+                        for (unsigned i = 0; i < simdSize; i += 8)
+                        {
+                            simdVal.u32[i / 8] = 0xFFFFFFFF;
+                        }
+
+                        GenTree* mask = gtNewVconNode(type);
+                        memcpy(&mask->AsVecCon()->gtSimdVal, &simdVal, simdSize);
+
+                        // ulong mullLo = (uint)(mull)
+                        // ulong mullHi = (uint)(mull >> 32)
+                        GenTree* mullLo = gtNewSimdBinOpNode(GT_AND, type, fgMakeMultiUse(&mull), fgMakeMultiUse(&mask),
+                                                             simdBaseJitType, simdSize);
+                        GenTree* mullHi =
+                            gtNewSimdBinOpNode(GT_RSZ, type, mull, gtNewIconNode(32), simdBaseJitType, simdSize);
+
+                        // ulong t = (op1Hi * op2Lo) + mullHi
+                        GenTree* t = gtNewSimdHWIntrinsicNode(type, op1Hi, op2Lo, NI_SSE2_Multiply, CORINFO_TYPE_ULONG,
+                                                              simdSize);
+                        t = gtNewSimdBinOpNode(GT_ADD, type, t, mullHi, CORINFO_TYPE_ULONG, simdSize);
+
+                        // ulong tLo = (uint)(t)
+                        GenTree* tLo = gtNewSimdBinOpNode(GT_AND, type, t, mask, simdBaseJitType, simdSize);
+
+                        // ulong tl = (op1Lo * op2Hi) + tLo
+                        GenTree* tl = gtNewSimdHWIntrinsicNode(type, op1Lo, op2Hi, NI_SSE2_Multiply, CORINFO_TYPE_ULONG,
                                                                simdSize);
+                        tl = gtNewSimdBinOpNode(GT_ADD, type, tl, tLo, CORINFO_TYPE_ULONG, simdSize);
 
-                        // return t3 + t4
-                        return gtNewSimdBinOpNode(GT_ADD, type, t3, t4, simdBaseJitType, simdSize);
+                        // return (tl << 32) | mullLo
+                        GenTree* result =
+                            gtNewSimdBinOpNode(GT_LSH, type, tl, gtNewIconNode(32), simdBaseJitType, simdSize);
+                        result = gtNewSimdBinOpNode(GT_OR, type, result, mullLo, simdBaseJitType, simdSize);
+                        return result;
                     }
                     break;
                 }
