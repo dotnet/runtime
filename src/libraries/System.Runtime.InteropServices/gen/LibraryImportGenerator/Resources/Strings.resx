@@ -497,4 +497,10 @@
   <data name="ConvertToLibraryImportWithSuffixAddUnsafe" xml:space="preserve">
     <value>Convert to 'LibraryImport' with '{0}' suffix and enable unsafe code</value>
   </data>
+  <data name="InvalidMarshalModeTitle" xml:space="preserve">
+    <value>Invalid MarshalMode value.</value>
+  </data>
+  <data name="MarshalModeMustBeValidEnumValue" xml:space="preserve">
+    <value>The 'marshalMode' argument of 'CustomMarshallerAttribute' must be a valid enum value of MarshalMode.</value>
+  </data>
 </root>

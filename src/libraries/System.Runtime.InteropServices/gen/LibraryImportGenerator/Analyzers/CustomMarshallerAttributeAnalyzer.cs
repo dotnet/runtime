@@ -395,6 +395,17 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.ManagedTypeMustBeNonNullDescription)));
 
+        /// <inheritdoc cref="SR.MarshalModeMustBeValidEnumValue" />
+        public static readonly DiagnosticDescriptor MarshalModeMustBeValidValue =
+            new DiagnosticDescriptor(
+                Ids.InvalidCustomMarshallerAttributeUsage,
+                GetResourceString(nameof(SR.InvalidMarshalModeTitle)),
+                GetResourceString(nameof(SR.MarshalModeMustBeValidEnumValue)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.MarshalModeMustBeValidEnumValue)));
+
         // We are intentionally using the same diagnostic IDs as the parent type.
         // These diagnostics are the same diagnostics, but with a different severity,
         // as the Default marshaller shape can have support for the managed-to-unmanaged shape
@@ -674,6 +685,14 @@ namespace Microsoft.Interop.Analyzers
                                 (entryType, marshallerType) => marshallerTypeReporter.CreateAndReportDiagnostic(MarshallerTypeMustBeClosedOrMatchArityRule, marshallerType, entryType),
                                 out ITypeSymbol marshallerType))
                             {
+                                return;
+                            }
+                            var marshalModeArgument = attrCreation.GetArgumentByOrdinal(1);
+                            if (marshalModeArgument.Syntax.ChildNodes().SingleOrDefault() is BinaryExpressionSyntax expression
+                                || !Enum.IsDefined(typeof(MarshalMode), (MarshalMode) marshalModeArgument.Value.ConstantValue.Value))
+                            {
+                                DiagnosticReporter marshalModeReporter = DiagnosticReporter.CreateForLocation(marshalModeArgument.Syntax.GetLocation(), context.ReportDiagnostic);
+                                marshalModeReporter.CreateAndReportDiagnostic(MarshalModeMustBeValidValue);
                                 return;
                             }
 
