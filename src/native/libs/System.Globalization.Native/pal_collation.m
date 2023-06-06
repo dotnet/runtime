@@ -77,6 +77,20 @@ int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName, int3
                               locale:currentLocale];
 }
 
+NSString* ComposeString(NSString* str)
+{
+    NSString* source = str.precomposedStringWithCanonicalMapping;
+    // Below we are removing weightless characters from the string to get ICU behavior.
+    NSString* zarb = @"\u200d";
+    NSString* nullChar = @"\0";
+    // Remove zero width joiner
+    NSString* result = [source stringByReplacingOccurrencesOfString:zarb withString:@""];
+    // Remove null characters
+    result = [result stringByReplacingOccurrencesOfString:nullChar withString:@""];
+
+    return result;
+}
+
 /*
 Function:
 IndexOf
@@ -99,13 +113,11 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
     }
 
     NSString *searchString = [NSString stringWithCharacters: lpTarget length: cwTargetLength];
-    NSString *searchStrComposed = searchString.precomposedStringWithCanonicalMapping;
+    NSString *searchStrComposed = ComposeString(searchString);
     NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
-    NSString *sourceStrComposed = sourceString.precomposedStringWithCanonicalMapping;
+    NSString *sourceStrComposed = ComposeString(sourceString);
 
-    // Weightless characters
-    int32_t isEmptyString = [searchStrComposed compare:@""];
-    if (isEmptyString == 0)
+    if (searchStrComposed.length == 0)
     {
        result.location = fromBeginning ? 0 : sourceString.length;
        return result;
@@ -157,9 +169,9 @@ int32_t GlobalizationNative_StartsWithNative(const uint16_t* localeName, int32_t
     }
 
     NSString *prefixString = [NSString stringWithCharacters: lpPrefix length: cwPrefixLength];
-    NSString *prefixStrComposed = prefixString.precomposedStringWithCanonicalMapping;
+    NSString *prefixStrComposed = ComposeString(prefixString);
     NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
-    NSString *sourceStrComposed = sourceString.precomposedStringWithCanonicalMapping;
+    NSString *sourceStrComposed = ComposeString(sourceString);
 
     NSRange sourceRange = NSMakeRange(0, prefixStrComposed.length > sourceStrComposed.length ? sourceStrComposed.length : prefixStrComposed.length);
     NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
@@ -194,9 +206,9 @@ int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t l
     }
 
     NSString *suffixString = [NSString stringWithCharacters: lpSuffix length: cwSuffixLength];
-    NSString *suffixStrComposed = suffixString.precomposedStringWithCanonicalMapping;
+    NSString *suffixStrComposed = ComposeString(suffixString);
     NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
-    NSString *sourceStrComposed = sourceString.precomposedStringWithCanonicalMapping;
+    NSString *sourceStrComposed = ComposeString(sourceString);
 
     int32_t startIndex = suffixStrComposed.length > sourceStrComposed.length ? 0 : sourceStrComposed.length - suffixStrComposed.length;
     NSRange sourceRange = NSMakeRange(startIndex, sourceStrComposed.length - startIndex);

@@ -19,12 +19,9 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "", "", 0, 0, CompareOptions.None, 0, 0 };
             yield return new object[] { s_invariantCompare, "", "", -1, 0, CompareOptions.None, 0, 0 };
             yield return new object[] { s_invariantCompare, "", "", 0, -1, CompareOptions.None, 0, 0 };
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
-            {
-                yield return new object[] { s_invariantCompare, "", "a", 0, 0, CompareOptions.None, -1, 0 };
-                yield return new object[] { s_invariantCompare, "", "a", -1, 0, CompareOptions.None, -1, 0 };
-                yield return new object[] { s_invariantCompare, "", "a", 0, -1, CompareOptions.None, -1, 0 };
-            }
+            yield return new object[] { s_invariantCompare, "", "a", 0, 0, CompareOptions.None, -1, 0 };
+            yield return new object[] { s_invariantCompare, "", "a", -1, 0, CompareOptions.None, -1, 0 };
+            yield return new object[] { s_invariantCompare, "", "a", 0, -1, CompareOptions.None, -1, 0 };
 
             // Start index = source.Length
             yield return new object[] { s_invariantCompare, "Hello", "l", 5, 5, CompareOptions.None, 3, 1 };
@@ -97,18 +94,15 @@ namespace System.Globalization.Tests
             // Weightless characters
             // NLS matches weightless characters at the end of the string
             // ICU matches weightless characters at 1 index prior to the end of the string
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
-            {
-                yield return new object[] { s_invariantCompare, "", "\u200d", 0, 0, CompareOptions.None, 0, 0 };
-                yield return new object[] { s_invariantCompare, "", "\u200d", -1, 0, CompareOptions.None, 0, 0 };
-                yield return new object[] { s_invariantCompare, "hello", "\u200d", 4, 5, CompareOptions.IgnoreCase, 5, 0};
-                yield return new object[] { s_invariantCompare, "hello", "\0", 4, 5, CompareOptions.None, useNls ? -1 : 5, 0};
-                yield return new object[] { s_invariantCompare, "A\u0303", "\u200d", 1, 2, CompareOptions.None, 2, 0};
-                yield return new object[] { s_invariantCompare, "A\u0303\u200D", "\u200d", 2, 3, CompareOptions.None, 3, 0};
-                yield return new object[] { s_invariantCompare, "\u0001F601", "\u200d", 1, 2, CompareOptions.None, 2, 0}; // \u0001F601 is GRINNING FACE WITH SMILING EYES surrogate character
-                yield return new object[] { s_invariantCompare, "AA\u200DA", "\u200d", 3, 4, CompareOptions.None, 4, 0};
-            }
-
+            yield return new object[] { s_invariantCompare, "", "\u200d", 0, 0, CompareOptions.None, 0, 0 };
+            yield return new object[] { s_invariantCompare, "", "\u200d", -1, 0, CompareOptions.None, 0, 0 };
+            yield return new object[] { s_invariantCompare, "hello", "\u200d", 4, 5, CompareOptions.IgnoreCase, 5, 0};
+            yield return new object[] { s_invariantCompare, "hello", "\0", 4, 5, CompareOptions.None, useNls ? -1 : 5, 0};
+            yield return new object[] { s_invariantCompare, "A\u0303", "\u200d", 1, 2, CompareOptions.None, 2, 0};
+            yield return new object[] { s_invariantCompare, "A\u0303\u200D", "\u200d", 2, 3, CompareOptions.None, 3, 0};
+            yield return new object[] { s_invariantCompare, "\u0001F601", "\u200d", 1, 2, CompareOptions.None, 2, 0}; // \u0001F601 is GRINNING FACE WITH SMILING EYES surrogate character
+            yield return new object[] { s_invariantCompare, "AA\u200DA", "\u200d", 3, 4, CompareOptions.None, 4, 0};
+            
             // Ignore symbols
             if (!PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsHybridGlobalizationOnOSX)
                 yield return new object[] { s_invariantCompare, "More Test's", "Tests", 10, 11, CompareOptions.IgnoreSymbols, 5, 6 };
@@ -163,7 +157,7 @@ namespace System.Globalization.Tests
             string source = "Is \u0055\u0308 or \u0075\u0308 the same as \u00DC or \u00FC?";
             if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
             {
-                yield return new object[] { s_invariantCompare, source, "U\u0308", 25, 18, CompareOptions.None, 24, 1 };
+                yield return new object[] { s_invariantCompare, source, "U\u0308", 25, 18, CompareOptions.None, PlatformDetection.IsHybridGlobalizationOnOSX ? 23 : 24, 1 };
                 yield return new object[] { s_invariantCompare, source, "u\u0308", 25, 18, CompareOptions.None, 9, 2 };
                 yield return new object[] { s_invariantCompare, source, '\u00DC', 25, 18, CompareOptions.None, 24, 1 };
                 yield return new object[] { s_invariantCompare, source, '\u00FC', 25, 18, CompareOptions.None, 9, 2 };

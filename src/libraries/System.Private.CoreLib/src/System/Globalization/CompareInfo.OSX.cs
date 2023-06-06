@@ -40,6 +40,7 @@ namespace System.Globalization
         private unsafe int IndexOfCoreNative(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!target.IsEmpty);
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(target.Length != 0);
 

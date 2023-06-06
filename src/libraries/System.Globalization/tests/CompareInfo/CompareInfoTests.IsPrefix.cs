@@ -45,16 +45,13 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "interesting", "\u0130", CompareOptions.IgnoreCase, false, 0 };
 
             // Unicode
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
-            {
-                yield return new object[] { s_invariantCompare, "\u00C0nimal", "A\u0300", CompareOptions.None, true, 1 };
-                yield return new object[] { s_invariantCompare, "\u00C0nimal", "a\u0300", CompareOptions.None, false, 0 };
-                yield return new object[] { s_invariantCompare, "\u00C0nimal", "a\u0300", CompareOptions.IgnoreCase, true, 1 };
-                yield return new object[] { s_invariantCompare, "FooBA\u0300R", "FooB\u00C0R", supportedIgnoreNonSpaceOption, true, 7 };
-                yield return new object[] { s_invariantCompare, "o\u0308", "o", CompareOptions.None, false, 0 };
-                yield return new object[] { s_invariantCompare, "o\u0000\u0308", "o", CompareOptions.None, true, 1 };
-            }
-
+           
+            yield return new object[] { s_invariantCompare, "\u00C0nimal", "A\u0300", CompareOptions.None, true, 1 };
+            yield return new object[] { s_invariantCompare, "\u00C0nimal", "a\u0300", CompareOptions.None, false, 0 };
+            yield return new object[] { s_invariantCompare, "\u00C0nimal", "a\u0300", CompareOptions.IgnoreCase, true, 1 };
+            yield return new object[] { s_invariantCompare, "FooBA\u0300R", "FooB\u00C0R", supportedIgnoreNonSpaceOption, true, 7 };  
+            yield return new object[] { s_invariantCompare, "o\u0308", "o", CompareOptions.None, false, 0 };
+            yield return new object[] { s_invariantCompare, "o\u0000\u0308", "o", CompareOptions.None, true, 1 };
             yield return new object[] { s_invariantCompare, "\u00C0nimal", "A\u0300", CompareOptions.Ordinal, false, 0 };
             yield return new object[] { s_invariantCompare, "\u00C0nimal", "a\u0300", CompareOptions.Ordinal, false, 0 };
             yield return new object[] { s_invariantCompare, "\u00C0nimal", "a\u0300", CompareOptions.OrdinalIgnoreCase, false, 0 };
@@ -62,11 +59,8 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "o\u0308", "o", CompareOptions.Ordinal, true, 1 };
 
             // Weightless comparisons
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
-            {
-                yield return new object[] { s_invariantCompare, "", "\u200d", CompareOptions.None, true, 0 };
-                yield return new object[] { s_invariantCompare, "\u200dxy", "x", CompareOptions.None, true, 2 };
-            }
+            yield return new object[] { s_invariantCompare, "", "\u200d", CompareOptions.None, true, 0 };
+            yield return new object[] { s_invariantCompare, "\u200dxy", "x", CompareOptions.None, true, 2 };
 
             // Surrogates
             if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
@@ -212,15 +206,10 @@ namespace System.Globalization.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         public void IsPrefixWithAsciiAndIgnoredCharacters()
         {
-            // this fails
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
-            {
-                Assert.StartsWith("A", "A\0");
-                Assert.StartsWith("A\0", "A");
-                Assert.StartsWith("a", "A\0", StringComparison.CurrentCultureIgnoreCase);
-                Assert.StartsWith("a\0", "A", StringComparison.CurrentCultureIgnoreCase);
-            }
-            
+            Assert.StartsWith("A", "A\0");
+            Assert.StartsWith("A\0", "A");
+            Assert.StartsWith("a", "A\0", StringComparison.CurrentCultureIgnoreCase);
+            Assert.StartsWith("a\0", "A", StringComparison.CurrentCultureIgnoreCase);            
         }
     }
 }
