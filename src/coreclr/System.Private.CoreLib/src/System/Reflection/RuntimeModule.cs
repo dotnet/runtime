@@ -512,7 +512,7 @@ namespace System.Reflection
             {
                 string s = GetFullyQualifiedName();
 
-                int i = s.LastIndexOf(System.IO.Path.DirectorySeparatorChar);
+                int i = s.LastIndexOf(IO.Path.DirectorySeparatorChar);
 
                 if (i < 0)
                     return s;

@@ -202,6 +202,8 @@ bool DetectCPUFeatures()
 
         if ((cpuidInfo[CPUID_EDX] & requiredBaselineEdxFlags) == requiredBaselineEdxFlags)
         {
+            g_cpuFeatures |= XArchIntrinsicConstants_VectorT128;
+
             if ((cpuidInfo[CPUID_ECX] & (1 << 25)) != 0)                                                                // AESNI
             {
                 g_cpuFeatures |= XArchIntrinsicConstants_Aes;
@@ -259,12 +261,14 @@ bool DetectCPUFeatures()
                                         if ((cpuidInfo[CPUID_EBX] & (1 << 5)) != 0)                                     // AVX2
                                         {
                                             g_cpuFeatures |= XArchIntrinsicConstants_Avx2;
+                                            g_cpuFeatures |= XArchIntrinsicConstants_VectorT256;
 
                                             if (PalIsAvx512Enabled() && (avx512StateSupport() == 1))                    // XGETBV XRC0[7:5] == 111
                                             {
                                                 if ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0)                            // AVX512F
                                                 {
                                                     g_cpuFeatures |= XArchIntrinsicConstants_Avx512f;
+                                                    g_cpuFeatures |= XArchIntrinsicConstants_VectorT512;
 
                                                     bool isAVX512_VLSupported = false;
                                                     if ((cpuidInfo[CPUID_EBX] & (1 << 31)) != 0)                        // AVX512VL

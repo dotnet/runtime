@@ -333,7 +333,7 @@ namespace System.Reflection
             try
             {
                 // Load the dependency via LoadFrom so that it goes through the same path of being in the LoadFrom list.
-                return Assembly.LoadFrom(requestedAssemblyPath);
+                return LoadFrom(requestedAssemblyPath);
             }
             catch (FileNotFoundException)
             {
