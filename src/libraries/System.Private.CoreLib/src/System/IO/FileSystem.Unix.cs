@@ -28,7 +28,7 @@ namespace System.IO
             UnixFileMode.OtherWrite |
             UnixFileMode.OtherExecute;
 
-        private static partial void TryCloneFile(string sourceFullPath, string destFullPath, bool overwrite, ref bool cloned);
+        static partial void TryCloneFile(string sourceFullPath, string destFullPath, bool overwrite, ref bool cloned);
 
         public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {

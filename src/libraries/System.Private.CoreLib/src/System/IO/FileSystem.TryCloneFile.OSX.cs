@@ -8,7 +8,7 @@ namespace System.IO
 {
     internal static partial class FileSystem
     {
-        private static partial void TryCloneFile(string sourceFullPath, string destFullPath, bool overwrite, ref bool cloned)
+        static partial void TryCloneFile(string sourceFullPath, string destFullPath, bool overwrite, ref bool cloned)
         {
             // This helper function calls out to clonefile, and returns the error.
             static bool TryCloneFile(string sourceFullPath, string destFullPath, int flags, out Interop.Error error)
