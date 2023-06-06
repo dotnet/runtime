@@ -585,39 +585,39 @@ _interp_wasm_simd_assert_not_reached (v128_t lhs, v128_t rhs) {
 	g_assert_not_reached ();
 }
 
-#define INTERP_WASM_SIMD_INTRINSIC_V_P(id, c_intrinsic, wasm_opcode) \
+#define INTERP_WASM_SIMD_INTRINSIC_V_P(name, arg1, c_intrinsic, wasm_opcode) \
 static void \
-_mono_interp_simd_ ## id (gpointer res, gpointer v1) { \
+_mono_interp_simd_ ## c_intrinsic (gpointer res, gpointer v1) { \
 	*((v128_t *)res) = c_intrinsic (v1); \
 }
 
-#define INTERP_WASM_SIMD_INTRINSIC_V_V(id, c_intrinsic, wasm_opcode) \
+#define INTERP_WASM_SIMD_INTRINSIC_V_V(name, arg1, c_intrinsic, wasm_opcode) \
 static void \
-_mono_interp_simd_ ## id (gpointer res, gpointer v1) { \
+_mono_interp_simd_ ## c_intrinsic (gpointer res, gpointer v1) { \
 	*((v128_t *)res) = c_intrinsic (*((v128_t *)v1)); \
 }
 
-#define INTERP_WASM_SIMD_INTRINSIC_I_V(id, c_intrinsic, wasm_opcode) \
+#define INTERP_WASM_SIMD_INTRINSIC_I_V(name, arg1, c_intrinsic, wasm_opcode) \
 static void \
-_mono_interp_simd_ ## id (gpointer res, gpointer v1) { \
+_mono_interp_simd_ ## c_intrinsic (gpointer res, gpointer v1) { \
 	*((int32_t *)res) = c_intrinsic (*((v128_t *)v1)); \
 }
 
-#define INTERP_WASM_SIMD_INTRINSIC_V_VV(id, c_intrinsic, wasm_opcode) \
+#define INTERP_WASM_SIMD_INTRINSIC_V_VV(name, arg1, c_intrinsic, wasm_opcode) \
 static void \
-_mono_interp_simd_ ## id (gpointer res, gpointer v1, gpointer v2) { \
+_mono_interp_simd_ ## c_intrinsic (gpointer res, gpointer v1, gpointer v2) { \
 	*((v128_t *)res) = c_intrinsic (*((v128_t *)v1), *((v128_t *)v2)); \
 }
 
-#define INTERP_WASM_SIMD_INTRINSIC_V_VI(id, c_intrinsic, wasm_opcode) \
+#define INTERP_WASM_SIMD_INTRINSIC_V_VI(name, arg1, c_intrinsic, wasm_opcode) \
 static void \
-_mono_interp_simd_ ## id (gpointer res, gpointer v1, gpointer v2) { \
+_mono_interp_simd_ ## c_intrinsic (gpointer res, gpointer v1, gpointer v2) { \
 	*((v128_t *)res) = c_intrinsic (*((v128_t *)v1), *((int *)v2)); \
 }
 
-#define INTERP_WASM_SIMD_INTRINSIC_V_VVV(id, c_intrinsic, wasm_opcode) \
+#define INTERP_WASM_SIMD_INTRINSIC_V_VVV(name, arg1, c_intrinsic, wasm_opcode) \
 static void \
-_mono_interp_simd_ ## id (gpointer res, gpointer v1, gpointer v2, gpointer v3) { \
+_mono_interp_simd_ ## c_intrinsic (gpointer res, gpointer v1, gpointer v2, gpointer v3) { \
 	*((v128_t *)res) = c_intrinsic (*((v128_t *)v1), *((v128_t *)v2), *((v128_t *)v3)); \
 }
 

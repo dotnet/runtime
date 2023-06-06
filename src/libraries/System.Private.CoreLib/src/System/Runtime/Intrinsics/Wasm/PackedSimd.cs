@@ -14,7 +14,7 @@ namespace System.Runtime.Intrinsics.Wasm
     [CLSCompliant(false)]
     public abstract class PackedSimd
     {
-        public static bool IsSupported { [Intrinsic] get { return false; } }
+        public static bool IsSupported { [Intrinsic] get { return true; } }
 
         // Constructing SIMD Values
 

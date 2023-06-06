@@ -22,9 +22,9 @@ simd_src = open(simd_header_path, 'r')
 tab = "    "
 header_lines = src.read().splitlines()
 # strip preprocessing directives
-simd_header_lines = (l for l in simd_src.read().splitlines() if not l.startswith("#"))
+simd_header_lines = (l for l in simd_src.read().splitlines() if not (l.startswith("#") or l.startswith("//")))
 # strip preprocessing directives and add indentation for tslint/eslint
-header = "\n".join((tab + l) for l in header_lines if not l.startswith("#"))
+header = "\n".join((tab + l) for l in header_lines if not (l.startswith("#") or l.startswith("//")))
 src.close()
 simd_src.close()
 
@@ -53,7 +53,11 @@ for line in simd_header_lines:
     idx2 = line.index(",") if "," in line else None
     if (idx1 and idx2):
         key = line[0:idx1].strip()
-        simd_disp[key].append(line[(idx1 + 1):idx2].strip().replace("INTERP_SIMD_INTRINSIC_", ""))
+        vals = line[(idx1 + 1):].strip().split(",")
+        id = vals[0].replace("INTERP_SIMD_INTRINSIC_", "").strip()
+        if (len(vals) == 4):
+            id += vals[1].strip()
+        simd_disp[key].append(id)
 
 splitter = ",\n    "
 splitter2 = ",\n        "
