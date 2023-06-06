@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -63,22 +65,24 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
         List<ITaskItem> bundledResources = new(FilesToBundle.Length);
         foreach (ITaskItem bundledResource in FilesToBundle)
         {
+            var resourcePath = bundledResource.ItemSpec;
+
             var registeredName = bundledResource.GetMetadata("RegisteredName");
             if (string.IsNullOrEmpty(registeredName))
             {
                 string culture = bundledResource.GetMetadata("Culture");
                 if (!string.IsNullOrEmpty(culture))
                 {
-                    registeredName = culture + "/" + Path.GetFileName(bundledResource.ItemSpec);
+                    registeredName = culture + "/" + Path.GetFileName(resourcePath);
                 }
                 else
                 {
-                    registeredName = Path.GetFileName(bundledResource.ItemSpec);
+                    registeredName = Path.GetFileName(resourcePath);
                 }
                 bundledResource.SetMetadata("RegisteredName", registeredName);
             }
 
-            string resourceDataSymbol = $"bundled_resource_{ToSafeSymbolName(TruncateEncodedHash(Utils.ComputeHashEx(bundledResource.ItemSpec, Utils.HashAlgorithmType.SHA256, Utils.HashEncodingType.Base64Safe), MaxEncodedHashLength))}";
+            string resourceDataSymbol = $"bundled_resource_{ToSafeSymbolName(TruncateEncodedHash(Utils.ComputeHashEx(resourcePath, Utils.HashAlgorithmType.SHA256, Utils.HashEncodingType.Base64Safe), MaxEncodedHashLength))}";
             if (resourceDataSymbolDictionary.ContainsKey(registeredName))
             {
                 throw new LogAsErrorException($"Multiple resources have the same RegisteredName '{registeredName}'. Ensure {nameof(FilesToBundle)} 'RegisteredName' metadata are set and unique.");
@@ -98,6 +102,37 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                 resourcesWithDataSymbol = new[] {registeredName};
             }
             resourcesForDataSymbolDictionary.Add(resourceDataSymbol, resourcesWithDataSymbol);
+
+            bundledResource.SetMetadata("ResourceType", "DataResource");
+            try
+            {
+                using FileStream resourceContents = File.OpenRead(resourcePath);
+                using PEReader resourcePEReader = new(resourceContents);
+                if (resourcePEReader.HasMetadata)
+                {
+                    string? managedAssemblyCulture = null;
+
+                    var resourceMetadataReader = PEReaderExtensions.GetMetadataReader(resourcePEReader);
+                    if (resourceMetadataReader.IsAssembly)
+                    {
+                        bundledResource.SetMetadata("ResourceType", "AssemblyResource");
+                        managedAssemblyCulture = resourceMetadataReader.GetString(resourceMetadataReader.GetAssemblyDefinition().Culture);
+                    }
+
+                    bool isSatelliteAssembly = !string.IsNullOrEmpty(managedAssemblyCulture) && !managedAssemblyCulture!.Equals("neutral", StringComparison.OrdinalIgnoreCase);
+                    if (resourcePath.EndsWith(".resources.dll", StringComparison.InvariantCultureIgnoreCase) || isSatelliteAssembly)
+                    {
+                        bundledResource.SetMetadata("ResourceType", "SatelliteAssemblyResource");
+                        if (isSatelliteAssembly)
+                            bundledResource.SetMetadata("Culture", managedAssemblyCulture);
+                    }
+                }
+            }
+            catch (BadImageFormatException e)
+            {
+                if (resourcePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                    Log.LogMessage(MessageImportance.High, $"Resource '{resourcePath}' was interpreted with ResourceType 'DataResource' but has a '.dll' extension. Error: {e}");
+            }
 
             bundledResources.Add(bundledResource);
         }
@@ -154,6 +189,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             string resourceSymbols = GatherUniqueExportedResourceDataSymbols(bundledResources);
 
             var files = bundledResources.Select(bundledResource => {
+                var resourceType = bundledResource.GetMetadata("ResourceType");
                 var registeredName = bundledResource.GetMetadata("RegisteredName");
                 var resourceName = ToSafeSymbolName(registeredName, false);
                 // Different timezone resources may have the same contents, use registered name to differentiate preallocated resources
@@ -164,7 +200,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                 if (File.Exists(bundledResource.GetMetadata("SymbolFile")))
                     resourceSymbolName = ToSafeSymbolName(bundledResource.GetMetadata("SymbolFile"));
 
-                return (registeredName, resourceName, resourceDataSymbol, culture, resourceSymbolName);
+                return (resourceType, registeredName, resourceName, resourceDataSymbol, culture, resourceSymbolName);
             }).ToList();
 
             Log.LogMessage(MessageImportance.Low, $"Bundling {files.Count} files for {BundleRegistrationFunctionName}");
@@ -240,7 +276,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
         return resourceSymbols.ToString();
     }
 
-    private static void GenerateBundledResourcePreallocationAndRegistration(string resourceSymbols, string bundleRegistrationFunctionName, ICollection<(string registeredName, string resourceName, string resourceDataSymbol, string culture, string? resourceSymbolName)> files, StreamWriter outputUtf8Writer)
+    private static void GenerateBundledResourcePreallocationAndRegistration(string resourceSymbols, string bundleRegistrationFunctionName, ICollection<(string resourceType, string registeredName, string resourceName, string resourceDataSymbol, string culture, string? resourceSymbolName)> files, StreamWriter outputUtf8Writer)
     {
         List<string> preallocatedSource = new ();
 
@@ -261,34 +297,44 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
             // Generate Preloaded MonoBundled*Resource structs
             string preloadedStruct;
-            if (!string.IsNullOrEmpty(tuple.culture))
+            switch (tuple.resourceType)
             {
-                preloadedStruct = satelliteAssemblyTemplate;
-                preloadedStruct.Replace("%Culture%", tuple.culture);
-                resourceId = tuple.registeredName;
-                preallocatedSatelliteAssemblies.Add($"    (MonoBundledResource *)&{tuple.resourceName}");
-                satelliteAssembliesCount += 1;
-            }
-            else if (tuple.registeredName.EndsWith(".dll"))
-            {
-                preloadedStruct = assemblyTemplate;
-                // Add associated symfile information to MonoBundledAssemblyResource structs
-                string preloadedSymbolData = "";
-                if (!string.IsNullOrEmpty(tuple.resourceSymbolName))
+                case "SatelliteAssemblyResource":
                 {
-                    preloadedSymbolData = $",\n{Utils.GetEmbeddedResource("mono-bundled-symbol.template")
-                                                .Replace("%ResourceSymbolName%", tuple.resourceSymbolName)
-                                                .Replace("%SymbolLen%", symbolDataLen[tuple.resourceSymbolName!].ToString())}";
+                    preloadedStruct = satelliteAssemblyTemplate;
+                    preloadedStruct.Replace("%Culture%", tuple.culture);
+                    resourceId = tuple.registeredName;
+                    preallocatedSatelliteAssemblies.Add($"    (MonoBundledResource *)&{tuple.resourceName}");
+                    satelliteAssembliesCount += 1;
+                    break;
                 }
-                preloadedStruct = preloadedStruct.Replace("%MonoBundledSymbolData%", preloadedSymbolData);
-                preallocatedAssemblies.Add($"    (MonoBundledResource *)&{tuple.resourceName}");
-                assembliesCount += 1;
-            }
-            else
-            {
-                preloadedStruct = symbolDataTemplate;
-                preallocatedData.Add($"    (MonoBundledResource *)&{tuple.resourceName}");
-                dataCount += 1;
+                case "AssemblyResource":
+                {
+                    preloadedStruct = assemblyTemplate;
+                    // Add associated symfile information to MonoBundledAssemblyResource structs
+                    string preloadedSymbolData = "";
+                    if (!string.IsNullOrEmpty(tuple.resourceSymbolName))
+                    {
+                        preloadedSymbolData = $",\n{Utils.GetEmbeddedResource("mono-bundled-symbol.template")
+                                                    .Replace("%ResourceSymbolName%", tuple.resourceSymbolName)
+                                                    .Replace("%SymbolLen%", symbolDataLen[tuple.resourceSymbolName!].ToString())}";
+                    }
+                    preloadedStruct = preloadedStruct.Replace("%MonoBundledSymbolData%", preloadedSymbolData);
+                    preallocatedAssemblies.Add($"    (MonoBundledResource *)&{tuple.resourceName}");
+                    assembliesCount += 1;
+                    break;
+                }
+                case "DataResource":
+                {
+                    preloadedStruct = symbolDataTemplate;
+                    preallocatedData.Add($"    (MonoBundledResource *)&{tuple.resourceName}");
+                    dataCount += 1;
+                    break;
+                }
+                default:
+                {
+                    throw new Exception($"Unsupported ResourceType '{tuple.resourceType}' for Resource '{tuple.resourceName}' with registered name '{tuple.registeredName}'. Ensure that the resource's ResourceType metadata is populated.");
+                }
             }
 
             var resourceDataSymbol = tuple.resourceDataSymbol;
