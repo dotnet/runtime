@@ -645,7 +645,8 @@ if(LLVM_PREFIX)
   endif()
 
   if(HOST_LINUX AND NOT "${TARGET_ARCH}" STREQUAL "wasm")
-    set(MONO_stdlib -stdlib=libc++)
+    set(MONO_stdlib "-stdlib=libc++")
+    set(MONO_cxx_lib "-lc++")
   endif()
 
   # llvm-config --cflags
@@ -655,7 +656,7 @@ if(LLVM_PREFIX)
 
   if(HOST_LINUX)
     # llvm-config --system-libs
-    set(llvm_system_libs "-lc++" "-lz" "-lrt" "-ldl" "-lpthread" "-lm")
+    set(llvm_system_libs ${MONO_cxx_lib} "-lz" "-lrt" "-ldl" "-lpthread" "-lm")
   elseif(HOST_OSX)
     # llvm-config --system-libs
     set(llvm_system_libs "-lz" "-lm")
