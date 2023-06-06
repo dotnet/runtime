@@ -1333,13 +1333,11 @@ namespace System.Text.Json.SourceGeneration
                     !_knownSymbols.JsonConverterType.IsAssignableFrom(converterType) ||
                     !converterType.Constructors.Any(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType)))
                 {
-                    // TODO invalid converter annotation diagnostic
                     return null;
                 }
 
                 if (_knownSymbols.JsonStringEnumConverterType.IsAssignableFrom(converterType))
                 {
-                    // The non-generic JsonStringEnumConverter will not work in NativeAOT but we still want to support it -- emit a warning diagnostic.
                     ReportDiagnostic(DiagnosticDescriptors.JsonStringEnumConverterNotSupportedInAot, declaringSymbol.GetDiagnosticLocation(), declaringSymbol.ToDisplayString());
                 }
 
