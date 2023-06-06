@@ -1249,21 +1249,40 @@ void ReplaceVisitor::EndBlock()
             assert(!rep.NeedsReadBack || !rep.NeedsWriteBack);
             if (rep.NeedsReadBack)
             {
-                // We only mark fields as requiring read-back if they are live
-                // at the point where the stack local was written. If the
-                // replacement still needs to be read back then we saw no use
-                // between that point and the end of the BB, so we expect the
-                // use to be in a successor.
-                assert(m_liveness->IsReplacementLiveOut(m_currentBlock, agg->LclNum, (unsigned)i));
+                if (m_liveness->IsReplacementLiveOut(m_currentBlock, agg->LclNum, (unsigned)i))
+                {
+                    JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB ":\n",
+                            agg->LclNum, rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum,
+                            m_currentBlock->bbNum);
 
-                JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB ":\n",
-                        agg->LclNum, rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum,
-                        m_currentBlock->bbNum);
+                    GenTree*   readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
+                    Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
+                    DISPSTMT(stmt);
+                    m_compiler->fgInsertStmtNearEnd(m_currentBlock, stmt);
+                }
+                else
+                {
+                    // We only mark fields as requiring read-back if they are
+                    // live at the point where the stack local was written, so
+                    // at first glance we would not expect this case to ever
+                    // happen. However, it is possible that the field is live
+                    // because it has a future struct use, in which case we may
+                    // not need to insert any readbacks anywhere. For example,
+                    // consider:
+                    //
+                    //   V03 = CALL() // V03 is a struct with promoted V03.[000..008)
+                    //   CALL(struct V03)    // V03.[000.008) marked as live here
+                    //
+                    // While V03.[000.008) gets marked for readback at the
+                    // assignment, no readback is necessary at the location of
+                    // the call argument, and it may die after that.
 
-                GenTree*   readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
-                Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
-                DISPSTMT(stmt);
-                m_compiler->fgInsertStmtNearEnd(m_currentBlock, stmt);
+                    JITDUMP("Skipping reading back dead replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB
+                            "\n",
+                            agg->LclNum, rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum,
+                            m_currentBlock->bbNum);
+                }
+
                 rep.NeedsReadBack = false;
             }
 
