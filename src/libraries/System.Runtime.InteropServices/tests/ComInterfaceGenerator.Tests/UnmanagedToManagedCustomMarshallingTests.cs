@@ -198,14 +198,13 @@ namespace ComInterfaceGenerator.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86608")]
         public unsafe void ValidateArrayElementsByValueOutFreed_Stateless()
         {
             const int startingValue = 13;
 
             ManagedObjectImplementation impl = new ManagedObjectImplementation(startingValue);
 
-            void* wrapper = VTableGCHandlePair<NativeExportsNE.UnmanagedToManagedCustomMarshalling.INativeObjectStateful>.Allocate(impl);
+            void* wrapper = VTableGCHandlePair<NativeExportsNE.UnmanagedToManagedCustomMarshalling.INativeObject>.Allocate(impl);
 
             try
             {
@@ -222,7 +221,7 @@ namespace ComInterfaceGenerator.Tests
             }
             finally
             {
-                VTableGCHandlePair<NativeExportsNE.UnmanagedToManagedCustomMarshalling.INativeObjectStateful>.Free(wrapper);
+                VTableGCHandlePair<NativeExportsNE.UnmanagedToManagedCustomMarshalling.INativeObject>.Free(wrapper);
             }
         }
 
@@ -282,7 +281,6 @@ namespace ComInterfaceGenerator.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86608")]
         public unsafe void ValidateArrayElementsByValueOutFreed_Stateful()
         {
             const int startingValue = 13;
@@ -392,7 +390,7 @@ namespace ComInterfaceGenerator.Tests
 
                 public Span<TManaged> GetManagedValuesDestination(int numElements)
                 {
-                    return _managed = new TManaged[numElements];
+                    return _managed ??= new TManaged[numElements];
                 }
 
                 public ReadOnlySpan<TUnmanaged> GetUnmanagedValuesSource(int numElements)

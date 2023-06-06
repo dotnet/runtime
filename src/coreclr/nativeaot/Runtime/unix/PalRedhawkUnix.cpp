@@ -738,6 +738,13 @@ REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
     (void)!write(STDERR_FILENO, message, strlen(message));
 }
 
+REDHAWK_PALEXPORT char* PalCopyTCharAsChar(const TCHAR* toCopy)
+{
+    NewArrayHolder<char> copy {new (nothrow) char[strlen(toCopy) + 1]};
+    strcpy(copy, toCopy);
+    return copy.Extract();
+}
+
 static int W32toUnixAccessControl(uint32_t flProtect)
 {
     int prot = 0;
@@ -1256,7 +1263,7 @@ extern "C" uint64_t PalQueryPerformanceFrequency()
     return GCToOSInterface::QueryPerformanceFrequency();
 }
 
-extern "C" uint64_t PalGetCurrentThreadIdForLogging()
+extern "C" uint64_t PalGetCurrentOSThreadId()
 {
 #if defined(__linux__)
     return (uint64_t)syscall(SYS_gettid);
@@ -1439,7 +1446,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
 #endif
 #ifdef HWCAP_ASIMD
     if (hwCap & HWCAP_ASIMD)
-        *flags |= ARM64IntrinsicConstants_AdvSimd;
+        *flags |= ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128;
 #endif
 #ifdef HWCAP_ASIMDRDM
     if (hwCap & HWCAP_ASIMDRDM)
@@ -1538,7 +1545,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
     // Every ARM64 CPU should support SIMD and FP
     // If the OS have no function to query for CPU capabilities we set just these
 
-    *flags |= ARM64IntrinsicConstants_AdvSimd;
+    *flags |= ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128;
 #endif // HAVE_AUXV_HWCAP_H
 }
 #endif

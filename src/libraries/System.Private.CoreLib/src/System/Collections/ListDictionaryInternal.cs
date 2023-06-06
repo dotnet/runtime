@@ -11,13 +11,15 @@
 **
 ===========================================================*/
 
+using System.Runtime.CompilerServices;
+
 namespace System.Collections
 {
     ///    This is a simple implementation of IDictionary using a singly linked list. This
     ///    will be smaller and faster than a Hashtable if the number of elements is 10 or less.
     ///    This should not be used if performance is important for large numbers of elements.
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     // Needs to be public to support binary serialization compatibility
     public class ListDictionaryInternal : IDictionary
     {

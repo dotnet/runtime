@@ -10,36 +10,45 @@ namespace System.Security.Cryptography
     /// </summary>
     public sealed class RSAEncryptionPadding : IEquatable<RSAEncryptionPadding>
     {
-        private static readonly RSAEncryptionPadding s_pkcs1 = new RSAEncryptionPadding(RSAEncryptionPaddingMode.Pkcs1, default(HashAlgorithmName));
-        private static readonly RSAEncryptionPadding s_oaepSHA1 = CreateOaep(HashAlgorithmName.SHA1);
-        private static readonly RSAEncryptionPadding s_oaepSHA256 = CreateOaep(HashAlgorithmName.SHA256);
-        private static readonly RSAEncryptionPadding s_oaepSHA384 = CreateOaep(HashAlgorithmName.SHA384);
-        private static readonly RSAEncryptionPadding s_oaepSHA512 = CreateOaep(HashAlgorithmName.SHA512);
-
         /// <summary>
         /// <see cref="RSAEncryptionPaddingMode.Pkcs1"/> mode.
         /// </summary>
-        public static RSAEncryptionPadding Pkcs1 { get { return s_pkcs1; } }
+        public static RSAEncryptionPadding Pkcs1 { get; } = new RSAEncryptionPadding(RSAEncryptionPaddingMode.Pkcs1, default);
 
         /// <summary>
         /// <see cref="RSAEncryptionPaddingMode.Oaep"/> mode with SHA1 hash algorithm.
         /// </summary>
-        public static RSAEncryptionPadding OaepSHA1 { get { return s_oaepSHA1; } }
+        public static RSAEncryptionPadding OaepSHA1 { get; } = CreateOaep(HashAlgorithmName.SHA1);
 
         /// <summary>
         /// <see cref="RSAEncryptionPaddingMode.Oaep"/> mode with SHA256 hash algorithm.
         /// </summary>
-        public static RSAEncryptionPadding OaepSHA256 { get { return s_oaepSHA256; } }
+        public static RSAEncryptionPadding OaepSHA256 { get; } = CreateOaep(HashAlgorithmName.SHA256);
 
         /// <summary>
         /// <see cref="RSAEncryptionPaddingMode.Oaep"/> mode with SHA384 hash algorithm.
         /// </summary>
-        public static RSAEncryptionPadding OaepSHA384 { get { return s_oaepSHA384; } }
+        public static RSAEncryptionPadding OaepSHA384 { get; } = CreateOaep(HashAlgorithmName.SHA384);
 
         /// <summary>
         /// <see cref="RSAEncryptionPaddingMode.Oaep"/> mode with SHA512 hash algorithm.
         /// </summary>
-        public static RSAEncryptionPadding OaepSHA512 { get { return s_oaepSHA512; } }
+        public static RSAEncryptionPadding OaepSHA512 { get; } = CreateOaep(HashAlgorithmName.SHA512);
+
+        /// <summary>
+        /// <see cref="RSAEncryptionPaddingMode.Oaep"/> mode with SHA3-256 hash algorithm.
+        /// </summary>
+        public static RSAEncryptionPadding OaepSHA3_256 { get; } = CreateOaep(HashAlgorithmName.SHA3_256);
+
+        /// <summary>
+        /// <see cref="RSAEncryptionPaddingMode.Oaep"/> mode with SHA3-384 hash algorithm.
+        /// </summary>
+        public static RSAEncryptionPadding OaepSHA3_384 { get; } = CreateOaep(HashAlgorithmName.SHA3_384);
+
+        /// <summary>
+        /// <see cref="RSAEncryptionPaddingMode.Oaep"/> mode with SHA3-512 hash algorithm.
+        /// </summary>
+        public static RSAEncryptionPadding OaepSHA3_512 { get; } = CreateOaep(HashAlgorithmName.SHA3_512);
 
         private readonly RSAEncryptionPaddingMode _mode;
         private readonly HashAlgorithmName _oaepHashAlgorithm;

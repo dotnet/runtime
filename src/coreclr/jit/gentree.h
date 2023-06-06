@@ -554,6 +554,7 @@ enum GenTreeFlags : unsigned int
     GTF_MDARRLEN_NONFAULTING    = 0x20000000, // GT_MDARR_LENGTH -- An MD array length operation that cannot fault. Same as GT_IND_NONFAULTING.
 
     GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
+
 };
 
 inline constexpr GenTreeFlags operator ~(GenTreeFlags a)
@@ -1086,7 +1087,7 @@ public:
         return TypeIs(type) || TypeIs(rest...);
     }
 
-    static bool StaticOperIs(genTreeOps operCompare, genTreeOps oper)
+    static constexpr bool StaticOperIs(genTreeOps operCompare, genTreeOps oper)
     {
         return operCompare == oper;
     }
@@ -1679,7 +1680,7 @@ public:
         }
 #endif
 #if defined(TARGET_ARM64)
-        if (OperIs(GT_CCMP, GT_CINCCC))
+        if (OperIs(GT_CCMP, GT_SELECT_INCCC, GT_SELECT_INVCC, GT_SELECT_NEGCC))
         {
             return true;
         }
@@ -1733,6 +1734,10 @@ public:
 #if defined(TARGET_ARM)
             case GT_PUTARG_REG:
 #endif // defined(TARGET_ARM)
+#if defined(TARGET_ARM64)
+            case GT_SELECT_NEGCC:
+            case GT_SELECT_INCCC:
+#endif // defined(TARGET_ARM64)
 
                 return true;
             default:
@@ -5421,20 +5426,38 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_RETBUFFARG_LCLOPT) != 0;
     }
 
-    InlineCandidateInfo* GetInlineCandidateInfo()
+    InlineCandidateInfo* GetSingleInlineCandidateInfo()
     {
+        // gtInlineInfoCount can be 0 (not an inline candidate) or 1
+        if (gtInlineInfoCount == 0)
+        {
+            assert(!IsInlineCandidate());
+            assert(gtInlineCandidateInfo == nullptr);
+            return nullptr;
+        }
+        else if (gtInlineInfoCount > 1)
+        {
+            assert(!"Call has multiple inline candidates");
+        }
         return gtInlineCandidateInfo;
     }
 
-    void SetSingleInlineCadidateInfo(InlineCandidateInfo* candidateInfo);
+    void SetSingleInlineCandidateInfo(InlineCandidateInfo* candidateInfo);
 
-    InlineCandidateInfo* GetGDVCandidateInfo(uint8_t index = 0);
+    InlineCandidateInfo* GetGDVCandidateInfo(uint8_t index);
 
-    void AddGDVCandidateInfo(InlineCandidateInfo* candidateInfo);
+    void AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candidateInfo);
+
+    void RemoveGDVCandidateInfo(Compiler* comp, uint8_t index);
 
     void ClearInlineInfo()
     {
-        SetSingleInlineCadidateInfo(nullptr);
+        SetSingleInlineCandidateInfo(nullptr);
+    }
+
+    uint8_t GetInlineCandidatesCount()
+    {
+        return gtInlineInfoCount;
     }
 
     //-----------------------------------------------------------------------------------------
@@ -5522,8 +5545,12 @@ struct GenTreeCall final : public GenTree
     union {
         // only used for CALLI unmanaged calls (CT_INDIRECT)
         GenTree* gtCallCookie;
+
         // gtInlineCandidateInfo is only used when inlining methods
-        InlineCandidateInfo*                 gtInlineCandidateInfo;
+        InlineCandidateInfo* gtInlineCandidateInfo;
+        // gtInlineCandidateInfoList is used when we have more than one GDV candidate
+        jitstd::vector<InlineCandidateInfo*>* gtInlineCandidateInfoList;
+
         HandleHistogramProfileCandidateInfo* gtHandleHistogramProfileCandidateInfo;
         LateDevirtualizationInfo*            gtLateDevirtualizationInfo;
         CORINFO_GENERIC_HANDLE compileTimeHelperArgumentHandle; // Used to track type handle argument of dynamic helpers
@@ -6216,6 +6243,8 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsMemoryStore(GenTree** pAddr = nullptr) const;
     bool OperIsMemoryLoadOrStore() const;
     bool OperIsMemoryStoreOrBarrier() const;
+    bool OperIsEmbBroadcastCompatible() const;
+    bool OperIsBroadcastScalar() const;
 
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;
@@ -8637,7 +8666,11 @@ struct GenTreeOpCC : public GenTreeOp
     GenTreeOpCC(genTreeOps oper, var_types type, GenCondition condition, GenTree* op1 = nullptr, GenTree* op2 = nullptr)
         : GenTreeOp(oper, type, op1, op2 DEBUGARG(/*largeNode*/ FALSE)), gtCondition(condition)
     {
+#ifdef TARGET_ARM64
+        assert(OperIs(GT_SELECTCC, GT_SELECT_INCCC, GT_SELECT_INVCC, GT_SELECT_NEGCC));
+#else
         assert(OperIs(GT_SELECTCC));
+#endif
     }
 
 #if DEBUGGABLE_GENTREE

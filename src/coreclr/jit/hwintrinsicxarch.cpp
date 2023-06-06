@@ -783,10 +783,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 return impSpecialIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, simdBaseJitType, retType,
                                            simdSize);
             }
-            else
+            else if (vectorTByteLength == XMM_REGSIZE_BYTES)
             {
-                assert(vectorTByteLength == XMM_REGSIZE_BYTES);
-
                 // We fold away the cast here, as it only exists to satisfy
                 // the type system. It is safe to do this here since the retNode type
                 // and the signature return type are both the same TYP_SIMD.
@@ -794,6 +792,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 retNode = impSIMDPopStack();
                 SetOpLclRelatedToSIMDIntrinsic(retNode);
                 assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
+            }
+            else
+            {
+                assert(vectorTByteLength == 0);
             }
             break;
         }
@@ -919,10 +921,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 break;
             }
-            else
+            else if (vectorTByteLength == XMM_REGSIZE_BYTES)
             {
-                assert(vectorTByteLength == XMM_REGSIZE_BYTES);
-
                 if (compExactlyDependsOn(InstructionSet_AVX))
                 {
                     // We support Vector256 but Vector<T> is only 16-bytes, so we should
@@ -940,6 +940,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                                    retType, 16);
                     }
                 }
+            }
+            else
+            {
+                assert(vectorTByteLength == 0);
             }
             break;
         }
@@ -969,10 +973,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
                 break;
             }
-            else
+            else if (vectorTByteLength == XMM_REGSIZE_BYTES)
             {
-                assert(vectorTByteLength == XMM_REGSIZE_BYTES);
-
                 if (compExactlyDependsOn(InstructionSet_AVX512F))
                 {
                     // We support Vector512 but Vector<T> is only 16-bytes, so we should
@@ -990,6 +992,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                                    retType, 16);
                     }
                 }
+            }
+            else
+            {
+                assert(vectorTByteLength == 0);
             }
             break;
         }
@@ -2565,18 +2571,23 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-            op1 = impSIMDPopStack();
-
 #if defined(TARGET_X86)
             if (varTypeIsLong(simdBaseType))
             {
+                if (!compExactlyDependsOn(InstructionSet_SSE41))
+                {
+                    // We need SSE41 to handle long, use software fallback
+                    break;
+                }
                 // Create a GetElement node which handles decomposition
+                op1     = impSIMDPopStack();
                 op2     = gtNewIconNode(0);
                 retNode = gtNewSimdGetElementNode(retType, op1, op2, simdBaseJitType, simdSize);
                 break;
             }
 #endif // TARGET_X86
 
+            op1     = impSIMDPopStack();
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
             break;
         }

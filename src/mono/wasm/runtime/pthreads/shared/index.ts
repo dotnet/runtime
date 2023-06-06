@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "../../globals";
+import MonoWasmThreads from "consts:monoWasmThreads";
+
+import { ENVIRONMENT_IS_PTHREAD, Module, runtimeHelpers } from "../../globals";
 import { MonoConfig } from "../../types";
 import { pthreadPtr } from "./types";
 
@@ -128,3 +130,24 @@ export function isMonoWorkerMessagePreload<TPort>(message: MonoWorkerMessage<TPo
     }
     return false;
 }
+
+let synchronization_context_installed = false;
+export function install_synchronization_context(): void {
+    if (MonoWasmThreads && !synchronization_context_installed) {
+        runtimeHelpers.javaScriptExports.install_synchronization_context();
+        synchronization_context_installed = true;
+    }
+}
+
+export function assert_synchronization_context(): void {
+    if (MonoWasmThreads) {
+        // TODO mono_assert(synchronization_context_installed, "Synchronization context not installed on the current worker. Please use dedicated worker for working with JavaScript interop.");
+    }
+}
+
+export function assert_legacy_interop(): void {
+    if (MonoWasmThreads) {
+        mono_assert(!ENVIRONMENT_IS_PTHREAD, "Legacy interop is not supported with WebAssembly threads.");
+    }
+}
+

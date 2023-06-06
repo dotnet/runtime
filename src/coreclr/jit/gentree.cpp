@@ -21,13 +21,13 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 const unsigned char GenTree::gtOperKindTable[] = {
-#define GTNODE(en, st, cm, ok) ((ok)&GTK_MASK) + GTK_COMMUTE *cm,
+#define GTNODE(en, st, cm, ivn, ok) ((ok)&GTK_MASK) + GTK_COMMUTE *cm,
 #include "gtlist.h"
 };
 
 #ifdef DEBUG
 const GenTreeDebugOperKind GenTree::gtDebugOperKindTable[] = {
-#define GTNODE(en, st, cm, ok) static_cast<GenTreeDebugOperKind>((ok)&DBK_MASK),
+#define GTNODE(en, st, cm, ivn, ok) static_cast<GenTreeDebugOperKind>((ok)&DBK_MASK),
 #include "gtlist.h"
 };
 #endif // DEBUG
@@ -171,7 +171,7 @@ static void printIndent(IndentStack* indentStack)
 #if defined(DEBUG) || NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS || DUMP_FLOWGRAPHS
 
 static const char* opNames[] = {
-#define GTNODE(en, st, cm, ok) #en,
+#define GTNODE(en, st, cm, ivn, ok) #en,
 #include "gtlist.h"
 };
 
@@ -187,7 +187,7 @@ const char* GenTree::OpName(genTreeOps op)
 #if MEASURE_NODE_SIZE
 
 static const char* opStructNames[] = {
-#define GTNODE(en, st, cm, ok) #st,
+#define GTNODE(en, st, cm, ivn, ok) #st,
 #include "gtlist.h"
 };
 
@@ -214,7 +214,7 @@ unsigned char GenTree::s_gtNodeSizes[GT_COUNT + 1];
 #if NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS
 
 unsigned char GenTree::s_gtTrueSizes[GT_COUNT + 1]{
-#define GTNODE(en, st, cm, ok) sizeof(st),
+#define GTNODE(en, st, cm, ivn, ok) sizeof(st),
 #include "gtlist.h"
 };
 
@@ -2164,12 +2164,12 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBloc
 }
 
 //-------------------------------------------------------------------------
-// SetSingleInlineCadidateInfo: set a single inline candidate info in the current call.
+// SetSingleInlineCandidateInfo: set a single inline candidate info in the current call.
 //
 // Arguments:
 //     candidateInfo - inline candidate info
 //
-void GenTreeCall::SetSingleInlineCadidateInfo(InlineCandidateInfo* candidateInfo)
+void GenTreeCall::SetSingleInlineCandidateInfo(InlineCandidateInfo* candidateInfo)
 {
     if (candidateInfo != nullptr)
     {
@@ -2180,9 +2180,9 @@ void GenTreeCall::SetSingleInlineCadidateInfo(InlineCandidateInfo* candidateInfo
     {
         gtInlineInfoCount = 0;
         gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
-        gtCallMoreFlags &= ~GTF_CALL_M_GUARDED_DEVIRT;
     }
     gtInlineCandidateInfo = candidateInfo;
+    ClearGuardedDevirtualizationCandidate();
 }
 
 //-------------------------------------------------------------------------
@@ -2194,31 +2194,77 @@ void GenTreeCall::SetSingleInlineCadidateInfo(InlineCandidateInfo* candidateInfo
 InlineCandidateInfo* GenTreeCall::GetGDVCandidateInfo(uint8_t index)
 {
     assert(index < gtInlineInfoCount);
-    return &gtInlineCandidateInfo[index];
+    if (gtInlineInfoCount > 1)
+    {
+        // In this case we should access it through gtInlineCandidateInfoList
+        return gtInlineCandidateInfoList->at(index);
+    }
+    return gtInlineCandidateInfo;
 }
 
 //-------------------------------------------------------------------------
 // AddGDVCandidateInfo: Record a guarded devirtualization (GDV) candidate info
-//     for this call. For now, we only support one GDV candidate per call.
+//     for this call. A call can't have more than MAX_GDV_TYPE_CHECKS number of candidates
 //
 // Arguments:
+//     comp          - Compiler instance
 //     candidateInfo - GDV candidate info
 //
-void GenTreeCall::AddGDVCandidateInfo(InlineCandidateInfo* candidateInfo)
+void GenTreeCall::AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candidateInfo)
 {
+    assert(gtInlineInfoCount < MAX_GDV_TYPE_CHECKS);
     assert(candidateInfo != nullptr);
+
     if (gtInlineInfoCount == 0)
     {
+        // Most calls are monomorphic, so we don't need to allocate a vector
         gtInlineCandidateInfo = candidateInfo;
+    }
+    else if (gtInlineInfoCount == 1)
+    {
+        // Upgrade gtInlineCandidateInfo to gtInlineCandidateInfoList (vector)
+        CompAllocator        allocator      = comp->getAllocator(CMK_Inlining);
+        InlineCandidateInfo* firstCandidate = gtInlineCandidateInfo;
+        gtInlineCandidateInfoList           = new (allocator) jitstd::vector<InlineCandidateInfo*>(allocator);
+        gtInlineCandidateInfoList->push_back(firstCandidate);
+        gtInlineCandidateInfoList->push_back(candidateInfo);
     }
     else
     {
-        // Allocate a fixed list of InlineCandidateInfo structs
-        assert(!"multiple GDV candidates are not implemented yet");
+        gtInlineCandidateInfoList->push_back(candidateInfo);
     }
-
     gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT;
     gtInlineInfoCount++;
+}
+
+//-------------------------------------------------------------------------
+// RemoveGDVCandidateInfo: Remove a guarded devirtualization (GDV) candidate info
+//     by its index. Index must not be greater than gtInlineInfoCount
+//     the call will be marked as "has no inline candidates" if the last candidate is removed
+//
+// Arguments:
+//     comp    - Compiler instance
+//     index   - GDV candidate to remove
+//
+void GenTreeCall::RemoveGDVCandidateInfo(Compiler* comp, uint8_t index)
+{
+    assert(index < gtInlineInfoCount);
+
+    if (gtInlineInfoCount == 1)
+    {
+        // No longer have any inline candidates
+        ClearInlineInfo();
+        assert(gtInlineInfoCount == 0);
+        return;
+    }
+    gtInlineCandidateInfoList->erase(gtInlineCandidateInfoList->begin() + index);
+    gtInlineInfoCount--;
+
+    // Downgrade gtInlineCandidateInfoList to gtInlineCandidateInfo
+    if (gtInlineInfoCount == 1)
+    {
+        gtInlineCandidateInfo = gtInlineCandidateInfoList->at(0);
+    }
 }
 
 //-------------------------------------------------------------------------
@@ -6361,11 +6407,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_IL_OFFSET:
             return false;
 
-// Standard unary operators
-#ifdef TARGET_ARM64
-        case GT_CNEG_LT:
-        case GT_CINCCC:
-#endif // TARGET_ARM64
+        // Standard unary operators
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
         case GT_NOT:
@@ -6554,7 +6596,11 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
             }
             return false;
         }
-
+#ifdef TARGET_ARM64
+        case GT_SELECT_NEG:
+        case GT_SELECT_INV:
+        case GT_SELECT_INC:
+#endif
         case GT_SELECT:
         {
             GenTreeConditional* const conditional = this->AsConditional();
@@ -7729,10 +7775,11 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     node->gtCallType    = callType;
     node->gtCallMethHnd = callHnd;
     INDEBUG(node->callSig = nullptr;)
-    node->tailCallInfo    = nullptr;
-    node->gtRetClsHnd     = nullptr;
-    node->gtControlExpr   = nullptr;
-    node->gtCallMoreFlags = GTF_CALL_M_EMPTY;
+    node->tailCallInfo      = nullptr;
+    node->gtRetClsHnd       = nullptr;
+    node->gtControlExpr     = nullptr;
+    node->gtCallMoreFlags   = GTF_CALL_M_EMPTY;
+    node->gtInlineInfoCount = 0;
 
     if (callType == CT_INDIRECT)
     {
@@ -9713,11 +9760,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             m_state = -1;
             return;
 
-// Standard unary operators
-#ifdef TARGET_ARM64
-        case GT_CNEG_LT:
-        case GT_CINCCC:
-#endif // TARGET_ARM64
+        // Standard unary operators
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
         case GT_NOT:
@@ -9829,7 +9872,11 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             m_advance  = &GenTreeUseEdgeIterator::AdvanceCall<CALL_ARGS>;
             AdvanceCall<CALL_ARGS>();
             return;
-
+#ifdef TARGET_ARM64
+        case GT_SELECT_NEG:
+        case GT_SELECT_INV:
+        case GT_SELECT_INC:
+#endif
         case GT_SELECT:
             m_edge = &m_node->AsConditional()->gtCond;
             assert(*m_edge != nullptr);
@@ -9955,8 +10002,15 @@ void GenTreeUseEdgeIterator::AdvanceConditional()
     switch (m_state)
     {
         case 0:
-            m_edge  = &conditional->gtOp1;
-            m_state = 1;
+            m_edge = &conditional->gtOp1;
+            if (conditional->gtOp2 == nullptr)
+            {
+                m_advance = &GenTreeUseEdgeIterator::Terminate;
+            }
+            else
+            {
+                m_state = 1;
+            }
             break;
         case 1:
             m_edge    = &conditional->gtOp2;
@@ -12229,7 +12283,7 @@ void Compiler::gtDispTree(GenTree*     tree,
             printf(" cond=%s", tree->AsOpCC()->gtCondition.Name());
         }
 #ifdef TARGET_ARM64
-        else if (tree->OperIs(GT_CINCCC))
+        else if (tree->OperIs(GT_SELECT_INCCC, GT_SELECT_INVCC, GT_SELECT_NEGCC))
         {
             printf(" cond=%s", tree->AsOpCC()->gtCondition.Name());
         }
@@ -12346,10 +12400,21 @@ void Compiler::gtDispTree(GenTree*     tree,
                 printf(" (FramesRoot last use)");
             }
 
-            if (((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0) && (call->GetInlineCandidateInfo() != nullptr) &&
-                (call->GetInlineCandidateInfo()->exactContextHnd != nullptr))
+            if ((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0)
             {
-                printf(" (exactContextHnd=0x%p)", dspPtr(call->GetInlineCandidateInfo()->exactContextHnd));
+                InlineCandidateInfo* inlineInfo;
+                if (call->IsGuardedDevirtualizationCandidate())
+                {
+                    inlineInfo = call->GetGDVCandidateInfo(0);
+                }
+                else
+                {
+                    inlineInfo = call->GetSingleInlineCandidateInfo();
+                }
+                if ((inlineInfo != nullptr) && (inlineInfo->exactContextHnd != nullptr))
+                {
+                    printf(" (exactContextHnd=0x%p)", dspPtr(inlineInfo->exactContextHnd));
+                }
             }
 
             gtDispCommonEndLine(tree);
@@ -17823,6 +17888,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 {
                     // if we managed to get a class handle it's definitely not null
                     *pIsNonNull = true;
+                    *pIsExact   = true;
                 }
             }
             break;
@@ -17864,7 +17930,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 // type class handle in the inline info (for GDV candidates,
                 // this data is valid only for a correct guess, so we cannot
                 // use it).
-                InlineCandidateInfo* inlInfo = call->GetInlineCandidateInfo();
+                InlineCandidateInfo* inlInfo = call->GetSingleInlineCandidateInfo();
                 assert(inlInfo != nullptr);
 
                 // Grab it as our first cut at a return type.
@@ -19007,6 +19073,18 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_Vector256_get_Zero:
         {
             // These HWIntrinsic operations are contained as part of Sse41.Insert
+            return true;
+        }
+
+        case NI_SSE3_MoveAndDuplicate:
+        case NI_AVX_BroadcastScalarToVector128:
+        case NI_AVX2_BroadcastScalarToVector128:
+        case NI_AVX_BroadcastScalarToVector256:
+        case NI_AVX2_BroadcastScalarToVector256:
+        case NI_AVX512F_BroadcastScalarToVector512:
+        {
+            // These intrinsic operations are contained as part of the operand of embedded broadcast compatible
+            // instruction
             return true;
         }
 
@@ -24941,6 +25019,44 @@ bool GenTreeHWIntrinsic::OperIsMemoryStoreOrBarrier() const
     {
         return false;
     }
+}
+
+//------------------------------------------------------------------------
+// OperIsEmbBroadcastCompatible: Checks if the intrinsic is a embedded broadcast compatible inintrsic.
+//
+// Return Value:
+//     true if the intrinsic node lowering instruction is embedded broadcast compatible.
+//
+bool GenTreeHWIntrinsic::OperIsEmbBroadcastCompatible() const
+{
+    return HWIntrinsicInfo::IsEmbBroadcastCompatible(GetHWIntrinsicId());
+}
+
+//------------------------------------------------------------------------
+// OperIsBroadcastScalar: Is this HWIntrinsic a broadcast node from scalar.
+//
+// Return Value:
+//    Whether "this" is a broadcast node from scalar.
+//
+bool GenTreeHWIntrinsic::OperIsBroadcastScalar() const
+{
+#if defined(TARGET_XARCH)
+    NamedIntrinsic intrinsicId = GetHWIntrinsicId();
+    switch (intrinsicId)
+    {
+        case NI_AVX2_BroadcastScalarToVector128:
+        case NI_AVX2_BroadcastScalarToVector256:
+        case NI_AVX_BroadcastScalarToVector128:
+        case NI_AVX_BroadcastScalarToVector256:
+        case NI_SSE3_MoveAndDuplicate:
+        case NI_AVX512F_BroadcastScalarToVector512:
+            return true;
+        default:
+            return false;
+    }
+#else
+    return false;
+#endif
 }
 
 //------------------------------------------------------------------------------

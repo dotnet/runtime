@@ -20,7 +20,7 @@ namespace System.Runtime.CompilerServices
     /// Indicates that a method should suppress the GC transition as part of the calling convention.
     /// </summary>
     /// <remarks>
-    /// The <see cref="System.Runtime.InteropServices.SuppressGCTransitionAttribute" /> describes the effects
+    /// The <see cref="InteropServices.SuppressGCTransitionAttribute" /> describes the effects
     /// of suppressing the GC transition on a native call.
     /// </remarks>
     public class CallConvSuppressGCTransition

@@ -407,7 +407,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
         {
             // We will use lea so displacement and not immediate will be relocatable
             size = EA_SET_FLG(EA_REMOVE_FLG(size, EA_CNS_RELOC_FLG), EA_DSP_RELOC_FLG);
-            GetEmitter()->emitIns_R_AI(INS_lea, size, reg, imm);
+            GetEmitter()->emitIns_R_AI(INS_lea, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
         }
         else
         {
@@ -3401,14 +3401,14 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     assert(srcOffset < (INT32_MAX - static_cast<int>(size)));
     assert(dstOffset < (INT32_MAX - static_cast<int>(size)));
 
-    if (size >= XMM_REGSIZE_BYTES)
+    // Get the largest SIMD register available if the size is large enough
+    unsigned regSize = compiler->roundDownSIMDSize(size);
+
+    if ((size >= regSize) && (regSize > 0))
     {
         regNumber tempReg = node->GetSingleTempReg(RBM_ALLFLOAT);
 
         instruction simdMov = simdUnalignedMovIns();
-
-        // Get the largest SIMD register available if the size is large enough
-        unsigned regSize = compiler->roundDownSIMDSize(size);
 
         auto emitSimdMovs = [&]() {
             if (srcLclNum != BAD_VAR_NUM)

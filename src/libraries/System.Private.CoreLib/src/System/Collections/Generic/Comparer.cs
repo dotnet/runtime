@@ -116,7 +116,7 @@ namespace System.Collections.Generic
     {
         public override int Compare(T? x, T? y)
         {
-            return System.Collections.Comparer.Default.Compare(x, y);
+            return Comparer.Default.Compare(x, y);
         }
 
         // Equals method for the comparer itself.
