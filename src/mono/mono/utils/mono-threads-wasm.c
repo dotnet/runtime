@@ -481,6 +481,7 @@ mono_threads_wasm_browser_thread_tid (void)
 
 #ifndef DISABLE_THREADS
 extern void mono_wasm_pthread_on_pthread_attached (MonoNativeThreadId pthread_id);
+extern void mono_wasm_pthread_on_pthread_detached (MonoNativeThreadId pthread_id);
 #endif
 
 void
@@ -497,6 +498,22 @@ mono_threads_wasm_on_thread_attached (void)
 	MONO_ENTER_GC_SAFE;
 	mono_wasm_pthread_on_pthread_attached (id);
 	MONO_EXIT_GC_SAFE;
+#endif
+}
+
+void
+mono_threads_wasm_on_thread_detached (void)
+{
+#ifdef DISABLE_THREADS
+	return;
+#else
+	if (mono_threads_wasm_is_browser_thread ()) {
+		return;
+	}
+	// Notify JS that the pthread attachd to Mono
+	pthread_t id = pthread_self ();
+
+	mono_wasm_pthread_on_pthread_detached (id);
 #endif
 }
 

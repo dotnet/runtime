@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import MonoWasmThreads from "consts:monoWasmThreads";
+import BuildConfiguration from "consts:configuration";
 
 import { Module, runtimeHelpers } from "../../globals";
 import { MonoConfig } from "../../types";
@@ -9,6 +10,7 @@ import { pthreadPtr } from "./types";
 import { mono_log_debug } from "../../logging";
 import { bindings_init } from "../../startup";
 import { forceDisposeProxies } from "../../gc-handles";
+import { pthread_self } from "../worker";
 
 export interface PThreadInfo {
     readonly pthreadId: pthreadPtr;
@@ -146,6 +148,8 @@ export function mono_wasm_install_js_worker_interop(install_js_synchronization_c
     if (install_js_synchronization_context) {
         Module.runtimeKeepalivePush();
     }
+
+    set_thread_info(pthread_self ? pthread_self.pthreadId : 0, true, true, !!install_js_synchronization_context);
 }
 
 export function mono_wasm_uninstall_js_worker_interop(uninstall_js_synchronization_context: number): void {
@@ -162,10 +166,18 @@ export function mono_wasm_uninstall_js_worker_interop(uninstall_js_synchronizati
 
     worker_js_synchronization_context_installed = false;
     runtimeHelpers.mono_wasm_bindings_is_ready = false;
+    set_thread_info(pthread_self ? pthread_self.pthreadId : 0, true, false, false);
 }
 
 export function assert_synchronization_context(): void {
     if (MonoWasmThreads) {
         mono_assert(worker_js_synchronization_context_installed, "Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
+    }
+}
+
+// this is just for Debug build of the runtime, making it easier to debug worker threads
+export function set_thread_info(pthread_ptr: number, isAttached: boolean, hasInterop: boolean, hasSynchronization: boolean): void {
+    if (MonoWasmThreads && BuildConfiguration === "Debug") {
+        (globalThis as any).monoThreadInfo = new Function(`//# sourceURL=https://WorkerInfo/\r\nconsole.log("tid:0x${pthread_ptr.toString(16)} isAttached:${isAttached} hasInterop:${!!hasInterop} hasSynchronization:${hasSynchronization}" );`);
     }
 }

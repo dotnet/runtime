@@ -416,6 +416,7 @@ export declare interface EmscriptenModuleInternal {
     safeSetTimeout(func: Function, timeout: number): number;
     runtimeKeepalivePush(): void;
     runtimeKeepalivePop(): void;
+    maybeExit(): void;
 }
 
 /// A PromiseController encapsulates a Promise together with easy access to its resolve and reject functions.

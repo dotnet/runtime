@@ -120,6 +120,7 @@ let linked_functions = [
 linked_functions = [...linked_functions,
     // mono-threads-wasm.c
     "mono_wasm_pthread_on_pthread_attached",
+    "mono_wasm_pthread_on_pthread_detached",
     // threads.c
     "mono_wasm_eventloop_has_unsettled_interop_promises",
     // diagnostics_server.c

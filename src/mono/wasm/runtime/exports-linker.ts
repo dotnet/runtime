@@ -12,7 +12,7 @@ import { mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry 
 import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue, mono_jiterp_do_jit_call_indirect } from "./jiterpreter-jit-call";
 import { mono_wasm_marshal_promise } from "./marshal-to-js";
 import { mono_wasm_eventloop_has_unsettled_interop_promises } from "./pthreads/shared/eventloop";
-import { mono_wasm_pthread_on_pthread_attached } from "./pthreads/worker";
+import { mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_detached } from "./pthreads/worker";
 import { mono_wasm_schedule_timer, schedule_background_exec } from "./scheduling";
 import { mono_wasm_asm_loaded } from "./startup";
 import { mono_wasm_diagnostic_server_on_server_thread_created } from "./diagnostics/server_pthread";
@@ -37,6 +37,7 @@ import { mono_wasm_typed_array_from_ref } from "./net6-legacy/buffers";
 const mono_wasm_threads_exports = !MonoWasmThreads ? undefined : {
     // mono-threads-wasm.c
     mono_wasm_pthread_on_pthread_attached,
+    mono_wasm_pthread_on_pthread_detached,
     // threads.c
     mono_wasm_eventloop_has_unsettled_interop_promises,
     // diagnostics_server.c

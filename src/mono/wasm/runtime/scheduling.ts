@@ -37,6 +37,7 @@ export function prevent_timer_throttling(): void {
 }
 
 function prevent_timer_throttling_tick() {
+    Module.maybeExit();
     cwraps.mono_wasm_execute_timer();
     pump_count++;
     mono_background_exec_until_done();
