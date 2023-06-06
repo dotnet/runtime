@@ -122,7 +122,7 @@
 
     <Exec Condition="$(BuildPerfMap) and '$(CrossGenPerfMapCmd)' != ''" Command="$(CrossGenPerfMapCmd)" />
 
-    <Copy Condition="!$(BuildDll)" SourceFiles="$(CoreLibInputPath)" DestinationFiles="$(CoreLibOutputPath)" UseHardlinksIfPossible="true" />
+    <Copy Condition="!$(BuildDll)" SourceFiles="@(CoreLib)" DestinationFiles="$(CoreLibOutputPath)" UseHardlinksIfPossible="true" />
 
     <Message Importance="High" Text="Crossgenning of System.Private.CoreLib succeeded." />
     <Message Importance="High" Text="Product binaries are available at $(BinDir)" />

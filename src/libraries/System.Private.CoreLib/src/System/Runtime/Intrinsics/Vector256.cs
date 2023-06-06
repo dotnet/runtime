@@ -473,11 +473,11 @@ namespace System.Runtime.Intrinsics
 
                 if (Fma.IsSupported)
                 {
-                    return Fma.MultiplyAdd(upper, Vector256.Create(65536.0f), lower);
+                    return Fma.MultiplyAdd(upper, Create(65536.0f), lower);
                 }
                 else
                 {
-                    Vector256<float> result = Avx.Multiply(upper, Vector256.Create(65536.0f));
+                    Vector256<float> result = Avx.Multiply(upper, Create(65536.0f));
                     return Avx.Add(result, lower);
                 }
             }

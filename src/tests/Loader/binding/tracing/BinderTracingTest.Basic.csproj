@@ -2,6 +2,8 @@
   <PropertyGroup>
     <!-- TestAssemblyLoadContext.Load called from the finalizer -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <!-- Dynamic assembly loads -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BinderTracingTest.Basic.cs" />
