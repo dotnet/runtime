@@ -85,9 +85,9 @@
       <Sha>8374d5fca634a93458c84414b1604c12f765d1ab</Sha>
       <SourceBuild RepoName="command-line-api" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.23301.1">
+    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.23306.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>ea84c8236c45ebace0073dbc01e0e75ffba65a65</Sha>
+      <Sha>76f3f2033523a66f24a82654457779d7e113c3b0</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100.Transport" Version="8.0.0-preview.6.23301.1">
