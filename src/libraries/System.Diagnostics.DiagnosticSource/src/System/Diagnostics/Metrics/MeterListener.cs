@@ -179,36 +179,6 @@ namespace System.Diagnostics.Metrics
             }
         }
 
-        /* Option 2 - Modify MeterListener to understand concept of being updated
-         *
-        public void Update()
-        {
-            List<Instrument>? publishedInstruments = null;
-            lock (Instrument.SyncObject)
-            {
-                if (_disposed)
-                {
-                    return;
-                }
-
-                if (!s_allStartedListeners.Contains(this))
-                {
-                    s_allStartedListeners.Add(this);
-                }
-
-                publishedInstruments = Meter.GetPublishedInstruments();
-            }
-
-            if (publishedInstruments is not null)
-            {
-                foreach (Instrument instrument in publishedInstruments)
-                {
-                    InstrumentPublished?.Invoke(instrument, this);
-                }
-            }
-        }
-        */
-
         /// <summary>
         /// Calls all Observable instruments which the listener is listening to then calls <see cref="SetMeasurementEventCallback" /> with every collected measurement.
         /// </summary>

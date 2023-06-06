@@ -469,6 +469,34 @@ namespace System.Diagnostics.Metrics.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         //[OuterLoop("Slow and has lots of console spew")]
+        public void EventSourceRejectsNewSharedListenerWithDifferentMaxHistogramAfterNoClientId()
+        {
+            using Meter meter = new Meter("TestMeter7");
+            Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
+
+            EventWrittenEventArgs[] events;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, string.Empty, isShared: true, IntervalSecs, 10, 10, "TestMeter7"))
+            {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                c.Add(5);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                c.Add(12);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                c.Add(19);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
+                events = listener.Events.ToArray();
+            }
+
+            using MetricsEventListener listener3 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, 11, 11, "TestMeter7");
+            listener3.WaitForMultipleSessionsConfiguredIncorrectlyError(s_waitForEventTimeout);
+
+            AssertBeginInstrumentReportingEventsPresent(events, c);
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"), ("19", "36"));
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 4);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        //[OuterLoop("Slow and has lots of console spew")]
         public void EventSourceRejectsNewSharedListenerWithDifferentInterval()
         {
             using Meter meter = new Meter("TestMeter7");

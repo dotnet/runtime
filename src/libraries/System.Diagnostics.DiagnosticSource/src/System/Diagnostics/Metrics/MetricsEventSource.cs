@@ -47,6 +47,11 @@ namespace System.Diagnostics.Metrics
 
         private const string SharedSessionId = "SHARED";
         private const string ClientIdKey = "ClientId";
+        private const string MaxHistogramsKey = "MaxHistograms";
+        private const string MaxTimeSeriesKey = "MaxTimeSeries";
+        private const string RefreshIntervalKey = "RefreshInterval";
+        private const string DefaultValueDescription = "default";
+        private const string SharedValueDescription = "shared value";
 
         public static class Keywords
         {
@@ -232,6 +237,7 @@ namespace System.Diagnostics.Metrics
             private string _sessionId = "";
             private HashSet<string> _sharedSessionClientIds = new HashSet<string>();
             private int _sharedSessionRefCount;
+            private bool _disabledRefCount;
 
             public CommandHandler(MetricsEventSource parent)
             {
@@ -279,7 +285,9 @@ namespace System.Diagnostics.Metrics
 
                         if (IsSharedSession(commandSessionId))
                         {
-                            if (command.Command == EventCommand.Disable && Interlocked.Decrement(ref _sharedSessionRefCount) == 0)
+                            if (command.Command == EventCommand.Disable
+                                && !_disabledRefCount
+                                && Interlocked.Decrement(ref _sharedSessionRefCount) == 0)
                             {
                                 Parent.Message($"Previous session with id {_sessionId} is stopped");
                                 _aggregationManager.Dispose();
@@ -304,6 +312,7 @@ namespace System.Diagnostics.Metrics
                             {
                                 if (validShared)
                                 {
+                                    // Refactor this to be shared
                                     if (command.Arguments!.TryGetValue("Metrics", out string? metricsSpecs))
                                     {
                                         Parent.Message($"Metrics argument received: {metricsSpecs}");
@@ -347,7 +356,7 @@ namespace System.Diagnostics.Metrics
                                 Parent.MultipleSessionsNotSupportedError(_sessionId);
                                 return;
                             }
-                            else if (command.Command == EventCommand.Disable && Interlocked.Decrement(ref _sharedSessionRefCount) == 0)
+                            else if (command.Command == EventCommand.Disable && !_disabledRefCount && Interlocked.Decrement(ref _sharedSessionRefCount) == 0)
                             {
                                 Parent.Message($"Previous session with id {_sessionId} is stopped");
                                 _aggregationManager.Dispose();
@@ -412,13 +421,27 @@ namespace System.Diagnostics.Metrics
                 }
             }
 
+            private void InvalidateRefCounting()
+            {
+                _disabledRefCount = true;
+                Parent.Message($"{ClientIdKey} not provided; session will remain active indefinitely.");
+            }
+
             private void IncrementRefCount(string clientId, EventCommandEventArgs command)
             {
-                // Could be unsafe if ClientId protocol isn't followed
-                if (command.Arguments!.TryGetValue(ClientIdKey, out string? clientIdArg))
+                if (clientId.Equals(SharedSessionId))
                 {
-                    clientId = clientIdArg!;
+                    if (command.Arguments!.TryGetValue(ClientIdKey, out string? clientIdArg) && !string.IsNullOrEmpty(clientIdArg))
+                    {
+                        clientId = clientIdArg!;
+                    }
+                    else
+                    {
+                        // If ClientId contract is followed, this should never happen.
+                        InvalidateRefCounting();
+                    }
                 }
+
 
                 if (!_sharedSessionClientIds.Contains(clientId))
                 {
@@ -429,22 +452,22 @@ namespace System.Diagnostics.Metrics
 
             private bool SetSharedMaxTimeSeries(IDictionary<string, string>? arguments, int sharedValue, out int maxTimeSeries)
             {
-                return SetMaxValue(arguments, "MaxTimeSeries", "shared value", sharedValue, out maxTimeSeries);
+                return SetMaxValue(arguments, MaxTimeSeriesKey, SharedValueDescription, sharedValue, out maxTimeSeries);
             }
 
             private void SetUniqueMaxTimeSeries(IDictionary<string, string>? arguments, int defaultValue, out int maxTimeSeries)
             {
-                _ = SetMaxValue(arguments, "MaxTimeSeries", "default", defaultValue, out maxTimeSeries);
+                _ = SetMaxValue(arguments, MaxTimeSeriesKey, DefaultValueDescription, defaultValue, out maxTimeSeries);
             }
 
             private bool SetSharedMaxHistograms(IDictionary<string, string>? arguments, int sharedValue, out int maxHistograms)
             {
-                return SetMaxValue(arguments, "MaxHistograms", "shared value", sharedValue, out maxHistograms);
+                return SetMaxValue(arguments, MaxHistogramsKey, SharedValueDescription, sharedValue, out maxHistograms);
             }
 
             private void SetUniqueMaxHistograms(IDictionary<string, string>? arguments, int defaultValue, out int maxHistograms)
             {
-                _ = SetMaxValue(arguments, "MaxHistograms", "default", defaultValue, out maxHistograms);
+                _ = SetMaxValue(arguments, MaxHistogramsKey, DefaultValueDescription, defaultValue, out maxHistograms);
             }
 
             private bool SetMaxValue(IDictionary<string, string>? arguments, string argumentsKey, string valueDescriptor, int defaultValue, out int maxValue)
@@ -473,57 +496,40 @@ namespace System.Diagnostics.Metrics
 
             private void SetRefreshIntervalSecs(IDictionary<string, string>? arguments, double minValue, double defaultValue, out double refreshIntervalSeconds)
             {
-                double gottenRefreshIntervalSecs;
-                if (GetRefreshIntervalSecs(arguments, "default", defaultValue, out gottenRefreshIntervalSecs))
+                if (GetRefreshIntervalSecs(arguments, DefaultValueDescription, defaultValue, out refreshIntervalSeconds)
+                    && refreshIntervalSeconds < minValue)
                 {
-                    if (gottenRefreshIntervalSecs < minValue)
-                    {
-                        Parent.Message($"RefreshInterval too small. Using minimum interval {minValue} seconds.");
-                        refreshIntervalSeconds = minValue;
-                    }
-                    else
-                    {
-                        refreshIntervalSeconds = gottenRefreshIntervalSecs;
-                    }
-                }
-                else
-                {
-                    refreshIntervalSeconds = gottenRefreshIntervalSecs;
+                    Parent.Message($"{RefreshIntervalKey} too small. Using minimum interval {minValue} seconds.");
+                    refreshIntervalSeconds = minValue;
                 }
             }
 
             private bool SetSharedRefreshIntervalSecs(IDictionary<string, string>? arguments, double sharedValue, out double refreshIntervalSeconds)
             {
-                double gottenRefreshIntervalSecs;
-                if (GetRefreshIntervalSecs(arguments, "shared value", sharedValue, out gottenRefreshIntervalSecs))
+                if (GetRefreshIntervalSecs(arguments, SharedValueDescription, sharedValue, out refreshIntervalSeconds)
+                    && refreshIntervalSeconds != sharedValue)
                 {
-                    if (gottenRefreshIntervalSecs != sharedValue)
-                    {
-                        refreshIntervalSeconds = -1;
-                        return false;
-                    }
+                    return false;
                 }
-
-                refreshIntervalSeconds = gottenRefreshIntervalSecs;
 
                 return true;
             }
 
             private bool GetRefreshIntervalSecs(IDictionary<string, string>? arguments, string valueDescriptor, double defaultValue, out double refreshIntervalSeconds)
             {
-                if (arguments!.TryGetValue("RefreshInterval", out string? refreshInterval))
+                if (arguments!.TryGetValue(RefreshIntervalKey, out string? refreshInterval))
                 {
-                    Parent.Message($"RefreshInterval argument received: {refreshInterval}");
+                    Parent.Message($"{RefreshIntervalKey} argument received: {refreshInterval}");
                     if (!double.TryParse(refreshInterval, out refreshIntervalSeconds))
                     {
-                        Parent.Message($"Failed to parse RefreshInterval. Using {valueDescriptor} {defaultValue}s.");
+                        Parent.Message($"Failed to parse {RefreshIntervalKey}. Using {valueDescriptor} {defaultValue}s.");
                         refreshIntervalSeconds = defaultValue;
                         return false;
                     }
                 }
                 else
                 {
-                    Parent.Message($"No RefreshInterval argument received. Using {valueDescriptor} {defaultValue}s.");
+                    Parent.Message($"No {RefreshIntervalKey} argument received. Using {valueDescriptor} {defaultValue}s.");
                     refreshIntervalSeconds = defaultValue;
                     return false;
                 }

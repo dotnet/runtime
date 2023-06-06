@@ -167,9 +167,6 @@ namespace System.Diagnostics.Metrics
             tempListener.MeasurementsCompleted += CompletedMeasurements;
             tempListener.Start();
 
-            // Option 2 - Doesn't create/destroy temporarily MeterListeners
-            //_listener.Update();
-
             _initialInstrumentEnumerationComplete();
         }
 
