@@ -580,6 +580,12 @@ namespace System.Globalization
         /// </summary>
         internal string SortName => _sortName ??= _cultureData.SortName;
 
+        /// <summary>
+        /// The culture name to use to interop with the underlying native globalization libraries like ICU or Windows NLS APIs.
+        /// For example, we can have the name de_DE@collation=phonebook when using ICU for the German culture de-DE with the phonebook sorting behavior.
+        /// </summary>
+        internal string? InteropName => _cultureData.InteropName;
+
         public string IetfLanguageTag =>
                 // special case the compatibility cultures
                 Name switch

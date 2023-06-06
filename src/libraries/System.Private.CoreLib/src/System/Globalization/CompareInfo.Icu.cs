@@ -14,7 +14,7 @@ namespace System.Globalization
         [NonSerialized]
         private bool _isAsciiEqualityOrdinal;
 
-        private void IcuInitSortHandle()
+        private void IcuInitSortHandle(string interopCultureName)
         {
             if (GlobalizationMode.Invariant)
             {
@@ -23,6 +23,7 @@ namespace System.Globalization
             else
             {
                 Debug.Assert(!GlobalizationMode.UseNls);
+                Debug.Assert(interopCultureName != null);
 
                 // Inline the following condition to avoid potential implementation cycles within globalization
                 //
@@ -31,7 +32,7 @@ namespace System.Globalization
                 _isAsciiEqualityOrdinal = _sortName.Length == 0 ||
                     (_sortName.Length >= 2 && _sortName[0] == 'e' && _sortName[1] == 'n' && (_sortName.Length == 2 || _sortName[2] == '-'));
 
-                _sortHandle = SortHandleCache.GetCachedSortHandle(_sortName);
+                _sortHandle = SortHandleCache.GetCachedSortHandle(interopCultureName);
             }
         }
 
