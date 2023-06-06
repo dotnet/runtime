@@ -57,9 +57,9 @@ namespace Microsoft.Interop
                 {
                     // The base has failed generation at some point, so this interface cannot be generated
                     var diagnostic = DiagnosticOr<ComInterfaceContext>.From(
-                        Diagnostic.Create(
+                        DiagnosticInfo.Create(
                             GeneratorDiagnostics.BaseInterfaceIsNotGenerated,
-                            iface.DiagnosticLocation.AsLocation(), iface.ThisInterfaceKey, iface.BaseInterfaceKey));
+                            iface.DiagnosticLocation, iface.ThisInterfaceKey, iface.BaseInterfaceKey));
                     nameToContextCache[iface.ThisInterfaceKey] = diagnostic;
                     return diagnostic;
                 }

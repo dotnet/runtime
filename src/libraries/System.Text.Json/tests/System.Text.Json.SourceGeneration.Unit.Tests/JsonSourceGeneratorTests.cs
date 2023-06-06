@@ -426,8 +426,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CheckCompilationDiagnosticsErrors(result.Diagnostics);
             CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
 
-            Assert.Equal(4, result.AllGeneratedTypes.Count());
+            Assert.Equal(3, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::HelloWorld.AppRecord");
+            result.AssertContainsType("string");
+            result.AssertContainsType("int");
         }
 
         [Fact]
@@ -463,8 +465,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CheckCompilationDiagnosticsErrors(result.Diagnostics);
             CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
 
-            Assert.Equal(4, result.AllGeneratedTypes.Count());
+            Assert.Equal(3, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::ReferencedAssembly.LibRecord");
+            result.AssertContainsType("string");
+            result.AssertContainsType("int");
         }
 
         [Fact]
@@ -504,8 +508,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CheckCompilationDiagnosticsErrors(result.Diagnostics);
             CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
 
-            Assert.Equal(4, result.AllGeneratedTypes.Count());
+            Assert.Equal(3, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::HelloWorld.AppRecord");
+            result.AssertContainsType("string");
+            result.AssertContainsType("int");
         }
 
         private void CheckCompilationDiagnosticsErrors(ImmutableArray<Diagnostic> diagnostics)
@@ -692,6 +698,65 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+        }
+
+        [Fact]
+        public void UseUnderlyingTypeConverterForNullableType()
+        {
+            // Compile the referenced assembly first.
+            Compilation referencedCompilation = CompilationHelper.CreateReferencedLocationCompilation();
+
+            // Emit the image of the referenced assembly.
+            byte[] referencedImage = CompilationHelper.CreateAssemblyImage(referencedCompilation);
+
+            string source = """
+                using ReferencedAssembly;
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+                namespace Test
+                {
+                    [JsonSourceGenerationOptions]
+                    [JsonSerializable(typeof(Sample))]
+                    public partial class SourceGenerationContext : JsonSerializerContext
+                    {
+                    }
+                    public class Sample
+                    {
+                        [JsonConverter(typeof(DateTimeOffsetToTimestampJsonConverter))]
+                        public DateTimeOffset Start { get; set; }
+                        [JsonConverter(typeof(DateTimeOffsetToTimestampJsonConverter))]
+                        public DateTimeOffset? End { get; set; } // Without this property, this is fine
+                    }
+                    public class DateTimeOffsetToTimestampJsonConverter : JsonConverter<DateTimeOffset>
+                    {
+                        internal const long TicksPerMicroseconds = 10;
+                        public override DateTimeOffset Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                        {
+                            var value = reader.GetInt64();
+                            return new DateTimeOffset(value * TicksPerMicroseconds, TimeSpan.Zero);
+                        }
+                        public override void Write(Utf8JsonWriter writer, DateTimeOffset value, JsonSerializerOptions options)
+                        {
+                            writer.WriteNumberValue(value.Ticks / TicksPerMicroseconds);
+                        }
+                    }
+                }
+                """;
+
+            MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            // Make sure compilation was successful.
+            CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
+
+            Assert.Equal(3, result.AllGeneratedTypes.Count());
+            result.AssertContainsType("global::Test.Sample");
+            result.AssertContainsType("global::System.DateTimeOffset");
+            result.AssertContainsType("global::System.DateTimeOffset?");
         }
 
         [Fact]

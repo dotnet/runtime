@@ -30,7 +30,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Constructs a stack trace from the current location.
         /// </summary>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public StackTrace()
         {
             InitializeForCurrentThread(METHODS_TO_SKIP, false);
@@ -39,7 +39,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Constructs a stack trace from the current location.
         /// </summary>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public StackTrace(bool fNeedFileInfo)
         {
             InitializeForCurrentThread(METHODS_TO_SKIP, fNeedFileInfo);
@@ -49,7 +49,7 @@ namespace System.Diagnostics
         /// Constructs a stack trace from the current location, in a caller's
         /// frame
         /// </summary>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public StackTrace(int skipFrames)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(skipFrames);
@@ -61,7 +61,7 @@ namespace System.Diagnostics
         /// Constructs a stack trace from the current location, in a caller's
         /// frame
         /// </summary>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public StackTrace(int skipFrames, bool fNeedFileInfo)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(skipFrames);
@@ -331,7 +331,7 @@ namespace System.Diagnostics
                                 sb.Append(' ');
                                 sb.AppendFormat(CultureInfo.InvariantCulture, inFileILOffset, assemblyName, token, sf.GetILOffset());
                             }
-                            catch (System.InvalidOperationException) {}
+                            catch (InvalidOperationException) {}
                         }
                     }
 

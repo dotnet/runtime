@@ -24,17 +24,17 @@
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedDescription">
         <source>COM interface source generation requires all base COM interfaces to be valid interfaces. Fix any issues on the base interface to resolve this diagnostic.</source>
-        <target state="new">COM interface source generation requires all base COM interfaces to be valid interfaces. Fix any issues on the base interface to resolve this diagnostic.</target>
+        <target state="translated">產生 COM 介面來源要求所有基底 COM 介面都必須是有效的介面。請修正基底介面上的任何問題，以解決此診斷。</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedMessage">
         <source>COM interface {0} inherits from {1}, which has errors. ComInterfaceGenerator will not generate source for {0}.</source>
-        <target state="new">COM interface {0} inherits from {1}, which has errors. ComInterfaceGenerator will not generate source for {0}.</target>
+        <target state="translated">COM 介面 {0} 繼承自有錯誤的 {1}。ComInterfaceGenerator 不會產生 {0} 的來源。</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedTitle">
         <source>The base COM interface failed to generate source. ComInterfaceGenerator will not generate source for this interface.</source>
-        <target state="new">The base COM interface failed to generate source. ComInterfaceGenerator will not generate source for this interface.</target>
+        <target state="translated">基底 COM 介面無法產生來源。ComInterfaceGenerator 不會產生此介面的來源。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">
@@ -74,7 +74,7 @@
       </trans-unit>
       <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</source>
-        <target state="new">The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</target>
+        <target state="translated">'StringMarshalling' 和 'StringMarshallingCustomType' 的設定必須和基底 COM 介面相符。</target>
         <note />
       </trans-unit>
       <trans-unit id="InterfaceTypeNotSupportedMessage">
@@ -169,7 +169,7 @@
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationOnInterfaceMessage">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</source>
-        <target state="new">The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</target>
+        <target state="translated">介面 '{0}' 上的 'StringMarshalling' 和 'StringMarshallingCustomType' 設定無效。{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationOnMethodMessage">

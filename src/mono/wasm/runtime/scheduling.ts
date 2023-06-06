@@ -30,13 +30,15 @@ export function prevent_timer_throttling(): void {
     const light_throttling_frequency = 1000;
     for (let schedule = next_reach_time; schedule < desired_reach_time; schedule += light_throttling_frequency) {
         const delay = schedule - now;
-        setTimeout(() => {
-            cwraps.mono_wasm_execute_timer();
-            pump_count++;
-            mono_background_exec_until_done();
-        }, delay);
+        globalThis.setTimeout(prevent_timer_throttling_tick, delay);
     }
     spread_timers_maximum = desired_reach_time;
+}
+
+function prevent_timer_throttling_tick() {
+    cwraps.mono_wasm_execute_timer();
+    pump_count++;
+    mono_background_exec_until_done();
 }
 
 function mono_background_exec_until_done() {
@@ -48,14 +50,18 @@ function mono_background_exec_until_done() {
 
 export function schedule_background_exec(): void {
     ++pump_count;
-    setTimeout(mono_background_exec_until_done, 0);
+    globalThis.setTimeout(mono_background_exec_until_done, 0);
 }
 
 let lastScheduledTimeoutId: any = undefined;
 export function mono_wasm_schedule_timer(shortestDueTimeMs: number): void {
     if (lastScheduledTimeoutId) {
-        clearTimeout(lastScheduledTimeoutId);
+        globalThis.clearTimeout(lastScheduledTimeoutId);
         lastScheduledTimeoutId = undefined;
     }
-    lastScheduledTimeoutId = setTimeout(cwraps.mono_wasm_execute_timer, shortestDueTimeMs);
+    lastScheduledTimeoutId = globalThis.setTimeout(mono_wasm_schedule_timer_tick, shortestDueTimeMs);
+}
+
+function mono_wasm_schedule_timer_tick() {
+    cwraps.mono_wasm_execute_timer();
 }

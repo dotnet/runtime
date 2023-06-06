@@ -4930,7 +4930,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		arg_locals = (guint32*) g_malloc ((!!signature->hasthis + signature->param_count) * sizeof (guint32));
 		/* Allocate locals to store inlined method args from stack */
 		for (int i = signature->param_count - 1; i >= 0; i--) {
-			local = create_interp_local (td, signature->params [i]);
+			MonoType *type = td->locals [td->sp [-1].local].type;
+			local = create_interp_local (td, type);
 			arg_locals [i + !!signature->hasthis] = local;
 			store_local (td, local);
 		}
@@ -4940,11 +4941,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			 * If this is value type, it is passed by address and not by value.
 			 * Valuetype this local gets integer type MINT_TYPE_I.
 			 */
-			MonoType *type;
-			if (m_class_is_valuetype (method->klass))
-				type = mono_get_int_type ();
-			else
-				type = mono_get_object_type ();
+			MonoType *type = td->locals [td->sp [-1].local].type;
 			local = create_interp_local (td, type);
 			arg_locals [0] = local;
 			store_local (td, local);
