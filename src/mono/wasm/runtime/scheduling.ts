@@ -2,23 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import cwraps from "./cwraps";
+import { loaderHelpers } from "./globals";
 
 let spread_timers_maximum = 0;
-export let isChromium = false;
 let pump_count = 0;
 
-if (globalThis.navigator) {
-    const nav: any = globalThis.navigator;
-    if (nav.userAgentData && nav.userAgentData.brands) {
-        isChromium = nav.userAgentData.brands.some((i: any) => i.brand == "Chromium");
-    }
-    else if (nav.userAgent) {
-        isChromium = nav.userAgent.includes("Chrome");
-    }
-}
-
 export function prevent_timer_throttling(): void {
-    if (!isChromium) {
+    if (!loaderHelpers.isChromium) {
         return;
     }
 
