@@ -1912,19 +1912,26 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
         pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_NonGCMaxThreadStaticBlocks);
     }
 #else
-    pInfo->tlsGetAddrFtnPtr = (size_t)&__tls_get_addr;
+    void* maxThreadStaticDescriptor = 0;
+    size_t addrOfMaxThreadStaticBlock = 0;
+    size_t addressOfThreadStaticBlock = 0;
+
     if (isGCType)
     {
-        size_t maxThreadStaticDescriptor = getGCMaxThreadStaticDescriptor();
-        pInfo->descrAddrOfMaxThreadStaticBlock = maxThreadStaticDescriptor;
-        pInfo->offsetOfThreadStaticBlocks = (size_t)(&t_GCThreadStaticBlocks - __tls_get_addr(maxThreadStaticDescriptor) );
+        maxThreadStaticDescriptor = getGCMaxThreadStaticDescriptor();
+        addressOfThreadStaticBlock = (size_t)&t_GCThreadStaticBlocks;
     }
     else
     {
-        size_t maxThreadStaticDescriptor = getNonGCMaxThreadStaticDescriptor();
-        pInfo->descrAddrOfMaxThreadStaticBlock = maxThreadStaticDescriptor;
-        pInfo->offsetOfThreadStaticBlocks = (size_t)(&t_NonGCThreadStaticBlocks - __tls_get_addr(maxThreadStaticDescriptor);
+        maxThreadStaticDescriptor = getNonGCMaxThreadStaticDescriptor();
+        addressOfThreadStaticBlock = (size_t)&t_NonGCThreadStaticBlocks;
     }
+    
+    addrOfMaxThreadStaticBlock = (size_t)__tls_get_addr(maxThreadStaticDescriptor);
+
+    pInfo->tlsGetAddrFtnPtr = (size_t)&__tls_get_addr;
+    pInfo->descrAddrOfMaxThreadStaticBlock = (size_t)maxThreadStaticDescriptor;
+    pInfo->offsetOfThreadStaticBlocks = addressOfThreadStaticBlock - addrOfMaxThreadStaticBlock;
 #endif
 
     pInfo->offsetOfGCDataPointer = static_cast<uint32_t>(PtrArray::GetDataOffset());

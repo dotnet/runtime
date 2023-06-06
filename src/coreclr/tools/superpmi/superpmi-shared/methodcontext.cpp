@@ -3648,7 +3648,7 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
 #else
     value.tlsGetAddrFtnPtr                      = pInfo->tlsGetAddrFtnPtr;
     value.descrAddrOfMaxThreadStaticBlock       = pInfo->descrAddrOfMaxThreadStaticBlock;
-    value.descrAddrOfThreadStaticBlocks         = pInfo->descrAddrOfThreadStaticBlocks;
+    value.offsetOfThreadStaticBlocks         = pInfo->offsetOfThreadStaticBlocks;
 #endif
     value.offsetOfGCDataPointer                 = pInfo->offsetOfGCDataPointer;
 
@@ -3668,8 +3668,8 @@ void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_
            value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadStaticBlocks, value.offsetOfGCDataPointer);
 #else
     printf("GetThreadLocalStaticBlocksInfo key %u, value tlsGetAddrFtnPtr-%016" PRIX64
-           ", descrAddrOfMaxThreadStaticBlock-%lu, descrAddrOfThreadStaticBlocks-%lu",
-           key, value.tlsGetAddrFtnPtr, value.descrAddrOfMaxThreadStaticBlock, value.descrAddrOfThreadStaticBlocks);
+           ", descrAddrOfMaxThreadStaticBlock-%lu, offsetOfThreadStaticBlocks-%lu",
+           key, value.tlsGetAddrFtnPtr, value.descrAddrOfMaxThreadStaticBlock, value.offsetOfThreadStaticBlocks);
 #endif
 }
 
@@ -3689,7 +3689,7 @@ void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
 #else
     pInfo->tlsGetAddrFtnPtr                     = value.tlsGetAddrFtnPtr;
     pInfo->descrAddrOfMaxThreadStaticBlock      = value.descrAddrOfMaxThreadStaticBlock;
-    pInfo->descrAddrOfThreadStaticBlocks        = value.descrAddrOfThreadStaticBlocks;
+    pInfo->offsetOfThreadStaticBlocks        = value.offsetOfThreadStaticBlocks;
 #endif
     pInfo->offsetOfGCDataPointer                = value.offsetOfGCDataPointer;
 }
