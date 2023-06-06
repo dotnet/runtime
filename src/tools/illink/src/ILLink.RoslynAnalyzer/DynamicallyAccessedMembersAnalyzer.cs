@@ -87,6 +87,12 @@ namespace ILLink.RoslynAnalyzer
 				// Examine generic instantiations in base types and interface list
 				context.RegisterSymbolAction (context => {
 					var type = (INamedTypeSymbol) context.Symbol;
+					// RUC on type doesn't silence DAM warnings about generic base/interface types.
+					// This knowledge lives in IsInRequiresUnreferencedCodeAttributeScope,
+					// which we still call for consistency here, but it is expected to return false.
+					if (type.IsInRequiresUnreferencedCodeAttributeScope (out _))
+						return;
+
 					if (type.BaseType is INamedTypeSymbol baseType) {
 						foreach (var diagnostic in ProcessGenericParameters (baseType, type.Locations[0]))
 							context.ReportDiagnostic (diagnostic);
