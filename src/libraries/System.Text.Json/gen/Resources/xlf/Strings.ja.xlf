@@ -63,8 +63,8 @@
         <note />
       </trans-unit>
       <trans-unit id="JsonStringEnumConverterNotSupportedMessageFormat">
-        <source>The member '{0}' has been annotated with 'JsonStringEnumConverter' which is not supported in Native AOT. Consider using the generic 'JsonStringEnumConverter&lt;TEnum&gt;' instead.</source>
-        <target state="new">The member '{0}' has been annotated with 'JsonStringEnumConverter' which is not supported in Native AOT. Consider using the generic 'JsonStringEnumConverter&lt;TEnum&gt;' instead.</target>
+        <source>The member '{0}' has been annotated with 'JsonStringEnumConverter' which is not supported in native AOT. Consider using the generic 'JsonStringEnumConverter&lt;TEnum&gt;' instead.</source>
+        <target state="new">The member '{0}' has been annotated with 'JsonStringEnumConverter' which is not supported in native AOT. Consider using the generic 'JsonStringEnumConverter&lt;TEnum&gt;' instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonStringEnumConverterNotSupportedTitle">
