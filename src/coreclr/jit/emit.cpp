@@ -6703,7 +6703,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     }
 
     CorJitAllocMemFlag allocMemFlagDataAlign = static_cast<CorJitAllocMemFlag>(0);
-    if (dataAlignment == 16)
+    if (dataAlignment == 8)
+    {
+        allocMemFlagDataAlign = CORJIT_ALLOCMEM_FLG_RODATA_8BYTE_ALIGN;
+    }
+    else if (dataAlignment == 16)
     {
         allocMemFlagDataAlign = CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN;
     }
@@ -6743,9 +6747,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         // in final obj file.
         assert((((size_t)codeBlock & 31) == 0) || emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT));
     }
-#if 0
-    // TODO: we should be able to assert the following, but it appears crossgen2 doesn't respect them,
-    // or maybe it respects them in the written image but not in the buffer pointer given to the JIT.
+
     if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
     {
         assert(((size_t)codeBlock & 15) == 0);
@@ -6763,7 +6765,10 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     {
         assert(((size_t)consBlock & 15) == 0);
     }
-#endif // 0
+    else if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_8BYTE_ALIGN) != 0)
+    {
+        assert(((size_t)consBlock & 7) == 0);
+    }
 #endif
 
     // if (emitConsDsc.dsdOffs)

@@ -424,7 +424,7 @@ namespace Internal.JitInterface
                     // hotCode. Once hot/cold splitting is done, need to trim respective `_code` or `_coldCode`
                     // accordingly.
                     Debug.Assert(codeSize != 0);
-                    Array.Resize(ref _code, (int)codeSize);
+                    _code.SetLength((int)codeSize);
                 }
             }
 
@@ -450,9 +450,9 @@ namespace Internal.JitInterface
                 _compilation.NodeFactory.Target.MinimumFunctionAlignment :
                 _compilation.NodeFactory.Target.OptimumFunctionAlignment;
 
-            alignment = Math.Max(alignment, _codeAlignment);
+            alignment = Math.Max(alignment, _code.Alignment);
 
-            var objectData = new ObjectNode.ObjectData(_code,
+            var objectData = new ObjectNode.ObjectData(_code.ToArray(),
                                                        relocs,
                                                        alignment,
                                                        new ISymbolDefinitionNode[] { _methodCodeNode });
@@ -481,7 +481,7 @@ namespace Internal.JitInterface
             {
                 var relocs2 = _coldCodeRelocs.ToArray();
                 Array.Sort(relocs2, (x, y) => (x.Offset - y.Offset));
-                var coldObjectData = new ObjectNode.ObjectData(_coldCode,
+                var coldObjectData = new ObjectNode.ObjectData(_coldCode.ToArray(),
                     relocs2,
                     alignment,
                     new ISymbolDefinitionNode[] { _methodColdCodeNode });
@@ -587,9 +587,9 @@ namespace Internal.JitInterface
 
             var relocs = _roDataRelocs.ToArray();
             Array.Sort(relocs, (x, y) => (x.Offset - y.Offset));
-            var objectData = new ObjectNode.ObjectData(_roData,
+            var objectData = new ObjectNode.ObjectData(_roData.ToArray(),
                                                        relocs,
-                                                       _roDataAlignment,
+                                                       _roData.Alignment,
                                                        new ISymbolDefinitionNode[] { _roDataBlob });
 
             _roDataBlob.InitializeData(objectData);
@@ -3403,14 +3403,63 @@ namespace Internal.JitInterface
 #endif
         }
 
-        private byte[] _code;
-        private byte[] _coldCode;
-        private int _codeAlignment;
 
-        private byte[] _roData;
+        private sealed class AlignedMemoryAllocation
+        {
+            private int _offset;
+            private int _alignment;
+            private int _length;
+            private byte[] _data;
+            private unsafe byte *_pointer;
+
+            public AlignedMemoryAllocation(int length, int alignment)
+            {
+                if (alignment < 1) alignment = 1;
+
+                _length = length;
+                _alignment = alignment;
+                nint alignmentMinusOne = (nint)alignment - (nint)1;
+                nint doubleAlignmentMinusOne = (nint)(alignment * 2) - (nint)1;
+                _data = GC.AllocateArray<byte>(_length + (int)alignmentMinusOne + alignment, pinned:true);
+                fixed(byte* basePtr = &_data[0])
+                {
+                    _pointer = (byte*)((((nint)basePtr) + alignmentMinusOne) & ~alignmentMinusOne);
+                    byte* doubleAlignedPointer = (byte*)((((nint)basePtr) + doubleAlignmentMinusOne) & ~doubleAlignmentMinusOne);
+
+                    // Do not permit the pointer to be aligned on a higher alignment, as this could theoretically cause the JIT
+                    // to assume that the data will reliably be placed at a higher alignment than specified
+                    if (_pointer == doubleAlignedPointer)
+                        _pointer += alignment;
+                    _offset = (int)(_pointer - basePtr);
+                }
+            }
+
+            public unsafe byte* Pointer => _pointer;
+            public int Length => _length;
+            public int Alignment => _alignment;
+
+            public void SetLength(int newLength)
+            {
+                if ((newLength > Length) || (newLength < 0))
+                    throw new ArgumentException();
+
+                _length = newLength;
+            }
+
+            public byte[] ToArray()
+            {
+                byte[] newArray = new byte[Length];
+                Array.Copy(_data, _offset, newArray, 0, Length);
+                return newArray;
+            }
+        }
+
+        private AlignedMemoryAllocation _code;
+        private AlignedMemoryAllocation _coldCode;
+
+        private AlignedMemoryAllocation _roData;
 
         private MethodReadOnlyDataNode _roDataBlob;
-        private int _roDataAlignment;
 
         private int _numFrameInfos;
         private int _usedFrameInfos;
@@ -3429,7 +3478,43 @@ namespace Internal.JitInterface
 
         private void allocMem(ref AllocMemArgs args)
         {
-            args.hotCodeBlock = (void*)GetPin(_code = new byte[args.hotCodeSize]);
+            int codeAlignment = 1;
+            int roDataAlignment = 1;
+
+            if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN) != 0)
+            {
+                roDataAlignment = 64;
+            }
+            else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
+            {
+                roDataAlignment = 32;
+            }
+            else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
+            {
+                roDataAlignment = 16;
+            }
+            else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_8BYTE_ALIGN) != 0)
+            {
+                roDataAlignment = 8;
+            }
+            else if (args.roDataSize < 8)
+            {
+                roDataAlignment = PointerSize;
+            }
+
+            if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+            {
+                codeAlignment = 32;
+            }
+            else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+            {
+                codeAlignment = 16;
+            }
+
+            codeAlignment = Math.Max(codeAlignment, _compilation.NodeFactory.Target.MinimumFunctionAlignment);
+
+            _code = new AlignedMemoryAllocation((int)args.hotCodeSize, codeAlignment);
+            args.hotCodeBlock = _code.Pointer;
             args.hotCodeBlockRW = args.hotCodeBlock;
 
             if (args.coldCodeSize != 0)
@@ -3438,46 +3523,18 @@ namespace Internal.JitInterface
 #if READYTORUN
                 this._methodColdCodeNode = new MethodColdCodeNode(MethodBeingCompiled);
 #endif
-                args.coldCodeBlock = (void*)GetPin(_coldCode = new byte[args.coldCodeSize]);
+                _coldCode = new AlignedMemoryAllocation((int)args.coldCodeSize, codeAlignment);
+                args.coldCodeBlock = (void*)_coldCode.Pointer;
                 args.coldCodeBlockRW = args.coldCodeBlock;
-            }
-
-            _codeAlignment = -1;
-            if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
-            {
-                _codeAlignment = 32;
-            }
-            else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
-            {
-                _codeAlignment = 16;
             }
 
             if (args.roDataSize != 0)
             {
-                _roDataAlignment = 8;
-
-                if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN) != 0)
-                {
-                    _roDataAlignment = 64;
-                }
-                else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
-                {
-                    _roDataAlignment = 32;
-                }
-                else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
-                {
-                    _roDataAlignment = 16;
-                }
-                else if (args.roDataSize < 8)
-                {
-                    _roDataAlignment = PointerSize;
-                }
-
-                _roData = new byte[args.roDataSize];
+                _roData = new AlignedMemoryAllocation((int)args.roDataSize, roDataAlignment);
 
                 _roDataBlob = new MethodReadOnlyDataNode(MethodBeingCompiled);
 
-                args.roDataBlock = (void*)GetPin(_roData);
+                args.roDataBlock = (void*)_roData.Pointer;
                 args.roDataBlockRW = args.roDataBlock;
             }
 
@@ -3615,36 +3672,27 @@ namespace Internal.JitInterface
 
         private BlockType findKnownBlock(void* location, out int offset)
         {
-            fixed (byte* pCode = _code)
+            if (_code.Pointer <= (byte*)location && (byte*)location < _code.Pointer + _code.Length)
             {
-                if (pCode <= (byte*)location && (byte*)location < pCode + _code.Length)
-                {
-                    offset = (int)((byte*)location - pCode);
-                    return BlockType.Code;
-                }
+                offset = (int)((byte*)location - _code.Pointer);
+                return BlockType.Code;
             }
 
             if (_coldCode != null)
             {
-                fixed (byte* pColdCode = _coldCode)
+                if (_coldCode.Pointer <= (byte*)location && (byte*)location < _coldCode.Pointer + _coldCode.Length)
                 {
-                    if (pColdCode <= (byte*)location && (byte*)location < pColdCode + _coldCode.Length)
-                    {
-                        offset = (int)((byte*)location - pColdCode);
-                        return BlockType.ColdCode;
-                    }
+                    offset = (int)((byte*)location - _coldCode.Pointer);
+                    return BlockType.ColdCode;
                 }
             }
 
             if (_roData != null)
             {
-                fixed (byte* pROData = _roData)
+                if (_roData.Pointer <= (byte*)location && (byte*)location < _roData.Pointer + _roData.Length)
                 {
-                    if (pROData <= (byte*)location && (byte*)location < pROData + _roData.Length)
-                    {
-                        offset = (int)((byte*)location - pROData);
-                        return BlockType.ROData;
-                    }
+                    offset = (int)((byte*)location - _roData.Pointer);
+                    return BlockType.ROData;
                 }
             }
 
