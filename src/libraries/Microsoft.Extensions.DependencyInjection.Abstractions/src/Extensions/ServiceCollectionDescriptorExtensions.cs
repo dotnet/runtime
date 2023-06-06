@@ -411,7 +411,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
             ThrowHelper.ThrowIfNull(collection);
             ThrowHelper.ThrowIfNull(instance);
 
-            var descriptor = ServiceDescriptor.Singleton(typeof(TService), instance);
+            var descriptor = ServiceDescriptor.Singleton(serviceType: typeof(TService), implementationInstance: instance);
             TryAdd(collection, descriptor);
         }
 
