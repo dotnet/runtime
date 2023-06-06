@@ -1040,11 +1040,17 @@ namespace System.Text.Json.Serialization
         public System.Text.Json.Serialization.JsonKnownNamingPolicy PropertyNamingPolicy { get { throw null; } set { } }
         public bool WriteIndented { get { throw null; } set { } }
     }
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JsonStringEnumConverter cannot be statically analyzed and requires runtime code generation. Native AOT applications should use the generic JsonStringEnumConverter<TEnum> instead.")]
     public partial class JsonStringEnumConverter : System.Text.Json.Serialization.JsonConverterFactory
     {
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JsonStringEnumConverter cannot be statically analyzed and requires runtime code generation. Native AOT users should only use this type indirectly via JsonConverterAttribute annotations.")]
         public JsonStringEnumConverter() { }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JsonStringEnumConverter cannot be statically analyzed and requires runtime code generation. Native AOT users should only use this type indirectly via JsonConverterAttribute annotations.")]
+        public JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy? namingPolicy = null, bool allowIntegerValues = true) { }
+        public sealed override bool CanConvert(System.Type typeToConvert) { throw null; }
+        public sealed override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
+    }
+    public partial class JsonStringEnumConverter<TEnum> : System.Text.Json.Serialization.JsonConverterFactory where TEnum : struct, System.Enum
+    {
+        public JsonStringEnumConverter() { }
         public JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy? namingPolicy = null, bool allowIntegerValues = true) { }
         public sealed override bool CanConvert(System.Type typeToConvert) { throw null; }
         public sealed override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
@@ -1184,10 +1190,9 @@ namespace System.Text.Json.Serialization.Metadata
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<TCollection> CreateStackInfo<TCollection>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues<TCollection> collectionInfo, System.Action<TCollection, object?> addFunc) where TCollection : System.Collections.IEnumerable { throw null; }
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<TCollection> CreateStackInfo<TCollection, TElement>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues<TCollection> collectionInfo) where TCollection : System.Collections.Generic.Stack<TElement> { throw null; }
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> CreateValueInfo<T>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.JsonConverter converter) { throw null; }
-        public static System.Text.Json.Serialization.JsonConverter<T> GetEnumConverter<T>(System.Text.Json.JsonSerializerOptions options) where T : struct { throw null; }
+        public static System.Text.Json.Serialization.JsonConverter<T> GetEnumConverter<T>(System.Text.Json.JsonSerializerOptions options) where T : struct, System.Enum { throw null; }
         public static System.Text.Json.Serialization.JsonConverter<T?> GetNullableConverter<T>(System.Text.Json.JsonSerializerOptions options) where T : struct { throw null; }
         public static System.Text.Json.Serialization.JsonConverter<T?> GetNullableConverter<T>(System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> underlyingTypeInfo) where T : struct { throw null; }
-        public static System.Text.Json.Serialization.JsonConverter<T> GetStringEnumConverter<T>(System.Text.Json.Serialization.JsonStringEnumConverter converterFactory, System.Text.Json.JsonSerializerOptions options) where T : struct { throw null; }
         public static System.Text.Json.Serialization.JsonConverter<T> GetUnsupportedTypeConverter<T>() { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]

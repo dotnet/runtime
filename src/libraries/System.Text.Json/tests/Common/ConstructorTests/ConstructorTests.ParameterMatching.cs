@@ -1575,7 +1575,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [JsonConverter(typeof(JsonStringEnumConverter))]
+        [JsonConverter(typeof(JsonStringEnumConverter<MyEnum>))]
         public enum MyEnum
         {
             One = 1,
