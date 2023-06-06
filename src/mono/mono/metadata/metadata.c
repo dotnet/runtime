@@ -5103,7 +5103,7 @@ mono_metadata_custom_attrs_from_index (MonoImage *meta, guint32 index)
 	/* FIXME: Index translation */
 
 	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) != NULL;
-	if (!found)
+	if (!found) {
 		if (G_LIKELY (!meta->has_updates)) {
 			return 0;
 		} else {
@@ -5114,6 +5114,7 @@ mono_metadata_custom_attrs_from_index (MonoImage *meta, guint32 index)
 				return 0;
 			}
 		}
+	}
 
 	/* Find the first entry by searching backwards */
 	while ((loc.result > 0) && (mono_metadata_decode_row_col (tdef, loc.result - 1, MONO_CUSTOM_ATTR_PARENT) == index))
