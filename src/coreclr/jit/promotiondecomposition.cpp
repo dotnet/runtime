@@ -698,21 +698,8 @@ private:
                 entry.ToReplacement->NeedsReadBack  = false;
             }
 
-            if (CanSkipEntry(entry, dstDeaths, remainderStrategy))
+            if (CanSkipEntry(entry, dstDeaths, remainderStrategy DEBUGARG(/* dump */ true)))
             {
-                if (entry.FromReplacement != nullptr)
-                {
-                    JITDUMP(
-                        "  Skipping dst+%03u <- V%02u (%s); it is up-to-date in its struct local and will be handled "
-                        "as part of the remainder\n",
-                        entry.Offset, entry.FromReplacement->LclNum, entry.FromReplacement->Description);
-                }
-                else if (entry.ToReplacement != nullptr)
-                {
-                    JITDUMP("  Skipping def of V%02u (%s); it is dying", entry.ToReplacement->LclNum,
-                            entry.ToReplacement->Description);
-                }
-
                 continue;
             }
 
@@ -824,9 +811,13 @@ private:
     //
     // Parameters:
     //   entry             - The init/copy entry
+    //   deaths            - Liveness information for the destination; only valid if m_dstInvolvedReplacements is true.
     //   remainderStrategy - The strategy we are using for the remainder
+    //   verbose           - Whether to log decisions made
     //
-    bool CanSkipEntry(const Entry& entry, const StructDeaths& deaths, const RemainderStrategy& remainderStrategy)
+    bool CanSkipEntry(const Entry&             entry,
+                      const StructDeaths&      deaths,
+                      const RemainderStrategy& remainderStrategy DEBUGARG(bool dump = false))
     {
         if (entry.ToReplacement != nullptr)
         {
@@ -841,6 +832,32 @@ private:
             size_t replacementIndex = entry.ToReplacement - firstRep;
             if (deaths.IsReplacementDying((unsigned)replacementIndex))
             {
+#ifdef DEBUG
+                if (dump)
+                {
+                    JITDUMP("  Skipping def of V%02u (%s); it is dying\n", entry.ToReplacement->LclNum,
+                            entry.ToReplacement->Description);
+                }
+#endif
+
+                return true;
+            }
+        }
+        else
+        {
+            // If the destination has replacements we still have usable
+            // liveness information for the remainder. This case happens if the
+            // source was also promoted.
+            if (m_dstInvolvesReplacements && deaths.IsRemainderDying())
+            {
+#ifdef DEBUG
+                if (dump)
+                {
+                    JITDUMP("  Skipping write to dst+%03u; it is the remainder and the remainder is dying\n",
+                            entry.Offset);
+                }
+#endif
+
                 return true;
             }
         }
@@ -848,8 +865,20 @@ private:
         if (entry.FromReplacement != nullptr)
         {
             // Check if the remainder is going to handle it.
-            return (remainderStrategy.Type == RemainderStrategy::FullBlock) && !entry.FromReplacement->NeedsWriteBack &&
-                   (entry.ToLclNum == BAD_VAR_NUM);
+            if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && !entry.FromReplacement->NeedsWriteBack &&
+                (entry.ToLclNum == BAD_VAR_NUM))
+            {
+#ifdef DEBUG
+                if (dump)
+                {
+                    JITDUMP("  Skipping dst+%03u <- V%02u (%s); it is up-to-date in its struct local and will be "
+                            "handled as part of the remainder\n",
+                            entry.Offset, entry.FromReplacement->LclNum, entry.FromReplacement->Description);
+                }
+#endif
+
+                return true;
+            }
         }
 
         return false;
