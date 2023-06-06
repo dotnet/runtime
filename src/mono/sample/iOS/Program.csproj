@@ -8,16 +8,14 @@
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
     <AppName>HelloiOS</AppName>
     <MainLibraryFileName>Program.dll</MainLibraryFileName>
-    <DevTeamProvisioning Condition="'$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
-    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
-    <DeployAndRun Condition="'$(DeployAndRun)' == ''">false</DeployAndRun>
-    <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''">false</StripDebugSymbols>
-    <UseMonoJustInterp Condition="'$(UseMonoJustInterp)' == '' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
 
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>Link</TrimMode>
-    <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
+    <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
 
+    <DevTeamProvisioning Condition="'$(DevTeamProvisioning)' == '' and '$(TargetOS)' != 'maccatalyst'">-</DevTeamProvisioning>
+    <UseMonoJustInterp Condition="'$(UseMonoJustInterp)' == '' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
     <ShouldILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(UseMonoJustInterp)' != 'true'" >true</ShouldILStrip>
     <EnableDefaultAssembliesToBundle>true</EnableDefaultAssembliesToBundle>
     <AppleGenerateAppBundle>true</AppleGenerateAppBundle>
@@ -29,12 +27,6 @@
     <BuildAppBundleDependsOnTargets Condition="'$(ArchiveTests)' == 'true'">Publish</BuildAppBundleDependsOnTargets>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'maccatalyst'">
-    <DevTeamProvisioning Condition="'$(DevTeamProvisioning)' == ''">adhoc</DevTeamProvisioning>
-    <EnableAppSandbox Condition="'$(EnableAppSandbox)' == ''">false</EnableAppSandbox>
-  </PropertyGroup>
-
-  <Import Project="$(MonoProjectRoot)\msbuild\common\LibraryBuilder.props" />
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets" />
 
