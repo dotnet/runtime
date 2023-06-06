@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { marshal_exception_to_cs, bind_arg_marshal_to_cs } from "./marshal-to-cs";
@@ -9,7 +10,7 @@ import { setI32, setI32_unchecked, receiveWorkerHeapViews } from "./memory";
 import { monoStringToString, stringToMonoStringRoot } from "./strings";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
-import { INTERNAL, Module } from "./globals";
+import { INTERNAL, Module, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_js } from "./marshal-to-js";
 import { mono_wasm_new_external_root } from "./roots";
 import { mono_log_debug, mono_wasm_symbolicate_string } from "./logging";
@@ -21,7 +22,7 @@ import { assert_synchronization_context } from "./pthreads/shared";
 const fn_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, we never free bound functions
 
 export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_name: MonoStringRef, signature: JSFunctionSignature, function_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
-    assert_synchronization_context();
+    assert_bindings();
     const function_name_root = mono_wasm_new_external_root<MonoString>(function_name),
         module_name_root = mono_wasm_new_external_root<MonoString>(module_name),
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
@@ -54,9 +55,15 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
                 };
                 has_cleanup = true;
             }
+            else if (marshaler_type == MarshalerType.Task) {
+                assert_synchronization_context();
+            }
         }
         const res_sig = get_sig(signature, 1);
         const res_marshaler_type = get_signature_type(res_sig);
+        if (res_marshaler_type == MarshalerType.Task) {
+            assert_synchronization_context();
+        }
         const res_converter = bind_arg_marshal_to_cs(res_sig, res_marshaler_type, 1);
 
         const closure: BindingClosure = {
@@ -381,5 +388,13 @@ export function wrap_no_error_root(is_exception: Int32Ptr | null, result?: WasmR
     }
     if (result) {
         result.clear();
+    }
+}
+
+export function assert_bindings(): void {
+    if (MonoWasmThreads) {
+        mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
+    } else {
+        mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "The runtime must be initialized.");
     }
 }

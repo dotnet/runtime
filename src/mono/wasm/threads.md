@@ -91,3 +91,10 @@ To run the debugger tests in the runtime [built with enabled support for multi-t
 ```
 dotnet test src/mono/wasm/debugger/DebuggerTestSuite -e RuntimeConfiguration=Debug -e Configuration=Debug -e DebuggerHost=chrome -e WasmEnableThreads=true -e WASM_TESTS_USING_VARIANT=multithreaded
 ```
+
+## JS interop on dedicated threads ##
+FIXME: better documentation, better public API.
+The JavaScript objects have thread (web worker) affinity. You can't use DOM, WebSocket or their promises on any other web worker than the original one.
+Therefore we have JSSynchronizationContext which is helping the user code to stay on that thread. Instead of finishing the `await` continuation on any threadpool thread.
+Because browser events (for example incoming web socket message) could be fired after any synchronous code of the thread finished, we have to treat threads (web workers) which want to do JS interop as un-managed resource. It's lifetime should be managed by the user.
+As we are prototyping it, we have [WebWorker](..\..\libraries\System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\WebWorker.cs) as tentative API which should be used to start such dedicated threads.

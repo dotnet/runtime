@@ -18,6 +18,7 @@ import {
 } from "./events";
 import { preRunWorker } from "../../startup";
 import { mono_log_debug } from "../../logging";
+import { mono_set_thread_id } from "../../logging";
 
 // re-export some of the events types
 export {
@@ -78,10 +79,11 @@ function setupChannelToMainThread(pthread_ptr: pthreadPtr): PThreadSelf {
 
 
 /// This is an implementation detail function.
-/// Called in the worker thread from mono when a pthread becomes attached to the mono runtime.
-export function mono_wasm_pthread_on_pthread_attached(pthread_id: pthreadPtr): void {
+/// Called in the worker thread (not main thread) from mono when a pthread becomes attached to the mono runtime.
+export function mono_wasm_pthread_on_pthread_attached(pthread_id: number): void {
     const self = pthread_self;
     mono_assert(self !== null && self.pthreadId == pthread_id, "expected pthread_self to be set already when attaching");
+    mono_set_thread_id("0x" + pthread_id.toString(16));
     mono_log_debug("attaching pthread to runtime 0x" + pthread_id.toString(16));
     preRunWorker();
     currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadAttached, self));

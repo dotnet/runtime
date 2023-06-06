@@ -597,6 +597,8 @@ mono_wasm_execute_timer (void)
 void
 mono_wasm_main_thread_schedule_timer (void *timerHandler, int shortestDueTimeMs)
 {
+	// NOTE: here the `timerHandler` callback is [UnmanagedCallersOnly] which wraps it with MONO_ENTER_GC_UNSAFE/MONO_EXIT_GC_UNSAFE
+
 	g_assert (timerHandler);
 	timer_handler = timerHandler;
 #ifdef HOST_BROWSER
@@ -615,9 +617,10 @@ mono_arch_register_icall (void)
 {
 #ifdef HOST_BROWSER
 	mono_add_internal_call_internal ("System.Threading.TimerQueue::MainThreadScheduleTimer", mono_wasm_main_thread_schedule_timer);
+#ifdef DISABLE_THREADS
 	mono_add_internal_call_internal ("System.Threading.ThreadPool::MainThreadScheduleBackgroundJob", mono_main_thread_schedule_background_job);
-#ifndef DISABLE_THREADS
-	mono_add_internal_call_internal ("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext::MainThreadScheduleBackgroundJob", mono_main_thread_schedule_background_job);
+#else
+	mono_add_internal_call_internal ("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext::TargetThreadScheduleBackgroundJob", mono_target_thread_schedule_background_job);
 #endif /* DISABLE_THREADS */
 #endif /* HOST_BROWSER */
 }

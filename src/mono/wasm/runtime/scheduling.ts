@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import cwraps from "./cwraps";
+import { Module } from "./globals";
 
 let spread_timers_maximum = 0;
 export let isChromium = false;
@@ -50,7 +51,7 @@ function mono_background_exec_until_done() {
 
 export function schedule_background_exec(): void {
     ++pump_count;
-    globalThis.setTimeout(mono_background_exec_until_done, 0);
+    Module.safeSetTimeout(mono_background_exec_until_done, 0);
 }
 
 let lastScheduledTimeoutId: any = undefined;
@@ -58,10 +59,13 @@ export function mono_wasm_schedule_timer(shortestDueTimeMs: number): void {
     if (lastScheduledTimeoutId) {
         globalThis.clearTimeout(lastScheduledTimeoutId);
         lastScheduledTimeoutId = undefined;
+        // NOTE: Module.safeSetTimeout() does the runtimeKeepalivePush() but clearTimeout is asymmetric.
+        Module.runtimeKeepalivePop();
     }
-    lastScheduledTimeoutId = globalThis.setTimeout(mono_wasm_schedule_timer_tick, shortestDueTimeMs);
+    lastScheduledTimeoutId = Module.safeSetTimeout(mono_wasm_schedule_timer_tick, shortestDueTimeMs);
 }
 
 function mono_wasm_schedule_timer_tick() {
+    lastScheduledTimeoutId = undefined;
     cwraps.mono_wasm_execute_timer();
 }

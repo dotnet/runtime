@@ -257,6 +257,7 @@ lifo_js_wait_entry_on_timeout (void *wait_entry_as_user_data)
 	gboolean call_timeout_cb = FALSE;
 	LifoSemaphoreAsyncWaitCallbackFn timeout_cb = NULL;
 	intptr_t user_data = 0;
+	MONO_ENTER_GC_UNSAFE;
 	mono_coop_mutex_lock (&sem->base.mutex);
 	switch (wait_entry->state) {
 	case LIFO_JS_WAITING:
@@ -284,6 +285,7 @@ lifo_js_wait_entry_on_timeout (void *wait_entry_as_user_data)
 	if (call_timeout_cb) {
 		timeout_cb (sem, user_data);
 	}
+	MONO_EXIT_GC_UNSAFE;
 }
 
 static void
@@ -296,6 +298,7 @@ lifo_js_wait_entry_on_success (void *wait_entry_as_user_data)
 	gboolean call_success_cb = FALSE;
 	LifoSemaphoreAsyncWaitCallbackFn success_cb = NULL;
 	intptr_t user_data = 0;
+	MONO_ENTER_GC_UNSAFE;
 	mono_coop_mutex_lock (&sem->base.mutex);
 	switch (wait_entry->state) {
 	case LIFO_JS_SIGNALED:
@@ -321,6 +324,7 @@ lifo_js_wait_entry_on_success (void *wait_entry_as_user_data)
 	mono_coop_mutex_unlock (&sem->base.mutex);
 	g_assert (call_success_cb);
 	success_cb (sem, user_data);
+	MONO_EXIT_GC_UNSAFE;
 }
 
 #endif /* HOST_BROWSER && !DISABLE_THREADS */

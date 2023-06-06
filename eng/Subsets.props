@@ -440,6 +440,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.wasmruntime+'))">
+    <ProjectToBuild Include="$(LibrariesProjectRoot)\System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" Category="mono" />
     <ProjectToBuild Include="$(MonoProjectRoot)wasm\wasm.proj" Category="mono" />
   </ItemGroup>
 

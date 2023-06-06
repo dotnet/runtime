@@ -24,15 +24,14 @@ import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "
 import { export_linker } from "./exports-linker";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { getMemorySnapshot, storeMemorySnapshot, getMemorySnapshotSize } from "./snapshot";
+import { mono_log_debug, mono_log_warn, mono_set_thread_id } from "./logging";
+import { getBrowserThreadID } from "./pthreads/shared";
 
 // legacy
 import { init_legacy_exports } from "./net6-legacy/corebindings";
 import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
 import { BINDING, MONO } from "./net6-legacy/globals";
-import { mono_log_debug, mono_log_warn } from "./logging";
-import { install_synchronization_context } from "./pthreads/shared";
 import { localHeapViewU8 } from "./memory";
-
 
 // default size if MonoConfig.pthreadPoolSize is undefined
 const MONO_PTHREAD_POOL_SIZE = 4;
@@ -197,14 +196,6 @@ async function preInitWorkerAsync() {
 }
 
 export function preRunWorker() {
-    const mark = startMeasure();
-    try {
-        bindings_init();
-        endMeasure(mark, MeasuredBlock.preRunWorker);
-    } catch (err) {
-        loaderHelpers.abort_startup(err, true);
-        throw err;
-    }
     // signal next stage
     runtimeHelpers.afterPreRun.promise_control.resolve();
 }
@@ -265,10 +256,16 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
                 // we could enable diagnostics after the snapshot is taken
                 await mono_wasm_init_diagnostics();
             }
+            const tid = getBrowserThreadID();
+            mono_set_thread_id(`0x${tid.toString(16)}-main`);
             await instantiateWasmPThreadWorkerPool();
         }
 
         bindings_init();
+        if (MonoWasmThreads) {
+            runtimeHelpers.javaScriptExports.install_synchronization_context();
+        }
+
         if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
 
         if (runtimeHelpers.config.startupOptions && INTERNAL.resourceLoader) {
@@ -586,9 +583,6 @@ export function bindings_init(): void {
         init_managed_exports();
         if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop && !ENVIRONMENT_IS_PTHREAD) {
             init_legacy_exports();
-        }
-        if (MonoWasmThreads && !ENVIRONMENT_IS_PTHREAD) {
-            install_synchronization_context();
         }
         initialize_marshalers_to_js();
         initialize_marshalers_to_cs();

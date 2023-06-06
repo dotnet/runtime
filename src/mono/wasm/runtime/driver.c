@@ -689,19 +689,19 @@ EMSCRIPTEN_KEEPALIVE MonoObject*
 mono_wasm_invoke_method_bound (MonoMethod *method, void* args)// JSMarshalerArguments
 {
 	MonoObject *exc = NULL;
-	MonoObject *res;
+	MonoObject *res = NULL;
 
 	void *invoke_args[1] = { args };
-
+	MONO_ENTER_GC_UNSAFE;
 	mono_runtime_invoke (method, NULL, invoke_args, &exc);
 	if (exc) {
 		MonoObject *exc2 = NULL;
 		res = (MonoObject*)mono_object_to_string (exc, &exc2);
 		if (exc2)
 			res = (MonoObject*) mono_string_new (root_domain, "Exception Double Fault");
-		return res;
 	}
-	return NULL;
+	MONO_EXIT_GC_UNSAFE;
+	return res;
 }
 
 EMSCRIPTEN_KEEPALIVE MonoMethod*

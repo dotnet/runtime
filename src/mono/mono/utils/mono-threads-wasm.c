@@ -23,6 +23,10 @@
 #include <emscripten/threading.h>
 #endif
 
+#ifdef ENABLE_CHECKED_BUILD
+#include <mono/utils/checked-build.h>
+#endif
+
 #define round_down(addr, val) ((void*)((addr) & ~((val) - 1)))
 
 EMSCRIPTEN_KEEPALIVE
@@ -305,6 +309,9 @@ gboolean
 mono_thread_platform_external_eventloop_keepalive_check (void)
 {
 #if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+#ifdef ENABLE_CHECKED_BUILD
+	MONO_REQ_GC_SAFE_MODE;
+#endif
 	/* if someone called emscripten_runtime_keepalive_push (), the
 	 * thread will stay alive in the JS event loop after returning
 	 * from the thread's main function.
@@ -402,6 +409,16 @@ mono_current_thread_schedule_background_job (background_job_cb cb)
 #endif /*DISABLE_THREADS*/
 }
 
+#ifndef DISABLE_THREADS
+void
+mono_target_thread_schedule_background_job (MonoNativeThreadId target_thread, background_job_cb cb)
+{
+	THREADS_DEBUG ("worker %p queued job %p to worker %p \n", (gpointer)pthread_self(), (gpointer) cb, (gpointer) target_thread);
+	// NOTE: here the cb is [UnmanagedCallersOnly] which wraps it with MONO_ENTER_GC_UNSAFE/MONO_EXIT_GC_UNSAFE
+	mono_threads_wasm_async_run_in_target_thread_vi ((pthread_t) target_thread, (void*)mono_current_thread_schedule_background_job, (gpointer)cb);
+}
+#endif /*DISABLE_THREADS*/
+
 G_EXTERN_C
 EMSCRIPTEN_KEEPALIVE void
 mono_background_exec (void);
@@ -463,8 +480,7 @@ mono_threads_wasm_browser_thread_tid (void)
 }
 
 #ifndef DISABLE_THREADS
-extern void
-mono_wasm_pthread_on_pthread_attached (gpointer pthread_id);
+extern void mono_wasm_pthread_on_pthread_attached (MonoNativeThreadId pthread_id);
 #endif
 
 void
@@ -483,7 +499,6 @@ mono_threads_wasm_on_thread_attached (void)
 	MONO_EXIT_GC_SAFE;
 #endif
 }
-
 
 #ifndef DISABLE_THREADS
 void
