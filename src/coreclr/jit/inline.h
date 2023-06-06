@@ -556,13 +556,13 @@ public:
         m_ImportedILSize = x;
     }
 
-    // Report/log/dump decision as appropriate
-    void Report();
-
 private:
     // No copying or assignment allowed.
     InlineResult(const InlineResult&) = delete;
     InlineResult& operator=(const InlineResult&) = delete;
+
+    // Report/log/dump decision as appropriate
+    void Report();
 
     Compiler*             m_RootCompiler;
     InlinePolicy*         m_Policy;

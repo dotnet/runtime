@@ -6300,8 +6300,6 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
             // Do the actual evaluation
             impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
                                          ilOffset, &inlineResult);
-            inlineResult.Report();
-
             // Ignore non-inlineable candidates
             // TODO: Consider keeping them to just devirtualize without inlining, at least for interface
             // calls on NativeAOT, but that requires more changes elsewhere too.
@@ -6326,7 +6324,6 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
         InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate");
         impMarkInlineCandidateHelper(call, 0, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, ilOffset,
                                      &inlineResult);
-        inlineResult.Report();
     }
 
     // If this call is an inline candidate or is not a guarded devirtualization
