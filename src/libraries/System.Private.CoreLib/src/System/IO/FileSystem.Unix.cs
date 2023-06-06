@@ -28,6 +28,8 @@ namespace System.IO
             UnixFileMode.OtherWrite |
             UnixFileMode.OtherExecute;
 
+        private static partial void TryCloneFile(string sourceFullPath, string destFullPath, bool overwrite, ref bool cloned);
+
         public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
             long fileLength;
@@ -35,7 +37,9 @@ namespace System.IO
             using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out fileLength, out filePermissions);
 
             // Try to clone the file first.
-            if (TryCloneFile(sourceFullPath, destFullPath, overwrite))
+            bool cloned = false;
+            TryCloneFile(sourceFullPath, destFullPath, overwrite, ref cloned);
+            if (cloned)
             {
                 return;
             }

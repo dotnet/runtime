@@ -8,7 +8,7 @@ namespace System.IO
 {
     internal static partial class FileSystem
     {
-        private static bool TryCloneFile(string sourceFullPath, string destFullPath, bool overwrite)
+        private static partial void TryCloneFile(string sourceFullPath, string destFullPath, bool overwrite, ref bool cloned)
         {
             // This helper function calls out to clonefile, and returns the error.
             static bool TryCloneFile(string sourceFullPath, string destFullPath, int flags, out Interop.Error error)
@@ -27,14 +27,22 @@ namespace System.IO
             // destination doesn't exist, so we don't worry about locking for this one.
             int flags = Interop.@libc.CLONE_ACL;
             Interop.Error error;
-            if (TryCloneFile(sourceFullPath, destFullPath, flags, out error)) return true;
+            if (TryCloneFile(sourceFullPath, destFullPath, flags, out error))
+            {
+                cloned = true;
+                return;
+            }
 
             // Some filesystems don't support ACLs, so may fail due to trying to copy ACLs.
             // This will disable them and allow trying again (a maximum of 1 time).
             if (error == Interop.Error.EINVAL)
             {
                 flags = 0;
-                if (TryCloneFile(sourceFullPath, destFullPath, flags, out error)) return true;
+                if (TryCloneFile(sourceFullPath, destFullPath, flags, out error))
+                {
+                    cloned = true;
+                    return;
+                }
             }
 
             // Try to delete the destination file if we're overwriting.
@@ -52,7 +60,7 @@ namespace System.IO
                         if (error != Interop.Error.ENOENT)
                         {
                             // Fall back to standard copy as an unexpected error has occurred.
-                            return false;
+                            return;
                         }
                     }
                 }
@@ -62,14 +70,18 @@ namespace System.IO
                 }
 
                 // Try clonefile now we've deleted the destination file.
-                if (TryCloneFile(sourceFullPath, destFullPath, flags, out error)) return true;
+                if (TryCloneFile(sourceFullPath, destFullPath, flags, out error))
+                {
+                    cloned = true;
+                    return;
+                }
             }
 
             // Check if it's not supported, if files are on different filesystems, or if the destination file still exists.
             if (error == Interop.Error.ENOTSUP || error == Interop.Error.EXDEV || error == Interop.Error.EEXIST)
             {
                 // Fall back to normal copy.
-                return false;
+                return;
             }
 
             // Throw the appropriate exception.
