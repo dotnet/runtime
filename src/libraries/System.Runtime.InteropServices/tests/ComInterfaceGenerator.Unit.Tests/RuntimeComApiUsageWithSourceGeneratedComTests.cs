@@ -32,15 +32,15 @@ namespace ComInterfaceGenerator.Unit.Tests
                {
                    public static void Foo(I i)
                    {
-                       Marshal.SetComObjectData([|i|], new object());
+                       Marshal.SetComObjectData([|i|], new object(), new object());
                    }
                    public static void Foo(C c)
                    {
-                       Marshal.SetComObjectData([|c|], new object());
+                       Marshal.SetComObjectData([|c|], new object(), new object());
                    }
                    public static void Foo(ComObject c)
                    {
-                       Marshal.SetComObjectData([|c|], new object());
+                       Marshal.SetComObjectData([|c|], new object(), new object());
                    }
                }
                """;
@@ -69,15 +69,15 @@ namespace ComInterfaceGenerator.Unit.Tests
                {
                    public static void Foo(I i)
                    {
-                       _ = Marshal.GetComObjectData([|i|]);
+                       _ = Marshal.GetComObjectData([|i|], new object());
                    }
                    public static void Foo(C c)
                    {
-                       _ = Marshal.GetComObjectData([|c|]);
+                       _ = Marshal.GetComObjectData([|c|], new object());
                    }
                    public static void Foo(ComObject c)
                    {
-                       _ = Marshal.GetComObjectData([|c|]);
+                       _ = Marshal.GetComObjectData([|c|], new object());
                    }
                }
                """;
@@ -98,7 +98,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                }
                
                [GeneratedComClass]
-               public interface C : I
+               public class C : I
                {
                }
 
@@ -135,7 +135,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                }
                
                [GeneratedComClass]
-               public interface C : I
+               public class C : I
                {
                }
                
@@ -172,7 +172,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
                 
                 [GeneratedComClass]
-                public interface C : I
+                public class C : I
                 {
                 }
 
@@ -182,19 +182,19 @@ namespace ComInterfaceGenerator.Unit.Tests
                     {
                         _ = Marshal.CreateAggregatedObject(outer, (object)[|i|]);
                         _ = Marshal.CreateAggregatedObject(outer, [|i|]);
-                        _ = Marshal.CreateAggregatedObject<I>(outer, [|i|]);
+                        _ = Marshal.CreateAggregatedObject<[|I|]>(outer, [|i|]);
                     }
                     public static void Foo(nint outer, C c)
                     {
                         _ = Marshal.CreateAggregatedObject(outer, (object)[|c|]);
                         _ = Marshal.CreateAggregatedObject(outer, [|c|]);
-                        _ = Marshal.CreateAggregatedObject<C>(outer, [|c|]);
+                        _ = Marshal.CreateAggregatedObject<[|C|]>(outer, [|c|]);
                     }
                     public static void Foo(nint outer, ComObject c)
                     {
                         _ = Marshal.CreateAggregatedObject(outer, (object)[|c|]);
                         _ = Marshal.CreateAggregatedObject(outer, [|c|]);
-                        _ = Marshal.CreateAggregatedObject<ComObject>(outer, [|c|]);
+                        _ = Marshal.CreateAggregatedObject<[|ComObject|]>(outer, [|c|]);
                     }
                 }
                 """;
@@ -263,7 +263,7 @@ namespace ComInterfaceGenerator.Unit.Tests
         }        
 
         [Fact]
-        public async Task CreateTypedObjectForIUnknown()
+        public async Task GetTypedObjectForIUnknown()
         {
             string source = """
                 using System.Runtime.InteropServices;
@@ -283,9 +283,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     public static void Foo(nint unknown)
                     {
-                        _ = Marshal.CreateTypedObjectForIUnknown(unknown, typeof([|I|]));
-                        _ = Marshal.CreateTypedObjectForIUnknown(unknown, typeof([|C|]));
-                        _ = Marshal.CreateTypedObjectForIUnknown(unknown, typeof([|ComObject|]));
+                        _ = Marshal.GetTypedObjectForIUnknown(unknown, typeof([|I|]));
+                        _ = Marshal.GetTypedObjectForIUnknown(unknown, typeof([|C|]));
+                        _ = Marshal.GetTypedObjectForIUnknown(unknown, typeof([|ComObject|]));
                     }
                 }
                 """;
@@ -306,7 +306,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
       
                 [GeneratedComClass]
-                public interface C : I
+                public class C : I
                 {
                 }
       
@@ -343,7 +343,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
       
                 [GeneratedComClass]
-                public interface C : I
+                public class C : I
                 {
                 }
       
@@ -380,7 +380,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                }
       
                [GeneratedComClass]
-               public interface C : I
+               public class C : I
                {
                }
       

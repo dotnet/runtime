@@ -297,4 +297,13 @@
   <data name="ComHostingDoesNotSupportGeneratedComInterfaceTitle" xml:space="preserve">
     <value>.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'</value>
   </data>
+  <data name="RuntimeComApisDoNotSupportSourceGeneratedComDescription" xml:space="preserve">
+    <value>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime</value>
+  </data>
+  <data name="RuntimeComApisDoNotSupportSourceGeneratedComMessage" xml:space="preserve">
+    <value>The method '{0}' only supports runtime-based COM interop and will not work with type '{1}'</value>
+  </data>
+  <data name="RuntimeComApisDoNotSupportSourceGeneratedComTitle" xml:space="preserve">
+    <value>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM</value>
+  </data>
 </root>

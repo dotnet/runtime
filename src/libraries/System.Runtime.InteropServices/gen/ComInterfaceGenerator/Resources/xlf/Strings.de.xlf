@@ -262,6 +262,21 @@
         <target state="translated">Die angegebene Schnittstelle wird von mindestens zwei Schnittstellen abgeleitet, die "GeneratedComInterfaceAttribute" zugeordnet sind.</target>
         <note />
       </trans-unit>
+      <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComDescription">
+        <source>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime</source>
+        <target state="new">COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComMessage">
+        <source>The method '{0}' only supports runtime-based COM interop and will not work with type '{1}'</source>
+        <target state="new">The method '{0}' only supports runtime-based COM interop and will not work with type '{1}'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComTitle">
+        <source>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM</source>
+        <target state="new">COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">
         <source>For types that are not supported by source-generated COM, the resulting function pointer will rely on the underlying runtime to marshal the specified type.</source>
         <target state="translated">Bei Typen, die vom quellgenerierten COM nicht unterstützt werden, basiert der resultierende Funktionszeiger auf der zugrunde liegenden Laufzeit, um den angegebenen Typ zu marshallen.</target>

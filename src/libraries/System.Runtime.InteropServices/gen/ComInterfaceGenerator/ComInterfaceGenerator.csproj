@@ -23,6 +23,7 @@
     <Compile Include="..\Common\DefaultMarshallingInfoParser.cs" Link="Common\DefaultMarshallingInfoParser.cs" />
     <Compile Include="..\..\tests\Common\ExceptionMarshalling.cs" Link="Common\ExceptionMarshalling.cs" />
     <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
+    <Compile Include="..\Common\OperationExtensions.cs" Link="Common\OperationExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup>
