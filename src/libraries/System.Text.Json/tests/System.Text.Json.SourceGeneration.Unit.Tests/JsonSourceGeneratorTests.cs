@@ -426,8 +426,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CheckCompilationDiagnosticsErrors(result.Diagnostics);
             CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
 
-            Assert.Equal(4, result.AllGeneratedTypes.Count());
+            Assert.Equal(3, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::HelloWorld.AppRecord");
+            result.AssertContainsType("string");
+            result.AssertContainsType("int");
         }
 
         [Fact]
@@ -463,8 +465,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CheckCompilationDiagnosticsErrors(result.Diagnostics);
             CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
 
-            Assert.Equal(4, result.AllGeneratedTypes.Count());
+            Assert.Equal(3, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::ReferencedAssembly.LibRecord");
+            result.AssertContainsType("string");
+            result.AssertContainsType("int");
         }
 
         [Fact]
@@ -504,8 +508,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CheckCompilationDiagnosticsErrors(result.Diagnostics);
             CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
 
-            Assert.Equal(4, result.AllGeneratedTypes.Count());
+            Assert.Equal(3, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::HelloWorld.AppRecord");
+            result.AssertContainsType("string");
+            result.AssertContainsType("int");
         }
 
         private void CheckCompilationDiagnosticsErrors(ImmutableArray<Diagnostic> diagnostics)

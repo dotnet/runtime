@@ -346,12 +346,6 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitRegisterFP, W("JitRegisterFP"), 3, "Control
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitELTHookEnabled, W("JitELTHookEnabled"), 0, "On ARM, setting this will emit Enter/Leave/TailCall callbacks")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitMemStats, W("JitMemStats"), 0, "Display JIT memory usage statistics")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitVNMapSelBudget, W("JitVNMapSelBudget"), 100, "Max # of MapSelect's considered for a particular top-level invocation.")
-#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64)
-#define EXTERNAL_FeatureSIMD_Default 1
-#else // !(defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64))
-#define EXTERNAL_FeatureSIMD_Default 0
-#endif // !(defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64))
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_SIMD16ByteOnly, W("SIMD16ByteOnly"), 0, "Limit maximum SIMD vector length to 16 bytes (used by x64_arm64_altjit)")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TrackDynamicMethodDebugInfo, W("TrackDynamicMethodDebugInfo"), 0, "Specifies whether debug info should be generated and tracked for dynamic methods")
 
 #ifdef FEATURE_MULTICOREJIT
@@ -734,15 +728,17 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_GDBJitEmitDebugFrame, W("GDBJitEmitDebugFrame"
 #endif
 #endif
 
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_MaxVectorTBitWidth,           W("MaxVectorTBitWidth"),        0, "The maximum width, in bits, that Vector<T> is allowed to be. A value less than 128 is treated as the system default.")
+
 //
 // Hardware Intrinsic ISAs; keep in sync with jitconfigvalues.h
 //
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 //TODO: should implement LoongArch64's features.
 //TODO-RISCV64-CQ: should implement RISCV64's features.
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,  W("EnableHWIntrinsic"),  0, "Allows Base+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,            W("EnableHWIntrinsic"),         0, "Allows Base+ hardware intrinsics to be disabled")
 #else
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,  W("EnableHWIntrinsic"),  1, "Allows Base+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,            W("EnableHWIntrinsic"),         1, "Allows Base+ hardware intrinsics to be disabled")
 #endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)

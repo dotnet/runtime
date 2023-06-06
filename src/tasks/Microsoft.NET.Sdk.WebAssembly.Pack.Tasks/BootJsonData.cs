@@ -173,7 +173,10 @@ public enum ICUDataMode : int
     /// </summary>
     Custom = 3,
 
-    Hybrid = 4
+    /// <summary>
+    /// Use the reduced icudt_hybrid.dat file
+    /// </summary>
+    Hybrid = 4,
 }
 
 [DataContract]

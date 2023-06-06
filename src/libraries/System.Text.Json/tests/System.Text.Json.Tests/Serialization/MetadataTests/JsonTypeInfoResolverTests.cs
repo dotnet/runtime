@@ -158,5 +158,21 @@ namespace System.Text.Json.Serialization.Tests
 
             return list;
         }
+
+        [Fact]
+        public static void NullResolver_ReturnsObjectMetadata()
+        {
+            var options = new JsonSerializerOptions();
+            var resolver = new NullResolver();
+            Assert.Null(resolver.GetTypeInfo(typeof(object), options));
+
+            options.TypeInfoResolver = resolver;
+            Assert.IsAssignableFrom<JsonTypeInfo<object>>(options.GetTypeInfo(typeof(object)));
+        }
+
+        public sealed class NullResolver : IJsonTypeInfoResolver
+        {
+            public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options) => null;
+        }
     }
 }

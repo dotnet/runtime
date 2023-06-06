@@ -16,7 +16,7 @@ namespace System
         /// and a timer based on <see cref="Timer"/>.
         /// </summary>
         /// <remarks>
-        /// If the <see cref="TimeZoneInfo.Local"/> changes after the object is returned, the change will be reflected in any subsequent operations that retrieve <see cref="TimeProvider.GetLocalNow"/>.
+        /// If the <see cref="TimeZoneInfo.Local"/> changes after the object is returned, the change will be reflected in any subsequent operations that retrieve <see cref="GetLocalNow"/>.
         /// </remarks>
         public static TimeProvider System { get; } = new SystemTimeProvider();
 
@@ -274,7 +274,7 @@ namespace System
         }
 
         /// <summary>
-        /// Used to create a <see cref="TimeProvider"/> instance returned from <see cref="TimeProvider.System"/> and uses the default implementation
+        /// Used to create a <see cref="TimeProvider"/> instance returned from <see cref="System"/> and uses the default implementation
         /// provided by <see cref="TimeProvider"/> which uses <see cref="DateTimeOffset.UtcNow"/>, <see cref="TimeZoneInfo.Local"/>, <see cref="Stopwatch"/>, and <see cref="Timer"/>.
         /// </summary>
         private sealed class SystemTimeProvider : TimeProvider

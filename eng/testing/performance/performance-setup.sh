@@ -36,9 +36,10 @@ use_latest_dotnet=false
 logical_machine=
 javascript_engine="v8"
 iosmono=false
+iosnativeaot=false
+runtimetype=""
 iosllvmbuild=""
 iosstripsymbols=""
-iosnativeaot=false
 maui_version=""
 use_local_commit_time=false
 only_sanity=false
@@ -341,12 +342,14 @@ if [[ "$monoaot" == "true" ]]; then
 fi
 
 if [[ "$iosmono" == "true" ]]; then
-    configurations="$configurations iOSLlvmBuild=$iosllvmbuild iOSStripSymbols=$iosstripsymbols"
+    runtimetype="Mono"
+    configurations="$configurations iOSLlvmBuild=$iosllvmbuild iOSStripSymbols=$iosstripsymbols RuntimeType=$runtimetype"
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments"
 fi
 
 if [[ "$iosnativeaot" == "true" ]]; then
-    configurations="$configurations iOSStripSymbols=$iosstripsymbols"
+    runtimetype="NativeAOT"
+    configurations="$configurations iOSStripSymbols=$iosstripsymbols RuntimeType=$runtimetype"
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments"
 fi
 
@@ -453,40 +456,11 @@ if [[ "$use_baseline_core_run" == true ]]; then
   mv $baseline_core_root_directory $new_baseline_core_root
 fi
 
-if [[ "$iosmono" == "true" ]]; then
-    if [[ "$iosllvmbuild" == "True" ]]; then
-      if [[ "$iosstripsymbols" == "True" ]]; then
-          # LLVM NoSymbols Mono .app
-          mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/llvmnosymbols $payload_directory/iosHelloWorld
-          mkdir -p $payload_directory/iosHelloWorldZip/llvmnosymbolszip && cp -rv $source_directory/iosHelloWorldZip/llvmnosymbolszip $payload_directory/iosHelloWorldZip
-      else
-          # LLVM Symbols Mono .app
-          mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/llvmsymbols $payload_directory/iosHelloWorld
-          mkdir -p $payload_directory/iosHelloWorldZip/llvmsymbolszip && cp -rv $source_directory/iosHelloWorldZip/llvmsymbolszip $payload_directory/iosHelloWorldZip
-      fi
-    else
-      if [[ "$iosstripsymbols" == "True" ]]; then
-        # NoLLVM NoSymbols Mono .app
-        mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nollvmnosymbols $payload_directory/iosHelloWorld
-        mkdir -p $payload_directory/iosHelloWorldZip/nollvmnosymbolszip && cp -rv $source_directory/iosHelloWorldZip/nollvmnosymbolszip $payload_directory/iosHelloWorldZip
-      else
-        # NoLLVM Symbols Mono .app
-        mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nollvmsymbols $payload_directory/iosHelloWorld
-        mkdir -p $payload_directory/iosHelloWorldZip/nollvmsymbolszip && cp -rv $source_directory/iosHelloWorldZip/nollvmsymbolszip $payload_directory/iosHelloWorldZip
-      fi
-    fi
-fi
+if [[ "$iosmono" == "true" || "$iosnativeaot" == "true" ]]; then
+  mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld $payload_directory/iosHelloWorld
+  mkdir -p $payload_directory/iosHelloWorldZip && cp -rv $source_directory/iosHelloWorldZip $payload_directory/iosHelloWorldZip
 
-if [[ "$iosnativeaot" == "true" ]]; then
-  if [[ "$iosstripsymbols" == "True" ]]; then
-    # NoSymbols Mono .app
-    mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nosymbols $payload_directory/iosHelloWorld
-    mkdir -p $payload_directory/iosHelloWorldZip/nosymbolszip && cp -rv $source_directory/iosHelloWorldZip/nosymbolszip $payload_directory/iosHelloWorldZip
-  else
-    # NoSymbols Mono .app
-    mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/symbols $payload_directory/iosHelloWorld
-    mkdir -p $payload_directory/iosHelloWorldZip/symbolszip && cp -rv $source_directory/iosHelloWorldZip/symbolszip $payload_directory/iosHelloWorldZip
-  fi
+  find "$payload_directory/iosHelloWorldZip/" -type f -name "*.zip" -execdir mv {} "$payload_directory/iosHelloWorldZip/iOSSampleApp.zip" \;
 fi
 
 ci=true
@@ -521,6 +495,7 @@ Write-PipelineSetVariable -name "MonoDotnet" -value "$using_mono" -is_multi_job_
 Write-PipelineSetVariable -name "WasmDotnet" -value "$using_wasm" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iosllvmbuild" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSStripSymbols' -Value "$iosstripsymbols" -is_multi_job_variable false
+Write-PipelineSetVariable -Name 'RuntimeType' -Value "$runtimetype" -is_multi_job_variable false
 Write-PipelineSetVariable -name "OnlySanityCheck" -value "$only_sanity" -is_multi_job_variable false
 
 # Put it back to what was set on top of this script
