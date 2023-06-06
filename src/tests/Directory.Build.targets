@@ -10,7 +10,7 @@
           Condition="'$(DisableVersionCheckImported)' != 'true'" />
 
   <PropertyGroup>
-    <OSPlatformConfig>$(TargetOS).$(Platform).$(Configuration)</OSPlatformConfig>
+    <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
     <TestArchiveRoot>$(ArtifactsDir)helix/</TestArchiveRoot>
     <TestArchiveTestsRoot>$(TestArchiveRoot)tests/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
