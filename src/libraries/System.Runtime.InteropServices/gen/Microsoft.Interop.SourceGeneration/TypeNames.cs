@@ -36,6 +36,7 @@ namespace Microsoft.Interop
         public const string UnmanagedCallersOnlyAttribute = "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute";
 
         public const string System_Runtime_InteropServices_ComImportAttribute = "System.Runtime.InteropServices.ComImportAttribute";
+        public const string System_Runtime_InteropServices_ComVisibleAttribute = "System.Runtime.InteropServices.ComVisibleAttribute";
 
         public const string VirtualMethodIndexAttribute = "System.Runtime.InteropServices.Marshalling.VirtualMethodIndexAttribute";
         public const string VirtualMethodIndexAttribute_ShortName = "VirtualMethodIndexAttribute";

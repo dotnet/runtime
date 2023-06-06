@@ -19,7 +19,8 @@ namespace ComInterfaceGenerator.Unit.Tests
             string source = """
                 using System.Runtime.InteropServices;
 
-                [ComImport]
+                [ComVisible(true)]
+                [Guid("12D46FF1-E21A-45E4-8407-0573B30962FE")]
                 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
                 public interface I
                 {
@@ -40,6 +41,7 @@ namespace ComInterfaceGenerator.Unit.Tests
         {
             string source = """
                using System.Runtime.InteropServices;
+               using System.Runtime.InteropServices.Marshalling;
 
                [GeneratedComInterface]
                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -62,6 +64,7 @@ namespace ComInterfaceGenerator.Unit.Tests
         {
             string source = """
                using System.Runtime.InteropServices;
+               using System.Runtime.InteropServices.Marshalling;
 
                [GeneratedComInterface]
                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -88,7 +91,10 @@ namespace ComInterfaceGenerator.Unit.Tests
                     Sources = { source },
                     AnalyzerConfigFiles =
                     {
-                        (".editorconfig", $"build_property.EnableComHosting = {enableComHosting}")
+                        ("/.editorconfig", $"""
+                                            is_global = true
+                                            build_property.EnableComHosting = {enableComHosting}
+                                            """)
                     }
                 }
             };

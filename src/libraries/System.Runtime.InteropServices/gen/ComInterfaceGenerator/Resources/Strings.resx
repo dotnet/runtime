@@ -288,4 +288,13 @@
   <data name="AddGeneratedComClassAttributeTitle" xml:space="preserve">
     <value>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM</value>
   </data>
+  <data name="ComHostingDoesNotSupportGeneratedComInterfaceDescription" xml:space="preserve">
+    <value>.NET COM hosting with 'EnableComHosting' only supports built-in COM interop. It does not support source-generated COM interop with 'GeneratedComInterfaceAttribute'.</value>
+  </data>
+  <data name="ComHostingDoesNotSupportGeneratedComInterfaceMessage" xml:space="preserve">
+    <value>.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'. Change any COM exposed interfaces implemented by '{0}' to use the 'System.Runtime.InteropServices.ComVisibleAttribute' instead</value>
+  </data>
+  <data name="ComHostingDoesNotSupportGeneratedComInterfaceTitle" xml:space="preserve">
+    <value>.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'</value>
+  </data>
 </root>

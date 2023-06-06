@@ -13,6 +13,7 @@ namespace Microsoft.Interop.Analyzers
             public const string InvalidGeneratedComAttributeUsage = Prefix + "1090";
             public const string ConvertToGeneratedComInterface = Prefix + "1096";
             public const string AddGeneratedComClassAttribute = Prefix + "1097";
+            public const string ComHostingDoesNotSupportGeneratedComInterface = Prefix + "1097";
         }
 
         public static class Metadata
@@ -57,5 +58,15 @@ namespace Microsoft.Interop.Analyzers
                 DiagnosticSeverity.Info,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.AddGeneratedComClassAttributeDescription)));
+
+        public static readonly DiagnosticDescriptor ComHostingDoesNotSupportGeneratedComInterface =
+            new DiagnosticDescriptor(
+                Ids.ComHostingDoesNotSupportGeneratedComInterface,
+                GetResourceString(nameof(SR.ComHostingDoesNotSupportGeneratedComInterfaceTitle)),
+                GetResourceString(nameof(SR.ComHostingDoesNotSupportGeneratedComInterfaceMessage)),
+                Category,
+                DiagnosticSeverity.Warning,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.ComHostingDoesNotSupportGeneratedComInterfaceDescription)));
     }
 }
