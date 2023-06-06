@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Buffers;
 
 namespace System.Globalization
 {
@@ -146,8 +147,11 @@ namespace System.Globalization
             {
                 return true; // all chars are sortable in invariant mode
             }
-
-            return (GlobalizationMode.UseNls) ? NlsIsSortable(text) : IcuIsSortable(text);
+#if TARGET_WINDOWS && ((WASM_BUILD_NATIVE && ICU_OR_NLS_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
+            if (GlobalizationMode.UseNls)
+                return NlsIsSortable(text);
+#endif
+            return IcuIsSortable(text);
         }
 
         /// <summary>
@@ -170,21 +174,20 @@ namespace System.Globalization
         {
             _sortName = culture.SortName;
 
-#if TARGET_BROWSER
+#if TARGET_BROWSER && ((WASM_BUILD_NATIVE && HYBRID_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
             if (GlobalizationMode.Hybrid)
             {
                 JsInit(culture.InteropName!);
                 return;
             }
-#endif
+#elif TARGET_WINDOWS && ((WASM_BUILD_NATIVE && ICU_OR_NLS_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
             if (GlobalizationMode.UseNls)
             {
                 NlsInitSortHandle();
+                return;
             }
-            else
-            {
-                IcuInitSortHandle(culture.InteropName!);
-            }
+#endif
+            IcuInitSortHandle(culture.InteropName!);
         }
 
         [OnDeserializing]
@@ -492,9 +495,10 @@ namespace System.Globalization
         }
 
         private unsafe int CompareStringCore(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options) =>
+#if TARGET_WINDOWS && ((WASM_BUILD_NATIVE && ICU_OR_NLS_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
             GlobalizationMode.UseNls ?
                 NlsCompareString(string1, string2, options) :
-#if TARGET_BROWSER
+#elif TARGET_BROWSER && ((WASM_BUILD_NATIVE && HYBRID_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
             GlobalizationMode.Hybrid ?
                 JsCompareString(string1, string2, options) :
 #elif TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
@@ -622,7 +626,7 @@ namespace System.Globalization
             else
             {
                 // Linguistic comparison requested and we don't need to special-case any args.
-#if TARGET_BROWSER
+#if TARGET_BROWSER && ((WASM_BUILD_NATIVE && HYBRID_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
                 if (GlobalizationMode.Hybrid)
                 {
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_HybridGlobalizationWithMatchLength);
@@ -637,9 +641,10 @@ namespace System.Globalization
         }
 
         private unsafe bool StartsWithCore(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, int* matchLengthPtr) =>
+#if TARGET_WINDOWS && ((WASM_BUILD_NATIVE && ICU_OR_NLS_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
             GlobalizationMode.UseNls ?
                 NlsStartsWith(source, prefix, options, matchLengthPtr) :
-#if TARGET_BROWSER
+#elif TARGET_BROWSER && ((WASM_BUILD_NATIVE && HYBRID_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
             GlobalizationMode.Hybrid ?
                 JsStartsWith(source, prefix, options) :
 #endif
@@ -769,7 +774,7 @@ namespace System.Globalization
             else
             {
                 // Linguistic comparison requested and we don't need to special-case any args.
-#if TARGET_BROWSER
+#if TARGET_BROWSER && ((WASM_BUILD_NATIVE && HYBRID_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
                 if (GlobalizationMode.Hybrid)
                 {
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_HybridGlobalizationWithMatchLength);
@@ -789,9 +794,10 @@ namespace System.Globalization
         }
 
         private unsafe bool EndsWithCore(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options, int* matchLengthPtr) =>
+#if TARGET_WINDOWS && ((WASM_BUILD_NATIVE && ICU_OR_NLS_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
             GlobalizationMode.UseNls ?
                 NlsEndsWith(source, suffix, options, matchLengthPtr) :
-#if TARGET_BROWSER
+#elif TARGET_BROWSER && ((WASM_BUILD_NATIVE && HYBRID_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
             GlobalizationMode.Hybrid ?
                 JsEndsWith(source, suffix, options) :
 #endif
@@ -1126,9 +1132,10 @@ namespace System.Globalization
         }
 
         private unsafe int IndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning) =>
+#if TARGET_WINDOWS && ((WASM_BUILD_NATIVE && ICU_OR_NLS_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
             GlobalizationMode.UseNls ?
                 NlsIndexOfCore(source, target, options, matchLengthPtr, fromBeginning) :
-#if TARGET_BROWSER
+#elif TARGET_BROWSER && ((WASM_BUILD_NATIVE && HYBRID_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
             GlobalizationMode.Hybrid ?
                 JsIndexOfCore(source, target, options, matchLengthPtr, fromBeginning) :
 #endif
@@ -1436,28 +1443,31 @@ namespace System.Globalization
         /// </summary>
         public SortKey GetSortKey(string source, CompareOptions options)
         {
+#if (WASM_BUILD_NATIVE && INVARIANT_GLOBALIZATION) || (!WASM_BUILD_NATIVE)
             if (GlobalizationMode.Invariant)
             {
                 return InvariantCreateSortKey(source, options);
             }
-
+#endif
             return CreateSortKeyCore(source, options);
         }
 
         public SortKey GetSortKey(string source)
         {
+#if (WASM_BUILD_NATIVE && INVARIANT_GLOBALIZATION) || (!WASM_BUILD_NATIVE)
             if (GlobalizationMode.Invariant)
             {
                 return InvariantCreateSortKey(source, CompareOptions.None);
             }
-
+#endif
             return CreateSortKeyCore(source, CompareOptions.None);
         }
 
         private SortKey CreateSortKeyCore(string source, CompareOptions options) =>
+#if TARGET_WINDOWS && ((WASM_BUILD_NATIVE && ICU_OR_NLS_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
             GlobalizationMode.UseNls ?
                 NlsCreateSortKey(source, options) :
-#if TARGET_BROWSER
+#elif TARGET_BROWSER && ((WASM_BUILD_NATIVE && HYBRID_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
             GlobalizationMode.Hybrid ?
                 throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
 #endif
@@ -1487,20 +1497,20 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidFlag, ExceptionArgument.options);
             }
 
+#if (WASM_BUILD_NATIVE && INVARIANT_GLOBALIZATION) || (!WASM_BUILD_NATIVE)
             if (GlobalizationMode.Invariant)
             {
                 return InvariantGetSortKey(source, destination, options);
             }
-            else
-            {
-                return GetSortKeyCore(source, destination, options);
-            }
+#endif
+            return GetSortKeyCore(source, destination, options);
         }
 
         private int GetSortKeyCore(ReadOnlySpan<char> source, Span<byte> destination, CompareOptions options) =>
+#if TARGET_WINDOWS && ((WASM_BUILD_NATIVE && ICU_OR_NLS_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
             GlobalizationMode.UseNls ?
                 NlsGetSortKey(source, destination, options) :
-#if TARGET_BROWSER
+#elif TARGET_BROWSER && ((WASM_BUILD_NATIVE && HYBRID_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
             GlobalizationMode.Hybrid ?
                 throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
 #endif
@@ -1524,24 +1534,24 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidFlag, ExceptionArgument.options);
             }
 
+#if (WASM_BUILD_NATIVE && INVARIANT_GLOBALIZATION) || (!WASM_BUILD_NATIVE)
             if (GlobalizationMode.Invariant)
             {
                 return InvariantGetSortKeyLength(source, options);
             }
-            else
-            {
-                return GetSortKeyLengthCore(source, options);
-            }
+#endif
+            return GetSortKeyLengthCore(source, options);
         }
 
         private int GetSortKeyLengthCore(ReadOnlySpan<char> source, CompareOptions options) =>
+#if TARGET_WINDOWS && ((WASM_BUILD_NATIVE && ICU_OR_NLS_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
             GlobalizationMode.UseNls ?
               NlsGetSortKeyLength(source, options) :
-#if TARGET_BROWSER
+#elif TARGET_BROWSER && ((WASM_BUILD_NATIVE && HYBRID_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
             GlobalizationMode.Hybrid ?
                 throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
 #endif
-              IcuGetSortKeyLength(source, options);
+                IcuGetSortKeyLength(source, options);
 
         public override bool Equals([NotNullWhen(true)] object? value)
         {
@@ -1612,9 +1622,10 @@ namespace System.Globalization
         }
 
         private unsafe int GetHashCodeOfStringCore(ReadOnlySpan<char> source, CompareOptions options) =>
+#if TARGET_WINDOWS && ((WASM_BUILD_NATIVE && ICU_OR_NLS_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
             GlobalizationMode.UseNls ?
                 NlsGetHashCodeOfString(source, options) :
-#if TARGET_BROWSER
+#elif TARGET_BROWSER && ((WASM_BUILD_NATIVE && HYBRID_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
             GlobalizationMode.Hybrid ?
                 throw new PlatformNotSupportedException(GetPNSEText("HashCode")) :
 #endif
@@ -1638,13 +1649,19 @@ namespace System.Globalization
                     }
                     else
                     {
-#if TARGET_BROWSER
-                if (GlobalizationMode.Hybrid)
-                {
-                    throw new PlatformNotSupportedException(GetPNSEText("SortVersion"));
-                }
+#if TARGET_BROWSER && ((WASM_BUILD_NATIVE && HYBRID_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
+                        if (GlobalizationMode.Hybrid)
+                        {
+                            throw new PlatformNotSupportedException(GetPNSEText("SortVersion"));
+                        }
+#elif TARGET_WINDOWS && ((WASM_BUILD_NATIVE && ICU_OR_NLS_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
+                        if (GlobalizationMode.UseNls)
+                        {
+                            m_SortVersion = NlsGetSortVersion();
+                            return m_SortVersion;
+                        }
 #endif
-                        m_SortVersion = GlobalizationMode.UseNls ? NlsGetSortVersion() : IcuGetSortVersion();
+                        m_SortVersion = IcuGetSortVersion();
                     }
                 }
 
@@ -1654,7 +1671,7 @@ namespace System.Globalization
 
         public int LCID => CultureInfo.GetCultureInfo(Name).LCID;
 
-#if TARGET_BROWSER
+#if TARGET_BROWSER && ((WASM_BUILD_NATIVE && HYBRID_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
         private static string GetPNSEText(string funcName) => SR.Format(SR.PlatformNotSupported_HybridGlobalization, funcName);
 #endif
     }

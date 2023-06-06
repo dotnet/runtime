@@ -12,8 +12,10 @@ namespace System.Globalization
         // validate this implementation detail.
         private static partial class Settings
         {
+#if (WASM_BUILD_NATIVE && INVARIANT_GLOBALIZATION) || (!WASM_BUILD_NATIVE)
             internal static bool Invariant { get; } = AppContextConfigHelper.GetBooleanConfig("System.Globalization.Invariant", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
-#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS || TARGET_BROWSER
+#endif
+#if (WASM_BUILD_NATIVE && HYBRID_GLOBALIZATION) || (!WASM_BUILD_NATIVE && (TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS || TARGET_BROWSER))
             internal static bool Hybrid { get; } = AppContextConfigHelper.GetBooleanConfig("System.Globalization.Hybrid", "DOTNET_SYSTEM_GLOBALIZATION_HYBRID");
 #endif
             internal static bool PredefinedCulturesOnly { get; } = AppContextConfigHelper.GetBooleanConfig("System.Globalization.PredefinedCulturesOnly", "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", GlobalizationMode.Invariant);
@@ -22,8 +24,10 @@ namespace System.Globalization
         // Note: Invariant=true and Invariant=false are substituted at different levels in the ILLink.Substitutions file.
         // This allows for the whole Settings nested class to be trimmed when Invariant=true, and allows for the Settings
         // static cctor (on Unix) to be preserved when Invariant=false.
+#if (WASM_BUILD_NATIVE && INVARIANT_GLOBALIZATION) || (!WASM_BUILD_NATIVE)
         internal static bool Invariant => Settings.Invariant;
-#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS || TARGET_BROWSER
+#endif
+#if (WASM_BUILD_NATIVE && HYBRID_GLOBALIZATION) || (!WASM_BUILD_NATIVE && (TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS || TARGET_BROWSER))
         internal static bool Hybrid => Settings.Hybrid;
 #endif
         internal static bool PredefinedCulturesOnly => Settings.PredefinedCulturesOnly;

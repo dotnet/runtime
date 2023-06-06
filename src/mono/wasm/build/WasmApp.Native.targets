@@ -220,7 +220,10 @@
       <_EmccCFlags Include="-DDISABLE_PERFTRACING_LISTEN_PORTS=1" />
       <_EmccCFlags Include="-DENABLE_AOT=1"                    Condition="'$(_WasmShouldAOT)' == 'true'" />
       <_EmccCFlags Include="-DDRIVER_GEN=1"                    Condition="'$(_WasmShouldAOT)' == 'true'" />
+      <_EmccCFlags Include="-DWASM_BUILD_NATIVE=1"             Condition="'$(WasmBuildNative)' == 'true'" />
       <_EmccCFlags Include="-DINVARIANT_GLOBALIZATION=1"       Condition="'$(InvariantGlobalization)' == 'true'" />
+      <_EmccCFlags Include="-DHYBRID_GLOBALIZATION=1"          Condition="'$(HybridGlobalization)' == 'true'" />
+      <_EmccCFlags Include="-DICU_OR_NLS_GLOBALIZATION=1"      Condition="'$(InvariantGlobalization)' != 'true' and '$(HybridGlobalization)' != 'true'" />
       <_EmccCFlags Include="-DLINK_ICALLS=1"                   Condition="'$(WasmLinkIcalls)' == 'true'" />
       <_EmccCFlags Include="-DENABLE_AOT_PROFILER=1"           Condition="$(WasmProfilers.Contains('aot'))" />
       <_EmccCFlags Include="-DENABLE_BROWSER_PROFILER=1"       Condition="$(WasmProfilers.Contains('browser'))" />
@@ -376,7 +379,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_WasmCalculateInitialHeapSize" 
+  <Target Name="_WasmCalculateInitialHeapSize"
       Condition="'$(EmccInitialHeapSize)' == ''"
       DependsOnTargets="_CheckEmccIsExpectedVersion">
     <ItemGroup>
