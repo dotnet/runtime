@@ -10,10 +10,10 @@ namespace System.Buffers
     internal sealed class AsciiCharSearchValues<TOptimizations> : SearchValues<char>
         where TOptimizations : struct, IndexOfAnyAsciiSearcher.IOptimizations
     {
-        private readonly Vector128<byte> _bitmap;
+        private Vector256<byte> _bitmap;
         private readonly BitVector256 _lookup;
 
-        public AsciiCharSearchValues(Vector128<byte> bitmap, BitVector256 lookup)
+        public AsciiCharSearchValues(Vector256<byte> bitmap, BitVector256 lookup)
         {
             _bitmap = bitmap;
             _lookup = lookup;
@@ -46,7 +46,7 @@ namespace System.Buffers
             where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
         {
             return IndexOfAnyAsciiSearcher.IsVectorizationSupported && searchSpaceLength >= Vector128<short>.Count
-                ? IndexOfAnyAsciiSearcher.IndexOfAnyVectorized<TNegator, TOptimizations>(ref Unsafe.As<char, short>(ref searchSpace), searchSpaceLength, _bitmap)
+                ? IndexOfAnyAsciiSearcher.IndexOfAnyVectorized<TNegator, TOptimizations>(ref Unsafe.As<char, short>(ref searchSpace), searchSpaceLength, ref _bitmap)
                 : IndexOfAnyScalar<TNegator>(ref searchSpace, searchSpaceLength);
         }
 
@@ -55,7 +55,7 @@ namespace System.Buffers
             where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
         {
             return IndexOfAnyAsciiSearcher.IsVectorizationSupported && searchSpaceLength >= Vector128<short>.Count
-                ? IndexOfAnyAsciiSearcher.LastIndexOfAnyVectorized<TNegator, TOptimizations>(ref Unsafe.As<char, short>(ref searchSpace), searchSpaceLength, _bitmap)
+                ? IndexOfAnyAsciiSearcher.LastIndexOfAnyVectorized<TNegator, TOptimizations>(ref Unsafe.As<char, short>(ref searchSpace), searchSpaceLength, ref _bitmap)
                 : LastIndexOfAnyScalar<TNegator>(ref searchSpace, searchSpaceLength);
         }
 

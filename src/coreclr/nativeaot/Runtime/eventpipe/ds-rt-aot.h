@@ -191,11 +191,10 @@ ds_rt_transport_get_default_name (
     const ep_char8_t *group_id,
     const ep_char8_t *suffix)
 {
-    STATIC_CONTRACT_NOTHROW;
-    
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: PAL_GetTransportName is defined in coreclr\pal\inc\pal.h
-    return true;
+
+    extern bool ds_rt_aot_transport_get_default_name (ep_char8_t *name, int32_t name_len, const ep_char8_t *prefix, int32_t id, const ep_char8_t *group_id, const ep_char8_t *suffix);
+
+    return ds_rt_aot_transport_get_default_name(name, name_len, prefix, id, group_id, suffix);
 }
 
 /*
@@ -256,6 +255,20 @@ ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *valu
      // return SetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(name), reinterpret_cast<LPCWSTR>(value)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
      // PalDebugBreak();
     return 0xffff;
+}
+
+static
+uint32_t
+ds_rt_enable_perfmap (uint32_t type)
+{
+    return DS_IPC_E_NOTSUPPORTED;
+}
+
+static
+uint32_t
+ds_rt_disable_perfmap (void)
+{
+    return DS_IPC_E_NOTSUPPORTED;
 }
 
 /*

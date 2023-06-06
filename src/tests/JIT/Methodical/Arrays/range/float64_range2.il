@@ -20,7 +20,7 @@
            
   
 }
-.assembly 'float64_range2'
+.assembly ASSEMBLY_NAME
 {
 }
 .assembly extern xunit.core {}

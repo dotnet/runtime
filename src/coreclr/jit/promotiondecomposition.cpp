@@ -1,7 +1,11 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #include "jitpch.h"
 #include "promotion.h"
 #include "jitstd/algorithm.h"
 
+// Represents a list of statements; this is the result of assignment decomposition.
 class DecompositionStatementList
 {
     GenTree* m_head = nullptr;
@@ -24,92 +28,1012 @@ public:
 
         for (GenTree* cur = m_head->gtNext; cur != nullptr; cur = cur->gtNext)
         {
-            tree = comp->gtNewOperNode(GT_COMMA, tree->TypeGet(), cur, tree);
+            tree = comp->gtNewOperNode(GT_COMMA, TYP_VOID, cur, tree);
         }
 
         return tree;
     }
 };
 
-//------------------------------------------------------------------------
-// HandleAssignment:
-//   Handle an assignment that may be between struct locals with replacements.
-//
-// Parameters:
-//   asg - The assignment
-//   user - The user of the assignment.
-//
-void ReplaceVisitor::HandleAssignment(GenTree** use, GenTree* user)
+// Represents a plan for decomposing a block operation into direct treatment of
+// replacement fields and the remainder.
+class DecompositionPlan
 {
-    GenTreeOp* asg = (*use)->AsOp();
-
-    if (!asg->gtGetOp1()->TypeIs(TYP_STRUCT))
+    struct Entry
     {
-        return;
+        unsigned     ToLclNum;
+        Replacement* ToReplacement;
+        unsigned     FromLclNum;
+        Replacement* FromReplacement;
+        unsigned     Offset;
+        var_types    Type;
+    };
+
+    Compiler*                       m_compiler;
+    jitstd::vector<AggregateInfo*>& m_aggregates;
+    PromotionLiveness*              m_liveness;
+    GenTree*                        m_store;
+    GenTree*                        m_src;
+    bool                            m_dstInvolvesReplacements;
+    bool                            m_srcInvolvesReplacements;
+    ArrayStack<Entry>               m_entries;
+    bool                            m_hasNonRemainderUseOfStructLocal = false;
+
+public:
+    DecompositionPlan(Compiler*                       comp,
+                      jitstd::vector<AggregateInfo*>& aggregates,
+                      PromotionLiveness*              liveness,
+                      GenTree*                        store,
+                      GenTree*                        src,
+                      bool                            dstInvolvesReplacements,
+                      bool                            srcInvolvesReplacements)
+        : m_compiler(comp)
+        , m_aggregates(aggregates)
+        , m_liveness(liveness)
+        , m_store(store)
+        , m_src(src)
+        , m_dstInvolvesReplacements(dstInvolvesReplacements)
+        , m_srcInvolvesReplacements(srcInvolvesReplacements)
+        , m_entries(comp->getAllocator(CMK_Promotion))
+    {
     }
 
-    GenTree* dst = asg->gtGetOp1();
-    assert(!dst->OperIs(GT_COMMA));
-
-    GenTree* src = asg->gtGetOp2()->gtEffectiveVal();
-
-    Replacement* dstFirstRep             = nullptr;
-    Replacement* dstEndRep               = nullptr;
-    bool         dstInvolvesReplacements = asg->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
-                                   OverlappingReplacements(dst->AsLclVarCommon(), &dstFirstRep, &dstEndRep);
-    Replacement* srcFirstRep             = nullptr;
-    Replacement* srcEndRep               = nullptr;
-    bool         srcInvolvesReplacements = asg->gtGetOp2()->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
-                                   OverlappingReplacements(src->AsLclVarCommon(), &srcFirstRep, &srcEndRep);
-
-    if (!dstInvolvesReplacements && !srcInvolvesReplacements)
+    //------------------------------------------------------------------------
+    // CopyBetweenReplacements:
+    //   Add an entry specifying to copy from a replacement into another replacement.
+    //
+    // Parameters:
+    //   dstRep - The destination replacement.
+    //   srcRep - The source replacement.
+    //   offset - The offset this covers in the struct copy.
+    //   type   - The type of copy.
+    //
+    void CopyBetweenReplacements(Replacement* dstRep, Replacement* srcRep, unsigned offset)
     {
-        return;
+        m_entries.Push(Entry{dstRep->LclNum, dstRep, srcRep->LclNum, srcRep, offset, dstRep->AccessType});
     }
 
-    JITDUMP("Processing block operation [%06u] that involves replacements\n", Compiler::dspTreeID(asg));
-
-    if (dstInvolvesReplacements && (src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK) || src->IsConstInitVal()))
+    //------------------------------------------------------------------------
+    // CopyBetweenReplacements:
+    //   Add an entry specifying to copy from a promoted field into a replacement.
+    //
+    // Parameters:
+    //   dstRep - The destination replacement.
+    //   srcLcl - Local number of regularly promoted source field.
+    //   offset - The offset this covers in the struct copy.
+    //   type   - The type of copy.
+    //
+    // Remarks:
+    //   Used when the source local is a regular promoted field.
+    //
+    void CopyBetweenReplacements(Replacement* dstRep, unsigned srcLcl, unsigned offset)
     {
-        DecompositionStatementList result;
-        EliminateCommasInBlockOp(asg, &result);
+        m_entries.Push(Entry{dstRep->LclNum, dstRep, srcLcl, nullptr, offset, dstRep->AccessType});
+    }
 
-        if (dstInvolvesReplacements && srcInvolvesReplacements)
+    //------------------------------------------------------------------------
+    // CopyBetweenReplacements:
+    //   Add an entry specifying to copy from a replacement into a promoted field.
+    //
+    // Parameters:
+    //   dstRep - The destination replacement.
+    //   srcLcl - Local number of regularly promoted source field.
+    //   offset - The offset this covers in the struct copy.
+    //   type   - The type of copy.
+    //
+    // Remarks:
+    //   Used when the destination local is a regular promoted field.
+    //
+    void CopyBetweenReplacements(unsigned dstLcl, Replacement* srcRep, unsigned offset)
+    {
+        m_entries.Push(Entry{dstLcl, nullptr, srcRep->LclNum, srcRep, offset, srcRep->AccessType});
+    }
+
+    //------------------------------------------------------------------------
+    // CopyToReplacement:
+    //   Add an entry specifying to copy from the source into a replacement local.
+    //
+    // Parameters:
+    //   dstLcl - The destination local to write.
+    //   offset - The relative offset into the source.
+    //   type   - The type of copy.
+    //
+    void CopyToReplacement(Replacement* dstRep, unsigned offset)
+    {
+        m_entries.Push(Entry{dstRep->LclNum, dstRep, BAD_VAR_NUM, nullptr, offset, dstRep->AccessType});
+    }
+
+    //------------------------------------------------------------------------
+    // CopyFromReplacement:
+    //   Add an entry specifying to copy from a replacement local into the destination.
+    //
+    // Parameters:
+    //   srcLcl - The source local to copy from.
+    //   offset - The relative offset into the destination to write.
+    //   type   - The type of copy.
+    //
+    void CopyFromReplacement(Replacement* srcRep, unsigned offset)
+    {
+        m_entries.Push(Entry{BAD_VAR_NUM, nullptr, srcRep->LclNum, srcRep, offset, srcRep->AccessType});
+    }
+
+    //------------------------------------------------------------------------
+    // InitReplacement:
+    //   Add an entry specifying that a specified replacement local should be
+    //   constant initialized.
+    //
+    // Parameters:
+    //   dstLcl - The destination local.
+    //   offset - The offset covered by this initialization.
+    //   type   - The type to initialize.
+    //
+    void InitReplacement(Replacement* dstRep, unsigned offset)
+    {
+        m_entries.Push(Entry{dstRep->LclNum, dstRep, BAD_VAR_NUM, nullptr, offset, dstRep->AccessType});
+    }
+
+    //------------------------------------------------------------------------
+    // MarkNonRemainderUseOfStructLocal:
+    //   Mark that some of the destination replacements are being handled via a
+    //   readback. This invalidates liveness information for the remainder
+    //   because the struct local will now also be used for the readback.
+    //
+    void MarkNonRemainderUseOfStructLocal()
+    {
+        m_hasNonRemainderUseOfStructLocal = true;
+    }
+
+    //------------------------------------------------------------------------
+    // Finalize:
+    //   Create IR to perform the full decomposed struct copy as specified by
+    //   the entries that were added to the decomposition plan. Add the
+    //   statements to the specified list.
+    //
+    // Parameters:
+    //   statements - The list of statements to add to.
+    //
+    void Finalize(DecompositionStatementList* statements)
+    {
+        if (IsInit())
         {
-            JITDUMP("Copy [%06u] is between two physically promoted locals with replacements\n",
-                    Compiler::dspTreeID(asg));
-            JITDUMP("*** Conservative: Phys<->phys copies not yet supported; inserting conservative write-back\n");
-            for (Replacement* rep = srcFirstRep; rep < srcEndRep; rep++)
+            FinalizeInit(statements);
+        }
+        else
+        {
+            FinalizeCopy(statements);
+        }
+    }
+
+    //------------------------------------------------------------------------
+    // CanInitPrimitive:
+    //   Check if we can handle initializing a primitive of the specified type.
+    //   For example, we cannot directly initialize SIMD types to non-zero
+    //   constants.
+    //
+    // Parameters:
+    //   type - The primitive type
+    //
+    // Returns:
+    //   True if so.
+    //
+    bool CanInitPrimitive(var_types type)
+    {
+        assert(IsInit());
+        if (varTypeIsGC(type) || varTypeIsSIMD(type))
+        {
+            return GetInitPattern() == 0;
+        }
+
+        return true;
+    }
+
+private:
+    //------------------------------------------------------------------------
+    // IsInit:
+    //   Check if this is an init block operation.
+    //
+    // Returns:
+    //   True if so.
+    //
+    bool IsInit()
+    {
+        return m_src->IsConstInitVal();
+    }
+
+    //------------------------------------------------------------------------
+    // GetInitPattern:
+    //   For an init block operation, get the pattern to init with.
+    //
+    // Returns:
+    //   Byte pattern.
+    //
+    uint8_t GetInitPattern()
+    {
+        assert(IsInit());
+        GenTree* cns = m_src->OperIsInitVal() ? m_src->gtGetOp1() : m_src;
+        return uint8_t(cns->AsIntCon()->IconValue() & 0xFF);
+    }
+
+    //------------------------------------------------------------------------
+    // ComputeRemainder:
+    //   Compute the remainder of the block operation that needs to be inited
+    //   or copied after the replacements stored in the plan have been handled.
+    //
+    // Returns:
+    //   Segments representing the remainder.
+    //
+    // Remarks:
+    //   This function takes into account that insignificant padding does not
+    //   need to be considered part of the remainder. For example, the last 4
+    //   bytes of Span<T> on 64-bit are not returned as the remainder.
+    //
+    StructSegments ComputeRemainder()
+    {
+        ClassLayout* dstLayout = m_store->GetLayout(m_compiler);
+
+        // Validate with "obviously correct" but less scalable fixed bit vector implementation.
+        INDEBUG(FixedBitVect * segmentBitVect);
+        StructSegments segments = Promotion::SignificantSegments(m_compiler, dstLayout DEBUGARG(&segmentBitVect));
+
+        for (int i = 0; i < m_entries.Height(); i++)
+        {
+            const Entry& entry = m_entries.BottomRef(i);
+
+            segments.Subtract(StructSegments::Segment(entry.Offset, entry.Offset + genTypeSize(entry.Type)));
+
+#ifdef DEBUG
+            for (unsigned i = 0; i < genTypeSize(entry.Type); i++)
+                segmentBitVect->bitVectClear(entry.Offset + i);
+#endif
+        }
+
+#ifdef DEBUG
+        segments.Check(segmentBitVect);
+
+        if (m_compiler->verbose)
+        {
+            printf("  Remainder: ");
+            segments.Dump();
+            printf("\n");
+        }
+#endif
+
+        return segments;
+    }
+
+    // Represents the strategy for handling the remainder part of the block
+    // operation.
+    struct RemainderStrategy
+    {
+        enum
+        {
+            NoRemainder,
+            Primitive,
+            FullBlock,
+        };
+
+        int       Type;
+        unsigned  PrimitiveOffset;
+        var_types PrimitiveType;
+
+        RemainderStrategy(int type, unsigned primitiveOffset = 0, var_types primitiveType = TYP_UNDEF)
+            : Type(type), PrimitiveOffset(primitiveOffset), PrimitiveType(primitiveType)
+        {
+        }
+    };
+
+    //------------------------------------------------------------------------
+    // DetermineRemainderStrategy:
+    //   Determine the strategy to use to handle the remaining parts of the struct
+    //   once replacements have been handled.
+    //
+    // Returns:
+    //   Type describing how it should be handled; for example, by a full block
+    //   copy (that may be redundant with some of the replacements, but covers
+    //   the rest of the remainder); or by handling a specific 'hole' as a
+    //   primitive.
+    //
+    RemainderStrategy DetermineRemainderStrategy(const StructDeaths& dstDeaths)
+    {
+        if (m_dstInvolvesReplacements && !m_hasNonRemainderUseOfStructLocal && dstDeaths.IsRemainderDying())
+        {
+            JITDUMP("  => Remainder strategy: do nothing (remainder dying)\n");
+            return RemainderStrategy(RemainderStrategy::NoRemainder);
+        }
+
+        StructSegments remainder = ComputeRemainder();
+        if (remainder.IsEmpty())
+        {
+            JITDUMP("  => Remainder strategy: do nothing (no remainder)\n");
+            return RemainderStrategy(RemainderStrategy::NoRemainder);
+        }
+
+        StructSegments::Segment segment;
+        // See if we can "plug the hole" with a single primitive.
+        if (remainder.IsSingleSegment(&segment))
+        {
+            var_types primitiveType = TYP_UNDEF;
+            unsigned  size          = segment.End - segment.Start;
+            if ((size == TARGET_POINTER_SIZE) && ((segment.Start % TARGET_POINTER_SIZE) == 0))
             {
-                if (rep->NeedsWriteBack)
+                ClassLayout* dstLayout = m_store->GetLayout(m_compiler);
+                primitiveType          = dstLayout->GetGCPtrType(segment.Start / TARGET_POINTER_SIZE);
+            }
+            else
+            {
+                switch (size)
                 {
-                    result.AddStatement(
-                        Promotion::CreateWriteBack(m_compiler, src->AsLclVarCommon()->GetLclNum(), *rep));
-                    rep->NeedsWriteBack = false;
+                    case 1:
+                        primitiveType = TYP_UBYTE;
+                        break;
+                    case 2:
+                        primitiveType = TYP_USHORT;
+                        break;
+                    case 4:
+                        primitiveType = TYP_INT;
+                        break;
+#ifdef TARGET_64BIT
+                    case 8:
+                        primitiveType = TYP_LONG;
+                        break;
+#endif
+
+                        // TODO-CQ: SIMD sizes
                 }
             }
 
-            srcInvolvesReplacements = false;
+            if (primitiveType != TYP_UNDEF)
+            {
+                if (!IsInit() || CanInitPrimitive(primitiveType))
+                {
+                    JITDUMP("  => Remainder strategy: %s at +%03u\n", varTypeName(primitiveType), segment.Start);
+                    return RemainderStrategy(RemainderStrategy::Primitive, segment.Start, primitiveType);
+                }
+                else
+                {
+                    JITDUMP("  Cannot handle initing remainder as primitive of type %s\n", varTypeName(primitiveType));
+                }
+            }
         }
+
+        JITDUMP("  => Remainder strategy: retain a full block op\n");
+        return RemainderStrategy(RemainderStrategy::FullBlock);
+    }
+
+    //------------------------------------------------------------------------
+    // FinalizeInit:
+    //   Create IR to perform the decomposed initialization.
+    //
+    // Parameters:
+    //   statements - List to add statements to.
+    //
+    void FinalizeInit(DecompositionStatementList* statements)
+    {
+        uint8_t      initPattern = GetInitPattern();
+        StructDeaths deaths      = m_liveness->GetDeathsForStructLocal(m_store->AsLclVarCommon());
+
+        AggregateInfo* agg = m_aggregates[m_store->AsLclVarCommon()->GetLclNum()];
+        assert((agg != nullptr) && (agg->Replacements.size() > 0));
+        Replacement* firstRep = agg->Replacements.data();
+
+        for (int i = 0; i < m_entries.Height(); i++)
+        {
+            const Entry& entry = m_entries.BottomRef(i);
+
+            assert((entry.ToLclNum != BAD_VAR_NUM) && (entry.ToReplacement != nullptr));
+            assert((entry.ToReplacement >= firstRep) && (entry.ToReplacement < firstRep + agg->Replacements.size()));
+            size_t replacementIndex = entry.ToReplacement - firstRep;
+
+            if (!deaths.IsReplacementDying((unsigned)replacementIndex))
+            {
+                GenTree* value = m_compiler->gtNewConWithPattern(entry.Type, initPattern);
+                GenTree* store = m_compiler->gtNewStoreLclVarNode(entry.ToLclNum, value);
+                statements->AddStatement(store);
+            }
+
+            entry.ToReplacement->NeedsWriteBack = true;
+            entry.ToReplacement->NeedsReadBack  = false;
+        }
+
+        RemainderStrategy remainderStrategy = DetermineRemainderStrategy(deaths);
+        if (remainderStrategy.Type == RemainderStrategy::FullBlock)
+        {
+            statements->AddStatement(m_store);
+        }
+        else if (remainderStrategy.Type == RemainderStrategy::Primitive)
+        {
+            GenTree*             value  = m_compiler->gtNewConWithPattern(remainderStrategy.PrimitiveType, initPattern);
+            GenTreeLclVarCommon* dstLcl = m_store->AsLclVarCommon();
+            GenTree*             store =
+                m_compiler->gtNewStoreLclFldNode(dstLcl->GetLclNum(), remainderStrategy.PrimitiveType,
+                                                 dstLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset, value);
+            m_compiler->lvaSetVarDoNotEnregister(dstLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+            statements->AddStatement(store);
+        }
+    }
+
+    //------------------------------------------------------------------------
+    // FinalizeCopy:
+    //   Create IR to perform the decomposed copy.
+    //
+    // Parameters:
+    //   statements - List to add statements to.
+    //
+    void FinalizeCopy(DecompositionStatementList* statements)
+    {
+        assert(m_store->OperIs(GT_STORE_LCL_VAR, GT_STORE_LCL_FLD, GT_STORE_BLK) &&
+               m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK));
+
+        StructDeaths dstDeaths;
+        if (m_dstInvolvesReplacements)
+        {
+            dstDeaths = m_liveness->GetDeathsForStructLocal(m_store->AsLclVarCommon());
+        }
+
+        RemainderStrategy remainderStrategy = DetermineRemainderStrategy(dstDeaths);
+
+        // If the remainder is a full block and is going to incur write barrier
+        // then avoid incurring multiple write barriers for each source
+        // replacement that is a GC pointer -- write them back to the struct
+        // first instead. That is, instead of:
+        //
+        //   ▌  COMMA     void
+        //   ├──▌  STORE_BLK struct<Program+S, 32>        <- write barrier
+        //   │  ├──▌  LCL_VAR   byref  V01 arg1
+        //   │  └──▌  LCL_VAR   struct<Program+S, 32> V00 arg0
+        //   └──▌  COMMA     void
+        //      ├──▌  STOREIND ref                        <- write barrier
+        //      │  ├───▌  ADD       byref
+        //      │  │   ├──▌  LCL_VAR   byref  V01 arg1
+        //      │  │   └──▌  CNS_INT   long   8
+        //      │  └──▌  LCL_VAR   ref    V05 tmp3
+        //      └──▌  STOREIND   ref                      <- write barrier
+        //         ├──▌  ADD       byref
+        //         │  ├──▌  LCL_VAR   byref  V01 arg1
+        //         │  └──▌  CNS_INT   long   24
+        //         └──▌  LCL_VAR   ref    V06 tmp4
+        //
+        // Produce:
+        //
+        //   ▌  COMMA     void
+        //   ├──▌  STORE_LCL_FLD ref    V00 arg0         [+8]   <- no write barrier
+        //   │  └──▌  LCL_VAR   ref    V05 tmp3
+        //   └──▌  COMMA     void
+        //      ├──▌  STORE_LCL_FLD ref    V00 arg0      [+24]  <- no write barrier
+        //      │  └──▌  LCL_VAR   ref    V06 tmp4
+        //      └──▌  STORE_BLK struct<Program+S, 32>           <- write barrier
+        //         ├──▌  LCL_VAR   byref  V01 arg1          (last use)
+        //         └──▌  LCL_VAR   struct<Program+S, 32> V00 arg0
+        //
+        if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && m_store->OperIs(GT_STORE_BLK) &&
+            m_store->AsBlk()->GetLayout()->HasGCPtr())
+        {
+            for (int i = 0; i < m_entries.Height(); i++)
+            {
+                const Entry& entry = m_entries.BottomRef(i);
+                if ((entry.FromReplacement != nullptr) && (entry.Type == TYP_REF))
+                {
+                    Replacement* rep = entry.FromReplacement;
+                    if (rep->NeedsWriteBack)
+                    {
+                        statements->AddStatement(
+                            Promotion::CreateWriteBack(m_compiler, m_src->AsLclVarCommon()->GetLclNum(), *rep));
+                        JITDUMP("  Will write back V%02u (%s) to avoid an additional write barrier\n", rep->LclNum,
+                                rep->Description);
+
+                        // The loop below will skip these replacements as an
+                        // optimization if it is going to copy the struct
+                        // anyway.
+                        rep->NeedsWriteBack = false;
+                    }
+                }
+            }
+        }
+
+        GenTree*       addr               = nullptr;
+        target_ssize_t addrBaseOffs       = 0;
+        FieldSeq*      addrBaseOffsFldSeq = nullptr;
+        GenTreeFlags   indirFlags         = GTF_EMPTY;
+
+        if (m_store->OperIs(GT_STORE_BLK))
+        {
+            addr = m_store->AsIndir()->Addr();
+            indirFlags =
+                m_store->gtFlags & (GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INITCLASS);
+        }
+        else if (m_src->OperIs(GT_BLK))
+        {
+            addr = m_src->AsIndir()->Addr();
+            indirFlags =
+                m_src->gtFlags & (GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INITCLASS);
+        }
+
+        int numAddrUses = 0;
+
+        if (addr != nullptr)
+        {
+            for (int i = 0; i < m_entries.Height(); i++)
+            {
+                if (!CanSkipEntry(m_entries.BottomRef(i), dstDeaths, remainderStrategy))
+                {
+                    numAddrUses++;
+                }
+            }
+
+            if (remainderStrategy.Type != RemainderStrategy::NoRemainder)
+            {
+                numAddrUses++;
+            }
+        }
+
+        bool needsNullCheck = false;
+        if ((addr != nullptr) && m_compiler->fgAddrCouldBeNull(addr))
+        {
+            switch (remainderStrategy.Type)
+            {
+                case RemainderStrategy::NoRemainder:
+                case RemainderStrategy::Primitive:
+                    needsNullCheck = true;
+                    // See if our first indirection will subsume the null check (usual case).
+                    for (int i = 0; i < m_entries.Height(); i++)
+                    {
+                        if (CanSkipEntry(m_entries.BottomRef(i), dstDeaths, remainderStrategy))
+                        {
+                            continue;
+                        }
+
+                        const Entry& entry = m_entries.BottomRef(i);
+
+                        assert((entry.FromLclNum == BAD_VAR_NUM) || (entry.ToLclNum == BAD_VAR_NUM));
+                        needsNullCheck = m_compiler->fgIsBigOffset(entry.Offset);
+                        break;
+                    }
+                    break;
+            }
+        }
+
+        if (needsNullCheck)
+        {
+            numAddrUses++;
+        }
+
+        if ((addr != nullptr) && (numAddrUses > 1))
+        {
+            m_compiler->gtPeelOffsets(&addr, &addrBaseOffs, &addrBaseOffsFldSeq);
+
+            if (CanReuseAddressForDecomposedStore(addr))
+            {
+                if (addr->OperIsLocalRead())
+                {
+                    // We will introduce more uses of the address local, so it is
+                    // no longer dying here.
+                    addr->gtFlags &= ~GTF_VAR_DEATH;
+                }
+            }
+            else
+            {
+                unsigned addrLcl = m_compiler->lvaGrabTemp(true DEBUGARG("Spilling address for field-by-field copy"));
+                statements->AddStatement(m_compiler->gtNewTempStore(addrLcl, addr));
+                addr = m_compiler->gtNewLclvNode(addrLcl, addr->TypeGet());
+            }
+        }
+
+        auto grabAddr = [=, &numAddrUses](unsigned offs) {
+            assert(numAddrUses > 0);
+            numAddrUses--;
+
+            GenTree* addrUse;
+            if (numAddrUses == 0)
+            {
+                // Last use of the address, reuse the node.
+                addrUse = addr;
+            }
+            else
+            {
+                addrUse = m_compiler->gtCloneExpr(addr);
+            }
+
+            target_ssize_t fullOffs = addrBaseOffs + (target_ssize_t)offs;
+            if ((fullOffs != 0) || (addrBaseOffsFldSeq != nullptr))
+            {
+                GenTreeIntCon* offsetNode = m_compiler->gtNewIconNode(fullOffs, TYP_I_IMPL);
+                offsetNode->gtFieldSeq    = addrBaseOffsFldSeq;
+
+                var_types addrType = varTypeIsGC(addrUse) ? TYP_BYREF : TYP_I_IMPL;
+                addrUse            = m_compiler->gtNewOperNode(GT_ADD, addrType, addrUse, offsetNode);
+            }
+
+            return addrUse;
+        };
+
+        if (remainderStrategy.Type == RemainderStrategy::FullBlock)
+        {
+            // We will reuse the existing block op. Rebase the address off of the new local we created.
+            if (m_src->OperIs(GT_BLK))
+            {
+                m_src->AsIndir()->Addr() = grabAddr(0);
+            }
+            else if (m_store->OperIs(GT_STORE_BLK))
+            {
+                m_store->AsIndir()->Addr() = grabAddr(0);
+            }
+        }
+
+        // If the source involves replacements then do the struct op first --
+        // we would overwrite the destination with stale bits if we did it last.
+        // If the source does not involve replacements then CQ analysis shows
+        // that it's best to do it last.
+        if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && m_srcInvolvesReplacements)
+        {
+            statements->AddStatement(m_store);
+
+            if (m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+            {
+                // We will introduce uses of the source below so this struct
+                // copy is no longer the last use if it was before.
+                m_src->gtFlags &= ~GTF_VAR_DEATH;
+            }
+        }
+
+        if (needsNullCheck)
+        {
+            GenTreeIndir* indir = m_compiler->gtNewIndir(TYP_BYTE, grabAddr(0));
+            PropagateIndirFlags(indir, indirFlags);
+            statements->AddStatement(indir);
+        }
+
+        StructDeaths srcDeaths;
+        if (m_srcInvolvesReplacements)
+        {
+            srcDeaths = m_liveness->GetDeathsForStructLocal(m_src->AsLclVarCommon());
+        }
+
+        for (int i = 0; i < m_entries.Height(); i++)
+        {
+            const Entry& entry = m_entries.BottomRef(i);
+
+            if (entry.ToReplacement != nullptr)
+            {
+                entry.ToReplacement->NeedsWriteBack = true;
+                entry.ToReplacement->NeedsReadBack  = false;
+            }
+
+            if (CanSkipEntry(entry, dstDeaths, remainderStrategy))
+            {
+                if (entry.FromReplacement != nullptr)
+                {
+                    JITDUMP(
+                        "  Skipping dst+%03u <- V%02u (%s); it is up-to-date in its struct local and will be handled "
+                        "as part of the remainder\n",
+                        entry.Offset, entry.FromReplacement->LclNum, entry.FromReplacement->Description);
+                }
+                else if (entry.ToReplacement != nullptr)
+                {
+                    JITDUMP("  Skipping def of V%02u (%s); it is dying", entry.ToReplacement->LclNum,
+                            entry.ToReplacement->Description);
+                }
+
+                continue;
+            }
+
+            GenTree* src;
+            if (entry.FromLclNum != BAD_VAR_NUM)
+            {
+                src = m_compiler->gtNewLclvNode(entry.FromLclNum, entry.Type);
+
+                if (entry.FromReplacement != nullptr)
+                {
+                    AggregateInfo* srcAgg   = m_aggregates[m_src->AsLclVarCommon()->GetLclNum()];
+                    Replacement*   firstRep = srcAgg->Replacements.data();
+                    assert((entry.FromReplacement >= firstRep) &&
+                           (entry.FromReplacement < (firstRep + srcAgg->Replacements.size())));
+                    size_t replacementIndex = entry.FromReplacement - firstRep;
+                    if (srcDeaths.IsReplacementDying((unsigned)replacementIndex))
+                    {
+                        src->gtFlags |= GTF_VAR_DEATH;
+                    }
+                }
+            }
+            else if (m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+            {
+                unsigned offs = m_src->AsLclVarCommon()->GetLclOffs() + entry.Offset;
+                // Local morph ensures we do not see local indirs here that dereference beyond UINT16_MAX.
+                noway_assert(FitsIn<uint16_t>(offs));
+                src = m_compiler->gtNewLclFldNode(m_src->AsLclVarCommon()->GetLclNum(), entry.Type, offs);
+                m_compiler->lvaSetVarDoNotEnregister(m_src->AsLclVarCommon()->GetLclNum()
+                                                         DEBUGARG(DoNotEnregisterReason::LocalField));
+            }
+            else
+            {
+                GenTree* addr = grabAddr(entry.Offset);
+                src           = m_compiler->gtNewIndir(entry.Type, addr);
+                PropagateIndirFlags(src, indirFlags);
+            }
+
+            GenTree* store;
+            if (entry.ToLclNum != BAD_VAR_NUM)
+            {
+                store = m_compiler->gtNewStoreLclVarNode(entry.ToLclNum, src);
+            }
+            else if (m_store->OperIsLocalStore())
+            {
+                unsigned offs = m_store->AsLclVarCommon()->GetLclOffs() + entry.Offset;
+                // Local morph ensures we do not see local indirs here that dereference beyond UINT16_MAX.
+                noway_assert(FitsIn<uint16_t>(offs));
+                store = m_compiler->gtNewStoreLclFldNode(m_store->AsLclVarCommon()->GetLclNum(), entry.Type, offs, src);
+                m_compiler->lvaSetVarDoNotEnregister(m_store->AsLclVarCommon()->GetLclNum()
+                                                         DEBUGARG(DoNotEnregisterReason::LocalField));
+            }
+            else
+            {
+                GenTree* addr = grabAddr(entry.Offset);
+                store         = m_compiler->gtNewStoreIndNode(entry.Type, addr, src);
+                PropagateIndirFlags(store, indirFlags);
+            }
+
+            statements->AddStatement(store);
+        }
+
+        if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && !m_srcInvolvesReplacements)
+        {
+            statements->AddStatement(m_store);
+        }
+
+        if (remainderStrategy.Type == RemainderStrategy::Primitive)
+        {
+            GenTree* src;
+            if (m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+            {
+                GenTreeLclVarCommon* srcLcl = m_src->AsLclVarCommon();
+                src = m_compiler->gtNewLclFldNode(srcLcl->GetLclNum(), remainderStrategy.PrimitiveType,
+                                                  srcLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset);
+                m_compiler->lvaSetVarDoNotEnregister(srcLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+            }
+            else
+            {
+                src = m_compiler->gtNewIndir(remainderStrategy.PrimitiveType,
+                                             grabAddr(remainderStrategy.PrimitiveOffset));
+                PropagateIndirFlags(src, indirFlags);
+            }
+
+            GenTree* store;
+            if (m_store->OperIsLocalStore())
+            {
+                GenTreeLclVarCommon* dstLcl = m_store->AsLclVarCommon();
+                store = m_compiler->gtNewStoreLclFldNode(dstLcl->GetLclNum(), remainderStrategy.PrimitiveType,
+                                                         dstLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset, src);
+                m_compiler->lvaSetVarDoNotEnregister(dstLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+            }
+            else
+            {
+                store = m_compiler->gtNewStoreIndNode(remainderStrategy.PrimitiveType,
+                                                      grabAddr(remainderStrategy.PrimitiveOffset), src);
+                PropagateIndirFlags(store, indirFlags);
+            }
+
+            statements->AddStatement(store);
+        }
+
+        assert(numAddrUses == 0);
+    }
+
+    //------------------------------------------------------------------------
+    // CanSkipEntry:
+    //   Check if the specified entry can be skipped because it is writing to a
+    //   death replacement or because the remainder would handle it anyway.
+    //
+    // Parameters:
+    //   entry             - The init/copy entry
+    //   remainderStrategy - The strategy we are using for the remainder
+    //
+    bool CanSkipEntry(const Entry& entry, const StructDeaths& deaths, const RemainderStrategy& remainderStrategy)
+    {
+        if (entry.ToReplacement != nullptr)
+        {
+            // Check if this entry is dying anyway.
+            assert(m_dstInvolvesReplacements);
+
+            AggregateInfo* agg = m_aggregates[m_store->AsLclVarCommon()->GetLclNum()];
+            assert((agg != nullptr) && (agg->Replacements.size() > 0));
+            Replacement* firstRep = agg->Replacements.data();
+            assert((entry.ToReplacement >= firstRep) && (entry.ToReplacement < (firstRep + agg->Replacements.size())));
+
+            size_t replacementIndex = entry.ToReplacement - firstRep;
+            if (deaths.IsReplacementDying((unsigned)replacementIndex))
+            {
+                return true;
+            }
+        }
+
+        if (entry.FromReplacement != nullptr)
+        {
+            // Check if the remainder is going to handle it.
+            return (remainderStrategy.Type == RemainderStrategy::FullBlock) && !entry.FromReplacement->NeedsWriteBack &&
+                   (entry.ToLclNum == BAD_VAR_NUM);
+        }
+
+        return false;
+    }
+
+    //------------------------------------------------------------------------
+    // CanReuseAddressForDecomposedStore: Check if it is safe to reuse the
+    // specified address node for each decomposed store of a block copy.
+    //
+    // Arguments:
+    //   addrNode - The address node
+    //
+    // Return Value:
+    //   True if the caller can reuse the address by cloning.
+    //
+    bool CanReuseAddressForDecomposedStore(GenTree* addrNode)
+    {
+        if (addrNode->OperIsLocalRead())
+        {
+            GenTreeLclVarCommon* lcl    = addrNode->AsLclVarCommon();
+            unsigned             lclNum = lcl->GetLclNum();
+            if (m_compiler->lvaGetDesc(lclNum)->IsAddressExposed())
+            {
+                // Address could be pointing to itself
+                return false;
+            }
+
+            // If we aren't writing a local here then since the address is not
+            // exposed it cannot change.
+            if (!m_store->OperIsLocalStore())
+            {
+                return true;
+            }
+
+            // Otherwise it could still be possible that the address is part of
+            // the struct we're writing.
+            unsigned dstLclNum = m_store->AsLclVarCommon()->GetLclNum();
+            if (lclNum == dstLclNum)
+            {
+                return false;
+            }
+
+            // It could also be one of the replacement locals we're going to write.
+            for (int i = 0; i < m_entries.Height(); i++)
+            {
+                if (m_entries.BottomRef(i).ToLclNum == lclNum)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return addrNode->IsInvariant();
+    }
+
+    //------------------------------------------------------------------------
+    // PropagateIndirFlags:
+    //   Propagate the specified flags to a GT_IND node.
+    //
+    // Parameters:
+    //   indir - The indirection to apply flags to
+    //   flags - The specified indirection flags.
+    //
+    void PropagateIndirFlags(GenTree* indir, GenTreeFlags flags)
+    {
+        if (genTypeSize(indir) == 1)
+        {
+            flags &= ~GTF_IND_UNALIGNED;
+        }
+
+        indir->gtFlags |= flags;
+    }
+};
+
+//------------------------------------------------------------------------
+// gtPeelOffsets: Peel all ADD(addr, CNS_INT(x)) nodes off the specified address
+// node and return the base node and sum of offsets peeled.
+//
+// Arguments:
+//   addr   - [in, out] The address node.
+//   offset - [out] The sum of offset peeled such that ADD(addr, offset) is equivalent to the original addr.
+//   fldSeq - [out] The combined field sequence for all the peeled offsets.
+//
+void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq)
+{
+    assert((*addr)->TypeIs(TYP_I_IMPL, TYP_BYREF, TYP_REF));
+    *offset = 0;
+    *fldSeq = nullptr;
+    while ((*addr)->OperIs(GT_ADD) && !(*addr)->gtOverflow())
+    {
+        GenTree* op1 = (*addr)->gtGetOp1();
+        GenTree* op2 = (*addr)->gtGetOp2();
+
+        if (op2->IsCnsIntOrI() && !op2->AsIntCon()->IsIconHandle())
+        {
+            assert(op2->TypeIs(TYP_I_IMPL));
+            GenTreeIntCon* intCon = op2->AsIntCon();
+            *offset += (target_ssize_t)intCon->IconValue();
+            *fldSeq = m_fieldSeqStore->Append(*fldSeq, intCon->gtFieldSeq);
+            *addr   = op1;
+        }
+        else if (op1->IsCnsIntOrI() && !op1->AsIntCon()->IsIconHandle())
+        {
+            assert(op1->TypeIs(TYP_I_IMPL));
+            GenTreeIntCon* intCon = op1->AsIntCon();
+            *offset += (target_ssize_t)intCon->IconValue();
+            *fldSeq = m_fieldSeqStore->Append(intCon->gtFieldSeq, *fldSeq);
+            *addr   = op2;
+        }
+        else
+        {
+            break;
+        }
+    }
+}
+
+// HandleStore:
+//   Handle a store that may be between struct locals with replacements.
+//
+// Parameters:
+//   use  - The store's use
+//   user - The store's user
+//
+void ReplaceVisitor::HandleStore(GenTree** use, GenTree* user)
+{
+    GenTree* store = *use;
+
+    if (!store->TypeIs(TYP_STRUCT))
+    {
+        return;
+    }
+
+    GenTree*             src    = store->Data()->gtEffectiveVal();
+    GenTreeLclVarCommon* dstLcl = store->OperIsLocalStore() ? store->AsLclVarCommon() : nullptr;
+    GenTreeLclVarCommon* srcLcl = src->OperIs(GT_LCL_VAR, GT_LCL_FLD) ? src->AsLclVarCommon() : nullptr;
+
+    Replacement* dstFirstRep     = nullptr;
+    Replacement* dstEndRep       = nullptr;
+    bool dstInvolvesReplacements = (dstLcl != nullptr) && OverlappingReplacements(dstLcl, &dstFirstRep, &dstEndRep);
+    Replacement* srcFirstRep     = nullptr;
+    Replacement* srcEndRep       = nullptr;
+    bool srcInvolvesReplacements = (srcLcl != nullptr) && OverlappingReplacements(srcLcl, &srcFirstRep, &srcEndRep);
+
+    if (!dstInvolvesReplacements && !srcInvolvesReplacements)
+    {
+        // TODO-CQ: If the destination is an aggregate we can still use liveness
+        // information for the remainder to DCE this.
+        return;
+    }
+
+    JITDUMP("Processing block operation [%06u] that involves replacements\n", Compiler::dspTreeID(store));
+
+    if (src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK) || src->IsConstInitVal())
+    {
+        DecompositionStatementList result;
+        EliminateCommasInBlockOp(store, &result);
+
+        DecompositionPlan plan(m_compiler, m_aggregates, m_liveness, store, src, dstInvolvesReplacements,
+                               srcInvolvesReplacements);
 
         if (dstInvolvesReplacements)
         {
-            GenTreeLclVarCommon* dstLcl     = dst->AsLclVarCommon();
-            unsigned             dstLclOffs = dstLcl->GetLclOffs();
-            unsigned             dstLclSize = dstLcl->GetLayout(m_compiler)->GetSize();
-
+            unsigned dstLclOffs = dstLcl->GetLclOffs();
+            unsigned dstLclSize = dstLcl->GetLayout(m_compiler)->GetSize();
             if (dstFirstRep->Offset < dstLclOffs)
             {
-                JITDUMP("*** Block operation partially overlaps with %s. Write and read-backs are necessary.\n",
-                        dstFirstRep->Description);
-                // The value of the replacement will be partially assembled from its old value and this struct
-                // operation.
-                // We accomplish this by an initial write back, the struct copy, followed by a later read back.
-                // TODO-CQ: This is very expensive and unreflected in heuristics, but it is also very rare.
-                result.AddStatement(Promotion::CreateWriteBack(m_compiler, dstLcl->GetLclNum(), *dstFirstRep));
+                JITDUMP("*** Block operation partially overlaps with start replacement of destination V%02u (%s)\n",
+                        dstFirstRep->LclNum, dstFirstRep->Description);
 
-                dstFirstRep->NeedsWriteBack = false;
-                dstFirstRep->NeedsReadBack  = true;
+                if (dstFirstRep->NeedsWriteBack)
+                {
+                    // The value of the replacement will be partially assembled from its old value and this struct
+                    // operation.
+                    // We accomplish this by an initial write back, the struct copy, followed by a later read back.
+                    // TODO-CQ: This is expensive and unreflected in heuristics, but it is also very rare.
+                    result.AddStatement(Promotion::CreateWriteBack(m_compiler, dstLcl->GetLclNum(), *dstFirstRep));
+                    dstFirstRep->NeedsWriteBack = false;
+                }
+
+                plan.MarkNonRemainderUseOfStructLocal();
+                dstFirstRep->NeedsReadBack = true;
+                m_hasPendingReadBacks      = true;
                 dstFirstRep++;
             }
 
@@ -118,97 +1042,92 @@ void ReplaceVisitor::HandleAssignment(GenTree** use, GenTree* user)
                 Replacement* dstLastRep = dstEndRep - 1;
                 if (dstLastRep->Offset + genTypeSize(dstLastRep->AccessType) > dstLclOffs + dstLclSize)
                 {
-                    JITDUMP("*** Block operation partially overlaps with %s. Write and read-backs are necessary.\n",
-                            dstLastRep->Description);
-                    result.AddStatement(Promotion::CreateWriteBack(m_compiler, dstLcl->GetLclNum(), *dstLastRep));
+                    JITDUMP("*** Block operation partially overlaps with end replacement of destination V%02u (%s)\n",
+                            dstLastRep->LclNum, dstLastRep->Description);
 
-                    dstLastRep->NeedsWriteBack = false;
-                    dstLastRep->NeedsReadBack  = true;
+                    if (dstLastRep->NeedsWriteBack)
+                    {
+                        result.AddStatement(Promotion::CreateWriteBack(m_compiler, dstLcl->GetLclNum(), *dstLastRep));
+                        dstLastRep->NeedsWriteBack = false;
+                    }
+
+                    plan.MarkNonRemainderUseOfStructLocal();
+                    dstLastRep->NeedsReadBack = true;
+                    m_hasPendingReadBacks     = true;
                     dstEndRep--;
                 }
             }
+        }
 
-            if (src->IsConstInitVal())
-            {
-                GenTree* cns = src->OperIsInitVal() ? src->gtGetOp1() : src;
-                InitFieldByField(dstFirstRep, dstEndRep, static_cast<unsigned char>(cns->AsIntCon()->IconValue()),
-                                 &result);
-            }
-            else
-            {
-                CopyIntoFields(dstFirstRep, dstEndRep, dstLcl, src, &result);
-            }
+        if (srcInvolvesReplacements)
+        {
+            unsigned srcLclOffs = srcLcl->GetLclOffs();
+            unsigned srcLclSize = srcLcl->GetLayout(m_compiler)->GetSize();
 
-            // At this point all replacements that have Handled = true contain their correct value.
-            // Check if these cover the entire block operation.
-            unsigned prevEnd = dstLclOffs;
-            bool     covered = true;
-
-            for (Replacement* rep = dstFirstRep; rep < dstEndRep; rep++)
+            if (srcFirstRep->Offset < srcLclOffs)
             {
-                if (!rep->Handled)
+                JITDUMP("*** Block operation partially overlaps with start replacement of source V%02u (%s)\n",
+                        srcFirstRep->LclNum, srcFirstRep->Description);
+
+                if (srcFirstRep->NeedsWriteBack)
                 {
-                    covered = false;
-                    break;
+                    result.AddStatement(Promotion::CreateWriteBack(m_compiler, srcLcl->GetLclNum(), *srcFirstRep));
+                    srcFirstRep->NeedsWriteBack = false;
                 }
 
-                assert(rep->Offset >= prevEnd);
-                if (rep->Offset != prevEnd)
+                srcFirstRep++;
+            }
+
+            if (srcEndRep > srcFirstRep)
+            {
+                Replacement* srcLastRep = srcEndRep - 1;
+                if (srcLastRep->Offset + genTypeSize(srcLastRep->AccessType) > srcLclOffs + srcLclSize)
                 {
-                    // Uncovered hole from [lastEnd..rep->Offset).
-                    // TODO-CQ: In many cases it's more efficient to "plug" the holes. However,
-                    // it is made more complicated by the fact that the holes can contain GC pointers in them and
-                    // we cannot (yet) represent custom class layouts with GC pointers in them.
-                    // TODO-CQ: Many of these cases are just padding. We should handle structs with insignificant
-                    // padding here.
-                    covered = false;
-                    break;
+                    JITDUMP("*** Block operation partially overlaps with end replacement of source V%02u (%s)\n",
+                            srcLastRep->LclNum, srcLastRep->Description);
+
+                    if (srcLastRep->NeedsWriteBack)
+                    {
+                        result.AddStatement(Promotion::CreateWriteBack(m_compiler, srcLcl->GetLclNum(), *srcLastRep));
+                        srcLastRep->NeedsWriteBack = false;
+                    }
+
+                    srcEndRep--;
                 }
-
-                prevEnd = rep->Offset + genTypeSize(rep->AccessType);
             }
+        }
 
-            covered &= prevEnd == dstLclOffs + dstLclSize;
-
-            if (!covered)
-            {
-                JITDUMP("Struct operation is not fully covered by replaced fields. Keeping struct operation.\n");
-                result.AddStatement(asg);
-            }
-
-            // For unhandled replacements, mark that they will require a read back before their next access.
-            // Conversely, the replacements we handled above are now up to date and should not be read back.
-            // We also keep the invariant that Replacement::Handled == false, so reset it here as well.
-
-            for (Replacement* rep = dstFirstRep; rep < dstEndRep; rep++)
-            {
-                rep->NeedsReadBack  = !rep->Handled;
-                rep->NeedsWriteBack = rep->Handled;
-                rep->Handled        = false;
-            }
+        if (src->IsConstInitVal())
+        {
+            InitFields(store->AsLclVarCommon(), dstFirstRep, dstEndRep, &plan);
         }
         else
         {
-            assert(srcInvolvesReplacements);
+            CopyBetweenFields(store, dstFirstRep, dstEndRep, src, srcFirstRep, srcEndRep, &result, &plan);
         }
+
+        plan.Finalize(&result);
 
         *use          = result.ToCommaTree(m_compiler);
         m_madeChanges = true;
     }
     else
     {
-        if (asg->gtGetOp2()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+        if (store->Data()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
         {
-            GenTreeLclVarCommon* rhsLcl = asg->gtGetOp2()->AsLclVarCommon();
-            unsigned             size   = rhsLcl->GetLayout(m_compiler)->GetSize();
-            WriteBackBefore(&asg->gtOp2, rhsLcl->GetLclNum(), rhsLcl->GetLclOffs(), size);
+            GenTreeLclVarCommon* srcLcl = store->Data()->AsLclVarCommon();
+            unsigned             size   = srcLcl->GetLayout(m_compiler)->GetSize();
+            WriteBackBefore(&store->Data(), srcLcl->GetLclNum(), srcLcl->GetLclOffs(), size);
         }
 
-        if (asg->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+        if (store->OperIsLocalStore())
         {
-            GenTreeLclVarCommon* lhsLcl = asg->gtGetOp1()->AsLclVarCommon();
-            unsigned             size   = lhsLcl->GetLayout(m_compiler)->GetSize();
-            MarkForReadBack(lhsLcl->GetLclNum(), lhsLcl->GetLclOffs(), size);
+            GenTreeLclVarCommon* lclStore = store->AsLclVarCommon();
+            unsigned             size     = lclStore->GetLayout(m_compiler)->GetSize();
+            if (MarkForReadBack(lclStore->GetLclNum(), lclStore->GetLclOffs(), size))
+            {
+                JITDUMP("Marked store destination replacements to be read back (could not decompose this store)\n");
+            }
         }
     }
 }
@@ -229,61 +1148,15 @@ bool ReplaceVisitor::OverlappingReplacements(GenTreeLclVarCommon* lcl,
                                              Replacement**        firstReplacement,
                                              Replacement**        endReplacement)
 {
-    if (m_replacements[lcl->GetLclNum()] == nullptr)
+    AggregateInfo* agg = m_aggregates[lcl->GetLclNum()];
+    if (agg == nullptr)
     {
         return false;
     }
 
-    jitstd::vector<Replacement>& replacements = *m_replacements[lcl->GetLclNum()];
-
-    unsigned offs       = lcl->GetLclOffs();
-    unsigned size       = lcl->GetLayout(m_compiler)->GetSize();
-    size_t   firstIndex = Promotion::BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
-    if ((ssize_t)firstIndex < 0)
-    {
-        firstIndex = ~firstIndex;
-        if (firstIndex > 0)
-        {
-            Replacement& lastRepBefore = replacements[firstIndex - 1];
-            if ((lastRepBefore.Offset + genTypeSize(lastRepBefore.AccessType)) > offs)
-            {
-                // Overlap with last entry starting before offs.
-                firstIndex--;
-            }
-            else if (firstIndex >= replacements.size())
-            {
-                // Starts after last replacement ends.
-                return false;
-            }
-        }
-
-        const Replacement& first = replacements[firstIndex];
-        if (first.Offset >= (offs + size))
-        {
-            // First candidate starts after this ends.
-            return false;
-        }
-    }
-
-    assert(replacements[firstIndex].Overlaps(offs, size));
-    *firstReplacement = &replacements[firstIndex];
-
-    if (endReplacement != nullptr)
-    {
-        size_t lastIndex = Promotion::BinarySearch<Replacement, &Replacement::Offset>(replacements, offs + size);
-        if ((ssize_t)lastIndex < 0)
-        {
-            lastIndex = ~lastIndex;
-        }
-
-        // Since we verified above that there is an overlapping replacement
-        // we know that lastIndex exists and is the next one that does not
-        // overlap.
-        assert(lastIndex > 0);
-        *endReplacement = replacements.data() + lastIndex;
-    }
-
-    return true;
+    unsigned offs = lcl->GetLclOffs();
+    unsigned size = lcl->GetLayout(m_compiler)->GetSize();
+    return agg->OverlappingReplacements(offs, size, firstReplacement, endReplacement);
 }
 
 //------------------------------------------------------------------------
@@ -291,303 +1164,287 @@ bool ReplaceVisitor::OverlappingReplacements(GenTreeLclVarCommon* lcl,
 //   Ensure that the sources of a block op are not commas by extracting side effects.
 //
 // Parameters:
-//   asg    - The block op
-//   result   - Statement list to add resulting statements to.
+//   store  - The block op
+//   result - Statement list to add resulting statements to.
 //
 // Remarks:
 //   Works similarly to MorphInitBlockHelper::EliminateCommas.
 //
-void ReplaceVisitor::EliminateCommasInBlockOp(GenTreeOp* asg, DecompositionStatementList* result)
+void ReplaceVisitor::EliminateCommasInBlockOp(GenTree* store, DecompositionStatementList* result)
 {
     bool     any = false;
-    GenTree* lhs = asg->gtGetOp1();
-    assert(lhs->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_IND, GT_BLK));
+    GenTree* src = store->Data();
 
-    GenTree* rhs = asg->gtGetOp2();
-
-    if (asg->IsReverseOp())
+    if (store->IsReverseOp())
     {
-        while (rhs->OperIs(GT_COMMA))
+        while (src->OperIs(GT_COMMA))
         {
-            result->AddStatement(rhs->gtGetOp1());
-            rhs = rhs->gtGetOp2();
+            result->AddStatement(src->gtGetOp1());
+            src = src->gtGetOp2();
             any = true;
         }
     }
     else
     {
-        if (lhs->OperIsUnary() && rhs->OperIs(GT_COMMA))
+        if (store->OperIsIndir() && src->OperIs(GT_COMMA))
         {
-            GenTree* addr = lhs->gtGetOp1();
-            // Note that GTF_GLOB_REF is not up to date here, hence we need
-            // a tree walk to find address exposed locals.
-            if (((addr->gtFlags & GTF_ALL_EFFECT) != 0) || (((rhs->gtFlags & GTF_ASG) != 0) && !addr->IsInvariant()) ||
+            GenTree* addr = store->gtGetOp1();
+            // Note that GTF_GLOB_REF is not up to date here, hence we need a tree walk to find address exposed locals.
+            if (((addr->gtFlags & GTF_ALL_EFFECT) != 0) || (((src->gtFlags & GTF_ASG) != 0) && !addr->IsInvariant()) ||
                 m_compiler->gtHasAddressExposedLocals(addr))
             {
-                unsigned lhsAddrLclNum = m_compiler->lvaGrabTemp(true DEBUGARG("Block morph LHS addr"));
+                unsigned dstAddrLclNum = m_compiler->lvaGrabTemp(true DEBUGARG("Block morph store addr"));
 
-                result->AddStatement(m_compiler->gtNewTempAssign(lhsAddrLclNum, addr));
-                lhs->AsUnOp()->gtOp1 = m_compiler->gtNewLclvNode(lhsAddrLclNum, genActualType(addr));
-                m_compiler->gtUpdateNodeSideEffects(lhs);
+                result->AddStatement(m_compiler->gtNewTempStore(dstAddrLclNum, addr));
+                store->AsIndir()->Addr() = m_compiler->gtNewLclvNode(dstAddrLclNum, genActualType(addr));
+                m_compiler->gtUpdateNodeSideEffects(store);
                 m_madeChanges = true;
                 any           = true;
             }
         }
 
-        while (rhs->OperIs(GT_COMMA))
+        while (src->OperIs(GT_COMMA))
         {
-            result->AddStatement(rhs->gtGetOp1());
-            rhs = rhs->gtGetOp2();
+            result->AddStatement(src->gtGetOp1());
+            src = src->gtGetOp2();
             any = true;
         }
     }
 
     if (any)
     {
-        asg->gtOp2 = rhs;
-        m_compiler->gtUpdateNodeSideEffects(asg);
+        store->Data() = src;
+        m_compiler->gtUpdateNodeSideEffects(store);
         m_madeChanges = true;
     }
 }
 
 //------------------------------------------------------------------------
-// InitFieldByField:
-//   Initialize the specified replacements with a specified pattern.
+// InitFields:
+//   Add entries into the plan specifying which replacements can be
+//   directly inited, and mark the other ones as requiring read back.
 //
 // Parameters:
+//   dstStore - Store into the destination local that involves replacement.
 //   firstRep - The first replacement.
 //   endRep   - End of the replacements.
-//   initVal  - byte pattern to init with
-//   result   - Statement list to add resulting statements to.
+//   plan     - Decomposition plan to add initialization entries into.
 //
-// Remarks:
-//   Sets Replacement::Handled if the replacement was handled and IR was
-//   created to initialize it with the correct value.
-//
-void ReplaceVisitor::InitFieldByField(Replacement*                firstRep,
-                                      Replacement*                endRep,
-                                      unsigned char               initVal,
-                                      DecompositionStatementList* result)
+void ReplaceVisitor::InitFields(GenTreeLclVarCommon* dstStore,
+                                Replacement*         firstRep,
+                                Replacement*         endRep,
+                                DecompositionPlan*   plan)
 {
-    int64_t initPattern = int64_t(initVal) * 0x0101010101010101LL;
-
     for (Replacement* rep = firstRep; rep < endRep; rep++)
     {
-        assert(!rep->Handled);
-
-        GenTree* srcVal;
-        if ((initPattern != 0) && (varTypeIsSIMD(rep->AccessType) || varTypeIsGC(rep->AccessType)))
+        if (!plan->CanInitPrimitive(rep->AccessType))
         {
-            // Leave unhandled, we will do this via a read back on the next access.
+            JITDUMP("  Unsupported init of %s %s. Will init as struct and read back.\n", varTypeName(rep->AccessType),
+                    rep->Description);
+
+            // We will need to read this one back after initing the struct.
+            rep->NeedsWriteBack = false;
+            rep->NeedsReadBack  = true;
+            plan->MarkNonRemainderUseOfStructLocal();
             continue;
         }
 
-        switch (rep->AccessType)
-        {
-            case TYP_BOOL:
-            case TYP_BYTE:
-            case TYP_UBYTE:
-            case TYP_SHORT:
-            case TYP_USHORT:
-            case TYP_INT:
-            {
-                int64_t mask = (int64_t(1) << (genTypeSize(rep->AccessType) * 8)) - 1;
-                srcVal       = m_compiler->gtNewIconNode(static_cast<int32_t>(initPattern & mask));
-                break;
-            }
-            case TYP_LONG:
-                srcVal = m_compiler->gtNewLconNode(initPattern);
-                break;
-            case TYP_FLOAT:
-                float floatPattern;
-                memcpy(&floatPattern, &initPattern, sizeof(floatPattern));
-                srcVal = m_compiler->gtNewDconNode(floatPattern, TYP_FLOAT);
-                break;
-            case TYP_DOUBLE:
-                double doublePattern;
-                memcpy(&doublePattern, &initPattern, sizeof(doublePattern));
-                srcVal = m_compiler->gtNewDconNode(doublePattern);
-                break;
-            case TYP_REF:
-            case TYP_BYREF:
-#ifdef FEATURE_SIMD
-            case TYP_SIMD8:
-            case TYP_SIMD12:
-            case TYP_SIMD16:
-#if defined(TARGET_XARCH)
-            case TYP_SIMD32:
-            case TYP_SIMD64:
-#endif // TARGET_XARCH
-#endif // FEATURE_SIMD
-            {
-                assert(initPattern == 0);
-                srcVal = m_compiler->gtNewZeroConNode(rep->AccessType);
-                break;
-            }
-            default:
-                unreached();
-        }
-
-        GenTree* lcl = m_compiler->gtNewLclvNode(rep->LclNum, rep->AccessType);
-        GenTree* asg = m_compiler->gtNewAssignNode(lcl, srcVal);
-        result->AddStatement(asg);
-        rep->Handled = true;
+        JITDUMP("  Init V%02u (%s)\n", rep->LclNum, rep->Description);
+        plan->InitReplacement(rep, rep->Offset - dstStore->GetLclOffs());
     }
 }
 
+#ifdef DEBUG
 //------------------------------------------------------------------------
-// CopyIntoFields:
-//   Copy from a specified block source into the specified replacements.
+// LastUseString:
+//   Return a string indicating whether a replacement is a last use, for
+//   JITDUMP purposes.
 //
 // Parameters:
-//   firstRep - The first replacement.
-//   endRep   - End of the replacements.
-//   dst      - Local containing the replacements.
-//   src      - The block source.
-//   result   - Statement list to add resulting statements to.
+//   lcl - A struct local
+//   rep - A replacement of that struct local
 //
-void ReplaceVisitor::CopyIntoFields(Replacement*                firstRep,
-                                    Replacement*                endRep,
-                                    GenTreeLclVarCommon*        dst,
-                                    GenTree*                    src,
-                                    DecompositionStatementList* result)
+// Returns:
+//   " (last use)" if it is, and otherwise "".
+//
+const char* ReplaceVisitor::LastUseString(GenTreeLclVarCommon* lcl, Replacement* rep)
+{
+    StructDeaths   deaths = m_liveness->GetDeathsForStructLocal(lcl);
+    AggregateInfo* agg    = m_aggregates[lcl->GetLclNum()];
+    assert(agg != nullptr);
+    Replacement* firstRep = agg->Replacements.data();
+    assert((rep >= firstRep) && (rep < firstRep + agg->Replacements.size()));
+
+    size_t replacementIndex = rep - firstRep;
+    if (deaths.IsReplacementDying((unsigned)replacementIndex))
+    {
+        return " (last use)";
+    }
+
+    return "";
+}
+#endif
+
+//------------------------------------------------------------------------
+// CopyBetweenFields:
+//   Copy between two struct locals that may involve replacements.
+//
+// Parameters:
+//   store       - Store node
+//   dstFirstRep - First replacement of the destination or nullptr if destination is not a promoted local.
+//   dstEndRep   - One past last replacement of the destination.
+//   src         - Source node
+//   srcFirstRep - First replacement of the source or nullptr if source is not a promoted local.
+//   srcEndRep   - One past last replacement of the source.
+//   statements  - Statement list to add potential "init" statements to.
+//   plan        - Data structure that tracks the specific copies to be done.
+//
+void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
+                                       Replacement*                dstFirstRep,
+                                       Replacement*                dstEndRep,
+                                       GenTree*                    src,
+                                       Replacement*                srcFirstRep,
+                                       Replacement*                srcEndRep,
+                                       DecompositionStatementList* statements,
+                                       DecompositionPlan*          plan)
 {
     assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK));
 
-    GenTreeFlags indirFlags = GTF_EMPTY;
-    if (src->OperIs(GT_BLK))
+    GenTreeLclVarCommon* dstLcl      = store->OperIsLocalStore() ? store->AsLclVarCommon() : nullptr;
+    GenTreeLclVarCommon* srcLcl      = src->OperIs(GT_LCL_VAR, GT_LCL_FLD) ? src->AsLclVarCommon() : nullptr;
+    unsigned             dstBaseOffs = dstLcl != nullptr ? dstLcl->GetLclOffs() : 0;
+    unsigned             srcBaseOffs = srcLcl != nullptr ? srcLcl->GetLclOffs() : 0;
+
+    LclVarDsc* dstDsc = dstLcl != nullptr ? m_compiler->lvaGetDesc(dstLcl) : nullptr;
+    LclVarDsc* srcDsc = srcLcl != nullptr ? m_compiler->lvaGetDesc(srcLcl) : nullptr;
+
+    Replacement* dstRep = dstFirstRep;
+    Replacement* srcRep = srcFirstRep;
+
+    while ((dstRep < dstEndRep) || (srcRep < srcEndRep))
     {
-        GenTree* addr = src->AsIndir()->Addr();
+        if ((srcRep < srcEndRep) && srcRep->NeedsReadBack)
+        {
+            JITDUMP("  Source replacement V%02u (%s) is stale. Will read it back before copy.\n", srcRep->LclNum,
+                    srcRep->Description);
 
-        if (addr->OperIsLocal() && (addr->AsLclVarCommon()->GetLclNum() != dst->GetLclNum()))
-        {
-            // We will introduce more uses of the address local, so it is
-            // no longer dying here.
-            addr->gtFlags &= ~GTF_VAR_DEATH;
-        }
-        else if (addr->IsInvariant())
-        {
-            // Fall through
-        }
-        else
-        {
-            // TODO-CQ: Avoid this local if we only use the address once? A
-            // bit complicated since our caller may use the address too.
-            unsigned addrLcl = m_compiler->lvaGrabTemp(true DEBUGARG("Spilling address for field-by-field copy"));
-            result->AddStatement(m_compiler->gtNewTempAssign(addrLcl, addr));
-            src->AsUnOp()->gtOp1 = m_compiler->gtNewLclvNode(addrLcl, addr->TypeGet());
+            assert(srcLcl != nullptr);
+            statements->AddStatement(Promotion::CreateReadBack(m_compiler, srcLcl->GetLclNum(), *srcRep));
+            srcRep->NeedsReadBack = false;
+            assert(!srcRep->NeedsWriteBack);
         }
 
-        indirFlags = src->gtFlags & (GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INITCLASS);
-    }
-
-    LclVarDsc* srcDsc = src->OperIs(GT_LCL_VAR, GT_LCL_FLD) ? m_compiler->lvaGetDesc(src->AsLclVarCommon()) : nullptr;
-
-    for (Replacement* rep = firstRep; rep < endRep; rep++)
-    {
-        assert(!rep->Handled);
-        assert(rep->Offset >= dst->GetLclOffs());
-
-        unsigned srcOffs = rep->Offset - dst->GetLclOffs();
-
-        GenTree* dstLcl = m_compiler->gtNewLclvNode(rep->LclNum, rep->AccessType);
-        GenTree* srcFld = nullptr;
-        if (srcDsc != nullptr)
+        if ((dstRep < dstEndRep) && (srcRep < srcEndRep))
         {
-            srcOffs += src->AsLclVarCommon()->GetLclOffs();
-
-            if (srcDsc->lvPromoted)
+            if (srcRep->Offset - srcBaseOffs + genTypeSize(srcRep->AccessType) < dstRep->Offset - dstBaseOffs)
             {
+                // This source replacement ends before the next destination replacement starts.
+                // Write it directly to the destination struct local.
+                unsigned offs = srcRep->Offset - srcBaseOffs;
+                plan->CopyFromReplacement(srcRep, offs);
+                JITDUMP("  dst+%03u <- V%02u (%s)%s\n", offs, srcRep->LclNum, srcRep->Description,
+                        LastUseString(srcLcl, srcRep));
+                srcRep++;
+                continue;
+            }
+
+            if (dstRep->Offset - dstBaseOffs + genTypeSize(dstRep->AccessType) < srcRep->Offset - srcBaseOffs)
+            {
+                // Destination replacement ends before the next source replacement starts.
+                // Read it directly from the source struct local.
+                unsigned offs = dstRep->Offset - dstBaseOffs;
+                plan->CopyToReplacement(dstRep, offs);
+                JITDUMP("  V%02u (%s)%s <- src+%03u\n", dstRep->LclNum, dstRep->Description,
+                        LastUseString(dstLcl, dstRep), offs);
+                dstRep++;
+                continue;
+            }
+
+            // Overlap. Check for exact match of replacements.
+            // TODO-CQ: Allow copies between small types of different signs, and between TYP_I_IMPL/TYP_BYREF?
+            if (((dstRep->Offset - dstBaseOffs) == (srcRep->Offset - srcBaseOffs)) &&
+                (dstRep->AccessType == srcRep->AccessType))
+            {
+                plan->CopyBetweenReplacements(dstRep, srcRep, dstRep->Offset - dstBaseOffs);
+                JITDUMP("  V%02u (%s)%s <- V%02u (%s)%s\n", dstRep->LclNum, dstRep->Description,
+                        LastUseString(dstLcl, dstRep), srcRep->LclNum, srcRep->Description,
+                        LastUseString(srcLcl, srcRep));
+
+                dstRep++;
+                srcRep++;
+                continue;
+            }
+
+            // Partial overlap. Write source back to the struct local. We
+            // will handle the destination replacement in a future
+            // iteration of the loop.
+            statements->AddStatement(Promotion::CreateWriteBack(m_compiler, srcLcl->GetLclNum(), *srcRep));
+            JITDUMP("  Partial overlap of V%02u (%s)%s <- V%02u (%s)%s. Will read source back before copy\n",
+                    dstRep->LclNum, dstRep->Description, LastUseString(dstLcl, dstRep), srcRep->LclNum,
+                    srcRep->Description, LastUseString(srcLcl, srcRep));
+            srcRep++;
+            continue;
+        }
+
+        if (dstRep < dstEndRep)
+        {
+            unsigned offs = dstRep->Offset - dstBaseOffs;
+
+            if ((srcDsc != nullptr) && srcDsc->lvPromoted)
+            {
+                unsigned srcOffs  = srcLcl->GetLclOffs() + offs;
                 unsigned fieldLcl = m_compiler->lvaGetFieldLocal(srcDsc, srcOffs);
 
-                if ((fieldLcl != BAD_VAR_NUM) && (m_compiler->lvaGetDesc(fieldLcl)->lvType == rep->AccessType))
+                if (fieldLcl != BAD_VAR_NUM)
                 {
-                    srcFld = m_compiler->gtNewLclvNode(fieldLcl, rep->AccessType);
+                    LclVarDsc* dsc = m_compiler->lvaGetDesc(fieldLcl);
+                    if (dsc->lvType == dstRep->AccessType)
+                    {
+                        plan->CopyBetweenReplacements(dstRep, fieldLcl, offs);
+                        JITDUMP("  V%02u (%s)%s <- V%02u (%s)\n", dstRep->LclNum, dstRep->Description,
+                                LastUseString(dstLcl, dstRep), dsc->lvReason);
+                        dstRep++;
+                        continue;
+                    }
                 }
             }
 
-            if (srcFld == nullptr)
-            {
-                srcFld = m_compiler->gtNewLclFldNode(src->AsLclVarCommon()->GetLclNum(), rep->AccessType, srcOffs);
-                // TODO-CQ: This may be better left as a read back if the
-                // source is non-physically promoted.
-                m_compiler->lvaSetVarDoNotEnregister(src->AsLclVarCommon()->GetLclNum()
-                                                         DEBUGARG(DoNotEnregisterReason::LocalField));
-            }
-
-            UpdateEarlyRefCount(srcFld);
+            // TODO-CQ: If the source is promoted then this will result in
+            // DNER'ing it. Alternatively we could copy the promoted field
+            // directly to the destination's struct local and mark the
+            // overlapping fields as needing read back to avoid this DNER.
+            plan->CopyToReplacement(dstRep, offs);
+            JITDUMP("  V%02u (%s)%s <- src+%03u\n", dstRep->LclNum, dstRep->Description, LastUseString(dstLcl, dstRep),
+                    offs);
+            dstRep++;
         }
         else
         {
-            if ((rep == firstRep) && m_compiler->fgIsBigOffset(srcOffs) &&
-                m_compiler->fgAddrCouldBeNull(src->AsIndir()->Addr()))
+            assert(srcRep < srcEndRep);
+            unsigned offs = srcRep->Offset - srcBaseOffs;
+            if ((dstDsc != nullptr) && dstDsc->lvPromoted)
             {
-                GenTree*      addrForNullCheck = m_compiler->gtCloneExpr(src->AsIndir()->Addr());
-                GenTreeIndir* indir            = m_compiler->gtNewIndir(TYP_BYTE, addrForNullCheck);
-                indir->gtFlags |= indirFlags;
-                result->AddStatement(indir);
-                UpdateEarlyRefCount(addrForNullCheck);
+                unsigned dstOffs  = dstLcl->GetLclOffs() + offs;
+                unsigned fieldLcl = m_compiler->lvaGetFieldLocal(dstDsc, dstOffs);
+
+                if (fieldLcl != BAD_VAR_NUM)
+                {
+                    LclVarDsc* dsc = m_compiler->lvaGetDesc(fieldLcl);
+                    if (dsc->lvType == srcRep->AccessType)
+                    {
+                        plan->CopyBetweenReplacements(fieldLcl, srcRep, offs);
+                        JITDUMP("  V%02u (%s) <- V%02u (%s)%s\n", fieldLcl, dsc->lvReason, srcRep->LclNum,
+                                srcRep->Description, LastUseString(srcLcl, srcRep));
+                        srcRep++;
+                        continue;
+                    }
+                }
             }
 
-            GenTree* addr = m_compiler->gtCloneExpr(src->AsIndir()->Addr());
-            UpdateEarlyRefCount(addr);
-            if (srcOffs != 0)
-            {
-                var_types addrType = varTypeIsGC(addr) ? TYP_BYREF : TYP_I_IMPL;
-                addr =
-                    m_compiler->gtNewOperNode(GT_ADD, addrType, addr, m_compiler->gtNewIconNode(srcOffs, TYP_I_IMPL));
-            }
-
-            GenTree* dstLcl = m_compiler->gtNewLclvNode(rep->LclNum, rep->AccessType);
-            srcFld          = m_compiler->gtNewIndir(rep->AccessType, addr, indirFlags);
-        }
-
-        result->AddStatement(m_compiler->gtNewAssignNode(dstLcl, srcFld));
-        rep->Handled = true;
-    }
-}
-
-//------------------------------------------------------------------------
-// UpdateEarlyRefCount:
-//   Update early ref counts if necessary for the specified IR node.
-//
-// Parameters:
-//   candidate - the IR node that may be a local that should have its early ref counts updated.
-//
-void ReplaceVisitor::UpdateEarlyRefCount(GenTree* candidate)
-{
-    if (!candidate->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_LCL_ADDR))
-    {
-        return;
-    }
-
-    IncrementRefCount(candidate->AsLclVarCommon()->GetLclNum());
-
-    LclVarDsc* varDsc = m_compiler->lvaGetDesc(candidate->AsLclVarCommon());
-    if (varDsc->lvIsStructField)
-    {
-        IncrementRefCount(varDsc->lvParentLcl);
-    }
-
-    if (varDsc->lvPromoted)
-    {
-        for (unsigned fldLclNum = varDsc->lvFieldLclStart; fldLclNum < varDsc->lvFieldLclStart + varDsc->lvFieldCnt;
-             fldLclNum++)
-        {
-            IncrementRefCount(fldLclNum);
+            plan->CopyFromReplacement(srcRep, offs);
+            JITDUMP("  dst+%03u <- V%02u (%s)%s\n", offs, srcRep->LclNum, srcRep->Description,
+                    LastUseString(srcLcl, srcRep));
+            srcRep++;
         }
     }
-}
-
-//------------------------------------------------------------------------
-// IncrementRefCount:
-//   Increment the ref count for the specified local.
-//
-// Parameters:
-//   lclNum - the local
-//
-void ReplaceVisitor::IncrementRefCount(unsigned lclNum)
-{
-    LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-    varDsc->incLvRefCntSaturating(1, RCS_EARLY);
 }

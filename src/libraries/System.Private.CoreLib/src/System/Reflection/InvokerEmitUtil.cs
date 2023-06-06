@@ -197,7 +197,7 @@ namespace System.Reflection
 #else
             private static MethodInfo? s_NextCallReturnAddress;
             public static MethodInfo NextCallReturnAddress() =>
-                s_NextCallReturnAddress ??= typeof(System.StubHelpers.StubHelpers).GetMethod(nameof(System.StubHelpers.StubHelpers.NextCallReturnAddress), BindingFlags.NonPublic | BindingFlags.Static)!;
+                s_NextCallReturnAddress ??= typeof(StubHelpers.StubHelpers).GetMethod(nameof(StubHelpers.StubHelpers.NextCallReturnAddress), BindingFlags.NonPublic | BindingFlags.Static)!;
 #endif
         }
     }

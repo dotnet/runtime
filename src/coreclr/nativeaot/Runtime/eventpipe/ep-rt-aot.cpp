@@ -9,6 +9,14 @@
 #include <eventpipe/ep-stack-contents.h>
 #include <eventpipe/ep-rt.h>
 
+#ifdef TARGET_WINDOWS
+#include <windows.h>
+#else
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
+
 // The regdisplay.h, StackFrameIterator.h, and thread.h includes are present only to access the Thread
 // class and can be removed if it turns out that the required ep_rt_thread_handle_t can be
 // implemented in some manner that doesn't rely on the Thread class.
@@ -20,12 +28,18 @@
 #include "holder.h"
 #include "SpinLock.h"
 
+#ifdef TARGET_UNIX
+// Per module (1 for NativeAOT), key that will be used to implement TLS in Unix
+pthread_key_t eventpipe_tls_key;
+__thread EventPipeThreadHolder* eventpipe_tls_instance;
+#else
+thread_local EventPipeAotThreadHolderTLS EventPipeAotThreadHolderTLS::g_threadHolderTLS;
+#endif
+
 // Uses _rt_aot_lock_internal_t that has CrstStatic as a field
 // This is initialized at the beginning and EventPipe library requires the lock handle to be maintained by the runtime
 ep_rt_lock_handle_t _ep_rt_aot_config_lock_handle;
 CrstStatic _ep_rt_aot_config_lock;
-
-thread_local EventPipeAotThreadHolderTLS EventPipeAotThreadHolderTLS::g_threadHolderTLS;
 
 ep_char8_t *volatile _ep_rt_aot_diagnostics_cmd_line;
 
@@ -297,10 +311,7 @@ ep_rt_aot_current_thread_get_id (void)
     STATIC_CONTRACT_NOTHROW;
 
 #ifdef TARGET_UNIX
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: AOT doesn't have PAL_GetCurrentOSThreadId, as CoreCLR does.
-    // PalDebugBreak();    
-    return static_cast<ep_rt_thread_id_t>(0);
+    return static_cast<ep_rt_thread_id_t>(PalGetCurrentOSThreadId());
 #else
     return static_cast<ep_rt_thread_id_t>(::GetCurrentThreadId ());
 #endif
@@ -328,6 +339,73 @@ ep_rt_aot_system_timestamp_get (void)
     FILETIME value;
     GetSystemTimeAsFileTime (&value);
     return static_cast<int64_t>(((static_cast<uint64_t>(value.dwHighDateTime)) << 32) | static_cast<uint64_t>(value.dwLowDateTime));
+}
+
+ep_rt_file_handle_t
+ep_rt_aot_file_open_write (const ep_char8_t *path)
+{
+    if (!path)
+        return INVALID_HANDLE_VALUE;
+
+#ifdef TARGET_WINDOWS
+    ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path, -1);
+    if (!path_utf16)
+        return INVALID_HANDLE_VALUE;
+
+    HANDLE res = ::CreateFileW (reinterpret_cast<LPCWSTR>(path_utf16), GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    ep_rt_utf16_string_free (path_utf16);
+    return static_cast<ep_rt_file_handle_t>(res);
+#else
+    mode_t perms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
+    int fd = creat (path, perms);
+    if (fd == -1)
+        return INVALID_HANDLE_VALUE;
+
+    return (ep_rt_file_handle_t)(ptrdiff_t)fd;
+#endif
+}
+
+bool
+ep_rt_aot_file_close (ep_rt_file_handle_t file_handle)
+{
+#ifdef TARGET_WINDOWS
+    return ::CloseHandle (file_handle) != FALSE;
+#else
+    int fd = (int)(ptrdiff_t)file_handle;
+    close (fd);
+    return true;
+#endif
+}
+
+bool
+ep_rt_aot_file_write (
+	ep_rt_file_handle_t file_handle,
+	const uint8_t *buffer,
+	uint32_t bytes_to_write,
+	uint32_t *bytes_written)
+{
+#ifdef TARGET_WINDOWS
+    return ::WriteFile (file_handle, buffer, bytes_to_write, reinterpret_cast<LPDWORD>(bytes_written), NULL) != FALSE;
+#else
+    int fd = (int)(ptrdiff_t)file_handle;
+    int ret;
+    do {
+        ret = write (fd, buffer, bytes_to_write);
+    } while (ret == -1 && errno == EINTR);
+
+    if (ret == -1) {
+        if (bytes_written != NULL) {
+            *bytes_written = 0;
+        }
+
+        return false;
+    }
+
+    if (bytes_written != NULL)
+        *bytes_written = ret;
+
+    return true;
+#endif
 }
 
 uint8_t *
@@ -378,7 +456,15 @@ ep_rt_aot_utf16_string_len (const ep_char16_t *str)
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (str != NULL);
 
-    return wcslen (reinterpret_cast<LPCWSTR>(str));
+    #ifdef TARGET_UNIX
+        const uint16_t *a = (const uint16_t *)str;
+        size_t length = 0;
+        while (a [length])
+            ++length;
+        return length;
+    #else
+        return wcslen (reinterpret_cast<LPCWSTR>(str));
+    #endif
 }
 
 uint32_t
@@ -509,6 +595,17 @@ ep_rt_aot_volatile_store_ptr_without_barrier (
     VolatileStoreWithoutBarrier<void *> ((void **)ptr, value);
 }
 
+void unix_tls_callback_fn(void *value) 
+{
+    if (value) {
+        // we need to do the unallocation here
+        EventPipeThreadHolder *thread_holder_old = static_cast<EventPipeThreadHolder*>(value);    
+        // @TODO - inline
+        thread_holder_free_func (thread_holder_old);
+        value = NULL;
+    }
+}
+
 void ep_rt_aot_init (void)
 {
     extern ep_rt_lock_handle_t _ep_rt_aot_config_lock_handle;
@@ -516,6 +613,11 @@ void ep_rt_aot_init (void)
 
     _ep_rt_aot_config_lock_handle.lock = &_ep_rt_aot_config_lock;
     _ep_rt_aot_config_lock_handle.lock->InitNoThrow (CrstType::CrstEventPipeConfig);
+
+    // Initialize the pthread key used for TLS in Unix
+    #ifdef TARGET_UNIX
+    pthread_key_create(&eventpipe_tls_key, unix_tls_callback_fn);
+    #endif
 }
 
 bool ep_rt_aot_lock_acquire (ep_rt_lock_handle_t *lock)

@@ -30,6 +30,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
+    <SelfContained>true</SelfContained>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet7)' == 'true'">$(WasmNativeWorkload7)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet8)' == 'true'">$(WasmNativeWorkload8)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet6)' == 'true'">$(WasmNativeWorkload)</WasmNativeWorkloadAvailable>
@@ -139,6 +140,7 @@
   <PropertyGroup Condition="'$(TargetsCurrent)' == 'true' and ('$(UsingMobileWorkload)' == 'true' or '$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'wasi-wasm')">
     <_MonoWorkloadTargetsMobile>true</_MonoWorkloadTargetsMobile>
     <_MonoWorkloadRuntimePackPackageVersion>$(_RuntimePackInWorkloadVersionCurrent)</_MonoWorkloadRuntimePackPackageVersion>
+    <_KnownWebAssemblySdkPackVersion>$(_RuntimePackInWorkloadVersionCurrent)</_KnownWebAssemblySdkPackVersion>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetsCurrent)' == 'true' and '$(_MonoWorkloadTargetsMobile)' == 'true'">

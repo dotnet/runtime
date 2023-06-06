@@ -178,20 +178,6 @@ ErrExit:
     return hr;
 }
 
-STDMETHODIMP CCeeGen::GetIMapTokenIface (
-        IUnknown **pIMapToken)
-{
-    _ASSERTE(!"E_NOTIMPL");
-    return E_NOTIMPL;
-}
-
-STDMETHODIMP CCeeGen::AddNotificationHandler (
-        IUnknown *pHandler)
-{
-    _ASSERTE(!"E_NOTIMPL");
-    return E_NOTIMPL;
-}
-
 STDMETHODIMP CCeeGen::GenerateCeeFile ()
 {
     _ASSERTE(!"E_NOTIMPL");
@@ -260,8 +246,6 @@ CCeeGen::CCeeGen() // protected ctor
     m_cRefs = 0;
     m_peSectionMan = NULL;
     m_pTokenMap = NULL;
-    m_pRemapHandler = NULL;
-
 }
 
 // Shared init code between derived classes, called by virtual Init()
@@ -288,7 +272,6 @@ HRESULT CCeeGen::Init() // not-virtual, protected
 
     m_pTokenMap = NULL;
     m_fTokenMapSupported = FALSE;
-    m_pRemapHandler = NULL;
 
     // These text section needs special support for handling string management now that we have
     // merged the sections together, so create it with an underlying CeeSectionString rather than the
@@ -321,17 +304,6 @@ LExit:
     return hr;
 }
 
-HRESULT CCeeGen::cloneInstance(CCeeGen *destination) { //public, virtual
-    _ASSERTE(destination);
-
-    destination->m_pTokenMap =          m_pTokenMap;
-    destination->m_fTokenMapSupported = m_fTokenMapSupported;
-    destination->m_pRemapHandler =      m_pRemapHandler;
-
-    //Create a deep copy of the section manager (and each of it's sections);
-    return m_peSectionMan->cloneInstance(destination->m_peSectionMan);
-}
-
 HRESULT CCeeGen::Cleanup() // virtual
 {
     HRESULT hr;
@@ -355,12 +327,6 @@ HRESULT CCeeGen::Cleanup() // virtual
         }
         pMapper->Release();
         m_pTokenMap = NULL;
-    }
-
-    if (m_pRemapHandler)
-    {
-        m_pRemapHandler->Release();
-        m_pRemapHandler = NULL;
     }
 
     if (m_peSectionMan) {
@@ -546,48 +512,7 @@ HRESULT CCeeGen::getMapTokenIface(IUnknown **pIMapToken, IMetaDataEmit *emitter)
         }
         m_pTokenMap = pMapper;
         m_fTokenMapSupported = (emitter == 0);
-
-        // If we've been holding onto a token remap handler waiting
-        // for the token mapper to get created, add it to the token
-        // mapper now and release our hold on it.
-        if (m_pRemapHandler && m_pTokenMap)
-        {
-            m_pTokenMap->AddTokenMapper(m_pRemapHandler);
-            m_pRemapHandler->Release();
-            m_pRemapHandler = NULL;
-        }
     }
     *pIMapToken = getTokenMapper()->GetMapTokenIface();
     return S_OK;
-}
-
-HRESULT CCeeGen::addNotificationHandler(IUnknown *pHandler)
-{
-    // Null is no good...
-    if (!pHandler)
-        return E_POINTER;
-
-    HRESULT hr = S_OK;
-    IMapToken *pIMapToken = NULL;
-
-    // Is this an IMapToken? If so, we can put it to good use...
-    if (SUCCEEDED(pHandler->QueryInterface(IID_IMapToken,
-                                           (void**)&pIMapToken)))
-    {
-        // You gotta have a token mapper to use an IMapToken, though.
-        if (m_pTokenMap)
-        {
-            hr = m_pTokenMap->AddTokenMapper(pIMapToken);
-            pIMapToken->Release();
-        }
-        else
-        {
-            // Hold onto it for later, just in case a token mapper
-            // gets created. We're holding a reference to it here,
-            // too.
-            m_pRemapHandler = pIMapToken;
-        }
-    }
-
-    return hr;
 }

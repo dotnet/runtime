@@ -18,7 +18,7 @@ namespace Microsoft.Interop.UnitTests
         private static readonly string UsingSystemRuntimeInteropServicesMarshalling = "using System.Runtime.InteropServices.Marshalling;";
 
         public static string NonBlittableUserDefinedType(bool defineNativeMarshalling = true) => $$"""
-            {{(defineNativeMarshalling ? "[NativeMarshalling(typeof(Marshaller))]" : string.Empty)}}
+            {{(defineNativeMarshalling ? "[{|#10:NativeMarshalling(typeof(Marshaller))|}]" : string.Empty)}}
             public struct S
             {
             #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
@@ -240,9 +240,9 @@ namespace Microsoft.Interop.UnitTests
                 + NonBlittableUserDefinedType()
                 + Ref;
 
-                public string StackallocOnlyRefParameter => _provider.BasicParameterWithByRefModifier("ref", "S")
-                + NonBlittableUserDefinedType()
-                + InOutBuffer;
+            public string StackallocOnlyRefParameter => _provider.BasicParameterWithByRefModifier("ref", "S")
+            + NonBlittableUserDefinedType()
+            + InOutBuffer;
 
             public string OptionalStackallocParametersAndModifiers => _provider.BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
                 + NonBlittableUserDefinedType()

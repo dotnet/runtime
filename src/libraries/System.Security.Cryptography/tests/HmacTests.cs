@@ -9,8 +9,11 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public abstract class HmacTests
+    public abstract class HmacTests<THmacTrait> where THmacTrait : IHmacTrait
     {
+        public static bool IsSupported => THmacTrait.IsSupported;
+        public static bool IsNotSupported => !IsSupported;
+
         // RFC2202 defines the test vectors for HMACMD5 and HMACSHA1
         // RFC4231 defines the test vectors for HMACSHA{224,256,384,512}
         // They share the same datasets for cases 1-5, but cases 6 and 7 differ.
@@ -26,6 +29,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         protected abstract HMAC Create();
+        protected abstract HMAC Create(byte[] key);
 
         protected abstract HashAlgorithm CreateHashAlgorithm();
         protected abstract byte[] HashDataOneShot(byte[] key, byte[] source);
@@ -254,7 +258,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void InvalidInput_Null()
         {
             using (HMAC hash = Create())
@@ -265,7 +269,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void InvalidInput_NegativeOffset()
         {
             using (HMAC hash = Create())
@@ -274,7 +278,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void InvalidInput_NegativeCount()
         {
             using (HMAC hash = Create())
@@ -283,7 +287,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void InvalidInput_TooBigOffset()
         {
             using (HMAC hash = Create())
@@ -292,7 +296,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void InvalidInput_TooBigCount()
         {
             byte[] nonEmpty = new byte[53];
@@ -306,7 +310,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void BoundaryCondition_Count0()
         {
             byte[] nonEmpty = new byte[53];
@@ -332,7 +336,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void OffsetAndCountRespected()
         {
             byte[] dataA = { 1, 1, 2, 3, 5, 8 };
@@ -349,7 +353,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void InvalidKey_ThrowArgumentNullException()
         {
             using (HMAC hash = Create())
@@ -358,21 +362,21 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void OneShot_NullKey_ArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("key", () =>
                 HashDataOneShot(key: (byte[])null, source: Array.Empty<byte>()));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void OneShot_NullSource_ArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", () =>
                 HashDataOneShot(key: Array.Empty<byte>(), source: (byte[])null));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void OneShot_ExistingBuffer_TooSmall()
         {
             byte[] buffer = new byte[MacSize - 1];
@@ -385,7 +389,7 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.FilledWith<byte>(0, buffer);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void OneShot_TryExistingBuffer_TooSmall()
         {
             byte[] buffer = new byte[MacSize - 1];
@@ -397,10 +401,10 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.FilledWith<byte>(0, buffer);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void OneShot_TryExistingBuffer_Exact()
         {
-            for (int caseId = 1; caseId <= 7; caseId++)
+            for (int caseId = 1; caseId < _testKeys.Length; caseId++)
             {
                 byte[] buffer = new byte[MacSize];
                 byte[] key = _testKeys[caseId];
@@ -415,10 +419,10 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void OneShot_TryExistingBuffer_Larger()
         {
-            for (int caseId = 1; caseId <= 7; caseId++)
+            for (int caseId = 1; caseId < _testKeys.Length; caseId++)
             {
                 Span<byte> buffer = new byte[MacSize + 20];
                 byte[] key = _testKeys[caseId];
@@ -438,14 +442,14 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(IsSupported))]
         [InlineData(0, 10)]
         [InlineData(10, 10)]
         [InlineData(10, 0)]
         [InlineData(10, 20)]
         public void OneShot_TryExistingBuffer_OverlapsKey(int keyOffset, int bufferOffset)
         {
-            for (int caseId = 1; caseId <= 7; caseId++)
+            for (int caseId = 1; caseId < _testKeys.Length; caseId++)
             {
                 byte[] key = _testKeys[caseId];
                 byte[] data = _testData[caseId];
@@ -464,14 +468,14 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(IsSupported))]
         [InlineData(0, 10)]
         [InlineData(10, 10)]
         [InlineData(10, 0)]
         [InlineData(10, 20)]
         public void OneShot_TryExistingBuffer_OverlapsSource(int sourceOffset, int bufferOffset)
         {
-            for (int caseId = 1; caseId <= 7; caseId++)
+            for (int caseId = 1; caseId < _testKeys.Length; caseId++)
             {
                 byte[] key = _testKeys[caseId];
                 byte[] data = _testData[caseId];
@@ -490,7 +494,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(IsSupported))]
         [InlineData(new byte[0], new byte[] { 1 })]
         [InlineData(new byte[] { 1 }, new byte[0])]
         public void OneShot_Empty_Matches_Instances(byte[] key, byte[] source)
@@ -505,7 +509,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void HashData_Stream_Source_Null()
         {
             AssertExtensions.Throws<ArgumentNullException>(
@@ -517,7 +521,7 @@ namespace System.Security.Cryptography.Tests
                 () => HashDataOneShot(Array.Empty<byte>(), (Stream)null));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void HashData_Stream_Source_Null_Async()
         {
             AssertExtensions.Throws<ArgumentNullException>(
@@ -529,7 +533,7 @@ namespace System.Security.Cryptography.Tests
                 () => HashDataOneShotAsync(Array.Empty<byte>(), (Stream)null, default));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void HashData_Stream_ByteKey_Null()
         {
             AssertExtensions.Throws<ArgumentNullException>(
@@ -537,7 +541,7 @@ namespace System.Security.Cryptography.Tests
                 () => HashDataOneShot((byte[])null, Stream.Null));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void HashData_Stream_ByteKey_Null_Async()
         {
             AssertExtensions.Throws<ArgumentNullException>(
@@ -545,7 +549,7 @@ namespace System.Security.Cryptography.Tests
                 () => HashDataOneShotAsync((byte[])null, Stream.Null, default));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void HashData_Stream_DestinationTooSmall()
         {
             byte[] destination = new byte[MacSize - 1];
@@ -561,7 +565,7 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.FilledWith<byte>(0, destination);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void HashData_Stream_DestinationTooSmall_Async()
         {
             byte[] destination = new byte[MacSize - 1];
@@ -577,7 +581,7 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.FilledWith<byte>(0, destination);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void HashData_Stream_NotReadable()
         {
             AssertExtensions.Throws<ArgumentException>(
@@ -589,7 +593,7 @@ namespace System.Security.Cryptography.Tests
                 () => HashDataOneShot(ReadOnlySpan<byte>.Empty, UntouchableStream.Instance));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void HashData_Stream_Cancelled()
         {
             Memory<byte> buffer = new byte[512 / 8];
@@ -603,12 +607,43 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.FilledWith<byte>(0, buffer.Span);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void HashData_Stream_Allocating_Cancelled()
         {
             CancellationToken cancelledToken = new CancellationToken(canceled: true);
             ValueTask<byte[]> waitable = HashDataOneShotAsync(ReadOnlyMemory<byte>.Empty, Stream.Null, cancelledToken);
             Assert.True(waitable.IsCanceled, nameof(waitable.IsCanceled));
         }
+
+        [ConditionalFact(nameof(IsNotSupported))]
+        public void Ctor_NotSupported()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => Create());
+            Assert.Throws<PlatformNotSupportedException>(() => Create(new byte[42]));
+        }
+
+        [ConditionalFact(nameof(IsNotSupported))]
+        public async Task HashData_NotSupported()
+        {
+            byte[] key = new byte[1];
+            byte[] buffer = new byte[THmacTrait.HashSizeInBytes];
+            Assert.Throws<PlatformNotSupportedException>(() => HashDataOneShot(key, Array.Empty<byte>()));
+            Assert.Throws<PlatformNotSupportedException>(() => HashDataOneShot(key, ReadOnlySpan<byte>.Empty));
+            Assert.Throws<PlatformNotSupportedException>(() => HashDataOneShot(key, ReadOnlySpan<byte>.Empty, buffer));
+            Assert.Throws<PlatformNotSupportedException>(() => TryHashDataOneShot(key, ReadOnlySpan<byte>.Empty, buffer, out _));
+
+            Assert.Throws<PlatformNotSupportedException>(() => HashDataOneShot(key, Stream.Null));
+            Assert.Throws<PlatformNotSupportedException>(() => HashDataOneShot(key, Stream.Null, buffer));
+            await Assert.ThrowsAsync<PlatformNotSupportedException>(async () =>
+                await HashDataOneShotAsync(key, Stream.Null, default(CancellationToken)));
+            await Assert.ThrowsAsync<PlatformNotSupportedException>(async () =>
+                await HashDataOneShotAsync(key, Stream.Null, buffer, default(CancellationToken)));
+        }
+    }
+
+    public interface IHmacTrait
+    {
+        static abstract bool IsSupported { get; }
+        static abstract int HashSizeInBytes { get; }
     }
 }

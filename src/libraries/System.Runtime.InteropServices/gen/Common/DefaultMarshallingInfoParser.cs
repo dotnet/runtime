@@ -38,14 +38,15 @@ namespace Microsoft.Interop
                 diagnostics,
                 new MethodSignatureElementInfoProvider(env.Compilation, diagnostics, method, useSiteAttributeParsers),
                 useSiteAttributeParsers,
-            ImmutableArray.Create<IMarshallingInfoAttributeParser>(
+                ImmutableArray.Create<IMarshallingInfoAttributeParser>(
                     new MarshalAsAttributeParser(env.Compilation, diagnostics, defaultInfo),
                     new MarshalUsingAttributeParser(env.Compilation, diagnostics),
-                    new NativeMarshallingAttributeParser(env.Compilation, diagnostics)),
+                    new NativeMarshallingAttributeParser(env.Compilation, diagnostics),
+                    new ComInterfaceMarshallingInfoProvider(env.Compilation)),
                 ImmutableArray.Create<ITypeBasedMarshallingInfoProvider>(
                     new SafeHandleMarshallingInfoProvider(env.Compilation, method.ContainingType),
                     new ArrayMarshallingInfoProvider(env.Compilation),
-            new CharMarshallingInfoProvider(defaultInfo),
+                    new CharMarshallingInfoProvider(defaultInfo),
                     new StringMarshallingInfoProvider(env.Compilation, diagnostics, unparsedAttributeData, defaultInfo),
                     new BooleanMarshallingInfoProvider(),
                     new BlittableTypeMarshallingInfoProvider(env.Compilation)));

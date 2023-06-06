@@ -1733,55 +1733,42 @@ void CodeGen::genGenerateMachineCode()
         printf(" for ");
 
 #if defined(TARGET_X86)
-        if (compiler->info.genCPU == CPU_X86)
+        if (compiler->canUseEvexEncoding())
         {
-            printf("generic X86 CPU");
+            printf("X86 with AVX512");
         }
-        else if (compiler->info.genCPU == CPU_X86_PENTIUM_4)
+        else if (compiler->canUseVexEncoding())
         {
-            printf("Pentium 4");
+            printf("X86 with AVX");
         }
-#elif defined(TARGET_AMD64)
-        if (compiler->info.genCPU == CPU_X64)
-        {
-            if (compiler->canUseEvexEncoding())
-            {
-                printf("X64 CPU with AVX512");
-            }
-            else if (compiler->canUseVexEncoding())
-            {
-                printf("X64 CPU with AVX");
-            }
-            else
-            {
-                printf("X64 CPU with SSE2");
-            }
-        }
-#elif defined(TARGET_ARM)
-        if (compiler->info.genCPU == CPU_ARM)
-        {
-            printf("generic ARM CPU");
-        }
-#elif defined(TARGET_ARM64)
-        if (compiler->info.genCPU == CPU_ARM64)
-        {
-            printf("generic ARM64 CPU");
-        }
-#elif defined(TARGET_LOONGARCH64)
-        if (compiler->info.genCPU == CPU_LOONGARCH64)
-        {
-            printf("generic LOONGARCH64 CPU");
-        }
-#elif defined(TARGET_RISCV64)
-        if (compiler->info.genCPU == CPU_RISCV64)
-        {
-            printf("generic RISCV64 CPU");
-        }
-#endif
         else
         {
-            printf("unknown architecture");
+            printf("generic X86");
         }
+#elif defined(TARGET_AMD64)
+        if (compiler->canUseEvexEncoding())
+        {
+            printf("X64 with AVX512");
+        }
+        else if (compiler->canUseVexEncoding())
+        {
+            printf("X64 with AVX");
+        }
+        else
+        {
+            printf("generic X64");
+        }
+#elif defined(TARGET_ARM)
+        printf("generic ARM");
+#elif defined(TARGET_ARM64)
+        printf("generic ARM64");
+#elif defined(TARGET_LOONGARCH64)
+        printf("generic LOONGARCH64");
+#elif defined(TARGET_RISCV64)
+        printf("generic RISCV64");
+#else
+        printf("unknown architecture");
+#endif
 
         if (TargetOS::IsWindows)
         {
@@ -4668,7 +4655,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 //    initReg -- scratch register to use if needed
 //    pInitRegZeroed -- [IN,OUT] if init reg is zero (on entry/exit)
 //
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed)
 #else
 void CodeGen::genEnregisterOSRArgsAndLocals()
@@ -4809,7 +4796,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 
         GetEmitter()->emitIns_R_AR(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset);
 
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
         // Patchpoint offset is from top of Tier0 frame
         //
@@ -5449,7 +5436,7 @@ void CodeGen::genFnProlog()
         psiBegProlog();
     }
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     // For arm64 OSR, emit a "phantom prolog" to account for the actions taken
     // in the tier0 frame that impact FP and SP on entry to the OSR method.
     //
@@ -5464,7 +5451,7 @@ void CodeGen::genFnProlog()
         // SP is tier0 method's SP.
         compiler->unwindAllocStack(tier0FrameSize);
     }
-#endif // defined(TARGET_ARM64)
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
 #ifdef DEBUG
 
@@ -5787,6 +5774,14 @@ void CodeGen::genFnProlog()
     {
         initReg = REG_IP1;
     }
+#elif defined(TARGET_LOONGARCH64)
+    // For loongarch64 OSR root frames, we may need a scratch register for large
+    // offset addresses. Use a register that won't be allocated.
+    //
+    if (isRoot && compiler->opts.IsOSR())
+    {
+        initReg = REG_SCRATCH;
+    }
 #endif
 
     noway_assert(!compiler->compMethodRequiresPInvokeFrame() || (initReg != REG_PINVOKE_FRAME));
@@ -5840,7 +5835,7 @@ void CodeGen::genFnProlog()
         //
         extraFrameSize = compiler->compCalleeRegsPushed * REGSIZE_BYTES;
     }
-#endif // TARGET_ARM64
+#endif // TARGET_AMD64
 
     if (doubleAlignOrFramePointerUsed())
     {
@@ -6100,7 +6095,7 @@ void CodeGen::genFnProlog()
         // Otherwise we'll do some of these fetches twice.
         //
         CLANG_FORMAT_COMMENT_ANCHOR;
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         genEnregisterOSRArgsAndLocals(initReg, &initRegZeroed);
 #else
         genEnregisterOSRArgsAndLocals();

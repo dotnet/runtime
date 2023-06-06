@@ -41,11 +41,6 @@
 //
 bool Compiler::fgHaveProfileData()
 {
-    if (compIsForImportOnly())
-    {
-        return false;
-    }
-
     return (fgPgoSchema != nullptr);
 }
 
@@ -436,7 +431,7 @@ void BlockCountInstrumentor::RelocateProbes()
 {
     // We only see such blocks when optimizing. They are flagged by the importer.
     //
-    if (!m_comp->opts.IsInstrumentedOptimized() || ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
+    if (!m_comp->opts.IsInstrumentedAndOptimized() || ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
     {
         // No problematic blocks to worry about.
         //
@@ -824,14 +819,13 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp, uint8_t*
         comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR, false);
 
     // Increment value by 1
-    GenTree* rhsNode = comp->gtNewOperNode(GT_ADD, countType, valueNode, comp->gtNewIconNode(1, countType));
+    GenTree* incValueNode = comp->gtNewOperNode(GT_ADD, countType, valueNode, comp->gtNewIconNode(1, countType));
 
     // Write new Basic-Block count value
-    GenTree* lhsNode =
-        comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR, false);
-    GenTree* asgNode = comp->gtNewAssignNode(lhsNode, rhsNode);
+    GenTree* counterAddrNode = comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
+    GenTree* updateNode      = comp->gtNewStoreIndNode(countType, counterAddrNode, incValueNode);
 
-    return asgNode;
+    return updateNode;
 }
 
 //------------------------------------------------------------------------
@@ -1220,6 +1214,16 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
             break;
         }
     }
+
+    // Notify visitor of remaining blocks
+    //
+    for (BasicBlock* const block : Blocks())
+    {
+        if (!BlockSetOps::IsMember(this, marked, block->bbNum))
+        {
+            visitor->VisitBlock(block);
+        }
+    }
 }
 
 // Map a block into its schema key we will use for storing basic blocks.
@@ -1606,7 +1610,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
 {
     // We only see such blocks when optimizing. They are flagged by the importer.
     //
-    if (!m_comp->opts.IsInstrumentedOptimized() || ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
+    if (!m_comp->opts.IsInstrumentedAndOptimized() || ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
     {
         // No problematic blocks to worry about.
         //
@@ -2032,7 +2036,7 @@ public:
         //
         //      (CALLVIRT
         //        (COMMA
-        //          (ASG tmp, obj)
+        //          (tmp = obj)
         //          (COMMA
         //            (CALL probe_fn tmp, &probeEntry)
         //            tmp)))
@@ -2122,15 +2126,14 @@ public:
 
         // Generate the IR...
         //
-        GenTree* const tmpNode2      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTree* const callCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
-        GenTree* const tmpNode3      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTree* const asgNode       = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, objUse->GetNode());
-        GenTree* const asgCommaNode  = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
+        GenTree* const tmpNode2       = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+        GenTree* const callCommaNode  = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
+        GenTree* const storeNode      = compiler->gtNewStoreLclVarNode(tmpNum, objUse->GetNode());
+        GenTree* const storeCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, storeNode, callCommaNode);
 
         // Update the call
         //
-        objUse->SetEarlyNode(asgCommaNode);
+        objUse->SetEarlyNode(storeCommaNode);
 
         JITDUMP("Modified call is now\n");
         DISPTREE(call);
@@ -3287,6 +3290,15 @@ void EfficientEdgeCountReconstructor::Prepare()
 //
 void EfficientEdgeCountReconstructor::Solve()
 {
+    // If we have dynamic PGO data, we don't expect to see any mismatches,
+    // since the schema we got from the runtime should have come from the
+    // exact same JIT and IL, created in an earlier tier.
+    //
+    if (m_comp->fgPgoSource == ICorJitInfo::PgoSource::Dynamic)
+    {
+        assert(!m_mismatch);
+    }
+
     // If issues arose earlier, then don't try solving.
     //
     if (m_badcode || m_mismatch || m_allWeightsZero)
@@ -3608,7 +3620,7 @@ void EfficientEdgeCountReconstructor::Propagate()
 //    for the OSR entry block.
 //
 // Arguments:
-//    block - block in question
+//    block - block in question (OSR entry)
 //    info - model info for the block
 //    nSucc - number of successors of the block in the flow graph
 //
@@ -3647,7 +3659,13 @@ void EfficientEdgeCountReconstructor::PropagateOSREntryEdges(BasicBlock* block, 
     }
 
     assert(nEdges == nSucc);
-    assert(info->m_weight > BB_ZERO_WEIGHT);
+
+    if (info->m_weight == BB_ZERO_WEIGHT)
+    {
+        JITDUMP("\nPropagate: OSR entry block weight is zero\n");
+        EntryWeightZero();
+        return;
+    }
 
     // Transfer model edge weight onto the FlowEdges as likelihoods.
     //

@@ -406,7 +406,7 @@ namespace Wasm.Build.Tests
             }
             else
             {
-                AssertFilesDontExist(Path.Combine(GetBinDir(config), "AppBundle"), new[] { "dotnet.js.symbols" });
+                AssertFilesDontExist(Path.Combine(GetBinDir(config), "AppBundle"), new[] { "dotnet.native.js.symbols" });
             }
 
             string runArgs = $"run --no-build -c {config}";
