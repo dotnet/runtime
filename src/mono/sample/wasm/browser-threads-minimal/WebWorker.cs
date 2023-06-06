@@ -26,7 +26,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 var webWorker = typeof(JSObject).Assembly.GetType("System.Runtime.InteropServices.JavaScript.WebWorker");
                 runAsyncMethod = webWorker.GetMethod("RunAsync", BindingFlags.Public|BindingFlags.Static);
             }
-            return (Task<T>)runAsyncMethod.Invoke(null, new object[] { body });
+
+            var genericRunAsyncMethod = runAsyncMethod.MakeGenericMethod(typeof(T));
+            return (Task<T>)genericRunAsyncMethod.Invoke(null, new object[] { body });
         }
 
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.WebWorker", "System.Runtime.InteropServices.JavaScript")]
