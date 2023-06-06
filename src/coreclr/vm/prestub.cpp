@@ -1136,6 +1136,92 @@ namespace
         return targetType;
     }
 
+    bool DoesMethodMatchUnsafeAccessorDeclaration(
+        GenerationContext& cxt,
+        MethodDesc* method)
+    {
+        STANDARD_VM_CONTRACT;
+        _ASSERTE(method != NULL);
+
+        PCCOR_SIGNATURE pSig1;
+        DWORD cSig1;
+        cxt.Declaration->GetSig(&pSig1, &cSig1);
+        PCCOR_SIGNATURE pEndSig1 = pSig1 + cSig1;
+        ModuleBase* pModule1 = cxt.Declaration->GetModule();
+        const Substitution* pSubst1 = NULL;
+
+        PCCOR_SIGNATURE pSig2;
+        DWORD cSig2;
+        method->GetSig(&pSig2, &cSig2);
+        PCCOR_SIGNATURE pEndSig2 = pSig2 + cSig2;
+        ModuleBase* pModule2 = method->GetModule();
+        const Substitution* pSubst2 = NULL;
+
+        // Validate calling convention
+        if ((*pSig1 & IMAGE_CEE_CS_CALLCONV_MASK) != (*pSig2 & IMAGE_CEE_CS_CALLCONV_MASK))
+        {
+            return false;
+        }
+
+        BYTE callConv = *pSig1;
+        pSig1++;
+        pSig2++;
+
+        // Generics are not supported
+        _ASSERTE((callConv & IMAGE_CEE_CS_CALLCONV_GENERIC) == 0);
+
+        DWORD declArgCount;
+        DWORD methodArgCount;
+        IfFailThrow(CorSigUncompressData_EndPtr(pSig1, pEndSig1, &declArgCount));
+        IfFailThrow(CorSigUncompressData_EndPtr(pSig2, pEndSig2, &methodArgCount));
+
+        DWORD i = 0;
+        DWORD argCount = min(declArgCount, methodArgCount);
+        for (; i <= argCount; ++i)
+        {
+            if (i == 0 && cxt.Kind == UnsafeAccessorKind::Constructor)
+            {
+                // Skip return value (index 0) validation on constructor accessors
+                SigPointer ptr1(pSig1, (DWORD)(pEndSig1 - pSig1));
+                IfFailThrow(ptr1.SkipExactlyOne());
+                pSig1 = ptr1.GetPtr();
+
+                SigPointer ptr2(pSig2, (DWORD)(pEndSig2 - pSig2));
+                IfFailThrow(ptr2.SkipExactlyOne());
+                pSig2 = ptr2.GetPtr();
+                continue;
+            }
+            else if (i == 1 && cxt.Kind != UnsafeAccessorKind::Constructor)
+            {
+                // Skip over first argument (index 1) on non-constructor accessors
+                // This is skipped since the first argument is used only for target
+                // lookup and passing an instance.
+                SigPointer ptr1(pSig1, (DWORD)(pEndSig1 - pSig1));
+                IfFailThrow(ptr1.SkipExactlyOne());
+                pSig1 = ptr1.GetPtr();
+                continue;
+            }
+
+            // Compare the actual element
+            if (FALSE == MetaSig::CompareElementType(
+                pSig1,
+                pSig2,
+                pEndSig1,
+                pEndSig2,
+                pModule1,
+                pModule2,
+                pSubst1,
+                pSubst2,
+                NULL))
+            {
+                return false;
+            }
+        }
+
+        // If we validated all arguments, then it is a match.
+        return (i - 1) == methodArgCount;
+    }
+
     bool TrySetTargetMethod(
         GenerationContext& cxt,
         LPCUTF8 methodName)
@@ -1148,11 +1234,6 @@ namespace
 
         TypeHandle targetType = cxt.TargetType;
         _ASSERTE(!targetType.IsTypeDesc());
-
-        CorElementType declCorType;
-        CorElementType maybeCorType;
-        TypeHandle declType;
-        TypeHandle maybeType;
 
         // Following the iteration pattern found in MemberLoader::FindMethod().
         // Reverse order is recommended - see comments in MemberLoader::FindMethod().
@@ -1170,58 +1251,8 @@ namespace
             if (strcmp(methodName, curr->GetNameThrowing()) != 0)
                 continue;
 
-            // Reset reading the declaration signature
-            cxt.DeclarationSig.Reset();
-
-            MetaSig currSig(curr);
-
-            // Validate calling convention.
-            if (cxt.DeclarationSig.GetCallingConvention() != currSig.GetCallingConvention())
-                continue;
-
-            // Validate the return type and prepare for validating
-            // the current signature's argument list.
-            UINT argCount = cxt.DeclarationSig.NumFixedArgs();
-            if (cxt.Kind == UnsafeAccessorKind::Constructor)
-            {
-                // Constructors must return void.
-                if (currSig.GetReturnType() != ELEMENT_TYPE_VOID)
-                    continue;
-            }
-            else
-            {
-                declCorType = cxt.DeclarationSig.GetReturnTypeNormalized(&declType);
-                maybeCorType = currSig.GetReturnTypeNormalized(&maybeType);
-                if (declCorType != maybeCorType)
-                    continue;
-                if (declType != maybeType)
-                    continue;
-
-                // Non-constructor accessors skip the first argument
-                // when validating the target argument list.
-                cxt.DeclarationSig.SkipArg();
-                argCount--;
-            }
-
-            // Validate argument count matches.
-            if (argCount != currSig.NumFixedArgs())
-                continue;
-
-            // Validate arguments match.
-            for (; argCount > 0; --argCount)
-            {
-                declCorType = cxt.DeclarationSig.PeekArgNormalized(&declType);
-                maybeCorType = currSig.PeekArgNormalized(&maybeType);
-                if (declCorType != maybeCorType)
-                    break;
-                if (declType != maybeType)
-                    break;
-                cxt.DeclarationSig.NextArg();
-                currSig.NextArg();
-            }
-
-            // If we validated all arguments, we have a match.
-            if (argCount != 0)
+            // Check signature
+            if (!DoesMethodMatchUnsafeAccessorDeclaration(cxt, curr))
                 continue;
 
             cxt.TargetMethod = curr;
