@@ -1736,7 +1736,7 @@ struct CORINFO_THREAD_STATIC_BLOCKS_INFO
 #else
     size_t tlsGetAddrFtnPtr;
     size_t descrAddrOfMaxThreadStaticBlock;
-    size_t descrAddrOfThreadStaticBlocks;
+    size_t offsetOfThreadStaticBlocks;
 #endif
     uint32_t offsetOfGCDataPointer;
 };

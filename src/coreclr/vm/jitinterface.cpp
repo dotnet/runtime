@@ -1915,13 +1915,15 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     pInfo->tlsGetAddrFtnPtr = (size_t)&__tls_get_addr;
     if (isGCType)
     {
-        pInfo->descrAddrOfMaxThreadStaticBlock = (size_t)getGCMaxThreadStaticDescriptor();
-        pInfo->descrAddrOfThreadStaticBlocks = (size_t)getGCThreadStaticBlockDescriptor();
+        size_t maxThreadStaticDescriptor = getGCMaxThreadStaticDescriptor();
+        pInfo->descrAddrOfMaxThreadStaticBlock = maxThreadStaticDescriptor;
+        pInfo->offsetOfThreadStaticBlocks = (size_t)(&t_GCThreadStaticBlocks - __tls_get_addr(maxThreadStaticDescriptor) );
     }
     else
     {
-        pInfo->descrAddrOfMaxThreadStaticBlock = (size_t)getNonGCMaxThreadStaticDescriptor();
-        pInfo->descrAddrOfThreadStaticBlocks = (size_t)getNonGCThreadStaticBlockDescriptor();
+        size_t maxThreadStaticDescriptor = getNonGCMaxThreadStaticDescriptor();
+        pInfo->descrAddrOfMaxThreadStaticBlock = maxThreadStaticDescriptor;
+        pInfo->offsetOfThreadStaticBlocks = (size_t)(&t_NonGCThreadStaticBlocks - __tls_get_addr(maxThreadStaticDescriptor);
     }
 #endif
 

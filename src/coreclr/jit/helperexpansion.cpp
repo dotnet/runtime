@@ -495,13 +495,13 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     CORINFO_THREAD_STATIC_BLOCKS_INFO threadStaticBlocksInfo;
     info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo, isGCThreadStatic);
 
+    uint32_t offsetOfThreadStaticBlocksVal = threadStaticBlocksInfo.offsetOfThreadStaticBlocks;
+    
 #ifdef _MSC_VER
     uint32_t offsetOfMaxThreadStaticBlocksVal = 0;
-    uint32_t offsetOfThreadStaticBlocksVal    = 0;
+    
     JITDUMP("getThreadLocalStaticBlocksInfo (%s)\n:", isGCThreadStatic ? "GC" : "Non-GC");
     offsetOfMaxThreadStaticBlocksVal = threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks;
-    offsetOfThreadStaticBlocksVal    = threadStaticBlocksInfo.offsetOfThreadStaticBlocks;
-
     JITDUMP("tlsIndex= %u\n", (ssize_t)threadStaticBlocksInfo.tlsIndex.addr);
     JITDUMP("offsetOfThreadLocalStoragePointer= %u\n", threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer);
     JITDUMP("offsetOfMaxThreadStaticBlocks= %u\n", offsetOfMaxThreadStaticBlocksVal);
@@ -509,7 +509,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 #else
     JITDUMP("tlsGetAddrFtnPtr= %u\n", threadStaticBlocksInfo.tlsGetAddrFtnPtr);
     JITDUMP("descrAddrOfMaxThreadStaticBlock= %u\n", threadStaticBlocksInfo.descrAddrOfMaxThreadStaticBlock);
-    JITDUMP("descrAddrOfThreadStaticBlocks= %u\n", threadStaticBlocksInfo.descrAddrOfThreadStaticBlocks);
+    JITDUMP("offsetOfThreadStaticBlocks= %u\n", threadStaticBlocksInfo.offsetOfThreadStaticBlocks);
 #endif
 
     JITDUMP("offsetOfGCDataPointer= %u\n", threadStaticBlocksInfo.offsetOfGCDataPointer);
@@ -622,7 +622,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         gtNewIndir(TYP_INT, gtCloneExpr(maxThreadStaticBlocksRef), GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
     GenTree* threadStaticBlocksRef = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(maxThreadStaticBlocksRef),
-                                                   gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL));
+                                                   gtNewIconNode(offsetOfThreadStaticBlocksVal, TYP_I_IMPL));
     GenTree* threadStaticBlocksValue =
         gtNewIndir(TYP_I_IMPL, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
