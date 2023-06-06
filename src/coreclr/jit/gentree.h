@@ -6508,31 +6508,37 @@ struct GenTreeVecCon : public GenTree
             case TYP_LONG:
             case TYP_ULONG:
             {
-#if defined(TARGET_64BIT)
-                if (arg->IsCnsIntOrI())
+                if (arg->IsIntegralConst())
                 {
-                    simdVal.i64[argIdx] = static_cast<int64_t>(arg->AsIntCon()->gtIconVal);
+                    simdVal.i64[argIdx] = static_cast<int64_t>(arg->AsIntConCommon()->LngValue());
                     return true;
                 }
-#else
-                if (arg->OperIsLong() && arg->AsOp()->gtOp1->IsCnsIntOrI() && arg->AsOp()->gtOp2->IsCnsIntOrI())
+
+#if !defined(TARGET_64BIT)
+                if (arg->OperIsLong())
                 {
                     // 32-bit targets will decompose GT_CNS_LNG into two GT_CNS_INT
                     // We need to reconstruct the 64-bit value in order to handle this
 
-                    INT64 gtLconVal = arg->AsOp()->gtOp2->AsIntCon()->gtIconVal;
-                    gtLconVal <<= 32;
-                    gtLconVal |= arg->AsOp()->gtOp1->AsIntCon()->gtIconVal;
+                    GenTreeOp* argOp = arg->AsOp();
 
-                    simdVal.i64[argIdx] = gtLconVal;
-                    return true;
+                    GenTree* argOpLo = argOp->gtGetOp1();
+                    GenTree* argOpHi = argOp->gtGetOp2();
+
+                    if (argOpLo->IsCnsIntOrI() && argOpHi->IsCnsIntOrI())
+                    {
+                        argIdx *= 2;
+
+                        simdVal.i32[argIdx + 0] = static_cast<int32_t>(argOpLo->AsIntCon()->gtIconVal);
+                        simdVal.i32[argIdx + 1] = static_cast<int32_t>(argOpHi->AsIntCon()->gtIconVal);
+
+                        return true;
+                    }
                 }
-#endif // TARGET_64BIT
-                else
-                {
-                    // We expect the constant to have been already zeroed
-                    assert(simdVal.i64[argIdx] == 0);
-                }
+#endif // !TARGET_64BIT
+
+                // We expect the constant to have been already zeroed
+                assert(simdVal.i64[argIdx] == 0);
                 break;
             }
 

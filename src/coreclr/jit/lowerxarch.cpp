@@ -2281,6 +2281,8 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     {
                         result->SetUnusedValue();
                     }
+
+                    BlockRange().Remove(op1);
                     BlockRange().Remove(node);
 
                     LowerNode(vector);
@@ -2387,6 +2389,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
             tmp1 = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, simdBaseJitType, 16);
             LowerNode(tmp1);
+
             switch (simdBaseType)
             {
                 case TYP_BYTE:
@@ -2914,6 +2917,15 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
     switch (simdBaseType)
     {
+#if defined(TARGET_X86)
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_INT;
+            FALLTHROUGH;
+        }
+#endif // TARGET_X86
+
         case TYP_BYTE:
         case TYP_UBYTE:
         case TYP_SHORT:
@@ -2955,6 +2967,37 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
                     opN = node->Op(N + 1);
 
+#if defined(TARGET_X86)
+                    if (opN->OperIsLong())
+                    {
+                        GenTreeOp* argOp = opN->AsOp();
+
+                        GenTree* argOpLo = argOp->gtGetOp1();
+                        GenTree* argOpHi = argOp->gtGetOp2();
+
+                        unsigned tmpN = N * 2;
+
+                        idx = comp->gtNewIconNode(tmpN + 0, TYP_INT);
+                        BlockRange().InsertAfter(opN, idx);
+
+                        tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, argOpLo, idx, insIntrinsic,
+                                                              simdBaseJitType, simdSize);
+                        BlockRange().InsertAfter(idx, tmp1);
+                        LowerNode(tmp1);
+
+                        idx = comp->gtNewIconNode(tmpN + 1, TYP_INT);
+                        BlockRange().InsertAfter(tmp1, idx);
+
+                        tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, argOpHi, idx, insIntrinsic,
+                                                              simdBaseJitType, simdSize);
+                        BlockRange().InsertAfter(idx, tmp1);
+                        LowerNode(tmp1);
+
+                        BlockRange().Remove(opN);
+                        continue;
+                    }
+#endif // TARGET_X86
+
                     idx = comp->gtNewIconNode(N, TYP_INT);
                     BlockRange().InsertAfter(opN, idx);
 
@@ -2979,6 +3022,35 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 //   ...
 
                 opN = node->Op(argCnt);
+
+#if defined(TARGET_X86)
+                if (opN->OperIsLong())
+                {
+                    GenTreeOp* argOp = opN->AsOp();
+
+                    GenTree* argOpLo = argOp->gtGetOp1();
+                    GenTree* argOpHi = argOp->gtGetOp2();
+
+                    unsigned tmpN = N * 2;
+
+                    idx = comp->gtNewIconNode(tmpN + 0, TYP_INT);
+                    BlockRange().InsertAfter(opN, idx);
+
+                    tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, argOpLo, idx, insIntrinsic, simdBaseJitType,
+                                                          simdSize);
+                    BlockRange().InsertAfter(idx, tmp1);
+                    LowerNode(tmp1);
+
+                    idx = comp->gtNewIconNode(tmpN + 1, TYP_INT);
+                    BlockRange().InsertAfter(tmp1, idx);
+
+                    node->ResetHWIntrinsicId(insIntrinsic, comp, tmp1, argOpHi, idx);
+                    node->SetSimdBaseJitType(simdBaseJitType);
+
+                    BlockRange().Remove(opN);
+                    break;
+                }
+#endif // TARGET_X86
 
                 idx = comp->gtNewIconNode(N, TYP_INT);
                 BlockRange().InsertAfter(opN, idx);

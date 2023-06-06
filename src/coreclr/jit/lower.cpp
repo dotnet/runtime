@@ -8204,6 +8204,52 @@ GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types   simdType,
 {
     assert(varTypeIsSIMD(simdType));
 
+#if !defined(TARGET_64BIT)
+    if (op1->OperIsLong())
+    {
+        // We need to handle TYP_LONG here to allow callers, such as LowerHWIntrinsicCreate, to remain
+        // simple. This means we need to check for the known special cases such as constants and otherwise
+        // generate a tree that functionally does: `CreateScalar<uint>(op1.lo()).WithElement(op1.hi())`
+
+        var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+        simdBaseJitType        = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_INT;
+        assert(varTypeIsLong(simdBaseType));
+
+        GenTreeOp* argOp = op1->AsOp();
+
+        GenTree* argOpLo = argOp->gtGetOp1();
+        GenTree* argOpHi = argOp->gtGetOp2();
+
+        if (argOpLo->IsCnsIntOrI() && argOpHi->IsCnsIntOrI())
+        {
+            simd_t simdVal = {};
+
+            simdVal.i32[0] = static_cast<int32_t>(argOpLo->AsIntCon()->gtIconVal);
+            simdVal.i32[1] = static_cast<int32_t>(argOpHi->AsIntCon()->gtIconVal);
+
+            GenTreeVecCon* vecCon = comp->gtNewVconNode(simdType);
+            memcpy(&vecCon->gtSimdVal, &simdVal, simdSize);
+            BlockRange().InsertAfter(op1, vecCon);
+
+            BlockRange().Remove(op1);
+            return vecCon;
+        }
+
+        GenTree* vector = comp->gtNewSimdCreateScalarUnsafeNode(simdType, op1->gtGetOp1(), simdBaseJitType, simdSize);
+        BlockRange().InsertAfter(op1, vector);
+
+        GenTree* index = comp->gtNewIconNode(1);
+        BlockRange().InsertAfter(vector, index);
+
+        GenTree* withElem =
+            comp->gtNewSimdWithElementNode(simdType, vector, index, op1->gtGetOp2(), simdBaseJitType, simdSize);
+        BlockRange().InsertAfter(index, withElem);
+
+        BlockRange().Remove(op1);
+        return withElem;
+    }
+#endif // !TARGET_64BIT
+
     GenTree* result = comp->gtNewSimdCreateScalarUnsafeNode(simdType, op1, simdBaseJitType, simdSize);
     BlockRange().InsertAfter(op1, result);
 
