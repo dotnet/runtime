@@ -42,7 +42,7 @@ namespace System.Threading.ThreadPools.Tests
         // Tests concurrent calls to ThreadPool.SetMinThreads. Invoked from the static constructor.
         private static void ConcurrentInitializeTest()
         {
-            RemoteExecutor.Invoke((UsePortableThreadPool) =>
+            RemoteExecutor.Invoke((usePortableThreadPool) =>
             {
                 int processorCount = Environment.ProcessorCount;
                 var countdownEvent = new CountdownEvent(processorCount);
@@ -51,7 +51,7 @@ namespace System.Threading.ThreadPools.Tests
                     {
                         countdownEvent.Signal();
                         countdownEvent.Wait(ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
-                        if (Boolean.Parse(UsePortableThreadPool))
+                        if (Boolean.Parse(usePortableThreadPool))
                         {
                             Assert.True(ThreadPool.SetMinThreads(processorCount, processorCount));
                         }
@@ -1163,12 +1163,12 @@ namespace System.Threading.ThreadPools.Tests
         public static bool IsThreadingAndRemoteExecutorSupported =>
             PlatformDetection.IsThreadingSupported && RemoteExecutor.IsSupported;
 
-        private static bool getUseWindowsThreadPool()
+        private static bool GetUseWindowsThreadPool()
         {
-            AppContext.TryGetSwitch("System.Threading.ThreadPool.UseWindowsThreadPool", out bool UseWindowsThreadPool);
-            return UseWindowsThreadPool;
+            AppContext.TryGetSwitch("System.Threading.ThreadPool.UseWindowsThreadPool", out bool useWindowsThreadPool);
+            return useWindowsThreadPool;
         }
 
-        private static bool UsePortableThreadPool { get; } = !getUseWindowsThreadPool();
+        private static bool UsePortableThreadPool { get; } = !GetUseWindowsThreadPool();
     }
 }
