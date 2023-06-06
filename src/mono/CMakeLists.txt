@@ -644,9 +644,13 @@ if(LLVM_PREFIX)
     set(MONO_llvm_extra_libs_aarch64codegen ${MONO_llvm_extra_libs_aarch64codegen} "LLVMObjCARCOpts" "LLVMSymbolize" "LLVMDebugInfoPDB"  "LLVMIRReader" "LLVMAsmParser" "LLVMTargetParser")
   endif()
 
+  if(HOST_LINUX AND NOT "${TARGET_ARCH}" STREQUAL "wasm")
+    set(MONO_stdlib -stdlib=libc++)
+  endif()
+
   # llvm-config --cflags
   set(llvm_cflags "-I${LLVM_PREFIX}/include -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
-  set(llvm_cxxflags "-I${LLVM_PREFIX}/include -std=c++17 -stdlib=libc++ -fno-exceptions -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+  set(llvm_cxxflags "-I${LLVM_PREFIX}/include -std=c++17 ${MONO_stdlib} -fno-exceptions -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
   set(llvm_includedir "${LLVM_PREFIX}/include")
 
   if(HOST_LINUX)
