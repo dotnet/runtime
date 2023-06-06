@@ -12,6 +12,7 @@ namespace System.Globalization
         // ICU constants
         private const int ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY = 100; // max size of keyword or value
         private const int ICU_ULOC_FULLNAME_CAPACITY = 157;           // max size of locale name
+        private const int WINDOWS_MAX_COLLATION_NAME_LENGTH = 8;      // max collation name length in the culture name
 
         /// <summary>
         /// Process the locale name that ICU returns and convert it to the format that .NET expects.
@@ -72,7 +73,7 @@ namespace System.Globalization
                             endOfCollation = name.Length;
                         }
 
-                        int length = Math.Min(8, endOfCollation - collationIndex);  // Windows doesn't allow collation names longer than 8 characters
+                        int length = Math.Min(WINDOWS_MAX_COLLATION_NAME_LENGTH, endOfCollation - collationIndex);  // Windows doesn't allow collation names longer than 8 characters
                         if (buffer.Length - bufferIndex >= length + 1)
                         {
                             collationStart = bufferIndex;
