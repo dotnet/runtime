@@ -6,6 +6,13 @@ using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization
 {
+    /// <summary>
+    /// Converter to convert enums to and from strings.
+    /// </summary>
+    /// <remarks>
+    /// Reading is case insensitive, writing can be customized via a <see cref="JsonNamingPolicy" />.
+    /// </remarks>
+    /// <typeparam name="TEnum">The enum type that this converter targets.</typeparam>
     public class JsonStringEnumConverter<TEnum> : JsonConverterFactory
         where TEnum : struct, Enum
     {
@@ -39,7 +46,10 @@ namespace System.Text.Json.Serialization
                 : EnumConverterOptions.AllowStrings;
         }
 
+        /// <inheritdoc />
         public override bool CanConvert(Type typeToConvert) => typeToConvert == typeof(TEnum);
+
+        /// <inheritdoc />
         public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             if (typeToConvert != typeof(TEnum))
