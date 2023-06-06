@@ -1513,7 +1513,9 @@ MINI_OP(OP_XEXTRACT, "xextract", IREG, XREG, NONE)
  * Generic SIMD operations, the rest of the JIT doesn't care about the exact operation.
  */
 MINI_OP(OP_XUNOP, "xunop", XREG, XREG, NONE)
+/* inst_c0 is a OP_ constant, inst_c1 is a MONO_TYPE_ constant */
 MINI_OP(OP_XBINOP, "xbinop", XREG, XREG, XREG)
+/* The arguments are treated as vectors of integer types. inst_c0 is a XBINOP_FORCEINT_ constant */
 MINI_OP(OP_XBINOP_FORCEINT, "xbinop_forceint", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP_SCALAR, "xbinop_scalar", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP_BYSCALAR, "xbinop_byscalar", XREG, XREG, XREG)
@@ -1827,6 +1829,7 @@ MINI_OP(OP_CVT_UI_FP,        "convert_ui_to_fp", XREG, XREG, NONE)
 MINI_OP(OP_CVT_SI_FP,        "convert_si_to_fp", XREG, XREG, NONE)
 MINI_OP(OP_CVT_UI_FP_SCALAR, "convert_ui_to_fp_scalar", XREG, XREG, NONE)
 MINI_OP(OP_CVT_SI_FP_SCALAR, "convert_si_to_fp_scalar", XREG, XREG, NONE)
+/* inst_c1 is one of the MONO_TYPE_ constants */
 MINI_OP(OP_NEGATION,        "negate", XREG, XREG, NONE)
 MINI_OP(OP_NEGATION_SCALAR, "negate_scalar", XREG, XREG, NONE)
 MINI_OP3(OP_BSL,            "bitwise_select", XREG, XREG, XREG, XREG)

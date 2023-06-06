@@ -390,6 +390,10 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 				if (!COMPILE_LLVM (cfg) && (arg_type == MONO_TYPE_I8 || arg_type == MONO_TYPE_U8 || arg_type == MONO_TYPE_I || arg_type == MONO_TYPE_U))
 					return NULL;
 #endif
+#ifdef TARGET_AMD64
+				if (!COMPILE_LLVM (cfg))
+					return NULL;
+#endif
 				if (fsig->params [1]->type != MONO_TYPE_GENERICINST) 
 					return handle_mul_div_by_scalar (cfg, klass, arg_type, args [1]->dreg, args [0]->dreg, OP_IMUL);
 				else if (fsig->params [0]->type != MONO_TYPE_GENERICINST)
@@ -1009,6 +1013,8 @@ support_probe_complete:
 	if (id == SN_get_IsSupported) {
 		MonoInst *ins = NULL;
 		EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
+		if (cfg->verbose_level > 1)
+			g_printf ("\t-> %s\n", supported ? "true" : " false");
 		return ins;
 	}
 	if (!supported) {
@@ -1332,15 +1338,14 @@ emit_msb_shift_vector_constant (MonoCompile *cfg, MonoClass *arg_class, MonoType
 	return msb_shift_vec;
 }
 
-/* Emit intrinsics in System.Numerics.Vector and System.Runtime.Intrinsics.Vector64/128/256/512 */
+/*
+ * Emit intrinsics in System.Numerics.Vector and System.Runtime.Intrinsics.Vector64/128/256/512.
+ * If the intrinsic is not supported for some reasons, return NULL, and fall back to the c#
+ * implementation.
+ */
 static MonoInst*
 emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {	
-#if defined(TARGET_AMD64) || defined(TARGET_WASM)
-	if (!COMPILE_LLVM (cfg))
-		return NULL;
-#endif
-
 	int id = lookup_intrins (sri_vector_methods, sizeof (sri_vector_methods), cmethod);
 	if (id == -1) {
 		//check_no_intrinsic_cattr (cmethod);
@@ -1372,6 +1377,92 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		switch (id) {
 		case SN_GetLower:
 		case SN_GetUpper:
+			return NULL;
+		default:
+			break;
+		}
+	}
+#endif
+
+#ifdef TARGET_WASM
+	g_assert (COMPILE_LLVM (cfg));
+#endif
+
+#ifdef TARGET_AMD64
+	if (!COMPILE_LLVM (cfg)) {
+		if (vector_size != 128)
+			return NULL;
+#ifdef TARGET_WIN32
+		return NULL;
+#endif
+		switch (id) {
+		case SN_Abs:
+		case SN_Add:
+		case SN_AndNot:
+		case SN_As:
+		case SN_AsByte:
+		case SN_AsDouble:
+		case SN_AsInt16:
+		case SN_AsInt32:
+		case SN_AsInt64:
+		case SN_AsSByte:
+		case SN_AsSingle:
+		case SN_AsUInt16:
+		case SN_AsUInt32:
+		case SN_AsUInt64:
+		case SN_BitwiseAnd:
+		case SN_BitwiseOr:
+		case SN_Ceiling:
+		case SN_ConditionalSelect:
+		case SN_ConvertToDouble:
+		case SN_ConvertToInt32:
+		case SN_ConvertToInt64:
+		case SN_ConvertToSingle:
+		case SN_ConvertToUInt32:
+		case SN_ConvertToUInt64:
+		case SN_Create:
+		case SN_CreateScalar:
+		case SN_CreateScalarUnsafe:
+		case SN_Divide:
+		case SN_Dot:
+		case SN_Equals:
+		case SN_EqualsAll:
+		case SN_EqualsAny:
+		case SN_ExtractMostSignificantBits:
+		case SN_Floor:
+		case SN_GetElement:
+		case SN_GetLower:
+		case SN_GetUpper:
+		case SN_GreaterThan:
+		case SN_GreaterThanAll:
+		case SN_GreaterThanAny:
+		case SN_GreaterThanOrEqual:
+		case SN_GreaterThanOrEqualAll:
+		case SN_GreaterThanOrEqualAny:
+		case SN_LessThan:
+		case SN_LessThanAll:
+		case SN_LessThanAny:
+		case SN_LessThanOrEqual:
+		case SN_LessThanOrEqualAll:
+		case SN_LessThanOrEqualAny:
+		case SN_Max:
+		case SN_Min:
+		case SN_Multiply:
+		case SN_Narrow:
+		case SN_Negate:
+		case SN_OnesComplement:
+		case SN_Shuffle:
+		case SN_Sqrt:
+		case SN_Subtract:
+		case SN_Sum:
+		case SN_ToScalar:
+		case SN_ToVector128:
+		case SN_ToVector128Unsafe:
+		case SN_WidenLower:
+		case SN_WidenUpper:
+		case SN_WithElement:
+		case SN_Xor:
+		case SN_get_IsHardwareAccelerated:
 			return NULL;
 		default:
 			break;
@@ -2219,6 +2310,7 @@ static guint16 vector64_vector128_t_methods [] = {
 	SN_op_UnaryPlus,
 };
 
+/* Emit intrinsics in System.Runtime.Intrinsics.Vector64<T>/128<T>/256<T>/512<T> */
 static MonoInst*
 emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
@@ -2230,6 +2322,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 	MonoClass *klass = cmethod->klass;
 	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
+	gboolean supported = TRUE;
 
 	if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 		return NULL;
@@ -2247,26 +2340,37 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		g_free (name);
 	}
 
+#if defined(TARGET_WASM)
+	if (!COMPILE_LLVM (cfg))
+		supported = FALSE;
+#endif
+
+// FIXME: Support Vector64 for mini JIT on arm64
+#ifdef TARGET_ARM64
+	if (!COMPILE_LLVM (cfg) && (size != 16))
+		supported = FALSE;
+#endif
+
+#ifdef TARGET_AMD64
+	if (!COMPILE_LLVM (cfg) && (size != 16))
+		supported = FALSE;
+#ifdef TARGET_WIN32
+		supported = FALSE;
+#endif
+#endif
+
 	switch (id) {
 	case SN_get_IsSupported: {
 		MonoInst *ins = NULL;
-		EMIT_NEW_ICONST (cfg, ins, 1);
+		EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
 		return ins;
 	}
 	default:
 		break;
 	}
 
-#if defined(TARGET_AMD64) || defined(TARGET_WASM)
-	if (!COMPILE_LLVM (cfg))
+	if (!supported)
 		return NULL;
-#endif
-
-// FIXME: Support Vector64 for mini JIT on arm64
-#ifdef TARGET_ARM64
-	if (!COMPILE_LLVM (cfg) && (size != 16))
-		return NULL;
-#endif
 
 	switch (id) {
 	case SN_get_Count: {
@@ -2283,12 +2387,16 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		return emit_xones (cfg, klass);
 	}
 	case SN_get_One: {
-		if (size != 16)
-			return NULL;
+		guint64 buf [8];
+
+		/* For Vector64, the upper elements are 0 */
+		g_assert (sizeof (buf) >= size);
+		memset (buf, 0, sizeof (buf));
+
 		switch (etype->type) {
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1: {
-			guint8 value[16];
+			guint8 *value = (guint8*)buf;
 
 			for (int i = 0; i < len; ++i) {
 				value [i] = 1;
@@ -2298,7 +2406,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2: {
-			guint16 value[8];
+			guint16 *value = (guint16*)buf;
 
 			for (int i = 0; i < len; ++i) {
 				value [i] = 1;
@@ -2312,7 +2420,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 #endif
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4: {
-			guint32 value[4];
+			guint32 *value = (guint32*)buf;
 
 			for (int i = 0; i < len; ++i) {
 				value [i] = 1;
@@ -2326,7 +2434,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 #endif
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8: {
-			guint64 value[2];
+			guint64 *value = (guint64*)buf;
 
 			for (int i = 0; i < len; ++i) {
 				value [i] = 1;
@@ -2335,7 +2443,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return emit_xconst_v128 (cfg, klass, (guint8*)value);
 		}
 		case MONO_TYPE_R4: {
-			float value[4];
+			float *value = (float*)buf;
 
 			for (int i = 0; i < len; ++i) {
 				value [i] = 1.0f;
@@ -2344,7 +2452,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return emit_xconst_v128 (cfg, klass, (guint8*)value);
 		}
 		case MONO_TYPE_R8: {
-			double value[2];
+			double *value = (double*)buf;
 
 			for (int i = 0; i < len; ++i) {
 				value [i] = 1.0;

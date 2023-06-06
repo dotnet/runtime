@@ -67,6 +67,7 @@ static gpointer bp_trampoline;
 /* Offset between fp and the first argument in the callee */
 #define ARGS_OFFSET 16
 #define GP_SCRATCH_REG AMD64_R11
+#define SIMD_TEMP_REG MONO_ARCH_FP_SCRATCH_REG
 
 /* Max number of bblocks before we bail from using more advanced branch placement code */
 #define MAX_BBLOCKS_FOR_BRANCH_OPTS 800
@@ -4015,7 +4016,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->opcode = ins->inst_c1 == MONO_TYPE_R8 ? OP_MAXPD : OP_MAXPS;
 				break;
 			default:
-				g_assert_not_reached();
+				// Handled in mono_arch_output_basic_block ()
 				break;
 			}
 			break;
@@ -6033,8 +6034,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (cfg->compile_aot && cfg->code_exec_only) {
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R8_GOT, &r8_0);
 				amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, sizeof (target_mgreg_t));
-				amd64_sse_movsd_reg_membase (code, MONO_ARCH_FP_SCRATCH_REG, AMD64_R11, 0);
-				amd64_sse_xorpd_reg_reg (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG);
+				amd64_sse_movsd_reg_membase (code, SIMD_TEMP_REG, AMD64_R11, 0);
+				amd64_sse_xorpd_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
 			} else {
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R8, &r8_0);
 				amd64_sse_xorpd_reg_membase (code, ins->dreg, AMD64_RIP, 0);
@@ -6049,8 +6050,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (cfg->compile_aot && cfg->code_exec_only) {
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R8_GOT, &d);
 				amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, sizeof (target_mgreg_t));
-				amd64_sse_movsd_reg_membase (code, MONO_ARCH_FP_SCRATCH_REG, AMD64_R11, 0);
-				amd64_sse_andpd_reg_reg (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG);
+				amd64_sse_movsd_reg_membase (code, SIMD_TEMP_REG, AMD64_R11, 0);
+				amd64_sse_andpd_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
 			} else {
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R8, &d);
 				amd64_sse_andpd_reg_membase (code, ins->dreg, AMD64_RIP, 0);
@@ -6081,13 +6082,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (cfg->compile_aot && cfg->code_exec_only) {
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R4_GOT, &r4_0);
 				amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, sizeof (target_mgreg_t));
-				amd64_sse_movss_reg_membase (code, MONO_ARCH_FP_SCRATCH_REG, AMD64_R11, 0);
+				amd64_sse_movss_reg_membase (code, SIMD_TEMP_REG, AMD64_R11, 0);
 			} else {
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R4, &r4_0);
-				amd64_sse_movss_reg_membase (code, MONO_ARCH_FP_SCRATCH_REG, AMD64_RIP, 0);
+				amd64_sse_movss_reg_membase (code, SIMD_TEMP_REG, AMD64_RIP, 0);
 			}
 
-			amd64_sse_xorps_reg_reg (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG);
+			amd64_sse_xorps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
 			break;
 		}
 
@@ -6674,6 +6675,109 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 		/* TODO: Some of these IR opcodes are marked as no clobber when they indeed do. */
+		case OP_XBINOP: {
+			switch (ins->inst_c0) {
+			case OP_IMUL:
+				switch (ins->inst_c1) {
+				case MONO_TYPE_U4:
+					amd64_sse_pmuludq_reg_reg (code, ins->sreg1, ins->sreg2);
+					break;
+				default:
+					g_assert_not_reached ();
+					break;
+				}
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
+		case OP_XBINOP_FORCEINT: {
+			switch (ins->inst_c0) {
+			case XBINOP_FORCEINT_AND:
+				amd64_sse_andpd_reg_reg (code, ins->sreg1, ins->sreg2);
+				break;
+			case XBINOP_FORCEINT_OR:
+				amd64_sse_orpd_reg_reg (code, ins->sreg1, ins->sreg2);
+				break;
+			case XBINOP_FORCEINT_XOR:
+				amd64_sse_xorpd_reg_reg (code, ins->sreg1, ins->sreg2);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
+		case OP_ONES_COMPLEMENT:
+			amd64_sse_pcmpeqd_reg_reg (code, SIMD_TEMP_REG, SIMD_TEMP_REG);
+			amd64_sse_pxor_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
+			break;
+		case OP_NEGATION: {
+			switch (ins->inst_c1) {
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U1:
+				amd64_sse_pxor_reg_reg (code, SIMD_TEMP_REG, SIMD_TEMP_REG);
+				amd64_sse_psubb_reg_reg (code, SIMD_TEMP_REG, ins->sreg1);
+				amd64_sse_movaps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
+				break;
+			case MONO_TYPE_I2:
+			case MONO_TYPE_U2:
+				amd64_sse_pxor_reg_reg (code, SIMD_TEMP_REG, SIMD_TEMP_REG);
+				amd64_sse_psubw_reg_reg (code, SIMD_TEMP_REG, ins->sreg1);
+				amd64_sse_movaps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
+				break;
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4:
+				amd64_sse_pxor_reg_reg (code, SIMD_TEMP_REG, SIMD_TEMP_REG);
+				amd64_sse_psubd_reg_reg (code, SIMD_TEMP_REG, ins->sreg1);
+				amd64_sse_movaps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
+				break;
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8:
+				amd64_sse_pxor_reg_reg (code, SIMD_TEMP_REG, SIMD_TEMP_REG);
+				amd64_sse_psubq_reg_reg (code, SIMD_TEMP_REG, ins->sreg1);
+				amd64_sse_movaps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
+				break;
+			case MONO_TYPE_R4: {
+				static float r8_0 [] = {-0.0, -0.0, -0.0, -0.0 };
+
+				if (cfg->compile_aot && cfg->code_exec_only) {
+					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_X128_GOT, &r8_0);
+					amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, sizeof(target_mgreg_t));
+					amd64_sse_movups_reg_membase (code, SIMD_TEMP_REG, AMD64_R11, 0);
+				} else {
+					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_X128, &r8_0);
+					amd64_sse_movups_reg_membase (code, SIMD_TEMP_REG, AMD64_RIP, 0);
+				}
+
+				g_assert (ins->sreg1 == ins->dreg);
+				amd64_sse_xorps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
+				break;
+			}
+			case MONO_TYPE_R8: {
+				static double r8_0 [] = {-0.0, -0.0 };
+
+				if (cfg->compile_aot && cfg->code_exec_only) {
+					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_X128_GOT, &r8_0);
+					amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, sizeof(target_mgreg_t));
+					amd64_sse_movups_reg_membase (code, SIMD_TEMP_REG, AMD64_R11, 0);
+				} else {
+					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_X128, &r8_0);
+					amd64_sse_movups_reg_membase (code, SIMD_TEMP_REG, AMD64_RIP, 0);
+				}
+
+				g_assert (ins->sreg1 == ins->dreg);
+				amd64_sse_xorps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
+				break;
+			}
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
 		case OP_ADDPS:
 			amd64_sse_addps_reg_reg (code, ins->sreg1, ins->sreg2);
 			break;
@@ -7114,8 +7218,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_EXTRACT_I8:
 			if (ins->inst_c0) {
-				amd64_movhlps_reg_reg (code, MONO_ARCH_FP_SCRATCH_REG, ins->sreg1);
-				amd64_movd_reg_xreg_size (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG, 8);
+				amd64_movhlps_reg_reg (code, SIMD_TEMP_REG, ins->sreg1);
+				amd64_movd_reg_xreg_size (code, ins->dreg, SIMD_TEMP_REG, 8);
 			} else {
 				amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 8);
 			}
@@ -7165,11 +7269,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_sse_pinsrw_reg_reg_imm (code, ins->dreg, ins->sreg2, ins->inst_c0 * 2 + 1);
 			break;
 		case OP_INSERTX_I8_SLOW:
-			amd64_movd_xreg_reg_size(code, MONO_ARCH_FP_SCRATCH_REG, ins->sreg2, 8);
+			amd64_movd_xreg_reg_size(code, SIMD_TEMP_REG, ins->sreg2, 8);
 			if (ins->inst_c0)
-				amd64_movlhps_reg_reg (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG);
+				amd64_movlhps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
 			else
-				amd64_sse_movsd_reg_reg (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG);
+				amd64_sse_movsd_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
 			break;
 
 		case OP_INSERTX_R4_SLOW:

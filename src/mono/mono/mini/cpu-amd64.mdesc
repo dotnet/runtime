@@ -600,6 +600,13 @@ loadu2_mem: dest:i len:16
 
 #SIMD
 
+xbinop: dest:x src1:x src2:x len:7 clob:1
+xbinop_forceint: dest:x src1:x src2:x len:7 clob:1
+ones_complement: dest:x src1:x len:16 clob:1
+negate: dest:x src1:x len:24 clob:1
+xlower: dest:x src1:x len:7 clob:1
+xupper: dest:x src1:x len:7 clob:1
+
 addps: dest:x src1:x src2:x len:4 clob:1
 divps: dest:x src1:x src2:x len:4 clob:1
 mulps: dest:x src1:x src2:x len:4 clob:1
