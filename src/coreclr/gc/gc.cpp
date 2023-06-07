@@ -1415,9 +1415,7 @@ bool gc_heap::should_move_heap (GCSpinLock* msl)
 // so we can try another heap or we can continue the allocation on the same heap.
 enter_msl_status gc_heap::enter_spin_lock_msl_helper (GCSpinLock* msl)
 {
-retry:
-
-    if (Interlocked::CompareExchange (&msl->lock, lock_taken, lock_free) != lock_free)
+    do
     {
 #ifdef DYNAMIC_HEAP_COUNT
         uint64_t start = GetHighPrecisionTimeStamp();
@@ -1479,8 +1477,8 @@ retry:
         Interlocked::ExchangeAdd64 (&msl->msl_wait_time, end - start);
         dprintf (6666, ("wait for msl lock total time: %zd, total count: %zd, this time: %zd, this count: %u", msl->msl_wait_time, msl->msl_wait_count, end - start, i));
 #endif //DYNAMIC_HEAP_COUNT
-        goto retry;
     }
+    while (Interlocked::CompareExchange (&msl->lock, lock_taken, lock_free) != lock_free);
 
     return msl_entered;
 }
@@ -3170,16 +3168,40 @@ uint32_t limit_time_to_uint32 (uint64_t time)
     return (uint32_t)time;
 }
 
+size_t permillage (float percentage)
+{
+    int result = (int)(percentage*10);
+    if (result < 0)
+        return 0;
+    else if (result > 999)
+        return 999;
+    else
+        return result;
+}
+
 void gc_heap::fire_per_heap_hist_event (gc_history_per_heap* current_gc_data_per_heap, int heap_num)
 {
     maxgen_size_increase* maxgen_size_info = &(current_gc_data_per_heap->maxgen_size_info);
+#ifdef DYNAMIC_HEAP_COUNT
+
+    // pack 6 numbers into one size_t
+    size_t metric = permillage (dynamic_heap_count_data.median_percent_overhead          ) +
+                    permillage (dynamic_heap_count_data.overhead_reduction_per_step_up   ) * 1000 +
+                    permillage (dynamic_heap_count_data.overhead_increase_per_step_down  ) * 1000 * 1000 +
+                    permillage (dynamic_heap_count_data.space_cost_increase_per_step_up  ) * 1000 * 1000 * 1000 + 
+                    permillage (dynamic_heap_count_data.space_cost_decrease_per_step_down) * 1000 * 1000 * 1000 * 1000;
+
+#else //DYNAMIC_HEAP_COUNT
+    size_t metric = maxgen_size_info->pinned_allocated_advance;
+#endif //DYNAMIC_HEAP_COUNT
+
     FIRE_EVENT(GCPerHeapHistory_V3,
                (void *)(maxgen_size_info->free_list_allocated),
                (void *)(maxgen_size_info->free_list_rejected),
                (void *)(maxgen_size_info->end_seg_allocated),
                (void *)(maxgen_size_info->condemned_allocated),
                (void *)(maxgen_size_info->pinned_allocated),
-               (void *)(maxgen_size_info->pinned_allocated_advance),
+               (void *)(metric),
                maxgen_size_info->running_free_list_efficiency,
                current_gc_data_per_heap->gen_to_condemn_reasons.get_reasons0(),
                current_gc_data_per_heap->gen_to_condemn_reasons.get_reasons1(),
@@ -3195,15 +3217,15 @@ void gc_heap::fire_per_heap_hist_event (gc_history_per_heap* current_gc_data_per
     current_gc_data_per_heap->gen_to_condemn_reasons.print (heap_num);
 }
 
-int percentage (uint64_t part, uint64_t whole)
+int permillage (uint64_t part, uint64_t whole)
 {
     if (whole == 0)
-        return 100;
+        return 999;
     double quotient = (double)part / (double)whole;
-    if (quotient >= 0.99)
-        return 99;
+    if (quotient >= 0.999)
+        return 999;
     else
-        return (int)(quotient*100.0);
+        return (int)(quotient*1000);
 }
 
 void gc_heap::fire_pevents()
@@ -3236,16 +3258,15 @@ void gc_heap::fire_pevents()
     assert (prev_sample_index < dynamic_heap_count_data_t::sample_size);
     dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[prev_sample_index];
 
-    int gc_percentage = percentage (sample.gc_elapsed_time, sample.elapsed_between_gcs);
-    int soh_percentage = percentage (sample.soh_msl_wait_time, sample.elapsed_between_gcs);
-    int uoh_percentage = percentage (sample.uoh_msl_wait_time, sample.elapsed_between_gcs);
-    int num_alloc_threads = (int)min (sample.allocating_thread_count, 1000);
+    int gc_permillage  = permillage (sample.gc_elapsed_time  , sample.elapsed_between_gcs);
+    int soh_permillage = permillage (sample.soh_msl_wait_time, sample.elapsed_between_gcs);
+    int uoh_permillage = permillage (sample.uoh_msl_wait_time, sample.elapsed_between_gcs);
 
-    // pack the 4 numbers into one
-    int metric = num_alloc_threads * (100*100*100) +
-                 uoh_percentage * (100*100) +
-                 soh_percentage * (100) +
-                 gc_percentage;
+    // pack the 3 numbers into one
+    int metric = uoh_permillage * (1000*1000) +
+                 soh_permillage * (1000) +
+                 gc_permillage;
+
 #else //DYNAMIC_HEAP_COUNT
     int metric = current_gc_data_global->gen0_reduction_count;
 #endif //DYNAMIC_HEAP_COUNT
@@ -25116,6 +25137,14 @@ void gc_heap::check_heap_count ()
     #endif //STRESS_DYNAMIC_HEAP_COUNT
 
             dynamic_heap_count_data.new_n_heaps = new_n_heaps;
+
+            // store data used for decision to emit in ETW event
+            dynamic_heap_count_data.median_percent_overhead           = median_percent_overhead;
+            dynamic_heap_count_data.percent_heap_space_cost_per_heap  = percent_heap_space_cost_per_heap;
+            dynamic_heap_count_data.overhead_reduction_per_step_up    = overhead_reduction_per_step_up;
+            dynamic_heap_count_data.overhead_increase_per_step_down   = overhead_increase_per_step_down;
+            dynamic_heap_count_data.space_cost_increase_per_step_up   = space_cost_increase_per_step_up;
+            dynamic_heap_count_data.space_cost_decrease_per_step_down = space_cost_decrease_per_step_down;
 
             if (new_n_heaps != n_heaps)
             {

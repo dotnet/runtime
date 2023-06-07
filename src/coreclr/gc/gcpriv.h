@@ -4255,6 +4255,13 @@ private:
         unsigned        sample_index;
         sample          samples[sample_size];
 
+        float median_percent_overhead;          // estimated overhead of allocator + gc
+        float percent_heap_space_cost_per_heap; // percent space cost of adding a heap
+        float overhead_reduction_per_step_up;   // percentage effect on overhead of increasing heap count
+        float overhead_increase_per_step_down;  // percentage effect on overhead of decreasing heap count
+        float space_cost_increase_per_step_up;  // percentage effect on space of increasing heap count
+        float space_cost_decrease_per_step_down;// percentage effect on space of decreasing heap count
+
         int             new_n_heaps;
 #ifdef STRESS_DYNAMIC_HEAP_COUNT
         int             lowest_heap_with_msl_uoh;
