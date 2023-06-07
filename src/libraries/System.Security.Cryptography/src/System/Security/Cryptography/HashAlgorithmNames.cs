@@ -13,7 +13,6 @@ namespace System.Security.Cryptography
         public const string SHA256 = "SHA256";
         public const string SHA384 = "SHA384";
         public const string SHA512 = "SHA512";
-
         public const string SHA3_256 = "SHA3-256";
         public const string SHA3_384 = "SHA3-384";
         public const string SHA3_512 = "SHA3-512";
@@ -31,6 +30,12 @@ namespace System.Security.Cryptography
                 return HashAlgorithmNames.SHA384;
             if (hashAlgorithm is SHA512)
                 return HashAlgorithmNames.SHA512;
+            if (hashAlgorithm is SHA3_256)
+                return HashAlgorithmNames.SHA3_256;
+            if (hashAlgorithm is SHA3_384)
+                return HashAlgorithmNames.SHA3_384;
+            if (hashAlgorithm is SHA3_512)
+                return HashAlgorithmNames.SHA3_512;
             if (hashAlgorithm is MD5)
                 return HashAlgorithmNames.MD5;
 
@@ -61,6 +66,21 @@ namespace System.Security.Cryptography
             if (hashAlgorithmName.Equals(SHA1, StringComparison.OrdinalIgnoreCase))
             {
                 return SHA1;
+            }
+
+            if (hashAlgorithmName.Equals(SHA3_256, StringComparison.OrdinalIgnoreCase))
+            {
+                return SHA3_256;
+            }
+
+            if (hashAlgorithmName.Equals(SHA3_384, StringComparison.OrdinalIgnoreCase))
+            {
+                return SHA3_384;
+            }
+
+            if (hashAlgorithmName.Equals(SHA3_512, StringComparison.OrdinalIgnoreCase))
+            {
+                return SHA3_512;
             }
 
             if (hashAlgorithmName.Equals(MD5, StringComparison.OrdinalIgnoreCase))
