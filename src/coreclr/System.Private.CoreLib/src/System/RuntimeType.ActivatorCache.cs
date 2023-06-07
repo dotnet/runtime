@@ -11,7 +11,7 @@ namespace System
     {
         /// <summary>
         /// A cache which allows optimizing <see cref="Activator.CreateInstance"/>,
-        /// <see cref="RuntimeType.CreateInstanceDefaultCtor"/>, and related APIs.
+        /// <see cref="CreateInstanceDefaultCtor"/>, and related APIs.
         /// </summary>
         private sealed unsafe class ActivatorCache
         {

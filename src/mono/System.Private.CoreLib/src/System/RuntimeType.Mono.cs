@@ -794,7 +794,7 @@ namespace System
                     {
                         MethodInfo methodInfo = candidates[j];
                         if (!System.DefaultBinder.CompareMethodSig(methodInfo, firstCandidate))
-                            throw new AmbiguousMatchException();
+                            throw ThrowHelper.GetAmbiguousMatchException(firstCandidate);
                     }
 
                     // All the methods have the exact same name and sig so return the most derived one.
@@ -850,10 +850,10 @@ namespace System
             if (types == null || types.Length == 0)
             {
                 // no arguments
+                PropertyInfo firstCandidate = candidates[0];
+
                 if (candidates.Count == 1)
                 {
-                    PropertyInfo firstCandidate = candidates[0];
-
                     if (returnType is not null && !returnType.IsEquivalentTo(firstCandidate.PropertyType))
                         return null;
 
@@ -863,7 +863,7 @@ namespace System
                 {
                     if (returnType is null)
                         // if we are here we have no args or property type to select over and we have more than one property with that name
-                        throw new AmbiguousMatchException();
+                        throw ThrowHelper.GetAmbiguousMatchException(firstCandidate);
                 }
             }
 
@@ -894,7 +894,7 @@ namespace System
                 if ((bindingAttr & eventInfo.BindingFlags) == eventInfo.BindingFlags)
                 {
                     if (match != null)
-                        throw new AmbiguousMatchException();
+                        throw ThrowHelper.GetAmbiguousMatchException(match);
 
                     match = eventInfo;
                 }
@@ -923,7 +923,7 @@ namespace System
                     if (match != null)
                     {
                         if (ReferenceEquals(fieldInfo.DeclaringType, match.DeclaringType))
-                            throw new AmbiguousMatchException();
+                            throw ThrowHelper.GetAmbiguousMatchException(match);
 
                         if (match.DeclaringType!.IsInterface && fieldInfo.DeclaringType!.IsInterface)
                             multipleStaticFieldMatches = true;
@@ -935,7 +935,7 @@ namespace System
             }
 
             if (multipleStaticFieldMatches && match!.DeclaringType!.IsInterface)
-                throw new AmbiguousMatchException();
+                throw ThrowHelper.GetAmbiguousMatchException(match);
 
             return match;
         }
@@ -987,7 +987,7 @@ namespace System
                 if (FilterApplyType(iface, bindingAttr, name, false, ns))
                 {
                     if (match != null)
-                        throw new AmbiguousMatchException();
+                        throw ThrowHelper.GetAmbiguousMatchException(match);
 
                     match = iface;
                 }
@@ -1015,7 +1015,7 @@ namespace System
                 if (FilterApplyType(nestedType, bindingAttr, name, false, ns))
                 {
                     if (match != null)
-                        throw new AmbiguousMatchException();
+                        throw ThrowHelper.GetAmbiguousMatchException(match);
 
                     match = nestedType;
                 }

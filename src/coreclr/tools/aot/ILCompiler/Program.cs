@@ -29,6 +29,7 @@ namespace ILCompiler
     internal sealed class Program
     {
         private readonly ILCompilerRootCommand _command;
+        private static readonly char[] s_separator = new char[] { ',', ';', ' ' };
 
         public Program(ILCompilerRootCommand command)
         {
@@ -66,7 +67,7 @@ namespace ILCompiler
 
             TargetArchitecture targetArchitecture = Get(_command.TargetArchitecture);
             TargetOS targetOS = Get(_command.TargetOS);
-            InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), targetArchitecture, targetOS,
+            InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), targetArchitecture, targetOS,
                 "Unrecognized instruction set {0}", "Unsupported combination of instruction sets: {0}/{1}");
 
             string systemModuleName = Get(_command.SystemModuleName);
@@ -682,7 +683,7 @@ namespace ILCompiler
         {
             foreach (string value in warningCodes)
             {
-                string[] values = value.Split(new char[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] values = value.Split(s_separator, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string id in values)
                 {
                     if (!id.StartsWith("IL", StringComparison.Ordinal) || !ushort.TryParse(id.AsSpan(2), out ushort code))

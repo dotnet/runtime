@@ -33,6 +33,8 @@ namespace System.Data.OleDb
             }
         }
 
+        private static readonly char[] s_trimChars = new char[] { '@', ' ', ':' };
+
         private void OleDbRowUpdatingHandler(object sender, OleDbRowUpdatingEventArgs ruevent)
         {
             RowUpdatingHandler(ruevent);
@@ -235,7 +237,7 @@ namespace System.Data.OleDb
                         if ((null != parameterName) && !dataRow.IsNull(parameterName, DataRowVersion.Default))
                         {
                             // $CONSIDER - not trimming the @ from the beginning but to left the designer do that
-                            parameter.ParameterName = Convert.ToString(dataRow[parameterName, DataRowVersion.Default], CultureInfo.InvariantCulture)!.TrimStart(new char[] { '@', ' ', ':' });
+                            parameter.ParameterName = Convert.ToString(dataRow[parameterName, DataRowVersion.Default], CultureInfo.InvariantCulture)!.TrimStart(s_trimChars);
                         }
                         if ((null != parameterDirection) && !dataRow.IsNull(parameterDirection, DataRowVersion.Default))
                         {

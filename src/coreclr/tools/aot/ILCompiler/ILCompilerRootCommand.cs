@@ -112,6 +112,8 @@ namespace ILCompiler
             }, true, "Maximum number of threads to use during compilation");
         public Option<string> InstructionSet { get; } =
             new(new[] { "--instruction-set" }, "Instruction set to allow or disallow");
+        public Option<int> MaxVectorTBitWidth { get; } =
+            new(new[] { "--max-vectort-bitwidth" }, "Maximum width, in bits, that Vector<T> is allowed to be");
         public Option<string> Guard { get; } =
             new(new[] { "--guard" }, "Enable mitigations. Options: 'cf': CFG (Control Flow Guard, Windows only)");
         public Option<bool> Dehydrate { get; } =
@@ -210,6 +212,7 @@ namespace ILCompiler
             AddOption(RuntimeKnobs);
             AddOption(Parallelism);
             AddOption(InstructionSet);
+            AddOption(MaxVectorTBitWidth);
             AddOption(Guard);
             AddOption(Dehydrate);
             AddOption(PreinitStatics);
@@ -267,9 +270,11 @@ namespace ILCompiler
                         // + the original command line arguments
                         // + a rsp file that should work to directly run out of the zip file
 
+#pragma warning disable CA1861 // Avoid constant arrays as arguments. Only executed once during the execution of the program.
                         Helpers.MakeReproPackage(makeReproPath, context.ParseResult.GetValue(OutputFilePath), args, context.ParseResult,
                             inputOptions : new[] { "r", "reference", "m", "mibc", "rdxml", "directpinvokelist", "descriptor" },
                             outputOptions : new[] { "o", "out", "exportsfile" });
+#pragma warning restore CA1861 // Avoid constant arrays as arguments
                     }
 
                     context.ExitCode = new Program(this).Run();
