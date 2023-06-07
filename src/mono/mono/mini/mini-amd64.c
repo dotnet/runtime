@@ -48,6 +48,7 @@
 #include "mini-gc.h"
 #include "mini-runtime.h"
 #include "aot-runtime.h"
+#include "llvm-intrinsics-types.h"
 
 MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 
@@ -6679,6 +6680,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			switch (ins->inst_c0) {
 			case OP_IMUL:
 				switch (ins->inst_c1) {
+				case MONO_TYPE_I4:
 				case MONO_TYPE_U4:
 					amd64_sse_pmuludq_reg_reg (code, ins->sreg1, ins->sreg2);
 					break;
@@ -6710,6 +6712,32 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
+		case OP_XOP_X_X_X: {
+			switch (ins->inst_c0) {
+			case INTRINS_SSE_PHADDW:
+				amd64_sse_phaddw_reg_reg (code, ins->dreg, ins->sreg2);
+				break;
+			case INTRINS_SSE_PHADDD:
+				amd64_sse_phaddd_reg_reg (code, ins->dreg, ins->sreg2);
+				break;
+			case INTRINS_SSE_HADDPS:
+				amd64_sse_haddps_reg_reg (code, ins->dreg, ins->sreg2);
+				break;
+			case INTRINS_SSE_HADDPD:
+				amd64_sse_haddpd_reg_reg (code, ins->dreg, ins->sreg2);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
+		case OP_SSE41_DPPS_IMM:
+			amd64_sse_dpps_reg_reg (code, ins->dreg, ins->sreg2, ins->inst_c0);
+			break;
+		case OP_SSE41_DPPD_IMM:
+			amd64_sse_dppd_reg_reg (code, ins->dreg, ins->sreg2, ins->inst_c0);
+			break;
 		case OP_ONES_COMPLEMENT:
 			amd64_sse_pcmpeqd_reg_reg (code, SIMD_TEMP_REG, SIMD_TEMP_REG);
 			amd64_sse_pxor_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
@@ -7242,6 +7270,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_movhlps_reg_reg (code, ins->dreg, ins->sreg1);
 			else
 				amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_EXTRACT_R4:
+			g_assert (!ins->inst_c0);
+			amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_INSERT_I2:
 			amd64_sse_pinsrw_reg_reg_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);

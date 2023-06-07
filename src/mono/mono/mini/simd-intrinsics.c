@@ -380,9 +380,17 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 				return NULL;
 			case SN_Max:
 				instc0 = type_enum_is_unsigned (arg_type) ? OP_IMAX_UN : OP_IMAX;
+#ifdef TARGET_AMD64
+				if (!COMPILE_LLVM (cfg) && instc0 == OP_IMAX_UN)
+					return NULL;
+#endif
 				break;
 			case SN_Min:
 				instc0 = type_enum_is_unsigned (arg_type) ? OP_IMIN_UN : OP_IMIN;
+#ifdef TARGET_AMD64
+				if (!COMPILE_LLVM (cfg) && instc0 == OP_IMIN_UN)
+					return NULL;
+#endif
 				break;
 			case SN_Multiply:
 			case SN_op_Multiply: {
@@ -1397,7 +1405,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #endif
 		switch (id) {
 		case SN_Abs:
-		case SN_Add:
 		case SN_AndNot:
 		case SN_As:
 		case SN_AsByte:
@@ -1410,8 +1417,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_AsUInt16:
 		case SN_AsUInt32:
 		case SN_AsUInt64:
-		case SN_BitwiseAnd:
-		case SN_BitwiseOr:
 		case SN_Ceiling:
 		case SN_ConditionalSelect:
 		case SN_ConvertToDouble:
@@ -1423,8 +1428,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_Create:
 		case SN_CreateScalar:
 		case SN_CreateScalarUnsafe:
-		case SN_Divide:
-		case SN_Dot:
 		case SN_Equals:
 		case SN_EqualsAll:
 		case SN_EqualsAny:
@@ -1445,15 +1448,11 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_LessThanOrEqual:
 		case SN_LessThanOrEqualAll:
 		case SN_LessThanOrEqualAny:
-		case SN_Max:
-		case SN_Min:
-		case SN_Multiply:
 		case SN_Narrow:
 		case SN_Negate:
 		case SN_OnesComplement:
 		case SN_Shuffle:
 		case SN_Sqrt:
-		case SN_Subtract:
 		case SN_Sum:
 		case SN_ToScalar:
 		case SN_ToVector128:
@@ -1461,7 +1460,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_WidenLower:
 		case SN_WidenUpper:
 		case SN_WithElement:
-		case SN_Xor:
 		case SN_get_IsHardwareAccelerated:
 			return NULL;
 		default:
@@ -1737,21 +1735,31 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		int instc =-1;
 		if (type_enum_is_float (arg0_type)) {
 			if (is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSE41)) {
-				int mask_reg = alloc_ireg (cfg);
+				int mask_val = -1;
 				switch (arg0_type) {
-				case MONO_TYPE_R4: 
-					instc = OP_SSE41_DPPS; 
-					MONO_EMIT_NEW_ICONST (cfg, mask_reg, 0xf1);		// 0xf1 ... 0b11110001
+				case MONO_TYPE_R4:
+					instc = COMPILE_LLVM (cfg) ? OP_SSE41_DPPS : OP_SSE41_DPPS_IMM;
+					mask_val = 0xf1; // 0xf1 ... 0b11110001
 					break;
-				case MONO_TYPE_R8: 
-					instc = OP_SSE41_DPPD; 
-					MONO_EMIT_NEW_ICONST (cfg, mask_reg, 0x31);		// 0x31 ... 0b00110001
-					break;	
+				case MONO_TYPE_R8:
+					instc = COMPILE_LLVM (cfg) ? OP_SSE41_DPPD : OP_SSE41_DPPD_IMM;
+					mask_val = 0x31; // 0x31 ... 0b00110001
+					break;
 				default:
 					return NULL;
 				}	
-				MonoInst *dot = emit_simd_ins (cfg, klass, instc, args [0]->dreg, args [1]->dreg);
-				dot->sreg3 = mask_reg;
+
+				MonoInst *dot;
+				if (COMPILE_LLVM (cfg)) {
+					int mask_reg = alloc_ireg (cfg);
+					MONO_EMIT_NEW_ICONST (cfg, mask_reg, mask_val);
+
+					dot = emit_simd_ins (cfg, klass, instc, args [0]->dreg, args [1]->dreg);
+					dot->sreg3 = mask_reg;
+				} else {
+					dot = emit_simd_ins (cfg, klass, instc, args [0]->dreg, args [1]->dreg);
+					dot->inst_c0 = mask_val;
+				}
 
 				return extract_first_element (cfg, klass, arg0_type, dot->dreg);
 			} else {
@@ -1760,6 +1768,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		} else {
 			if (arg0_type == MONO_TYPE_I1 || arg0_type == MONO_TYPE_U1)
 				return NULL; 	// We don't support sum vector for byte, sbyte types yet
+
+			// FIXME:
+			if (!COMPILE_LLVM (cfg) && !(arg0_type == MONO_TYPE_I4 || arg0_type == MONO_TYPE_U4))
+				return NULL;
 
 			instc = OP_IMUL;
 		}

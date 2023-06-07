@@ -894,6 +894,8 @@ typedef union {
 
 #define amd64_sse_shufpd_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_imm((inst), (dreg), (reg), 0x66, 0x0f, 0xC6, (imm))
 
+#define amd64_sse_roundps_reg_reg_imm(inst, dreg, reg, imm) emit_sse_reg_reg_op4_imm((inst), (dreg), (reg), 0x66, 0x0f, 0x3a, 0x08, (imm))
+
 #define amd64_sse_roundpd_reg_reg_imm(inst, dreg, reg, imm) emit_sse_reg_reg_op4_imm((inst), (dreg), (reg), 0x66, 0x0f, 0x3a, 0x09, (imm))
 
 #define amd64_sse_addpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x58)
@@ -1168,6 +1170,13 @@ typedef union {
 
 #define amd64_sse_lzcnt_reg_reg_size(inst, dreg, reg, size) emit_sse_reg_reg_size((inst), (dreg), (reg), 0xf3, 0x0f, 0xbd, (size))
 #define amd64_sse_popcnt_reg_reg_size(inst, dreg, reg, size) emit_sse_reg_reg_size((inst), (dreg), (reg), 0xf3, 0x0f, 0xb8, (size))
+
+#define amd64_sse_psrlq_reg_imm(inst, reg, imm) emit_sse_reg_reg_imm((inst), X86_SSE_SHR, (reg), 0x66, 0x0f, 0x73, (imm))
+#define amd64_sse_dpps_reg_reg(inst, dreg, sreg, mask) emit_sse_reg_reg_op4_imm((inst), (dreg), (sreg), 0x66, 0x0f, 0x3a, 0x40, (mask))
+#define amd64_sse_dppd_reg_reg(inst, dreg, sreg, mask) emit_sse_reg_reg_op4_imm((inst), (dreg), (sreg), 0x66, 0x0f, 0x3a, 0x41, (mask))
+#define amd64_sse_phaddw_reg_reg(inst, dreg, sreg) emit_sse_reg_reg_op4((inst), (dreg), (sreg), 0x66, 0x0f, 0x38, 0x01)
+#define amd64_sse_phaddd_reg_reg(inst, dreg, sreg) emit_sse_reg_reg_op4((inst), (dreg), (sreg), 0x66, 0x0f, 0x38, 0x02)
+#define amd64_movq_reg_reg(inst,dreg,sreg) emit_sse_reg_reg ((inst), (dreg), (sreg), 0xf3, 0x0f, 0x7e)
 
 /* Generated from x86-codegen.h */
 

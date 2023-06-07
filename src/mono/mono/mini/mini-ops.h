@@ -1145,6 +1145,9 @@ MINI_OP(OP_SSE_CVTII, "sse_cvtii", XREG, XREG, NONE)
 MINI_OP3(OP_SSE41_DPPS, "sse41_dpps", XREG, XREG, XREG, IREG)
 MINI_OP3(OP_SSE41_DPPD, "sse41_dppd", XREG, XREG, XREG, IREG)
 MINI_OP3(OP_SSE41_MPSADBW, "sse41_mpsadbw", XREG, XREG, XREG, IREG)
+/* inst_c0 contains the mask value */
+MINI_OP(OP_SSE41_DPPS_IMM, "sse41_dpps_imm", XREG, XREG, XREG)
+MINI_OP(OP_SSE41_DPPD_IMM, "sse41_dppd_imm", XREG, XREG, XREG)
 
 /* pclmulqdq */
 MINI_OP3(OP_PCLMULQDQ, "pclmulqdq", XREG, XREG, XREG, IREG)
