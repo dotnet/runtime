@@ -10,7 +10,7 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
         public GenericAddStaticField () {
         }
 
-        public T GetField => s_field;
+        public T GetField () => s_field;
 
         private static T s_field;
 

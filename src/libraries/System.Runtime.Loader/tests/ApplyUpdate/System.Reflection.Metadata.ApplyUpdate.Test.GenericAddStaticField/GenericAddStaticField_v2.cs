@@ -10,7 +10,7 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
         public GenericAddStaticField () {
         }
 
-        public T GetField () => s_field;
+        public T GetField () => s_field2;
 
         private static T s_field;
 
@@ -18,7 +18,7 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
 
         public void TestMethod () {
             s_field = (T)(object)"spqr";
-            //s_field2 = (T)(object)"4567";
+            s_field2 = (T)(object)"4567";
         }
 
     }

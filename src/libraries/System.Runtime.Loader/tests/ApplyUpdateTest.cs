@@ -753,7 +753,7 @@ namespace System.Reflection.Metadata
                 var ty = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod);
                 var assm = ty.Assembly;
 
-		var bindingFlags = BindingFlags.Instance | BindingFlags.Public;
+                var bindingFlags = BindingFlags.Instance | BindingFlags.Public;
                 var allMethods = ty.GetMethods(bindingFlags);
 
                 int objectMethods = typeof(object).GetMethods(bindingFlags).Length;
@@ -799,33 +799,33 @@ namespace System.Reflection.Metadata
                     parmPos++;
                 }
 
-		var parmAttrs = parms[4].GetCustomAttributes(false);
+                var parmAttrs = parms[4].GetCustomAttributes(false);
                 Assert.Equal (2, parmAttrs.Length);
-		bool foundCallerMemberName = false;
-		bool foundOptional = false;
-		foreach (var pa in parmAttrs) {
-		    if (typeof (CallerMemberNameAttribute).Equals(pa.GetType()))
-		    {
-			foundCallerMemberName = true;
-		    }
-		    if (typeof (OptionalAttribute).Equals(pa.GetType()))
-		    {
-			foundOptional = true;
-		    }
-		}
-		Assert.True(foundCallerMemberName);
-		Assert.True(foundOptional);
+                bool foundCallerMemberName = false;
+                bool foundOptional = false;
+                foreach (var pa in parmAttrs) {
+                    if (typeof (CallerMemberNameAttribute).Equals(pa.GetType()))
+                    {
+                        foundCallerMemberName = true;
+                    }
+                    if (typeof (OptionalAttribute).Equals(pa.GetType()))
+                    {
+                        foundOptional = true;
+                    }
+                }
+                Assert.True(foundCallerMemberName);
+                Assert.True(foundOptional);
 
-		// n.b. this typeof() also makes the rest of the test work on Wasm with aggressive trimming.
-		Assert.Equal (typeof(System.Threading.CancellationToken), parms[3].ParameterType);
+                // n.b. this typeof() also makes the rest of the test work on Wasm with aggressive trimming.
+                Assert.Equal (typeof(System.Threading.CancellationToken), parms[3].ParameterType);
 
                 Assert.True(parms[3].HasDefaultValue);
-		Assert.True(parms[4].HasDefaultValue);
+                Assert.True(parms[4].HasDefaultValue);
 
-		Assert.Null(parms[3].DefaultValue);
-		Assert.Equal(string.Empty, parms[4].DefaultValue);
+                Assert.Null(parms[3].DefaultValue);
+                Assert.Equal(string.Empty, parms[4].DefaultValue);
             });
-	}
+        }
 
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
         public static void TestGenericAddStaticField()
@@ -838,20 +838,24 @@ namespace System.Reflection.Metadata
 
                 x.TestMethod();
 
-                Assert.Equal ("abcd", x.GetField);
+                Assert.Equal ("abcd", x.GetField());
 
                 var y = new System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField<double>();
 
-                Assert.Equal (0.0, y.GetField);
+                Assert.Equal (0.0, y.GetField());
                 
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                // there are two updates - the first adds the fields, the second one updates the
+                // methods to use the new fields
                 ApplyUpdateUtil.ApplyUpdate(assm);
 
                 x.TestMethod();
 
-                string result = x.GetField;
+                string result = x.GetField();
                 Assert.Equal("4567", result);
 
-                Assert.Equal(0.0, y.GetField);
+                Assert.Equal(0.0, y.GetField());
             });
         }
     }
