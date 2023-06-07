@@ -1,6 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include <sys/types.h>
+
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#endif
+
+#ifdef __NetBSD__
+#include <sys/cdefs.h>
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#include <kvm.h>
+#endif
+
+#ifdef __FreeBSD__
+#include <sys/sysctl.h>
+#include <sys/user.h>
+#endif
+
 #include <eventpipe/ep-rt-config.h>
 
 #ifdef ENABLE_PERFTRACING
@@ -13,6 +31,7 @@
 
 bool aot_ipc_get_process_id_disambiguation_key(uint32_t process_id, uint64_t *key);
 
+// Consider moving this code to shared library code. See https://github.com/dotnet/runtime/issues/87069
 bool
 aot_ipc_get_process_id_disambiguation_key(
     uint32_t process_id,
@@ -26,7 +45,54 @@ aot_ipc_get_process_id_disambiguation_key(
     *key = 0;
 
 // Mono implementation, restricted just to Unix
-#ifdef TARGET_UNIX
+#if defined (__APPLE__) || defined (__FreeBSD__)
+	// On OS X, we return the process start time expressed in Unix time (the number of seconds
+	// since the start of the Unix epoch).
+	struct kinfo_proc info = {};
+	size_t size = sizeof (info);
+	int mib [4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, process_id };
+
+	const int result_sysctl = sysctl (mib, sizeof(mib)/sizeof(*mib), &info, &size, NULL, 0);
+	if (result_sysctl == 0) {
+#if defined (__APPLE__)
+		struct timeval proc_starttime = info.kp_proc.p_starttime;
+#else // __FreeBSD__
+		struct timeval proc_starttime = info.ki_start;
+#endif
+		long seconds_since_epoch = proc_starttime.tv_sec;
+		*key = seconds_since_epoch;
+		return true;
+	} else {
+		EP_ASSERT (!"Failed to get start time of a process.");
+		return false;
+	}
+#elif defined (__NetBSD__)
+	// On NetBSD, we return the process start time expressed in Unix time (the number of seconds
+	// since the start of the Unix epoch).
+	kvm_t *kd;
+	int cnt;
+	struct kinfo_proc2 *info;
+
+	kd = kvm_open (NULL, NULL, NULL, KVM_NO_FILES, "kvm_open");
+	if (!kd) {
+		EP_ASSERT (!"Failed to get start time of a process.");
+		return false;
+	}
+
+	info = kvm_getproc2 (kd, KERN_PROC_PID, process_id, sizeof (struct kinfo_proc2), &cnt);
+	if (!info || cnt < 1) {
+		kvm_close (kd);
+		EP_ASSERT (!"Failed to get start time of a process.");
+		return false;
+	}
+
+	kvm_close (kd);
+
+	long seconds_since_epoch = info->p_ustart_sec;
+	*key = seconds_since_epoch;
+
+	return true;
+#elif defined (__linux__)
 
     // Here we read /proc/<pid>/stat file to get the start time for the process.
     // We return this value (which is expressed in jiffies since boot time).
