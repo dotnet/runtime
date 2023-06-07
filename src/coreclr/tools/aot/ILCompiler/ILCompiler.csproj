@@ -10,8 +10,8 @@
   <!-- BEGIN: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
   <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' != 'true'">
     <PublishDir>$(RuntimeBinDir)ilc-published/</PublishDir>
-    <NativeAotSupported Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'linux' and '$(TargetOS)' != 'osx'">false</NativeAotSupported>
-    <NativeAotSupported Condition="'$(TargetArchitecture)' != 'x64'">false</NativeAotSupported>
+    <!-- Can't use NativeAOT in source build yet https://github.com/dotnet/runtime/issues/66859 -->
+    <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true'">false</NativeAotSupported>
     <PublishAot Condition="'$(NativeAotSupported)' == 'true'">true</PublishAot>
     <SysRoot Condition="'$(NativeAotSupported)' == 'true' and '$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
     <PublishReadyToRun Condition="'$(NativeAotSupported)' != 'true'">true</PublishReadyToRun>
