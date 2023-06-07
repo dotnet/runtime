@@ -241,7 +241,6 @@ unsigned argTotalDeferred;
 unsigned argTotalConst;
 
 unsigned argTotalObjPtr;
-unsigned argTotalGTF_ASGinArgs;
 
 unsigned argMaxTempsPerMethod;
 
@@ -529,11 +528,11 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
     switch (structSize)
     {
         case 1:
-            useType = TYP_BYTE;
+            useType = TYP_UBYTE;
             break;
 
         case 2:
-            useType = TYP_SHORT;
+            useType = TYP_USHORT;
             break;
 
 #if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI)
@@ -1330,7 +1329,7 @@ void Compiler::compStartup()
     emitter::emitInit();
 
     // Static vars of ValueNumStore
-    ValueNumStore::InitValueNumStoreStatics();
+    ValueNumStore::ValidateValueNumStoreStatics();
 
     compDisplayStaticSizes(jitstdout);
 }
@@ -1919,7 +1918,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compLocallocUsed             = false;
     compLocallocOptimized        = false;
     compQmarkRationalized        = false;
-    compAssignmentRationalized   = false;
     compQmarkUsed                = false;
     compFloatingPointUsed        = false;
 
@@ -2287,15 +2285,16 @@ void Compiler::compSetProcessor()
     // the overall JIT implementation, we currently require the entire set of ISAs to be
     // supported and disable AVX512 support otherwise.
 
-    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW_VL) &&
-        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD_VL) &&
-        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ_VL))
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F))
     {
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ));
         assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F));
         assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW_VL));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD_VL));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ_VL));
 
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
 
@@ -2309,32 +2308,6 @@ void Compiler::compSetProcessor()
 
             preferredVectorByteLength = 256 / 8;
         }
-    }
-    else
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI_VL);
-
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI_VL_X64);
-#endif // TARGET_AMD64
     }
 
     opts.preferredVectorByteLength = preferredVectorByteLength;
@@ -4039,7 +4012,7 @@ _SetMinOpts:
     fgCanRelocateEHRegions = true;
 }
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
 // Function compRsvdRegCheck:
 //  given a curState to use for calculating the total frame size
 //  it will return true if the REG_OPT_RSVD should be reserved so
@@ -4082,10 +4055,6 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 
     // TODO-ARM64-CQ: update this!
     JITDUMP(" Returning true (ARM64)\n\n");
-    return true; // just always assume we'll need it, for now
-
-#elif defined(TARGET_LOONGARCH64)
-    JITDUMP(" Returning true (LOONGARCH64)\n\n");
     return true; // just always assume we'll need it, for now
 
 #elif defined(TARGET_RISCV64)
@@ -4215,7 +4184,7 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     return false;
 #endif // TARGET_ARM
 }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_ARMARCH || TARGET_RISCV64
 
 //------------------------------------------------------------------------
 // compGetTieringName: get a string describing tiered compilation settings
@@ -4750,8 +4719,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Promote struct locals based on primitive access patterns
     //
     DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
-
-    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
 
     // Run a simple forward substitution pass.
     //
@@ -5588,7 +5555,7 @@ void Compiler::generatePatchpointInfo()
     //
     const int totalFrameSize = codeGen->genTotalFrameSize() + TARGET_POINTER_SIZE;
     const int offsetAdjust   = 0;
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     // SP is not manipulated by calls so no frame size adjustment needed.
     // Local Offsets may need adjusting, if FP is at bottom of frame.
     //
@@ -6838,8 +6805,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         {
             frameSizeUpdate = 8;
         }
-#elif defined(TARGET_ARM64)
-        if ((totalFrameSize % 16) != 0)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+        if ((totalFrameSize & 0xf) != 0)
         {
             frameSizeUpdate = 8;
         }

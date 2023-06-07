@@ -74,7 +74,7 @@ namespace System.Collections.Concurrent
         /// <param name="collection">
         /// The collection whose elements are copied to the new <see cref="ConcurrentQueue{T}"/>.
         /// </param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="collection"/> argument is null.</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="collection"/> argument is null.</exception>
         public ConcurrentQueue(IEnumerable<T> collection)
         {
             if (collection == null)
@@ -171,10 +171,10 @@ namespace System.Collections.Concurrent
         IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)this).GetEnumerator();
 
         /// <summary>
-        /// Attempts to add an object to the <see cref="Concurrent.IProducerConsumerCollection{T}"/>.
+        /// Attempts to add an object to the <see cref="IProducerConsumerCollection{T}"/>.
         /// </summary>
         /// <param name="item">The object to add to the <see
-        /// cref="Concurrent.IProducerConsumerCollection{T}"/>. The value can be a null
+        /// cref="IProducerConsumerCollection{T}"/>. The value can be a null
         /// reference (Nothing in Visual Basic) for reference types.
         /// </param>
         /// <returns>true if the object was added successfully; otherwise, false.</returns>
@@ -188,7 +188,7 @@ namespace System.Collections.Concurrent
         }
 
         /// <summary>
-        /// Attempts to remove and return an object from the <see cref="Concurrent.IProducerConsumerCollection{T}"/>.
+        /// Attempts to remove and return an object from the <see cref="IProducerConsumerCollection{T}"/>.
         /// </summary>
         /// <param name="item">
         /// When this method returns, if the operation was successful, <paramref name="item"/> contains the
@@ -740,7 +740,7 @@ namespace System.Collections.Concurrent
         /// </summary>
         /// <param name="result">
         /// When this method returns, <paramref name="result"/> contains an object from
-        /// the beginning of the <see cref="Concurrent.ConcurrentQueue{T}"/> or default(T)
+        /// the beginning of the <see cref="ConcurrentQueue{T}"/> or default(T)
         /// if the operation failed.
         /// </param>
         /// <returns>true if and object was returned successfully; otherwise, false.</returns>

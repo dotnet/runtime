@@ -295,11 +295,8 @@
   extern const regNumber fltArgRegs [MAX_FLOAT_REG_ARG];
   extern const regMaskTP fltArgMasks[MAX_FLOAT_REG_ARG];
 
-  #define B_DIST_SMALL_MAX_NEG  (-131072)
-  #define B_DIST_SMALL_MAX_POS  (+131071)
-
-  #define OFFSET_DIST_SMALL_MAX_NEG   (-2048)
-  #define OFFSET_DIST_SMALL_MAX_POS   (+2047)
+  #define B_DIST_SMALL_MAX_NEG  (-4096)
+  #define B_DIST_SMALL_MAX_POS  (+4095)
 
   #define STACK_PROBE_BOUNDARY_THRESHOLD_BYTES 0
 

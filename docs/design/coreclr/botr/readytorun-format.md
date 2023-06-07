@@ -179,6 +179,7 @@ The following section types are defined and described later in this document:
 | PgoInstrumentationData    |   117 | Image (added in V5.2)
 | ManifestAssemblyMvids     |   118 | Image (added in V5.3)
 | CrossModuleInlineInfo     |   119 | Image (added in V6.3)
+| HotColdMap                |   120 | Image (added in V8.0)
 
 ## ReadyToRunSectionType.CompilerIdentifier
 
@@ -643,6 +644,15 @@ The entry of the hashtable is a counted sequence of compressed unsigned integers
   - a sequence of inliner RID deltas
 
 This section may be included in addition to a InliningInfo2 section.
+
+## ReadyToRunSectionType.HotColdMap (v8.0+)
+In ReadyToRun 8.0+, the format supports splitting a method into hot and cold parts so that they are not located together. This hot-cold map section captures the information about how methods are split so that the runtime can locate them for various services.
+
+For every method that is split, there is a single entry in the section. Each entry has two unsigned 32-bit integers. The first integer is the runtime function index of the cold part and the second integer is the runtime function index of the hot part.
+
+The methods in this table are sorted by their hot part runtime function indices, which are also sorted by their cold part runtime function indices because we always emit the cold part in the same order as the hot parts, or by their RVAs because the runtime function table itself is sorted by the RVAs.
+
+This section may not exist if no method is split - this happens when the `--hot-cold-splitting` flag is not specified during compilation, or the compiler decides it should not split any methods.
 
 # Native Format
 

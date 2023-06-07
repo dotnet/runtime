@@ -37,9 +37,6 @@ namespace System.Threading
             return result;
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern float CompareExchange(ref float location1, float value, float comparand);
-
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern int Decrement(ref int location);
@@ -72,15 +69,8 @@ namespace System.Threading
             return result;
         }
 
-        [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern float Exchange(ref float location1, float value);
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern long CompareExchange(ref long location1, long value, long comparand);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern double CompareExchange(ref double location1, double value, double comparand);
 
         [return: NotNullIfNotNull(nameof(location1))]
         [Intrinsic]
@@ -109,10 +99,6 @@ namespace System.Threading
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern long Exchange(ref long location1, long value);
-
-        [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern double Exchange(ref double location1, double value);
 
         [return: NotNullIfNotNull(nameof(location1))]
         [Intrinsic]
@@ -144,11 +130,6 @@ namespace System.Threading
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern long Add(ref long location1, long value);
-
-        [Intrinsic]
-        public static void MemoryBarrier()
-        {
-        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void MemoryBarrierProcessWide();

@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Serialization.Tests;
+using System.Text.Json.SourceGeneration.Tests.NETStandard;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -125,11 +126,17 @@ namespace System.Text.Json.SourceGeneration.Tests
             PersonJsonContext context = PersonJsonContext.Default;
             object person = new Person("John", "Smith");
             string expectedJson = """{"firstName":"John","lastName":"Smith"}""";
-            // Sanity check -- context does not specify object metadata
-            Assert.Null(context.GetTypeInfo(typeof(object)));
+            // Sanity check -- context resolver does not specify object metadata
+            Assert.Null(((IJsonTypeInfoResolver)context).GetTypeInfo(typeof(object), new()));
 
             string json = JsonSerializer.Serialize(person, context.Options);
             Assert.Equal(expectedJson, json);
+
+            json = JsonSerializer.Serialize(person, typeof(object), context);
+            Assert.Equal(expectedJson, json);
+
+            json = JsonSerializer.Serialize(person, context.GetTypeInfo(typeof(object)));
+            Assert.NotNull(context.GetTypeInfo(typeof(object)));
 
             var stream = new Utf8MemoryStream();
             await JsonSerializer.SerializeAsync(stream, person, context.Options);
@@ -168,6 +175,22 @@ namespace System.Text.Json.SourceGeneration.Tests
                         Assert.NotNull(fieldInfo);
                         Assert.Null(fieldInfo.GetValue(null));
                     }
+                }).Dispose();
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void JsonSerializerContext_GeneratedDefault_IsSingleton()
+        {
+            RemoteExecutor.Invoke(
+                static () =>
+                {
+                    const int Count = 30;
+                    var contexts = new MetadataContext[Count];
+                    Parallel.For(0, Count, i => contexts[i] = MetadataContext.Default);
+
+                    Assert.All(contexts, ctx => Assert.Same(MetadataContext.Default, ctx));
+
                 }).Dispose();
         }
 
@@ -684,6 +707,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         // Regression test for https://github.com/dotnet/runtime/issues/61860
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/79311", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void SupportsGenericParameterWithCustomConverterFactory()
         {
             var value = new List<TestEnum> { TestEnum.Cee };
@@ -745,6 +769,26 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         [JsonSerializable(typeof(ClassWithDictionaryProperty))]
         internal partial class ClassWithDictionaryPropertyContext : JsonSerializerContext
+        {
+        }
+
+        [Fact]
+        public static void DoesNotReferenceInternalMembersFromOtherAssemblies()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/66679
+
+            Assert.Equal(1, ContextForClassesFromAnotherAssembly.Default.ClassFromOtherAssemblyWithNonPublicMembers.Properties.Count);
+            Assert.Equal("PublicValue", ContextForClassesFromAnotherAssembly.Default.ClassFromOtherAssemblyWithNonPublicMembers.Properties[0].Name);
+
+            var value = new ClassFromOtherAssemblyWithNonPublicMembers();
+            string json = JsonSerializer.Serialize(value, ContextForClassesFromAnotherAssembly.Default.ClassFromOtherAssemblyWithNonPublicMembers);
+            Assert.Equal("""{"PublicValue":1}""", json);
+
+            JsonSerializer.Deserialize(json, ContextForClassesFromAnotherAssembly.Default.ClassFromOtherAssemblyWithNonPublicMembers);
+        }
+
+        [JsonSerializable(typeof(ClassFromOtherAssemblyWithNonPublicMembers))]
+        internal partial class ContextForClassesFromAnotherAssembly : JsonSerializerContext
         {
         }
 

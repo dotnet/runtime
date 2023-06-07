@@ -112,11 +112,10 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                         // Assuming the policy says it's ok to ignore the ambiguity, we're to resolve in favor of the member
                         // declared by the most derived type. Since QueriedMemberLists are sorted in order of decreasing derivation,
                         // that means we let the first match win - unless, of course, they're both the "most derived member".
-                        if (match.DeclaringType.Equals(challenger.DeclaringType))
-                            throw new AmbiguousMatchException();
-
-                        if (!_policies.OkToIgnoreAmbiguity(match, challenger))
-                            throw new AmbiguousMatchException();
+                        // If they're not from same type, we throw if the policy doesn't allow ambiguity.
+                        if (match.DeclaringType.Equals(challenger.DeclaringType) ||
+                            !_policies.OkToIgnoreAmbiguity(match, challenger))
+                            throw ThrowHelper.GetAmbiguousMatchException(match);
                     }
                     else
                     {

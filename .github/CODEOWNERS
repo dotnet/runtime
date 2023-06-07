@@ -96,3 +96,8 @@
 
 /docs/project/list-of-diagnostics.md                @jeffhandley
 /src/libraries/Common/src/System/Obsoletions.cs     @jeffhandley
+
+# Area ownership and repo automation
+/docs/area-owners.*                                 @jeffhandley
+/docs/issue*.md                                     @jeffhandley
+/.github/fabricbot.json                             @jeffhandley

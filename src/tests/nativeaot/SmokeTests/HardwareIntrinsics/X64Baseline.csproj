@@ -7,7 +7,7 @@
     <!-- Sanitizers increase the binary size, so it ends up outside of our expected range. -->
     <CLRTestTargetUnsupported Condition="'$(EnableNativeSanitizers)' != ''">true</CLRTestTargetUnsupported>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants);BASELINE_INTRINSICS</DefineConstants>
+    <DefineConstants>$(DefineConstants);BASELINE_INTRINSICS;VECTORT128_INTRINSICS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />

@@ -67,8 +67,8 @@ namespace System
         internal const int ArrayBitMask = 0x10000;
 
         internal static Variant Empty => default;
-        internal static Variant Missing => new Variant(Variant.CV_MISSING, Type.Missing, 0);
-        internal static Variant DBNull => new Variant(Variant.CV_NULL, System.DBNull.Value, 0);
+        internal static Variant Missing => new Variant(CV_MISSING, Type.Missing, 0);
+        internal static Variant DBNull => new Variant(CV_NULL, System.DBNull.Value, 0);
 
         //
         // Native Methods

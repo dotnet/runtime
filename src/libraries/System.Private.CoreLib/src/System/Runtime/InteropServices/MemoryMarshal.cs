@@ -22,10 +22,10 @@ namespace System.Runtime.InteropServices
         /// That type may not contain pointers or references. This is checked at runtime in order to preserve type safety.
         /// </summary>
         /// <param name="span">The source slice, of type <typeparamref name="T"/>.</param>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// Thrown when <typeparamref name="T"/> contains pointers.
         /// </exception>
-        /// <exception cref="System.OverflowException">
+        /// <exception cref="OverflowException">
         /// Thrown if the Length property of the new Span would exceed int.MaxValue.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -45,10 +45,10 @@ namespace System.Runtime.InteropServices
         /// That type may not contain pointers or references. This is checked at runtime in order to preserve type safety.
         /// </summary>
         /// <param name="span">The source slice, of type <typeparamref name="T"/>.</param>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// Thrown when <typeparamref name="T"/> contains pointers.
         /// </exception>
-        /// <exception cref="System.OverflowException">
+        /// <exception cref="OverflowException">
         /// Thrown if the Length property of the new Span would exceed int.MaxValue.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -93,14 +93,14 @@ namespace System.Runtime.InteropServices
         /// for pinning but must never be dereferenced. This is useful for interop with methods that do not accept null pointers for zero-sized buffers.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe ref T GetNonNullPinnableReference<T>(Span<T> span) => ref (span.Length != 0) ? ref Unsafe.AsRef<T>(in span._reference) : ref Unsafe.AsRef<T>((void*)1);
+        internal static unsafe ref T GetNonNullPinnableReference<T>(Span<T> span) => ref (span.Length != 0) ? ref Unsafe.AsRef(in span._reference) : ref Unsafe.AsRef<T>((void*)1);
 
         /// <summary>
         /// Returns a reference to the 0th element of the ReadOnlySpan. If the ReadOnlySpan is empty, returns a reference to fake non-null pointer. Such a reference
         /// can be used for pinning but must never be dereferenced. This is useful for interop with methods that do not accept null pointers for zero-sized buffers.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe ref T GetNonNullPinnableReference<T>(ReadOnlySpan<T> span) => ref (span.Length != 0) ? ref Unsafe.AsRef<T>(in span._reference) : ref Unsafe.AsRef<T>((void*)1);
+        internal static unsafe ref T GetNonNullPinnableReference<T>(ReadOnlySpan<T> span) => ref (span.Length != 0) ? ref Unsafe.AsRef(in span._reference) : ref Unsafe.AsRef<T>((void*)1);
 #pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         /// <summary>
@@ -111,7 +111,7 @@ namespace System.Runtime.InteropServices
         /// Supported only for platforms that support misaligned memory access or when the memory block is aligned by other means.
         /// </remarks>
         /// <param name="span">The source slice, of type <typeparamref name="TFrom"/>.</param>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -166,7 +166,7 @@ namespace System.Runtime.InteropServices
         /// Supported only for platforms that support misaligned memory access or when the memory block is aligned by other means.
         /// </remarks>
         /// <param name="span">The source slice, of type <typeparamref name="TFrom"/>.</param>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -209,7 +209,7 @@ namespace System.Runtime.InteropServices
             }
 
             return new ReadOnlySpan<TTo>(
-                ref Unsafe.As<TFrom, TTo>(ref MemoryMarshal.GetReference(span)),
+                ref Unsafe.As<TFrom, TTo>(ref GetReference(span)),
                 toLength);
         }
 
@@ -466,7 +466,7 @@ namespace System.Runtime.InteropServices
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
-            Unsafe.WriteUnaligned<T>(ref GetReference(destination), value);
+            Unsafe.WriteUnaligned(ref GetReference(destination), value);
         }
 
         /// <summary>
@@ -485,7 +485,7 @@ namespace System.Runtime.InteropServices
             {
                 return false;
             }
-            Unsafe.WriteUnaligned<T>(ref GetReference(destination), value);
+            Unsafe.WriteUnaligned(ref GetReference(destination), value);
             return true;
         }
 
@@ -544,8 +544,8 @@ namespace System.Runtime.InteropServices
         /// that array should not be unpinned while the returned Memory<typeparamref name="T"/> is still in use.
         /// Calling this method on an unpinned array could result in memory corruption.</remarks>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
-        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=Length).
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

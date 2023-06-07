@@ -23,7 +23,7 @@ namespace System
 
     [Serializable]
     [NonVersionable] // This only applies to field layout
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed partial class String
         : IComparable,
           IEnumerable,
@@ -409,7 +409,7 @@ namespace System
 
         /// <summary>Copies the contents of this string into the destination span.</summary>
         /// <param name="destination">The span into which to copy this string's contents.</param>
-        /// <exception cref="System.ArgumentException">The destination span is shorter than the source string.</exception>
+        /// <exception cref="ArgumentException">The destination span is shorter than the source string.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CopyTo(Span<char> destination)
         {
@@ -498,7 +498,7 @@ namespace System
         /// <summary>
         /// Returns a reference to the first element of the String. If the string is null, an access will throw a NullReferenceException.
         /// </summary>
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [NonVersionable]
         public ref readonly char GetPinnableReference() => ref _firstChar;
 

@@ -1400,7 +1400,7 @@ main_thread_handler (gpointer user_data)
 		MonoAssembly **assemblies;
 
 		assemblies = g_new0 (MonoAssembly*, main_args->argc);
-
+		mono_set_failure_type (MONO_CLASS_LOADER_DEFERRED_FAILURE);
 		/* Treat the other arguments as assemblies to compile too */
 		for (i = 0; i < main_args->argc; ++i) {
 			assembly = mono_domain_assembly_open_internal (mono_alc_get_default (), main_args->argv [i]);

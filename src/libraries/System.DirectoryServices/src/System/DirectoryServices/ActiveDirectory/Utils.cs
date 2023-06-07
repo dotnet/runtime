@@ -896,7 +896,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 ADSearcher adSearcher = new ADSearcher(de,
                                                            "(&(objectClass=nTDSDSA)(invocationID=" + stringGuid + "))",
-                                                           new string[] { "distinguishedName" },
+                                                           ActiveDirectorySite.s_distinguishedName,
                                                            SearchScope.Subtree,
                                                            false, /* don't need paged search */
                                                            false /* don't need to cache result */);

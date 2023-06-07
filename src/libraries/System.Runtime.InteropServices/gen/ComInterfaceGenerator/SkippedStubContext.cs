@@ -6,5 +6,5 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
-    internal sealed record SkippedStubContext(ManagedTypeInfo OriginalDefiningType) : GeneratedMethodContextBase(OriginalDefiningType, new(ImmutableArray<Diagnostic>.Empty));
+    internal sealed record SkippedStubContext(ManagedTypeInfo OriginalDefiningType) : GeneratedMethodContextBase(OriginalDefiningType, new(ImmutableArray<DiagnosticInfo>.Empty));
 }
