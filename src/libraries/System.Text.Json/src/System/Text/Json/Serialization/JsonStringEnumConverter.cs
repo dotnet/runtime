@@ -69,7 +69,7 @@ namespace System.Text.Json.Serialization
     /// </remarks>
     [RequiresDynamicCode(
         "JsonStringEnumConverter cannot be statically analyzed and requires runtime code generation. " +
-        "Native AOT applications should use the generic JsonStringEnumConverter<TEnum> instead.")]
+        "Applications should use the generic JsonStringEnumConverter<TEnum> instead.")]
     public class JsonStringEnumConverter : JsonConverterFactory
     {
         private readonly JsonNamingPolicy? _namingPolicy;
