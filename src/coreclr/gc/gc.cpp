@@ -3184,7 +3184,7 @@ void gc_heap::fire_per_heap_hist_event (gc_history_per_heap* current_gc_data_per
     maxgen_size_increase* maxgen_size_info = &(current_gc_data_per_heap->maxgen_size_info);
 #ifdef DYNAMIC_HEAP_COUNT
 
-    // pack 6 numbers into one size_t
+    // pack 5 numbers into one size_t
     size_t metric = permillage (dynamic_heap_count_data.median_percent_overhead          ) +
                     permillage (dynamic_heap_count_data.overhead_reduction_per_step_up   ) * 1000 +
                     permillage (dynamic_heap_count_data.overhead_increase_per_step_down  ) * 1000 * 1000 +
