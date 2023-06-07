@@ -247,19 +247,19 @@ namespace System.Text.Json.SourceGeneration.Tests
 
     public class ClassWithCustomConverterFactoryProperty
     {
-        [JsonConverter(typeof(JsonStringEnumConverter))] // This converter is a JsonConverterFactory
+        [JsonConverter(typeof(JsonStringEnumConverter<SourceGenSampleEnum>))] // This converter is a JsonConverterFactory
         public SourceGenSampleEnum MyEnum { get; set; }
     }
 
     public struct StructWithCustomConverterFactoryProperty
     {
-        [JsonConverter(typeof(JsonStringEnumConverter))] // This converter is a JsonConverterFactory
+        [JsonConverter(typeof(JsonStringEnumConverter<SourceGenSampleEnum>))] // This converter is a JsonConverterFactory
         public SourceGenSampleEnum MyEnum { get; set; }
     }
 
     public class ClassWithCustomConverterFactoryNullableProperty
     {
-        [JsonConverter(typeof(JsonStringEnumConverter))] // This converter is a JsonConverterFactory
+        [JsonConverter(typeof(JsonStringEnumConverter<SourceGenSampleEnum>))] // This converter is a JsonConverterFactory
         public SourceGenSampleEnum? MyEnum { get; set; }
     }
 
