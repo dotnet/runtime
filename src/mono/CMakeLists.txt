@@ -644,7 +644,7 @@ if(LLVM_PREFIX)
     set(MONO_llvm_extra_libs_aarch64codegen ${MONO_llvm_extra_libs_aarch64codegen} "LLVMObjCARCOpts" "LLVMSymbolize" "LLVMDebugInfoPDB"  "LLVMIRReader" "LLVMAsmParser" "LLVMTargetParser")
   endif()
 
-  if(HOST_LINUX AND NOT "${TARGET_ARCH}" STREQUAL "wasm")
+  if(HOST_LINUX AND NOT "${TARGET_ARCH}" STREQUAL "wasm" AND ${llvm_api_version} GREATER_EQUAL 1600)
     set(MONO_stdlib "-stdlib=libc++")
     set(MONO_cxx_lib "-lc++")
   endif()
