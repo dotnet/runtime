@@ -200,7 +200,7 @@ namespace System.Diagnostics
         /// <summary>Associated process is a child that can use the terminal.</summary>
         private readonly bool _usesTerminal;
 
-        /// <summary>If a wait operation is in progress, the Task that represents it; otherwise, null.</summary>
+        /// <summary>If a wait operation is in progress or has completed, the Task that represents it; otherwise, null.</summary>
         private Task? _waitInProgress;
         /// <summary>The number of alive users of this object.</summary>
         private int _outstandingRefCount;
