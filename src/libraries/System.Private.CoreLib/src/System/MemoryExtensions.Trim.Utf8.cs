@@ -9,7 +9,6 @@ namespace System
 {
     public static partial class MemoryExtensions
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<byte> TrimUtf8(this ReadOnlySpan<byte> span)
         {
             // Assume that in most cases input doesn't need trimming

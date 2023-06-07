@@ -32,7 +32,6 @@ namespace System
         /// <param name="span">The source span.</param>
         /// <param name="value">The sequence to compare to the beginning of the source span.</param>
         /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="value"/> are compared.</param>
-        [Intrinsic] // Unrolled and vectorized for half-constant input (Ordinal)
         internal static bool StartsWithUtf8(this ReadOnlySpan<byte> span, ReadOnlySpan<byte> value, StringComparison comparisonType)
         {
             string.CheckStringComparison(comparisonType);

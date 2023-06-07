@@ -256,17 +256,34 @@ namespace System.Globalization
 
             if (length != 0)
             {
-                // We have 1, 2, or 3 bytes remaining. We want to backtrack
-                // so we read exactly 4 bytes and then do one final iteration.
+                // We have 1, 2, or 3 bytes remaining. We can't do anything fancy
+                // like backtracking since we could have only had 1-3 bytes. So,
+                // instead we'll do 1 or 2 reads to get all 3 bytes. Endianness
+                // doesn't matter here since we only compare if all bytes are ascii
+                // and the ordering will be consistent between the two comparisons
 
-                Debug.Assert(length <= 3);
-                int backtrack = 4 - length;
+                if (length == 3)
+                {
+                    valueAu32 = Unsafe.ReadUnaligned<ushort>(ref Unsafe.AddByteOffset(ref charA, byteOffset));
+                    valueBu32 = Unsafe.ReadUnaligned<ushort>(ref Unsafe.AddByteOffset(ref charB, byteOffset));
 
-                length += backtrack;
-                byteOffset -= backtrack;
+                    byteOffset += 2;
 
-                valueAu32 = Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref charA, byteOffset));
-                valueBu32 = Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref charB, byteOffset));
+                    valueAu32 |= (uint)(Unsafe.AddByteOffset(ref charA, byteOffset) << 16);
+                    valueBu32 |= (uint)(Unsafe.AddByteOffset(ref charB, byteOffset) << 16);
+                }
+                else if (length == 2)
+                {
+                    valueAu32 = Unsafe.ReadUnaligned<ushort>(ref Unsafe.AddByteOffset(ref charA, byteOffset));
+                    valueBu32 = Unsafe.ReadUnaligned<ushort>(ref Unsafe.AddByteOffset(ref charB, byteOffset));
+                }
+                else
+                {
+                    Debug.Assert(length == 1);
+
+                    valueAu32 = Unsafe.AddByteOffset(ref charA, byteOffset);
+                    valueBu32 = Unsafe.AddByteOffset(ref charB, byteOffset);
+                }
 
                 if (!Utf8Utility.AllBytesInUInt32AreAscii(valueAu32 | valueBu32))
                 {
