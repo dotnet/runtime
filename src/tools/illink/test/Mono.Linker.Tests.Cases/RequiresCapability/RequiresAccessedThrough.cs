@@ -74,57 +74,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 		}
 
-		class AccessedThroughGenericParameterAnnotation
-		{
-			class TypeWithRequiresMethod
-			{
-				[RequiresUnreferencedCode("--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--")]
-				[RequiresDynamicCode ("--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--")]
-				[RequiresAssemblyFiles ("--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--")]
-				public static void MethodWhichRequires () { }
-			}
-
-			class TypeWithPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T>
-			{
-				public TypeWithPublicMethods () { }
-			}
-
-			[ExpectedWarning ("IL2026", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--")]
-			[ExpectedWarning ("IL3002", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", ProducedBy = Tool.NativeAot)]
-			static void TestAccessOnGenericType ()
-			{
-				new TypeWithPublicMethods<TypeWithRequiresMethod> ();
-			}
-
-			static void MethodWithPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> () { }
-
-			[ExpectedWarning ("IL2026", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--")]
-			[ExpectedWarning ("IL3002", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", ProducedBy = Tool.NativeAot)]
-			static void TestAccessOnGenericMethod ()
-			{
-				MethodWithPublicMethods<TypeWithRequiresMethod> ();
-			}
-
-			static void MethodWithPublicMethodsInference<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> (T instance) { }
-
-			[ExpectedWarning ("IL2026", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--")]
-			[ExpectedWarning ("IL3002", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", ProducedBy = Tool.NativeAot)]
-			static void TestAccessOnGenericMethodWithInferenceOnMethod ()
-			{
-				MethodWithPublicMethodsInference (new TypeWithRequiresMethod ());
-			}
-
-			public static void Test ()
-			{
-				TestAccessOnGenericType ();
-				TestAccessOnGenericMethod ();
-				TestAccessOnGenericMethodWithInferenceOnMethod ();
-			}
-		}
-
 		class AccessThroughSpecialAttribute
 		{
 			// https://github.com/dotnet/linker/issues/1873

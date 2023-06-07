@@ -388,6 +388,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.PublicFieldsProperty = null;
 			_ = instance.PublicMethodsProperty;
 			instance.PublicMethodsProperty = null;
+			_ = instance.PublicMethodsImplicitGetter;
 
 			instance.PublicFieldsMethodParameter (null);
 			instance.PublicMethodsMethodParameter (null);
@@ -418,7 +419,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				set { }
 			}
 
-			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), ProducedBy = Tool.Trimmer | Tool.Analyzer)] // NativeAOT_StorageSpaceType
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), ProducedBy = Tool.Trimmer | Tool.Analyzer, CompilerGeneratedCode = true)] // NativeAOT_StorageSpaceType
 			public TypeRequiresPublicMethods<TOuter> PublicMethodsImplicitGetter => null;
 
 			public void PublicFieldsMethodParameter (TypeRequiresPublicFields<TOuter> param) { }
@@ -436,7 +437,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TypeRequiresPublicFields<TOuter> t = null;
 			}
 
-			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), ProducedBy = Tool.Trimmer)]
+			// The analyzer matches NativeAot behavior for local variables - it doesn't warn on generic types of local variables.
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), ProducedBy = Tool.Trimmer)] // NativeAOT_StorageSpaceType
 			public void PublicMethodsMethodLocalVariable ()
 			{
 				TypeRequiresPublicMethods<TOuter> t = null;
