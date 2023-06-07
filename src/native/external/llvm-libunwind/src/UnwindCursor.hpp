@@ -125,6 +125,25 @@ private:
 };
 
 template <typename A>
+typename A::pint_t DwarfFDECache<A>::findFDE(pint_t mh, pint_t pc) {
+    return 0;
+}
+
+template <typename A>
+void DwarfFDECache<A>::add(pint_t mh, pint_t ip_start, pint_t ip_end,
+                           pint_t fde) {
+}
+
+template <typename A> void DwarfFDECache<A>::removeAllIn(pint_t mh) {
+}
+
+template <typename A>
+void DwarfFDECache<A>::iterateCacheEntries(void (*func)(
+    unw_word_t ip_start, unw_word_t ip_end, unw_word_t fde, unw_word_t mh)) {
+}
+
+#if 0
+template <typename A>
 typename DwarfFDECache<A>::entry *
 DwarfFDECache<A>::_buffer = _initialBuffer;
 
@@ -226,6 +245,8 @@ void DwarfFDECache<A>::iterateCacheEntries(void (*func)(
   }
   _LIBUNWIND_LOG_IF_FALSE(_lock.unlock());
 }
+#endif
+
 #endif // defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
 
 

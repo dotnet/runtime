@@ -112,6 +112,67 @@ bool EHHeaderParser<A>::findFDE(A &addressSpace, pint_t pc, pint_t ehHdrStart,
 
   if (hdrInfo.fde_count == 0) return false;
 
+  pint_t tableEntryDebug = 0;
+
+  // Special-case the most common encoding with faster binary search implementation
+  if (hdrInfo.table_enc == (DW_EH_PE_sdata4 | DW_EH_PE_datarel))
+  {
+    size_t tableEntrySize = 8;
+
+    pint_t relpc = pc - ehHdrStart;
+
+    size_t low = 0;
+    size_t high = hdrInfo.fde_count - 1;
+
+    // Binary search the entry table
+    // Use linear search once we get down to a small number of elements
+    // to avoid binary search overhead.
+    while (high - low > 10) {
+      size_t middle = low + (high - low) / 2;
+
+      pint_t tableEntry = hdrInfo.table + middle * tableEntrySize;
+      pint_t relstart = (pint_t)(int32_t)addressSpace.get32(tableEntry);
+
+      if (relpc < relstart) {
+        high = middle - 1;
+      } else {
+        low = middle;
+      }
+    }
+
+    for (size_t i = low; i < high; i++) {
+      pint_t tableEntry = hdrInfo.table + (i + 1) * tableEntrySize;
+      pint_t relstart = (pint_t)(int32_t)addressSpace.get32(tableEntry);
+
+      if (relpc < relstart) {
+        high = i;
+        break;
+      }
+    }
+
+    pint_t tableEntry = hdrInfo.table + high * tableEntrySize;
+
+    // Have to decode the whole FDE for the PC range anyway, so just throw away
+    // the PC start.
+    pint_t fde =
+        (pint_t)(int32_t)addressSpace.get32(tableEntry + 4) + ehHdrStart;
+    const char *message =
+        CFI_Parser<A>::decodeFDE(addressSpace, fde, fdeInfo, cieInfo);
+    if (message != NULL) {
+      _LIBUNWIND_DEBUG_LOG("EHHeaderParser::decodeTableEntry: bad fde: %s",
+                           message);
+      return false;
+    }
+
+#if defined(NDEBUG)
+    if (pc >= fdeInfo->pcStart && pc < fdeInfo->pcEnd)
+        return true;
+    return false;
+#else
+    tableEntryDebug = tableEntry;
+#endif
+  }
+
   size_t tableEntrySize = getTableEntrySize(hdrInfo.table_enc);
   pint_t tableEntry;
 
@@ -134,6 +195,9 @@ bool EHHeaderParser<A>::findFDE(A &addressSpace, pint_t pc, pint_t ehHdrStart,
   }
 
   tableEntry = hdrInfo.table + low * tableEntrySize;
+
+  assert(tableEntry == tableEntryDebug);
+
   if (decodeTableEntry(addressSpace, tableEntry, ehHdrStart, ehHdrEnd,
                        hdrInfo.table_enc, fdeInfo, cieInfo)) {
     if (pc >= fdeInfo->pcStart && pc < fdeInfo->pcEnd)
