@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Serialization.Tests;
+using System.Text.Json.SourceGeneration.Tests.NETStandard;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -125,11 +126,17 @@ namespace System.Text.Json.SourceGeneration.Tests
             PersonJsonContext context = PersonJsonContext.Default;
             object person = new Person("John", "Smith");
             string expectedJson = """{"firstName":"John","lastName":"Smith"}""";
-            // Sanity check -- context does not specify object metadata
-            Assert.Null(context.GetTypeInfo(typeof(object)));
+            // Sanity check -- context resolver does not specify object metadata
+            Assert.Null(((IJsonTypeInfoResolver)context).GetTypeInfo(typeof(object), new()));
 
             string json = JsonSerializer.Serialize(person, context.Options);
             Assert.Equal(expectedJson, json);
+
+            json = JsonSerializer.Serialize(person, typeof(object), context);
+            Assert.Equal(expectedJson, json);
+
+            json = JsonSerializer.Serialize(person, context.GetTypeInfo(typeof(object)));
+            Assert.NotNull(context.GetTypeInfo(typeof(object)));
 
             var stream = new Utf8MemoryStream();
             await JsonSerializer.SerializeAsync(stream, person, context.Options);
@@ -762,6 +769,26 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         [JsonSerializable(typeof(ClassWithDictionaryProperty))]
         internal partial class ClassWithDictionaryPropertyContext : JsonSerializerContext
+        {
+        }
+
+        [Fact]
+        public static void DoesNotReferenceInternalMembersFromOtherAssemblies()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/66679
+
+            Assert.Equal(1, ContextForClassesFromAnotherAssembly.Default.ClassFromOtherAssemblyWithNonPublicMembers.Properties.Count);
+            Assert.Equal("PublicValue", ContextForClassesFromAnotherAssembly.Default.ClassFromOtherAssemblyWithNonPublicMembers.Properties[0].Name);
+
+            var value = new ClassFromOtherAssemblyWithNonPublicMembers();
+            string json = JsonSerializer.Serialize(value, ContextForClassesFromAnotherAssembly.Default.ClassFromOtherAssemblyWithNonPublicMembers);
+            Assert.Equal("""{"PublicValue":1}""", json);
+
+            JsonSerializer.Deserialize(json, ContextForClassesFromAnotherAssembly.Default.ClassFromOtherAssemblyWithNonPublicMembers);
+        }
+
+        [JsonSerializable(typeof(ClassFromOtherAssemblyWithNonPublicMembers))]
+        internal partial class ContextForClassesFromAnotherAssembly : JsonSerializerContext
         {
         }
 

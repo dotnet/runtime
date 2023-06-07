@@ -6,7 +6,7 @@ using System.Runtime.InteropServices.ComTypes;
 
 namespace System.Runtime.InteropServices.CustomMarshalers
 {
-    internal sealed class EnumerableViewOfDispatch : ICustomAdapter, System.Collections.IEnumerable
+    internal sealed class EnumerableViewOfDispatch : ICustomAdapter, Collections.IEnumerable
     {
         // Reserved DISPID slot for getting an enumerator from an IDispatch-implementing COM interface.
         private const int DISPID_NEWENUM = -4;
@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
 
         private IDispatch Dispatch => (IDispatch)_dispatch;
 
-        public System.Collections.IEnumerator GetEnumerator()
+        public Collections.IEnumerator GetEnumerator()
         {
             Variant result;
             unsafe
@@ -50,7 +50,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
                 }
 
                 enumVariantPtr = Marshal.GetIUnknownForObject(enumVariant);
-                return (System.Collections.IEnumerator)EnumeratorToEnumVariantMarshaler.GetInstance(null).MarshalNativeToManaged(enumVariantPtr);
+                return (Collections.IEnumerator)EnumeratorToEnumVariantMarshaler.GetInstance(null).MarshalNativeToManaged(enumVariantPtr);
             }
             finally
             {

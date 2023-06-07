@@ -8662,17 +8662,31 @@ private:
         CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_XARCH)
-        if (compExactlyDependsOn(InstructionSet_AVX2))
+        // TODO-XArch: Add support for 512-bit Vector<T>
+        assert(!compIsaSupportedDebugOnly(InstructionSet_VectorT512));
+
+        if (compExactlyDependsOn(InstructionSet_VectorT256))
         {
-            // TODO-XArch-AVX512 : Return ZMM_REGSIZE_BYTES once Vector<T> supports AVX512.
+            assert(!compIsaSupportedDebugOnly(InstructionSet_VectorT128));
             return YMM_REGSIZE_BYTES;
         }
-        else
+        else if (compExactlyDependsOn(InstructionSet_VectorT128))
         {
             return XMM_REGSIZE_BYTES;
         }
+        else
+        {
+            return 0;
+        }
 #elif defined(TARGET_ARM64)
-        return FP_REGSIZE_BYTES;
+        if (compExactlyDependsOn(InstructionSet_VectorT128))
+        {
+            return FP_REGSIZE_BYTES;
+        }
+        else
+        {
+            return 0;
+        }
 #else
         assert(!"getVectorTByteLength() unimplemented on target arch");
         unreached();
@@ -8691,23 +8705,33 @@ private:
     uint32_t getMaxVectorByteLength() const
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
         {
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
-            {
-                return ZMM_REGSIZE_BYTES;
-            }
-            else
-            {
-                return YMM_REGSIZE_BYTES;
-            }
+            return ZMM_REGSIZE_BYTES;
         }
-        else
+        else if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+        {
+            return YMM_REGSIZE_BYTES;
+        }
+        else if (compOpportunisticallyDependsOn(InstructionSet_SSE))
         {
             return XMM_REGSIZE_BYTES;
         }
+        else
+        {
+            assert((JitConfig.EnableHWIntrinsic() == 0) || (JitConfig.EnableSSE() == 0));
+            return 0;
+        }
 #elif defined(TARGET_ARM64)
-        return FP_REGSIZE_BYTES;
+        if (compOpportunisticallyDependsOn(InstructionSet_AdvSimd))
+        {
+            return FP_REGSIZE_BYTES;
+        }
+        else
+        {
+            assert((JitConfig.EnableHWIntrinsic() == 0) || (JitConfig.EnableArm64AdvSimd() == 0));
+            return 0;
+        }
 #else
         assert(!"getMaxVectorByteLength() unimplemented on target arch");
         unreached();

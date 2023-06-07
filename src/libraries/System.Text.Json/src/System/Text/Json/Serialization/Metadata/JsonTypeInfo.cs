@@ -1287,7 +1287,7 @@ namespace System.Text.Json.Serialization.Metadata
             if (type == typeof(object) && converter.CanBePolymorphic)
             {
                 // System.Object is polymorphic and will not respect Properties
-                Debug.Assert(converter is ObjectConverter or ObjectConverterSlim);
+                Debug.Assert(converter is ObjectConverter);
                 return JsonTypeInfoKind.None;
             }
 
@@ -1405,7 +1405,8 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (jsonPropertyInfo.IsIgnored)
                 {
-                    (state.IgnoredProperties ??= new()).Add(memberName, jsonPropertyInfo);
+                    state.IgnoredProperties ??= new();
+                    state.IgnoredProperties[memberName] = jsonPropertyInfo;
                 }
             }
         }

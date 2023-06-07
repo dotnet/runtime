@@ -6,6 +6,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Threading;
 
@@ -28,7 +29,7 @@ namespace System
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed partial class TimeZoneInfo : IEquatable<TimeZoneInfo?>, ISerializable, IDeserializationCallback
     {
         private enum TimeZoneInfoResult
@@ -892,7 +893,7 @@ namespace System
             string? displayName,
             string? standardDisplayName)
         {
-            bool hasIanaId = TimeZoneInfo.TryConvertIanaIdToWindowsId(id, allocate: false, out _);
+            bool hasIanaId = TryConvertIanaIdToWindowsId(id, allocate: false, out _);
 
             return new TimeZoneInfo(
                 id,
@@ -943,7 +944,7 @@ namespace System
                 adjustmentRules = (AdjustmentRule[])adjustmentRules.Clone();
             }
 
-            bool hasIanaId = TimeZoneInfo.TryConvertIanaIdToWindowsId(id, allocate: false, out _);
+            bool hasIanaId = TryConvertIanaIdToWindowsId(id, allocate: false, out _);
 
             return new TimeZoneInfo(
                 id,

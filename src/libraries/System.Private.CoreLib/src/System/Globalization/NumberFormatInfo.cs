@@ -400,7 +400,7 @@ namespace System.Globalization
         {
             get
             {
-                System.Globalization.CultureInfo culture = CultureInfo.CurrentCulture;
+                CultureInfo culture = CultureInfo.CurrentCulture;
                 if (!culture._isInherited)
                 {
                     NumberFormatInfo? info = culture._numInfo;

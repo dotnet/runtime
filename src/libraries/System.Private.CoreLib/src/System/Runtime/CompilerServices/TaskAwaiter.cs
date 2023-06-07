@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace System.Runtime.CompilerServices
 {
-    /// <summary>Provides an awaiter for awaiting a <see cref="System.Threading.Tasks.Task"/>.</summary>
+    /// <summary>Provides an awaiter for awaiting a <see cref="Task"/>.</summary>
     public readonly struct TaskAwaiter : ICriticalNotifyCompletion, ITaskAwaiter
     {
         // WARNING: Unsafe.As is used to access the generic TaskAwaiter<> as TaskAwaiter.
@@ -26,7 +26,7 @@ namespace System.Runtime.CompilerServices
         internal readonly Task m_task;
 
         /// <summary>Initializes the <see cref="TaskAwaiter"/>.</summary>
-        /// <param name="task">The <see cref="System.Threading.Tasks.Task"/> to be awaited.</param>
+        /// <param name="task">The <see cref="Task"/> to be awaited.</param>
         internal TaskAwaiter(Task task)
         {
             Debug.Assert(task != null, "Constructing an awaiter requires a task to await.");
@@ -35,33 +35,33 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Gets whether the task being awaited is completed.</summary>
         /// <remarks>This property is intended for compiler user rather than use directly in code.</remarks>
-        /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
+        /// <exception cref="NullReferenceException">The awaiter was not properly initialized.</exception>
         public bool IsCompleted => m_task.IsCompleted;
 
-        /// <summary>Schedules the continuation onto the <see cref="System.Threading.Tasks.Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
+        /// <summary>Schedules the continuation onto the <see cref="Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
         /// <param name="continuation">The action to invoke when the await operation completes.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.InvalidOperationException">The awaiter was not properly initialized.</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
+        /// <exception cref="InvalidOperationException">The awaiter was not properly initialized.</exception>
         /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
         public void OnCompleted(Action continuation)
         {
             OnCompletedInternal(m_task, continuation, continueOnCapturedContext: true, flowExecutionContext: true);
         }
 
-        /// <summary>Schedules the continuation onto the <see cref="System.Threading.Tasks.Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
+        /// <summary>Schedules the continuation onto the <see cref="Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
         /// <param name="continuation">The action to invoke when the await operation completes.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.InvalidOperationException">The awaiter was not properly initialized.</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
+        /// <exception cref="InvalidOperationException">The awaiter was not properly initialized.</exception>
         /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
         public void UnsafeOnCompleted(Action continuation)
         {
             OnCompletedInternal(m_task, continuation, continueOnCapturedContext: true, flowExecutionContext: false);
         }
 
-        /// <summary>Ends the await on the completed <see cref="System.Threading.Tasks.Task"/>.</summary>
-        /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
-        /// <exception cref="System.Threading.Tasks.TaskCanceledException">The task was canceled.</exception>
-        /// <exception cref="System.Exception">The task completed in a Faulted state.</exception>
+        /// <summary>Ends the await on the completed <see cref="Task"/>.</summary>
+        /// <exception cref="NullReferenceException">The awaiter was not properly initialized.</exception>
+        /// <exception cref="TaskCanceledException">The task was canceled.</exception>
+        /// <exception cref="Exception">The task completed in a Faulted state.</exception>
         [StackTraceHidden]
         public void GetResult()
         {
@@ -163,13 +163,13 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        /// <summary>Schedules the continuation onto the <see cref="System.Threading.Tasks.Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
+        /// <summary>Schedules the continuation onto the <see cref="Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
         /// <param name="task">The task being awaited.</param>
         /// <param name="continuation">The action to invoke when the await operation completes.</param>
         /// <param name="continueOnCapturedContext">Whether to capture and marshal back to the current context.</param>
         /// <param name="flowExecutionContext">Whether to flow ExecutionContext across the await.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
+        /// <exception cref="NullReferenceException">The awaiter was not properly initialized.</exception>
         /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
         internal static void OnCompletedInternal(Task task, Action continuation, bool continueOnCapturedContext, bool flowExecutionContext)
         {
@@ -186,7 +186,7 @@ namespace System.Runtime.CompilerServices
             task.SetContinuationForAwait(continuation, continueOnCapturedContext, flowExecutionContext);
         }
 
-        /// <summary>Schedules the continuation onto the <see cref="System.Threading.Tasks.Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
+        /// <summary>Schedules the continuation onto the <see cref="Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
         /// <param name="task">The task being awaited.</param>
         /// <param name="stateMachineBox">The box to invoke when the await operation completes.</param>
         /// <param name="continueOnCapturedContext">Whether to capture and marshal back to the current context.</param>
@@ -282,7 +282,7 @@ namespace System.Runtime.CompilerServices
         }
     }
 
-    /// <summary>Provides an awaiter for awaiting a <see cref="System.Threading.Tasks.Task{TResult}"/>.</summary>
+    /// <summary>Provides an awaiter for awaiting a <see cref="Task{TResult}"/>.</summary>
     public readonly struct TaskAwaiter<TResult> : ICriticalNotifyCompletion, ITaskAwaiter
     {
         // WARNING: Unsafe.As is used to access TaskAwaiter<> as the non-generic TaskAwaiter.
@@ -292,7 +292,7 @@ namespace System.Runtime.CompilerServices
         private readonly Task<TResult> m_task;
 
         /// <summary>Initializes the <see cref="TaskAwaiter{TResult}"/>.</summary>
-        /// <param name="task">The <see cref="System.Threading.Tasks.Task{TResult}"/> to be awaited.</param>
+        /// <param name="task">The <see cref="Task{TResult}"/> to be awaited.</param>
         internal TaskAwaiter(Task<TResult> task)
         {
             Debug.Assert(task != null, "Constructing an awaiter requires a task to await.");
@@ -301,34 +301,34 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Gets whether the task being awaited is completed.</summary>
         /// <remarks>This property is intended for compiler user rather than use directly in code.</remarks>
-        /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
+        /// <exception cref="NullReferenceException">The awaiter was not properly initialized.</exception>
         public bool IsCompleted => m_task.IsCompleted;
 
-        /// <summary>Schedules the continuation onto the <see cref="System.Threading.Tasks.Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
+        /// <summary>Schedules the continuation onto the <see cref="Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
         /// <param name="continuation">The action to invoke when the await operation completes.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
+        /// <exception cref="NullReferenceException">The awaiter was not properly initialized.</exception>
         /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
         public void OnCompleted(Action continuation)
         {
             TaskAwaiter.OnCompletedInternal(m_task, continuation, continueOnCapturedContext: true, flowExecutionContext: true);
         }
 
-        /// <summary>Schedules the continuation onto the <see cref="System.Threading.Tasks.Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
+        /// <summary>Schedules the continuation onto the <see cref="Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
         /// <param name="continuation">The action to invoke when the await operation completes.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
+        /// <exception cref="NullReferenceException">The awaiter was not properly initialized.</exception>
         /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
         public void UnsafeOnCompleted(Action continuation)
         {
             TaskAwaiter.OnCompletedInternal(m_task, continuation, continueOnCapturedContext: true, flowExecutionContext: false);
         }
 
-        /// <summary>Ends the await on the completed <see cref="System.Threading.Tasks.Task{TResult}"/>.</summary>
-        /// <returns>The result of the completed <see cref="System.Threading.Tasks.Task{TResult}"/>.</returns>
-        /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
-        /// <exception cref="System.Threading.Tasks.TaskCanceledException">The task was canceled.</exception>
-        /// <exception cref="System.Exception">The task completed in a Faulted state.</exception>
+        /// <summary>Ends the await on the completed <see cref="Task{TResult}"/>.</summary>
+        /// <returns>The result of the completed <see cref="Task{TResult}"/>.</returns>
+        /// <exception cref="NullReferenceException">The awaiter was not properly initialized.</exception>
+        /// <exception cref="TaskCanceledException">The task was canceled.</exception>
+        /// <exception cref="Exception">The task completed in a Faulted state.</exception>
         [StackTraceHidden]
         public TResult GetResult()
         {
@@ -351,15 +351,15 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     internal interface IConfiguredTaskAwaiter { }
 
-    /// <summary>Provides an awaitable object that allows for configured awaits on <see cref="System.Threading.Tasks.Task"/>.</summary>
+    /// <summary>Provides an awaitable object that allows for configured awaits on <see cref="Task"/>.</summary>
     /// <remarks>This type is intended for compiler use only.</remarks>
     public readonly struct ConfiguredTaskAwaitable
     {
         /// <summary>The task being awaited.</summary>
-        private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter m_configuredTaskAwaiter;
+        private readonly ConfiguredTaskAwaiter m_configuredTaskAwaiter;
 
         /// <summary>Initializes the <see cref="ConfiguredTaskAwaitable"/>.</summary>
-        /// <param name="task">The awaitable <see cref="System.Threading.Tasks.Task"/>.</param>
+        /// <param name="task">The awaitable <see cref="Task"/>.</param>
         /// <param name="options">Options to control the behavior of the awaiter.</param>
         internal ConfiguredTaskAwaitable(Task task, ConfigureAwaitOptions options)
         {
@@ -369,7 +369,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Gets an awaiter for this awaitable.</summary>
         /// <returns>The awaiter.</returns>
-        public ConfiguredTaskAwaitable.ConfiguredTaskAwaiter GetAwaiter()
+        public ConfiguredTaskAwaiter GetAwaiter()
         {
             return m_configuredTaskAwaiter;
         }
@@ -399,33 +399,33 @@ namespace System.Runtime.CompilerServices
 
             /// <summary>Gets whether the task being awaited is completed.</summary>
             /// <remarks>This property is intended for compiler user rather than use directly in code.</remarks>
-            /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
+            /// <exception cref="NullReferenceException">The awaiter was not properly initialized.</exception>
             public bool IsCompleted => ((m_options & ConfigureAwaitOptions.ForceYielding) == 0) && m_task.IsCompleted;
 
-            /// <summary>Schedules the continuation onto the <see cref="System.Threading.Tasks.Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
+            /// <summary>Schedules the continuation onto the <see cref="Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
             /// <param name="continuation">The action to invoke when the await operation completes.</param>
-            /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
-            /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
+            /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
+            /// <exception cref="NullReferenceException">The awaiter was not properly initialized.</exception>
             /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
             public void OnCompleted(Action continuation)
             {
                 TaskAwaiter.OnCompletedInternal(m_task, continuation, (m_options & ConfigureAwaitOptions.ContinueOnCapturedContext) != 0, flowExecutionContext: true);
             }
 
-            /// <summary>Schedules the continuation onto the <see cref="System.Threading.Tasks.Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
+            /// <summary>Schedules the continuation onto the <see cref="Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
             /// <param name="continuation">The action to invoke when the await operation completes.</param>
-            /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
-            /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
+            /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
+            /// <exception cref="NullReferenceException">The awaiter was not properly initialized.</exception>
             /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
             public void UnsafeOnCompleted(Action continuation)
             {
                 TaskAwaiter.OnCompletedInternal(m_task, continuation, (m_options & ConfigureAwaitOptions.ContinueOnCapturedContext) != 0, flowExecutionContext: false);
             }
 
-            /// <summary>Ends the await on the completed <see cref="System.Threading.Tasks.Task"/>.</summary>
-            /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
-            /// <exception cref="System.Threading.Tasks.TaskCanceledException">The task was canceled.</exception>
-            /// <exception cref="System.Exception">The task completed in a Faulted state.</exception>
+            /// <summary>Ends the await on the completed <see cref="Task"/>.</summary>
+            /// <exception cref="NullReferenceException">The awaiter was not properly initialized.</exception>
+            /// <exception cref="TaskCanceledException">The task was canceled.</exception>
+            /// <exception cref="Exception">The task completed in a Faulted state.</exception>
             [StackTraceHidden]
             public void GetResult()
             {
@@ -434,24 +434,24 @@ namespace System.Runtime.CompilerServices
         }
     }
 
-    /// <summary>Provides an awaitable object that allows for configured awaits on <see cref="System.Threading.Tasks.Task{TResult}"/>.</summary>
+    /// <summary>Provides an awaitable object that allows for configured awaits on <see cref="Task{TResult}"/>.</summary>
     /// <remarks>This type is intended for compiler use only.</remarks>
     public readonly struct ConfiguredTaskAwaitable<TResult>
     {
         /// <summary>The underlying awaitable on whose logic this awaitable relies.</summary>
-        private readonly ConfiguredTaskAwaitable<TResult>.ConfiguredTaskAwaiter m_configuredTaskAwaiter;
+        private readonly ConfiguredTaskAwaiter m_configuredTaskAwaiter;
 
         /// <summary>Initializes the <see cref="ConfiguredTaskAwaitable{TResult}"/>.</summary>
-        /// <param name="task">The awaitable <see cref="System.Threading.Tasks.Task{TResult}"/>.</param>
+        /// <param name="task">The awaitable <see cref="Task{TResult}"/>.</param>
         /// <param name="options">Options to control the behavior of the awaiter.</param>
         internal ConfiguredTaskAwaitable(Task<TResult> task, ConfigureAwaitOptions options)
         {
-            m_configuredTaskAwaiter = new ConfiguredTaskAwaitable<TResult>.ConfiguredTaskAwaiter(task, options);
+            m_configuredTaskAwaiter = new ConfiguredTaskAwaiter(task, options);
         }
 
         /// <summary>Gets an awaiter for this awaitable.</summary>
         /// <returns>The awaiter.</returns>
-        public ConfiguredTaskAwaitable<TResult>.ConfiguredTaskAwaiter GetAwaiter()
+        public ConfiguredTaskAwaiter GetAwaiter()
         {
             return m_configuredTaskAwaiter;
         }
@@ -481,34 +481,34 @@ namespace System.Runtime.CompilerServices
 
             /// <summary>Gets whether the task being awaited is completed.</summary>
             /// <remarks>This property is intended for compiler user rather than use directly in code.</remarks>
-            /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
+            /// <exception cref="NullReferenceException">The awaiter was not properly initialized.</exception>
             public bool IsCompleted => ((m_options & ConfigureAwaitOptions.ForceYielding) == 0) && m_task.IsCompleted;
 
-            /// <summary>Schedules the continuation onto the <see cref="System.Threading.Tasks.Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
+            /// <summary>Schedules the continuation onto the <see cref="Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
             /// <param name="continuation">The action to invoke when the await operation completes.</param>
-            /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
-            /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
+            /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
+            /// <exception cref="NullReferenceException">The awaiter was not properly initialized.</exception>
             /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
             public void OnCompleted(Action continuation)
             {
                 TaskAwaiter.OnCompletedInternal(m_task, continuation, (m_options & ConfigureAwaitOptions.ContinueOnCapturedContext) != 0, flowExecutionContext: true);
             }
 
-            /// <summary>Schedules the continuation onto the <see cref="System.Threading.Tasks.Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
+            /// <summary>Schedules the continuation onto the <see cref="Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
             /// <param name="continuation">The action to invoke when the await operation completes.</param>
-            /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
-            /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
+            /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
+            /// <exception cref="NullReferenceException">The awaiter was not properly initialized.</exception>
             /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
             public void UnsafeOnCompleted(Action continuation)
             {
                 TaskAwaiter.OnCompletedInternal(m_task, continuation, (m_options & ConfigureAwaitOptions.ContinueOnCapturedContext) != 0, flowExecutionContext: false);
             }
 
-            /// <summary>Ends the await on the completed <see cref="System.Threading.Tasks.Task{TResult}"/>.</summary>
-            /// <returns>The result of the completed <see cref="System.Threading.Tasks.Task{TResult}"/>.</returns>
-            /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
-            /// <exception cref="System.Threading.Tasks.TaskCanceledException">The task was canceled.</exception>
-            /// <exception cref="System.Exception">The task completed in a Faulted state.</exception>
+            /// <summary>Ends the await on the completed <see cref="Task{TResult}"/>.</summary>
+            /// <returns>The result of the completed <see cref="Task{TResult}"/>.</returns>
+            /// <exception cref="NullReferenceException">The awaiter was not properly initialized.</exception>
+            /// <exception cref="TaskCanceledException">The task was canceled.</exception>
+            /// <exception cref="Exception">The task completed in a Faulted state.</exception>
             [StackTraceHidden]
             public TResult GetResult()
             {
