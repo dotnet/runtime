@@ -178,6 +178,9 @@ add_event_to_existing_class (MonoImage *image_base, BaselineInfo *base_info, uin
 static void
 add_semantic_method_to_existing_event (MonoImage *image_base, BaselineInfo *base_info, uint32_t semantics, uint32_t klass_token, uint32_t event_token, uint32_t method_token);
 
+static MonoClassMetadataUpdateInfo *
+hot_reload_get_or_add_ginst_update_info(MonoClass *ginst);
+
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_available },
 	&hot_reload_set_fastpath_data,
@@ -3005,7 +3008,12 @@ hot_reload_get_field_idx (MonoClassField *field)
 
 static MonoClassField *
 hot_reload_get_field (MonoClass *klass, uint32_t fielddef_token) {
-	MonoClassMetadataUpdateInfo *info = mono_class_get_or_add_metadata_update_info (klass);
+	MonoClassMetadataUpdateInfo *info;
+	if (mono_class_is_ginst (klass)) {
+		info = hot_reload_get_or_add_ginst_update_info (klass);
+	} else {
+		info = mono_class_get_metadata_update_info (klass);
+	}
 	g_assert (mono_metadata_token_table (fielddef_token) == MONO_TABLE_FIELD);
 	GSList *added_fields = info->added_fields;
 
@@ -3274,7 +3282,12 @@ hot_reload_get_static_field_addr (MonoClassField *field)
 	g_assert (!m_type_is_byref(f->field.type)); // byref fields only in ref structs, which aren't allowed in EnC updates
 
 	MonoClass *parent = m_field_get_parent (&f->field);
-	MonoClassMetadataUpdateInfo *parent_info = mono_class_get_or_add_metadata_update_info (parent);
+	MonoClassMetadataUpdateInfo *parent_info;
+	if (mono_class_is_ginst (parent)) {
+		parent_info = hot_reload_get_or_add_ginst_update_info (parent);
+	} else {
+		parent_info = mono_class_get_metadata_update_info (parent);
+	}
 	MonoClassRuntimeMetadataUpdateInfo *runtime_info = &parent_info->runtime;
 
 	ensure_class_runtime_info_inited (parent, runtime_info);
@@ -3416,7 +3429,12 @@ hot_reload_added_methods_iter (MonoClass *klass, gpointer *iter)
 static MonoClassField *
 hot_reload_added_fields_iter (MonoClass *klass, gboolean lazy G_GNUC_UNUSED, gpointer *iter)
 {
-	MonoClassMetadataUpdateInfo *info = mono_class_get_metadata_update_info (klass);
+	MonoClassMetadataUpdateInfo *info;
+	if (mono_class_is_ginst (klass)) {
+		info = hot_reload_get_or_add_ginst_update_info (klass);
+	} else {
+		info = mono_class_get_metadata_update_info (klass);
+	}
 	if (!info)
 		return NULL;
 
@@ -3444,7 +3462,12 @@ hot_reload_added_fields_iter (MonoClass *klass, gboolean lazy G_GNUC_UNUSED, gpo
 static uint32_t
 hot_reload_get_num_fields_added (MonoClass *klass)
 {
-	MonoClassMetadataUpdateInfo *info = mono_class_get_metadata_update_info (klass);
+	MonoClassMetadataUpdateInfo *info;
+	if (mono_class_is_ginst (klass)) {
+		info = hot_reload_get_or_add_ginst_update_info (klass);
+	} else {
+		info = mono_class_get_metadata_update_info (klass);
+	}
 	if (!info)
 		return 0;
 	return g_slist_length (info->added_fields);
@@ -3454,6 +3477,7 @@ static uint32_t
 hot_reload_get_num_methods_added (MonoClass *klass)
 {
 	uint32_t count = 0;
+	// FIXME: this might need to look at the generic class if `klass` is a ginst
 	GSList *members = hot_reload_get_added_members (klass);
 	for (GSList *ptr = members; ptr; ptr = ptr->next) {
 		uint32_t token = GPOINTER_TO_UINT(ptr->data);
@@ -3630,6 +3654,29 @@ recompute_ginst_update_info(MonoClass *ginst, MonoClass *gtd, MonoClassMetadataU
 		info->added_events = g_slist_prepend_mem_manager (m_class_get_mem_manager (ginst), info->added_events, (gpointer)added_event);
 	}
 	
+	info->added_fields = NULL;
+	for (GSList *ptr = gtd_info->added_fields; ptr; ptr = ptr->next) {
+		MonoClassMetadataUpdateField *gtd_added_field = (MonoClassMetadataUpdateField *)ptr->data;
+		MonoClassMetadataUpdateField *added_field = mono_class_new0 (ginst, MonoClassMetadataUpdateField, 1);
+
+		ERROR_DECL (error);
+		mono_field_resolve_type (&gtd_added_field->field, error);
+		mono_error_assert_ok (error);
+		g_assert (gtd_added_field->field.type != NULL);
+
+		added_field->field = gtd_added_field->field;
+		added_field->token = gtd_added_field->token;
+
+		added_field->field.type = mono_class_inflate_generic_type_checked (
+			added_field->field.type, mono_class_get_context (ginst), error);
+		mono_error_assert_ok (error); /*FIXME proper error handling*/
+
+		m_field_set_parent (&added_field->field, ginst);
+		m_field_set_meta_flags (&added_field->field, MONO_CLASS_FIELD_META_FLAG_FROM_UPDATE);
+
+		info->added_fields = g_slist_prepend_mem_manager (m_class_get_mem_manager (ginst), info->added_fields, (gpointer)added_field);
+	}
+
 	// finally, update the generation of the ginst info to the same one as the gtd
 	info->generation = gtd_info->generation;
 	// we're done info is now up to date    
