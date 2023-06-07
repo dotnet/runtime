@@ -51,22 +51,26 @@ namespace Microsoft.Interop.Analyzers
                     return;
                 }
 
-                var methodsOfInterest = new Dictionary<ISymbol, Func<IInvocationOperation, (ITypeSymbol, Location)?>>(SymbolEqualityComparer.Default);
+                var methodsOfInterest = new Dictionary<ISymbol, ImmutableArray<Func<IInvocationOperation, (ITypeSymbol, Location)?>>>(SymbolEqualityComparer.Default);
 
-                methodsOfInterest.Add(marshalType.GetMembers("SetComObjectData")[0], CreateArgumentTypeLookup(0));
-                methodsOfInterest.Add(marshalType.GetMembers("GetComObjectData")[0], CreateArgumentTypeLookup(0));
-                methodsOfInterest.Add(marshalType.GetMembers("ReleaseComObject")[0], CreateArgumentTypeLookup(0));
-                methodsOfInterest.Add(marshalType.GetMembers("FinalReleaseComObject")[0], CreateArgumentTypeLookup(0));
+                var firstArgumentTypeLookup = CreateArgumentTypeLookup(0);
+
+                var firstArgumentTypeLookupOnly = ImmutableArray.Create(firstArgumentTypeLookup);
+
+                methodsOfInterest.Add(marshalType.GetMembers("SetComObjectData")[0], firstArgumentTypeLookupOnly);
+                methodsOfInterest.Add(marshalType.GetMembers("GetComObjectData")[0], firstArgumentTypeLookupOnly);
+                methodsOfInterest.Add(marshalType.GetMembers("ReleaseComObject")[0], firstArgumentTypeLookupOnly);
+                methodsOfInterest.Add(marshalType.GetMembers("FinalReleaseComObject")[0], firstArgumentTypeLookupOnly);
 
                 foreach (var createAggregatedObject in marshalType.GetMembers("CreateAggregatedObject"))
                 {
                     if (createAggregatedObject is IMethodSymbol { IsGenericMethod: true })
                     {
-                        methodsOfInterest.Add(createAggregatedObject, CreateTypeArgumentTypeLookup(0) + CreateArgumentTypeLookup(1));
+                        methodsOfInterest.Add(createAggregatedObject, ImmutableArray.Create(CreateTypeArgumentTypeLookup(0), CreateArgumentTypeLookup(1)));
                     }
                     else
                     {
-                        methodsOfInterest.Add(createAggregatedObject, CreateArgumentTypeLookup(1));
+                        methodsOfInterest.Add(createAggregatedObject, ImmutableArray.Create(CreateArgumentTypeLookup(1)));
                     }
                 }
 
@@ -74,27 +78,27 @@ namespace Microsoft.Interop.Analyzers
                 {
                     if (createWrapperOfType is IMethodSymbol { IsGenericMethod: true })
                     {
-                        methodsOfInterest.Add(createWrapperOfType, CreateTypeArgumentTypeLookup(0) + CreateTypeArgumentTypeLookup(1) + CreateArgumentTypeLookup(0));
+                        methodsOfInterest.Add(createWrapperOfType, ImmutableArray.Create(CreateTypeArgumentTypeLookup(0), CreateTypeArgumentTypeLookup(1), firstArgumentTypeLookup));
                     }
                     else
                     {
-                        methodsOfInterest.Add(createWrapperOfType, CreateArgumentTypeLookup(0) + CreateTypeOfArgumentTypeLookup(1));
+                        methodsOfInterest.Add(createWrapperOfType, ImmutableArray.Create(firstArgumentTypeLookup, CreateTypeOfArgumentTypeLookup(1)));
                     }
                 }
 
-                methodsOfInterest.Add(marshalType.GetMembers("GetTypedObjectForIUnknown")[0], CreateTypeOfArgumentTypeLookup(1));
-                methodsOfInterest.Add(marshalType.GetMembers("GetIUnknownForObject")[0], CreateArgumentTypeLookup(0));
-                methodsOfInterest.Add(marshalType.GetMembers("GetIDispatchForObject")[0], CreateArgumentTypeLookup(0));
+                methodsOfInterest.Add(marshalType.GetMembers("GetTypedObjectForIUnknown")[0], ImmutableArray.Create(CreateTypeOfArgumentTypeLookup(1)));
+                methodsOfInterest.Add(marshalType.GetMembers("GetIUnknownForObject")[0], firstArgumentTypeLookupOnly);
+                methodsOfInterest.Add(marshalType.GetMembers("GetIDispatchForObject")[0], firstArgumentTypeLookupOnly);
 
                 foreach (var getComInterfaceForObject in marshalType.GetMembers("GetComInterfaceForObject"))
                 {
                     if (getComInterfaceForObject is IMethodSymbol { IsGenericMethod: true })
                     {
-                        methodsOfInterest.Add(getComInterfaceForObject, CreateTypeArgumentTypeLookup(0) + CreateTypeArgumentTypeLookup(1) + CreateArgumentTypeLookup(0));
+                        methodsOfInterest.Add(getComInterfaceForObject, ImmutableArray.Create(CreateTypeArgumentTypeLookup(0), CreateTypeArgumentTypeLookup(1), firstArgumentTypeLookup));
                     }
                     else
                     {
-                        methodsOfInterest.Add(getComInterfaceForObject, CreateArgumentTypeLookup(0) + CreateTypeOfArgumentTypeLookup(1));
+                        methodsOfInterest.Add(getComInterfaceForObject, ImmutableArray.Create(CreateArgumentTypeLookup(0), CreateTypeOfArgumentTypeLookup(1)));
                     }
                 }
 
@@ -102,9 +106,9 @@ namespace Microsoft.Interop.Analyzers
                 {
                     var operation = (IInvocationOperation)context.Operation;
 
-                    if (methodsOfInterest.TryGetValue(operation.TargetMethod.OriginalDefinition, out Func<IInvocationOperation, (ITypeSymbol, Location)?>? discoverers))
+                    if (methodsOfInterest.TryGetValue(operation.TargetMethod.OriginalDefinition, out ImmutableArray<Func<IInvocationOperation, (ITypeSymbol, Location)?>> discoverers))
                     {
-                        foreach (Func<IInvocationOperation, (ITypeSymbol, Location)?> discoverer in discoverers.GetInvocationList())
+                        foreach (Func<IInvocationOperation, (ITypeSymbol, Location)?> discoverer in discoverers)
                         {
                             var typeInfo = discoverer(operation);
                             if (typeInfo is (ITypeSymbol targetType, Location diagnosticLocation))
