@@ -338,6 +338,6 @@ inline void ETW::GCLog::RootReference(
     DWORD rootFlags) { }
 #endif
 
-inline BOOL EventEnabledPinObjectAtGCTime() { return FALSE; }
+//inline BOOL EventEnabledPinObjectAtGCTime() { return FALSE; }
 
 #endif //_VMEVENTTRACE_H_

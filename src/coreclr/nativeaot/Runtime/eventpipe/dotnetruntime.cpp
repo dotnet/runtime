@@ -145,6 +145,18 @@ EventPipeEvent *EventPipeEventThreadPoolIOEnqueue = nullptr;
 EventPipeEvent *EventPipeEventThreadPoolIODequeue = nullptr;
 EventPipeEvent *EventPipeEventThreadPoolWorkingThreadCount = nullptr;
 EventPipeEvent *EventPipeEventThreadPoolIOPack = nullptr;
+EventPipeEvent *EventPipeEventGCAllocationTick_V4 = nullptr;
+EventPipeEvent *EventPipeEventGCHeapStats_V2 = nullptr;
+EventPipeEvent *EventPipeEventGCSampledObjectAllocationHigh = nullptr;
+EventPipeEvent *EventPipeEventGCSampledObjectAllocationLow = nullptr;
+EventPipeEvent *EventPipeEventPinObjectAtGCTime = nullptr;
+EventPipeEvent *EventPipeEventGCBulkRootStaticVar = nullptr;
+EventPipeEvent *EventPipeEventIncreaseMemoryPressure = nullptr;
+EventPipeEvent *EventPipeEventGCGlobalHeapHistory_V4 = nullptr;
+EventPipeEvent *EventPipeEventGenAwareBegin = nullptr;
+EventPipeEvent *EventPipeEventGenAwareEnd = nullptr;
+EventPipeEvent *EventPipeEventGCLOHCompact = nullptr;
+EventPipeEvent *EventPipeEventGCFitBucketInfo = nullptr;
 
 BOOL EventPipeEventEnabledDestroyGCHandle(void)
 {
@@ -1983,7 +1995,6 @@ ULONG EventPipeWriteEventGCFinalizersEnd_V1(
     return ERROR_SUCCESS;
 }
 
-
 BOOL EventPipeEventEnabledThreadPoolWorkerThreadStart(void)
 {
     return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolWorkerThreadStart);
@@ -2456,6 +2467,585 @@ ULONG EventPipeWriteEventThreadPoolIOPack(
     return ERROR_SUCCESS;
 }
 
+BOOL EventPipeEventEnabledGCAllocationTick_V4(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCAllocationTick_V4);
+}
+
+ULONG EventPipeWriteEventGCAllocationTick_V4(
+    const unsigned int AllocationAmount,
+    const unsigned int AllocationKind,
+    const unsigned short ClrInstanceID,
+    const unsigned __int64 AllocationAmount64,
+    const void* TypeID,
+    const wchar_t* TypeName,
+    const unsigned int HeapIndex,
+    const void* Address,
+    const unsigned __int64 ObjectSize,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledGCAllocationTick_V4())
+        return ERROR_SUCCESS;
+
+    size_t size = 110;
+    BYTE stackBuffer[110];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    if (!TypeName) { TypeName = L"NULL"; }
+    success &= WriteToBuffer(AllocationAmount, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(AllocationKind, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(AllocationAmount64, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(TypeID, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(TypeName, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(HeapIndex, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(Address, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ObjectSize, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventGCAllocationTick_V4, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledGCHeapStats_V2(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCHeapStats_V2);
+}
+
+ULONG EventPipeWriteEventGCHeapStats_V2(
+    const unsigned __int64 GenerationSize0,
+    const unsigned __int64 TotalPromotedSize0,
+    const unsigned __int64 GenerationSize1,
+    const unsigned __int64 TotalPromotedSize1,
+    const unsigned __int64 GenerationSize2,
+    const unsigned __int64 TotalPromotedSize2,
+    const unsigned __int64 GenerationSize3,
+    const unsigned __int64 TotalPromotedSize3,
+    const unsigned __int64 FinalizationPromotedSize,
+    const unsigned __int64 FinalizationPromotedCount,
+    const unsigned int PinnedObjectCount,
+    const unsigned int SinkBlockCount,
+    const unsigned int GCHandleCount,
+    const unsigned short ClrInstanceID,
+    const unsigned __int64 GenerationSize4,
+    const unsigned __int64 TotalPromotedSize4,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledGCHeapStats_V2())
+        return ERROR_SUCCESS;
+
+    size_t size = 110;
+    BYTE stackBuffer[110];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(GenerationSize0, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(TotalPromotedSize0, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(GenerationSize1, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(TotalPromotedSize1, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(GenerationSize2, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(TotalPromotedSize2, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(GenerationSize3, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(TotalPromotedSize3, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(FinalizationPromotedSize, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(FinalizationPromotedCount, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(PinnedObjectCount, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(SinkBlockCount, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(GCHandleCount, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(GenerationSize4, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(TotalPromotedSize4, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventGCHeapStats_V2, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledGCSampledObjectAllocationHigh(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCSampledObjectAllocationHigh);
+}
+
+ULONG EventPipeWriteEventGCSampledObjectAllocationHigh(
+    const void* Address,
+    const void* TypeID,
+    const unsigned int ObjectCountForTypeSample,
+    const unsigned __int64 TotalSizeForTypeSample,
+    const unsigned short ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledGCSampledObjectAllocationHigh())
+        return ERROR_SUCCESS;
+
+    size_t size = 32;
+    BYTE stackBuffer[32];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(Address, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(TypeID, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ObjectCountForTypeSample, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(TotalSizeForTypeSample, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventGCSampledObjectAllocationHigh, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledGCSampledObjectAllocationLow(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCSampledObjectAllocationLow);
+}
+
+ULONG EventPipeWriteEventGCSampledObjectAllocationLow(
+    const void* Address,
+    const void* TypeID,
+    const unsigned int ObjectCountForTypeSample,
+    const unsigned __int64 TotalSizeForTypeSample,
+    const unsigned short ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledGCSampledObjectAllocationLow())
+        return ERROR_SUCCESS;
+
+    size_t size = 32;
+    BYTE stackBuffer[32];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(Address, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(TypeID, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ObjectCountForTypeSample, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(TotalSizeForTypeSample, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventGCSampledObjectAllocationLow, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledPinObjectAtGCTime(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventPinObjectAtGCTime);
+}
+
+ULONG EventPipeWriteEventPinObjectAtGCTime(
+    const void* HandleID,
+    const void* ObjectID,
+    const unsigned __int64 ObjectSize,
+    const wchar_t* TypeName,
+    const unsigned short ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledPinObjectAtGCTime())
+        return ERROR_SUCCESS;
+
+    size_t size = 90;
+    BYTE stackBuffer[90];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    if (!TypeName) { TypeName = L"NULL"; }
+    success &= WriteToBuffer(HandleID, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ObjectID, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ObjectSize, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(TypeName, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventPinObjectAtGCTime, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledGCBulkRootStaticVar(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCBulkRootStaticVar);
+}
+
+ULONG EventPipeWriteEventGCBulkRootStaticVar(
+    const unsigned int Count,
+    const unsigned __int64 AppDomainID,
+    const unsigned short ClrInstanceID,
+    int Values_ElementSize,
+    const void* Values,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledGCBulkRootStaticVar())
+        return ERROR_SUCCESS;
+
+    size_t size = 46;
+    BYTE stackBuffer[46];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(Count, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(AppDomainID, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer((const BYTE *)Values, (int)(Values_ElementSize), buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventGCBulkRootStaticVar, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledIncreaseMemoryPressure(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventIncreaseMemoryPressure);
+}
+
+ULONG EventPipeWriteEventIncreaseMemoryPressure(
+    const unsigned __int64 BytesAllocated,
+    const unsigned short ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledIncreaseMemoryPressure())
+        return ERROR_SUCCESS;
+
+    size_t size = 32;
+    BYTE stackBuffer[32];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(BytesAllocated, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventIncreaseMemoryPressure, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledGCGlobalHeapHistory_V4(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCGlobalHeapHistory_V4);
+}
+
+ULONG EventPipeWriteEventGCGlobalHeapHistory_V4(
+    const unsigned __int64 FinalYoungestDesired,
+    const signed int NumHeaps,
+    const unsigned int CondemnedGeneration,
+    const unsigned int Gen0ReductionCount,
+    const unsigned int Reason,
+    const unsigned int GlobalMechanisms,
+    const unsigned short ClrInstanceID,
+    const unsigned int PauseMode,
+    const unsigned int MemoryPressure,
+    const unsigned int CondemnReasons0,
+    const unsigned int CondemnReasons1,
+    const unsigned int Count,
+    int Values_ElementSize,
+    const void* Values,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledGCGlobalHeapHistory_V4())
+        return ERROR_SUCCESS;
+
+    size_t size = 82;
+    BYTE stackBuffer[82];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(FinalYoungestDesired, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(NumHeaps, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(CondemnedGeneration, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(Gen0ReductionCount, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(Reason, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(GlobalMechanisms, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(PauseMode, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(MemoryPressure, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(CondemnReasons0, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(CondemnReasons1, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(Count, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer((const BYTE *)Values, (int)Values_ElementSize * (int)Count, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventGCGlobalHeapHistory_V4, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledGenAwareBegin(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventGenAwareBegin);
+}
+
+ULONG EventPipeWriteEventGenAwareBegin(
+    const unsigned int Count,
+    const unsigned short ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledGenAwareBegin())
+        return ERROR_SUCCESS;
+
+    size_t size = 32;
+    BYTE stackBuffer[32];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(Count, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventGenAwareBegin, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledGenAwareEnd(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventGenAwareEnd);
+}
+
+ULONG EventPipeWriteEventGenAwareEnd(
+    const unsigned int Count,
+    const unsigned short ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledGenAwareEnd())
+        return ERROR_SUCCESS;
+
+    size_t size = 32;
+    BYTE stackBuffer[32];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(Count, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventGenAwareEnd, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledGCLOHCompact(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCLOHCompact);
+}
+
+ULONG EventPipeWriteEventGCLOHCompact(
+    const unsigned short ClrInstanceID,
+    const unsigned short Count,
+    int Values_ElementSize,
+    const void* Values,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledGCLOHCompact())
+        return ERROR_SUCCESS;
+
+    size_t size = 36;
+    BYTE stackBuffer[36];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(Count, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer((const BYTE *)Values, (int)Values_ElementSize * (int)Count, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventGCLOHCompact, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledGCFitBucketInfo(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCFitBucketInfo);
+}
+
+ULONG EventPipeWriteEventGCFitBucketInfo(
+    const unsigned short ClrInstanceID,
+    const unsigned short BucketKind,
+    const unsigned __int64 TotalSize,
+    const unsigned short Count,
+    int Values_ElementSize,
+    const void* Values,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledGCFitBucketInfo())
+        return ERROR_SUCCESS;
+
+    size_t size = 46;
+    BYTE stackBuffer[46];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(BucketKind, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(TotalSize, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(Count, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer((const BYTE *)Values, (int)Values_ElementSize * (int)Count, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventGCFitBucketInfo, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+
+    return ERROR_SUCCESS;
+}
 
 typedef struct _MCGEN_TRACE_CONTEXT
 {
@@ -2648,4 +3238,16 @@ void InitDotNETRuntime(void)
     EventPipeEventThreadPoolIOEnqueue = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,63,2147549184,0,EP_EVENT_LEVEL_VERBOSE,true);
     EventPipeEventThreadPoolIODequeue = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,64,2147549184,0,EP_EVENT_LEVEL_VERBOSE,true);
     EventPipeEventThreadPoolWorkingThreadCount = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,60,65536,0,EP_EVENT_LEVEL_VERBOSE,true);
+    EventPipeEventGCAllocationTick_V4 = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,10,1,4,EP_EVENT_LEVEL_VERBOSE,true);
+    EventPipeEventGCHeapStats_V2 = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,4,1,2,EP_EVENT_LEVEL_INFORMATIONAL,false);
+    EventPipeEventGCSampledObjectAllocationHigh = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,20,2097152,0,EP_EVENT_LEVEL_INFORMATIONAL,true);
+    EventPipeEventGCSampledObjectAllocationLow = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,32,33554432,0,EP_EVENT_LEVEL_INFORMATIONAL,true);
+    EventPipeEventPinObjectAtGCTime = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,33,1,0,EP_EVENT_LEVEL_VERBOSE,false);
+    EventPipeEventGCBulkRootStaticVar = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,38,1048576,0,EP_EVENT_LEVEL_INFORMATIONAL,false);
+    EventPipeEventIncreaseMemoryPressure = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,200,1,0,EP_EVENT_LEVEL_VERBOSE,true);
+    EventPipeEventGCGlobalHeapHistory_V4 = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,205,1,4,EP_EVENT_LEVEL_INFORMATIONAL,true);
+    EventPipeEventGenAwareBegin = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,206,1048576,0,EP_EVENT_LEVEL_INFORMATIONAL,true);
+    EventPipeEventGenAwareEnd = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,207,1048576,0,EP_EVENT_LEVEL_INFORMATIONAL,true);
+    EventPipeEventGCLOHCompact = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,208,1,0,EP_EVENT_LEVEL_INFORMATIONAL,true);
+    EventPipeEventGCFitBucketInfo = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,209,1,0,EP_EVENT_LEVEL_VERBOSE,true);
 }
