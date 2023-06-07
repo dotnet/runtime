@@ -27,6 +27,50 @@ namespace System.Security.Cryptography
             return new HashProviderCng(hashAlgorithmId, key, isHmac: true);
         }
 
+        internal static bool HashSupported(string hashAlgorithmId)
+        {
+            switch (hashAlgorithmId)
+            {
+                // We know that MD5, SHA1, and SHA2 are supported on all platforms. Don't bother asking.
+                case HashAlgorithmNames.MD5:
+                case HashAlgorithmNames.SHA1:
+                case HashAlgorithmNames.SHA256:
+                case HashAlgorithmNames.SHA384:
+                case HashAlgorithmNames.SHA512:
+                    return true;
+                case HashAlgorithmNames.SHA3_256:
+                case HashAlgorithmNames.SHA3_384:
+                case HashAlgorithmNames.SHA3_512:
+                    return BCryptAlgorithmCache.IsBCryptAlgorithmSupported(
+                        hashAlgorithmId,
+                        BCryptOpenAlgorithmProviderFlags.None);
+                default:
+                    return false;
+            }
+        }
+
+        internal static bool MacSupported(string hashAlgorithmId)
+        {
+            switch (hashAlgorithmId)
+            {
+                // We know that MD5, SHA1, and SHA2 are supported on all platforms. Don't bother asking.
+                case HashAlgorithmNames.MD5:
+                case HashAlgorithmNames.SHA1:
+                case HashAlgorithmNames.SHA256:
+                case HashAlgorithmNames.SHA384:
+                case HashAlgorithmNames.SHA512:
+                    return true;
+                case HashAlgorithmNames.SHA3_256:
+                case HashAlgorithmNames.SHA3_384:
+                case HashAlgorithmNames.SHA3_512:
+                    return BCryptAlgorithmCache.IsBCryptAlgorithmSupported(
+                        hashAlgorithmId,
+                        BCryptOpenAlgorithmProviderFlags.BCRYPT_ALG_HANDLE_HMAC_FLAG);
+                default:
+                    return false;
+            }
+        }
+
         public static class OneShotHashProvider
         {
             public static unsafe int MacData(
@@ -142,6 +186,27 @@ namespace System.Security.Cryptography
                         Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_HMAC_SHA512_ALG_HANDLE :
                         Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_SHA512_ALG_HANDLE;
                     digestSizeInBytes = SHA512.HashSizeInBytes;
+                }
+                else if (hashAlgorithmId == HashAlgorithmNames.SHA3_256)
+                {
+                    algHandle = isHmac ?
+                        Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_HMAC_SHA3_256_ALG_HANDLE :
+                        Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_SHA3_256_ALG_HANDLE;
+                    digestSizeInBytes = SHA3_256.HashSizeInBytes;
+                }
+                else if (hashAlgorithmId == HashAlgorithmNames.SHA3_384)
+                {
+                    algHandle = isHmac ?
+                        Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_HMAC_SHA3_384_ALG_HANDLE :
+                        Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_SHA3_384_ALG_HANDLE;
+                    digestSizeInBytes = SHA3_384.HashSizeInBytes;
+                }
+                else if (hashAlgorithmId == HashAlgorithmNames.SHA3_512)
+                {
+                    algHandle = isHmac ?
+                        Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_HMAC_SHA3_512_ALG_HANDLE :
+                        Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_SHA3_512_ALG_HANDLE;
+                    digestSizeInBytes = SHA3_512.HashSizeInBytes;
                 }
                 else
                 {

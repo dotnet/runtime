@@ -14,13 +14,14 @@
 **
 =============================================================================*/
 
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System
 {
     [Obsolete("ExecutionEngineException previously indicated an unspecified fatal error in the runtime. The runtime no longer raises this exception so this type is obsolete.")]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class ExecutionEngineException : SystemException
     {
         public ExecutionEngineException()

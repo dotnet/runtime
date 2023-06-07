@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { runtimeHelpers } from "./globals";
-import { GCHandle, GCHandleNull, JSHandle, JSHandleDisposed, JSHandleNull, mono_assert } from "./types";
+import { GCHandle, GCHandleNull, JSHandle, JSHandleDisposed, JSHandleNull } from "./types/internal";
 import { create_weak_ref } from "./weak-ref";
 
 const _use_finalization_registry = typeof globalThis.FinalizationRegistry === "function";
@@ -36,7 +36,6 @@ export function get_js_obj(js_handle: JSHandle): any {
     return null;
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function mono_wasm_get_js_handle(js_obj: any): JSHandle {
     if (js_obj[cs_owned_js_handle_symbol]) {
         return js_obj[cs_owned_js_handle_symbol];
@@ -73,7 +72,6 @@ export function mono_wasm_release_cs_owned_object(js_handle: JSHandle): void {
     }
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function setup_managed_proxy(result: any, gc_handle: GCHandle): void {
     // keep the gc_handle so that we could easily convert it back to original C# object for roundtrip
     result[js_owned_gc_handle_symbol] = gc_handle;
@@ -90,7 +88,6 @@ export function setup_managed_proxy(result: any, gc_handle: GCHandle): void {
     _js_owned_object_table.set(gc_handle, wr);
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function teardown_managed_proxy(result: any, gc_handle: GCHandle): void {
     // The JS object associated with this gc_handle has been collected by the JS GC.
     // As such, it's not possible for this gc_handle to be invoked by JS anymore, so
@@ -109,7 +106,6 @@ export function teardown_managed_proxy(result: any, gc_handle: GCHandle): void {
     }
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function assert_not_disposed(result: any): GCHandle {
     const gc_handle = result[js_owned_gc_handle_symbol];
     mono_assert(gc_handle != GCHandleNull, "ObjectDisposedException");

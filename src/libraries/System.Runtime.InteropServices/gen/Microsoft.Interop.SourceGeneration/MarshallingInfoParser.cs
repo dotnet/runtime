@@ -73,7 +73,7 @@ namespace Microsoft.Interop
     }
 
     /// <summary>
-    /// A provider of marshalling info based only on the managed type any any previously parsed use-site attribute information
+    /// A provider of marshalling info based only on the managed type and any previously parsed use-site attribute information
     /// </summary>
     public interface ITypeBasedMarshallingInfoProvider
     {

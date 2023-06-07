@@ -1135,31 +1135,39 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
 
     LPCUTF8 className;
     LPCUTF8 nameSpace;
+
     if (FAILED(GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetTypeDefToken(), &className, &nameSpace)))
         return false;
 
     if (strcmp(className, "Vector`1") != 0 || strcmp(nameSpace, "System.Numerics") != 0)
         return false;
 
-    if (!TargetHasAVXSupport())
-        return false;
+    CORJIT_FLAGS CPUCompileFlags       = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
+    uint32_t     numInstanceFieldBytes = 16;
 
-    EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
-    if (jitMgr->LoadJIT())
+    if (CPUCompileFlags.IsSet(InstructionSet_VectorT512))
     {
-        CORJIT_FLAGS cpuCompileFlags = jitMgr->GetCPUCompileFlags();
-        unsigned intrinsicSIMDVectorLength = jitMgr->m_jit->getMaxIntrinsicSIMDVectorLength(cpuCompileFlags);
-        if (intrinsicSIMDVectorLength != 0)
-        {
-            bmtFP->NumInstanceFieldBytes     = intrinsicSIMDVectorLength;
-            if (HasLayout())
-            {
-                GetLayoutInfo()->m_cbManagedSize = intrinsicSIMDVectorLength;
-            }
-            return true;
-        }
+        // TODO-XARCH: The JIT needs to be updated to support 64-byte Vector<T>
+        numInstanceFieldBytes = 32;
     }
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+    else if (CPUCompileFlags.IsSet(InstructionSet_VectorT256))
+    {
+        numInstanceFieldBytes = 32;
+    }
+
+    if (numInstanceFieldBytes != 16)
+    {
+        bmtFP->NumInstanceFieldBytes = numInstanceFieldBytes;
+
+        if (HasLayout())
+        {
+            GetLayoutInfo()->m_cbManagedSize = numInstanceFieldBytes;
+        }
+
+        return true;
+    }
+#endif // TARGET_X86 || TARGET_AMD64
+
     return false;
 }
 

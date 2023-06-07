@@ -44,7 +44,7 @@ namespace System.Runtime.Versioning
     /// applied to indicate support on multiple operating systems.
     /// </summary>
     /// <remarks>
-    /// Callers can apply a <see cref="System.Runtime.Versioning.SupportedOSPlatformAttribute " />
+    /// Callers can apply a <see cref="SupportedOSPlatformAttribute " />
     /// or use guards to prevent calls to APIs on unsupported operating systems.
     ///
     /// A given platform should only be specified once.
@@ -150,7 +150,7 @@ namespace System.Runtime.Versioning
     /// Multiple attributes can be applied to indicate guard for multiple supported platforms.
     /// </summary>
     /// <remarks>
-    /// Callers can apply a <see cref="System.Runtime.Versioning.SupportedOSPlatformGuardAttribute " /> to a field, property or method
+    /// Callers can apply a <see cref="SupportedOSPlatformGuardAttribute " /> to a field, property or method
     /// and use that field, property or method in a conditional or assert statements in order to safely call platform specific APIs.
     ///
     /// The type of the field or property should be boolean, the method return type should be boolean in order to be used as platform guard.
@@ -176,7 +176,7 @@ namespace System.Runtime.Versioning
     /// Multiple attributes can be applied to indicate guard for multiple unsupported platforms.
     /// </summary>
     /// <remarks>
-    /// Callers can apply a <see cref="System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute " /> to a field, property or method
+    /// Callers can apply a <see cref="UnsupportedOSPlatformGuardAttribute " /> to a field, property or method
     /// and use that  field, property or method in a conditional or assert statements as a guard to safely call APIs unsupported on those platforms.
     ///
     /// The type of the field or property should be boolean, the method return type should be boolean in order to be used as platform guard.

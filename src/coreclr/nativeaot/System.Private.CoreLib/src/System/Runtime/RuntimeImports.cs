@@ -21,7 +21,6 @@ namespace System.Runtime
     //      E.g., the class and methods are marked internal assuming that only the base class library needs them
     //            but if a class library wants to factor differently (such as putting the GCHandle methods in an
     //            optional library, those methods can be moved to a different file/namespace/dll
-    [ReflectionBlocked]
     public static partial class RuntimeImports
     {
         private const string RuntimeLibrary = "*";
@@ -98,6 +97,14 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetGeneration")]
         internal static extern int RhGetGeneration(object obj);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetGenerationSize")]
+        internal static extern int RhGetGenerationSize(int gen);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetLastGCPercentTimeInGC")]
+        internal static extern int RhGetLastGCPercentTimeInGC();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetGcLatencyMode")]
@@ -193,6 +200,26 @@ namespace System.Runtime
         [LibraryImport(RuntimeLibrary)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static unsafe partial void RhEnumerateConfigurationValues(void* configurationContext, delegate* unmanaged<void*, void*, void*, GCConfigurationType, long, void> callback);
+
+        internal struct GCHeapHardLimitInfo
+        {
+            internal ulong HeapHardLimit;
+            internal ulong HeapHardLimitPercent;
+            internal ulong HeapHardLimitSOH;
+            internal ulong HeapHardLimitLOH;
+            internal ulong HeapHardLimitPOH;
+            internal ulong HeapHardLimitSOHPercent;
+            internal ulong HeapHardLimitLOHPercent;
+            internal ulong HeapHardLimitPOHPercent;
+        }
+
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial int RhRefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo);
+
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static unsafe partial int RhEnableNoGCRegionCallback(void* callback, long totalSize);
 
         [LibraryImport(RuntimeLibrary)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
@@ -313,21 +340,6 @@ namespace System.Runtime
 
         internal static unsafe object IsInstanceOf(EETypePtr pTargetType, object obj)
             => IsInstanceOf(pTargetType.ToPointer(), obj);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfClass")]
-        private  static extern unsafe object IsInstanceOfClass(MethodTable* pTargetType, object obj);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfInterface")]
-        internal static extern unsafe object IsInstanceOfInterface(MethodTable* pTargetType, object obj);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfException")]
-        internal static extern unsafe bool IsInstanceOfException(MethodTable* pTargetType, object obj);
-
-        internal static unsafe object IsInstanceOfInterface(EETypePtr pTargetType, object obj)
-            => IsInstanceOfInterface(pTargetType.ToPointer(), obj);
 
         //
         // calls to runtime for allocation
@@ -540,6 +552,10 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetLoadedOSModules")]
         internal static extern uint RhGetLoadedOSModules(IntPtr[] resultArray);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetKnobValues")]
+        internal static extern unsafe uint RhGetKnobValues(out byte** keyArray, out byte** valueArray);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetOSModuleFromPointer")]
@@ -778,10 +794,6 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpCheckedXchg")]
         internal static extern object InterlockedExchange([NotNullIfNotNull(nameof(value))] ref object? location1, object? value);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpMemoryBarrier")]
-        internal static extern void MemoryBarrier();
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

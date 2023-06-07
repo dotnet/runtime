@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_Gt1
 {
     const int Pass = 100;
@@ -16,7 +17,8 @@ public class BringUpTest_Gt1
         return x > 1;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool y = Gt1(1);
         if (y == false) return Pass;

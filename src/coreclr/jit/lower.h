@@ -81,7 +81,6 @@ private:
 
     void ContainCheckDivOrMod(GenTreeOp* node);
     void ContainCheckReturnTrap(GenTreeOp* node);
-    void ContainCheckArrOffset(GenTreeArrOffs* node);
     void ContainCheckLclHeap(GenTreeOp* node);
     void ContainCheckRet(GenTreeUnOp* ret);
 #ifdef TARGET_ARM64
@@ -90,6 +89,7 @@ private:
     void ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
     void ContainCheckNeg(GenTreeOp* neg);
     void TryLowerCselToCinc(GenTreeOp* select, GenTree* cond);
+    void TryLowerCselToCinvOrCneg(GenTreeOp* select, GenTree* cond);
 #endif
     void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTree* node);
@@ -110,6 +110,9 @@ private:
 #ifdef FEATURE_HW_INTRINSICS
     void ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* addr);
     void ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node);
+#ifdef TARGET_XARCH
+    void TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode, GenTreeVecCon* childNode);
+#endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
 
 #ifdef DEBUG
@@ -346,7 +349,6 @@ private:
     void WidenSIMD12IfNecessary(GenTreeLclVarCommon* node);
     bool CheckMultiRegLclVar(GenTreeLclVar* lclNode, int registerCount);
     void LowerStoreLoc(GenTreeLclVarCommon* tree);
-    GenTree* LowerArrElem(GenTreeArrElem* arrElem);
     void LowerRotate(GenTree* tree);
     void LowerShift(GenTreeOp* shift);
 #ifdef FEATURE_HW_INTRINSICS
@@ -358,8 +360,8 @@ private:
     GenTree* LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
 #if defined(TARGET_XARCH)
     void LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node);
-    void LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node);
-    void LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node);
+    GenTree* LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node);
+    GenTree* LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node);
     GenTree* TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode);

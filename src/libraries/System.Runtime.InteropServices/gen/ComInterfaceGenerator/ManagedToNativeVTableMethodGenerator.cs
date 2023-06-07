@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -238,7 +237,7 @@ namespace Microsoft.Interop
         {
             List<FunctionPointerParameterSyntax> functionPointerParameters = new();
             var (paramList, retType, _) = _marshallers.GenerateTargetMethodSignatureData(_context);
-            functionPointerParameters.AddRange(paramList.Parameters.Select(p => FunctionPointerParameter(p.Type)));
+            functionPointerParameters.AddRange(paramList.Parameters.Select(p => FunctionPointerParameter(attributeLists: default, p.Modifiers, p.Type)));
             functionPointerParameters.Add(FunctionPointerParameter(retType));
 
             // ((delegate* unmanaged<...>)<untypedFunctionPointerExpression>)

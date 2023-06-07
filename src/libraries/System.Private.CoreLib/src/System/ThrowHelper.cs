@@ -40,6 +40,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Numerics;
+using System.Reflection;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -444,6 +446,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowOutOfMemoryException_StringTooLong()
+        {
+            throw new OutOfMemoryException(SR.OutOfMemory_StringTooLong);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentException_Argument_IncompatibleArrayType()
         {
             throw new ArgumentException(SR.Argument_IncompatibleArrayType);
@@ -534,6 +542,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowFormatException_BadBoolean(ReadOnlySpan<char> value)
+        {
+            throw new FormatException(SR.Format(SR.Format_BadBoolean, new string(value)));
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRangeException_PrecisionTooLarge()
         {
             throw new ArgumentOutOfRangeException("precision", SR.Format(SR.Argument_PrecisionTooLarge, StandardFormat.MaxPrecision));
@@ -591,6 +605,22 @@ namespace System
         internal static void ThrowFormatIndexOutOfRange()
         {
             throw new FormatException(SR.Format_IndexOutOfRange);
+        }
+
+        internal static AmbiguousMatchException GetAmbiguousMatchException(MemberInfo memberInfo)
+        {
+            Type? declaringType = memberInfo.DeclaringType;
+            return new AmbiguousMatchException(SR.Format(SR.Arg_AmbiguousMatchException_MemberInfo, declaringType, memberInfo));
+        }
+
+        internal static AmbiguousMatchException GetAmbiguousMatchException(Attribute attribute)
+        {
+            return new AmbiguousMatchException(SR.Format(SR.Arg_AmbiguousMatchException_Attribute, attribute));
+        }
+
+        internal static AmbiguousMatchException GetAmbiguousMatchException(CustomAttributeData customAttributeData)
+        {
+            return new AmbiguousMatchException(SR.Format(SR.Arg_AmbiguousMatchException_CustomAttributeData, customAttributeData));
         }
 
         private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)
@@ -662,7 +692,7 @@ namespace System
         {
             // Note that default(T) is not equal to null for value types except when T is Nullable<U>.
             if (!(default(T) == null) && value == null)
-                ThrowHelper.ThrowArgumentNullException(argName);
+                ThrowArgumentNullException(argName);
         }
 
         // Throws if 'T' is disallowed in Vector<T> in the Numerics namespace.

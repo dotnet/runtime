@@ -814,7 +814,7 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 
 		klass = mono_class_from_mono_type_internal (t);
 
-		if (MONO_CLASS_IS_SIMD (ctx->cfg, klass))
+		if (mini_class_is_simd (ctx->cfg, klass))
 			return simd_class_to_llvm_type (ctx, klass);
 
 		if (m_class_is_enumtype (klass))
@@ -2419,14 +2419,12 @@ set_metadata_flag (LLVMValueRef v, const char *flag_name)
 static void
 set_nonnull_load_flag (LLVMValueRef v)
 {
-	LLVMValueRef md_arg;
 	int md_kind;
 	const char *flag_name;
 
 	flag_name = "nonnull";
 	md_kind = LLVMGetMDKindID (flag_name, (unsigned int)strlen (flag_name));
-	md_arg = md_string ("<index>");
-	LLVMSetMetadata (v, md_kind, LLVMMDNode (&md_arg, 1));
+	LLVMSetMetadata (v, md_kind, LLVMMDNode (NULL, 0));
 }
 
 static void
@@ -2692,7 +2690,7 @@ emit_args_to_vtype (EmitContext *ctx, LLVMBuilderRef builder, MonoType *t, LLVMV
 	klass = mono_class_from_mono_type_internal (t);
 	size = mono_class_value_size (klass, NULL);
 
-	if (MONO_CLASS_IS_SIMD (ctx->cfg, klass))
+	if (mini_class_is_simd (ctx->cfg, klass))
 		address = build_ptr_cast (ctx->builder, address, pointer_type (LLVMInt8Type ()));
 
 	if (ainfo->storage == LLVMArgAsFpArgs)
@@ -2714,7 +2712,7 @@ emit_args_to_vtype (EmitContext *ctx, LLVMBuilderRef builder, MonoType *t, LLVMV
 		switch (ainfo->pair_storage [j]) {
 		case LLVMArgInIReg: {
 			part_type = LLVMIntType (part_size * 8);
-			if (MONO_CLASS_IS_SIMD (ctx->cfg, klass)) {
+			if (mini_class_is_simd (ctx->cfg, klass)) {
 				index [0] = const_int32 (j * TARGET_SIZEOF_VOID_P);
 				addr = LLVMBuildGEP2 (builder, i1_t, address, index, 1, "");
 			} else {
@@ -2765,7 +2763,7 @@ emit_vtype_to_args (EmitContext *ctx, LLVMBuilderRef builder, MonoType *t, LLVMV
 	t = mini_get_underlying_type (t);
 	int32_t size = get_vtype_size_align (t).size;
 
-	if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (t)))
+	if (mini_class_is_simd (ctx->cfg, mono_class_from_mono_type_internal (t)))
 		address = build_ptr_cast (ctx->builder, address, pointer_type (LLVMInt8Type ()));
 
 	if (ainfo->storage == LLVMArgAsFpArgs)
@@ -2781,7 +2779,7 @@ emit_vtype_to_args (EmitContext *ctx, LLVMBuilderRef builder, MonoType *t, LLVMV
 
 		switch (ainfo->pair_storage [j]) {
 		case LLVMArgInIReg:
-			if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (t))) {
+			if (mini_class_is_simd (ctx->cfg, mono_class_from_mono_type_internal (t))) {
 				index [0] = const_int32 (j * TARGET_SIZEOF_VOID_P);
 				addr = LLVMBuildGEP2 (builder, i1_t, address, index, 1, "");
 			} else {
@@ -2840,7 +2838,7 @@ build_named_alloca (EmitContext *ctx, MonoType *t, char const *name)
 
 	g_assert (!mini_is_gsharedvt_variable_type (t));
 
-	if (MONO_CLASS_IS_SIMD (ctx->cfg, k))
+	if (mini_class_is_simd (ctx->cfg, k))
 		align = mono_class_value_size (k, NULL);
 	else
 		align = mono_class_min_align (k);
@@ -3899,7 +3897,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		if ((var->opcode == OP_GSHAREDVT_LOCAL || var->opcode == OP_GSHAREDVT_ARG_REGOFFSET))
 			continue;
 
-		if (var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) || (mini_type_is_vtype (var->inst_vtype) && !MONO_CLASS_IS_SIMD (ctx->cfg, var->klass))) {
+		if (var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) || (mini_type_is_vtype (var->inst_vtype) && !mini_class_is_simd (ctx->cfg, var->klass))) {
 			if (!ctx_ok (ctx))
 				return;
 			/* Could be already created by an OP_VPHI */
@@ -4065,7 +4063,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		case LLVMArgVtypeByRef:
 		case LLVMArgAsFpArgs:
 		{
-			if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (ainfo->type)))
+			if (mini_class_is_simd (ctx->cfg, mono_class_from_mono_type_internal (ainfo->type)))
 				/* Treat these as normal values */
 				ctx->values [reg] = LLVMBuildLoad2 (builder, ctx->addresses [reg]->type, ctx->addresses [reg]->value, "simd_vtype");
 			break;
@@ -4757,7 +4755,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	}
 
 	MonoClass *retclass = mono_class_from_mono_type_internal (sig->ret);
-	gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, retclass);
+	gboolean is_simd = mini_class_is_simd (ctx->cfg, retclass);
 	gboolean should_promote_to_value = FALSE;
 	const char *load_name = NULL;
 	/*
@@ -5207,6 +5205,14 @@ static LLVMValueRef
 extract_low_elements (EmitContext *ctx, LLVMValueRef src_vec)
 {
 	return extract_half_elements (ctx, src_vec, FALSE);
+}
+
+static G_GNUC_UNUSED LLVMTypeRef extended_type (LLVMTypeRef src_t)
+{
+	int nelems = LLVMGetVectorSize (src_t) / 2;
+	unsigned int width = mono_llvm_get_prim_size_bits (LLVMGetElementType(src_t));
+	LLVMTypeRef int_t = LLVMIntType (width * 2);
+	return LLVMVectorType (int_t, nelems);
 }
 
 static LLVMValueRef
@@ -5907,7 +5913,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				LLVMTypeRef ret_type = LLVMGetReturnType (ctx->lmethod_type);
 				LLVMValueRef retval = LLVMGetUndef (ret_type);
 				gboolean src_in_reg = FALSE;
-				gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
+				gboolean is_simd = mini_class_is_simd (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
 				switch (linfo->ret.storage) {
 				case LLVMArgNormal: src_in_reg = TRUE; break;
 				case LLVMArgVtypeInReg: case LLVMArgVtypeAsScalar: src_in_reg = is_simd; break;
@@ -6003,7 +6009,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case LLVMArgFpStruct: {
 				LLVMTypeRef ret_type = LLVMGetReturnType (ctx->lmethod_type);
 				LLVMValueRef retval, elem;
-				gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
+				gboolean is_simd = mini_class_is_simd (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
 
 				if (is_simd) {
 					g_assert (lhs);
@@ -6924,7 +6930,7 @@ MONO_RESTORE_WARNING
 		case OP_LDADDR: {
 			MonoInst *var = ins->inst_i0;
 
-			if (var->opcode == OP_VTARG_ADDR && !MONO_CLASS_IS_SIMD(cfg, var->klass)) {
+			if (var->opcode == OP_VTARG_ADDR && !mini_class_is_simd(cfg, var->klass)) {
 				/* The variable contains the vtype address */
 				values [ins->dreg] = values [var->dreg];
 			} else if (var->opcode == OP_GSHAREDVT_LOCAL) {
@@ -9944,6 +9950,33 @@ MONO_RESTORE_WARNING
 		}
 #endif
 #if defined(TARGET_WASM)
+		case OP_WASM_SIMD_SEXT_LOWER:
+		case OP_WASM_SIMD_SEXT_UPPER:
+		case OP_WASM_SIMD_ZEXT_LOWER:
+		case OP_WASM_SIMD_ZEXT_UPPER: {
+			LLVMTypeRef ret_t = extended_type (LLVMTypeOf (lhs));
+			gboolean upper = (ins->opcode == OP_WASM_SIMD_SEXT_UPPER || ins->opcode == OP_WASM_SIMD_ZEXT_UPPER);
+			gboolean sext = (ins->opcode == OP_WASM_SIMD_SEXT_LOWER || ins->opcode == OP_WASM_SIMD_SEXT_UPPER);
+			LLVMValueRef ext = upper ? extract_high_elements (ctx, lhs) : extract_low_elements (ctx, lhs);
+			values [ins->dreg] = sext ? LLVMBuildSExt (builder, ext, ret_t, "") : LLVMBuildZExt (builder, ext, ret_t, "");
+			break;
+		}
+		case OP_WASM_SIMD_CONV_R8_TO_R4: {
+			LLVMValueRef val = LLVMBuildFPTrunc (builder, lhs, v64_r4_t, "");
+			values [ins->dreg] = LLVMBuildShuffleVector (builder, val, LLVMConstNull(v64_r4_t), create_const_vector_4_i32 (0, 1, 2, 3), "");
+			break;
+		}
+		case OP_WASM_SIMD_CONV_U4_TO_R8_LOW: {
+			LLVMValueRef shuffle = LLVMBuildShuffleVector (builder, lhs, LLVMConstNull (LLVMTypeOf (lhs)), create_const_vector_2_i32 (0, 1), "");
+			values [ins->dreg] = LLVMBuildUIToFP (builder, shuffle, LLVMVectorType (LLVMDoubleType (), 2), dname);
+			break;
+		}
+		case OP_WASM_SIMD_CONV_R8_TO_I4_ZERO: {
+			LLVMValueRef args [] = { lhs };
+			LLVMValueRef val = call_intrins (ctx, ins->inst_c0, args, "");
+			values [ins->dreg] = LLVMBuildShuffleVector (builder, val, LLVMConstNull(v64_i4_t), create_const_vector_4_i32 (0, 1, 2, 3), "");
+			break;
+		}
 		case OP_WASM_SIMD_BITMASK: {
 			LLVMValueRef args [] = { lhs };
 			int nelems = LLVMGetVectorSize (LLVMTypeOf (lhs));
@@ -10054,11 +10087,7 @@ MONO_RESTORE_WARNING
 		case OP_WASM_EXTMUL_UPPER_U:
 		case OP_WASM_EXTMUL_LOWER:
 		case OP_WASM_EXTMUL_UPPER: {
-			LLVMTypeRef src_t = LLVMTypeOf (lhs);
-			int nelems = LLVMGetVectorSize (src_t) / 2;
-			unsigned int width = mono_llvm_get_prim_size_bits (LLVMGetElementType(src_t));
-			LLVMTypeRef int_t = LLVMIntType (width * 2);
-			LLVMTypeRef ret_t = LLVMVectorType (int_t, nelems);
+			LLVMTypeRef ret_t = extended_type (LLVMTypeOf (lhs));
 			int lower = ins->opcode == OP_WASM_EXTMUL_LOWER || ins->opcode == OP_WASM_EXTMUL_LOWER_U;
 			gboolean is_unsigned = ins->opcode == OP_WASM_EXTMUL_LOWER_U || ins->opcode == OP_WASM_EXTMUL_UPPER_U;
 			LLVMValueRef part1 = lower ? extract_low_elements (ctx, lhs) : extract_high_elements(ctx, lhs);
@@ -11563,16 +11592,6 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
-#endif
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
-		case OP_ONES_COMPLEMENT: {
-			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
-			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
-			result = LLVMBuildNot (builder, result, "");
-			result = convert (ctx, result, ret_t);
-			values [ins->dreg] = result;
-			break;
-		}
 		case OP_CVT_UI_FP:
 		case OP_CVT_SI_FP:
 		case OP_CVT_UI_FP_SCALAR:
@@ -11622,6 +11641,16 @@ MONO_RESTORE_WARNING
 				result = LLVMBuildFPToSI (builder, result, cvt_t, "fp2si");
 			if (scalar)
 				result = vector_from_scalar (ctx, ret_t, result);
+			values [ins->dreg] = result;
+			break;
+		}
+#endif
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+		case OP_ONES_COMPLEMENT: {
+			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
+			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
+			result = LLVMBuildNot (builder, result, "");
+			result = convert (ctx, result, ret_t);
 			values [ins->dreg] = result;
 			break;
 		}
@@ -11753,7 +11782,8 @@ MONO_RESTORE_WARNING
 		case OP_TAILCALL:
 		case OP_TAILCALL_REG:
 		case OP_TAILCALL_MEMBASE:
-		case OP_CKFINITE: {
+		case OP_CKFINITE:
+		case OP_LOAD_GOTADDR: {
 			char reason [128];
 
 			sprintf (reason, "opcode %s", mono_inst_name (ins->opcode));

@@ -13,6 +13,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections
 {
@@ -22,10 +23,10 @@ namespace System.Collections
     // of the ArrayList is automatically increased as required by reallocating the
     // internal array.
     //
-    [DebuggerTypeProxy(typeof(System.Collections.ArrayList.ArrayListDebugView))]
+    [DebuggerTypeProxy(typeof(ArrayListDebugView))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ArrayList : IList, ICloneable
     {
         private object?[] _items; // Do not rename (binary serialization)

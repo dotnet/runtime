@@ -1096,19 +1096,19 @@ void interceptor_ICJI::getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     mc->recGetFieldInfo(pResolvedToken, callerHandle, flags, pResult);
 }
 
-uint32_t interceptor_ICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
+uint32_t interceptor_ICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCType)
 {
     mc->cr->AddCall("getThreadLocalFieldInfo");
-    uint32_t result = original_ICorJitInfo->getThreadLocalFieldInfo(field);
-    mc->recGetThreadLocalFieldInfo(field, result);
+    uint32_t result = original_ICorJitInfo->getThreadLocalFieldInfo(field, isGCType);
+    mc->recGetThreadLocalFieldInfo(field, isGCType, result);
     return result;
 }
 
-void interceptor_ICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+void interceptor_ICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
 {
     mc->cr->AddCall("getThreadLocalStaticBlocksInfo");
-    original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo);
-    mc->recGetThreadLocalStaticBlocksInfo(pInfo);
+    original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo, isGCType);
+    mc->recGetThreadLocalStaticBlocksInfo(pInfo, isGCType);
 }
 
 // Returns true iff "fldHnd" represents a static field.
@@ -1329,53 +1329,6 @@ CorInfoHFAElemType interceptor_ICJI::getHFAType(CORINFO_CLASS_HANDLE hClass)
     CorInfoHFAElemType temp = original_ICorJitInfo->getHFAType(hClass);
     this->mc->recGetHFAType(hClass, temp);
     return temp;
-}
-
-/*****************************************************************************
-* ICorErrorInfo contains methods to deal with SEH exceptions being thrown
-* from the corinfo interface.  These methods may be called when an exception
-* with code EXCEPTION_COMPLUS is caught.
-*****************************************************************************/
-// Returns the HRESULT of the current exception
-HRESULT interceptor_ICJI::GetErrorHRESULT(struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    mc->cr->AddCall("GetErrorHRESULT");
-    return original_ICorJitInfo->GetErrorHRESULT(pExceptionPointers);
-}
-
-// Fetches the message of the current exception
-// Returns the size of the message (including terminating null). This can be
-// greater than bufferLength if the buffer is insufficient.
-uint32_t interceptor_ICJI::GetErrorMessage(_Inout_updates_(bufferLength) char16_t *buffer, uint32_t bufferLength)
-{
-    mc->cr->AddCall("GetErrorMessage");
-    return original_ICorJitInfo->GetErrorMessage(buffer, bufferLength);
-}
-
-// returns EXCEPTION_EXECUTE_HANDLER if it is OK for the compile to handle the
-//                        exception, abort some work (like the inlining) and continue compilation
-// returns EXCEPTION_CONTINUE_SEARCH if exception must always be handled by the EE
-//                    things like ThreadStoppedException ...
-// returns EXCEPTION_CONTINUE_EXECUTION if exception is fixed up by the EE
-int interceptor_ICJI::FilterException(struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    mc->cr->AddCall("FilterException");
-    int temp = original_ICorJitInfo->FilterException(pExceptionPointers);
-    mc->recFilterException(pExceptionPointers, temp);
-    return temp;
-}
-
-void interceptor_ICJI::ThrowExceptionForJitResult(HRESULT result)
-{
-    mc->cr->AddCall("ThrowExceptionForJitResult");
-    original_ICorJitInfo->ThrowExceptionForJitResult(result);
-}
-
-// Throws an exception defined by the given throw helper.
-void interceptor_ICJI::ThrowExceptionForHelper(const CORINFO_HELPER_DESC* throwHelper)
-{
-    mc->cr->AddCall("ThrowExceptionForHelper");
-    original_ICorJitInfo->ThrowExceptionForHelper(throwHelper);
 }
 
 /*****************************************************************************

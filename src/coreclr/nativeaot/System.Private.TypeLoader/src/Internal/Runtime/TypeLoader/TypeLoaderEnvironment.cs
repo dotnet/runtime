@@ -23,7 +23,7 @@ namespace Internal.Runtime.TypeLoader
     {
         public override TypeManagerHandle GetModuleForMetadataReader(MetadataReader reader)
         {
-            return TypeLoaderEnvironment.Instance.ModuleList.GetModuleForMetadataReader(reader);
+            return ModuleList.Instance.GetModuleForMetadataReader(reader);
         }
 
         public override bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle)
@@ -111,12 +111,6 @@ namespace Internal.Runtime.TypeLoader
 
         public static TypeLoaderEnvironment Instance { get; } = new TypeLoaderEnvironment();
 
-        /// <summary>
-        /// List of loaded binary modules is typically used to locate / process various metadata blobs
-        /// and other per-module information.
-        /// </summary>
-        public readonly ModuleList ModuleList;
-
         // Cache the NativeReader in each module to avoid looking up the NativeLayoutInfo blob each
         // time we call GetNativeLayoutInfoReader(). The dictionary is a thread static variable to ensure
         // thread safety. Using ThreadStatic instead of a lock is ok as long as the NativeReader class is
@@ -128,11 +122,6 @@ namespace Internal.Runtime.TypeLoader
         internal static void Initialize()
         {
             RuntimeAugments.InitializeLookups(new Callbacks());
-        }
-
-        public TypeLoaderEnvironment()
-        {
-            ModuleList = new ModuleList();
         }
 
         // To keep the synchronization simple, we execute all type loading under a global lock
@@ -491,13 +480,13 @@ namespace Internal.Runtime.TypeLoader
             return hashCode;
         }
 
-        private object TryParseNativeSignatureWorker(TypeSystemContext typeSystemContext, TypeManagerHandle moduleHandle, ref NativeParser parser, RuntimeTypeHandle[] typeGenericArgumentHandles, RuntimeTypeHandle[] methodGenericArgumentHandles, bool isMethodSignature)
+        private static object TryParseNativeSignatureWorker(TypeSystemContext typeSystemContext, TypeManagerHandle moduleHandle, ref NativeParser parser, RuntimeTypeHandle[] typeGenericArgumentHandles, RuntimeTypeHandle[] methodGenericArgumentHandles, bool isMethodSignature)
         {
             Instantiation typeGenericArguments = typeSystemContext.ResolveRuntimeTypeHandles(typeGenericArgumentHandles ?? Array.Empty<RuntimeTypeHandle>());
             Instantiation methodGenericArguments = typeSystemContext.ResolveRuntimeTypeHandles(methodGenericArgumentHandles ?? Array.Empty<RuntimeTypeHandle>());
 
             NativeLayoutInfoLoadContext nativeLayoutContext = new NativeLayoutInfoLoadContext();
-            nativeLayoutContext._module = ModuleList.GetModuleInfoByHandle(moduleHandle);
+            nativeLayoutContext._module = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
             nativeLayoutContext._typeSystemContext = typeSystemContext;
             nativeLayoutContext._typeArgumentHandles = typeGenericArguments;
             nativeLayoutContext._methodArgumentHandles = methodGenericArguments;

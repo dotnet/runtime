@@ -115,6 +115,30 @@ PALEXPORT const EVP_MD* CryptoNative_EvpSha512(void);
 
 /*
 Function:
+EvpSha3_256
+
+Direct shim to EVP_sha3_256.
+*/
+PALEXPORT const EVP_MD* CryptoNative_EvpSha3_256(void);
+
+/*
+Function:
+EvpSha3_384
+
+Direct shim to EVP_sha3_384.
+*/
+PALEXPORT const EVP_MD* CryptoNative_EvpSha3_384(void);
+
+/*
+Function:
+EvpSha3_512
+
+Direct shim to EVP_sha3_512.
+*/
+PALEXPORT const EVP_MD* CryptoNative_EvpSha3_512(void);
+
+/*
+Function:
 GetMaxMdSize
 
 Returns the maximum bytes for a message digest.

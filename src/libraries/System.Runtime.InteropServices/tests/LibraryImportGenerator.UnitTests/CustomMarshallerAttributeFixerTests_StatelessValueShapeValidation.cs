@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using Xunit;
 using static Microsoft.Interop.Analyzers.CustomMarshallerAttributeAnalyzer;
 
-using VerifyCS = LibraryImportGenerator.UnitTests.Verifiers.CSharpCodeFixVerifier<
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpCodeFixVerifier<
     Microsoft.Interop.Analyzers.CustomMarshallerAttributeAnalyzer,
     Microsoft.Interop.Analyzers.CustomMarshallerAttributeFixer>;
 

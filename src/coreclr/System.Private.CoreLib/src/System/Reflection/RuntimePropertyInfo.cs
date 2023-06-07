@@ -331,26 +331,26 @@ namespace System.Reflection
         #endregion
 
         #region Dynamic
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override object? GetValue(object? obj, object?[]? index)
         {
             return GetValue(obj, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static,
                 null, index, null);
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override object? GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
             RuntimeMethodInfo? m = GetGetMethod(true);
             if (m == null)
-                throw new ArgumentException(System.SR.Arg_GetMethNotFnd);
+                throw new ArgumentException(SR.Arg_GetMethNotFnd);
             return m.Invoke(obj, invokeAttr, binder, index, null);
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override void SetValue(object? obj, object? value, object?[]? index)
         {
             SetValue(obj,
@@ -361,14 +361,14 @@ namespace System.Reflection
                     null);
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
             RuntimeMethodInfo? m = GetSetMethod(true);
 
             if (m == null)
-                throw new ArgumentException(System.SR.Arg_SetMethNotFnd);
+                throw new ArgumentException(SR.Arg_SetMethNotFnd);
 
             if (index is null)
             {

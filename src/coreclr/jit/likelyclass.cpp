@@ -121,6 +121,11 @@ static unsigned getLikelyClassesOrMethods(LikelyClassMethodRecord*              
                                           int32_t                                ilOffset,
                                           bool                                   types)
 {
+    if (maxLikelyClasses == 0)
+    {
+        return 0;
+    }
+
     ICorJitInfo::PgoInstrumentationKind histogramKind =
         types ? ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes
               : ICorJitInfo::PgoInstrumentationKind::HandleHistogramMethods;
@@ -235,6 +240,12 @@ static unsigned getLikelyClassesOrMethods(LikelyClassMethodRecord*              
                         }
                     }
 
+                    if (knownHandles == 0)
+                    {
+                        // We don't have known handles
+                        return 0;
+                    }
+
                     // sort by m_count (descending)
                     jitstd::sort(sortedEntries, sortedEntries + knownHandles,
                                  [](const LikelyClassMethodHistogramEntry& h1,
@@ -244,12 +255,27 @@ static unsigned getLikelyClassesOrMethods(LikelyClassMethodRecord*              
 
                     const UINT32 numberOfClasses = min(knownHandles, maxLikelyClasses);
 
+                    UINT32 totalLikelihood = 0;
                     for (size_t hIdx = 0; hIdx < numberOfClasses; hIdx++)
                     {
                         LikelyClassMethodHistogramEntry const hc = sortedEntries[hIdx];
                         pLikelyEntries[hIdx].handle              = hc.m_handle;
                         pLikelyEntries[hIdx].likelihood          = hc.m_count * 100 / h.m_totalCount;
+                        totalLikelihood += pLikelyEntries[hIdx].likelihood;
                     }
+
+                    assert(totalLikelihood <= 100);
+
+                    // Distribute the rounding error and just apply it to the first entry.
+                    // Assume that there is no error If we have unknown handles.
+                    if (numberOfClasses == h.m_totalCount)
+                    {
+                        assert(numberOfClasses > 0);
+                        assert(totalLikelihood > 0);
+                        pLikelyEntries[0].likelihood += 100 - totalLikelihood;
+                        assert(pLikelyEntries[0].likelihood <= 100);
+                    }
+
                     return numberOfClasses;
                 }
             }

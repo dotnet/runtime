@@ -57,6 +57,7 @@
     <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.NoArmIntrinsics.xml" Condition="'$(SupportsArmIntrinsics)' != 'true'" />
     <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.NoX86Intrinsics.xml" Condition="'$(SupportsX86Intrinsics)' != 'true'" />
     <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.OSX.xml" Condition="'$(IsOSXLike)' == 'true'" />
+    <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.Browser.xml" Condition="'$(TargetsBrowser)' == 'true'" />
     <ILLinkLinkAttributesXmls Include="$(ILLinkSharedDirectory)ILLink.LinkAttributes.Shared.xml" />
   </ItemGroup>
   <PropertyGroup>
@@ -123,6 +124,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64Encoder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64Decoder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64Validator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\FormattingHelpers.CountDigits.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Constants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\FormattingHelpers.cs" />
@@ -157,7 +159,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.LittleG.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpanSplitter.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\TlsOverPerCoreLockedStacksArrayPool.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\SharedArrayPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Utilities.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ByReference.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Byte.cs" />
@@ -328,6 +330,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Invariant.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Nls.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.WebAssembly.cs" Condition="'$(TargetsBrowser)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.OSX.cs" Condition="'$(IsOSXLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Icu.cs" />
@@ -406,6 +409,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IFormatProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IFormattable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Index.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\ILGenerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\BitVector256.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\SingleCharSearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\SingleByteSearchValues.cs" />
@@ -750,7 +754,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\SatelliteContractVersionAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\UltimateResourceFallbackLocation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\AmbiguousImplementationException.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\BypassReadyToRunAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AccessedThroughPropertyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncIteratorMethodBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncIteratorStateMachineAttribute.cs" />
@@ -768,6 +771,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallerLineNumberAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallerMemberNameAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallingConventions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompExactlyDependsOnAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompilationRelaxations.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompilationRelaxationsAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" />
@@ -1170,6 +1174,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\AsyncCausalityTracerConstants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\CachedCompletedInt32Task.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\ConcurrentExclusiveSchedulerPair.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\ConfigureAwaitOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\Future.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\FutureFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\Sources\IValueTaskSource.cs" />
@@ -1265,6 +1270,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Collation.cs">
       <Link>Common\Interop\Interop.Collation.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.Collation.OSX.cs" Condition="'$(IsOSXLike)' == 'true'">
+      <Link>Common\Interop\Interop.Collation.OSX.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.ICU.cs">
       <Link>Common\Interop\Interop.ICU.cs</Link>
