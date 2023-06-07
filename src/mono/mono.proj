@@ -57,6 +57,8 @@
     <MonoWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreads>
     <MonoWasmThreadsNoUser Condition="'$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreadsNoUser>
     <MonoEnableAssertMessages Condition="'$(MonoEnableAssertMessages)' == '' and '$(TargetsWasi)' == 'true'">true</MonoEnableAssertMessages>
+    <MonoLLVMMajorVersion>$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion.Substring(0, $(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion.IndexOf('.'))))</MonoLLVMMajorVersion>
+    <MonoUseLibCxx Condition="'$(MonoLLVMMajorVersion)' > '16.0'">true</MonoUseLibCxx>
   </PropertyGroup>
 
   <!-- default thread suspend for specific platforms -->
@@ -272,13 +274,13 @@
       <_MonoCMakeArgs Include="-DMONO_SHARED_LIB_NAME=$(MonoSharedLibName)" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(HostOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(TargetArchitecture)' != 'wasm' and $(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion.StartsWith('16.0'))">
+    <ItemGroup Condition="'$(HostOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(TargetArchitecture)' != 'wasm' and '$(MonoUseLibCxx)' == 'true'">
       <_MonoCXXFLAGS Include="-I$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\include\c++\v1" />
       <_MonoCXXFLAGS Include="-L$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib" />
       <_MonoCXXFLAGS Include="-stdlib=libc++" />
       <_MonoCXXFLAGS Include="-Wl,-rpath=."/>
     </ItemGroup>
-    <ItemGroup Condition="'$(HostOS)' == 'Linux' and '$(MonoAOTEnableLLVM)' == 'true' and '$(TargetArchitecture)' != 'wasm' and $(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion.StartsWith('16.0'))">
+    <ItemGroup Condition="'$(HostOS)' == 'Linux' and '$(MonoAOTEnableLLVM)' == 'true' and '$(TargetArchitecture)' != 'wasm' and '$(MonoUseLibCxx)' == 'true'">
       <_MonoAOTCXXFLAGS Include="-I$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\include\c++\v1" />
       <_MonoAOTCXXFLAGS Include="-L$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib" />
       <_MonoAOTCXXFLAGS Include="-stdlib=libc++" />
