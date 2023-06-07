@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Text;
 
 namespace System.Globalization
@@ -74,10 +75,63 @@ namespace System.Globalization
         {
             // NLS/ICU doesn't provide native UTF-8 support so we need to convert to UTF-16 and compare that way
 
-            ReadOnlySpan<char> sourceUtf16 = Encoding.Unicode.GetString(source);
-            ReadOnlySpan<char> prefixUtf16 = Encoding.Unicode.GetString(prefix);
+            // Convert source using stackalloc for <= 256 characters and ArrayPool otherwise
 
-            return StartsWithCore(sourceUtf16, prefixUtf16, options, matchLengthPtr: null);
+            char[]? sourceUtf16Array;
+            scoped Span<char> sourceUtf16;
+            int sourceMaxCharCount = Encoding.UTF8.GetMaxCharCount(source.Length);
+
+            if (sourceMaxCharCount <= 256)
+            {
+                sourceUtf16Array = null;
+                sourceUtf16 = stackalloc char[512];
+            }
+            else
+            {
+                sourceUtf16Array = ArrayPool<char>.Shared.Rent(sourceMaxCharCount);
+                sourceUtf16 = sourceUtf16Array.AsSpan(0, sourceMaxCharCount);
+            }
+
+            int sourceUtf16Length = Encoding.UTF8.GetChars(source, sourceUtf16);
+            sourceUtf16 = sourceUtf16.Slice(0, sourceUtf16Length);
+
+            // Convert prefix using stackalloc for <= 256 characters and ArrayPool otherwise
+
+            char[]? prefixUtf16Array;
+            scoped Span<char> prefixUtf16;
+            int prefixMaxCharCount = Encoding.UTF8.GetMaxCharCount(prefix.Length);
+
+            if (prefixMaxCharCount < 256)
+            {
+                prefixUtf16Array = null;
+                prefixUtf16 = stackalloc char[512];
+            }
+            else
+            {
+                prefixUtf16Array = ArrayPool<char>.Shared.Rent(prefixMaxCharCount);
+                prefixUtf16 = prefixUtf16Array.AsSpan(0, prefixMaxCharCount);
+            }
+
+            int prefixUtf16Length = Encoding.UTF8.GetChars(prefix, prefixUtf16);
+            prefixUtf16 = prefixUtf16.Slice(0, prefixUtf16Length);
+
+            // Actual operation
+
+            bool result = StartsWithCore(sourceUtf16, prefixUtf16, options, matchLengthPtr: null);
+
+            // Return rented buffers if necessary
+
+            if (prefixUtf16Array != null)
+            {
+                ArrayPool<char>.Shared.Return(prefixUtf16Array);
+            }
+
+            if (sourceUtf16Array != null)
+            {
+                ArrayPool<char>.Shared.Return(sourceUtf16Array);
+            }
+
+            return result;
         }
     }
 }

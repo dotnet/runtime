@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -286,8 +287,38 @@ namespace System.Numerics
         /// <exception cref="OverflowException"><paramref name="utf8Text" /> is not representable by <typeparamref name="TSelf" />.</exception>
         static virtual TSelf Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider)
         {
-            string s = Encoding.Unicode.GetString(utf8Text);
-            return TSelf.Parse(s, style, provider);
+            // Convert text using stackalloc for <= 256 characters and ArrayPool otherwise
+
+            char[]? utf16TextArray;
+            scoped Span<char> utf16Text;
+            int textMaxCharCount = Encoding.UTF8.GetMaxCharCount(utf8Text.Length);
+
+            if (textMaxCharCount < 256)
+            {
+                utf16TextArray = null;
+                utf16Text = stackalloc char[512];
+            }
+            else
+            {
+                utf16TextArray = ArrayPool<char>.Shared.Rent(textMaxCharCount);
+                utf16Text = utf16TextArray.AsSpan(0, textMaxCharCount);
+            }
+
+            int utf16TextLength = Encoding.UTF8.GetChars(utf8Text, utf16Text);
+            utf16Text = utf16Text.Slice(0, utf16TextLength);
+
+            // Actual operation
+
+            TSelf result = TSelf.Parse(utf16Text, style, provider);
+
+            // Return rented buffers if necessary
+
+            if (utf16TextArray != null)
+            {
+                ArrayPool<char>.Shared.Return(utf16TextArray);
+            }
+
+            return result;
         }
 
         /// <summary>Tries to convert a value to an instance of the current type, throwing an overflow exception for any values that fall outside the representable range of the current type.</summary>
@@ -379,20 +410,110 @@ namespace System.Numerics
         /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
         static virtual bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result)
         {
-            string s = Encoding.Unicode.GetString(utf8Text);
-            return TSelf.TryParse(s, style, provider, out result);
+            // Convert text using stackalloc for <= 256 characters and ArrayPool otherwise
+
+            char[]? utf16TextArray;
+            scoped Span<char> utf16Text;
+            int textMaxCharCount = Encoding.UTF8.GetMaxCharCount(utf8Text.Length);
+
+            if (textMaxCharCount < 256)
+            {
+                utf16TextArray = null;
+                utf16Text = stackalloc char[512];
+            }
+            else
+            {
+                utf16TextArray = ArrayPool<char>.Shared.Rent(textMaxCharCount);
+                utf16Text = utf16TextArray.AsSpan(0, textMaxCharCount);
+            }
+
+            int utf16TextLength = Encoding.UTF8.GetChars(utf8Text, utf16Text);
+            utf16Text = utf16Text.Slice(0, utf16TextLength);
+
+            // Actual operation
+
+            bool succeeded = TSelf.TryParse(utf16Text, style, provider, out result);
+
+            // Return rented buffers if necessary
+
+            if (utf16TextArray != null)
+            {
+                ArrayPool<char>.Shared.Return(utf16TextArray);
+            }
+
+            return succeeded;
         }
 
         static TSelf IUtf8SpanParsable<TSelf>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider)
         {
-            string s = Encoding.Unicode.GetString(utf8Text);
-            return TSelf.Parse(s, provider);
+            // Convert text using stackalloc for <= 256 characters and ArrayPool otherwise
+
+            char[]? utf16TextArray;
+            scoped Span<char> utf16Text;
+            int textMaxCharCount = Encoding.UTF8.GetMaxCharCount(utf8Text.Length);
+
+            if (textMaxCharCount < 256)
+            {
+                utf16TextArray = null;
+                utf16Text = stackalloc char[512];
+            }
+            else
+            {
+                utf16TextArray = ArrayPool<char>.Shared.Rent(textMaxCharCount);
+                utf16Text = utf16TextArray.AsSpan(0, textMaxCharCount);
+            }
+
+            int utf16TextLength = Encoding.UTF8.GetChars(utf8Text, utf16Text);
+            utf16Text = utf16Text.Slice(0, utf16TextLength);
+
+            // Actual operation
+
+            TSelf result = TSelf.Parse(utf16Text, provider);
+
+            // Return rented buffers if necessary
+
+            if (utf16TextArray != null)
+            {
+                ArrayPool<char>.Shared.Return(utf16TextArray);
+            }
+
+            return result;
         }
 
         static bool IUtf8SpanParsable<TSelf>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, [MaybeNullWhen(returnValue: false)] out TSelf result)
         {
-            string s = Encoding.Unicode.GetString(utf8Text);
-            return TSelf.TryParse(s, provider, out result);
+            // Convert text using stackalloc for <= 256 characters and ArrayPool otherwise
+
+            char[]? utf16TextArray;
+            scoped Span<char> utf16Text;
+            int textMaxCharCount = Encoding.UTF8.GetMaxCharCount(utf8Text.Length);
+
+            if (textMaxCharCount < 256)
+            {
+                utf16TextArray = null;
+                utf16Text = stackalloc char[512];
+            }
+            else
+            {
+                utf16TextArray = ArrayPool<char>.Shared.Rent(textMaxCharCount);
+                utf16Text = utf16TextArray.AsSpan(0, textMaxCharCount);
+            }
+
+            int utf16TextLength = Encoding.UTF8.GetChars(utf8Text, utf16Text);
+            utf16Text = utf16Text.Slice(0, utf16TextLength);
+
+            // Actual operation
+
+            bool succeeded = TSelf.TryParse(utf16Text, provider, out result);
+
+            // Return rented buffers if necessary
+
+            if (utf16TextArray != null)
+            {
+                ArrayPool<char>.Shared.Return(utf16TextArray);
+            }
+
+            return succeeded;
         }
     }
 }

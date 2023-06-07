@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -66,13 +67,66 @@ namespace System.Globalization
         {
             // NLS/ICU doesn't provide native UTF-8 support so we need to convert to UTF-16 and compare that way
 
-            ReadOnlySpan<char> stringAUtf16 = Encoding.Unicode.GetString(MemoryMarshal.CreateReadOnlySpan(ref strA, lengthA));
-            ReadOnlySpan<char> stringBUtf16 = Encoding.Unicode.GetString(MemoryMarshal.CreateReadOnlySpan(ref strB, lengthB));
+            // Convert strA using stackalloc for <= 256 characters and ArrayPool otherwise
 
-            return CompareStringIgnoreCaseNonAscii(
-                ref MemoryMarshal.GetReference(stringAUtf16), stringAUtf16.Length,
-                ref MemoryMarshal.GetReference(stringBUtf16), stringBUtf16.Length
+            char[]? strAUtf16Array;
+            scoped Span<char> strAUtf16;
+            int strAMaxCharCount = Encoding.UTF8.GetMaxCharCount(lengthA);
+
+            if (strAMaxCharCount <= 256)
+            {
+                strAUtf16Array = null;
+                strAUtf16 = stackalloc char[512];
+            }
+            else
+            {
+                strAUtf16Array = ArrayPool<char>.Shared.Rent(strAMaxCharCount);
+                strAUtf16 = strAUtf16Array.AsSpan(0, strAMaxCharCount);
+            }
+
+            int strAUtf16Length = Encoding.UTF8.GetChars(MemoryMarshal.CreateReadOnlySpan(ref strA, lengthA), strAUtf16);
+            strAUtf16 = strAUtf16.Slice(0, strAUtf16Length);
+
+            // Convert strB using stackalloc for <= 256 characters and ArrayPool otherwise
+
+            char[]? strBUtf16Array;
+            scoped Span<char> strBUtf16;
+            int strBMaxCharCount = Encoding.UTF8.GetMaxCharCount(lengthB);
+
+            if (strBMaxCharCount <= 256)
+            {
+                strBUtf16Array = null;
+                strBUtf16 = stackalloc char[512];
+            }
+            else
+            {
+                strBUtf16Array = ArrayPool<char>.Shared.Rent(strBMaxCharCount);
+                strBUtf16 = strBUtf16Array.AsSpan(0, strBMaxCharCount);
+            }
+
+            int strBUtf16Length = Encoding.UTF8.GetChars(MemoryMarshal.CreateReadOnlySpan(ref strB, lengthB), strBUtf16);
+            strBUtf16 = strBUtf16.Slice(0, strBUtf16Length);
+
+            // Actual operation
+
+            int result = CompareStringIgnoreCaseNonAscii(
+                ref MemoryMarshal.GetReference(strAUtf16), strAUtf16.Length,
+                ref MemoryMarshal.GetReference(strBUtf16), strBUtf16.Length
             );
+
+            // Return rented buffers if necessary
+
+            if (strBUtf16Array != null)
+            {
+                ArrayPool<char>.Shared.Return(strBUtf16Array);
+            }
+
+            if (strAUtf16Array != null)
+            {
+                ArrayPool<char>.Shared.Return(strAUtf16Array);
+            }
+
+            return result;
         }
 
         private static bool EqualsIgnoreCaseUtf8_Vector128(ref byte charA, ref byte charB, int length)
