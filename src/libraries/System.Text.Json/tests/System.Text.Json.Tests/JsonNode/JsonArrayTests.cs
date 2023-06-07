@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Xml.Linq;
+using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace System.Text.Json.Nodes.Tests
@@ -485,6 +487,82 @@ namespace System.Text.Json.Nodes.Tests
                 Assert.Equal("elem0", (string)node[0]);
                 Assert.Equal("elem1", (string)node[1]);
             });
+        }
+
+        [Fact]
+        public static void DeepClone()
+        {
+            var nestedArray = new JsonArray();
+            nestedArray.Add("elem0");
+            nestedArray.Add("elem1");
+            var nestedJsonObj = new JsonObject()
+            {
+                { "Nine", 9 },
+                { "Name", "def"}
+            };
+
+            var array = new JsonArray();
+            array.Add(10);
+            array.Add("abcd");
+            array.Add(null);
+            array.Add(true);
+            array.Add(false);
+            array.Add(JsonValue.Create(30));
+            array.Add(nestedJsonObj);
+            array.Add(nestedArray);
+
+            JsonArray clonedArray = array.DeepClone().AsArray();
+
+            Assert.True(JsonNode.DeepEquals(array, clonedArray));
+            Assert.Equal(array.Count, clonedArray.Count);
+            Assert.Equal(10, array[0].GetValue<int>());
+            Assert.Equal("abcd", array[1].GetValue<string>());
+            Assert.Null(array[2]);
+            Assert.True(array[3].GetValue<bool>());
+            Assert.False(array[4].GetValue<bool>());
+            Assert.Equal(30, array[5].GetValue<int>());
+
+            JsonObject clonedNestedJObject = array[6].AsObject();
+            Assert.Equal(nestedJsonObj.Count, clonedNestedJObject.Count);
+            Assert.Equal(9, clonedNestedJObject["Nine"].GetValue<int>());
+            Assert.Equal("def", clonedNestedJObject["Name"].GetValue<string>());
+
+            JsonArray clonedNestedArray = clonedArray[7].AsArray();
+            Assert.Equal(nestedArray.Count, clonedNestedArray.Count);
+            Assert.Equal("elem0", clonedNestedArray[0].GetValue<string>());
+            Assert.Equal("elem1", clonedNestedArray[1].GetValue<string>());
+
+            string originalJson = array.ToJsonString();
+            string clonedJson = clonedArray.ToJsonString();
+
+            Assert.Equal(originalJson, clonedJson);
+        }
+
+        [Fact]
+        public static void DeepClone_FromElement()
+        {
+            using (JsonDocument document = JsonDocument.Parse("[\"abc\", 10]"))
+            {
+                JsonArray jArray = JsonArray.Create(document.RootElement);
+                var clone = jArray.DeepClone().AsArray();
+
+                Assert.True(JsonNode.DeepEquals(jArray, clone));
+                Assert.Equal(10, clone[1].GetValue<int>());
+                Assert.Equal("abc", clone[0].GetValue<string>());
+            }
+        }
+
+        [Fact]
+        public static void UpdateClonedObjectNotAffectOriginal()
+        {
+            var jArray = new JsonArray();
+            jArray.Add(10);
+            jArray.Add(20);
+
+            var clone = jArray.DeepClone().AsArray();
+            clone[1] = 3;
+
+            Assert.Equal(20, jArray[1].GetValue<int>());
         }
     }
 }

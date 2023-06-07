@@ -976,6 +976,11 @@ namespace System.Text.Json.Nodes.Tests
             var array = new JsonArray();
             array.Add(5);
             array.Add(7);
+            var nestedJsonObj = new JsonObject()
+            {
+                { "Ten", 10 },
+                { "Name", "xyz"}
+            };
 
             var jObject = new JsonObject();
             jObject["One"] = 1;
@@ -986,6 +991,7 @@ namespace System.Text.Json.Nodes.Tests
             jObject["Null"] = null;
             jObject["value"] = JsonValue.Create(10);
             jObject["array"] = array;
+            jObject["object"] = nestedJsonObj;
 
             var clone = jObject.DeepClone().AsObject();
 
@@ -1001,8 +1007,14 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Equal(10, clone["value"].GetValue<int>());
 
             JsonArray clonedArray = clone["array"].AsArray();
+            Assert.Equal(array.Count, clonedArray.Count);
             Assert.Equal(5, clonedArray[0].GetValue<int>());
             Assert.Equal(7, clonedArray[1].GetValue<int>());
+
+            JsonObject clonedNestedJObject = clone["object"].AsObject();
+            Assert.Equal(nestedJsonObj.Count, clonedNestedJObject.Count);
+            Assert.Equal(10, clonedNestedJObject["Ten"].GetValue<int>());
+            Assert.Equal("xyz", clonedNestedJObject["Name"].GetValue<string>());
 
             string originalJson = jObject.ToJsonString();
             string clonedJson = clone.ToJsonString();
