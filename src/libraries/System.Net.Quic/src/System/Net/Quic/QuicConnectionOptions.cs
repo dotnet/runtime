@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Threading;
 
 namespace System.Net.Quic;
@@ -130,6 +131,17 @@ public sealed class QuicClientConnectionOptions : QuicConnectionOptions
         if (RemoteEndPoint is null)
         {
             throw new ArgumentNullException(SR.Format(SR.net_quic_not_null_open_connection, nameof(QuicClientConnectionOptions.RemoteEndPoint)), argumentName);
+        }
+
+        // MsQuic is using DualMode sockets and that will faill even for IPv4 if AF_INET6 is not available.
+        if (!Socket.OSSupportsIPv6)
+        {
+            throw new SocketException((int)SocketError.AddressFamilyNotSupported);
+        }
+
+        if (RemoteEndPoint.AddressFamily == AddressFamily.InterNetwork && !Socket.OSSupportsIPv4)
+        {
+            throw new SocketException((int)SocketError.AddressFamilyNotSupported);
         }
     }
 }

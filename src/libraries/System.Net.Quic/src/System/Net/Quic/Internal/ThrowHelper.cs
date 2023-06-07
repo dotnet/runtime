@@ -4,6 +4,7 @@
 using Microsoft.Quic;
 using System.Security.Authentication;
 using System.Net.Security;
+using System.Net.Sockets;
 using static Microsoft.Quic.MsQuic;
 using System.Diagnostics.CodeAnalysis;
 
@@ -65,16 +66,23 @@ internal static class ThrowHelper
             //
             // Start by checking for statuses mapped to QuicError enum
             //
-            if (status == QUIC_STATUS_ADDRESS_IN_USE) return new QuicException(QuicError.AddressInUse, null, SR.net_quic_address_in_use);
-            if (status == QUIC_STATUS_UNREACHABLE) return new QuicException(QuicError.HostUnreachable, null, SR.net_quic_host_unreachable);
             if (status == QUIC_STATUS_CONNECTION_REFUSED) return new QuicException(QuicError.ConnectionRefused, null, SR.net_quic_connection_refused);
             if (status == QUIC_STATUS_CONNECTION_TIMEOUT) return new QuicException(QuicError.ConnectionTimeout, null, SR.net_quic_timeout);
             if (status == QUIC_STATUS_VER_NEG_ERROR) return new QuicException(QuicError.VersionNegotiationError, null, SR.net_quic_ver_neg_error);
-            if (status == QUIC_STATUS_INVALID_ADDRESS) return new QuicException(QuicError.InvalidAddress, null, SR.net_quic_invalid_address);
             if (status == QUIC_STATUS_CONNECTION_IDLE) return new QuicException(QuicError.ConnectionIdle, null, SR.net_quic_connection_idle);
             if (status == QUIC_STATUS_PROTOCOL_ERROR) return new QuicException(QuicError.ProtocolError, null, SR.net_quic_protocol_error);
             if (status == QUIC_STATUS_ALPN_IN_USE) return new QuicException(QuicError.AlpnInUse, null, SR.net_quic_protocol_error);
 
+            //
+            // Transport errors will throw SocketException
+            //
+            if (status == QUIC_STATUS_INVALID_ADDRESS) return new SocketException((int)SocketError.AddressNotAvailable);
+            if (status == QUIC_STATUS_ADDRESS_IN_USE) return new SocketException((int)SocketError.AddressAlreadyInUse);
+            if (status == QUIC_STATUS_UNREACHABLE) return new SocketException((int)SocketError.HostUnreachable);
+
+            //
+            // TLS and certificate erros throw AuthenticationException to match SslStream
+            //
             if (status == QUIC_STATUS_TLS_ERROR ||
                 status == QUIC_STATUS_CERT_EXPIRED ||
                 status == QUIC_STATUS_CERT_UNTRUSTED_ROOT ||

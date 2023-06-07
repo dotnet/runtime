@@ -409,5 +409,20 @@ namespace System.Net.Quic.Tests
 
             Assert.Throws<ArgumentOutOfRangeException>(() => QuicConnection.ConnectAsync(options));
         }
+
+        [ConditionalFact(nameof(QuicTestBase.IsIPv6Missing))]
+        public void ConnectAsync_UnsupportedIpv6_Throws()
+        {
+            var options = new QuicClientConnectionOptions()
+            {
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions(),
+                DefaultStreamErrorCode = DefaultStreamErrorCodeClient,
+                DefaultCloseErrorCode = DefaultCloseErrorCodeClient,
+                RemoteEndPoint = new IPEndPoint(IPAddress.IPv6Any, 10000),
+            };
+
+            SocketException ex = Assert.Throws<SocketException>(() => QuicConnection.ConnectAsync(options));
+            Assert.Equal(SocketError.AddressFamilyNotSupported, ((SocketException)ex).SocketErrorCode );
+        }
     }
 }

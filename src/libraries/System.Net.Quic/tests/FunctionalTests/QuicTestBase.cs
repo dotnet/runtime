@@ -32,6 +32,7 @@ namespace System.Net.Quic.Tests
 
         private static readonly Lazy<bool> _isIPv6Available = new Lazy<bool>(GetIsIPv6Available);
         public static bool IsIPv6Available => _isIPv6Available.Value;
+        public static bool IsIPv6Missing = !Socket.OSSupportsIPv6;
 
         public static SslApplicationProtocol ApplicationProtocol { get; } = new SslApplicationProtocol("quictest");
 

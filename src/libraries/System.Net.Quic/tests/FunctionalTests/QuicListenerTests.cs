@@ -74,6 +74,25 @@ namespace System.Net.Quic.Tests
             await Assert.ThrowsAnyAsync<ArgumentException>(async () => await listener.AcceptConnectionAsync());
         }
 
+        [Fact]
+        public void ListenAsync_MissingAlpn_Throws()
+        {
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            listenerOptions.ApplicationProtocols = null;
+
+            Assert.Throws<ArgumentNullException>(() => QuicListener.ListenAsync(listenerOptions));
+        }
+
+        [ConditionalFact(nameof(QuicTestBase.IsIPv6Missing))]
+        public void ListenAsync_UnsupportedIpv6_Throws()
+        {
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            listenerOptions.ListenEndPoint = new IPEndPoint(IPAddress.IPv6Any, 0);
+
+            SocketException ex = Assert.Throws<SocketException>(() => QuicListener.ListenAsync(listenerOptions));
+            Assert.Equal(SocketError.AddressFamilyNotSupported, ((SocketException)ex).SocketErrorCode );
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -310,7 +329,8 @@ namespace System.Net.Quic.Tests
             s.Bind(new IPEndPoint(IPAddress.Any, 0));
 
             // Try to create a listener on the same port.
-            await AssertThrowsQuicExceptionAsync(QuicError.AddressInUse, async () => await CreateQuicListener((IPEndPoint)s.LocalEndPoint));
+            SocketException ex = await Assert.ThrowsAsync<SocketException>(() => CreateQuicListener((IPEndPoint)s.LocalEndPoint).AsTask());
+            Assert.Equal(SocketError.AddressAlreadyInUse, ((SocketException)ex).SocketErrorCode );
         }
 
         [Fact]

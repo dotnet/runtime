@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -45,6 +46,18 @@ public sealed class QuicListenerOptions
         {
             throw new ArgumentNullException(SR.Format(SR.net_quic_not_null_listener, nameof(QuicListenerOptions.ListenEndPoint)), argumentName);
         }
+
+        if (ListenEndPoint.AddressFamily == AddressFamily.InterNetwork && !Socket.OSSupportsIPv4)
+        {
+            throw new SocketException((int)SocketError.AddressFamilyNotSupported);
+        }
+
+        // MsQuic is using DualMode sockets and that will faill even for IPv4 if AF_INET6 is not available.
+        if (!Socket.OSSupportsIPv6)
+        {
+            throw new SocketException((int)SocketError.AddressFamilyNotSupported);
+        }
+
         if (ApplicationProtocols is null || ApplicationProtocols.Count <= 0)
         {
             throw new ArgumentNullException(SR.Format(SR.net_quic_not_null_not_empty_listener, nameof(QuicListenerOptions.ApplicationProtocols)), argumentName);
