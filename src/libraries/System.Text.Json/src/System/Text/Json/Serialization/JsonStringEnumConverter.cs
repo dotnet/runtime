@@ -54,7 +54,7 @@ namespace System.Text.Json.Serialization
         {
             if (typeToConvert != typeof(TEnum))
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException_ArrayIndexNegative(nameof(typeToConvert));
+                ThrowHelper.ThrowArgumentOutOfRangeException_JsonConverterFactory_TypeNotSupported(typeToConvert);
             }
 
             return new EnumConverter<TEnum>(_converterOptions, _namingPolicy, options);
@@ -109,7 +109,14 @@ namespace System.Text.Json.Serialization
         }
 
         /// <inheritdoc />
-        public sealed override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options) =>
-            EnumConverterFactory.Create(typeToConvert, _converterOptions, _namingPolicy, options);
+        public sealed override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (!typeToConvert.IsEnum)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException_JsonConverterFactory_TypeNotSupported(typeToConvert);
+            }
+
+            return EnumConverterFactory.Create(typeToConvert, _converterOptions, _namingPolicy, options);
+        }
     }
 }

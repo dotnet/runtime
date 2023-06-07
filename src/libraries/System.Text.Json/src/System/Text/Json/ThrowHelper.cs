@@ -36,6 +36,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowArgumentOutOfRangeException_JsonConverterFactory_TypeNotSupported(Type typeToConvert)
+        {
+            throw new ArgumentOutOfRangeException(nameof(typeToConvert), SR.Format(SR.SerializerConverterFactoryInvalidArgument, typeToConvert.FullName));
+        }
+
+        [DoesNotReturn]
         public static void ThrowArgumentException_ArrayTooSmall(string paramName)
         {
             throw new ArgumentException(SR.ArrayTooSmall, paramName);

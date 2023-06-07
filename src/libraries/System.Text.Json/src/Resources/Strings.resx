@@ -549,6 +549,9 @@
   <data name="SerializerConverterFactoryReturnsJsonConverterFactory" xml:space="preserve">
     <value>The converter '{0}' cannot return an instance of JsonConverterFactory.</value>
   </data>
+  <data name="SerializerConverterFactoryInvalidArgument" xml:space="preserve">
+    <value>The type '{0}' is not supported by the current JsonConverterFactory.</value>
+  </data>
   <data name="NodeElementWrongType" xml:space="preserve">
     <value>The element must be of type '{0}'</value>
   </data>
