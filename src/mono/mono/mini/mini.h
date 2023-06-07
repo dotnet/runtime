@@ -2980,14 +2980,6 @@ mini_class_is_simd (MonoCompile *cfg, MonoClass *klass)
 #ifdef TARGET_ARM64
 	if (size == 8 || size == 16)
 		return TRUE;
-#elif defined(TARGET_AMD64)
-
-#ifdef TARGET_WIN32
-	return FALSE;
-#endif
-	if (size == 16)
-		return TRUE;
-
 #else
 	if (size == 16)
 		return TRUE;
