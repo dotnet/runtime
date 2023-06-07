@@ -69,7 +69,7 @@ namespace System
          */
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-#if !NATIVEAOT
+#if MONO
         [DynamicDependency("Ctor(System.Char[])")]
 #endif
         public extern String(char[]? value);
@@ -90,7 +90,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-#if !NATIVEAOT
+#if MONO
         [DynamicDependency("Ctor(System.Char[],System.Int32,System.Int32)")]
 #endif
         public extern String(char[] value, int startIndex, int length);
@@ -117,7 +117,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-#if !NATIVEAOT
+#if MONO
         [DynamicDependency("Ctor(System.Char*)")]
 #endif
         public extern unsafe String(char* value);
@@ -143,7 +143,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-#if !NATIVEAOT
+#if MONO
         [DynamicDependency("Ctor(System.Char*,System.Int32,System.Int32)")]
 #endif
         public extern unsafe String(char* value, int startIndex, int length);
@@ -177,7 +177,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-#if !NATIVEAOT
+#if MONO
         [DynamicDependency("Ctor(System.SByte*)")]
 #endif
         public extern unsafe String(sbyte* value);
@@ -195,7 +195,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-#if !NATIVEAOT
+#if MONO
         [DynamicDependency("Ctor(System.SByte*,System.Int32,System.Int32)")]
 #endif
         public extern unsafe String(sbyte* value, int startIndex, int length);
@@ -251,7 +251,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-#if !NATIVEAOT
+#if MONO
         [DynamicDependency("Ctor(System.SByte*,System.Int32,System.Int32,System.Text.Encoding)")]
 #endif
         public extern unsafe String(sbyte* value, int startIndex, int length, Encoding enc);
@@ -282,7 +282,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-#if !NATIVEAOT
+#if MONO
         [DynamicDependency("Ctor(System.Char,System.Int32)")]
 #endif
         public extern String(char c, int count);
@@ -304,7 +304,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-#if !NATIVEAOT
+#if MONO
         [DynamicDependency("Ctor(System.ReadOnlySpan{System.Char})")]
 #endif
         public extern String(ReadOnlySpan<char> value);
