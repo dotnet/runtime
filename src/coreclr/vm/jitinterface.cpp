@@ -1808,6 +1808,7 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isG
 
 #ifndef _MSC_VER
 
+#if defined(TARGET_AMD64)
 void* getThreadStaticDescriptor(uint8_t* p)
 {
     _ASSERTE_MSG((p[0] == 0x66 && p[1] == 0x48 && p[2] == 0x8d && p[3] == 0x3d),
@@ -1829,22 +1830,7 @@ void* getNonGCMaxThreadStaticDescriptor()
     uint8_t* p;
     __asm__("leaq 0(%%rip), %%rbx\n"
             "data16\n"
-            "leaq t_NonGCMaxThreadStaticBlocks@TLSGD(%%rip), %%rdi\n"
-            "data16\n"
-            "data16\n"
-            "rex64\n"
-            "callq __tls_get_addr\n"
-            : "=b"(p));
-
-    return getThreadStaticDescriptor(p);
-}
-
-void* getNonGCThreadStaticBlockDescriptor()
-{
-    uint8_t* p;
-    __asm__("leaq 0(%%rip), %%rbx\n"
-            "data16\n"
-            "leaq t_NonGCThreadStaticBlocks@TLSGD(%%rip), %%rdi\n"
+            "leaq t_NonGCMaxThreadStaticBlocks@TLSLDM(%%rip), %%rdi\n"
             "data16\n"
             "data16\n"
             "rex64\n"
@@ -1859,7 +1845,7 @@ void* getGCMaxThreadStaticDescriptor()
     uint8_t* p;
     __asm__("leaq 0(%%rip), %%rbx\n"
             "data16\n"
-            "leaq t_GCMaxThreadStaticBlocks@TLSGD(%%rip), %%rdi\n"
+            "leaq t_GCMaxThreadStaticBlocks@TLSLDM(%%rip), %%rdi\n"
             "data16\n"
             "data16\n"
             "rex64\n"
@@ -1868,21 +1854,10 @@ void* getGCMaxThreadStaticDescriptor()
 
     return getThreadStaticDescriptor(p);
 }
+#elif defined(TARGET_ARM64)
 
-void* getGCThreadStaticBlockDescriptor()
-{
-    uint8_t* p;
-    __asm__("leaq 0(%%rip), %%rbx\n"
-            "data16\n"
-            "leaq t_GCThreadStaticBlocks@TLSGD(%%rip), %%rdi\n"
-            "data16\n"
-            "data16\n"
-            "rex64\n"
-            "callq __tls_get_addr\n"
-            : "=b"(p));
-
-    return getThreadStaticDescriptor(p);
-}
+#elif define(TARGET_X86)
+#endif 
 #endif
 
 /*********************************************************************/
@@ -1913,7 +1888,6 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     }
 #else
     void* maxThreadStaticDescriptor = 0;
-    size_t addrOfMaxThreadStaticBlock = 0;
     size_t addressOfThreadStaticBlock = 0;
 
     if (isGCType)
@@ -1927,11 +1901,9 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
         addressOfThreadStaticBlock = (size_t)&t_NonGCThreadStaticBlocks;
     }
     
-    addrOfMaxThreadStaticBlock = (size_t)__tls_get_addr(maxThreadStaticDescriptor);
-
     pInfo->tlsGetAddrFtnPtr = (size_t)&__tls_get_addr;
     pInfo->descrAddrOfMaxThreadStaticBlock = (size_t)maxThreadStaticDescriptor;
-    pInfo->offsetOfThreadStaticBlocks = addressOfThreadStaticBlock - addrOfMaxThreadStaticBlock;
+    pInfo->offsetOfThreadStaticBlocks = addressOfThreadStaticBlock - (size_t)__tls_get_addr(maxThreadStaticDescriptor);
 #endif
 
     pInfo->offsetOfGCDataPointer = static_cast<uint32_t>(PtrArray::GetDataOffset());
