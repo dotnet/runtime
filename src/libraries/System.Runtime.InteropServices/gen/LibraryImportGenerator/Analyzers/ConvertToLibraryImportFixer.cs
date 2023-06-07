@@ -273,33 +273,10 @@ namespace Microsoft.Interop.Analyzers
                     .WithIsExtern(false)
                     .WithPartial(true));
 
-            foreach (IParameterSymbol parameter in methodSymbol.Parameters)
-            {
-                if (parameter.Type.SpecialType == SpecialType.System_Boolean
-                    && !parameter.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
-                {
-                    SyntaxNode generatedParameterSyntax = generator.GetParameters(generatedDeclaration)[parameter.Ordinal];
-                    generatedDeclaration = generator.ReplaceNode(generatedDeclaration, generatedParameterSyntax, generator.AddAttributes(generatedParameterSyntax,
-                                    GenerateMarshalAsUnmanagedTypeBoolAttribute(generator)));
-                }
-            }
-
-            if (methodSymbol.ReturnType.SpecialType == SpecialType.System_Boolean
-                && !methodSymbol.GetReturnTypeAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
-            {
-                generatedDeclaration = generator.AddReturnAttributes(generatedDeclaration,
-                    GenerateMarshalAsUnmanagedTypeBoolAttribute(generator));
-            }
+            generatedDeclaration = AddExplicitDefaultBoolMarshalling(generator, methodSymbol, generatedDeclaration, "Bool");
 
             return generatedDeclaration;
         }
-
-        private static SyntaxNode GenerateMarshalAsUnmanagedTypeBoolAttribute(SyntaxGenerator generator)
-         => generator.Attribute(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute,
-             generator.AttributeArgument(
-                 generator.MemberAccessExpression(
-                     generator.DottedName(TypeNames.System_Runtime_InteropServices_UnmanagedType),
-                     generator.IdentifierName("Bool"))));
 
         private static async Task<bool> TransformCallersOfNoPreserveSigMethod(DocumentEditor editor, IMethodSymbol methodSymbol, CancellationToken cancellationToken)
         {

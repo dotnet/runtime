@@ -263,5 +263,36 @@ namespace Microsoft.Interop.Analyzers
                 editor.ReplaceNode(node, (node, gen) => gen.WithModifiers(node, gen.GetModifiers(node).WithPartial(true)));
             }
         }
+
+        protected static SyntaxNode AddExplicitDefaultBoolMarshalling(SyntaxGenerator generator, IMethodSymbol methodSymbol, SyntaxNode generatedDeclaration, string unmanagedTypeMemberIdentifier)
+        {
+            foreach (IParameterSymbol parameter in methodSymbol.Parameters)
+            {
+                if (parameter.Type.SpecialType == SpecialType.System_Boolean
+                    && !parameter.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
+                {
+                    SyntaxNode generatedParameterSyntax = generator.GetParameters(generatedDeclaration)[parameter.Ordinal];
+                    generatedDeclaration = generator.ReplaceNode(generatedDeclaration, generatedParameterSyntax, generator.AddAttributes(generatedParameterSyntax,
+                                    GenerateMarshalAsUnmanagedTypeBoolAttribute(generator, unmanagedTypeMemberIdentifier)));
+                }
+            }
+
+            if (methodSymbol.ReturnType.SpecialType == SpecialType.System_Boolean
+                && !methodSymbol.GetReturnTypeAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
+            {
+                generatedDeclaration = generator.AddReturnAttributes(generatedDeclaration,
+                    GenerateMarshalAsUnmanagedTypeBoolAttribute(generator, unmanagedTypeMemberIdentifier));
+            }
+
+            return generatedDeclaration;
+
+
+            static SyntaxNode GenerateMarshalAsUnmanagedTypeBoolAttribute(SyntaxGenerator generator, string unmanagedTypeMemberIdentifier)
+                 => generator.Attribute(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute,
+                     generator.AttributeArgument(
+                         generator.MemberAccessExpression(
+                             generator.DottedName(TypeNames.System_Runtime_InteropServices_UnmanagedType),
+                             generator.IdentifierName(unmanagedTypeMemberIdentifier))));
+        }
     }
 }
