@@ -20,7 +20,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                using System.Runtime.InteropServices.Marshalling;
 
                [GeneratedComInterface]
-               public interface I
+               public partial interface I
                {
                }
 
@@ -34,7 +34,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices.Marshalling;
                 
                 [GeneratedComInterface]
-                public interface I
+                public partial interface I
                 {
                 }
 

@@ -110,39 +110,14 @@ namespace Microsoft.Interop.Analyzers
                 IMethodSymbol method = (IMethodSymbol)editor.SemanticModel.GetDeclaredSymbol(member, ct);
                 var generatedDeclaration = member;
 
-                foreach (IParameterSymbol parameter in method.Parameters)
-                {
-                    if (parameter.Type.SpecialType == SpecialType.System_Boolean
-                        && !parameter.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
-                    {
-                        var parameters = gen.GetParameters(member);
-                        var parameterSyntax = parameters[parameter.Ordinal];
-                        generatedDeclaration = gen.ReplaceNode(
-                            member,
-                            parameterSyntax,
-                            gen.AddAttributes(
-                                parameterSyntax,
-                                GenerateMarshalAsUnmanagedTypeVariantBoolAttribute(gen)));
-                    }
-                }
-
-                if (method.ReturnType.SpecialType == SpecialType.System_Boolean
-                    && !method.GetReturnTypeAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
-                {
-                    generatedDeclaration = gen.AddReturnAttributes(
-                        generatedDeclaration,
-                        GenerateMarshalAsUnmanagedTypeVariantBoolAttribute(gen));
-                }
+                generatedDeclaration = AddExplicitDefaultBoolMarshalling(gen, method, generatedDeclaration, "VariantBool");
                 editor.ReplaceNode(member, generatedDeclaration);
             }
-        }
 
-        private static SyntaxNode GenerateMarshalAsUnmanagedTypeVariantBoolAttribute(SyntaxGenerator generator)
-         => generator.Attribute(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute,
-             generator.AttributeArgument(
-                 generator.MemberAccessExpression(
-                     generator.DottedName(TypeNames.System_Runtime_InteropServices_UnmanagedType),
-                     generator.IdentifierName("VariantBool"))));
+            editor.ReplaceNode(node, (node, gen) => gen.WithModifiers(node, gen.GetModifiers(node).WithPartial(true)));
+
+            MakeNodeParentsPartial(editor, node);
+        }
 
     }
 }

@@ -33,7 +33,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                [GeneratedComInterface]
                [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-               public interface I
+               public partial interface I
                {
                }
                """;
@@ -63,7 +63,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                [GeneratedComInterface]
                [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-               public interface I
+               public partial interface I
                {
                     void Foo(int a);
                }
@@ -94,7 +94,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                [GeneratedComInterface]
                [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-               public interface I
+               public partial interface I
                {
                    [return: MarshalAs(UnmanagedType.VariantBool)]
                    bool Foo([MarshalAs(UnmanagedType.VariantBool)] bool a);
@@ -126,7 +126,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 [GeneratedComInterface(StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(BStrStringMarshaller))]
                 [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
                 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-                public interface I
+                public partial interface I
                 {
                     string Foo(string a);
                 }
@@ -237,7 +237,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 [GeneratedComInterface]
                 [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
                 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-                public interface I
+                public partial interface I
                 {
                     void Foo([MarshalAs(UnmanagedType.FunctionPtr)] Action a);
                 }
@@ -268,7 +268,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 [GeneratedComInterface]
                 [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
                 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-                public interface I
+                public partial interface I
                 {
                     void Foo([MarshalAs(UnmanagedType.LPArray, SizeConst = 10)] int[] a);
                 }
@@ -309,7 +309,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 [GeneratedComInterface]
                 [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
                 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-                public interface I
+                public partial interface I
                 {
                     void Foo(int a);
                 }
@@ -317,7 +317,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 [GeneratedComInterface]
                 [Guid("F59AB2FE-523D-4B28-911C-21363808C51E")]
                 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-                public interface J : I
+                public partial interface J : I
                 {
                     void Bar(short a);
                 }

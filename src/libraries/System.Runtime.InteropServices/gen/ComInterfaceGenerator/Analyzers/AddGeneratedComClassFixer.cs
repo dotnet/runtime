@@ -35,6 +35,8 @@ namespace Microsoft.Interop.Analyzers
                 return updatedNode;
             });
 
+            MakeNodeParentsPartial(editor, node);
+
             return Task.CompletedTask;
         }
 
