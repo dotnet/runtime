@@ -26,13 +26,14 @@ namespace System.Text.Json.Serialization
                 HandleNullOnRead = true;
                 HandleNullOnWrite = true;
             }
-            else
+            else if (UsesDefaultHandleNull)
             {
-                // For the HandleNull == false case, either:
-                // 1) The default values are assigned in this type's virtual HandleNull property
-                // or
-                // 2) A converter overrode HandleNull and returned false so HandleNullOnRead and HandleNullOnWrite
-                // will be their default values of false.
+                // If the type doesn't support null, allow the converter a chance to modify.
+                // These semantics are backwards compatible with 3.0.
+                HandleNullOnRead = default(T) is not null;
+
+                // The framework handles null automatically on writes.
+                HandleNullOnWrite = false;
             }
         }
 
@@ -56,21 +57,6 @@ namespace System.Text.Json.Serialization
             return new JsonTypeInfo<T>(this, options);
         }
 
-        internal sealed override JsonConverter<TTarget> CreateCastingConverter<TTarget>()
-        {
-            if (this is JsonConverter<TTarget> conv)
-            {
-                return conv;
-            }
-
-            JsonSerializerOptions.CheckConverterNullabilityIsSameAsPropertyType(this, typeof(TTarget));
-
-            // Avoid layering casting converters by consulting any source converters directly.
-            return
-                SourceConverterForCastingConverter?.CreateCastingConverter<TTarget>()
-                ?? new CastingConverter<TTarget>(this, handleNull: HandleNull, handleNullOnRead: HandleNullOnRead, handleNullOnWrite: HandleNullOnWrite);
-        }
-
         internal override Type? KeyType => null;
 
         internal override Type? ElementType => null;
@@ -86,30 +72,10 @@ namespace System.Text.Json.Serialization
         {
             get
             {
-                // HandleNull is only called by the framework once during initialization and any
-                // subsequent calls elsewhere would just re-initialize to the same values (we don't
-                // track a "hasInitialized" flag since that isn't necessary).
-
-                // If the type doesn't support null, allow the converter a chance to modify.
-                // These semantics are backwards compatible with 3.0.
-                HandleNullOnRead = default(T) is not null;
-
-                // The framework handles null automatically on writes.
-                HandleNullOnWrite = false;
-
+                UsesDefaultHandleNull = true;
                 return false;
             }
         }
-
-        /// <summary>
-        /// Does the converter want to be called when reading null tokens.
-        /// </summary>
-        internal bool HandleNullOnRead { get; private protected set; }
-
-        /// <summary>
-        /// Does the converter want to be called for null values.
-        /// </summary>
-        internal bool HandleNullOnWrite { get; private protected set; }
 
         // This non-generic API is sealed as it just forwards to the generic version.
         internal sealed override void WriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
