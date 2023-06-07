@@ -191,6 +191,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup>
       <_WasmRuntimePackVersion>%(ResolvedRuntimePack.NuGetPackageVersion)</_WasmRuntimePackVersion>
     </PropertyGroup>
+
+    <Error Code="WASM0005" Message="Unnable to resolve WebAssembly runtime pack version" Condition="'$(_WasmRuntimePackVersion)' == ''" />
   </Target>
 
   <Target Name="_ResolveWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild;_GetWasmRuntimePackVersion">

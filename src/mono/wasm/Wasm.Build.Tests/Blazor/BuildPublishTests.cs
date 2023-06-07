@@ -76,16 +76,11 @@ public class BuildPublishTests : BuildTestBase
 
         CreateBlazorWasmTemplateProject(id);
 
-        void Execute(Func<BlazorBuildOptions, string[], (CommandResult, string)> target) => target(
-            new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs),
-            new[] {
-                "/p:WasmBuildNative=true",
-                (expectFingerprintOnDotnetJs ? " /p:WasmFingerprintDotnetJs=true" : string.Empty)
-            }
-        );
+        var options = new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs);
+        var finterprintingArg = expectFingerprintOnDotnetJs ? " /p:WasmFingerprintDotnetJs=true" : string.Empty;
 
-        Execute(BlazorBuild);
-        Execute(BlazorPublish);
+        BlazorBuild(options, "/p:WasmBuildNative=true", finterprintingArg);
+        BlazorPublish(options, finterprintingArg);
     }
 
     // Disabling for now - publish folder can have more than one dotnet*hash*js, and not sure
