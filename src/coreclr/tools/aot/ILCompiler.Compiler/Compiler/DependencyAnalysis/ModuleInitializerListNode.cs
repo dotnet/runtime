@@ -10,16 +10,11 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class ModuleInitializerListNode : ObjectNode, ISymbolDefinitionNode
+    internal sealed class ModuleInitializerListNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private readonly ObjectAndOffsetSymbolNode _endSymbol;
+        private int? _size;
 
-        public ModuleInitializerListNode()
-        {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__module_initializers_End", true);
-        }
-
-        public ISymbolNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -137,7 +132,6 @@ namespace ILCompiler.DependencyAnalysis
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.RequireInitialAlignment(factory.Target.PointerSize);
             builder.AddSymbol(this);
-            builder.AddSymbol(_endSymbol);
 
             foreach (var module in sortedModules)
             {
@@ -150,7 +144,7 @@ namespace ILCompiler.DependencyAnalysis
 
             var result = builder.ToObjectData();
 
-            _endSymbol.SetSymbolOffset(result.Data.Length);
+            _size = result.Data.Length;
 
             return result;
         }

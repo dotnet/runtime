@@ -2068,7 +2068,9 @@ namespace Mono.Options
                 command.Options.WriteOptionDescriptions(CommandSet.Out);
                 return 0;
             }
+#pragma warning disable CA1861 // Avoid constant arrays as arguments. Only invoked when --help is passed.
             return command.Invoke(new[] { "--help" });
+#pragma warning restore CA1861
         }
 
         private List<KeyValuePair<string, Command>> GetCommands()

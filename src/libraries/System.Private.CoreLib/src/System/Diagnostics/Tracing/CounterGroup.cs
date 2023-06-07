@@ -9,7 +9,7 @@ namespace System.Diagnostics.Tracing
 {
 #if !ES_BUILD_STANDALONE
 #if !FEATURE_WASM_PERFTRACING
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("browser")]
 #endif
 #endif
     internal sealed class CounterGroup
@@ -111,15 +111,15 @@ namespace System.Diagnostics.Tracing
         private static void EnsureEventSourceIndexAvailable(int eventSourceIndex)
         {
             Debug.Assert(Monitor.IsEntered(s_counterGroupLock));
-            if (CounterGroup.s_counterGroups == null)
+            if (s_counterGroups == null)
             {
-                CounterGroup.s_counterGroups = new WeakReference<CounterGroup>[eventSourceIndex + 1];
+                s_counterGroups = new WeakReference<CounterGroup>[eventSourceIndex + 1];
             }
-            else if (eventSourceIndex >= CounterGroup.s_counterGroups.Length)
+            else if (eventSourceIndex >= s_counterGroups.Length)
             {
                 WeakReference<CounterGroup>[] newCounterGroups = new WeakReference<CounterGroup>[eventSourceIndex + 1];
-                Array.Copy(CounterGroup.s_counterGroups, newCounterGroups, CounterGroup.s_counterGroups.Length);
-                CounterGroup.s_counterGroups = newCounterGroups;
+                Array.Copy(s_counterGroups, newCounterGroups, s_counterGroups.Length);
+                s_counterGroups = newCounterGroups;
             }
         }
 
@@ -130,11 +130,11 @@ namespace System.Diagnostics.Tracing
                 int eventSourceIndex = EventListener.EventSourceIndex(eventSource);
                 EnsureEventSourceIndexAvailable(eventSourceIndex);
                 Debug.Assert(s_counterGroups != null);
-                WeakReference<CounterGroup> weakRef = CounterGroup.s_counterGroups[eventSourceIndex];
+                WeakReference<CounterGroup> weakRef = s_counterGroups[eventSourceIndex];
                 if (weakRef == null || !weakRef.TryGetTarget(out CounterGroup? ret))
                 {
                     ret = new CounterGroup(eventSource);
-                    CounterGroup.s_counterGroups[eventSourceIndex] = new WeakReference<CounterGroup>(ret);
+                    s_counterGroups[eventSourceIndex] = new WeakReference<CounterGroup>(ret);
                 }
                 return ret;
             }

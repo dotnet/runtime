@@ -19,10 +19,6 @@ namespace System.Globalization
 
             return GlobalizationMode.UseNls ?
                 NlsIsNormalized(strInput, normalizationForm) :
-#if TARGET_BROWSER
-            GlobalizationMode.Hybrid ?
-                JsIsNormalized(strInput, normalizationForm) :
-#endif
                 IcuIsNormalized(strInput, normalizationForm);
         }
 
@@ -37,10 +33,6 @@ namespace System.Globalization
 
             return GlobalizationMode.UseNls ?
                 NlsNormalize(strInput, normalizationForm) :
-#if TARGET_BROWSER
-            GlobalizationMode.Hybrid ?
-                JsNormalize(strInput, normalizationForm) :
-#endif
                 IcuNormalize(strInput, normalizationForm);
         }
     }

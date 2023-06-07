@@ -8717,6 +8717,7 @@ mono_jiterp_frame_data_allocator_alloc (FrameDataAllocator *stack, InterpFrame *
 	return frame_data_allocator_alloc(stack, frame, size);
 }
 
+// NOTE: This does not perform a null check and passing a null object or klass is an error!
 MONO_ALWAYS_INLINE gboolean
 mono_jiterp_isinst (MonoObject* object, MonoClass* klass)
 {

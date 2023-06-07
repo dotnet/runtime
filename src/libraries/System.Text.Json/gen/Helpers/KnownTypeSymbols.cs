@@ -213,6 +213,11 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? UIntPtrType => GetOrResolveType(typeof(UIntPtr), ref _UIntPtrType);
         private Option<INamedTypeSymbol?> _UIntPtrType;
 
+        public INamedTypeSymbol? MemoryType => GetOrResolveType(typeof(Memory<>), ref _MemoryType);
+        private Option<INamedTypeSymbol?> _MemoryType;
+
+        public INamedTypeSymbol? ReadOnlyMemoryType => GetOrResolveType(typeof(ReadOnlyMemory<>), ref _ReadOnlyMemoryType);
+        private Option<INamedTypeSymbol?> _ReadOnlyMemoryType;
 
         public bool IsImmutableEnumerableType(ITypeSymbol type, out string? factoryTypeFullName)
         {

@@ -164,7 +164,7 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals(T x, T y)
         {
-            return System.Runtime.CompilerServices.RuntimeHelpers.EnumEquals(x, y);
+            return RuntimeHelpers.EnumEquals(x, y);
         }
 
         internal override int IndexOf(T[] array, T value, int startIndex, int count)
@@ -172,7 +172,7 @@ namespace System.Collections.Generic
             int endIndex = startIndex + count;
             for (int i = startIndex; i < endIndex; i++)
             {
-                if (System.Runtime.CompilerServices.RuntimeHelpers.EnumEquals(array[i], value)) return i;
+                if (RuntimeHelpers.EnumEquals(array[i], value)) return i;
             }
             return -1;
         }
@@ -182,7 +182,7 @@ namespace System.Collections.Generic
             int endIndex = startIndex - count + 1;
             for (int i = startIndex; i >= endIndex; i--)
             {
-                if (System.Runtime.CompilerServices.RuntimeHelpers.EnumEquals(array[i], value)) return i;
+                if (RuntimeHelpers.EnumEquals(array[i], value)) return i;
             }
             return -1;
         }

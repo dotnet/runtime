@@ -475,10 +475,16 @@ namespace ILCompiler
                 return true;
             }
 
-            if (!(type is MetadataType defType))
+            if (type is not MetadataType defType)
             {
                 // Non metadata backed types have layout defined in all version bubbles
                 return true;
+            }
+
+            if (VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(defType))
+            {
+                // Vector<T> always needs a layout check
+                return false;
             }
 
             if (!NodeFactory.CompilationModuleGroup.VersionsWithModule(defType.Module))

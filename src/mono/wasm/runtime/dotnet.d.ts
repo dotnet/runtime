@@ -3,7 +3,7 @@
 //!
 //! This is generated file, see src/mono/wasm/runtime/rollup.config.js
 
-//! This is not considered public API with backward compatibility guarantees. 
+//! This is not considered public API with backward compatibility guarantees.
 
 declare interface NativePointer {
     __brandNativePointer: "NativePointer";
@@ -346,7 +346,8 @@ declare enum ICUDataMode {
     Sharded = 0,
     All = 1,
     Invariant = 2,
-    Custom = 3
+    Custom = 3,
+    Hybrid = 4
 }
 
 declare global {
