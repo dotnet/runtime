@@ -70,11 +70,6 @@ namespace Microsoft.Interop.Analyzers
 
         protected override IEnumerable<ConvertToSourceGeneratedInteropDocumentCodeAction> CreateAllCodeFixesForOptions(Document document, SyntaxNode node, ImmutableDictionary<string, Option> options)
         {
-            if (node is not MethodDeclarationSyntax methodDeclaration)
-            {
-                yield break;
-            }
-
             bool warnForAdditionalWork = options.TryGetValue(Option.MayRequireAdditionalWork, out Option mayRequireAdditionalWork) && mayRequireAdditionalWork is Option.Bool(true);
 
             CharSet? charSet = options.TryGetValue(CharSetOption, out Option charSetOption) && charSetOption is Option.String(string charSetString) && Enum.TryParse<CharSet>(charSetString, out CharSet result) ? result : null;
@@ -89,7 +84,7 @@ namespace Microsoft.Interop.Analyzers
                 (editor, ct) =>
                     ConvertToLibraryImport(
                         editor,
-                        methodDeclaration,
+                        node,
                         warnForAdditionalWork,
                         null,
                         ct),
@@ -112,7 +107,7 @@ namespace Microsoft.Interop.Analyzers
                         (editor, ct) =>
                             ConvertToLibraryImport(
                                 editor,
-                                methodDeclaration,
+                                node,
                                 warnForAdditionalWork,
                                 'A',
                                 ct),
@@ -127,7 +122,7 @@ namespace Microsoft.Interop.Analyzers
                         (editor, ct) =>
                             ConvertToLibraryImport(
                                 editor,
-                                methodDeclaration,
+                                node,
                                 warnForAdditionalWork,
                                 'W',
                                 ct),
@@ -147,7 +142,7 @@ namespace Microsoft.Interop.Analyzers
                 (editor, ct) =>
                     ConvertToLibraryImport(
                         editor,
-                        (MethodDeclarationSyntax)node,
+                        node,
                         warnForAdditionalWork,
                         suffix,
                         ct),
@@ -174,7 +169,7 @@ namespace Microsoft.Interop.Analyzers
 
         private static async Task ConvertToLibraryImport(
             DocumentEditor editor,
-            MethodDeclarationSyntax methodSyntax,
+            SyntaxNode methodSyntax,
             bool warnForAdditionalWork,
             char? entryPointSuffix,
             CancellationToken cancellationToken)
@@ -209,7 +204,7 @@ namespace Microsoft.Interop.Analyzers
         }
 
         private static async Task<SyntaxNode> ConvertMethodDeclarationToLibraryImport(
-            MethodDeclarationSyntax methodSyntax,
+            SyntaxNode methodSyntax,
             DocumentEditor editor,
             SyntaxGenerator generator,
             IMethodSymbol methodSymbol,
@@ -217,12 +212,12 @@ namespace Microsoft.Interop.Analyzers
             char? entryPointSuffix,
             CancellationToken cancellationToken)
         {
-            INamedTypeSymbol? dllImportAttrType = editor.SemanticModel.Compilation.GetTypeByMetadataName(typeof(DllImportAttribute).FullName);
+            INamedTypeSymbol? dllImportAttrType = editor.SemanticModel.Compilation.GetBestTypeByMetadataName(typeof(DllImportAttribute).FullName);
             if (dllImportAttrType == null)
                 return methodSyntax;
 
             // We wouldn't have offered this code fix if the LibraryImport type isn't available, so we can be sure it isn't null here.
-            INamedTypeSymbol libraryImportAttrType = editor.SemanticModel.Compilation.GetTypeByMetadataName(TypeNames.LibraryImportAttribute)!;
+            INamedTypeSymbol libraryImportAttrType = editor.SemanticModel.Compilation.GetBestTypeByMetadataName(TypeNames.LibraryImportAttribute)!;
 
             // Make sure the method has the DllImportAttribute
             if (!TryGetAttribute(methodSymbol, dllImportAttrType, out AttributeData? dllImportAttr))
@@ -283,8 +278,7 @@ namespace Microsoft.Interop.Analyzers
                 if (parameter.Type.SpecialType == SpecialType.System_Boolean
                     && !parameter.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
                 {
-                    MethodDeclarationSyntax generatedDeclarationSyntax = (MethodDeclarationSyntax)generatedDeclaration;
-                    ParameterSyntax generatedParameterSyntax = generatedDeclarationSyntax.ParameterList.Parameters[parameter.Ordinal];
+                    SyntaxNode generatedParameterSyntax = generator.GetParameters(generatedDeclaration)[parameter.Ordinal];
                     generatedDeclaration = generator.ReplaceNode(generatedDeclaration, generatedParameterSyntax, generator.AddAttributes(generatedParameterSyntax,
                                     GenerateMarshalAsUnmanagedTypeBoolAttribute(generator)));
                 }
@@ -440,7 +434,7 @@ namespace Microsoft.Interop.Analyzers
                 return generator.InvocationExpression(
                             generator.MemberAccessExpression(
                                 generator.NameExpression(
-                                    editor.SemanticModel.Compilation.GetTypeByMetadataName(
+                                    editor.SemanticModel.Compilation.GetBestTypeByMetadataName(
                                         TypeNames.System_Runtime_InteropServices_Marshal)),
                                 "ThrowExceptionForHR"),
                             node);
@@ -611,7 +605,7 @@ namespace Microsoft.Interop.Analyzers
             CallingConvention callingConvention,
             out SyntaxNode? unmanagedCallConvAttribute)
         {
-            if (editor.SemanticModel.Compilation.GetTypeByMetadataName(TypeNames.UnmanagedCallConvAttribute) is null)
+            if (editor.SemanticModel.Compilation.GetBestTypeByMetadataName(TypeNames.UnmanagedCallConvAttribute) is null)
             {
                 unmanagedCallConvAttribute = null;
                 return false;
@@ -628,13 +622,13 @@ namespace Microsoft.Interop.Analyzers
             ITypeSymbol? callingConventionType = callingConvention switch
             {
                 CallingConvention.Cdecl => editor.SemanticModel.Compilation.ObjectType.ContainingAssembly.
-                GetTypeByMetadataName($"System.Runtime.CompilerServices.CallConvCdecl"),
+                    GetTypeByMetadataName($"System.Runtime.CompilerServices.CallConvCdecl"),
                 CallingConvention.StdCall => editor.SemanticModel.Compilation.ObjectType.ContainingAssembly.
-                GetTypeByMetadataName($"System.Runtime.CompilerServices.CallConvStdcall"),
+                    GetTypeByMetadataName($"System.Runtime.CompilerServices.CallConvStdcall"),
                 CallingConvention.ThisCall => editor.SemanticModel.Compilation.ObjectType.ContainingAssembly.
-                GetTypeByMetadataName($"System.Runtime.CompilerServices.CallConvThiscall"),
+                    GetTypeByMetadataName($"System.Runtime.CompilerServices.CallConvThiscall"),
                 CallingConvention.FastCall => editor.SemanticModel.Compilation.ObjectType.ContainingAssembly.
-                GetTypeByMetadataName($"System.Runtime.CompilerServices.CallConvFastcall"),
+                    GetTypeByMetadataName($"System.Runtime.CompilerServices.CallConvFastcall"),
                 _ => null
             };
 
@@ -650,7 +644,7 @@ namespace Microsoft.Interop.Analyzers
             unmanagedCallConvAttribute = generator.Attribute(TypeNames.UnmanagedCallConvAttribute,
                 generator.AttributeArgument("CallConvs",
                     generator.ArrayCreationExpression(
-                        generator.TypeExpression(editor.SemanticModel.Compilation.GetTypeByMetadataName(TypeNames.System_Type)),
+                        generator.TypeExpression(editor.SemanticModel.Compilation.GetBestTypeByMetadataName(TypeNames.System_Type)),
                         new[] { generator.TypeOfExpression(generator.TypeExpression(callingConventionType)) })));
 
             return true;
