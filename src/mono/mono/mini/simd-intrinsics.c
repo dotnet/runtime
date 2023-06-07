@@ -2348,7 +2348,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 // FIXME: Support Vector64 for mini JIT on arm64
 #ifdef TARGET_ARM64
 	if (!COMPILE_LLVM (cfg) && (size != 16))
-		supported = FALSE;
+		return NULL;
 #endif
 
 #ifdef TARGET_AMD64
