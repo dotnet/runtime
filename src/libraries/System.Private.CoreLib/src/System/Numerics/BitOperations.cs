@@ -949,7 +949,9 @@ namespace System.Numerics
         /// Similar in behavior to the x86 instruction BTC (Bit Test and Complement).
         /// </summary>
         /// <param name="value">The value.</param>
-        /// <param name="index">The zero-based index of the bit to flip.</param>
+        /// <param name="index">The zero-based index of the bit to flip.
+        /// Any value outside the range [0..31] is treated as congruent mod 32.</param>
+        /// <returns>The new value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static uint FlipBit(uint value, int index)
         {
