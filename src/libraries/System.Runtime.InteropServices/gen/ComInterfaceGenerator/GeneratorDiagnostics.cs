@@ -297,13 +297,24 @@ namespace Microsoft.Interop
         /// <inheritdoc cref="SR.InvalidGeneratedComClassAttributeUsageMissingPartialModifier"/>
         public static readonly DiagnosticDescriptor InvalidAttributedClassMissingPartialModifier =
             new DiagnosticDescriptor(
-            Ids.InvalidGeneratedComClassAttributeUsage,
-            GetResourceString(nameof(SR.InvalidGeneratedComClassAttributeUsageTitle)),
-            GetResourceString(nameof(SR.InvalidGeneratedComClassAttributeUsageMissingPartialModifier)),
-            Category,
-            DiagnosticSeverity.Error,
-            isEnabledByDefault: true,
-            description: GetResourceString(nameof(SR.InvalidGeneratedComClassAttributeUsageDescription)));
+                Ids.InvalidGeneratedComClassAttributeUsage,
+                GetResourceString(nameof(SR.InvalidGeneratedComClassAttributeUsageTitle)),
+                GetResourceString(nameof(SR.InvalidGeneratedComClassAttributeUsageMissingPartialModifier)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.InvalidGeneratedComClassAttributeUsageDescription)));
+
+        /// <inheritdoc cref="SR.InterfaceTypeNotSupportedMessage"/>
+        public static readonly DiagnosticDescriptor InterfaceTypeNotSupported =
+            new DiagnosticDescriptor(
+                Ids.InvalidGeneratedComInterfaceAttributeUsage,
+                GetResourceString(nameof(SR.InterfaceTypeNotSupportedTitle)),
+                GetResourceString(nameof(SR.InterfaceTypeNotSupportedMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.InterfaceTypeNotSupportedMessage)));
 
         private readonly List<DiagnosticInfo> _diagnostics = new List<DiagnosticInfo>();
 

@@ -18,8 +18,8 @@
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedTitle">
-        <source>Analysis for generation has failed.</source>
-        <target state="translated">Falha na análise de geração.</target>
+        <source>Analysis for COM interface generation has failed.</source>
+        <target state="needs-review-translation">Falha na análise de geração.</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedDescription">
@@ -33,8 +33,8 @@
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedTitle">
-        <source>The base COM interface failed to generate source. ComInterfaceGenerator will not generate source for this interface.</source>
-        <target state="translated">A interface COM base falhou ao gerar a fonte. ComInterfaceGenerator não irá gerar fonte para esta interface.</target>
+        <source>The base COM interface failed to generate source. Code will not be generated for this interface.</source>
+        <target state="needs-review-translation">A interface COM base falhou ao gerar a fonte. ComInterfaceGenerator não irá gerar fonte para esta interface.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">

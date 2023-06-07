@@ -262,7 +262,7 @@
     <value>COM interface {0} inherits from {1}, which has errors. ComInterfaceGenerator will not generate source for {0}.</value>
   </data>
   <data name="BaseInterfaceCannotBeGeneratedTitle" xml:space="preserve">
-    <value>The base COM interface failed to generate source. ComInterfaceGenerator will not generate source for this interface.</value>
+    <value>The base COM interface failed to generate source. Code will not be generated for this interface.</value>
   </data>
   <data name="InvalidStringMarshallingConfigurationOnInterfaceMessage" xml:space="preserve">
     <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</value>

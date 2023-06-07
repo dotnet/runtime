@@ -18,8 +18,8 @@
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedTitle">
-        <source>Analysis for generation has failed.</source>
-        <target state="translated">產生分析失敗。</target>
+        <source>Analysis for COM interface generation has failed.</source>
+        <target state="needs-review-translation">產生分析失敗。</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedDescription">
@@ -33,8 +33,8 @@
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedTitle">
-        <source>The base COM interface failed to generate source. ComInterfaceGenerator will not generate source for this interface.</source>
-        <target state="translated">基底 COM 介面無法產生來源。ComInterfaceGenerator 不會產生此介面的來源。</target>
+        <source>The base COM interface failed to generate source. Code will not be generated for this interface.</source>
+        <target state="needs-review-translation">基底 COM 介面無法產生來源。ComInterfaceGenerator 不會產生此介面的來源。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">
