@@ -216,7 +216,7 @@ public:
                 /* Handle the repeating case - array of valuetypes */
                 for (ptrdiff_t __i = 0; __i > cnt; __i--)
                 {
-                    NumOfPointers += cur->val_serie[__i].nptrs;
+                    NumOfPointers += (cur->val_serie + __i)->nptrs;
                 }
 
                 NumOfPointers *= NumComponents;
