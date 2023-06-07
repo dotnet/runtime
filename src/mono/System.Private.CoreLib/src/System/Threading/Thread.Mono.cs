@@ -364,13 +364,5 @@ namespace System.Threading
                 external_eventloop = value;
             }
         }
-
-        internal long NativeThreadId
-        {
-            get
-            {
-                return thread_id;
-            }
-        }
     }
 }

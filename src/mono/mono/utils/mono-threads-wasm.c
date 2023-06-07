@@ -10,6 +10,7 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-threads-api.h>
 #include <mono/utils/mono-threads-debug.h>
+#include <mono/utils/checked-build.h>
 
 #include <glib.h>
 
@@ -23,9 +24,6 @@
 #include <emscripten/threading.h>
 #endif
 
-#ifdef ENABLE_CHECKED_BUILD
-#include <mono/utils/checked-build.h>
-#endif
 
 #define round_down(addr, val) ((void*)((addr) & ~((val) - 1)))
 
@@ -309,9 +307,7 @@ gboolean
 mono_thread_platform_external_eventloop_keepalive_check (void)
 {
 #if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
-#ifdef ENABLE_CHECKED_BUILD
 	MONO_REQ_GC_SAFE_MODE;
-#endif
 	/* if someone called emscripten_runtime_keepalive_push (), the
 	 * thread will stay alive in the JS event loop after returning
 	 * from the thread's main function.

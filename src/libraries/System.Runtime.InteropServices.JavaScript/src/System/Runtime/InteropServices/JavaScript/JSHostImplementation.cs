@@ -237,6 +237,9 @@ namespace System.Runtime.InteropServices.JavaScript
         private static FieldInfo? thread_id_Field;
         private static FieldInfo? external_eventloop_Field;
 
+        // FIXME: after https://github.com/dotnet/runtime/issues/86040 replace with
+        // [UnsafeAccessor(UnsafeAccessorKind.Field, Name="external_eventloop")]
+        // static extern ref bool ThreadExternalEventloop(Thread @this);
         [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicMethods, "System.Threading.Thread", "System.Private.CoreLib")]
         public static void SetHasExternalEventLoop(Thread thread)
         {
@@ -247,6 +250,7 @@ namespace System.Runtime.InteropServices.JavaScript
             external_eventloop_Field.SetValue(thread, true);
         }
 
+        // FIXME: after https://github.com/dotnet/runtime/issues/86040
         [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, "System.Threading.Thread", "System.Private.CoreLib")]
         public static IntPtr GetNativeThreadId()
         {
