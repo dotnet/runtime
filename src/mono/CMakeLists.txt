@@ -649,9 +649,15 @@ if(LLVM_PREFIX)
     set(MONO_cxx_lib "-lc++")
   endif()
 
+  if(${llvm_api_version} GREATER_EQUAL 1600)
+    set(MONO_cxx_std_version "-std=c++17")
+  else()
+    set(MONO_cxx_std_version "-std=c++14")
+  endif()
+
   # llvm-config --cflags
   set(llvm_cflags "-I${LLVM_PREFIX}/include -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
-  set(llvm_cxxflags "-I${LLVM_PREFIX}/include -std=c++17 ${MONO_stdlib} -fno-exceptions -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+  set(llvm_cxxflags "-I${LLVM_PREFIX}/include ${MONO_cxx_std_version} ${MONO_stdlib} -fno-exceptions -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
   set(llvm_includedir "${LLVM_PREFIX}/include")
 
   if(HOST_LINUX)
