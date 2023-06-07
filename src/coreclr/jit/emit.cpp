@@ -6690,8 +6690,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     }
 #endif
 
-    // We support requesting alignment from 4 -> 32 bytes on all platforms. The VM will provide an alignment of at least TARGET_POINTER_SIZE,
-    // but crossgen2 will provide the exactly requested alignment.
+    // We support requesting alignment from 4 -> 32 bytes on all platforms. The VM will provide an alignment of at least
+    // TARGET_POINTER_SIZE, but crossgen2 will provide the exactly requested alignment.
     assert((4 <= codeAlignment) && (codeAlignment <= 32) && isPow2(codeAlignment));
 
     CorJitAllocMemFlag allocMemFlagCodeAlign = CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN;
