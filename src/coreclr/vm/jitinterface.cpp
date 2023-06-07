@@ -1825,7 +1825,7 @@ void* getThreadStaticDescriptor(uint8_t* p)
     return *(uint32_t*)p + (p + 4);
 }
 
-void* getNonGCMaxThreadStaticDescriptor()
+void* getNonGCMaxThreadStaticOffset()
 {
     uint8_t* p;
     __asm__("leaq 0(%%rip), %%rbx\n"
@@ -1840,7 +1840,7 @@ void* getNonGCMaxThreadStaticDescriptor()
     return getThreadStaticDescriptor(p);
 }
 
-void* getGCMaxThreadStaticDescriptor()
+void* getGCMaxThreadStaticOffset()
 {
     uint8_t* p;
     __asm__("leaq 0(%%rip), %%rbx\n"
@@ -1855,7 +1855,77 @@ void* getGCMaxThreadStaticDescriptor()
     return getThreadStaticDescriptor(p);
 }
 #elif defined(TARGET_ARM64)
+uint64_t getNonGCMaxThreadStaticOffset()
+{
+    uint64_t offset;
+    __asm__ (
+        "adrp x0,  :tlsdesc:t_NonGCMaxThreadStaticBlocks\n"
+        "ldr  x1,  [x0, #:tlsdesc_lo12:t_NonGCMaxThreadStaticBlocks]\n"
+        "add  x0,  x0, :tlsdesc_lo12:t_NonGCMaxThreadStaticBlocks\n"
+        ".tlsdesccall t_NonGCMaxThreadStaticBlocks\n"
+        "blr  x1\n"
+        "mov %[result], x0\n"
+        : [result] "=r" (offset)
+        :
+        : "x0", "x1"
+    );
 
+    return offset;
+}
+
+uint64_t getNonGCThreadStaticOffset()
+{
+    uint64_t offset;
+    __asm__ (
+        "adrp x0,  :tlsdesc:t_NonGCThreadStaticBlocks\n"
+        "ldr  x1,  [x0, #:tlsdesc_lo12:t_NonGCThreadStaticBlocks]\n"
+        "add  x0,  x0, :tlsdesc_lo12:t_NonGCThreadStaticBlocks\n"
+        ".tlsdesccall t_NonGCThreadStaticBlocks\n"
+        "blr  x1\n"
+        "mov %[result], x0\n"
+        : [result] "=r" (offset)
+        :
+        : "x0", "x1"
+    );
+
+    return offset;
+}
+
+uint64_t getGCMaxThreadStaticOffset()
+{
+    uint64_t offset;
+    __asm__ (
+        "adrp x0,  :tlsdesc:t_GCMaxThreadStaticBlocks\n"
+        "ldr  x1,  [x0, #:tlsdesc_lo12:t_GCMaxThreadStaticBlocks]\n"
+        "add  x0,  x0, :tlsdesc_lo12:t_GCMaxThreadStaticBlocks\n"
+        ".tlsdesccall t_GCMaxThreadStaticBlocks\n"
+        "blr  x1\n"
+        "mov %[result], x0\n"
+        : [result] "=r" (offset)
+        :
+        : "x0", "x1"
+    );
+
+    return offset;
+}
+
+uint64_t getGCThreadStaticOffset()
+{
+    uint64_t offset;
+    __asm__ (
+        "adrp x0,  :tlsdesc:t_GCThreadStaticBlocks\n"
+        "ldr  x1,  [x0, #:tlsdesc_lo12:t_GCThreadStaticBlocks]\n"
+        "add  x0,  x0, :tlsdesc_lo12:t_GCThreadStaticBlocks\n"
+        ".tlsdesccall t_GCThreadStaticBlocks\n"
+        "blr  x1\n"
+        "mov %[result], x0\n"
+        : [result] "=r" (offset)
+        :
+        : "x0", "x1"
+    );
+
+    return offset;
+}
 #elif define(TARGET_X86)
 #endif 
 #endif
@@ -1886,24 +1956,36 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
         pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_NonGCThreadStaticBlocks);
         pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_NonGCMaxThreadStaticBlocks);
     }
-#else
+#elif defined(TARGET_AMD64)
     void* maxThreadStaticDescriptor = 0;
     size_t addressOfThreadStaticBlock = 0;
 
     if (isGCType)
     {
-        maxThreadStaticDescriptor = getGCMaxThreadStaticDescriptor();
+        maxThreadStaticDescriptor = getGCMaxThreadStaticOffset();
         addressOfThreadStaticBlock = (size_t)&t_GCThreadStaticBlocks;
     }
     else
     {
-        maxThreadStaticDescriptor = getNonGCMaxThreadStaticDescriptor();
+        maxThreadStaticDescriptor = getNonGCMaxThreadStaticOffset();
         addressOfThreadStaticBlock = (size_t)&t_NonGCThreadStaticBlocks;
     }
     
     pInfo->tlsGetAddrFtnPtr = (size_t)&__tls_get_addr;
     pInfo->descrAddrOfMaxThreadStaticBlock = (size_t)maxThreadStaticDescriptor;
     pInfo->offsetOfThreadStaticBlocks = addressOfThreadStaticBlock - (size_t)__tls_get_addr(maxThreadStaticDescriptor);
+
+#elif defined(TARGET_ARM64)
+    if (isGCType)
+    {
+        pInfo->offsetOfThreadStaticBlocks = getGCThreadStaticOffset();
+        pInfo->offsetOfMaxThreadStaticBlocks = getGCMaxThreadStaticOffset();
+    }
+    else
+    {
+        pInfo->offsetOfThreadStaticBlocks = getNonGCThreadStaticOffset();
+        pInfo->offsetOfMaxThreadStaticBlocks = getNonGCMaxThreadStaticOffset();
+    }    
 #endif
 
     pInfo->offsetOfGCDataPointer = static_cast<uint32_t>(PtrArray::GetDataOffset());
