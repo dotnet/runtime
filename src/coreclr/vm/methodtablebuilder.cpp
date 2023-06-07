@@ -1135,6 +1135,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
 
     LPCUTF8 className;
     LPCUTF8 nameSpace;
+
     if (FAILED(GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetTypeDefToken(), &className, &nameSpace)))
         return false;
 
@@ -1144,7 +1145,12 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     CORJIT_FLAGS CPUCompileFlags       = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
     uint32_t     numInstanceFieldBytes = 16;
 
-    if (CPUCompileFlags.IsSet(InstructionSet_AVX2))
+    if (CPUCompileFlags.IsSet(InstructionSet_VectorT512))
+    {
+        // TODO-XARCH: The JIT needs to be updated to support 64-byte Vector<T>
+        numInstanceFieldBytes = 32;
+    }
+    else if (CPUCompileFlags.IsSet(InstructionSet_VectorT256))
     {
         numInstanceFieldBytes = 32;
     }

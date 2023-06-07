@@ -21,7 +21,7 @@ namespace System
     // the contract of the method.  Ideally it should give a meaningful error
     // message describing what was wrong and which parameter is incorrect.
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ArgumentException : SystemException
     {
         private readonly string? _paramName;
@@ -97,7 +97,7 @@ namespace System
 
         private void SetMessageField()
         {
-            if (_message == null && HResult == System.HResults.COR_E_ARGUMENT)
+            if (_message == null && HResult == HResults.COR_E_ARGUMENT)
             {
                 _message = SR.Arg_ArgumentException;
             }
