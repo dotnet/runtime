@@ -190,7 +190,7 @@ namespace Microsoft.Interop
 
         public override int GetHashCode()
         {
-            // ContainingSyntax and ContainingSyntaxContext do not implement GetHashCode
+            // ContainingSyntax does not implement GetHashCode
             return HashCode.Combine(Type, TypeDefinitionContext, InterfaceId);
         }
 
