@@ -253,7 +253,10 @@
       Category="clr" />
   </ItemGroup>
 
-  <!-- Build the CoreCLR cross tools when we're doing a cross build and either we're building any CoreCLR native tools for platforms CoreCLR fully supports or when someone explicitly requests them -->
+  <!--
+    Build the CoreCLR cross tools when we're doing a cross build and either we're building any CoreCLR native tools for platforms CoreCLR fully supports or when someone explicitly requests them.
+    The cross tools are used as part of the build process with the downloaded build tools, so we need to build them for the host architecture and build them as unsanitized binaries.
+    -->
   <ItemGroup Condition="(('$(ClrRuntimeBuildSubsets)' != '' and '$(PrimaryRuntimeFlavor)' == 'CoreCLR' and '$(TargetsMobile)' != 'true') or $(_subset.Contains('+clr.crossarchtools+'))) and ('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(EnableNativeSanitizers)' != '')">
     <ProjectToBuild
       Include="$(CoreClrProjectRoot)runtime.proj"
@@ -268,7 +271,10 @@
       Category="clr" />
   </ItemGroup>
 
-  <!-- Build the debugging components of CoreCLR for the same target architecture as an unsanitized build whenever we build a sanitized coreclr build. -->
+  <!--
+    Build the debugging components of CoreCLR for the same target architecture as an unsanitized build whenever we build a sanitized coreclr build.
+    These components are loaded into a debugger process, which generally is not a sanitized executable.
+  -->
   <ItemGroup Condition="'$(ClrRuntimeBuildSubsets)' != '' and '$(EnableNativeSanitizers)' != ''">
     <ProjectToBuild
       Include="$(CoreClrProjectRoot)runtime.proj"
@@ -300,7 +306,7 @@
                             PgoInstrument=false;
                             NoPgoOptimize=true;
                             TargetOS=linux;
-                            CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1 -DBUILD_DEBUGGER_CROSS_COMPONENTS=1" Category="clr" />
+                            CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1" Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+alpinedac+')) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' != 'x86'">
@@ -312,7 +318,7 @@
                             PgoInstrument=false;
                             NoPgoOptimize=true;
                             TargetOS=alpine;
-                            CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1 -DBUILD_DEBUGGER_CROSS_COMPONENTS=1" Category="clr" />
+                            CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1" Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+crossdacpack+'))">
