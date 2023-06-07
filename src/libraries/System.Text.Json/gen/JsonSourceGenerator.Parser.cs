@@ -131,7 +131,7 @@ namespace System.Text.Json.SourceGeneration
                     TypeToGenerate typeToGenerate = _typesToGenerate.Dequeue();
                     if (!_generatedTypes.ContainsKey(typeToGenerate.Type))
                     {
-                        TypeGenerationSpec spec = ParseTypeGenerationSpec(typeToGenerate, contextName: contextTypeSymbol.Name, contextLocation, options);
+                        TypeGenerationSpec spec = ParseTypeGenerationSpec(typeToGenerate, contextTypeSymbol, contextLocation, options);
                         _generatedTypes.Add(typeToGenerate.Type, spec);
                     }
                 }
@@ -494,8 +494,10 @@ namespace System.Text.Json.SourceGeneration
                 };
             }
 
-            private TypeGenerationSpec ParseTypeGenerationSpec(TypeToGenerate typeToGenerate, string contextName, Location contextLocation, JsonSourceGenerationOptionsAttribute options)
+            private TypeGenerationSpec ParseTypeGenerationSpec(TypeToGenerate typeToGenerate, INamedTypeSymbol contextType, Location contextLocation, JsonSourceGenerationOptionsAttribute options)
             {
+                Debug.Assert(IsSymbolAccessibleWithin(typeToGenerate.Type, within: contextType), "should not generate metadata for inaccessible types.");
+
                 ITypeSymbol type = typeToGenerate.Type;
                 Location typeLocation = type.GetDiagnosticLocation() ?? typeToGenerate.AttributeLocation ?? contextLocation;
 
@@ -547,7 +549,7 @@ namespace System.Text.Json.SourceGeneration
                     }
                     else if (!foundDesignTimeCustomConverter && _knownSymbols.JsonConverterAttributeType.IsAssignableFrom(attributeType))
                     {
-                        converterType = GetConverterTypeFromAttribute(attributeData);
+                        converterType = GetConverterTypeFromAttribute(contextType, attributeData);
                         foundDesignTimeCustomConverter = true;
                     }
 
@@ -589,179 +591,41 @@ namespace System.Text.Json.SourceGeneration
                 {
                     classType = ClassType.Enum;
                 }
-                else if (type.GetCompatibleGenericBaseType(_knownSymbols.IAsyncEnumerableOfTType) is INamedTypeSymbol iasyncEnumerableType)
+                else if (TryResolveCollectionType(type,
+                    out ITypeSymbol? valueType,
+                    out ITypeSymbol? keyType,
+                    out collectionType,
+                    out immutableCollectionFactoryTypeFullName,
+                    out bool needsRuntimeType))
                 {
-                    if (type.CanUseDefaultConstructorForDeserialization(out IMethodSymbol? defaultCtor))
+                    if (!IsSymbolAccessibleWithin(valueType, within: contextType) ||
+                        (keyType != null && !IsSymbolAccessibleWithin(keyType, within: contextType)))
                     {
-                        constructionStrategy = ObjectConstructionStrategy.ParameterlessConstructor;
-                        constructorSetsRequiredMembers = defaultCtor?.ContainsAttribute(SetsRequiredMembersAttributeFullName) == true;
-                    }
-
-                    ITypeSymbol elementType = iasyncEnumerableType.TypeArguments[0];
-                    collectionValueType = EnqueueType(elementType, typeToGenerate.Mode);
-                    collectionType = CollectionType.IAsyncEnumerableOfT;
-                    classType = ClassType.Enumerable;
-                }
-                else if (_knownSymbols.IEnumerableType.IsAssignableFrom(type))
-                {
-                    if (type.CanUseDefaultConstructorForDeserialization(out IMethodSymbol? defaultCtor))
-                    {
-                        constructionStrategy = ObjectConstructionStrategy.ParameterlessConstructor;
-                        constructorSetsRequiredMembers = defaultCtor?.ContainsAttribute(SetsRequiredMembersAttributeFullName) == true;
-                    }
-
-                    INamedTypeSymbol? actualTypeToConvert;
-                    ITypeSymbol? keyType = null;
-                    ITypeSymbol valueType;
-                    bool needsRuntimeType = false;
-
-                    if (type is IArrayTypeSymbol arraySymbol)
-                    {
-                        Debug.Assert(arraySymbol.Rank == 1, "multi-dimensional arrays should have been handled earlier.");
-                        classType = ClassType.Enumerable;
-                        collectionType = CollectionType.Array;
-                        valueType = arraySymbol.ElementType;
-                    }
-                    else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.ListOfTType)) != null)
-                    {
-                        classType = ClassType.Enumerable;
-                        collectionType = CollectionType.List;
-                        valueType = actualTypeToConvert.TypeArguments[0];
-                    }
-                    else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.DictionaryOfTKeyTValueType)) != null)
-                    {
-                        classType = ClassType.Dictionary;
-                        collectionType = CollectionType.Dictionary;
-
-                        keyType = actualTypeToConvert.TypeArguments[0];
-                        valueType = actualTypeToConvert.TypeArguments[1];
-                    }
-                    else if (_knownSymbols.IsImmutableDictionaryType(type, out immutableCollectionFactoryTypeFullName))
-                    {
-                        classType = ClassType.Dictionary;
-                        collectionType = CollectionType.ImmutableDictionary;
-
-                        ImmutableArray<ITypeSymbol> genericArgs = ((INamedTypeSymbol)type).TypeArguments;
-                        keyType = genericArgs[0];
-                        valueType = genericArgs[1];
-                    }
-                    else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.IDictionaryOfTKeyTValueType)) != null)
-                    {
-                        classType = ClassType.Dictionary;
-                        collectionType = CollectionType.IDictionaryOfTKeyTValue;
-
-                        keyType = actualTypeToConvert.TypeArguments[0];
-                        valueType = actualTypeToConvert.TypeArguments[1];
-
-                        needsRuntimeType = SymbolEqualityComparer.Default.Equals(type, actualTypeToConvert);
-                    }
-                    else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.IReadonlyDictionaryOfTKeyTValueType)) != null)
-                    {
-                        classType = ClassType.Dictionary;
-                        collectionType = CollectionType.IReadOnlyDictionary;
-
-                        keyType = actualTypeToConvert.TypeArguments[0];
-                        valueType = actualTypeToConvert.TypeArguments[1];
-
-                        needsRuntimeType = SymbolEqualityComparer.Default.Equals(type, actualTypeToConvert);
-                    }
-                    else if (_knownSymbols.IsImmutableEnumerableType(type, out immutableCollectionFactoryTypeFullName))
-                    {
-                        classType = ClassType.Enumerable;
-                        collectionType = CollectionType.ImmutableEnumerable;
-                        valueType = ((INamedTypeSymbol)type).TypeArguments[0];
-                    }
-                    else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.IListOfTType)) != null)
-                    {
-                        classType = ClassType.Enumerable;
-                        collectionType = CollectionType.IListOfT;
-                        valueType = actualTypeToConvert.TypeArguments[0];
-                    }
-                    else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.ISetOfTType)) != null)
-                    {
-                        classType = ClassType.Enumerable;
-                        collectionType = CollectionType.ISet;
-                        valueType = actualTypeToConvert.TypeArguments[0];
-                    }
-                    else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.ICollectionOfTType)) != null)
-                    {
-                        classType = ClassType.Enumerable;
-                        collectionType = CollectionType.ICollectionOfT;
-                        valueType = actualTypeToConvert.TypeArguments[0];
-                    }
-                    else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.StackOfTType)) != null)
-                    {
-                        classType = ClassType.Enumerable;
-                        collectionType = CollectionType.StackOfT;
-                        valueType = actualTypeToConvert.TypeArguments[0];
-                    }
-                    else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.QueueOfTType)) != null)
-                    {
-                        classType = ClassType.Enumerable;
-                        collectionType = CollectionType.QueueOfT;
-                        valueType = actualTypeToConvert.TypeArguments[0];
-                    }
-                    else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.ConcurrentStackType)) != null)
-                    {
-                        classType = ClassType.Enumerable;
-                        collectionType = CollectionType.ConcurrentStack;
-                        valueType = actualTypeToConvert.TypeArguments[0];
-                    }
-                    else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.ConcurrentQueueType)) != null)
-                    {
-                        classType = ClassType.Enumerable;
-                        collectionType = CollectionType.ConcurrentQueue;
-                        valueType = actualTypeToConvert.TypeArguments[0];
-                    }
-                    else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.IEnumerableOfTType)) != null)
-                    {
-                        classType = ClassType.Enumerable;
-                        collectionType = CollectionType.IEnumerableOfT;
-                        valueType = actualTypeToConvert.TypeArguments[0];
-                    }
-                    else if (_knownSymbols.IDictionaryType.IsAssignableFrom(type))
-                    {
-                        classType = ClassType.Dictionary;
-                        collectionType = CollectionType.IDictionary;
-                        keyType = _knownSymbols.StringType;
-                        valueType = _knownSymbols.ObjectType;
-
-                        needsRuntimeType = SymbolEqualityComparer.Default.Equals(type, actualTypeToConvert);
-                    }
-                    else if (_knownSymbols.IListType.IsAssignableFrom(type))
-                    {
-                        classType = ClassType.Enumerable;
-                        collectionType = CollectionType.IList;
-                        valueType = _knownSymbols.ObjectType;
-                    }
-                    else if (_knownSymbols.StackType.IsAssignableFrom(type))
-                    {
-                        classType = ClassType.Enumerable;
-                        collectionType = CollectionType.Stack;
-                        valueType = _knownSymbols.ObjectType;
-                    }
-                    else if (_knownSymbols.QueueType.IsAssignableFrom(type))
-                    {
-                        classType = ClassType.Enumerable;
-                        collectionType = CollectionType.Queue;
-                        valueType = _knownSymbols.ObjectType;
+                        classType = ClassType.UnsupportedType;
+                        keyType = valueType = null;
+                        immutableCollectionFactoryTypeFullName = null;
+                        collectionType = default;
+                        needsRuntimeType = false;
                     }
                     else
                     {
-                        classType = ClassType.Enumerable;
-                        collectionType = CollectionType.IEnumerable;
-                        valueType = _knownSymbols.ObjectType;
-                    }
-
-                    collectionValueType = EnqueueType(valueType, typeToGenerate.Mode);
-
-                    if (keyType != null)
-                    {
-                        collectionKeyType = EnqueueType(keyType, typeToGenerate.Mode);
-
-                        if (needsRuntimeType)
+                        if (type.CanUseDefaultConstructorForDeserialization(out IMethodSymbol? defaultCtor))
                         {
-                            runtimeTypeRef = GetDictionaryTypeRef(keyType, valueType);
+                            constructionStrategy = ObjectConstructionStrategy.ParameterlessConstructor;
+                            constructorSetsRequiredMembers = defaultCtor?.ContainsAttribute(SetsRequiredMembersAttributeFullName) == true;
+                        }
+
+                        classType = keyType != null ? ClassType.Dictionary : ClassType.Enumerable;
+                        collectionValueType = EnqueueType(valueType, typeToGenerate.Mode);
+
+                        if (keyType != null)
+                        {
+                            collectionKeyType = EnqueueType(keyType, typeToGenerate.Mode);
+
+                            if (needsRuntimeType)
+                            {
+                                runtimeTypeRef = GetDictionaryTypeRef(keyType, valueType);
+                            }
                         }
                     }
                 }
@@ -825,8 +689,9 @@ namespace System.Text.Json.SourceGeneration
                         foreach (INamedTypeSymbol currentType in type.GetSortedTypeHierarchy())
                         {
                             var declaringTypeRef = new TypeRef(currentType);
+                            ImmutableArray<ISymbol> members = currentType.GetMembers();
 
-                            foreach (IPropertySymbol propertyInfo in currentType.GetMembers().OfType<IPropertySymbol>())
+                            foreach (IPropertySymbol propertyInfo in members.OfType<IPropertySymbol>())
                             {
                                 bool isVirtual = propertyInfo.IsVirtual();
 
@@ -840,7 +705,7 @@ namespace System.Text.Json.SourceGeneration
                                     continue;
                                 }
 
-                                PropertyGenerationSpec? spec = ParsePropertyGenerationSpec(declaringTypeRef, propertyInfo.Type, propertyInfo, isVirtual, typeToGenerate.Mode, options);
+                                PropertyGenerationSpec? spec = ParsePropertyGenerationSpec(contextType, declaringTypeRef, propertyInfo.Type, propertyInfo, isVirtual, typeToGenerate.Mode, options);
                                 if (spec is null)
                                 {
                                     continue;
@@ -849,7 +714,7 @@ namespace System.Text.Json.SourceGeneration
                                 CacheMemberHelper(propertyInfo.Type, propertyInfo, spec);
                             }
 
-                            foreach (IFieldSymbol fieldInfo in currentType.GetMembers().OfType<IFieldSymbol>())
+                            foreach (IFieldSymbol fieldInfo in members.OfType<IFieldSymbol>())
                             {
                                 // Skip if :
                                 if (
@@ -865,7 +730,7 @@ namespace System.Text.Json.SourceGeneration
                                     continue;
                                 }
 
-                                PropertyGenerationSpec? spec = ParsePropertyGenerationSpec(declaringTypeRef, fieldInfo.Type, fieldInfo, isVirtual: false, typeToGenerate.Mode, options);
+                                PropertyGenerationSpec? spec = ParsePropertyGenerationSpec(contextType, declaringTypeRef, fieldInfo.Type, fieldInfo, isVirtual: false, typeToGenerate.Mode, options);
                                 if (spec is null)
                                 {
                                     continue;
@@ -915,11 +780,6 @@ namespace System.Text.Json.SourceGeneration
                                         (propertyInitializers ??= new()).Add(propInitializerSpec);
                                     }
                                 }
-
-                                if (spec.HasJsonInclude && (!spec.CanUseGetter || !spec.CanUseSetter || !spec.IsPublic))
-                                {
-                                    ReportDiagnostic(DiagnosticDescriptors.InaccessibleJsonIncludePropertiesNotSupported, memberInfo.GetDiagnosticLocation(), new string[] { type.Name, spec.MemberName });
-                                }
                             }
                         }
 
@@ -938,7 +798,7 @@ namespace System.Text.Json.SourceGeneration
                     ReportDiagnostic(DiagnosticDescriptors.TypeNotSupported, typeLocation, new string[] { typeRef.FullyQualifiedName });
                 }
 
-                if (!_generatedContextAndTypeNames.Add((contextName, typeInfoPropertyName)))
+                if (!_generatedContextAndTypeNames.Add((contextType.Name, typeInfoPropertyName)))
                 {
                     // The context name/property name combination will result in a conflict in generated types.
                     // Workaround for https://github.com/dotnet/roslyn/issues/54185 by keeping track of the file names we've used.
@@ -974,6 +834,149 @@ namespace System.Text.Json.SourceGeneration
                     ImplementsIJsonOnSerializing = implementsIJsonOnSerializing,
                     ImmutableCollectionFactoryMethod = DetermineImmutableCollectionFactoryMethod(immutableCollectionFactoryTypeFullName),
                 };
+            }
+
+            private bool TryResolveCollectionType(
+                ITypeSymbol type,
+                [NotNullWhen(true)] out ITypeSymbol? valueType,
+                out ITypeSymbol? keyType,
+                out CollectionType collectionType,
+                out string? immutableCollectionFactoryTypeFullName,
+                out bool needsRuntimeType)
+            {
+                INamedTypeSymbol? actualTypeToConvert;
+                valueType = null;
+                keyType = null;
+                collectionType = default;
+                immutableCollectionFactoryTypeFullName = null;
+                needsRuntimeType = false;
+
+                // IAsyncEnumerable<T> takes precedence over IEnumerable.
+                if (type.GetCompatibleGenericBaseType(_knownSymbols.IAsyncEnumerableOfTType) is INamedTypeSymbol iAsyncEnumerableType)
+                {
+                    valueType = iAsyncEnumerableType.TypeArguments[0];
+                    collectionType = CollectionType.IAsyncEnumerableOfT;
+                    return true;
+                }
+
+                if (!_knownSymbols.IEnumerableType.IsAssignableFrom(type))
+                {
+                    // Type is not IEnumerable and therefore not a collection type
+                    return false;
+                }
+
+                if (type is IArrayTypeSymbol arraySymbol)
+                {
+                    Debug.Assert(arraySymbol.Rank == 1, "multi-dimensional arrays should have been handled earlier.");
+                    collectionType = CollectionType.Array;
+                    valueType = arraySymbol.ElementType;
+                }
+                else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.ListOfTType)) != null)
+                {
+                    collectionType = CollectionType.List;
+                    valueType = actualTypeToConvert.TypeArguments[0];
+                }
+                else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.DictionaryOfTKeyTValueType)) != null)
+                {
+                    collectionType = CollectionType.Dictionary;
+                    keyType = actualTypeToConvert.TypeArguments[0];
+                    valueType = actualTypeToConvert.TypeArguments[1];
+                }
+                else if (_knownSymbols.IsImmutableDictionaryType(type, out immutableCollectionFactoryTypeFullName))
+                {
+                    collectionType = CollectionType.ImmutableDictionary;
+                    ImmutableArray<ITypeSymbol> genericArgs = ((INamedTypeSymbol)type).TypeArguments;
+                    keyType = genericArgs[0];
+                    valueType = genericArgs[1];
+                }
+                else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.IDictionaryOfTKeyTValueType)) != null)
+                {
+                    collectionType = CollectionType.IDictionaryOfTKeyTValue;
+                    keyType = actualTypeToConvert.TypeArguments[0];
+                    valueType = actualTypeToConvert.TypeArguments[1];
+                    needsRuntimeType = SymbolEqualityComparer.Default.Equals(type, actualTypeToConvert);
+                }
+                else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.IReadonlyDictionaryOfTKeyTValueType)) != null)
+                {
+                    collectionType = CollectionType.IReadOnlyDictionary;
+                    keyType = actualTypeToConvert.TypeArguments[0];
+                    valueType = actualTypeToConvert.TypeArguments[1];
+                    needsRuntimeType = SymbolEqualityComparer.Default.Equals(type, actualTypeToConvert);
+                }
+                else if (_knownSymbols.IsImmutableEnumerableType(type, out immutableCollectionFactoryTypeFullName))
+                {
+                    collectionType = CollectionType.ImmutableEnumerable;
+                    valueType = ((INamedTypeSymbol)type).TypeArguments[0];
+                }
+                else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.IListOfTType)) != null)
+                {
+                    collectionType = CollectionType.IListOfT;
+                    valueType = actualTypeToConvert.TypeArguments[0];
+                }
+                else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.ISetOfTType)) != null)
+                {
+                    collectionType = CollectionType.ISet;
+                    valueType = actualTypeToConvert.TypeArguments[0];
+                }
+                else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.ICollectionOfTType)) != null)
+                {
+                    collectionType = CollectionType.ICollectionOfT;
+                    valueType = actualTypeToConvert.TypeArguments[0];
+                }
+                else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.StackOfTType)) != null)
+                {
+                    collectionType = CollectionType.StackOfT;
+                    valueType = actualTypeToConvert.TypeArguments[0];
+                }
+                else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.QueueOfTType)) != null)
+                {
+                    collectionType = CollectionType.QueueOfT;
+                    valueType = actualTypeToConvert.TypeArguments[0];
+                }
+                else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.ConcurrentStackType)) != null)
+                {
+                    collectionType = CollectionType.ConcurrentStack;
+                    valueType = actualTypeToConvert.TypeArguments[0];
+                }
+                else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.ConcurrentQueueType)) != null)
+                {
+                    collectionType = CollectionType.ConcurrentQueue;
+                    valueType = actualTypeToConvert.TypeArguments[0];
+                }
+                else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.IEnumerableOfTType)) != null)
+                {
+                    collectionType = CollectionType.IEnumerableOfT;
+                    valueType = actualTypeToConvert.TypeArguments[0];
+                }
+                else if (_knownSymbols.IDictionaryType.IsAssignableFrom(type))
+                {
+                    collectionType = CollectionType.IDictionary;
+                    keyType = _knownSymbols.StringType;
+                    valueType = _knownSymbols.ObjectType;
+                    needsRuntimeType = SymbolEqualityComparer.Default.Equals(type, actualTypeToConvert);
+                }
+                else if (_knownSymbols.IListType.IsAssignableFrom(type))
+                {
+                    collectionType = CollectionType.IList;
+                    valueType = _knownSymbols.ObjectType;
+                }
+                else if (_knownSymbols.StackType.IsAssignableFrom(type))
+                {
+                    collectionType = CollectionType.Stack;
+                    valueType = _knownSymbols.ObjectType;
+                }
+                else if (_knownSymbols.QueueType.IsAssignableFrom(type))
+                {
+                    collectionType = CollectionType.Queue;
+                    valueType = _knownSymbols.ObjectType;
+                }
+                else
+                {
+                    collectionType = CollectionType.IEnumerable;
+                    valueType = _knownSymbols.ObjectType;
+                }
+
+                return true;
             }
 
             private TypeRef? GetDictionaryTypeRef(ITypeSymbol keyType, ITypeSymbol valueType)
@@ -1040,6 +1043,7 @@ namespace System.Text.Json.SourceGeneration
             }
 
             private PropertyGenerationSpec? ParsePropertyGenerationSpec(
+                INamedTypeSymbol contextType,
                 TypeRef declaringType,
                 ITypeSymbol memberType,
                 ISymbol memberInfo,
@@ -1050,6 +1054,7 @@ namespace System.Text.Json.SourceGeneration
                 Debug.Assert(memberInfo is IFieldSymbol or IPropertySymbol);
 
                 ProcessMemberCustomAttributes(
+                    contextType,
                     memberInfo,
                     out bool hasJsonInclude,
                     out string? jsonPropertyName,
@@ -1062,6 +1067,7 @@ namespace System.Text.Json.SourceGeneration
                     out bool hasJsonRequiredAttribute);
 
                 ProcessMember(
+                    contextType,
                     memberInfo,
                     hasJsonInclude,
                     out bool isReadOnly,
@@ -1069,14 +1075,22 @@ namespace System.Text.Json.SourceGeneration
                     out bool isRequired,
                     out bool canUseGetter,
                     out bool canUseSetter,
+                    out bool isJsonIncludeInaccessible,
                     out bool setterIsInitOnly);
 
-                if (!isPublic && !memberType.IsPublic())
+                if (isJsonIncludeInaccessible)
                 {
-                    return null;
+                    ReportDiagnostic(DiagnosticDescriptors.InaccessibleJsonIncludePropertiesNotSupported, memberInfo.GetDiagnosticLocation(), new string[] { declaringType.Name, memberInfo.Name });
                 }
 
-                bool needsAtSign = memberInfo.MemberNameNeedsAtSign();
+                if ((!canUseGetter && !canUseSetter && !isJsonIncludeInaccessible) ||
+                    !IsSymbolAccessibleWithin(memberType, within: contextType))
+                {
+                    // Skip the member if either of the two conditions hold
+                    // 1. Member has no accessible getters or setters (but is not marked with JsonIncludeAttribute since we need to throw a runtime exception) OR
+                    // 2. The member type is not accessible within the generated context.
+                    return null;
+                }
 
                 string clrName = memberInfo.Name;
                 string runtimePropertyName = DetermineRuntimePropName(clrName, jsonPropertyName, options.PropertyNamingPolicy);
@@ -1084,7 +1098,7 @@ namespace System.Text.Json.SourceGeneration
 
                 return new PropertyGenerationSpec
                 {
-                    NameSpecifiedInSourceCode = needsAtSign ? "@" + memberInfo.Name : memberInfo.Name,
+                    NameSpecifiedInSourceCode = memberInfo.MemberNameNeedsAtSign() ? "@" + memberInfo.Name : memberInfo.Name,
                     MemberName = memberInfo.Name,
                     IsProperty = memberInfo is IPropertySymbol,
                     IsPublic = isPublic,
@@ -1111,6 +1125,7 @@ namespace System.Text.Json.SourceGeneration
             }
 
             private void ProcessMemberCustomAttributes(
+                INamedTypeSymbol contextType,
                 ISymbol memberInfo,
                 out bool hasJsonInclude,
                 out string? jsonPropertyName,
@@ -1145,7 +1160,7 @@ namespace System.Text.Json.SourceGeneration
 
                     if (converterType is null && _knownSymbols.JsonConverterAttributeType.IsAssignableFrom(attributeType))
                     {
-                        converterType = GetConverterTypeFromAttribute(attributeData);
+                        converterType = GetConverterTypeFromAttribute(contextType, attributeData);
                     }
                     else if (attributeType.ContainingAssembly.Name == SystemTextJsonNamespace)
                     {
@@ -1213,7 +1228,8 @@ namespace System.Text.Json.SourceGeneration
                 }
             }
 
-            private static void ProcessMember(
+            private void ProcessMember(
+                INamedTypeSymbol contextType,
                 ISymbol memberInfo,
                 bool hasJsonInclude,
                 out bool isReadOnly,
@@ -1221,13 +1237,16 @@ namespace System.Text.Json.SourceGeneration
                 out bool isRequired,
                 out bool canUseGetter,
                 out bool canUseSetter,
-                out bool setterIsInitOnly)
+                out bool isJsonIncludeInaccessible,
+                out bool isSetterInitOnly)
             {
                 isPublic = false;
+                isReadOnly = false;
                 isRequired = false;
                 canUseGetter = false;
                 canUseSetter = false;
-                setterIsInitOnly = false;
+                isJsonIncludeInaccessible = false;
+                isSetterInitOnly = false;
 
                 switch (memberInfo)
                 {
@@ -1246,25 +1265,32 @@ namespace System.Text.Json.SourceGeneration
                                     isPublic = true;
                                     canUseGetter = true;
                                 }
-                                else if (getMethod.DeclaredAccessibility is Accessibility.Internal)
+                                else if (IsSymbolAccessibleWithin(getMethod, within: contextType))
                                 {
                                     canUseGetter = hasJsonInclude;
+                                }
+                                else
+                                {
+                                    isJsonIncludeInaccessible = hasJsonInclude;
                                 }
                             }
 
                             if (setMethod != null)
                             {
-                                isReadOnly = false;
-                                setterIsInitOnly = setMethod.IsInitOnly;
+                                isSetterInitOnly = setMethod.IsInitOnly;
 
                                 if (setMethod.DeclaredAccessibility is Accessibility.Public)
                                 {
                                     isPublic = true;
                                     canUseSetter = true;
                                 }
-                                else if (setMethod.DeclaredAccessibility is Accessibility.Internal)
+                                else if (IsSymbolAccessibleWithin(setMethod, within: contextType))
                                 {
                                     canUseSetter = hasJsonInclude;
+                                }
+                                else
+                                {
+                                    isJsonIncludeInaccessible = hasJsonInclude;
                                 }
                             }
                             else
@@ -1275,35 +1301,37 @@ namespace System.Text.Json.SourceGeneration
                         break;
                     case IFieldSymbol fieldInfo:
                         {
-                            isPublic = fieldInfo.DeclaredAccessibility is Accessibility.Public;
                             isReadOnly = fieldInfo.IsReadOnly;
 #if ROSLYN4_4_OR_GREATER
                             isRequired = fieldInfo.IsRequired;
 #endif
-                            if (fieldInfo.DeclaredAccessibility is not (Accessibility.Private or Accessibility.Protected))
+                            if (fieldInfo.DeclaredAccessibility is Accessibility.Public)
                             {
+                                isPublic = true;
                                 canUseGetter = true;
                                 canUseSetter = !isReadOnly;
+                            }
+                            else
+                            {
+                                // Unlike properties JsonIncludeAttribute is not supported for internal fields.
+                                isJsonIncludeInaccessible = hasJsonInclude;
                             }
                         }
                         break;
                     default:
-                        throw new InvalidOperationException();
+                        Debug.Fail("Method given an invalid symbol type.");
+                        break;
                 }
             }
 
-            private static bool PropertyAccessorCanBeReferenced(MethodInfo? accessor)
-                => accessor != null && (accessor.IsPublic || accessor.IsAssembly);
-
-            private TypeRef? GetConverterTypeFromAttribute(AttributeData attributeData)
+            private TypeRef? GetConverterTypeFromAttribute(INamedTypeSymbol contextType, AttributeData attributeData)
             {
                 Debug.Assert(_knownSymbols.JsonConverterAttributeType.IsAssignableFrom(attributeData.AttributeClass));
                 var converterType = (INamedTypeSymbol?)attributeData.ConstructorArguments[0].Value;
 
                 if (converterType == null ||
                     !_knownSymbols.JsonConverterType.IsAssignableFrom(converterType) ||
-                    !converterType.Constructors.Any(c => c.Parameters.Length == 0) ||
-                    converterType.IsNestedPrivate())
+                    !converterType.Constructors.Any(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType)))
                 {
                     return null;
                 }
@@ -1501,6 +1529,9 @@ namespace System.Text.Json.SourceGeneration
                 deserializationCtor = ctorWithAttribute ?? publicParameterlessCtor ?? lonePublicCtor;
                 return true;
             }
+
+            private bool IsSymbolAccessibleWithin(ISymbol symbol, INamedTypeSymbol within)
+                => _knownSymbols.Compilation.IsSymbolAccessibleWithin(symbol, within);
 
             private bool IsUnsupportedType(ITypeSymbol type)
             {

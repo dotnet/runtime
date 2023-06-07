@@ -796,7 +796,7 @@ REDHAWK_PALIMPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
 #endif
 
     // FP and SIMD support are enabled by default
-    *flags |= ARM64IntrinsicConstants_AdvSimd;
+    *flags |= ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128;
 
     if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE))
     {
