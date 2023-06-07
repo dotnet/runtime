@@ -1431,7 +1431,7 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
                     {
                         plan->CopyBetweenReplacements(dstRep, fieldLcl, offs);
                         JITDUMP("  V%02u (%s)%s <- V%02u (%s)\n", dstRep->LclNum, dstRep->Description,
-                                LastUseString(dstLcl, dstRep), dsc->lvReason);
+                                LastUseString(dstLcl, dstRep), fieldLcl, dsc->lvReason);
                         dstRep++;
                         continue;
                     }
