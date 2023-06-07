@@ -803,8 +803,7 @@ private:
 
                 if (src == nullptr)
                 {
-                    src = m_compiler->gtNewLclFldNode(srcLcl->GetLclNum(), remainderStrategy.PrimitiveType,
-                                                      srcLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset);
+                    src = m_compiler->gtNewLclFldNode(srcLcl->GetLclNum(), remainderStrategy.PrimitiveType, srcLclOffs);
                     m_compiler->lvaSetVarDoNotEnregister(srcLcl->GetLclNum()
                                                              DEBUGARG(DoNotEnregisterReason::LocalField));
                 }
@@ -846,9 +845,7 @@ private:
 
                 if (store == nullptr)
                 {
-                    store =
-                        m_compiler->gtNewStoreLclFldNode(dstLcl->GetLclNum(), src->TypeGet(),
-                                                         dstLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset, src);
+                    store = m_compiler->gtNewStoreLclFldNode(dstLcl->GetLclNum(), src->TypeGet(), dstLclOffs, src);
                     m_compiler->lvaSetVarDoNotEnregister(dstLcl->GetLclNum()
                                                              DEBUGARG(DoNotEnregisterReason::LocalField));
                 }
