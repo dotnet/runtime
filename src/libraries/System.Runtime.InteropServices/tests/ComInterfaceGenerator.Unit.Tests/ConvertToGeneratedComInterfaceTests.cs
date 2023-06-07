@@ -282,7 +282,6 @@ namespace ComInterfaceGenerator.Unit.Tests
         {
             string source = """
                using System.Runtime.InteropServices;
-               using System.Runtime.InteropServices.Marshalling;
 
                [ComImport]
                [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]

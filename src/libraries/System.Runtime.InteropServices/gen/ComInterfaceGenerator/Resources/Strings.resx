@@ -297,6 +297,12 @@
   <data name="ComHostingDoesNotSupportGeneratedComInterfaceTitle" xml:space="preserve">
     <value>.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'</value>
   </data>
+  <data name="AddGeneratedComClassAddUnsafe" xml:space="preserve">
+    <value>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM and allow unsafe code</value>
+  </data>
+  <data name="ConvertToGeneratedComInterfaceAddUnsafe" xml:space="preserve">
+    <value>Convert to 'GeneratedComInterface' and allow unsafe code</value>
+  </data>
   <data name="RuntimeComApisDoNotSupportSourceGeneratedComDescription" xml:space="preserve">
     <value>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime</value>
   </data>

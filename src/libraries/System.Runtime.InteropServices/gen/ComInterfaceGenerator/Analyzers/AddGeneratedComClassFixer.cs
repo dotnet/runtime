@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Composition;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,44 +17,18 @@ using Microsoft.CodeAnalysis.Simplification;
 
 namespace Microsoft.Interop.Analyzers
 {
-    [ExportCodeFixProvider(LanguageNames.CSharp)]
-    public class AddGeneratedComClassFixer : CodeFixProvider
+    [ExportCodeFixProvider(LanguageNames.CSharp), Shared]
+    public class AddGeneratedComClassFixer : ConvertToSourceGeneratedInteropFixer
     {
-        public override FixAllProvider? GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
-
         public override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray.Create(AnalyzerDiagnostics.Ids.AddGeneratedComClassAttribute);
 
-        public override async Task RegisterCodeFixesAsync(CodeFixContext context)
+        protected override string BaseEquivalenceKey => nameof(AddGeneratedComClassFixer);
+
+        private static Task AddGeneratedComClassAsync(DocumentEditor editor, SyntaxNode node)
         {
-            var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken)
-                .ConfigureAwait(false);
-            var diagnostic = context.Diagnostics[0];
-            var diagnosticSpan = diagnostic.Location.SourceSpan;
-
-            var node = root.FindNode(diagnosticSpan);
-            if (node == null)
-            {
-                return;
-            }
-
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    SR.AddGeneratedComClassAttributeTitle,
-                    ct => AddGeneratedComClassAsync(
-                        context.Document,
-                        node,
-                        ct),
-                    nameof(AddGeneratedComClassAsync)),
-                diagnostic);
-        }
-
-        private static async Task<Document> AddGeneratedComClassAsync(Document document, SyntaxNode node, CancellationToken ct)
-        {
-            var editor = await DocumentEditor.CreateAsync(document, ct).ConfigureAwait(false);
-
             editor.ReplaceNode(node, (node, gen) =>
             {
-                var attribute = gen.Attribute(gen.TypeExpression(editor.SemanticModel.Compilation.GetBestTypeByMetadataName(TypeNames.GeneratedComClassAttribute)));
+                var attribute = gen.Attribute(gen.TypeExpression(editor.SemanticModel.Compilation.GetBestTypeByMetadataName(TypeNames.GeneratedComClassAttribute)).WithAdditionalAnnotations(Simplifier.AddImportsAnnotation));
                 var updatedNode = gen.AddAttributes(node, attribute);
                 var declarationModifiers = gen.GetModifiers(updatedNode);
                 if (!declarationModifiers.IsPartial)
@@ -63,7 +38,31 @@ namespace Microsoft.Interop.Analyzers
                 return updatedNode;
             });
 
-            return editor.GetChangedDocument();
+            return Task.CompletedTask;
+        }
+
+        protected override ConvertToSourceGeneratedInteropDocumentCodeAction CreateFixForSelectedOptions(Document document, SyntaxNode node, ImmutableDictionary<string, Option> selectedOptions)
+        {
+            return new ConvertToSourceGeneratedInteropDocumentCodeAction(
+                SR.AddGeneratedComClassAttributeTitle,
+                selectedOptions,
+                document,
+                (editor, ct) => AddGeneratedComClassAsync(editor, node),
+                BaseEquivalenceKey);
+        }
+
+        protected override string GetDiagnosticTitle(ImmutableDictionary<string, Option> selectedOptions)
+        {
+            bool allowUnsafe = selectedOptions.TryGetValue(Option.AllowUnsafe, out var allowUnsafeOption) && allowUnsafeOption is Option.Bool(true);
+
+            return allowUnsafe
+                ? SR.AddGeneratedComClassAttributeTitle
+                : SR.AddGeneratedComClassAddUnsafe;
+        }
+
+        protected override ImmutableDictionary<string, Option> ParseOptionsFromDiagnostic(Diagnostic diagnostic)
+        {
+            return ImmutableDictionary<string, Option>.Empty;
         }
     }
 }

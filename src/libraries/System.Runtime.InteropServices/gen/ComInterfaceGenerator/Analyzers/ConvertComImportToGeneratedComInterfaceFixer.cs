@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Immutable;
+using System.Composition;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,48 +15,51 @@ using Microsoft.CodeAnalysis.Simplification;
 
 namespace Microsoft.Interop.Analyzers
 {
-    [ExportCodeFixProvider(LanguageNames.CSharp)]
-    public sealed class ConvertComImportToGeneratedComInterfaceFixer : CodeFixProvider
+    [ExportCodeFixProvider(LanguageNames.CSharp), Shared]
+    public sealed class ConvertComImportToGeneratedComInterfaceFixer : ConvertToSourceGeneratedInteropFixer
     {
-        public override FixAllProvider? GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
+        private const string AddStringMarshallingOption = nameof(AddStringMarshallingOption);
+
+        protected override string BaseEquivalenceKey => "ConvertToGeneratedComInterface";
 
         public override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray.Create(AnalyzerDiagnostics.Ids.ConvertToGeneratedComInterface);
 
-        public override async Task RegisterCodeFixesAsync(CodeFixContext context)
+        protected override string GetDiagnosticTitle(ImmutableDictionary<string, Option> selectedOptions)
         {
-            var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken)
-                .ConfigureAwait(false);
-            var diagnostic = context.Diagnostics[0];
-            var diagnosticSpan = diagnostic.Location.SourceSpan;
+            return selectedOptions.TryGetValue(Option.AllowUnsafe, out Option allowUnsafeOption) && allowUnsafeOption is Option.Bool(true)
+                ? SR.ConvertToGeneratedComInterfaceAddUnsafe
+                : SR.ConvertToGeneratedComInterfaceTitle;
+        }
 
-            var node = root.FindNode(diagnosticSpan);
-            if (node == null)
+        protected override ConvertToSourceGeneratedInteropDocumentCodeAction CreateFixForSelectedOptions(Document document, SyntaxNode node, ImmutableDictionary<string, Option> selectedOptions)
+        {
+            bool mayRequireAdditionalWork = selectedOptions.TryGetValue(Option.MayRequireAdditionalWork, out Option mayRequireAdditionalWorkOption) && mayRequireAdditionalWorkOption is Option.Bool(true);
+            bool addStringMarshalling = selectedOptions.TryGetValue(AddStringMarshallingOption, out Option addStringMarshallingOption) && addStringMarshallingOption is Option.Bool(true);
+
+            return new ConvertToSourceGeneratedInteropDocumentCodeAction(SR.ConvertToGeneratedComInterfaceTitle,
+                selectedOptions,
+                document,
+                (editor, ct) => ConvertComImportToGeneratedComInterfaceAsync(editor, node, mayRequireAdditionalWork, addStringMarshalling, ct),
+                BaseEquivalenceKey);
+        }
+
+        protected override ImmutableDictionary<string, Option> ParseOptionsFromDiagnostic(Diagnostic diagnostic)
+        {
+            var optionsBuilder = ImmutableDictionary.CreateBuilder<string, Option>();
+            // Only add the bool options if they are true. This simplifies our equivalence key and makes testing easier.
+            if (diagnostic.Properties.TryGetValue(AnalyzerDiagnostics.Metadata.MayRequireAdditionalWork, out string? mayRequireAdditionalWork) && bool.Parse(mayRequireAdditionalWork))
             {
-                return;
+                optionsBuilder.Add(Option.MayRequireAdditionalWork, new Option.Bool(true));
             }
-
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    SR.ConvertToGeneratedComInterfaceTitle,
-                    ct => ConvertComImportToGeneratedComInterfaceAsync(
-                        context.Document,
-                        node,
-                        mayRequireAdditionalWork: ParseOption(diagnostic, AnalyzerDiagnostics.Metadata.MayRequireAdditionalWork),
-                        addStringMarshalling: ParseOption(diagnostic, AnalyzerDiagnostics.Metadata.AddStringMarshalling),
-                        ct),
-                    nameof(ConvertComImportToGeneratedComInterfaceAsync)),
-                diagnostic);
+            if (diagnostic.Properties.TryGetValue(AnalyzerDiagnostics.Metadata.AddStringMarshalling, out string? addStringMarshalling) && bool.Parse(addStringMarshalling))
+            {
+                optionsBuilder.Add(AddStringMarshallingOption, new Option.Bool(true));
+            }
+            return optionsBuilder.ToImmutable();
         }
 
-        private static bool ParseOption(Diagnostic diagnostic, string optionName)
+        private static async Task ConvertComImportToGeneratedComInterfaceAsync(DocumentEditor editor, SyntaxNode node, bool mayRequireAdditionalWork, bool addStringMarshalling, CancellationToken ct)
         {
-            var options = diagnostic.Properties;
-            return options.TryGetValue(optionName, out string valueAsString) && bool.TryParse(valueAsString, out bool value) && value;
-        }
-
-        private static async Task<Document> ConvertComImportToGeneratedComInterfaceAsync(Document document, SyntaxNode node, bool mayRequireAdditionalWork, bool addStringMarshalling, CancellationToken ct)
-        {
-            var editor = await DocumentEditor.CreateAsync(document, ct).ConfigureAwait(false);
             var gen = editor.Generator;
             var comp = editor.SemanticModel.Compilation;
             var declaringType = editor.SemanticModel.GetDeclaredSymbol(node, ct);
@@ -135,8 +139,6 @@ namespace Microsoft.Interop.Analyzers
                 }
                 editor.ReplaceNode(member, generatedDeclaration);
             }
-
-            return editor.GetChangedDocument();
         }
 
         private static SyntaxNode GenerateMarshalAsUnmanagedTypeVariantBoolAttribute(SyntaxGenerator generator)

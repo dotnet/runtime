@@ -54,7 +54,6 @@ namespace Microsoft.Interop.Analyzers
 
         protected override ImmutableDictionary<string, Option> ParseOptionsFromDiagnostic(Diagnostic diagnostic)
         {
-            // Create builder
             var optionsBuilder = ImmutableDictionary.CreateBuilder<string, Option>();
             // Only add the "May require additional work" option if it is true. This simplifies our equivalence key and makes testing easier.
             if (diagnostic.Properties.TryGetValue(ConvertToLibraryImportAnalyzer.MayRequireAdditionalWork, out string? mayRequireAdditionalWork) && bool.Parse(mayRequireAdditionalWork))
@@ -131,7 +130,7 @@ namespace Microsoft.Interop.Analyzers
             }
         }
 
-        protected override ConvertToSourceGeneratedInteropDocumentCodeAction CreateFixForSelectedOptions(SyntaxNode node, Document document, ImmutableDictionary<string, Option> selectedOptions)
+        protected override ConvertToSourceGeneratedInteropDocumentCodeAction CreateFixForSelectedOptions(Document document, SyntaxNode node, ImmutableDictionary<string, Option> selectedOptions)
         {
             bool warnForAdditionalWork = selectedOptions.TryGetValue(Option.MayRequireAdditionalWork, out Option mayRequireAdditionalWork) && mayRequireAdditionalWork is Option.Bool(true);
             char? suffix = selectedOptions.TryGetValue(SelectedSuffixOption, out Option selectedSuffixOption) && selectedSuffixOption is Option.String(string selectedSuffix) ? selectedSuffix[0] : null;

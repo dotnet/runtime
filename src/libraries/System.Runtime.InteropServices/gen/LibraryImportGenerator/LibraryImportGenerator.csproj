@@ -26,6 +26,7 @@
     <Compile Include="..\Common\DefaultMarshallingInfoParser.cs" Link="Common\DefaultMarshallingInfoParser.cs" />
     <Compile Include="..\Common\OperationExtensions.cs" Link="Common\OperationExtensions.cs" />
     <Compile Include="..\Common\ConvertToSourceGeneratedInteropFixer.cs" Link="Common\ConvertToSourceGeneratedInteropFixer.cs" />
+    <Compile Include="..\Common\FixAllContextExtensions.cs" Link="Common\FixAllContextExtensions.cs" />
   </ItemGroup>
 
 </Project>

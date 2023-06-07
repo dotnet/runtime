@@ -23,9 +23,13 @@ namespace Microsoft.Interop.Analyzers
 
         protected abstract string BaseEquivalenceKey { get; }
 
-        protected abstract IEnumerable<ConvertToSourceGeneratedInteropDocumentCodeAction> CreateAllCodeFixesForOptions(Document document, SyntaxNode node, ImmutableDictionary<string, Option> options);
+        protected virtual IEnumerable<ConvertToSourceGeneratedInteropDocumentCodeAction> CreateAllCodeFixesForOptions(Document document, SyntaxNode node, ImmutableDictionary<string, Option> options)
+        {
+            // By default, we only have one fix for the options specified from the diagnostic.
+            yield return CreateFixForSelectedOptions(document, node, options);
+        }
 
-        protected abstract ConvertToSourceGeneratedInteropDocumentCodeAction CreateFixForSelectedOptions(SyntaxNode node, Document document, ImmutableDictionary<string, Option> selectedOptions);
+        protected abstract ConvertToSourceGeneratedInteropDocumentCodeAction CreateFixForSelectedOptions(Document document, SyntaxNode node, ImmutableDictionary<string, Option> selectedOptions);
 
         protected abstract string GetDiagnosticTitle(ImmutableDictionary<string, Option> selectedOptions);
 
@@ -213,7 +217,8 @@ namespace Microsoft.Interop.Analyzers
 
                         foreach (var diagnostic in diagnosticsInScope)
                         {
-                            bool mayRequireAdditionalWork = bool.TryParse(diagnostic.Properties[Option.MayRequireAdditionalWork], out bool mayRequireAdditionalWorkValue)
+                            bool mayRequireAdditionalWork = diagnostic.Properties.TryGetValue(Option.MayRequireAdditionalWork, out string mayRequireAdditionalWorkString)
+                                && bool.TryParse(mayRequireAdditionalWorkString, out bool mayRequireAdditionalWorkValue)
                                 ? mayRequireAdditionalWorkValue
                                 : false;
                             if (mayRequireAdditionalWork && !includeFixesWithAdditionalWork)
@@ -228,7 +233,7 @@ namespace Microsoft.Interop.Analyzers
 
                             SyntaxNode node = root.FindNode(diagnostic.Location.SourceSpan);
 
-                            var documentBasedFix = codeFixProvider.CreateFixForSelectedOptions(node, editor.OriginalDocument, options);
+                            var documentBasedFix = codeFixProvider.CreateFixForSelectedOptions(editor.OriginalDocument, node, options);
 
                             await documentBasedFix.DocumentEditAction(editor, ct).ConfigureAwait(false);
 
