@@ -116,16 +116,6 @@ mono_native_thread_join_handle (HANDLE thread_handle, gboolean close_handle);
 #define LOCK_THREAD(thread) lock_thread((thread))
 #define UNLOCK_THREAD(thread) unlock_thread((thread))
 
-typedef union {
-	gint32 ival;
-	gfloat fval;
-} IntFloatUnion;
-
-typedef union {
-	gint64 ival;
-	gdouble fval;
-} LongDoubleUnion;
-
 typedef struct _StaticDataFreeList StaticDataFreeList;
 struct _StaticDataFreeList {
 	StaticDataFreeList *next;
