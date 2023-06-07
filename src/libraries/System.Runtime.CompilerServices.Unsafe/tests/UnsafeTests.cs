@@ -1219,6 +1219,8 @@ namespace System.Runtime.CompilerServices
             Assert.Equal(s, Unsafe.BitCast<S4, float>(*(S4*)misalignedPtr));
             *(S8*)misalignedPtr = s8;
             Assert.Equal(d, Unsafe.BitCast<S8, double>(*(S8*)misalignedPtr));
+
+            NativeMemory.AlignedFree(misalignedPtr - 1);
         }
     }
 
