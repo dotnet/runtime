@@ -366,6 +366,34 @@ ULONG EventPipeWriteEventGCSuspendEEBegin_V1(
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
 );
+BOOL EventPipeEventEnabledDecreaseMemoryPressure(void);
+ULONG EventPipeWriteEventDecreaseMemoryPressure(
+    const unsigned __int64  BytesFreed,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledFinalizeObject(void);
+ULONG EventPipeWriteEventFinalizeObject(
+    const void*  TypeID,
+    const void*  ObjectID,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledGCFinalizersBegin_V1(void);
+ULONG EventPipeWriteEventGCFinalizersBegin_V1(
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledGCFinalizersEnd_V1(void);
+ULONG EventPipeWriteEventGCFinalizersEnd_V1(
+    const unsigned int  Count,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
 BOOL EventPipeEventEnabledThreadPoolWorkerThreadStart(void);
 ULONG EventPipeWriteEventThreadPoolWorkerThreadStart(
     const unsigned int  ActiveWorkerThreadCount,

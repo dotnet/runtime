@@ -704,6 +704,62 @@ inline ULONG FireEtwGCSuspendEEBegin_V1(
     return status;
 }
 
+inline BOOL EventEnabledDecreaseMemoryPressure(void) {return EventPipeEventEnabledDecreaseMemoryPressure();}
+
+inline ULONG FireEtwDecreaseMemoryPressure(
+    const unsigned __int64  BytesFreed,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventDecreaseMemoryPressure(BytesFreed,ClrInstanceID,ActivityId,RelatedActivityId);
+    //status &= FireEtXplatDecreaseMemoryPressure(BytesFreed,ClrInstanceID);
+    return status;
+}
+
+inline BOOL EventEnabledFinalizeObject(void) {return EventPipeEventEnabledFinalizeObject();}// || EventXplatEnabledFinalizeObject();}
+
+inline ULONG FireEtwFinalizeObject(
+    const void*  TypeID,
+    const void*  ObjectID,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventFinalizeObject(TypeID,ObjectID,ClrInstanceID,ActivityId,RelatedActivityId);
+    //status &= FireEtXplatFinalizeObject(TypeID,ObjectID,ClrInstanceID);
+    return status;
+}
+
+inline BOOL EventEnabledGCFinalizersBegin_V1(void) {return EventPipeEventEnabledGCFinalizersBegin_V1();}// || EventXplatEnabledGCFinalizersBegin_V1();}
+
+inline ULONG FireEtwGCFinalizersBegin_V1(
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventGCFinalizersBegin_V1(ClrInstanceID,ActivityId,RelatedActivityId);
+//    status &= FireEtXplatGCFinalizersBegin_V1(ClrInstanceID);
+    return status;
+}
+
+inline BOOL EventEnabledGCFinalizersEnd_V1(void) {return EventPipeEventEnabledGCFinalizersEnd_V1();}// || EventXplatEnabledGCFinalizersEnd_V1();}
+
+inline ULONG FireEtwGCFinalizersEnd_V1(
+    const unsigned int  Count,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventGCFinalizersEnd_V1(Count,ClrInstanceID,ActivityId,RelatedActivityId);
+    //status &= FireEtXplatGCFinalizersEnd_V1(Count,ClrInstanceID);
+    return status;
+}
+
 inline BOOL EventEnabledThreadPoolWorkerThreadStart(void) {return EventPipeEventEnabledThreadPoolWorkerThreadStart();}// || EventXplatEnabledThreadPoolWorkerThreadStart();}
 
 inline uint32_t FireEtwThreadPoolWorkerThreadStart(

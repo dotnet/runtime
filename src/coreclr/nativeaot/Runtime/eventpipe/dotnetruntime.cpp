@@ -130,6 +130,10 @@ EventPipeEvent *EventPipeEventGCRestartEEEnd_V1 = nullptr;
 EventPipeEvent *EventPipeEventGCRestartEEBegin_V1 = nullptr;
 EventPipeEvent *EventPipeEventGCSuspendEEEnd_V1 = nullptr;
 EventPipeEvent *EventPipeEventGCSuspendEEBegin_V1 = nullptr;
+EventPipeEvent *EventPipeEventDecreaseMemoryPressure = nullptr;
+EventPipeEvent *EventPipeEventFinalizeObject = nullptr;
+EventPipeEvent *EventPipeEventGCFinalizersBegin_V1 = nullptr;
+EventPipeEvent *EventPipeEventGCFinalizersEnd_V1 = nullptr;
 EventPipeEvent *EventPipeEventThreadPoolWorkerThreadStart = nullptr;
 EventPipeEvent *EventPipeEventThreadPoolWorkerThreadStop = nullptr;
 EventPipeEvent *EventPipeEventThreadPoolWorkerThreadWait = nullptr;
@@ -1823,6 +1827,163 @@ ULONG EventPipeWriteEventGCSuspendEEBegin_V1(
     return ERROR_SUCCESS;
 }
 
+BOOL EventPipeEventEnabledDecreaseMemoryPressure(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventDecreaseMemoryPressure);
+}
+
+ULONG EventPipeWriteEventDecreaseMemoryPressure(
+    const unsigned __int64 BytesFreed,
+    const unsigned short ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledDecreaseMemoryPressure())
+        return ERROR_SUCCESS;
+
+    size_t size = 32;
+    BYTE stackBuffer[32];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(BytesFreed, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventDecreaseMemoryPressure, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledFinalizeObject(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventFinalizeObject);
+}
+
+ULONG EventPipeWriteEventFinalizeObject(
+    const void* TypeID,
+    const void* ObjectID,
+    const unsigned short ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledFinalizeObject())
+        return ERROR_SUCCESS;
+
+    size_t size = 32;
+    BYTE stackBuffer[32];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(TypeID, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ObjectID, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventFinalizeObject, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledGCFinalizersBegin_V1(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCFinalizersBegin_V1);
+}
+
+ULONG EventPipeWriteEventGCFinalizersBegin_V1(
+    const unsigned short ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledGCFinalizersBegin_V1())
+        return ERROR_SUCCESS;
+
+    size_t size = 32;
+    BYTE stackBuffer[32];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventGCFinalizersBegin_V1, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledGCFinalizersEnd_V1(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCFinalizersEnd_V1);
+}
+
+ULONG EventPipeWriteEventGCFinalizersEnd_V1(
+    const unsigned int Count,
+    const unsigned short ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledGCFinalizersEnd_V1())
+        return ERROR_SUCCESS;
+
+    size_t size = 32;
+    BYTE stackBuffer[32];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(Count, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventGCFinalizersEnd_V1, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+    return ERROR_SUCCESS;
+}
+
+
 BOOL EventPipeEventEnabledThreadPoolWorkerThreadStart(void)
 {
     return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolWorkerThreadStart);
@@ -2295,6 +2456,7 @@ ULONG EventPipeWriteEventThreadPoolIOPack(
     return ERROR_SUCCESS;
 }
 
+
 typedef struct _MCGEN_TRACE_CONTEXT
 {
     TRACEHANDLE            RegistrationHandle;
@@ -2472,6 +2634,10 @@ void InitDotNETRuntime(void)
     EventPipeEventGCRestartEEBegin_V1 = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,7,1,1,EP_EVENT_LEVEL_INFORMATIONAL,false);
     EventPipeEventGCSuspendEEEnd_V1 = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,8,1,1,EP_EVENT_LEVEL_INFORMATIONAL,false);
     EventPipeEventGCSuspendEEBegin_V1 = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,9,1,1,EP_EVENT_LEVEL_INFORMATIONAL,false);
+    EventPipeEventDecreaseMemoryPressure = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,201,1,0,EP_EVENT_LEVEL_VERBOSE,true);
+    EventPipeEventFinalizeObject = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,29,1,0,EP_EVENT_LEVEL_VERBOSE,false);
+    EventPipeEventGCFinalizersBegin_V1 = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,14,1,1,EP_EVENT_LEVEL_INFORMATIONAL,false);
+    EventPipeEventGCFinalizersEnd_V1 = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,13,1,1,EP_EVENT_LEVEL_INFORMATIONAL,false);
     EventPipeEventThreadPoolWorkerThreadStart = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,50,65536,0,EP_EVENT_LEVEL_INFORMATIONAL,false);
     EventPipeEventThreadPoolWorkerThreadStop = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,51,65536,0,EP_EVENT_LEVEL_INFORMATIONAL,false);
     EventPipeEventThreadPoolWorkerThreadWait = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,57,65536,0,EP_EVENT_LEVEL_INFORMATIONAL,false);

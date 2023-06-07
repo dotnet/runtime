@@ -481,3 +481,25 @@ ULONG EventPipeWriteEventGCRestartEEEnd_V1(
 {
     return 0;
 }
+
+ULONG EventPipeWriteEventDecreaseMemoryPressure(
+    const unsigned __int64  BytesFreed,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId
+)
+{
+    return 0;
+}
+
+ULONG EventPipeWriteEventFinalizeObject(
+    const void*  TypeID,
+    const void*  ObjectID,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId
+)
+{
+    return 0;
+}
+
