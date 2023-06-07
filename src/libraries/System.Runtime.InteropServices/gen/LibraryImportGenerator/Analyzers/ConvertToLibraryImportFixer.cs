@@ -67,7 +67,7 @@ namespace Microsoft.Interop.Analyzers
             return optionsBuilder.ToImmutable();
         }
 
-        protected override IEnumerable<ConvertToSourceGeneratedInteropDocumentCodeAction> CreateAllCodeFixesForOptions(Document document, SyntaxNode node, ImmutableDictionary<string, Option> options)
+        protected override IEnumerable<ConvertToSourceGeneratedInteropFix> CreateAllFixesForDiagnosticOptions(SyntaxNode node, ImmutableDictionary<string, Option> options)
         {
             bool warnForAdditionalWork = options.TryGetValue(Option.MayRequireAdditionalWork, out Option mayRequireAdditionalWork) && mayRequireAdditionalWork is Option.Bool(true);
 
@@ -76,10 +76,7 @@ namespace Microsoft.Interop.Analyzers
             // We don't want the CharSet option contributing to the "selected options" set for the fix, so we remove it here.
             var selectedOptions = options.Remove(CharSetOption);
 
-            yield return new ConvertToSourceGeneratedInteropDocumentCodeAction(
-                SR.ConvertToLibraryImport,
-                selectedOptions,
-                document,
+            yield return new ConvertToSourceGeneratedInteropFix(
                 (editor, ct) =>
                     ConvertToLibraryImport(
                         editor,
@@ -87,8 +84,7 @@ namespace Microsoft.Interop.Analyzers
                         warnForAdditionalWork,
                         null,
                         ct),
-                BaseEquivalenceKey
-                );
+                selectedOptions);
 
             if (charSet is not null)
             {
@@ -99,10 +95,7 @@ namespace Microsoft.Interop.Analyzers
                 // to enable developers to pick which variant they mean (since they could explicitly decide they want one or the other)
                 if (charSet is CharSet.None or CharSet.Ansi or CharSet.Auto)
                 {
-                    yield return new ConvertToSourceGeneratedInteropDocumentCodeAction(
-                        SR.Format(SR.ConvertToLibraryImportWithSuffix, 'A'),
-                        selectedOptions.Add(SelectedSuffixOption, new Option.String("A")),
-                        document,
+                    yield return new ConvertToSourceGeneratedInteropFix(
                         (editor, ct) =>
                             ConvertToLibraryImport(
                                 editor,
@@ -110,14 +103,11 @@ namespace Microsoft.Interop.Analyzers
                                 warnForAdditionalWork,
                                 'A',
                                 ct),
-                        BaseEquivalenceKey);
+                        selectedOptions.Add(SelectedSuffixOption, new Option.String("A")));
                 }
                 if (charSet is CharSet.Unicode or CharSet.Auto)
                 {
-                    yield return new ConvertToSourceGeneratedInteropDocumentCodeAction(
-                        SR.Format(SR.ConvertToLibraryImportWithSuffix, 'W'),
-                        selectedOptions.Add(SelectedSuffixOption, new Option.String("W")),
-                        document,
+                    yield return new ConvertToSourceGeneratedInteropFix(
                         (editor, ct) =>
                             ConvertToLibraryImport(
                                 editor,
@@ -125,27 +115,22 @@ namespace Microsoft.Interop.Analyzers
                                 warnForAdditionalWork,
                                 'W',
                                 ct),
-                        BaseEquivalenceKey);
+                        selectedOptions.Add(SelectedSuffixOption, new Option.String("W")));
                 }
             }
         }
 
-        protected override ConvertToSourceGeneratedInteropDocumentCodeAction CreateFixForSelectedOptions(Document document, SyntaxNode node, ImmutableDictionary<string, Option> selectedOptions)
+        protected override Func<DocumentEditor, CancellationToken, Task> CreateFixForSelectedOptions(SyntaxNode node, ImmutableDictionary<string, Option> selectedOptions)
         {
             bool warnForAdditionalWork = selectedOptions.TryGetValue(Option.MayRequireAdditionalWork, out Option mayRequireAdditionalWork) && mayRequireAdditionalWork is Option.Bool(true);
             char? suffix = selectedOptions.TryGetValue(SelectedSuffixOption, out Option selectedSuffixOption) && selectedSuffixOption is Option.String(string selectedSuffix) ? selectedSuffix[0] : null;
-            return new ConvertToSourceGeneratedInteropDocumentCodeAction(
-                GetDiagnosticTitle(selectedOptions),
-                selectedOptions,
-                document,
-                (editor, ct) =>
-                    ConvertToLibraryImport(
-                        editor,
-                        node,
-                        warnForAdditionalWork,
-                        suffix,
-                        ct),
-                BaseEquivalenceKey);
+            return (editor, ct) =>
+                ConvertToLibraryImport(
+                    editor,
+                    node,
+                    warnForAdditionalWork,
+                    suffix,
+                    ct);
         }
 
         private static string AppendSuffix(string entryPoint, char? entryPointSuffix)

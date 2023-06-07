@@ -2,14 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using Microsoft.CodeAnalysis.Editing;
@@ -41,14 +38,9 @@ namespace Microsoft.Interop.Analyzers
             return Task.CompletedTask;
         }
 
-        protected override ConvertToSourceGeneratedInteropDocumentCodeAction CreateFixForSelectedOptions(Document document, SyntaxNode node, ImmutableDictionary<string, Option> selectedOptions)
+        protected override Func<DocumentEditor, CancellationToken, Task> CreateFixForSelectedOptions(SyntaxNode node, ImmutableDictionary<string, Option> selectedOptions)
         {
-            return new ConvertToSourceGeneratedInteropDocumentCodeAction(
-                SR.AddGeneratedComClassAttributeTitle,
-                selectedOptions,
-                document,
-                (editor, ct) => AddGeneratedComClassAsync(editor, node),
-                BaseEquivalenceKey);
+            return (editor, _) => AddGeneratedComClassAsync(editor, node);
         }
 
         protected override string GetDiagnosticTitle(ImmutableDictionary<string, Option> selectedOptions)

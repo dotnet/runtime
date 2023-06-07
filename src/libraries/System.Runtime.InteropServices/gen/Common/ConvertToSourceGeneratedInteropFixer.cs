@@ -23,13 +23,13 @@ namespace Microsoft.Interop.Analyzers
 
         protected abstract string BaseEquivalenceKey { get; }
 
-        protected virtual IEnumerable<ConvertToSourceGeneratedInteropDocumentCodeAction> CreateAllCodeFixesForOptions(Document document, SyntaxNode node, ImmutableDictionary<string, Option> options)
+        protected virtual IEnumerable<ConvertToSourceGeneratedInteropFix> CreateAllFixesForDiagnosticOptions(SyntaxNode node, ImmutableDictionary<string, Option> options)
         {
             // By default, we only have one fix for the options specified from the diagnostic.
-            yield return CreateFixForSelectedOptions(document, node, options);
+            yield return new ConvertToSourceGeneratedInteropFix(CreateFixForSelectedOptions(node, options), options);
         }
 
-        protected abstract ConvertToSourceGeneratedInteropDocumentCodeAction CreateFixForSelectedOptions(Document document, SyntaxNode node, ImmutableDictionary<string, Option> selectedOptions);
+        protected abstract Func<DocumentEditor, CancellationToken, Task> CreateFixForSelectedOptions(SyntaxNode node, ImmutableDictionary<string, Option> selectedOptions);
 
         protected abstract string GetDiagnosticTitle(ImmutableDictionary<string, Option> selectedOptions);
 
@@ -95,13 +95,13 @@ namespace Microsoft.Interop.Analyzers
 
         protected abstract ImmutableDictionary<string, Option> ParseOptionsFromDiagnostic(Diagnostic diagnostic);
 
-        private static async Task<Solution> ApplyActionAndEnableUnsafe(Solution solution, ConvertToSourceGeneratedInteropDocumentCodeAction documentBasedFix, CancellationToken ct)
+        private static async Task<Solution> ApplyActionAndEnableUnsafe(Solution solution, DocumentId documentId, Func<DocumentEditor, CancellationToken, Task> documentBasedFix, CancellationToken ct)
         {
             var editor = new SolutionEditor(solution);
-            var docEditor = await editor.GetDocumentEditorAsync(documentBasedFix.Document.Id, ct).ConfigureAwait(false);
-            await documentBasedFix.DocumentEditAction(docEditor, ct).ConfigureAwait(false);
+            var docEditor = await editor.GetDocumentEditorAsync(documentId, ct).ConfigureAwait(false);
+            await documentBasedFix(docEditor, ct).ConfigureAwait(false);
 
-            var docProjectId = documentBasedFix.Document.Project.Id;
+            var docProjectId = documentId.ProjectId;
             var updatedSolution = editor.GetChangedSolution();
             return AddUnsafe(updatedSolution, updatedSolution.GetProject(docProjectId));
         }
@@ -120,42 +120,60 @@ namespace Microsoft.Interop.Analyzers
             foreach (Diagnostic diagnostic in context.Diagnostics)
             {
                 var options = ParseOptionsFromDiagnostic(diagnostic);
-                foreach (var fix in CreateAllCodeFixesForOptions(doc, node, options))
+                foreach (var fix in CreateAllFixesForDiagnosticOptions(node, options))
                 {
                     if (enableUnsafe)
                     {
+                        var selectedOptions = fix.SelectedOptions.Add(Option.AllowUnsafe, new Option.Bool(true));
+
                         context.RegisterCodeFix(
                             new ConvertToSourceGeneratedInteropSolutionCodeAction(
-                                GetDiagnosticTitle(fix.Options),
-                                fix.Options.Add(Option.AllowUnsafe, new Option.Bool(true)),
+                                GetDiagnosticTitle(selectedOptions),
+                                selectedOptions,
                                 doc.Project.Solution,
-                                (solution, ct) => ApplyActionAndEnableUnsafe(solution, fix, ct),
+                                (solution, ct) => ApplyActionAndEnableUnsafe(solution, doc.Id, fix.ApplyFix, ct),
                                 BaseEquivalenceKey),
                             diagnostic);
                     }
                     else
                     {
                         context.RegisterCodeFix(
-                            fix,
+                            new ConvertToSourceGeneratedInteropDocumentCodeAction(
+                                GetDiagnosticTitle(fix.SelectedOptions),
+                                fix.SelectedOptions,
+                                doc,
+                                fix.ApplyFix,
+                                BaseEquivalenceKey),
                             diagnostic);
                     }
                 }
             }
         }
 
-        protected sealed class ConvertToSourceGeneratedInteropDocumentCodeAction : CodeAction
+        private abstract class ConvertToSourceGeneratedInteropCodeAction : CodeAction
         {
-            public ConvertToSourceGeneratedInteropDocumentCodeAction(string title, ImmutableDictionary<string, Option> options, Document document, Func<DocumentEditor, CancellationToken, Task> applyDocumentEdit, string baseEquivalenceKey)
+            public ConvertToSourceGeneratedInteropCodeAction(string title, ImmutableDictionary<string, Option> options, string baseEquivalenceKey)
             {
                 Title = title;
                 Options = options;
-                Document = document;
-                DocumentEditAction = applyDocumentEdit;
                 EquivalenceKey = Option.CreateEquivalenceKeyFromOptions(baseEquivalenceKey, options);
             }
 
-            public override string Title { get; }
+            public sealed override string Title { get; }
+
             public ImmutableDictionary<string, Option> Options { get; }
+
+            public sealed override string EquivalenceKey { get; }
+        }
+
+        private sealed class ConvertToSourceGeneratedInteropDocumentCodeAction : ConvertToSourceGeneratedInteropCodeAction
+        {
+            public ConvertToSourceGeneratedInteropDocumentCodeAction(string title, ImmutableDictionary<string, Option> options, Document document, Func<DocumentEditor, CancellationToken, Task> applyDocumentEdit, string baseEquivalenceKey)
+                : base(title, options, baseEquivalenceKey)
+            {
+                Document = document;
+                DocumentEditAction = applyDocumentEdit;
+            }
             public Document Document { get; }
             public Func<DocumentEditor, CancellationToken, Task> DocumentEditAction { get; }
 
@@ -167,23 +185,17 @@ namespace Microsoft.Interop.Analyzers
 
                 return editor.GetChangedDocument();
             }
-
-            public override string? EquivalenceKey { get; }
         }
 
-        private sealed class ConvertToSourceGeneratedInteropSolutionCodeAction : CodeAction
+        private sealed class ConvertToSourceGeneratedInteropSolutionCodeAction : ConvertToSourceGeneratedInteropCodeAction
         {
             public ConvertToSourceGeneratedInteropSolutionCodeAction(string title, ImmutableDictionary<string, Option> options, Solution solution, Func<Solution, CancellationToken, Task<Solution>> applySolutionEdit, string baseEquivalenceKey)
+                : base(title, options, baseEquivalenceKey)
             {
-                Title = title;
-                Options = options;
                 Solution = solution;
                 SolutionEditAction = applySolutionEdit;
-                EquivalenceKey = Option.CreateEquivalenceKeyFromOptions(baseEquivalenceKey, options);
             }
 
-            public override string Title { get; }
-            public ImmutableDictionary<string, Option> Options { get; }
             public Solution Solution { get; }
             public Func<Solution, CancellationToken, Task<Solution>> SolutionEditAction { get; }
 
@@ -191,9 +203,9 @@ namespace Microsoft.Interop.Analyzers
             {
                 return await SolutionEditAction(Solution, cancellationToken).ConfigureAwait(false);
             }
-
-            public override string? EquivalenceKey { get; }
         }
+
+        protected record struct ConvertToSourceGeneratedInteropFix(Func<DocumentEditor, CancellationToken, Task> ApplyFix, ImmutableDictionary<string, Option> SelectedOptions);
 
         private sealed class CustomFixAllProvider : FixAllProvider
         {
@@ -233,9 +245,9 @@ namespace Microsoft.Interop.Analyzers
 
                             SyntaxNode node = root.FindNode(diagnostic.Location.SourceSpan);
 
-                            var documentBasedFix = codeFixProvider.CreateFixForSelectedOptions(editor.OriginalDocument, node, options);
+                            var documentBasedFix = codeFixProvider.CreateFixForSelectedOptions(node, options);
 
-                            await documentBasedFix.DocumentEditAction(editor, ct).ConfigureAwait(false);
+                            await documentBasedFix(editor, ct).ConfigureAwait(false);
 
                             // Record this project as a project we need to allow unsafe blocks in.
                             projectsToAddUnsafe.Add(solutionEditor.OriginalSolution.GetDocument(documentId).Project);
