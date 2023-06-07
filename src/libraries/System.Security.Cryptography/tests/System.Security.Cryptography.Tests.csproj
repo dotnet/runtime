@@ -251,7 +251,6 @@
     <Compile Include="ECDsaTests.cs" />
     <Compile Include="ECPemExportTests.cs" />
     <Compile Include="FixedTimeEqualsTests.cs" />
-    <Compile Include="HashAlgorithmNamesTests.cs" />
     <Compile Include="HashAlgorithmNameTests.cs" />
     <Compile Include="HashAlgorithmTest.cs" />
     <Compile Include="HashAlgorithmTestDriver.cs" />
