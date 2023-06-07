@@ -3478,8 +3478,8 @@ namespace Internal.JitInterface
 
         private void allocMem(ref AllocMemArgs args)
         {
-            int codeAlignment = 1;
-            int roDataAlignment = 1;
+            int codeAlignment = 4;
+            int roDataAlignment = 4;
 
             if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN) != 0)
             {
@@ -3497,7 +3497,7 @@ namespace Internal.JitInterface
             {
                 roDataAlignment = 8;
             }
-            else if (args.roDataSize < 8)
+            else
             {
                 roDataAlignment = PointerSize;
             }
@@ -3509,6 +3509,10 @@ namespace Internal.JitInterface
             else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
             {
                 codeAlignment = 16;
+            }
+            else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_8BYTE_ALIGN) != 0)
+            {
+                codeAlignment = 8;
             }
 
             codeAlignment = Math.Max(codeAlignment, _compilation.NodeFactory.Target.MinimumFunctionAlignment);

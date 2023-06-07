@@ -12165,6 +12165,10 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
     {
         roDataAlignment = 16;
     }
+    else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_8BYTE_ALIGN)!= 0)
+    {
+        roDataAlignment = 8;
+    }
     else if (pArgs->roDataSize >= 8)
     {
         roDataAlignment = 8;
@@ -12180,6 +12184,10 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
         else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
         {
             codeAlignment = 16;
+        }
+        else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_8BYTE_ALIGN) != 0)
+        {
+            codeAlignment = 8;
         }
         totalSize.AlignUp(codeAlignment);
 

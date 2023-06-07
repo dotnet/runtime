@@ -6636,7 +6636,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     assert((dataSection::MIN_DATA_ALIGN <= dataAlignment) && (dataAlignment <= dataSection::MAX_DATA_ALIGN) &&
            isPow2(dataAlignment));
 
-    uint32_t codeAlignment = TARGET_POINTER_SIZE;
+    uint32_t codeAlignment = 4; // The minimum alignment of code on all platforms is 4 bytes. The VM/Runtime
+                                // will always use at least pointer size, but R2R images may pack code more densely.
 
 #ifdef TARGET_X86
     //
@@ -6689,8 +6690,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     }
 #endif
 
-    // Note that we don't support forcing code alignment of 8 bytes on 32-bit platforms; an omission?
-    assert((TARGET_POINTER_SIZE <= codeAlignment) && (codeAlignment <= 32) && isPow2(codeAlignment));
+    // We support requesting alignment from 4 -> 32 bytes on all platforms. The VM will provide an alignment of at least TARGET_POINTER_SIZE,
+    // but crossgen2 will provide the exactly requested alignment.
+    assert((4 <= codeAlignment) && (codeAlignment <= 32) && isPow2(codeAlignment));
 
     CorJitAllocMemFlag allocMemFlagCodeAlign = CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN;
     if (codeAlignment == 32)
@@ -6700,6 +6702,10 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     else if (codeAlignment == 16)
     {
         allocMemFlagCodeAlign = CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN;
+    }
+    else if (codeAlignment == 8)
+    {
+        allocMemFlagCodeAlign = CORJIT_ALLOCMEM_FLG_8BYTE_ALIGN;
     }
 
     CorJitAllocMemFlag allocMemFlagDataAlign = static_cast<CorJitAllocMemFlag>(0);
@@ -6752,6 +6758,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     {
         assert(((size_t)codeBlock & 15) == 0);
     }
+    if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_8BYTE_ALIGN) != 0)
+    {
+        assert(((size_t)codeBlock & 7) == 0);
+    }
+    assert(((size_t)codeBlock & 3) == 0); // A minimum alignment of 4 bytes is always provided
 
     if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN) != 0)
     {
@@ -6769,6 +6780,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     {
         assert(((size_t)consBlock & 7) == 0);
     }
+
+    assert(((size_t)consBlock & 3) == 0); // A minimum alignment of 4 bytes is always provided
 #endif
 
     // if (emitConsDsc.dsdOffs)

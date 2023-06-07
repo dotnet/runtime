@@ -110,6 +110,8 @@ enum CorJitResult
 /*****************************************************************************/
 // These are flags passed to ICorJitInfo::allocMem
 // to guide the memory allocation for the code, readonly data, and read-write data
+// The default will align at either 4 or 8 bytes depending on platform and compilation strategy
+// If an 8 byte alignment is required, then it must be specified
 enum CorJitAllocMemFlag
 {
     CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN = 0x00000000, // The code will use the normal alignment
@@ -119,6 +121,7 @@ enum CorJitAllocMemFlag
     CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN = 0x00000008, // The read-only data will be 32-byte aligned
     CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN = 0x00000010, // The read-only data will be 64-byte aligned
     CORJIT_ALLOCMEM_FLG_RODATA_8BYTE_ALIGN = 0x00000020, // The read-only data will be 8-byte aligned
+    CORJIT_ALLOCMEM_FLG_8BYTE_ALIGN   = 0x00000040, // The code will be 8-byte aligned
 };
 
 inline CorJitAllocMemFlag operator |(CorJitAllocMemFlag a, CorJitAllocMemFlag b)

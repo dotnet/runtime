@@ -1617,6 +1617,10 @@ void MyICJI::allocMem(AllocMemArgs* pArgs)
     {
          codeAlignment = 16;
     }
+    else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_8BYTE_ALIGN) != 0)
+    {
+         codeAlignment = 8;
+    }
     hotCodeAlignedSize = ALIGN_UP_SPMI(hotCodeAlignedSize, codeAlignment);
     hotCodeAlignedSize = hotCodeAlignedSize + (codeAlignment - sizeof(void*));
     pArgs->hotCodeBlock      = jitInstance->mc->cr->allocateMemory(hotCodeAlignedSize);
@@ -1643,6 +1647,10 @@ void MyICJI::allocMem(AllocMemArgs* pArgs)
         else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
         {
             roDataAlignment = 16;
+        }
+        else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_8BYTE_ALIGN) != 0)
+        {
+            roDataAlignment = 8;
         }
         else if (pArgs->roDataSize >= 8)
         {

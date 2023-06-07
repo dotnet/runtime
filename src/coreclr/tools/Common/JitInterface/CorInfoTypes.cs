@@ -745,6 +745,7 @@ namespace Internal.JitInterface
         CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN = 0x00000008, // The read-only data will be 32-byte aligned
         CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN = 0x00000010, // The read-only data will be 64-byte aligned
         CORJIT_ALLOCMEM_FLG_RODATA_8BYTE_ALIGN = 0x00000020, // The read-only data will be 8-byte aligned
+        CORJIT_ALLOCMEM_FLG_8BYTE_ALIGN   = 0x00000040, // The code will be 8-byte aligned
     }
 
     public enum CorJitFuncKind

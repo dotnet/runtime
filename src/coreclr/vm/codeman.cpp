@@ -3094,6 +3094,8 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
 
     unsigned alignment = CODE_SIZE_ALIGN;
 
+    _ASSERTE(CODE_SIZE_ALIGN >= 8); // In JIT scenarios we always align to at least 8 bytes. If we stop doing so, we need to check CORJIT_ALLOCMEM_FLG_8BYTE_ALIGN.
+
     if ((flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
     {
         alignment = max(alignment, 32);
