@@ -30,7 +30,7 @@ namespace ILCompiler
             rootProvider.AddCompilationRoot(new RuntimeConfigurationBlobNode(_blobName, _runtimeOptions), "Runtime configuration");
         }
 
-        private sealed class RuntimeConfigurationBlobNode : DehydratableObjectNode, ISymbolDefinitionNode
+        private sealed class RuntimeConfigurationBlobNode : ObjectNode, ISymbolDefinitionNode
         {
             private readonly string _blobName;
             private readonly IReadOnlyCollection<string> _runtimeOptions;
@@ -54,11 +54,12 @@ namespace ILCompiler
                 sb.Append(_blobName);
             }
 
-            protected override ObjectNodeSection GetDehydratedSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
+            public override ObjectNodeSection GetSection(NodeFactory factory) =>
+                factory.Target.IsWindows ? ObjectNodeSection.ReadOnlyDataSection : ObjectNodeSection.DataSection;
 
             protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-            protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)
+            public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
             {
                 var builder = new ObjectDataBuilder(factory.TypeSystemContext.Target, relocsOnly);
                 builder.AddSymbol(this);
