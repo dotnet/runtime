@@ -106,25 +106,25 @@ inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
 #endif // which host OS
 
 const BYTE genTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) sz,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) sz,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genTypeAlignments[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) al,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) al,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genTypeStSzs[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) st,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) st,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genActualTypes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) jitType,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) jitType,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -241,7 +241,6 @@ unsigned argTotalDeferred;
 unsigned argTotalConst;
 
 unsigned argTotalObjPtr;
-unsigned argTotalGTF_ASGinArgs;
 
 unsigned argMaxTempsPerMethod;
 
@@ -529,11 +528,11 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
     switch (structSize)
     {
         case 1:
-            useType = TYP_BYTE;
+            useType = TYP_UBYTE;
             break;
 
         case 2:
-            useType = TYP_SHORT;
+            useType = TYP_USHORT;
             break;
 
 #if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI)
@@ -1330,7 +1329,7 @@ void Compiler::compStartup()
     emitter::emitInit();
 
     // Static vars of ValueNumStore
-    ValueNumStore::InitValueNumStoreStatics();
+    ValueNumStore::ValidateValueNumStoreStatics();
 
     compDisplayStaticSizes(jitstdout);
 }
@@ -1919,7 +1918,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compLocallocUsed             = false;
     compLocallocOptimized        = false;
     compQmarkRationalized        = false;
-    compAssignmentRationalized   = false;
     compQmarkUsed                = false;
     compFloatingPointUsed        = false;
 
@@ -2267,6 +2265,10 @@ void Compiler::compSetProcessor()
 // don't actually exist. The JIT is in charge of adding those and ensuring
 // the total sum of flags is still valid.
 #if defined(TARGET_XARCH)
+    // Get the preferred vector bitwidth, rounding down to the nearest multiple of 128-bits
+    uint32_t preferredVectorBitWidth   = (JitConfig.PreferredVectorBitWidth() / 128) * 128;
+    uint32_t preferredVectorByteLength = preferredVectorBitWidth / 8;
+
     if (instructionSetFlags.HasInstructionSet(InstructionSet_SSE))
     {
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
@@ -2283,44 +2285,32 @@ void Compiler::compSetProcessor()
     // the overall JIT implementation, we currently require the entire set of ISAs to be
     // supported and disable AVX512 support otherwise.
 
-    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW_VL) &&
-        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD_VL) &&
-        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ_VL))
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F))
     {
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ));
         assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F));
         assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW_VL));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD_VL));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ_VL));
 
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
-    }
-    else
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI_VL);
 
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI_VL_X64);
-#endif // TARGET_AMD64
+        if ((preferredVectorByteLength == 0) && jitFlags.IsSet(JitFlags::JIT_FLAG_VECTOR512_THROTTLING))
+        {
+            // Some architectures can experience frequency throttling when
+            // executing 512-bit width instructions. To account for this we set the
+            // default preferred vector width to 256-bits in some scenarios. Power
+            // users can override this with `DOTNET_PreferredVectorBitWidth=512` to
+            // allow using such instructions where hardware support is available.
+
+            preferredVectorByteLength = 256 / 8;
+        }
     }
+
+    opts.preferredVectorByteLength = preferredVectorByteLength;
 #elif defined(TARGET_ARM64)
     if (instructionSetFlags.HasInstructionSet(InstructionSet_AdvSimd))
     {
@@ -2849,8 +2839,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitSaveFpLrWithCalleeSavedRegisters = 0;
 #endif // defined(TARGET_ARM64)
 
-    opts.compJitEarlyExpandMDArrays = (JitConfig.JitEarlyExpandMDArrays() != 0);
-
     opts.disAsm       = false;
     opts.disDiffable  = false;
     opts.dspDiffable  = false;
@@ -2968,18 +2956,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (JitConfig.JitOptRepeat().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
         {
             opts.optRepeat = true;
-        }
-
-        // If JitEarlyExpandMDArrays is non-zero, then early MD expansion is enabled.
-        // If JitEarlyExpandMDArrays is zero, then conditionally enable it for functions specified by
-        // JitEarlyExpandMDArraysFilter.
-        if (JitConfig.JitEarlyExpandMDArrays() == 0)
-        {
-            if (JitConfig.JitEarlyExpandMDArraysFilter().contains(info.compMethodHnd, info.compClassHnd,
-                                                                  &info.compMethodInfo->args))
-            {
-                opts.compJitEarlyExpandMDArrays = true;
-            }
         }
     }
 
@@ -3149,7 +3125,25 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     // TBD: Exclude PInvoke stubs
     if (opts.compJitELTHookEnabled)
     {
-        compProfilerMethHnd           = (void*)DummyProfilerELTStub;
+#if defined(DEBUG) // We currently only know if we're running under SuperPMI in DEBUG
+        // We don't want to get spurious SuperPMI asm diffs because profile stress kicks in and we use
+        // the address of `DummyProfilerELTStub` in the JIT binary, without relocation. So just use
+        // a fixed address in this case. It's SuperPMI replay, so the generated code won't be run.
+        if (RunningSuperPmiReplay())
+        {
+#ifdef HOST_64BIT
+            static_assert_no_msg(sizeof(void*) == 8);
+            compProfilerMethHnd = (void*)0x0BADF00DBEADCAFE;
+#else
+            static_assert_no_msg(sizeof(void*) == 4);
+            compProfilerMethHnd = (void*)0x0BADF00D;
+#endif
+        }
+        else
+#endif // DEBUG
+        {
+            compProfilerMethHnd = (void*)DummyProfilerELTStub;
+        }
         compProfilerMethHndIndirected = false;
     }
 
@@ -3409,8 +3403,15 @@ bool Compiler::compJitHaltMethod()
  *    It should reflect the usefulness:overhead ratio.
  */
 
-const LPCWSTR Compiler::s_compStressModeNames[STRESS_COUNT + 1] = {
+const LPCWSTR Compiler::s_compStressModeNamesW[STRESS_COUNT + 1] = {
 #define STRESS_MODE(mode) W("STRESS_") W(#mode),
+
+    STRESS_MODES
+#undef STRESS_MODE
+};
+
+const char* Compiler::s_compStressModeNames[STRESS_COUNT + 1] = {
+#define STRESS_MODE(mode) "STRESS_" #mode,
 
     STRESS_MODES
 #undef STRESS_MODE
@@ -3459,12 +3460,41 @@ bool Compiler::compStressCompile(compStressArea stressArea, unsigned weight)
     {
         if (verbose)
         {
-            printf("\n\n*** JitStress: %ws ***\n\n", s_compStressModeNames[stressArea]);
+            printf("\n\n*** JitStress: %s ***\n\n", s_compStressModeNames[stressArea]);
         }
         compActiveStressModes[stressArea] = 1;
     }
 
     return doStress;
+}
+
+//------------------------------------------------------------------------
+// compStressAreaHash: Get (or compute) a hash code for a stress area.
+//
+// Arguments:
+//   stressArea - stress mode
+//
+// Returns:
+//   A hash code for the specific stress area.
+//
+unsigned Compiler::compStressAreaHash(compStressArea area)
+{
+    static LONG s_hashCodes[STRESS_COUNT];
+    assert(static_cast<unsigned>(area) < ArrLen(s_hashCodes));
+
+    unsigned result = (unsigned)s_hashCodes[area];
+    if (result == 0)
+    {
+        result = HashStringA(s_compStressModeNames[area]);
+        if (result == 0)
+        {
+            result = 1;
+        }
+
+        InterlockedExchange(&s_hashCodes[area], (LONG)result);
+    }
+
+    return result;
 }
 
 //------------------------------------------------------------------------
@@ -3497,7 +3527,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
     // Does user explicitly prevent using this STRESS_MODE through the command line?
     const WCHAR* strStressModeNamesNot = JitConfig.JitStressModeNamesNot();
     if ((strStressModeNamesNot != nullptr) &&
-        (wcsstr(strStressModeNamesNot, s_compStressModeNames[stressArea]) != nullptr))
+        (u16_strstr(strStressModeNamesNot, s_compStressModeNamesW[stressArea]) != nullptr))
     {
         return false;
     }
@@ -3506,7 +3536,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
     const WCHAR* strStressModeNames = JitConfig.JitStressModeNames();
     if (strStressModeNames != nullptr)
     {
-        if (wcsstr(strStressModeNames, s_compStressModeNames[stressArea]) != nullptr)
+        if (u16_strstr(strStressModeNames, s_compStressModeNamesW[stressArea]) != nullptr)
         {
             return true;
         }
@@ -3548,7 +3578,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
 
     // Get a hash which can be compared with 'weight'
     assert(stressArea != 0);
-    const unsigned hash = (info.compMethodHash() ^ stressArea ^ stressLevel) % MAX_STRESS_WEIGHT;
+    const unsigned hash = (info.compMethodHash() ^ compStressAreaHash(stressArea) ^ stressLevel) % MAX_STRESS_WEIGHT;
 
     assert(hash < MAX_STRESS_WEIGHT && weight <= MAX_STRESS_WEIGHT);
     return (hash < weight);
@@ -3982,7 +4012,7 @@ _SetMinOpts:
     fgCanRelocateEHRegions = true;
 }
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
 // Function compRsvdRegCheck:
 //  given a curState to use for calculating the total frame size
 //  it will return true if the REG_OPT_RSVD should be reserved so
@@ -4025,10 +4055,6 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 
     // TODO-ARM64-CQ: update this!
     JITDUMP(" Returning true (ARM64)\n\n");
-    return true; // just always assume we'll need it, for now
-
-#elif defined(TARGET_LOONGARCH64)
-    JITDUMP(" Returning true (LOONGARCH64)\n\n");
     return true; // just always assume we'll need it, for now
 
 #elif defined(TARGET_RISCV64)
@@ -4158,7 +4184,7 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     return false;
 #endif // TARGET_ARM
 }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_ARMARCH || TARGET_RISCV64
 
 //------------------------------------------------------------------------
 // compGetTieringName: get a string describing tiered compilation settings
@@ -4700,8 +4726,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Locals tree list is no longer kept valid.
     fgNodeThreading = NodeThreading::None;
-
-    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
 
     // Apply the type update to implicit byref parameters; also choose (based on address-exposed
     // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
@@ -5257,66 +5281,66 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
         {
             // Loop alignment is disabled for cold blocks
             assert((block->bbFlags & BBF_COLD) == 0);
-            BasicBlock* const loopTop = block->bbNext;
+            BasicBlock* const loopTop              = block->bbNext;
+            bool              isSpecialCallFinally = block->isBBCallAlwaysPairTail();
+            bool              unmarkedLoopAlign    = false;
 
-            // If jmp was not found, then block before the loop start is where align instruction will be added.
-            // There are two special cases:
-            // 1. If the block before the loop start is a retless BBJ_CALLFINALLY with
-            //    FEATURE_EH_CALLFINALLY_THUNKS, we can't add alignment because it will affect reported EH
-            //    region range.
-            // 2. If the previous block is the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair, then we
-            //    can't add alignment because we can't add instructions in that block. In the
-            //    FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the reported EH, as above.
-            //
-            // Currently, we don't align loops for these cases.
-            //
-            if (bbHavingAlign == nullptr)
-            {
-                bool isSpecialCallFinally = block->isBBCallAlwaysPairTail();
 #if FEATURE_EH_CALLFINALLY_THUNKS
-                if (block->bbJumpKind == BBJ_CALLFINALLY)
-                {
-                    // It must be a retless BBJ_CALLFINALLY if we get here.
-                    assert(!block->isBBCallAlwaysPair());
+            if (block->bbJumpKind == BBJ_CALLFINALLY)
+            {
+                // It must be a retless BBJ_CALLFINALLY if we get here.
+                assert(!block->isBBCallAlwaysPair());
 
-                    // In the case of FEATURE_EH_CALLFINALLY_THUNKS, we can't put the align instruction in a retless
-                    // BBJ_CALLFINALLY either, because it alters the "cloned finally" region reported to the VM.
-                    // In the x86 case (the only !FEATURE_EH_CALLFINALLY_THUNKS that supports retless
-                    // BBJ_CALLFINALLY), we allow it.
-                    isSpecialCallFinally = true;
-                }
+                // In the case of FEATURE_EH_CALLFINALLY_THUNKS, we can't put the align instruction in a retless
+                // BBJ_CALLFINALLY either, because it alters the "cloned finally" region reported to the VM.
+                // In the x86 case (the only !FEATURE_EH_CALLFINALLY_THUNKS that supports retless
+                // BBJ_CALLFINALLY), we allow it.
+                isSpecialCallFinally = true;
+            }
 #endif // FEATURE_EH_CALLFINALLY_THUNKS
 
-                if (isSpecialCallFinally)
+            if (isSpecialCallFinally)
+            {
+                // There are two special cases:
+                // 1. If the block before the loop start is a retless BBJ_CALLFINALLY with
+                //    FEATURE_EH_CALLFINALLY_THUNKS, we can't add alignment because it will affect reported EH
+                //    region range.
+                // 2. If the previous block is the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair, then we
+                //    can't add alignment because we can't add instructions in that block. In the
+                //    FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the reported EH, as above.
+                // Currently, we don't align loops for these cases.
+
+                loopTop->unmarkLoopAlign(this DEBUG_ARG("block before loop is special callfinally/always block"));
+                madeChanges       = true;
+                unmarkedLoopAlign = true;
+            }
+            else if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (block->bbNatLoopNum == loopTop->bbNatLoopNum))
+            {
+                // In some odd cases we may see blocks within the loop before we see the
+                // top block of the loop. Just bail on aligning such loops.
+                //
+                loopTop->unmarkLoopAlign(this DEBUG_ARG("loop block appears before top of loop"));
+                madeChanges       = true;
+                unmarkedLoopAlign = true;
+            }
+
+            if (!unmarkedLoopAlign)
+            {
+                if (bbHavingAlign == nullptr)
                 {
-                    loopTop->unmarkLoopAlign(this DEBUG_ARG("block before loop is special callfinally/always block"));
-                    madeChanges = true;
-                }
-                else if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) &&
-                         (block->bbNatLoopNum == loopTop->bbNatLoopNum))
-                {
-                    // In some odd cases we may see blocks within the loop before we see the
-                    // top block of the loop. Just bail on aligning such loops.
-                    //
-                    loopTop->unmarkLoopAlign(this DEBUG_ARG("loop block appears before top of loop"));
-                    madeChanges = true;
-                }
-                else
-                {
+                    // If jmp was not found, then block before the loop start is where align instruction will be added.
+
                     bbHavingAlign = block;
                     JITDUMP("Marking " FMT_BB " before the loop with BBF_HAS_ALIGN for loop at " FMT_BB "\n",
                             block->bbNum, loopTop->bbNum);
                 }
-            }
-            else
-            {
-                JITDUMP("Marking " FMT_BB " that ends with unconditional jump with BBF_HAS_ALIGN for loop at " FMT_BB
-                        "\n",
-                        bbHavingAlign->bbNum, loopTop->bbNum);
-            }
+                else
+                {
+                    JITDUMP("Marking " FMT_BB
+                            " that ends with unconditional jump with BBF_HAS_ALIGN for loop at " FMT_BB "\n",
+                            bbHavingAlign->bbNum, loopTop->bbNum);
+                }
 
-            if (bbHavingAlign != nullptr)
-            {
                 madeChanges = true;
                 bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
             }
@@ -5531,7 +5555,7 @@ void Compiler::generatePatchpointInfo()
     //
     const int totalFrameSize = codeGen->genTotalFrameSize() + TARGET_POINTER_SIZE;
     const int offsetAdjust   = 0;
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     // SP is not manipulated by calls so no frame size adjustment needed.
     // Local Offsets may need adjusting, if FP is at bottom of frame.
     //
@@ -6781,8 +6805,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         {
             frameSizeUpdate = 8;
         }
-#elif defined(TARGET_ARM64)
-        if ((totalFrameSize % 16) != 0)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+        if ((totalFrameSize & 0xf) != 0)
         {
             frameSizeUpdate = 8;
         }

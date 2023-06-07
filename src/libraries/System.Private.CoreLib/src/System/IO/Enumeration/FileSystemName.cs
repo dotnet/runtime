@@ -60,7 +60,7 @@ namespace System.IO.Enumeration
         /// <param name="ignoreCase"><see langword="true" /> to ignore case (default), <see langword="false" /> if the match should be case-sensitive.</param>
         /// <returns><see langword="true" /> if the given expression matches the given name; otherwise, <see langword="false" />.</returns>
         /// <remarks>The syntax of the <paramref name="expression" /> parameter is based on the syntax used by FileSystemWatcher, which is based on [RtlIsNameInExpression](/windows/win32/devnotes/rtlisnameinexpression), which defines the rules for matching DOS wildcards (`'*'`, `'?'`, `'&lt;'`, `'&gt;'`, `'"'`).
-        /// Matching will not correspond to Win32 behavior unless you transform the expression using <see cref="FileSystemName.TranslateWin32Expression(string)" />.</remarks>
+        /// Matching will not correspond to Win32 behavior unless you transform the expression using <see cref="TranslateWin32Expression(string)" />.</remarks>
         public static bool MatchesWin32Expression(ReadOnlySpan<char> expression, ReadOnlySpan<char> name, bool ignoreCase = true)
         {
             return MatchPattern(expression, name, ignoreCase, useExtendedWildcards: true);

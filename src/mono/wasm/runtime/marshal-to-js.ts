@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { createPromiseController, assertIsControllablePromise, getPromiseController } from "./promise-controller";
 import cwraps from "./cwraps";
 import { _lookup_js_owned_object, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, setup_managed_proxy } from "./gc-handles";
-import { Module, runtimeHelpers } from "./globals";
+import { Module, createPromiseController, loaderHelpers, runtimeHelpers } from "./globals";
 import {
     ManagedObject, ManagedError,
     get_arg_gc_handle, get_arg_js_handle, get_arg_type, get_arg_i32, get_arg_f64, get_arg_i52, get_arg_i16, get_arg_u8, get_arg_f32,
@@ -13,10 +12,11 @@ import {
     get_signature_res_type, get_arg_u16, array_element_size, get_string_root,
     ArraySegment, Span, MemoryViewType, get_signature_arg3_type, get_arg_i64_big, get_arg_intptr, get_arg_element_type, JavaScriptMarshalerArgSize
 } from "./marshal";
-import { conv_string_root } from "./strings";
-import { mono_assert, JSHandleNull, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToJs, MarshalerType } from "./types";
+import { monoStringToString } from "./strings";
+import { JSHandleNull, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToJs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
 import { get_marshaler_to_cs_by_type } from "./marshal-to-cs";
+import { localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
 
 export function initialize_marshalers_to_js(): void {
     if (cs_to_js_marshalers.size == 0) {
@@ -218,19 +218,17 @@ export function marshal_task_to_js(arg: JSMarshalerArgument, _?: MarshalerType, 
     }
 
     const js_handle = get_arg_js_handle(arg);
-    // console.log("_marshal_task_to_js A" + js_handle);
     if (js_handle == JSHandleNull) {
         // this is already resolved void
         return new Promise((resolve) => resolve(undefined));
     }
     const promise = mono_wasm_get_jsobj_from_js_handle(js_handle);
     mono_assert(!!promise, () => `ERR28: promise not found for js_handle: ${js_handle} `);
-    assertIsControllablePromise<any>(promise);
-    const promise_control = getPromiseController(promise);
+    loaderHelpers.assertIsControllablePromise<any>(promise);
+    const promise_control = loaderHelpers.getPromiseController(promise);
 
     const orig_resolve = promise_control.resolve;
     promise_control.resolve = (argInner: JSMarshalerArgument) => {
-        // console.log("_marshal_task_to_js R" + js_handle);
         const type = get_arg_type(argInner);
         if (type === MarshalerType.None) {
             orig_resolve(null);
@@ -281,8 +279,8 @@ export function mono_wasm_marshal_promise(args: JSMarshalerArguments): void {
         // resolve existing promise
         const promise = mono_wasm_get_jsobj_from_js_handle(js_handle);
         mono_assert(!!promise, () => `ERR25: promise not found for js_handle: ${js_handle} `);
-        assertIsControllablePromise(promise);
-        const promise_control = getPromiseController(promise);
+        loaderHelpers.assertIsControllablePromise(promise);
+        const promise_control = loaderHelpers.getPromiseController(promise);
 
         if (exc_type !== MarshalerType.None) {
             const reason = marshal_exception_to_js(exc);
@@ -304,7 +302,7 @@ export function marshal_string_to_js(arg: JSMarshalerArgument): string | null {
     }
     const root = get_string_root(arg);
     try {
-        const value = conv_string_root(root);
+        const value = monoStringToString(root);
         return value;
     } finally {
         root.release();
@@ -425,15 +423,15 @@ function _marshal_array_to_js_impl(arg: JSMarshalerArgument, element_type: Marsh
         }
     }
     else if (element_type == MarshalerType.Byte) {
-        const sourceView = Module.HEAPU8.subarray(<any>buffer_ptr, buffer_ptr + length);
+        const sourceView = localHeapViewU8().subarray(<any>buffer_ptr, buffer_ptr + length);
         result = sourceView.slice();//copy
     }
     else if (element_type == MarshalerType.Int32) {
-        const sourceView = Module.HEAP32.subarray(buffer_ptr >> 2, (buffer_ptr >> 2) + length);
+        const sourceView = localHeapViewI32().subarray(buffer_ptr >> 2, (buffer_ptr >> 2) + length);
         result = sourceView.slice();//copy
     }
     else if (element_type == MarshalerType.Double) {
-        const sourceView = Module.HEAPF64.subarray(buffer_ptr >> 3, (buffer_ptr >> 3) + length);
+        const sourceView = localHeapViewF64().subarray(buffer_ptr >> 3, (buffer_ptr >> 3) + length);
         result = sourceView.slice();//copy
     }
     else {

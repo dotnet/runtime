@@ -149,9 +149,6 @@ namespace Internal.JitInterface
             ref CORINFO_METHOD_INFO info, uint flags, out IntPtr nativeEntry, out uint codeSize);
 
         [DllImport(JitSupportLibrary)]
-        private static extern uint GetMaxIntrinsicSIMDVectorLength(IntPtr jit, CORJIT_FLAGS* flags);
-
-        [DllImport(JitSupportLibrary)]
         private static extern IntPtr AllocException([MarshalAs(UnmanagedType.LPWStr)]string message, int messageLength);
 
         [DllImport(JitSupportLibrary)]
@@ -2859,7 +2856,7 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private uint getThreadLocalFieldInfo(CORINFO_FIELD_STRUCT_* fld)
+        private uint getThreadLocalFieldInfo(CORINFO_FIELD_STRUCT_* fld, bool isGCType)
 #pragma warning restore CA1822 // Mark members as static
         {
             // Implemented for JIT only for now.
@@ -2868,7 +2865,7 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+        private void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
 #pragma warning restore CA1822 // Mark members as static
         {
             // Implemented for JIT only for now.

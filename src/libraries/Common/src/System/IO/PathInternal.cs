@@ -128,7 +128,7 @@ namespace System.IO
             // We treat "\.." , "\." and "\\" as a relative segment. We want to collapse the first separator past the root presuming
             // the root actually ends in a separator. Otherwise the first segment for RemoveRelativeSegments
             // in cases like "\\?\C:\.\" and "\\?\C:\..\", the first segment after the root will be ".\" and "..\" which is not considered as a relative segment and hence not be removed.
-            if (PathInternal.IsDirectorySeparator(path[skip - 1]))
+            if (IsDirectorySeparator(path[skip - 1]))
                 skip--;
 
             // Remove "//", "/./", and "/../" from the path by copying each character to the output,
@@ -143,18 +143,18 @@ namespace System.IO
             {
                 char c = path[i];
 
-                if (PathInternal.IsDirectorySeparator(c) && i + 1 < path.Length)
+                if (IsDirectorySeparator(c) && i + 1 < path.Length)
                 {
                     // Skip this character if it's a directory separator and if the next character is, too,
                     // e.g. "parent//child" => "parent/child"
-                    if (PathInternal.IsDirectorySeparator(path[i + 1]))
+                    if (IsDirectorySeparator(path[i + 1]))
                     {
                         continue;
                     }
 
                     // Skip this character and the next if it's referring to the current directory,
                     // e.g. "parent/./child" => "parent/child"
-                    if ((i + 2 == path.Length || PathInternal.IsDirectorySeparator(path[i + 2])) &&
+                    if ((i + 2 == path.Length || IsDirectorySeparator(path[i + 2])) &&
                         path[i + 1] == '.')
                     {
                         i++;
@@ -164,14 +164,14 @@ namespace System.IO
                     // Skip this character and the next two if it's referring to the parent directory,
                     // e.g. "parent/child/../grandchild" => "parent/grandchild"
                     if (i + 2 < path.Length &&
-                        (i + 3 == path.Length || PathInternal.IsDirectorySeparator(path[i + 3])) &&
+                        (i + 3 == path.Length || IsDirectorySeparator(path[i + 3])) &&
                         path[i + 1] == '.' && path[i + 2] == '.')
                     {
                         // Unwind back to the last slash (and if there isn't one, clear out everything).
                         int s;
                         for (s = sb.Length - 1; s >= skip; s--)
                         {
-                            if (PathInternal.IsDirectorySeparator(sb[s]))
+                            if (IsDirectorySeparator(sb[s]))
                             {
                                 sb.Length = (i + 3 >= path.Length && s == skip) ? s + 1 : s; // to avoid removing the complete "\tmp\" segment in cases like \\?\C:\tmp\..\, C:\tmp\..
                                 break;
@@ -188,9 +188,9 @@ namespace System.IO
                 }
 
                 // Normalize the directory separator if needed
-                if (c != PathInternal.DirectorySeparatorChar && c == PathInternal.AltDirectorySeparatorChar)
+                if (c != DirectorySeparatorChar && c == AltDirectorySeparatorChar)
                 {
-                    c = PathInternal.DirectorySeparatorChar;
+                    c = DirectorySeparatorChar;
                     flippedSeparator = true;
                 }
 

@@ -33,11 +33,11 @@ public class BuildPublishTests : BuildTestBase
 
         // Build
         BlazorBuildInternal(id, config, publish: false);
-        AssertBlazorBootJson(config, isPublish: false);
+        AssertBlazorBootJson(config, isPublish: false, isNet7AndBelow: false);
 
         // Publish
         BlazorBuildInternal(id, config, publish: true);
-        AssertBlazorBootJson(config, isPublish: true);
+        AssertBlazorBootJson(config, isPublish: true, isNet7AndBelow: false);
     }
 
     [Theory]
@@ -62,6 +62,18 @@ public class BuildPublishTests : BuildTestBase
         {
             BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack, ExpectRelinkDirWhenPublishing: true));
         }
+    }
+
+    [Theory]
+    [InlineData("Debug")]
+    [InlineData("Release")]
+    public void DefaultTemplate_BuildNative_WithWorkload(string config)
+    {
+        string id = $"blz_buildandbuildnative_{config}_{Path.GetRandomFileName()}";
+
+        CreateBlazorWasmTemplateProject(id);
+
+        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked), "/p:WasmBuildNative=true");
     }
 
     // Disabling for now - publish folder can have more than one dotnet*hash*js, and not sure
@@ -197,7 +209,7 @@ public class BuildPublishTests : BuildTestBase
                 .ExecuteWithCapturedOutput("new razorclasslib")
                 .EnsureSuccessful();
 
-        string razorClassLibraryFileName = UseWebcil ? "RazorClassLibrary.webcil" : "RazorClassLibrary.dll";
+        string razorClassLibraryFileName = UseWebcil ? $"RazorClassLibrary{WebcilInWasmExtension}" : "RazorClassLibrary.dll";
         AddItemsPropertiesToProject(wasmProjectFile, extraItems: @$"
             <ProjectReference Include=""..\\RazorClassLibrary\\RazorClassLibrary.csproj"" />
             <BlazorWebAssemblyLazyLoad Include=""{ razorClassLibraryFileName }"" />
@@ -226,7 +238,6 @@ public class BuildPublishTests : BuildTestBase
         Assert.Contains(razorClassLibraryFileName, lazyVal.EnumerateObject().Select(jp => jp.Name));
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/85769")]
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
     [InlineData("Debug")]
     [InlineData("Release")]

@@ -5522,7 +5522,7 @@ void Compiler::fgValueNumberArrayElemLoad(GenTree* loadTree, VNFuncApp* addrFunc
 //                              to an array element.
 //
 // Arguments:
-//    storeNode - The ASG node performing the store
+//    storeNode - The store node
 //    addrFunc  - The "VNF_PtrToArrElem" function representing the address
 //    storeSize - The number of bytes being stored
 //    value     - (VN of) the value being stored
@@ -5640,7 +5640,7 @@ void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, Fiel
 //                          a class/static field.
 //
 // Arguments:
-//    storeNode - The ASG node performing the store
+//    storeNode - The store node
 //    baseAddr  - The "base address" of the field (see "GenTree::IsFieldAddr")
 //    fieldSeq  - The field sequence representing the address
 //    offset    - The offset, relative to the field, of the target location
@@ -5794,6 +5794,11 @@ bool ValueNumStore::IsVNConstant(ValueNum vn)
     {
         return c->m_attribs == CEA_Handle;
     }
+}
+
+bool ValueNumStore::IsVNConstantNonHandle(ValueNum vn)
+{
+    return IsVNConstant(vn) && !IsVNHandle(vn);
 }
 
 bool ValueNumStore::IsVNInt32Constant(ValueNum vn)
@@ -7017,6 +7022,12 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(var_types      type,
 #endif // TARGET_ARM64
 
 #if defined(TARGET_XARCH)
+            case NI_AVX512CD_LeadingZeroCount:
+            case NI_AVX512CD_VL_LeadingZeroCount:
+            {
+                return EvaluateUnarySimd(this, GT_LZCNT, /* scalar */ false, type, baseType, arg0VN);
+            }
+
             case NI_BMI1_TrailingZeroCount:
             {
                 assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
@@ -7117,6 +7128,17 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(var_types      type,
                 return VNForLongCon(static_cast<int64_t>(result));
             }
 #endif // TARGET_XARCH
+
+            case NI_Vector128_ToScalar:
+#ifdef TARGET_ARM64
+            case NI_Vector64_ToScalar:
+#else
+            case NI_Vector256_ToScalar:
+            case NI_Vector512_ToScalar:
+#endif
+            {
+                return EvaluateSimdGetElement(this, type, baseType, arg0VN, 0);
+            }
 
             default:
                 break;
@@ -7302,6 +7324,20 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             {
                 return EvaluateBinarySimd(this, GT_OR, /* scalar */ false, type, baseType, arg0VN, arg1VN);
             }
+
+#ifdef TARGET_XARCH
+            case NI_AVX512F_RotateLeft:
+            case NI_AVX512F_VL_RotateLeft:
+            {
+                return EvaluateBinarySimd(this, GT_ROL, /* scalar */ false, type, baseType, arg0VN, arg1VN);
+            }
+
+            case NI_AVX512F_RotateRight:
+            case NI_AVX512F_VL_RotateRight:
+            {
+                return EvaluateBinarySimd(this, GT_ROR, /* scalar */ false, type, baseType, arg0VN, arg1VN);
+            }
+#endif // TARGET_XARCH
 
 #ifdef TARGET_ARM64
             case NI_AdvSimd_ShiftLeftLogical:
@@ -8816,7 +8852,65 @@ void ValueNumStore::vnDumpZeroObj(Compiler* comp, VNFuncApp* zeroObj)
 #endif // DEBUG
 
 // Static fields, methods.
-static UINT8      vnfOpAttribs[VNF_COUNT];
+
+#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic, extra)                                        \
+    static_assert((arity) >= 0 || !(extra), "valuenumfuncs.h has EncodesExtraTypeArg==true and arity<0 for " #vnf);
+#include "valuenumfuncs.h"
+
+#ifdef FEATURE_HW_INTRINSICS
+
+#define HARDWARE_INTRINSIC(isa, name, size, argCount, extra, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)  \
+    static_assert((size) != 0 || !(extra),                                                                             \
+                  "hwintrinsicslist<arch>.h has EncodesExtraTypeArg==true and size==0 for " #isa " " #name);
+#if defined(TARGET_XARCH)
+#include "hwintrinsiclistxarch.h"
+#elif defined(TARGET_ARM64)
+#include "hwintrinsiclistarm64.h"
+#else
+#error Unsupported platform
+#endif
+
+#endif // FEATURE_HW_INTRINSICS
+
+/* static */ constexpr uint8_t ValueNumStore::GetOpAttribsForArity(genTreeOps oper, GenTreeOperKind kind)
+{
+    return ((GenTree::StaticOperIs(oper, GT_SELECT) ? 3 : (((kind & GTK_UNOP) >> 1) | ((kind & GTK_BINOP) >> 1)))
+            << VNFOA_ArityShift) &
+           VNFOA_ArityMask;
+}
+
+/* static */ constexpr uint8_t ValueNumStore::GetOpAttribsForGenTree(genTreeOps      oper,
+                                                                     bool            commute,
+                                                                     bool            illegalAsVNFunc,
+                                                                     GenTreeOperKind kind)
+{
+    return GetOpAttribsForArity(oper, kind) | (static_cast<uint8_t>(commute) << VNFOA_CommutativeShift) |
+           (static_cast<uint8_t>(illegalAsVNFunc) << VNFOA_IllegalGenTreeOpShift);
+}
+
+/* static */ constexpr uint8_t ValueNumStore::GetOpAttribsForFunc(int  arity,
+                                                                  bool commute,
+                                                                  bool knownNonNull,
+                                                                  bool sharedStatic)
+{
+    return (static_cast<uint8_t>(commute) << VNFOA_CommutativeShift) |
+           (static_cast<uint8_t>(knownNonNull) << VNFOA_KnownNonNullShift) |
+           (static_cast<uint8_t>(sharedStatic) << VNFOA_SharedStaticShift) |
+           ((static_cast<uint8_t>(arity & ~(arity >> 31)) << VNFOA_ArityShift) & VNFOA_ArityMask);
+}
+
+const uint8_t ValueNumStore::s_vnfOpAttribs[VNF_COUNT] = {
+#define GTNODE(en, st, cm, ivn, ok)                                                                                    \
+    GetOpAttribsForGenTree(static_cast<genTreeOps>(GT_##en), cm, ivn, static_cast<GenTreeOperKind>(ok)),
+#include "gtlist.h"
+
+    0, // VNF_Boundary
+
+#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic, extra)                                        \
+    GetOpAttribsForFunc((arity) + static_cast<int>(extra), commute, knownNonNull, sharedStatic),
+#include "valuenumfuncs.h"
+};
+
 static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memory.
                                                  GT_NULLCHECK, GT_QMARK, GT_COLON, GT_LOCKADD, GT_XADD, GT_XCHG,
                                                  GT_CMPXCHG, GT_LCLHEAP, GT_BOX, GT_XORR, GT_XAND, GT_STORE_DYN_BLK,
@@ -8833,15 +8927,10 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
                                                  // These control-flow operations need no values.
                                                  GT_JTRUE, GT_RETURN, GT_SWITCH, GT_RETFILT, GT_CKFINITE};
 
-UINT8* ValueNumStore::s_vnfOpAttribs = nullptr;
-
-void ValueNumStore::InitValueNumStoreStatics()
+void ValueNumStore::ValidateValueNumStoreStatics()
 {
-    // Make sure we have the constants right...
-    assert(unsigned(VNFOA_Arity1) == (1 << VNFOA_ArityShift));
-    assert(VNFOA_ArityMask == (VNFOA_MaxArity << VNFOA_ArityShift));
-
-    s_vnfOpAttribs = &vnfOpAttribs[0];
+#if DEBUG
+    uint8_t arr[VNF_COUNT] = {};
     for (unsigned i = 0; i < GT_COUNT; i++)
     {
         genTreeOps gtOper = static_cast<genTreeOps>(i);
@@ -8859,11 +8948,11 @@ void ValueNumStore::InitValueNumStoreStatics()
             arity = 3;
         }
 
-        vnfOpAttribs[i] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask);
+        arr[i] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask);
 
         if (GenTree::OperIsCommutative(gtOper))
         {
-            vnfOpAttribs[i] |= VNFOA_Commutative;
+            arr[i] |= VNFOA_Commutative;
         }
     }
 
@@ -8871,25 +8960,24 @@ void ValueNumStore::InitValueNumStoreStatics()
 
     int vnfNum = VNF_Boundary + 1; // The macro definition below will update this after using it.
 
-#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic)                                               \
+#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic, extra)                                        \
     if (commute)                                                                                                       \
-        vnfOpAttribs[vnfNum] |= VNFOA_Commutative;                                                                     \
+        arr[vnfNum] |= VNFOA_Commutative;                                                                              \
     if (knownNonNull)                                                                                                  \
-        vnfOpAttribs[vnfNum] |= VNFOA_KnownNonNull;                                                                    \
+        arr[vnfNum] |= VNFOA_KnownNonNull;                                                                             \
     if (sharedStatic)                                                                                                  \
-        vnfOpAttribs[vnfNum] |= VNFOA_SharedStatic;                                                                    \
+        arr[vnfNum] |= VNFOA_SharedStatic;                                                                             \
     if (arity > 0)                                                                                                     \
-        vnfOpAttribs[vnfNum] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask);                                       \
+        arr[vnfNum] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask);                                                \
     vnfNum++;
 
 #include "valuenumfuncs.h"
-#undef ValueNumFuncDef
 
     assert(vnfNum == VNF_COUNT);
 
 #define ValueNumFuncSetArity(vnfNum, arity)                                                                            \
-    vnfOpAttribs[vnfNum] &= ~VNFOA_ArityMask;                               /* clear old arity value   */              \
-    vnfOpAttribs[vnfNum] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask) /* set the new arity value */
+    arr[vnfNum] &= ~VNFOA_ArityMask;                               /* clear old arity value   */                       \
+    arr[vnfNum] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask) /* set the new arity value */
 
 #ifdef FEATURE_HW_INTRINSICS
 
@@ -8903,7 +8991,7 @@ void ValueNumStore::InitValueNumStoreStatics()
             // These HW_Intrinsic's have an extra VNF_SimdType arg.
             //
             VNFunc   func     = VNFunc(VNF_HWI_FIRST + (id - NI_HW_INTRINSIC_START - 1));
-            unsigned oldArity = VNFuncArity(func);
+            unsigned oldArity = (arr[func] & VNFOA_ArityMask) >> VNFOA_ArityShift;
             unsigned newArity = oldArity + 1;
 
             ValueNumFuncSetArity(func, newArity);
@@ -8912,7 +9000,7 @@ void ValueNumStore::InitValueNumStoreStatics()
         if (HWIntrinsicInfo::IsCommutative(id))
         {
             VNFunc func = VNFunc(VNF_HWI_FIRST + (id - NI_HW_INTRINSIC_START - 1));
-            vnfOpAttribs[func] |= VNFOA_Commutative;
+            arr[func] |= VNFOA_Commutative;
         }
     }
 
@@ -8922,17 +9010,23 @@ void ValueNumStore::InitValueNumStoreStatics()
 
     for (unsigned i = 0; i < ArrLen(genTreeOpsIllegalAsVNFunc); i++)
     {
-        vnfOpAttribs[genTreeOpsIllegalAsVNFunc[i]] |= VNFOA_IllegalGenTreeOp;
+        arr[genTreeOpsIllegalAsVNFunc[i]] |= VNFOA_IllegalGenTreeOp;
     }
+
+    assert(ArrLen(arr) == ArrLen(s_vnfOpAttribs));
+    for (unsigned i = 0; i < ArrLen(arr); i++)
+    {
+        assert(arr[i] == s_vnfOpAttribs[i]);
+    }
+#endif // DEBUG
 }
 
 #ifdef DEBUG
 // Define the name array.
-#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic) #vnf,
+#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic, extra) #vnf,
 
 const char* ValueNumStore::VNFuncNameArr[] = {
 #include "valuenumfuncs.h"
-#undef ValueNumFuncDef
 };
 
 /* static */ const char* ValueNumStore::VNFuncName(VNFunc vnf)
@@ -9202,15 +9296,14 @@ struct ValueNumberState
 
         SetVisitBit(blk->bbNum, BVB_complete);
 
-        for (BasicBlock* succ : blk->GetAllSuccs(m_comp))
-        {
+        blk->VisitAllSuccs(m_comp, [&](BasicBlock* succ) {
 #ifdef DEBUG_VN_VISIT
             JITDUMP("   Succ(" FMT_BB ").\n", succ->bbNum);
 #endif // DEBUG_VN_VISIT
 
             if (GetVisitBit(succ->bbNum, BVB_complete))
             {
-                continue;
+                return BasicBlockVisit::Continue;
             }
 #ifdef DEBUG_VN_VISIT
             JITDUMP("     Not yet completed.\n");
@@ -9233,8 +9326,8 @@ struct ValueNumberState
                 JITDUMP("     All preds complete, adding to allDone.\n");
 #endif // DEBUG_VN_VISIT
 
-                assert(!GetVisitBit(succ->bbNum, BVB_onAllDone)); // Only last completion of last succ should add to
-                                                                  // this.
+                // Only last completion of last succ should add to this.
+                assert(!GetVisitBit(succ->bbNum, BVB_onAllDone));
                 m_toDoAllPredsDone.Push(succ);
                 SetVisitBit(succ->bbNum, BVB_onAllDone);
             }
@@ -9253,7 +9346,9 @@ struct ValueNumberState
                     SetVisitBit(succ->bbNum, BVB_onNotAllDone);
                 }
             }
-        }
+
+            return BasicBlockVisit::Continue;
+        });
     }
 
     bool ToDoExists()
@@ -10272,7 +10367,9 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
     if (vnStore->GetVNFunc(tree->gtVNPair.GetLiberal(), &funcApp) && (funcApp.m_func == VNF_PtrToStatic))
     {
         FieldSeq* fseq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[1]);
-        if (fseq->GetKind() == FieldSeq::FieldKind::SimpleStatic)
+        // TODO-Cleanup: We may see null field seqs here due to how the base of
+        // boxed statics are VN'd. We should get rid of this case.
+        if ((fseq != nullptr) && (fseq->GetKind() == FieldSeq::FieldKind::SimpleStatic))
         {
             *byteOffset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[2]);
             *pFseq      = fseq;
@@ -10357,38 +10454,37 @@ static bool GetObjectHandleAndOffset(ValueNumStore*         vnStore,
                                      ssize_t*               byteOffset,
                                      CORINFO_OBJECT_HANDLE* pObj)
 {
-
     if (!tree->gtVNPair.BothEqual())
     {
         return false;
     }
 
-    ValueNum  treeVN = tree->gtVNPair.GetLiberal();
-    VNFuncApp funcApp;
-    if (vnStore->GetVNFunc(treeVN, &funcApp) && (funcApp.m_func == (VNFunc)GT_ADD))
+    ValueNum       treeVN = tree->gtVNPair.GetLiberal();
+    VNFuncApp      funcApp;
+    target_ssize_t offset = 0;
+    while (vnStore->GetVNFunc(treeVN, &funcApp) && (funcApp.m_func == (VNFunc)GT_ADD))
     {
-        // [objHandle + offset]
-        if (vnStore->IsVNObjHandle(funcApp.m_args[0]) && vnStore->IsVNConstant(funcApp.m_args[1]))
+        if (vnStore->IsVNConstantNonHandle(funcApp.m_args[0]) && (vnStore->TypeOfVN(funcApp.m_args[0]) == TYP_I_IMPL))
         {
-            *pObj       = vnStore->ConstantObjHandle(funcApp.m_args[0]);
-            *byteOffset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[1]);
-            return true;
+            offset += vnStore->ConstantValue<target_ssize_t>(funcApp.m_args[0]);
+            treeVN = funcApp.m_args[1];
         }
-
-        // [offset + objHandle]
-        // TODO: Introduce a general helper to accumulate offsets for
-        // shapes such as (((X + CNS1) + CNS2) + CNS3) etc.
-        if (vnStore->IsVNObjHandle(funcApp.m_args[1]) && vnStore->IsVNConstant(funcApp.m_args[0]))
+        else if (vnStore->IsVNConstantNonHandle(funcApp.m_args[1]) &&
+                 (vnStore->TypeOfVN(funcApp.m_args[1]) == TYP_I_IMPL))
         {
-            *pObj       = vnStore->ConstantObjHandle(funcApp.m_args[1]);
-            *byteOffset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[0]);
-            return true;
+            offset += vnStore->ConstantValue<target_ssize_t>(funcApp.m_args[1]);
+            treeVN = funcApp.m_args[0];
+        }
+        else
+        {
+            return false;
         }
     }
-    else if (vnStore->IsVNObjHandle(treeVN))
+
+    if (vnStore->IsVNObjHandle(treeVN))
     {
         *pObj       = vnStore->ConstantObjHandle(treeVN);
-        *byteOffset = 0;
+        *byteOffset = offset;
         return true;
     }
     return false;
@@ -10423,7 +10519,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     int                   size           = (int)genTypeSize(tree->TypeGet());
     const int             maxElementSize = sizeof(simd_t);
 
-    if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree) || tree->TypeIs(TYP_REF)) &&
+    if (!tree->TypeIs(TYP_BYREF, TYP_STRUCT) &&
         GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
     {
         CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
@@ -10442,7 +10538,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
             }
         }
     }
-    else if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree)) &&
+    else if (!tree->TypeIs(TYP_REF, TYP_BYREF, TYP_STRUCT) &&
              GetObjectHandleAndOffset(vnStore, tree->gtGetOp1(), &byteOffset, &obj))
     {
         // See if we can fold IND(ADD(FrozenObj, CNS)) to a constant
@@ -10452,10 +10548,32 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
             uint8_t buffer[maxElementSize] = {0};
             if (info.compCompHnd->getObjectContent(obj, buffer, size, (int)byteOffset))
             {
-                ValueNum vn = vnStore->VNForGenericCon(tree->TypeGet(), buffer);
-                assert(!vnStore->IsVNObjHandle(vn));
-                tree->gtVNPair.SetBoth(vn);
-                return true;
+                // If we have IND<size_t>(frozenObj) then it means we're reading object type
+                // so make sure we report the constant as class handle
+                if ((size == TARGET_POINTER_SIZE) && (byteOffset == 0))
+                {
+                    // In case of 64bit jit emitting 32bit codegen this handle will be 64bit
+                    // value holding 32bit handle with upper half zeroed (hence, "= NULL").
+                    // It's done to match the current crossgen/ILC behavior.
+                    CORINFO_CLASS_HANDLE rawHandle = NULL;
+                    memcpy(&rawHandle, buffer, TARGET_POINTER_SIZE);
+
+                    void* pEmbedClsHnd;
+                    void* embedClsHnd = (void*)info.compCompHnd->embedClassHandle(rawHandle, &pEmbedClsHnd);
+                    if (pEmbedClsHnd == nullptr)
+                    {
+                        // getObjectContent doesn't support reading handles for AOT (NativeAOT) yet
+                        tree->gtVNPair.SetBoth(vnStore->VNForHandle((ssize_t)embedClsHnd, GTF_ICON_CLASS_HDL));
+                        return true;
+                    }
+                }
+                else
+                {
+                    ValueNum vn = vnStore->VNForGenericCon(tree->TypeGet(), buffer);
+                    assert(!vnStore->IsVNObjHandle(vn));
+                    tree->gtVNPair.SetBoth(vn);
+                    return true;
+                }
             }
         }
     }
@@ -10732,12 +10850,18 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                 if (!returnsTypeHandle)
                 {
-                    // Indirections off of addresses for boxed statics represent bases for
-                    // the address of the static itself. Here we will use "nullptr" for the
-                    // field sequence and assume the actual static field will be appended to
-                    // it later, as part of numbering the method table pointer offset addition.
-                    if (addr->IsIconHandle(GTF_ICON_STATIC_BOX_PTR))
+                    // TYP_REF check to improve TP since we mostly target invariant loads of
+                    // frozen objects here
+                    if (addr->TypeIs(TYP_REF) && fgValueNumberConstLoad(tree->AsIndir()))
                     {
+                        // VN is assigned inside fgValueNumberConstLoad
+                    }
+                    else if (addr->IsIconHandle(GTF_ICON_STATIC_BOX_PTR))
+                    {
+                        // Indirections off of addresses for boxed statics represent bases for
+                        // the address of the static itself. Here we will use "nullptr" for the
+                        // field sequence and assume the actual static field will be appended to
+                        // it later, as part of numbering the method table pointer offset addition.
                         assert(addrNvnp.BothEqual() && (addrXvnp == vnStore->VNPForEmptyExcSet()));
                         ValueNum boxAddrVN  = addrNvnp.GetLiberal();
                         ValueNum fieldSeqVN = vnStore->VNForFieldSeq(nullptr);
@@ -11156,23 +11280,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 break;
             }
 
-            // ARR_ELEM is a bounds-checked address. TODO-CQ: model it precisely.
             case GT_ARR_ELEM:
-            {
-                GenTreeArrElem* arrElem = tree->AsArrElem();
-
-                ValueNumPair vnpExcSet = vnStore->VNPExceptionSet(arrElem->gtArrObj->gtVNPair);
-                for (size_t i = 0; i < arrElem->gtArrRank; i++)
-                {
-                    vnpExcSet = vnStore->VNPUnionExcSet(arrElem->gtArrInds[i]->gtVNPair, vnpExcSet);
-                }
-
-                arrElem->gtVNPair = vnStore->VNPUniqueWithExc(arrElem->TypeGet(), vnpExcSet);
-
-                // TODO: model the IndexOutOfRangeException for this node.
-                fgValueNumberAddExceptionSetForIndirection(arrElem, arrElem->gtArrObj);
-            }
-            break;
+                unreached(); // we expect these to be gone by the time value numbering runs
+                break;
 
             // FIELD_LIST is an R-value that we currently don't model.
             case GT_FIELD_LIST:
@@ -11230,7 +11340,11 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             printTreeID(tree);
             printf(" ");
             gtDispNodeName(tree);
-            if (tree->OperIsLeaf() || tree->OperIsLocalStore()) // local stores used to be leaves
+            if (tree->OperIsLocalStore())
+            {
+                gtDispLocal(tree->AsLclVarCommon(), nullptr);
+            }
+            else if (tree->OperIsLeaf())
             {
                 gtDispLeaf(tree, nullptr);
             }
@@ -11279,6 +11393,23 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
     else
     {
         assert(intrinsic->gtIntrinsicName == NI_System_Object_GetType);
+
+        // Try to fold obj.GetType() if we know the exact type of obj.
+        bool                 isExact   = false;
+        bool                 isNonNull = false;
+        CORINFO_CLASS_HANDLE cls       = gtGetClassHandle(tree->gtGetOp1(), &isExact, &isNonNull);
+        if ((cls != NO_CLASS_HANDLE) && isExact && isNonNull)
+        {
+            CORINFO_OBJECT_HANDLE typeObj = info.compCompHnd->getRuntimeTypePointer(cls);
+            if (typeObj != nullptr)
+            {
+                setMethodHasFrozenObjects();
+                ValueNum handleVN   = vnStore->VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL);
+                intrinsic->gtVNPair = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), arg0VNPx);
+                return;
+            }
+        }
+
         intrinsic->gtVNPair =
             vnStore->VNPWithExc(vnStore->VNPairForFunc(intrinsic->TypeGet(), VNF_ObjGetType, arg0VNP), arg0VNPx);
     }
@@ -12216,6 +12347,9 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
             vnf = VNF_GetsharedGcthreadstaticBaseNoctor;
             break;
+        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            vnf = VNF_GetsharedGcthreadstaticBaseNoctorOptimized;
+            break;
         case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
             vnf = VNF_GetsharedNongcthreadstaticBaseNoctor;
             break;
@@ -12929,19 +13063,6 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
             case GT_MDARR_LENGTH:
             case GT_MDARR_LOWER_BOUND:
                 fgValueNumberAddExceptionSetForIndirection(tree, tree->AsArrCommon()->ArrRef());
-                break;
-
-            case GT_ARR_ELEM:
-                assert(!opts.compJitEarlyExpandMDArrays);
-                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsArrElem()->gtArrObj);
-                break;
-
-            case GT_ARR_INDEX:
-                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsArrIndex()->ArrObj());
-                break;
-
-            case GT_ARR_OFFSET:
-                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsArrOffs()->gtArrObj);
                 break;
 
             case GT_CKFINITE:

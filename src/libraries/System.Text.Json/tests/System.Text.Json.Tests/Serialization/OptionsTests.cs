@@ -464,7 +464,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void Options_GetConverterForObjectJsonElement_GivesCorrectConverter()
         {
-            GenericObjectOrJsonElementConverterTestHelper<object>("ObjectConverter", new object(), "{}");
+            GenericObjectOrJsonElementConverterTestHelper<object>("DefaultObjectConverter", new object(), "{}");
             JsonElement element = JsonDocument.Parse("[3]").RootElement;
             GenericObjectOrJsonElementConverterTestHelper<JsonElement>("JsonElementConverter", element, "[3]");
         }

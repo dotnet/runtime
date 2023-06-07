@@ -43,7 +43,7 @@
   <Target Name="GenerateILCompilerExplicitPackageReferenceWarning" Condition="'$(SuppressGenerateILCompilerExplicitPackageReferenceWarning)' == '' and '$(ILCompilerTargetsPath)' != ''"
       BeforeTargets="ImportRuntimeIlcPackageTarget">
     <Warning Condition="'%(PackageReference.Identity)' == 'Microsoft.DotNet.ILCompiler' And '%(PackageReference.IsImplicitlyDefined)' != 'true'"
-             Text="Delete explicit 'Microsoft.DotNet.ILCompiler' package reference in your project file. Explicit 'Microsoft.DotNet.ILCompiler' package reference can run into version errors." />
+             Text="Delete explicit 'Microsoft.DotNet.ILCompiler' package reference in your project file to avoid versioning problems." />
   </Target>
 
   <!-- Locate the runtime package according to the current target runtime -->

@@ -70,8 +70,11 @@ EXTERN_C uint32_t _tls_index;
 #endif
 
 #ifdef _MSC_VER
-__declspec(selectany) __declspec(thread) uint32_t t_maxThreadStaticBlocks;
-__declspec(selectany) __declspec(thread) void** t_threadStaticBlocks;
+__declspec(selectany) __declspec(thread) uint32_t t_NonGCMaxThreadStaticBlocks;
+__declspec(selectany) __declspec(thread) uint32_t t_GCMaxThreadStaticBlocks;
+
+__declspec(selectany) __declspec(thread) void** t_NonGCThreadStaticBlocks;
+__declspec(selectany) __declspec(thread) void** t_GCThreadStaticBlocks;
 #else
 EXTERN_C __thread uint32_t t_maxThreadStaticBlocks;
 EXTERN_C __thread void** t_threadStaticBlocks;
@@ -1570,15 +1573,19 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
 #ifdef HOST_WINDOWS
 #ifndef TARGET_ARM
-                bool canOptimizeHelper = (pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR) ||
-                    (pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE);
                 // For windows, we convert the TLS access to the optimized helper where we will store
                 // the static blocks in TLS directly and access them via inline code.
-                if (canOptimizeHelper && ((pField->GetFieldType() >= ELEMENT_TYPE_BOOLEAN) && (pField->GetFieldType() < ELEMENT_TYPE_STRING)))
+                if ((pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR) ||
+                    (pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE))
                 {
                     fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
-
                     pResult->helper = CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
+                }
+                else if ((pResult->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR) ||
+                            (pResult->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE))
+                {
+                    fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
+                    pResult->helper = CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
                 }
 #endif // !TARGET_ARM
 #endif // HOST_WINDOWS
@@ -1768,7 +1775,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 #ifdef HOST_WINDOWS
 
 /*********************************************************************/
-uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
+uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isGCType)
 {
     CONTRACTL {
         THROWS;
@@ -1783,16 +1790,23 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
     FieldDesc* fieldDesc = (FieldDesc*)field;
     _ASSERTE(fieldDesc->IsThreadStatic());
 
-    typeIndex = AppDomain::GetCurrentDomain()->GetThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
+    if (isGCType)
+    {
+        typeIndex = AppDomain::GetCurrentDomain()->GetGCThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
+    }
+    else
+    {
+        typeIndex = AppDomain::GetCurrentDomain()->GetNonGCThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
+    }
 
     assert(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
-    
+
     EE_TO_JIT_TRANSITION();
     return typeIndex;
 }
 
 /*********************************************************************/
-void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
 {
     CONTRACTL {
         NOTHROW;
@@ -1806,13 +1820,24 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     pInfo->tlsIndex.accessType = IAT_VALUE;
 
     pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
-    pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_threadStaticBlocks);
-    pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_maxThreadStaticBlocks);
-    
+    if (isGCType)
+    {
+        pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_GCThreadStaticBlocks);
+        pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_GCMaxThreadStaticBlocks);
+    }
+    else
+    {
+        pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_NonGCThreadStaticBlocks);
+        pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_NonGCMaxThreadStaticBlocks);
+    }
+
+    pInfo->offsetOfGCDataPointer = static_cast<uint32_t>(PtrArray::GetDataOffset());
+
     JIT_TO_EE_TRANSITION_LEAF();
 }
 #else
-uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
+
+uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isGCType)
 {
     CONTRACTL {
         NOTHROW;
@@ -1823,7 +1848,7 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
     return 0;
 }
 
-void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
 {
     CONTRACTL {
         NOTHROW;
@@ -1838,7 +1863,8 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     pInfo->offsetOfThreadLocalStoragePointer = 0;
     pInfo->offsetOfThreadStaticBlocks = 0;
     pInfo->offsetOfMaxThreadStaticBlocks = 0;
-    
+    pInfo->offsetOfGCDataPointer = 0;
+
     JIT_TO_EE_TRANSITION_LEAF();
 }
 #endif // HOST_WINDOWS
@@ -11851,11 +11877,25 @@ bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, in
     _ASSERTE(objRef != NULL);
 
     // TODO: support types containing GC pointers
-    if (!objRef->GetMethodTable()->ContainsPointers() && bufferSize + valueOffset <= (int)objRef->GetSize())
+    if (bufferSize + valueOffset <= (int)objRef->GetSize())
     {
         Object* obj = OBJECTREFToObject(objRef);
-        memcpy(buffer, (uint8_t*)obj + valueOffset, bufferSize);
-        result = true;
+        PTR_MethodTable type = obj->GetMethodTable();
+        if (type->ContainsPointers())
+        {
+            // RuntimeType has a gc field (object m_keepAlive), but if the object is in a frozen segment
+            // it means that field is always nullptr so we can read any part of the object:
+            if (type == g_pRuntimeTypeClass && GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
+            {
+                memcpy(buffer, (uint8_t*)obj + valueOffset, bufferSize);
+                result = true;
+            }
+        }
+        else
+        {
+            memcpy(buffer, (uint8_t*)obj + valueOffset, bufferSize);
+            result = true;
+        }
     }
 
     EE_TO_JIT_TRANSITION();
@@ -12413,17 +12453,8 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 
     CorJitResult ret = CORJIT_SKIPPED;   // Note that CORJIT_SKIPPED is an error exit status code
 
-#ifdef FEATURE_STACK_SAMPLING
-    static ConfigDWORD s_stackSamplingEnabled;
-    bool samplingEnabled = (s_stackSamplingEnabled.val(CLRConfig::UNSUPPORTED_StackSamplingEnabled) != 0);
-#endif
-
 #if defined(ALLOW_SXS_JIT)
-    if (FAILED(ret) && jitMgr->m_alternateJit
-#ifdef FEATURE_STACK_SAMPLING
-        && (!samplingEnabled || (jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SAMPLING_JIT_BACKGROUND)))
-#endif
-       )
+    if (FAILED(ret) && jitMgr->m_alternateJit)
     {
         CORJIT_FLAGS altJitFlags = jitFlags;
         altJitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
@@ -12433,14 +12464,6 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
                                                      CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
                                                      nativeEntry,
                                                      nativeSizeOfCode);
-
-#ifdef FEATURE_STACK_SAMPLING
-        if (jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SAMPLING_JIT_BACKGROUND))
-        {
-            // Don't bother with failures if we couldn't collect a trace.
-            ret = CORJIT_OK;
-        }
-#endif // FEATURE_STACK_SAMPLING
 
         // If we failed to jit, then fall back to the primary Jit.
         if (FAILED(ret))
@@ -13059,14 +13082,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         {
             jitInfo.WriteCode(jitMgr);
 #if defined(DEBUGGING_SUPPORTED)
-            // Note: if we're only importing (ie, verifying/
-            // checking to make sure we could JIT, but not actually generating code (
-            // eg, for inlining), then DON'T TELL THE DEBUGGER about this.
-            if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND)
-#ifdef FEATURE_STACK_SAMPLING
-                && !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SAMPLING_JIT_BACKGROUND)
-#endif // FEATURE_STACK_SAMPLING
-               )
+            if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND))
             {
                 //
                 // Notify the debugger that we have successfully jitted the function

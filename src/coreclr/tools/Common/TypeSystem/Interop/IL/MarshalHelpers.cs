@@ -422,6 +422,12 @@ namespace Internal.TypeSystem.Interop
                     return MarshallerKind.Invalid;
                 }
 
+                if (!isField && ((DefType)type).IsVectorTOrHasVectorTFields)
+                {
+                    // Vector<T> types or structs that contain them cannot be passed by value
+                    return MarshallerKind.Invalid;
+                }
+
                 if (MarshalUtils.IsBlittableType(type))
                 {
                     if (nativeType != NativeTypeKind.Default && nativeType != NativeTypeKind.Struct)
