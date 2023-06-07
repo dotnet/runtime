@@ -813,7 +813,7 @@ private:
     //   entry             - The init/copy entry
     //   deaths            - Liveness information for the destination; only valid if m_dstInvolvedReplacements is true.
     //   remainderStrategy - The strategy we are using for the remainder
-    //   verbose           - Whether to log decisions made
+    //   dump              - Whether to JITDUMP decisions made
     //
     bool CanSkipEntry(const Entry&             entry,
                       const StructDeaths&      deaths,
