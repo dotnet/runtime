@@ -54,7 +54,8 @@ namespace ILCompiler
                 sb.Append(_blobName);
             }
 
-            public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
+            public override ObjectNodeSection GetSection(NodeFactory factory) =>
+                factory.Target.IsWindows ? ObjectNodeSection.ReadOnlyDataSection : ObjectNodeSection.DataSection;
 
             protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
