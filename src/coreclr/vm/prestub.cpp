@@ -1138,7 +1138,8 @@ namespace
 
     bool DoesMethodMatchUnsafeAccessorDeclaration(
         GenerationContext& cxt,
-        MethodDesc* method)
+        MethodDesc* method,
+        MetaSig::CompareState& state)
     {
         STANDARD_VM_CONTRACT;
         _ASSERTE(method != NULL);
@@ -1212,7 +1213,7 @@ namespace
                 pModule2,
                 pSubst1,
                 pSubst2,
-                NULL))
+                &state))
             {
                 return false;
             }
@@ -1252,8 +1253,14 @@ namespace
                 continue;
 
             // Check signature
-            if (!DoesMethodMatchUnsafeAccessorDeclaration(cxt, curr))
+            MetaSig::CompareState state{};
+            state.IgnoreCustomModifiers = false;
+            if (!DoesMethodMatchUnsafeAccessorDeclaration(cxt, curr, state))
                 continue;
+
+            //
+            // [TODO] Collect all matching methods and compare custom modifiers count.
+            //
 
             cxt.TargetMethod = curr;
             return true;

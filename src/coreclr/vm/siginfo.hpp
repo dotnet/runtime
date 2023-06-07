@@ -944,6 +944,32 @@ class MetaSig
         //------------------------------------------------------------------
         CorElementType GetByRefType(TypeHandle* pTy) const;
 
+        // Struct used to capture in/out state during the comparison
+        // of element types.
+        struct CompareState
+        {
+            // List of tokens that are currently being compared.
+            // See TokenPairList for more use details.
+            TokenPairList*  Visited;
+
+            // Custom modifiers found during the comparison.
+            DWORD CustomModifierCount1;
+            DWORD CustomModifierCount2;
+
+            // Boolean indicating if custom modifiers should
+            // be compared.
+            bool IgnoreCustomModifiers;
+
+            CompareState() = default;
+
+            CompareState(TokenPairList* list)
+                : Visited{ list }
+                , CustomModifierCount1{}
+                , CustomModifierCount2{}
+                , IgnoreCustomModifiers{ false }
+            { }
+        };
+
         //------------------------------------------------------------------
         // Compare types in two signatures, first applying
         // - optional substitutions pSubst1 and pSubst2
@@ -958,7 +984,7 @@ class MetaSig
             ModuleBase *         pModule2,
             const Substitution * pSubst1,
             const Substitution * pSubst2,
-            TokenPairList *      pVisited = NULL);
+            CompareState *       state = NULL);
 
 
 

@@ -1016,7 +1016,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
         // This may throw an exception using the FullModule
         _ASSERTE(pModule->IsFullModule());
     }
-    
 
     // We have an invariant that before we call a method, we must have loaded all of the valuetype parameters of that
     // method visible from the signature of the method. Normally we do this via type loading before the method is called
@@ -1467,7 +1466,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                                                             argLevel,
                                                             argDrop,
                                                             pSubst,
-                                                            pZapSigContext, 
+                                                            pZapSigContext,
                                                             NULL,
                                                             pRecursiveFieldGenericHandling);
                         if (typeHnd.IsNull())
@@ -1534,7 +1533,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                         else
                         {
                             // At this point thFound is the instantiation over Byte and thRet is set to the instantiation over __Canon.
-                            // If the two have the same GC layout, then the field layout is not affected by the type parameters, and the type load can continue 
+                            // If the two have the same GC layout, then the field layout is not affected by the type parameters, and the type load can continue
                             // with just using the __Canon variant.
                             // To simplify the calculation, all we really need to compute is the number of GC pointers in the representation and the Base size.
                             // For if the type parameter is used in field layout, there will be at least 1 more pointer in the __Canon instantiation as compared to the Byte instantiation.
@@ -1548,7 +1547,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 #ifndef DACCESS_COMPILE
                                 failedLayoutCompare = CGCDesc::GetNumPointers(thRet.AsMethodTable(), objectSizeCanonInstantiation, 0) !=
                                                       CGCDesc::GetNumPointers(thFound.AsMethodTable(), objectSizeCanonInstantiation, 0);
-#else  
+#else
                                 DacNotImpl();
 #endif
                             }
@@ -1557,7 +1556,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                             {
 #ifndef DACCESS_COMPILE
                                 static_cast<Module*>(pOrigModule)->ThrowTypeLoadException(pOrigModule->GetMDImport(), pRecursiveFieldGenericHandling->tkTypeDefToAvoidIfPossible, IDS_INVALID_RECURSIVE_GENERIC_FIELD_LOAD);
-#else  
+#else
                                 DacNotImpl();
 #endif
                             }
@@ -1780,7 +1779,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             }
 
             // Find an existing function pointer or make a new one
-            thRet = ClassLoader::LoadFnptrTypeThrowing((BYTE) uCallConv, cArgs, retAndArgTypes, fLoadTypes, level);                
+            thRet = ClassLoader::LoadFnptrTypeThrowing((BYTE) uCallConv, cArgs, retAndArgTypes, fLoadTypes, level);
 #else
             // Function pointers are interpreted as IntPtr to the debugger.
             thRet = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_I));
@@ -3615,7 +3614,7 @@ MetaSig::CompareElementType(
     ModuleBase *         pModule2,
     const Substitution * pSubst1,
     const Substitution * pSubst2,
-    TokenPairList *      pVisited) // = NULL
+    CompareState *       state) // = NULL
 {
     CONTRACTL
     {
@@ -3625,6 +3624,10 @@ MetaSig::CompareElementType(
         MODE_ANY;
     }
     CONTRACTL_END
+
+    CompareState temp{};
+    if (state == NULL)
+        state = &temp;
 
  redo:
     // We jump here if the Type was a ET_CMOD prefix.
@@ -3659,7 +3662,7 @@ MetaSig::CompareElementType(
             pSubst2->GetModule(),
             pSubst1,
             pSubst2->GetNext(),
-            pVisited);
+            state);
     }
 
     if ((*pSig1 == ELEMENT_TYPE_VAR) && (pSubst1 != NULL) && !pSubst1->GetInst().IsNull())
@@ -3686,7 +3689,7 @@ MetaSig::CompareElementType(
             pModule2,
             pSubst1->GetNext(),
             pSubst2,
-            pVisited);
+            state);
     }
 
     CorElementType Type1 = ELEMENT_TYPE_MAX; // initialize to illegal
@@ -3782,10 +3785,40 @@ MetaSig::CompareElementType(
                 }
             }
         }
-        else
+        else if (state->IgnoreCustomModifiers)
         {
-            return FALSE; // types must be the same
+            mdToken tk;
+            bool consumedCustomModifier = false;
+            switch (Type1)
+            {
+            case ELEMENT_TYPE_CMOD_REQD:
+            case ELEMENT_TYPE_CMOD_OPT:
+                IfFailThrow(CorSigUncompressToken_EndPtr(pSig1, pEndSig1, &tk));
+                state->CustomModifierCount1++;
+                consumedCustomModifier = true;
+                break;
+            default:
+                break;
+            }
+
+            switch (Type2)
+            {
+            case ELEMENT_TYPE_CMOD_REQD:
+            case ELEMENT_TYPE_CMOD_OPT:
+                IfFailThrow(CorSigUncompressToken_EndPtr(pSig2, pEndSig2, &tk));
+                state->CustomModifierCount2++;
+                consumedCustomModifier = true;
+                break;
+            default:
+                break;
+            }
+
+            // Custom modifiers were consumed, try again.
+            if (consumedCustomModifier)
+                goto redo;
         }
+
+        return FALSE; // types must be the same
     }
 
     switch (Type1)
@@ -3837,6 +3870,9 @@ MetaSig::CompareElementType(
             IfFailThrow(CorSigUncompressToken_EndPtr(pSig1, pEndSig1, &tk1));
             IfFailThrow(CorSigUncompressToken_EndPtr(pSig2, pEndSig2, &tk2));
 
+            state->CustomModifierCount1++;
+            state->CustomModifierCount2++;
+
 #ifndef DACCESS_COMPILE
             if (!CompareTypeDefOrRefOrSpec(
                     pModule1,
@@ -3845,7 +3881,7 @@ MetaSig::CompareElementType(
                     pModule2,
                     tk2,
                     pSubst2,
-                    pVisited))
+                    state->Visited))
             {
                 return FALSE;
             }
@@ -3868,7 +3904,7 @@ MetaSig::CompareElementType(
                     pModule2,
                     pSubst1,
                     pSubst2,
-                    pVisited))
+                    state))
             {
                 return FALSE;
             }
@@ -3883,7 +3919,7 @@ MetaSig::CompareElementType(
             IfFailThrow(CorSigUncompressToken_EndPtr(pSig1, pEndSig1, &tk1));
             IfFailThrow(CorSigUncompressToken_EndPtr(pSig2, pEndSig2, &tk2));
 
-            return CompareTypeTokens(tk1, tk2, pModule1, pModule2, pVisited);
+            return CompareTypeTokens(tk1, tk2, pModule1, pModule2, state->Visited);
         }
 
         case ELEMENT_TYPE_FNPTR:
@@ -3914,7 +3950,9 @@ MetaSig::CompareElementType(
             // Add return parameter into the parameter count (it cannot overflow)
             argCnt1++;
 
-            TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(pVisited);
+            TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(state->Visited);
+            state->Visited = &newVisited;
+
             // Compare all parameters, incl. return parameter
             while (argCnt1 > 0)
             {
@@ -3927,7 +3965,7 @@ MetaSig::CompareElementType(
                         pModule2,
                         pSubst1,
                         pSubst2,
-                        &newVisited))
+                        state))
                 {
                     return FALSE;
                 }
@@ -3939,11 +3977,12 @@ MetaSig::CompareElementType(
         case ELEMENT_TYPE_GENERICINST:
         {
             TokenPairList newVisited = TokenPairList::AdjustForTypeSpec(
-                pVisited,
+                state->Visited,
                 pModule1,
                 pSig1 - 1,
                 (DWORD)(pEndSig1 - pSig1) + 1);
-            TokenPairList newVisitedAlwaysForbidden = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(pVisited);
+            TokenPairList newVisitedAlwaysForbidden = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(state->Visited);
+            state->Visited = &newVisitedAlwaysForbidden;
 
             // Type constructors - The actual type is never permitted to participate in type equivalence.
             if (!CompareElementType(
@@ -3955,7 +3994,7 @@ MetaSig::CompareElementType(
                     pModule2,
                     pSubst1,
                     pSubst2,
-                    &newVisitedAlwaysForbidden))
+                    state))
             {
                 return FALSE;
             }
@@ -3969,6 +4008,7 @@ MetaSig::CompareElementType(
                 return FALSE;
             }
 
+            state->Visited = &newVisited;
             while (argCnt1 > 0)
             {
                 if (!CompareElementType(
@@ -3980,7 +4020,7 @@ MetaSig::CompareElementType(
                         pModule2,
                         pSubst1,
                         pSubst2,
-                        &newVisited))
+                        state))
                 {
                     return FALSE;
                 }
@@ -4008,7 +4048,7 @@ MetaSig::CompareElementType(
                     pModule2,
                     pSubst1,
                     pSubst2,
-                    pVisited))
+                    state))
             {
                 return FALSE;
             }
@@ -4146,6 +4186,8 @@ MetaSig::CompareTypeDefsUnderSubstitutions(
 
     SigPointer inst1 = pSubst1->GetInst();
     SigPointer inst2 = pSubst2->GetInst();
+
+    CompareState state{ pVisited };
     for (DWORD i = 0; i < pTypeDef1->GetNumGenericArgs(); i++)
     {
         PCCOR_SIGNATURE startInst1 = inst1.GetPtr();
@@ -4163,7 +4205,7 @@ MetaSig::CompareTypeDefsUnderSubstitutions(
                 pSubst2->GetModule(),
                 pSubst1->GetNext(),
                 pSubst2->GetNext(),
-                pVisited))
+                &state))
         {
             return FALSE;
         }
@@ -4372,6 +4414,7 @@ MetaSig::CompareMethodSigs(
         // to correctly handle overloads, where there are a number of varargs methods
         // to pick from, like m1(int,...) and m2(int,int,...), etc.
 
+        CompareState state{ pVisited };
         // <= because we want to include a check of the return value!
         for (i = 0; i <= ArgCount1; i++)
         {
@@ -4412,7 +4455,7 @@ MetaSig::CompareMethodSigs(
                     pModule2,
                     pSubst1,
                     pSubst2,
-                    pVisited))
+                    &state))
                 {
                     return FALSE;
                 }
@@ -4427,6 +4470,7 @@ MetaSig::CompareMethodSigs(
     }
 
     // do return type as well
+    CompareState state{ pVisited };
     for (i = 0; i <= ArgCount1; i++)
     {
         if (i == 0 && skipReturnTypeSig)
@@ -4450,7 +4494,7 @@ MetaSig::CompareMethodSigs(
                 pModule2,
                 pSubst1,
                 pSubst2,
-                pVisited))
+                &state))
             {
                 return FALSE;
             }
@@ -4491,7 +4535,8 @@ BOOL MetaSig::CompareFieldSigs(
     pEndSig1 = pSig1 + cSig1;
     pEndSig2 = pSig2 + cSig2;
 
-    return(CompareElementType(++pSig1, ++pSig2, pEndSig1, pEndSig2, pModule1, pModule2, NULL, NULL, pVisited));
+    CompareState state{ pVisited };
+    return(CompareElementType(++pSig1, ++pSig2, pEndSig1, pEndSig2, pModule1, pModule2, NULL, NULL, &state));
 }
 
 #ifndef DACCESS_COMPILE
@@ -4733,7 +4778,8 @@ BOOL MetaSig::CompareTypeDefOrRefOrSpec(ModuleBase *pModule1, mdToken tok1,
     ULONG cSig1,cSig2;
     IfFailThrow(pInternalImport1->GetTypeSpecFromToken(tok1, &pSig1, &cSig1));
     IfFailThrow(pInternalImport2->GetTypeSpecFromToken(tok2, &pSig2, &cSig2));
-    return MetaSig::CompareElementType(pSig1, pSig2, pSig1 + cSig1, pSig2 + cSig2, pModule1, pModule2, pSubst1, pSubst2, pVisited);
+    CompareState state{ pVisited };
+    return MetaSig::CompareElementType(pSig1, pSig2, pSig1 + cSig1, pSig2 + cSig2, pModule1, pModule2, pSubst1, pSubst2, &state);
 } // MetaSig::CompareTypeDefOrRefOrSpec
 
 /* static */
