@@ -127,81 +127,29 @@ namespace Microsoft.Interop.Analyzers
                         var selectedOptions = fix.SelectedOptions.Add(Option.AllowUnsafe, new Option.Bool(true));
 
                         context.RegisterCodeFix(
-                            new ConvertToSourceGeneratedInteropSolutionCodeAction(
+                            CodeAction.Create(
                                 GetDiagnosticTitle(selectedOptions),
-                                selectedOptions,
-                                doc.Project.Solution,
-                                (solution, ct) => ApplyActionAndEnableUnsafe(solution, doc.Id, fix.ApplyFix, ct),
-                                BaseEquivalenceKey),
+                                ct => ApplyActionAndEnableUnsafe(doc.Project.Solution, doc.Id, fix.ApplyFix, ct),
+                                Option.CreateEquivalenceKeyFromOptions(BaseEquivalenceKey, selectedOptions)),
                             diagnostic);
                     }
                     else
                     {
                         context.RegisterCodeFix(
-                            new ConvertToSourceGeneratedInteropDocumentCodeAction(
+                            CodeAction.Create(
                                 GetDiagnosticTitle(fix.SelectedOptions),
-                                fix.SelectedOptions,
-                                doc,
-                                fix.ApplyFix,
-                                BaseEquivalenceKey),
+                                async ct =>
+                                {
+                                    DocumentEditor editor = await DocumentEditor.CreateAsync(doc, ct).ConfigureAwait(false);
+
+                                    await fix.ApplyFix(editor, ct).ConfigureAwait(false);
+
+                                    return editor.GetChangedDocument();
+                                },
+                                Option.CreateEquivalenceKeyFromOptions(BaseEquivalenceKey, fix.SelectedOptions)),
                             diagnostic);
                     }
                 }
-            }
-        }
-
-        private abstract class ConvertToSourceGeneratedInteropCodeAction : CodeAction
-        {
-            public ConvertToSourceGeneratedInteropCodeAction(string title, ImmutableDictionary<string, Option> options, string baseEquivalenceKey)
-            {
-                Title = title;
-                Options = options;
-                EquivalenceKey = Option.CreateEquivalenceKeyFromOptions(baseEquivalenceKey, options);
-            }
-
-            public sealed override string Title { get; }
-
-            public ImmutableDictionary<string, Option> Options { get; }
-
-            public sealed override string EquivalenceKey { get; }
-        }
-
-        private sealed class ConvertToSourceGeneratedInteropDocumentCodeAction : ConvertToSourceGeneratedInteropCodeAction
-        {
-            public ConvertToSourceGeneratedInteropDocumentCodeAction(string title, ImmutableDictionary<string, Option> options, Document document, Func<DocumentEditor, CancellationToken, Task> applyDocumentEdit, string baseEquivalenceKey)
-                : base(title, options, baseEquivalenceKey)
-            {
-                Document = document;
-                DocumentEditAction = applyDocumentEdit;
-            }
-            public Document Document { get; }
-            public Func<DocumentEditor, CancellationToken, Task> DocumentEditAction { get; }
-
-            protected override async Task<Document> GetChangedDocumentAsync(CancellationToken cancellationToken)
-            {
-                DocumentEditor editor = await DocumentEditor.CreateAsync(Document, cancellationToken).ConfigureAwait(false);
-
-                await DocumentEditAction(editor, cancellationToken).ConfigureAwait(false);
-
-                return editor.GetChangedDocument();
-            }
-        }
-
-        private sealed class ConvertToSourceGeneratedInteropSolutionCodeAction : ConvertToSourceGeneratedInteropCodeAction
-        {
-            public ConvertToSourceGeneratedInteropSolutionCodeAction(string title, ImmutableDictionary<string, Option> options, Solution solution, Func<Solution, CancellationToken, Task<Solution>> applySolutionEdit, string baseEquivalenceKey)
-                : base(title, options, baseEquivalenceKey)
-            {
-                Solution = solution;
-                SolutionEditAction = applySolutionEdit;
-            }
-
-            public Solution Solution { get; }
-            public Func<Solution, CancellationToken, Task<Solution>> SolutionEditAction { get; }
-
-            protected override async Task<Solution> GetChangedSolutionAsync(CancellationToken cancellationToken)
-            {
-                return await SolutionEditAction(Solution, cancellationToken).ConfigureAwait(false);
             }
         }
 
