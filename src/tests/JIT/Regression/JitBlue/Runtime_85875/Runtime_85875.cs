@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Xunit;
 
 public unsafe class Runtime_85874
@@ -14,7 +15,8 @@ public unsafe class Runtime_85874
         double* ptr = (double*)NativeMemory.AlignedAlloc(16, 16);
         *ptr = value;
         Move128(ptr);
-        Assert.Equals(value, *ptr);
+        Assert.Equal(value, *ptr);
+        NativeMemory.AlignedFree(ptr);
     }
 
     [Fact]
@@ -24,7 +26,8 @@ public unsafe class Runtime_85874
         double* ptr = (double*)NativeMemory.AlignedAlloc(32, 32);
         *ptr = value;
         Move256(ptr);
-        Assert.Equals(value, *ptr);
+        Assert.Equal(value, *ptr);
+        NativeMemory.AlignedFree(ptr);
     }
 
     [Fact]
@@ -34,7 +37,8 @@ public unsafe class Runtime_85874
         double* ptr = (double*)NativeMemory.AlignedAlloc(64, 64);
         *ptr = value;
         Move512(ptr);
-        Assert.Equals(value, *ptr);
+        Assert.Equal(value, *ptr);
+        NativeMemory.AlignedFree(ptr);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
