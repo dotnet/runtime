@@ -1044,7 +1044,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test the exceptional behavior when attempting to create a map so large it's not supported.
         /// </summary>
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51375", typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJS))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51375", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsNotNodeJS))]
         [SkipOnPlatform(TestPlatforms.OSX, "Because of the file-based backing, OS X pops up a warning dialog about being out-of-space (even though we clean up immediately)")]
         [Fact]
         public void TooLargeCapacity()
