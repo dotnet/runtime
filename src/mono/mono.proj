@@ -272,13 +272,13 @@
       <_MonoCMakeArgs Include="-DMONO_SHARED_LIB_NAME=$(MonoSharedLibName)" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(HostOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(TargetArchitecture)' != 'wasm'">
+    <ItemGroup Condition="'$(HostOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(TargetArchitecture)' != 'wasm' and '$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)' > '16.0'">
       <_MonoCXXFLAGS Include="-I$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\include\c++\v1" />
       <_MonoCXXFLAGS Include="-L$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib" />
       <_MonoCXXFLAGS Include="-stdlib=libc++" />
       <_MonoCXXFLAGS Include="-Wl,-rpath=."/>
     </ItemGroup>
-    <ItemGroup Condition="'$(HostOS)' == 'Linux' and '$(MonoAOTEnableLLVM)' == 'true' and '$(TargetArchitecture)' != 'wasm'">
+    <ItemGroup Condition="'$(HostOS)' == 'Linux' and '$(MonoAOTEnableLLVM)' == 'true' and '$(TargetArchitecture)' != 'wasm' and '$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)' > '16.0'">
       <_MonoAOTCXXFLAGS Include="-I$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\include\c++\v1" />
       <_MonoAOTCXXFLAGS Include="-L$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib" />
       <_MonoAOTCXXFLAGS Include="-stdlib=libc++" />
