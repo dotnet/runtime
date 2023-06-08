@@ -68,8 +68,13 @@ jobs:
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           - group: DotNet-HelixApi-Access
 
-      - name: _osParameter
-        value: -os osx
+      - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), in(parameters.osGroup, 'ios', 'tvos', 'maccatalyst')) }}:
+        - name: _osParameter
+          value: -os osx
+      - ${{ else }}:
+        - name: _osParameter
+          value: -os ${{ parameters.osGroup }}
+
 
       - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubGroup, '_bionic')) }}:
         - name: _osParameter
