@@ -53,7 +53,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public int HashSizeInBytes
+        public readonly int HashSizeInBytes
         {
             get
             {
@@ -62,7 +62,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public void Append(ReadOnlySpan<byte> data)
+        public readonly void Append(ReadOnlySpan<byte> data)
         {
             if (data.IsEmpty)
             {
@@ -77,7 +77,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public int Finalize(Span<byte> destination)
+        public readonly int Finalize(Span<byte> destination)
         {
             NTSTATUS ntStatus = Interop.BCrypt.BCryptFinishHash(_hashHandle, destination, destination.Length, dwFlags: 0);
 
@@ -92,6 +92,7 @@ namespace System.Security.Cryptography
         [MemberNotNull(nameof(_hashHandle))]
         public void Reset()
         {
+            _hashHandle?.Dispose();
             SafeBCryptHashHandle hashHandle;
 
             NTSTATUS ntStatus = Interop.BCrypt.BCryptCreateHash(
@@ -109,11 +110,10 @@ namespace System.Security.Cryptography
                 throw Interop.BCrypt.CreateCryptographicException(ntStatus);
             }
 
-            _hashHandle?.Dispose();
             _hashHandle = hashHandle;
         }
 
-        public void Current(Span<byte> destination)
+        public readonly void Current(Span<byte> destination)
         {
             using (SafeBCryptHashHandle tmpHash = Interop.BCrypt.BCryptDuplicateHash(_hashHandle))
             {
@@ -126,7 +126,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public void Dispose()
+        public readonly void Dispose()
         {
             _hashHandle.Dispose();
         }
