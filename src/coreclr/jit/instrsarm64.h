@@ -1595,6 +1595,9 @@ INST1(isb,         "isb",          0,      IF_SI_0B,  0xD50330DF)
 INST1(dczva,       "dczva",        0,      IF_SR_1A,  0xD50B7420)
                                    //  dc      zva,Rt               SR_1A  1101010100001011 01110100001ttttt   D50B 7420   Rt
 
+INST1(mrs,         "mrs",          0,      IF_SR_1A,  0xD5300000)
+                                   //  mrs     Rt,SR                SR_1A  110101010011ssss sssssssssssttttt   D530 0000   Rt, SR
+
 INST1(umov,        "umov",         0,      IF_DV_2B,  0x0E003C00)
                                    //  umov    Rd,Vn[]              DV_2B  0Q001110000iiiii 001111nnnnnddddd   0E00 3C00   Rd,Vn[]
 
