@@ -688,8 +688,8 @@ namespace Microsoft.Interop.Analyzers
                                 return;
                             }
                             var marshalModeArgument = attrCreation.GetArgumentByOrdinal(1);
-                            if (marshalModeArgument.Syntax.ChildNodes().SingleOrDefault() is BinaryExpressionSyntax expression
-                                || !Enum.IsDefined(typeof(MarshalMode), (MarshalMode) marshalModeArgument.Value.ConstantValue.Value))
+                            if (marshalModeArgument.Value is not IFieldReferenceOperation { ConstantValue.Value: var marshalMode }
+                                || !Enum.IsDefined(typeof(MarshalMode), (MarshalMode) marshalMode))
                             {
                                 DiagnosticReporter marshalModeReporter = DiagnosticReporter.CreateForLocation(marshalModeArgument.Syntax.GetLocation(), context.ReportDiagnostic);
                                 marshalModeReporter.CreateAndReportDiagnostic(MarshalModeMustBeValidValue);
@@ -699,7 +699,7 @@ namespace Microsoft.Interop.Analyzers
                             AnalyzeMarshallerType(
                                 marshallerTypeReporter,
                                 managedType,
-                                (MarshalMode)attrCreation.GetArgumentByOrdinal(1).Value.ConstantValue.Value,
+                                (MarshalMode)marshalModeArgument.Value.ConstantValue.Value,
                                 (INamedTypeSymbol)marshallerType,
                                 ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryType));
                         }
