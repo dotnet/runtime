@@ -562,6 +562,7 @@
 
     <PropertyGroup>
       <_NativeDependencies>$(IntermediateOutputPath)\..\$(TestingGroup)\$(CategoryWithSlash)\$(TestName)\native\$(TestName).o</_NativeDependencies>
+      <DevTeamProvisioning>-</DevTeamProvisioning>
     </PropertyGroup>
 
     <RemoveDir Directories="$(AppDir)" />
