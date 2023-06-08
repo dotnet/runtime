@@ -12,7 +12,7 @@ import {
     bound_cs_function_symbol, get_signature_version, alloc_stack_frame, get_signature_type,
 } from "./marshal";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "./roots";
-import { monoStringToString, monoStringToStringUnsafe } from "./strings";
+import { monoStringToString } from "./strings";
 import { MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMarshalerArguments, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, VoidPtrNull, MonoObjectRefNull, MonoObjectNull, MarshalerType } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
 import cwraps from "./cwraps";

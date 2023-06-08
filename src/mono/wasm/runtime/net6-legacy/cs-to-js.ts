@@ -16,7 +16,6 @@ import { legacyHelpers } from "./globals";
 import { js_to_mono_obj_root } from "./js-to-cs";
 import { assert_legacy_interop, mono_bind_method, mono_method_get_call_signature_ref } from "./method-binding";
 import { createPromiseController } from "../globals";
-import { assert_legacy_interop } from "../pthreads/shared";
 import { monoStringToStringUnsafe } from "./strings";
 
 const delegate_invoke_symbol = Symbol.for("wasm delegate_invoke");
