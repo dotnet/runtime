@@ -25,7 +25,7 @@ parameters:
   enablePublishTestResults: false
   enablePublishUsingPipelines: false
   enableBuildRetry: false
-  disableComponentGovernance: false
+  disableComponentGovernance: ''
   componentGovernanceIgnoreDirectories: ''
   mergeTestResults: false
   testRunTitle: ''
@@ -75,6 +75,10 @@ jobs:
   - ${{ if eq(parameters.enableRichCodeNavigation, 'true') }}:
     - name: EnableRichCodeNavigation
       value: 'true'
+  # Retry signature validation up to three times, waiting 2 seconds between attempts.
+  # See https://learn.microsoft.com/en-us/nuget/reference/errors-and-warnings/nu3028#retry-untrusted-root-failures
+  - name: NUGET_EXPERIMENTAL_CHAIN_BUILD_RETRY_POLICY
+    value: 3,2000
   - ${{ each variable in parameters.variables }}:
     # handle name-value variable syntax
     # example:
@@ -155,11 +159,16 @@ jobs:
         uploadRichNavArtifacts: ${{ coalesce(parameters.richCodeNavigationUploadArtifacts, false) }}
       continueOnError: true
 
-  - ${{ if and(eq(parameters.runAsPublic, 'false'), ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'), ne(parameters.disableComponentGovernance, 'true')) }}:
-      - task: ComponentGovernanceComponentDetection@0
-        continueOnError: true
-        inputs:
-          ignoreDirectories: ${{ parameters.componentGovernanceIgnoreDirectories }}
+  - template: /eng/common/templates/steps/component-governance.yml
+    parameters:
+      ${{ if eq(parameters.disableComponentGovernance, '') }}:
+        ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'), eq(parameters.runAsPublic, 'false'), or(startsWith(variables['Build.SourceBranch'], 'refs/heads/release/'), startsWith(variables['Build.SourceBranch'], 'refs/heads/dotnet/'), startsWith(variables['Build.SourceBranch'], 'refs/heads/microsoft/'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))) }}:
+          disableComponentGovernance: false
+        ${{ else }}:
+          disableComponentGovernance: true
+      ${{ else }}:
+        disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
+      componentGovernanceIgnoreDirectories: ${{ parameters.componentGovernanceIgnoreDirectories }}
 
   - ${{ if eq(parameters.enableMicrobuild, 'true') }}:
     - ${{ if and(eq(parameters.runAsPublic, 'false'), ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:

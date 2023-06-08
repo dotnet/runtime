@@ -4,5 +4,5 @@
     <WasiSysRoot>$([MSBuild]::NormalizeDirectory($(WasiSdkRoot), 'share', 'wasi-sysroot'))</WasiSysRoot>
     <WasiClang>$(WasiSdkRoot)\bin\clang</WasiClang>
     <WasiClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(WasiClang).exe</WasiClang>
-   </PropertyGroup>
+  </PropertyGroup>
 </Project>

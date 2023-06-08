@@ -31,7 +31,8 @@ namespace System
           IComparable<float>,
           IEquatable<float>,
           IBinaryFloatingPointIeee754<float>,
-          IMinMaxValue<float>
+          IMinMaxValue<float>,
+          IUtf8SpanFormattable
     {
         private readonly float m_value; // Do not rename (binary serialization)
 
@@ -194,7 +195,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool IsNegativeInfinity(float f)
         {
-            return f == float.NegativeInfinity;
+            return f == NegativeInfinity;
         }
 
         /// <summary>Determines whether the specified value is normal.</summary>
@@ -212,7 +213,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool IsPositiveInfinity(float f)
         {
-            return f == float.PositiveInfinity;
+            return f == PositiveInfinity;
         }
 
         /// <summary>Determines whether the specified value is subnormal.</summary>
@@ -355,6 +356,12 @@ namespace System
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
+        }
+
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        {
+            return Number.TryFormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider), utf8Destination, out bytesWritten);
         }
 
         // Parses a float from a String in the given style.  If
@@ -1140,21 +1147,21 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<float>.TryConvertFromChecked<TOther>(TOther value, out float result)
         {
-            return TryConvertFrom<TOther>(value, out result);
+            return TryConvertFrom(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<float>.TryConvertFromSaturating<TOther>(TOther value, out float result)
         {
-            return TryConvertFrom<TOther>(value, out result);
+            return TryConvertFrom(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<float>.TryConvertFromTruncating<TOther>(TOther value, out float result)
         {
-            return TryConvertFrom<TOther>(value, out result);
+            return TryConvertFrom(value, out result);
         }
 
         private static bool TryConvertFrom<TOther>(TOther value, out float result)
@@ -1296,14 +1303,14 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<float>.TryConvertToSaturating<TOther>(float value, [MaybeNullWhen(false)] out TOther result)
         {
-            return TryConvertTo<TOther>(value, out result);
+            return TryConvertTo(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<float>.TryConvertToTruncating<TOther>(float value, [MaybeNullWhen(false)] out TOther result)
         {
-            return TryConvertTo<TOther>(value, out result);
+            return TryConvertTo(value, out result);
         }
 
         private static bool TryConvertTo<TOther>(float value, [MaybeNullWhen(false)] out TOther result)

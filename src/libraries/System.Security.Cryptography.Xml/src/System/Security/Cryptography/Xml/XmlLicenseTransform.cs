@@ -1,11 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Xml;
 
 namespace System.Security.Cryptography.Xml
 {
+    [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
+    [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
     public class XmlLicenseTransform : Transform
     {
         private readonly Type[] _inputTypes = { typeof(XmlDocument) };
@@ -13,8 +16,13 @@ namespace System.Security.Cryptography.Xml
         private XmlNamespaceManager? _namespaceManager;
         private XmlDocument? _license;
         private IRelDecryptor? _relDecryptor;
-        private const string ElementIssuer = "issuer";
-        private const string NamespaceUriCore = "urn:mpeg:mpeg21:2003:01-REL-R-NS";
+
+        // work around https://github.com/dotnet/runtime/issues/81864 by splitting these into a separate class.
+        internal static class Consts
+        {
+            internal const string ElementIssuer = "issuer";
+            internal const string NamespaceUriCore = "urn:mpeg:mpeg21:2003:01-REL-R-NS";
+        }
 
         public XmlLicenseTransform()
         {
@@ -129,7 +137,7 @@ namespace System.Security.Cryptography.Xml
             _namespaceManager = new XmlNamespaceManager(_license.NameTable);
             _namespaceManager.AddNamespace("dsig", SignedXml.XmlDsigNamespaceUrl);
             _namespaceManager.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);
-            _namespaceManager.AddNamespace("r", NamespaceUriCore);
+            _namespaceManager.AddNamespace("r", Consts.NamespaceUriCore);
 
             XmlElement? currentIssuerContext;
             XmlElement? currentLicenseContext;
@@ -156,8 +164,8 @@ namespace System.Security.Cryptography.Xml
                 if (issuerList[i]! == currentIssuerContext)
                     continue;
 
-                if ((issuerList[i]!.LocalName == ElementIssuer) &&
-                    (issuerList[i]!.NamespaceURI == NamespaceUriCore))
+                if ((issuerList[i]!.LocalName == Consts.ElementIssuer) &&
+                    (issuerList[i]!.NamespaceURI == Consts.NamespaceUriCore))
                     issuerList[i]!.ParentNode!.RemoveChild(issuerList[i]!);
             }
 

@@ -208,6 +208,12 @@ namespace Mono.Linker.Tests.TestCases
 			Run (testCase);
 		}
 
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.SingleFileTests))]
+		public void SingleFileTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
+
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.StaticsTests))]
 		public void StaticsTests (TestCase testCase)
 		{

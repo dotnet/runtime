@@ -579,6 +579,23 @@ mono_class_set_failure (MonoClass *klass, MonoErrorBoxed *boxed_error)
 }
 
 /**
+ * mono_class_set_deferred_failure:
+ * \param klass class in which the failure was detected
+ 
+ * This method marks the class with a deferred failure, indicating that a failure was detected but it will be processed during AOT runtime..
+ * Note that only the first failure is kept.
+ *
+ * LOCKING: Acquires the loader lock.
+ */
+void
+mono_class_set_deferred_failure (MonoClass *klass)
+{
+	mono_loader_lock ();
+	klass->has_deferred_failure = 1;
+	mono_loader_unlock ();
+}
+
+/**
  * mono_class_set_nonblittable:
  * \param klass class which will be marked as not blittable.
  *
@@ -620,11 +637,10 @@ MonoClassMetadataUpdateInfo*
 mono_class_get_metadata_update_info (MonoClass *klass)
 {
 	switch (m_class_get_class_kind (klass)) {
-	case MONO_CLASS_GTD:
-		return NULL;
 	case MONO_CLASS_DEF:
-		return (MonoClassMetadataUpdateInfo *)get_pointer_property (klass, PROP_METADATA_UPDATE_INFO);
+	case MONO_CLASS_GTD:
 	case MONO_CLASS_GINST:
+		return (MonoClassMetadataUpdateInfo *)get_pointer_property (klass, PROP_METADATA_UPDATE_INFO);
 	case MONO_CLASS_GPARAM:
 	case MONO_CLASS_ARRAY:
 	case MONO_CLASS_POINTER:
@@ -643,13 +659,13 @@ mono_class_set_metadata_update_info (MonoClass *klass, MonoClassMetadataUpdateIn
 {
 	switch (m_class_get_class_kind (klass)) {
 	case MONO_CLASS_GTD:
-		g_assertf (0, "%s: EnC metadata update info on generic types is not supported", __func__);
-		break;
 	case MONO_CLASS_DEF:
+	case MONO_CLASS_GINST:
 		set_pointer_property (klass, PROP_METADATA_UPDATE_INFO, value);
 		return;
-	case MONO_CLASS_GINST:
 	case MONO_CLASS_GPARAM:
+		/* metadata-update: this shouldn't happen */
+		g_assert_not_reached();
 	case MONO_CLASS_POINTER:
 	case MONO_CLASS_GC_FILLER:
 		g_assert_not_reached ();
@@ -664,11 +680,12 @@ mono_class_has_metadata_update_info (MonoClass *klass)
 {
 	switch (m_class_get_class_kind (klass)) {
 	case MONO_CLASS_GTD:
-		return FALSE;
 	case MONO_CLASS_DEF:
 		return get_pointer_property (klass, PROP_METADATA_UPDATE_INFO) != NULL;
 	case MONO_CLASS_GINST:
 	case MONO_CLASS_GPARAM:
+		/* metadata-update: this shouldn't happen */
+		g_assert_not_reached();
 	case MONO_CLASS_POINTER:
 	case MONO_CLASS_GC_FILLER:
 		return FALSE;

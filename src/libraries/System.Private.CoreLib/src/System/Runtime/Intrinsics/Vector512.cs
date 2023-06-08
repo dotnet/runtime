@@ -1575,6 +1575,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The vector to get the upper 256-bits from.</param>
         /// <returns>The value of the upper 256-bits as a new <see cref="Vector256{T}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> GetUpper<T>(this Vector512<T> vector)
             where T : struct
@@ -3093,6 +3094,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value of the lower 256-bits as a <see cref="Vector256{T}" />.</param>
         /// <returns>A new <see cref="Vector512{T}" /> with the lower 256-bits set to <paramref name="value" /> and the upper 256-bits set to the same value as that in <paramref name="vector" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> WithLower<T>(this Vector512<T> vector, Vector256<T> value)
             where T : struct
@@ -3104,12 +3106,13 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Creates a new <see cref="Vector512{T}" /> with the upper 256-bits set to the specified value and the upper 256-bits set to the same value as that in the given vector.</summary>
+        /// <summary>Creates a new <see cref="Vector512{T}" /> with the upper 256-bits set to the specified value and the lower 256-bits set to the same value as that in the given vector.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="vector">The vector to get the lower 256-bits from.</param>
         /// <param name="value">The value of the upper 256-bits as a <see cref="Vector256{T}" />.</param>
         /// <returns>A new <see cref="Vector512{T}" /> with the upper 256-bits set to <paramref name="value" /> and the lower 256-bits set to the same value as that in <paramref name="vector" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> WithUpper<T>(this Vector512<T> vector, Vector256<T> value)
             where T : struct

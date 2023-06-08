@@ -30,6 +30,8 @@ namespace Microsoft.Interop
 
         public ImmutableArray<TypePositionInfo> ElementTypeInformation { get; init; }
 
+        public IEnumerable<TypePositionInfo> ManagedParameters => ElementTypeInformation.Where(tpi => !TypePositionInfo.IsSpecialIndex(tpi.ManagedIndex));
+
         public TypeSyntax StubReturnType { get; init; }
 
         public IEnumerable<ParameterSyntax> StubParameters
@@ -123,7 +125,7 @@ namespace Microsoft.Interop
             retTypeInfo = retTypeInfo with
             {
                 ManagedIndex = TypePositionInfo.ReturnIndex,
-                NativeIndex = TypePositionInfo.ReturnIndex
+                NativeIndex = TypePositionInfo.ReturnIndex,
             };
 
             typeInfos.Add(retTypeInfo);

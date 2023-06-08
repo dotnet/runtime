@@ -34,8 +34,7 @@ The following are the key methods on this interface:
   It returns a pointer to the code, its size, and additional GC, EH and (optionally) debug info.
   * `getVersionIdentifier` is the mechanism by which the JIT/EE interface is versioned.
   There is a single GUID (manually generated) which the JIT and EE must agree on.
-  * `getMaxIntrinsicSIMDVectorLength` communicates to the EE the largest SIMD vector length that the JIT can support.
-* `ICorJitInfo` – this is the interface that the EE implements. It has many methods defined on it that allow the JIT to
+  * `ICorJitInfo` – this is the interface that the EE implements. It has many methods defined on it that allow the JIT to
 look up metadata tokens, traverse type signatures, compute field and vtable offsets, find method entry points,
 construct string literals, etc. This bulk of this interface is inherited from `ICorDynamicInfo` which is defined in
 [src/inc/corinfo.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/corinfo.h). The implementation
@@ -131,7 +130,7 @@ bit vectors.
 ### Example of Post-Import IR
 
 For this snippet of code (extracted from
-[src/tests/JIT/CodeGenBringUpTests/DblRoots.cs](https://github.com/dotnet/runtime/blob/main/src/tests/JIT/CodeGenBringUpTests/DblRoots.cs)), with `COMPlus_TieredCompilation=0` and using the DblRoots_ro.csproj project to compile it:
+[src/tests/JIT/CodeGenBringUpTests/DblRoots.cs](https://github.com/dotnet/runtime/blob/main/src/tests/JIT/CodeGenBringUpTests/DblRoots.cs)), with `DOTNET_TieredCompilation=0` and using the DblRoots_ro.csproj project to compile it:
 
        r1 = (-b + Math.Sqrt(b*b - 4*a*c))/(2*a);
 
@@ -756,13 +755,13 @@ phase-specific information by searching for the phase name. Some useful points f
 
 ## How to create a JitDump
 
-You can enable dumps by setting the `COMPlus_JitDump` environment variable to a space-separated list of the method(s)
+You can enable dumps by setting the `DOTNET_JitDump` environment variable to a space-separated list of the method(s)
 you want to dump. For example:
 
 ```cmd
 :: Print out lots of useful info when
 :: compiling methods named Main/GetEnumerator
-set "COMPlus_JitDump=Main GetEnumerator"
+set "DOTNET_JitDump=Main GetEnumerator"
 ```
 
 See [Setting configuration variables](viewing-jit-dumps.md#setting-configuration-variables) for more
@@ -843,7 +842,7 @@ bad tree and wish to understand how it got corrupted, you can place a conditiona
 `gtNewNode` to see when it is created, and then a data breakpoint on the field that you believe is corrupted.
 
 The trees are connected by line characters (either in ASCII, by default, or in slightly more readable Unicode when
-`COMPlus_JitDumpASCII=0` is specified), to make it a bit easier to read.
+`DOTNET_JitDumpASCII=0` is specified), to make it a bit easier to read.
 
 ## Variable naming
 

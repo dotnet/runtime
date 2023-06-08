@@ -3,10 +3,12 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public unsafe class Runtime_72265
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var unmanaged = ((delegate* unmanaged<StructWithIndex>)&GetStructUnmanaged)();
         var managed = GetStructManaged();

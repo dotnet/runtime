@@ -248,6 +248,7 @@
       <RidAgnosticNupkgToPublishFile
         Include="
           $(DownloadDirectory)**\Microsoft.NET.Workload.Mono.Toolchain.*Manifest-*.nupkg;
+          $(DownloadDirectory)**\Microsoft.NET.Sdk.WebAssembly.Pack.*.nupkg;
           $(DownloadDirectory)*\$(PublishRidAgnosticPackagesFromPlatform)\**\*.nupkg;
           $(DownloadDirectory)*\*AllConfigurations\**\*.nupkg"
         Exclude="@(RuntimeNupkgFile);@(DownloadedSymbolNupkgFile)" />

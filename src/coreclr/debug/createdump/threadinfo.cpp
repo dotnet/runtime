@@ -387,3 +387,9 @@ ThreadInfo::GetThreadStack()
         TRACE("Thread %04x null stack pointer\n", m_tid);
     }
 }
+
+bool
+ThreadInfo::IsCrashThread() const
+{
+    return m_tid == m_crashInfo.CrashThread();
+}

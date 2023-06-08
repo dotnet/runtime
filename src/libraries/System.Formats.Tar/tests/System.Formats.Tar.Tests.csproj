@@ -13,6 +13,7 @@
     <Compile Include="SimulatedDataStream.cs" />
     <Compile Include="TarEntry\TarEntry.ExtractToFile.Tests.cs" />
     <Compile Include="TarEntry\TarEntry.ExtractToFileAsync.Tests.cs" />
+    <Compile Include="TarFile\TarFile.CreateFromDirectoryAsync.File.Roundtrip.cs" />
     <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.Stream.Tests.cs" />
     <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.File.Tests.cs" />
     <Compile Include="TarFile\TarFile.CreateFromDirectoryAsync.Stream.Tests.cs" />

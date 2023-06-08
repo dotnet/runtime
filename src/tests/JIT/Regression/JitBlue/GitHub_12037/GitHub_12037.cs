@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 public class TailCallOptTest
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool res1 = Caller1(new object(), 0L, 0xBEEF, new TypedDouble(1.0), new TypedDouble(2.0), new TypedDouble(3.0));
         bool res2 = Caller2(new object(), 0L, 0xBEEF, new TypedDouble(1.0), new TwoInts(3, 5), new TypedDouble(3.0));

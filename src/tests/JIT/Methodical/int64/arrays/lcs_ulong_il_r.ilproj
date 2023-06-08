@@ -5,6 +5,7 @@
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="lcs_ulong_r.il" />
     <Compile Include="lcs_ulong.il" />
   </ItemGroup>
 </Project>

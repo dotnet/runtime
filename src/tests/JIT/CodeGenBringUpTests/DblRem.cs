@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_DblRem
 {
     const int Pass = 100;
@@ -13,7 +14,8 @@ public class BringUpTest_DblRem
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static double DblRem(double x, double y) { return x%y; }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         double y = DblRem(81f, 45f);
         Console.WriteLine(y);

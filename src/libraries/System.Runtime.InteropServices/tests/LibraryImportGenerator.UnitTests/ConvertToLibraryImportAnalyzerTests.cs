@@ -10,7 +10,7 @@ using Xunit;
 
 using static Microsoft.Interop.Analyzers.ConvertToLibraryImportAnalyzer;
 
-using VerifyCS = LibraryImportGenerator.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.Analyzers.ConvertToLibraryImportAnalyzer>;
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.Analyzers.ConvertToLibraryImportAnalyzer>;
 
 namespace LibraryImportGenerator.UnitTests
 {
@@ -36,7 +36,7 @@ namespace LibraryImportGenerator.UnitTests
             new object[] { typeof(bool*) },
             new object[] { typeof(char*) },
             // See issue https://github.com/dotnet/runtime/issues/71891
-            // new object[] { typeof(delegate* <void>) }, 
+            // new object[] { typeof(delegate* <void>) },
             new object[] { typeof(IntPtr) },
             new object[] { typeof(ConsoleKey) }, // enum
         };
@@ -71,20 +71,20 @@ namespace LibraryImportGenerator.UnitTests
         public async Task ByRef_ReportsDiagnostic(Type type)
         {
             string typeName = type.FullName!;
-            string source = @$"
-using System.Runtime.InteropServices;
-unsafe partial class Test
-{{
-    [DllImport(""DoesNotExist"")]
-    public static extern void {{|#0:Method_In|}}(in {typeName} p);
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                unsafe partial class Test
+                {
+                    [DllImport("DoesNotExist")]
+                    public static extern void {|#0:Method_In|}(in {{typeName}} p);
 
-    [DllImport(""DoesNotExist"")]
-    public static extern void {{|#1:Method_Out|}}(out {typeName} p);
+                    [DllImport("DoesNotExist")]
+                    public static extern void {|#1:Method_Out|}(out {{typeName}} p);
 
-    [DllImport(""DoesNotExist"")]
-    public static extern void {{|#2:Method_Ref|}}(ref {typeName} p);
-}}
-";
+                    [DllImport("DoesNotExist")]
+                    public static extern void {|#2:Method_Ref|}(ref {{typeName}} p);
+                }
+                """;
             await VerifyCS.VerifyAnalyzerAsync(
                 source,
                 VerifyCS.Diagnostic(ConvertToLibraryImport)
@@ -101,17 +101,18 @@ unsafe partial class Test
         [Fact]
         public async Task SetLastErrorTrue_ReportsDiagnostic()
         {
-            string source = @$"
-using System.Runtime.InteropServices;
-partial class Test
-{{
-    [DllImport(""DoesNotExist"", SetLastError = false)]
-    public static extern void {{|#0:Method1|}}();
+            string source = """
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [DllImport("DoesNotExist", SetLastError = false)]
+                    public static extern void {|#0:Method1|}();
 
-    [DllImport(""DoesNotExist"", SetLastError = true)]
-    public static extern void {{|#1:Method2|}}();
-}}
-";
+                    [DllImport("DoesNotExist", SetLastError = true)]
+                    public static extern void {|#1:Method2|}();
+                }
+
+                """;
             await VerifyCS.VerifyAnalyzerAsync(
                 source,
                 VerifyCS.Diagnostic(ConvertToLibraryImport)
@@ -131,71 +132,96 @@ partial class Test
         }
 
         [Theory]
-        [InlineData(UnmanagedType.Interface)]
         [InlineData(UnmanagedType.IDispatch)]
         [InlineData(UnmanagedType.IInspectable)]
         [InlineData(UnmanagedType.IUnknown)]
         [InlineData(UnmanagedType.SafeArray)]
         public async Task UnsupportedUnmanagedType_NoDiagnostic(UnmanagedType unmanagedType)
         {
-            string source = $@"
-using System.Runtime.InteropServices;
-unsafe partial class Test
-{{
-    [DllImport(""DoesNotExist"")]
-    public static extern void Method_Parameter([MarshalAs(UnmanagedType.{unmanagedType}, MarshalType = ""DNE"")]int p);
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                unsafe partial class Test
+                {
+                    [DllImport("DoesNotExist")]
+                    public static extern void Method_Parameter([MarshalAs(UnmanagedType.{{unmanagedType}}, MarshalType = "DNE")]int p);
 
-    [DllImport(""DoesNotExist"")]
-    [return: MarshalAs(UnmanagedType.{unmanagedType}, MarshalType = ""DNE"")]
-    public static extern int Method_Return();
-}}
-";
+                    [DllImport("DoesNotExist")]
+                    [return: MarshalAs(UnmanagedType.{{unmanagedType}}, MarshalType = "DNE")]
+                    public static extern int Method_Return();
+                }
+                """;
+            await VerifyCS.VerifyAnalyzerAsync(source);
+        }
+
+        [Fact]
+        public async Task UnmanagedTypeInterfaceWithComImportType_NoDiagnostic()
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices;
+
+                [ComImport]
+                [Guid("8509bcd0-45bc-4b04-bb45-f3cac0b4cabd")]
+                interface IFoo
+                {
+                    void Bar();
+                }
+
+                unsafe partial class Test
+                {
+                    [DllImport("DoesNotExist")]
+                    public static extern void Method_Parameter([MarshalAs(UnmanagedType.Interface)]IFoo p);
+
+                    [DllImport("DoesNotExist")]
+                    [return: MarshalAs(UnmanagedType.Interface, MarshalType = "DNE")]
+                    public static extern IFoo Method_Return();
+                }
+                """;
             await VerifyCS.VerifyAnalyzerAsync(source);
         }
 
         [Fact]
         public async Task LibraryImport_NoDiagnostic()
         {
-            string source = @$"
-using System.Runtime.InteropServices;
-partial class Test
-{{
-    [LibraryImport(""DoesNotExist"")]
-    public static partial void Method();
-}}
-partial class Test
-{{
-    [DllImport(""DoesNotExist"")]
-    public static extern partial void Method();
-}}
-";
+            string source = """
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial void Method();
+                }
+                partial class Test
+                {
+                    [DllImport("DoesNotExist")]
+                    public static extern partial void Method();
+                }
+                """;
             await VerifyCS.VerifyAnalyzerAsync(source);
         }
 
         [Fact]
         public async Task NotDllImport_NoDiagnostic()
         {
-            string source = @$"
-using System.Runtime.InteropServices;
-partial class Test
-{{
-    public static extern bool Method1(bool p, in bool pIn, ref bool pRef, out bool pOut);
-    public static extern int Method2(int p, in int pIn, ref int pRef, out int pOut);
-}}
-";
+            string source = """
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    public static extern bool Method1(bool p, in bool pIn, ref bool pRef, out bool pOut);
+                    public static extern int Method2(int p, in int pIn, ref int pRef, out int pOut);
+                }
+                """;
             await VerifyCS.VerifyAnalyzerAsync(source);
         }
 
-        private static string DllImportWithType(string typeName) => @$"
-using System.Runtime.InteropServices;
-unsafe partial class Test
-{{
-    [DllImport(""DoesNotExist"")]
-    public static extern void {{|#0:Method_Parameter|}}({typeName} p);
+        private static string DllImportWithType(string typeName) => $$"""
+            using System.Runtime.InteropServices;
+            unsafe partial class Test
+            {
+                [DllImport("DoesNotExist")]
+                public static extern void {|#0:Method_Parameter|}({{typeName}} p);
 
-    [DllImport(""DoesNotExist"")]
-    public static extern {typeName} {{|#1:Method_Return|}}();
-}}
-";
+                [DllImport("DoesNotExist")]
+                public static extern {{typeName}} {|#1:Method_Return|}();
+            }
+            """;
     }
 }

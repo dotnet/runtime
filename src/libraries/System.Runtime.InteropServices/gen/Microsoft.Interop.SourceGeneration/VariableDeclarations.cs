@@ -37,13 +37,13 @@ namespace Microsoft.Interop
             }
 
             // Stub return is not the same as invoke return
-            if (!marshallers.IsManagedVoidReturn && !marshallers.ManagedNativeSameReturn)
+            if (!marshallers.IsManagedVoidReturn)
             {
                 // Declare variables for stub return value
                 AppendVariableDeclarations(variables, marshallers.ManagedReturnMarshaller, context, initializeToDefault: initializeDeclarations);
             }
 
-            if (!marshallers.IsManagedVoidReturn)
+            if (!marshallers.IsUnmanagedVoidReturn && !marshallers.ManagedNativeSameReturn)
             {
                 // Declare variables for invoke return value
                 AppendVariableDeclarations(variables, marshallers.NativeReturnMarshaller, context, initializeToDefault: initializeDeclarations);
@@ -87,21 +87,20 @@ namespace Microsoft.Interop
             foreach (BoundGenerator marshaller in marshallers.NativeParameterMarshallers)
             {
                 TypePositionInfo info = marshaller.TypeInfo;
-                if (info.IsNativeReturnPosition)
+                if (info.IsNativeReturnPosition || info.IsManagedReturnPosition)
                     continue;
 
                 // Declare variables for parameters
                 AppendVariableDeclarations(variables, marshaller, context, initializeToDefault: initializeDeclarations);
             }
 
-            // Stub return is not the same as invoke return
-            if (!marshallers.IsManagedVoidReturn && !marshallers.ManagedNativeSameReturn)
+            if (!marshallers.IsManagedVoidReturn)
             {
                 // Declare variables for stub return value
                 AppendVariableDeclarations(variables, marshallers.ManagedReturnMarshaller, context, initializeToDefault: initializeDeclarations);
             }
 
-            if (!marshallers.IsManagedVoidReturn)
+            if (!marshallers.IsUnmanagedVoidReturn && !marshallers.ManagedNativeSameReturn)
             {
                 // Declare variables for invoke return value
                 AppendVariableDeclarations(variables, marshallers.NativeReturnMarshaller, context, initializeToDefault: initializeDeclarations);
@@ -134,21 +133,6 @@ namespace Microsoft.Interop
                             marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax,
                             native,
                             initializeToDefault: true));
-                    }
-                }
-                else if (marshaller.TypeInfo.IsManagedReturnPosition)
-                {
-                    statementsToUpdate.Add(MarshallerHelpers.Declare(
-                        marshaller.TypeInfo.ManagedType.Syntax,
-                        managed,
-                        initializeToDefault));
-
-                    if (marshaller.Generator.UsesNativeIdentifier(marshaller.TypeInfo, context))
-                    {
-                        statementsToUpdate.Add(MarshallerHelpers.Declare(
-                            marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax,
-                            native,
-                            initializeToDefault));
                     }
                 }
                 else

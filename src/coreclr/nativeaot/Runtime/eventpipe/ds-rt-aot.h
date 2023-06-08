@@ -13,6 +13,8 @@
 #include <eventpipe/ds-profiler-protocol.h>
 #include <eventpipe/ds-dump-protocol.h>
 
+#include <RhConfig.h>
+
 #undef DS_LOG_ALWAYS_0
 #define DS_LOG_ALWAYS_0(msg) do {} while (0)
 
@@ -63,22 +65,6 @@
 
 #undef DS_EXIT_BLOCKING_PAL_SECTION
 #define DS_EXIT_BLOCKING_PAL_SECTION
-
-#undef DS_RT_DEFINE_ARRAY
-#define DS_RT_DEFINE_ARRAY(array_name, array_type, iterator_type, item_type) \
-    EP_RT_DEFINE_ARRAY_PREFIX(ds, array_name, array_type, iterator_type, item_type)
-
-#undef DS_RT_DEFINE_LOCAL_ARRAY
-#define DS_RT_DEFINE_LOCAL_ARRAY(array_name, array_type, iterator_type, item_type) \
-    EP_RT_DEFINE_LOCAL_ARRAY_PREFIX(ds, array_name, array_type, iterator_type, item_type)
-
-#undef DS_RT_DEFINE_ARRAY_ITERATOR
-#define DS_RT_DEFINE_ARRAY_ITERATOR(array_name, array_type, iterator_type, item_type) \
-    EP_RT_DEFINE_ARRAY_ITERATOR_PREFIX(ds, array_name, array_type, iterator_type, item_type)
-
-#undef DS_RT_DEFINE_ARRAY_REVERSE_ITERATOR
-#define DS_RT_DEFINE_ARRAY_REVERSE_ITERATOR(array_name, array_type, iterator_type, item_type) \
-    EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR_PREFIX(ds, array_name, array_type, iterator_type, item_type)
 
 /*
 * AutoTrace.
@@ -143,8 +129,10 @@ ds_rt_config_value_get_enable (void)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: EventPipe Configuration values - RhConfig?
+    bool value;
+    if (RhConfig::Environment::TryGetBooleanValue("EnableDiagnostics", &value))
+        return value;
+
     return true;
 }
 
@@ -153,8 +141,12 @@ inline
 ep_char8_t *
 ds_rt_config_value_get_ports (void)
 {
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: EventPipe Configuration values - RhConfig?
+    STATIC_CONTRACT_NOTHROW;
+
+    char* value;
+    if (RhConfig::Environment::TryGetStringValue("DiagnosticPorts", &value))
+        return (ep_char8_t*)value;
+
     return nullptr;
 }
 
@@ -164,8 +156,14 @@ uint32_t
 ds_rt_config_value_get_default_port_suspend (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: EventPipe Configuration values - RhConfig?
+    
+    uint64_t value;
+    if (RhConfig::Environment::TryGetIntegerValue("DefaultDiagnosticPortSuspend", &value))
+    {
+        EP_ASSERT(value <= UINT32_MAX);
+        return static_cast<uint32_t>(value);
+    }
+
     return 0;
 }
 
@@ -207,40 +205,11 @@ ds_rt_transport_get_default_name (
     const ep_char8_t *group_id,
     const ep_char8_t *suffix)
 {
-    STATIC_CONTRACT_NOTHROW;
-    
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: PAL_GetTransportName is defined in coreclr\pal\inc\pal.h
-    return true;
+
+    extern bool ds_rt_aot_transport_get_default_name (ep_char8_t *name, int32_t name_len, const ep_char8_t *prefix, int32_t id, const ep_char8_t *group_id, const ep_char8_t *suffix);
+
+    return ds_rt_aot_transport_get_default_name(name, name_len, prefix, id, group_id, suffix);
 }
-
-/*
- * DiagnosticsIpcPollHandle.
- */
-
-DS_RT_DEFINE_ARRAY (ipc_poll_handle_array, ds_rt_ipc_poll_handle_array_t, ds_rt_ipc_poll_handle_array_iterator_t, DiagnosticsIpcPollHandle)
-DS_RT_DEFINE_LOCAL_ARRAY (ipc_poll_handle_array, ds_rt_ipc_poll_handle_array_t, ds_rt_ipc_poll_handle_array_iterator_t, DiagnosticsIpcPollHandle)
-DS_RT_DEFINE_ARRAY_ITERATOR (ipc_poll_handle_array, ds_rt_ipc_poll_handle_array_t, ds_rt_ipc_poll_handle_array_iterator_t, DiagnosticsIpcPollHandle)
-
-#undef DS_RT_DECLARE_LOCAL_IPC_POLL_HANDLE_ARRAY
-#define DS_RT_DECLARE_LOCAL_IPC_POLL_HANDLE_ARRAY(var_name) \
-    EP_RT_DECLARE_LOCAL_ARRAY_VARIABLE(var_name, ds_rt_ipc_poll_handle_array_t)
-
-/*
- * DiagnosticsPort.
- */
-
-DS_RT_DEFINE_ARRAY (port_array, ds_rt_port_array_t, ds_rt_port_array_iterator_t, DiagnosticsPort *)
-DS_RT_DEFINE_ARRAY_ITERATOR (port_array, ds_rt_port_array_t, ds_rt_port_array_iterator_t, DiagnosticsPort *)
-
-DS_RT_DEFINE_ARRAY (port_config_array, ds_rt_port_config_array_t, ds_rt_port_config_array_iterator_t, ep_char8_t *)
-DS_RT_DEFINE_LOCAL_ARRAY (port_config_array, ds_rt_port_config_array_t, ds_rt_port_config_array_iterator_t, ep_char8_t *)
-DS_RT_DEFINE_ARRAY_ITERATOR (port_config_array, ds_rt_port_config_array_t, ds_rt_port_config_array_iterator_t, ep_char8_t *)
-DS_RT_DEFINE_ARRAY_REVERSE_ITERATOR (port_config_array, ds_rt_port_config_array_t, ds_rt_port_config_array_reverse_iterator_t, ep_char8_t *)
-
-#undef DS_RT_DECLARE_LOCAL_PORT_CONFIG_ARRAY
-#define DS_RT_DECLARE_LOCAL_PORT_CONFIG_ARRAY(var_name) \
-    EP_RT_DECLARE_LOCAL_ARRAY_VARIABLE(var_name, ds_rt_port_config_array_t)
 
 /*
 * DiagnosticsProfiler.
@@ -302,6 +271,20 @@ ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *valu
     return 0xffff;
 }
 
+static
+uint32_t
+ds_rt_enable_perfmap (uint32_t type)
+{
+    return DS_IPC_E_NOTSUPPORTED;
+}
+
+static
+uint32_t
+ds_rt_disable_perfmap (void)
+{
+    return DS_IPC_E_NOTSUPPORTED;
+}
+
 /*
 * DiagnosticServer.
 */
@@ -312,10 +295,15 @@ ds_rt_server_log_pause_message (void)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    const char diagPortsName[] = "DOTNET_DiagnosticPorts";
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Cannot find nocache versions of RhConfig
-    // PalDebugBreak();
+    ep_char8_t * ports = ds_rt_config_value_get_ports ();
+	uint32_t port_suspended = ds_rt_config_value_get_default_port_suspend ();
+
+	printf ("The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command from a Diagnostic Port.\n");
+	printf ("DOTNET_DiagnosticPorts=\"%s\"\n", ports == nullptr ? "" : ports);
+	printf ("DOTNET_DefaultDiagnosticPortSuspend=%d\n", port_suspended);
+	fflush (stdout);
+
+	ep_rt_utf8_string_free (ports);
 }
 
 #endif /* ENABLE_PERFTRACING */

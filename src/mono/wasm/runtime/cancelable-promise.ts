@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { _lookup_js_owned_object } from "./gc-handles";
+import { createPromiseController, loaderHelpers } from "./globals";
 import { TaskCallbackHolder } from "./marshal-to-cs";
-import { mono_assert, GCHandle } from "./types";
-import { createPromiseController, getPromiseController, ControllablePromise, assertIsControllablePromise } from "./promise-controller";
+import { ControllablePromise, GCHandle } from "./types/internal";
 
 export const _are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function isThenable(js_obj: any): boolean {
     // When using an external Promise library like Bluebird the Promise.resolve may not be sufficient
     // to identify the object as a Promise.
@@ -29,8 +28,8 @@ export function mono_wasm_cancel_promise(task_holder_gc_handle: GCHandle): void 
 
     const promise = holder.promise;
     mono_assert(!!promise, () => `Expected Promise for GCHandle ${task_holder_gc_handle}`);
-    assertIsControllablePromise(promise);
-    const promise_control = getPromiseController(promise);
+    loaderHelpers.assertIsControllablePromise(promise);
+    const promise_control = loaderHelpers.getPromiseController(promise);
     promise_control.reject("OperationCanceledException");
 }
 

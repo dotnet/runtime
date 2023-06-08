@@ -52,7 +52,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// <param name="options">Options for the connection.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
     /// <returns>An asynchronous task that completes with the connected connection.</returns>
-    public static async ValueTask<QuicConnection> ConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken = default)
+    public static ValueTask<QuicConnection> ConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken = default)
     {
         if (!IsSupported)
         {
@@ -61,18 +61,23 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         // Validate and fill in defaults for the options.
         options.Validate(nameof(options));
+        return StartConnectAsync(options, cancellationToken);
 
-        QuicConnection connection = new QuicConnection();
-        try
+        static async ValueTask<QuicConnection> StartConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken)
         {
-            await connection.FinishConnectAsync(options, cancellationToken).ConfigureAwait(false);
+            QuicConnection connection = new QuicConnection();
+            try
+            {
+                await connection.FinishConnectAsync(options, cancellationToken).ConfigureAwait(false);
+            }
+            catch
+            {
+                await connection.DisposeAsync().ConfigureAwait(false);
+                throw;
+            }
+
+            return connection;
         }
-        catch
-        {
-            await connection.DisposeAsync().ConfigureAwait(false);
-            throw;
-        }
-        return connection;
     }
 
     /// <summary>
@@ -150,6 +155,12 @@ public sealed partial class QuicConnection : IAsyncDisposable
     public IPEndPoint LocalEndPoint => _localEndPoint;
 
     /// <summary>
+    /// Gets the name of the server the client is trying to connect to. That name is used for server certificate validation. It can be a DNS name or an IP address.
+    /// </summary>
+    /// <returns>The name of the server the client is trying to connect to.</returns>
+    public string TargetHostName => _sslConnectionOptions.TargetHost ?? string.Empty;
+
+    /// <summary>
     /// The certificate provided by the peer.
     /// For an outbound/client connection will always have the peer's (server) certificate; for an inbound/server one, only if the connection requested and the peer (client) provided one.
     /// </summary>
@@ -223,8 +234,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
     private async ValueTask FinishConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
-
         if (_connectedTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken))
         {
             _canAccept = options.MaxInboundBidirectionalStreams > 0 || options.MaxInboundUnidirectionalStreams > 0;
@@ -247,7 +256,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             // RemoteEndPoint is DnsEndPoint containing hostname that is different from requested SNI.
             // --> Resolve the hostname and set the IP directly, use requested SNI in ConnectionStart.
             else if (host is not null &&
-                    !host.Equals(options.ClientAuthenticationOptions.TargetHost, StringComparison.InvariantCultureIgnoreCase))
+                    !host.Equals(options.ClientAuthenticationOptions.TargetHost, StringComparison.OrdinalIgnoreCase))
             {
                 IPAddress[] addresses = await Dns.GetHostAddressesAsync(host!, cancellationToken).ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
@@ -279,10 +288,16 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 MsQuicHelpers.SetMsQuicParameter(_handle, QUIC_PARAM_CONN_LOCAL_ADDRESS, quicAddress);
             }
 
+            // RFC 6066 forbids IP literals
+            // DNI mapping is handled by MsQuic
+            var hostname = TargetHostNameHelper.IsValidAddress(options.ClientAuthenticationOptions.TargetHost)
+                ? string.Empty
+                : options.ClientAuthenticationOptions.TargetHost ?? string.Empty;
+
             _sslConnectionOptions = new SslConnectionOptions(
                 this,
                 isClient: true,
-                options.ClientAuthenticationOptions.TargetHost,
+                hostname,
                 certificateRequired: true,
                 options.ClientAuthenticationOptions.CertificateRevocationCheckMode,
                 options.ClientAuthenticationOptions.RemoteCertificateValidationCallback,
@@ -312,7 +327,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         await valueTask.ConfigureAwait(false);
     }
 
-    internal ValueTask FinishHandshakeAsync(QuicServerConnectionOptions options, string? targetHost, CancellationToken cancellationToken = default)
+    internal ValueTask FinishHandshakeAsync(QuicServerConnectionOptions options, string targetHost, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
@@ -322,10 +337,16 @@ public sealed partial class QuicConnection : IAsyncDisposable
             _defaultStreamErrorCode = options.DefaultStreamErrorCode;
             _defaultCloseErrorCode = options.DefaultCloseErrorCode;
 
+            // RFC 6066 forbids IP literals, avoid setting IP address here for consistency with SslStream
+            if (TargetHostNameHelper.IsValidAddress(targetHost))
+            {
+                targetHost = string.Empty;
+            }
+
             _sslConnectionOptions = new SslConnectionOptions(
                 this,
                 isClient: false,
-                targetHost: null,
+                targetHost,
                 options.ServerAuthenticationOptions.ClientCertificateRequired,
                 options.ServerAuthenticationOptions.CertificateRevocationCheckMode,
                 options.ServerAuthenticationOptions.RemoteCertificateValidationCallback,

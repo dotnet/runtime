@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Text;
 using System.Runtime.Serialization;
 
@@ -10,6 +11,10 @@ namespace System.DirectoryServices.Protocols
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices.Protocols, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public class DirectoryException : Exception
     {
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected DirectoryException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -31,6 +36,10 @@ namespace System.DirectoryServices.Protocols
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices.Protocols, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public class DirectoryOperationException : DirectoryException, ISerializable
     {
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected DirectoryOperationException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 
         public DirectoryOperationException() : base() { }
@@ -74,6 +83,10 @@ namespace System.DirectoryServices.Protocols
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices.Protocols, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public class BerConversionException : DirectoryException
     {
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected BerConversionException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 
         public BerConversionException() : base(SR.BerConversionError)

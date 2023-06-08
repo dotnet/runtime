@@ -60,6 +60,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         )
 
         target_link_libraries(System.IO.Compression.Native
+            PRIVATE
             ${NATIVE_LIBS_EXTRA}
         )
 
@@ -103,6 +104,7 @@ else ()
 
     if (CLR_CMAKE_HOST_ARCH_I386 OR CLR_CMAKE_HOST_ARCH_AMD64)
         include(${CLR_SRC_NATIVE_DIR}/external/zlib-intel.cmake)
+        add_definitions(-DINTERNAL_ZLIB_INTEL)
     else ()
         include(${CLR_SRC_NATIVE_DIR}/external/zlib.cmake)
     endif ()
@@ -142,17 +144,6 @@ else ()
             ${NATIVECOMPRESSION_SOURCES}
         )
         target_compile_options(System.IO.Compression.Native.Aot.GuardCF PRIVATE /GL-)
-    endif()
-
-    # Allow specification of libraries that should be linked against
-    if (GEN_SHARED_LIB)
-        target_link_libraries(System.IO.Compression.Native ${__LinkLibraries})
-    endif ()
-    target_link_libraries(System.IO.Compression.Native-Static ${__LinkLibraries})
-
-    if(STATIC_LIBS_ONLY)
-        target_link_libraries(System.IO.Compression.Native.Aot ${__LinkLibraries})
-        target_link_libraries(System.IO.Compression.Native.Aot.GuardCF ${__LinkLibraries})
     endif()
 
     if (GEN_SHARED_LIB)

@@ -310,6 +310,12 @@ BEGIN
 	IDS_CLASSLOAD_GENERICTYPE_RECURSIVE     "Could not load type '%1' from assembly '%2' because it has recursive generic definition."
     IDS_CLASSLOAD_TOOMANYGENERICARGS        "Could not load type '%1' from assembly '%2'. Internal limitation: Too many generic arguments."
 
+    IDS_CLASSLOAD_INLINE_ARRAY_FIELD_COUNT  "InlineArrayAttribute requires that the target type has a single instance field. Type: '%1'.  Assembly: '%2'."
+    IDS_CLASSLOAD_INLINE_ARRAY_LENGTH       "InlineArrayAttribute requires that the length argument is greater than 0. Type: '%1'.  Assembly: '%2'."
+    IDS_CLASSLOAD_INLINE_ARRAY_EXPLICIT     "InlineArrayAttribute cannot be applied to a type with explicit layout. Type: '%1'.  Assembly: '%2'."
+
+    IDS_INVALID_RECURSIVE_GENERIC_FIELD_LOAD "Could not load type '%1' from assembly '%2' because of an invalid self-referential generic field."
+
 #if FEATURE_COMINTEROP
     IDS_EE_CANNOTCAST_NOMARSHAL                 "The Windows Runtime Object can only be used in the threading context where it was created, because it implements INoMarshal or has MarshalingBehaviorAttribute(MarshalingType.None) set."
 #endif

@@ -40,11 +40,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestArrayResetGetElementOnByRefArray ();
 			TestArrayResetAfterCall ();
 			TestArrayResetAfterAssignment ();
+
+			TestArrayRecursion ();
+
 			TestMultiDimensionalArray.Test ();
 
 			WriteCapturedArrayElement.Test ();
 
 			ConstantFieldValuesAsIndex.Test ();
+
+			HoistedArrayMutation.Test ();
 		}
 
 		[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
@@ -271,6 +276,18 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			_externalArray = arr;
 
 			arr[0].RequiresPublicFields (); // Should warn
+		}
+
+		static void TestArrayRecursion ()
+		{
+			typeof (TestType).RequiresAll (); // Force data flow on this method
+
+			object[] arr = new object[3];
+			arr[0] = arr; // Recursive reference
+
+			ConsumeArray (arr);
+
+			static void ConsumeArray (object[] a) { }
 		}
 
 		static Type[] _externalArray;
@@ -620,6 +637,38 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				types[ConstUShort].RequiresPublicMethods ();
 				types[ConstInt].RequiresPublicMethods ();
 				types[ConstUInt].RequiresPublicMethods ();
+			}
+		}
+
+		class HoistedArrayMutation
+		{
+			static void LoopAssignmentWithInitAfter ()
+			{
+				// This is a repro for https://github.com/dotnet/runtime/issues/86379
+				// The array value is a hoisted local
+				// It's first used in the main method (in the for loop)
+				// this doesn't get a deep clone of the value, it takes the value from
+				// the hoisted locals dictionary - and modifies it.
+				// The local function Initialize then creates a deep copy and uses that.
+				// Because of a bug, the changes done in the main body method are also
+				// visible in the "old" interprocedural state. So the state never settles
+				// and this causes an endless loop in the analyzer.
+				int[] arr;
+
+				Initialize ();
+				for (int i = 0; i < arr.Length; i++) {
+					arr[i] = 0;
+				}
+
+				void Initialize ()
+				{
+					arr = new int[10];
+				}
+			}
+
+			public static void Test ()
+			{
+				LoopAssignmentWithInitAfter ();
 			}
 		}
 

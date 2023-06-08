@@ -128,9 +128,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 		}
 
-		// https://github.com/dotnet/runtime/issues/72833
-		// NativeAOT doesn't implement full type name parser yet
-		[Kept (By = Tool.Trimmer)]
+		[Kept]
 		class FromStringConstantWithGenericInner
 		{
 		}
@@ -143,9 +141,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public T GetValue () { return default (T); }
 		}
 
-		// https://github.com/dotnet/runtime/issues/72833
-		// NativeAOT doesn't implement full type name parser yet
-		[Kept (By = Tool.Trimmer)]
+		[Kept]
 		class FromStringConstantWithGenericInnerInner
 		{
 			[Kept (By = Tool.Trimmer)]
@@ -156,7 +152,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			int unusedField;
 		}
 
-		[Kept (By = Tool.Trimmer)]
+		[Kept]
 		class FromStringConstantWithGenericInnerOne<
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), By = Tool.Trimmer)]
@@ -164,9 +160,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 		}
 
-		// https://github.com/dotnet/runtime/issues/72833
-		// NativeAOT doesn't implement full type name parser yet
-		[Kept (By = Tool.Trimmer)]
+		[Kept]
 		class FromStringConstantWithGenericInnerTwo
 		{
 			void UnusedMethod ()
@@ -174,22 +168,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		// https://github.com/dotnet/runtime/issues/72833
-		// NativeAOT doesn't implement full type name parser yet
-		[Kept (By = Tool.Trimmer)]
+		[Kept]
 		class FromStringConstantWitGenericInnerMultiDimArray
 		{
 		}
 
-		// https://github.com/dotnet/runtime/issues/72833
-		// NativeAOT actually preserves this, but for a slightly wrong reason - it completely ignores the array notations
 		[Kept]
-		[KeptMember (".ctor()", By = Tool.NativeAot)]
 		class FromStringConstantWithMultiDimArray
 		{
-			// https://github.com/dotnet/runtime/issues/72833
-			// NativeAOT actually preserves this, but for a slightly wrong reason - it completely ignores the array notations
-			[Kept (By = Tool.NativeAot)]
 			public void UnusedMethod () { }
 		}
 
@@ -200,6 +186,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
+		[KeptAttributeAttribute(typeof(UnconditionalSuppressMessageAttribute))]
+		[UnconditionalSuppressMessage("test", "IL3050", Justification = "The test applies DAM on System.Array, which contains CreateInstance method which has RDC on it.")]
 		static void TestFromStringConstantWithGeneric ()
 		{
 			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGeneric`1[[Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGenericInner]]");

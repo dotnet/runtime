@@ -5,15 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-using AssemblyName = System.Reflection.AssemblyName;
-using Debug = System.Diagnostics.Debug;
+using Internal.TypeSystem;
+
+#nullable disable
 
 namespace Internal.TypeSystem
 {
-    // TODO: This file is pretty much a line-by-line port of C++ code to parse CA type name strings from NUTC.
-    //       It's a stopgap solution.
-    //       This should be replaced with type name parser in System.Reflection.Metadata once it starts shipping.
-
     public static class CustomAttributeTypeNameParser
     {
         /// <summary>
@@ -21,441 +18,107 @@ namespace Internal.TypeSystem
         /// The type name string should be in the 'SerString' format as defined by the ECMA-335 standard.
         /// This is the inverse of what <see cref="CustomAttributeTypeNameFormatter"/> does.
         /// </summary>
-        public static TypeDesc GetTypeByCustomAttributeTypeName(this ModuleDesc module, string name, bool throwIfNotFound = true, Func<string, ModuleDesc, bool, MetadataType> resolver = null)
+        public static TypeDesc GetTypeByCustomAttributeTypeName(this ModuleDesc module, string name, bool throwIfNotFound = true,
+            Func<ModuleDesc, string, MetadataType> canonResolver = null)
         {
-            TypeDesc loadedType;
+            return System.Reflection.TypeNameParser.ResolveType(module, name, throwIfNotFound, canonResolver);
+        }
+    }
+}
 
-            StringBuilder genericTypeDefName = new StringBuilder(name.Length);
+namespace System.Reflection
+{
+    internal partial struct TypeNameParser
+    {
+        private ModuleDesc _module;
+        private bool _throwIfNotFound;
+        private Func<ModuleDesc, string, MetadataType> _canonResolver;
 
-            var ch = name.Begin();
-            var nameEnd = name.End();
-
-            for (; ch < nameEnd; ++ch)
+        public static TypeDesc ResolveType(ModuleDesc module, string name, bool throwIfNotFound,
+            Func<ModuleDesc, string, MetadataType> canonResolver)
+        {
+            return new TypeNameParser(name.AsSpan())
             {
-                // Always pass escaped characters through.
-                if (ch.Current == '\\')
-                {
-                    genericTypeDefName.Append(ch.Current);
-                    ++ch;
-                    if (ch < nameEnd)
-                    {
-                        genericTypeDefName.Append(ch.Current);
-                    }
-                    continue;
-                }
+                _module = module,
+                _throwIfNotFound = throwIfNotFound,
+                _canonResolver = canonResolver
+            }.Parse()?.Value;
+        }
 
-                // The type def name ends if
+        private sealed class Type
+        {
+            public Type(TypeDesc type) => Value = type;
+            public TypeDesc Value { get; }
 
-                // The start of a generic argument list
-                if (ch.Current == '[')
-                    break;
+            public Type MakeArrayType() => new Type(Value.MakeArrayType());
+            public Type MakeArrayType(int rank) => new Type(Value.MakeArrayType(rank));
+            public Type MakePointerType() => new Type(Value.MakePointerType());
+            public Type MakeByRefType() => new Type(Value.MakeByRefType());
 
-                // Indication that the type is a pointer
-                if (ch.Current == '*')
-                    break;
+            public Type MakeGenericType(Type[] typeArguments)
+            {
+                TypeDesc[] instantiation = new TypeDesc[typeArguments.Length];
+                for (int i = 0; i < typeArguments.Length; i++)
+                    instantiation[i] = typeArguments[i].Value;
+                return new Type(((MetadataType)Value).MakeInstantiatedType(instantiation));
+            }
+        }
 
-                // Indication that the type is a reference
-                if (ch.Current == '&')
-                    break;
+        private static bool CheckTopLevelAssemblyQualifiedName() => true;
 
-                // A comma that indicates that the rest of the name is an assembly reference
-                if (ch.Current == ',')
-                    break;
+        private Type GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, string assemblyNameIfAny)
+        {
+            ModuleDesc module = (assemblyNameIfAny == null) ? _module :
+                _module.Context.ResolveAssembly(new AssemblyName(assemblyNameIfAny), throwIfNotFound: _throwIfNotFound);
 
-                genericTypeDefName.Append(ch.Current);
+            if (_canonResolver != null && nestedTypeNames.IsEmpty)
+            {
+                MetadataType canonType = _canonResolver(module, typeName);
+                if (canonType != null)
+                    return new Type(canonType);
             }
 
-            ModuleDesc homeModule = module;
-            AssemblyName homeAssembly = FindAssemblyIfNamePresent(name);
-            if (homeAssembly != null)
+            if (module != null)
             {
-                homeModule = module.Context.ResolveAssembly(homeAssembly, throwIfNotFound);
-                if (homeModule == null)
-                    return null;
+                Type type = GetTypeCore(module, typeName, nestedTypeNames);
+                if (type != null)
+                    return type;
             }
-            MetadataType typeDef = resolver != null ? resolver(genericTypeDefName.ToString(), homeModule, throwIfNotFound) :
-                ResolveCustomAttributeTypeDefinitionName(genericTypeDefName.ToString(), homeModule, throwIfNotFound);
-            if (typeDef == null)
+
+            // If it didn't resolve and wasn't assembly-qualified, we also try core library
+            if (assemblyNameIfAny == null)
+            {
+                Type type = GetTypeCore(module.Context.SystemModule, typeName, nestedTypeNames);
+                if (type != null)
+                    return type;
+            }
+
+            if (_throwIfNotFound)
+                ThrowHelper.ThrowTypeLoadException(EscapeTypeName(typeName, nestedTypeNames), module);
+            return null;
+        }
+
+        private static Type GetTypeCore(ModuleDesc module, string typeName, ReadOnlySpan<string> nestedTypeNames)
+        {
+            (string typeNamespace, string name) = SplitFullTypeName(typeName);
+
+            MetadataType type = module.GetType(typeNamespace, name, throwIfNotFound: false);
+            if (type == null)
                 return null;
 
-            ArrayBuilder<TypeDesc> genericArgs = default(ArrayBuilder<TypeDesc>);
-
-            // Followed by generic instantiation parameters (but check for the array case)
-            if (ch < nameEnd && ch.Current == '[' && (ch + 1) < nameEnd && (ch + 1).Current != ']' && (ch + 1).Current != ',')
+            for (int i = 0; i < nestedTypeNames.Length; i++)
             {
-                ch++; // truncate the '['
-                var genericInstantiationEnd = ch + ReadTypeArgument(ch, nameEnd, true);  // find the end of the instantiation list
-                while (ch < genericInstantiationEnd)
-                {
-                    if (ch.Current == ',')
-                        ch++;
-
-                    int argLen = ReadTypeArgument(ch, name.End(), false);
-                    string typeArgName;
-                    if (ch.Current == '[')
-                    {
-                        // This type argument name is stringified,
-                        // we need to remove the [] from around it
-                        ch++;
-                        typeArgName = StringIterator.Substring(ch, ch + (argLen - 2));
-                        ch += argLen - 1;
-                    }
-                    else
-                    {
-                        typeArgName = StringIterator.Substring(ch, ch + argLen);
-                        ch += argLen;
-                    }
-
-                    TypeDesc argType = module.GetTypeByCustomAttributeTypeName(typeArgName, throwIfNotFound, resolver);
-                    if (argType == null)
-                        return null;
-                    genericArgs.Add(argType);
-                }
-
-                Debug.Assert(ch == genericInstantiationEnd);
-                ch++;
-
-                loadedType = typeDef.MakeInstantiatedType(genericArgs.ToArray());
-            }
-            else
-            {
-                // Non-generic type
-                loadedType = typeDef;
+                type = type.GetNestedType(nestedTypeNames[i]);
+                if (type == null)
+                    return null;
             }
 
-            // At this point the characters following may be any number of * characters to indicate pointer depth
-            while (ch < nameEnd)
-            {
-                if (ch.Current == '*')
-                {
-                    loadedType = loadedType.MakePointerType();
-                }
-                else
-                {
-                    break;
-                }
-                ch++;
-            }
-
-            // Followed by any number of "[]" or "[,*]" pairs to indicate arrays
-            int commasSeen = 0;
-            bool bracketSeen = false;
-            while (ch < nameEnd)
-            {
-                if (ch.Current == '[')
-                {
-                    ch++;
-                    commasSeen = 0;
-                    bracketSeen = true;
-                }
-                else if (ch.Current == ']')
-                {
-                    if (!bracketSeen)
-                        break;
-
-                    ch++;
-                    if (commasSeen == 0)
-                    {
-                        loadedType = loadedType.MakeArrayType();
-                    }
-                    else
-                    {
-                        loadedType = loadedType.MakeArrayType(commasSeen + 1);
-                    }
-
-                    bracketSeen = false;
-                }
-                else if (ch.Current == ',')
-                {
-                    if (!bracketSeen)
-                        break;
-                    ch++;
-                    commasSeen++;
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            // Followed by at most one & character to indicate a byref.
-            if (ch < nameEnd)
-            {
-                if (ch.Current == '&')
-                {
-                    loadedType = loadedType.MakeByRefType();
-#pragma warning disable IDE0059 // Unnecessary assignment of a value
-                    ch++;
-#pragma warning restore IDE0059 // Unnecessary assignment of a value
-                }
-            }
-
-            return loadedType;
+            return new Type(type);
         }
 
-
-        public static MetadataType ResolveCustomAttributeTypeDefinitionName(string name, ModuleDesc module, bool throwIfNotFound)
+        private void ParseError()
         {
-            MetadataType containingType = null;
-            StringBuilder typeName = new StringBuilder(name.Length);
-            bool escaped = false;
-            for (var c = name.Begin(); c < name.End(); c++)
-            {
-                if (c.Current == '\\' && !escaped)
-                {
-                    escaped = true;
-                    continue;
-                }
-
-                if (escaped)
-                {
-                    escaped = false;
-                    typeName.Append(c.Current);
-                    continue;
-                }
-
-                if (c.Current == ',')
-                {
-                    break;
-                }
-
-                if (c.Current == '[' || c.Current == '*' || c.Current == '&')
-                {
-                    break;
-                }
-
-                if (c.Current == '+')
-                {
-                    if (containingType != null)
-                    {
-                        MetadataType outerType = containingType;
-                        containingType = outerType.GetNestedType(typeName.ToString());
-                        if (containingType == null)
-                        {
-                            if (throwIfNotFound)
-                                ThrowHelper.ThrowTypeLoadException(typeName.ToString(), outerType.Module);
-
-                            return null;
-                        }
-                    }
-                    else
-                    {
-                        containingType = module.GetType(typeName.ToString(), throwIfNotFound);
-                        if (containingType == null)
-                            return null;
-                    }
-                    typeName.Length = 0;
-                    continue;
-                }
-
-                typeName.Append(c.Current);
-            }
-
-            if (containingType != null)
-            {
-                MetadataType type = containingType.GetNestedType(typeName.ToString());
-                if ((type == null) && throwIfNotFound)
-                    ThrowHelper.ThrowTypeLoadException(typeName.ToString(), containingType.Module);
-
-                return type;
-            }
-
-            return module.GetType(typeName.ToString(), throwIfNotFound);
+            ThrowHelper.ThrowTypeLoadException(_input.ToString(), _module);
         }
-
-        private static MetadataType GetType(this ModuleDesc module, string fullName, bool throwIfNotFound = true)
-        {
-            string namespaceName;
-            string typeName;
-            int split = fullName.LastIndexOf('.');
-            if (split < 0)
-            {
-                namespaceName = "";
-                typeName = fullName;
-            }
-            else
-            {
-                namespaceName = fullName.Substring(0, split);
-                typeName = fullName.Substring(split + 1);
-            }
-            return module.GetType(namespaceName, typeName, throwIfNotFound);
-        }
-
-        private static AssemblyName FindAssemblyIfNamePresent(string name)
-        {
-            AssemblyName result = null;
-            var endOfType = name.Begin() + ReadTypeArgument(name.Begin(), name.End(), false);
-            if (endOfType < name.End() && endOfType.Current == ',')
-            {
-                // There is an assembly name here
-                int foundCommas = 0;
-                var endOfAssemblyName = endOfType;
-                for (var ch = endOfType + 1; ch < name.End(); ch++)
-                {
-                    if (foundCommas == 3)
-                    {
-                        // We're now eating the public key token, looking for the end of the name,
-                        // or a right bracket
-                        if (ch.Current == ']' || ch.Current == ',')
-                        {
-                            endOfAssemblyName = ch - 1;
-                            break;
-                        }
-                    }
-
-                    if (ch.Current == ',')
-                    {
-                        foundCommas++;
-                    }
-                }
-                if (endOfAssemblyName == endOfType)
-                {
-                    endOfAssemblyName = name.End();
-                }
-
-                // eat the comma
-                endOfType++;
-                for (; endOfType < endOfAssemblyName; ++endOfType)
-                {
-                    // trim off spaces
-                    if (endOfType.Current != ' ')
-                        break;
-                }
-                result = new AssemblyName(StringIterator.Substring(endOfType, endOfAssemblyName));
-            }
-            return result;
-        }
-
-        private static int ReadTypeArgument(StringIterator strBegin, StringIterator strEnd, bool ignoreComma)
-        {
-            int level = 0;
-            int length = 0;
-            for (var c = strBegin; c < strEnd; c++)
-            {
-                if (c.Current == '\\')
-                {
-                    length++;
-                    if ((c + 1) < strEnd)
-                    {
-                        c++;
-                        length++;
-                    }
-                    continue;
-                }
-                if (c.Current == '[')
-                {
-                    level++;
-                }
-                else if (c.Current == ']')
-                {
-                    if (level == 0)
-                        break;
-                    level--;
-                }
-                else if (!ignoreComma && (c.Current == ','))
-                {
-                    if (level == 0)
-                        break;
-                }
-
-                length++;
-            }
-
-            return length;
-        }
-
-        #region C++ string iterator compatibility shim
-
-        private static StringIterator Begin(this string s)
-        {
-            return new StringIterator(s, 0);
-        }
-
-        private static StringIterator End(this string s)
-        {
-            return new StringIterator(s, s.Length);
-        }
-
-        private struct StringIterator : IEquatable<StringIterator>
-        {
-            private string _string;
-            private int _index;
-
-            public char Current
-            {
-                get
-                {
-                    return _string[_index];
-                }
-            }
-
-            public StringIterator(string s, int index)
-            {
-                Debug.Assert(index <= s.Length);
-                _string = s;
-                _index = index;
-            }
-
-            public static string Substring(StringIterator it1, StringIterator it2)
-            {
-                Debug.Assert(ReferenceEquals(it1._string, it2._string));
-                return it1._string.Substring(it1._index, it2._index - it1._index);
-            }
-
-            public static StringIterator operator ++(StringIterator it)
-            {
-                return new StringIterator(it._string, ++it._index);
-            }
-
-            public static bool operator <(StringIterator it1, StringIterator it2)
-            {
-                Debug.Assert(ReferenceEquals(it1._string, it2._string));
-                return it1._index < it2._index;
-            }
-
-            public static bool operator >(StringIterator it1, StringIterator it2)
-            {
-                Debug.Assert(ReferenceEquals(it1._string, it2._string));
-                return it1._index > it2._index;
-            }
-
-            public static StringIterator operator +(StringIterator it, int val)
-            {
-                return new StringIterator(it._string, it._index + val);
-            }
-
-            public static StringIterator operator -(StringIterator it, int val)
-            {
-                return new StringIterator(it._string, it._index - val);
-            }
-
-            public static bool operator ==(StringIterator it1, StringIterator it2)
-            {
-                Debug.Assert(ReferenceEquals(it1._string, it2._string));
-                return it1._index == it2._index;
-            }
-
-            public static bool operator !=(StringIterator it1, StringIterator it2)
-            {
-                Debug.Assert(ReferenceEquals(it1._string, it2._string));
-                return it1._index != it2._index;
-            }
-
-            public override bool Equals(object obj)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override int GetHashCode()
-            {
-                throw new NotImplementedException();
-            }
-
-            public bool Equals(StringIterator other)
-            {
-                throw new NotImplementedException();
-            }
-        }
-        #endregion
     }
 }

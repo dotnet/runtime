@@ -3,13 +3,14 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 // Test includes an intentional unreachable return 
 #pragma warning disable 162
 
 namespace PInvokeTest
 {
-    internal class Test
+    public class Test
     {
         [DllImport("msvcrt", EntryPoint = "sin", CallingConvention = CallingConvention.Cdecl)]
         private static extern double sin(double x);
@@ -17,7 +18,8 @@ namespace PInvokeTest
         private static double g;
         private static bool b;
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             bool result = false;
             g = 0.0;

@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public enum TestEnum
 {
@@ -35,7 +36,8 @@ public struct AA
 [StructLayout(LayoutKind.Sequential)]
 public class App
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

@@ -105,6 +105,8 @@ namespace Microsoft.Extensions.Hosting
     {
         public HostOptions() { }
         public Microsoft.Extensions.Hosting.BackgroundServiceExceptionBehavior BackgroundServiceExceptionBehavior { get { throw null; } set { } }
+        public bool ServicesStartConcurrently { get { throw null; } set { } }
+        public bool ServicesStopConcurrently { get { throw null; } set { } }
         public System.TimeSpan ShutdownTimeout { get { throw null; } set { } }
     }
 }

@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis;
 #nullable enable
 namespace ILLink.Shared.TrimAnalysis
 {
-	internal sealed partial class FlowAnnotations
+	public sealed partial class FlowAnnotations
 	{
 		// In the analyzer there's no stateful data the flow annotations need to store
 		// so we just create a singleton on demand.

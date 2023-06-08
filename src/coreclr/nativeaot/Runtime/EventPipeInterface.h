@@ -6,6 +6,7 @@
 
 // Initialize EventPipe
 void EventPipeAdapter_Initialize();
+bool EventPipeAdapter_Enabled();
 
 // Initialize DS
 bool DiagnosticServerAdapter_Initialize();

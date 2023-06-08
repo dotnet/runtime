@@ -15,7 +15,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'jumps5' // as "jumps"
+.assembly ASSEMBLY_NAME // as "jumps"
 {
                         
 }

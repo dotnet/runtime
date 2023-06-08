@@ -5,6 +5,7 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="catchfinally_tail_d.il" />
     <Compile Include="catchfinally_tail.il" />
   </ItemGroup>
 </Project>

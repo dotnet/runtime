@@ -4,7 +4,7 @@
 using System;
 using System.Xml;
 using System.Collections.Generic;
-
+using System.Diagnostics;
 
 namespace System.Runtime.Serialization
 {
@@ -48,7 +48,7 @@ namespace System.Runtime.Serialization
             {
                 if (_objectDictionary == null)
                 {
-                    DiagnosticUtility.DebugAssert("Object reference stack in invalid state");
+                    Debug.Fail("Object reference stack in invalid state");
                 }
                 _objectDictionary.Remove(obj);
             }
@@ -75,7 +75,7 @@ namespace System.Runtime.Serialization
             {
                 if (_objectDictionary == null)
                 {
-                    DiagnosticUtility.DebugAssert("Object reference stack in invalid state");
+                    Debug.Fail("Object reference stack in invalid state");
                 }
                 _objectDictionary.Remove(obj);
             }

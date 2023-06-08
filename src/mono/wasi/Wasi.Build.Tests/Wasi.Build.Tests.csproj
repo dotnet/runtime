@@ -15,10 +15,9 @@
     <!-- these are imported in this project instead -->
     <SkipWorkloadsTestingTargetsImport>false</SkipWorkloadsTestingTargetsImport>
     <InstallWorkloadForTesting>true</InstallWorkloadForTesting>
-    <InstallWasmtimeForTests>true</InstallWasmtimeForTests>
 
     <!-- don't run any wasm build steps -->
-    <IsBrowserWasmProject>false</IsBrowserWasmProject>
+    <IsWasiProject>false</IsWasiProject>
     <UseDefaultTestHost>true</UseDefaultTestHost>
 
     <EnableRunSettingsSupport>false</EnableRunSettingsSupport>

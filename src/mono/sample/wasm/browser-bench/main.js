@@ -129,28 +129,30 @@ class MainApp {
         return new Promise(resolve => setTimeout(() => resolve(runBenchmark()), 0));
     }
 
-    async pageShow() {
+    async pageShow(guid) {
         try {
-            await this.waitFor('pageshow');
+            await this.waitFor('pageshow', guid);
         } finally {
             this.removeFrame();
         }
     }
 
-    async frameReachedManaged() {
+    async frameReachedManaged(guid) {
         try {
-            await this.waitFor('reached');
+            await this.waitFor('reached', guid);
         } finally {
             this.removeFrame();
         }
     }
 
-    async waitFor(eventName) {
+    async waitFor(eventName, guid) {
         try {
             let promise;
             let promiseResolve;
             this._frame = document.createElement('iframe');
-            this._frame.src = 'appstart-frame.html';
+            this._frame.src = guid
+                ? 'unique/' + guid + '/appstart-frame.html'
+                : 'appstart-frame.html';
 
             promise = new Promise(resolve => { promiseResolve = resolve; })
             window.resolveAppStartEvent = function (event) {

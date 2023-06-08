@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- Needed for GCStressIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <OutputType>Exe</OutputType>
     <NoStandardLib>True</NoStandardLib>
     <Noconfig>True</Noconfig>
     <Optimize>True</Optimize>

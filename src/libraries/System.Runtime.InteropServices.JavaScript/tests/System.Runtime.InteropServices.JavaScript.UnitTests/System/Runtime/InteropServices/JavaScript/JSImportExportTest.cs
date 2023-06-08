@@ -58,8 +58,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public unsafe void DotnetInstance()
         {
+#if !DISABLE_LEGACY_JS_INTEROP
             Assert.True(JSHost.DotnetInstance.HasProperty("MONO"));
             Assert.Equal("object", JSHost.DotnetInstance.GetTypeOfProperty("MONO"));
+#endif
 
             JSHost.DotnetInstance.SetProperty("testBool", true);
             Assert.Equal("boolean", JSHost.DotnetInstance.GetTypeOfProperty("testBool"));
@@ -1426,7 +1428,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             var stack = JavaScriptTestHelper.catch1stack("-t-e-s-t-", nameof(JavaScriptTestHelper.ThrowFromJSExport));
             Assert.Contains(nameof(JavaScriptTestHelper.ThrowFromJSExport), stack);
-            Assert.Contains("catch1stack", stack);
+            if (PlatformDetection.IsBrowserDomSupportedOrNodeJS)
+            {
+                Assert.Contains("catch1stack", stack);
+            }
         }
 
         #endregion Exception

@@ -5,4 +5,5 @@ using System.IO;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("common")]
+[assembly: InternalsVisibleTo("enabledisable")]
 #endif

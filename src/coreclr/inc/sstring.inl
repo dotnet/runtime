@@ -380,7 +380,7 @@ inline SString::SString(tagUTF8Literal dummytag, const UTF8 *literal)
 }
 
 inline SString::SString(tagLiteral dummytag, const WCHAR *literal)
-  : SBuffer(Immutable, (const BYTE *) literal, (COUNT_T) (wcslen(literal)+1)*sizeof(WCHAR))
+  : SBuffer(Immutable, (const BYTE *) literal, (COUNT_T) (u16_strlen(literal)+1)*sizeof(WCHAR))
 {
     SS_CONTRACT_VOID
     {
@@ -784,7 +784,7 @@ inline void SString::AppendUTF8(const CHAR c)
 
 // Helpers for CRT function equivalance.
 /* static */
-inline int __cdecl SString::_stricmp(const CHAR *buffer1, const CHAR *buffer2) {
+inline int SString::_stricmp(const CHAR *buffer1, const CHAR *buffer2) {
     WRAPPER_NO_CONTRACT;
     int returnValue = CaseCompareHelperA(buffer1, buffer2, 0, TRUE, FALSE);
 #ifdef VERIFY_CRT_EQUIVALNCE
@@ -795,7 +795,7 @@ inline int __cdecl SString::_stricmp(const CHAR *buffer1, const CHAR *buffer2) {
 }
 
 /* static */
-inline int __cdecl SString::_strnicmp(const CHAR *buffer1, const CHAR *buffer2, COUNT_T count) {
+inline int SString::_strnicmp(const CHAR *buffer1, const CHAR *buffer2, COUNT_T count) {
     WRAPPER_NO_CONTRACT;
     int returnValue = CaseCompareHelperA(buffer1, buffer2, count, TRUE, TRUE);
 #ifdef VERIFY_CRT_EQUIVALNCE
@@ -805,7 +805,7 @@ inline int __cdecl SString::_strnicmp(const CHAR *buffer1, const CHAR *buffer2, 
 }
 
 /* static */
-inline int __cdecl SString::_wcsicmp(const WCHAR *buffer1, const WCHAR *buffer2) {
+inline int SString::_wcsicmp(const WCHAR *buffer1, const WCHAR *buffer2) {
     WRAPPER_NO_CONTRACT;
     int returnValue = CaseCompareHelper(buffer1, buffer2, 0, TRUE, FALSE);
 #ifdef VERIFY_CRT_EQUIVALNCE
@@ -816,7 +816,7 @@ inline int __cdecl SString::_wcsicmp(const WCHAR *buffer1, const WCHAR *buffer2)
 }
 
 /* static */
-inline int __cdecl SString::_wcsnicmp(const WCHAR *buffer1, const WCHAR *buffer2, COUNT_T count) {
+inline int SString::_wcsnicmp(const WCHAR *buffer1, const WCHAR *buffer2, COUNT_T count) {
     WRAPPER_NO_CONTRACT;
     int returnValue = CaseCompareHelper(buffer1, buffer2, count, TRUE, TRUE);
 #ifdef VERIFY_CRT_EQUIVALNCE

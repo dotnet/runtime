@@ -641,7 +641,6 @@ sgen_update_reference (GCObject **p, GCObject *o, gboolean allow_null)
 /* Major collector */
 
 typedef void (*sgen_cardtable_block_callback) (mword start, mword size);
-void sgen_major_collector_iterate_live_block_ranges (sgen_cardtable_block_callback callback);
 void sgen_major_collector_iterate_block_ranges (sgen_cardtable_block_callback callback);
 
 void sgen_iterate_all_block_ranges (sgen_cardtable_block_callback callback, gboolean is_parallel);
@@ -688,7 +687,6 @@ struct _SgenMajorCollector {
 
 	GCObject* (*alloc_object) (GCVTable vtable, size_t size, gboolean has_references);
 	GCObject* (*alloc_object_par) (GCVTable vtable, size_t size, gboolean has_references);
-	void (*free_pinned_object) (GCObject *obj, size_t size);
 
 	/*
 	 * This is used for domain unloading, heap walking from the logging profiler, and
@@ -696,11 +694,9 @@ struct _SgenMajorCollector {
 	 */
 	void (*iterate_objects) (IterateObjectsFlags flags, IterateObjectCallbackFunc callback, void *data);
 
-	void (*free_non_pinned_object) (GCObject *obj, size_t size);
 	void (*pin_objects) (SgenGrayQueue *queue);
 	void (*pin_major_object) (GCObject *obj, SgenGrayQueue *queue);
 	void (*scan_card_table) (CardTableScanType scan_type, ScanCopyContext ctx, int job_index, int job_split_count, int block_count);
-	void (*iterate_live_block_ranges) (sgen_cardtable_block_callback callback);
 	void (*iterate_block_ranges) (sgen_cardtable_block_callback callback);
 	void (*iterate_block_ranges_in_parallel) (sgen_cardtable_block_callback callback, int job_index, int job_split_count, int block_count);
 	void (*update_cardtable_mod_union) (void);
@@ -902,10 +898,8 @@ typedef void (*SGenFinalizationProc)(gpointer, gpointer); // same as MonoFinaliz
 void sgen_object_register_for_finalization (GCObject *obj, SGenFinalizationProc user_data)
 	MONO_PERMIT (need (sgen_lock_gc));
 
-void sgen_finalize_if (SgenObjectPredicateFunc predicate, void *user_data)
+void sgen_finalize_all (void)
 	MONO_PERMIT (need (sgen_lock_gc));
-void sgen_remove_finalizers_if (SgenObjectPredicateFunc predicate, void *user_data, int generation);
-void sgen_set_suspend_finalizers (void);
 
 void sgen_wbroots_iterate_live_block_ranges (sgen_cardtable_block_callback cb);
 void sgen_wbroots_scan_card_table (ScanCopyContext ctx);
@@ -1106,7 +1100,6 @@ extern NurseryClearPolicy sgen_nursery_clear_policy;
 extern gboolean sgen_try_free_some_memory;
 extern mword sgen_total_promoted_size;
 extern mword sgen_total_allocated_major;
-extern volatile gboolean sgen_suspend_finalizers;
 extern MonoCoopMutex sgen_gc_mutex;
 #ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 extern volatile gboolean sgen_concurrent_collection_in_progress;
@@ -1160,7 +1153,6 @@ void sgen_check_whole_heap_stw (void)
 void sgen_check_objref (char *obj);
 void sgen_check_heap_marked (gboolean nursery_must_be_pinned);
 void sgen_check_nursery_objects_untag (void);
-void sgen_check_for_xdomain_refs (void);
 GCObject* sgen_find_object_for_ptr (char *ptr);
 
 void mono_gc_scan_for_specific_ref (GCObject *key, gboolean precise);

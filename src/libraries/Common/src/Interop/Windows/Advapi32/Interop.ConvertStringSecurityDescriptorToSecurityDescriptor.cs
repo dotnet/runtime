@@ -11,10 +11,10 @@ internal static partial class Interop
     {
         [LibraryImport(Interop.Libraries.Advapi32, EntryPoint = "ConvertStringSecurityDescriptorToSecurityDescriptorW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool ConvertStringSecurityDescriptorToSecurityDescriptor(
+        internal static unsafe partial bool ConvertStringSecurityDescriptorToSecurityDescriptor(
             string StringSecurityDescriptor,
             int StringSDRevision,
-            out SafeLocalAllocHandle pSecurityDescriptor,
-            IntPtr SecurityDescriptorSize);
+            out void* pSecurityDescriptor,
+            uint* SecurityDescriptorSize);
     }
 }

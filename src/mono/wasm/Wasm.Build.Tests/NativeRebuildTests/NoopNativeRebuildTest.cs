@@ -79,7 +79,7 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             var pathsDict = GetFilesTable(true, objDir);
             pathsDict.Remove("runtime-icall-table.h");
-            pathsDict.UpdateTo(unchanged: false, "dotnet.wasm", "dotnet.js", "emcc-link.rsp");
+            pathsDict.UpdateTo(unchanged: false, "dotnet.native.wasm", "dotnet.native.js", "emcc-link.rsp");
 
             var originalStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 

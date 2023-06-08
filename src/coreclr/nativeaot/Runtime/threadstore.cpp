@@ -174,6 +174,9 @@ void ThreadStore::DetachCurrentThread()
         g_threadExitCallback();
     }
 
+    // we will be taking the threadstore lock and need to be in preemptive mode.
+    ASSERT(!pDetachingThread->IsCurrentThreadInCooperativeMode());
+
     // The following makes the thread no longer able to run managed code or participate in GC.
     // We need to hold threadstore lock while doing that.
     {
@@ -196,7 +199,23 @@ void ThreadStore::DetachCurrentThread()
 // to ensure that only one thread performs suspension.
 void ThreadStore::LockThreadStore()
 {
+    // the thread should not be in coop mode when taking the threadstore lock.
+    // this is required to avoid deadlocks if suspension is in progress.
+    bool wasCooperative = false;
+    Thread* pThisThread = GetCurrentThreadIfAvailable();
+    if (pThisThread && pThisThread->IsCurrentThreadInCooperativeMode())
+    {
+        wasCooperative = true;
+        pThisThread->EnablePreemptiveMode();
+    }
+
     m_Lock.Enter();
+
+    if (wasCooperative)
+    {
+        // we just got the lock thus EE can't be suspending, so no waiting here
+        pThisThread->DisablePreemptiveMode();
+    }
 }
 
 void ThreadStore::UnlockThreadStore()
@@ -411,11 +430,21 @@ C_ASSERT(sizeof(Thread) == sizeof(ThreadBuffer));
 
 #ifndef _MSC_VER
 __thread ThreadBuffer tls_CurrentThread;
+
+// the root of inlined threadstatics storage
+// there is only one now,
+// eventually this will be emitted by ILC and we may have more than one such variable
+__thread InlinedThreadStaticRoot tls_InlinedThreadStatics;
 #endif
 
 EXTERN_C ThreadBuffer* RhpGetThread()
 {
     return &tls_CurrentThread;
+}
+
+COOP_PINVOKE_HELPER(Object**, RhGetInlinedThreadStaticStorage, ())
+{
+    return &tls_InlinedThreadStatics.m_threadStaticsBase;
 }
 
 #endif // !DACCESS_COMPILE
@@ -487,59 +516,3 @@ void ThreadStore::SaveCurrentThreadOffsetForDAC()
 }
 
 #endif // _WIN32
-
-
-#ifndef DACCESS_COMPILE
-
-// internal static extern unsafe bool RhGetExceptionsForCurrentThread(Exception[] outputArray, out int writtenCountOut);
-COOP_PINVOKE_HELPER(FC_BOOL_RET, RhGetExceptionsForCurrentThread, (Array* pOutputArray, int32_t* pWrittenCountOut))
-{
-    FC_RETURN_BOOL(GetThreadStore()->GetExceptionsForCurrentThread(pOutputArray, pWrittenCountOut));
-}
-
-bool ThreadStore::GetExceptionsForCurrentThread(Array* pOutputArray, int32_t* pWrittenCountOut)
-{
-    int32_t countWritten = 0;
-    Object** pArrayElements;
-    Thread * pThread = GetCurrentThread();
-
-    for (PTR_ExInfo pInfo = pThread->m_pExInfoStackHead; pInfo != NULL; pInfo = pInfo->m_pPrevExInfo)
-    {
-        if (pInfo->m_exception == NULL)
-            continue;
-
-        countWritten++;
-    }
-
-    // No input array provided, or it was of the wrong kind.  We'll fill out the count and return false.
-    if ((pOutputArray == NULL) || (pOutputArray->get_EEType()->RawGetComponentSize() != POINTER_SIZE))
-        goto Error;
-
-    // Input array was not big enough.  We don't even partially fill it.
-    if (pOutputArray->GetArrayLength() < (uint32_t)countWritten)
-        goto Error;
-
-    *pWrittenCountOut = countWritten;
-
-    // Success, but nothing to report.
-    if (countWritten == 0)
-        return true;
-
-    pArrayElements = (Object**)pOutputArray->GetArrayData();
-    for (PTR_ExInfo pInfo = pThread->m_pExInfoStackHead; pInfo != NULL; pInfo = pInfo->m_pPrevExInfo)
-    {
-        if (pInfo->m_exception == NULL)
-            continue;
-
-        *pArrayElements = pInfo->m_exception;
-        pArrayElements++;
-    }
-
-    RhpBulkWriteBarrier(pArrayElements, countWritten * POINTER_SIZE);
-    return true;
-
-Error:
-    *pWrittenCountOut = countWritten;
-    return false;
-}
-#endif // DACCESS_COMPILE

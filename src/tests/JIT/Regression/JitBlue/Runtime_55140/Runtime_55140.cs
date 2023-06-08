@@ -3,12 +3,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_55140
 {
     private static int _value;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         _value = 100;
         if (TestSubNegNeg() is not 1 and var subNegNeg)

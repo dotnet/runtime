@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
 internal delegate T GenDelegate<T>(T p1, out T p2);
 
@@ -20,9 +21,10 @@ internal struct Foo : IFoo
     }
 }
 
-internal class Test_Delegate021
+public class Test_Delegate021
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int i, j;
         IFoo inst = new Foo();

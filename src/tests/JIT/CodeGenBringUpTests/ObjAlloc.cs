@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Point
 {
@@ -39,7 +40,8 @@ public class BringUpTest_ObjAlloc
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Point obj = ObjAlloc();
         if (obj == null) return Fail;

@@ -3,12 +3,14 @@
 //
 
 using System;
+using Xunit;
 public class AA
 {
     static AA m_xStatic3;
     static long m_lFwd5;
     void Method1(ref long param1) { }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

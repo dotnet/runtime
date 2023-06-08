@@ -129,6 +129,15 @@
   <data name="ClassLoadExplicitLayout" xml:space="preserve">
     <value>Failed to load type '{0}' from assembly '{1}' because of field offset '{2}'</value>
   </data>
+  <data name="ClassLoadInlineArrayFieldCount" xml:space="preserve">
+    <value>InlineArrayAttribute requires that the target type has a single instance field. Type: '{0}'. Assembly: '{1}'.</value>
+  </data>
+  <data name="ClassLoadInlineArrayLength" xml:space="preserve">
+    <value>InlineArrayAttribute requires that the length argument is greater than 0. Type: '{0}'. Assembly: '{1}'.</value>
+  </data>
+  <data name="ClassLoadInlineArrayExplicit" xml:space="preserve">
+    <value>InlineArrayAttribute cannot be applied to a type with explicit layout. Type: '{0}'. Assembly: '{1}'.'</value>
+  </data>
   <data name="ClassLoadValueClassTooLarge" xml:space="preserve">
     <value>Array of type '{0}' from assembly '{1}' cannot be created because base value type is too large</value>
   </data>

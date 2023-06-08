@@ -123,10 +123,10 @@ namespace System.Xml.Xsl.Xslt
             }
         }
 
-        internal struct ModeName
+        internal readonly struct ModeName
         {
-            public QilName Mode;
-            public QilName Name;
+            public readonly QilName Mode;
+            public readonly QilName Name;
 
             public ModeName(QilName mode, QilName name)
             {
@@ -262,7 +262,7 @@ namespace System.Xml.Xsl.Xslt
             }
         }
 
-        private void FillModeFlags(Dictionary<QilName, XslFlags> parentModeFlags, Stylesheet sheet)
+        private static void FillModeFlags(Dictionary<QilName, XslFlags> parentModeFlags, Stylesheet sheet)
         {
             // Recursion: Process all imports to calculate ModeFlags for apply-import in this sheet
             foreach (Stylesheet import in sheet.Imports!)

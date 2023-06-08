@@ -68,7 +68,6 @@ namespace System
             // Based on http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd "Algorithm 1: Generic SIMD" by Wojciech Mula
             // Some details about the implementation can also be found in https://github.com/dotnet/runtime/pull/63285
         SEARCH_TWO_CHARS:
-            ref ushort ushortSearchSpace = ref Unsafe.As<char, ushort>(ref searchSpace);
             if (Vector256.IsHardwareAccelerated && searchSpaceMinusValueTailLength - Vector256<ushort>.Count >= 0)
             {
                 // Find the last unique (which is not equal to ch1) character
@@ -89,8 +88,8 @@ namespace System
                     // Make sure we don't go out of bounds
                     Debug.Assert(offset + ch1ch2Distance + Vector256<ushort>.Count <= searchSpaceLength);
 
-                    Vector256<ushort> cmpCh2 = Vector256.Equals(ch2, Vector256.LoadUnsafe(ref ushortSearchSpace, (nuint)(offset + ch1ch2Distance)));
-                    Vector256<ushort> cmpCh1 = Vector256.Equals(ch1, Vector256.LoadUnsafe(ref ushortSearchSpace, (nuint)offset));
+                    Vector256<ushort> cmpCh2 = Vector256.Equals(ch2, Vector256.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
+                    Vector256<ushort> cmpCh1 = Vector256.Equals(ch1, Vector256.LoadUnsafe(ref searchSpace, (nuint)offset));
                     Vector256<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
 
                     // Early out: cmpAnd is all zeros
@@ -156,8 +155,8 @@ namespace System
                     // Make sure we don't go out of bounds
                     Debug.Assert(offset + ch1ch2Distance + Vector128<ushort>.Count <= searchSpaceLength);
 
-                    Vector128<ushort> cmpCh2 = Vector128.Equals(ch2, Vector128.LoadUnsafe(ref ushortSearchSpace, (nuint)(offset + ch1ch2Distance)));
-                    Vector128<ushort> cmpCh1 = Vector128.Equals(ch1, Vector128.LoadUnsafe(ref ushortSearchSpace, (nuint)offset));
+                    Vector128<ushort> cmpCh2 = Vector128.Equals(ch2, Vector128.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
+                    Vector128<ushort> cmpCh1 = Vector128.Equals(ch1, Vector128.LoadUnsafe(ref searchSpace, (nuint)offset));
                     Vector128<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
 
                     // Early out: cmpAnd is all zeros
@@ -254,7 +253,6 @@ namespace System
             // Based on http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd "Algorithm 1: Generic SIMD" by Wojciech Mula
             // Some details about the implementation can also be found in https://github.com/dotnet/runtime/pull/63285
         SEARCH_TWO_CHARS:
-            ref ushort ushortSearchSpace = ref Unsafe.As<char, ushort>(ref searchSpace);
             if (Vector256.IsHardwareAccelerated && searchSpaceMinusValueTailLength >= Vector256<ushort>.Count)
             {
                 offset = searchSpaceMinusValueTailLength - Vector256<ushort>.Count;
@@ -272,8 +270,8 @@ namespace System
                 do
                 {
 
-                    Vector256<ushort> cmpCh1 = Vector256.Equals(ch1, Vector256.LoadUnsafe(ref ushortSearchSpace, (nuint)offset));
-                    Vector256<ushort> cmpCh2 = Vector256.Equals(ch2, Vector256.LoadUnsafe(ref ushortSearchSpace, (nuint)(offset + ch1ch2Distance)));
+                    Vector256<ushort> cmpCh1 = Vector256.Equals(ch1, Vector256.LoadUnsafe(ref searchSpace, (nuint)offset));
+                    Vector256<ushort> cmpCh2 = Vector256.Equals(ch2, Vector256.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
                     Vector256<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
 
                     // Early out: cmpAnd is all zeros
@@ -321,8 +319,8 @@ namespace System
 
                 do
                 {
-                    Vector128<ushort> cmpCh1 = Vector128.Equals(ch1, Vector128.LoadUnsafe(ref ushortSearchSpace, (nuint)offset));
-                    Vector128<ushort> cmpCh2 = Vector128.Equals(ch2, Vector128.LoadUnsafe(ref ushortSearchSpace, (nuint)(offset + ch1ch2Distance)));
+                    Vector128<ushort> cmpCh1 = Vector128.Equals(ch1, Vector128.LoadUnsafe(ref searchSpace, (nuint)offset));
+                    Vector128<ushort> cmpCh2 = Vector128.Equals(ch2, Vector128.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
                     Vector128<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
 
                     // Early out: cmpAnd is all zeros
@@ -357,7 +355,6 @@ namespace System
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static unsafe int SequenceCompareTo(ref char first, int firstLength, ref char second, int secondLength)
         {
             Debug.Assert(firstLength >= 0);
@@ -424,7 +421,6 @@ namespace System
 
         // IndexOfNullCharacter processes memory in aligned chunks, and thus it won't crash even if it accesses memory beyond the null terminator.
         // This behavior is an implementation detail of the runtime and callers outside System.Private.CoreLib must not depend on it.
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static unsafe int IndexOfNullCharacter(char* searchSpace)
         {
             const char value = '\0';
@@ -443,11 +439,13 @@ namespace System
                 // Needs to be double length to allow us to align the data first.
                 lengthToExamine = UnalignedCountVector128(searchSpace);
             }
+#if MONO
             else if (Vector.IsHardwareAccelerated)
             {
                 // Needs to be double length to allow us to align the data first.
                 lengthToExamine = UnalignedCountVector(searchSpace);
             }
+#endif
 
         SequentialScan:
             // In the non-vector case lengthToExamine is the total length.
@@ -607,6 +605,7 @@ namespace System
                     }
                 }
             }
+#if MONO
             else if (Vector.IsHardwareAccelerated)
             {
                 if (offset < length)
@@ -641,6 +640,7 @@ namespace System
                     }
                 }
             }
+#endif
 
             ThrowMustBeNullTerminatedString();
         Found3:
@@ -653,6 +653,7 @@ namespace System
             return (int)(offset);
         }
 
+#if MONO
         // Vector sub-search adapted from https://github.com/aspnet/KestrelHttpServer/pull/1138
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateFirstFoundChar(Vector<ushort> match)
@@ -675,10 +676,6 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int LocateFirstFoundChar(ulong match)
-            => BitOperations.TrailingZeroCount(match) >> 4;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector<ushort> LoadVector(ref char start, nint offset)
             => Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref start, offset)));
 
@@ -691,19 +688,24 @@ namespace System
             => (length - offset) & ~(Vector<ushort>.Count - 1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe nint UnalignedCountVector(char* searchSpace)
+        {
+            const int ElementsPerByte = sizeof(ushort) / sizeof(byte);
+            return (nint)(uint)(-(int)searchSpace / ElementsPerByte) & (Vector<ushort>.Count - 1);
+        }
+#endif
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int LocateFirstFoundChar(ulong match)
+            => BitOperations.TrailingZeroCount(match) >> 4;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static nint GetCharVector128SpanLength(nint offset, nint length)
             => (length - offset) & ~(Vector128<ushort>.Count - 1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static nint GetCharVector256SpanLength(nint offset, nint length)
             => (length - offset) & ~(Vector256<ushort>.Count - 1);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe nint UnalignedCountVector(char* searchSpace)
-        {
-            const int ElementsPerByte = sizeof(ushort) / sizeof(byte);
-            return (nint)(uint)(-(int)searchSpace / ElementsPerByte) & (Vector<ushort>.Count - 1);
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe nint UnalignedCountVector128(char* searchSpace)

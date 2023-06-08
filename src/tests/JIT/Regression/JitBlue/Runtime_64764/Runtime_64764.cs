@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class TestClass
 {
     public struct S1
@@ -116,7 +117,7 @@ public class TestClass
             return 15|4;
         }
     }
-    public void Method0()
+    internal void Method0()
     {
         unchecked
         {
@@ -126,7 +127,8 @@ public class TestClass
             return;
         }
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         new TestClass().Method0();
 

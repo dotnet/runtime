@@ -41,7 +41,7 @@ namespace Microsoft.Interop.Analyzers
                     && GetAttribute(typeSymbol, TypeNames.InterfaceTypeAttribute, out AttributeData? comInterfaceAttribute)
                     && !InterfaceTypeAttributeIsSupported(comInterfaceAttribute, out string unsupportedValue))
                 {
-                    context.ReportDiagnostic(comInterfaceAttribute.CreateDiagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported, unsupportedValue));
+                    context.ReportDiagnostic(comInterfaceAttribute.CreateDiagnosticInfo(AnalyzerDiagnostics.InterfaceTypeNotSupported, unsupportedValue).ToDiagnostic());
                 }
             }, SymbolKind.NamedType);
         }

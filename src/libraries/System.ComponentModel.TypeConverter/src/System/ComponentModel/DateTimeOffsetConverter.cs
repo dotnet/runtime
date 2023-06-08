@@ -126,7 +126,7 @@ namespace System.ComponentModel
                     format = formatInfo!.ShortDatePattern + " " + formatInfo.ShortTimePattern + " zzz";
                 }
 
-                return dto.ToString(format, CultureInfo.CurrentCulture);
+                return dto.ToString(format, culture);
             }
             if (destinationType == typeof(InstanceDescriptor) && value is DateTimeOffset)
             {

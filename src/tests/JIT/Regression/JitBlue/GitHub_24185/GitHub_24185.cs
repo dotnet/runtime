@@ -4,6 +4,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
 // The test shows recursive assertion propagation in one statement.
 
@@ -11,7 +12,8 @@ namespace GitHub_24185
 {
     public class Program
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

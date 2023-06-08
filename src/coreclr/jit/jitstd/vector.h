@@ -479,7 +479,7 @@ typename vector<T, Allocator>::iterator
     assert(last.m_pElem >= m_pArray);
     assert(first.m_pElem <= m_pArray + m_nSize);
     assert(last.m_pElem <= m_pArray + m_nSize);
-    assert(last.m_pElem > first.m_pElem);
+    assert(last.m_pElem >= first.m_pElem);
 
     pointer fptr = first.m_pElem;
     pointer lptr = last.m_pElem;
@@ -733,7 +733,7 @@ void vector<T, Allocator>::insert_elements_helper(iterator iter, size_type size,
 
     ensure_capacity(m_nSize + size);
 
-    for (int src = m_nSize - 1, dst = m_nSize + size - 1; src >= (int) pos; --src, --dst)
+    for (int src = (int)(m_nSize - 1), dst = (int)(m_nSize + size - 1); src >= (int) pos; --src, --dst)
     {
         m_pArray[dst] = m_pArray[src];
     }

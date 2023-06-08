@@ -7,10 +7,12 @@
 // thrown.
 
 using System;
+using Xunit;
 
 public static class C
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int i = -4;
         ulong l = 0;

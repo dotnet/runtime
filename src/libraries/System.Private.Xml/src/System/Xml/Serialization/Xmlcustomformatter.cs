@@ -105,6 +105,17 @@ namespace System.Xml.Serialization
             }
         }
 
+        internal static bool TryFormatDateTime(DateTime value, Span<char> destination, out int charsWritten)
+        {
+            if (Mode == DateTimeSerializationSection.DateTimeSerializationMode.Local)
+            {
+                return XmlConvert.TryFormat(value, "yyyy-MM-ddTHH:mm:ss.fffffffzzzzzz", destination, out charsWritten);
+            }
+
+            // for mode DateTimeSerializationMode.Roundtrip and DateTimeSerializationMode.Default
+            return XmlConvert.TryFormat(value, XmlDateTimeSerializationMode.RoundtripKind, destination, out charsWritten);
+        }
+
         internal static string FromChar(char value)
         {
             return XmlConvert.ToString((ushort)value);

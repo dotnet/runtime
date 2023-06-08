@@ -219,6 +219,7 @@ typedef struct {
 __declspec(naked) void __cdecl
 copy_stack_data_internal_win32_wrapper (MonoThreadInfo *info, MonoStackData *stackdata_begin, MonoBuiltinUnwindInfo *unwind_info_data, CopyStackDataFunc func)
 {
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 	__asm {
 		mov edx, dword ptr [esp + 0Ch]
 		mov dword ptr [edx + 00h], ebx
@@ -230,6 +231,7 @@ copy_stack_data_internal_win32_wrapper (MonoThreadInfo *info, MonoStackData *sta
 		mov edx, dword ptr [esp + 10h]
 		jmp edx
 	};
+#endif
 }
 #endif
 

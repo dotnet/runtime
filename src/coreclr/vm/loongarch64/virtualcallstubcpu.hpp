@@ -527,55 +527,6 @@ void VTableCallHolder::Initialize(unsigned slot)
 
 #endif // DACCESS_COMPILE
 
-VirtualCallStubManager::StubKind VirtualCallStubManager::predictStubKind(PCODE stubStartAddress)
-{
-
-    SUPPORTS_DAC;
-#ifdef DACCESS_COMPILE
-
-    return SK_BREAKPOINT;  // Dac always uses the slower lookup
-
-#else
-
-    StubKind stubKind = SK_UNKNOWN;
-    TADDR pInstr = PCODEToPINSTR(stubStartAddress);
-
-    EX_TRY
-    {
-        // If stubStartAddress is completely bogus, then this might AV,
-        // so we protect it with SEH. An AV here is OK.
-        AVInRuntimeImplOkayHolder AVOkay;
-
-        DWORD firstDword = *((DWORD*) pInstr);
-
-        if (firstDword == DISPATCH_STUB_FIRST_DWORD) // assembly of first instruction of DispatchStub :
-        {
-            stubKind = SK_DISPATCH;
-        }
-        else if (firstDword == RESOLVE_STUB_FIRST_DWORD) // assembly of first instruction of ResolveStub :
-        {
-            stubKind = SK_RESOLVE;
-        }
-        else if (firstDword == VTABLECALL_STUB_FIRST_DWORD) // assembly of first instruction of VTableCallStub :
-        {
-            stubKind = SK_VTABLECALL;
-        }
-        else if (firstDword == LOOKUP_STUB_FIRST_DWORD) // first instruction of LookupStub :
-        {
-            stubKind = SK_LOOKUP;
-        }
-    }
-    EX_CATCH
-    {
-        stubKind = SK_UNKNOWN;
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    return stubKind;
-
-#endif // DACCESS_COMPILE
-}
-
 #endif //DECLARE_DATA
 
 #endif // _VIRTUAL_CALL_STUB_LOONGARCH64_H

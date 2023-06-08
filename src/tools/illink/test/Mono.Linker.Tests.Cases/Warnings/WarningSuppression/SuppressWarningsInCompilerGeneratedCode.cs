@@ -294,7 +294,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			{
 				LocalFunction ();
 
-				[UnconditionalSuppressMessage ("Test", "IL2026")] // This supresses the RequiresUnreferencedCodeMethod
+				[UnconditionalSuppressMessage ("Test", "IL2026")] // This suppresses the RequiresUnreferencedCodeMethod
 				void LocalFunction (Type unknownType = null)
 				{
 					RequiresUnreferencedCodeMethod ();
@@ -306,7 +306,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			{
 				LocalFunction ();
 
-				[UnconditionalSuppressMessage ("Test", "IL2026")] // This supresses the RequiresUnreferencedCodeMethod
+				[UnconditionalSuppressMessage ("Test", "IL2026")] // This suppresses the RequiresUnreferencedCodeMethod
 				void LocalFunction (Type unknownType = null)
 				{
 					RequiresUnreferencedCodeMethod ();
@@ -574,12 +574,50 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				yield return 0;
 			}
 
+			static event EventHandler TestEvent;
+
+			// https://github.com/dotnet/runtime/issues/82956 - the suppression is ignored
+			[ExpectedWarning ("IL2026", CompilerGeneratedCode = true, ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2121", CompilerGeneratedCode = true, ProducedBy = Tool.Trimmer)]
+			static void TestLambdaInLocalFunction ()
+			{
+				LocalFunction ();
+
+				[UnconditionalSuppressMessage ("Test", "IL2026")]
+				void LocalFunction ()
+				{
+					TestEvent += (sender, args) => {
+						RequiresUnreferencedCodeMethod ();
+					};
+				}
+			}
+
+			// https://github.com/dotnet/runtime/issues/82956 - the suppression is ignored
+			// https://github.com/dotnet/roslyn/issues/59746
+			[ExpectedWarning ("IL2026", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2121", CompilerGeneratedCode = true, ProducedBy = Tool.Trimmer)]
+			static void TestLocalFunctionInLambda ()
+			{
+				TestEvent +=
+				[UnconditionalSuppressMessage ("Test", "IL2026")]
+				(sender, args) => {
+					LocalFunction ();
+
+					void LocalFunction ()
+					{
+						RequiresUnreferencedCodeMethod ();
+					}
+				};
+			}
+
 			public static void Test ()
 			{
 				TestIteratorLocalFunction ();
 				TestIteratorLocalFunctionInAsync ();
 				TestIteratorLocalFunctionInAsyncWithoutInner ();
 				TestDynamicallyAccessedMethodViaGenericMethodParameterInIterator ();
+				TestLambdaInLocalFunction ();
+				TestLocalFunctionInLambda ();
 			}
 		}
 

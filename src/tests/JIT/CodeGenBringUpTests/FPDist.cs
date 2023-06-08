@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_FPDist
 {
     const int Pass = 100;
@@ -17,7 +18,8 @@ public class BringUpTest_FPDist
        return z; 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         float y = FPDist(5f, 7f, 2f, 3f);
         Console.WriteLine(y);

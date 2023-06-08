@@ -3,6 +3,7 @@
 
 using System;
 using System.Numerics;
+using Xunit;
 
 namespace JitCrashPOC
 {
@@ -10,7 +11,8 @@ namespace JitCrashPOC
     {
         static public int s_res;
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             var map = new ItemRunner();
 

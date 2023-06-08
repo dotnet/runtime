@@ -27,7 +27,7 @@ namespace System.ComponentModel.DataAnnotations
         // Also we use this ability in Validator.CreateValidationContext()??
         : IServiceProvider
     {
-        internal const string InstanceTypeNotStaticallyDiscovered = "The Type of instance cannot be statically discovered.";
+        internal const string InstanceTypeNotStaticallyDiscovered = "The Type of instance cannot be statically discovered and the Type's properties can be trimmed.";
 
         #region Member Fields
 

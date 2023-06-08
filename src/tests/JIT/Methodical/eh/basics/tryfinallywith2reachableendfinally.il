@@ -10,7 +10,7 @@
 }
 .assembly extern mscorlib {}
 .assembly extern eh_common {}
-.assembly 'tryfinallywith2reachableendfinally' {}
+.assembly ASSEMBLY_NAME {}
 .assembly extern xunit.core {}
 
 .namespace hello_tryfinallywith2reachableendfinally_basics_il

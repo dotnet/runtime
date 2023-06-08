@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 public sealed class X: IComparable<X>
 {
@@ -55,7 +56,8 @@ public class Y<T> where T : IComparable<T>
 
 public class Z
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // Ideally inlining Y.C would enable the interface call in Y
         // to be devirtualized, since we know the exact type of the

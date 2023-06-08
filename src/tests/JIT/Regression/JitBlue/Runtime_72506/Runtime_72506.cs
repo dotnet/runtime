@@ -4,12 +4,14 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 public class Runtime_72506
 {
     private static int retCode = 100;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // float
         AssertEqual(Vector256.Create(1f).ToString(), "<1, 1, 1, 1, 1, 1, 1, 1>");

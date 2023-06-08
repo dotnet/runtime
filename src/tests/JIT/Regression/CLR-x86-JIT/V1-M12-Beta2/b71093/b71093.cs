@@ -3,13 +3,14 @@
 
 
 using System;
+using Xunit;
 
 
 namespace Test
 {
     public class AA
     {
-        public static void Main1()
+        internal static void Main1()
         {
             try
             {
@@ -26,7 +27,8 @@ namespace Test
             }
             finally { }
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

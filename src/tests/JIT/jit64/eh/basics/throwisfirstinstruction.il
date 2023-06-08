@@ -12,7 +12,7 @@
 .assembly extern eh_common {}
 .assembly 'throwisfirstinstruction' {}
 
-.class private auto ansi beforefieldinit test
+.class public auto ansi beforefieldinit test
        extends [mscorlib]System.Object
 {
   .field private static class [eh_common]TestUtil.TestLog testLog

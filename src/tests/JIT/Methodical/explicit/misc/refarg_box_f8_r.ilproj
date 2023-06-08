@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <!-- https://github.com/dotnet/runtime/issues/68060 -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="refarg_box_f8_r.il" />
+    <Compile Include="refarg_box_f8.il" />
+  </ItemGroup>
+</Project>

@@ -8,6 +8,7 @@
 // Debug: Outputs 0
 // Release: Outputs 1
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public struct S0
 {
@@ -41,7 +42,8 @@ public class Runtime_71600
     public static uint s_13;
     public static short[] s_28;
     public static S0[] s_39;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         S0[] vr2 = new S0[]{new S0(-1)};
         s_39 = vr2;

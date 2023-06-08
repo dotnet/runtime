@@ -393,11 +393,11 @@ namespace System.Reflection.Runtime.General
 
         public sealed override Assembly[] GetLoadedAssemblies() => RuntimeAssemblyInfo.GetLoadedAssemblies();
 
-        public sealed override EnumInfo<TUnderlyingValue> GetEnumInfo<TUnderlyingValue>(Type type)
+        public sealed override EnumInfo GetEnumInfo(Type type, Func<Type, string[], object[], bool, EnumInfo> create)
         {
             RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
 
-            EnumInfo<TUnderlyingValue>? info = runtimeType.GenericCache as EnumInfo<TUnderlyingValue>;
+            var info = runtimeType.GenericCache as EnumInfo;
             if (info != null)
                 return info;
 
@@ -407,32 +407,27 @@ namespace System.Reflection.Runtime.General
             // That codepath would bring functionality to compare everything that was ever allocated in the program.
             ArraySortHelper<object, string>.IntrospectiveSort(unsortedValues, unsortedNames, EnumUnderlyingTypeComparer.Instance);
 
-            // Only after we've sorted, create the underlying array.
-            var values = new TUnderlyingValue[unsortedValues.Length];
-            for (int i = 0; i < unsortedValues.Length; i++)
-                values[i] = (TUnderlyingValue)unsortedValues[i];
+            info = create(RuntimeAugments.GetEnumUnderlyingType(type.TypeHandle), unsortedNames, unsortedValues, isFlags);
 
-            info = new EnumInfo<TUnderlyingValue>(RuntimeAugments.GetEnumUnderlyingType(runtimeType.TypeHandle), values, unsortedNames, isFlags);
             runtimeType.GenericCache = info;
             return info;
         }
 
-        private class EnumUnderlyingTypeComparer : IComparer<object>
+        private sealed class EnumUnderlyingTypeComparer : IComparer<object>
         {
             public static readonly EnumUnderlyingTypeComparer Instance = new EnumUnderlyingTypeComparer();
 
             public int Compare(object? x, object? y)
-                => x switch
+            {
+                Debug.Assert(x is byte or ushort or uint or ulong);
+                return x switch
                 {
-                    int i => i.CompareTo((int)y!),
-                    uint ui => ui.CompareTo((uint)y!),
                     byte b => b.CompareTo((byte)y!),
                     ushort us => us.CompareTo((ushort)y!),
-                    short s => s.CompareTo((short)y!),
-                    sbyte sb => sb.CompareTo((sbyte)y!),
-                    long l => l.CompareTo((long)y!),
+                    uint ui => ui.CompareTo((uint)y!),
                     _ => ((ulong)x!).CompareTo((ulong)y!),
                 };
+            }
         }
 
         public sealed override DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type)

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -143,7 +144,7 @@ namespace System.Buffers.Text
         /// <summary>
         /// Returns the maximum length (in bytes) of the result if you were to encode binary data within a byte span of size "length".
         /// </summary>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="length"/> is less than 0 or larger than 1610612733 (since encode inflates the data by 4/3).
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -226,6 +227,7 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static unsafe void Avx2Encode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
         {
             // If we have AVX2 support, pick off 24 bytes at a time for as long as we can.
@@ -396,6 +398,8 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         private static unsafe void Vector128Encode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
         {
             // If we have SSSE3 support, pick off 12 bytes at a time for as long as we can.
@@ -583,10 +587,10 @@ namespace System.Buffers.Text
             }
         }
 
-        private const uint EncodingPad = '='; // '=', for padding
+        internal const uint EncodingPad = '='; // '=', for padding
 
         private const int MaximumEncodeLength = (int.MaxValue / 4) * 3; // 1610612733
 
-        private static ReadOnlySpan<byte> EncodingMap => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"u8;
+        internal static ReadOnlySpan<byte> EncodingMap => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"u8;
     }
 }

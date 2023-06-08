@@ -1151,7 +1151,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [Theory]
         [MemberData(nameof(Match_DeepNesting_MemberData))]
-        public async void Match_DeepNesting(RegexEngine engine, int count)
+        public async Task Match_DeepNesting(RegexEngine engine, int count)
         {
             const string Start = @"((?>abc|(?:def[ghi]", End = @")))";
             const string Match = "defg";

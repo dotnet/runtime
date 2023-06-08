@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 struct RefWrapper
 {
@@ -20,7 +21,8 @@ public class TestStructs
         return arr[0];
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         RefWrapper a = new RefWrapper();
         arr = new RefWrapper[1];

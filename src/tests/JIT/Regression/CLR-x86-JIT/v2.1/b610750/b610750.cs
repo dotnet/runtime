@@ -9,6 +9,7 @@
 // Well, and it runs fast. 
 
 using System;
+using Xunit;
 
 public class Program
 {
@@ -2015,7 +2016,8 @@ public class Program
 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         TestSHL();
 

@@ -165,50 +165,54 @@ namespace System.Net.Sockets.Tests
         [MemberData(nameof(Loopbacks))]
         public async Task SendRecv_Stream_TCP_LargeMultiBufferSends(IPAddress listenAt)
         {
-            using (var listener = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
-            using (var client = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
+            using var portBlocker = new PortBlocker(() => {
+                var l = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                l.BindToAnonymousPort(listenAt);
+                return l;
+            });
+
+            Socket listener = portBlocker.MainSocket;
+            using var client = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+
+            listener.Listen(1);
+
+            Task<Socket> acceptTask = AcceptAsync(listener);
+            await client.ConnectAsync(listener.LocalEndPoint).WaitAsync(TestSettings.PassingTestTimeout);
+            using Socket server = await acceptTask.WaitAsync(TestSettings.PassingTestTimeout);
+            
+            var sentChecksum = new Fletcher32();
+            var rand = new Random();
+            int bytesToSend = 0;
+            var buffers = new List<ArraySegment<byte>>();
+            const int NumBuffers = 5;
+            for (int i = 0; i < NumBuffers; i++)
             {
-                listener.BindToAnonymousPort(listenAt);
-                listener.Listen(1);
-
-                Task<Socket> acceptTask = AcceptAsync(listener);
-                await client.ConnectAsync(listener.LocalEndPoint);
-                using (Socket server = await acceptTask)
-                {
-                    var sentChecksum = new Fletcher32();
-                    var rand = new Random();
-                    int bytesToSend = 0;
-                    var buffers = new List<ArraySegment<byte>>();
-                    const int NumBuffers = 5;
-                    for (int i = 0; i < NumBuffers; i++)
-                    {
-                        var sendBuffer = new byte[12345678];
-                        rand.NextBytes(sendBuffer);
-                        bytesToSend += sendBuffer.Length - i; // trim off a few bytes to test offset/count
-                        sentChecksum.Add(sendBuffer, i, sendBuffer.Length - i);
-                        buffers.Add(new ArraySegment<byte>(sendBuffer, i, sendBuffer.Length - i));
-                    }
-
-                    Task<int> sendTask = SendAsync(client, buffers);
-
-                    var receivedChecksum = new Fletcher32();
-                    int bytesReceived = 0;
-                    byte[] recvBuffer = new byte[1024];
-                    while (bytesReceived < bytesToSend)
-                    {
-                        int received = await ReceiveAsync(server, new ArraySegment<byte>(recvBuffer));
-                        if (received <= 0)
-                        {
-                            break;
-                        }
-                        bytesReceived += received;
-                        receivedChecksum.Add(recvBuffer, 0, received);
-                    }
-
-                    Assert.Equal(bytesToSend, await sendTask);
-                    Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
-                }
+                var sendBuffer = new byte[12345678];
+                rand.NextBytes(sendBuffer);
+                bytesToSend += sendBuffer.Length - i; // trim off a few bytes to test offset/count
+                sentChecksum.Add(sendBuffer, i, sendBuffer.Length - i);
+                buffers.Add(new ArraySegment<byte>(sendBuffer, i, sendBuffer.Length - i));
             }
+
+            Task<int> sendTask = SendAsync(client, buffers);
+
+            var receivedChecksum = new Fletcher32();
+            int bytesReceived = 0;
+            byte[] recvBuffer = new byte[1024];
+            while (bytesReceived < bytesToSend)
+            {
+                int received = await ReceiveAsync(server, new ArraySegment<byte>(recvBuffer)).WaitAsync(TestSettings.PassingTestTimeout);
+                if (received <= 0)
+                {
+                    break;
+                }
+                bytesReceived += received;
+                receivedChecksum.Add(recvBuffer, 0, received);
+            }
+
+            int bytesSent = await sendTask.WaitAsync(TestSettings.PassingTestLongTimeout);
+            Assert.Equal(bytesToSend, bytesSent);
+            Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
         }
 
         [OuterLoop]
@@ -1149,7 +1153,7 @@ namespace System.Net.Sockets.Tests
                     int received;
                     do
                     {
-                        received = await ReceiveAsync(socket2, receiveBuffer);
+                        received = await ReceiveAsync(socket2, receiveBuffer).WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
                         receivedTotal += received;
                     } while (received != 0);
 

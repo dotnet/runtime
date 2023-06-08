@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace NarrowStore
 {
-    class Program 
+    public class Program 
     { 
         byte x01;
         byte t01;
@@ -26,7 +27,8 @@ namespace NarrowStore
             }
         }
 
-        static int Main() 
+        [Fact]
+        public static int TestEntryPoint() 
         { 
             Program prog = new Program();
             

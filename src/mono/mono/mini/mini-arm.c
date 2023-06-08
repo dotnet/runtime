@@ -4346,16 +4346,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ARM_LDR_REG_REG (code, ins->dreg, ins->inst_basereg, ARMREG_LR);
 				break;
 			case OP_ATOMIC_LOAD_R4:
-				if (cfg->r4fp) {
-					ARM_ADD_REG_REG (code, ARMREG_LR, ins->inst_basereg, ARMREG_LR);
-					ARM_FLDS (code, ins->dreg, ARMREG_LR, 0);
-				} else {
-					code = mono_arm_emit_vfp_scratch_save (cfg, code, vfp_scratch1);
-					ARM_ADD_REG_REG (code, ARMREG_LR, ins->inst_basereg, ARMREG_LR);
-					ARM_FLDS (code, vfp_scratch1, ARMREG_LR, 0);
-					ARM_CVTS (code, ins->dreg, vfp_scratch1);
-					code = mono_arm_emit_vfp_scratch_restore (cfg, code, vfp_scratch1);
-				}
+				ARM_ADD_REG_REG (code, ARMREG_LR, ins->inst_basereg, ARMREG_LR);
+				ARM_FLDS (code, ins->dreg, ARMREG_LR, 0);
 				break;
 			case OP_ATOMIC_LOAD_R8:
 				ARM_ADD_REG_REG (code, ARMREG_LR, ins->inst_basereg, ARMREG_LR);
@@ -4394,16 +4386,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ARM_STR_REG_REG (code, ins->sreg1, ins->inst_destbasereg, ARMREG_LR);
 				break;
 			case OP_ATOMIC_STORE_R4:
-				if (cfg->r4fp) {
-					ARM_ADD_REG_REG (code, ARMREG_LR, ins->inst_destbasereg, ARMREG_LR);
-					ARM_FSTS (code, ins->sreg1, ARMREG_LR, 0);
-				} else {
-					code = mono_arm_emit_vfp_scratch_save (cfg, code, vfp_scratch1);
-					ARM_ADD_REG_REG (code, ARMREG_LR, ins->inst_destbasereg, ARMREG_LR);
-					ARM_CVTD (code, vfp_scratch1, ins->sreg1);
-					ARM_FSTS (code, vfp_scratch1, ARMREG_LR, 0);
-					code = mono_arm_emit_vfp_scratch_restore (cfg, code, vfp_scratch1);
-				}
+				ARM_ADD_REG_REG (code, ARMREG_LR, ins->inst_destbasereg, ARMREG_LR);
+				ARM_FSTS (code, ins->sreg1, ARMREG_LR, 0);
 				break;
 			case OP_ATOMIC_STORE_R8:
 				ARM_ADD_REG_REG (code, ARMREG_LR, ins->inst_destbasereg, ARMREG_LR);
@@ -4939,32 +4923,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ARM_CPYS (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_MOVE_F_TO_I4:
-			if (cfg->r4fp) {
-				ARM_FMRS (code, ins->dreg, ins->sreg1);
-			} else {
-				code = mono_arm_emit_vfp_scratch_save (cfg, code, vfp_scratch1);
-				ARM_CVTD (code, vfp_scratch1, ins->sreg1);
-				ARM_FMRS (code, ins->dreg, vfp_scratch1);
-				code = mono_arm_emit_vfp_scratch_restore (cfg, code, vfp_scratch1);
-			}
+			ARM_FMRS (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_MOVE_I4_TO_F:
-			if (cfg->r4fp) {
-				ARM_FMSR (code, ins->dreg, ins->sreg1);
-			} else {
-				ARM_FMSR (code, ins->dreg, ins->sreg1);
-				ARM_CVTS (code, ins->dreg, ins->dreg);
-			}
+			ARM_FMSR (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_FCONV_TO_R4:
-			if (IS_VFP) {
-				if (cfg->r4fp) {
-					ARM_CVTD (code, ins->dreg, ins->sreg1);
-				} else {
-					ARM_CVTD (code, ins->dreg, ins->sreg1);
-					ARM_CVTS (code, ins->dreg, ins->dreg);
-				}
-			}
+			if (IS_VFP)
+				ARM_CVTD (code, ins->dreg, ins->sreg1);
 			break;
 
 		case OP_TAILCALL_PARAMETER:
@@ -5548,13 +5514,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ARM_B (code, 0);
 				*(guint32*)code = ((guint32*)(ins->inst_p0))[0];
 				code += 4;
-				if (!cfg->r4fp)
-					ARM_CVTS (code, ins->dreg, ins->dreg);
 			} else {
 				code = mono_arm_emit_load_imm (code, ARMREG_LR, (guint32)(gsize)ins->inst_p0);
 				ARM_FLDS (code, ins->dreg, ARMREG_LR, 0);
-				if (!cfg->r4fp)
-					ARM_CVTS (code, ins->dreg, ins->dreg);
 			}
 			break;
 		case OP_STORER8_MEMBASE_REG:
@@ -5579,41 +5541,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_STORER4_MEMBASE_REG:
 			g_assert (arm_is_fpimm8 (ins->inst_offset));
-			if (cfg->r4fp) {
-				ARM_FSTS (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset);
-			} else {
-				code = mono_arm_emit_vfp_scratch_save (cfg, code, vfp_scratch1);
-				ARM_CVTD (code, vfp_scratch1, ins->sreg1);
-				ARM_FSTS (code, vfp_scratch1, ins->inst_destbasereg, ins->inst_offset);
-				code = mono_arm_emit_vfp_scratch_restore (cfg, code, vfp_scratch1);
-			}
+			ARM_FSTS (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset);
 			break;
 		case OP_LOADR4_MEMBASE:
-			if (cfg->r4fp) {
-				ARM_FLDS (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
-			} else {
-				g_assert (arm_is_fpimm8 (ins->inst_offset));
-				code = mono_arm_emit_vfp_scratch_save (cfg, code, vfp_scratch1);
-				ARM_FLDS (code, vfp_scratch1, ins->inst_basereg, ins->inst_offset);
-				ARM_CVTS (code, ins->dreg, vfp_scratch1);
-				code = mono_arm_emit_vfp_scratch_restore (cfg, code, vfp_scratch1);
-			}
+			ARM_FLDS (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
 			break;
 		case OP_ICONV_TO_R_UN: {
 			g_assert_not_reached ();
 			break;
 		}
 		case OP_ICONV_TO_R4:
-			if (cfg->r4fp) {
-				ARM_FMSR (code, ins->dreg, ins->sreg1);
-				ARM_FSITOS (code, ins->dreg, ins->dreg);
-			} else {
-				code = mono_arm_emit_vfp_scratch_save (cfg, code, vfp_scratch1);
-				ARM_FMSR (code, vfp_scratch1, ins->sreg1);
-				ARM_FSITOS (code, vfp_scratch1, vfp_scratch1);
-				ARM_CVTS (code, ins->dreg, vfp_scratch1);
-				code = mono_arm_emit_vfp_scratch_restore (cfg, code, vfp_scratch1);
-			}
+			ARM_FMSR (code, ins->dreg, ins->sreg1);
+			ARM_FSITOS (code, ins->dreg, ins->dreg);
 			break;
 		case OP_ICONV_TO_R8:
 			code = mono_arm_emit_vfp_scratch_save (cfg, code, vfp_scratch1);
@@ -5625,18 +5564,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_SETFRET: {
 			MonoType *sig_ret = mini_get_underlying_type (mono_method_signature_internal (cfg->method)->ret);
 			if (sig_ret->type == MONO_TYPE_R4) {
-				if (cfg->r4fp) {
-					if (IS_HARD_FLOAT) {
-						if (ins->sreg1 != ARM_VFP_D0)
-							ARM_CPYS (code, ARM_VFP_D0, ins->sreg1);
-					} else {
-						ARM_FMRS (code, ARMREG_R0, ins->sreg1);
-					}
+				if (IS_HARD_FLOAT) {
+					if (ins->sreg1 != ARM_VFP_D0)
+						ARM_CPYS (code, ARM_VFP_D0, ins->sreg1);
 				} else {
-					ARM_CVTD (code, ARM_VFP_F0, ins->sreg1);
-
-					if (!IS_HARD_FLOAT)
-						ARM_FMRS (code, ARMREG_R0, ARM_VFP_F0);
+					ARM_FMRS (code, ARMREG_R0, ins->sreg1);
 				}
 			} else {
 				if (IS_HARD_FLOAT)

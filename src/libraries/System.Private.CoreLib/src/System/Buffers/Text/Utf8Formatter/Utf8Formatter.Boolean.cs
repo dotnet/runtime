@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Binary;
-
 namespace System.Buffers.Text
 {
     public static partial class Utf8Formatter
@@ -34,19 +32,14 @@ namespace System.Buffers.Text
             {
                 if (symbol == 'G')
                 {
-                    // By having each branch perform its own call to TryWriteUInt32BigEndian, we ensure that a
-                    // constant value is passed to this routine, which means the compiler can reverse endianness
-                    // at compile time instead of runtime if necessary.
-                    const uint TrueValueUppercase = ('T' << 24) + ('r' << 16) + ('u' << 8) + ('e' << 0);
-                    if (!BinaryPrimitives.TryWriteUInt32BigEndian(destination, TrueValueUppercase))
+                    if (!"True"u8.TryCopyTo(destination))
                     {
                         goto BufferTooSmall;
                     }
                 }
                 else if (symbol == 'l')
                 {
-                    const uint TrueValueLowercase = ('t' << 24) + ('r' << 16) + ('u' << 8) + ('e' << 0);
-                    if (!BinaryPrimitives.TryWriteUInt32BigEndian(destination, TrueValueLowercase))
+                    if (!"true"u8.TryCopyTo(destination))
                     {
                         goto BufferTooSmall;
                     }
@@ -63,42 +56,33 @@ namespace System.Buffers.Text
             {
                 if (symbol == 'G')
                 {
-                    // This check can't be performed earlier because we need to throw if an invalid symbol is
-                    // provided, even if the buffer is too small.
-                    if (destination.Length <= 4)
+                    if (!"False"u8.TryCopyTo(destination))
                     {
                         goto BufferTooSmall;
                     }
-
-                    const uint FalsValueUppercase = ('F' << 24) + ('a' << 16) + ('l' << 8) + ('s' << 0);
-                    BinaryPrimitives.WriteUInt32BigEndian(destination, FalsValueUppercase);
                 }
                 else if (symbol == 'l')
                 {
-                    if (destination.Length <= 4)
+                    if (!"false"u8.TryCopyTo(destination))
                     {
                         goto BufferTooSmall;
                     }
-
-                    const uint FalsValueLowercase = ('f' << 24) + ('a' << 16) + ('l' << 8) + ('s' << 0);
-                    BinaryPrimitives.WriteUInt32BigEndian(destination, FalsValueLowercase);
                 }
                 else
                 {
                     goto BadFormat;
                 }
 
-                destination[4] = (byte)'e';
                 bytesWritten = 5;
                 return true;
             }
 
+        BadFormat:
+            ThrowHelper.ThrowFormatException_BadFormatSpecifier();
+
         BufferTooSmall:
             bytesWritten = 0;
             return false;
-
-        BadFormat:
-            return FormattingHelpers.TryFormatThrowFormatException(out bytesWritten);
         }
     }
 }

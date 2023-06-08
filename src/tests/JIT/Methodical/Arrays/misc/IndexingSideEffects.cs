@@ -5,6 +5,8 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
+namespace IndexingSideEffects;
+
 public class IndexingSideEffects
 {
     [Fact]
@@ -25,7 +27,7 @@ public class IndexingSideEffects
 
         try
         {
-            TryIndexing(new int[0]);
+            TryIndexing(Array.Empty<int>());
         }
         catch (IndexOutOfRangeException)
         {

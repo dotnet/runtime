@@ -363,7 +363,7 @@ namespace CoreclrTestLib
         /// <param name="crashReportJsonFile">crash dump path</param>
         /// <param name="outputWriter">Stream for writing logs</param>
         /// <returns>true, if we can print the stack trace, otherwise false.</returns>
-        static bool TryPrintStackTraceFromCrashReport(string crashReportJsonFile, StreamWriter outputWriter)
+        public static bool TryPrintStackTraceFromCrashReport(string crashReportJsonFile, TextWriter outputWriter)
         {
             if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
             {
@@ -585,7 +585,7 @@ namespace CoreclrTestLib
             }
         }
 
-        static bool TryPrintStackTraceFromDmp(string dmpFile, StreamWriter outputWriter)
+        public static bool TryPrintStackTraceFromDmp(string dmpFile, TextWriter outputWriter)
         {
             string targetArchitecture = Environment.GetEnvironmentVariable(TEST_TARGET_ARCHITECTURE_ENVIRONMENT_VAR);
             if (string.IsNullOrEmpty(targetArchitecture))
@@ -601,10 +601,13 @@ namespace CoreclrTestLib
                 return false;
             }
 
+            string sosPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".dotnet", "sos", "sos.dll");
+
             var cdbScriptPath = Path.GetTempFileName();
-            // TODO: Add SOS support once we can easily download SOS to install.
-            File.WriteAllText(cdbScriptPath, """
+            File.WriteAllText(cdbScriptPath, $$"""
+                .load {{sosPath}}
                 ~*k
+                !clrstack -f -all
                 q
                 """);
 

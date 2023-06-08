@@ -258,7 +258,7 @@ namespace System.Runtime.CompilerServices
             {
                 Container c = _container;
                 return c is null || c.FirstFreeEntry == 0 ?
-                    SZGenericArrayEnumerator<KeyValuePair<TKey, TValue>>.Empty :
+                    GenericEmptyEnumerator<KeyValuePair<TKey, TValue>>.Instance :
                     new Enumerator(this);
             }
         }

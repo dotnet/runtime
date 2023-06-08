@@ -59,7 +59,7 @@ namespace System.Security.Cryptography
                 {
                     unsafe
                     {
-                        int estimatedSize = KeySize / 8;
+                        int estimatedSize = GetMaxOutputSize();
                         switch (padding.Mode)
                         {
                             case RSASignaturePaddingMode.Pkcs1:

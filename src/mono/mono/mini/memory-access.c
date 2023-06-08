@@ -116,8 +116,19 @@ mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int so
 {
 	int cur_reg;
 
-	/*FIXME arbitrary hack to avoid unbound code expansion.*/
-	g_assert (size < MAX_INLINE_COPY_SIZE);
+	if (size >= MAX_INLINE_COPY_SIZE) {
+		MonoInst *iargs [3];
+
+		int reg = alloc_ireg (cfg);
+		EMIT_NEW_UNALU (cfg, iargs [0], OP_MOVE, reg, destreg);
+		reg = alloc_ireg (cfg);
+		EMIT_NEW_UNALU (cfg, iargs [1], OP_MOVE, reg, srcreg);
+		EMIT_NEW_ICONST (cfg, iargs [2], size);
+
+		mono_emit_method_call (cfg, mini_get_memcpy_method (), iargs, NULL);
+		return;
+	}
+
 	g_assert (align > 0);
 
 MONO_DISABLE_WARNING(4127) /* conditional expression is constant */

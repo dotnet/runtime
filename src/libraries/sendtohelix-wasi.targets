@@ -15,6 +15,17 @@
 
         - Useful properties to condition on: $(Scenario), $(IsRunningLibraryTests)
         - And add to, change, or remove from @(HelixWorkItem)
+
+      ** Staging system directories before use as helix payloads **
+
+      Helix tries to write a `.payload` file to the payload directory, but if that is
+      not writable then it needs to be staged first. For example:
+
+        <HelixDependenciesToStage Condition="'$(NeedsWasmtime)' == 'true'" SourcePath="$(WasmtimeDir)"   Include="$(WasmtimeDirForHelixPayload)" />
+
+      Then the payload can use specified as:
+
+        <HelixCorrelationPayload Include="$(WasmtimeDirForHelixPayload)" Destination="wasmtime" Condition="'$(NeedsWasmtime)' == 'true'" />
   -->
 
   <PropertyGroup>
@@ -29,11 +40,13 @@
         _AddWorkItemsForBuildWasmApps
     </PrepareForBuildHelixWorkItems_WasiDependsOn>
 
-    <BuildHelixWorkItemsDependsOn>$(BuildHelixWorkItemsDependsOn);StageWasiSdkForHelix;PrepareForBuildHelixWorkItems_Wasi</BuildHelixWorkItemsDependsOn>
+    <BuildHelixWorkItemsDependsOn>$(BuildHelixWorkItemsDependsOn);PrepareForBuildHelixWorkItems_Wasi</BuildHelixWorkItemsDependsOn>
     <IncludeHelixCorrelationPayload>false</IncludeHelixCorrelationPayload>
     <EnableDefaultBuildHelixWorkItems>false</EnableDefaultBuildHelixWorkItems>
+
     <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == ''">$(RepoRoot)src\mono\wasi\wasi-sdk\</WASI_SDK_PATH>
-    <WasiSdkForHelixPayload>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasi', 'wasi-sdk'))</WasiSdkForHelixPayload>
+    <WasiSdkDirForHelixPayload>$(HelixDependenciesStagingPath)\wasi-sdk</WasiSdkDirForHelixPayload>
+    <WasmtimeDirForHelixPayload>$(HelixDependenciesStagingPath)\wasmtime</WasmtimeDirForHelixPayload>
 
     <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
     <NeedsWasiSdk Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsWasiSdk>
@@ -45,6 +58,11 @@
     <SdkForWorkloadTestingDirName Condition="'$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' == 'true'">dotnet-latest</SdkForWorkloadTestingDirName>
     <SdkForWorkloadTestingDirName Condition="'$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' != 'true'">dotnet-none</SdkForWorkloadTestingDirName>
   </PropertyGroup>
+
+  <ItemGroup>
+    <HelixDependenciesToStage Condition="'$(NeedsWasiSdk)' == 'true'"  SourcePath="$(WASI_SDK_PATH)" Include="$(WasiSdkDirForHelixPayload)" />
+    <HelixDependenciesToStage Condition="'$(NeedsWasmtime)' == 'true'" SourcePath="$(WasmtimeDir)"   Include="$(WasmtimeDirForHelixPayload)" />
+  </ItemGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' != 'true'">
     <HelixPreCommand Condition="'$(Scenario)' != ''" Include="export SCENARIO=$(Scenario)" />
@@ -95,13 +113,11 @@
 
   <Target Name="PrepareHelixCorrelationPayload_Wasi">
     <Error Text="Cannot find %24(WasmtimeDir)=$(WasmtimeDir)" Condition="'$(WasmtimeDir)' == '' or !Exists($(WasmtimeDir))" />
-    <Message Condition="'$(NeedsWasiSdk)' == 'true'" Importance="High" Text="Using wasi-sdk: $(WasiSdkForHelixPayload)" />
-
     <ItemGroup>
-      <HelixCorrelationPayload Include="$(WasmtimeDir)" Destination="wasmtime" Condition="'$(NeedsWasmtime)' == 'true'" />
+      <HelixCorrelationPayload Include="$(WasmtimeDirForHelixPayload)" Destination="wasmtime" Condition="'$(NeedsWasmtime)' == 'true'" />
 
       <HelixCorrelationPayload Include="$(_ShippingPackagesPath)"  Destination="built-nugets" Condition="'$(NeedsBuiltNugets)' == 'true'" />
-      <HelixCorrelationPayload Include="$(WasiSdkForHelixPayload)" Destination="build/wasi-sdk" Condition="'$(NeedsWasiSdk)' == 'true'" />
+      <HelixCorrelationPayload Include="$(WasiSdkDirForHelixPayload)" Destination="build/wasi-sdk" Condition="'$(NeedsWasiSdk)' == 'true'" />
     </ItemGroup>
   </Target>
 
@@ -166,23 +182,5 @@
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
     </ItemGroup>
-  </Target>
-
-  <!-- CI has wasi-sdk provisioned in $(WASK_SDK_PATH) as `/usr/local/wasi-sdk`. Because helix tasks will
-       attempt to write a .payload file, we cannot use $(WASI_SDK_PATH) to package wasi-sdk as a helix correlation
-       payload. Instead, we copy over the files to a new directory `src/mono/wasi/wasi-sdk` and use that. -->
-  <Target Name="StageWasiSdkForHelix" Condition="'$(NeedsWasiSdk)' == 'true' and !Exists($(WasiSdkForHelixPayload))">
-    <Error Condition="'$(WASI_SDK_PATH)' == '' or !Exists($(WASI_SDK_PATH))"
-           Text="Could not find wasi sdk in WASI_SDK_PATH=$(WASI_SDK_PATH), needed to provision for running tests on helix" />
-
-    <MakeDir Directories="$(WasiSdkForHelixPayload)" />
-
-    <ItemGroup>
-      <_WasiSdkFiles Include="$(WASI_SDK_PATH)\**\*" Exclude="$(WASI_SDK_PATH)\.git\**\*" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(_WasiSdkFiles)"
-          DestinationFiles="@(_WasiSdkFiles -> '$(WasiSdkForHelixPayload)\%(RecursiveDir)%(FileName)%(Extension)')"
-          SkipUnchangedFiles="true" />
   </Target>
 </Project>

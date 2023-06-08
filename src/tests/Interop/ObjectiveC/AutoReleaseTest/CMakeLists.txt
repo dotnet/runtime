@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake") 
+include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake")
 set(CMAKE_OBJC_STANDARD 99)
 set(CMAKE_OBJC_STANDARD_REQUIRED TRUE)
 
@@ -19,4 +19,4 @@ include(CMakeFindFrameworks)
 find_library(FOUNDATION Foundation REQUIRED)
 
 add_library(ObjectiveC SHARED ${SOURCES})
-target_link_libraries(ObjectiveC ${FOUNDATION})
+target_link_libraries(ObjectiveC PRIVATE ${FOUNDATION})

@@ -13,7 +13,6 @@
 #include <libunwind.h>
 
 #include "UnixContext.h"
-#include "UnwindHelpers.h"
 
 // WebAssembly has a slightly different version of LibUnwind that doesn't define unw_get_save_loc
 #if defined(HOST_WASM)
@@ -372,52 +371,6 @@ static void RegDisplayToUnwindCursor(REGDISPLAY* regDisplay, unw_cursor_t *curso
 #undef ASSIGN_REG_PTR
 }
 
-// Returns the unw_proc_info_t for a given IP.
-bool GetUnwindProcInfo(PCODE ip, unw_proc_info_t *procInfo)
-{
-    int st;
-
-    unw_context_t unwContext;
-    unw_cursor_t cursor;
-
-    st = unw_getcontext(&unwContext);
-    if (st < 0)
-    {
-        return false;
-    }
-
-#ifdef HOST_AMD64
-    // We manually index into the unw_context_t's internals for now because there's
-    // no better way to modify it. This will go away in the future when we locate the
-    // LSDA and other information without initializing an unwind cursor.
-    unwContext.data[16] = ip;
-#elif HOST_ARM
-    ((uint32_t*)(unwContext.data))[15] = ip;
-#elif HOST_ARM64
-    unwContext.data[32] = ip;
-#elif HOST_WASM
-    ASSERT(false);
-#elif HOST_X86
-    ASSERT(false);
-#else
-    #error "GetUnwindProcInfo is not supported on this arch yet."
-#endif
-
-    st = unw_init_local(&cursor, &unwContext);
-    if (st < 0)
-    {
-        return false;
-    }
-
-    st = unw_get_proc_info(&cursor, procInfo);
-    if (st < 0)
-    {
-        return false;
-    }
-
-    return true;
-}
-
 // Initialize unw_cursor_t and unw_context_t from REGDISPLAY
 bool InitializeUnwindContextAndCursor(REGDISPLAY* regDisplay, unw_cursor_t* cursor, unw_context_t* unwContext)
 {
@@ -698,36 +651,6 @@ uint64_t GetPC(void* context)
 }
 
 #endif // HOST_AMD64
-
-// Find LSDA and start address for a function at address controlPC
-bool FindProcInfo(uintptr_t controlPC, uintptr_t* startAddress, uintptr_t* endAddress, uintptr_t* lsda)
-{
-    unw_proc_info_t procInfo;
-
-    if (!GetUnwindProcInfo((PCODE)controlPC, &procInfo))
-    {
-        return false;
-    }
-
-    assert((procInfo.start_ip <= controlPC) && (controlPC < procInfo.end_ip));
-
-#if defined(HOST_ARM)
-    // libunwind fills by reference not by value for ARM
-    *lsda = *((uintptr_t *)procInfo.lsda);
-#else
-    *lsda = procInfo.lsda;
-#endif
-    *startAddress = procInfo.start_ip;
-    *endAddress = procInfo.end_ip;
-
-    return true;
-}
-
-// Virtually unwind stack to the caller of the context specified by the REGDISPLAY
-bool VirtualUnwind(REGDISPLAY* pRegisterSet)
-{
-    return UnwindHelpers::StepFrame(pRegisterSet);
-}
 
 #ifdef TARGET_ARM64
 

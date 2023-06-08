@@ -985,7 +985,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetSpanDataFrom (MonoCl
 		return NULL;
 	}
 
-	MonoType *type = targetTypeHandle;
+	MonoType *type = mono_type_get_underlying_type (targetTypeHandle);
 	if (MONO_TYPE_IS_REFERENCE (type) || type->type == MONO_TYPE_VALUETYPE) {
 		mono_error_set_argument (error, "array", "Cannot initialize array of non-primitive type");
 		return NULL;
@@ -2685,6 +2685,8 @@ set_interface_map_data_method_object (MonoMethod *method, MonoClass *iclass, int
 	MONO_HANDLE_ARRAY_SETREF (methods, i, member);
 
 	MonoMethod* foundMethod = m_class_get_vtable (klass) [i + ioffset];
+
+	g_assert (foundMethod);
 
 	if (mono_class_has_dim_conflicts (klass) && mono_class_is_interface (foundMethod->klass)) {
 		GSList* conflicts = mono_class_get_dim_conflicts (klass);
@@ -5394,7 +5396,7 @@ ves_icall_System_Reflection_RuntimeAssembly_GetTopLevelForwardedTypes (MonoQCall
 }
 
 void
-ves_icall_Mono_RuntimeMarshal_FreeAssemblyName (MonoAssemblyName *aname, MonoBoolean free_struct)
+ves_icall_System_Reflection_AssemblyName_FreeAssemblyName (MonoAssemblyName *aname, MonoBoolean free_struct)
 {
 	mono_assembly_name_free_internal (aname);
 	if (free_struct)
@@ -6174,7 +6176,7 @@ mono_method_get_unmanaged_wrapper_ftnptr_internal (MonoMethod *method, gboolean 
 	} else {
 		g_assert (!only_unmanaged_callers_only);
 	}
-	return mono_get_runtime_callbacks ()->get_ftnptr (method, error);
+	return mono_get_runtime_callbacks ()->get_ftnptr (method, FALSE, error);
 }
 
 MonoBoolean

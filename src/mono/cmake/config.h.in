@@ -666,6 +666,9 @@
 /* ... */
 #cmakedefine TARGET_WASM 1
 
+/* ... */
+#cmakedefine TARGET_WASI 1
+
 /* The JIT/AOT targets WatchOS */
 #cmakedefine TARGET_WATCHOS 1
 

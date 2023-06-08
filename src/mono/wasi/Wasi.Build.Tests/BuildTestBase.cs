@@ -360,9 +360,8 @@ namespace Wasm.Build.Tests
             {
                 "index.html",
                 mainJS,
-                "dotnet.timezones.blat",
                 "dotnet.wasm",
-                "mono-config.json",
+                "_framework/blazor.boot.json",
                 "dotnet.js"
             });
 

@@ -273,6 +273,7 @@ if(CLR_CMAKE_TARGET_OSX)
   find_library(SECURITY Security)
   find_library(SYSTEM System)
   target_link_libraries(coreclrpal
+    PUBLIC
     ${COREFOUNDATION}
     ${CORESERVICES}
     ${SECURITY}
@@ -282,6 +283,7 @@ endif(CLR_CMAKE_TARGET_OSX)
 
 if(CLR_CMAKE_TARGET_FREEBSD)
   target_link_libraries(coreclrpal
+    PUBLIC
     pthread
     rt
     ${UNWIND_LIBS}
@@ -292,27 +294,30 @@ if(CLR_CMAKE_TARGET_LINUX)
   # On Android, we don't need to link with gcc_s, pthread and rt
   if(NOT CLR_CMAKE_TARGET_ANDROID)
     target_link_libraries(coreclrpal
+      PUBLIC
       gcc_s
       pthread
       rt
     )
   else(NOT CLR_CMAKE_TARGET_ANDROID)
     target_link_libraries(coreclrpal
+      PUBLIC
       ${ANDROID_GLOB}
       ${LZMA})
   endif(NOT CLR_CMAKE_TARGET_ANDROID)
 
   target_link_libraries(coreclrpal
+    PUBLIC
     dl
   )
 
   if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
-    target_link_libraries(coreclrpal ${UNWIND_LIBS})
+    target_link_libraries(coreclrpal PUBLIC ${UNWIND_LIBS})
   endif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
 
   # bundled libunwind requires using libucontext on alpine and x86 and ppc64le
   if(CLR_CMAKE_TARGET_ALPINE_LINUX AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_POWERPC64))
-    target_link_libraries(coreclrpal ucontext)
+    target_link_libraries(coreclrpal PUBLIC ucontext)
   endif(CLR_CMAKE_TARGET_ALPINE_LINUX AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_POWERPC64))
 
 endif(CLR_CMAKE_TARGET_LINUX)
@@ -324,6 +329,7 @@ if(CLR_CMAKE_TARGET_NETBSD)
   add_definitions(-D_KMEMUSER)
   find_library(KVM kvm)
   target_link_libraries(coreclrpal
+    PUBLIC
     pthread
     rt
     ${UNWIND}
@@ -333,6 +339,7 @@ endif(CLR_CMAKE_TARGET_NETBSD)
 
 if(CLR_CMAKE_TARGET_SUNOS)
   target_link_libraries(coreclrpal
+    PUBLIC
     pthread
     rt
   )

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // Some simple interface call devirtualization cases
 
@@ -40,7 +41,8 @@ public class Z : B, Iz
     static int Hz(Iz z) { return z.H(); }
     static int Hi(Iz z) { return z.I(); }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int callsBF = Fx(new Z()) + Fx(new B()) + ((Ix) new Z()).F() + ((Ix) new B()).F();
         int callsBG = Gy(new B()) + ((Iy) new B()).G() + (new B()).G();

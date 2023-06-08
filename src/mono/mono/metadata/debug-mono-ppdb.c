@@ -61,18 +61,19 @@ enum {
 };
 
 gboolean 
-get_pe_debug_info_full (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *out_timestamp, guint8 **ppdb_data,
+mono_get_pe_debug_info_full (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *out_timestamp, guint8 **ppdb_data,
 				   int *ppdb_uncompressed_size, int *ppdb_compressed_size, char **pdb_path, GArray *pdb_checksum_hash_type, GArray *pdb_checksum)
 {
 	MonoPEDirEntry *debug_dir_entry;
 	ImageDebugDirectory debug_dir;
 	gboolean guid_found = FALSE;
 	guint8 *data;
-
+	if (!image || !image->image_info)
+		return FALSE;
 	*ppdb_data = NULL;
 
 	debug_dir_entry = (MonoPEDirEntry *) &image->image_info->cli_header.datadir.pe_debug;
-	if (!debug_dir_entry->size)
+	if (!debug_dir_entry || !debug_dir_entry->size)
 		return FALSE;
 
 	int offset = mono_cli_rva_image_map (image, debug_dir_entry->rva);
@@ -130,7 +131,7 @@ static gboolean
 get_pe_debug_info (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *out_timestamp, guint8 **ppdb_data,
 				   int *ppdb_uncompressed_size, int *ppdb_compressed_size)
 {
-	return get_pe_debug_info_full (image, out_guid, out_age, out_timestamp, ppdb_data, ppdb_uncompressed_size, ppdb_compressed_size, NULL, NULL, NULL);
+	return mono_get_pe_debug_info_full (image, out_guid, out_age, out_timestamp, ppdb_data, ppdb_uncompressed_size, ppdb_compressed_size, NULL, NULL, NULL);
 }
 
 static void

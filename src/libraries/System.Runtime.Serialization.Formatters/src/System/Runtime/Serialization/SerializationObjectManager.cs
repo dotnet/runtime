@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization
 {
+    [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public sealed class SerializationObjectManager
     {
         private const string SerializationObjectManagerUnreferencedCodeMessage = "SerializationObjectManager is not trim compatible because the type of objects being managed cannot be statically discovered.";

@@ -7,8 +7,6 @@ using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 
-using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
-
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
@@ -117,6 +115,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool HasConditionalStaticDependencies => true;
 
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => GetDictionaryLayout(factory).IsEmpty;
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
@@ -197,13 +196,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override TypeSystemContext Context => _owningMethod.Context;
         public override TypeSystemEntity OwningEntity => _owningMethod;
         public MethodDesc OwningMethod => _owningMethod;
-        public override bool HasConditionalStaticDependencies => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
-        {
-            CombinedDependencyList list = null;
-            factory.MetadataManager.GetConditionalDependenciesDueToMethodGenericDictionary(ref list, factory, _owningMethod);
-            return list ?? (IEnumerable<CombinedDependencyListEntry>)System.Array.Empty<CombinedDependencyListEntry>();
-        }
+        public override bool HasConditionalStaticDependencies => false;
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
@@ -245,8 +238,6 @@ namespace ILCompiler.DependencyAnalysis
 
             // Make sure the dictionary can also be populated
             dependencies.Add(factory.ShadowConcreteMethod(_owningMethod), "Dictionary contents");
-
-            factory.MetadataManager.GetDependenciesForGenericDictionary(ref dependencies, factory, _owningMethod);
 
             return dependencies;
         }

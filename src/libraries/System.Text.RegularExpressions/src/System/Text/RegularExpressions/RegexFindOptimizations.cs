@@ -66,7 +66,7 @@ namespace System.Text.RegularExpressions
             }
 
             // If there's a leading substring, just use IndexOf and inherit all of its optimizations.
-            string prefix = RegexPrefixAnalyzer.FindPrefix(root);
+            string? prefix = RegexPrefixAnalyzer.FindPrefix(root);
             if (prefix.Length > 1)
             {
                 LeadingPrefix = prefix;
@@ -123,6 +123,16 @@ namespace System.Text.RegularExpressions
                         _asciiLookups = new uint[1][];
                     }
                 }
+                return;
+            }
+
+            // We're now left-to-right only.
+
+            prefix = RegexPrefixAnalyzer.FindPrefixOrdinalCaseInsensitive(root);
+            if (prefix is { Length: > 1 })
+            {
+                LeadingPrefix = prefix;
+                FindMode = FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight;
                 return;
             }
 
@@ -547,6 +557,21 @@ namespace System.Text.RegularExpressions
                         return false;
                     }
 
+                // There's a case-insensitive prefix.  Search for it with ordinal case-insensitive IndexOf.
+
+                case FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight:
+                    {
+                        int i = textSpan.Slice(pos).IndexOf(LeadingPrefix.AsSpan(), StringComparison.OrdinalIgnoreCase);
+                        if (i >= 0)
+                        {
+                            pos += i;
+                            return true;
+                        }
+
+                        pos = textSpan.Length;
+                        return false;
+                    }
+
                 // There's a set at the beginning of the pattern.  Search for it.
 
                 case FindNextStartingPositionMode.LeadingSet_LeftToRight:
@@ -776,6 +801,8 @@ namespace System.Text.RegularExpressions
         LeadingString_LeftToRight,
         /// <summary>A multi-character substring at the beginning of the right-to-left pattern.</summary>
         LeadingString_RightToLeft,
+        /// <summary>A multi-character ordinal case-insensitive substring at the beginning of the pattern.</summary>
+        LeadingString_OrdinalIgnoreCase_LeftToRight,
 
         /// <summary>A set starting the pattern.</summary>
         LeadingSet_LeftToRight,

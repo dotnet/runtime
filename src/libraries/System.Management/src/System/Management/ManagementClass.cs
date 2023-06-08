@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.CodeDom;
@@ -266,7 +267,11 @@ namespace System.Management
         public ManagementClass(string scope, string path, ObjectGetOptions options)
             : base(new ManagementScope(scope), new ManagementPath(path), options) { }
 
-        protected ManagementClass(SerializationInfo info, StreamingContext context) : base(info, context)
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+        protected ManagementClass(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
         }

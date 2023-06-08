@@ -269,6 +269,11 @@ namespace Mono.Linker.Dataflow
 			case IntrinsicId.Marshal_PtrToStructure:
 			case IntrinsicId.Marshal_DestroyStructure:
 			case IntrinsicId.Marshal_GetDelegateForFunctionPointer:
+			case IntrinsicId.Assembly_get_Location:
+			case IntrinsicId.Assembly_GetFile:
+			case IntrinsicId.Assembly_GetFiles:
+			case IntrinsicId.AssemblyName_get_CodeBase:
+			case IntrinsicId.AssemblyName_get_EscapedCodeBase:
 				// These intrinsics are not interesting for trimmer (they are interesting for AOT and that's why they are recognized)
 				break;
 
@@ -298,11 +303,13 @@ namespace Mono.Linker.Dataflow
 						if (staticType is null) {
 							// We don't know anything about the type GetType was called on. Track this as a usual result of a method call without any annotations
 							AddReturnValue (context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethodDefinition));
-						} else if (staticType.IsSealed || staticType.IsTypeOf ("System", "Delegate")) {
+						} else if (staticType.IsSealed || staticType.IsTypeOf ("System", "Delegate") || staticType.IsTypeOf ("System", "Array")) {
 							// We can treat this one the same as if it was a typeof() expression
 
 							// We can allow Object.GetType to be modeled as System.Delegate because we keep all methods
 							// on delegates anyway so reflection on something this approximation would miss is actually safe.
+
+							// We can also treat all arrays as "sealed" since it's not legal to derive from Array type (even though it is not sealed itself)
 
 							// We ignore the fact that the type can be annotated (see below for handling of annotated types)
 							// This means the annotations (if any) won't be applied - instead we rely on the exact knowledge
@@ -339,7 +346,7 @@ namespace Mono.Linker.Dataflow
 			//    For all other cases, the trimming tools would have already produced a warning.
 
 			default:
-				throw new NotImplementedException ("Unhandled intrinsic");
+				throw new NotImplementedException ($"Unhandled intrinsic: {intrinsicId}");
 			}
 
 			// If we get here, we handled this as an intrinsic.  As a convenience, if the code above

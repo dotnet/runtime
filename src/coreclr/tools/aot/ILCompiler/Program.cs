@@ -29,6 +29,7 @@ namespace ILCompiler
     internal sealed class Program
     {
         private readonly ILCompilerRootCommand _command;
+        private static readonly char[] s_separator = new char[] { ',', ';', ' ' };
 
         public Program(ILCompilerRootCommand command)
         {
@@ -41,7 +42,7 @@ namespace ILCompiler
             }
         }
 
-        private List<MethodDesc> CreateInitializerList(CompilerTypeSystemContext context)
+        private IReadOnlyCollection<MethodDesc> CreateInitializerList(CompilerTypeSystemContext context)
         {
             List<ModuleDesc> assembliesWithInitializers = new List<ModuleDesc>();
 
@@ -55,18 +56,7 @@ namespace ILCompiler
 
             var libraryInitializers = new LibraryInitializers(context, assembliesWithInitializers);
 
-            List<MethodDesc> initializerList = new List<MethodDesc>(libraryInitializers.LibraryInitializerMethods);
-
-            // If there are any AppContext switches the user wishes to enable, generate code that sets them.
-            string[] appContextSwitches = Get(_command.AppContextSwitches);
-            if (appContextSwitches.Length > 0)
-            {
-                MethodDesc appContextInitMethod = new Internal.IL.Stubs.StartupCode.AppContextInitializerMethod(
-                    context.GeneratedAssembly.GetGlobalModuleType(), appContextSwitches);
-                initializerList.Add(appContextInitMethod);
-            }
-
-            return initializerList;
+            return libraryInitializers.LibraryInitializerMethods;
         }
 
         public int Run()
@@ -77,7 +67,7 @@ namespace ILCompiler
 
             TargetArchitecture targetArchitecture = Get(_command.TargetArchitecture);
             TargetOS targetOS = Get(_command.TargetOS);
-            InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), targetArchitecture, targetOS,
+            InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), targetArchitecture, targetOS,
                 "Unrecognized instruction set {0}", "Unsupported combination of instruction sets: {0}/{1}");
 
             string systemModuleName = Get(_command.SystemModuleName);
@@ -166,7 +156,6 @@ namespace ILCompiler
             {
                 // Either single file, or multifile library, or multifile consumption.
                 EcmaModule entrypointModule = null;
-                bool systemModuleIsInputModule = false;
                 foreach (var inputFile in typeSystemContext.InputFilePaths)
                 {
                     EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
@@ -178,10 +167,7 @@ namespace ILCompiler
                         entrypointModule = module;
                     }
 
-                    if (module == typeSystemContext.SystemModule)
-                        systemModuleIsInputModule = true;
-
-                    compilationRoots.Add(new ExportedMethodsRootProvider(module));
+                    compilationRoots.Add(new UnmanagedEntryPointsRootProvider(module));
                 }
 
                 bool nativeLib = Get(_command.NativeLib);
@@ -209,18 +195,20 @@ namespace ILCompiler
                     if (entrypointModule == null && (!nativeLib || SplitExeInitialization))
                         throw new Exception("No entrypoint module");
 
-                    if (!systemModuleIsInputModule)
-                        compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
                     compilationGroup = new SingleFileCompilationModuleGroup();
                 }
 
+                const string settingsBlobName = "g_compilerEmbeddedSettingsBlob";
+                const string knobsBlobName = "g_compilerEmbeddedKnobsBlob";
                 string[] runtimeOptions = Get(_command.RuntimeOptions);
+                string[] runtimeKnobs = Get(_command.RuntimeKnobs);
                 if (nativeLib)
                 {
                     // Set owning module of generated native library startup method to compiler generated module,
                     // to ensure the startup method is included in the object file during multimodule mode build
                     compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, CreateInitializerList(typeSystemContext)));
-                    compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
+                    compilationRoots.Add(new RuntimeConfigurationRootProvider(settingsBlobName, runtimeOptions));
+                    compilationRoots.Add(new RuntimeConfigurationRootProvider(knobsBlobName, runtimeKnobs));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
                     if (SplitExeInitialization)
                     {
@@ -230,12 +218,24 @@ namespace ILCompiler
                 else if (entrypointModule != null)
                 {
                     compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext), generateLibraryAndModuleInitializers: !SplitExeInitialization));
-                    compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
+                    compilationRoots.Add(new RuntimeConfigurationRootProvider(settingsBlobName, runtimeOptions));
+                    compilationRoots.Add(new RuntimeConfigurationRootProvider(knobsBlobName, runtimeKnobs));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
                     if (SplitExeInitialization)
                     {
                         compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, CreateInitializerList(typeSystemContext)));
                     }
+                }
+
+                foreach (var unmanagedEntryPointsAssembly in Get(_command.UnmanagedEntryPointsAssemblies))
+                {
+                    if (typeSystemContext.InputFilePaths.ContainsKey(unmanagedEntryPointsAssembly))
+                    {
+                        // Skip adding UnmanagedEntryPointsRootProvider for modules that have been already registered as an input module
+                        continue;
+                    }
+                    EcmaModule module = typeSystemContext.GetModuleForSimpleName(unmanagedEntryPointsAssembly);
+                    compilationRoots.Add(new UnmanagedEntryPointsRootProvider(module));
                 }
 
                 foreach (var rdXmlFilePath in Get(_command.RdXmlFilePaths))
@@ -343,8 +343,7 @@ namespace ILCompiler
             UsageBasedMetadataGenerationOptions metadataGenerationOptions = default;
             if (supportsReflection)
             {
-                mdBlockingPolicy = Get(_command.NoMetadataBlocking) ?
-                    new NoMetadataBlockingPolicy() : new BlockedInternalsBlockingPolicy(typeSystemContext);
+                mdBlockingPolicy = new NoMetadataBlockingPolicy();
 
                 resBlockingPolicy = new ManifestResourceBlockingPolicy(logger, featureSwitches);
 
@@ -387,7 +386,8 @@ namespace ILCompiler
                     featureSwitches,
                     Get(_command.ConditionallyRootedAssemblies),
                     rootedAssemblies,
-                    Get(_command.TrimmedAssemblies));
+                    Get(_command.TrimmedAssemblies),
+                    Get(_command.SatelliteFilePaths));
 
             InteropStateManager interopStateManager = new InteropStateManager(typeSystemContext.GeneratedAssembly);
             InteropStubManager interopStubManager = new UsageBasedInteropStubManager(interopStateManager, pinvokePolicy, logger);
@@ -480,6 +480,15 @@ namespace ILCompiler
                     preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, scanResults.GetPreinitializationPolicy());
                     builder.UsePreinitializationManager(preinitManager);
                 }
+
+                // If we have a scanner, we can inline threadstatics storage using the information
+                // we collected at scanning time.
+                // Inlined storage implies a single type manager, thus we do not do it in multifile case.
+                // This could be a command line switch if we really wanted to.
+                if (!multiFile)
+                {
+                    builder.UseInlinedThreadStatics(scanResults.GetInlinedThreadStatics());
+                }
             }
 
             string ilDump = Get(_command.IlDump);
@@ -531,7 +540,7 @@ namespace ILCompiler
                 ExportsFileWriter defFileWriter = new ExportsFileWriter(typeSystemContext, exportsFile);
                 foreach (var compilationRoot in compilationRoots)
                 {
-                    if (compilationRoot is ExportedMethodsRootProvider provider)
+                    if (compilationRoot is UnmanagedEntryPointsRootProvider provider)
                         defFileWriter.AddExportedMethods(provider.ExportedMethods);
                 }
 
@@ -625,11 +634,9 @@ namespace ILCompiler
         {
             ModuleDesc systemModule = context.SystemModule;
 
-            TypeDesc foundType = systemModule.GetTypeByCustomAttributeTypeName(typeName, false, (typeDefName, module, throwIfNotFound) =>
-            {
-                return (MetadataType)context.GetCanonType(typeDefName)
-                    ?? CustomAttributeTypeNameParser.ResolveCustomAttributeTypeDefinitionName(typeDefName, module, throwIfNotFound);
-            });
+            TypeDesc foundType = systemModule.GetTypeByCustomAttributeTypeName(typeName, false,
+                (module, typeDefName) => (MetadataType)module.Context.GetCanonType(typeDefName));
+
             if (foundType == null)
                 throw new CommandLineException($"Type '{typeName}' not found");
 
@@ -676,7 +683,7 @@ namespace ILCompiler
         {
             foreach (string value in warningCodes)
             {
-                string[] values = value.Split(new char[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] values = value.Split(s_separator, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string id in values)
                 {
                     if (!id.StartsWith("IL", StringComparison.Ordinal) || !ushort.TryParse(id.AsSpan(2), out ushort code))
