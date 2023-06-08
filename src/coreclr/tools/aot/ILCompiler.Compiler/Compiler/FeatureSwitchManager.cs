@@ -28,7 +28,13 @@ namespace ILCompiler
         public FeatureSwitchManager(ILProvider nestedILProvider, Logger logger, IEnumerable<KeyValuePair<string, bool>> switchValues)
         {
             _nestedILProvider = nestedILProvider;
-            _hashtable = new FeatureSwitchHashtable(logger, new Dictionary<string, bool>(switchValues));
+
+            // Last setting wins
+            var dictionary = new Dictionary<string, bool>();
+            foreach ((string name, bool value) in switchValues)
+                dictionary[name] = value;
+
+            _hashtable = new FeatureSwitchHashtable(logger, dictionary);
         }
 
         private BodySubstitution GetSubstitution(MethodDesc method)

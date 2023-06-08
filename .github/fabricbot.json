@@ -2595,7 +2595,7 @@
     "subCapability": "IssueCommentResponder",
     "version": "1.0",
     "config": {
-      "taskName": "Replace `needs-author-action` label with `needs-further-triage` label when the author comments on an issue",
+      "taskName": "Replace `needs-author-action` label with `needs-further-triage` label when the author comments on an issue that is not still untriaged",
       "actions": [
         {
           "name": "addLabel",
@@ -2635,6 +2635,74 @@
             "name": "hasLabel",
             "parameters": {
               "label": "needs-author-action"
+            }
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "untriaged"
+                }
+              }
+            ]
+          },
+          {
+            "name": "isOpen",
+            "parameters": {}
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssueCommentResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "Remove `needs-author-action` label when the author comments on an `untriaged` issue",
+      "actions": [
+        {
+          "name": "removeLabel",
+          "parameters": {
+            "label": "needs-author-action"
+          }
+        }
+      ],
+      "eventType": "issue",
+      "eventNames": [
+        "issue_comment"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isAction",
+            "parameters": {
+              "action": "created"
+            }
+          },
+          {
+            "name": "isActivitySender",
+            "parameters": {
+              "user": {
+                "type": "author"
+              }
+            }
+          },
+          {
+            "name": "hasLabel",
+            "parameters": {
+              "label": "needs-author-action"
+            }
+          },
+          {
+            "name": "hasLabel",
+            "parameters": {
+              "label": "untriaged"
             }
           },
           {
