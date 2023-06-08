@@ -705,20 +705,19 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
         }
 
-        // Regression test for https://github.com/dotnet/runtime/issues/61860
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/79311", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void SupportsGenericParameterWithCustomConverterFactory()
         {
+            // Regression test for https://github.com/dotnet/runtime/issues/61860
             var value = new List<TestEnum> { TestEnum.Cee };
             string json = JsonSerializer.Serialize(value, GenericParameterWithCustomConverterFactoryContext.Default.ListTestEnum);
             Assert.Equal(@"[""Cee""]", json);
         }
 
-        // Regression test for https://github.com/dotnet/runtime/issues/74652
         [Fact]
         public static void ClassWithStringValuesRoundtrips()
         {
+            // Regression test for https://github.com/dotnet/runtime/issues/74652
             JsonSerializerOptions options = ClassWithStringValuesContext.Default.Options;
 
             ClassWithStringValues obj = new()
@@ -730,10 +729,10 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal("""{"StringValuesProperty":["abc","def"]}""", json);
         }
 
-        // Regression test for https://github.com/dotnet/runtime/issues/61734
         [Fact]
         public static void ClassWithDictionaryPropertyRoundtrips()
         {
+            // Regression test for https://github.com/dotnet/runtime/issues/61734
             JsonSerializerOptions options = ClassWithDictionaryPropertyContext.Default.Options;
 
             ClassWithDictionaryProperty obj = new(new Dictionary<string, object?>()
@@ -746,7 +745,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal("""{"DictionaryProperty":{"foo":"bar","test":"baz"}}""", json);
         }
 
-        [JsonConverter(typeof(JsonStringEnumConverter))]
+        [JsonConverter(typeof(JsonStringEnumConverter<TestEnum>))]
         public enum TestEnum
         {
             Aye, Bee, Cee

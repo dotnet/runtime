@@ -1493,6 +1493,5 @@ extends:
             extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
             extraStepsParameters:
               creator: dotnet-bot
-              # FIXME: Currently, tracing/eventpipe tests are only enabled on iOS platforms. It should be expanded to include all runtime tests. Tracking issue: https://github.com/dotnet/runtime/issues/84254
-              testBuildArgs: tree tracing/eventpipe
+              testBuildArgs: tree nativeaot/SmokeTests/UnitTests
               testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)

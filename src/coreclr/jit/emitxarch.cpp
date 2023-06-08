@@ -18856,6 +18856,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_pcmpgtq:
         case INS_psadbw:
         case INS_vdbpsadbw:
+        case INS_vpcmpgtq:
         case INS_vpermps:
         case INS_vpermpd:
         case INS_vpermpd_reg:
@@ -19290,16 +19291,22 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
-        case INS_kmovb_msk:
-        case INS_kmovw_msk:
-        case INS_kmovd_msk:
-        case INS_kmovq_msk:
         case INS_kmovb_gpr:
         case INS_kmovw_gpr:
         case INS_kmovd_gpr:
         case INS_kmovq_gpr:
         {
             result.insLatency += PERFSCORE_LATENCY_3C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+        }
+
+        case INS_kmovb_msk:
+        case INS_kmovw_msk:
+        case INS_kmovd_msk:
+        case INS_kmovq_msk:
+        {
+            result.insLatency += PERFSCORE_LATENCY_1C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
         }
@@ -19333,12 +19340,71 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
-        case INS_kortestb:
-        case INS_kortestw:
-        case INS_kortestd:
-        case INS_kortestq:
+        case INS_kandb:
+        case INS_kandd:
+        case INS_kandq:
+        case INS_kandw:
+        case INS_kandnb:
+        case INS_kandnd:
+        case INS_kandnq:
+        case INS_kandnw:
+        case INS_knotb:
+        case INS_knotd:
+        case INS_knotq:
+        case INS_knotw:
+        case INS_korb:
+        case INS_kord:
+        case INS_korq:
+        case INS_korw:
+        case INS_kxnorb:
+        case INS_kxnord:
+        case INS_kxnorq:
+        case INS_kxnorw:
+        case INS_kxorb:
+        case INS_kxord:
+        case INS_kxorq:
+        case INS_kxorw:
         {
             result.insLatency += PERFSCORE_LATENCY_1C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+        }
+
+        case INS_kortestb:
+        case INS_kortestd:
+        case INS_kortestq:
+        case INS_kortestw:
+        case INS_ktestb:
+        case INS_ktestd:
+        case INS_ktestq:
+        case INS_ktestw:
+        {
+            // Keep these in a separate group as there isn't a documented latency
+            // Similar instructions have a 1 cycle latency, however
+
+            result.insLatency += PERFSCORE_LATENCY_1C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+
+            break;
+        }
+
+        case INS_kaddb:
+        case INS_kaddd:
+        case INS_kaddq:
+        case INS_kaddw:
+        case INS_kshiftlb:
+        case INS_kshiftld:
+        case INS_kshiftlq:
+        case INS_kshiftlw:
+        case INS_kshiftrb:
+        case INS_kshiftrd:
+        case INS_kshiftrq:
+        case INS_kshiftrw:
+        case INS_kunpckbw:
+        case INS_kunpckdq:
+        case INS_kunpckwd:
+        {
+            result.insLatency += PERFSCORE_LATENCY_4C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
         }

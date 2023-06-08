@@ -197,6 +197,9 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? JsonUnmappedMemberHandlingAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonUnmappedMemberHandlingAttribute", ref _JsonUnmappedMemberHandlingAttributeType);
         private Option<INamedTypeSymbol?> _JsonUnmappedMemberHandlingAttributeType;
 
+        public INamedTypeSymbol? JsonStringEnumConverterType => GetOrResolveType("System.Text.Json.Serialization.JsonStringEnumConverter", ref _JsonStringEnumConverterType);
+        private Option<INamedTypeSymbol?> _JsonStringEnumConverterType;
+
         // Unsupported types
         public INamedTypeSymbol? DelegateType => _DelegateType ??= Compilation.GetSpecialType(SpecialType.System_Delegate);
         private INamedTypeSymbol? _DelegateType;

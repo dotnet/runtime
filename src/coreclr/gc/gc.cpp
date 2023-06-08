@@ -7841,7 +7841,7 @@ void gc_heap::fix_allocation_context_heaps (gc_alloc_context* gc_context, void*)
 // make sure no allocation contexts point to idle heaps
 void gc_heap::fix_allocation_contexts_heaps()
 {
-    GCToEEInterface::GcEnumAllocContexts (fix_allocation_context_heaps, nullptr); 
+    GCToEEInterface::GcEnumAllocContexts (fix_allocation_context_heaps, nullptr);
 }
 #endif //MULTIPLE_HEAPS
 
@@ -15851,9 +15851,9 @@ void allocator::count_items (gc_heap* this_hp, size_t* fl_items_count, size_t* f
             assert (((CObjectHeader*)free_item)->IsFree());
 
             num_fl_items++;
-            // Get the heap its region belongs to see if we need to put it back. 
+            // Get the heap its region belongs to see if we need to put it back.
             heap_segment* region = gc_heap::region_of (free_item);
-            dprintf (3, ("b#%2d FL %Ix region %Ix heap %d -> %d", 
+            dprintf (3, ("b#%2d FL %Ix region %Ix heap %d -> %d",
                 i, free_item, (size_t)region, this_hp->heap_number, region->heap->heap_number));
             if (region->heap != this_hp)
             {
@@ -15862,7 +15862,7 @@ void allocator::count_items (gc_heap* this_hp, size_t* fl_items_count, size_t* f
                 //if ((num_fl_items_rethread % 1000) == 0)
                 //{
                 //    end_us = GetHighPrecisionTimeStamp();
-                //    dprintf (8888, ("%Id items rethreaded out of %Id items in %I64d us, current fl: %Ix", 
+                //    dprintf (8888, ("%Id items rethreaded out of %Id items in %I64d us, current fl: %Ix",
                 //        num_fl_items_rethread, num_fl_items, (end_us - start_us), free_item));
                 //    start_us = end_us;
                 //}
@@ -15954,9 +15954,9 @@ void allocator::rethread_items (size_t* num_total_fl_items, size_t* num_total_fl
             assert (((CObjectHeader*)free_item)->IsFree());
 
             num_fl_items++;
-            // Get the heap its region belongs to see if we need to put it back. 
+            // Get the heap its region belongs to see if we need to put it back.
             heap_segment* region = gc_heap::region_of (free_item);
-            dprintf (3, ("b#%2d FL %Ix region %Ix heap %d -> %d", 
+            dprintf (3, ("b#%2d FL %Ix region %Ix heap %d -> %d",
                 i, free_item, (size_t)region, current_heap->heap_number, region->heap->heap_number));
             // need to keep track of heap and only check if it's not from our heap!!
             if (region->heap != current_heap)
@@ -16000,7 +16000,7 @@ void allocator::rethread_items (size_t* num_total_fl_items, size_t* num_total_fl
 // merge buckets from min_fl_list to their corresponding buckets to this FL.
 void allocator::merge_items (gc_heap* current_heap, int to_num_heaps, int from_num_heaps)
 {
-    int this_hn = current_heap->heap_number; 
+    int this_hn = current_heap->heap_number;
 
     for (unsigned int i = 0; i < num_buckets; i++)
     {
@@ -22495,7 +22495,7 @@ void gc_heap::gc1()
 bool gc_heap::prepare_rethread_fl_items()
 {
     if (!min_fl_list)
-    {    
+    {
         min_fl_list = new (nothrow) min_fl_list_info [MAX_BUCKET_COUNT * n_max_heaps];
         if (min_fl_list == nullptr)
             return false;
@@ -24899,7 +24899,7 @@ void gc_heap::check_heap_count ()
     if (GCConfig::GetGCDynamicAdaptationMode() == 0)
     {
         // don't change the heap count dynamically if the feature isn't explicitly enabled
-        return;        
+        return;
     }
 
     if (heap_number == 0)
@@ -25889,8 +25889,8 @@ BOOL gc_heap::background_mark (uint8_t* o, uint8_t* low, uint8_t* high)
         {                                                                   \
             for (ptrdiff_t __i = 0; __i > cnt; __i--)                         \
             {                                                               \
-                HALF_SIZE_T skip =  cur->val_serie[__i].skip;               \
-                HALF_SIZE_T nptrs = cur->val_serie[__i].nptrs;              \
+                HALF_SIZE_T skip =  (cur->val_serie + __i)->skip;           \
+                HALF_SIZE_T nptrs = (cur->val_serie + __i)->nptrs;          \
                 uint8_t** ppstop = parm + nptrs;                            \
                 if (!start_useful || (uint8_t*)ppstop > (start))            \
                 {                                                           \
@@ -30961,21 +30961,21 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
     //
     // + if the pinned surv of a region is >= demotion_pinned_ratio_th (this will be dynamically tuned based on memory load),
     //   it will be promoted to its normal planned generation unconditionally.
-    // 
+    //
     // + if the pinned surv is < demotion_pinned_ratio_th, we will always demote it to gen0. We will record how many regions
     //   have no survival at all - those will be empty and can be used to plan any non gen0 generation if needed.
-    // 
+    //
     //   Note! We could actually promote a region with non zero pinned survivors to whichever generation we'd like (eg, we could
     //   promote a gen0 region to gen2). However it means we'd need to set cards on those objects because we will not have a chance
     //   later. The benefit of doing this is small in general as when we get into this method, it's very rare we don't already
     //   have planned regions in higher generations. So I don't think it's worth the complexicity for now. We may consider it
     //   for the future.
-    // 
+    //
     // + if after we are done walking the remaining regions, we still haven't successfully planned all the needed generations,
     //   we check to see if we have enough in the regions that will be empty (note that we call set_region_plan_gen_num on
     //   these regions which means they are planned in gen0. So we need to make sure at least gen0 has 1 region). If so
     //   thread_final_regions will naturally get one from there so we don't need to call set_region_plan_gen_num to replace the
-    //   plan gen num. 
+    //   plan gen num.
     //
     // + if we don't have enough in regions that will be empty, we'll need to ask for new regions and if we can't, we fall back
     //   to the special sweep mode.
@@ -31026,7 +31026,7 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
 
             heap_segment_plan_allocated (nseg) = generation_allocation_pointer (consing_gen);
             decide_on_demotion_pin_surv (nseg, &to_be_empty_regions);
-            
+
             heap_segment* next_seg = heap_segment_next_non_sip (nseg);
 
             if ((next_seg == 0) && (heap_segment_gen_num (nseg) > 0))
@@ -46231,7 +46231,7 @@ void gc_heap::descr_generations (const char* msg)
             dprintf (1, ("[%5s] GC#%5Id total heap size: %Idmb (F: %Idmb %d%%) commit size: %Idmb, %0.3f min, %d,%d new in plan, %d in threading\n",
                 msg, idx, alloc_size, frag_size,
                 (int)((double)frag_size * 100.0 / (double)alloc_size),
-                commit_size, 
+                commit_size,
                 (double)elapsed_time_so_far / (double)1000000 / (double)60,
                 total_new_gen0_regions_in_plns, total_new_regions_in_prr, total_new_regions_in_threading));
         }

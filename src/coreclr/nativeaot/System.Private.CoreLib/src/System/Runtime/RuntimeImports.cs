@@ -351,9 +351,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhBoxAny")]
         internal static extern unsafe object RhBoxAny(ref byte pData, MethodTable* pEEType);
 
-        internal static unsafe object RhBoxAny(ref byte pData, EETypePtr pEEType)
-            => RhBoxAny(ref pData, pEEType.ToPointer());
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewObject")]
         internal static extern unsafe object RhNewObject(MethodTable* pEEType);
@@ -473,8 +470,6 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhResolveDispatchOnType")]
-        // For my life cannot figure out the ordering of modifiers this is expecting.
-#pragma warning disable IDE0036
         internal static extern unsafe IntPtr RhResolveDispatchOnType(EETypePtr instanceType, EETypePtr interfaceType, ushort slot, EETypePtr* pGenericContext);
 
         internal static unsafe IntPtr RhResolveDispatchOnType(EETypePtr instanceType, EETypePtr interfaceType, ushort slot)
@@ -562,14 +557,6 @@ namespace System.Runtime
         internal static extern IntPtr RhGetOSModuleFromPointer(IntPtr pointerVal);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetModuleFromEEType")]
-        internal static extern TypeManagerHandle RhGetModuleFromEEType(IntPtr pEEType);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetOSModuleFromEEType")]
-        internal static extern IntPtr RhGetOSModuleFromEEType(IntPtr pEEType);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticStorage")]
         internal static extern ref object[][] RhGetThreadStaticStorage();
 
@@ -620,11 +607,6 @@ namespace System.Runtime
         internal static extern unsafe int RhGetModuleFileName(IntPtr moduleHandle, out char* moduleName);
 #endif
 
-        // returns the previous value.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhSetErrorInfoBuffer")]
-        internal static extern unsafe void* RhSetErrorInfoBuffer(void* pNewBuffer);
-
         //
         // StackTrace helper
         //
@@ -648,21 +630,6 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhSetThreadExitCallback")]
         internal static extern unsafe void RhSetThreadExitCallback(delegate* unmanaged<void> pCallback);
-
-        // Functions involved in thunks from managed to managed functions (Universal transition transitions
-        // from an arbitrary method call into a defined function, and CallDescrWorker goes the other way.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetUniversalTransitionThunk")]
-        internal static extern IntPtr RhGetUniversalTransitionThunk();
-
-        // For Managed to Managed calls
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhCallDescrWorker")]
-        internal static extern void RhCallDescrWorker(IntPtr callDescr);
-
-        // For Managed to Native calls
-        [LibraryImport(RuntimeLibrary, EntryPoint = "RhCallDescrWorker")]
-        internal static partial void RhCallDescrWorkerNative(IntPtr callDescr);
 
         // Moves memory from smem to dmem. Size must be a positive value.
         // This copy uses an intrinsic to be safe for copying arbitrary bits of

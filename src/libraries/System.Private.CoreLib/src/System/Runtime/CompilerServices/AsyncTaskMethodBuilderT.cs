@@ -333,7 +333,7 @@ namespace System.Runtime.CompilerServices
             {
                 get
                 {
-                    Debug.Assert(m_stateObject is null || m_stateObject is ExecutionContext, $"{nameof(m_stateObject)} must only be for ExecutionContext but contained {m_stateObject}.");
+                    Debug.Assert(m_stateObject is null or ExecutionContext, $"Expected {nameof(m_stateObject)} to be null or an ExecutionContext but was {(m_stateObject is object o ? o.GetType().ToString() : "(null)")}.");
                     return ref Unsafe.As<object?, ExecutionContext?>(ref m_stateObject);
                 }
             }

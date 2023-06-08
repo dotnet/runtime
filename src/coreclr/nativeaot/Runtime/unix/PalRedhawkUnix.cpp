@@ -892,12 +892,6 @@ REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size
 #endif
 }
 
-REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)
-{
-    static void* pBuffer;
-    return PalInterlockedExchangePointer(&pBuffer, pNewBuffer);
-}
-
 extern "C" HANDLE GetCurrentProcess()
 {
     return (HANDLE)-1;
