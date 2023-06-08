@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Immutable;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
@@ -40,11 +41,28 @@ namespace Microsoft.Interop.Analyzers
                 context.RegisterOperationAction(context =>
                 {
                     IAttributeOperation attr = (IAttributeOperation)context.Operation;
-                    if (attr.Operation is IObjectCreationOperation ctor
-                        && comVisibleAttribute.Equals(ctor.Type, SymbolEqualityComparer.Default)
-                        && ctor.Arguments[0].Value.ConstantValue.Value is true)
+                    if (attr.Operation is not IObjectCreationOperation ctor
+                        || !comVisibleAttribute.Equals(ctor.Type, SymbolEqualityComparer.Default)
+                        || ctor.Arguments[0].Value.ConstantValue.Value is not true)
+                    {
+                        return;
+                    }
+
+                    INamedTypeSymbol containingType = (INamedTypeSymbol)context.ContainingSymbol;
+
+                    if (containingType.GetAttributes().Any(attr => generatedComClassAttribute.Equals(attr.AttributeClass, SymbolEqualityComparer.Default)))
                     {
                         context.ReportDiagnostic(context.ContainingSymbol.CreateDiagnostic(ComHostingDoesNotSupportGeneratedComInterface, context.ContainingSymbol.Name));
+                        return;
+                    }
+
+                    foreach (var iface in containingType.AllInterfaces)
+                    {
+                        if (iface.GetAttributes().Any(attr => generatedComInterfaceAttribute.Equals(attr.AttributeClass, SymbolEqualityComparer.Default)))
+                        {
+                            context.ReportDiagnostic(context.ContainingSymbol.CreateDiagnostic(ComHostingDoesNotSupportGeneratedComInterface, context.ContainingSymbol.Name));
+                            return;
+                        }
                     }
                 }, OperationKind.Attribute);
             });
