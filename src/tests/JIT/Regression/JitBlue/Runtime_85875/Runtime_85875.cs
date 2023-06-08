@@ -43,19 +43,19 @@ public unsafe class Runtime_85874
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-    public static void Move128(double* p)
+    private static void Move128(double* p)
     {
         Vector128.Store(Vector128.LoadAligned((byte*)p).AsDouble(), p);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-    public static void Move256(double* p)
+    private static void Move256(double* p)
     {
         Vector256.Store(Vector256.LoadAligned((byte*)p).AsDouble(), p);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-    public static void Move512(double* p)
+    private static void Move512(double* p)
     {
         Vector512.Store(Vector512.LoadAligned((byte*)p).AsDouble(), p);
     }
