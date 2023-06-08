@@ -206,32 +206,33 @@ def build_and_run(coreclr_args, output_mch_name):
          "--framework", "net8.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
          "-o", artifacts_directory], _exit_on_fail=True)
 
+    # common BDN prefix
+    collection_command = f"{dotnet_exe} {benchmarks_dll} --corerun {os.path.join(core_root, corerun_exe)} "
+
+    # test specific filters
     if benchmark_binary.lower().startswith("microbenchmarks"):
-        # Disable ReadyToRun so we always JIT R2R methods and collect them
-        collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter \"*\" --corerun {os.path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
-                             f"--partition-index {partition_index} --iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart --logBuildOutput " \
-                             f"--envVars DOTNET_JitName:{shim_name} DOTNET_ZapDisable:1 DOTNET_ReadyToRun:0"
-
+        collection_command += f"--filter \"*\" --partition-count {partition_count} --partition-index {partition_index} "
     elif benchmark_binary.lower().startswith("demobenchmarks"):
-        # Disable ReadyToRun so we always JIT R2R methods and collect them
-        collection_command = f"{dotnet_exe} {benchmarks_dll}  -f *CollisionBatcherTaskBenchmarks.* *GroupedCollisionTesterBenchmarks.* *GatherScatterBenchmarks.* " \
+        collection_command += "-f *CollisionBatcherTaskBenchmarks.* *GroupedCollisionTesterBenchmarks.* *GatherScatterBenchmarks.* " \
                               " *OneBodyConstraintBenchmarks.* *TwoBodyConstraintBenchmarks.* *ThreeBodyConstraintBenchmarks.* *FourBodyConstraintBenchmarks.* " \
-                              " *SweepBenchmarks.* *ShapeRayBenchmarks.* *ShapePileBenchmark.* *RagdollTubeBenchmark.* " \
-                             f" --corerun {os.path.join(core_root, corerun_exe)} " \
-                               "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart --logBuildOutput " \
-                             f" --envVars DOTNET_JitName:{shim_name} DOTNET_ZapDisable:1 DOTNET_ReadyToRun:0"
+                              " *SweepBenchmarks.* *ShapeRayBenchmarks.* *ShapePileBenchmark.* *RagdollTubeBenchmark.* "
     else:
-        # Disable ReadyToRun so we always JIT R2R methods and collect them
-        collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter \"*\" --corerun {os.path.join(core_root, corerun_exe)} " \
-                              "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart --logBuildOutput " \
-                             f"--envVars DOTNET_JitName:{shim_name} DOTNET_ZapDisable:1 DOTNET_ReadyToRun:0"
+        collection_command += "--filter \"*\" "
 
+    # common BDN arguments
+    collection_command += "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart --logBuildOutput "
+
+    # common BDN environment var settings
+    # Disable ReadyToRun so we always JIT R2R methods and collect them
+    collection_command += f"--envVars DOTNET_JitName:{shim_name} DOTNET_ZapDisable:1 DOTNET_ReadyToRun:0 "
+
+    # custom BDN environment var settings
     if coreclr_args.tiered_pgo:
-        collection_command += " DOTNET_TieredCompilation:1 DOTNET_TieredPGO:1"
+        collection_command += "DOTNET_TieredCompilation:1 DOTNET_TieredPGO:1"
     elif coreclr_args.tiered_compilation:
-        collection_command += " DOTNET_TieredCompilation:1"
+        collection_command += "DOTNET_TieredCompilation:1 DOTNET_TieredPGO:0"
     else:
-        collection_command += " DOTNET_TieredCompilation:0"
+        collection_command += "DOTNET_TieredCompilation:0"
 
     # Generate the execution script in Temp location
     with TempDir() as temp_location:
