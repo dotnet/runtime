@@ -239,6 +239,24 @@ typedef enum {
 
 #define MINT_MOV_PAIRS_MAX 4
 
+typedef enum {
+	MintICallSig_V_V = 0,
+	MintICallSig_V_P,
+	MintICallSig_P_V,
+	MintICallSig_P_P,
+	MintICallSig_PP_V,
+	MintICallSig_PP_P,
+	MintICallSig_PPP_V,
+	MintICallSig_PPP_P,
+	MintICallSig_PPPP_V,
+	MintICallSig_PPPP_P,
+	MintICallSig_PPPPP_V,
+	MintICallSig_PPPPP_P,
+	MintICallSig_PPPPPP_V,
+	MintICallSig_PPPPPP_P,
+	MintICallSig_MAX
+} MintICallSig;
+
 extern unsigned char const mono_interp_oplen[];
 extern int const mono_interp_op_dregs [];
 extern int const mono_interp_op_sregs [];
