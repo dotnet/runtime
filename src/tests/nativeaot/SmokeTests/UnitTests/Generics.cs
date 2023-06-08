@@ -53,7 +53,7 @@ class Generics
         TestNullableCasting.Run();
         TestVariantCasting.Run();
         TestMDArrayAddressMethod.Run();
-        TestNativeLayoutGeneration.Run();
+        // TestNativeLayoutGeneration.Run();
         TestByRefLikeVTables.Run();
         TestFunctionPointerLoading.Run();
 

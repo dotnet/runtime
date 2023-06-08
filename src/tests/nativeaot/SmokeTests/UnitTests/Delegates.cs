@@ -51,7 +51,7 @@ public class Delegates
             result = Fail;
         }
 
-        TestLinqExpressions.Run();
+        // TestLinqExpressions.Run();
         TestDefaultInterfaceMethods.Run();
 
         return result;

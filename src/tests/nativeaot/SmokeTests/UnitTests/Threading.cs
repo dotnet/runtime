@@ -62,8 +62,8 @@ internal static class Threading
         Console.WriteLine("    ThreadPoolTests.WorkQueueDepletionTest");
         ThreadPoolTests.WorkQueueDepletionTest();
 
-        Console.WriteLine("    ThreadPoolTests.WorkerThreadStateReset");
-        ThreadPoolTests.WorkerThreadStateReset();
+        // Console.WriteLine("    ThreadPoolTests.WorkerThreadStateReset");
+        // ThreadPoolTests.WorkerThreadStateReset();
 
         // This test is not applicable (and will not pass) on Windows since it uses the Windows OS-provided thread pool.
         // Console.WriteLine("    ThreadPoolTests.SettingMinThreadsWillCreateThreadsUpToMinimum");

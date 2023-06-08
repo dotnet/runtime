@@ -9,6 +9,8 @@
     <MSBuildEnableAllPropertyFunctions>1</MSBuildEnableAllPropertyFunctions>
     <Language>C#</Language>
     <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
+    <_IsApplePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsApplePlatform>
+    <_IsiOSLikePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsiOSLikePlatform>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,7 +20,7 @@
     <DisabledTestDir Include="TestWrappers" />
   </ItemGroup>
 
-  <ItemGroup>
+  <!-- <ItemGroup>
     <RestoreProjects Include="Common\test_dependencies_fs\test_dependencies.fsproj" />
     <RestoreProjects Include="Common\test_dependencies\test_dependencies.csproj" />
     <RestoreProjects Include="Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
@@ -31,10 +33,10 @@
     <RestoreProjects Include="Common\XHarnessRunnerLibrary\XHarnessRunnerLibrary.csproj" />
     <RestoreProjects Include="Common\external\external.csproj" />
     <RestoreProjects Include="Common\ilasm\ilasm.ilproj" />
-  </ItemGroup>
+  </ItemGroup> -->
 
   <ItemGroup>
-    <TestBuildSteps Include="RestorePackages" />
+    <!-- <TestBuildSteps Include="RestorePackages" /> -->
     <TestBuildSteps Include="ManagedBuild" />
     <TestBuildSteps Include="CheckTestBuildStep" />
     <TestBuildSteps Include="GenerateLayout" />
@@ -467,18 +469,162 @@
     <Message Importance="High" Text="App: $(FinalPath)" />
   </Target>
 
-  <Target Name="BuildAlliOSApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
+
+  <Target Name="_SetCustomIlcPath">
+    <PropertyGroup>
+      <UseNativeAOTRuntime>true</UseNativeAOTRuntime>
+      <NativeLib>static</NativeLib>
+      <CustomNativeMain>true</CustomNativeMain>
+      <_SymbolPrefix>_</_SymbolPrefix>
+      <DsymUtilOptions>--flat</DsymUtilOptions>
+      <IlcPath>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(HostOS).$(BuildArchitecture).$(CoreCLRConfiguration)', 'ilc'))</IlcPath>
+      <IlcToolsPath>$(IlcPath)</IlcToolsPath>
+      <IlcSdkPath>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(TargetOS).$(BuildArchitecture).$(CoreCLRConfiguration)', 'aotsdk'))</IlcSdkPath>
+      <IlcFrameworkPath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkPath>
+      <IlcFrameworkNativePath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkNativePath>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="BuildNativeAOTiOSApp" DependsOnTargets="_SetCustomIlcPath;SetupOSSpecificProps">
+    <PropertyGroup>
+      <CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(_CMDDIR)))))</CMDDIR_Grandparent>
+      <TestingGroup>$([System.IO.Path]::GetFileName($(CMDDIR_Grandparent)))</TestingGroup>
+      <CategoryWithSlash>$([System.String]::Copy('$(_CMDDIR)').Replace("$(CMDDIR_Grandparent)/",""))</CategoryWithSlash>
+      <TestName>$([System.IO.Path]::GetFileName($(_CMDDIR)))</TestName>
+      <Category>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','_'))</Category>
+      <XUnitWrapperFileName>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/', '.')).XUnitWrapper.dll</XUnitWrapperFileName>
+      <XUnitWrapperDll>$(CMDDIR_GrandParent)/$(CategoryWithSlash)/$(XUnitWrapperFileName)</XUnitWrapperDll>
+      <BuildDir>$(IntermediateOutputPath)\iOSApps\$(Category)</BuildDir>
+      <FinalPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).app</FinalPath>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <AssemblyName>$(Category)</AssemblyName>
+      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'iossimulator'" >iossimulator</RuntimePackOSSuffix>
+      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'ios'" >ios</RuntimePackOSSuffix>
+      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'tvossimulator'" >tvossimulator</RuntimePackOSSuffix>
+      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'tvos'" >tvos</RuntimePackOSSuffix>
+      <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimePackOSSuffix)-$(TargetArchitecture)/$(Configuration)/runtimes/$(RuntimePackOSSuffix)-$(TargetArchitecture)</MicrosoftNetCoreAppRuntimePackDir>
+      <MicrosoftNetCoreAppRuntimePackNativeDir>$(MicrosoftNetCoreAppRuntimePackDir)/native</MicrosoftNetCoreAppRuntimePackNativeDir>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <!-- FIXME: Currently, tracing/eventpipe tests only work with the Mono Interpreter. Mono interpreter should be only enabled for simulator targets. -->
+      <MonoForceInterpreter>True</MonoForceInterpreter>
+    </PropertyGroup>
     <ItemGroup>
+      <AllTestScripts Include="$(_CMDDIR)\**\*.sh" Exclude="$(_CMDDIR)\**\AppBundle\*.sh" />
+    </ItemGroup>
+    <ItemGroup>
+      <TestExclusions Include="@(ExcludeList->Metadata('FullPath'))" Condition="$(HaveExcludes)" />
+      <TestScripts Include="@(AllTestScripts)" Exclude="@(TestExclusions)" />
+      <TestDllPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
+      <TestDlls Include="%(TestDllPaths.Identity)" Condition="Exists(%(TestDllPaths.Identity))" />
+      <AssembliesInTestDirs Include="%(AllCMDsPresent.RelativeDir)*.dll" Exclude="@(TestAssemblies)"/>
+      <RuntimePackLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/**/*.dll" />
+      <TestTargetingPathLibs Include="$(TargetingPackPath)/*.dll" />
+    </ItemGroup>
+    <ItemGroup>
+      <ExtraDlls Include="%(TestDlls.RelativeDir)*.dll" Exclude="@(TestDlls)">
+        <TestDllFilename>@(TestDlls->'%(Filename)')</TestDllFilename>
+      </ExtraDlls>
+    </ItemGroup>
+    <PropertyGroup>
+      <BundleDir>$([MSBuild]::NormalizeDirectory('$(BuildDir)', 'AppBundle'))</BundleDir>
+    </PropertyGroup>
+
+    <RemoveDir Directories="$(BundleDir)" />
+    <RemoveDir Directories="$(BuildDir)" />
+
+    <MakeDir Directories="$(BuildDir)" />
+    <MakeDir Directories="$(BuildDir)/testdir-%(TestDlls.Filename)" />
+
+    <Copy
+        SourceFiles="@(RuntimePackLibs)"
+        DestinationFolder="$(BuildDir)" />
+
+    <Copy
+        SourceFiles="@(TestTargetingPathLibs)"
+        DestinationFolder="$(BuildDir)" />
+    <Copy
+        SourceFiles="%(TestDlls.Identity)"
+        DestinationFolder="$(BuildDir)/testdir-%(TestDlls.Filename)" />
+    <Copy
+        SourceFiles="%(ExtraDlls.Identity)"
+        DestinationFolder="$(BuildDir)/testdir-%(ExtraDlls.TestDllFilename)" />
+
+    <ItemGroup>
+      <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />
+      <_LinkerFlagsToDrop Include="@(LinkerArg)" Condition="$([System.String]::new('%(Identity)').Contains('swift'))" />
+      <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
+      <ExtraLinkerArguments Include="@(LinkerArg)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_NativeDependencies>$(IntermediateOutputPath)\..\$(TestingGroup)\$(CategoryWithSlash)\$(TestName)\native\$(TestName).o</_NativeDependencies>
+    </PropertyGroup>
+
+    <RemoveDir Directories="$(AppDir)" />
+
+    <AppleAppBuilderTask
+        UseNativeAOTRuntime="true"
+        NativeDependencies="$(_NativeDependencies)"
+        TargetOS="$(TargetOS)"
+        Arch="$(TargetArchitecture)"
+        ProjectName="$(AssemblyName)"
+        Assemblies="@(BundleAssemblies)"
+        GenerateXcodeProject="True"
+        BuildAppBundle="True"
+        DevTeamProvisioning="$(DevTeamProvisioning)"
+        OutputDirectory="$(AppDir)"
+        Optimized="$(Optimized)"
+        InvariantGlobalization="$(InvariantGlobalization)"
+        EnableAppSandbox="$(EnableAppSandbox)"
+        StripSymbolTable="$(StripDebugSymbols)"
+        AppDir="$(BuildDir)"
+        ExtraLinkerArguments="@(ExtraLinkerArguments)" >
+        <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
+        <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
+    </AppleAppBuilderTask>
+
+    <!-- Apparently MSBuild cannot move directories and recursively copying a
+         a directory requires writing some sort of recursive traversal
+         logic yourself. -->
+    <ItemGroup>
+      <RecursiveCopyHack Include="$(AppBundlePath)/**/*.*" />
+    </ItemGroup>
+    <MakeDir Directories="$(FinalPath)" />
+    <Copy SourceFiles="@(RecursiveCopyHack)" DestinationFolder="$(FinalPath)/%(RecursiveDir)" />
+    <RemoveDir Directories="$(AppBundlePath)" />
+    <Message Importance="High" Text="App: $(FinalPath)" />
+  </Target>
+
+  <Target Name="BuildAlliOSApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
+    <ItemGroup Condition="'$(TestBuildMode)' != 'nativeaot'" >
       <RunProj Include="$(MSBuildProjectFile)">
         <Properties>_CMDDIR=%(TestDirectories.Identity)</Properties>
       </RunProj>
     </ItemGroup>
     <MSBuild
       Projects="@(RunProj)"
-      Targets="BuildiOSApp"
+      Targets="BuildMonoiOSApp"
       BuildInParallel="true"
-      Condition="'@(TestDirectories)' != ''"
-      />
+      Condition="'@(TestDirectories)' != '' and '$(TestBuildMode)' != 'nativeaot'"
+    />
+
+    <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
+      <SubfolderFullPaths Include="$([System.IO.Directory]::GetDirectories('%(TestDirectories.Identity)'))" />
+      <SubTestDirectories Include="@(SubfolderFullPaths->'$([System.IO.Path]::GetFullPath('%(SubfolderFullPaths.Identity)'))')" />
+      <RunProj Include="$(MSBuildProjectFile)">
+        <Properties>_CMDDIR=%(SubTestDirectories.Identity)</Properties>
+      </RunProj>
+    </ItemGroup>
+    <MSBuild
+      Projects="@(RunProj)"
+      Targets="BuildNativeAOTiOSApp"
+      BuildInParallel="true"
+      Condition="'@(TestDirectories)' != '' and '$(TestBuildMode)' == 'nativeaot'"
+    />
   </Target>
 
   <Target Name="GetListOfTestCmds">
@@ -592,6 +738,12 @@
       <GroupBuildCmd>$(GroupBuildCmd) /bl:$(ArtifactsDir)/log/$(Configuration)/InnerManagedTestBuild.$(__TestGroupToBuild).binlog</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(CrossBuild)' == 'true'">$(GroupBuildCmd) "/p:CrossBuild=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot'">$(GroupBuildCmd) "/p:DefaultBuildAllTarget=BuildNativeAot"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetsAppleMobile)' == 'true'">$(GroupBuildCmd) "/p:UseNativeAOTRuntime=true"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetsAppleMobile)' == 'true'">$(GroupBuildCmd) "/p:NativeLib=static"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetsAppleMobile)' == 'true'">$(GroupBuildCmd) "/p:CustomNativeMain=true"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetsAppleMobile)' == 'true'">$(GroupBuildCmd) "/p:NativeCompilationDuringPublish=false"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetsAppleMobile)' == 'true'">$(GroupBuildCmd) "/p:CustomIlcCompileDependsOn=true"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetsAppleMobile)' == 'true'">$(GroupBuildCmd) "/p:InvariantGlobalization=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(IlcMultiModule)' == 'true'">$(GroupBuildCmd) "/p:IlcMultiModule=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(GroupBuildCmd) "/p:BuildNativeAotFrameworkObjects=true"</GroupBuildCmd>
     </PropertyGroup>

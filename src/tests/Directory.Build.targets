@@ -22,6 +22,20 @@
     <NoWarn Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">$(NoWarn);CS2008</NoWarn>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <IlcCompileDependsOn Condition="'$(CustomIlcCompileDependsOn)' == 'true'">Compile;ComputeIlcCompileInputs;SetupOSSpecificProps;PrepareForILLink</IlcCompileDependsOn>
+  </PropertyGroup>
+
+  <Target Name="_SetCustomIlcPath" Condition="'$(CustomIlcCompileDependsOn)' == 'true'" BeforeTargets="SetupProperties">
+    <PropertyGroup>
+      <IlcPath>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(HostOS).$(BuildArchitecture).$(CoreCLRConfiguration)', 'ilc'))</IlcPath>
+      <IlcToolsPath>$(IlcPath)</IlcToolsPath>
+      <IlcSdkPath>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(TargetOS).$(BuildArchitecture).$(CoreCLRConfiguration)', 'aotsdk'))</IlcSdkPath>
+      <IlcFrameworkPath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkPath>
+      <IlcFrameworkNativePath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkNativePath>
+    </PropertyGroup>
+  </Target>
+
   <!-- All CLRTests need to be of a certain "kind". These kinds are enumerated below.
   By default all tests are BuildAndRun. This means that the build system will Build them
   and construct a run-batch-script for them. -->

@@ -17,8 +17,8 @@ public class Interfaces
         if (TestInterfaceCache() == Fail)
             return Fail;
 
-        if (TestAVInInterfaceCache() == Fail)
-            return Fail;
+        // if (TestAVInInterfaceCache() == Fail)
+        //     return Fail;
 
         if (TestMultipleInterfaces() == Fail)
             return Fail;

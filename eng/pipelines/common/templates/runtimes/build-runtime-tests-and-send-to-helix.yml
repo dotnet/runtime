@@ -30,6 +30,15 @@ parameters:
   shouldContinueOnError: false
 
 steps:
+  # Build Native AOT runtime packs
+  - ${{ if and(eq(parameters.runtimeFlavor, 'nativeaot'), or(eq(parameters.osGroup, 'ios'), eq(parameters.osGroup, 'tvos'))) }}:
+    - script: ./build.sh
+              clr.nativeaotruntime+clr.nativeaotlibs 
+              -c ${{ parameters.buildConfig }}
+              -os ${{ parameters.osGroup }}
+              -arch ${{ parameters.archType }}
+      displayName: "Build Native AOT runtime packs"
+
   - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
     parameters:
       osGroup: ${{ parameters.osGroup }}
