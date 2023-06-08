@@ -594,8 +594,9 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse), offsetOfThreadStaticBlocks);
     GenTree* threadStaticBlocksValue =
         gtNewIndir(TYP_I_IMPL, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+#elif defined(TARGET_ARM64)
 
-#else
+#elif defined(TARGET_AMD64)
     GenTree* tls_get_addr_val = gtNewIconHandleNode(threadStaticBlocksInfo.tlsGetAddrFtnPtr, GTF_ICON_FTN_ADDR);
     tlsValue                  = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
     GenTreeCall* tlsRefCall   = tlsValue->AsCall();

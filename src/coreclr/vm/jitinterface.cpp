@@ -1974,17 +1974,21 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     pInfo->tlsGetAddrFtnPtr = (size_t)&__tls_get_addr;
     pInfo->descrAddrOfMaxThreadStaticBlock = (size_t)maxThreadStaticDescriptor;
     pInfo->offsetOfThreadStaticBlocks = addressOfThreadStaticBlock - (size_t)__tls_get_addr(maxThreadStaticDescriptor);
-
 #elif defined(TARGET_ARM64)
     if (isGCType)
     {
-        pInfo->offsetOfThreadStaticBlocks = getGCThreadStaticOffset();
         pInfo->offsetOfMaxThreadStaticBlocks = getGCMaxThreadStaticOffset();
+        pInfo->offsetOfThreadStaticBlocks = getGCThreadStaticOffset() - pInfo->offsetOfMaxThreadStaticBlocks;
     }
     else
     {
-        pInfo->offsetOfThreadStaticBlocks = getNonGCThreadStaticOffset();
         pInfo->offsetOfMaxThreadStaticBlocks = getNonGCMaxThreadStaticOffset();
+        pInfo->offsetOfThreadStaticBlocks = getNonGCThreadStaticOffset() - pInfo->offsetOfMaxThreadStaticBlocks;
+
+        // x64 and arm64:
+        //TODO: Think if we should store the distance between (threadStaticBlock - maxThreadStaticBlock) or just the
+        // overall offsets of those 2 variables. Storing distance is risky as rearranging the variables can lead to
+        // having distance negative.
     }    
 #endif
 
