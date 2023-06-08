@@ -1476,7 +1476,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_NativeAOT_RuntimeTests
             timeoutInMinutes: 240
-            buildArgs: -s clr+clr.aot+libs+packs -c $(_BuildConfig)
+            buildArgs: -s clr.aot -c $(_BuildConfig)
             # extra steps, run tests
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
