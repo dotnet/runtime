@@ -189,11 +189,11 @@ jobs:
       - ${{ if eq(parameters.isManualCodeQLBuild, true) }}:
         - task: CodeQL3000Init@0
           displayName: Initialize CodeQL (manually-injected)
-
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) $(crossArg) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_cxx11Parameter) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
-        displayName: Build product
-        ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
-          continueOnError: ${{ parameters.shouldContinueOnError }}
+      - ${{ if ne(parameters.runtimeFlavor, "nativeaot" )}}:
+        - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) $(crossArg) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_cxx11Parameter) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
+          displayName: Build product
+          ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
+            continueOnError: ${{ parameters.shouldContinueOnError }}
 
       - ${{ if eq(parameters.isManualCodeQLBuild, true) }}:
         - task: CodeQL3000Finalize@0
