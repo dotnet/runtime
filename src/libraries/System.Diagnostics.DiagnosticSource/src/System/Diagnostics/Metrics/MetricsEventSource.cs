@@ -315,14 +315,14 @@ namespace System.Diagnostics.Metrics
                                     if (ParseMetrics(command.Arguments!, out string? metricsSpecs))
                                     {
                                         ParseSpecs(metricsSpecs);
-                                        _aggregationManager!.Update();
+                                        _aggregationManager.Update();
                                     }
 
                                     return;
                                 }
                                 else
                                 {
-                                    // In theory this should be required as part of the contract to do shared -> not currently safe with !
+                                    // If the clientId protocol is not followed, we can't tell which session is configured incorrectly
                                     if (command.Arguments!.TryGetValue(ClientIdKey, out string? clientId))
                                     {
                                         lock (_aggregationManager)
@@ -350,7 +350,9 @@ namespace System.Diagnostics.Metrics
                                 Parent.MultipleSessionsNotSupportedError(_sessionId);
                                 return;
                             }
-                            else if (command.Command == EventCommand.Disable && !_disabledRefCount && Interlocked.Decrement(ref _sharedSessionRefCount) == 0)
+                            else if (command.Command == EventCommand.Disable
+                                && !_disabledRefCount
+                                && Interlocked.Decrement(ref _sharedSessionRefCount) == 0)
                             {
                                 Parent.Message($"Previous session with id {_sessionId} is stopped");
                                 _aggregationManager.Dispose();
@@ -412,7 +414,6 @@ namespace System.Diagnostics.Metrics
 
             private bool ParseMetrics(IDictionary<string, string> arguments, out string? metricsSpecs)
             {
-                // Refactor this to be shared
                 if (arguments.TryGetValue("Metrics", out metricsSpecs))
                 {
                     Parent.Message($"Metrics argument received: {metricsSpecs}");
@@ -443,7 +444,6 @@ namespace System.Diagnostics.Metrics
                         InvalidateRefCounting();
                     }
                 }
-
 
                 if (!_sharedSessionClientIds.Contains(clientId))
                 {
@@ -496,7 +496,7 @@ namespace System.Diagnostics.Metrics
                 return true;
             }
 
-            private void SetRefreshIntervalSecs(IDictionary<string, string>? arguments, double minValue, double defaultValue, out double refreshIntervalSeconds)
+            private void SetRefreshIntervalSecs(IDictionary<string, string> arguments, double minValue, double defaultValue, out double refreshIntervalSeconds)
             {
                 if (GetRefreshIntervalSecs(arguments, DefaultValueDescription, defaultValue, out refreshIntervalSeconds)
                     && refreshIntervalSeconds < minValue)
@@ -506,7 +506,7 @@ namespace System.Diagnostics.Metrics
                 }
             }
 
-            private bool SetSharedRefreshIntervalSecs(IDictionary<string, string>? arguments, double sharedValue, out double refreshIntervalSeconds)
+            private bool SetSharedRefreshIntervalSecs(IDictionary<string, string> arguments, double sharedValue, out double refreshIntervalSeconds)
             {
                 if (GetRefreshIntervalSecs(arguments, SharedValueDescription, sharedValue, out refreshIntervalSeconds)
                     && refreshIntervalSeconds != sharedValue)
@@ -517,7 +517,7 @@ namespace System.Diagnostics.Metrics
                 return true;
             }
 
-            private bool GetRefreshIntervalSecs(IDictionary<string, string>? arguments, string valueDescriptor, double defaultValue, out double refreshIntervalSeconds)
+            private bool GetRefreshIntervalSecs(IDictionary<string, string> arguments, string valueDescriptor, double defaultValue, out double refreshIntervalSeconds)
             {
                 if (arguments!.TryGetValue(RefreshIntervalKey, out string? refreshInterval))
                 {
