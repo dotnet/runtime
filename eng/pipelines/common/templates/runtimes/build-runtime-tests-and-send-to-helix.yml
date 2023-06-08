@@ -31,11 +31,7 @@ parameters:
 
 steps:
   # Build Native AOT runtime packs
-  - ${{ if and(eq(parameters.runtimeFlavor, 'nativeaot'), or(eq(parameters.osGroup, 'ios'), eq(parameters.osGroup, 'tvos'))) }}:
-    - script: ./build.sh
-              clr+clr.aot
-              -c ${{ parameters.buildConfig }}
-      displayName: "Build host"
+  - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), in(parameters.osGroup, 'ios', 'tvos', 'maccatalyst')) }}:
     - script: ./build.sh
               clr.nativeaotruntime+clr.nativeaotlibs 
               -c ${{ parameters.buildConfig }}
