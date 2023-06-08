@@ -71,6 +71,12 @@ namespace Internal.TypeSystem
             throw new TypeSystemException.MarshalDirectiveException(ExceptionStringID.MarshalDirectiveGeneric);
         }
 
+        [System.Diagnostics.DebuggerHidden]
+        public static void ThrowAmbiguousImplementationException(string message)
+        {
+            throw new TypeSystemException.AmbiguousImplementationException(message);
+        }
+
         private static partial class Format
         {
             public static string OwningModule(TypeDesc type)

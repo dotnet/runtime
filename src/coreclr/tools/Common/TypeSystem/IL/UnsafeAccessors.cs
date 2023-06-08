@@ -13,6 +13,7 @@ namespace Internal.IL
     public sealed class UnsafeAccessors
     {
         private const string InvalidUnsafeAccessorUsage = "Invalid usage of UnsafeAccessorAttribute.";
+        private const string AmbiguityInUnsafeAccessorUsage = "Ambiguity in binding of UnsafeAccessorAttribute.";
 
         public static MethodIL TryGetIL(EcmaMethod method)
         {
@@ -102,7 +103,7 @@ namespace Internal.IL
 
                     context.TargetType = ValidateTargetType(firstArgType);
                     context.IsTargetStatic = kind == UnsafeAccessorKind.StaticField;
-                    if (!TrySetTargetField(ref context, name, retType))
+                    if (!TrySetTargetField(ref context, name, ((ParameterizedType)retType).GetParameterType()))
                     {
                         ThrowHelper.ThrowMissingFieldException(context.TargetType, name);
                     }
@@ -202,12 +203,125 @@ namespace Internal.IL
             return targetType;
         }
 
-        private static bool TrySetTargetMethod(ref GenerationContext context, string name)
+        private static bool DoesMethodMatchUnsafeAccessorDeclaration(ref GenerationContext context, MethodDesc method, bool ignoreCustomModifiers)
+        {
+            MethodSignature declSig = context.Declaration.Signature;
+            MethodSignature maybeSig = method.Signature;
+
+            // Check if we need to also validate custom modifiers.
+            // If we are, do it first.
+            if (!ignoreCustomModifiers)
+            {
+                // One signature has custom modifiers the other doesn't, no match.
+                if (declSig.HasEmbeddedSignatureData != maybeSig.HasEmbeddedSignatureData)
+                {
+                    return false;
+                }
+
+                // Get all custom modifiers on the signatures.
+                var declData = declSig.GetEmbeddedSignatureData(EmbeddedSignatureDataKind.RequiredCustomModifier, EmbeddedSignatureDataKind.OptionalCustomModifier);
+                var maybeData = maybeSig.GetEmbeddedSignatureData(EmbeddedSignatureDataKind.RequiredCustomModifier, EmbeddedSignatureDataKind.OptionalCustomModifier);
+                if (declData.Length != maybeData.Length)
+                {
+                    return false;
+                }
+
+                // Validate the custom modifiers match precisely.
+                for (int i = 0; i < declData.Length; ++i)
+                {
+                    EmbeddedSignatureData dd = declData[i];
+                    EmbeddedSignatureData md = maybeData[i];
+                    if (dd.kind != md.kind || dd.type != md.type)
+                    {
+                        return false;
+                    }
+
+                    // The indices on non-constructor declarations require
+                    // some slight modification since there is always an extra
+                    // argument in the declaration compared to the target.
+                    string declIndex = dd.index;
+                    if (context.Kind != UnsafeAccessorKind.Constructor)
+                    {
+                        // Decrement the second to last index by one to
+                        // account for the difference in declarations.
+                        string[] tmp = declIndex.Split('.');
+                        int toUpdate = tmp.Length < 2 ? 0 : tmp.Length - 2;
+                        int idx = int.Parse(tmp[toUpdate]);
+                        idx--;
+                        tmp[toUpdate] = idx.ToString();
+                        declIndex = string.Join(".", tmp);
+                    }
+
+                    if (declIndex != md.index)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            // Validate calling convention.
+            if ((declSig.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask)
+                != (maybeSig.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask))
+            {
+                return false;
+            }
+
+            // Validate argument count and return type
+            if (context.Kind == UnsafeAccessorKind.Constructor)
+            {
+                // Declarations for constructor scenarios have
+                // matching argument counts with the target.
+                if (declSig.Length != maybeSig.Length)
+                {
+                    return false;
+                }
+
+                // Validate the return value for target constructor
+                // candidate is void.
+                if (!maybeSig.ReturnType.IsVoid)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // Declarations of non-constructor scenarios have
+                // an additional argument to indicate target type
+                // and to pass an instance for non-static methods.
+                if (declSig.Length != (maybeSig.Length + 1))
+                {
+                    return false;
+                }
+
+                if (declSig.ReturnType != maybeSig.ReturnType)
+                {
+                    return false;
+                }
+            }
+
+            // Validate argument types
+            for (int i = 0; i < maybeSig.Length; ++i)
+            {
+                // Skip over first argument (index 0) on non-constructor accessors.
+                // See argument count validation above.
+                TypeDesc declType = context.Kind == UnsafeAccessorKind.Constructor ? declSig[i] : declSig[i + 1];
+                TypeDesc maybeType = maybeSig[i];
+
+                // Compare the types
+                if (declType != maybeType)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool TrySetTargetMethod(ref GenerationContext context, string name, bool ignoreCustomModifiers = true)
         {
             TypeDesc targetType = context.TargetType;
 
-            TypeDesc declTypeDesc;
-            TypeDesc maybeTypeDesc;
+            MethodDesc targetMaybe = null;
             foreach (MethodDesc md in targetType.GetMethods())
             {
                 // Check the target and current method match static/instance state.
@@ -222,64 +336,32 @@ namespace Internal.IL
                     continue;
                 }
 
-                // Validate calling convention.
-                if ((MethodSignatureFlags.UnmanagedCallingConventionMask & md.Signature.Flags)
-                    != (MethodSignatureFlags.UnmanagedCallingConventionMask & context.Declaration.Signature.Flags))
+                // Check signature
+                if (!DoesMethodMatchUnsafeAccessorDeclaration(ref context, md, ignoreCustomModifiers))
                 {
                     continue;
                 }
 
-                // Validate the return type and prepare for validating
-                // the current signature's argument list.
-                int sigCount = context.Declaration.Signature.Length;
-                if (context.Kind == UnsafeAccessorKind.Constructor)
+                // Check if there is some ambiguity.
+                if (targetMaybe != null)
                 {
-                    if (!md.Signature.ReturnType.IsVoid)
+                    if (ignoreCustomModifiers)
                     {
-                        continue;
-                    }
-                }
-                else
-                {
-                    declTypeDesc = context.Declaration.Signature.ReturnType;
-                    maybeTypeDesc = md.Signature.ReturnType;
-                    if (declTypeDesc != maybeTypeDesc)
-                    {
-                        continue;
+                        // We have detected ambiguity when ignoring custom modifiers.
+                        // Start over, but look for a match requiring custom modifiers
+                        // to match precisely.
+                        if (TrySetTargetMethod(ref context, name, ignoreCustomModifiers: false))
+                            return true;
                     }
 
-                    // Non-constructor accessors skip the first argument
-                    // when validating the target argument list.
-                    sigCount--;
+                    ThrowHelper.ThrowAmbiguousImplementationException(AmbiguityInUnsafeAccessorUsage);
                 }
 
-                // Validate argument count matches.
-                if (sigCount != md.Signature.Length)
-                {
-                    continue;
-                }
-
-                // Validate arguments match - reverse order
-                for (; sigCount > 0; --sigCount)
-                {
-                    declTypeDesc = context.Declaration.Signature[sigCount];
-                    maybeTypeDesc = md.Signature[sigCount];
-                    if (declTypeDesc != maybeTypeDesc)
-                    {
-                        break;
-                    }
-                }
-
-                // If we validated all arguments, we have a match.
-                if (sigCount != 0)
-                {
-                    continue;
-                }
-
-                context.TargetMethod = md;
-                return true;
+                targetMaybe = md;
             }
-            return false;
+
+            context.TargetMethod = targetMaybe;
+            return context.TargetMethod != null;
         }
 
         private static bool TrySetTargetField(ref GenerationContext context, string name, TypeDesc fieldType)
@@ -350,7 +432,7 @@ namespace Internal.IL
 
             // Return from the generated stub
             codeStream.Emit(ILOpcode.ret);
-            return emit.Link(context.TargetMethod);
+            return emit.Link(context.TargetMethod ?? context.Declaration);
         }
     }
 }

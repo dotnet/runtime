@@ -170,5 +170,13 @@ namespace Internal.TypeSystem
             {
             }
         }
+
+        public class AmbiguousImplementationException : TypeSystemException
+        {
+            internal AmbiguousImplementationException(string reason)
+                : base(ExceptionStringID.AmbiguousImplementationSpecific, reason)
+            {
+            }
+        }
     }
 }

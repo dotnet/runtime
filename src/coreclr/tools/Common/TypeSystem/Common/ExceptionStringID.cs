@@ -47,5 +47,8 @@ namespace Internal.TypeSystem
 
         // MarshalDirectiveException
         MarshalDirectiveGeneric,
+
+        // AmbiguousImplementationException
+        AmbiguousImplementationSpecific,
     }
 }

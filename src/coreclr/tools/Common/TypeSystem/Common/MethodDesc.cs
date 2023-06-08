@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Internal.NativeFormat;
@@ -183,12 +184,27 @@ namespace Internal.TypeSystem
             }
         }
 
-        public EmbeddedSignatureData[] GetEmbeddedSignatureData()
+        public EmbeddedSignatureData[] GetEmbeddedSignatureData(params EmbeddedSignatureDataKind[] kinds)
         {
             if ((_embeddedSignatureData == null) || (_embeddedSignatureData.Length == 0))
                 return null;
 
-            return (EmbeddedSignatureData[])_embeddedSignatureData.Clone();
+            if (kinds == null)
+                return (EmbeddedSignatureData[])_embeddedSignatureData.Clone();
+
+            List<EmbeddedSignatureData> ret = new();
+            foreach (var data in _embeddedSignatureData)
+            {
+                foreach (var k in kinds)
+                {
+                    if (data.kind == k)
+                    {
+                        ret.Add(data);
+                        break;
+                    }
+                }
+            }
+            return ret.ToArray();
         }
 
         public bool Equals(MethodSignature otherSignature)
