@@ -41,26 +41,26 @@ export async function mono_wasm_init_diagnostics(): Promise<void> {
     if (!MonoWasmThreads) {
         mono_log_warn("ignoring diagnostics options because this runtime does not support diagnostics");
         return;
-    } else {
-        const options = diagnostic_options_from_environment();
-        if (!options)
-            return;
-        diagnosticsInitialized = true;
-        if (!is_nullish(options?.server)) {
-            if (options.server.connectUrl === undefined || typeof (options.server.connectUrl) !== "string") {
-                throw new Error("server.connectUrl must be a string");
-            }
-            const url = options.server.connectUrl;
-            const suspend = boolsyOption(options.server.suspend);
-            const controller = await startDiagnosticServer(url);
-            if (controller) {
-                diagnosticsServerEnabled = true;
-                if (suspend) {
-                    suspendOnStartup = true;
-                }
+    }
+    const options = diagnostic_options_from_environment();
+    if (!options)
+        return;
+    diagnosticsInitialized = true;
+    if (!is_nullish(options?.server)) {
+        if (options.server.connectUrl === undefined || typeof (options.server.connectUrl) !== "string") {
+            throw new Error("server.connectUrl must be a string");
+        }
+        const url = options.server.connectUrl;
+        const suspend = boolsyOption(options.server.suspend);
+        const controller = await startDiagnosticServer(url);
+        if (controller) {
+            diagnosticsServerEnabled = true;
+            if (suspend) {
+                suspendOnStartup = true;
             }
         }
     }
+
 }
 
 function boolsyOption(x: string | boolean): boolean {
@@ -144,6 +144,7 @@ function diagnostic_options_from_ports_spec(val: string): DiagnosticOptions | nu
 }
 
 export function mono_wasm_diagnostic_server_on_runtime_server_init(out_options: VoidPtr): void {
+    mono_assert(MonoWasmThreads, "threads are not enabled");
     if (diagnosticsServerEnabled) {
         /* called on the main thread when the runtime is sufficiently initialized */
         const controller = getController();
