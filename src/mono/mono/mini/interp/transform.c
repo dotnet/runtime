@@ -1267,114 +1267,79 @@ jit_call2_supported (MonoMethod *method, MonoMethodSignature *sig)
 #endif
 
 static void
-interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *target_method)
+emit_ldptr (TransformData *td, gpointer data)
 {
-	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_method_access;
+	interp_add_ins (td, MINT_LDPTR);
+	push_simple_type (td, STACK_TYPE_I);
+	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+	td->last_ins->data [0] = get_data_item_index (td, data);
+}
 
+static int
+interp_icall_op_for_sig (MonoMethodSignature *sig);
+
+static void
+interp_generate_icall_throw (TransformData *td, MonoJitICallInfo *icall_info, gpointer arg1, gpointer arg2)
+{
+	// Allocate dreg for call, only void calls are supported
 	push_simple_type (td, STACK_TYPE_I4);
 	td->sp--;
 	int dummy_dreg = td->sp [0].local;
 
-	/* Inject code throwing MethodAccessException */
+	// Push the native method to call
 	interp_add_ins (td, MINT_LDPTR);
 	push_simple_type (td, STACK_TYPE_I);
 	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+	td->last_ins->data [0] = get_data_item_index (td, (gpointer)icall_info->func);
 
-	interp_add_ins (td, MINT_LDPTR);
-	push_simple_type (td, STACK_TYPE_I);
-	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-	td->last_ins->data [0] = get_data_item_index (td, method);
+	int num_args = icall_info->sig->param_count;
+	if (num_args > 0)
+		emit_ldptr (td, arg1);
+	if (num_args > 1)
+		emit_ldptr (td, arg2);
 
-	interp_add_ins (td, MINT_LDPTR);
-	push_simple_type (td, STACK_TYPE_I);
-	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-	td->last_ins->data [0] = get_data_item_index (td, target_method);
-
-	td->sp -= 2;
+	td->sp -= num_args;
 
 	interp_add_ins (td, MINT_CALLI_NAT_FAST);
 	interp_ins_set_dreg (td->last_ins, dummy_dreg);
 	interp_ins_set_sregs2 (td->last_ins, td->sp [-1].local, MINT_CALL_ARGS_SREG);
-	td->last_ins->data [0] = get_data_item_index (td, info->sig);
-	td->last_ins->data [1] = GINT_TO_OPCODE (MINT_ICALL_PP_V);
+	td->last_ins->data [0] = get_data_item_index (td, icall_info->sig);
+	td->last_ins->data [1] = GINT_TO_OPCODE (interp_icall_op_for_sig (icall_info->sig));
 	init_last_ins_call (td);
 	if (td->optimized) {
-		int *call_args = (int*)mono_mempool_alloc (td->mempool, 3 * sizeof (int));
-		call_args [0] = td->sp [0].local;
-		call_args [1] = td->sp [1].local;
-		call_args [2] = -1;
-		td->last_ins->info.call_info->call_args = call_args;
+		if (num_args) {
+			int *call_args = (int*)mono_mempool_alloc (td->mempool, (num_args + 1) * sizeof (int));
+			for (int i = 0; i < num_args; i++)
+				call_args [i] = td->sp [i].local;
+			call_args [num_args] = -1;
+			td->last_ins->info.call_info->call_args = call_args;
+		}
 	} else {
 		td->last_ins->info.call_info->call_offset = get_tos_offset (td);
 	}
 	td->sp--;
+}
+
+static void
+interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *target_method)
+{
+	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_method_access;
+	interp_generate_icall_throw (td, info, method, target_method);
 }
 
 static void
 interp_generate_void_throw (TransformData *td, MonoJitICallId icall_id)
 {
 	MonoJitICallInfo *info = mono_find_jit_icall_info (icall_id);
-
-	push_simple_type (td, STACK_TYPE_I4);
-	td->sp--;
-	int dummy_dreg = td->sp [0].local;
-
-	interp_add_ins (td, MINT_LDPTR);
-	push_simple_type (td, STACK_TYPE_I);
-	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
-
-	interp_add_ins (td, MINT_CALLI_NAT_FAST);
-	interp_ins_set_dreg (td->last_ins, dummy_dreg);
-	interp_ins_set_sregs2 (td->last_ins, td->sp [-1].local, MINT_CALL_ARGS_SREG);
-	td->last_ins->data [0] = get_data_item_index (td, info->sig);
-	td->last_ins->data [1] = GINT_TO_OPCODE (MINT_ICALL_V_V);
-	init_last_ins_call (td);
-	if (!td->optimized)
-		td->last_ins->info.call_info->call_offset = get_tos_offset (td);
-
-	td->sp--;
+	interp_generate_icall_throw (td, info, NULL, NULL);
 }
 
 static void
 interp_generate_ipe_throw_with_msg (TransformData *td, MonoError *error_msg)
 {
 	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_invalid_program;
-
 	char *msg = mono_mem_manager_strdup (td->mem_manager, mono_error_get_message (error_msg));
-
-	push_simple_type (td, STACK_TYPE_I4);
-	td->sp--;
-	int dummy_dreg = td->sp [0].local;
-
-	interp_add_ins (td, MINT_LDPTR);
-	push_simple_type (td, STACK_TYPE_I);
-	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
-
-	interp_add_ins (td, MINT_LDPTR);
-	push_simple_type (td, STACK_TYPE_I);
-	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-	td->last_ins->data [0] = get_data_item_index (td, msg);
-
-	td->sp -= 1;
-
-	interp_add_ins (td, MINT_CALLI_NAT_FAST);
-	interp_ins_set_dreg (td->last_ins, dummy_dreg);
-	interp_ins_set_sregs2 (td->last_ins, td->sp [-1].local, MINT_CALL_ARGS_SREG);
-	td->last_ins->data [0] = get_data_item_index (td, info->sig);
-	td->last_ins->data [1] = GINT_TO_OPCODE (MINT_ICALL_P_V);
-	init_last_ins_call (td);
-	if (td->optimized) {
-		int *call_args = (int*)mono_mempool_alloc (td->mempool, 2 * sizeof (int));
-		call_args [0] = td->sp [0].local;
-		call_args [1] = -1;
-		td->last_ins->info.call_info->call_args = call_args;
-	} else {
-		td->last_ins->info.call_info->call_offset = get_tos_offset (td);
-	}
-	td->sp--;
+	interp_generate_icall_throw (td, info, msg, NULL);
 }
 
 static void
