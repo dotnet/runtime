@@ -59,6 +59,7 @@ namespace Microsoft.Interop
                 }
             }
 
+            // a higher enum value is more accessible
             if (symbol.DeclaredAccessibility - Accessibility.Internal < 0)
             {
                 return DiagnosticOrInterfaceInfo.From(DiagnosticInfo.Create(
@@ -106,7 +107,7 @@ namespace Microsoft.Interop
                             SR.InvalidStringMarshallingConfigurationMissingCustomType);
                         return false;
                     }
-                    // higher enum value is more accessible
+                    // a higher enum value is more accessible
                     if (attrInfo.StringMarshallingCustomTypeAccessibility - Accessibility.Internal < 0)
                     {
                         stringMarshallingDiagnostic = DiagnosticInfo.Create(

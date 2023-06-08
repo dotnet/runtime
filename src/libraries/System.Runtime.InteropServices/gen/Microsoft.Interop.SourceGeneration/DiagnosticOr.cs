@@ -5,12 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Runtime.InteropServices.ComTypes;
-using System.Text;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Interop
 {
@@ -90,7 +86,7 @@ namespace Microsoft.Interop
         /// <summary>
         /// Create a Diagnostic variant
         /// </summary>
-        public static DiagnosticOr<T> From(params DiagnosticInfo[] diagnostic)
+        public static DiagnosticOr<T> From(DiagnosticInfo diagnostic)
         {
             return new Diag(ImmutableArray.Create(diagnostic));
         }
@@ -118,7 +114,7 @@ namespace Microsoft.Interop
     public static class DiagnosticOrTHelperExtensions
     {
         /// <summary>
-        /// Splits the elements of <paramref name="provider"/> into a "values" provider and a "diagnositics" provider.
+        /// Splits the elements of <paramref name="provider"/> into a values provider and a diagnostics provider.
         /// </summary>
         public static (IncrementalValuesProvider<T>, IncrementalValuesProvider<DiagnosticInfo>) Split<T>(this IncrementalValuesProvider<DiagnosticOr<T>> provider)
         {
