@@ -612,13 +612,14 @@ export function generateWasmBody(
                 */
 
                 // str
-                const ptrLocal = builder.options.zeroPageOptimization ? "math_rhs32" : "cknull_ptr";
+                let ptrLocal = "cknull_ptr";
                 if (builder.options.zeroPageOptimization && isZeroPageReserved()) {
                     // load string ptr and stash it
                     // if the string ptr is null, the length check will fail and we will bail out,
                     //  so the null check is not necessary
                     counters.nullChecksFused++;
                     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                    ptrLocal = "math_rhs32";
                     builder.local(ptrLocal, WasmOpcode.tee_local);
                 } else
                     append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true);
@@ -3095,12 +3096,13 @@ function append_getelema1(
     // stash it since we need it twice
     builder.local("math_lhs32", WasmOpcode.tee_local);
 
-    const ptrLocal = builder.options.zeroPageOptimization ? "math_rhs32" : "cknull_ptr";
+    let ptrLocal = "cknull_ptr";
     if (builder.options.zeroPageOptimization && isZeroPageReserved()) {
         // load array ptr and stash it
         // if the array ptr is null, the length check will fail and we will bail out
         counters.nullChecksFused++;
         append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
+        ptrLocal = "math_rhs32";
         builder.local(ptrLocal, WasmOpcode.tee_local);
     } else
         // array null check
