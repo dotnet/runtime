@@ -20,7 +20,7 @@
     <DisabledTestDir Include="TestWrappers" />
   </ItemGroup>
 
-  <!-- <ItemGroup>
+  <ItemGroup>
     <RestoreProjects Include="Common\test_dependencies_fs\test_dependencies.fsproj" />
     <RestoreProjects Include="Common\test_dependencies\test_dependencies.csproj" />
     <RestoreProjects Include="Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
@@ -33,10 +33,10 @@
     <RestoreProjects Include="Common\XHarnessRunnerLibrary\XHarnessRunnerLibrary.csproj" />
     <RestoreProjects Include="Common\external\external.csproj" />
     <RestoreProjects Include="Common\ilasm\ilasm.ilproj" />
-  </ItemGroup> -->
+  </ItemGroup>
 
   <ItemGroup>
-    <!-- <TestBuildSteps Include="RestorePackages" /> -->
+    <TestBuildSteps Include="RestorePackages" />
     <TestBuildSteps Include="ManagedBuild" />
     <TestBuildSteps Include="CheckTestBuildStep" />
     <TestBuildSteps Include="GenerateLayout" />
