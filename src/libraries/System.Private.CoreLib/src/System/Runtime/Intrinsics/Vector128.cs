@@ -558,11 +558,11 @@ namespace System.Runtime.Intrinsics
 
                 if (Fma.IsSupported)
                 {
-                    return Fma.MultiplyAdd(upper, Vector128.Create(65536.0f), lower);
+                    return Fma.MultiplyAdd(upper, Create(65536.0f), lower);
                 }
                 else
                 {
-                    Vector128<float> result = Sse.Multiply(upper, Vector128.Create(65536.0f));
+                    Vector128<float> result = Sse.Multiply(upper, Create(65536.0f));
                     return Sse.Add(result, lower);
                 }
             }
@@ -2737,7 +2737,7 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             ref byte address = ref Unsafe.As<T, byte>(ref Unsafe.Add(ref destination, elementOffset));
-            Unsafe.WriteUnaligned<double>(ref address, source.AsDouble().ToScalar());
+            Unsafe.WriteUnaligned(ref address, source.AsDouble().ToScalar());
         }
 
         /// <summary>Stores a vector at the given destination.</summary>

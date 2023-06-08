@@ -23,9 +23,8 @@ Param(
     [switch] $AndroidMono,
     [switch] $iOSMono,
     [switch] $iOSNativeAOT,
-    [switch] $NoPGO,
-    [switch] $DynamicPGO,
-    [switch] $FullPGO,
+    [switch] $NoDynamicPGO,
+    [switch] $PhysicalPromotion,
     [switch] $iOSLlvmBuild,
     [switch] $iOSStripSymbols,
     [string] $MauiVersion,
@@ -65,13 +64,11 @@ else {
     $Queue = "Windows.10.Amd64.ClientRS4.DevEx.15.8.Open"
 }
 
-if($MonoInterpreter)
-{
+if ($MonoInterpreter) {
     $ExtraBenchmarkDotNetArguments = "--category-exclusion-filter NoInterpreter"
 }
 
-if($MonoDotnet -ne "")
-{
+if ($MonoDotnet -ne "") {
     $Configurations += " LLVM=$LLVM MonoInterpreter=$MonoInterpreter MonoAOT=$MonoAOT"
     if($ExtraBenchmarkDotNetArguments -eq "")
     {
@@ -85,17 +82,12 @@ if($MonoDotnet -ne "")
     }
 }
 
-if($NoPGO)
-{
-    $Configurations += " PGOType=nopgo"
+if ($NoDynamicPGO) {
+    $Configurations += " PGOType=nodynamicpgo"
 }
-elseif($DynamicPGO)
-{
-    $Configurations += " PGOType=dynamicpgo"
-}
-elseif($FullPGO)
-{
-    $Configurations += " PGOType=fullpgo"
+
+if ($PhysicalPromotion) {
+    $Configurations += " PhysicalPromotionType=physicalpromotion"
 }
 
 if ($iOSMono) {
@@ -116,21 +108,15 @@ if($Branch.Contains("refs/heads/release"))
 $CommonSetupArguments="--channel $CleanedBranchName --queue $Queue --build-number $BuildNumber --build-configs $Configurations --architecture $Architecture"
 $SetupArguments = "--repository https://github.com/$Repository --branch $Branch --get-perf-hash --commit-sha $CommitSha $CommonSetupArguments"
 
-if($NoPGO)
-{
-    $SetupArguments = "$SetupArguments --no-pgo"
-}
-elseif($DynamicPGO)
-{
-    $SetupArguments = "$SetupArguments --dynamic-pgo"
-}
-elseif($FullPGO)
-{
-    $SetupArguments = "$SetupArguments --full-pgo"
+if ($NoDynamicPGO) {
+    $SetupArguments = "$SetupArguments --no-dynamic-pgo"
 }
 
-if($UseLocalCommitTime)
-{
+if ($PhysicalPromotion) {
+    $SetupArguments = "$SetupArguments --physical-promotion"
+}
+
+if ($UseLocalCommitTime) {
     $LocalCommitTime = (git show -s --format=%ci $CommitSha)
     $SetupArguments = "$SetupArguments --commit-time `"$LocalCommitTime`""
 }
@@ -144,8 +130,7 @@ else {
     git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance $PerformanceDirectory
 }
 
-if($MonoDotnet -ne "")
-{
+if ($MonoDotnet -ne "") {
     $UsingMono = "true"
     $MonoDotnetPath = (Join-Path $PayloadDirectory "dotnet-mono")
     Move-Item -Path $MonoDotnet -Destination $MonoDotnetPath
@@ -160,8 +145,7 @@ if ($UseBaselineCoreRun) {
     Move-Item -Path $BaselineCoreRootDirectory -Destination $NewBaselineCoreRoot
 }
 
-if($MauiVersion -ne "")
-{
+if ($MauiVersion -ne "") {
     $SetupArguments = "$SetupArguments --maui-version $MauiVersion"
 }
 

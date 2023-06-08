@@ -195,9 +195,9 @@ namespace Internal.Runtime.Augments
             return typeHandle.ToEETypePtr().RawValue;
         }
 
-        public static TypeManagerHandle GetModuleFromTypeHandle(RuntimeTypeHandle typeHandle)
+        public static unsafe TypeManagerHandle GetModuleFromTypeHandle(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhGetModuleFromEEType(GetPointerFromTypeHandle(typeHandle));
+            return typeHandle.ToMethodTable()->TypeManager;
         }
 
         public static RuntimeTypeHandle CreateRuntimeTypeHandle(IntPtr ldTokenResult)
@@ -817,21 +817,6 @@ namespace Internal.Runtime.Augments
         private static volatile ReflectionExecutionDomainCallbacks s_reflectionExecutionDomainCallbacks;
         private static TypeLoaderCallbacks s_typeLoaderCallbacks;
 
-        public static void ReportUnhandledException(Exception exception)
-        {
-            RuntimeExceptionHelpers.ReportUnhandledException(exception);
-        }
-
-        public static unsafe RuntimeTypeHandle GetRuntimeTypeHandleFromObjectReference(object obj)
-        {
-            return new RuntimeTypeHandle(obj.GetEETypePtr());
-        }
-
-        public static IntPtr GetUniversalTransitionThunk()
-        {
-            return RuntimeImports.RhGetUniversalTransitionThunk();
-        }
-
         public static object CreateThunksHeap(IntPtr commonStubAddress)
         {
             object newHeap = RuntimeImports.RhCreateThunksHeap(commonStubAddress);
@@ -866,22 +851,6 @@ namespace Internal.Runtime.Augments
         public static int GetThunkSize()
         {
             return RuntimeImports.RhGetThunkSize();
-        }
-
-        [DebuggerStepThrough]
-        /* TEMP workaround due to bug 149078 */
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void CallDescrWorker(IntPtr callDescr)
-        {
-            RuntimeImports.RhCallDescrWorker(callDescr);
-        }
-
-        [DebuggerStepThrough]
-        /* TEMP workaround due to bug 149078 */
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void CallDescrWorkerNative(IntPtr callDescr)
-        {
-            RuntimeImports.RhCallDescrWorkerNative(callDescr);
         }
 
         public static Delegate CreateObjectArrayDelegate(Type delegateType, Func<object?[], object?> invoker)
