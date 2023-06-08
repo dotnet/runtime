@@ -1,0 +1,50 @@
+/* eslint-disable no-prototype-builtins */
+
+import { INTERNAL } from "./globals";
+import { WebAssemblyResourceLoader } from "./loader/blazor/WebAssemblyResourceLoader";
+import { hasDebuggingEnabled } from "./loader/blazor/_Polyfill";
+
+export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<void> {
+    const resourceLoader: WebAssemblyResourceLoader = INTERNAL.resourceLoader;
+    const resources = resourceLoader.bootConfig.resources;
+    const lazyAssemblies = resources.lazyAssembly;
+    if (!lazyAssemblies) {
+        throw new Error("No assemblies have been marked as lazy-loadable. Use the 'BlazorWebAssemblyLazyLoad' item group in your project file to enable lazy loading an assembly.");
+    }
+
+    const assemblyMarkedAsLazy = lazyAssemblies.hasOwnProperty(assemblyNameToLoad);
+    if (!assemblyMarkedAsLazy) {
+        throw new Error(`${assemblyNameToLoad} must be marked with 'BlazorWebAssemblyLazyLoad' item group in your project file to allow lazy-loading.`);
+    }
+    const dllNameToLoad = assemblyNameToLoad;
+    const pdbNameToLoad = changeExtension(assemblyNameToLoad, ".pdb");
+    const shouldLoadPdb = hasDebuggingEnabled(resourceLoader.bootConfig) && resources.pdb && lazyAssemblies.hasOwnProperty(pdbNameToLoad);
+
+    const dllBytesPromise = resourceLoader.loadResource(dllNameToLoad, `_framework/${dllNameToLoad}`, lazyAssemblies[dllNameToLoad], "assembly").response.then(response => response.arrayBuffer());
+
+    // TODO MF: call interop
+
+    if (shouldLoadPdb) {
+        const pdbBytesPromise = await resourceLoader.loadResource(pdbNameToLoad, `_framework/${pdbNameToLoad}`, lazyAssemblies[pdbNameToLoad], "pdb").response.then(response => response.arrayBuffer());
+        const [dllBytes, pdbBytes] = await Promise.all([dllBytesPromise, pdbBytesPromise]);
+        return {
+            dll: new Uint8Array(dllBytes),
+            pdb: new Uint8Array(pdbBytes),
+        };
+    } else {
+        const dllBytes = await dllBytesPromise;
+        return {
+            dll: new Uint8Array(dllBytes),
+            pdb: null,
+        };
+    }
+}
+
+function changeExtension(filename: string, newExtensionWithLeadingDot: string) {
+    const lastDotIndex = filename.lastIndexOf(".");
+    if (lastDotIndex < 0) {
+        throw new Error(`No extension to replace in '${filename}'`);
+    }
+
+    return filename.substr(0, lastDotIndex) + newExtensionWithLeadingDot;
+}

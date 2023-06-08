@@ -91,6 +91,28 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        public static async Task LoadAssembly(List<Assembly> loadedAssemblies)
+        {
+            using var files = await LazyAssemblyLoaderInterop.LoadLazyAssembly(assemblyToLoad);
+
+            var dllBytes = files.GetPropertyAsByteArray("dll")!;
+            var pdbBytes = files.GetPropertyAsByteArray("pdb");
+            Assembly loadedAssembly = pdbBytes == null
+                        ? AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes))
+                        : AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes), new MemoryStream(pdbBytes));
+
+            loadedAssemblies.Add(loadedAssembly);
+            _loadedAssemblyCache!.Add(assemblyToLoad);
+
+        }
+
+        public static void LoadSatelliteAssembly(JSObject wrapper)
+        {
+            var dllBytes = wrapper.GetPropertyAsByteArray("dll")!;
+            using var stream = new MemoryStream(dllBytes);
+            AssemblyLoadContext.Default.LoadFromStream(stream);
+            wrapper.Dispose();
+        }
 
         // The JS layer invokes this method when the JS wrapper for a JS owned object
         //  has been collected by the JS garbage collector
