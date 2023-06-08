@@ -1406,17 +1406,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		switch (id) {
 		case SN_Abs:
 		case SN_AndNot:
-		case SN_As:
-		case SN_AsByte:
-		case SN_AsDouble:
-		case SN_AsInt16:
-		case SN_AsInt32:
-		case SN_AsInt64:
-		case SN_AsSByte:
-		case SN_AsSingle:
-		case SN_AsUInt16:
-		case SN_AsUInt32:
-		case SN_AsUInt64:
 		case SN_Ceiling:
 		case SN_ConditionalSelect:
 		case SN_ConvertToDouble:
