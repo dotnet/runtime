@@ -858,5 +858,43 @@ namespace System.Reflection.Metadata
                 Assert.Equal(0.0, y.GetField());
             });
         }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestGenericAddInstanceField()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField<>).Assembly;
+
+                var x = new System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField<string>("abcd");
+
+                Assert.Null (x.GetIt());
+
+                var y = new System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField<double>(45.0);
+
+                Assert.Equal (0.0, y.GetIt());
+                
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                // there are two updates - the first adds the fields, the second one updates the
+                // methods to use the new fields
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                Assert.Null (x.GetIt());
+                Assert.Equal (0.0, y.GetIt());
+
+                x = new System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField<string>("spqr");
+
+                string result = x.GetIt();
+                Assert.Equal("spqr", result);
+
+                y = new System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField<double>(2.717);
+                Assert.Equal(2.717, y.GetIt());
+
+                var dt = DateTime.Now;
+                var z = new System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField<DateTime>(dt);
+                Assert.Equal(dt, z.GetIt());
+            });
+        }
     }
 }
