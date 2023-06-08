@@ -607,7 +607,7 @@ export function generateWasmBody(
                 // index
                 append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
                 // stash it, we'll be using it multiple times
-                builder.local("index", WasmOpcode.set_local);
+                builder.local("index", WasmOpcode.tee_local);
 
                 /*
                 const constantIndex = get_known_constant_value(getArgU16(ip, 3));
@@ -624,18 +624,15 @@ export function generateWasmBody(
                     counters.nullChecksFused++;
                     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
                     ptrLocal = "src_ptr";
-                    builder.local(ptrLocal, WasmOpcode.set_local);
+                    builder.local(ptrLocal, WasmOpcode.tee_local);
                 } else
-                    append_ldloc_cknull(builder, getArgU16(ip, 2), ip, false);
+                    append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true);
 
-                // We couldn't use leave-on-stack because the cknull block may have purged
-                //  the index from the stack
-                // read index and ptr for (index < ptr->length)
-                builder.local("index");
-                builder.local(ptrLocal);
+                // current stack layout is [index, ptr]
                 // get string length
                 builder.appendU8(WasmOpcode.i32_load);
                 builder.appendMemarg(getMemberOffset(JiterpMember.StringLength), 2);
+                // current stack layout is [index, length]
                 // index < length
                 builder.appendU8(WasmOpcode.i32_lt_s);
                 // index >= 0
@@ -3104,7 +3101,7 @@ function append_getelema1(
     // load index for check
     append_ldloc(builder, indexOffset, WasmOpcode.i32_load);
     // stash it since we need it twice
-    builder.local("index", WasmOpcode.set_local);
+    builder.local("index", WasmOpcode.tee_local);
 
     let ptrLocal = "cknull_ptr";
     if (builder.options.zeroPageOptimization && isZeroPageReserved()) {
@@ -3113,20 +3110,16 @@ function append_getelema1(
         counters.nullChecksFused++;
         append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
         ptrLocal = "src_ptr";
-        builder.local(ptrLocal, WasmOpcode.set_local);
+        builder.local(ptrLocal, WasmOpcode.tee_local);
     } else
         // array null check
-        append_ldloc_cknull(builder, objectOffset, ip, false);
+        append_ldloc_cknull(builder, objectOffset, ip, true);
 
-    // We couldn't use leave-on-stack because the cknull block may have purged
-    //  the index from the stack
-    // load index for (index < array.length)
-    builder.local("index");
-    // load array
-    builder.local(ptrLocal);
+    // current stack layout is [index, ptr]
     // load array length
     builder.appendU8(WasmOpcode.i32_load);
     builder.appendMemarg(getMemberOffset(JiterpMember.ArrayLength), 2);
+    // current stack layout is [index, length]
     // check index < array.length, unsigned. if index is negative it will be interpreted as
     //  a massive value which is naturally going to be bigger than array.length. interp.c
     //  exploits this property so we can too
