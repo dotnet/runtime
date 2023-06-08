@@ -813,7 +813,10 @@ extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_nested_types(MonoClass
 
     if (nestedIterator->index < nestedIterator->count)
     {
-        TypeHandle th = ClassLoader::LoadTypeDefThrowing(klass_clr->GetModule(), nestedIterator->tokens[nestedIterator->index]);
+        TypeHandle th = ClassLoader::LoadTypeDefThrowing(klass_clr->GetModule(),
+            nestedIterator->tokens[nestedIterator->index],
+            ClassLoader::ThrowIfNotFound,
+            ClassLoader::PermitUninstDefOrRef);
         nestedIterator->index++;
         MONO_ASSERTE(!th.IsNull());
         return (MonoClass*)th.GetMethodTable();
