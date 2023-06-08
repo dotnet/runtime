@@ -1555,14 +1555,15 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
 //
 void ReplaceVisitor::CheckForwardSubForLastUse(unsigned lclNum)
 {
-    Statement* prevStmt = m_currentStmt->GetPrevStmt();
-    if (prevStmt == nullptr)
+    if (m_currentBlock->firstStmt() == m_currentStmt)
     {
         return;
     }
 
-    GenTree* node = prevStmt->GetRootNode();
-    if (node->OperIsLocalStore() && (node->AsLclVarCommon()->GetLclNum() == lclNum))
+    Statement* prevStmt = m_currentStmt->GetPrevStmt();
+    GenTree*   prevNode = prevStmt->GetRootNode();
+
+    if (prevNode->OperIsLocalStore() && (prevNode->AsLclVarCommon()->GetLclNum() == lclNum))
     {
         m_mayHaveForwardSub = true;
     }
