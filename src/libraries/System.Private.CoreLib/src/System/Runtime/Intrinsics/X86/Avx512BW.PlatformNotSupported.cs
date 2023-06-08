@@ -469,6 +469,27 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<ushort> Average(Vector512<ushort> left, Vector512<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m512i _mm512_blendv_epu8 (__m512i a, __m512i b, __m512i mask)
+        ///   VPBLENDMB zmm1 {k1}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<byte> BlendVariable(Vector512<byte> left, Vector512<byte> right, Vector512<byte> mask) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_blendv_epi16 (__m512i a, __m512i b, __m512i mask)
+        ///   VPBLENDMW zmm1 {k1}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<short> BlendVariable(Vector512<short> left, Vector512<short> right, Vector512<short> mask) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_blendv_epi8 (__m512i a, __m512i b, __m512i mask)
+        ///   VPBLENDMB zmm1 {k1}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<sbyte> BlendVariable(Vector512<sbyte> left, Vector512<sbyte> right, Vector512<sbyte> mask) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_blendv_epu16 (__m512i a, __m512i b, __m512i mask)
+        ///   VPBLENDMW zmm1 {k1}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<ushort> BlendVariable(Vector512<ushort> left, Vector512<ushort> right, Vector512<ushort> mask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m512i _mm512_broadcastb_epi8 (__m128i a)
         ///   VPBROADCASTB zmm1 {k1}{z}, xmm2/m8
         /// </summary>

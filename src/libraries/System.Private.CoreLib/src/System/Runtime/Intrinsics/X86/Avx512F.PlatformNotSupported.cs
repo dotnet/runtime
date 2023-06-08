@@ -1448,6 +1448,37 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<ulong> AndNot(Vector512<ulong> left, Vector512<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m512d _mm512_blendv_pd (__m512d a, __m512d b, __m512d mask)
+        ///   VBLENDMPD zmm1 {k1}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> BlendVariable(Vector512<double> left, Vector512<double> right, Vector512<double> mask) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_blendv_epi32 (__m512i a, __m512i b, __m512i mask)
+        ///   VPBLENDMD zmm1 {k1}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> BlendVariable(Vector512<int> left, Vector512<int> right, Vector512<int> mask) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_blendv_epi64 (__m512i a, __m512i b, __m512i mask)
+        ///   VPBLENDMQ zmm1 {k1}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> BlendVariable(Vector512<long> left, Vector512<long> right, Vector512<long> mask) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_blendv_ps (__m512 a, __m512 b, __m512 mask)
+        ///   VBLENDMPS zmm1 {k1}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> BlendVariable(Vector512<float> left, Vector512<float> right, Vector512<float> mask) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_blendv_epu32 (__m512i a, __m512i b, __m512i mask)
+        ///   VPBLENDMD zmm1 {k1}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<uint> BlendVariable(Vector512<uint> left, Vector512<uint> right, Vector512<uint> mask) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_blendv_epu64 (__m512i a, __m512i b, __m512i mask)
+        ///   VPBLENDMQ zmm1 {k1}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> BlendVariable(Vector512<ulong> left, Vector512<ulong> right, Vector512<ulong> mask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m512i _mm512_broadcastd_epi32 (__m128i a)
         ///   VPBROADCASTD zmm1 {k1}{z}, xmm2/m32
         /// </summary>

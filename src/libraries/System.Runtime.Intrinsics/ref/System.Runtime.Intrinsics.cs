@@ -4418,6 +4418,10 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<byte> AlignRight(System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<byte> right, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte mask) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> Average(System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<byte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ushort> Average(System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<byte> BlendVariable(System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<byte> right, System.Runtime.Intrinsics.Vector512<byte> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<short> BlendVariable(System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<short> right, System.Runtime.Intrinsics.Vector512<short> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<sbyte> BlendVariable(System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<sbyte> right, System.Runtime.Intrinsics.Vector512<sbyte> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ushort> BlendVariable(System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right, System.Runtime.Intrinsics.Vector512<ushort> mask) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> BroadcastScalarToVector512(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> BroadcastScalarToVector512(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<sbyte> BroadcastScalarToVector512(System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
@@ -4792,6 +4796,12 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<ushort> AndNot(System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<uint> AndNot(System.Runtime.Intrinsics.Vector512<uint> left, System.Runtime.Intrinsics.Vector512<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ulong> AndNot(System.Runtime.Intrinsics.Vector512<ulong> left, System.Runtime.Intrinsics.Vector512<ulong> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> BlendVariable(System.Runtime.Intrinsics.Vector512<double> left, System.Runtime.Intrinsics.Vector512<double> right, System.Runtime.Intrinsics.Vector512<double> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<int> BlendVariable(System.Runtime.Intrinsics.Vector512<int> left, System.Runtime.Intrinsics.Vector512<int> right, System.Runtime.Intrinsics.Vector512<int> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<long> BlendVariable(System.Runtime.Intrinsics.Vector512<long> left, System.Runtime.Intrinsics.Vector512<long> right, System.Runtime.Intrinsics.Vector512<long> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<float> BlendVariable(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right, System.Runtime.Intrinsics.Vector512<float> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<uint> BlendVariable(System.Runtime.Intrinsics.Vector512<uint> left, System.Runtime.Intrinsics.Vector512<uint> right, System.Runtime.Intrinsics.Vector512<uint> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ulong> BlendVariable(System.Runtime.Intrinsics.Vector512<ulong> left, System.Runtime.Intrinsics.Vector512<ulong> right, System.Runtime.Intrinsics.Vector512<ulong> mask) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> BroadcastScalarToVector512(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> BroadcastScalarToVector512(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<long> BroadcastScalarToVector512(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
