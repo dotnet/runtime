@@ -5990,9 +5990,10 @@ CorInfoHelpFunc CEEInfo::getCastingHelperStatic(TypeHandle clsHnd, bool fThrowin
         helper = CORINFO_HELP_ISINSTANCEOFARRAY;
     }
     else
-    if (!clsHnd.IsTypeDesc() && !Nullable::IsNullableType(clsHnd))
+    if (!clsHnd.IsTypeDesc() && !(Nullable::IsNullableType(clsHnd) && fThrowing))
     {
         // If it is a non-variant class, use the fast class helper
+        // Also use fast helper for isinst Nullable, which is equal to isinst of underlying type
         helper = CORINFO_HELP_ISINSTANCEOFCLASS;
     }
     else
