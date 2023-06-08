@@ -111,7 +111,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				Array.Empty<KeyValuePair<string, bool>> (),
 				Array.Empty<string> (),
 				options.AdditionalRootAssemblies.ToArray (),
-				options.TrimAssemblies.ToArray ());
+				options.TrimAssemblies.ToArray (),
+				Array.Empty<string> ());
 
 			PInvokeILEmitterConfiguration pinvokePolicy = new ILCompilerTestPInvokePolicy ();
 			InteropStateManager interopStateManager = new InteropStateManager (typeSystemContext.GeneratedAssembly);

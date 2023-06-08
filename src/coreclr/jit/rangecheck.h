@@ -689,8 +689,8 @@ public:
     bool IsOverBudget();
 
 private:
-    // Given a lclvar use, try to find the lclvar's defining assignment and its containing block.
-    LclSsaVarDsc* GetSsaDefAsg(GenTreeLclVarCommon* lclUse);
+    // Given a lclvar use, try to find the lclvar's defining store and its containing block.
+    LclSsaVarDsc* GetSsaDefStore(GenTreeLclVarCommon* lclUse);
 
     GenTreeBoundsChk* m_pCurBndsChk;
 

@@ -4275,6 +4275,51 @@ mini_get_underlying_type (MonoType *type)
 	return mini_type_get_underlying_type (type);
 }
 
+static GENERATE_GET_CLASS_WITH_CACHE (iequatable, "System", "IEquatable`1")
+static GENERATE_GET_CLASS_WITH_CACHE (geqcomparer, "System.Collections.Generic", "GenericEqualityComparer`1");
+
+// Provide more specific type information about the return value of a special
+// call, so that we can devirtualize future calls on this object.
+MonoClass*
+mini_handle_call_res_devirt (MonoMethod *cmethod)
+{
+	if (m_class_get_image (cmethod->klass) == mono_defaults.corlib &&
+			!strcmp (m_class_get_name (cmethod->klass), "EqualityComparer`1") &&
+			!strcmp (cmethod->name, "get_Default")) {
+		MonoType *param_type = mono_class_get_generic_class (cmethod->klass)->context.class_inst->type_argv [0];
+		MonoClass *inst;
+		MonoGenericContext ctx;
+		ERROR_DECL (error);
+
+		memset (&ctx, 0, sizeof (ctx));
+
+		MonoType *args [ ] = { param_type };
+		ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+
+		inst = mono_class_inflate_generic_class_checked (mono_class_get_iequatable_class (), &ctx, error);
+		mono_error_assert_ok (error);
+
+		// EqualityComparer<T>.Default returns specific types depending on T
+		// FIXME: Special case more types: byte, string, nullable, enum ?
+		if (mono_class_is_assignable_from_internal (inst, mono_class_from_mono_type_internal (param_type)) && param_type->type != MONO_TYPE_U1 && param_type->type != MONO_TYPE_STRING) {
+			MonoClass *gcomparer_inst;
+
+			memset (&ctx, 0, sizeof (ctx));
+
+			args [0] = param_type;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+
+			MonoClass *gcomparer = mono_class_get_geqcomparer_class ();
+			g_assert (gcomparer);
+			gcomparer_inst = mono_class_inflate_generic_class_checked (gcomparer, &ctx, error);
+			if (is_ok (error))
+				return gcomparer_inst;
+		}
+	}
+
+	return NULL;
+}
+
 void
 mini_jit_init (void)
 {

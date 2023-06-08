@@ -497,6 +497,9 @@ namespace System.Globalization
 #if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
                 JsCompareString(string1, string2, options) :
+#elif TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            GlobalizationMode.Hybrid ?
+                CompareStringNative(string1, string2, options) :
 #endif
                 IcuCompareString(string1, string2, options);
 

@@ -36,6 +36,11 @@ namespace Internal.Reflection.Execution.MethodInvokers
             return result;
         }
 
+        protected sealed override object CreateInstance(object[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
+        {
+            throw NotImplemented.ByDesign;
+        }
+
         public sealed override IntPtr LdFtnResult => MethodInvokeInfo.LdFtnResult;
     }
 }

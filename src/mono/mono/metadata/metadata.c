@@ -2512,6 +2512,29 @@ mono_metadata_signature_dup (MonoMethodSignature *sig)
 	return mono_metadata_signature_dup_full (NULL, sig);
 }
 
+/**
+ * mono_metadata_signature_dup_delegate_invoke_to_target:
+ * \param sig method signature
+ *
+ * Duplicate an existing \c MonoMethodSignature but removes first param from it so it can
+ * be used as signature for a delegate target method.
+ * This is a Mono runtime internal function.
+ *
+ * \returns the new \c MonoMethodSignature structure.
+ */
+MonoMethodSignature*
+mono_metadata_signature_dup_delegate_invoke_to_target (MonoMethodSignature *sig)
+{
+	MonoMethodSignature *res = mono_metadata_signature_dup_full (NULL, sig);
+
+	for (int i = 0 ; i < sig->param_count - 1; i ++) {
+		res->params [i] = sig->params [i + 1];
+	}
+	res->param_count --;
+
+	return res;
+}
+
 /*
  * mono_metadata_signature_size:
  *

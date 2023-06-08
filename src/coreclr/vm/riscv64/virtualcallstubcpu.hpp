@@ -44,7 +44,7 @@ public:
         // _resolveWorkerTarget
         // _token
 
-        _stub._entryPoint[0] = LOOKUP_STUB_FIRST_DWORD; // auipc t6, 0  //0x00000097
+        _stub._entryPoint[0] = LOOKUP_STUB_FIRST_DWORD; // auipc t6, 0  //0x00000f97
         _stub._entryPoint[1] = 0x018fb383; //ld   t2, 24(t6)
         _stub._entryPoint[2] = 0x010fbf83; //ld   t6, 16(t6)
         _stub._entryPoint[3] = 0x000f8067; //jalr x0, t6, 0
@@ -226,7 +226,7 @@ struct ResolveHolder
         _stub._resolveEntryPoint[n++] = 0x005e0333;
         // 	auipc t0, 0
         _stub._resolveEntryPoint[n++] = 0x00000297;
-        //  addi t0, t0, -16
+        //  addi t0, t0, -12
         _stub._resolveEntryPoint[n++] = 0xff428293;
 
         // 	lw  t6, 0(t0)  #t6 = this._hashedToken
@@ -461,7 +461,7 @@ void VTableCallHolder::Initialize(unsigned slot)
         *(DWORD*)p = 0x00036e03 | ((UINT32)dataOffset << 20); p += 4;
         // add t4, t4, t3
         *(DWORD*)p = 0x01ce8eb3; p += 4;
-        // ld t4, offsetOfIndirection(t4)
+        // ld t4, 0(t4)
         *(DWORD*)p = 0x000ebe83; p += 4;
     }
     else
@@ -485,7 +485,7 @@ void VTableCallHolder::Initialize(unsigned slot)
     }
     else
     {
-        // ld t4, offsetOfIndirection(t4)
+        // ld t4, offsetAfterIndirection(t4)
         *(DWORD*)p = 0x000ebe83 | ((UINT32)offsetAfterIndirection << 20); p += 4;
     }
 

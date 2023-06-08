@@ -6,7 +6,7 @@
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { Module, ENVIRONMENT_IS_PTHREAD } from "../../globals";
 import { makeChannelCreatedMonoMessage } from "../shared";
-import type { pthread_ptr } from "../shared/types";
+import type { pthreadPtr } from "../shared/types";
 import { is_nullish } from "../../types/internal";
 import type { MonoThreadMessage } from "../shared";
 import {
@@ -30,7 +30,7 @@ export {
 
 class WorkerSelf implements PThreadSelf {
     readonly isBrowserThread = false;
-    constructor(readonly pthread_id: pthread_ptr, readonly portToBrowser: MessagePort) { }
+    constructor(readonly pthreadId: pthreadPtr, readonly portToBrowser: MessagePort) { }
     postMessageToBrowser(message: MonoThreadMessage, transfer?: Transferable[]) {
         if (transfer) {
             this.portToBrowser.postMessage(message, transfer);
@@ -64,7 +64,7 @@ function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>
 }
 
 
-function setupChannelToMainThread(pthread_ptr: pthread_ptr): PThreadSelf {
+function setupChannelToMainThread(pthread_ptr: pthreadPtr): PThreadSelf {
     mono_log_debug("creating a channel", pthread_ptr);
     const channel = new MessageChannel();
     const workerPort = channel.port1;
@@ -79,9 +79,9 @@ function setupChannelToMainThread(pthread_ptr: pthread_ptr): PThreadSelf {
 
 /// This is an implementation detail function.
 /// Called in the worker thread from mono when a pthread becomes attached to the mono runtime.
-export function mono_wasm_pthread_on_pthread_attached(pthread_id: pthread_ptr): void {
+export function mono_wasm_pthread_on_pthread_attached(pthread_id: pthreadPtr): void {
     const self = pthread_self;
-    mono_assert(self !== null && self.pthread_id == pthread_id, "expected pthread_self to be set already when attaching");
+    mono_assert(self !== null && self.pthreadId == pthread_id, "expected pthread_self to be set already when attaching");
     mono_log_debug("attaching pthread to runtime 0x" + pthread_id.toString(16));
     preRunWorker();
     currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadAttached, self));

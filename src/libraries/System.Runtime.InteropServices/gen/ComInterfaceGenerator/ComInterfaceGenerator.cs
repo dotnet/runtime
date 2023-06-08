@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
@@ -43,39 +44,35 @@ namespace Microsoft.Interop
                 .Where(
                     static modelData => modelData is not null);
 
-            var interfaceSymbolAndDiagnostics = attributedInterfaces.Select(static (data, ct) =>
+            var interfaceSymbolOrDiagnostics = attributedInterfaces.Select(static (data, ct) =>
             {
-                var (info, diagnostic) = ComInterfaceInfo.From(data.Symbol, data.Syntax);
-                return (InterfaceInfo: info, Diagnostic: diagnostic, Symbol: data.Symbol);
+                return ComInterfaceInfo.From(data.Symbol, data.Syntax, ct);
             });
-            context.RegisterDiagnostics(interfaceSymbolAndDiagnostics.Select((data, ct) => data.Diagnostic));
+            var interfaceSymbolsWithoutDiagnostics = context.FilterAndReportDiagnostics(interfaceSymbolOrDiagnostics);
 
-            var interfaceSymbolsWithoutDiagnostics = interfaceSymbolAndDiagnostics
-                .Where(data => data.Diagnostic is null)
-                .Select((data, ct) =>
-                (data.InterfaceInfo, data.Symbol));
-
-            var interfaceContexts = interfaceSymbolsWithoutDiagnostics
+            var interfaceContextsOrDiagnostics = interfaceSymbolsWithoutDiagnostics
                 .Select((data, ct) => data.InterfaceInfo!)
                 .Collect()
                 .SelectMany(ComInterfaceContext.GetContexts);
 
-            var comMethodsAndSymbolsAndDiagnostics = interfaceSymbolsWithoutDiagnostics.Select(ComMethodInfo.GetMethodsFromInterface);
-            context.RegisterDiagnostics(comMethodsAndSymbolsAndDiagnostics.SelectMany(static (methodList, ct) => methodList.Select(m => m.Diagnostic)));
-            var methodInfoAndSymbolGroupedByInterface = comMethodsAndSymbolsAndDiagnostics
-                .Select(static (methods, ct) =>
-                    methods
-                        .Where(pair => pair.Diagnostic is null)
-                        .Select(pair => (pair.Symbol, pair.ComMethod))
-                        .ToSequenceEqualImmutableArray());
+            // Filter down interface symbols to remove those with diagnostics from GetContexts
+            (var interfaceContexts, interfaceSymbolsWithoutDiagnostics) = context.FilterAndReportDiagnostics(interfaceContextsOrDiagnostics, interfaceSymbolsWithoutDiagnostics);
+
+            var comMethodsAndSymbolsOrDiagnostics = interfaceSymbolsWithoutDiagnostics.Select(ComMethodInfo.GetMethodsFromInterface);
+            var methodInfoAndSymbolGroupedByInterface = context
+                .FilterAndReportDiagnostics<(ComMethodInfo MethodInfo, IMethodSymbol Symbol)> (comMethodsAndSymbolsOrDiagnostics);
 
             var methodInfosGroupedByInterface = methodInfoAndSymbolGroupedByInterface
                 .Select(static (methods, ct) =>
-                    methods.Select(pair => pair.ComMethod).ToSequenceEqualImmutableArray());
+                    methods.Select(pair => pair.MethodInfo).ToSequenceEqualImmutableArray());
             // Create list of methods (inherited and declared) and their owning interface
             var comMethodContextBuilders = interfaceContexts
                 .Zip(methodInfosGroupedByInterface)
                 .Collect()
+                .SelectMany(static (data, ct) =>
+                {
+                    return data.GroupBy(data => data.Left.GetTopLevelBase());
+                })
                 .SelectMany(static (data, ct) =>
                 {
                     return ComMethodContext.CalculateAllMethods(data, ct);
@@ -85,7 +82,7 @@ namespace Microsoft.Interop
             var methodInfoToSymbolMap = methodInfoAndSymbolGroupedByInterface
                 .SelectMany((data, ct) => data)
                 .Collect()
-                .Select((data, ct) => data.ToDictionary(static x => x.ComMethod, static x => x.Symbol));
+                .Select((data, ct) => data.ToDictionary(static x => x.MethodInfo, static x => x.Symbol));
             var comMethodContexts = comMethodContextBuilders
                 .Combine(methodInfoToSymbolMap)
                 .Combine(context.CreateStubEnvironmentProvider())
@@ -239,16 +236,6 @@ namespace Microsoft.Interop
                 }
             }
 
-            AttributeData? generatedComAttribute = null;
-            foreach (var attr in symbol.ContainingType.GetAttributes())
-            {
-                if (generatedComAttribute is null
-                    && attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedComInterfaceAttribute)
-                {
-                    generatedComAttribute = attr;
-                }
-            }
-
             var generatorDiagnostics = new GeneratorDiagnostics();
 
             if (lcidConversionAttr is not null)
@@ -257,12 +244,8 @@ namespace Microsoft.Interop
                 generatorDiagnostics.ReportConfigurationNotSupported(lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
             }
 
-            var generatedComInterfaceAttributeData = new InteropAttributeCompilationData();
-            if (generatedComAttribute is not null)
-            {
-                var args = generatedComAttribute.NamedArguments.ToImmutableDictionary();
-                generatedComInterfaceAttributeData = generatedComInterfaceAttributeData.WithValuesFromNamedArguments(args);
-            }
+            GeneratedComInterfaceCompilationData.TryGetGeneratedComInterfaceAttributeFromInterface(symbol.ContainingType, out var generatedComAttribute);
+            var generatedComInterfaceAttributeData = GeneratedComInterfaceCompilationData.GetDataFromAttribute(generatedComAttribute);
             // Create the stub.
             var signatureContext = SignatureContext.Create(
                 symbol,

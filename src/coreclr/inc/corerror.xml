@@ -1603,7 +1603,7 @@
 <HRESULT NumericValue="0x80131603">
 	<SymbolicName>COR_E_TARGET</SymbolicName>
 	<Message>"Attempt to invoke non-static method with a null Object."</Message>
-	<Comment> - If you attempt to invoke a non-static method with a null Object - If you atte</Comment>
+	<Comment>If you attempt to invoke a non-static method with a null Object</Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131604">

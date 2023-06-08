@@ -7,6 +7,7 @@ namespace Microsoft.Interop
     {
         public const string DllImportAttribute = "System.Runtime.InteropServices.DllImportAttribute";
         public const string LibraryImportAttribute = "System.Runtime.InteropServices.LibraryImportAttribute";
+        public const string LibraryImportAttribute_ShortName = "LibraryImportAttribute";
         public const string StringMarshalling = "System.Runtime.InteropServices.StringMarshalling";
 
         public const string NativeMarshallingAttribute = "System.Runtime.InteropServices.Marshalling.NativeMarshallingAttribute";
@@ -34,7 +35,10 @@ namespace Microsoft.Interop
 
         public const string UnmanagedCallersOnlyAttribute = "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute";
 
+        public const string System_Runtime_InteropServices_ComImportAttribute = "System.Runtime.InteropServices.ComImportAttribute";
+
         public const string VirtualMethodIndexAttribute = "System.Runtime.InteropServices.Marshalling.VirtualMethodIndexAttribute";
+        public const string VirtualMethodIndexAttribute_ShortName = "VirtualMethodIndexAttribute";
 
         public const string IUnmanagedVirtualMethodTableProvider = "System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider";
 
@@ -108,6 +112,7 @@ namespace Microsoft.Interop
         public const string System_Runtime_CompilerServices_RuntimeHelpers = "System.Runtime.CompilerServices.RuntimeHelpers";
 
         public const string GeneratedComInterfaceAttribute = "System.Runtime.InteropServices.Marshalling.GeneratedComInterfaceAttribute";
+        public const string GeneratedComInterfaceAttribute_ShortName = "GeneratedComInterfaceAttribute";
 
         public const string InterfaceTypeAttribute = "System.Runtime.InteropServices.InterfaceTypeAttribute";
 
@@ -142,5 +147,7 @@ namespace Microsoft.Interop
         public const string UnreachableException = "System.Diagnostics.UnreachableException";
 
         public const string System_Runtime_InteropServices_Marshalling_SafeHandleMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller`1";
+
+        public const string System_Runtime_InteropServices_Marshalling_ComInterfaceMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.ComInterfaceMarshaller`1";
     }
 }
