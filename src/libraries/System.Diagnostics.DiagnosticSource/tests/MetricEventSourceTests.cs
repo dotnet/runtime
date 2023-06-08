@@ -26,48 +26,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         //[OuterLoop("Slow and has lots of console spew")]
-        public void EventSourcePublishesTimeSeriesWithEmptyMetadata()
-        {
-            using Meter meter = new Meter("TestMeter1");
-            Counter<int> c = meter.CreateCounter<int>("counter1");
-            int counterState = 3;
-            ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; });
-            int gaugeState = 0;
-            ObservableGauge<int> og = meter.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; });
-            Histogram<int> h = meter.CreateHistogram<int>("histogram1");
-            UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1");
-            int upDownCounterState = 0;
-            ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState -= 11; return upDownCounterState; });
-
-            EventWrittenEventArgs[] events;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter1"))
-            {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
-                c.Add(5);
-                h.Record(19);
-                udc.Add(-33);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
-                c.Add(12);
-                h.Record(26);
-                udc.Add(-40);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
-                events = listener.Events.ToArray();
-            }
-
-            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
-            AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
-            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("", "10"), ("7", "17"));
-            AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
-            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
-            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", ("-33", "-33"), ("-40", "-73"));
-            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", ("", "-11"), ("-11", "-22"));
-            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        //[OuterLoop("Slow and has lots of console spew")]
-        public void EventSourcePublishesTimeSeriesWithEmptyMetadataMultiplexingDifferentCounter()
+        public void MultipleListeners_DifferentCounters()
         {
             using Meter meter = new Meter("TestMeter1");
             Counter<int> c = meter.CreateCounter<int>("counter1");
@@ -109,7 +68,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         //[OuterLoop("Slow and has lots of console spew")]
-        public void EventSourcePublishesTimeSeriesWithEmptyMetadataMultiplexingReuseCounter()
+        public void MultipleListeners_ReuseCounter()
         {
             using Meter meter = new Meter("TestMeter1");
             Counter<int> c = meter.CreateCounter<int>("counter1");
@@ -154,7 +113,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         //[OuterLoop("Slow and has lots of console spew")]
-        public void EventSourcePublishesTimeSeriesWithEmptyMetadataMultiplexingDifferentCounterCollectAfterDisable()
+        public void MultipleListeners_CollectAfterDisableListener()
         {
             using Meter meter = new Meter("TestMeter1");
             Counter<int> c = meter.CreateCounter<int>("counter1");
@@ -202,7 +161,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         //[OuterLoop("Slow and has lots of console spew")]
-        public void EventSourcePublishesTimeSeriesWithEmptyMetadataMultiplexingThreeMeters()
+        public void MultipleListeners_ThreeCounters()
         {
             using Meter meter = new Meter("TestMeter1");
             Counter<int> c = meter.CreateCounter<int>("counter1");
@@ -256,7 +215,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         //[OuterLoop("Slow and has lots of console spew")]
-        public void EventSourcePublishesTimeSeriesWithEmptyMetadataMultiplexingDifferentCounterAlternating()
+        public void MultipleListeners_OverlappingListeners()
         {
             using Meter meter = new Meter("TestMeter1");
             Counter<int> c = meter.CreateCounter<int>("counter1");
@@ -295,7 +254,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         //[OuterLoop("Slow and has lots of console spew")]
-        public void EventSourceRejectsNewSharedListener()
+        public void MultipleListeners_UnsharedSessionRejectsUnsharedListener()
         {
             using Meter meter = new Meter("TestMeter7");
             Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
@@ -320,8 +279,52 @@ namespace System.Diagnostics.Metrics.Tests
                 h.Record(26);
                 udc.Add(40);
 
-                // some alternate listener attempts to listen in the middle
-                using MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "ADifferentMeter");
+                using MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "ADifferentMeter");
+                listener2.WaitForMultipleSessionsNotSupportedError(s_waitForEventTimeout);
+
+
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                events = listener.Events.ToArray();
+            }
+
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"));
+            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, ("", "10"), ("7", "17"), ("7", "24"));
+            AssertGaugeEventsPresent(events, meter.Name, og.Name, "", og.Unit, "9", "18", "27");
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", h.Unit, ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
+            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", udc.Unit, ("33", "33"), ("40", "73"));
+            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", oudc.Unit, ("", "11"), ("11", "22"), ("11", "33"));
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        //[OuterLoop("Slow and has lots of console spew")]
+        public void MultipleListeners_UnsharedSessionRejectsSharedListener()
+        {
+            using Meter meter = new Meter("TestMeter7");
+            Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
+            int counterState = 3;
+            ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
+            int gaugeState = 0;
+            ObservableGauge<int> og = meter.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!");
+            Histogram<int> h = meter.CreateHistogram<int>("histogram1", "a unit", "the description");
+            UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
+            int upDownCounterState = 0;
+            ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
+
+            EventWrittenEventArgs[] events;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter7"))
+            {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                c.Add(5);
+                h.Record(19);
+                udc.Add(33);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                c.Add(12);
+                h.Record(26);
+                udc.Add(40);
+
+                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "ADifferentMeter"))
                 {
                     listener2.WaitForMultipleSessionsNotSupportedError(s_waitForEventTimeout);
                 }
@@ -342,7 +345,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         //[OuterLoop("Slow and has lots of console spew")]
-        public void EventSourceRejectsNewUnsharedListener()
+        public void MultipleListeners_SharedSessionRejectsUnsharedListener()
         {
             using Meter meter = new Meter("TestMeter7");
             Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
@@ -367,55 +370,9 @@ namespace System.Diagnostics.Metrics.Tests
                 h.Record(26);
                 udc.Add(40);
 
-                // some alternate listener attempts to listen in the middle
-                using MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "ADifferentMeter");
-                listener2.WaitForMultipleSessionsNotSupportedError(s_waitForEventTimeout);
-
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
-                events = listener.Events.ToArray();
-            }
-
-            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
-            AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"));
-            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, ("", "10"), ("7", "17"), ("7", "24"));
-            AssertGaugeEventsPresent(events, meter.Name, og.Name, "", og.Unit, "9", "18", "27");
-            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", h.Unit, ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
-            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", udc.Unit, ("33", "33"), ("40", "73"));
-            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", oudc.Unit, ("", "11"), ("11", "22"), ("11", "33"));
-            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        //[OuterLoop("Slow and has lots of console spew")]
-        public void EventSourceRejectsNewSharedListenerWithDifferentMaxHistogramAndMaxTimeSeries()
-        {
-            using Meter meter = new Meter("TestMeter7");
-            Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
-            int counterState = 3;
-            ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
-            int gaugeState = 0;
-            ObservableGauge<int> og = meter.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!");
-            Histogram<int> h = meter.CreateHistogram<int>("histogram1", "a unit", "the description");
-            UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
-            int upDownCounterState = 0;
-            ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
-
-            EventWrittenEventArgs[] events;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, 10, 10, "TestMeter7"))
-            {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
-                c.Add(5);
-                h.Record(19);
-                udc.Add(33);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
-                c.Add(12);
-                h.Record(26);
-                udc.Add(40);
-
-                // some alternate listener attempts to listen in the middle
-                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, 11, 11, "ADifferentMeter"))
+                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "ADifferentMeter"))
                 {
-                    listener2.WaitForMultipleSessionsConfiguredIncorrectlyError(s_waitForEventTimeout);
+                    listener2.WaitForMultipleSessionsNotSupportedError(s_waitForEventTimeout);
                 }
 
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
@@ -434,151 +391,123 @@ namespace System.Diagnostics.Metrics.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         //[OuterLoop("Slow and has lots of console spew")]
-        public void EventSourceRejectsNewSharedListenerWithDifferentMaxHistogramAndMaxTimeSeriesDoesntDisable()
+        public void MultipleListeners_SharedSessionRejectsListenerWithDifferentArgs()
         {
             using Meter meter = new Meter("TestMeter7");
             Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
-
-            EventWrittenEventArgs[] events;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, 10, 10, "TestMeter7"))
-            {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
-                c.Add(5);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
-                c.Add(12);
-
-                // some alternate listener attempts to listen in the middle
-                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, 11, 11, "ADifferentMeter"))
-                {
-                    listener2.WaitForMultipleSessionsConfiguredIncorrectlyError(s_waitForEventTimeout);
-                }
-
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
-                c.Add(19);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
-                events = listener.Events.ToArray();
-            }
-
-            AssertBeginInstrumentReportingEventsPresent(events, c);
-            AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"), ("19", "36"));
-            AssertCollectStartStopEventsPresent(events, IntervalSecs, 4);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        //[OuterLoop("Slow and has lots of console spew")]
-        public void EventSourceRejectsNewSharedListenerWithDifferentMaxHistogramAfterNoClientId()
-        {
-            using Meter meter = new Meter("TestMeter7");
-            Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
-
-            EventWrittenEventArgs[] events;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, string.Empty, isShared: true, IntervalSecs, 10, 10, "TestMeter7"))
-            {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
-                c.Add(5);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
-                c.Add(12);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
-                c.Add(19);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
-                events = listener.Events.ToArray();
-            }
-
-            using MetricsEventListener listener3 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, 11, 11, "TestMeter7");
-            listener3.WaitForMultipleSessionsConfiguredIncorrectlyError(s_waitForEventTimeout);
-
-            AssertBeginInstrumentReportingEventsPresent(events, c);
-            AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"), ("19", "36"));
-            AssertCollectStartStopEventsPresent(events, IntervalSecs, 4);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        //[OuterLoop("Slow and has lots of console spew")]
-        public void EventSourceRejectsNewSharedListenerWithDifferentInterval()
-        {
-            using Meter meter = new Meter("TestMeter7");
-            Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
-            int counterState = 3;
-            ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
-            int gaugeState = 0;
-            ObservableGauge<int> og = meter.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!");
-            Histogram<int> h = meter.CreateHistogram<int>("histogram1", "a unit", "the description");
-            UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
-            int upDownCounterState = 0;
-            ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
-
-            EventWrittenEventArgs[] events;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter7"))
-            {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
-                c.Add(5);
-                h.Record(19);
-                udc.Add(33);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
-                c.Add(12);
-                h.Record(26);
-                udc.Add(40);
-
-                // some alternate listener attempts to listen in the middle
-                using MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs + 1, "ADifferentMeter");
-                listener2.WaitForMultipleSessionsConfiguredIncorrectlyError(s_waitForEventTimeout);
-
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
-                events = listener.Events.ToArray();
-            }
-
-            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
-            AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"));
-            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, ("", "10"), ("7", "17"), ("7", "24"));
-            AssertGaugeEventsPresent(events, meter.Name, og.Name, "", og.Unit, "9", "18", "27");
-            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", h.Unit, ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
-            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", udc.Unit, ("33", "33"), ("40", "73"));
-            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", oudc.Unit, ("", "11"), ("11", "22"), ("11", "33"));
-            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        //[OuterLoop("Slow and has lots of console spew")]
-        public void EventSourcePublishesTimeSeriesWithEmptyMetadataMultiplexingSameCounter()
-        {
-            using Meter meter = new Meter("TestMeter1");
-            Counter<int> c = meter.CreateCounter<int>("counter1");
 
             EventWrittenEventArgs[] events, events2;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter1"))
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, 10, 12, "TestMeter7"))
+            {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                c.Add(5);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                c.Add(12);
+
+                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, 11, 13, "ADifferentMeter"))
+                {
+                    listener2.WaitForMultipleSessionsConfiguredIncorrectlyError(s_waitForEventTimeout);
+                    events2 = listener2.Events.ToArray();
+                    AssertMultipleSessionsConfiguredIncorrectlyErrorEventsPresent(events2, "12", "13", "10", "11", IntervalSecs.ToString(), IntervalSecs.ToString());
+                }
+
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                c.Add(19);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
+                events = listener.Events.ToArray();
+            }
+
+            AssertBeginInstrumentReportingEventsPresent(events, c);
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"), ("19", "36"));
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 4);
+        }
+
+        /* This test appears to destabilize the others by having the session remain running
+         * 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        //[OuterLoop("Slow and has lots of console spew")]
+        public void MultipleListeners_SharedSessionWithoutClientIdRejectsSharedListenerWithDifferentArgsAfterListenerDisposed()
+        {
+            using Meter meter = new Meter("TestMeter7");
+            Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
+
+            EventWrittenEventArgs[] events, events2;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, string.Empty, isShared: true, IntervalSecs, 10, 12, "TestMeter7"))
             {
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                c.Add(19);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
                 events = listener.Events.ToArray();
+            }
 
-                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter1"))
-                {
-                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 1);
-                    c.Add(5);
-                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 2);
-                    c.Add(12);
-                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 3);
-                    events2 = listener2.Events.ToArray();
-                }
+            using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, 11, 13, "TestMeter7"))
+            {
+                listener2.WaitForMultipleSessionsConfiguredIncorrectlyError(s_waitForEventTimeout);
+                events2 = listener2.Events.ToArray();
+                AssertMultipleSessionsConfiguredIncorrectlyErrorEventsPresent(events2, "12", "13", "10", "11", IntervalSecs.ToString(), IntervalSecs.ToString());
             }
 
             AssertBeginInstrumentReportingEventsPresent(events, c);
-            AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
-            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"), ("19", "36"));
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 4);
+        }*/
 
-            AssertBeginInstrumentReportingEventsPresent(events2, c);
-            AssertInitialEnumerationCompleteEventPresent(events2);
-            AssertCounterEventsPresent(events2, meter.Name, c.Name, "", "", ("0", "17"), ("5", "22"), ("12", "34"));
-            AssertCollectStartStopEventsPresent(events2, IntervalSecs, 3);
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        //[OuterLoop("Slow and has lots of console spew")]
+        public void MultipleListeners_SharedSessionRejectsListenerWithDifferentInterval()
+        {
+            using Meter meter = new Meter("TestMeter7");
+            Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
+            int counterState = 3;
+            ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
+            int gaugeState = 0;
+            ObservableGauge<int> og = meter.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!");
+            Histogram<int> h = meter.CreateHistogram<int>("histogram1", "a unit", "the description");
+            UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
+            int upDownCounterState = 0;
+            ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
+
+            EventWrittenEventArgs[] events, events2;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter7"))
+            {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                c.Add(5);
+                h.Record(19);
+                udc.Add(33);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                c.Add(12);
+                h.Record(26);
+                udc.Add(40);
+
+                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs + 1, "ADifferentMeter"))
+                {
+                    listener2.WaitForMultipleSessionsConfiguredIncorrectlyError(s_waitForEventTimeout);
+                    events2 = listener2.Events.ToArray();
+                    AssertMultipleSessionsConfiguredIncorrectlyErrorEventsPresent(events2, MetricsEventListener.HistogramLimit.ToString(), MetricsEventListener.HistogramLimit.ToString(),
+                        MetricsEventListener.TimeSeriesLimit.ToString(), MetricsEventListener.TimeSeriesLimit.ToString(), IntervalSecs.ToString(), (IntervalSecs + 1).ToString());
+                }
+
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                events = listener.Events.ToArray();
+            }
+
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"));
+            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, ("", "10"), ("7", "17"), ("7", "24"));
+            AssertGaugeEventsPresent(events, meter.Name, og.Name, "", og.Unit, "9", "18", "27");
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", h.Unit, ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
+            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", udc.Unit, ("33", "33"), ("40", "73"));
+            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", oudc.Unit, ("", "11"), ("11", "22"), ("11", "33"));
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         //[OuterLoop("Slow and has lots of console spew")]
-        public void EventSourcePublishesEndEventsOnMeterDisposeMultiplexing()
+        public void MultipleListeners_DisposeMeterBeforeSecondListener()
         {
             using Meter meterA = new Meter("TestMeter8");
             using Meter meterB = new Meter("TestMeter9");
@@ -634,7 +563,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         //[OuterLoop("Slow and has lots of console spew")]
-        public void EventSourcePublishesEndEventsOnMeterDisposeMultiplexing2()
+        public void MultipleListeners_DisposeMetersDuringAndAfterSecondListener()
         {
             using Meter meterA = new Meter("TestMeter8");
             using Meter meterB = new Meter("TestMeter9");
@@ -691,6 +620,86 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 4);
             AssertEndInstrumentReportingEventsPresent(events, c, oc, og, udc, oudc, h);
             AssertEndInstrumentReportingEventsPresent(events2, c, oc, og, udc, oudc);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        //[OuterLoop("Slow and has lots of console spew")]
+        public void MultipleListeners_PublishingInstruments()
+        {
+            using Meter meterA = new Meter("TestMeter10");
+            using Meter meterB = new Meter("TestMeter11");
+            Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!");
+            int counterState = 3;
+            ObservableCounter<int> oc = meterA.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
+            int gaugeState = 0;
+            ObservableGauge<int> og = meterA.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!");
+            Histogram<int> h = meterB.CreateHistogram<int>("histogram1", "a unit", "the description");
+            UpDownCounter<int> udc = meterA.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
+            int upDownCounterState = 0;
+            ObservableUpDownCounter<int> oudc = meterA.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
+
+            EventWrittenEventArgs[] events, events2;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.InstrumentPublishing, isShared: true, null, ""))
+            {
+                listener.WaitForEnumerationComplete(s_waitForEventTimeout);
+                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.InstrumentPublishing, isShared: true, null, ""))
+                {
+                    listener2.WaitForEnumerationComplete(s_waitForEventTimeout);
+                    events = listener.Events.ToArray();
+                    events2 = listener2.Events.ToArray();
+                }
+            }
+
+            AssertInstrumentPublishingEventsPresent(events, c, oc, og, h, udc, oudc, c, oc, og, h, udc, oudc);
+            AssertInitialEnumerationCompleteEventPresent(events, 2);
+            AssertInstrumentPublishingEventsPresent(events2, c, oc, og, h, udc, oudc);
+            AssertInitialEnumerationCompleteEventPresent(events2);
+        }
+
+
+
+
+
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        //[OuterLoop("Slow and has lots of console spew")]
+        public void EventSourcePublishesTimeSeriesWithEmptyMetadata()
+        {
+            using Meter meter = new Meter("TestMeter1");
+            Counter<int> c = meter.CreateCounter<int>("counter1");
+            int counterState = 3;
+            ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; });
+            int gaugeState = 0;
+            ObservableGauge<int> og = meter.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; });
+            Histogram<int> h = meter.CreateHistogram<int>("histogram1");
+            UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1");
+            int upDownCounterState = 0;
+            ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState -= 11; return upDownCounterState; });
+
+            EventWrittenEventArgs[] events;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter1"))
+            {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                c.Add(5);
+                h.Record(19);
+                udc.Add(-33);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                c.Add(12);
+                h.Record(26);
+                udc.Add(-40);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                events = listener.Events.ToArray();
+            }
+
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
+            AssertInitialEnumerationCompleteEventPresent(events);
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
+            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("", "10"), ("7", "17"));
+            AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
+            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", ("-33", "-33"), ("-40", "-73"));
+            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", ("", "-11"), ("-11", "-22"));
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
@@ -1077,52 +1086,6 @@ namespace System.Diagnostics.Metrics.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         //[OuterLoop("Slow and has lots of console spew")]
-        public void EventSourceRejectsNewListener()
-        {
-            using Meter meter = new Meter("TestMeter7");
-            Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
-            int counterState = 3;
-            ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
-            int gaugeState = 0;
-            ObservableGauge<int> og = meter.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!");
-            Histogram<int> h = meter.CreateHistogram<int>("histogram1", "a unit", "the description");
-            UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
-            int upDownCounterState = 0;
-            ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
-
-            EventWrittenEventArgs[] events;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter7"))
-            {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
-                c.Add(5);
-                h.Record(19);
-                udc.Add(33);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
-                c.Add(12);
-                h.Record(26);
-                udc.Add(40);
-
-                // some alternate listener attempts to listen in the middle
-                using MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "ADifferentMeter");
-                listener2.WaitForMultipleSessionsNotSupportedError(s_waitForEventTimeout);
-
-
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
-                events = listener.Events.ToArray();
-            }
-
-            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
-            AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"));
-            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, ("", "10"), ("7", "17"), ("7", "24"));
-            AssertGaugeEventsPresent(events, meter.Name, og.Name, "", og.Unit, "9", "18", "27");
-            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", h.Unit, ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
-            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", udc.Unit, ("33", "33"), ("40", "73"));
-            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", oudc.Unit, ("", "11"), ("11", "22"), ("11", "33"));
-            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        //[OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesEndEventsOnMeterDispose()
         {
             using Meter meterA = new Meter("TestMeter8");
@@ -1196,40 +1159,6 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertInstrumentPublishingEventsPresent(events, c, oc, og, h, udc, oudc);
             AssertInitialEnumerationCompleteEventPresent(events);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        //[OuterLoop("Slow and has lots of console spew")]
-        public void EventSourcePublishesInstrumentsMultiplexing()
-        {
-            using Meter meterA = new Meter("TestMeter10");
-            using Meter meterB = new Meter("TestMeter11");
-            Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!");
-            int counterState = 3;
-            ObservableCounter<int> oc = meterA.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
-            int gaugeState = 0;
-            ObservableGauge<int> og = meterA.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!");
-            Histogram<int> h = meterB.CreateHistogram<int>("histogram1", "a unit", "the description");
-            UpDownCounter<int> udc = meterA.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
-            int upDownCounterState = 0;
-            ObservableUpDownCounter<int> oudc = meterA.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
-
-            EventWrittenEventArgs[] events, events2;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.InstrumentPublishing, isShared: true, null, ""))
-            {
-                listener.WaitForEnumerationComplete(s_waitForEventTimeout);
-                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.InstrumentPublishing, isShared: true, null, ""))
-                {
-                    listener2.WaitForEnumerationComplete(s_waitForEventTimeout);
-                    events = listener.Events.ToArray();
-                    events2 = listener2.Events.ToArray();
-                }
-            }
-
-            AssertInstrumentPublishingEventsPresent(events, c, oc, og, h, udc, oudc, c, oc, og, h, udc, oudc);
-            AssertInitialEnumerationCompleteEventPresent(events, 2);
-            AssertInstrumentPublishingEventsPresent(events2, c, oc, og, h, udc, oudc);
-            AssertInitialEnumerationCompleteEventPresent(events2);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
@@ -1754,6 +1683,31 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.NotEmpty(errorEvents);
             Assert.Contains("Example user exception", errorEvents[0].ErrorText);
         }
+
+        private void AssertMultipleSessionsConfiguredIncorrectlyErrorEventsPresent(EventWrittenEventArgs[] events,
+            string expectedMaxHistograms, string actualMaxHistograms, string expectedMaxTimeSeries, string actualMaxTimeSeries,
+            string expectedRefreshInterval, string actualRefreshInterval)
+        {
+            var counterEvents = events.Where(e => e.EventName == "MultipleSessionsConfiguredIncorrectlyError").Select(e =>
+                new
+                {
+                    ExpectedMaxHistograms = e.Payload[1].ToString(),
+                    ActualMaxHistograms = e.Payload[2].ToString(),
+                    ExpectedMaxTimeSeries = e.Payload[3].ToString(),
+                    ActualMaxTimeSeries = e.Payload[4].ToString(),
+                    ExpectedRefreshInterval = e.Payload[5].ToString(),
+                    ActualRefreshInterval = e.Payload[6].ToString(),
+                }).ToArray();
+            var filteredEvents = counterEvents;
+            Assert.Single(filteredEvents);
+
+            Assert.Equal(expectedMaxHistograms, filteredEvents[0].ExpectedMaxHistograms);
+            Assert.Equal(expectedMaxTimeSeries, filteredEvents[0].ExpectedMaxTimeSeries);
+            Assert.Equal(expectedRefreshInterval, filteredEvents[0].ExpectedRefreshInterval);
+            Assert.Equal(actualMaxHistograms, filteredEvents[0].ActualMaxHistograms);
+            Assert.Equal(actualMaxTimeSeries, filteredEvents[0].ActualMaxTimeSeries);
+            Assert.Equal(actualRefreshInterval, filteredEvents[0].ActualRefreshInterval);
+        }
     }
 
     class MetricsEventListener : EventListener
@@ -1877,7 +1831,7 @@ namespace System.Diagnostics.Metrics.Tests
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
             string sessionId = eventData.Payload[0].ToString();
-            if ((eventData.EventName != "MultipleSessionsNotSupportedError" && eventData.EventName != "MultipleSessionsConfiguredIncorrectlyError") && sessionId != "" && sessionId != _sessionId)
+            if (eventData.EventName != "MultipleSessionsNotSupportedError" && eventData.EventName != "MultipleSessionsConfiguredIncorrectlyError" && sessionId != "" && sessionId != _sessionId)
             {
                 return;
             }
@@ -1909,7 +1863,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         public void WaitForMultipleSessionsNotSupportedError(TimeSpan timeout) => WaitForEvent(timeout, 1, "MultipleSessionsNotSupportedError");
 
-        public void WaitForMultipleSessionsConfiguredIncorrectlyError(TimeSpan timeout) => WaitForEvent(timeout, 1, "MultipleSessionsConfiguredIncorrectlyError");
+        public void WaitForMultipleSessionsConfiguredIncorrectlyError(TimeSpan timeout) => WaitForEvent(timeout, 1, "MultipleSessionsConfiguredIncorrectlyError"); // thought - do we want to verify the msg?
 
         void WaitForEvent(TimeSpan timeout, int numEvents, string eventName)
         {
