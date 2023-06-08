@@ -1454,7 +1454,6 @@ extends:
       #       timeoutInMinutes: 95
       #       condition: eq(variables['isRollingBuild'], true)
 
-
       #
       # Build the whole product using NativeAOT for iOS/tvOS and run runtime tests with iOS/tvOS devices
       #
@@ -1463,7 +1462,6 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           buildConfig: Release
-          runtimeFlavor: nativeaot
           # isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
           # isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
           platforms:
