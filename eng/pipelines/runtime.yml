@@ -1483,7 +1483,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_NativeAOT_RuntimeTests
-            buildArgs: clr+clr.aot+libs+packs -c $(_BuildConfig)
+            buildArgs: -s clr+clr.aot+libs+packs -c $(_BuildConfig)
             timeoutInMinutes: 240
             # extra steps, run tests
             extraVariablesTemplates:
