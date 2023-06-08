@@ -22,7 +22,7 @@ parameters:
   isOfficialBuild: false
   isSourceBuild: false
   isNonPortableSourceBuild: false
-  runtimeFlavor: ''
+  runtimeFlavor: 'coreclr'
   runtimeVariant: ''
   helixQueues: ''
   enablePublishTestResults: false
@@ -68,11 +68,13 @@ jobs:
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           - group: DotNet-HelixApi-Access
 
+      # Fixme: parameters.runtimeFlavor doesn't have expected value, should be fixed before merge
+      # - name: _osParameter
+      #   value: -os ${{ parameters.osGroup }}
+      # - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), in(parameters.osGroup, 'ios', 'tvos', 'maccatalyst')) }}:
       - name: _osParameter
-        value: -os ${{ parameters.osGroup }}
-      - ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
-        - name: _osParameter
-          value: -os osx
+        value: -os osx
+
 
       - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubGroup, '_bionic')) }}:
         - name: _osParameter
