@@ -69,7 +69,9 @@ namespace System
          */
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+#if MONO
         [DynamicDependency("Ctor(System.Char[])")]
+#endif
         public extern String(char[]? value);
 
         private static string Ctor(char[]? value)
@@ -88,7 +90,9 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+#if MONO
         [DynamicDependency("Ctor(System.Char[],System.Int32,System.Int32)")]
+#endif
         public extern String(char[] value, int startIndex, int length);
 
         private static string Ctor(char[] value, int startIndex, int length)
@@ -113,7 +117,9 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
+#if MONO
         [DynamicDependency("Ctor(System.Char*)")]
+#endif
         public extern unsafe String(char* value);
 
         private static unsafe string Ctor(char* ptr)
@@ -137,7 +143,9 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
+#if MONO
         [DynamicDependency("Ctor(System.Char*,System.Int32,System.Int32)")]
+#endif
         public extern unsafe String(char* value, int startIndex, int length);
 
         private static unsafe string Ctor(char* ptr, int startIndex, int length)
@@ -169,7 +177,9 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
+#if MONO
         [DynamicDependency("Ctor(System.SByte*)")]
+#endif
         public extern unsafe String(sbyte* value);
 
         private static unsafe string Ctor(sbyte* value)
@@ -185,7 +195,9 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
+#if MONO
         [DynamicDependency("Ctor(System.SByte*,System.Int32,System.Int32)")]
+#endif
         public extern unsafe String(sbyte* value, int startIndex, int length);
 
         private static unsafe string Ctor(sbyte* value, int startIndex, int length)
@@ -239,7 +251,9 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
+#if MONO
         [DynamicDependency("Ctor(System.SByte*,System.Int32,System.Int32,System.Text.Encoding)")]
+#endif
         public extern unsafe String(sbyte* value, int startIndex, int length, Encoding enc);
 
         private static unsafe string Ctor(sbyte* value, int startIndex, int length, Encoding? enc)
@@ -268,7 +282,9 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+#if MONO
         [DynamicDependency("Ctor(System.Char,System.Int32)")]
+#endif
         public extern String(char c, int count);
 
         private static string Ctor(char c, int count)
@@ -288,7 +304,9 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+#if MONO
         [DynamicDependency("Ctor(System.ReadOnlySpan{System.Char})")]
+#endif
         public extern String(ReadOnlySpan<char> value);
 
         private static unsafe string Ctor(ReadOnlySpan<char> value)
