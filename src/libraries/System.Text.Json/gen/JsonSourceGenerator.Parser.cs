@@ -549,7 +549,7 @@ namespace System.Text.Json.SourceGeneration
                     }
                     else if (!foundDesignTimeCustomConverter && _knownSymbols.JsonConverterAttributeType.IsAssignableFrom(attributeType))
                     {
-                        converterType = GetConverterTypeFromAttribute(contextType, attributeData);
+                        converterType = GetConverterTypeFromAttribute(contextType, type, attributeData);
                         foundDesignTimeCustomConverter = true;
                     }
 
@@ -1075,15 +1075,15 @@ namespace System.Text.Json.SourceGeneration
                     out bool isRequired,
                     out bool canUseGetter,
                     out bool canUseSetter,
-                    out bool isJsonIncludeInaccessible,
+                    out bool hasJsonIncludeButIsInaccessible,
                     out bool setterIsInitOnly);
 
-                if (isJsonIncludeInaccessible)
+                if (hasJsonIncludeButIsInaccessible)
                 {
                     ReportDiagnostic(DiagnosticDescriptors.InaccessibleJsonIncludePropertiesNotSupported, memberInfo.GetDiagnosticLocation(), new string[] { declaringType.Name, memberInfo.Name });
                 }
 
-                if ((!canUseGetter && !canUseSetter && !isJsonIncludeInaccessible) ||
+                if ((!canUseGetter && !canUseSetter && !hasJsonIncludeButIsInaccessible) ||
                     !IsSymbolAccessibleWithin(memberType, within: contextType))
                 {
                     // Skip the member if either of the two conditions hold
@@ -1160,7 +1160,7 @@ namespace System.Text.Json.SourceGeneration
 
                     if (converterType is null && _knownSymbols.JsonConverterAttributeType.IsAssignableFrom(attributeType))
                     {
-                        converterType = GetConverterTypeFromAttribute(contextType, attributeData);
+                        converterType = GetConverterTypeFromAttribute(contextType, memberInfo, attributeData);
                     }
                     else if (attributeType.ContainingAssembly.Name == SystemTextJsonNamespace)
                     {
@@ -1237,7 +1237,7 @@ namespace System.Text.Json.SourceGeneration
                 out bool isRequired,
                 out bool canUseGetter,
                 out bool canUseSetter,
-                out bool isJsonIncludeInaccessible,
+                out bool hasJsonIncludeButIsInaccessible,
                 out bool isSetterInitOnly)
             {
                 isPublic = false;
@@ -1245,7 +1245,7 @@ namespace System.Text.Json.SourceGeneration
                 isRequired = false;
                 canUseGetter = false;
                 canUseSetter = false;
-                isJsonIncludeInaccessible = false;
+                hasJsonIncludeButIsInaccessible = false;
                 isSetterInitOnly = false;
 
                 switch (memberInfo)
@@ -1271,7 +1271,7 @@ namespace System.Text.Json.SourceGeneration
                                 }
                                 else
                                 {
-                                    isJsonIncludeInaccessible = hasJsonInclude;
+                                    hasJsonIncludeButIsInaccessible = hasJsonInclude;
                                 }
                             }
 
@@ -1290,7 +1290,7 @@ namespace System.Text.Json.SourceGeneration
                                 }
                                 else
                                 {
-                                    isJsonIncludeInaccessible = hasJsonInclude;
+                                    hasJsonIncludeButIsInaccessible = hasJsonInclude;
                                 }
                             }
                             else
@@ -1314,7 +1314,7 @@ namespace System.Text.Json.SourceGeneration
                             else
                             {
                                 // Unlike properties JsonIncludeAttribute is not supported for internal fields.
-                                isJsonIncludeInaccessible = hasJsonInclude;
+                                hasJsonIncludeButIsInaccessible = hasJsonInclude;
                             }
                         }
                         break;
@@ -1324,7 +1324,7 @@ namespace System.Text.Json.SourceGeneration
                 }
             }
 
-            private TypeRef? GetConverterTypeFromAttribute(INamedTypeSymbol contextType, AttributeData attributeData)
+            private TypeRef? GetConverterTypeFromAttribute(INamedTypeSymbol contextType, ISymbol declaringSymbol, AttributeData attributeData)
             {
                 Debug.Assert(_knownSymbols.JsonConverterAttributeType.IsAssignableFrom(attributeData.AttributeClass));
                 var converterType = (INamedTypeSymbol?)attributeData.ConstructorArguments[0].Value;
@@ -1334,6 +1334,11 @@ namespace System.Text.Json.SourceGeneration
                     !converterType.Constructors.Any(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType)))
                 {
                     return null;
+                }
+
+                if (_knownSymbols.JsonStringEnumConverterType.IsAssignableFrom(converterType))
+                {
+                    ReportDiagnostic(DiagnosticDescriptors.JsonStringEnumConverterNotSupportedInAot, declaringSymbol.GetDiagnosticLocation(), declaringSymbol.ToDisplayString());
                 }
 
                 return new TypeRef(converterType);
