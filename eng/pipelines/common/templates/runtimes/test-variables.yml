@@ -73,11 +73,11 @@ variables:
       value: 120
 
   - name: runtimeFlavorArgs
-    value: ''
+    value: '-nativeaot'
 
-  - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-    - name: runtimeFlavorArgs
-      value: '-mono'
+  # - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+  #   - name: runtimeFlavorArgs
+  #     value: '-mono'
 
   - name: runtimeVariantArg
     value: ''
