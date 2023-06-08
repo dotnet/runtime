@@ -1481,7 +1481,6 @@ extends:
               value: 180
           jobParameters:
             testGroup: innerloop
-            isSourceBuild: true
             nameSuffix: AllSubsets_NativeAOT_RuntimeTests
             timeoutInMinutes: 240
             # extra steps, run tests
