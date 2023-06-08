@@ -44,6 +44,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                using System.Runtime.InteropServices.Marshalling;
 
                [GeneratedComInterface]
+               [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
                public interface I
                {
@@ -67,8 +68,37 @@ namespace ComInterfaceGenerator.Unit.Tests
                using System.Runtime.InteropServices.Marshalling;
 
                [GeneratedComInterface]
+               [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-               public interface I
+               public partial interface I
+               {
+               }
+
+               [ComVisible(true)]
+               public class [|C|] : I
+               {
+               }
+       
+               """;
+
+            await VerifyAnalyzerAsync(source, enableComHosting: true);
+        }
+
+        [Fact]
+        public async Task ComVisibleType_GeneratedComInterface_TransitiveInterface_EnabledHosting_ReportsDiagnostic()
+        {
+            string source = """
+               using System.Runtime.InteropServices;
+               using System.Runtime.InteropServices.Marshalling;
+
+               [GeneratedComInterface]
+               [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
+               [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+               public partial interface I
+               {
+               }
+
+               public interface J : I
                {
                }
 

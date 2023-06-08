@@ -19,6 +19,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                using System.Runtime.InteropServices.Marshalling;
 
                [GeneratedComInterface]
+               [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                public interface I
                {
                }
@@ -56,6 +57,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                using System.Runtime.InteropServices.Marshalling;
 
                [GeneratedComInterface]
+               [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                public interface I
                {
                }
@@ -93,6 +95,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                using System.Runtime.InteropServices.Marshalling;
                
                [GeneratedComInterface]
+               [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                public interface I
                {
                }
@@ -130,6 +133,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                using System.Runtime.InteropServices.Marshalling;
                
                [GeneratedComInterface]
+               [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                public interface I
                {
                }
@@ -167,6 +171,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices.Marshalling;
                 
                 [GeneratedComInterface]
+                [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                 public interface I
                 {
                 }
@@ -210,11 +215,13 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices.Marshalling;
 
                 [GeneratedComInterface]
+                [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                 public interface I
                 {
                 }
 
                 [GeneratedComInterface]
+                [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                 public interface J
                 {
                 }
@@ -270,6 +277,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices.Marshalling;
 
                 [GeneratedComInterface]
+                [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                 public interface I
                 {
                 }
@@ -301,6 +309,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices.Marshalling;
       
                 [GeneratedComInterface]
+                [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                 public interface I
                 {
                 }
@@ -338,6 +347,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices.Marshalling;
       
                 [GeneratedComInterface]
+                [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                 public interface I
                 {
                 }
@@ -375,6 +385,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                using System.Runtime.InteropServices.Marshalling;
       
                [GeneratedComInterface]
+               [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                public interface I
                {
                }

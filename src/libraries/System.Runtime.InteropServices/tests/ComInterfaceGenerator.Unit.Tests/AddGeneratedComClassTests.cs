@@ -20,6 +20,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                using System.Runtime.InteropServices.Marshalling;
 
                [GeneratedComInterface]
+               [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                public partial interface I
                {
                }
@@ -34,6 +35,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices.Marshalling;
                 
                 [GeneratedComInterface]
+                [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                 public partial interface I
                 {
                 }
@@ -73,6 +75,51 @@ namespace ComInterfaceGenerator.Unit.Tests
                 """;
 
             await VerifyCS.VerifyCodeFixAsync(source, source);
+        }
+
+        [Fact]
+        public async Task TypeThatImplementsGeneratedComInterfaceTypeTranstively_ReportsDiagnostic()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
+                public partial interface I
+                {
+                }
+
+                public interface J : I
+                {
+                }
+
+                class [|C|] : J
+                {
+                }
+                """;
+
+            string fixedSource = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+    
+                [GeneratedComInterface]
+                [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
+                public partial interface I
+                {
+                }
+                
+                public interface J : I
+                {
+                }
+
+                [GeneratedComClass]
+                partial class C : J
+                {
+                }
+                """;
+
+            await VerifyCS.VerifyCodeFixAsync(source, fixedSource);
         }
     }
 }

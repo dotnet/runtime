@@ -38,6 +38,12 @@ namespace Microsoft.Interop.Analyzers
                         return;
                     }
 
+                    // Only direct people to put the GeneratedComClassAttribute on classes.
+                    if (type.TypeKind != TypeKind.Class)
+                    {
+                        return;
+                    }
+
                     foreach (var iface in type.AllInterfaces)
                     {
                         if (iface.GetAttributes().Any(attr => generatedComInterfaceAttributeType.Equals(attr.AttributeClass, SymbolEqualityComparer.Default)))
