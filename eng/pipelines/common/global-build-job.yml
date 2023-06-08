@@ -22,7 +22,7 @@ parameters:
   isOfficialBuild: false
   isSourceBuild: false
   isNonPortableSourceBuild: false
-  runtimeFlavor: 'coreclr'
+  runtimeFlavor: ''
   runtimeVariant: ''
   helixQueues: ''
   enablePublishTestResults: false
@@ -68,12 +68,11 @@ jobs:
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           - group: DotNet-HelixApi-Access
 
-      - ${{ if eq(runtimeFlavor, 'coreclr') }}:
+      - name: _osParameter
+        value: -os ${{ parameters.osGroup }}
+      - ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
         - name: _osParameter
           value: -os osx
-      - ${{ else }}:
-        - name: _osParameter
-          value: -os ${{ parameters.osGroup }}
 
       - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubGroup, '_bionic')) }}:
         - name: _osParameter
