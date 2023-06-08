@@ -6580,7 +6580,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						MonoClass *field_class = mono_class_from_mono_type_internal (ftype);
 						interp_emit_metadata_update_ldflda (td, field, error);
 						goto_if_nok (error, exit);
-						interp_add_ins (td, interp_get_ldind_for_mt (mt));
+						if (mt == MINT_TYPE_VT) {
+							interp_emit_ldobj (td, field_class);
+						} else {
+							interp_add_ins (td, interp_get_ldind_for_mt (mt));
+						}
 						interp_ins_set_sreg (td->last_ins, td->sp [-1].local);
 						td->sp--;
 						push_type (td, stack_type [mt], field_class);
