@@ -185,26 +185,20 @@ namespace System.Tests
         [InlineData(false, "False")]
         public static void TryFormat(bool i, string expected)
         {
-            char[] actual;
-            int charsWritten;
-
-            // Just right
-            actual = new char[expected.Length];
-            Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal(expected, new string(actual));
-
-            // Longer than needed
-            actual = new char[expected.Length + 1];
-            Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal(expected, new string(actual, 0, charsWritten));
+            // Just right and longer than needed
+            for (int additional = 0; additional < 2; additional++)
+            {
+                var actual = new char[expected.Length + additional];
+                Assert.True(i.TryFormat(actual.AsSpan(), out int charsWritten));
+                Assert.Equal(expected.Length, charsWritten);
+                Assert.Equal(expected, new string(actual.AsSpan(0, charsWritten)));
+            }
 
             // Too short
             if (expected.Length > 0)
             {
-                actual = new char[expected.Length - 1];
-                Assert.False(i.TryFormat(actual.AsSpan(), out charsWritten));
+                var actual = new char[expected.Length - 1];
+                Assert.False(i.TryFormat(actual.AsSpan(), out int charsWritten));
                 Assert.Equal(0, charsWritten);
             }
         }

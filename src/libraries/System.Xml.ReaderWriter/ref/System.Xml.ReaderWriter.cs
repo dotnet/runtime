@@ -471,6 +471,8 @@ namespace System.Xml
     public partial class XmlException : System.SystemException
     {
         public XmlException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected XmlException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public XmlException(string? message) { }
         public XmlException(string? message, System.Exception? innerException) { }
@@ -479,6 +481,8 @@ namespace System.Xml
         public int LinePosition { get { throw null; } }
         public override string Message { get { throw null; } }
         public string? SourceUri { get { throw null; } }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class XmlImplementation
@@ -535,7 +539,6 @@ namespace System.Xml
         public abstract string? Get(char[] array, int offset, int length);
         public abstract string? Get(string array);
     }
-    [System.Diagnostics.DebuggerDisplayAttribute("{debuggerDisplayProxy}")]
     public abstract partial class XmlNode : System.Collections.IEnumerable, System.ICloneable, System.Xml.XPath.IXPathNavigable
     {
         internal XmlNode() { }
@@ -769,8 +772,6 @@ namespace System.Xml
         public override string ToString() { throw null; }
         public static string ToString(string name, string? ns) { throw null; }
     }
-    [System.Diagnostics.DebuggerDisplayAttribute("{debuggerDisplayProxy}")]
-    [System.Diagnostics.DebuggerDisplayAttribute("{debuggerDisplayProxy}")]
     public abstract partial class XmlReader : System.IDisposable
     {
         protected XmlReader() { }
@@ -1869,6 +1870,8 @@ namespace System.Xml.Schema
     public partial class XmlSchemaException : System.SystemException
     {
         public XmlSchemaException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected XmlSchemaException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public XmlSchemaException(string? message) { }
         public XmlSchemaException(string? message, System.Exception? innerException) { }
@@ -1878,6 +1881,8 @@ namespace System.Xml.Schema
         public override string Message { get { throw null; } }
         public System.Xml.Schema.XmlSchemaObject? SourceSchemaObject { get { throw null; } }
         public string? SourceUri { get { throw null; } }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public abstract partial class XmlSchemaExternal : System.Xml.Schema.XmlSchemaObject
@@ -1982,10 +1987,14 @@ namespace System.Xml.Schema
     public partial class XmlSchemaInferenceException : System.Xml.Schema.XmlSchemaException
     {
         public XmlSchemaInferenceException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected XmlSchemaInferenceException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public XmlSchemaInferenceException(string message) { }
         public XmlSchemaInferenceException(string message, System.Exception? innerException) { }
         public XmlSchemaInferenceException(string message, System.Exception? innerException, int lineNumber, int linePosition) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class XmlSchemaInfo : System.Xml.Schema.IXmlSchemaInfo
@@ -2322,11 +2331,15 @@ namespace System.Xml.Schema
     public partial class XmlSchemaValidationException : System.Xml.Schema.XmlSchemaException
     {
         public XmlSchemaValidationException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected XmlSchemaValidationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public XmlSchemaValidationException(string? message) { }
         public XmlSchemaValidationException(string? message, System.Exception? innerException) { }
         public XmlSchemaValidationException(string? message, System.Exception? innerException, int lineNumber, int linePosition) { }
         public object? SourceObject { get { throw null; } }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         protected internal void SetSourceObject(object? sourceObject) { }
     }
@@ -2739,7 +2752,6 @@ namespace System.Xml.XPath
         public override object ValueAs(System.Type returnType, System.Xml.IXmlNamespaceResolver? nsResolver) { throw null; }
         public virtual void WriteSubtree(System.Xml.XmlWriter writer) { }
     }
-    [System.Diagnostics.DebuggerDisplayAttribute("Position={CurrentPosition}, Current={debuggerDisplayProxy}")]
     public abstract partial class XPathNodeIterator : System.Collections.IEnumerable, System.ICloneable
     {
         protected XPathNodeIterator() { }
@@ -2792,6 +2804,7 @@ namespace System.Xml.Xsl
         System.Xml.XPath.XPathResultType VariableType { get; }
         object Evaluate(System.Xml.Xsl.XsltContext xsltContext);
     }
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XslCompiledTransform requires dynamic code because it generates IL at runtime.")]
     public sealed partial class XslCompiledTransform
     {
         public XslCompiledTransform() { }
@@ -2841,9 +2854,13 @@ namespace System.Xml.Xsl
     {
         public XsltCompileException() { }
         public XsltCompileException(System.Exception inner, string sourceUri, int lineNumber, int linePosition) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected XsltCompileException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public XsltCompileException(string message) { }
         public XsltCompileException(string message, System.Exception innerException) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public abstract partial class XsltContext : System.Xml.XmlNamespaceManager
@@ -2859,6 +2876,8 @@ namespace System.Xml.Xsl
     public partial class XsltException : System.SystemException
     {
         public XsltException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected XsltException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public XsltException(string message) { }
         public XsltException(string message, System.Exception? innerException) { }
@@ -2866,6 +2885,8 @@ namespace System.Xml.Xsl
         public virtual int LinePosition { get { throw null; } }
         public override string Message { get { throw null; } }
         public virtual string? SourceUri { get { throw null; } }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public abstract partial class XsltMessageEncounteredEventArgs : System.EventArgs

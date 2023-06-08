@@ -37,6 +37,7 @@ namespace System.Reflection
 
         // Implementation attributes.
         Import = 0x00001000,     // Class / interface is imported
+        [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         Serializable = 0x00002000,     // The class is Serializable.
         WindowsRuntime = 0x00004000,     // Type is a Windows Runtime type.
 

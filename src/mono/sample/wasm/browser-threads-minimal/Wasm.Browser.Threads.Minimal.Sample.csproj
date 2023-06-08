@@ -6,6 +6,8 @@
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="main.js" />
+    <WasmExtraFilesToDeploy Include="fetchhelper.js" />
+    <WasmExtraFilesToDeploy Include="blurst.txt" />
   </ItemGroup>
 
   <!-- set the condition to false and you will get a CA1416 error about the call to Thread.Start from a browser-wasm project -->

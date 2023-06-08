@@ -1,0 +1,33 @@
+<Project>
+  <!-- iOS/tvOS device + arm64 simulators need to AOT -->
+  <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or (('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') And '$(TargetArchitecture)' == 'arm64')">
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
+    <iOSLikeDedup Condition="'$(iOSLikeDedup)' == ''">true</iOSLikeDedup>
+  </PropertyGroup>
+
+  <!-- iOS/tvOS arm64 simulators do not support JIT, so force interpreter fallback, devices should FullAOT -->
+  <PropertyGroup Condition="('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') And '$(TargetArchitecture)' == 'arm64'">
+    <MonoForceInterpreter Condition="'$(MonoForceInterpreter)' == ''">true</MonoForceInterpreter>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())</RuntimeIdentifier>
+    <UseMonoRuntime>true</UseMonoRuntime>
+    <UseMonoJustInterp Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
+
+    <!--<ShouldILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip>-->
+
+    <_IsLibraryMode Condition="'$(NativeLib)' != ''">true</_IsLibraryMode>
+
+    <AppleBuildAfterThisTarget Condition="'$(AppleBuildAfterThisTarget)' == ''">Publish</AppleBuildAfterThisTarget>
+    <AppleBuildDependsOn>
+        _InitializeCommonProperties;
+        _BeforeAppleBuild;
+        _AppleResolveReferences;
+        _AppleAotCompile;
+        _BuildNativeLibrary;
+        _AppleGenerateAppBundle;
+        _AfterAppleBuild
+    </AppleBuildDependsOn>
+  </PropertyGroup>
+</Project>

@@ -316,7 +316,7 @@ namespace System.Reflection.Emit
                 Type enclosingType = nestings[i];
                 string name = enclosingType.Name;
 
-                if (i == nestings.Count - 1 && enclosingType.Namespace != null && enclosingType.Namespace.Length != 0)
+                if (i == nestings.Count - 1 && !string.IsNullOrEmpty(enclosingType.Namespace))
                     name = enclosingType.Namespace + "." + name;
 
                 AddName(name);

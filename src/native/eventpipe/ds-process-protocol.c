@@ -79,6 +79,18 @@ process_protocol_helper_set_environment_variable (
 
 static
 bool
+process_protocol_helper_enable_perfmap (
+	DiagnosticsIpcMessage *message,
+	DiagnosticsIpcStream *stream);
+
+static
+bool
+process_protocol_helper_disable_perfmap (
+	DiagnosticsIpcMessage *message,
+	DiagnosticsIpcStream *stream);
+
+static
+bool
 process_protocol_helper_unknown_command (
 	DiagnosticsIpcMessage *message,
 	DiagnosticsIpcStream *stream);
@@ -745,6 +757,121 @@ ep_on_error:
 	ep_exit_error_handler ();
 }
 
+DiagnosticsEnablePerfmapPayload *
+ds_enable_perfmap_payload_alloc (void)
+{
+	return ep_rt_object_alloc (DiagnosticsEnablePerfmapPayload);
+}
+
+void
+ds_enable_perfmap_payload_free (DiagnosticsEnablePerfmapPayload *payload)
+{
+	ep_return_void_if_nok (payload != NULL);
+	ep_rt_byte_array_free (payload->incoming_buffer);
+	ep_rt_object_free (payload);
+}
+
+static
+uint8_t *
+enable_perfmap_command_try_parse_payload (
+	uint8_t *buffer,
+	uint16_t buffer_len)
+{
+	EP_ASSERT (buffer != NULL);
+
+	uint8_t * buffer_cursor = buffer;
+	uint32_t buffer_cursor_len = buffer_len;
+
+	DiagnosticsEnablePerfmapPayload *instance = ds_enable_perfmap_payload_alloc ();
+	ep_raise_error_if_nok (instance != NULL);
+
+	instance->incoming_buffer = buffer;
+
+	if (!ds_ipc_message_try_parse_uint32_t (&buffer_cursor, &buffer_cursor_len, &instance->perfMapType))
+		ep_raise_error ();
+
+ep_on_exit:
+	return (uint8_t *)instance;
+
+ep_on_error:
+	ds_enable_perfmap_payload_free (instance);
+	instance = NULL;
+	ep_exit_error_handler ();
+}
+
+static
+bool
+process_protocol_helper_enable_perfmap (
+	DiagnosticsIpcMessage *message,
+	DiagnosticsIpcStream *stream)
+{
+	EP_ASSERT (message != NULL);
+	EP_ASSERT (stream != NULL);
+
+	if (!stream)
+		return false;
+
+	bool result = false;
+	DiagnosticsEnablePerfmapPayload *payload = (DiagnosticsEnablePerfmapPayload *)ds_ipc_message_try_parse_payload (message, enable_perfmap_command_try_parse_payload);
+	if (!payload) {
+		ds_ipc_message_send_error (stream, DS_IPC_E_BAD_ENCODING);
+		ep_raise_error ();
+	}
+
+	ds_ipc_result_t ipc_result;
+	ipc_result = ds_rt_enable_perfmap (payload->perfMapType);
+	if (ipc_result != DS_IPC_S_OK) {
+		ds_ipc_message_send_error (stream, ipc_result);
+		ep_raise_error ();
+	} else {
+		ds_ipc_message_send_success (stream, ipc_result);
+	}
+
+	result = true;
+
+ep_on_exit:
+	ds_enable_perfmap_payload_free (payload);
+	ds_ipc_stream_free (stream);
+	return result;
+
+ep_on_error:
+	EP_ASSERT (!result);
+	ep_exit_error_handler ();
+}
+
+static
+bool
+process_protocol_helper_disable_perfmap (
+	DiagnosticsIpcMessage *message,
+	DiagnosticsIpcStream *stream)
+{
+	EP_ASSERT (message != NULL);
+	EP_ASSERT (stream != NULL);
+
+	if (!stream)
+		return false;
+
+	bool result = false;
+	ds_ipc_result_t ipc_result;
+	ipc_result = ds_rt_disable_perfmap ();
+	if (ipc_result != DS_IPC_S_OK) {
+		ds_ipc_message_send_error (stream, ipc_result);
+		ep_raise_error ();
+	} else {
+		ds_ipc_message_send_success (stream, ipc_result);
+	}
+
+	result = true;
+
+ep_on_exit:
+	ds_ipc_stream_free (stream);
+	return result;
+
+ep_on_error:
+	EP_ASSERT (!result);
+	ep_exit_error_handler ();
+}
+
 static
 bool
 process_protocol_helper_unknown_command (
@@ -782,6 +909,12 @@ ds_process_protocol_helper_handle_ipc_message (
 		break;
 	case DS_PROCESS_COMMANDID_GET_PROCESS_INFO_2:
 		result = process_protocol_helper_get_process_info_2 (message, stream);
+		break;
+	case DS_PROCESS_COMMANDID_ENABLE_PERFMAP:
+		result = process_protocol_helper_enable_perfmap (message, stream);
+		break;
+	case DS_PROCESS_COMMANDID_DISABLE_PERFMAP:
+		result = process_protocol_helper_disable_perfmap (message, stream);
 		break;
 	default:
 		result = process_protocol_helper_unknown_command (message, stream);

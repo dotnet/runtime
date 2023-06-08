@@ -3,10 +3,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Program
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Test();
 
@@ -14,12 +16,12 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test()
+    internal static void Test()
     {
         M1(0);
     }
 
-    public static void M1(byte arg0)
+    internal static void M1(byte arg0)
     {
         long var6 = default(long);
         arg0 = (byte)(~(ulong)var6 % 3545460779U);

@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.Specialized;
+using System.IO;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
@@ -518,6 +519,40 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        [Fact]
+        public void NullKeyReturnedFromDictionary_ThrowsArgumentNullException()
+        {
+            // Via JsonSerializer.Serialize
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(new NullKeyDictionary<object>()));
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(new NullKeyDictionary<string>()));
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(new NullKeyDictionary<Uri>()));
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(new NullKeyDictionary<Version>()));
+
+            // Via converter directly
+            var writer = new Utf8JsonWriter(Stream.Null);
+            Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.ObjectConverter.WriteAsPropertyName(writer, null, JsonSerializerOptions.Default));
+            Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.StringConverter.WriteAsPropertyName(writer, null, JsonSerializerOptions.Default));
+            Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.UriConverter.WriteAsPropertyName(writer, null, JsonSerializerOptions.Default));
+            Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.VersionConverter.WriteAsPropertyName(writer, null, JsonSerializerOptions.Default));
+        }
+
+        private sealed class NullKeyDictionary<TKey> : IReadOnlyDictionary<TKey, int> where TKey : class?
+        {
+            public int Count => 1;
+
+            public IEnumerator<KeyValuePair<TKey, int>> GetEnumerator()
+            {
+                yield return new KeyValuePair<TKey, int>(null!, 0);
+            }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            public IEnumerable<TKey> Keys => throw new NotImplementedException();
+            public IEnumerable<int> Values => throw new NotImplementedException();
+            public int this[TKey key] => throw new NotImplementedException();
+            public bool ContainsKey(TKey key) => throw new NotImplementedException();
+            public bool TryGetValue(TKey key, out int value) => throw new NotImplementedException();
+        }
+
         private class ComplexKeyConverter : JsonConverter<ClassWithIDictionary>
         {
             public override ClassWithIDictionary? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -527,4 +562,4 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 #endif
-        }
+}

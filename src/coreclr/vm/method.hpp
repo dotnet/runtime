@@ -3205,10 +3205,10 @@ public:
 // come in four flavours, discriminated by the
 // low order bits of the first field:
 //
-//  00 --> GenericMethodDefinition
-//  01 --> UnsharedMethodInstantiation
-//  10 --> SharedMethodInstantiation
-//  11 --> WrapperStubWithInstantiations - and unboxing or instantiating stub
+//  001 --> GenericMethodDefinition
+//  010 --> UnsharedMethodInstantiation
+//  011 --> SharedMethodInstantiation
+//  100 --> WrapperStubWithInstantiations - and unboxing or instantiating stub
 //
 // A SharedMethodInstantiation descriptor extends MethodDesc
 // with a pointer to dictionary layout and a representative instantiation.
@@ -3358,15 +3358,6 @@ public:
     void SetupWrapperStubWithInstantiations(MethodDesc* wrappedMD,DWORD numGenericArgs, TypeHandle *pGenericMethodInst);
 
 private:
-    enum
-    {
-        KindMask                            = 0x07,
-        GenericMethodDefinition             = 0x00,
-        UnsharedMethodInstantiation         = 0x01,
-        SharedMethodInstantiation           = 0x02,
-        WrapperStubWithInstantiations       = 0x03,
-    };
-
     friend class MethodDesc; // this fields are currently accessed by MethodDesc::Save/Restore etc.
     union {
         PTR_DictionaryLayout m_pDictLayout; //SharedMethodInstantiation
@@ -3387,6 +3378,14 @@ public: // <TODO>make private: JITinterface.cpp accesses through this </TODO>
     PTR_Dictionary m_pPerInstInfo;  //SHARED
 
 private:
+    enum
+    {
+        KindMask                        = 0x07,
+        GenericMethodDefinition         = 0x01,
+        UnsharedMethodInstantiation     = 0x02,
+        SharedMethodInstantiation       = 0x03,
+        WrapperStubWithInstantiations   = 0x04,
+    };
     WORD          m_wFlags2;
     WORD          m_wNumGenericArgs;
 

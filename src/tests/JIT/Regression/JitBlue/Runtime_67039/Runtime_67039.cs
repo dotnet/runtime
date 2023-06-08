@@ -3,10 +3,12 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 public class Runtime_67039
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Vector128<float> left = Vector128.Create(1.0f, 2, 3, 4);
         Vector128<float> right = Vector128.Create(4.0f, 3, 2, 1);

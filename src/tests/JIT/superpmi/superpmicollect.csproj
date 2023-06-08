@@ -25,13 +25,8 @@
   <ItemGroup>
     <_SpmiTestProjects Include="..\Performance\CodeQuality\Bytemark\Bytemark.csproj" />
     <_SpmiTestProjects Include="..\Performance\CodeQuality\Roslyn\CscBench.csproj" />
-    <!-- The reference to 10w5d_cs_do.csproj is commented out due to https://github.com/dotnet/runtime/issues/76421: 
-        merged tests (those built with BuildAsStandalone=false) don't get .cmd/.sh files, which are needed to
-        run the test by the superpmicollect driver.
-    -->
-    <!--
     <_SpmiTestProjects Include="..\Methodical\fp\exgen\10w5d_cs_do.csproj" />
-    -->
+
     <ProjectReference Include="@(_SpmiTestProjects)">
       <Targets>Build</Targets>
       <OutputItemType>_SpmiTest</OutputItemType>

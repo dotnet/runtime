@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 [StructLayoutAttribute(LayoutKind.Sequential, Pack = 8)]
 internal sealed class tagDBPROPSET
@@ -25,7 +26,8 @@ internal sealed class tagDBPROPSET
 
 public class a
 {
-    static public int Main()
+    [Fact]
+    static public int TestEntryPoint()
     {
         try
         {

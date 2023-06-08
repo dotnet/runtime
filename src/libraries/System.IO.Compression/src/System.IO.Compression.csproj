@@ -39,6 +39,8 @@
     <Compile Include="System\IO\Compression\GZipStream.cs" />
     <Compile Include="System\IO\Compression\PositionPreservingWriteOnlyStreamWrapper.cs" />
     <Compile Include="System\IO\Compression\ZLibStream.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">

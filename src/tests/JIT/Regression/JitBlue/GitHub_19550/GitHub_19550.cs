@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Threading;
+using Xunit;
 
 // Test folding of addressing expressions
 
@@ -119,7 +120,8 @@ public class Program
         return returnVal;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         S s = new S();
         Vector128<float> v = Vector128.Create(1.0F);

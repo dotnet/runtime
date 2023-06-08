@@ -321,6 +321,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal("b", list[1]);
             Assert.Equal(0, list.IndexOf("a"));
             Assert.Equal(1, list.IndexOf("b"));
+            Assert.Equal(-1, list.IndexOf(null));
             Assert.Throws<NotSupportedException>(() => list.Add("b"));
             Assert.Throws<NotSupportedException>(() => list[3] = "c");
             Assert.Throws<NotSupportedException>(() => list.Clear());
@@ -329,6 +330,10 @@ namespace System.Collections.Immutable.Tests
             Assert.Throws<NotSupportedException>(() => list.RemoveAt(0));
             Assert.True(list.IsFixedSize);
             Assert.True(list.IsReadOnly);
+
+            list = ImmutableSortedSet.Create(1, 2, 3);
+            Assert.Equal(-1, list.IndexOf(null));
+            Assert.Equal(-1, list.IndexOf("a"));
         }
 
         [Fact]

@@ -2012,6 +2012,7 @@ private:
         DWORD NumInstanceFieldBytes;
         DWORD NumInlineArrayElements;
 
+        bool  fIsAllGCPointers;
         bool  fIsByRefLikeType;
         bool  fHasFixedAddressValueTypes;
         bool  fHasSelfReferencingStaticValueTypeField_WithRVA;
@@ -2924,7 +2925,7 @@ private:
 
 #ifdef UNIX_AMD64_ABI
     // checks whether the struct is enregisterable.
-    void SystemVAmd64CheckForPassStructInRegister();
+    void SystemVAmd64CheckForPassStructInRegister(MethodTable** pByValueClassCache);
     // Store the eightbyte classification into the EEClass
     void StoreEightByteClassification(SystemVStructRegisterPassingHelper* helper);
 

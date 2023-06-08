@@ -93,6 +93,12 @@ public class LibraryBuilderTask : AppBuilderTask
     [Output]
     public string OutputPath { get; set; } = ""!;
 
+    /// <summary>
+    /// The set of exported symbols identified by the aot compiler.
+    /// </summary>
+    [Output]
+    public string[] ExportedSymbols { get; set; } = Array.Empty<string>();
+
     private string MobileSymbolFileName
     {
         get => Path.Combine(OutputDirectory, "mobile_symbols.txt");
@@ -152,7 +158,6 @@ public class LibraryBuilderTask : AppBuilderTask
     private void GatherAotSourcesObjects(StringBuilder aotSources, StringBuilder aotObjects, StringBuilder extraSources, StringBuilder linkerArgs)
     {
         List<string> exportedSymbols = new List<string>();
-        bool hasExports = false;
 
         foreach (CompiledAssembly compiledAssembly in CompiledAssemblies)
         {
@@ -173,8 +178,6 @@ public class LibraryBuilderTask : AppBuilderTask
 
             if (!string.IsNullOrEmpty(compiledAssembly.ExportsFile))
             {
-                hasExports = true;
-
                 int symbolsAdded = GatherExportedSymbols(compiledAssembly.ExportsFile, exportedSymbols);
 
                 if (symbolsAdded > 0)
@@ -183,32 +186,38 @@ public class LibraryBuilderTask : AppBuilderTask
                 }
             }
         }
-        if (IsSharedLibrary && exportedAssemblies.Count == 0)
+
+        if (exportedAssemblies.Count == 0)
         {
-            throw new LogAsErrorException($"None of the compiled assemblies contain exported symbols. Resulting shared library would be unusable.");
+            throw new LogAsErrorException($"None of the compiled assemblies contain exported symbols. The library must export only symbols resulting from [UnmanageCallersOnly(Entrypoint = )]Resulting shared library would be unusable.");
         }
 
-        // for android, all symbols to keep go in one linker script
-        //
-        // for ios, multiple files can be specified
-        if (hasExports && TargetOS == "android")
+        if (IsSharedLibrary)
         {
-            WriteLinkerScriptFile(MobileSymbolFileName, exportedSymbols);
-            WriteLinkerScriptArg(MobileSymbolFileName, linkerArgs);
-        }
-        else if (hasExports && exportedSymbols.Count > 0)
-        {
-            File.WriteAllText(
-                MobileSymbolFileName,
-                string.Join("\n", exportedSymbols.Select(symbol => symbol))
-            );
-            WriteExportedSymbolsArg(MobileSymbolFileName, linkerArgs);
+            // for android, all symbols to keep go in one linker script
+            //
+            // for ios, multiple files can be specified
+            if (TargetOS == "android")
+            {
+                WriteLinkerScriptFile(MobileSymbolFileName, exportedSymbols);
+                WriteLinkerScriptArg(MobileSymbolFileName, linkerArgs);
+            }
+            else
+            {
+                File.WriteAllText(
+                    MobileSymbolFileName,
+                    string.Join("\n", exportedSymbols.Select(symbol => symbol))
+                );
+                WriteExportedSymbolsArg(MobileSymbolFileName, linkerArgs);
+            }
         }
 
         foreach (ITaskItem item in ExtraSources)
         {
             extraSources.AppendLine($"    {item.ItemSpec}");
         }
+
+        ExportedSymbols = exportedSymbols.ToArray();
     }
 
     private void GatherLinkerArgs(StringBuilder linkerArgs)

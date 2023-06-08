@@ -153,4 +153,4 @@ if(CLR_CMAKE_HOST_UNIX)
 endif()
 
 target_link_libraries(mscordbi PRIVATE ${COREDBI_LIBRARIES} monoapi)
-install(TARGETS mscordbi DESTINATION lib)
+install_with_stripped_symbols(mscordbi TARGETS lib)

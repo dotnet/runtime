@@ -4,5 +4,5 @@ parameters:
 
 steps:
   # Execute tests
-  - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) -s libs.tests -c $(_BuildConfig) /p:TestAssemblies=false /p:TestTrimming=true $(_officialBuildParameter) $(_crossBuildPropertyArg) /bl:$(Build.SourcesDirectory)/artifacts/log/$(buildConfigUpper)/TrimmingTests.binlog ${{ parameters.extraTestArgs }}
+  - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) -s libs.tests -c $(_BuildConfig) $(crossArg) /p:TestAssemblies=false /p:TestTrimming=true $(_officialBuildParameter) /bl:$(Build.SourcesDirectory)/artifacts/log/$(buildConfigUpper)/TrimmingTests.binlog ${{ parameters.extraTestArgs }}
     displayName: Run Trimming Tests

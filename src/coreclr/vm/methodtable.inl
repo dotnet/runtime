@@ -1158,6 +1158,32 @@ inline PTR_BYTE MethodTable::GetNonGCThreadStaticsBasePointer()
 }
 
 //==========================================================================================
+inline PTR_BYTE MethodTable::GetGCThreadStaticsBaseHandle()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    // Get the current thread
+    PTR_Thread pThread = dac_cast<PTR_Thread>(GetThread());
+
+    // Get the current module's ModuleIndex
+    ModuleIndex index = GetModuleForStatics()->GetModuleIndex();
+
+    PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLB(pThread);
+
+    PTR_ThreadLocalModule pTLM = pTLB->GetTLMIfExists(index);
+    if (pTLM == NULL)
+        return NULL;
+
+    return dac_cast<PTR_BYTE>(pTLM->GetPrecomputedGCStaticsBaseHandle());
+}
+
+//==========================================================================================
 inline PTR_BYTE MethodTable::GetGCThreadStaticsBasePointer()
 {
     CONTRACTL

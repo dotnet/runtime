@@ -61,6 +61,10 @@ namespace System.Media
             _stream = stream;
         }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected SoundPlayer(SerializationInfo serializationInfo, StreamingContext context)
         {
             throw new PlatformNotSupportedException();

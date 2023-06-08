@@ -45,8 +45,7 @@ namespace System.Xml
                     if (list != null)
                         return list[index];
 
-                    if (index != 0)
-                        throw new ArgumentOutOfRangeException(nameof(index));
+                    ArgumentOutOfRangeException.ThrowIfNotEqual(index, 0);
 
                     return _field;
                 }
@@ -97,8 +96,7 @@ namespace System.Xml
                     return;
                 }
 
-                if (index != 0)
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                ArgumentOutOfRangeException.ThrowIfNotEqual(index, 0);
 
                 _field = null;
             }
@@ -107,8 +105,7 @@ namespace System.Xml
             {
                 if (_field == null)
                 {
-                    if (index != 0)
-                        throw new ArgumentOutOfRangeException(nameof(index));
+                    ArgumentOutOfRangeException.ThrowIfNotEqual(index, 0);
                     Add(value);
                     return;
                 }

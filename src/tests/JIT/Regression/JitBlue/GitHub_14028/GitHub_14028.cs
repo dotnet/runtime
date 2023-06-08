@@ -5,13 +5,15 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;
+using Xunit;
 
 public class GitHub_10215
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static bool Test(Vector<int> x, Vector<int> y) => x[0] == y[0];
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int returnVal = 100;
         Vector<int> X0 = new Vector<int>(0);

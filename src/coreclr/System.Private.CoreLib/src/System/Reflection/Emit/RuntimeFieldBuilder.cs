@@ -20,12 +20,8 @@ namespace System.Reflection.Emit
         internal RuntimeFieldBuilder(RuntimeTypeBuilder typeBuilder, string fieldName, Type type,
             Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
-            ArgumentException.ThrowIfNullOrEmpty(fieldName);
-
             if (fieldName[0] == '\0')
                 throw new ArgumentException(SR.Argument_IllegalName, nameof(fieldName));
-
-            ArgumentNullException.ThrowIfNull(type);
 
             if (type == typeof(void))
                 throw new ArgumentException(SR.Argument_BadFieldType);
@@ -154,7 +150,7 @@ namespace System.Reflection.Emit
             RuntimeTypeBuilder.SetConstantValue(m_typeBuilder.GetModuleBuilder(), m_fieldTok, m_fieldType, defaultValue);
         }
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             RuntimeModuleBuilder moduleBuilder = (RuntimeModuleBuilder)m_typeBuilder.Module;
 
@@ -162,13 +158,6 @@ namespace System.Reflection.Emit
 
             RuntimeTypeBuilder.DefineCustomAttribute(moduleBuilder,
                 m_fieldTok, moduleBuilder.GetMethodMetadataToken(con), binaryAttribute);
-        }
-
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            m_typeBuilder.ThrowIfCreated();
-
-            customBuilder.CreateCustomAttribute((RuntimeModuleBuilder)m_typeBuilder.Module, m_fieldTok);
         }
 
         #endregion

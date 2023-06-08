@@ -40,26 +40,6 @@ EXTERN_C void SinglecastDelegateInvokeStub();
 
 #define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
 
-//**********************************************************************
-// To be used with GetSpecificCpuInfo()
-
-#define CPU_X86_FAMILY(cpuType)     (((cpuType) & 0x0F00) >> 8)
-#define CPU_X86_MODEL(cpuType)      (((cpuType) & 0x00F0) >> 4)
-// Stepping is masked out by GetSpecificCpuInfo()
-// #define CPU_X86_STEPPING(cpuType)   (((cpuType) & 0x000F)     )
-
-#define CPU_X86_USE_CMOV(cpuFeat)   ((cpuFeat & 0x00008001) == 0x00008001)
-#define CPU_X86_USE_SSE2(cpuFeat)   ((cpuFeat & 0x04000000) == 0x04000000)
-
-// Values for CPU_X86_FAMILY(cpuType)
-#define CPU_X86_486                 4
-#define CPU_X86_PENTIUM             5
-#define CPU_X86_PENTIUM_PRO         6
-#define CPU_X86_PENTIUM_4           0xF
-
-// Values for CPU_X86_MODEL(cpuType) for CPU_X86_PENTIUM_PRO
-#define CPU_X86_MODEL_PENTIUM_PRO_BANIAS    9 // Pentium M (Mobile PPro with P4 feautres)
-
 #define COMMETHOD_PREPAD                        8   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)
 #ifdef FEATURE_COMINTEROP
 #define COMMETHOD_CALL_PRESTUB_SIZE             5   // x86: CALL(E8) xx xx xx xx

@@ -53,6 +53,12 @@ JMP_SMALL(jmp   , jmp   , b      )
 JMP_SMALL(eq    , ne    , beq    )  // EQ
 JMP_SMALL(ne    , eq    , bne    )  // NE
 
+#elif defined(TARGET_RISCV64)
+// TODO-RISCV64: adding other condition branches
+JMP_SMALL(jmp   , jmp   , j      )
+JMP_SMALL(eq    , ne    , beq    )  // EQ
+JMP_SMALL(ne    , eq    , bne    )  // NE
+
 #else
   #error Unsupported or unset target architecture
 #endif // target type

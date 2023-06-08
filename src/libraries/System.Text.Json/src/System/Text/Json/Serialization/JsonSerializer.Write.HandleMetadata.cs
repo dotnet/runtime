@@ -34,10 +34,10 @@ namespace System.Text.Json
 
             if (state.PolymorphicTypeDiscriminator is object discriminator)
             {
-                Debug.Assert(state.Parent.JsonPropertyInfo!.JsonTypeInfo.PolymorphicTypeResolver != null);
+                Debug.Assert(state.PolymorphicTypeResolver != null);
 
                 JsonEncodedText propertyName =
-                    state.Parent.JsonPropertyInfo.JsonTypeInfo.PolymorphicTypeResolver.CustomTypeDiscriminatorPropertyNameJsonEncoded is JsonEncodedText customPropertyName
+                    state.PolymorphicTypeResolver.CustomTypeDiscriminatorPropertyNameJsonEncoded is JsonEncodedText customPropertyName
                     ? customPropertyName
                     : s_metadataType;
 
@@ -88,7 +88,9 @@ namespace System.Text.Json
                 writer.WriteString(s_metadataRef, referenceId);
                 writer.WriteEndObject();
 
-                state.PolymorphicTypeDiscriminator = null; // clear out any polymorphism state.
+                // clear out any polymorphism state.
+                state.PolymorphicTypeDiscriminator = null;
+                state.PolymorphicTypeResolver = null;
             }
             else
             {

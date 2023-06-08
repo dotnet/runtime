@@ -12,7 +12,6 @@ using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = Tool.NativeAot)]
 	[ExpectedNoWarnings]
 	[SkipKeptItemsValidation]
 	class ConstructedTypesDataFlow

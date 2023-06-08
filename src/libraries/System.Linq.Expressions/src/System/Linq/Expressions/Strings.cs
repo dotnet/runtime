@@ -644,11 +644,6 @@ namespace System.Linq.Expressions
         internal static string ArgumentCannotBeOfTypeVoid => SR.ArgumentCannotBeOfTypeVoid;
 
         /// <summary>
-        /// A string like "{0} must be greater than or equal to {1}"
-        /// </summary>
-        internal static string OutOfRange(object? p0, object? p1) => SR.Format(SR.OutOfRange, p0, p1);
-
-        /// <summary>
         /// A string like "Cannot redefine label '{0}' in an inner block."
         /// </summary>
         internal static string LabelTargetAlreadyDefined(object? p0) => SR.Format(SR.LabelTargetAlreadyDefined, p0);

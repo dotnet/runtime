@@ -4,6 +4,7 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // GitHub 20211: bug with lowering SIMDIntrinsicGetItem on ARM64
 // when INS_mov (move w/o sign-extension) was used to copy signed value
@@ -235,7 +236,8 @@ namespace GitHub_20211
             }
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             if (new TestRunner().Run() == Result.Pass)
             {

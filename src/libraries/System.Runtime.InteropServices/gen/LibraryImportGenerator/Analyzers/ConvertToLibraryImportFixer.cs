@@ -30,6 +30,10 @@ namespace Microsoft.Interop.Analyzers
         public override FixAllProvider GetFixAllProvider() => CustomFixAllProvider.Instance;
 
         private const string ConvertToLibraryImportKey = "ConvertToLibraryImport,";
+        private static string AppendSuffix(string entryPoint, char? entryPointSuffix)
+            => entryPointSuffix.HasValue && entryPoint.LastOrDefault() == entryPointSuffix.Value
+                ? entryPoint
+                : entryPoint + entryPointSuffix;
         private static string AddSuffixKey(string baseKey, char suffix) => $"{baseKey}{suffix},";
         private static string AddUnsafeKey(string baseKey) => baseKey + "AddUnsafe,";
         private static string AddMayRequireAdditionalWorkKey(string baseKey) => baseKey + $"{ConvertToLibraryImportAnalyzer.MayRequireAdditionalWork},";
@@ -563,7 +567,7 @@ namespace Microsoft.Interop.Analyzers
 
             // Update attribute arguments for LibraryImport
             bool hasEntryPointAttributeArgument = false;
-            List<SyntaxNode> argumentsToAdd= new List<SyntaxNode>();
+            List<SyntaxNode> argumentsToAdd = new List<SyntaxNode>();
             List<SyntaxNode> argumentsToRemove = new List<SyntaxNode>();
             foreach (SyntaxNode argument in generator.GetAttributeArguments(libraryImportSyntax))
             {
@@ -647,17 +651,20 @@ namespace Microsoft.Interop.Analyzers
                                 argumentsToRemove.Add(attrArg);
                                 argumentsToAdd.Add(attrArg.WithExpression(
                                     SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression,
-                                        SyntaxFactory.Literal(entryPoint + entryPointSuffix))));
+                                        SyntaxFactory.Literal(AppendSuffix(entryPoint, entryPointSuffix)))));
                             }
                         }
                         else
                         {
-                            argumentsToRemove.Add(attrArg);
-                            argumentsToAdd.Add(attrArg.WithExpression(
-                                SyntaxFactory.BinaryExpression(SyntaxKind.AddExpression,
-                                    attrArg.Expression,
-                                    SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression,
-                                        SyntaxFactory.Literal(entryPointSuffix.ToString())))));
+                            if (dllImportData.EntryPointName!.LastOrDefault() != entryPointSuffix.Value)
+                            {
+                                argumentsToRemove.Add(attrArg);
+                                argumentsToAdd.Add(attrArg.WithExpression(
+                                    SyntaxFactory.BinaryExpression(SyntaxKind.AddExpression,
+                                        attrArg.Expression,
+                                        SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression,
+                                            SyntaxFactory.Literal(entryPointSuffix.ToString())))));
+                            }
                         }
                     }
                 }
@@ -671,7 +678,7 @@ namespace Microsoft.Interop.Analyzers
             if (entryPointSuffix.HasValue && !hasEntryPointAttributeArgument)
             {
                 argumentsToAdd.Add(generator.AttributeArgument("EntryPoint",
-                    generator.LiteralExpression(methodName + entryPointSuffix.Value)));
+                    generator.LiteralExpression(AppendSuffix(methodName, entryPointSuffix.Value))));
             }
 
             libraryImportSyntax = generator.RemoveNodes(libraryImportSyntax, argumentsToRemove);

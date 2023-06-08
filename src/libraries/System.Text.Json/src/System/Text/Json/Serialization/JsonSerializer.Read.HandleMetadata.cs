@@ -50,7 +50,7 @@ namespace System.Text.Json
                     // We just read a property. The only valid next tokens are EndObject and PropertyName.
                     Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
 
-                    if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Ref))
+                    if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Ref) != 0)
                     {
                         // No properties whatsoever should follow a $ref property.
                         ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties(reader.GetSpan(), ref state);
@@ -427,7 +427,7 @@ namespace System.Text.Json
 
         internal static void ValidateMetadataForObjectConverter(ref ReadStack state)
         {
-            if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Values))
+            if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Values) != 0)
             {
                 // Object converters do not support $values metadata.
                 ThrowHelper.ThrowJsonException_MetadataUnexpectedProperty(s_valuesPropertyName, ref state);

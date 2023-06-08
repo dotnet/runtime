@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 // Represents a problem with contained nodes chains, that contain lclVar reads, that were moved through lclVar stores.
 // Notice that the project file sets DOTNET_JitStressModeNames.
@@ -98,7 +99,8 @@ public class TestApp
         return result;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         AA.reset();
         int result;

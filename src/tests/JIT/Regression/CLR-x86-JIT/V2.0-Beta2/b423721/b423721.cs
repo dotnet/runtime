@@ -3,13 +3,15 @@
 
 using System;
 using System.Reflection;
+using Xunit;
 
 namespace Test
 {
 
     public class C2
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int ret = 100;
 

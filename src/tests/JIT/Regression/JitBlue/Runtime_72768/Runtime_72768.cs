@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Adapted from:
 // Fuzzlyn v1.5 on 2022-07-24 15:28:54
@@ -27,7 +28,7 @@ public class Program
     public static bool s_43;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test()
+    internal static void Test()
     {
         try
         {
@@ -60,7 +61,8 @@ public class Program
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

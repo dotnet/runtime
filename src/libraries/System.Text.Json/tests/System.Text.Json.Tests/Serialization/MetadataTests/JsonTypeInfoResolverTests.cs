@@ -3,11 +3,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization.Metadata;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -159,6 +157,22 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => list.Add(new DefaultJsonTypeInfoResolver()));
 
             return list;
+        }
+
+        [Fact]
+        public static void NullResolver_ReturnsObjectMetadata()
+        {
+            var options = new JsonSerializerOptions();
+            var resolver = new NullResolver();
+            Assert.Null(resolver.GetTypeInfo(typeof(object), options));
+
+            options.TypeInfoResolver = resolver;
+            Assert.IsAssignableFrom<JsonTypeInfo<object>>(options.GetTypeInfo(typeof(object)));
+        }
+
+        public sealed class NullResolver : IJsonTypeInfoResolver
+        {
+            public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options) => null;
         }
     }
 }

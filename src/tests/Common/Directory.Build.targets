@@ -31,17 +31,8 @@
           DependsOnTargets="ResolveAssemblyReferences;ResolveRuntimeFilesFromLocalBuild">
 
     <ItemGroup>
-      <RunTimeDependencyExclude Include="$(CORE_ROOT)\**\*.*" />
-      <RunTimeDependencyExcludeFiles Include="@(RunTimeDependencyExclude -> '%(FileName)%(Extension)')" />
-      <RunTimeDependencyExcludeFiles Include="@(RunTimeDependencyExclude -> '%(FileName).ni%(Extension)')" />
-      <RunTimeDependencyExcludeFiles Include="@(RunTimeDependencyExclude -> '%(FileName).pdb')" />
-
-      <AllResolvedRuntimeDependencies Include="@(RuntimeCopyLocalItems -> '%(FileName)%(Extension)');@(NativeCopyLocalItems -> '%(FileName)%(Extension)')">
-        <File>%(Identity)</File>
-      </AllResolvedRuntimeDependencies>
-
-      <RunTimeDependencyCopyLocalFile Include="@(AllResolvedRuntimeDependencies)"  Exclude="@(RunTimeDependencyExcludeFiles)"/>
-      <RunTimeDependencyCopyLocal Include="@(RunTimeDependencyCopyLocalFile -> '%(File)')"  />
+      <RunTimeDependencyCopyLocal Include="@(RuntimeCopyLocalItems)" />
+      <RunTimeDependencyCopyLocal Include="@(NativeCopyLocalItems)" />
       <RunTimeDependencyCopyLocal Include="$(TargetingPackPath)/*" />
       <RunTimeDependencyCopyLocal Include="$(TargetingPackPath)/xunit.*" TargetDir="xunit/" />
     </ItemGroup>

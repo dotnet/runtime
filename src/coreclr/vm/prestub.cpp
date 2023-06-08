@@ -30,10 +30,6 @@
 #include "clrtocomcall.h"
 #endif
 
-#ifdef FEATURE_STACK_SAMPLING
-#include "stacksampler.h"
-#endif
-
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
 #endif
@@ -650,7 +646,7 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
     STANDARD_VM_CONTRACT;
 
     LOG((LF_JIT, LL_INFO1000000,
-        "JitCompileCode(" FMT_ADDR ", %s) for %s:%s\n",
+        "JitCompileCode(" FMT_ADDR ", ILStub: %s) for %s::%s\n",
         DBG_ADDR(this),
         IsILStub() ? " TRUE" : "FALSE",
         GetMethodTable()->GetDebugClassName(),
@@ -857,10 +853,6 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         }
 
     }
-
-#ifdef FEATURE_STACK_SAMPLING
-    StackSampler::RecordJittingInfo(this, flags);
-#endif // FEATURE_STACK_SAMPLING
 
 #ifdef PROFILING_SUPPORTED
     {
@@ -2303,7 +2295,7 @@ PCODE TheVarargNDirectStub(BOOL hasRetBuffArg)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     if (hasRetBuffArg)
     {
         return GetEEFuncEntryPoint(VarargPInvokeStub_RetBuffArg);
@@ -2587,7 +2579,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                     token = DispatchToken::CreateDispatchToken(slot);
 
                 StubCallSite callSite(pIndirection, pEMFrame->GetReturnAddress());
-                pCode = pMgr->ResolveWorker(&callSite, protectedObj, token, VirtualCallStubManager::SK_LOOKUP);
+                pCode = pMgr->ResolveWorker(&callSite, protectedObj, token, STUB_CODE_BLOCK_VSD_LOOKUP_STUB);
             }
             else
             {

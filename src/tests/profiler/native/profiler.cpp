@@ -785,7 +785,7 @@ void Profiler::SetCallback(ProfilerCallback cb)
     s_callbackSet.Signal();
 }
 
-void Profiler::NotifyManagedCodeViaCallback(ICorProfilerInfo13 *pCorProfilerInfo)
+void Profiler::NotifyManagedCodeViaCallback(ICorProfilerInfo14  *pCorProfilerInfo)
 {
     s_callbackSet.Wait();
 
@@ -795,7 +795,7 @@ void Profiler::NotifyManagedCodeViaCallback(ICorProfilerInfo13 *pCorProfilerInfo
         // some crst order asserts if we call back in to managed code. Spin up
         // a new thread to avoid that.
         pCorProfilerInfo->InitializeCurrentThread();
-        s_callback();
+        s_callback(); 
     });
 
     callbackThread.join();

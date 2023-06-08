@@ -25,7 +25,9 @@ namespace System.Runtime.Serialization.Json
         }
 
         internal XmlObjectSerializerWriteContextComplexJson(DataContractJsonSerializer serializer, DataContract rootTypeDataContract)
+#pragma warning disable SYSLIB0050 // StreamingContext ctor is obsolete
             : base(serializer, serializer.MaxItemsInObjectGraph, new StreamingContext(StreamingContextStates.All), serializer.IgnoreExtensionDataObject)
+#pragma warning restore SYSLIB0050
         {
             _emitXsiType = serializer.EmitTypeInformation;
             this.rootTypeDataContract = rootTypeDataContract;
@@ -329,6 +331,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
+#pragma warning disable SYSLIB0050 // The legacy serialization infrastructure (including ISerializable & friends) is obsolete
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void WriteJsonISerializable(XmlWriterDelegator xmlWriter, ISerializable obj)
@@ -345,6 +348,7 @@ namespace System.Runtime.Serialization.Json
                 base.WriteSerializationInfo(xmlWriter, objType, serInfo);
             }
         }
+#pragma warning restore SYSLIB0050
 
         [return: NotNullIfNotNull(nameof(oldItemContract))]
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]

@@ -23,6 +23,8 @@ namespace ILCompiler
             new(new[] { "--reference", "-r" }, result => Helpers.BuildPathDictionary(result.Tokens, false), true, SR.ReferenceFiles);
         public Option<string> InstructionSet { get; } =
             new(new[] { "--instruction-set" }, SR.InstructionSets);
+        public Option<int> MaxVectorTBitWidth { get; } =
+            new(new[] { "--max-vectort-bitwidth" }, SR.MaxVectorTBitWidths);
         public Option<string[]> MibcFilePaths { get; } =
             new(new[] { "--mibc", "-m" }, Array.Empty<string>, SR.MibcFiles);
         public Option<string> OutputFilePath { get; } =
@@ -193,6 +195,7 @@ namespace ILCompiler
             AddOption(UnrootedInputFilePaths);
             AddOption(ReferenceFilePaths);
             AddOption(InstructionSet);
+            AddOption(MaxVectorTBitWidth);
             AddOption(MibcFilePaths);
             AddOption(OutputFilePath);
             AddOption(CompositeRootPath);

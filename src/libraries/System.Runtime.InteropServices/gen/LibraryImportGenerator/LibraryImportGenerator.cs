@@ -28,7 +28,7 @@ namespace Microsoft.Interop
             SequenceEqualImmutableArray<AttributeSyntax> ForwardedAttributes,
             LibraryImportData LibraryImportData,
             MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version Version, LibraryImportGeneratorOptions Options)> GeneratorFactoryKey,
-            SequenceEqualImmutableArray<Diagnostic> Diagnostics);
+            SequenceEqualImmutableArray<DiagnosticInfo> Diagnostics);
 
         public static class StepNames
         {
@@ -78,13 +78,13 @@ namespace Microsoft.Interop
                     || data.Left.Compilation.Options is CSharpCompilationOptions { AllowUnsafe: true } // Unsafe code enabled
                     || data.Left.TargetFramework != TargetFramework.Net) // Non-.NET 5 scenarios use forwarders and don't need unsafe code
                 {
-                    return ImmutableArray<Diagnostic>.Empty;
+                    return ImmutableArray<DiagnosticInfo>.Empty;
                 }
 
-                return ImmutableArray.Create(Diagnostic.Create(GeneratorDiagnostics.RequiresAllowUnsafeBlocks, null));
+                return ImmutableArray.Create(DiagnosticInfo.Create(GeneratorDiagnostics.RequiresAllowUnsafeBlocks, null));
             }));
 
-            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateSingleStub = methodsToGenerate
+            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>)> generateSingleStub = methodsToGenerate
                 .Combine(stubEnvironment)
                 .Combine(stubOptions)
                 .Select(static (data, ct) => new
@@ -303,11 +303,11 @@ namespace Microsoft.Interop
                 new SequenceEqualImmutableArray<AttributeSyntax>(additionalAttributes.ToImmutableArray(), SyntaxEquivalentComparer.Instance),
                 LibraryImportData.From(libraryImportData),
                 LibraryImportGeneratorHelpers.CreateGeneratorFactory(environment, options),
-                new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray())
+                new SequenceEqualImmutableArray<DiagnosticInfo>(generatorDiagnostics.Diagnostics.ToImmutableArray())
                 );
         }
 
-        private static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateSource(
+        private static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateSource(
             IncrementalStubGenerationContext pinvokeStub,
             LibraryImportGeneratorOptions options)
         {

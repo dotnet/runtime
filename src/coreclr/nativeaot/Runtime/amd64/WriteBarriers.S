@@ -260,8 +260,13 @@ LEAF_END RhpCheckedXchg, _TEXT
 //      rdi, rsi are incremented by 8,
 //      rcx, r10, r11: trashed
 //
+// WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
+// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpByRefAssignRefAVLocation1/2
+// - Function "UnwindSimpleHelperToCaller" assumes the stack contains just the pushed return address
 LEAF_ENTRY RhpByRefAssignRef, _TEXT
+ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
     mov     rcx, [rsi]
+ALTERNATE_ENTRY RhpByRefAssignRefAVLocation2
     mov     [rdi], rcx
 
     // Check whether the writes were even into the heap. If not there's no card update required.

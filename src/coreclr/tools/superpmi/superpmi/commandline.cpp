@@ -365,7 +365,8 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                     return false;
                 }
 
-                Logger::SetLogLevel(Logger::ParseLogLevelString(argv[i]));
+                o->verbosity = argv[i];
+                Logger::SetLogLevel(Logger::ParseLogLevelString(o->verbosity));
             }
             else if ((_strnicmp(&argv[i][1], "writeLogFile", argLen) == 0))
             {
@@ -731,9 +732,9 @@ bool CommandLine::AddJitOption(int&  currArgument,
     }
 
     DWORD keyIndex =
-        (DWORD)targetjitOptions->AddBuffer((unsigned char*)key, sizeof(WCHAR) * ((unsigned int)wcslen(key) + 1));
+        (DWORD)targetjitOptions->AddBuffer((unsigned char*)key, sizeof(WCHAR) * ((unsigned int)u16_strlen(key) + 1));
     DWORD valueIndex =
-        (DWORD)targetjitOptions->AddBuffer((unsigned char*)value, sizeof(WCHAR) * ((unsigned int)wcslen(value) + 1));
+        (DWORD)targetjitOptions->AddBuffer((unsigned char*)value, sizeof(WCHAR) * ((unsigned int)u16_strlen(value) + 1));
     targetjitOptions->Add(keyIndex, valueIndex);
 
     delete[] key;

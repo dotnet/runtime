@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Writer
 {
@@ -25,7 +26,8 @@ public class Writer
         return new ArraySegment<byte>(data, 0, writer.Position);
     }
     
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var x = Test();
         return x[0];

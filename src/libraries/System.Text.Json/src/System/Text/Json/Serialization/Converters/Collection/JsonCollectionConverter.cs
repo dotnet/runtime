@@ -25,6 +25,11 @@ namespace System.Text.Json.Serialization
         /// </summary>
         protected virtual void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
         {
+            if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
+            {
+                return;
+            }
+
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
             if (typeInfo.CreateObject is null)
@@ -109,7 +114,7 @@ namespace System.Text.Json.Serialization
                         }
 
                         // Get the value from the converter and add it.
-                        elementConverter.TryRead(ref reader, typeof(TElement), options, ref state, out TElement? element);
+                        elementConverter.TryRead(ref reader, typeof(TElement), options, ref state, out TElement? element, out _);
                         Add(element!, ref state);
                     }
                 }
@@ -161,7 +166,7 @@ namespace System.Text.Json.Serialization
                 }
 
                 // Dispatch to any polymorphic converters: should always be entered regardless of ObjectState progress
-                if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Type) &&
+                if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Type) != 0 &&
                     state.Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted &&
                     ResolvePolymorphicConverter(jsonTypeInfo, ref state) is JsonConverter polymorphicConverter)
                 {
@@ -181,7 +186,7 @@ namespace System.Text.Json.Serialization
 
                     CreateCollection(ref reader, ref state, options);
 
-                    if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Id))
+                    if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Id) != 0)
                     {
                         Debug.Assert(state.ReferenceId != null);
                         Debug.Assert(options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve);
@@ -224,7 +229,7 @@ namespace System.Text.Json.Serialization
                         if (state.Current.PropertyState < StackFramePropertyState.TryRead)
                         {
                             // Get the value from the converter and add it.
-                            if (!elementConverter.TryRead(ref reader, typeof(TElement), options, ref state, out TElement? element))
+                            if (!elementConverter.TryRead(ref reader, typeof(TElement), options, ref state, out TElement? element, out _))
                             {
                                 value = default;
                                 return false;
@@ -245,7 +250,7 @@ namespace System.Text.Json.Serialization
                     state.Current.ObjectState = StackFrameObjectState.EndToken;
 
                     // Array payload is nested inside a $values metadata property.
-                    if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Values))
+                    if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Values) != 0)
                     {
                         if (!reader.Read())
                         {
@@ -258,7 +263,7 @@ namespace System.Text.Json.Serialization
                 if (state.Current.ObjectState < StackFrameObjectState.EndTokenValidation)
                 {
                     // Array payload is nested inside a $values metadata property.
-                    if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Values))
+                    if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Values) != 0)
                     {
                         if (reader.TokenType != JsonTokenType.EndObject)
                         {

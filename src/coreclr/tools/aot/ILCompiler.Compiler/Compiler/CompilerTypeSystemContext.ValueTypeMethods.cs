@@ -35,7 +35,7 @@ namespace ILCompiler
         {
             TypeDesc valueTypeDefinition = valueType.GetTypeDefinition();
 
-            if (RequiresGetFieldHelperMethod((MetadataType)valueTypeDefinition))
+            if (RequiresValueTypeGetFieldHelperMethod((MetadataType)valueTypeDefinition))
             {
                 MethodDesc getFieldHelperMethod = _valueTypeMethodHashtable.GetOrCreateValue((DefType)valueTypeDefinition);
 
@@ -54,7 +54,30 @@ namespace ILCompiler
                 yield return method;
         }
 
-        private bool RequiresGetFieldHelperMethod(MetadataType valueType)
+        protected virtual IEnumerable<MethodDesc> GetAllMethodsForAttribute(TypeDesc attributeType, bool virtualOnly)
+        {
+            TypeDesc attributeTypeDefinition = attributeType.GetTypeDefinition();
+
+            if (RequiresAttributeGetFieldHelperMethod(attributeTypeDefinition))
+            {
+                MethodDesc getFieldHelperMethod = _valueTypeMethodHashtable.GetOrCreateValue((DefType)attributeTypeDefinition);
+
+                if (attributeType != attributeTypeDefinition)
+                {
+                    yield return GetMethodForInstantiatedType(getFieldHelperMethod, (InstantiatedType)attributeType);
+                }
+                else
+                {
+                    yield return getFieldHelperMethod;
+                }
+            }
+
+            IEnumerable<MethodDesc> metadataMethods = virtualOnly ? attributeType.GetVirtualMethods() : attributeType.GetMethods();
+            foreach (MethodDesc method in metadataMethods)
+                yield return method;
+        }
+
+        private bool RequiresValueTypeGetFieldHelperMethod(MetadataType valueType)
         {
             _objectEqualsMethod ??= GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
 
@@ -88,6 +111,19 @@ namespace ILCompiler
             _iAsyncStateMachineType ??= SystemModule.GetType("System.Runtime.CompilerServices", "IAsyncStateMachine", throwIfNotFound: false);
             return type.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute")
                 && Array.IndexOf(type.RuntimeInterfaces, _iAsyncStateMachineType) >= 0;
+        }
+
+        private static bool RequiresAttributeGetFieldHelperMethod(TypeDesc attributeTypeDef)
+        {
+            foreach (FieldDesc field in attributeTypeDef.GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+
+                return true;
+            }
+
+            return false;
         }
 
         private sealed class TypeState

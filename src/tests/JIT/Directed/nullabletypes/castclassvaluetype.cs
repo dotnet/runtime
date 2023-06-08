@@ -3,6 +3,7 @@
 
 using System.Runtime.InteropServices;
 using System;
+using Xunit;
 
 
 internal class NullableTest1
@@ -4692,9 +4693,10 @@ internal class NullableTest45
 }
 
 
-internal class Test_castclassvaluetype
+public class Test_castclassvaluetype
 {
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

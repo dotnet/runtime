@@ -1217,14 +1217,31 @@ public:
     friend class LoadLockHolder;
 public:
     void InitVSD();
-    RangeList *GetCollectibleVSDRanges() { return &m_collVSDRanges; }
 
 private:
     TypeIDMap m_typeIDMap;
-    // Range list for collectible types. Maps VSD PCODEs back to the VirtualCallStubManager they belong to
-    LockedRangeList m_collVSDRanges;
+
+#ifdef HOST_WINDOWS
+    // MethodTable to `typeIndex` map. `typeIndex` is embedded in the code during codegen.
+    // During execution corresponding thread static data blocks are stored in `t_NonGCThreadStaticBlocks`
+    // and `t_GCThreadStaticBlocks` array at the `typeIndex`.
+    TypeIDMap m_NonGCThreadStaticBlockTypeIDMap;
+    TypeIDMap m_GCThreadStaticBlockTypeIDMap;
+
+#endif // HOST_WINDOWS
 
 public:
+
+#ifdef HOST_WINDOWS
+    void InitThreadStaticBlockTypeMap();
+
+    UINT32 GetNonGCThreadStaticTypeIndex(PTR_MethodTable pMT);
+    UINT32 GetGCThreadStaticTypeIndex(PTR_MethodTable pMT);
+
+    PTR_MethodTable LookupNonGCThreadStaticBlockType(UINT32 id);
+    PTR_MethodTable LookupGCThreadStaticBlockType(UINT32 id);
+#endif
+
     UINT32 GetTypeID(PTR_MethodTable pMT);
     UINT32 LookupTypeID(PTR_MethodTable pMT);
     PTR_MethodTable LookupType(UINT32 id);
@@ -2264,7 +2281,7 @@ private:
         using key_t = LPCWSTR;
         static const key_t GetKey(_In_ const element_t& e) { return e.Name; }
         static count_t Hash(_In_ key_t key) { return HashString(key); }
-        static bool Equals(_In_ key_t lhs, _In_ key_t rhs) { return wcscmp(lhs, rhs) == 0; }
+        static bool Equals(_In_ key_t lhs, _In_ key_t rhs) { return u16_strcmp(lhs, rhs) == 0; }
         static bool IsNull(_In_ const element_t& e) { return e.Handle == NULL; }
         static const element_t Null() { return UnmanagedImageCacheEntry(); }
     };

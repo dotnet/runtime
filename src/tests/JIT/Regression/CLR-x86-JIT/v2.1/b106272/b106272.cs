@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 namespace TernaryOperatorOptimization
 {
@@ -10,7 +11,8 @@ namespace TernaryOperatorOptimization
     {
         private static bool caughtException = false;
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Console.WriteLine("Regression testcase for devdiv 106272 - Invalid JIT optimization");
             Console.WriteLine("with ternary/conditional operator (?:) in release builds");

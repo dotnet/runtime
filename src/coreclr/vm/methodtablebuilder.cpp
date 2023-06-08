@@ -1135,31 +1135,39 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
 
     LPCUTF8 className;
     LPCUTF8 nameSpace;
+
     if (FAILED(GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetTypeDefToken(), &className, &nameSpace)))
         return false;
 
     if (strcmp(className, "Vector`1") != 0 || strcmp(nameSpace, "System.Numerics") != 0)
         return false;
 
-    if (!TargetHasAVXSupport())
-        return false;
+    CORJIT_FLAGS CPUCompileFlags       = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
+    uint32_t     numInstanceFieldBytes = 16;
 
-    EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
-    if (jitMgr->LoadJIT())
+    if (CPUCompileFlags.IsSet(InstructionSet_VectorT512))
     {
-        CORJIT_FLAGS cpuCompileFlags = jitMgr->GetCPUCompileFlags();
-        unsigned intrinsicSIMDVectorLength = jitMgr->m_jit->getMaxIntrinsicSIMDVectorLength(cpuCompileFlags);
-        if (intrinsicSIMDVectorLength != 0)
-        {
-            bmtFP->NumInstanceFieldBytes     = intrinsicSIMDVectorLength;
-            if (HasLayout())
-            {
-                GetLayoutInfo()->m_cbManagedSize = intrinsicSIMDVectorLength;
-            }
-            return true;
-        }
+        // TODO-XARCH: The JIT needs to be updated to support 64-byte Vector<T>
+        numInstanceFieldBytes = 32;
     }
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+    else if (CPUCompileFlags.IsSet(InstructionSet_VectorT256))
+    {
+        numInstanceFieldBytes = 32;
+    }
+
+    if (numInstanceFieldBytes != 16)
+    {
+        bmtFP->NumInstanceFieldBytes = numInstanceFieldBytes;
+
+        if (HasLayout())
+        {
+            GetLayoutInfo()->m_cbManagedSize = numInstanceFieldBytes;
+        }
+
+        return true;
+    }
+#endif // TARGET_X86 || TARGET_AMD64
+
     return false;
 }
 
@@ -1841,7 +1849,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #ifdef FEATURE_HFA
 #error "Can't have FEATURE_HFA and UNIX_AMD64_ABI defined at the same time."
 #endif // FEATURE_HFA
-        SystemVAmd64CheckForPassStructInRegister();
+        SystemVAmd64CheckForPassStructInRegister(pByValueClassCache);
 #endif // UNIX_AMD64_ABI
     }
 
@@ -1863,8 +1871,8 @@ MethodTableBuilder::BuildMethodTableThrowing(
         // Perform relevant GC calculations for value classes
         HandleGCForValueClasses(pByValueClassCache);
 
-        // GC reqires the series to be sorted.
-        // TODO: fix it so that we emit them in the correct order in the first place.
+    // GC reqires the series to be sorted.
+    // TODO: fix it so that we emit them in the correct order in the first place.
     if (pMT->ContainsPointers())
     {
         CGCDesc* gcDesc = CGCDesc::GetCGCDescFromMT(pMT);
@@ -1902,7 +1910,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
     // if there are context or thread static set the info in the method table optional members
     //
 
-    // Check for the RemotingProxy Attribute
     // structs with GC pointers MUST be pointer sized aligned because the GC assumes it
     if (IsValueClass() && pMT->ContainsPointers() && (bmtFP->NumInstanceFieldBytes % TARGET_POINTER_SIZE != 0))
     {
@@ -1968,7 +1975,8 @@ MethodTableBuilder::BuildMethodTableThrowing(
             CONSISTENCY_CHECK(!current->IsStatic());
             if (current->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
             {
-                TypeHandle th = current->LookupApproxFieldTypeHandle();
+                _ASSERTE((size_t)fields.GetValueClassCacheIndex() < bmtEnumFields->dwNumInstanceFields);
+                TypeHandle th = TypeHandle(pByValueClassCache[fields.GetValueClassCacheIndex()]);
                 CONSISTENCY_CHECK(!th.IsNull());
                 if (th.AsMethodTable()->GetClass()->IsUnsafeValueClass())
                 {
@@ -3787,6 +3795,11 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
     // Track whether any field in this type requires 8-byte alignment
     BOOL    fFieldRequiresAlign8 = HasParent() ? GetParentMethodTable()->RequiresAlign8() : FALSE;
 #endif
+#if defined(EnC_SUPPORTED)
+    bool isEnCField = pFieldDescList != NULL && pFieldDescList->IsEnCNew();
+#else
+    bool isEnCField = false;
+#endif // EnC_SUPPORTED
 
     for (i = 0; i < bmtMetaData->cFields; i++)
     {
@@ -4091,14 +4104,30 @@ IS_VALUETYPE:
                 {
                     // Loading a non-self-ref valuetype field.
                     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOAD_APPROXPARENTS);
-                    // We load the approximate type of the field to avoid recursion problems.
-                    // MethodTable::DoFullyLoad() will later load it fully
-                    pByValueClass = fsig.GetArgProps().GetTypeHandleThrowing(GetModule(),
+                    if (isEnCField || fIsStatic)
+                    {
+                        // EnCFieldDescs are not created at normal MethodTableBuilder time, and don't need to avoid recursive generic instantiation
+                        pByValueClass = fsig.GetArgProps().GetTypeHandleThrowing(GetModule(),
                                                                             &bmtGenerics->typeContext,
                                                                              ClassLoader::LoadTypes,
                                                                              CLASS_LOAD_APPROXPARENTS,
                                                                              TRUE
                                                                              ).GetMethodTable();
+                    }
+                    else
+                    {
+                        // We load the approximate type of the field to avoid recursion problems.
+                        // MethodTable::DoFullyLoad() will later load it fully
+                        SigPointer::HandleRecursiveGenericsForFieldLayoutLoad recursiveControl;
+                        recursiveControl.pModuleWithTokenToAvoidIfPossible = GetModule();
+                        recursiveControl.tkTypeDefToAvoidIfPossible = GetCl();
+                        pByValueClass = fsig.GetArgProps().GetTypeHandleThrowing(GetModule(),
+                                                                                &bmtGenerics->typeContext,
+                                                                                ClassLoader::LoadTypes,
+                                                                                CLASS_LOAD_APPROXPARENTS,
+                                                                                TRUE, NULL, NULL, NULL,
+                                                                                &recursiveControl).GetMethodTable();
+                    }
                 }
 
                 // #FieldDescTypeMorph  IF it is an enum, strip it down to its underlying type
@@ -4455,9 +4484,12 @@ IS_VALUETYPE:
         BuildMethodTableThrowException(IDS_EE_TOOMANYFIELDS);
     }
 
-    GetHalfBakedClass()->SetNumInstanceFields((WORD)dwNumInstanceFields);
-    GetHalfBakedClass()->SetNumStaticFields((WORD)dwNumStaticFields);
-    GetHalfBakedClass()->SetNumThreadStaticFields((WORD)dwNumThreadStaticFields);
+    if (!isEnCField)
+    {
+        GetHalfBakedClass()->SetNumInstanceFields((WORD)dwNumInstanceFields);
+        GetHalfBakedClass()->SetNumStaticFields((WORD)dwNumStaticFields);
+        GetHalfBakedClass()->SetNumThreadStaticFields((WORD)dwNumThreadStaticFields);
+    }
 
     if (bmtFP->fHasFixedAddressValueTypes)
     {
@@ -6053,7 +6085,7 @@ MethodTableBuilder::InitMethodDesc(
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_EVERYTHING, "MTB::IMD: pNewMD:%p (%u) EnC: %s tok:%x (%s::%s)\n",
+    LOG((LF_CORDB, LL_EVERYTHING, "MTB::IMD: pNewMD:%p (%u) EnC: %s tok:0x%08x (%s::%s)\n",
         pNewMD, Classification, (fEnC ? "true" : "false"), tok, pszDebugClassName, pszDebugMethodName));
 
     // Now we know the classification we can perform any classification specific initialization.
@@ -8042,6 +8074,8 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
         FieldDesc *pFieldDescList = GetHalfBakedClass()->GetFieldDescList();
         DWORD   dwCumulativeInstanceFieldPos;
 
+        bool isAllGCPointers = true;
+
         // Instance fields start right after the parent
         if (HasParent())
         {
@@ -8057,6 +8091,11 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
             else
             {
                 dwCumulativeInstanceFieldPos = pParentMT->GetNumInstanceFieldBytes();
+            }
+
+            if (pParentMT->GetNumInstanceFields() != 0 && !pParentMT->IsAllGCPointers())
+            {
+                isAllGCPointers = false;
             }
         }
         else
@@ -8300,6 +8339,11 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                     // Add pointer series for by-value classes
                     dwNumGCPointerSeries += (DWORD)CGCDesc::GetCGCDescFromMT(pByValueMT)->GetNumSeries();
                 }
+
+                if (!pByValueMT->ContainsPointers() || !pByValueMT->IsAllGCPointers())
+                {
+                    isAllGCPointers = false;
+                }
             }
             else
             {
@@ -8307,6 +8351,11 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                 // This does not account for types that are marked IsAlign8Candidate due to 8-byte fields
                 // but that is explicitly handled when we calculate the final alignment for the type.
                 largestAlignmentRequirement = max(largestAlignmentRequirement, TARGET_POINTER_SIZE);
+
+                if (!pFieldDescList[i].IsObjRef())
+                {
+                    isAllGCPointers = false;
+                }
             }
         }
 
@@ -8315,14 +8364,17 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
 
         if (IsValueClass())
         {
-                 // Like C++ we enforce that there can be no 0 length structures.
-                // Thus for a value class with no fields, we 'pad' the length to be 1
+            // Like C++ we enforce that there can be no 0 length structures.
+            // Thus for a value class with no fields, we 'pad' the length to be 1
             if (dwNumInstanceFieldBytes == 0)
+            {
                 dwNumInstanceFieldBytes = 1;
+                isAllGCPointers = false;
+            }
 
-                // The JITs like to copy full machine words,
-                //  so if the size is bigger than a void* round it up to minAlign
-                // and if the size is smaller than void* round it up to next power of two
+            // The JITs like to copy full machine words,
+            //  so if the size is bigger than a void* round it up to minAlign
+            // and if the size is smaller than void* round it up to next power of two
             unsigned minAlign;
 
 #ifdef FEATURE_64BIT_ALIGNMENT
@@ -8372,6 +8424,13 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
             }
         }
 
+        bmtFP->fIsAllGCPointers = isAllGCPointers && dwNumGCPointerSeries;
+        if (bmtFP->fIsAllGCPointers)
+        {
+            // we can use optimized form of GCDesc taking one serie
+            dwNumGCPointerSeries = 1;
+        }
+
         bmtFP->NumInstanceFieldBytes = dwNumInstanceFieldBytes;
 
         bmtFP->NumGCPointerSeries = dwNumGCPointerSeries;
@@ -8401,7 +8460,7 @@ DWORD MethodTableBuilder::GetFieldSize(FieldDesc *pFD)
 
 #ifdef UNIX_AMD64_ABI
 // checks whether the struct is enregisterable.
-void MethodTableBuilder::SystemVAmd64CheckForPassStructInRegister()
+void MethodTableBuilder::SystemVAmd64CheckForPassStructInRegister(MethodTable** pByValueClassCache)
 {
     STANDARD_VM_CONTRACT;
 
@@ -8430,7 +8489,7 @@ void MethodTableBuilder::SystemVAmd64CheckForPassStructInRegister()
     const bool useNativeLayout = false;
     // Iterate through the fields and make sure they meet requirements to pass in registers
     SystemVStructRegisterPassingHelper helper((unsigned int)totalStructSize);
-    if (GetHalfBakedMethodTable()->ClassifyEightBytes(&helper, 0, 0, useNativeLayout))
+    if (GetHalfBakedMethodTable()->ClassifyEightBytes(&helper, 0, 0, useNativeLayout, pByValueClassCache))
     {
         LOG((LF_JIT, LL_EVERYTHING, "**** SystemVAmd64CheckForPassStructInRegister: struct %s is enregisterable\n",
                this->GetDebugClassName()));
@@ -9023,6 +9082,10 @@ void MethodTableBuilder::FindPointerSeriesExplicit(UINT instanceSliceSize,
 
     bmtFP->NumGCPointerSeries = bmtParent->NumParentPointerSeries + bmtGCSeries->numSeries;
 
+    // since the GC series are computed from a ref map,
+    // in most cases where optimized GCDesc could be used, that is what we will compute anyways,
+    // so we will not try optimizing this case.
+    bmtFP->fIsAllGCPointers = false;
 }
 
 //*******************************************************************************
@@ -11536,8 +11599,27 @@ VOID MethodTableBuilder::HandleGCForValueClasses(MethodTable ** pByValueClassCac
 
         pMT->SetContainsPointers();
 
-        // Copy the pointer series map from the parent
         CGCDesc::Init( (PVOID) pMT, bmtFP->NumGCPointerSeries );
+
+        // special case when all instance fields are objects - we can encode that as one serie.
+        if (bmtFP->fIsAllGCPointers)
+        {
+            _ASSERTE(bmtFP->NumGCPointerSeries == 1);
+
+            CGCDescSeries* pSeries = CGCDesc::GetCGCDescFromMT(pMT)->GetHighestSeries();
+
+            // the data is right after the method table ptr
+            int offsetToData = TARGET_POINTER_SIZE;
+
+            // Set the size as the negative of the BaseSize (the GC always adds the total
+            // size of the object, so what you end up with is the size of the data portion of the instance)
+            pSeries->SetSeriesSize(-(SSIZE_T)(offsetToData + TARGET_POINTER_SIZE));
+            pSeries->SetSeriesOffset(offsetToData);
+
+            return;
+        }
+
+        // Copy the pointer series map from the parent
         if (bmtParent->NumParentPointerSeries != 0)
         {
             size_t ParentGCSize = CGCDesc::ComputeSize(bmtParent->NumParentPointerSeries);
@@ -11554,7 +11636,7 @@ VOID MethodTableBuilder::HandleGCForValueClasses(MethodTable ** pByValueClassCac
             repeat = bmtFP->NumInlineArrayElements;
         }
 
-        // Build the pointer series map for this pointers in this instance
+        // Build the pointer series map for pointers in this instance
         pSeries = ((CGCDesc*)pMT)->GetLowestSeries();
         if (bmtFP->NumInstanceGCPointerFields)
         {
@@ -11579,7 +11661,6 @@ VOID MethodTableBuilder::HandleGCForValueClasses(MethodTable ** pByValueClassCac
 
                     // if we have an inline array, we will have only one formal instance field,
                     // but will have to replicate the layout "repeat" times.
-                    // otherwise every field will be matched with 1 serie.
                     for (DWORD r = 0; r < repeat; r++)
                     {
                         // The by value class may have more than one pointer series

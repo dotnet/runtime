@@ -31,6 +31,13 @@ namespace ILCompiler.DependencyAnalysis.ARM64
             Builder.EmitUInt(instruction);
         }
 
+        public void EmitMVN(Register regDst, ushort imm16)
+        {
+            Debug.Assert((uint)regDst <= 0x1f);
+            uint instruction = 0x92800000u | ((uint)imm16 << 5) | (uint)regDst;
+            Builder.EmitUInt(instruction);
+        }
+
         public void EmitMOV(Register regDst, ISymbolNode symbol)
         {
             // ADRP regDst, [symbol (21bit ADRP thing)]

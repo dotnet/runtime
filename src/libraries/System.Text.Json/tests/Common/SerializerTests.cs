@@ -40,7 +40,8 @@ namespace System.Text.Json.Serialization.Tests
             CollectionElement = 4,
             DictionaryValue = 8,
             JsonNode = 16,
-            All = RootValue | ObjectProperty | CollectionElement | DictionaryValue | JsonNode
+            BoxedValue = 32,
+            All = RootValue | ObjectProperty | CollectionElement | DictionaryValue | JsonNode | BoxedValue,
         }
 
         /// <summary>
@@ -71,6 +72,19 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
 
+            if (contexts.HasFlag(SerializedValueContext.RootValue | SerializedValueContext.BoxedValue))
+            {
+                if (expectedExceptionType != null)
+                {
+                    await Assert.ThrowsAsync(expectedExceptionType, () => Serializer.SerializeWrapper<object>(value, options));
+                }
+                else
+                {
+                    actualJson = await Serializer.SerializeWrapper<object>(value, options);
+                    JsonTestHelper.AssertJsonEqual(expectedJson, actualJson);
+                }
+            }
+
             if (contexts.HasFlag(SerializedValueContext.ObjectProperty))
             {
                 var poco = new GenericPoco<TValue> { Property = value };
@@ -84,6 +98,25 @@ namespace System.Text.Json.Serialization.Tests
                     string propertyName = options?.PropertyNamingPolicy is JsonNamingPolicy policy
                         ? policy.ConvertName(nameof(GenericPoco<TValue>.Property))
                         : nameof(GenericPoco<TValue>.Property);
+
+                    actualJson = await Serializer.SerializeWrapper(poco, options);
+                    JsonTestHelper.AssertJsonEqual($@"{{ ""{propertyName}"" : {expectedJson} }}", actualJson);
+                }
+            }
+
+            if (contexts.HasFlag(SerializedValueContext.ObjectProperty | SerializedValueContext.BoxedValue))
+            {
+                var poco = new GenericPoco<object> { Property = value };
+
+                if (expectedExceptionType != null)
+                {
+                    await Assert.ThrowsAsync(expectedExceptionType, () => Serializer.SerializeWrapper(poco, options));
+                }
+                else
+                {
+                    string propertyName = options?.PropertyNamingPolicy is JsonNamingPolicy policy
+                        ? policy.ConvertName(nameof(GenericPoco<object>.Property))
+                        : nameof(GenericPoco<object>.Property);
 
                     actualJson = await Serializer.SerializeWrapper(poco, options);
                     JsonTestHelper.AssertJsonEqual($@"{{ ""{propertyName}"" : {expectedJson} }}", actualJson);
@@ -105,10 +138,45 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
 
+            if (contexts.HasFlag(SerializedValueContext.CollectionElement | SerializedValueContext.BoxedValue))
+            {
+                var list = new List<object> { value };
+
+                if (expectedExceptionType != null)
+                {
+                    await Assert.ThrowsAsync(expectedExceptionType, () => Serializer.SerializeWrapper(list, options));
+                }
+                else
+                {
+                    actualJson = await Serializer.SerializeWrapper(list, options);
+                    JsonTestHelper.AssertJsonEqual($"[{expectedJson}]", actualJson);
+                }
+            }
+
             if (contexts.HasFlag(SerializedValueContext.DictionaryValue))
             {
                 const string key = "key";
                 var dictionary = new Dictionary<string, TValue> { [key] = value };
+
+                if (expectedExceptionType != null)
+                {
+                    await Assert.ThrowsAsync(expectedExceptionType, () => Serializer.SerializeWrapper(dictionary, options));
+                }
+                else
+                {
+                    string jsonKey = options?.DictionaryKeyPolicy is JsonNamingPolicy policy
+                        ? policy.ConvertName(key)
+                        : key;
+
+                    actualJson = await Serializer.SerializeWrapper(dictionary, options);
+                    JsonTestHelper.AssertJsonEqual($@"{{ ""{jsonKey}"" : {expectedJson} }}", actualJson);
+                }
+            }
+
+            if (contexts.HasFlag(SerializedValueContext.DictionaryValue | SerializedValueContext.BoxedValue))
+            {
+                const string key = "key";
+                var dictionary = new Dictionary<string, object> { [key] = value };
 
                 if (expectedExceptionType != null)
                 {

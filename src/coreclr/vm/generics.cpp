@@ -487,7 +487,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         pMT->Debug_SetHasInjectedInterfaceDuplicates();
 #endif // _DEBUG
 
-    // <NICE>This logic is identical to logic in class.cpp.  Factor these out.</NICE>
     // No need to generate IDs for open types.   However
     // we still leave the optional member in the MethodTable holding the value -1 for the ID.
     if (fHasGenericsStaticsInfo)

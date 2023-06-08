@@ -17,8 +17,8 @@ namespace System.Security.Cryptography.X509Certificates
         private const string UseNewlineSeparators = "\r\n";
         private const string DefaultSeparators = ",;";
 
-        private static readonly IndexOfAnyValues<char> s_needsQuotingChars =
-            IndexOfAnyValues.Create(",+=\"\n<>#;"); // \r is NOT in this list, because it isn't in Windows.
+        private static readonly SearchValues<char> s_needsQuotingChars =
+            SearchValues.Create(",+=\"\n<>#;"); // \r is NOT in this list, because it isn't in Windows.
 
         internal static string X500DistinguishedNameDecode(
             byte[] encodedName,

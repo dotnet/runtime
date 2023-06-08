@@ -197,6 +197,13 @@ namespace ILLink.RoslynAnalyzer
 					if (operationContext.Operation.Parent is IOperation operation && operation.Kind == OperationKind.NameOf)
 						return;
 
+					// Do not emit any diagnostics for constant fields - they can only have Requires attributes applied to them
+					// via the type, and in that case the attribute is guarding the access to the static ctor.
+					// But constant fields are never accessed at runtime, and thus they don't cause static ctor to run.
+					// Constant fields are always inlined by the compiler (required by the ECMA spec).
+					if (member is IFieldSymbol field && field.HasConstantValue)
+						return;
+
 					ISymbol containingSymbol = FindContainingSymbol (operationContext, AnalyzerDiagnosticTargets);
 
 					// Do not emit any diagnostic if caller is annotated with the attribute too.

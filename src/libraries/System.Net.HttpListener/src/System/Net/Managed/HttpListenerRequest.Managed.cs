@@ -64,7 +64,7 @@ namespace System.Net
         private Stream? _inputStream;
         private readonly HttpListenerContext _context;
         private bool _isChunked;
-        private static readonly IndexOfAnyValues<char> s_validMethodChars = IndexOfAnyValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~");
+        private static readonly SearchValues<char> s_validMethodChars = SearchValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~");
         private static readonly byte[] s_100continue = "HTTP/1.1 100 Continue\r\n\r\n"u8.ToArray();
 
         internal HttpListenerRequest(HttpListenerContext context)
@@ -163,7 +163,7 @@ namespace System.Net
         internal void FinishInitialization()
         {
             string host = UserHostName;
-            if (_version > HttpVersion.Version10 && (host == null || host.Length == 0))
+            if (_version > HttpVersion.Version10 && string.IsNullOrEmpty(host))
             {
                 _context.ErrorMessage = "Invalid host name";
                 return;
@@ -177,7 +177,7 @@ namespace System.Net
             else
                 path = _rawUrl;
 
-            if ((host == null || host.Length == 0))
+            if (string.IsNullOrEmpty(host))
                 host = UserHostAddress;
 
             if (raw_uri != null)

@@ -90,9 +90,6 @@
   <data name="net_WebSockets_ArgumentOutOfRange_TooSmall" xml:space="preserve">
     <value>The argument must be a value greater than {0}.</value>
   </data>
-  <data name="net_WebSockets_InvalidEmptySubProtocol" xml:space="preserve">
-    <value>Empty string is not a valid subprotocol value. Please use \"null\" to specify no value.</value>
-  </data>
   <data name="net_WebSockets_InvalidCharInProtocolString" xml:space="preserve">
     <value>The WebSocket protocol '{0}' is invalid because it contains the invalid character '{1}'.</value>
   </data>

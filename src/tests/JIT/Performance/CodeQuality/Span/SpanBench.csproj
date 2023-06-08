@@ -1,9 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- Always try to use latest Roslyn compiler -->
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-  </PropertyGroup>
-  <PropertyGroup>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
   </PropertyGroup>

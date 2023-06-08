@@ -3,13 +3,15 @@
 
 
 using System;
+using Xunit;
 
 
 namespace Test
 {
     public class AA
     {
-        public static unsafe int Main()
+        [Fact]
+        public static unsafe int TestEntryPoint()
         {
             byte* p = stackalloc byte[new sbyte[] { 10 }[0]];
             return 100;

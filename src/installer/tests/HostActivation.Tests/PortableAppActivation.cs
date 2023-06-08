@@ -202,7 +202,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .Execute()
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World")
-                    .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
+                    .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion)
+                    .And.NotHaveStdErr();
 
                 // Verify running from within the working directory
                 Command.Create(appExe)
@@ -216,7 +217,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .Execute()
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World")
-                    .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
+                    .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion)
+                    .And.NotHaveStdErr();
             }
         }
 

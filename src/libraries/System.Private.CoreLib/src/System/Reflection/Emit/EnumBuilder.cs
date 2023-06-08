@@ -35,11 +35,9 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
             => SetCustomAttributeCore(con, binaryAttribute);
 
-        protected abstract void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute);
+        protected abstract void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute);
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
-            => SetCustomAttributeCore(customBuilder);
-
-        protected abstract void SetCustomAttributeCore(CustomAttributeBuilder customBuilder);
+            => SetCustomAttributeCore(customBuilder.Ctor, customBuilder.Data);
     }
 }

@@ -50,9 +50,22 @@ namespace System.Globalization
 
         AllowHexSpecifier = 0x00000200,
 
+        /// <summary>
+        /// Indicates that the numeric string represents a binary value. Valid binary values include the numeric digits 0 and 1.
+        /// Strings that are parsed using this style do not employ a prefix; "0b" cannot be used. A string that is parsed with
+        /// the <see cref="AllowBinarySpecifier"/> style will always be interpreted as a binary value. The only flags that can
+        /// be combined with <see cref="AllowBinarySpecifier"/> are <see cref="AllowLeadingWhite"/> and <see cref="AllowTrailingWhite"/>.
+        /// The <see cref="NumberStyles"/> enumeration includes a composite style, <see cref="BinaryNumber"/>, that consists of
+        /// these three flags.
+        /// </summary>
+        AllowBinarySpecifier = 0x00000400,
+
         Integer = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign,
 
         HexNumber = AllowLeadingWhite | AllowTrailingWhite | AllowHexSpecifier,
+
+        /// <summary>Indicates that the <see cref="AllowLeadingWhite"/>, <see cref="AllowTrailingWhite"/>, and <see cref="AllowBinarySpecifier"/> styles are used. This is a composite number style.</summary>
+        BinaryNumber = AllowLeadingWhite | AllowTrailingWhite | AllowBinarySpecifier,
 
         Number = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | AllowTrailingSign |
                    AllowDecimalPoint | AllowThousands,

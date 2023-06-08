@@ -332,7 +332,7 @@ void ThreadStressLog::LogMsg ( uint32_t facility, int cArgs, const char* format,
         msg->args[i] = data;
     }
 
-    ASSERT(IsValid() && threadId == PalGetCurrentThreadIdForLogging());
+    ASSERT(IsValid() && threadId == PalGetCurrentOSThreadId());
 }
 
 
@@ -340,7 +340,7 @@ void ThreadStressLog::Activate (Thread * pThread)
 {
     _ASSERTE(pThread != NULL);
     //there is no need to zero buffers because we could handle garbage contents
-    threadId = PalGetCurrentThreadIdForLogging();
+    threadId = PalGetCurrentOSThreadId();
     isDead = FALSE;
     curWriteChunk = chunkListTail;
     curPtr = (StressMsg *)curWriteChunk->EndPtr ();

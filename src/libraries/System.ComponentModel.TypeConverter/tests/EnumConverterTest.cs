@@ -171,7 +171,7 @@ namespace System.ComponentModel.Tests
             EnumConverter converter = new EnumConverter(typeof(LongFlagsEnum));
             LongFlagsEnum value = LongFlagsEnum.Bit62 | LongFlagsEnum.Bit63;
             Enum[] result = (Enum[])converter.ConvertTo(null, null, value, typeof(Enum[]));
-            Assert.Equal(new Enum[] { LongFlagsEnum.Bit63, LongFlagsEnum.Bit62 }, result);
+            Assert.Equal(new Enum[] { LongFlagsEnum.Bit62, LongFlagsEnum.Bit63 }, result);
         }
 
         private static void VerifyArraysEqual<T>(T[] expected, object actual)

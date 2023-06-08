@@ -57,9 +57,9 @@ namespace System.Xml
         private const string AsciiCharDataChars = "\t\n\r !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
         private const string WhiteSpaceChars = "\t\n\r ";
 
-        private static readonly IndexOfAnyValues<char> s_publicIdChars = IndexOfAnyValues.Create(PublicIdChars);
-        private static readonly IndexOfAnyValues<char> s_asciiCharDataChars = IndexOfAnyValues.Create(AsciiCharDataChars);
-        private static readonly IndexOfAnyValues<char> s_whitespaceChars = IndexOfAnyValues.Create(WhiteSpaceChars);
+        private static readonly SearchValues<char> s_publicIdChars = SearchValues.Create(PublicIdChars);
+        private static readonly SearchValues<char> s_asciiCharDataChars = SearchValues.Create(AsciiCharDataChars);
+        private static readonly SearchValues<char> s_whitespaceChars = SearchValues.Create(WhiteSpaceChars);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsWhiteSpace(char ch) => (GetCharProperties(ch) & Whitespace) != 0u;

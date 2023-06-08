@@ -3,10 +3,12 @@
 
 using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_71375
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // At the time of writing this test, the calling convention for incoming vector parameters on
         // Windows ARM64 was broken, so only the fact that "Problem" compiled without asserts was

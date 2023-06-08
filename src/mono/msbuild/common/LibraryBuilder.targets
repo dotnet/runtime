@@ -18,7 +18,7 @@
     </ItemGroup>
 
     <LibraryBuilderTask
-      Assemblies="@(AppAssembliesInternal)"
+      Assemblies="@(_AssembliesToBundleInternal)"
       AssembliesLocation="$(AssembliesLocation)"
       ExtraLinkerArguments="@(_ExtraLinkerArgs)"
       ExtraSources="@(_ExtraLibrarySources)"
@@ -32,6 +32,7 @@
       UsesCustomRuntimeInitCallback="$(_UsesCustomRuntimeInitCallback)"
       UsesRuntimeInitCallback="$(_UsesRuntimeInitCallback)">
       <Output TaskParameter="OutputPath" PropertyName="LibraryOutputPath" />
+      <Output TaskParameter="ExportedSymbols" ItemName="LibraryRuntimeExportedSymbols" />
     </LibraryBuilderTask>
   </Target>
 

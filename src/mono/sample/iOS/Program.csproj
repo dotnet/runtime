@@ -46,9 +46,9 @@
     <PropertyGroup Condition="'$(iOSLikeDedup)' == 'true'">
       <_iOSLikeDedupAssembly>$(MSBuildThisFileDirectory)$(PublishDir)\aot-instances.dll</_iOSLikeDedupAssembly>
     </PropertyGroup>
-    <WriteLinesToFile Condition="'$(iOSLikeDedup)' == 'true'" File="$(MSBuildThisFileDirectory)$(PublishDir)/aot-instances.cs" Overwrite="true" Lines="" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile Condition="'$(iOSLikeDedup)' == 'true'" File="$(IntermediateOutputPath)/aot-instances.cs" Overwrite="true" Lines="" WriteOnlyWhenDifferent="true" />
     <Csc Condition="'$(iOSLikeDedup)' == 'true'"
-      Sources="$(MSBuildThisFileDirectory)$(PublishDir)\aot-instances.cs"
+      Sources="$(IntermediateOutputPath)\aot-instances.cs"
       OutputAssembly="$(_iOSLikeDedupAssembly)"
       TargetType="library"
       Deterministic="true"
@@ -62,6 +62,7 @@
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </AotInputAssemblies>
+      <_ExcludeFromAppDir Include="$(_iOSLikeDedupAssembly)" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -109,6 +110,7 @@
         EnableAppSandbox="$(EnableAppSandbox)"
         DiagnosticPorts="$(DiagnosticPorts)"
         StripSymbolTable="$(StripDebugSymbols)"
+        ExcludeFromAppDir="@(_ExcludeFromAppDir)"
         AppDir="$(MSBuildThisFileDirectory)$(PublishDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />

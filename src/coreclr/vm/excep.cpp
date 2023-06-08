@@ -6280,9 +6280,9 @@ IsDebuggerFault(EXCEPTION_RECORD *pExceptionRecord,
 
 #endif // TARGET_UNIX
 
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 EXTERN_C void JIT_StackProbe_End();
-#endif // TARGET_ARM64
+#endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
 #ifdef FEATURE_EH_FUNCLETS
 
@@ -6314,14 +6314,13 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
         return FALSE;
     }
 
-    VirtualCallStubManager::StubKind sk;
-    VirtualCallStubManager::FindStubManager(f_IP, &sk, FALSE /* usePredictStubKind */);
+    StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
 
-    if (sk == VirtualCallStubManager::SK_DISPATCH)
+    if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
     {
         return TRUE;
     }
-    else if (sk == VirtualCallStubManager::SK_RESOLVE)
+    else if (sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB)
     {
         return TRUE;
     }
@@ -6347,9 +6346,9 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
     CHECK_RANGE(JIT_WriteBarrier)
     CHECK_RANGE(JIT_CheckedWriteBarrier)
     CHECK_RANGE(JIT_ByRefWriteBarrier)
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !(TARGET_RISCV64)
     CHECK_RANGE(JIT_StackProbe)
-#endif // !TARGET_ARM64
+#endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 #else
 #ifdef TARGET_UNIX
     CHECK_RANGE(JIT_WriteBarrierGroup)
@@ -6471,7 +6470,7 @@ AdjustContextForJITHelpers(
 
         Thread::VirtualUnwindToFirstManagedCallFrame(pContext);
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // We had an AV in the writebarrier that needs to be treated
         // as originating in managed code. At this point, the stack (growing
         // from left->right) looks like this:
@@ -6495,7 +6494,7 @@ AdjustContextForJITHelpers(
        // Now we save the address back into the context so that it gets used
        // as the faulting address.
        SetIP(pContext, ControlPCPostAdjustment);
-#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
         // Unwind the frame chain - On Win64, this is required since we may handle the managed fault and to do so,
         // we will replace the exception context with the managed context and "continue execution" there. Thus, we do not

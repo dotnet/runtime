@@ -85,12 +85,6 @@ namespace System.Reflection.Metadata
                     peReader = new PEReader((byte*)safeBuffer.DangerousGetHandle(), (int)safeBuffer.ByteLength);
                     MetadataReader mdReader = peReader.GetMetadataReader(MetadataReaderOptions.None);
                     AssemblyName assemblyName = mdReader.GetAssemblyDefinition().GetAssemblyName();
-
-                    AssemblyFlags aFlags = mdReader.AssemblyTable.GetFlags();
-#pragma warning disable SYSLIB0037 // AssemblyName.ProcessorArchitecture is obsolete
-                    assemblyName.ProcessorArchitecture = CalculateProcArch(peReader, aFlags);
-#pragma warning restore SYSLIB0037
-
                     return assemblyName;
                 }
                 finally
@@ -105,42 +99,6 @@ namespace System.Reflection.Metadata
             {
                 throw new BadImageFormatException(ex.Message, assemblyFile, ex);
             }
-        }
-
-        private static ProcessorArchitecture CalculateProcArch(PEReader peReader, AssemblyFlags aFlags)
-        {
-            // 0x70 specifies "reference assembly".
-            // For these, CLR wants to return None as arch so they can be always loaded, regardless of process type.
-            if (((uint)aFlags & 0xF0) == 0x70)
-                return ProcessorArchitecture.None;
-
-            PEHeaders peHeaders = peReader.PEHeaders;
-            switch (peHeaders.CoffHeader.Machine)
-            {
-                case Machine.IA64:
-                    return ProcessorArchitecture.IA64;
-                case Machine.Arm:
-                    return ProcessorArchitecture.Arm;
-                case Machine.Amd64:
-                    return ProcessorArchitecture.Amd64;
-                case Machine.I386:
-                    {
-                        CorFlags flags = peHeaders.CorHeader!.Flags;
-                        if ((flags & CorFlags.ILOnly) != 0 &&
-                            (flags & CorFlags.Requires32Bit) == 0)
-                        {
-                            // platform neutral.
-                            return ProcessorArchitecture.MSIL;
-                        }
-
-                        // requires x86
-                        return ProcessorArchitecture.X86;
-                    }
-            }
-
-            // ProcessorArchitecture is a legacy API and does not cover other Machine kinds.
-            // For example ARM64 is not expressible
-            return ProcessorArchitecture.None;
         }
 
         private static AssemblyNameFlags GetAssemblyNameFlags(AssemblyFlags flags)

@@ -105,12 +105,12 @@ void Ref_ScanSizedRefHandles(uint32_t condemned, uint32_t maxgen, ScanContext* s
 void Ref_ScanPointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn);
 #endif
 
-void Ref_CheckReachable       (uint32_t uCondemnedGeneration, uint32_t uMaxGeneration, uintptr_t lp1);
-void Ref_CheckAlive           (uint32_t uCondemnedGeneration, uint32_t uMaxGeneration, uintptr_t lp1);
+void Ref_CheckReachable       (uint32_t uCondemnedGeneration, uint32_t uMaxGeneration, ScanContext* sc);
+void Ref_CheckAlive           (uint32_t uCondemnedGeneration, uint32_t uMaxGeneration, ScanContext *sc);
 void Ref_ScanHandlesForProfilerAndETW(uint32_t uMaxGeneration, uintptr_t lp1, handle_scan_fn fn);
 void Ref_ScanDependentHandlesForProfilerAndETW(uint32_t uMaxGeneration, ScanContext * SC, handle_scan_fn fn);
-void Ref_AgeHandles           (uint32_t uCondemnedGeneration, uint32_t uMaxGeneration, uintptr_t lp1);
-void Ref_RejuvenateHandles(uint32_t uCondemnedGeneration, uint32_t uMaxGeneration, uintptr_t lp1);
+void Ref_AgeHandles           (uint32_t uCondemnedGeneration, uint32_t uMaxGeneration, ScanContext *sc);
+void Ref_RejuvenateHandles(uint32_t uCondemnedGeneration, uint32_t uMaxGeneration, ScanContext *sc);
 
 void Ref_VerifyHandleTable(uint32_t condemned, uint32_t maxgen, ScanContext* sc);
 

@@ -83,7 +83,7 @@ HRESULT SString::LoadResourceAndReturnHR(CCompRC* pResourceDLL, CCompRC::Resourc
 
             if (SUCCEEDED(hr))
             {
-                Truncate(Begin() + (COUNT_T) wcslen(GetRawUnicode()));
+                Truncate(Begin() + (COUNT_T) u16_strlen(GetRawUnicode()));
             }
 
             Normalize();

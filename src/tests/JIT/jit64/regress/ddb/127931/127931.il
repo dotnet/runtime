@@ -6,11 +6,11 @@
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
   .ver 2:0:0:0
 }
-.assembly ILGEN_0xf64b7da3
+.assembly extern xunit.core {}
+.assembly '127931'
 {
   .ver 0:0:0:0
 }
-.module rtc_shorteningconvert.exe
 // MVID: {FB8EB234-0641-4679-8147-BB7819EB64E7}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -22,7 +22,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private auto ansi ILGEN_0xf64b7da3
+.class public auto ansi ILGEN_0xf64b7da3
        extends [mscorlib]System.Object
 {
   .method privatescope static int16  Method_0xcb0b0b48$PST06000001(uint32 Arg_0x2) cil managed
@@ -51,8 +51,11 @@
     IL_0038:  ret
   } // end of method ILGEN_0xf64b7da3::Method_0xcb0b0b48
 
-  .method privatescope static int32  Main$PST06000002() cil managed
+  .method public static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       11 (0xb)
     .maxstack  11

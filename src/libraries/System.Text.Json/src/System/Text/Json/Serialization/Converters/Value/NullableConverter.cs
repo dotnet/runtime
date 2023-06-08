@@ -1,12 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text.Json.Serialization.Metadata;
+
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class NullableConverter<T> : JsonConverter<T?> where T : struct
     {
         internal override Type? ElementType => typeof(T);
         public override bool HandleNull => true;
+        internal override bool CanPopulate => _elementConverter.CanPopulate;
+        internal override bool ConstructorIsParameterized => _elementConverter.ConstructorIsParameterized;
 
         // It is possible to cache the underlying converter since this is an internal converter and
         // an instance is created only once for each JsonSerializerOptions instance.
@@ -17,6 +21,7 @@ namespace System.Text.Json.Serialization.Converters
             _elementConverter = elementConverter;
             IsInternalConverterForNumberType = elementConverter.IsInternalConverterForNumberType;
             ConverterStrategy = elementConverter.ConverterStrategy;
+            ConstructorInfo = elementConverter.ConstructorInfo;
         }
 
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out T? value)
@@ -27,13 +32,16 @@ namespace System.Text.Json.Serialization.Converters
                 return true;
             }
 
-            state.Current.JsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
-            if (_elementConverter.TryRead(ref reader, typeof(T), options, ref state, out T element))
+            JsonTypeInfo previousTypeInfo = state.Current.JsonTypeInfo;
+            state.Current.JsonTypeInfo = state.Current.JsonTypeInfo.ElementTypeInfo!;
+            if (_elementConverter.OnTryRead(ref reader, typeof(T), options, ref state, out T element))
             {
                 value = element;
+                state.Current.JsonTypeInfo = previousTypeInfo;
                 return true;
             }
 
+            state.Current.JsonTypeInfo = previousTypeInfo;
             value = null;
             return false;
         }

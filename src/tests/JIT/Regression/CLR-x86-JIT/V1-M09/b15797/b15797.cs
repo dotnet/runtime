@@ -4,10 +4,12 @@
 
 // Compute distance light travels using long variables.
 using System;
+using Xunit;
 public class Light
 {
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int lightspeed;
         long days;

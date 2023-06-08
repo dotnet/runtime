@@ -33,6 +33,7 @@ extends:
           - windows_x64
           - windows_x86
           - windows_arm64
+          disableComponentGovernance: true # Not a shipping artifact
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -47,3 +48,4 @@ extends:
           - windows_x64
           - windows_x86
           - windows_arm64
+          disableComponentGovernance: true # Not a shipping artifact

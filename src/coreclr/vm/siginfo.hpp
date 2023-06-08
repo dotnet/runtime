@@ -213,6 +213,12 @@ public:
         TypeHandle GetTypeHandleNT(Module* pModule,
                                    const SigTypeContext *pTypeContext) const;
 
+        struct HandleRecursiveGenericsForFieldLayoutLoad
+        {
+            Module* pModuleWithTokenToAvoidIfPossible;
+            mdToken tkTypeDefToAvoidIfPossible;
+        };
+
         // pTypeContext indicates how to instantiate any generic type parameters we come
         // However, first we implicitly apply the substitution pSubst to the metadata if pSubst is supplied.
         // That is, if the metadata contains a type variable "!0" then we first look up
@@ -240,7 +246,9 @@ public:
                                          BOOL dropGenericArgumentLevel = FALSE,
                                          const Substitution *pSubst = NULL,
                                          const ZapSig::Context *pZapSigContext = NULL,
-                                         MethodTable *pMTInterfaceMapOwner = NULL) const;
+                                         MethodTable *pMTInterfaceMapOwner = NULL,
+                                         HandleRecursiveGenericsForFieldLayoutLoad *pRecursiveFieldGenericHandling = NULL
+                                         ) const;
 
 public:
         //------------------------------------------------------------------------

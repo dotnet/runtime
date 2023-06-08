@@ -50,7 +50,7 @@ namespace System.Threading
             return success;
         }
 
-        public void ReleaseCore(int count)
+        protected override void ReleaseCore(int count)
         {
             Debug.Assert(count > 0);
 

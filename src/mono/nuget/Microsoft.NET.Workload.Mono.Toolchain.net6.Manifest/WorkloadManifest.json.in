@@ -119,6 +119,7 @@
       "platforms": [ "win-x64", "win-arm64", "osx-arm64", "osx-x64" ]
     },
     "runtimes-windows-net6": {
+      "abstract": true,
       "description": "Windows Runtime Packs for net6.0",
       "packs": [
         "Microsoft.NETCore.App.Runtime.net6.win-x64",

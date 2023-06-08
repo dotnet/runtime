@@ -65,7 +65,7 @@ public abstract class EmitWasmBundleBase : Microsoft.Build.Utilities.Task, ICanc
             return (registeredName, symbolName);
         }).ToList();
 
-        Log.LogMessage(MessageImportance.Low, "Bundling {numFiles} files for {bundleName}", files.Count, BundleName);
+        Log.LogMessage(MessageImportance.Low, $"Bundling {files.Count} files for {BundleName}");
 
         if (remainingDestinationFilesToBundle.Length > 0)
         {
