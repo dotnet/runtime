@@ -1616,6 +1616,12 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_AVX512F_CompareLessThan:
         case NI_AVX512F_CompareLessThanOrEqual:
         case NI_AVX512F_CompareNotEqual:
+        case NI_AVX512F_CompareNotGreaterThan:
+        case NI_AVX512F_CompareNotGreaterThanOrEqual:
+        case NI_AVX512F_CompareNotLessThan:
+        case NI_AVX512F_CompareNotLessThanOrEqual:
+        case NI_AVX512F_CompareOrdered:
+        case NI_AVX512F_CompareUnordered:
         case NI_AVX512F_VL_CompareGreaterThan:
         case NI_AVX512F_VL_CompareGreaterThanOrEqual:
         case NI_AVX512F_VL_CompareLessThan:
@@ -1848,31 +1854,67 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
 
                         case NI_AVX512F_CompareGreaterThanMask:
                         {
-                            maskIntrinsicId = NI_AVX512F_CompareLessThanOrEqualMask;
+                            maskIntrinsicId = NI_AVX512F_CompareNotGreaterThanMask;
                             break;
                         }
 
                         case NI_AVX512F_CompareGreaterThanOrEqualMask:
                         {
-                            maskIntrinsicId = NI_AVX512F_CompareLessThanMask;
+                            maskIntrinsicId = NI_AVX512F_CompareNotGreaterThanOrEqualMask;
                             break;
                         }
 
                         case NI_AVX512F_CompareLessThanMask:
                         {
-                            maskIntrinsicId = NI_AVX512F_CompareGreaterThanOrEqualMask;
+                            maskIntrinsicId = NI_AVX512F_CompareNotLessThanMask;
                             break;
                         }
 
                         case NI_AVX512F_CompareLessThanOrEqualMask:
                         {
-                            maskIntrinsicId = NI_AVX512F_CompareGreaterThanMask;
+                            maskIntrinsicId = NI_AVX512F_CompareNotLessThanOrEqualMask;
                             break;
                         }
 
                         case NI_AVX512F_CompareNotEqualMask:
                         {
                             maskIntrinsicId = NI_AVX512F_CompareEqualMask;
+                            break;
+                        }
+
+                        case NI_AVX512F_CompareNotGreaterThanMask:
+                        {
+                            maskIntrinsicId = NI_AVX512F_CompareGreaterThanMask;
+                            break;
+                        }
+
+                        case NI_AVX512F_CompareNotGreaterThanOrEqualMask:
+                        {
+                            maskIntrinsicId = NI_AVX512F_CompareGreaterThanOrEqualMask;
+                            break;
+                        }
+
+                        case NI_AVX512F_CompareNotLessThanMask:
+                        {
+                            maskIntrinsicId = NI_AVX512F_CompareLessThanMask;
+                            break;
+                        }
+
+                        case NI_AVX512F_CompareNotLessThanOrEqualMask:
+                        {
+                            maskIntrinsicId = NI_AVX512F_CompareLessThanOrEqualMask;
+                            break;
+                        }
+
+                        case NI_AVX512F_CompareOrderedMask:
+                        {
+                            maskIntrinsicId = NI_AVX512F_CompareUnorderedMask;
+                            break;
+                        }
+
+                        case NI_AVX512F_CompareUnorderedMask:
+                        {
+                            maskIntrinsicId = NI_AVX512F_CompareOrderedMask;
                             break;
                         }
 
@@ -5089,7 +5131,7 @@ GenTree* Lowering::LowerHWIntrinsicWithAvx512Mask(GenTreeHWIntrinsic* node)
         case NI_AVX512F_VL_CompareLessThan:
         case NI_AVX512BW_VL_CompareLessThan:
         {
-            assert(varTypeIsUnsigned(simdBaseType));
+            assert(!varTypeIsFloating(simdBaseType));
             FALLTHROUGH;
         }
 
@@ -5125,6 +5167,42 @@ GenTree* Lowering::LowerHWIntrinsicWithAvx512Mask(GenTreeHWIntrinsic* node)
         case NI_AVX512BW_CompareNotEqual:
         {
             maskIntrinsicId = NI_AVX512F_CompareNotEqualMask;
+            break;
+        }
+
+        case NI_AVX512F_CompareNotGreaterThan:
+        {
+            maskIntrinsicId = NI_AVX512F_CompareNotGreaterThanMask;
+            break;
+        }
+
+        case NI_AVX512F_CompareNotGreaterThanOrEqual:
+        {
+            maskIntrinsicId = NI_AVX512F_CompareNotGreaterThanOrEqualMask;
+            break;
+        }
+
+        case NI_AVX512F_CompareNotLessThan:
+        {
+            maskIntrinsicId = NI_AVX512F_CompareNotLessThanMask;
+            break;
+        }
+
+        case NI_AVX512F_CompareNotLessThanOrEqual:
+        {
+            maskIntrinsicId = NI_AVX512F_CompareNotLessThanOrEqualMask;
+            break;
+        }
+
+        case NI_AVX512F_CompareOrdered:
+        {
+            maskIntrinsicId = NI_AVX512F_CompareOrderedMask;
+            break;
+        }
+
+        case NI_AVX512F_CompareUnordered:
+        {
+            maskIntrinsicId = NI_AVX512F_CompareUnorderedMask;
             break;
         }
 
