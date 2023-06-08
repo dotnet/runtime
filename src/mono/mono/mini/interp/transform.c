@@ -1271,7 +1271,16 @@ interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *ta
 {
 	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_method_access;
 
+	push_simple_type (td, STACK_TYPE_I4);
+	td->sp--;
+	int dummy_dreg = td->sp [0].local;
+
 	/* Inject code throwing MethodAccessException */
+	interp_add_ins (td, MINT_LDPTR);
+	push_simple_type (td, STACK_TYPE_I);
+	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+
 	interp_add_ins (td, MINT_LDPTR);
 	push_simple_type (td, STACK_TYPE_I);
 	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
@@ -1284,9 +1293,11 @@ interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *ta
 
 	td->sp -= 2;
 
-	interp_add_ins (td, MINT_ICALL_PP_V);
-	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
-	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+	interp_add_ins (td, MINT_CALLI_NAT_FAST);
+	interp_ins_set_dreg (td->last_ins, dummy_dreg);
+	interp_ins_set_sregs2 (td->last_ins, td->sp [-1].local, MINT_CALL_ARGS_SREG);
+	td->last_ins->data [0] = get_data_item_index (td, info->sig);
+	td->last_ins->data [1] = GINT_TO_OPCODE (MINT_ICALL_PP_V);
 	init_last_ins_call (td);
 	if (td->optimized) {
 		int *call_args = (int*)mono_mempool_alloc (td->mempool, 3 * sizeof (int));
@@ -1297,6 +1308,7 @@ interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *ta
 	} else {
 		td->last_ins->info.call_info->call_offset = get_tos_offset (td);
 	}
+	td->sp--;
 }
 
 static void
@@ -1304,17 +1316,25 @@ interp_generate_void_throw (TransformData *td, MonoJitICallId icall_id)
 {
 	MonoJitICallInfo *info = mono_find_jit_icall_info (icall_id);
 
-	interp_add_ins (td, MINT_ICALL_V_V);
-	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
+	push_simple_type (td, STACK_TYPE_I4);
+	td->sp--;
+	int dummy_dreg = td->sp [0].local;
+
+	interp_add_ins (td, MINT_LDPTR);
+	push_simple_type (td, STACK_TYPE_I);
+	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+
+	interp_add_ins (td, MINT_CALLI_NAT_FAST);
+	interp_ins_set_dreg (td->last_ins, dummy_dreg);
+	interp_ins_set_sregs2 (td->last_ins, td->sp [-1].local, MINT_CALL_ARGS_SREG);
+	td->last_ins->data [0] = get_data_item_index (td, info->sig);
+	td->last_ins->data [1] = GINT_TO_OPCODE (MINT_ICALL_V_V);
 	init_last_ins_call (td);
-	if (!td->optimized) {
-		push_simple_type (td, STACK_TYPE_I4);
-		td->sp--;
-		td->last_ins->dreg = td->sp [0].local;
-	} else {
+	if (!td->optimized)
 		td->last_ins->info.call_info->call_offset = get_tos_offset (td);
-	}
+
+	td->sp--;
 }
 
 static void
@@ -1324,6 +1344,15 @@ interp_generate_ipe_throw_with_msg (TransformData *td, MonoError *error_msg)
 
 	char *msg = mono_mem_manager_strdup (td->mem_manager, mono_error_get_message (error_msg));
 
+	push_simple_type (td, STACK_TYPE_I4);
+	td->sp--;
+	int dummy_dreg = td->sp [0].local;
+
+	interp_add_ins (td, MINT_LDPTR);
+	push_simple_type (td, STACK_TYPE_I);
+	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+
 	interp_add_ins (td, MINT_LDPTR);
 	push_simple_type (td, STACK_TYPE_I);
 	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
@@ -1331,9 +1360,11 @@ interp_generate_ipe_throw_with_msg (TransformData *td, MonoError *error_msg)
 
 	td->sp -= 1;
 
-	interp_add_ins (td, MINT_ICALL_P_V);
-	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
-	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+	interp_add_ins (td, MINT_CALLI_NAT_FAST);
+	interp_ins_set_dreg (td->last_ins, dummy_dreg);
+	interp_ins_set_sregs2 (td->last_ins, td->sp [-1].local, MINT_CALL_ARGS_SREG);
+	td->last_ins->data [0] = get_data_item_index (td, info->sig);
+	td->last_ins->data [1] = GINT_TO_OPCODE (MINT_ICALL_P_V);
 	init_last_ins_call (td);
 	if (td->optimized) {
 		int *call_args = (int*)mono_mempool_alloc (td->mempool, 2 * sizeof (int));
@@ -1343,6 +1374,7 @@ interp_generate_ipe_throw_with_msg (TransformData *td, MonoError *error_msg)
 	} else {
 		td->last_ins->info.call_info->call_offset = get_tos_offset (td);
 	}
+	td->sp--;
 }
 
 static void
