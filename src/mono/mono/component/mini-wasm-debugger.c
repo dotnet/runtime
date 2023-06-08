@@ -199,7 +199,16 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 		return;
 	}
 
-	if (mono_bundled_resources_get_assembly_resource_values(assembly->aname.name, NULL, NULL, NULL, NULL))
+	if (mono_bundled_resources_get_assembly_resource_values (assembly->aname.name, NULL, NULL, NULL, NULL))
+		return;
+
+	size_t len = strlen (assembly->aname.name);
+	char *assembly_name_with_extension = (char *)g_malloc0 (sizeof(char) * (len + 5));
+	memcpy (assembly_name_with_extension, assembly->aname.name, len);
+	memcpy (assembly_name_with_extension + len, ".dll\0", 5);
+	gboolean mono_bundle_has_assembly = mono_bundled_resources_get_assembly_resource_values (assembly_name_with_extension, NULL, NULL, NULL, NULL);
+	g_free (assembly_name_with_extension);
+	if (mono_bundle_has_assembly)
 		return;
 
 	if (mono_has_pdb_checksum ((char *) assembly_image->raw_data, assembly_image->raw_data_len)) { //if it's a release assembly we don't need to send to DebuggerProxy

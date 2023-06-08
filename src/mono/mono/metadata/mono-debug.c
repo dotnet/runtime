@@ -1082,29 +1082,12 @@ mono_register_symfile_for_assembly (const char *assembly_name, const mono_byte *
 static MonoDebugHandle *
 open_symfile_from_bundle (MonoImage *image)
 {
-	MonoDebugHandle *handle = NULL;
 	const uint8_t *data = NULL;
 	uint32_t size = 0;
-	if (mono_bundled_resources_get_assembly_resource_values (image->module_name, NULL, NULL, &data, &size))
-		handle = mono_debug_open_image (image, data, size);
+	if (!mono_bundled_resources_get_assembly_resource_values (image->module_name, NULL, NULL, &data, &size))
+		return NULL;
 
-#ifdef ENABLE_WEBCIL
-	size_t len = strlen (image->module_name);
-	char *extension = strrchr (image->module_name, '.');
-	/* if image's module_name ends with an acceptable extension, check if theres a bundled resource with a .dll extension instead */
-	if (extension && (!strcmp (extension, ".webcil") || !strcmp (extension, MONO_WEBCIL_IN_WASM_EXTENSION))) {
-		size_t n = extension - image->module_name;
-		char *module_name_dll_suffix = (char *)g_malloc0 (sizeof(char) * (n + 5));
-		memcpy (module_name_dll_suffix, image->module_name, len);
-		memcpy (module_name_dll_suffix + n, ".dll\0", 5);
-		if (mono_bundled_resources_get_assembly_resource_values (module_name_dll_suffix, NULL, NULL, &data, &size))
-			handle = mono_debug_open_image (image, data, size);
-
-		g_free (module_name_dll_suffix);
-	}
-#endif
-
-	return handle;
+	return mono_debug_open_image (image, data, size);
 }
 
 const mono_byte *
@@ -1112,26 +1095,7 @@ mono_get_symfile_bytes_from_bundle (const char *assembly_name, int *size)
 {
 	const uint8_t *symbol_data = NULL;
 	uint32_t symbol_size = 0;
-	if (mono_bundled_resources_get_assembly_resource_values (assembly_name, NULL, NULL, &symbol_data, &symbol_size)) {
-		*size = symbol_size;
-		return (mono_byte *)symbol_data;
-	}
-
-#ifdef ENABLE_WEBCIL
-	if (!symbol_data) {
-		size_t len = strlen (assembly_name);
-		char *extension = strrchr (assembly_name, '.');
-		/* if image's module_name ends with an acceptable extension, check if theres a bundled resource with a .dll extension instead */
-		if (extension && (!strcmp (extension, ".webcil") || !strcmp (extension, MONO_WEBCIL_IN_WASM_EXTENSION))) {
-			size_t n = extension - assembly_name;
-			char *module_name_dll_suffix = (char *)g_malloc0 (sizeof(char) * (n + 5));
-			memcpy (module_name_dll_suffix, assembly_name, len);
-			memcpy (module_name_dll_suffix + n, ".dll\0", 5);
-			mono_bundled_resources_get_assembly_resource_values (module_name_dll_suffix, NULL, NULL, &symbol_data, &symbol_size);
-			g_free (module_name_dll_suffix);
-		}
-	}
-#endif
+	mono_bundled_resources_get_assembly_resource_values (assembly_name, NULL, NULL, &symbol_data, &symbol_size);
 
 	*size = symbol_size;
 	return (mono_byte *)symbol_data;

@@ -92,17 +92,14 @@
     <ItemGroup>
       <_WasmTimezonesInternal Include="$(_WasmTimezonesPath)\**\*.*" WasmRole="Timezone"/>
     </ItemGroup>
-    <GetFileHash Files="@(_WasmTimezonesInternal)">
-      <Output TaskParameter="Items" ItemName="_WasmBundleTimezonesWithHashes" />
-    </GetFileHash>
     <ItemGroup>
-      <_WasmBundleTimezonesWithHashes Update="@(_WasmBundleTimezonesWithHashes)">
-        <RegisteredName>/usr/share/zoneinfo/$([MSBuild]::MakeRelative($(_WasmTimezonesPath), %(_WasmBundleTimezonesWithHashes.Identity)).Replace('\','/'))</RegisteredName>
-      </_WasmBundleTimezonesWithHashes>
+      <_WasmTimezonesInternal Update="@(_WasmTimezonesInternal)">
+        <RegisteredName>/usr/share/zoneinfo/$([MSBuild]::MakeRelative($(_WasmTimezonesPath), %(_WasmTimezonesInternal.Identity)).Replace('\','/'))</RegisteredName>
+      </_WasmTimezonesInternal>
     </ItemGroup>
     <!-- TODO make this incremental compilation -->
     <EmitBundleSourceFiles
-      FilesToBundle="@(_WasmBundleTimezonesWithHashes)"
+      FilesToBundle="@(_WasmTimezonesInternal)"
       BundleRegistrationFunctionName="mono_register_timezones_bundle"
       BundleFile="$(_WasmTimezonesBundleSourceFile)"
       OutputDirectory="$(WasmObjDir)">
@@ -147,7 +144,7 @@
       <_WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.c" />
       <_WasmBundleTimezonesToDelete Remove="$(WasmObjDir)\$(_WasmTimezonesBundleSourceFile)" />
       <_WasmBundleTimezonesToDelete Remove="%(BundledWasmTimezones.DestinationFile)" />
-      <_WasmBundleTimezonesToDelete Remove="%(WasmBundleTimezonesObjects)" />
+      <_WasmBundleTimezonesToDelete Remove="$(WasmObjDir)\%(WasmBundleTimezonesObjects)" />
     </ItemGroup>
     <Delete Files="@(_WasmBundleTimezonesToDelete)" />
   </Target>
