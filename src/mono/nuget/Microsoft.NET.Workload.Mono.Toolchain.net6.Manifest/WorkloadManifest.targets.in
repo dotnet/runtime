@@ -67,7 +67,7 @@
     <_MonoWorkloadRuntimePackPackageVersion>$(_RuntimePackInWorkloadVersion6)</_MonoWorkloadRuntimePackPackageVersion>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetsNet6)' == 'true' and '$(_MonoWorkloadTargetsMobile)' == 'true'">
+  <ItemGroup Condition="'$(TargetsNet6)' == 'true' and '$(_MonoWorkloadRuntimePackPackageVersion)' != '' and '$(_MonoWorkloadTargetsMobile)' == 'true'">
     <KnownRuntimePack Update="@(KnownRuntimePack)">
       <LatestRuntimeFrameworkVersion Condition="'%(KnownRuntimePack.TargetFramework)' == 'net6.0' and '%(KnownRuntimePack.RuntimePackLabels)' == 'Mono'">$(_MonoWorkloadRuntimePackPackageVersion)</LatestRuntimeFrameworkVersion>
     </KnownRuntimePack>
