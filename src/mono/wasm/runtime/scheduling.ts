@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import cwraps from "./cwraps";
+import { Module, loaderHelpers } from "./globals";
 
 let spread_timers_maximum = 0;
 let pump_count = 0;
