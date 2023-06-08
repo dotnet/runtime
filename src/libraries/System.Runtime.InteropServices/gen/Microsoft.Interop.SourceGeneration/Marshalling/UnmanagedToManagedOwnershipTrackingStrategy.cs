@@ -168,7 +168,9 @@ namespace Microsoft.Interop
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _inner.UsesNativeIdentifier(info, context);
     }
 
+#pragma warning disable SA1400 // Access modifier should be declared https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3659
     file sealed record OwnedValueCodeContext : StubCodeContext
+#pragma warning restore SA1400 // Access modifier should be declared
     {
         private readonly StubCodeContext _innerContext;
 
@@ -194,7 +196,9 @@ namespace Microsoft.Interop
         public override string GetAdditionalIdentifier(TypePositionInfo info, string name) => _innerContext.GetAdditionalIdentifier(info, name);
     }
 
+#pragma warning disable SA1400 // Access modifier should be declared https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3659
     file static class OwnershipTrackingHelpers
+#pragma warning restore SA1400 // Access modifier should be declared
     {
         public const string OwnOriginalValueIdentifier = "ownOriginal";
         public const string OriginalValueIdentifier = "original";
