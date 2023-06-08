@@ -422,10 +422,9 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 4);
         }
 
-        /* This test appears to destabilize the others by having the session remain running
-         * 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         //[OuterLoop("Slow and has lots of console spew")]
+        [ActiveIssue("This test appears to interfere with the others due to the session not being shut down.")]
         public void MultipleListeners_SharedSessionWithoutClientIdRejectsSharedListenerWithDifferentArgsAfterListenerDisposed()
         {
             using Meter meter = new Meter("TestMeter7");
@@ -454,7 +453,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertBeginInstrumentReportingEventsPresent(events, c);
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"), ("19", "36"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 4);
-        }*/
+        }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         //[OuterLoop("Slow and has lots of console spew")]
@@ -655,11 +654,6 @@ namespace System.Diagnostics.Metrics.Tests
             AssertInstrumentPublishingEventsPresent(events2, c, oc, og, h, udc, oudc);
             AssertInitialEnumerationCompleteEventPresent(events2);
         }
-
-
-
-
-
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         //[OuterLoop("Slow and has lots of console spew")]
