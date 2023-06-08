@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (compilationData?.LanguageVersionIsSupported != true)
             {
-                context.ReportDiagnostic(Diagnostic.Create(ParserDiagnostics.LanguageVersionNotSupported, location: null));
+                context.ReportDiagnostic(Diagnostic.Create(Parser.Diagnostics.LanguageVersionNotSupported, location: null));
                 return;
             }
 

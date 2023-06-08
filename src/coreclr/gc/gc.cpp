@@ -6995,7 +6995,6 @@ void gc_heap::gc_thread_function ()
             {
                 update_collection_counts_for_no_gc();
                 proceed_with_gc_p = FALSE;
-                gradual_decommit_in_progress_p = FALSE;
             }
             else
             {
@@ -7842,7 +7841,7 @@ void gc_heap::fix_allocation_context_heaps (gc_alloc_context* gc_context, void*)
 // make sure no allocation contexts point to idle heaps
 void gc_heap::fix_allocation_contexts_heaps()
 {
-    GCToEEInterface::GcEnumAllocContexts (fix_allocation_context_heaps, nullptr); 
+    GCToEEInterface::GcEnumAllocContexts (fix_allocation_context_heaps, nullptr);
 }
 #endif //MULTIPLE_HEAPS
 
@@ -10597,7 +10596,7 @@ static int __cdecl cmp_mark_list_item (const void* vkey, const void* vdatum)
 #endif // _DEBUG
 
 #ifdef USE_REGIONS
-uint8_t** gc_heap::get_region_mark_list (uint8_t* start, uint8_t* end, uint8_t*** mark_list_end_ptr)
+uint8_t** gc_heap::get_region_mark_list (BOOL& use_mark_list, uint8_t* start, uint8_t* end, uint8_t*** mark_list_end_ptr)
 {
     size_t region_number = get_basic_region_index_for_address (start);
     size_t source_number = region_number;
@@ -10727,6 +10726,13 @@ void gc_heap::merge_mark_lists (size_t total_mark_list_size)
 
             // blast this piece to the mark list
             append_to_mark_list(source[lowest_source], x);
+#ifdef USE_REGIONS
+            if (mark_list_index > mark_list_end)
+            {
+                use_mark_list = false;
+                return nullptr;
+            }
+#endif //USE_REGIONS
             piece_count++;
 
             source[lowest_source] = x;
@@ -10746,6 +10752,13 @@ void gc_heap::merge_mark_lists (size_t total_mark_list_size)
         }
         // we're left with just one source that we copy
         append_to_mark_list(source[0], source_end[0]);
+#ifdef USE_REGIONS
+        if (mark_list_index > mark_list_end)
+        {
+            use_mark_list = false;
+            return nullptr;
+        }
+#endif //USE_REGIONS
         piece_count++;
     }
 
@@ -10802,7 +10815,7 @@ static uint8_t** binary_search (uint8_t** left, uint8_t** right, uint8_t* e)
         return a + l;
 }
 
-uint8_t** gc_heap::get_region_mark_list (uint8_t* start, uint8_t* end, uint8_t*** mark_list_end_ptr)
+uint8_t** gc_heap::get_region_mark_list (BOOL& use_mark_list, uint8_t* start, uint8_t* end, uint8_t*** mark_list_end_ptr)
 {
     // do a binary search over the sorted marked list to find start and end of the
     // mark list for this region
@@ -14171,7 +14184,7 @@ gc_heap::init_semi_shared()
 #ifdef MULTIPLE_HEAPS
     mark_list_size = min (100*1024, max (8192, soh_segment_size/(2*10*32)));
 #ifdef DYNAMIC_HEAP_COUNT
-    if (GCConfig::GetGCDynamicAdaptation() && GCConfig::GetHeapCount() == 0)
+    if (GCConfig::GetGCDynamicAdaptationMode() == 1 && GCConfig::GetHeapCount() == 0)
     {
         // we'll actually start with one heap in this case
         g_mark_list_total_size = mark_list_size;
@@ -14381,7 +14394,7 @@ gc_heap::init_semi_shared()
 #endif //FEATURE_EVENT_TRACE
 
     conserve_mem_setting  = (int)GCConfig::GetGCConserveMem();
-    if (conserve_mem_setting == 0 && GCConfig::GetGCDynamicAdaptation())
+    if (conserve_mem_setting == 0 && GCConfig::GetGCDynamicAdaptationMode() == 1)
         conserve_mem_setting = 5;
     if (conserve_mem_setting < 0)
         conserve_mem_setting = 0;
@@ -15838,9 +15851,9 @@ void allocator::count_items (gc_heap* this_hp, size_t* fl_items_count, size_t* f
             assert (((CObjectHeader*)free_item)->IsFree());
 
             num_fl_items++;
-            // Get the heap its region belongs to see if we need to put it back. 
+            // Get the heap its region belongs to see if we need to put it back.
             heap_segment* region = gc_heap::region_of (free_item);
-            dprintf (3, ("b#%2d FL %Ix region %Ix heap %d -> %d", 
+            dprintf (3, ("b#%2d FL %Ix region %Ix heap %d -> %d",
                 i, free_item, (size_t)region, this_hp->heap_number, region->heap->heap_number));
             if (region->heap != this_hp)
             {
@@ -15849,7 +15862,7 @@ void allocator::count_items (gc_heap* this_hp, size_t* fl_items_count, size_t* f
                 //if ((num_fl_items_rethread % 1000) == 0)
                 //{
                 //    end_us = GetHighPrecisionTimeStamp();
-                //    dprintf (8888, ("%Id items rethreaded out of %Id items in %I64d us, current fl: %Ix", 
+                //    dprintf (8888, ("%Id items rethreaded out of %Id items in %I64d us, current fl: %Ix",
                 //        num_fl_items_rethread, num_fl_items, (end_us - start_us), free_item));
                 //    start_us = end_us;
                 //}
@@ -15941,9 +15954,9 @@ void allocator::rethread_items (size_t* num_total_fl_items, size_t* num_total_fl
             assert (((CObjectHeader*)free_item)->IsFree());
 
             num_fl_items++;
-            // Get the heap its region belongs to see if we need to put it back. 
+            // Get the heap its region belongs to see if we need to put it back.
             heap_segment* region = gc_heap::region_of (free_item);
-            dprintf (3, ("b#%2d FL %Ix region %Ix heap %d -> %d", 
+            dprintf (3, ("b#%2d FL %Ix region %Ix heap %d -> %d",
                 i, free_item, (size_t)region, current_heap->heap_number, region->heap->heap_number));
             // need to keep track of heap and only check if it's not from our heap!!
             if (region->heap != current_heap)
@@ -15987,7 +16000,7 @@ void allocator::rethread_items (size_t* num_total_fl_items, size_t* num_total_fl
 // merge buckets from min_fl_list to their corresponding buckets to this FL.
 void allocator::merge_items (gc_heap* current_heap, int to_num_heaps, int from_num_heaps)
 {
-    int this_hn = current_heap->heap_number; 
+    int this_hn = current_heap->heap_number;
 
     for (unsigned int i = 0; i < num_buckets; i++)
     {
@@ -22482,7 +22495,7 @@ void gc_heap::gc1()
 bool gc_heap::prepare_rethread_fl_items()
 {
     if (!min_fl_list)
-    {    
+    {
         min_fl_list = new (nothrow) min_fl_list_info [MAX_BUCKET_COUNT * n_max_heaps];
         if (min_fl_list == nullptr)
             return false;
@@ -22934,6 +22947,11 @@ BOOL gc_heap::should_proceed_for_no_gc()
     BOOL soh_full_gc_requested = FALSE;
     BOOL no_gc_requested = FALSE;
     BOOL get_new_loh_segments = FALSE;
+
+#ifdef MULTIPLE_HEAPS
+    // need to turn off this flag here because of the call to grow_heap_segment below
+    gradual_decommit_in_progress_p = FALSE;
+#endif //MULTIPLE_HEAPS
 
     gc_heap* hp = nullptr;
     if (current_no_gc_region_info.soh_allocation_size)
@@ -24878,10 +24896,10 @@ void gc_heap::check_heap_count ()
         return;
     }
 
-    if (!GCConfig::GetGCDynamicAdaptation())
+    if (GCConfig::GetGCDynamicAdaptationMode() == 0)
     {
         // don't change the heap count dynamically if the feature isn't explicitly enabled
-        return;        
+        return;
     }
 
     if (heap_number == 0)
@@ -25871,8 +25889,8 @@ BOOL gc_heap::background_mark (uint8_t* o, uint8_t* low, uint8_t* high)
         {                                                                   \
             for (ptrdiff_t __i = 0; __i > cnt; __i--)                         \
             {                                                               \
-                HALF_SIZE_T skip =  cur->val_serie[__i].skip;               \
-                HALF_SIZE_T nptrs = cur->val_serie[__i].nptrs;              \
+                HALF_SIZE_T skip =  (cur->val_serie + __i)->skip;           \
+                HALF_SIZE_T nptrs = (cur->val_serie + __i)->nptrs;          \
                 uint8_t** ppstop = parm + nptrs;                            \
                 if (!start_useful || (uint8_t*)ppstop > (start))            \
                 {                                                           \
@@ -30943,21 +30961,21 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
     //
     // + if the pinned surv of a region is >= demotion_pinned_ratio_th (this will be dynamically tuned based on memory load),
     //   it will be promoted to its normal planned generation unconditionally.
-    // 
+    //
     // + if the pinned surv is < demotion_pinned_ratio_th, we will always demote it to gen0. We will record how many regions
     //   have no survival at all - those will be empty and can be used to plan any non gen0 generation if needed.
-    // 
+    //
     //   Note! We could actually promote a region with non zero pinned survivors to whichever generation we'd like (eg, we could
     //   promote a gen0 region to gen2). However it means we'd need to set cards on those objects because we will not have a chance
     //   later. The benefit of doing this is small in general as when we get into this method, it's very rare we don't already
     //   have planned regions in higher generations. So I don't think it's worth the complexicity for now. We may consider it
     //   for the future.
-    // 
+    //
     // + if after we are done walking the remaining regions, we still haven't successfully planned all the needed generations,
     //   we check to see if we have enough in the regions that will be empty (note that we call set_region_plan_gen_num on
     //   these regions which means they are planned in gen0. So we need to make sure at least gen0 has 1 region). If so
     //   thread_final_regions will naturally get one from there so we don't need to call set_region_plan_gen_num to replace the
-    //   plan gen num. 
+    //   plan gen num.
     //
     // + if we don't have enough in regions that will be empty, we'll need to ask for new regions and if we can't, we fall back
     //   to the special sweep mode.
@@ -31008,7 +31026,7 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
 
             heap_segment_plan_allocated (nseg) = generation_allocation_pointer (consing_gen);
             decide_on_demotion_pin_surv (nseg, &to_be_empty_regions);
-            
+
             heap_segment* next_seg = heap_segment_next_non_sip (nseg);
 
             if ((next_seg == 0) && (heap_segment_gen_num (nseg) > 0))
@@ -31606,7 +31624,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
     uint8_t** mark_list_index = nullptr;
     uint8_t** mark_list_next = nullptr;
     if (use_mark_list)
-        mark_list_next = get_region_mark_list (x, end, &mark_list_index);
+        mark_list_next = get_region_mark_list (use_mark_list, x, end, &mark_list_index);
 #else // USE_REGIONS
     assert (!marked (x));
     uint8_t** mark_list_next = &mark_list[0];
@@ -31894,7 +31912,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                 current_brick = brick_of (x);
 #ifdef USE_REGIONS
                 if (use_mark_list)
-                    mark_list_next = get_region_mark_list (x, end, &mark_list_index);
+                    mark_list_next = get_region_mark_list (use_mark_list, x, end, &mark_list_index);
 
                 if (should_sweep_in_plan (seg1))
                 {
@@ -31964,7 +31982,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                     current_brick = brick_of (x);
 
                     if (use_mark_list)
-                        mark_list_next = get_region_mark_list (x, end, &mark_list_index);
+                        mark_list_next = get_region_mark_list (use_mark_list, x, end, &mark_list_index);
 
                     if (should_sweep_in_plan (seg1))
                     {
@@ -44274,8 +44292,6 @@ BOOL gc_heap::ephemeral_gen_fit_p (gc_tuning_point tp)
 
 CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int gen_number, int64_t& alloc_bytes)
 {
-    uint64_t start_us = GetHighPrecisionTimeStamp ();
-
     //create a new alloc context because gen3context is shared.
     alloc_context acontext;
     acontext.init();
@@ -44370,13 +44386,6 @@ CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int g
 
     assert (obj != 0);
     assert ((size_t)obj == Align ((size_t)obj, align_const));
-
-    uint64_t elapsed_us = GetHighPrecisionTimeStamp () - start_us;
-
-    //if (elapsed_us > 1000)
-    //{
-    //    dprintf (5555, ("LONG uoh alloc %Id (%I64dus)", size, elapsed_us));
-    //}
 
     return obj;
 }
@@ -46213,7 +46222,7 @@ void gc_heap::descr_generations (const char* msg)
             dprintf (1, ("[%5s] GC#%5Id total heap size: %Idmb (F: %Idmb %d%%) commit size: %Idmb, %0.3f min, %d,%d new in plan, %d in threading\n",
                 msg, idx, alloc_size, frag_size,
                 (int)((double)frag_size * 100.0 / (double)alloc_size),
-                commit_size, 
+                commit_size,
                 (double)elapsed_time_so_far / (double)1000000 / (double)60,
                 total_new_gen0_regions_in_plns, total_new_regions_in_prr, total_new_regions_in_threading));
         }
@@ -48063,7 +48072,7 @@ HRESULT GCHeap::Initialize()
     {
 #ifdef DYNAMIC_HEAP_COUNT
         // if no heap count was specified, and we are told to adjust heap count dynamically ...
-        if (GCConfig::GetHeapCount() == 0 && GCConfig::GetGCDynamicAdaptation())
+        if (GCConfig::GetHeapCount() == 0 && GCConfig::GetGCDynamicAdaptationMode() == 1)
         {
             // ... start with only 1 heap
             gc_heap::g_heaps[0]->change_heap_count (1);
@@ -50505,7 +50514,7 @@ size_t gc_heap::get_gen0_min_size()
         int n_heaps = 1;
 #endif //SERVER_GC
 
-        if (GCConfig::GetGCConserveMem() != 0 || GCConfig::GetGCDynamicAdaptation())
+        if (GCConfig::GetGCConserveMem() != 0 || GCConfig::GetGCDynamicAdaptationMode() == 1)
         {
             // if we are asked to be stingy with memory, limit gen 0 size
             gen0size = min (gen0size, (4*1024*1024));

@@ -48,10 +48,9 @@ namespace ComInterfaceGenerator.Tests
             iface.SetInt(5);
             Assert.Equal(5, iface.GetInt());
 
-            // https://github.com/dotnet/runtime/issues/85795
-            //Assert.Equal("myName", iface.GetName());
-            //iface.SetName("updated");
-            //Assert.Equal("updated", iface.GetName());
+            Assert.Equal("myName", iface.GetName());
+            iface.SetName("updated");
+            Assert.Equal("updated", iface.GetName());
 
             var iUnknownStrategyProperty = typeof(ComObject).GetProperty("IUnknownStrategy", BindingFlags.NonPublic | BindingFlags.Instance);
 
@@ -67,7 +66,7 @@ namespace ComInterfaceGenerator.Tests
         {
             int data = 3;
             string myName = "myName";
-            public void DoThingWithString([MarshalUsing(typeof(Utf16StringMarshaller))] string name) => throw new NotImplementedException();
+            public void DoThingWithString(string name) => throw new NotImplementedException();
 
             public int GetInt() => data;
 

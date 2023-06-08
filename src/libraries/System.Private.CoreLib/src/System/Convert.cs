@@ -113,17 +113,12 @@ namespace System
         }
 
         // Converts the given object to the given type. In general, this method is
-        // equivalent to calling the Value.ToXXX(value) method for the given
+        // equivalent to calling ((IConvertible)value).ToXXX(CultureInfo.CurrentCulture) for the given
         // typeCode and boxing the result.
         //
         // The method first checks if the given object implements IConvertible. If not,
-        // the only permitted conversion is from a null to TypeCode.Empty, the
+        // the only permitted conversion is from a null to TypeCode.Empty/TypeCode.String/TypeCode.Object, the
         // result of which is null.
-        //
-        // If the object does implement IConvertible, a check is made to see if the
-        // object already has the given type code, in which case the object is
-        // simply returned. Otherwise, the appropriate ToXXX() is invoked on the
-        // object's implementation of IConvertible.
         [return: NotNullIfNotNull(nameof(value))]
         public static object? ChangeType(object? value, TypeCode typeCode)
         {

@@ -67,5 +67,5 @@ namespace DependencyLogViewer
             string dMessage = "Dependent nodes depend on the current node. The current node depends on the dependees.";
             MessageBox.Show(dMessage);
         }
-    }   
+    }
 }

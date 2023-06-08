@@ -7528,7 +7528,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					goto calli_end;
 				}
 			}
-			if (cfg->llvm_only && !(cfg->method->wrapper_type && cfg->method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD))
+			/* Some wrappers use calli with ftndesc-es */
+			if (cfg->llvm_only && !(cfg->method->wrapper_type &&
+									cfg->method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD &&
+									cfg->method->wrapper_type != MONO_WRAPPER_DELEGATE_INVOKE))
 				ins = mini_emit_llvmonly_calli (cfg, fsig, sp, addr);
 			else
 				ins = (MonoInst*)mini_emit_calli_full (cfg, fsig, sp, addr, NULL, NULL, tailcall);

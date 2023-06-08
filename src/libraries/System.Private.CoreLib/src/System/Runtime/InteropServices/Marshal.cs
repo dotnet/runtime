@@ -480,7 +480,7 @@ namespace System.Runtime.InteropServices
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
-        [EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("WriteIntPtr(Object, Int32, IntPtr) may be unavailable in future releases.")]
         public static void WriteIntPtr(object ptr, int ofs, IntPtr val)
         {

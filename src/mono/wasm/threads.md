@@ -79,10 +79,10 @@ Mono exposes these functions as `mono_threads_wasm_async_run_in_main_thread`, et
 
 ## Background tasks ##
 
-The runtime has a number of tasks that are scheduled with `mono_threads_schedule_background_job`
+The runtime has a number of tasks that are scheduled with `mono_main_thread_schedule_background_job`
 (pumping the threadpool task queue, running GC finalizers, etc).
 
-The background tasks will run on the main thread.  Calling `mono_threads_schedule_background_job` on
+The background tasks will run on the main thread.  Calling `mono_main_thread_schedule_background_job` on
 a worker thread will use `async_run_in_main_thread` to queue up work for the main thread.
 
 ## Debugger tests ##

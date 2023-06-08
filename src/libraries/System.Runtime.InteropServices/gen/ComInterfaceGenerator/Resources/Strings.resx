@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!--
-    Microsoft ResX Schema
-
+  <!-- 
+    Microsoft ResX Schema 
+    
     Version 2.0
-
-    The primary goals of this format is to allow a simple XML format
-    that is mostly human readable. The generation and parsing of the
-    various data types are done through the TypeConverter classes
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
     associated with the data types.
-
+    
     Example:
-
+    
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-
-    There are any number of "resheader" rows that contain simple
+                
+    There are any number of "resheader" rows that contain simple 
     name/value pairs.
-
-    Each data row contains a name, and value. The row also contains a
-    type or mimetype. Type corresponds to a .NET class that support
-    text/value conversion through the TypeConverter architecture.
-    Classes that don't support this are serialized and stored with the
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
     mimetype set.
-
-    The mimetype is used for serialized objects, and tells the
-    ResXResourceReader how to depersist the object. This is currently not
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
     extensible. For a given mimetype the value must be set accordingly:
-
-    Note - application/x-microsoft.net.object.binary.base64 is the format
-    that the ResXResourceWriter will generate, however the reader can
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
     read any of the formats listed below.
-
+    
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-
+    
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array
+    value   : The object must be serialized into a byte array 
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -141,7 +141,7 @@
   <data name="InvalidStringMarshallingConfigurationDescription" xml:space="preserve">
     <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' is invalid.</value>
   </data>
-  <data name="InvalidStringMarshallingConfigurationMessage" xml:space="preserve">
+  <data name="InvalidStringMarshallingConfigurationOnMethodMessage" xml:space="preserve">
     <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on method '{0}' is invalid. {1}</value>
     <comment>{1} is a message containing additional details about what is not valid</comment>
   </data>
@@ -251,5 +251,20 @@
   </data>
   <data name="AnalysisFailedTitle" xml:space="preserve">
     <value>Analysis for generation has failed.</value>
+  </data>
+  <data name="GeneratedComInterfaceStringMarshallingMustMatchBase" xml:space="preserve">
+    <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</value>
+  </data>
+  <data name="BaseInterfaceCannotBeGeneratedDescription" xml:space="preserve">
+    <value>COM interface source generation requires all base COM interfaces to be valid interfaces. Fix any issues on the base interface to resolve this diagnostic.</value>
+  </data>
+  <data name="BaseInterfaceCannotBeGeneratedMessage" xml:space="preserve">
+    <value>COM interface {0} inherits from {1}, which has errors. ComInterfaceGenerator will not generate source for {0}.</value>
+  </data>
+  <data name="BaseInterfaceCannotBeGeneratedTitle" xml:space="preserve">
+    <value>The base COM interface failed to generate source. ComInterfaceGenerator will not generate source for this interface.</value>
+  </data>
+  <data name="InvalidStringMarshallingConfigurationOnInterfaceMessage" xml:space="preserve">
+    <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</value>
   </data>
 </root>

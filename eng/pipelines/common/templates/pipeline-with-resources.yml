@@ -33,10 +33,14 @@ resources:
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm64-alpine
       env:
         ROOTFS_DIR: /crossrootfs/arm64
-    # This container contains all required toolsets to build for Android and for Linux with bionic libc.
 
+    # This container contains all required toolsets to build for Android and for Linux with bionic libc.
     - container: linux_bionic
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-android
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-android
+
+    # This container contains all required toolsets to build for Android as well as tooling to build docker images.
+    - container: android_docker
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-android-docker
 
     - container: linux_x64
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-amd64

@@ -13,14 +13,13 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Hashtable of all generic method templates used by the TypeLoader at runtime
     /// </summary>
-    public sealed class GenericMethodsTemplateMap : ObjectNode, ISymbolDefinitionNode
+    public sealed class GenericMethodsTemplateMap : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private ObjectAndOffsetSymbolNode _endSymbol;
+        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
 
         public GenericMethodsTemplateMap(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__GenericMethodsTemplateMap_End", true);
             _externalReferences = externalReferences;
         }
 
@@ -29,7 +28,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__GenericMethodsTemplateMap");
         }
 
-        public ISymbolNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
         public int Offset => 0;
         public override bool IsShareable => false;
         public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
@@ -73,9 +72,9 @@ namespace ILCompiler.DependencyAnalysis
 
             byte[] streamBytes = nativeWriter.Save();
 
-            _endSymbol.SetSymbolOffset(streamBytes.Length);
+            _size = streamBytes.Length;
 
-            return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
+            return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
         public static void GetTemplateMethodDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)

@@ -54,6 +54,7 @@
     <Compile Include="Helpers\RoslynExtensions.cs" />
     <Compile Include="Helpers\SourceWriter.cs" />
     <Compile Include="JsonConstants.cs" />
+    <Compile Include="JsonSourceGenerator.DiagnosticDescriptors.cs" />
     <Compile Include="JsonSourceGenerator.Emitter.cs" />
     <Compile Include="JsonSourceGenerator.Emitter.ExceptionMessages.cs" />
     <Compile Include="JsonSourceGenerator.Parser.cs" />
@@ -65,7 +66,6 @@
     <Compile Include="Model\ParameterGenerationSpec.cs" />
     <Compile Include="Model\PropertyGenerationSpec.cs" />
     <Compile Include="Model\PropertyInitializerGenerationSpec.cs" />
-    <Compile Include="Model\SourceGenerationSpec.cs" />
     <Compile Include="Model\TypeGenerationSpec.cs" />
     <Compile Include="Model\TypeRef.cs" />
   </ItemGroup>

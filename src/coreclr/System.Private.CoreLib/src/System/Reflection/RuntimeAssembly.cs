@@ -14,6 +14,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Threading;
+using System.Security;
 
 namespace System.Reflection
 {
@@ -344,7 +345,7 @@ namespace System.Reflection
         public override Module ManifestModule =>
             // We don't need to return the "external" ModuleBuilder because
             // it is meant to be read-only
-            RuntimeAssembly.GetManifestModule(GetNativeHandle());
+            GetManifestModule(GetNativeHandle());
 
         public override object[] GetCustomAttributes(bool inherit)
         {
@@ -657,7 +658,7 @@ namespace System.Reflection
             return InternalGetSatelliteAssembly(culture, version, throwOnFileNotFound: true)!;
         }
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         internal Assembly? InternalGetSatelliteAssembly(CultureInfo culture,
                                                        Version? version,
                                                        bool throwOnFileNotFound)

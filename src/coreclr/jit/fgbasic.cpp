@@ -167,7 +167,7 @@ void Compiler::fgInit()
 #endif // DEBUG
 
 #ifdef FEATURE_SIMD
-    fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
+    fgPreviousCandidateSIMDFieldStoreStmt = nullptr;
 #endif
 
     fgHasSwitch                  = false;
