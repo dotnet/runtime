@@ -72,9 +72,9 @@ namespace Internal.TypeSystem
         }
 
         [System.Diagnostics.DebuggerHidden]
-        public static void ThrowAmbiguousImplementationException(string message)
+        public static void ThrowAmbiguousMatchException(string message)
         {
-            throw new TypeSystemException.AmbiguousImplementationException(message);
+            throw new TypeSystemException.AmbiguousMatchException(message);
         }
 
         private static partial class Format

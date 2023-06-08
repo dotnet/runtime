@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -320,7 +320,7 @@ static unsafe class UnsafeAccessorsTests
         Assert.Throws<MissingFieldException>(() => FieldNotFound(null));
         Assert.Throws<MissingFieldException>(() => StaticFieldNotFound(null));
 
-        Assert.Throws<AmbiguousImplementationException>(
+        Assert.Throws<AmbiguousMatchException>(
             () => CallAmbiguousMethod(CallPrivateConstructorClass(), null));
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name="_DoesNotExist_")]

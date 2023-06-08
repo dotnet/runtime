@@ -171,10 +171,10 @@ namespace Internal.TypeSystem
             }
         }
 
-        public class AmbiguousImplementationException : TypeSystemException
+        public class AmbiguousMatchException : TypeSystemException
         {
-            internal AmbiguousImplementationException(string reason)
-                : base(ExceptionStringID.AmbiguousImplementationSpecific, reason)
+            internal AmbiguousMatchException(string reason)
+                : base(ExceptionStringID.AmbiguousMatchSpecific, reason)
             {
             }
         }

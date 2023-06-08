@@ -189,7 +189,7 @@ namespace Internal.TypeSystem
             if ((_embeddedSignatureData == null) || (_embeddedSignatureData.Length == 0))
                 return null;
 
-            if (kinds == null)
+            if (kinds.Length == 0)
                 return (EmbeddedSignatureData[])_embeddedSignatureData.Clone();
 
             List<EmbeddedSignatureData> ret = new();

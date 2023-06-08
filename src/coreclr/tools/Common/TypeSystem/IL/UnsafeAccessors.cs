@@ -354,7 +354,7 @@ namespace Internal.IL
                             return true;
                     }
 
-                    ThrowHelper.ThrowAmbiguousImplementationException(AmbiguityInUnsafeAccessorUsage);
+                    ThrowHelper.ThrowAmbiguousMatchException(AmbiguityInUnsafeAccessorUsage);
                 }
 
                 targetMaybe = md;

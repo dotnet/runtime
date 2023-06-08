@@ -59,7 +59,9 @@ namespace System.Runtime.CompilerServices
     /// can be used to call <code>Class1&lt;T1&gt;.Method1&lt;T2&gt;()</code>. The generic constraints of the
     /// <code>extern static</code> method must match generic constraints of the target type, field or method.
     ///
-    /// Return type is considered for the signature match. modreqs and modopts are not considered for the signature match.
+    /// Return type is considered for the signature match. modreqs and modopts are initially not considered for
+    /// the signature match. However, if an ambiguity exists ignoring modreqs and modopts, a precise match
+    /// is attempted. If an ambiguity still exists <see cref="System.Reflection.AmbiguousMatchException" /> is thrown.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
     public sealed class UnsafeAccessorAttribute : Attribute
