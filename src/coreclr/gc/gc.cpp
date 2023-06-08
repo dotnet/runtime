@@ -44292,8 +44292,6 @@ BOOL gc_heap::ephemeral_gen_fit_p (gc_tuning_point tp)
 
 CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int gen_number, int64_t& alloc_bytes)
 {
-    uint64_t start_us = GetHighPrecisionTimeStamp ();
-
     //create a new alloc context because gen3context is shared.
     alloc_context acontext;
     acontext.init();
@@ -44388,13 +44386,6 @@ CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int g
 
     assert (obj != 0);
     assert ((size_t)obj == Align ((size_t)obj, align_const));
-
-    uint64_t elapsed_us = GetHighPrecisionTimeStamp () - start_us;
-
-    //if (elapsed_us > 1000)
-    //{
-    //    dprintf (5555, ("LONG uoh alloc %Id (%I64dus)", size, elapsed_us));
-    //}
 
     return obj;
 }

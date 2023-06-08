@@ -411,16 +411,12 @@ internal sealed class Xcode
             frameworks = "\"-framework GSS\"";
         }
 
-        string appLinkerArgs = "";
-        foreach(string linkerArg in extraLinkerArgs)
-        {
-            appLinkerArgs += $"    \"{linkerArg}\"{Environment.NewLine}";
-        }
-
-        appLinkerArgs += $"    {frameworks}{Environment.NewLine}";
+        string appLinkLibraries = $"    {frameworks}{Environment.NewLine}";
+        string extraLinkerArgsConcat = $"\"{string.Join('\n', extraLinkerArgs)}\"";
 
         cmakeLists = cmakeLists.Replace("%NativeLibrariesToLink%", toLink);
-        cmakeLists = cmakeLists.Replace("%APP_LINKER_ARGS%", appLinkerArgs);
+        cmakeLists = cmakeLists.Replace("%APP_LINK_LIBRARIES%", appLinkLibraries);
+        cmakeLists = cmakeLists.Replace("%EXTRA_LINKER_ARGS%", extraLinkerArgsConcat);
         cmakeLists = cmakeLists.Replace("%AotSources%", aotSources);
         cmakeLists = cmakeLists.Replace("%AotTargetsList%", aotList);
         cmakeLists = cmakeLists.Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.m");
