@@ -6955,6 +6955,19 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += short_offset ? (gint16)*(ip + 1) : (gint32)READ32 (ip + 1);
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_ICALL) {
+			stackval *ret = (stackval*)(locals + ip [1]);
+			stackval *args = (stackval*)(locals + ip [2]);
+			int icall_opcode  = ip [3];
+			gpointer target_ip = frame->imethod->data_items [ip [4]];
+
+			frame->state.ip = ip + 5;
+			do_icall_wrapper (frame, NULL, icall_opcode, ret, args, target_ip, FALSE, &gc_transitions);
+			EXCEPTION_CHECKPOINT;
+			CHECK_RESUME_STATE (context);
+			ip += 5;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_ICALL_V_V)
 		MINT_IN_CASE(MINT_ICALL_P_V)
 		MINT_IN_CASE(MINT_ICALL_PP_V)

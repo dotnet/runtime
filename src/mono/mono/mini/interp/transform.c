@@ -1286,12 +1286,6 @@ interp_generate_icall_throw (TransformData *td, MonoJitICallInfo *icall_info, gp
 	td->sp--;
 	int dummy_dreg = td->sp [0].local;
 
-	// Push the native method to call
-	interp_add_ins (td, MINT_LDPTR);
-	push_simple_type (td, STACK_TYPE_I);
-	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-	td->last_ins->data [0] = get_data_item_index (td, (gpointer)icall_info->func);
-
 	int num_args = icall_info->sig->param_count;
 	if (num_args > 0)
 		emit_ldptr (td, arg1);
@@ -1300,11 +1294,11 @@ interp_generate_icall_throw (TransformData *td, MonoJitICallInfo *icall_info, gp
 
 	td->sp -= num_args;
 
-	interp_add_ins (td, MINT_CALLI_NAT_FAST);
+	interp_add_ins (td, MINT_ICALL);
 	interp_ins_set_dreg (td->last_ins, dummy_dreg);
-	interp_ins_set_sregs2 (td->last_ins, td->sp [-1].local, MINT_CALL_ARGS_SREG);
-	td->last_ins->data [0] = get_data_item_index (td, icall_info->sig);
-	td->last_ins->data [1] = GINT_TO_OPCODE (interp_icall_op_for_sig (icall_info->sig));
+	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
+	td->last_ins->data [0] = GINT_TO_OPCODE (interp_icall_op_for_sig (icall_info->sig));
+	td->last_ins->data [1] = get_data_item_index (td, (gpointer)icall_info->func);
 	init_last_ins_call (td);
 	if (td->optimized) {
 		if (num_args) {
@@ -1317,7 +1311,6 @@ interp_generate_icall_throw (TransformData *td, MonoJitICallInfo *icall_info, gp
 	} else {
 		td->last_ins->info.call_info->call_offset = get_tos_offset (td);
 	}
-	td->sp--;
 }
 
 static void
@@ -7553,6 +7546,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						mt = mono_mint_type (info->sig->ret);
 						push_simple_type (td, stack_type [mt]);
 						dreg = td->sp [-1].local;
+					} else {
+						// dummy dreg
+						push_simple_type (td, STACK_TYPE_I4);
+						td->sp--;
+						dreg = td->sp [0].local;
 					}
 
 					if (jit_icall_id == MONO_JIT_ICALL_mono_threads_attach_coop) {
@@ -7566,12 +7564,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						int const icall_op = interp_icall_op_for_sig (info->sig);
 						g_assert (icall_op != -1);
 
-						interp_add_ins (td, icall_op);
-						// hash here is overkill
-						if (dreg != -1)
-							interp_ins_set_dreg (td->last_ins, dreg);
+						interp_add_ins (td, MINT_ICALL);
+						interp_ins_set_dreg (td->last_ins, dreg);
 						interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
-						td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+						td->last_ins->data [0] = icall_op;
+						td->last_ins->data [1] = get_data_item_index (td, (gpointer)info->func);
 						init_last_ins_call (td);
 						td->last_ins->info.call_info->call_args = call_args;
 						if (!td->optimized)

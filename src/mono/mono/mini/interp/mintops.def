@@ -695,6 +695,7 @@ OPDEF(MINT_CALL_VARARG, "call.vararg", 6, 1, 1, MintOpMethodToken)
 OPDEF(MINT_TAILCALL, "tailcall", 4, 0, 1, MintOpMethodToken)
 OPDEF(MINT_TAILCALL_VIRT, "tailcall.virt", 5, 0, 1, MintOpMethodToken)
 
+OPDEF(MINT_ICALL, "mono_icall", 5, 1, 1, MintOpTwoShorts)
 OPDEF(MINT_ICALL_V_V, "mono_icall_v_v", 3, 0, 1, MintOpShortInt)
 OPDEF(MINT_ICALL_V_P, "mono_icall_v_p", 4, 1, 1, MintOpShortInt)
 OPDEF(MINT_ICALL_P_V, "mono_icall_p_v", 3, 0, 1, MintOpShortInt)
