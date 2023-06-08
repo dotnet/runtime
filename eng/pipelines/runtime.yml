@@ -1480,6 +1480,7 @@ extends:
             - name: timeoutPerTestCollectionInMinutes
               value: 180
           jobParameters:
+            runtimeFlavor: coreclr
             testGroup: innerloop
             nameSuffix: AllSubsets_NativeAOT_RuntimeTests
             buildArgs: -s clr+clr.aot -c $(_BuildConfig)
