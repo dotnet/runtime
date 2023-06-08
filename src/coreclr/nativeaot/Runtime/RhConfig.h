@@ -11,6 +11,8 @@
 // Values can also be embedded in the compiled binary.
 //
 
+#ifndef RHCONFIG_H
+#define RHCONFIG_H
 
 #ifndef DACCESS_COMPILE
 
@@ -108,3 +110,5 @@ private:
 extern RhConfig * g_pRhConfig;
 
 #endif //!DACCESS_COMPILE
+
+#endif // RHCONFIG_H
