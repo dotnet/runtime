@@ -3594,6 +3594,32 @@ ErrExit:
 #endif //!DACCESS_COMPILE
 } // CompareTypeTokens
 
+static DWORD ConsumeCustomModifiers(PCCOR_SIGNATURE& pSig, PCCOR_SIGNATURE pEndSig)
+{
+    mdToken tk;
+    CorElementType type;
+    DWORD count = 0;
+
+    PCCOR_SIGNATURE pSigTmp = pSig;
+    for (;;)
+    {
+        type = ELEMENT_TYPE_MAX;
+        IfFailThrow(CorSigUncompressElementType_EndPtr(pSigTmp, pEndSig, &type));
+
+        switch (type)
+        {
+        case ELEMENT_TYPE_CMOD_REQD:
+        case ELEMENT_TYPE_CMOD_OPT:
+            IfFailThrow(CorSigUncompressToken_EndPtr(pSigTmp, pEndSig, &tk));
+            pSig = pSigTmp;
+            count++;
+            break;
+        default:
+            return count;
+        }
+    }
+}
+
 #ifdef _PREFAST_
 #pragma warning(push)
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
@@ -3692,6 +3718,13 @@ MetaSig::CompareElementType(
             state);
     }
 
+    // Consume custom modifiers if they are being ignored.
+    if (state->IgnoreCustomModifiers)
+    {
+        state->CustomModifierCount1 = ConsumeCustomModifiers(pSig1, pEndSig1);
+        state->CustomModifierCount2 = ConsumeCustomModifiers(pSig2, pEndSig2);
+    }
+
     CorElementType Type1 = ELEMENT_TYPE_MAX; // initialize to illegal
     CorElementType Type2 = ELEMENT_TYPE_MAX; // initialize to illegal
 
@@ -3784,38 +3817,6 @@ MetaSig::CompareElementType(
                     return FALSE;
                 }
             }
-        }
-        else if (state->IgnoreCustomModifiers)
-        {
-            mdToken tk;
-            bool consumedCustomModifier = false;
-            switch (Type1)
-            {
-            case ELEMENT_TYPE_CMOD_REQD:
-            case ELEMENT_TYPE_CMOD_OPT:
-                IfFailThrow(CorSigUncompressToken_EndPtr(pSig1, pEndSig1, &tk));
-                state->CustomModifierCount1++;
-                consumedCustomModifier = true;
-                break;
-            default:
-                break;
-            }
-
-            switch (Type2)
-            {
-            case ELEMENT_TYPE_CMOD_REQD:
-            case ELEMENT_TYPE_CMOD_OPT:
-                IfFailThrow(CorSigUncompressToken_EndPtr(pSig2, pEndSig2, &tk));
-                state->CustomModifierCount2++;
-                consumedCustomModifier = true;
-                break;
-            default:
-                break;
-            }
-
-            // Custom modifiers were consumed, try again.
-            if (consumedCustomModifier)
-                goto redo;
         }
 
         return FALSE; // types must be the same

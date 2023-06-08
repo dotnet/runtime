@@ -1176,34 +1176,56 @@ namespace
         IfFailThrow(CorSigUncompressData_EndPtr(pSig1, pEndSig1, &declArgCount));
         IfFailThrow(CorSigUncompressData_EndPtr(pSig2, pEndSig2, &methodArgCount));
 
-        DWORD i = 0;
-        DWORD argCount = min(declArgCount, methodArgCount);
-        for (; i <= argCount; ++i)
+        // Validate argument count
+        if (cxt.Kind == UnsafeAccessorKind::Constructor)
+        {
+            // Declarations for constructor scenarios have
+            // matching argument counts with the target.
+            if (declArgCount != methodArgCount)
+                return false;
+        }
+        else
+        {
+            // Declarations of non-constructor scenarios have
+            // an additional argument to indicate target type
+            // and to pass an instance for non-static methods.
+            if (declArgCount != (methodArgCount + 1))
+                return false;
+        }
+
+        // Validate return and argument types
+        for (DWORD i = 0; i <= methodArgCount; ++i)
         {
             if (i == 0 && cxt.Kind == UnsafeAccessorKind::Constructor)
             {
-                // Skip return value (index 0) validation on constructor accessors
+                // Skip return value (index 0) validation on constructor
+                // accessor declarations.
                 SigPointer ptr1(pSig1, (DWORD)(pEndSig1 - pSig1));
                 IfFailThrow(ptr1.SkipExactlyOne());
                 pSig1 = ptr1.GetPtr();
 
+                CorElementType typ;
                 SigPointer ptr2(pSig2, (DWORD)(pEndSig2 - pSig2));
-                IfFailThrow(ptr2.SkipExactlyOne());
+                IfFailThrow(ptr2.GetElemType(&typ));
                 pSig2 = ptr2.GetPtr();
+
+                // Validate the return value for target constructor
+                // candidate is void.
+                if (typ != ELEMENT_TYPE_VOID)
+                    return false;
+
                 continue;
             }
             else if (i == 1 && cxt.Kind != UnsafeAccessorKind::Constructor)
             {
-                // Skip over first argument (index 1) on non-constructor accessors
-                // This is skipped since the first argument is used only for target
-                // lookup and passing an instance.
+                // Skip over first argument (index 1) on non-constructor accessors.
+                // See argument count validation above.
                 SigPointer ptr1(pSig1, (DWORD)(pEndSig1 - pSig1));
                 IfFailThrow(ptr1.SkipExactlyOne());
                 pSig1 = ptr1.GetPtr();
-                continue;
             }
 
-            // Compare the actual element
+            // Compare the types
             if (FALSE == MetaSig::CompareElementType(
                 pSig1,
                 pSig2,
@@ -1219,13 +1241,13 @@ namespace
             }
         }
 
-        // If we validated all arguments, then it is a match.
-        return (i - 1) == methodArgCount;
+        return true;
     }
 
     bool TrySetTargetMethod(
         GenerationContext& cxt,
-        LPCUTF8 methodName)
+        LPCUTF8 methodName,
+        bool ignoreCustomModifiers = true)
     {
         STANDARD_VM_CONTRACT;
         _ASSERTE(methodName != NULL);
@@ -1235,6 +1257,8 @@ namespace
 
         TypeHandle targetType = cxt.TargetType;
         _ASSERTE(!targetType.IsTypeDesc());
+
+        MethodDesc* targetMaybe = NULL;
 
         // Following the iteration pattern found in MemberLoader::FindMethod().
         // Reverse order is recommended - see comments in MemberLoader::FindMethod().
@@ -1254,18 +1278,28 @@ namespace
 
             // Check signature
             MetaSig::CompareState state{};
-            state.IgnoreCustomModifiers = false;
+            state.IgnoreCustomModifiers = ignoreCustomModifiers;
             if (!DoesMethodMatchUnsafeAccessorDeclaration(cxt, curr, state))
                 continue;
 
-            //
-            // [TODO] Collect all matching methods and compare custom modifiers count.
-            //
-
-            cxt.TargetMethod = curr;
-            return true;
+            // Check if there is some ambiguity.
+            if (targetMaybe != NULL)
+            {
+                if (ignoreCustomModifiers)
+                {
+                    // We have detected ambiguity when ignoring custom modifiers.
+                    // Start over, but look for a match requiring custom modifiers
+                    // to match precisely.
+                    if (TrySetTargetMethod(cxt, methodName, false /* ignoreCustomModifiers */))
+                        return true;
+                }
+                COMPlusThrow(kAmbiguousImplementationException, BFA_AMBIGUOUS_UNSAFEACCESSOR);
+            }
+            targetMaybe = curr;
         }
-        return false;
+
+        cxt.TargetMethod = targetMaybe;
+        return cxt.TargetMethod != NULL;
     }
 
     bool TrySetTargetField(
