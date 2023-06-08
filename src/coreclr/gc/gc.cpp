@@ -3182,15 +3182,18 @@ size_t permillage (float percentage)
 void gc_heap::fire_per_heap_hist_event (gc_history_per_heap* current_gc_data_per_heap, int heap_num)
 {
     maxgen_size_increase* maxgen_size_info = &(current_gc_data_per_heap->maxgen_size_info);
+
 #ifdef DYNAMIC_HEAP_COUNT
-
-    // pack 5 numbers into one size_t
-    size_t metric = permillage (dynamic_heap_count_data.median_percent_overhead          ) +
-                    permillage (dynamic_heap_count_data.overhead_reduction_per_step_up   ) * 1000 +
-                    permillage (dynamic_heap_count_data.overhead_increase_per_step_down  ) * 1000 * 1000 +
-                    permillage (dynamic_heap_count_data.space_cost_increase_per_step_up  ) * 1000 * 1000 * 1000 + 
-                    permillage (dynamic_heap_count_data.space_cost_decrease_per_step_down) * 1000 * 1000 * 1000 * 1000;
-
+    size_t metric = (size_t)-1;
+    if ((GCConfig::GetHeapCount() == 0) && (GCConfig::GetGCDynamicAdaptationMode() != 0))
+    {
+        // pack 5 numbers into one size_t
+        metric = permillage (dynamic_heap_count_data.median_percent_overhead          ) +
+                 permillage (dynamic_heap_count_data.overhead_reduction_per_step_up   ) * 1000 +
+                 permillage (dynamic_heap_count_data.overhead_increase_per_step_down  ) * 1000 * 1000 +
+                 permillage (dynamic_heap_count_data.space_cost_increase_per_step_up  ) * 1000 * 1000 * 1000 + 
+                 permillage (dynamic_heap_count_data.space_cost_decrease_per_step_down) * 1000 * 1000 * 1000 * 1000;
+    }
 #else //DYNAMIC_HEAP_COUNT
     size_t metric = maxgen_size_info->pinned_allocated_advance;
 #endif //DYNAMIC_HEAP_COUNT
@@ -3254,19 +3257,23 @@ void gc_heap::fire_pevents()
         time_info_32[i] = limit_time_to_uint32 (time_info[i]);
     }
 #ifdef DYNAMIC_HEAP_COUNT
-    uint32_t prev_sample_index = (dynamic_heap_count_data.sample_index + dynamic_heap_count_data_t::sample_size - 1) % dynamic_heap_count_data_t::sample_size;
-    assert (prev_sample_index < dynamic_heap_count_data_t::sample_size);
-    dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[prev_sample_index];
 
-    int gc_permillage  = permillage (sample.gc_elapsed_time  , sample.elapsed_between_gcs);
-    int soh_permillage = permillage (sample.soh_msl_wait_time, sample.elapsed_between_gcs);
-    int uoh_permillage = permillage (sample.uoh_msl_wait_time, sample.elapsed_between_gcs);
+    int metric = -1;
+    if ((GCConfig::GetHeapCount() == 0) && (GCConfig::GetGCDynamicAdaptationMode() != 0))
+    {
+        uint32_t prev_sample_index = (dynamic_heap_count_data.sample_index + dynamic_heap_count_data_t::sample_size - 1) % dynamic_heap_count_data_t::sample_size;
+        assert (prev_sample_index < dynamic_heap_count_data_t::sample_size);
+        dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[prev_sample_index];
 
-    // pack the 3 numbers into one
-    int metric = uoh_permillage * (1000*1000) +
+        int gc_permillage  = permillage (sample.gc_elapsed_time  , sample.elapsed_between_gcs);
+        int soh_permillage = permillage (sample.soh_msl_wait_time, sample.elapsed_between_gcs);
+        int uoh_permillage = permillage (sample.uoh_msl_wait_time, sample.elapsed_between_gcs);
+
+        // pack the 3 numbers into one
+        metric = uoh_permillage * (1000*1000) +
                  soh_permillage * (1000) +
                  gc_permillage;
-
+    }
 #else //DYNAMIC_HEAP_COUNT
     int metric = current_gc_data_global->gen0_reduction_count;
 #endif //DYNAMIC_HEAP_COUNT
