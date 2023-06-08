@@ -2641,4 +2641,10 @@
     <Left>net7.0/System.Runtime.Loader.dll</Left>
     <Right>net8.0/System.Runtime.Loader.dll</Right>
   </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>T:System.Text.Json.Serialization.JsonStringEnumConverter:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>net7.0/System.Text.Json.dll</Left>
+    <Right>net8.0/System.Text.Json.dll</Right>
+  </Suppression>
 </Suppressions>

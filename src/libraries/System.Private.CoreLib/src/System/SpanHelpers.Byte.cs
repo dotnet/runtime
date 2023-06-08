@@ -261,16 +261,16 @@ namespace System
                         do
                         {
                             // unlike IndexOf, here we use LZCNT to process matches starting from the end
-                            int bitPos = 31 - BitOperations.LeadingZeroCount(mask);
+                            int highestSetBitIndex = 31 - BitOperations.LeadingZeroCount(mask);
                             if (valueLength == 2 || // we already matched two bytes
                                 SequenceEqual(
-                                    ref Unsafe.Add(ref searchSpace, offset + bitPos),
+                                    ref Unsafe.Add(ref searchSpace, offset + highestSetBitIndex),
                                     ref value, (nuint)(uint)valueLength)) // The (nuint)-cast is necessary to pick the correct overload
                             {
-                                return bitPos + offset;
+                                return highestSetBitIndex + offset;
                             }
                             // Clear the highest set bit.
-                            mask = BitOperations.ResetBit(mask, bitPos);
+                            mask = BitOperations.FlipBit(mask, highestSetBitIndex);
                         } while (mask != 0);
                     }
 
@@ -310,16 +310,16 @@ namespace System
                         do
                         {
                             // unlike IndexOf, here we use LZCNT to process matches starting from the end
-                            int bitPos = 31 - BitOperations.LeadingZeroCount(mask);
+                            int highestSetBitIndex = 31 - BitOperations.LeadingZeroCount(mask);
                             if (valueLength == 2 || // we already matched two bytes
                                 SequenceEqual(
-                                    ref Unsafe.Add(ref searchSpace, offset + bitPos),
+                                    ref Unsafe.Add(ref searchSpace, offset + highestSetBitIndex),
                                     ref value, (nuint)(uint)valueLength)) // The (nuint)-cast is necessary to pick the correct overload
                             {
-                                return bitPos + offset;
+                                return highestSetBitIndex + offset;
                             }
                             // Clear the highest set bit.
-                            mask = BitOperations.ResetBit(mask, bitPos);
+                            mask = BitOperations.FlipBit(mask, highestSetBitIndex);
                         } while (mask != 0);
                     }
 
