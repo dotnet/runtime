@@ -463,7 +463,7 @@ namespace System.Diagnostics
                             CancellationToken token = remainingTimeout == Timeout.Infinite ?
                                 CancellationToken.None :
                                 (cts = new CancellationTokenSource(remainingTimeout)).Token;
-                            waitTask = WaitForExitAsync(null, token);
+                            _waitInProgress = waitTask = WaitForExitAsync(null, token);
                         }
                     } // lock(_gate)
 
