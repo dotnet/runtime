@@ -305,6 +305,58 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(nameof(IsSupported))]
+        public void HashData_Minimal()
+        {
+            byte[] source = Array.Empty<byte>();
+            byte[] buffer = Array.Empty<byte>();
+
+            byte[] result = TShakeTrait.HashData(source, outputLength: 0);
+            Assert.Empty(result);
+
+            result = TShakeTrait.HashData(new ReadOnlySpan<byte>(source), outputLength: 0);
+            Assert.Empty(result);
+
+            result = TShakeTrait.HashData(Stream.Null, outputLength: 0);
+            Assert.Empty(result);
+
+            TShakeTrait.HashData(Stream.Null, buffer); // Assert.NoThrow
+            TShakeTrait.HashData(source, buffer); // Assert.NoThrow
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public async Task HashDataAsync_Minimal()
+        {
+            byte[] result = await TShakeTrait.HashDataAsync(Stream.Null, outputLength: 0);
+            Assert.Empty(result);
+
+            await TShakeTrait.HashDataAsync(Stream.Null, Array.Empty<byte>()); // Assert.NoThrow
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void GetCurrentHash_Minimal()
+        {
+            using (TShake shake = new TShake())
+            {
+                byte[] result = TShakeTrait.GetCurrentHash(shake, outputLength: 0);
+                Assert.Empty(result);
+
+                TShakeTrait.GetCurrentHash(shake, result); // Assert.NoThrow
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void GetHashAndReset_Minimal()
+        {
+            using (TShake shake = new TShake())
+            {
+                byte[] result = TShakeTrait.GetHashAndReset(shake, outputLength: 0);
+                Assert.Empty(result);
+
+                TShakeTrait.GetHashAndReset(shake, result); // Assert.NoThrow
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
         public void ArgValidation_OneShot_HashData_OutputLengthNegative()
         {
             byte[] source = new byte[1];
