@@ -74,25 +74,25 @@ namespace ILCompiler.DependencyAnalysis
                         ISortableSymbolNode index = factory.TypeThreadStaticIndex(target);
                         if (index is TypeThreadStaticIndexNode ti && ti.Type == null)
                         {
-                            ISymbolNode helper = factory.ExternSymbol("RhpGetInlinedThreadStaticBase");
-
                             if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
                             {
-                                encoder.EmitJMP(helper);
+                                EmitInlineTLSAccess(factory, ref encoder);
                             }
                             else
                             {
+                                // First arg: unused address of the TypeManager
+                                // encoder.EmitMOV(encoder.TargetRegister.Arg0, 0);
+
+                                // Second arg: -1 (index of inlined storage)
+                                encoder.EmitMOV(encoder.TargetRegister.Arg1, -1);
+
                                 encoder.EmitLEAQ(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target), -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
 
                                 AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg2, null, 0, 0, AddrModeSize.Int64);
                                 encoder.EmitCMP(ref initialized, 0);
-                                encoder.EmitJE(helper);
+                                encoder.EmitJNE(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
 
-                                // First arg: unused address of the TypeManager
-                                encoder.EmitMOV(encoder.TargetRegister.Arg0, 0);
-                                // Second arg: -1 (index of inlined storage)
-                                encoder.EmitMOV(encoder.TargetRegister.Arg1, -1);
-                                encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
+                                EmitInlineTLSAccess(factory, ref encoder);
                             }
                         }
                         else
@@ -223,6 +223,61 @@ namespace ILCompiler.DependencyAnalysis
 
                 default:
                     throw new NotImplementedException();
+            }
+        }
+
+        private static void EmitInlineTLSAccess(NodeFactory factory, ref X64Emitter encoder)
+        {
+            ISymbolNode getInlinedThreadStaticBaseSlow = factory.HelperEntrypoint(HelperEntrypoint.GetInlinedThreadStaticBaseSlow);
+
+            if (factory.Target.IsWindows)
+            {
+                // TODO: VS this should be "factory.TlsRoot"
+                ISymbolNode tlsRoot = factory.ExternSymbol("tls_InlinedThreadStatics");
+                // TODO: VS can we know that we have a singlefile exe case?
+                bool singleFileExe = false;
+                if (singleFileExe)
+                {
+                    // mov         rax,qword ptr gs:[58h]
+                    encoder.Builder.EmitBytes(new byte[] { 0x65, 0x48, 0x8B, 0x04, 0x25, 0x58, 0x00, 0x00, 0x00 });
+
+                    // mov         ecx,[tls_InlinedThreadStatics]
+                    encoder.Builder.EmitBytes(new byte[] { 0xB9 });
+                    encoder.Builder.EmitReloc(tlsRoot, RelocType.IMAGE_REL_SECREL);
+
+                    // add         rcx,qword ptr [rax]
+                    encoder.Builder.EmitBytes(new byte[] { 0x48, 0x03, 0x08 });
+                }
+                else
+                {
+                    // mov         ecx,dword ptr [_tls_index]
+                    encoder.Builder.EmitBytes(new byte[] { 0x8B, 0x0D });
+                    encoder.Builder.EmitReloc(factory.ExternSymbol("_tls_index"), RelocType.IMAGE_REL_BASED_REL32);
+
+                    // mov         rax,qword ptr gs:[58h]
+                    encoder.Builder.EmitBytes(new byte[] { 0x65, 0x48, 0x8B, 0x04, 0x25, 0x58, 0x00, 0x00, 0x00 });
+
+                    // mov         rax,qword ptr [rax+rcx*8]
+                    encoder.Builder.EmitBytes(new byte[] { 0x48, 0x8B, 0x04, 0xC8 });
+
+                    // mov         ecx,[tls_InlinedThreadStatics]
+                    encoder.Builder.EmitBytes(new byte[] { 0xB9 });
+                    encoder.Builder.EmitReloc(tlsRoot, RelocType.IMAGE_REL_SECREL);
+
+                    // add         rcx,rax
+                    encoder.Builder.EmitBytes(new byte[] { 0x48, 0x01, 0xC1 });
+                }
+
+                // mov         rax, qword ptr[rcx]
+                encoder.Builder.EmitBytes(new byte[] { 0x48, 0x8b, 0x01 });
+                encoder.EmitCompareToZero(Register.RAX);
+                encoder.EmitJE(getInlinedThreadStaticBaseSlow);
+                encoder.EmitRET();
+            }
+            else
+            {
+                ISymbolNode helper = factory.ExternSymbol("RhpGetInlinedThreadStaticBase");
+                encoder.EmitJMP(helper);
             }
         }
     }
