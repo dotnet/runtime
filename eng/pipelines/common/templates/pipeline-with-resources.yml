@@ -82,9 +82,13 @@ resources:
 
     - container: browser_wasm
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-webassembly
+      env:
+        ROOTFS_DIR: /crossrootfs/x64
 
     - container: wasi_wasm
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-webassembly
+      env:
+        ROOTFS_DIR: /crossrootfs/x64
 
     - container: freebsd_x64
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12
