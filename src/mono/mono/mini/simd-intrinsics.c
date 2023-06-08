@@ -1425,7 +1425,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_ConvertToSingle:
 		case SN_ConvertToUInt32:
 		case SN_ConvertToUInt64:
-		case SN_Create:
 		case SN_CreateScalar:
 		case SN_CreateScalarUnsafe:
 		case SN_Equals:
@@ -1677,6 +1676,11 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return ins;
 		} else if (is_create_from_half_vectors_overload (fsig)) {
 #if defined(TARGET_ARM64)
+			// Require Vector64 SIMD support
+			if (!COMPILE_LLVM (cfg))
+				return NULL;
+#endif
+#if defined(TARGET_AMD64)
 			// Require Vector64 SIMD support
 			if (!COMPILE_LLVM (cfg))
 				return NULL;

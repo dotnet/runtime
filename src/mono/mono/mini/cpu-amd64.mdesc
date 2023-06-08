@@ -790,7 +790,12 @@ extract_r4: dest:f src1:x len:5
 
 iconv_to_r4_raw: dest:f src1:i len:10
 
+insert_i1: dest:x src1:x src2:i len:7 clob:1
 insert_i2: dest:x src1:x src2:i len:6 clob:1
+insert_i4: dest:x src1:x src2:i len:7 clob:1
+insert_i8: dest:x src1:x src2:i len:7 clob:1
+insert_r4: dest:x src1:x src2:f len:7 clob:1
+insert_r8: dest:x src1:x src2:f len:24 clob:1
 
 extractx_u2: dest:i src1:x len:6
 insertx_u1_slow: dest:x src1:i src2:i len:18 clob:x

@@ -7275,9 +7275,35 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (!ins->inst_c0);
 			amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
+		case OP_INSERT_I1:
+			amd64_sse_pinsrb_reg_reg_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
+			break;
 		case OP_INSERT_I2:
 			amd64_sse_pinsrw_reg_reg_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
 			break;
+		case OP_INSERT_I4:
+			amd64_sse_pinsrd_reg_reg_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
+			break;
+		case OP_INSERT_I8:
+			amd64_sse_pinsrq_reg_reg_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
+			break;
+		case OP_INSERT_R4: {
+			guint8 imm = (0 << 6) | (ins->inst_c0 << 4);
+			amd64_sse_insertps_reg_reg (code, ins->sreg1, ins->sreg2, imm);
+			break;
+		}
+		case OP_INSERT_R8: {
+			if (ins->inst_c0 == 0) {
+				amd64_sse_orpd_reg_reg (code, ins->dreg, ins->sreg2);
+			} else {
+				guint8 imm = 0b01001110;
+				amd64_sse_movaps_reg_reg (code, GP_SCRATCH_REG, ins->sreg2);
+				amd64_sse_pshufd_reg_reg_imm (code, GP_SCRATCH_REG, GP_SCRATCH_REG, imm);
+				amd64_sse_orpd_reg_reg (code, GP_SCRATCH_REG, ins->sreg1);
+				amd64_sse_movaps_reg_reg (code, ins->dreg, GP_SCRATCH_REG);
+			}
+			break;
+		}
 		case OP_EXTRACTX_U2:
 			amd64_sse_pextrw_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
 			break;
