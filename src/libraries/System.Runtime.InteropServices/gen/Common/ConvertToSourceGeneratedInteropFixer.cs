@@ -71,7 +71,7 @@ namespace Microsoft.Interop.Analyzers
                     string value = optionKeyAndValue[1].Substring(2);
                     if (type == "b:")
                     {
-                        options.Add(optionKeyAndValue[0], new Bool(bool.TryParse(value, out bool boolValue) && boolValue));
+                        options.Add(optionKeyAndValue[0], new Bool(bool.Parse(value)));
                     }
                     else if (type == "s:")
                     {

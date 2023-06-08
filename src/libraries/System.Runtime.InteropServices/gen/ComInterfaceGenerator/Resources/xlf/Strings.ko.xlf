@@ -107,6 +107,11 @@
         <target state="translated">지정된 구성은 원본 생성 COM에서 지원되지 않습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ConvertComInterfaceMayProduceInvalidCode">
+        <source>Converting this interface to use 'GeneratedComInterfaceAttribute' may produce invalid code and may require additional work</source>
+        <target state="new">Converting this interface to use 'GeneratedComInterfaceAttribute' may produce invalid code and may require additional work</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceAddUnsafe">
         <source>Convert to 'GeneratedComInterface' and allow unsafe code</source>
         <target state="new">Convert to 'GeneratedComInterface' and allow unsafe code</target>

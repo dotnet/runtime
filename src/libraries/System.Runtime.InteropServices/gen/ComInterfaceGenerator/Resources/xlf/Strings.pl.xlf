@@ -107,6 +107,11 @@
         <target state="translated">Określona konfiguracja nie jest obsługiwana przez COM wygenerowany przez źródło.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ConvertComInterfaceMayProduceInvalidCode">
+        <source>Converting this interface to use 'GeneratedComInterfaceAttribute' may produce invalid code and may require additional work</source>
+        <target state="new">Converting this interface to use 'GeneratedComInterfaceAttribute' may produce invalid code and may require additional work</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceAddUnsafe">
         <source>Convert to 'GeneratedComInterface' and allow unsafe code</source>
         <target state="new">Convert to 'GeneratedComInterface' and allow unsafe code</target>

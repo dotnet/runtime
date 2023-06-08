@@ -76,7 +76,7 @@ namespace Microsoft.Interop.Analyzers
             if (mayRequireAdditionalWork)
             {
                 generatedComInterfaceAttribute = generatedComInterfaceAttribute.WithAdditionalAnnotations(
-                    WarningAnnotation.Create(""));
+                    WarningAnnotation.Create(SR.ConvertComInterfaceMayProduceInvalidCode));
             }
 
             var comImportAttributeType = comp.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_ComImportAttribute);

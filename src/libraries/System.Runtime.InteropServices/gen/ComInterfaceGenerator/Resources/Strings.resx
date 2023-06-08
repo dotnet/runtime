@@ -312,4 +312,7 @@
   <data name="RuntimeComApisDoNotSupportSourceGeneratedComTitle" xml:space="preserve">
     <value>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM</value>
   </data>
+  <data name="ConvertComInterfaceMayProduceInvalidCode" xml:space="preserve">
+    <value>Converting this interface to use 'GeneratedComInterfaceAttribute' may produce invalid code and may require additional work</value>
+  </data>
 </root>
