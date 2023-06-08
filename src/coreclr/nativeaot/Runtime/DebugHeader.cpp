@@ -243,10 +243,9 @@ extern "C" void PopulateDebugHeaders()
     MAKE_DEBUG_FIELD_ENTRY(StressLogChunk, dwSig2);
 
     MAKE_SIZE_ENTRY(StressMsg);
-    MAKE_DEBUG_FIELD_ENTRY(StressMsg, formatOffset);
+    MAKE_DEBUG_FIELD_ENTRY(StressMsg, numArgsAndLowOffset);
     MAKE_DEBUG_FIELD_ENTRY(StressMsg, facility);
-    MAKE_DEBUG_FIELD_ENTRY(StressMsg, timeStamp);
-    MAKE_DEBUG_FIELD_ENTRY(StressMsg, numberOfArgs);
+    MAKE_DEBUG_FIELD_ENTRY(StressMsg, timeStampAndHighOffset);
     MAKE_DEBUG_FIELD_ENTRY(StressMsg, args);
 
     MAKE_SIZE_ENTRY(RuntimeInstance);

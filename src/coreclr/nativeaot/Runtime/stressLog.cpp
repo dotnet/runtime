@@ -307,13 +307,24 @@ void ThreadStressLog::LogMsg ( uint32_t facility, int cArgs, const char* format,
 
     size_t offs = ((size_t)format - StressLog::theLog.moduleOffset);
 
+    if (offs > StressMsg::maxOffset)
+    {
+        // This string is at a location that is too far away from the base address of the module.
+        // We can handle up to 68GB of native modules registered in the stresslog.
+        // If you hit this break, and the NativeAOT image is not around 68GB,
+        // there's either a bug or the string that was passed in is not a static string
+        // in the module.
+        PalDebugBreak();
+        offs = 0;
+    }
+
     // Get next available slot
     StressMsg* msg = AdvanceWrite(cArgs);
 
     msg->timeStamp = getTimeStamp();
     msg->facility = facility;
-    msg->formatOffset = offs;
-    msg->numberOfArgs = (uint8_t)cArgs;
+    msg->SetFormatOffset(offs);
+    msg->SetNumberOfArgs(cArgs);
 
     for ( int i = 0; i < cArgs; ++i )
     {

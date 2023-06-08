@@ -1090,7 +1090,7 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
             while (msg < endMsg)
             {
                 totalMsgCount++;
-                char* format = (char*)(hdr->moduleImage + msg->formatOffset);
+                char* format = (char*)(hdr->moduleImage + msg->GetFormatOffset());
                 double deltaTime = ((double)(msg->timeStamp - hdr->startTimeStamp)) / hdr->tickFrequency;
                 bool fIgnoreMessage = false;
                 if (fTimeFilter)
@@ -1105,7 +1105,7 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
                         fIgnoreMessage = true;
                     }
                 }
-                int numberOfArgs = msg->numberOfArgs;
+                int numberOfArgs = msg->GetNumberOfArgs();
                 if (!fIgnoreMessage)
                 {
                     bool fIncludeMessage = s_showAllMessages || FilterMessage(hdr, tsl, msg->facility, format, deltaTime, numberOfArgs, msg->args);
@@ -1185,8 +1185,8 @@ static void PrintFriendlyNumber(LONGLONG n)
 static void PrintMessage(CorClrData& corClrData, FILE *outputFile, uint64_t threadId, StressMsg* msg)
 {
     void* argBuffer[StressMsg::maxArgCnt];
-    char* format = (char*)(s_hdr->moduleImage + msg->formatOffset);
-    int numberOfArgs = msg->numberOfArgs;
+    char* format = (char*)(s_hdr->moduleImage + msg->GetFormatOffset());
+    int numberOfArgs = msg->GetNumberOfArgs();
     for (int i = 0; i < numberOfArgs; i++)
     {
         argBuffer[i] = msg->args[i];

@@ -488,27 +488,65 @@ public:
 #endif
 
 //==========================================================================================
-// StressMsg
-// The order of fields is important.  Ensure that we minimize padding
-// to fit more messages in a chunk.
-struct StressMsg {
-#ifdef TARGET_64BIT
-    uint32_t facility;                      // facility used to log the entry
-    uint8_t numberOfArgs;                   // number of arguments
-    size_t   formatOffset;                  // offset of the format string in the module
-    uint64_t timeStamp;                     // time when mssg was logged
-    void*     args[0];                      // size given by numberOfArgs
-#else
-    uint32_t facility;                      // facility used to log the entry
-    size_t   formatOffset;                  // offset of the format string in the module
-    uint64_t timeStamp;                     // time when mssg was logged
-    uint8_t numberOfArgs;                   // number of arguments
-    void*     args[0];                      // size given by numberOfArgs
-#endif
+// The order of fields is important.  Keep the prefix length as the first field.
+// And make sure the timeStamp field is naturally alligned, so we don't waste
+// space on 32-bit platforms
+struct StressMsg
+{
+    static const size_t formatOffsetLowBits = 26;
+    static const size_t formatOffsetHighBits = 13;
+
+    union
+    {
+        struct
+        {
+            uint32_t numberOfArgsLow  : 3;                   // at most 7 arguments here
+            uint32_t formatOffsetLow  : formatOffsetLowBits; // low bits offset of format string in modules
+            uint32_t numberOfArgsHigh : 3;                   // extend number of args in a backward compat way
+        };
+        uint32_t numArgsAndLowOffset; // Single member for bitfield for debug header info
+    };
+    uint32_t facility; // facility used to log the entry
+    union
+    {
+        struct
+        {
+            uint64_t timeStamp : 51;                         // time when mssg was logged
+            uint64_t formatOffsetHigh: formatOffsetHighBits; // high bits of format string in modules
+        };
+        uint64_t timeStampAndHighOffset; // Single member for bitfield for debug header info
+    };
+    void*     args[0]; // size given by numberOfArgs
+
+    void SetFormatOffset(uint64_t offset)
+    {
+        formatOffsetLow = (uint32_t)(offset & ((1 << formatOffsetLowBits) - 1));
+        formatOffsetHigh = offset >> formatOffsetLowBits;
+    }
+
+    uint64_t GetFormatOffset()
+    {
+        return (formatOffsetHigh << formatOffsetLowBits) | formatOffsetLow;
+    }
+
+    void SetNumberOfArgs(uint32_t num)
+    {
+        numberOfArgsLow = num & ((1 << 3) - 1);
+        numberOfArgsHigh = num >> 3;
+    }
+
+    uint32_t GetNumberOfArgs()
+    {
+        return numberOfArgsLow | (numberOfArgsHigh << 3);
+    }
 
     static const size_t maxArgCnt = 63;
+    static const int64_t maxOffset = (int64_t)1 << (formatOffsetLowBits + formatOffsetHighBits);
     static size_t maxMsgSize ()
     { return sizeof(StressMsg) + maxArgCnt*sizeof(void*); }
+
+    friend class ThreadStressLog;
+    friend class StressLog;
 };
 
 #ifdef _WIN64

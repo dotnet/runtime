@@ -489,9 +489,9 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
         }
 
         StressMsg* latestMsg = latestLog->readPtr;
-        if (latestMsg->formatOffset != 0 && !latestLog->CompletedDump())
+        if (latestMsg->GetFormatOffset() != 0 && !latestLog->CompletedDump())
         {
-            TADDR taFmt = (latestMsg->formatOffset) + TO_TADDR(g_hThisInst);
+            TADDR taFmt = (latestMsg->GetFormatOffset()) + TO_TADDR(g_hThisInst);
             hr = memCallBack->ReadVirtual(TO_CDADDR(taFmt), format, 256, 0);
             if (hr != S_OK)
                 strcpy_s(format, ARRAY_SIZE(format), "Could not read address of format string");
