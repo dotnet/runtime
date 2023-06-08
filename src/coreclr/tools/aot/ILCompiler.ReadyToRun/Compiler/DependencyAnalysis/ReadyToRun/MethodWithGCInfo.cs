@@ -280,7 +280,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     dependencyList.Add(node, "classMustBeLoadedBeforeCodeIsRun");
 
                 }
-                catch (Exception)
+                catch (TypeSystemException)
                 {
                     Console.WriteLine($"Info: Dependency `{node}` was dropped due to introducing a generic cycle.");
                 }

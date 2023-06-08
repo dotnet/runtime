@@ -106,14 +106,7 @@ namespace ILCompiler
                 }
             }
 
-            try
-            {
-                _nodeFactory.DetectGenericCycles(caller, callee);
-            }
-            catch (TypeSystemException)
-            {
-                return false;
-            }
+            _nodeFactory.DetectGenericCycles(caller, callee);
 
             return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);
         }
