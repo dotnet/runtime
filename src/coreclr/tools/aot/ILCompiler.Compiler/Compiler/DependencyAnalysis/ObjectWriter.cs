@@ -455,17 +455,6 @@ namespace ILCompiler.DependencyAnalysis
             return (_options & ObjectWritingOptions.GenerateDebugInfo) != 0;
         }
 
-        public bool HasFunctionDebugInfo()
-        {
-            if (_offsetToDebugLoc.Count > 0)
-            {
-                Debug.Assert(HasModuleDebugInfo());
-                return true;
-            }
-
-            return false;
-        }
-
         private int GetDocumentId(string document)
         {
             if (_debugFileToId.TryGetValue(document, out int result))
@@ -1134,7 +1123,7 @@ namespace ILCompiler.DependencyAnalysis
                     // Emit the last CFI to close the frame.
                     objectWriter.EmitCFICodes(nodeContents.Data.Length);
 
-                    if (objectWriter.HasFunctionDebugInfo())
+                    if (objectWriter.HasModuleDebugInfo())
                     {
                         objectWriter.EmitDebugVarInfo(node);
                         objectWriter.EmitDebugEHClauseInfo(node);
