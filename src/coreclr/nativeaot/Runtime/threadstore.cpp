@@ -431,7 +431,7 @@ C_ASSERT(sizeof(Thread) == sizeof(ThreadBuffer));
 #ifndef _MSC_VER
 __thread ThreadBuffer tls_CurrentThread;
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(TARGET_ARM64)
 // the root of inlined threadstatics storage
 // eventually this will be emitted by ILC and we may have more than one such variable
 __thread InlinedThreadStaticRoot tls_InlinedThreadStatics;

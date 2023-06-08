@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.CompilationUnitPrefix).Append("tls_InlinedThreadStatics");
         }
         public int Offset => 0;
-        public override bool IsShareable => true;
+        public override bool IsShareable => false;
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
@@ -24,8 +24,8 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
-            objData.AddSymbol(this);
             objData.RequireInitialPointerAlignment();
+            objData.AddSymbol(this);
 
             // root
             objData.EmitZeroPointer();

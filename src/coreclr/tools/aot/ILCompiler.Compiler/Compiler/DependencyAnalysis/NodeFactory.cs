@@ -1303,7 +1303,8 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(EagerCctorTable, "EagerCctorTable is always generated");
             graph.AddRoot(TypeManagerIndirection, "TypeManagerIndirection is always generated");
 
-            if (!_target.IsOSXLike && !_target.IsWindows)
+            if (_target.OperatingSystem == TargetOS.Linux &&
+                _target.Architecture == TargetArchitecture.X64)
             {
                 graph.AddRoot(TlsRoot, "TlsRoot is always generated");
             }

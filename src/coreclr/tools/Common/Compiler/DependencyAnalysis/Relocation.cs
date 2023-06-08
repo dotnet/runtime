@@ -23,16 +23,22 @@ namespace ILCompiler.DependencyAnalysis
                                                        // This is a special NGEN-specific relocation type
                                                        // for relative pointer (used to make NGen relocation
                                                        // section smaller)
-        IMAGE_REL_SECREL                     = 0x80,   // 32 bit offset from base of section containing target
 
         IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 = 0x81,   // ADRP
         IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A = 0x82,   // ADD/ADDS (immediate) with zero shift, for page offset
         IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L = 0x83,   // LDR (indexed, unsigned immediate), for page offset
 
         //
+        // Relocation operators related to TLS access
+        //
+        IMAGE_REL_SECREL                     = 0x104,   // 32 bit offset from base of section containing target
+        IMAGE_REL_TLSGD                      = 0x105,
+        IMAGE_REL_TPOFF                      = 0x106,
+
+        //
         // Relocations for R2R image production
         //
-        IMAGE_REL_SYMBOL_SIZE                = 0x1000, // The size of data in the image represented by the target symbol node
+        IMAGE_REL_SYMBOL_SIZE = 0x1000, // The size of data in the image represented by the target symbol node
         IMAGE_REL_FILE_ABSOLUTE              = 0x1001, // 32 bit offset from beginning of image
     }
 
@@ -459,6 +465,8 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_REL32:
                 case RelocType.IMAGE_REL_BASED_RELPTR32:
                 case RelocType.IMAGE_REL_SECREL:
+                case RelocType.IMAGE_REL_TLSGD:
+                case RelocType.IMAGE_REL_TPOFF:
                 case RelocType.IMAGE_REL_FILE_ABSOLUTE:
                 case RelocType.IMAGE_REL_SYMBOL_SIZE:
                     return *(int*)location;

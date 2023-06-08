@@ -229,11 +229,13 @@ namespace ILCompiler.DependencyAnalysis
         private static void EmitInlineTLSAccess(NodeFactory factory, ref X64Emitter encoder)
         {
             ISymbolNode getInlinedThreadStaticBaseSlow = factory.HelperEntrypoint(HelperEntrypoint.GetInlinedThreadStaticBaseSlow);
+            ISymbolNode tlsRoot = factory.TlsRoot;
 
             if (factory.Target.IsWindows)
             {
-                // TODO: VS this should be "factory.TlsRoot"
-                ISymbolNode tlsRoot = factory.ExternSymbol("tls_InlinedThreadStatics");
+                // TODO: VS HACK until we emit proper TLS template on Windows
+                tlsRoot = factory.ExternSymbol("tls_InlinedThreadStatics");
+
                 // TODO: VS can we know that we have a singlefile exe case?
                 bool singleFileExe = false;
                 if (singleFileExe)
@@ -268,11 +270,51 @@ namespace ILCompiler.DependencyAnalysis
                     encoder.Builder.EmitBytes(new byte[] { 0x48, 0x01, 0xC1 });
                 }
 
-                // mov         rax, qword ptr[rcx]
+                // mov rax, qword ptr[rcx]
                 encoder.Builder.EmitBytes(new byte[] { 0x48, 0x8b, 0x01 });
                 encoder.EmitCompareToZero(Register.RAX);
                 encoder.EmitJE(getInlinedThreadStaticBaseSlow);
                 encoder.EmitRET();
+            }
+            else if (factory.Target.OperatingSystem == TargetOS.Linux)
+            {
+                // TODO: VS can we know that we have a singlefile exe case?
+                bool singleFileExe = false;
+                if (singleFileExe)
+                {
+                    // movq %fs:0x0,%rax
+                    encoder.Builder.EmitBytes(new byte[] { 0x64, 0x48, 0x8B, 0x04, 0x25, 0x00, 0x00, 0x00, 0x00 });
+
+                    // leaq tlsRoot@TPOFF(%rax), %rdi
+                    encoder.Builder.EmitBytes(new byte[] { 0x48, 0x8D, 0xB8 });
+                    encoder.Builder.EmitReloc(tlsRoot, RelocType.IMAGE_REL_TPOFF);
+                }
+                else
+                {
+                    // data16 leaq tlsRoot@TLSGD(%rip), %rdi
+                    encoder.Builder.EmitBytes(new byte[] { 0x66, 0x48, 0x8D, 0x3D });
+                    encoder.Builder.EmitReloc(tlsRoot, RelocType.IMAGE_REL_TLSGD, -4);
+
+                    // data16 data16 rex.W callq __tls_get_addr@PLT
+                    encoder.Builder.EmitBytes(new byte[] { 0x66, 0x66, 0x48, 0xE8 });
+                    encoder.Builder.EmitReloc(factory.ExternSymbol("__tls_get_addr"), RelocType.IMAGE_REL_BASED_REL32, -4);
+
+                    encoder.EmitMOV(Register.RDI, Register.RAX);
+                }
+
+                // mov  rax, qword ptr[rdi]
+                encoder.Builder.EmitBytes(new byte[] { 0x48, 0x8B, 0x07 });
+                encoder.EmitCompareToZero(Register.RAX);
+                encoder.EmitJE(getInlinedThreadStaticBaseSlow);
+                encoder.EmitRET();
+            }
+            else if (factory.Target.IsOSXLike)
+            {
+                // movq _\Var @TLVP(% rip), % rdi
+                // callq * (% rdi)
+
+                ISymbolNode helper = factory.ExternSymbol("RhpGetInlinedThreadStaticBase");
+                encoder.EmitJMP(helper);
             }
             else
             {
