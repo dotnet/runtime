@@ -10,7 +10,7 @@ const DISABLE_LEGACY_JS_INTEROP = process.env.DISABLE_LEGACY_JS_INTEROP === "1";
 const ENABLE_BROWSER_PROFILER = process.env.ENABLE_BROWSER_PROFILER === "1";
 const ENABLE_AOT_PROFILER = process.env.ENABLE_AOT_PROFILER === "1";
 
-function setup(linkerDisableLegacyJsInterop, linkerEnableAotProfiler, linkerEnableBrowserProfiler) {
+function setup(linkerSetup) {
     const pthreadReplacements = {};
     const dotnet_replacements = {
         fetch: globalThis.fetch,
@@ -31,8 +31,8 @@ function setup(linkerDisableLegacyJsInterop, linkerEnableAotProfiler, linkerEnab
 
     Module.__dotnet_runtime.passEmscriptenInternals({
         isPThread: ENVIRONMENT_IS_PTHREAD,
-        linkerDisableLegacyJsInterop, linkerEnableAotProfiler, linkerEnableBrowserProfiler,
-        quit_, ExitStatus
+        quit_, ExitStatus,
+        ...linkerSetup
     });
     Module.__dotnet_runtime.initializeReplacements(dotnet_replacements);
 
@@ -60,7 +60,11 @@ function setup(linkerDisableLegacyJsInterop, linkerEnableAotProfiler, linkerEnab
 }
 
 const postset = `
-    DOTNET.setup(${DISABLE_LEGACY_JS_INTEROP ? "true" : "false"}, ${ENABLE_AOT_PROFILER ? "true" : "false"}, ${ENABLE_BROWSER_PROFILER ? "true" : "false"});
+    DOTNET.setup({ `+
+    `linkerDisableLegacyJsInterop: ${DISABLE_LEGACY_JS_INTEROP ? "true" : "false"},` +
+    `linkerEnableAotProfiler: ${ENABLE_AOT_PROFILER ? "true" : "false"}, ` +
+    `linkerEnableBrowserProfiler: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}` +
+    `});
 `;
 
 const DotnetSupportLib = {

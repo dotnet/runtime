@@ -144,7 +144,7 @@ function diagnostic_options_from_ports_spec(val: string): DiagnosticOptions | nu
 }
 
 export function mono_wasm_diagnostic_server_on_runtime_server_init(out_options: VoidPtr): void {
-    mono_assert(MonoWasmThreads, "threads are not enabled");
+    mono_assert(MonoWasmThreads, "The diagnostic server requires threads to be enabled during build time.");
     if (diagnosticsServerEnabled) {
         /* called on the main thread when the runtime is sufficiently initialized */
         const controller = getController();

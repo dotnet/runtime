@@ -54,7 +54,7 @@ export function getController(): ServerController {
 }
 
 export async function startDiagnosticServer(websocket_url: string): Promise<ServerController | null> {
-    mono_assert(MonoWasmThreads, "threads are not enabled");
+    mono_assert(MonoWasmThreads, "The diagnostic server requires threads to be enabled during build time.");
     const sizeOfPthreadT = 4;
     mono_log_info(`starting the diagnostic server url: ${websocket_url}`);
     const result: number | undefined = withStackAlloc(sizeOfPthreadT, (pthreadIdPtr) => {

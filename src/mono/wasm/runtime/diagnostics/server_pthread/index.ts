@@ -285,7 +285,7 @@ function parseProtocolCommand(data: ArrayBuffer | BinaryProtocolCommand): ParseC
 
 /// Called by the runtime  to initialize the diagnostic server workers
 export function mono_wasm_diagnostic_server_on_server_thread_created(websocketUrlPtr: CharPtr): void {
-    mono_assert(MonoWasmThreads, "threads are not enabled");
+    mono_assert(MonoWasmThreads, "The diagnostic server requires threads to be enabled during build time.");
     const websocketUrl = utf8ToString(websocketUrlPtr);
     mono_log_debug(`mono_wasm_diagnostic_server_on_server_thread_created, url ${websocketUrl}`);
     let mock: PromiseAndController<Mock> | undefined = undefined;

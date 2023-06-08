@@ -24,7 +24,7 @@ export class EventPipeStreamingSession {
 }
 
 export async function makeEventPipeStreamingSession(ws: WebSocket | MockRemoteSocket, cmd: EventPipeCommandCollectTracing2): Promise<EventPipeStreamingSession> {
-    mono_assert(MonoWasmThreads, "threads are not enabled");
+    mono_assert(MonoWasmThreads, "The diagnostic server requires threads to be enabled during build time.");
     // First, create the native IPC stream and get its queue.
     const ipcStreamAddr = cwraps.mono_wasm_diagnostic_server_create_stream(); // FIXME: this should be a wrapped in a JS object so we can free it when we're done.
     const queueAddr = getQueueAddrFromStreamAddr(ipcStreamAddr);
