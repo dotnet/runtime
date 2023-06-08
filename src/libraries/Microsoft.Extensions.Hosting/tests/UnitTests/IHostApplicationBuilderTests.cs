@@ -18,7 +18,7 @@ public class IHostApplicationBuilderTests
     [Fact]
     public void TestIHostApplicationBuilderCanBeUsedInExtensionMethod()
     {
-        HostApplicationBuilder builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings()
+        HostApplicationBuilder builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings
         {
             EnvironmentName = "Development"
         });
@@ -47,7 +47,7 @@ internal static class HostBuilderExtensions
 
         builder.Configuration.AddInMemoryCollection(new Dictionary<string, string>
         {
-            { "Key1", "value1" }
+            ["Key1"] = "value1"
         });
 
         Assert.Equal(2, builder.Configuration.GetChildren().Count());

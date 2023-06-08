@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Configuration
     /// </remarks>
     [DebuggerDisplay("{DebuggerToString(),nq}")]
     [DebuggerTypeProxy(typeof(ConfigurationManagerDebugView))]
-    public sealed class ConfigurationManager : IConfigurationManager, IConfigurationBuilder, IConfigurationRoot, IDisposable
+    public sealed class ConfigurationManager : IConfigurationManager, IConfigurationRoot, IDisposable
     {
         // Concurrently modifying config sources or properties is not thread-safe. However, it is thread-safe to read config while modifying sources or properties.
         private readonly ConfigurationSources _sources;
