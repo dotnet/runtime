@@ -1,6 +1,11 @@
 # Hybrid Globalization
 
-Description, purpose and instruction how to use.
+Originally, internalization data is loaded from ICU data files. In `HybridGlobalization` mode we are leveraging the platform-native internationalization APIs, where it is possible, to allow for loading smaller ICU data files. We still need to rely on ICU files because for a bunch of globalization data no API equivalent is available. For some existing equivalents, the behavior does not fully match the original. The differences you can expect after switching on the mode are listed in this document. Expected size savings can be found under each platform section below.
+
+Hybrid has lower priority than Invariant. To switch on the mode set the property in the build file:
+```
+<HybridGlobalization>true</HybridGlobalization>
+```
 
 ## Behavioral differences
 
@@ -8,7 +13,9 @@ Hybrid mode does not use ICU data for some functions connected with globalizatio
 
 ### WASM
 
-For WebAssembly in Browser we are using Web API instead of some ICU data. Ideally, we would use `System.Runtime.InteropServices.JavaScript` to call JS code from inside of C# but we cannot reference any assemblies from inside of `System.Private.CoreLib`. That is why we are using iCalls instead.
+For WebAssembly in Browser we are using Web API instead of some ICU data. Ideally, we would use `System.Runtime.InteropServices.JavaScript` to call JS code from inside of C# but we cannot reference any assemblies from inside of `System.Private.CoreLib`. That is why we are using iCalls instead. The host support depends on used Web API functions support - see **dependencies** in each section.
+
+Hybrid has higher priority than sharding or custom modes, described in globalization-icu-wasm.md.
 
 **SortKey**
 
@@ -33,6 +40,12 @@ Hybrid case change, same as ICU-based, does not support code points expansion e.
 
 ICU-based case change does not respect final-sigma rule, but hybrid does, so "ΒΌΛΟΣ" -> "βόλος", not "βόλοσ".
 
+Dependencies:
+- [String.prototype.toUpperCase()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/toUpperCase)
+- [String.prototype.toLoweCase()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/toLowerCase)
+- [String.prototype.toLocaleUpperCase()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/toLocaleUpperCase)
+- [String.prototype.toLocaleLoweCase()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/toLocaleLowerCase)
+
 **String comparison**
 
 Affected public APIs:
@@ -40,7 +53,11 @@ Affected public APIs:
 - String.Compare,
 - String.Equals.
 
+Dependencies:
+- [String.prototype.localeCompare()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/localeCompare)
+
 The number of `CompareOptions` and `StringComparison` combinations is limited. Originally supported combinations can be found [here for CompareOptions](https://learn.microsoft.com/dotnet/api/system.globalization.compareoptions) and [here for StringComparison](https://learn.microsoft.com/dotnet/api/system.stringcomparison).
+
 
 - `IgnoreWidth` is not supported because there is no equivalent in Web API. Throws `PlatformNotSupportedException`.
 ``` JS
@@ -195,6 +212,10 @@ Affected public APIs:
 - CompareInfo.IsSuffix
 - String.StartsWith
 - String.EndsWith
+
+Dependencies:
+- [String.prototype.normalize()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/normalize)
+- [String.prototype.localeCompare()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/localeCompare)
 
 Web API does not expose locale-sensitive endsWith/startsWith function. As a workaround, both strings get normalized and weightless characters are removed. Resulting strings are cut to the same length and comparison is performed. This approach, beyond having the same compare option limitations as described under **String comparison**, has additional limitations connected with the workaround used. Because we are normalizing strings to be able to cut them, we cannot calculate the match length on the original strings. Methods that calculate this information throw PlatformNotSupported exception:
 

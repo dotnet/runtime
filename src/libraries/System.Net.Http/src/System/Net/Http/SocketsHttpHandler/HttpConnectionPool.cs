@@ -467,6 +467,10 @@ namespace System.Net.Http
         {
             if (NetEventSource.Log.IsEnabled()) Trace("Creating new HTTP/1.1 connection for pool.");
 
+            // Queue the remainder of the work so that this method completes quickly
+            // and escapes locks held by the caller.
+            await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+
             HttpConnectionWaiter<HttpConnection> waiter = queueItem.Waiter;
             HttpConnection? connection = null;
             Exception? connectionException = null;
@@ -531,12 +535,7 @@ namespace System.Net.Http
                 _pendingHttp11ConnectionCount++;
 
                 RequestQueue<HttpConnection>.QueueItem queueItem = _http11RequestQueue.PeekNextRequestForConnectionAttempt();
-
-                // Queue the creation of the connection to escape the held lock
-                ThreadPool.QueueUserWorkItem(static state =>
-                {
-                    _ = state.thisRef.AddHttp11ConnectionAsync(state.queueItem); // ignore returned task
-                }, (thisRef: this, queueItem), preferLocal: true);
+                _ = AddHttp11ConnectionAsync(queueItem); // ignore returned task
             }
         }
 
@@ -667,6 +666,10 @@ namespace System.Net.Http
         {
             if (NetEventSource.Log.IsEnabled()) Trace("Creating new HTTP/2 connection for pool.");
 
+            // Queue the remainder of the work so that this method completes quickly
+            // and escapes locks held by the caller.
+            await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+
             Http2Connection? connection = null;
             Exception? connectionException = null;
             HttpConnectionWaiter<Http2Connection?> waiter = queueItem.Waiter;
@@ -773,12 +776,7 @@ namespace System.Net.Http
                 _pendingHttp2Connection = true;
 
                 RequestQueue<Http2Connection?>.QueueItem queueItem = _http2RequestQueue.PeekNextRequestForConnectionAttempt();
-
-                // Queue the creation of the connection to escape the held lock
-                ThreadPool.QueueUserWorkItem(static state =>
-                {
-                    _ = state.thisRef.AddHttp2ConnectionAsync(state.queueItem); // ignore returned task
-                }, (thisRef: this, queueItem), preferLocal: true);
+                _ = AddHttp2ConnectionAsync(queueItem); // ignore returned task
             }
         }
 
@@ -2118,11 +2116,13 @@ namespace System.Net.Http
         {
             if (NetEventSource.Log.IsEnabled()) connection.Trace("");
 
-            Task.Run(async () =>
-            {
-                bool usable = await connection.WaitForAvailableStreamsAsync().ConfigureAwait(false);
+            _ = DisableHttp2ConnectionAsync(connection); // ignore returned task
 
-                if (NetEventSource.Log.IsEnabled()) connection.Trace($"WaitForAvailableStreamsAsync completed, {nameof(usable)}={usable}");
+            async Task DisableHttp2ConnectionAsync(Http2Connection connection)
+            {
+                bool usable = await connection.WaitForAvailableStreamsAsync().ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+
+                if (NetEventSource.Log.IsEnabled()) connection.Trace($"{nameof(connection.WaitForAvailableStreamsAsync)} completed, {nameof(usable)}={usable}");
 
                 if (usable)
                 {
@@ -2144,7 +2144,7 @@ namespace System.Net.Http
                     if (NetEventSource.Log.IsEnabled()) connection.Trace("HTTP2 connection no longer usable");
                     connection.Dispose();
                 }
-            });
+            };
         }
 
         public void InvalidateHttp3Connection(Http3Connection connection)

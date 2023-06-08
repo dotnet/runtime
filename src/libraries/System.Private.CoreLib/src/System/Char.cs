@@ -163,12 +163,12 @@ namespace System
         // Overrides System.Object.ToString.
         public override string ToString()
         {
-            return char.ToString(m_value);
+            return ToString(m_value);
         }
 
         public string ToString(IFormatProvider? provider)
         {
-            return char.ToString(m_value);
+            return ToString(m_value);
         }
 
         //
