@@ -689,7 +689,7 @@ namespace Microsoft.Interop.Analyzers
                             }
                             var marshalModeArgument = attrCreation.GetArgumentByOrdinal(1);
                             if (marshalModeArgument.Value is not IFieldReferenceOperation { ConstantValue.Value: var marshalMode }
-                                || !Enum.IsDefined(typeof(MarshalMode), (MarshalMode) marshalMode))
+                                || !Enum.IsDefined(typeof(MarshalMode), (MarshalMode)marshalMode))
                             {
                                 DiagnosticReporter marshalModeReporter = DiagnosticReporter.CreateForLocation(marshalModeArgument.Syntax.GetLocation(), context.ReportDiagnostic);
                                 marshalModeReporter.CreateAndReportDiagnostic(MarshalModeMustBeValidValue);
@@ -699,7 +699,7 @@ namespace Microsoft.Interop.Analyzers
                             AnalyzeMarshallerType(
                                 marshallerTypeReporter,
                                 managedType,
-                                (MarshalMode)marshalModeArgument.Value.ConstantValue.Value,
+                                (MarshalMode)marshalMode,
                                 (INamedTypeSymbol)marshallerType,
                                 ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryType));
                         }
