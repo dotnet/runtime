@@ -7588,7 +7588,7 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
                 if (instParam != nullptr)
                 {
                     assert(instParam->GetNext() == nullptr);
-                    CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(instParam->GetEarlyNode());
+                    CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(instParam->GetNode());
                     if (hClass != NO_CLASS_HANDLE)
                     {
                         hClass = getTypeInstantiationArgument(hClass, 0);
