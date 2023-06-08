@@ -1857,7 +1857,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         public void WaitForMultipleSessionsNotSupportedError(TimeSpan timeout) => WaitForEvent(timeout, 1, "MultipleSessionsNotSupportedError");
 
-        public void WaitForMultipleSessionsConfiguredIncorrectlyError(TimeSpan timeout) => WaitForEvent(timeout, 1, "MultipleSessionsConfiguredIncorrectlyError"); // thought - do we want to verify the msg?
+        public void WaitForMultipleSessionsConfiguredIncorrectlyError(TimeSpan timeout) => WaitForEvent(timeout, 1, "MultipleSessionsConfiguredIncorrectlyError");
 
         void WaitForEvent(TimeSpan timeout, int numEvents, string eventName)
         {
