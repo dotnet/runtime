@@ -158,7 +158,7 @@ namespace System.Security.Cryptography
                 Debug.Assert(isHmac ? true : key.IsEmpty);
 
                 Interop.BCrypt.BCryptAlgPseudoHandle algHandle;
-                int? digestSizeInBytes;
+                int digestSizeInBytes;
 
                 if (hashAlgorithmId == HashAlgorithmNames.MD5)
                 {
@@ -219,12 +219,12 @@ namespace System.Security.Cryptography
                 else if (hashAlgorithmId == HashAlgorithmNames.CSHAKE128)
                 {
                     algHandle = Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_CSHAKE128_ALG_HANDLE;
-                    digestSizeInBytes = null;
+                    digestSizeInBytes = destination.Length;
                 }
                 else if (hashAlgorithmId == HashAlgorithmNames.CSHAKE256)
                 {
                     algHandle = Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_CSHAKE256_ALG_HANDLE;
-                    digestSizeInBytes = null;
+                    digestSizeInBytes = destination.Length;
                 }
                 else
                 {
@@ -238,13 +238,11 @@ namespace System.Security.Cryptography
                     throw new CryptographicException();
                 }
 
-                int destinationSizeInBytes = digestSizeInBytes ?? destination.Length;
-
                 fixed (byte* pKey = &MemoryMarshal.GetReference(key))
                 fixed (byte* pSrc = &MemoryMarshal.GetReference(source))
                 fixed (byte* pDest = &MemoryMarshal.GetReference(destination))
                 {
-                    NTSTATUS ntStatus = Interop.BCrypt.BCryptHash((uint)algHandle, pKey, key.Length, pSrc, source.Length, pDest, destinationSizeInBytes);
+                    NTSTATUS ntStatus = Interop.BCrypt.BCryptHash((uint)algHandle, pKey, key.Length, pSrc, source.Length, pDest, digestSizeInBytes);
 
                     if (ntStatus != NTSTATUS.STATUS_SUCCESS)
                     {
@@ -252,7 +250,7 @@ namespace System.Security.Cryptography
                     }
                 }
 
-                hashSize = destinationSizeInBytes;
+                hashSize = digestSizeInBytes;
             }
 
             private static void HashUpdateAndFinish(

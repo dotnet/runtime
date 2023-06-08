@@ -407,10 +407,10 @@ namespace System.Security.Cryptography.Tests
             byte[] buffer = new byte[1];
             CancellationToken cancelledToken = new CancellationToken(canceled: true);
 
-            await Assert.ThrowsAsync<TaskCanceledException>(
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(
                 async () => await TShakeTrait.HashDataAsync(Stream.Null, outputLength: 1, cancelledToken));
 
-            await Assert.ThrowsAsync<TaskCanceledException>(
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(
                 async () => await TShakeTrait.HashDataAsync(Stream.Null, buffer, cancelledToken));
         }
 

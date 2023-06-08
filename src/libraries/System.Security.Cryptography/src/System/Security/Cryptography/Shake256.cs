@@ -240,7 +240,9 @@ namespace System.Security.Cryptography
             ArgumentOutOfRangeException.ThrowIfNegative(outputLength);
 
             if (!source.CanRead)
+            {
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
+            }
 
             CheckPlatformSupport();
             return LiteHashProvider.XofStream(HashAlgorithmId, outputLength, source);
@@ -266,7 +268,9 @@ namespace System.Security.Cryptography
             ArgumentNullException.ThrowIfNull(source);
 
             if (!source.CanRead)
+            {
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
+            }
 
             CheckPlatformSupport();
             LiteHashProvider.XofStream(HashAlgorithmId, source, destination);
@@ -288,6 +292,9 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">
         ///   <paramref name="source" /> does not support reading.
         /// </exception>
+        /// <exception cref="OperationCanceledException">
+        ///   <paramref name="cancellationToken"/> has been canceled.
+        /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support SHAKE256. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports SHAKE256.
@@ -297,7 +304,9 @@ namespace System.Security.Cryptography
             ArgumentNullException.ThrowIfNull(source);
 
             if (!source.CanRead)
+            {
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
+            }
 
             CheckPlatformSupport();
             return LiteHashProvider.XofStreamAsync(HashAlgorithmId, source, destination, cancellationToken);
@@ -324,6 +333,9 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source" /> is <see langword="null" />.
         /// </exception>
+        /// <exception cref="OperationCanceledException">
+        ///   <paramref name="cancellationToken"/> has been canceled.
+        /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support SHAKE256. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports SHAKE256.
@@ -334,7 +346,9 @@ namespace System.Security.Cryptography
             ArgumentOutOfRangeException.ThrowIfNegative(outputLength);
 
             if (!source.CanRead)
+            {
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
+            }
 
             CheckPlatformSupport();
             return LiteHashProvider.XofStreamAsync(HashAlgorithmId, outputLength, source, cancellationToken);

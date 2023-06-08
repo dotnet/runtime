@@ -81,7 +81,7 @@ namespace System.Security.Cryptography
                 _ = source;
                 _ = destination;
                 Debug.Fail("Caller should have checked if platform supported XOFs.");
-                throw new PlatformNotSupportedException();
+                throw new UnreachableException();
             }
 
             public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
