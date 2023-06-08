@@ -80,6 +80,10 @@ jobs:
         - name: runtimeFlavorArgs
           value: '-mono'
 
+      - ${{ if eq(parameters.runtimeFlavor, 'nativeaot') }}:
+        - name: runtimeFlavorArgs
+          value: '-nativeaot'
+
       - name: testTreeFilterArg
         value: ''
 

@@ -1462,6 +1462,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           buildConfig: Release
+          runtimeFlavor: nativeaot
           # isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
           # isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
           platforms:
@@ -1480,8 +1481,8 @@ extends:
               value: 180
           jobParameters:
             testGroup: innerloop
+            isSourceBuild: true
             nameSuffix: AllSubsets_NativeAOT_RuntimeTests
-            buildArgs: -s clr.aot -c $(_BuildConfig)
             timeoutInMinutes: 240
             # extra steps, run tests
             extraVariablesTemplates:
