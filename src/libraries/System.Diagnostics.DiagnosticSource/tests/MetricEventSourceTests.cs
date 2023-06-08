@@ -75,8 +75,7 @@ namespace System.Diagnostics.Metrics.Tests
             using Meter meter2 = new Meter("TestMeter2");
             Counter<int> c2 = meter2.CreateCounter<int>("counter2");
 
-            EventWrittenEventArgs[] events;
-            EventWrittenEventArgs[] events2;
+            EventWrittenEventArgs[] events, events2;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter1"))
             {
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
@@ -118,8 +117,7 @@ namespace System.Diagnostics.Metrics.Tests
             using Meter meter2 = new Meter("TestMeter2");
             Counter<int> c2 = meter2.CreateCounter<int>("counter2");
 
-            EventWrittenEventArgs[] events;
-            EventWrittenEventArgs[] events2;
+            EventWrittenEventArgs[] events, events2;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter1"))
             {
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
@@ -164,8 +162,7 @@ namespace System.Diagnostics.Metrics.Tests
             using Meter meter2 = new Meter("TestMeter2");
             Counter<int> c2 = meter2.CreateCounter<int>("counter2");
 
-            EventWrittenEventArgs[] events;
-            EventWrittenEventArgs[] events2;
+            EventWrittenEventArgs[] events, events2;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter1"))
             {
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
@@ -193,7 +190,7 @@ namespace System.Diagnostics.Metrics.Tests
             }
 
             AssertBeginInstrumentReportingEventsPresent(events, c, c, c2);
-            // AssertInitialEnumerationCompleteEventPresent(events); // Not sure if we want to re-enumerate when we add new providers, but this will break this test for now
+            AssertInitialEnumerationCompleteEventPresent(events, 2);
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"), ("0", "17"), ("0", "17"), ("0", "17"), ("0", "17"), ("6", "23"), ("13", "36"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 9);
 
@@ -216,9 +213,7 @@ namespace System.Diagnostics.Metrics.Tests
             using Meter meter3 = new Meter("TestMeter3");
             Counter<int> c3 = meter3.CreateCounter<int>("counter3");
 
-            EventWrittenEventArgs[] events;
-            EventWrittenEventArgs[] events2;
-            EventWrittenEventArgs[] events3;
+            EventWrittenEventArgs[] events, events2, events3;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter1"))
             {
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
@@ -269,8 +264,7 @@ namespace System.Diagnostics.Metrics.Tests
             using Meter meter2 = new Meter("TestMeter2");
             Counter<int> c2 = meter2.CreateCounter<int>("counter2");
 
-            EventWrittenEventArgs[] events;
-            EventWrittenEventArgs[] events2;
+            EventWrittenEventArgs[] events, events2;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter1"))
             {
                 using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter2"))
@@ -289,7 +283,8 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, c, c, c2);
             AssertBeginInstrumentReportingEventsPresent(events2, c, c2);
-            // AssertInitialEnumerationCompleteEventPresent(events); TBD what behavior we want -> should this be 2?
+            AssertInitialEnumerationCompleteEventPresent(events, 2);
+            AssertInitialEnumerationCompleteEventPresent(events2);
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
             AssertCounterEventsPresent(events, meter2.Name, c2.Name, "", "", ("6", "6"), ("13", "19"));
             AssertCounterEventsPresent(events2, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
@@ -327,7 +322,9 @@ namespace System.Diagnostics.Metrics.Tests
 
                 // some alternate listener attempts to listen in the middle
                 using MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "ADifferentMeter");
-                listener2.WaitForMultipleSessionsNotSupportedError(s_waitForEventTimeout);
+                {
+                    listener2.WaitForMultipleSessionsNotSupportedError(s_waitForEventTimeout);
+                }
 
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
@@ -547,8 +544,7 @@ namespace System.Diagnostics.Metrics.Tests
             using Meter meter = new Meter("TestMeter1");
             Counter<int> c = meter.CreateCounter<int>("counter1");
 
-            EventWrittenEventArgs[] events;
-            EventWrittenEventArgs[] events2;
+            EventWrittenEventArgs[] events, events2;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter1"))
             {
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
@@ -575,11 +571,127 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
 
             AssertBeginInstrumentReportingEventsPresent(events2, c);
-            //AssertInitialEnumerationCompleteEventPresent(events2);
+            AssertInitialEnumerationCompleteEventPresent(events2);
             AssertCounterEventsPresent(events2, meter.Name, c.Name, "", "", ("0", "17"), ("5", "22"), ("12", "34"));
             AssertCollectStartStopEventsPresent(events2, IntervalSecs, 3);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        //[OuterLoop("Slow and has lots of console spew")]
+        public void EventSourcePublishesEndEventsOnMeterDisposeMultiplexing()
+        {
+            using Meter meterA = new Meter("TestMeter8");
+            using Meter meterB = new Meter("TestMeter9");
+            Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!");
+            int counterState = 3;
+            ObservableCounter<int> oc = meterA.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
+            int gaugeState = 0;
+            ObservableGauge<int> og = meterA.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!");
+            Histogram<int> h = meterB.CreateHistogram<int>("histogram1", "a unit", "the description");
+            UpDownCounter<int> udc = meterA.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
+            int upDownCounterState = 0;
+            ObservableUpDownCounter<int> oudc = meterA.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
+
+            EventWrittenEventArgs[] events, events2;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter8;TestMeter9"))
+            {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                c.Add(5);
+                h.Record(19);
+                udc.Add(33);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                c.Add(12);
+                h.Record(26);
+                udc.Add(40);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+
+                meterA.Dispose();
+                listener.WaitForEndInstrumentReporting(s_waitForEventTimeout, 3);
+
+                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter8"))
+                {
+                    events2 = listener2.Events.ToArray();
+                }
+
+                h.Record(21);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
+                events = listener.Events.ToArray();
+            }
+
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc, h); // only h occurs twice because meterA is disposed before listener2 is created 
+            AssertBeginInstrumentReportingEventsPresent(events2, h);
+            AssertInitialEnumerationCompleteEventPresent(events, 2);
+            AssertInitialEnumerationCompleteEventPresent(events2);
+            AssertCounterEventsPresent(events, meterA.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"));
+            AssertCounterEventsPresent(events, meterA.Name, oc.Name, "", oc.Unit, ("", "10"), ("7", "17"), ("7", "24"));
+            AssertGaugeEventsPresent(events, meterA.Name, og.Name, "", og.Unit, "9", "18", "27");
+            AssertHistogramEventsPresent(events, meterB.Name, h.Name, "", h.Unit, ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"), ("0.5=21;0.95=21;0.99=21", "1", "21"));
+            AssertUpDownCounterEventsPresent(events, meterA.Name, udc.Name, "", udc.Unit, ("33", "33"), ("40", "73"));
+            AssertUpDownCounterEventsPresent(events, meterA.Name, oudc.Name, "", oudc.Unit, ("", "11"), ("11", "22"), ("11", "33"));
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 4);
+            AssertEndInstrumentReportingEventsPresent(events, c, oc, og, udc, oudc);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        //[OuterLoop("Slow and has lots of console spew")]
+        public void EventSourcePublishesEndEventsOnMeterDisposeMultiplexing2()
+        {
+            using Meter meterA = new Meter("TestMeter8");
+            using Meter meterB = new Meter("TestMeter9");
+            Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!");
+            int counterState = 3;
+            ObservableCounter<int> oc = meterA.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
+            int gaugeState = 0;
+            ObservableGauge<int> og = meterA.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!");
+            Histogram<int> h = meterB.CreateHistogram<int>("histogram1", "a unit", "the description");
+            UpDownCounter<int> udc = meterA.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
+            int upDownCounterState = 0;
+            ObservableUpDownCounter<int> oudc = meterA.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
+
+            EventWrittenEventArgs[] events, events2;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter8;TestMeter9"))
+            {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                c.Add(5);
+                h.Record(19);
+                udc.Add(33);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                c.Add(12);
+                h.Record(26);
+                udc.Add(40);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+
+                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter8;TestMeter9"))
+                {
+                    meterA.Dispose();
+                    listener.WaitForEndInstrumentReporting(s_waitForEventTimeout, 3);
+
+                    events2 = listener2.Events.ToArray();
+                }
+
+                h.Record(21);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
+
+                meterB.Dispose();
+                listener.WaitForEndInstrumentReporting(s_waitForEventTimeout, 5);
+
+                events = listener.Events.ToArray();
+            }
+
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc, c, oc, og, h, udc, oudc);
+            AssertBeginInstrumentReportingEventsPresent(events2, c, oc, og, h, udc, oudc);
+            AssertInitialEnumerationCompleteEventPresent(events, 2);
+            AssertInitialEnumerationCompleteEventPresent(events2);
+            AssertCounterEventsPresent(events, meterA.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"));
+            AssertCounterEventsPresent(events, meterA.Name, oc.Name, "", oc.Unit, ("", "10"), ("7", "17"), ("7", "24"));
+            AssertGaugeEventsPresent(events, meterA.Name, og.Name, "", og.Unit, "9", "18", "27");
+            AssertHistogramEventsPresent(events, meterB.Name, h.Name, "", h.Unit, ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"), ("0.5=21;0.95=21;0.99=21", "1", "21"));
+            AssertUpDownCounterEventsPresent(events, meterA.Name, udc.Name, "", udc.Unit, ("33", "33"), ("40", "73"));
+            AssertUpDownCounterEventsPresent(events, meterA.Name, oudc.Name, "", oudc.Unit, ("", "11"), ("11", "22"), ("11", "33"));
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 4);
+            AssertEndInstrumentReportingEventsPresent(events, c, oc, og, udc, oudc, h);
+            AssertEndInstrumentReportingEventsPresent(events2, c, oc, og, udc, oudc);
+        }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         //[OuterLoop("Slow and has lots of console spew")]
@@ -1088,6 +1200,40 @@ namespace System.Diagnostics.Metrics.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         //[OuterLoop("Slow and has lots of console spew")]
+        public void EventSourcePublishesInstrumentsMultiplexing()
+        {
+            using Meter meterA = new Meter("TestMeter10");
+            using Meter meterB = new Meter("TestMeter11");
+            Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!");
+            int counterState = 3;
+            ObservableCounter<int> oc = meterA.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
+            int gaugeState = 0;
+            ObservableGauge<int> og = meterA.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!");
+            Histogram<int> h = meterB.CreateHistogram<int>("histogram1", "a unit", "the description");
+            UpDownCounter<int> udc = meterA.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
+            int upDownCounterState = 0;
+            ObservableUpDownCounter<int> oudc = meterA.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
+
+            EventWrittenEventArgs[] events, events2;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.InstrumentPublishing, isShared: true, null, ""))
+            {
+                listener.WaitForEnumerationComplete(s_waitForEventTimeout);
+                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.InstrumentPublishing, isShared: true, null, ""))
+                {
+                    listener2.WaitForEnumerationComplete(s_waitForEventTimeout);
+                    events = listener.Events.ToArray();
+                    events2 = listener2.Events.ToArray();
+                }
+            }
+
+            AssertInstrumentPublishingEventsPresent(events, c, oc, og, h, udc, oudc, c, oc, og, h, udc, oudc);
+            AssertInitialEnumerationCompleteEventPresent(events, 2);
+            AssertInstrumentPublishingEventsPresent(events2, c, oc, og, h, udc, oudc);
+            AssertInitialEnumerationCompleteEventPresent(events2);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        //[OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesAllDataTypes()
         {
             using Meter meter = new Meter("TestMeter12");
@@ -1412,9 +1558,9 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(expectedInstruments.Length, beginReportEvents.Length);
         }
 
-        private void AssertInitialEnumerationCompleteEventPresent(EventWrittenEventArgs[] events)
+        private void AssertInitialEnumerationCompleteEventPresent(EventWrittenEventArgs[] events, int eventsCount = 1)
         {
-            Assert.Equal(1, events.Where(e => e.EventName == "InitialInstrumentEnumerationComplete").Count());
+            Assert.Equal(eventsCount, events.Where(e => e.EventName == "InitialInstrumentEnumerationComplete").Count());
         }
 
         private void AssertTimeSeriesLimitPresent(EventWrittenEventArgs[] events)

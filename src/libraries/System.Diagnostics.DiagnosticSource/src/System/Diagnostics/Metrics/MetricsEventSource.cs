@@ -312,16 +312,10 @@ namespace System.Diagnostics.Metrics
                             {
                                 if (validShared)
                                 {
-                                    // Refactor this to be shared
-                                    if (command.Arguments!.TryGetValue("Metrics", out string? metricsSpecs))
+                                    if (ParseMetrics(command.Arguments!, out string? metricsSpecs))
                                     {
-                                        Parent.Message($"Metrics argument received: {metricsSpecs}");
                                         ParseSpecs(metricsSpecs);
-                                        _aggregationManager.Update();
-                                    }
-                                    else
-                                    {
-                                        Parent.Message("No Metrics argument received");
+                                        _aggregationManager!.Update();
                                     }
 
                                     return;
@@ -402,14 +396,9 @@ namespace System.Diagnostics.Metrics
 
                         _aggregationManager.SetCollectionPeriod(TimeSpan.FromSeconds(refreshIntervalSecs));
 
-                        if (command.Arguments!.TryGetValue("Metrics", out string? metricsSpecs))
+                        if (ParseMetrics(command.Arguments!, out string? metricsSpecs))
                         {
-                            Parent.Message($"Metrics argument received: {metricsSpecs}");
                             ParseSpecs(metricsSpecs);
-                        }
-                        else
-                        {
-                            Parent.Message("No Metrics argument received");
                         }
 
                         _aggregationManager.Start();
@@ -419,6 +408,19 @@ namespace System.Diagnostics.Metrics
                 {
                     // this will never run
                 }
+            }
+
+            private bool ParseMetrics(IDictionary<string, string> arguments, out string? metricsSpecs)
+            {
+                // Refactor this to be shared
+                if (arguments.TryGetValue("Metrics", out metricsSpecs))
+                {
+                    Parent.Message($"Metrics argument received: {metricsSpecs}");
+                    return true;
+                }
+
+                Parent.Message("No Metrics argument received");
+                return false;
             }
 
             private void InvalidateRefCounting()
@@ -450,29 +452,29 @@ namespace System.Diagnostics.Metrics
                 }
             }
 
-            private bool SetSharedMaxTimeSeries(IDictionary<string, string>? arguments, int sharedValue, out int maxTimeSeries)
+            private bool SetSharedMaxTimeSeries(IDictionary<string, string> arguments, int sharedValue, out int maxTimeSeries)
             {
                 return SetMaxValue(arguments, MaxTimeSeriesKey, SharedValueDescription, sharedValue, out maxTimeSeries);
             }
 
-            private void SetUniqueMaxTimeSeries(IDictionary<string, string>? arguments, int defaultValue, out int maxTimeSeries)
+            private void SetUniqueMaxTimeSeries(IDictionary<string, string> arguments, int defaultValue, out int maxTimeSeries)
             {
                 _ = SetMaxValue(arguments, MaxTimeSeriesKey, DefaultValueDescription, defaultValue, out maxTimeSeries);
             }
 
-            private bool SetSharedMaxHistograms(IDictionary<string, string>? arguments, int sharedValue, out int maxHistograms)
+            private bool SetSharedMaxHistograms(IDictionary<string, string> arguments, int sharedValue, out int maxHistograms)
             {
                 return SetMaxValue(arguments, MaxHistogramsKey, SharedValueDescription, sharedValue, out maxHistograms);
             }
 
-            private void SetUniqueMaxHistograms(IDictionary<string, string>? arguments, int defaultValue, out int maxHistograms)
+            private void SetUniqueMaxHistograms(IDictionary<string, string> arguments, int defaultValue, out int maxHistograms)
             {
                 _ = SetMaxValue(arguments, MaxHistogramsKey, DefaultValueDescription, defaultValue, out maxHistograms);
             }
 
-            private bool SetMaxValue(IDictionary<string, string>? arguments, string argumentsKey, string valueDescriptor, int defaultValue, out int maxValue)
+            private bool SetMaxValue(IDictionary<string, string> arguments, string argumentsKey, string valueDescriptor, int defaultValue, out int maxValue)
             {
-                if (arguments!.TryGetValue(argumentsKey, out string? maxString))
+                if (arguments.TryGetValue(argumentsKey, out string? maxString))
                 {
                     Parent.Message($"{argumentsKey} argument received: {maxString}");
                     if (!int.TryParse(maxString, out maxValue))
