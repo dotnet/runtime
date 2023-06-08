@@ -3598,14 +3598,10 @@ hot_reload_get_or_add_ginst_update_info(MonoClass *ginst)
     ((struct_type *) mono_class_alloc0 ((klass), ((gsize) sizeof (struct_type)) * ((gsize) (n_structs))))
 
 static void
-recompute_ginst_update_info(MonoClass *ginst, MonoClass *gtd, MonoClassMetadataUpdateInfo *gtd_info)
+recompute_ginst_props (MonoClass *ginst, MonoClassMetadataUpdateInfo *info,
+			MonoClass *gtd, MonoClassMetadataUpdateInfo *gtd_info,
+			MonoError *error)
 {
-	// if ginst has a `MonoClassMetadataUpdateInfo`, use it to start with, otherwise, allocate a new one
-	MonoClassMetadataUpdateInfo *info = mono_class_get_or_add_metadata_update_info (ginst);
-  
-	if (!info)
-		info = mono_class_new0 (ginst, MonoClassMetadataUpdateInfo, 1);
-
 	// replace info->added_props by a new list re-computed from gtd_info->added_props
 	info->added_props = NULL;
 	for (GSList *ptr = gtd_info->added_props; ptr; ptr = ptr->next) {
@@ -3615,20 +3611,25 @@ recompute_ginst_update_info(MonoClass *ginst, MonoClass *gtd, MonoClassMetadataU
 		added_prop->prop = gtd_added_prop->prop;
 		added_prop->token = gtd_added_prop->token;
 
-		ERROR_DECL (error);
 		if (added_prop->prop.get)
 				added_prop->prop.get = mono_class_inflate_generic_method_full_checked (
 					added_prop->prop.get, ginst, mono_class_get_context (ginst), error);
 		if (added_prop->prop.set)
 			added_prop->prop.set = mono_class_inflate_generic_method_full_checked (
 				added_prop->prop.set, ginst, mono_class_get_context (ginst), error);
-		g_assert (is_ok (error)); /*FIXME proper error handling*/
+		mono_error_assert_ok (error); /*FIXME proper error handling*/
 
 		added_prop->prop.parent = ginst;
 
 		info->added_props = g_slist_prepend_mem_manager (m_class_get_mem_manager (ginst), info->added_props, (gpointer)added_prop);
 	}
+}
 
+static void
+recompute_ginst_events (MonoClass *ginst, MonoClassMetadataUpdateInfo *info,
+			MonoClass *gtd, MonoClassMetadataUpdateInfo *gtd_info,
+			MonoError *error)
+{
 	// replace info->added_events by a new list re-computed from gtd_info->added_events
 	info->added_events = NULL;
 	for (GSList *ptr = gtd_info->added_events; ptr; ptr = ptr->next) {
@@ -3637,7 +3638,6 @@ recompute_ginst_update_info(MonoClass *ginst, MonoClass *gtd, MonoClassMetadataU
 		
 		added_event->evt = gtd_added_event->evt;
 
-		ERROR_DECL (error);
 		if (added_event->evt.add)
 				added_event->evt.add = mono_class_inflate_generic_method_full_checked (
 					added_event->evt.add, ginst, mono_class_get_context (ginst), error);
@@ -3647,19 +3647,24 @@ recompute_ginst_update_info(MonoClass *ginst, MonoClass *gtd, MonoClassMetadataU
 		if (added_event->evt.raise)
 			added_event->evt.raise = mono_class_inflate_generic_method_full_checked (
 				added_event->evt.raise, ginst, mono_class_get_context (ginst), error);
-		g_assert (is_ok (error)); /*FIXME proper error handling*/
+		mono_error_assert_ok (error); /*FIXME proper error handling*/
 		
 		added_event->evt.parent = ginst;
 
 		info->added_events = g_slist_prepend_mem_manager (m_class_get_mem_manager (ginst), info->added_events, (gpointer)added_event);
 	}
-	
+}
+
+static void
+recompute_ginst_fields (MonoClass *ginst, MonoClassMetadataUpdateInfo *info,
+			MonoClass *gtd, MonoClassMetadataUpdateInfo *gtd_info,
+			MonoError *error)
+{
 	info->added_fields = NULL;
 	for (GSList *ptr = gtd_info->added_fields; ptr; ptr = ptr->next) {
 		MonoClassMetadataUpdateField *gtd_added_field = (MonoClassMetadataUpdateField *)ptr->data;
 		MonoClassMetadataUpdateField *added_field = mono_class_new0 (ginst, MonoClassMetadataUpdateField, 1);
 
-		ERROR_DECL (error);
 		mono_field_resolve_type (&gtd_added_field->field, error);
 		mono_error_assert_ok (error);
 		g_assert (gtd_added_field->field.type != NULL);
@@ -3676,6 +3681,27 @@ recompute_ginst_update_info(MonoClass *ginst, MonoClass *gtd, MonoClassMetadataU
 
 		info->added_fields = g_slist_prepend_mem_manager (m_class_get_mem_manager (ginst), info->added_fields, (gpointer)added_field);
 	}
+}
+
+static void
+recompute_ginst_update_info(MonoClass *ginst, MonoClass *gtd, MonoClassMetadataUpdateInfo *gtd_info)
+{
+	// if ginst has a `MonoClassMetadataUpdateInfo`, use it to start with, otherwise, allocate a new one
+	MonoClassMetadataUpdateInfo *info = mono_class_get_or_add_metadata_update_info (ginst);
+  
+	if (!info)
+		info = mono_class_new0 (ginst, MonoClassMetadataUpdateInfo, 1);
+
+	ERROR_DECL (error);
+
+	recompute_ginst_props (ginst, info, gtd, gtd_info, error);
+	mono_error_assert_ok (error);
+
+	recompute_ginst_events (ginst, info, gtd, gtd_info, error);
+	mono_error_assert_ok (error);
+	
+	recompute_ginst_fields (ginst, info, gtd, gtd_info, error);
+	mono_error_assert_ok (error);
 
 	// finally, update the generation of the ginst info to the same one as the gtd
 	info->generation = gtd_info->generation;
