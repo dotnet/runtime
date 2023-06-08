@@ -175,7 +175,7 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
     optPropKind propKind     = optPropKind::OPK_INVALID;
     bool        folded       = false;
 
-    if (tree->OperIsIndirOrArrMetaData())
+    if (tree->OperIsIndirOrArrMetaData() || tree->OperIsAtomicOp())
     {
         // optFoldNullCheck takes care of updating statement info if a null check is removed.
         folded = optFoldNullCheck(tree, nullCheckMap);
@@ -503,15 +503,24 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
 //       or
 //       indir(add(x, const2))
 //
-//       (indir is any node for which OperIsIndirOrArrMetaData() is true.)
+//       (indir is any node for which OperIsIndirOrArrMetaData() or OperIsAtomicOp() is true.)
 //
 //     2.  const1 + const2 if sufficiently small.
 
 GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap)
 {
-    assert(tree->OperIsIndirOrArrMetaData());
+    assert(tree->OperIsIndirOrArrMetaData() || tree->OperIsAtomicOp());
 
-    GenTree* addr = tree->GetIndirOrArrMetaDataAddr();
+    GenTree* addr;
+    if (tree->OperIsAtomicOp())
+    {
+        // For atomic operations, the address is always the first operand.
+        addr = tree->gtGetOp1()->gtEffectiveVal(true);
+    }
+    else
+    {
+        addr = tree->GetIndirOrArrMetaDataAddr();
+    }
 
     ssize_t offsetValue = 0;
 
