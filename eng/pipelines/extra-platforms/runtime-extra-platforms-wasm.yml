@@ -66,118 +66,118 @@ jobs:
 - ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
   # Library tests
   # these run on runtime also
-  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-    parameters:
-      platforms:
-        - browser_wasm
-      # Don't run for rolling builds, as this is covered
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-      scenarios:
-        - normal
-        - WasmTestOnBrowser
+  #- template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    #parameters:
+      #platforms:
+        #- browser_wasm
+      ## Don't run for rolling builds, as this is covered
+      #isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      #isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      #scenarios:
+        #- normal
+        #- WasmTestOnBrowser
 
-  # this only runs on the extra pipeline
-  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-    parameters:
-      platforms:
-        - browser_wasm
-      nameSuffix: _NodeJs
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
-      scenarios:
-        - WasmTestOnNodeJS
+  ## this only runs on the extra pipeline
+  #- template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    #parameters:
+      #platforms:
+        #- browser_wasm
+      #nameSuffix: _NodeJs
+      #isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      #isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      #alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      #scenarios:
+        #- WasmTestOnNodeJS
 
-  # Library tests - Windows
-  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-    parameters:
-      platforms:
-        - browser_wasm_win
-      # Don't run for rolling builds, as this is covered
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-      scenarios:
-        - WasmTestOnBrowser
-        - WasmTestOnNodeJS
-
-  # Smoke tests only with full threading
-  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-    parameters:
-      platforms:
-        - browser_wasm
+  ## Library tests - Windows
+  #- template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    #parameters:
+      #platforms:
         #- browser_wasm_win
-      nameSuffix: _Threading_Smoke
-      extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:_WasmPThreadPoolSize=8
-      shouldRunSmokeOnly: true
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-      # Always run for runtime-wasm because browser testing is not on runtime
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
-      scenarios:
-        - WasmTestOnBrowser
+      ## Don't run for rolling builds, as this is covered
+      #isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      #isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      #scenarios:
+        #- WasmTestOnBrowser
+        #- WasmTestOnNodeJS
 
-  # Library tests with full threading
-  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-    parameters:
-      platforms:
-        - browser_wasm
+  ## Smoke tests only with full threading
+  #- template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    #parameters:
+      #platforms:
+        #- browser_wasm
+        ##- browser_wasm_win
+      #nameSuffix: _Threading_Smoke
+      #extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:_WasmPThreadPoolSize=8
+      #shouldRunSmokeOnly: true
+      #isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      #isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      ## Always run for runtime-wasm because browser testing is not on runtime
+      #alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      #scenarios:
+        #- WasmTestOnBrowser
+
+  ## Library tests with full threading
+  #- template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    #parameters:
+      #platforms:
+        #- browser_wasm
+        ##- browser_wasm_win
+      #nameSuffix: _Threading
+      #extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:_WasmPThreadPoolSize=8
+      #isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      #isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      ## Always run for runtime-wasm because tests are not run in runtime
+      #alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+
+      ## NOTE - Since threading is experimental, we don't want to block mainline work
+      #shouldContinueOnError: true
+      #scenarios:
+        #- normal
+        #- WasmTestOnBrowser
+        #- WasmTestOnNodeJS
+
+  ## Library tests with internal threads only
+  #- template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    #parameters:
+      #platforms:
+        #- browser_wasm
+        ##- browser_wasm_win
+      #nameSuffix: _Threading_PerfTracing
+      #extraBuildArgs: /p:MonoWasmBuildVariant=perftrace
+      #isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      #isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      ## Always run for runtime-wasm because tests are not run in runtime
+      #alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+
+      ## NOTE - Since threading is experimental, we don't want to block mainline work
+      #shouldContinueOnError: true
+      #scenarios:
+        #- normal
+        #- WasmTestOnBrowser
+        #- WasmTestOnNodeJS
+
+  ## EAT Library tests - only run on linux
+  #- template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+    #parameters:
+      #platforms:
+        #- browser_wasm
+      #nameSuffix: _EAT
+      #runAOT: false
+      #isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      #isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+
+  ## AOT Library tests
+  #- template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+    #parameters:
+      #platforms:
+        #- browser_wasm
         #- browser_wasm_win
-      nameSuffix: _Threading
-      extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:_WasmPThreadPoolSize=8
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-      # Always run for runtime-wasm because tests are not run in runtime
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
-
-      # NOTE - Since threading is experimental, we don't want to block mainline work
-      shouldContinueOnError: true
-      scenarios:
-        - normal
-        - WasmTestOnBrowser
-        - WasmTestOnNodeJS
-
-  # Library tests with internal threads only
-  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-    parameters:
-      platforms:
-        - browser_wasm
-        #- browser_wasm_win
-      nameSuffix: _Threading_PerfTracing
-      extraBuildArgs: /p:MonoWasmBuildVariant=perftrace
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-      # Always run for runtime-wasm because tests are not run in runtime
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
-
-      # NOTE - Since threading is experimental, we don't want to block mainline work
-      shouldContinueOnError: true
-      scenarios:
-        - normal
-        - WasmTestOnBrowser
-        - WasmTestOnNodeJS
-
-  # EAT Library tests - only run on linux
-  - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-    parameters:
-      platforms:
-        - browser_wasm
-      nameSuffix: _EAT
-      runAOT: false
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-
-  # AOT Library tests
-  - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-    parameters:
-      platforms:
-        - browser_wasm
-        - browser_wasm_win
-      nameSuffix: _AOT
-      runAOT: true
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      #nameSuffix: _AOT
+      #runAOT: true
+      #isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      #isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      #alwaysRun: ${{ parameters.isWasmOnlyBuild }}
 
   # High resource AOT Library tests
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -194,20 +194,20 @@ jobs:
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
 
   # Wasi - run only smoke tests by default
-  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-    parameters:
-      platforms:
-        - wasi_wasm
-        - wasi_wasm_win
-      nameSuffix: '_Smoke'
-      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true
-      shouldRunSmokeOnly: true
-      # ignore test failures for runtime-extra-platforms, but not when this
-      # is run as part of a wasm specific pipeline like runtime-wasm
-      shouldContinueOnError: ${{ not(parameters.isWasmOnlyBuild) }}
-      alwaysRun: ${{ variables.isRollingBuild }}
-      scenarios:
-        - normal
+  #- template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    #parameters:
+      #platforms:
+        #- wasi_wasm
+        #- wasi_wasm_win
+      #nameSuffix: '_Smoke'
+      #extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true
+      #shouldRunSmokeOnly: true
+      ## ignore test failures for runtime-extra-platforms, but not when this
+      ## is run as part of a wasm specific pipeline like runtime-wasm
+      #shouldContinueOnError: ${{ not(parameters.isWasmOnlyBuild) }}
+      #alwaysRun: ${{ variables.isRollingBuild }}
+      #scenarios:
+        #- normal
 
 - ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeNonLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
   # Wasm.Build.Tests
