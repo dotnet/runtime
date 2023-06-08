@@ -65,9 +65,17 @@ namespace ILCompiler
             if (outputFilePath == null)
                 throw new CommandLineException("Output filename must be specified (/out <file>)");
 
+            // NativeAOT is full AOT and its pre-compiled methods can not be
+            // thrown away at runtime if they mismatch in required ISAs or
+            // computed layouts of structs. The worst case scenario is simply
+            // that the image targets a higher machine than the user has and
+            // it fails to launch. Thus we want to have usage of Vector<T>
+            // directly encoded as part of the required ISAs.
+            bool isVectorTOptimistic = false;
+
             TargetArchitecture targetArchitecture = Get(_command.TargetArchitecture);
             TargetOS targetOS = Get(_command.TargetOS);
-            InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), targetArchitecture, targetOS,
+            InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
                 "Unrecognized instruction set {0}", "Unsupported combination of instruction sets: {0}/{1}");
 
             string systemModuleName = Get(_command.SystemModuleName);
