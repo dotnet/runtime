@@ -1462,7 +1462,6 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           buildConfig: Release
-          runtimeFlavor: coreclr
           # isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
           # isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
           platforms:

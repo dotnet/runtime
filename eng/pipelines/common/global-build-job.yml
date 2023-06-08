@@ -68,7 +68,7 @@ jobs:
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           - group: DotNet-HelixApi-Access
 
-      - ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
+      - ${{ if eq(runtimeFlavor, 'coreclr') }}:
         - name: _osParameter
           value: -os osx
       - ${{ else }}:
