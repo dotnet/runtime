@@ -6680,8 +6680,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			switch (ins->inst_c0) {
 			case OP_IMUL:
 				switch (ins->inst_c1) {
-				case MONO_TYPE_I4:
-				case MONO_TYPE_U4:
+				case MONO_TYPE_I8:
+				case MONO_TYPE_U8:
 					amd64_sse_pmuludq_reg_reg (code, ins->sreg1, ins->sreg2);
 					break;
 				default:

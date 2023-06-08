@@ -1770,7 +1770,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				return NULL; 	// We don't support sum vector for byte, sbyte types yet
 
 			// FIXME:
-			if (!COMPILE_LLVM (cfg) && !(arg0_type == MONO_TYPE_I4 || arg0_type == MONO_TYPE_U4))
+			if (!COMPILE_LLVM (cfg))
 				return NULL;
 
 			instc = OP_IMUL;
