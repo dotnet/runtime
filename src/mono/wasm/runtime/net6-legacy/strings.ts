@@ -3,8 +3,10 @@
 
 import { assert_legacy_interop } from "../pthreads/shared";
 import { mono_wasm_new_root } from "../roots";
-import { interned_string_table, mono_wasm_empty_string, stringToInternedMonoStringRoot, stringToMonoStringRoot } from "../strings";
-import { MonoString, is_nullish } from "../types/internal";
+import { interned_string_table, monoStringToString, mono_wasm_empty_string, stringToInternedMonoStringRoot, stringToMonoStringRoot } from "../strings";
+import { MonoString, MonoStringNull, is_nullish } from "../types/internal";
+
+let mono_wasm_string_root: any;
 
 /**
  * @deprecated Not GC or thread safe
@@ -35,4 +37,17 @@ export function stringToMonoStringIntern(string: string): string {
     finally {
         root.release();
     }
+}
+
+/* @deprecated not GC safe, use monoStringToString */
+export function monoStringToStringUnsafe(mono_string: MonoString): string | null {
+    if (mono_string === MonoStringNull)
+        return null;
+    if (!mono_wasm_string_root)
+        mono_wasm_string_root = mono_wasm_new_root();
+
+    mono_wasm_string_root.value = mono_string;
+    const result = monoStringToString(mono_wasm_string_root);
+    mono_wasm_string_root.value = MonoStringNull;
+    return result;
 }
