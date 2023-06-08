@@ -479,16 +479,16 @@ namespace System.Security.Cryptography.Tests
         public void NotSupported_ThrowsPlatformNotSupportedException()
         {
             byte[] source = new byte[1];
-            byte[] destination = new byte[1];
+            byte[] destination = new byte[0];
 
             Assert.Throws<PlatformNotSupportedException>(() => TShakeTrait.Create());
-            Assert.Throws<PlatformNotSupportedException>(() => TShakeTrait.HashData(source, outputLength: 1));
-            Assert.Throws<PlatformNotSupportedException>(() => TShakeTrait.HashData(new ReadOnlySpan<byte>(source), outputLength: 1));
+            Assert.Throws<PlatformNotSupportedException>(() => TShakeTrait.HashData(source, outputLength: 0));
+            Assert.Throws<PlatformNotSupportedException>(() => TShakeTrait.HashData(new ReadOnlySpan<byte>(source), outputLength: 0));
             Assert.Throws<PlatformNotSupportedException>(() => TShakeTrait.HashData(source, destination));
-            Assert.Throws<PlatformNotSupportedException>(() => TShakeTrait.HashData(Stream.Null, outputLength: 1));
+            Assert.Throws<PlatformNotSupportedException>(() => TShakeTrait.HashData(Stream.Null, outputLength: 0));
             Assert.Throws<PlatformNotSupportedException>(() => TShakeTrait.HashData(Stream.Null, destination));
             Assert.Throws<PlatformNotSupportedException>(() => TShakeTrait.HashDataAsync(Stream.Null, destination));
-            Assert.Throws<PlatformNotSupportedException>(() => TShakeTrait.HashDataAsync(Stream.Null, outputLength: 1));
+            Assert.Throws<PlatformNotSupportedException>(() => TShakeTrait.HashDataAsync(Stream.Null, outputLength: 0));
         }
 
         [Fact]

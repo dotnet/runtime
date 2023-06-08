@@ -124,7 +124,7 @@ namespace System.Security.Cryptography
             ArgumentOutOfRangeException.ThrowIfNegative(outputLength);
             CheckDisposed();
 
-             byte[] output = new byte[outputLength];
+            byte[] output = new byte[outputLength];
             _hashProvider.Current(output);
             return output;
         }
