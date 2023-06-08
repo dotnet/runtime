@@ -526,9 +526,9 @@ public:
                                                    CORINFO_METHOD_HANDLE   callerHandle,
                                                    CORINFO_HELPER_DESC*    pAccessHelper);
 
-    void recGetCastingHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fThrowing, CorInfoHelpFunc result);
+    void recGetCastingHelper(CORINFO_CLASS_HANDLE clsHnd, bool fThrowing, CorInfoHelpFunc result);
     void dmpGetCastingHelper(const Agnostic_GetCastingHelper& key, DWORD value);
-    CorInfoHelpFunc repGetCastingHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fThrowing);
+    CorInfoHelpFunc repGetCastingHelper(CORINFO_CLASS_HANDLE clsHnd, bool fThrowing);
 
     void recEmbedModuleHandle(CORINFO_MODULE_HANDLE handle, void** ppIndirection, CORINFO_MODULE_HANDLE result);
     void dmpEmbedModuleHandle(DWORDLONG key, DLDL value);

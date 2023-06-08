@@ -5469,7 +5469,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     // Pessimistically assume the jit cannot expand this as an inline test
     bool                  canExpandInline = false;
     bool                  partialExpand   = false;
-    const CorInfoHelpFunc helper          = info.compCompHnd->getCastingHelper(pResolvedToken, isCastClass);
+    const CorInfoHelpFunc helper          = info.compCompHnd->getCastingHelper(hClass, isCastClass);
 
     CORINFO_CLASS_HANDLE exactCls = NO_CLASS_HANDLE;
 

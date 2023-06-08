@@ -631,11 +631,11 @@ CorInfoHelpFunc WrapICorJitInfo::getNewArrHelper(
 }
 
 CorInfoHelpFunc WrapICorJitInfo::getCastingHelper(
-          CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          CORINFO_CLASS_HANDLE clsHnd,
           bool fThrowing)
 {
     API_ENTER(getCastingHelper);
-    CorInfoHelpFunc temp = wrapHnd->getCastingHelper(pResolvedToken, fThrowing);
+    CorInfoHelpFunc temp = wrapHnd->getCastingHelper(clsHnd, fThrowing);
     API_LEAVE(getCastingHelper);
     return temp;
 }

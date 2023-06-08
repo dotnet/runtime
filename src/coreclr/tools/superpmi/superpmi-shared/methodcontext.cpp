@@ -3995,14 +3995,14 @@ CorInfoIsAccessAllowedResult MethodContext::repCanAccessClass(CORINFO_RESOLVED_T
     return temp;
 }
 
-void MethodContext::recGetCastingHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fThrowing, CorInfoHelpFunc result)
+void MethodContext::recGetCastingHelper(CORINFO_CLASS_HANDLE clsHnd, bool fThrowing, CorInfoHelpFunc result)
 {
     if (GetCastingHelper == nullptr)
         GetCastingHelper = new LightWeightMap<Agnostic_GetCastingHelper, DWORD>();
 
     Agnostic_GetCastingHelper key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.hClass    = CastHandle(pResolvedToken->hClass);
+    key.hClass    = CastHandle(clsHnd);
     key.fThrowing = (DWORD)fThrowing;
 
     DWORD value = (DWORD)result;
@@ -4013,11 +4013,11 @@ void MethodContext::dmpGetCastingHelper(const Agnostic_GetCastingHelper& key, DW
 {
     printf("GetCastingHelper key cls-%016" PRIX64 ", thw-%u, value res-%u", key.hClass, key.fThrowing, value);
 }
-CorInfoHelpFunc MethodContext::repGetCastingHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fThrowing)
+CorInfoHelpFunc MethodContext::repGetCastingHelper(CORINFO_CLASS_HANDLE clsHnd, bool fThrowing)
 {
     Agnostic_GetCastingHelper key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.hClass    = CastHandle(pResolvedToken->hClass);
+    key.hClass    = CastHandle(clsHnd);
     key.fThrowing = (DWORD)fThrowing;
 
     DWORD value = LookupByKeyOrMiss(GetCastingHelper, key, ": key %016" PRIX64 "", key.hClass);

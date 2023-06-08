@@ -598,10 +598,10 @@ CorInfoHelpFunc MyICJI::getNewArrHelper(CORINFO_CLASS_HANDLE arrayCls)
 }
 
 // returns the optimized "IsInstanceOf" or "ChkCast" helper
-CorInfoHelpFunc MyICJI::getCastingHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fThrowing)
+CorInfoHelpFunc MyICJI::getCastingHelper(CORINFO_CLASS_HANDLE clsHnd, bool fThrowing)
 {
     jitInstance->mc->cr->AddCall("getCastingHelper");
-    return jitInstance->mc->repGetCastingHelper(pResolvedToken, fThrowing);
+    return jitInstance->mc->repGetCastingHelper(clsHnd, fThrowing);
 }
 
 // returns helper to trigger static constructor

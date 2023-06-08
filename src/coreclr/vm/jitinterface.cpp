@@ -5914,7 +5914,7 @@ CorInfoHelpFunc CEEInfo::getNewArrHelperStatic(TypeHandle clsHnd)
 }
 
 /***********************************************************************/
-CorInfoHelpFunc CEEInfo::getCastingHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fThrowing)
+CorInfoHelpFunc CEEInfo::getCastingHelper(CORINFO_CLASS_HANDLE clsHnd, bool fThrowing)
 {
     CONTRACTL {
         THROWS;
@@ -5927,9 +5927,9 @@ CorInfoHelpFunc CEEInfo::getCastingHelper(CORINFO_RESOLVED_TOKEN * pResolvedToke
     JIT_TO_EE_TRANSITION();
 
     bool fClassMustBeRestored;
-    result = getCastingHelperStatic(TypeHandle(pResolvedToken->hClass), fThrowing, &fClassMustBeRestored);
+    result = getCastingHelperStatic(TypeHandle(clsHnd), fThrowing, &fClassMustBeRestored);
     if (fClassMustBeRestored)
-        classMustBeLoadedBeforeCodeIsRun(pResolvedToken->hClass);
+        classMustBeLoadedBeforeCodeIsRun(clsHnd);
 
     EE_TO_JIT_TRANSITION();
 
@@ -5990,10 +5990,9 @@ CorInfoHelpFunc CEEInfo::getCastingHelperStatic(TypeHandle clsHnd, bool fThrowin
         helper = CORINFO_HELP_ISINSTANCEOFARRAY;
     }
     else
-    if (!clsHnd.IsTypeDesc() && !(Nullable::IsNullableType(clsHnd) && fThrowing))
+    if (!clsHnd.IsTypeDesc() && !Nullable::IsNullableType(clsHnd))
     {
         // If it is a non-variant class, use the fast class helper
-        // Also use fast helper for isinst Nullable, which is equal to isinst of underlying type
         helper = CORINFO_HELP_ISINSTANCEOFCLASS;
     }
     else
