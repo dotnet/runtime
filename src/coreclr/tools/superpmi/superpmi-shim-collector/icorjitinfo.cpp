@@ -711,11 +711,11 @@ CorInfoHelpFunc interceptor_ICJI::getNewArrHelper(CORINFO_CLASS_HANDLE arrayCls)
 }
 
 // returns the optimized "IsInstanceOf" or "ChkCast" helper
-CorInfoHelpFunc interceptor_ICJI::getCastingHelper(CORINFO_CLASS_HANDLE clsHnd, bool fThrowing)
+CorInfoHelpFunc interceptor_ICJI::getCastingHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fThrowing)
 {
     mc->cr->AddCall("getCastingHelper");
-    CorInfoHelpFunc temp = original_ICorJitInfo->getCastingHelper(clsHnd, fThrowing);
-    mc->recGetCastingHelper(clsHnd, fThrowing, temp);
+    CorInfoHelpFunc temp = original_ICorJitInfo->getCastingHelper(pResolvedToken, fThrowing);
+    mc->recGetCastingHelper(pResolvedToken, fThrowing, temp);
     return temp;
 }
 

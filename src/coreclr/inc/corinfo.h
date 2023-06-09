@@ -2459,7 +2459,7 @@ public:
 
     // returns the optimized "IsInstanceOf" or "ChkCast" helper
     virtual CorInfoHelpFunc getCastingHelper(
-            CORINFO_CLASS_HANDLE clsHnd,
+            CORINFO_RESOLVED_TOKEN * pResolvedToken,
             bool fThrowing
             ) = 0;
 

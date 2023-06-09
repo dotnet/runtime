@@ -1433,7 +1433,7 @@ namespace Internal.JitInterface
             _methodCodeNode.InitializeColdFrameInfos(Array.Empty<FrameInfo>());
         }
 
-        private CorInfoHelpFunc getCastingHelper(CORINFO_CLASS_STRUCT_* clsHnd, bool fThrowing)
+        private CorInfoHelpFunc getCastingHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fThrowing)
         {
             return fThrowing ? CorInfoHelpFunc.CORINFO_HELP_CHKCASTANY : CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY;
         }

@@ -5914,7 +5914,7 @@ CorInfoHelpFunc CEEInfo::getNewArrHelperStatic(TypeHandle clsHnd)
 }
 
 /***********************************************************************/
-CorInfoHelpFunc CEEInfo::getCastingHelper(CORINFO_CLASS_HANDLE clsHnd, bool fThrowing)
+CorInfoHelpFunc CEEInfo::getCastingHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fThrowing)
 {
     CONTRACTL {
         THROWS;
@@ -5927,9 +5927,9 @@ CorInfoHelpFunc CEEInfo::getCastingHelper(CORINFO_CLASS_HANDLE clsHnd, bool fThr
     JIT_TO_EE_TRANSITION();
 
     bool fClassMustBeRestored;
-    result = getCastingHelperStatic(TypeHandle(clsHnd), fThrowing, &fClassMustBeRestored);
+    result = getCastingHelperStatic(TypeHandle(pResolvedToken->hClass), fThrowing, &fClassMustBeRestored);
     if (fClassMustBeRestored)
-        classMustBeLoadedBeforeCodeIsRun(clsHnd);
+        classMustBeLoadedBeforeCodeIsRun(pResolvedToken->hClass);
 
     EE_TO_JIT_TRANSITION();
 

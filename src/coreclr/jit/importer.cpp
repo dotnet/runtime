@@ -5422,19 +5422,9 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 {
     assert(op1->TypeGet() == TYP_REF);
 
-    // Import isinst Nullable<V> as isinst V
-    CORINFO_CLASS_HANDLE hClass = info.compCompHnd->getTypeForBox(pResolvedToken->hClass);
-
-    if (hClass != pResolvedToken->hClass)
-    {
-        // Convert nullable to underlying type
-        assert(op2->OperIsConst());
-        op2 = gtNewIconEmbClsHndNode(hClass);
-    }
-
     // Optimistically assume the jit should expand this as an inline test
     bool shouldExpandInline = true;
-    bool isClassExact       = impIsClassExact(hClass);
+    bool isClassExact       = impIsClassExact(pResolvedToken->hClass);
 
     // Profitability check.
     //
@@ -5469,7 +5459,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     // Pessimistically assume the jit cannot expand this as an inline test
     bool                  canExpandInline = false;
     bool                  partialExpand   = false;
-    const CorInfoHelpFunc helper          = info.compCompHnd->getCastingHelper(hClass, isCastClass);
+    const CorInfoHelpFunc helper          = info.compCompHnd->getCastingHelper(pResolvedToken, isCastClass);
 
     CORINFO_CLASS_HANDLE exactCls = NO_CLASS_HANDLE;
 
@@ -5482,7 +5472,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         CORINFO_CLASS_HANDLE actualImplCls = NO_CLASS_HANDLE;
         if (this->IsTargetAbi(CORINFO_NATIVEAOT_ABI) &&
             ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_CHKCASTINTERFACE)) &&
-            (info.compCompHnd->getExactClasses(hClass, 1, &actualImplCls) == 1) &&
+            (info.compCompHnd->getExactClasses(pResolvedToken->hClass, 1, &actualImplCls) == 1) &&
             (actualImplCls != NO_CLASS_HANDLE) && impIsClassExact(actualImplCls))
         {
             // if an interface has a single implementation on NativeAOT where we won't load new types,
@@ -5500,7 +5490,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             exactCls        = actualImplCls;
 
             JITDUMP("'%s' interface has a single implementation - '%s', using that to inline isinst/castclass.",
-                    eeGetClassName(hClass), eeGetClassName(actualImplCls));
+                    eeGetClassName(pResolvedToken->hClass), eeGetClassName(actualImplCls));
         }
         else if (isCastClass)
         {
@@ -5510,7 +5500,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             // For ChkCastAny we ignore cases where the class is known to be abstract or is an interface.
             if (helper == CORINFO_HELP_CHKCASTANY)
             {
-                const bool isAbstract = (info.compCompHnd->getClassAttribs(hClass) &
+                const bool isAbstract = (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) &
                                          (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0;
                 canExpandInline = !isAbstract;
             }
@@ -5553,7 +5543,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                 if ((likelyCls != NO_CLASS_HANDLE) &&
                     (likelyClass.likelihood > (UINT32)JitConfig.JitGuardedDevirtualizationChainLikelihood()))
                 {
-                    if ((info.compCompHnd->compareTypesForCast(likelyCls, hClass) ==
+                    if ((info.compCompHnd->compareTypesForCast(likelyCls, pResolvedToken->hClass) ==
                          TypeCompareState::Must))
                     {
                         bool isAbstract = (info.compCompHnd->getClassAttribs(likelyCls) &
@@ -5720,7 +5710,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     assert(lclDsc->lvSingleDef == 0);
     lclDsc->lvSingleDef = 1;
     JITDUMP("Marked V%02u as a single def temp\n", tmp);
-    lvaSetClass(tmp, hClass);
+    lvaSetClass(tmp, pResolvedToken->hClass);
     return gtNewLclvNode(tmp, TYP_REF);
 }
 

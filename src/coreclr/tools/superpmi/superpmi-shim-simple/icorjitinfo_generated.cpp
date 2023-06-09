@@ -457,10 +457,10 @@ CorInfoHelpFunc interceptor_ICJI::getNewArrHelper(
 }
 
 CorInfoHelpFunc interceptor_ICJI::getCastingHelper(
-          CORINFO_CLASS_HANDLE clsHnd,
+          CORINFO_RESOLVED_TOKEN* pResolvedToken,
           bool fThrowing)
 {
-    return original_ICorJitInfo->getCastingHelper(clsHnd, fThrowing);
+    return original_ICorJitInfo->getCastingHelper(pResolvedToken, fThrowing);
 }
 
 CorInfoHelpFunc interceptor_ICJI::getSharedCCtorHelper(

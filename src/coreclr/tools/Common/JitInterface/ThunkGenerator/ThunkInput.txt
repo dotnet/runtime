@@ -222,7 +222,7 @@ FUNCTIONS
     bool checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, const char * modifier, bool fOptional)
     CorInfoHelpFunc getNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool* pHasSideEffects)
     CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_HANDLE arrayCls)
-    CorInfoHelpFunc getCastingHelper(CORINFO_CLASS_HANDLE clsHnd, bool fThrowing)
+    CorInfoHelpFunc getCastingHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fThrowing)
     CorInfoHelpFunc getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd)
     CORINFO_CLASS_HANDLE getTypeForBox(CORINFO_CLASS_HANDLE cls)
     CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_HANDLE cls)

@@ -277,7 +277,7 @@ CorInfoHelpFunc getNewArrHelper(
           CORINFO_CLASS_HANDLE arrayCls) override;
 
 CorInfoHelpFunc getCastingHelper(
-          CORINFO_CLASS_HANDLE clsHnd,
+          CORINFO_RESOLVED_TOKEN* pResolvedToken,
           bool fThrowing) override;
 
 CorInfoHelpFunc getSharedCCtorHelper(

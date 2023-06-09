@@ -74,7 +74,7 @@ struct JitInterfaceCallbacks
     bool (* checkMethodModifier)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE hMethod, const char* modifier, bool fOptional);
     CorInfoHelpFunc (* getNewHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool* pHasSideEffects);
     CorInfoHelpFunc (* getNewArrHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE arrayCls);
-    CorInfoHelpFunc (* getCastingHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE clsHnd, bool fThrowing);
+    CorInfoHelpFunc (* getCastingHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fThrowing);
     CorInfoHelpFunc (* getSharedCCtorHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE clsHnd);
     CORINFO_CLASS_HANDLE (* getTypeForBox)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CorInfoHelpFunc (* getBoxHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
@@ -824,11 +824,11 @@ public:
 }
 
     virtual CorInfoHelpFunc getCastingHelper(
-          CORINFO_CLASS_HANDLE clsHnd,
+          CORINFO_RESOLVED_TOKEN* pResolvedToken,
           bool fThrowing)
 {
     CorInfoExceptionClass* pException = nullptr;
-    CorInfoHelpFunc temp = _callbacks->getCastingHelper(_thisHandle, &pException, clsHnd, fThrowing);
+    CorInfoHelpFunc temp = _callbacks->getCastingHelper(_thisHandle, &pException, pResolvedToken, fThrowing);
     if (pException != nullptr) throw pException;
     return temp;
 }

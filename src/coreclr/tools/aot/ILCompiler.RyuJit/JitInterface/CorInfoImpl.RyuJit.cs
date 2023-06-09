@@ -1033,9 +1033,9 @@ namespace Internal.JitInterface
             return _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(helperId, helperArgument, MethodBeingCompiled);
         }
 
-        private CorInfoHelpFunc getCastingHelper(CORINFO_CLASS_STRUCT_* clsHnd, bool fThrowing)
+        private CorInfoHelpFunc getCastingHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fThrowing)
         {
-            TypeDesc type = HandleToObject(clsHnd);
+            TypeDesc type = HandleToObject(pResolvedToken.hClass);
 
             CorInfoHelpFunc helper;
 
