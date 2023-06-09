@@ -496,7 +496,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventShutdownComplete()
     {
-        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetOperationAbortedException()));
+        Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetOperationAbortedException());
+        _acceptQueue.Writer.TryComplete(exception);
+        _connectedTcs.TrySetException(exception);
         _shutdownTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
     }
