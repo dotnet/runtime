@@ -303,6 +303,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new TypeGVMEntriesNode(type);
             });
 
+            _delegateTargetMethods = new NodeCache<MethodDesc, DelegateTargetVirtualMethodNode>(method =>
+            {
+                return new DelegateTargetVirtualMethodNode(method);
+            });
+
             _reflectedMethods = new NodeCache<MethodDesc, ReflectedMethodNode>(method =>
             {
                 return new ReflectedMethodNode(method);
@@ -965,6 +970,12 @@ namespace ILCompiler.DependencyAnalysis
         internal TypeGVMEntriesNode TypeGVMEntries(TypeDesc type)
         {
             return _gvmTableEntries.GetOrAdd(type);
+        }
+
+        private NodeCache<MethodDesc, DelegateTargetVirtualMethodNode> _delegateTargetMethods;
+        public DelegateTargetVirtualMethodNode DelegateTargetVirtualMethod(MethodDesc method)
+        {
+            return _delegateTargetMethods.GetOrAdd(method);
         }
 
         private NodeCache<MethodDesc, ReflectedMethodNode> _reflectedMethods;
