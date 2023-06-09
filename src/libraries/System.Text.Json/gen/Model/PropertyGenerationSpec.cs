@@ -124,20 +124,18 @@ namespace System.Text.Json.SourceGeneration
         public required bool IsExtensionData { get; init; }
 
         /// <summary>
-        /// Generation specification for the property's type.
+        /// Gets a reference to the property type.
         /// </summary>
         public required TypeRef PropertyType { get; init; }
 
         /// <summary>
-        /// Compilable name of the property's declaring type.
+        /// Gets a reference to the declaring type of the property.
         /// </summary>
-        public required string DeclaringTypeRef { get; init; }
+        public required TypeRef DeclaringType { get; init; }
 
         /// <summary>
-        /// Source code to instantiate design-time specified custom converter.
+        /// Design-time specified custom converter type.
         /// </summary>
-        public required string? ConverterInstantiationLogic { get; init; }
-
-        public required bool HasFactoryConverter { get; init; }
+        public required TypeRef? ConverterType { get; init; }
     }
 }

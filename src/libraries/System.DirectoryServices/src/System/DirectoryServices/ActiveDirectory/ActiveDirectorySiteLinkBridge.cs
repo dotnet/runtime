@@ -136,7 +136,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 ADSearcher adSearcher = new ADSearcher(de,
                                                       "(&(objectClass=siteLinkBridge)(objectCategory=SiteLinkBridge)(name=" + Utils.GetEscapedFilterValue(bridgeName) + "))",
-                                                      new string[] { "distinguishedName" },
+                                                      ActiveDirectorySite.s_distinguishedName,
                                                       SearchScope.OneLevel,
                                                       false, /* don't need paged search */
                                                       false /* don't need to cache result */);

@@ -77,15 +77,11 @@ namespace System.Text.Json.SourceGeneration
         /// Supports deserialization of extension data dictionaries typed as <c>I[ReadOnly]Dictionary&lt;string, object/JsonElement&gt;</c>.
         /// Specifies a concrete type to instantiate, which would be <c>Dictionary&lt;string, object/JsonElement&gt;</c>.
         /// </summary>
-        public required string? RuntimeTypeRef { get; init; }
+        public required TypeRef? RuntimeTypeRef { get; init; }
 
         public required TypeRef? ExtensionDataPropertyType { get; init; }
 
-        public required string? ConverterInstantiationLogic { get; init; }
-
-        // Only generate certain helper methods if necessary.
-        public required bool HasPropertyFactoryConverters { get; init; }
-        public required bool HasTypeFactoryConverter { get; init; }
+        public required TypeRef? ConverterType { get; init; }
 
         public required string? ImmutableCollectionFactoryMethod { get; init; }
     }

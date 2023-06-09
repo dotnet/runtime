@@ -1,32 +1,34 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "../../globals";
+import MonoWasmThreads from "consts:monoWasmThreads";
+
+import { ENVIRONMENT_IS_PTHREAD, Module, runtimeHelpers } from "../../globals";
 import { MonoConfig } from "../../types";
-import { pthread_ptr } from "./types";
+import { pthreadPtr } from "./types";
 
 export interface PThreadInfo {
-    readonly pthread_id: pthread_ptr;
+    readonly pthreadId: pthreadPtr;
     readonly isBrowserThread: boolean;
 }
 
 export const MainThread: PThreadInfo = {
-    get pthread_id(): pthread_ptr {
+    get pthreadId(): pthreadPtr {
         return getBrowserThreadID();
     },
     isBrowserThread: true
 };
 
-let browser_thread_id_lazy: pthread_ptr | undefined;
-export function getBrowserThreadID(): pthread_ptr {
-    if (browser_thread_id_lazy === undefined) {
-        browser_thread_id_lazy = (<any>Module)["_emscripten_main_runtime_thread_id"]() as pthread_ptr;
+let browserThreadIdLazy: pthreadPtr | undefined;
+export function getBrowserThreadID(): pthreadPtr {
+    if (browserThreadIdLazy === undefined) {
+        browserThreadIdLazy = (<any>Module)["_emscripten_main_runtime_thread_id"]() as pthreadPtr;
     }
-    return browser_thread_id_lazy;
+    return browserThreadIdLazy;
 }
 
 const enum WorkerMonoCommandType {
-    channel_created = "channel_created",
+    channelCreated = "channel_created",
     preload = "preload",
 }
 
@@ -74,7 +76,7 @@ export const monoSymbol = "__mono_message_please_dont_collide__"; //Symbol("mono
 /// We should just use this to establish a dedicated MessagePort for Mono's uses.
 export interface MonoWorkerMessage<TPort> {
     [monoSymbol]: {
-        mono_cmd: WorkerMonoCommandType;
+        monoCmd: WorkerMonoCommandType;
         port: TPort;
     };
 }
@@ -82,24 +84,24 @@ export interface MonoWorkerMessage<TPort> {
 /// The message sent early during pthread creation to set up a dedicated MessagePort for Mono between the main thread and the pthread.
 export interface MonoWorkerMessageChannelCreated<TPort> extends MonoWorkerMessage<TPort> {
     [monoSymbol]: {
-        mono_cmd: WorkerMonoCommandType.channel_created;
-        thread_id: pthread_ptr;
+        monoCmd: WorkerMonoCommandType.channelCreated;
+        threadId: pthreadPtr;
         port: TPort;
     };
 }
 
 export interface MonoWorkerMessagePreload<TPort> extends MonoWorkerMessage<TPort> {
     [monoSymbol]: {
-        mono_cmd: WorkerMonoCommandType.preload;
+        monoCmd: WorkerMonoCommandType.preload;
         port: TPort;
     };
 }
 
-export function makeChannelCreatedMonoMessage<TPort>(thread_id: pthread_ptr, port: TPort): MonoWorkerMessageChannelCreated<TPort> {
+export function makeChannelCreatedMonoMessage<TPort>(threadId: pthreadPtr, port: TPort): MonoWorkerMessageChannelCreated<TPort> {
     return {
         [monoSymbol]: {
-            mono_cmd: WorkerMonoCommandType.channel_created,
-            thread_id,
+            monoCmd: WorkerMonoCommandType.channelCreated,
+            threadId: threadId,
             port
         }
     };
@@ -112,7 +114,7 @@ export function isMonoWorkerMessage(message: unknown): message is MonoWorkerMess
 export function isMonoWorkerMessageChannelCreated<TPort>(message: MonoWorkerMessage<TPort>): message is MonoWorkerMessageChannelCreated<TPort> {
     if (isMonoWorkerMessage(message)) {
         const monoMessage = message[monoSymbol];
-        if (monoMessage.mono_cmd === WorkerMonoCommandType.channel_created) {
+        if (monoMessage.monoCmd === WorkerMonoCommandType.channelCreated) {
             return true;
         }
     }
@@ -122,9 +124,30 @@ export function isMonoWorkerMessageChannelCreated<TPort>(message: MonoWorkerMess
 export function isMonoWorkerMessagePreload<TPort>(message: MonoWorkerMessage<TPort>): message is MonoWorkerMessagePreload<TPort> {
     if (isMonoWorkerMessage(message)) {
         const monoMessage = message[monoSymbol];
-        if (monoMessage.mono_cmd === WorkerMonoCommandType.preload) {
+        if (monoMessage.monoCmd === WorkerMonoCommandType.preload) {
             return true;
         }
     }
     return false;
 }
+
+let synchronization_context_installed = false;
+export function install_synchronization_context(): void {
+    if (MonoWasmThreads && !synchronization_context_installed) {
+        runtimeHelpers.javaScriptExports.install_synchronization_context();
+        synchronization_context_installed = true;
+    }
+}
+
+export function assert_synchronization_context(): void {
+    if (MonoWasmThreads) {
+        // TODO mono_assert(synchronization_context_installed, "Synchronization context not installed on the current worker. Please use dedicated worker for working with JavaScript interop.");
+    }
+}
+
+export function assert_legacy_interop(): void {
+    if (MonoWasmThreads) {
+        mono_assert(!ENVIRONMENT_IS_PTHREAD, "Legacy interop is not supported with WebAssembly threads.");
+    }
+}
+

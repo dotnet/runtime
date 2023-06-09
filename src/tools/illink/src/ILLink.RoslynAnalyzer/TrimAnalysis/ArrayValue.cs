@@ -53,10 +53,15 @@ namespace ILLink.Shared.TrimAnalysis
 			if (!equals)
 				return false;
 
-			// If both sets T and O are the same size and "T intersect O" is empty, then T == O.
-			HashSet<KeyValuePair<int, MultiValue>> thisValueSet = new (IndexValues);
-			thisValueSet.ExceptWith (otherArr.IndexValues);
-			return thisValueSet.Count == 0;
+			// Here we rely on the assumption that we can't store mutable values in arrays. The only mutable value
+			// which we currently support are array values, but those are not allowed in an array (to avoid complexity).
+			// As such we can rely on the values to be immutable, and thus if the counts are equal
+			// then the arrays are equal if items from one can be directly found in the other.
+			foreach (var kvp in IndexValues)
+				if (!otherArr.IndexValues.TryGetValue (kvp.Key, out MultiValue value) || !kvp.Value.Equals (value))
+					return false;
+
+			return true;
 		}
 
 		// Lattice Meet() is supposed to copy values, so we need to make a deep copy since ArrayValue is mutable through IndexValues
@@ -73,7 +78,7 @@ namespace ILLink.Shared.TrimAnalysis
 				}
 #endif
 
-				newArray.IndexValues.Add (kvp.Key, kvp.Value.Clone ());
+				newArray.IndexValues.Add (kvp.Key, kvp.Value.DeepCopy ());
 			}
 
 			return newArray;

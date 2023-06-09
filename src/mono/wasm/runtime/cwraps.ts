@@ -3,7 +3,7 @@
 
 import type {
     MonoArray, MonoAssembly, MonoClass,
-    MonoMethod, MonoObject, MonoString,
+    MonoMethod, MonoObject,
     MonoType, MonoObjectRef, MonoStringRef, JSMarshalerArguments
 } from "./types/internal";
 import type { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/emscripten";
@@ -42,7 +42,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_parse_runtime_options", null, ["number", "number"]],
     [true, "mono_wasm_strdup", "number", ["string"]],
     [true, "mono_background_exec", null, []],
-    [true, "mono_set_timeout_exec", null, []],
+    [true, "mono_wasm_execute_timer", null, []],
     [true, "mono_wasm_load_icu_data", "number", ["number"]],
     [false, "mono_wasm_add_assembly", "number", ["string", "number", "number"]],
     [true, "mono_wasm_add_satellite_assembly", "void", ["string", "string", "number", "number"]],
@@ -79,7 +79,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_profiler_init_aot", "void", ["string"]],
     [true, "mono_wasm_profiler_init_browser", "void", ["number"]],
     [false, "mono_wasm_exec_regression", "number", ["number", "string"]],
-    [false, "mono_wasm_invoke_method_bound", "number", ["number", "number"]],
+    [false, "mono_wasm_invoke_method_bound", "number", ["number", "number", "number"]],
     [true, "mono_wasm_write_managed_pointer_unsafe", "void", ["number", "number"]],
     [true, "mono_wasm_copy_managed_pointer", "void", ["number", "number"]],
     [true, "mono_wasm_i52_to_f64", "number", ["number", "number"]],
@@ -130,6 +130,8 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_get_simd_opcode", "number", ["number", "number"]],
     [true, "mono_jiterp_get_arg_offset", "number", ["number", "number", "number"]],
     [true, "mono_jiterp_get_opcode_info", "number", ["number", "number"]],
+    [true, "mono_wasm_is_zero_page_reserved", "number", []],
+    [true, "mono_jiterp_is_special_interface", "number", ["number"]],
     ...legacy_interop_cwraps
 ];
 
@@ -162,7 +164,7 @@ export interface t_Cwraps {
     mono_wasm_strdup(value: string): number;
     mono_wasm_parse_runtime_options(length: number, argv: VoidPtr): void;
     mono_background_exec(): void;
-    mono_set_timeout_exec(): void;
+    mono_wasm_execute_timer(): void;
     mono_wasm_load_icu_data(offset: VoidPtr): number;
     mono_wasm_add_assembly(name: string, data: VoidPtr, size: number): number;
     mono_wasm_add_satellite_assembly(name: string, culture: string, data: VoidPtr, size: number): void;
@@ -198,7 +200,7 @@ export interface t_Cwraps {
     mono_wasm_profiler_init_aot(desc: string): void;
     mono_wasm_profiler_init_browser(desc: string): void;
     mono_wasm_exec_regression(verbose_level: number, image: string): number;
-    mono_wasm_invoke_method_bound(method: MonoMethod, args: JSMarshalerArguments): MonoString;
+    mono_wasm_invoke_method_bound(method: MonoMethod, args: JSMarshalerArguments, fail: MonoStringRef): number;
     mono_wasm_write_managed_pointer_unsafe(destination: VoidPtr | MonoObjectRef, pointer: ManagedPointer): void;
     mono_wasm_copy_managed_pointer(destination: VoidPtr | MonoObjectRef, source: VoidPtr | MonoObjectRef): void;
     mono_wasm_i52_to_f64(source: VoidPtr, error: Int32Ptr): number;
@@ -255,6 +257,8 @@ export interface t_Cwraps {
     mono_jiterp_get_simd_opcode(arity: number, index: number): number;
     mono_jiterp_get_arg_offset(imethod: number, sig: number, index: number): number;
     mono_jiterp_get_opcode_info(opcode: number, type: number): number;
+    mono_wasm_is_zero_page_reserved(): number;
+    mono_jiterp_is_special_interface(klass: number): number;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};

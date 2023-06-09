@@ -113,6 +113,11 @@ namespace Microsoft.Extensions
             }
         }
 
+        public class ClassWithPrimaryCtor(string color, int length)
+        {
+            public string Color { get; } = color;
+            public int Length { get; } = length;
+        }
 
         public record RecordTypeOptions(string Color, int Length);
 
@@ -580,6 +585,25 @@ namespace Microsoft.Extensions
             public List<ClassWithIndirectSelfReference> MyList { get; set; }
         }
 
+        public class DistributedQueueConfig
+        {
+            public List<QueueNamespaces> Namespaces { get; set; }
+        }
+
+        public class QueueNamespaces
+        {
+            public string Namespace { get; set; }
+
+            public Dictionary<string, QueueProperties> Queues { get; set; } = new();
+        }
+
+        public class QueueProperties
+        {
+            public DateTimeOffset? CreationDate { get; set; }
+
+            public DateTimeOffset? DequeueOnlyMarkedDate { get; set; } = default(DateTimeOffset);
+        }
+
         public record RecordWithPrimitives
         {
             public bool Prop0 { get; set; }
@@ -612,6 +636,24 @@ namespace Microsoft.Extensions
             public DateOnly Prop18 { get; set; }
             public TimeOnly Prop22 { get; set; }
 #endif
+        }
+
+        public class ClassWithParameterlessAndParameterizedCtor
+        {
+            public ClassWithParameterlessAndParameterizedCtor() => MyInt = 1;
+
+            public ClassWithParameterlessAndParameterizedCtor(int myInt) => MyInt = 10;
+
+            public int MyInt { get; }
+        }
+
+        public struct StructWithParameterlessAndParameterizedCtor
+        {
+            public StructWithParameterlessAndParameterizedCtor() => MyInt = 1;
+
+            public StructWithParameterlessAndParameterizedCtor(int myInt) => MyInt = 10;
+
+            public int MyInt { get; }
         }
     }
 }

@@ -31,9 +31,6 @@ namespace System.Threading
         }
 
         [Intrinsic]
-        public static void MemoryBarrier()
-        {
-            RuntimeImports.MemoryBarrier();
-        }
+        public static void MemoryBarrier() => MemoryBarrier();
     }
 }

@@ -56,7 +56,7 @@ namespace System.Net
         private void AcceptSecurityContext(string credential, string context, Interop.SspiCli.ContextFlags inFlags) =>
             WriteEvent(AcceptSecuritContextId, credential, context, (int)inFlags);
 
-        [Event(OperationReturnedSomethingId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(OperationReturnedSomethingId, Keywords = Keywords.Default, Level = EventLevel.Informational, Message = "{0} returned {1}.")]
         public void OperationReturnedSomething(string operation, Interop.SECURITY_STATUS errorCode) =>
             WriteEvent(OperationReturnedSomethingId, operation, errorCode);
 

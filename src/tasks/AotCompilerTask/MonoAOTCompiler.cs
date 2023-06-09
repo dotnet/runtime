@@ -291,6 +291,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     private int _totalNumAssemblies;
 
     private readonly Dictionary<string, string> _symbolNameFixups = new();
+    private static readonly char[] s_semicolon = new char[]{ ';' };
 
     private bool ProcessAndValidateArguments()
     {
@@ -635,13 +636,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         var a = assemblyItem.GetMetadata("AotArguments");
         if (a != null)
         {
-             aotArgs.AddRange(a.Split(new char[]{ ';' }, StringSplitOptions.RemoveEmptyEntries));
+             aotArgs.AddRange(a.Split(s_semicolon, StringSplitOptions.RemoveEmptyEntries));
         }
 
         var p = assemblyItem.GetMetadata("ProcessArguments");
         if (p != null)
         {
-            processArgs.AddRange(p.Split(new char[]{ ';' }, StringSplitOptions.RemoveEmptyEntries));
+            processArgs.AddRange(p.Split(s_semicolon, StringSplitOptions.RemoveEmptyEntries));
         }
 
         processArgs.Add("--debug");

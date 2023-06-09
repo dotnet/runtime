@@ -489,6 +489,14 @@ namespace System.Formats.Tar.Tests
                 _ => throw new InvalidDataException($"Unexpected format: {targetFormat}")
             };
 
+        public static IEnumerable<object[]> GetTestTarFormats()
+        {
+            foreach (TestTarFormat testFormat in Enum.GetValues<TestTarFormat>())
+            {
+                yield return new object[] { testFormat };
+            }
+        }
+
         public static IEnumerable<object[]> GetFormatsAndLinks()
         {
             foreach (TarEntryFormat format in new[] { TarEntryFormat.V7, TarEntryFormat.Ustar, TarEntryFormat.Pax, TarEntryFormat.Gnu })

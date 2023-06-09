@@ -169,6 +169,7 @@ using System.IO;
 using System.Numerics;
 using System.Reflection;
 using System.Resources;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -187,8 +188,8 @@ namespace System.Diagnostics.Tracing
     /// This class is meant to be inherited by a user-defined event source in order to define a managed
     /// ETW provider.   Please See DESIGN NOTES above for the internal architecture.
     /// The minimal definition of an EventSource simply specifies a number of ETW event methods that
-    /// call one of the EventSource.WriteEvent overloads, <see cref="EventSource.WriteEventCore"/>,
-    /// or <see cref="EventSource.WriteEventWithRelatedActivityIdCore"/> to log them. This functionality
+    /// call one of the EventSource.WriteEvent overloads, <see cref="WriteEventCore"/>,
+    /// or <see cref="WriteEventWithRelatedActivityIdCore"/> to log them. This functionality
     /// is sufficient for many users.
     /// <para>
     /// To achieve more control over the ETW provider manifest exposed by the event source type, the
@@ -198,7 +199,7 @@ namespace System.Diagnostics.Tracing
     /// eventSource and change what filtering is done (see EventListener.EnableEvents and
     /// <see cref="EventListener.DisableEvents"/>) or cause actions to be performed by the eventSource,
     /// e.g. dumping a data structure (see EventSource.SendCommand and
-    /// <see cref="EventSource.OnEventCommand"/>).
+    /// <see cref="OnEventCommand"/>).
     /// </para><para>
     /// The eventSources can be turned on with Windows ETW controllers (e.g. logman), immediately.
     /// It is also possible to control and intercept the data dispatcher programmatically.  See
@@ -385,7 +386,7 @@ namespace System.Diagnostics.Tracing
 
             ArgumentNullException.ThrowIfNull(eventSourceType);
 
-            byte[]? manifestBytes = EventSource.CreateManifestAndDescriptors(eventSourceType, assemblyPathToIncludeInManifest, null, flags);
+            byte[]? manifestBytes = CreateManifestAndDescriptors(eventSourceType, assemblyPathToIncludeInManifest, null, flags);
             return (manifestBytes == null) ? null : Encoding.UTF8.GetString(manifestBytes, 0, manifestBytes.Length);
         }
 
@@ -773,7 +774,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled())
             {
-                EventSource.EventData* descrs = stackalloc EventSource.EventData[1];
+                EventData* descrs = stackalloc EventData[1];
                 descrs[0].DataPointer = (IntPtr)(&arg1);
                 descrs[0].Size = 4;
                 descrs[0].Reserved = 0;
@@ -787,7 +788,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled())
             {
-                EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
+                EventData* descrs = stackalloc EventData[2];
                 descrs[0].DataPointer = (IntPtr)(&arg1);
                 descrs[0].Size = 4;
                 descrs[0].Reserved = 0;
@@ -804,7 +805,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled())
             {
-                EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
+                EventData* descrs = stackalloc EventData[3];
                 descrs[0].DataPointer = (IntPtr)(&arg1);
                 descrs[0].Size = 4;
                 descrs[0].Reserved = 0;
@@ -825,7 +826,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled())
             {
-                EventSource.EventData* descrs = stackalloc EventSource.EventData[1];
+                EventData* descrs = stackalloc EventData[1];
                 descrs[0].DataPointer = (IntPtr)(&arg1);
                 descrs[0].Size = 8;
                 descrs[0].Reserved = 0;
@@ -839,7 +840,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled())
             {
-                EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
+                EventData* descrs = stackalloc EventData[2];
                 descrs[0].DataPointer = (IntPtr)(&arg1);
                 descrs[0].Size = 8;
                 descrs[0].Reserved = 0;
@@ -856,7 +857,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled())
             {
-                EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
+                EventData* descrs = stackalloc EventData[3];
                 descrs[0].DataPointer = (IntPtr)(&arg1);
                 descrs[0].Size = 8;
                 descrs[0].Reserved = 0;
@@ -880,7 +881,7 @@ namespace System.Diagnostics.Tracing
                 arg1 ??= "";
                 fixed (char* string1Bytes = arg1)
                 {
-                    EventSource.EventData* descrs = stackalloc EventSource.EventData[1];
+                    EventData* descrs = stackalloc EventData[1];
                     descrs[0].DataPointer = (IntPtr)string1Bytes;
                     descrs[0].Size = ((arg1.Length + 1) * 2);
                     descrs[0].Reserved = 0;
@@ -900,7 +901,7 @@ namespace System.Diagnostics.Tracing
                 fixed (char* string1Bytes = arg1)
                 fixed (char* string2Bytes = arg2)
                 {
-                    EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
+                    EventData* descrs = stackalloc EventData[2];
                     descrs[0].DataPointer = (IntPtr)string1Bytes;
                     descrs[0].Size = ((arg1.Length + 1) * 2);
                     descrs[0].Reserved = 0;
@@ -925,7 +926,7 @@ namespace System.Diagnostics.Tracing
                 fixed (char* string2Bytes = arg2)
                 fixed (char* string3Bytes = arg3)
                 {
-                    EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
+                    EventData* descrs = stackalloc EventData[3];
                     descrs[0].DataPointer = (IntPtr)string1Bytes;
                     descrs[0].Size = ((arg1.Length + 1) * 2);
                     descrs[0].Reserved = 0;
@@ -950,7 +951,7 @@ namespace System.Diagnostics.Tracing
                 arg1 ??= "";
                 fixed (char* string1Bytes = arg1)
                 {
-                    EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
+                    EventData* descrs = stackalloc EventData[2];
                     descrs[0].DataPointer = (IntPtr)string1Bytes;
                     descrs[0].Size = ((arg1.Length + 1) * 2);
                     descrs[0].Reserved = 0;
@@ -971,7 +972,7 @@ namespace System.Diagnostics.Tracing
                 arg1 ??= "";
                 fixed (char* string1Bytes = arg1)
                 {
-                    EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
+                    EventData* descrs = stackalloc EventData[3];
                     descrs[0].DataPointer = (IntPtr)string1Bytes;
                     descrs[0].Size = ((arg1.Length + 1) * 2);
                     descrs[0].Reserved = 0;
@@ -996,7 +997,7 @@ namespace System.Diagnostics.Tracing
                 arg1 ??= "";
                 fixed (char* string1Bytes = arg1)
                 {
-                    EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
+                    EventData* descrs = stackalloc EventData[2];
                     descrs[0].DataPointer = (IntPtr)string1Bytes;
                     descrs[0].Size = ((arg1.Length + 1) * 2);
                     descrs[0].Reserved = 0;
@@ -1018,7 +1019,7 @@ namespace System.Diagnostics.Tracing
                 arg2 ??= "";
                 fixed (char* string2Bytes = arg2)
                 {
-                    EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
+                    EventData* descrs = stackalloc EventData[2];
                     descrs[0].DataPointer = (IntPtr)(&arg1);
                     descrs[0].Size = 8;
                     descrs[0].Reserved = 0;
@@ -1040,7 +1041,7 @@ namespace System.Diagnostics.Tracing
                 arg2 ??= "";
                 fixed (char* string2Bytes = arg2)
                 {
-                    EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
+                    EventData* descrs = stackalloc EventData[2];
                     descrs[0].DataPointer = (IntPtr)(&arg1);
                     descrs[0].Size = 4;
                     descrs[0].Reserved = 0;
@@ -1058,7 +1059,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled())
             {
-                EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
+                EventData* descrs = stackalloc EventData[2];
                 if (arg1 == null || arg1.Length == 0)
                 {
                     int blobSize = 0;
@@ -1093,7 +1094,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled())
             {
-                EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
+                EventData* descrs = stackalloc EventData[3];
                 descrs[0].DataPointer = (IntPtr)(&arg1);
                 descrs[0].Size = 8;
                 descrs[0].Reserved = 0;
@@ -1263,7 +1264,7 @@ namespace System.Diagnostics.Tracing
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
         [CLSCompliant(false)]
-        protected unsafe void WriteEventCore(int eventId, int eventDataCount, EventSource.EventData* data)
+        protected unsafe void WriteEventCore(int eventId, int eventDataCount, EventData* data)
         {
             WriteEventWithRelatedActivityIdCore(eventId, null, eventDataCount, data);
         }
@@ -1298,7 +1299,7 @@ namespace System.Diagnostics.Tracing
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
         [CLSCompliant(false)]
-        protected unsafe void WriteEventWithRelatedActivityIdCore(int eventId, Guid* relatedActivityId, int eventDataCount, EventSource.EventData* data)
+        protected unsafe void WriteEventWithRelatedActivityIdCore(int eventId, Guid* relatedActivityId, int eventDataCount, EventData* data)
         {
             if (IsEnabled())
             {
@@ -2242,6 +2243,8 @@ namespace System.Diagnostics.Tracing
 #endif // FEATURE_MANAGED_ETW || FEATURE_PERFTRACING
         }
 
+        private static ReadOnlyCollection<string>? s_errorPayloadNames;
+
         /// <summary>
         /// Since this is a means of reporting errors (see ReportoutOfBandMessage) any failure encountered
         /// while writing the message to any one of the listeners will be silently ignored.
@@ -2253,7 +2256,7 @@ namespace System.Diagnostics.Tracing
                 EventName = eventName,
                 Message = msg,
                 Payload = new ReadOnlyCollection<object?>(new object[] { msg }),
-                PayloadNames = new ReadOnlyCollection<string>(new string[] { "message" })
+                PayloadNames = s_errorPayloadNames ??= new ReadOnlyCollection<string>(new string[] { "message" })
             };
 
             for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)
@@ -2342,7 +2345,8 @@ namespace System.Diagnostics.Tracing
             }
             return true;
         }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private void ThrowEventSourceException(string? eventName, Exception? innerEx = null)
         {
             // If we fail during out of band logging we may end up trying
@@ -3398,7 +3402,7 @@ namespace System.Diagnostics.Tracing
                     foreach (string error in manifest.Errors)
                     {
                         if (!firstError)
-                            msg += System.Environment.NewLine;
+                            msg += Environment.NewLine;
                         firstError = false;
                         msg += error;
                     }
@@ -3813,7 +3817,7 @@ namespace System.Diagnostics.Tracing
                 }
 
                 // send message to debugger
-                Debugger.Log(0, null, $"EventSource Error: {msg}{System.Environment.NewLine}");
+                Debugger.Log(0, null, $"EventSource Error: {msg}{Environment.NewLine}");
 
                 // Send it to all listeners.
                 WriteEventString(msg);
@@ -4328,7 +4332,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         private static void RemoveReferencesToListenerInEventSources(EventListener listenerToRemove)
         {
-            Debug.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
+            Debug.Assert(Monitor.IsEntered(EventListenersLock));
             // Foreach existing EventSource in the appdomain
             Debug.Assert(s_EventSources != null);
 
@@ -5778,7 +5782,7 @@ namespace System.Diagnostics.Tracing
 
             var sortedStrings = new string[stringTab.Keys.Count];
             stringTab.Keys.CopyTo(sortedStrings, 0);
-            Array.Sort<string>(sortedStrings, StringComparer.Ordinal);
+            Array.Sort(sortedStrings, StringComparer.Ordinal);
 
             CultureInfo ci = CultureInfo.CurrentUICulture;
             sb.Append(" <resources culture=\"").Append(ci.Name).AppendLine("\">");

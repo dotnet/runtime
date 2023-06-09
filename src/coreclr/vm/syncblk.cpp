@@ -2548,7 +2548,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
 
         if (InterlockedCompareExchangeT(&m_emittedLockCreatedEvent, 1, 0) == 0)
         {
-            FireEtwLockCreated(this, OBJECTREFToObject(obj), GetClrInstanceId());
+            FireEtwContentionLockCreated(this, OBJECTREFToObject(obj), GetClrInstanceId());
         }
 
         // Fire a contention start event for a managed contention

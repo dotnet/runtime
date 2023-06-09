@@ -81,6 +81,13 @@ namespace Build.Tasks
         }
 
         [Output]
+        public ITaskItem[] SatelliteAssemblies
+        {
+            get;
+            set;
+        }
+
+        [Output]
         public ITaskItem[] AssembliesToSkipPublish
         {
             get;
@@ -91,6 +98,7 @@ namespace Build.Tasks
         {
             var list = new List<ITaskItem>();
             var assembliesToSkipPublish = new List<ITaskItem>();
+            var satelliteAssemblies = new List<ITaskItem>();
             var nativeAotFrameworkAssembliesToUse = new HashSet<string>();
 
             foreach (ITaskItem taskItem in SdkAssemblies)
@@ -164,10 +172,15 @@ namespace Build.Tasks
                                 string culture = moduleMetadataReader.GetString(moduleMetadataReader.GetAssemblyDefinition().Culture);
 
                                 assembliesToSkipPublish.Add(taskItem);
+
+                                // Split satellite assemblies from normal assemblies
                                 if (culture == "" || culture.Equals("neutral", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    // NativeAOT doesn't consume resource assemblies yet so skip them
                                     list.Add(taskItem);
+                                }
+                                else
+                                {
+                                    satelliteAssemblies.Add(taskItem);
                                 }
                             }
                         }
@@ -180,6 +193,7 @@ namespace Build.Tasks
 
             ManagedAssemblies = list.ToArray();
             AssembliesToSkipPublish = assembliesToSkipPublish.ToArray();
+            SatelliteAssemblies = satelliteAssemblies.ToArray();
 
             return true;
         }

@@ -125,9 +125,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Allow running/debugging from VS -->
-    <ProjectCapability Include="DotNetCoreWeb"/>
-
     <SupportedPlatform Condition="'$(IsWasiProject)' == 'true'"        Remove="@(SupportedPlatform)" />
     <SupportedPlatform Condition="'$(IsBrowserWasmProject)' == 'true'" Include="browser" />
     <SupportedPlatform Condition="'$(IsWasiProject)' == 'true'"        Include="wasi" />
