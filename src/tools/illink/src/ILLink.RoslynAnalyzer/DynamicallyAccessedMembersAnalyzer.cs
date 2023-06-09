@@ -128,7 +128,7 @@ namespace ILLink.RoslynAnalyzer
 					foreach (var diagnostic in ProcessGenericParameters (field.Type, field.Locations[0]))
 						context.ReportDiagnostic (diagnostic);
 				}, SymbolKind.Field);
-				// Examine generic instantiations in invocations, of generically instantiated methods,
+				// Examine generic instantiations in invocations of generically instantiated methods,
 				// or methods on generically instantiated types.
 				context.RegisterOperationAction (context => {
 					if (context.ContainingSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _))
@@ -136,14 +136,23 @@ namespace ILLink.RoslynAnalyzer
 
 					var invocation = (IInvocationOperation) context.Operation;
 					var methodSymbol = invocation.TargetMethod;
-					foreach (var diagnostic in ProcessGenericParameters (methodSymbol, invocation.Syntax.GetLocation()))
+					foreach (var diagnostic in ProcessMethodGenericParameters (methodSymbol, invocation.Syntax.GetLocation ()))
 						context.ReportDiagnostic (diagnostic);
-
-					if (methodSymbol.IsStatic && methodSymbol.ContainingType is not null) {
-						foreach (var diagnostic in ProcessGenericParameters (methodSymbol.ContainingType, invocation.Syntax.GetLocation()))
-							context.ReportDiagnostic (diagnostic);
-					}
 				}, OperationKind.Invocation);
+				// Examine generic instantiations in delegate creation of generically instantiated methods.
+				context.RegisterOperationAction (context => {
+					if (context.ContainingSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _))
+						return;
+
+					var delegateCreation = (IDelegateCreationOperation) context.Operation;
+					if (delegateCreation.Target is not IMethodReferenceOperation methodReference)
+						return;
+
+					if (methodReference.Method is not IMethodSymbol methodSymbol)
+						return;
+					foreach (var diagnostic in ProcessMethodGenericParameters (methodSymbol, delegateCreation.Syntax.GetLocation()))
+						context.ReportDiagnostic (diagnostic);
+				}, OperationKind.DelegateCreation);
 				// Examine generic instantiations in object creation of generically instantiated types.
 				context.RegisterOperationAction (context => {
 					if (context.ContainingSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _))
@@ -171,6 +180,17 @@ namespace ILLink.RoslynAnalyzer
 					VerifyMemberOnlyApplyToTypesOrStrings (context, context.Symbol);
 				}, SymbolKind.Field);
 			});
+		}
+
+		static IEnumerable<Diagnostic> ProcessMethodGenericParameters (IMethodSymbol methodSymbol, Location location)
+		{
+			foreach (var diagnostic in ProcessGenericParameters (methodSymbol, location))
+				yield return diagnostic;
+
+			if (methodSymbol.IsStatic && methodSymbol.ContainingType is not null) {
+				foreach (var diagnostic in ProcessGenericParameters (methodSymbol.ContainingType, location))
+					yield return diagnostic;
+			}
 		}
 
 		static IEnumerable<Diagnostic> ProcessGenericParameters (ISymbol symbol, Location location)

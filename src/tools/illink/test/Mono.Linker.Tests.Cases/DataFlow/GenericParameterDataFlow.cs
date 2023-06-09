@@ -42,6 +42,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestGenericParameterFlowsToField ();
 			TestGenericParameterFlowsToReturnValue ();
 
+			TestGenericParameterFlowsToDelegateMethod<TestType> ();
+			TestGenericParameterFlowsToDelegateMethodDeclaringType<TestType> ();
+			TestGenericParameterFlowsToDelegateMethodDeclaringTypeInstance<TestType> ();
+
 			TestNoWarningsInRUCMethod<TestType> ();
 			TestNoWarningsInRUCType<TestType, TestType> ();
 		}
@@ -884,6 +888,40 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static void TestGenericParameterFlowsToField ()
 		{
 			TypeRequiresPublicFields<TestType>.TestFields ();
+		}
+
+		[ExpectedWarning ("IL2091", nameof (MethodRequiresPublicFields))]
+		static void TestGenericParameterFlowsToDelegateMethod<T> ()
+		{
+			Action a = MethodRequiresPublicFields<T>;
+		}
+
+		[ExpectedWarning ("IL2091", nameof (DelegateMethodTypeRequiresFields<T>), nameof (DelegateMethodTypeRequiresFields<T>.Method))]
+		static void TestGenericParameterFlowsToDelegateMethodDeclaringType<T> ()
+		{
+			Action a = DelegateMethodTypeRequiresFields<T>.Method;
+		}
+
+		[ExpectedWarning ("IL2091", nameof (DelegateMethodTypeRequiresFields<T>))]
+		// NativeAOT_StorageSpaceType: illink warns about the type of 'instance' local variable
+		[ExpectedWarning ("IL2091", nameof (DelegateMethodTypeRequiresFields<T>), ProducedBy = Tool.Trimmer)]
+		// NativeAOT_StorageSpaceType: illink warns about the declaring type of 'InstanceMethod' on ldftn
+		[ExpectedWarning ("IL2091", nameof (DelegateMethodTypeRequiresFields<T>), ProducedBy = Tool.Trimmer)]
+		static void TestGenericParameterFlowsToDelegateMethodDeclaringTypeInstance<T> ()
+		{
+			var instance = new DelegateMethodTypeRequiresFields<T> ();
+			Action a = instance.InstanceMethod;
+		}
+
+		class DelegateMethodTypeRequiresFields<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] T>
+		{
+			public static void Method ()
+			{
+			}
+
+			public void InstanceMethod ()
+			{
+			}
 		}
 
 		public class TestType
