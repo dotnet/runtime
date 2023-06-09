@@ -11,7 +11,7 @@ namespace System.Threading
     /// An object representing the registration of a <see cref="WaitHandle"/> via <see cref="ThreadPool.RegisterWaitForSingleObject"/>.
     /// </summary>
 #if !FEATURE_WASM_THREADS
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [UnsupportedOSPlatform("browser")]
 #endif
     public sealed partial class RegisteredWaitHandle : MarshalByRefObject
     {

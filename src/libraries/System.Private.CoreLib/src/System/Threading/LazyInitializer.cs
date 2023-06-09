@@ -29,9 +29,9 @@ namespace System.Threading
         /// <param name="target">A reference of type <typeparamref name="T"/> to initialize if it has not
         /// already been initialized.</param>
         /// <returns>The initialized reference of type <typeparamref name="T"/>.</returns>
-        /// <exception cref="System.MissingMemberException">Type <typeparamref name="T"/> does not have a default
+        /// <exception cref="MissingMemberException">Type <typeparamref name="T"/> does not have a default
         /// constructor.</exception>
-        /// <exception cref="System.MemberAccessException">
+        /// <exception cref="MemberAccessException">
         /// Permissions to access the constructor of type <typeparamref name="T"/> were missing.
         /// </exception>
         /// <remarks>
@@ -78,12 +78,12 @@ namespace System.Threading
         /// <typeparam name="T">The reference type of the reference to be initialized.</typeparam>
         /// <param name="target">The reference of type <typeparamref name="T"/> to initialize if it has not
         /// already been initialized.</param>
-        /// <param name="valueFactory">The <see cref="System.Func{T}"/> invoked to initialize the
+        /// <param name="valueFactory">The <see cref="Func{T}"/> invoked to initialize the
         /// reference.</param>
         /// <returns>The initialized reference of type <typeparamref name="T"/>.</returns>
-        /// <exception cref="System.MissingMemberException">Type <typeparamref name="T"/> does not have a
+        /// <exception cref="MissingMemberException">Type <typeparamref name="T"/> does not have a
         /// default constructor.</exception>
-        /// <exception cref="System.InvalidOperationException"><paramref name="valueFactory"/> returned
+        /// <exception cref="InvalidOperationException"><paramref name="valueFactory"/> returned
         /// null.</exception>
         /// <remarks>
         /// <para>
@@ -192,7 +192,7 @@ namespace System.Threading
         /// <param name="syncLock">A reference to an object used as the mutually exclusive lock for initializing
         /// <paramref name="target"/>. If <paramref name="syncLock"/> is null, and if the target hasn't already
         /// been initialized, a new object will be instantiated.</param>
-        /// <param name="valueFactory">The <see cref="System.Func{T}"/> invoked to initialize the
+        /// <param name="valueFactory">The <see cref="Func{T}"/> invoked to initialize the
         /// reference or value.</param>
         /// <returns>The initialized value of type <typeparamref name="T"/>.</returns>
         public static T EnsureInitialized<T>([AllowNull] ref T target, ref bool initialized, [NotNullIfNotNull(nameof(syncLock))] ref object? syncLock, Func<T> valueFactory)
@@ -216,7 +216,7 @@ namespace System.Threading
         /// <param name="syncLock">A reference to a location containing a mutual exclusive lock. If <paramref name="syncLock"/> is null,
         /// a new object will be instantiated.</param>
         /// <param name="valueFactory">
-        /// The <see cref="System.Func{T}"/> to invoke in order to produce the lazily-initialized value.
+        /// The <see cref="Func{T}"/> to invoke in order to produce the lazily-initialized value.
         /// </param>
         /// <returns>The initialized object.</returns>
         private static T EnsureInitializedCore<T>([AllowNull] ref T target, ref bool initialized, [NotNull] ref object? syncLock, Func<T> valueFactory)
@@ -242,7 +242,7 @@ namespace System.Threading
         /// <param name="syncLock">A reference to an object used as the mutually exclusive lock for initializing
         /// <paramref name="target"/>. If <paramref name="syncLock"/> is null, and if the target hasn't already
         /// been initialized, a new object will be instantiated.</param>
-        /// <param name="valueFactory">The <see cref="System.Func{T}"/> invoked to initialize the reference.</param>
+        /// <param name="valueFactory">The <see cref="Func{T}"/> invoked to initialize the reference.</param>
         /// <returns>The initialized value of type <typeparamref name="T"/>.</returns>
         public static T EnsureInitialized<T>([NotNull] ref T? target, [NotNullIfNotNull(nameof(syncLock))] ref object? syncLock, Func<T> valueFactory) where T : class =>
             Volatile.Read(ref target!) ?? EnsureInitializedCore(ref target, ref syncLock, valueFactory);
@@ -256,7 +256,7 @@ namespace System.Threading
         /// <param name="syncLock">A reference to a location containing a mutual exclusive lock. If <paramref name="syncLock"/> is null,
         /// a new object will be instantiated.</param>
         /// <param name="valueFactory">
-        /// The <see cref="System.Func{T}"/> to invoke in order to produce the lazily-initialized value.
+        /// The <see cref="Func{T}"/> to invoke in order to produce the lazily-initialized value.
         /// </param>
         /// <returns>The initialized object.</returns>
         private static T EnsureInitializedCore<T>([NotNull] ref T? target, [NotNull] ref object? syncLock, Func<T> valueFactory) where T : class
