@@ -642,11 +642,14 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     // Cache the tls value
     tlsValueDef              = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
-    GenTree* maxThreadStaticBlocksRef = gtNewLclVarNode(tlsLclNum);
-    maxThreadStaticBlocksValue =
-        gtNewIndir(TYP_INT, gtCloneExpr(maxThreadStaticBlocksRef), GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+    GenTree* tlsLclValueUse = gtNewLclVarNode(tlsLclNum);
 
-    GenTree* threadStaticBlocksRef = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(maxThreadStaticBlocksRef),
+    GenTree* offsetOfMaxThreadStaticBlocks = gtNewIconNode(offsetOfMaxThreadStaticBlocksVal, TYP_I_IMPL);
+    GenTree* maxThreadStaticBlocksRef =
+        gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse), offsetOfMaxThreadStaticBlocks);
+    maxThreadStaticBlocksValue = gtNewIndir(TYP_INT, maxThreadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+    GenTree* threadStaticBlocksRef = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse),
                                                    gtNewIconNode(offsetOfThreadStaticBlocksVal, TYP_I_IMPL));
     threadStaticBlocksValue =
         gtNewIndir(TYP_I_IMPL, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
