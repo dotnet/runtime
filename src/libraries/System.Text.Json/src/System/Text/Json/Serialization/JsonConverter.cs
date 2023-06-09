@@ -102,7 +102,41 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException();
         }
 
-        internal abstract JsonConverter<TTarget> CreateCastingConverter<TTarget>();
+        internal JsonConverter<TTarget> CreateCastingConverter<TTarget>()
+        {
+            Debug.Assert(this is not JsonConverterFactory);
+
+            if (this is JsonConverter<TTarget> conv)
+            {
+                return conv;
+            }
+            else
+            {
+                JsonSerializerOptions.CheckConverterNullabilityIsSameAsPropertyType(this, typeof(TTarget));
+
+                // Avoid layering casting converters by consulting any source converters directly.
+                return
+                    SourceConverterForCastingConverter?.CreateCastingConverter<TTarget>()
+                    ?? new CastingConverter<TTarget>(this);
+            }
+        }
+
+        /// <summary>
+        /// Tracks whether the JsonConverter&lt;T&gt;.HandleNull property has been overridden by a derived converter.
+        /// </summary>
+        internal bool UsesDefaultHandleNull { get; private protected set; }
+
+        /// <summary>
+        /// Does the converter want to be called when reading null tokens.
+        /// When JsonConverter&lt;T&gt;.HandleNull isn't overridden this can still be true for non-nullable structs.
+        /// </summary>
+        internal bool HandleNullOnRead { get; private protected init; }
+
+        /// <summary>
+        /// Does the converter want to be called for null values.
+        /// Should always match the precise value of the JsonConverter&lt;T&gt;.HandleNull virtual property.
+        /// </summary>
+        internal bool HandleNullOnWrite { get; private protected init; }
 
         /// <summary>
         /// Set if this converter is itself a casting converter.

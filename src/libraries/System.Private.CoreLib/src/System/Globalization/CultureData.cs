@@ -424,7 +424,7 @@ namespace System.Globalization
             // First do a shortcut for Invariant
             if (string.IsNullOrEmpty(cultureName))
             {
-                return CultureData.Invariant;
+                return Invariant;
             }
 
             // First check if GetCultureData() can find it (ie: its a real culture)
@@ -672,7 +672,7 @@ namespace System.Globalization
             // First do a shortcut for Invariant
             if (string.IsNullOrEmpty(cultureName))
             {
-                return CultureData.Invariant;
+                return Invariant;
             }
 
             if (GlobalizationMode.PredefinedCulturesOnly)
@@ -804,7 +804,7 @@ namespace System.Globalization
                 // Always map the "C" locale to Invariant to avoid mapping it to en_US_POSIX on Linux because POSIX
                 // locale collation doesn't support case insensitive comparisons.
                 // We do the same mapping on Windows for the sake of consistency.
-                return CultureData.Invariant;
+                return Invariant;
             }
 
             CultureData culture = new CultureData();

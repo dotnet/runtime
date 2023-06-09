@@ -40,7 +40,7 @@ namespace System.Threading
         private bool _disposed;
         /// <summary>ITimer used by CancelAfter and Timer-related ctors. Used instead of Timer to avoid extra allocations and because the rooted behavior is desired.</summary>
         private volatile ITimer? _timer;
-        /// <summary><see cref="System.Threading.WaitHandle"/> lazily initialized and returned from <see cref="WaitHandle"/>.</summary>
+        /// <summary><see cref="Threading.WaitHandle"/> lazily initialized and returned from <see cref="WaitHandle"/>.</summary>
         private volatile ManualResetEvent? _kernelEvent;
         /// <summary>Registration state for the source.</summary>
         /// <remarks>Lazily-initialized, also serving as the lock to protect its contained state.</remarks>
@@ -860,7 +860,7 @@ namespace System.Threading
         /// </summary>
         /// <param name="tokens">The <see cref="CancellationToken">CancellationToken</see> instances to observe.</param>
         /// <returns>A <see cref="CancellationTokenSource"/> that is linked to the source tokens.</returns>
-        /// <exception cref="System.ArgumentNullException"><paramref name="tokens"/> is null.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="tokens"/> is null.</exception>
         public static CancellationTokenSource CreateLinkedTokenSource(params CancellationToken[] tokens)
         {
             ArgumentNullException.ThrowIfNull(tokens);

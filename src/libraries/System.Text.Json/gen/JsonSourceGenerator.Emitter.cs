@@ -225,8 +225,13 @@ namespace System.Text.Json.SourceGeneration
 
                 string typeFQN = typeMetadata.TypeRef.FullyQualifiedName;
                 string typeInfoPropertyName = typeMetadata.TypeInfoPropertyName;
-                string metadataInitSource = $"{JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeFQN)}({OptionsLocalVariableName}, {JsonMetadataServicesTypeRef}.{typeInfoPropertyName}Converter);";
-                GenerateTypeInfoProperty(writer, typeMetadata, metadataInitSource);
+
+                GenerateTypeInfoFactoryHeader(writer, typeMetadata);
+                writer.WriteLine($"""
+                    {JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeFQN)}({OptionsLocalVariableName}, {JsonMetadataServicesTypeRef}.{typeInfoPropertyName}Converter);
+                    """);
+
+                GenerateTypeInfoFactoryFooter(writer);
 
                 return CompleteSourceFileAndReturnText(writer);
             }
@@ -238,12 +243,16 @@ namespace System.Text.Json.SourceGeneration
                 SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec);
 
                 string typeFQN = typeMetadata.TypeRef.FullyQualifiedName;
-                string metadataInitSource = $$"""
-                    {{JsonConverterTypeRef}} converter = {{ExpandConverterMethodName}}(typeof({{typeFQN}}), new {{typeMetadata.ConverterType.FullyQualifiedName}}(), {{OptionsLocalVariableName}});
-                    {{JsonTypeInfoReturnValueLocalVariableName}} = {{JsonMetadataServicesTypeRef}}.{{GetCreateValueInfoMethodRef(typeFQN)}} ({{OptionsLocalVariableName}}, converter);
-                    """;
+                string converterFQN = typeMetadata.ConverterType.FullyQualifiedName;
 
-                GenerateTypeInfoProperty(writer, typeMetadata, metadataInitSource);
+                GenerateTypeInfoFactoryHeader(writer, typeMetadata);
+
+                writer.WriteLine($"""
+                    {JsonConverterTypeRef} converter = {ExpandConverterMethodName}(typeof({typeFQN}), new {converterFQN}(), {OptionsLocalVariableName});
+                    {JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeFQN)} ({OptionsLocalVariableName}, converter);
+                    """);
+
+                GenerateTypeInfoFactoryFooter(writer);
 
                 return CompleteSourceFileAndReturnText(writer);
             }
@@ -257,13 +266,14 @@ namespace System.Text.Json.SourceGeneration
                 string typeFQN = typeMetadata.TypeRef.FullyQualifiedName;
                 string underlyingTypeFQN = typeMetadata.NullableUnderlyingType.FullyQualifiedName;
 
-                string metadataInitSource = $$"""
-                    {{JsonTypeInfoReturnValueLocalVariableName}} = {{JsonMetadataServicesTypeRef}}.{{GetCreateValueInfoMethodRef(typeFQN)}}(
-                        {{OptionsLocalVariableName}},
-                        {{JsonMetadataServicesTypeRef}}.GetNullableConverter<{{underlyingTypeFQN}}>({{OptionsLocalVariableName}}));
-                    """;
+                GenerateTypeInfoFactoryHeader(writer, typeMetadata);
 
-                GenerateTypeInfoProperty(writer, typeMetadata, metadataInitSource);
+                writer.WriteLine($$"""
+                    {{JsonConverterTypeRef}} converter = {{JsonMetadataServicesTypeRef}}.GetNullableConverter<{{underlyingTypeFQN}}>({{OptionsLocalVariableName}});
+                    {{JsonTypeInfoReturnValueLocalVariableName}} = {{JsonMetadataServicesTypeRef}}.{{GetCreateValueInfoMethodRef(typeFQN)}}({{OptionsLocalVariableName}}, converter);
+                    """);
+
+                GenerateTypeInfoFactoryFooter(writer);
 
                 return CompleteSourceFileAndReturnText(writer);
             }
@@ -273,9 +283,13 @@ namespace System.Text.Json.SourceGeneration
                 SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec);
 
                 string typeFQN = typeMetadata.TypeRef.FullyQualifiedName;
-                string metadataInitSource = $"{JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeFQN)}({OptionsLocalVariableName}, {JsonMetadataServicesTypeRef}.GetUnsupportedTypeConverter<{typeFQN}>());";
 
-                GenerateTypeInfoProperty(writer, typeMetadata, metadataInitSource);
+                GenerateTypeInfoFactoryHeader(writer, typeMetadata);
+                writer.WriteLine($"""
+                    {JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeFQN)}({OptionsLocalVariableName}, {JsonMetadataServicesTypeRef}.GetUnsupportedTypeConverter<{typeFQN}>());
+                    """);
+
+                GenerateTypeInfoFactoryFooter(writer);
 
                 return CompleteSourceFileAndReturnText(writer);
             }
@@ -285,8 +299,13 @@ namespace System.Text.Json.SourceGeneration
                 SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec);
 
                 string typeFQN = typeMetadata.TypeRef.FullyQualifiedName;
-                string metadataInitSource = $"{JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeFQN)}({OptionsLocalVariableName}, {JsonMetadataServicesTypeRef}.GetEnumConverter<{typeFQN}>({OptionsLocalVariableName}));";
-                GenerateTypeInfoProperty(writer, typeMetadata, metadataInitSource);
+
+                GenerateTypeInfoFactoryHeader(writer, typeMetadata);
+                writer.WriteLine($"""
+                    {JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeFQN)}({OptionsLocalVariableName}, {JsonMetadataServicesTypeRef}.GetEnumConverter<{typeFQN}>({OptionsLocalVariableName}));
+                    """);
+
+                GenerateTypeInfoFactoryFooter(writer);
 
                 return CompleteSourceFileAndReturnText(writer);
             }
@@ -349,8 +368,10 @@ namespace System.Text.Json.SourceGeneration
                         break;
                 }
 
-                string metadataInitSource = $$"""
-                    var {{InfoVarName}} = new {{JsonCollectionInfoValuesTypeRef}}<{{typeFQN}}>()
+                GenerateTypeInfoFactoryHeader(writer, typeGenerationSpec);
+
+                writer.WriteLine($$"""
+                    var {{InfoVarName}} = new {{JsonCollectionInfoValuesTypeRef}}<{{typeFQN}}>
                     {
                         {{ObjectCreatorPropName}} = {{FormatDefaultConstructorExpr(typeGenerationSpec)}},
                         {{NumberHandlingPropName}} = {{GetNumberHandlingAsStr(typeGenerationSpec.NumberHandling)}},
@@ -358,9 +379,9 @@ namespace System.Text.Json.SourceGeneration
                     };
 
                     {{JsonTypeInfoReturnValueLocalVariableName}} = {{JsonMetadataServicesTypeRef}}.{{createCollectionMethodExpr}};
-                    """;
+                    """);
 
-                GenerateTypeInfoProperty(writer, typeGenerationSpec, metadataInitSource);
+                GenerateTypeInfoFactoryFooter(writer);
 
                 if (serializeMethodName != null)
                 {
@@ -491,8 +512,10 @@ namespace System.Text.Json.SourceGeneration
                 const string ObjectInfoVarName = "objectInfo";
                 string genericArg = typeMetadata.TypeRef.FullyQualifiedName;
 
-                string metadataInitSource = $$"""
-                    var {{ObjectInfoVarName}} = new {{JsonObjectInfoValuesTypeRef}}<{{genericArg}}>()
+                GenerateTypeInfoFactoryHeader(writer, typeMetadata);
+
+                writer.WriteLine($$"""
+                    var {{ObjectInfoVarName}} = new {{JsonObjectInfoValuesTypeRef}}<{{genericArg}}>
                     {
                         {{ObjectCreatorPropName}} = {{creatorInvocation}},
                         ObjectWithParameterizedConstructorCreator = {{parameterizedCreatorInvocation}},
@@ -503,25 +526,24 @@ namespace System.Text.Json.SourceGeneration
                     };
 
                     {{JsonTypeInfoReturnValueLocalVariableName}} = {{JsonMetadataServicesTypeRef}}.CreateObjectInfo<{{typeMetadata.TypeRef.FullyQualifiedName}}>({{OptionsLocalVariableName}}, {{ObjectInfoVarName}});
-                    """;
+                    """);
 
-                if (typeMetadata.UnmappedMemberHandling != null)
+                if (typeMetadata is { UnmappedMemberHandling: not null } or { PreferredPropertyObjectCreationHandling: not null })
                 {
-                    metadataInitSource += $"""
+                    writer.WriteLine();
 
-                        {JsonTypeInfoReturnValueLocalVariableName}.{UnmappedMemberHandlingPropName} = {GetUnmappedMemberHandlingAsStr(typeMetadata.UnmappedMemberHandling.Value)};
-                        """;
+                    if (typeMetadata.UnmappedMemberHandling != null)
+                    {
+                        writer.WriteLine($"{JsonTypeInfoReturnValueLocalVariableName}.{UnmappedMemberHandlingPropName} = {GetUnmappedMemberHandlingAsStr(typeMetadata.UnmappedMemberHandling.Value)};");
+                    }
+
+                    if (typeMetadata.PreferredPropertyObjectCreationHandling != null)
+                    {
+                        writer.WriteLine($"{JsonTypeInfoReturnValueLocalVariableName}.{PreferredPropertyObjectCreationHandlingPropName} = {GetObjectCreationHandlingAsStr(typeMetadata.PreferredPropertyObjectCreationHandling.Value)};");
+                    }
                 }
 
-                if (typeMetadata.PreferredPropertyObjectCreationHandling != null)
-                {
-                    metadataInitSource += $"""
-
-                        {JsonTypeInfoReturnValueLocalVariableName}.{PreferredPropertyObjectCreationHandlingPropName} = {GetObjectCreationHandlingAsStr(typeMetadata.PreferredPropertyObjectCreationHandling.Value)};
-                        """;
-                }
-
-                GenerateTypeInfoProperty(writer, typeMetadata, metadataInitSource);
+                GenerateTypeInfoFactoryFooter(writer);
 
                 if (propInitMethodName != null)
                 {
@@ -596,15 +618,17 @@ namespace System.Text.Json.SourceGeneration
                     string? converterInstantiationExpr = null;
                     if (property.ConverterType != null)
                     {
+                        string converterFQN = property.ConverterType.FullyQualifiedName;
                         TypeRef? nullableUnderlyingType = _typeIndex[property.PropertyType].NullableUnderlyingType;
                         _emitGetConverterForNullablePropertyMethod |= nullableUnderlyingType != null;
+
                         converterInstantiationExpr = nullableUnderlyingType != null
-                            ? $"{GetConverterForNullablePropertyMethodName}<{nullableUnderlyingType.FullyQualifiedName}>(new {property.ConverterType.FullyQualifiedName}(), {OptionsLocalVariableName})"
-                            : $"({JsonConverterTypeRef}<{propertyTypeFQN}>){ExpandConverterMethodName}(typeof({propertyTypeFQN}), new {property.ConverterType.FullyQualifiedName}(), {OptionsLocalVariableName})";
+                            ? $"{GetConverterForNullablePropertyMethodName}<{nullableUnderlyingType.FullyQualifiedName}>(new {converterFQN}(), {OptionsLocalVariableName})"
+                            : $"({JsonConverterTypeRef}<{propertyTypeFQN}>){ExpandConverterMethodName}(typeof({propertyTypeFQN}), new {converterFQN}(), {OptionsLocalVariableName})";
                     }
 
                     writer.WriteLine($$"""
-                        var {{InfoVarName}}{{i}} = new {{JsonPropertyInfoValuesTypeRef}}<{{propertyTypeFQN}}>()
+                        var {{InfoVarName}}{{i}} = new {{JsonPropertyInfoValuesTypeRef}}<{{propertyTypeFQN}}>
                         {
                             IsProperty = {{FormatBool(property.IsProperty)}},
                             IsPublic = {{FormatBool(property.IsPublic)}},
@@ -986,7 +1010,7 @@ namespace System.Text.Json.SourceGeneration
                 };
             }
 
-            private static void GenerateTypeInfoProperty(SourceWriter writer, TypeGenerationSpec typeMetadata, string metadataInitSource)
+            private static void GenerateTypeInfoFactoryHeader(SourceWriter writer, TypeGenerationSpec typeMetadata)
             {
                 string typeFQN = typeMetadata.TypeRef.FullyQualifiedName;
                 string typeInfoPropertyName = typeMetadata.TypeInfoPropertyName;
@@ -1010,7 +1034,10 @@ namespace System.Text.Json.SourceGeneration
                     """);
 
                 writer.Indentation += 2;
-                writer.WriteLine(metadataInitSource);
+            }
+
+            private static void GenerateTypeInfoFactoryFooter(SourceWriter writer)
+            {
                 writer.Indentation -= 2;
 
                 // NB OriginatingResolver should be the last property set by the source generator.
@@ -1018,7 +1045,7 @@ namespace System.Text.Json.SourceGeneration
                         }
 
                         {{JsonTypeInfoReturnValueLocalVariableName}}.{{OriginatingResolverPropertyName}} = this;
-                        return jsonTypeInfo;
+                        return {{JsonTypeInfoReturnValueLocalVariableName}};
                     }
                     """);
             }

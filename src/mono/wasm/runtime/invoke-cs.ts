@@ -12,7 +12,7 @@ import {
     bound_cs_function_symbol, get_signature_version, alloc_stack_frame, get_signature_type,
 } from "./marshal";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "./roots";
-import { monoStringToString, monoStringToStringUnsafe } from "./strings";
+import { monoStringToString } from "./strings";
 import { MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMarshalerArguments, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, VoidPtrNull, MonoObjectRefNull, MonoObjectNull } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
 import cwraps from "./cwraps";
@@ -244,12 +244,18 @@ type BindingClosure = {
 }
 
 export function invoke_method_and_handle_exception(method: MonoMethod, args: JSMarshalerArguments): void {
-    assert_synchronization_context();
-    const fail = cwraps.mono_wasm_invoke_method_bound(method, args);
-    if (fail) throw new Error("ERR24: Unexpected error: " + monoStringToStringUnsafe(fail));
-    if (is_args_exception(args)) {
-        const exc = get_arg(args, 0);
-        throw marshal_exception_to_js(exc);
+    const fail_root = mono_wasm_new_root<MonoString>();
+    try {
+        assert_synchronization_context();
+        const fail = cwraps.mono_wasm_invoke_method_bound(method, args, fail_root.address);
+        if (fail) throw new Error("ERR24: Unexpected error: " + monoStringToString(fail_root));
+        if (is_args_exception(args)) {
+            const exc = get_arg(args, 0);
+            throw marshal_exception_to_js(exc);
+        }
+    }
+    finally {
+        fail_root.release();
     }
 }
 
