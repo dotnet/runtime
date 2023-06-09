@@ -183,6 +183,9 @@ namespace ILCompiler
         public Option<bool> SynthesizeRandomMibc { get; } =
             new(new[] { "--synthesize-random-mibc" });
 
+        public Option<int> DeterminismStress { get; } =
+            new(new[] { "--determinism-stress" });
+
         public bool CompositeOrInputBubble { get; private set; }
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result { get; private set; }
@@ -249,6 +252,7 @@ namespace ILCompiler
             AddOption(MakeReproPath);
             AddOption(HotColdSplitting);
             AddOption(SynthesizeRandomMibc);
+            AddOption(DeterminismStress);
 
             this.SetHandler(context =>
             {
