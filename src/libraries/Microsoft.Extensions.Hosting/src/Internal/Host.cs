@@ -23,6 +23,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         private readonly IHostEnvironment _hostEnvironment;
         private readonly PhysicalFileProvider _defaultProvider;
         private IEnumerable<IHostedService>? _hostedServices;
+        private IEnumerable<IHostedLifecycleService>? _hostedLifecycleServices;
         private volatile bool _stopCalled;
 
         public Host(IServiceProvider services,
@@ -58,79 +59,87 @@ namespace Microsoft.Extensions.Hosting.Internal
         {
             _logger.Starting();
 
-            using var combinedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _applicationLifetime.ApplicationStopping);
-            CancellationToken combinedCancellationToken = combinedCancellationTokenSource.Token;
-
-            await _hostLifetime.WaitForStartAsync(combinedCancellationToken).ConfigureAwait(false);
-
-            combinedCancellationToken.ThrowIfCancellationRequested();
-            _hostedServices = Services.GetRequiredService<IEnumerable<IHostedService>>();
-
-            List<Exception> exceptions = new List<Exception>();
-
-            if (_options.ServicesStartConcurrently)
+            CancellationTokenSource? cts = null;
+            CancellationTokenSource linkedCts;
+            if (_options.StartupTimeout != Timeout.InfiniteTimeSpan)
             {
-                List<Task> tasks = new List<Task>();
-
-                foreach (IHostedService hostedService in _hostedServices)
-                {
-                    tasks.Add(Task.Run(() => StartAndTryToExecuteAsync(hostedService, combinedCancellationToken), combinedCancellationToken));
-                }
-
-                Task groupedTasks = Task.WhenAll(tasks);
-
-                try
-                {
-                    await groupedTasks.ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    exceptions.AddRange(groupedTasks.Exception?.InnerExceptions ?? new[] { ex }.AsEnumerable());
-                }
+                cts = new CancellationTokenSource(_options.StartupTimeout);
+                linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken, _applicationLifetime.ApplicationStopping);
             }
             else
             {
-                foreach (IHostedService hostedService in _hostedServices)
-                {
-                    try
-                    {
-                        // Fire IHostedService.Start
-                        await StartAndTryToExecuteAsync(hostedService, combinedCancellationToken).ConfigureAwait(false);
-                    }
-                    catch (Exception ex)
-                    {
-                        exceptions.Add(ex);
-                        break;
-                    }
-                }
+                linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _applicationLifetime.ApplicationStopping);
             }
 
-            if (exceptions.Count > 0)
+            using (cts)
+            using (linkedCts)
             {
-                if (exceptions.Count == 1)
+                CancellationToken token = linkedCts.Token;
+                List<Exception> exceptions = new();
+                _hostedServices = Services.GetRequiredService<IEnumerable<IHostedService>>();
+                _hostedLifecycleServices = GetHostLifecycles(_hostedServices);
+
+                await _hostLifetime.WaitForStartAsync(token).ConfigureAwait(false);
+                token.ThrowIfCancellationRequested();
+
+                if (_hostedLifecycleServices is not null)
                 {
-                    // Rethrow if it's a single error
-                    Exception singleException = exceptions[0];
-                    _logger.HostedServiceStartupFaulted(singleException);
-                    ExceptionDispatchInfo.Capture(singleException).Throw();
+                    await CallLifeCycle_Starting(_hostedLifecycleServices, token, exceptions).ConfigureAwait(false);
+                }
+
+                // Run IHostedService.Start either concurrently or serially.
+                if (_options.ServicesStartConcurrently)
+                {
+                    await CallLifeCycle_Start(_hostedServices, token, exceptions).ConfigureAwait(false);
                 }
                 else
                 {
-                    var ex = new AggregateException("One or more hosted services failed to start.", exceptions);
-                    _logger.HostedServiceStartupFaulted(ex);
-                    throw ex;
+                    foreach (IHostedService hostedService in _hostedServices)
+                    {
+                        try
+                        {
+                            await StartAndTryToExecuteAsync(hostedService, token).ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            exceptions.Add(ex);
+                            break;
+                        }
+                    }
                 }
-            }
 
-            // Fire IHostApplicationLifetime.Started
-            _applicationLifetime.NotifyStarted();
+                if (_hostedLifecycleServices is not null)
+                {
+                    await CallLifeCycle_Started(_hostedLifecycleServices, token, exceptions).ConfigureAwait(false);
+                }
+
+                if (exceptions.Count > 0)
+                {
+                    if (exceptions.Count == 1)
+                    {
+                        // Rethrow if it's a single error
+                        Exception singleException = exceptions[0];
+                        _logger.HostedServiceStartupFaulted(singleException);
+                        ExceptionDispatchInfo.Capture(singleException).Throw();
+                    }
+                    else
+                    {
+                        var ex = new AggregateException("One or more hosted services failed to start.", exceptions);
+                        _logger.HostedServiceStartupFaulted(ex);
+                        throw ex;
+                    }
+                }
+
+                // Fire IHostApplicationLifetime.Started
+                _applicationLifetime.NotifyStarted();
+            }
 
             _logger.Started();
         }
 
-        private async Task StartAndTryToExecuteAsync(IHostedService service, CancellationToken combinedCancellationToken)
+        private async Task StartAndTryToExecuteAsync(IHostedService service, CancellationToken token)
         {
-            await service.StartAsync(combinedCancellationToken).ConfigureAwait(false);
+            await service.StartAsync(token).ConfigureAwait(false);
 
             if (service is BackgroundService backgroundService)
             {
@@ -174,42 +183,46 @@ namespace Microsoft.Extensions.Hosting.Internal
             _stopCalled = true;
             _logger.Stopping();
 
-            using (var cts = new CancellationTokenSource(_options.ShutdownTimeout))
-            using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken))
+            CancellationTokenSource? cts = null;
+            CancellationTokenSource linkedCts;
+            if (_options.ShutdownTimeout != Timeout.InfiniteTimeSpan)
+            {
+                cts = new CancellationTokenSource(_options.ShutdownTimeout);
+                linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
+            }
+            else
+            {
+                linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            }
+
+            using (cts)
+            using (linkedCts)
             {
                 CancellationToken token = linkedCts.Token;
+                List<Exception> exceptions = new();
+
                 // Trigger IHostApplicationLifetime.ApplicationStopping
                 _applicationLifetime.StopApplication();
 
-                var exceptions = new List<Exception>();
                 if (_hostedServices != null) // Started?
                 {
                     // Ensure hosted services are stopped in LIFO order
-                    IEnumerable<IHostedService> hostedServices = _hostedServices.Reverse();
+                    IEnumerable<IHostedService> reversedServices = _hostedServices.Reverse();
+                    IEnumerable<IHostedLifecycleService>? reversedLifetimeServices = _hostedLifecycleServices?.Reverse();
 
+                    if (reversedLifetimeServices is not null)
+                    {
+                        await CallLifeCycle_Stopping(reversedLifetimeServices, token, exceptions).ConfigureAwait(false);
+                    }
+
+                    // Run IHostedService.Stop either concurrently or serially.
                     if (_options.ServicesStopConcurrently)
                     {
-                        List<Task> tasks = new List<Task>();
-
-                        foreach (IHostedService hostedService in hostedServices)
-                        {
-                            tasks.Add(Task.Run(() => hostedService.StopAsync(token), token));
-                        }
-
-                        Task groupedTasks = Task.WhenAll(tasks);
-
-                        try
-                        {
-                            await groupedTasks.ConfigureAwait(false);
-                        }
-                        catch (Exception ex)
-                        {
-                            exceptions.AddRange(groupedTasks.Exception?.InnerExceptions ?? new[] { ex }.AsEnumerable());
-                        }
+                        await CallLifeCycle_Stop(reversedServices, token, exceptions).ConfigureAwait(false);
                     }
                     else
                     {
-                        foreach (IHostedService hostedService in hostedServices)
+                        foreach (IHostedService hostedService in reversedServices)
                         {
                             try
                             {
@@ -220,6 +233,11 @@ namespace Microsoft.Extensions.Hosting.Internal
                                 exceptions.Add(ex);
                             }
                         }
+                    }
+
+                    if (reversedLifetimeServices is not null)
+                    {
+                        await CallLifeCycle_Stopped(reversedLifetimeServices, token, exceptions).ConfigureAwait(false);
                     }
                 }
 
@@ -254,6 +272,275 @@ namespace Microsoft.Extensions.Hosting.Internal
             }
 
             _logger.Stopped();
+        }
+
+        /// <summary>
+        /// Call <see cref="IHostedLifecycleService.StartingAsync(CancellationToken)"/>.
+        /// The beginning synchronous portions of the implementations are run serially in registration order for
+        /// performance since it is common to return Task.Completed as a noop.
+        /// Any subsequent asynchronous portions are grouped together run concurrently.
+        /// </summary>
+        private static async Task CallLifeCycle_Starting(IEnumerable<IHostedLifecycleService> services, CancellationToken token, List<Exception> exceptions)
+        {
+            List<Task>? tasks = null;
+
+            foreach (IHostedLifecycleService service in services)
+            {
+                Task? task =  task = service.StartingAsync(token);
+                if (task.IsCompleted)
+                {
+                    if (task.Exception is not null)
+                    {
+                        exceptions.Add(task.Exception);
+                    }
+                }
+                else
+                {
+                    tasks ??= new();
+                    tasks.Add(Task.Run(async () => await task.ConfigureAwait(false), token));
+                }
+            }
+
+            if (tasks is not null)
+            {
+                Task groupedTasks = Task.WhenAll(tasks);
+
+                try
+                {
+                    await groupedTasks.ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.AddRange(groupedTasks.Exception?.InnerExceptions ?? new[] { ex }.AsEnumerable());
+                }
+            }
+        }
+
+        /// <summary>
+        /// Call <see cref="IHostedService.StartAsync(CancellationToken)"/>.
+        /// The beginning synchronous portions of the implementations are run serially in registration order for
+        /// performance since it is common to return Task.Completed as a noop.
+        /// Any subsequent asynchronous portions are grouped together run concurrently.
+        /// </summary>
+        private static async Task CallLifeCycle_Start(IEnumerable<IHostedService> services, CancellationToken token, List<Exception> exceptions)
+        {
+            List<Task>? tasks = null;
+
+            foreach (IHostedService service in services)
+            {
+                Task? task = service.StartAsync(token);
+                if (task.IsCompleted)
+                {
+                    if (task.Exception is not null)
+                    {
+                        exceptions.Add(task.Exception);
+                    }
+                }
+                else
+                {
+                    tasks ??= new();
+                    tasks.Add(Task.Run(async () => await task.ConfigureAwait(false), token));
+                }
+            }
+
+            if (tasks is not null)
+            {
+                Task groupedTasks = Task.WhenAll(tasks);
+
+                try
+                {
+                    await groupedTasks.ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.AddRange(groupedTasks.Exception?.InnerExceptions ?? new[] { ex }.AsEnumerable());
+                }
+            }
+        }
+
+        /// <summary>
+        /// Call <see cref="IHostedLifecycleService.StartedAsync(CancellationToken)"/>.
+        /// The beginning synchronous portions of the implementations are run serially in registration order for
+        /// performance since it is common to return Task.Completed as a noop.
+        /// Any subsequent asynchronous portions are grouped together run concurrently.
+        /// </summary>
+        private static async Task CallLifeCycle_Started(IEnumerable<IHostedLifecycleService> services, CancellationToken token, List<Exception> exceptions)
+        {
+            List<Task>? tasks = null;
+
+            foreach (IHostedLifecycleService service in services)
+            {
+                Task? task = task = service.StartedAsync(token);
+                if (task.IsCompleted)
+                {
+                    if (task.Exception is not null)
+                    {
+                        exceptions.Add(task.Exception);
+                    }
+                }
+                else
+                {
+                    tasks ??= new();
+                    tasks.Add(Task.Run(async () => await task.ConfigureAwait(false), token));
+                }
+
+            }
+
+            if (tasks is not null)
+            {
+                Task groupedTasks = Task.WhenAll(tasks);
+
+                try
+                {
+                    await groupedTasks.ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.AddRange(groupedTasks.Exception?.InnerExceptions ?? new[] { ex }.AsEnumerable());
+                }
+            }
+        }
+
+        /// <summary>
+        /// Call <see cref="IHostedLifecycleService.StoppingAsync(CancellationToken)"/>.
+        /// The beginning synchronous portions of the implementations are run serially in registration order for
+        /// performance since it is common to return Task.Completed as a noop.
+        /// Any subsequent asynchronous portions are grouped together run concurrently.
+        /// </summary>
+        private static async Task CallLifeCycle_Stopping(IEnumerable<IHostedLifecycleService> services, CancellationToken token, List<Exception> exceptions)
+        {
+            List<Task>? tasks = null;
+
+            foreach (IHostedLifecycleService service in services)
+            {
+                Task? task = task = service.StoppingAsync(token);
+                if (task.IsCompleted)
+                {
+                    if (task.Exception is not null)
+                    {
+                        exceptions.Add(task.Exception);
+                    }
+                }
+                else
+                {
+                    tasks ??= new();
+                    tasks.Add(Task.Run(async () => await task.ConfigureAwait(false), token));
+                }
+            }
+
+            if (tasks is not null)
+            {
+                Task groupedTasks = Task.WhenAll(tasks);
+
+                try
+                {
+                    await groupedTasks.ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.AddRange(groupedTasks.Exception?.InnerExceptions ?? new[] { ex }.AsEnumerable());
+                }
+            }
+        }
+
+        /// <summary>
+        /// Call <see cref="IHostedService.StopAsync(CancellationToken)"/>.
+        /// The beginning synchronous portions of the implementations are run serially in registration order for
+        /// performance since it is common to return Task.Completed as a noop.
+        /// Any subsequent asynchronous portions are grouped together run concurrently.
+        /// </summary>
+        private static async Task CallLifeCycle_Stop(IEnumerable<IHostedService> services, CancellationToken token, List<Exception> exceptions)
+        {
+            List<Task>? tasks = null;
+
+            foreach (IHostedService service in services)
+            {
+                Task? task = task = service.StopAsync(token);
+                if (task.IsCompleted)
+                {
+                    if (task.Exception is not null)
+                    {
+                        exceptions.Add(task.Exception);
+                    }
+                }
+                else
+                {
+                    tasks ??= new();
+                    tasks.Add(Task.Run(async () => await task.ConfigureAwait(false), token));
+                }
+            }
+
+            if (tasks is not null)
+            {
+                Task groupedTasks = Task.WhenAll(tasks);
+
+                try
+                {
+                    await groupedTasks.ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.AddRange(groupedTasks.Exception?.InnerExceptions ?? new[] { ex }.AsEnumerable());
+                }
+            }
+        }
+
+        /// <summary>
+        /// Call <see cref="IHostedLifecycleService.StoppedAsync(CancellationToken)"/>.
+        /// The beginning synchronous portions of the implementations are run serially in registration order for
+        /// performance since it is common to return Task.Completed as a noop.
+        /// Any subsequent asynchronous portions are grouped together run concurrently.
+        /// </summary>
+        private static async Task CallLifeCycle_Stopped(IEnumerable<IHostedLifecycleService> services, CancellationToken token, List<Exception> exceptions)
+        {
+            List<Task>? tasks = null;
+
+            foreach (IHostedLifecycleService service in services)
+            {
+                Task? task = task = service.StoppedAsync(token);
+                if (task.IsCompleted)
+                {
+                    if (task.Exception is not null)
+                    {
+                        exceptions.Add(task.Exception);
+                    }
+                }
+                else
+                {
+                    tasks ??= new();
+                    tasks.Add(Task.Run(async () => await task.ConfigureAwait(false), token));
+                }
+            }
+
+            if (tasks is not null)
+            {
+                Task groupedTasks = Task.WhenAll(tasks);
+
+                try
+                {
+                    await groupedTasks.ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.AddRange(groupedTasks.Exception?.InnerExceptions ?? new[] { ex }.AsEnumerable());
+                }
+            }
+        }
+
+        private static List<IHostedLifecycleService>? GetHostLifecycles(IEnumerable<IHostedService> hostedServices)
+        {
+            List<IHostedLifecycleService>? _result = null;
+
+            foreach (IHostedService hostedService in hostedServices)
+            {
+                if (hostedService is IHostedLifecycleService service)
+                {
+                    _result ??= new List<IHostedLifecycleService>();
+                    _result.Add(service);
+                }
+            }
+
+            return _result;
         }
 
         public void Dispose() => DisposeAsync().AsTask().GetAwaiter().GetResult();
