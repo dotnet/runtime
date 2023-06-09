@@ -1404,7 +1404,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 #endif
 		switch (id) {
-		case SN_Ceiling:
 		case SN_ConditionalSelect:
 		case SN_ConvertToDouble:
 		case SN_ConvertToInt32:
@@ -1418,8 +1417,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_EqualsAll:
 		case SN_EqualsAny:
 		case SN_ExtractMostSignificantBits:
-		case SN_Floor:
-		case SN_GetElement:
 		case SN_GetLower:
 		case SN_GetUpper:
 		case SN_GreaterThan:
@@ -1435,8 +1432,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_LessThanOrEqualAll:
 		case SN_LessThanOrEqualAny:
 		case SN_Narrow:
-		case SN_Negate:
-		case SN_OnesComplement:
 		case SN_Shuffle:
 		case SN_Sqrt:
 		case SN_Sum:
@@ -1445,8 +1440,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_ToVector128Unsafe:
 		case SN_WidenLower:
 		case SN_WidenUpper:
-		case SN_WithElement:
-		case SN_get_IsHardwareAccelerated:
 			return NULL;
 		default:
 			break;
@@ -2207,14 +2200,13 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return ins;
 		} 
 
-		if (!COMPILE_LLVM(cfg) && fsig->params [0]->type != MONO_TYPE_GENERICINST) {
+		if (!COMPILE_LLVM (cfg) && fsig->params [0]->type != MONO_TYPE_GENERICINST)
 			return NULL;
-		}
 
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
 		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
 
-		if (COMPILE_LLVM(cfg) || type_to_width_log2 (arg0_type) == 3) {
+		if (COMPILE_LLVM (cfg) || type_to_width_log2 (arg0_type) == 3) {
 			int insert_op = type_to_xinsert_op (arg0_type);
 			MonoInst *ins = emit_simd_ins (cfg, klass, insert_op, args [0]->dreg, args [2]->dreg);
 			ins->sreg3 = args [1]->dreg;

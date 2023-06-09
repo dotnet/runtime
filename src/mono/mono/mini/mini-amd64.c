@@ -7275,10 +7275,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
-		case OP_EXTRACT_R4:
-			g_assert (!ins->inst_c0);
-			amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg1);
+		case OP_EXTRACT_R4: {
+			if (ins->inst_c0 == 0) {
+				amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg1);
+			} else {
+				int imm = ins->inst_c0;
+				amd64_sse_movaps_reg_reg (code, SIMD_TEMP_REG, ins->sreg1);
+				amd64_sse_shufps_reg_reg_imm (code, SIMD_TEMP_REG, ins->sreg1, imm);
+				amd64_sse_pxor_reg_reg (code, ins->dreg, ins->dreg);
+				amd64_sse_movss_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
+			}
 			break;
+		}
 		case OP_INSERT_I1:
 			amd64_sse_pinsrb_reg_reg_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
 			break;
@@ -7456,7 +7464,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->inst_c1 == MONO_TYPE_R8)
 				amd64_sse_roundpd_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
 			else
-				g_assert_not_reached (); // roundps, but it's not used anywhere for non-llvm back-end yet.
+				amd64_sse_roundps_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
 			break;
 		}
 #endif
