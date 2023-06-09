@@ -191,8 +191,8 @@ namespace Microsoft.Interop
 
         public override int GetHashCode()
         {
-            // ContainingSyntax and ContainingSyntaxContext do not implement GetHashCode
-            return HashCode.Combine(Type, TypeDefinitionContext, InterfaceId);
+            // ContainingSyntax does not implement GetHashCode
+            return HashCode.Combine(Type, ThisInterfaceKey, BaseInterfaceKey, TypeDefinitionContext, InterfaceId);
         }
 
         public bool Equals(ComInterfaceInfo other)
