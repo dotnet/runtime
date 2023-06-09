@@ -113,9 +113,59 @@ namespace System
             else
             {
                 ref short currentSearchSpace = ref searchSpace;
-
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else condition for this if statement is identical in semantics to Avx2 specific code
-                if (Avx2.IsSupported && length > Vector256<short>.Count)
+                if (Avx512F.IsSupported && length > Vector512<short>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
+                {
+                    Vector512<byte> packedValue = Vector512.Create((byte)value);
+
+                    if (length > 2 * Vector512<short>.Count)
+                    {
+                        // Process the input in chunks of 64 characters (2 * Vector512<short>).
+                        // If the input length is a multiple of 32, don't consume the last 16 characters in this loop.
+                        // Let the fallback below handle it instead. This is why the condition is
+                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                        ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector512<short>.Count));
+
+                        do
+                        {
+                            Vector512<short> source0 = Vector512.LoadUnsafe(ref currentSearchSpace);
+                            Vector512<short> source1 = Vector512.LoadUnsafe(ref currentSearchSpace, (nuint)Vector512<short>.Count);
+                            Vector512<byte> packedSource = PackSources(source0, source1);
+                            Vector512<byte> result = Vector512.Equals(packedValue, packedSource);
+
+                            if (result != Vector512<byte>.Zero)
+                            {
+                                return true;
+                            }
+
+                            currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, 2 * Vector512<short>.Count);
+                        }
+                        while (Unsafe.IsAddressLessThan(ref currentSearchSpace, ref twoVectorsAwayFromEnd));
+                    }
+
+                    // We have 1-32 characters remaining. Process the first and last vector in the search space.
+                    // They may overlap, but we're only interested in whether any value matched.
+                    {
+                        ref short oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector512<short>.Count);
+
+                        ref short firstVector = ref Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd)
+                            ? ref oneVectorAwayFromEnd
+                            : ref currentSearchSpace;
+
+                        Vector512<short> source0 = Vector512.LoadUnsafe(ref firstVector);
+                        Vector512<short> source1 = Vector512.LoadUnsafe(ref oneVectorAwayFromEnd);
+                        Vector512<byte> packedSource = PackSources(source0, source1);
+                        Vector512<byte> result = Vector512.Equals(packedValue, packedSource);
+
+                        if (result != Vector512<byte>.Zero)
+                        {
+                            return true;
+                        }
+                    }
+                }
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else condition for this if statement is identical in semantics to Avx2 specific code
+                else if (Avx2.IsSupported && length > Vector256<short>.Count)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     Vector256<byte> packedValue = Vector256.Create((byte)value);
@@ -264,7 +314,60 @@ namespace System
                 ref short currentSearchSpace = ref searchSpace;
 
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else condition for this if statement is identical in semantics to Avx2 specific code
-                if (Avx2.IsSupported && length > Vector256<short>.Count)
+                if (Avx512F.IsSupported && length > Vector512<short>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
+                {
+                    Vector512<byte> packedValue = Vector512.Create((byte)value);
+
+                    if (length > 2 * Vector512<short>.Count)
+                    {
+                        // Process the input in chunks of 32 characters (2 * Vector256<short>).
+                        // If the input length is a multiple of 32, don't consume the last 16 characters in this loop.
+                        // Let the fallback below handle it instead. This is why the condition is
+                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                        ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector512<short>.Count));
+
+                        do
+                        {
+                            Vector512<short> source0 = Vector512.LoadUnsafe(ref currentSearchSpace);
+                            Vector512<short> source1 = Vector512.LoadUnsafe(ref currentSearchSpace, (nuint)Vector512<short>.Count);
+                            Vector512<byte> packedSource = PackSources(source0, source1);
+                            Vector512<byte> result = Vector512.Equals(packedValue, packedSource);
+                            result = NegateIfNeeded<TNegator>(result);
+
+                            if (result != Vector512<byte>.Zero)
+                            {
+                                return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, result);
+                            }
+
+                            currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, 2 * Vector512<short>.Count);
+                        }
+                        while (Unsafe.IsAddressLessThan(ref currentSearchSpace, ref twoVectorsAwayFromEnd));
+                    }
+
+                    // We have 1-32 characters remaining. Process the first and last vector in the search space.
+                    // They may overlap, but we'll handle that in the index calculation if we do get a match.
+                    {
+                        ref short oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector512<short>.Count);
+
+                        ref short firstVector = ref Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd)
+                            ? ref oneVectorAwayFromEnd
+                            : ref currentSearchSpace;
+
+                        Vector512<short> source0 = Vector512.LoadUnsafe(ref firstVector);
+                        Vector512<short> source1 = Vector512.LoadUnsafe(ref oneVectorAwayFromEnd);
+                        Vector512<byte> packedSource = PackSources(source0, source1);
+                        Vector512<byte> result = Vector512.Equals(packedValue, packedSource);
+                        result = NegateIfNeeded<TNegator>(result);
+
+                        if (result != Vector512<byte>.Zero)
+                        {
+                            return ComputeFirstIndexOverlapped(ref searchSpace, ref firstVector, ref oneVectorAwayFromEnd, result);
+                        }
+                    }
+                }
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else condition for this if statement is identical in semantics to Avx2 specific code
+                else if (Avx2.IsSupported && length > Vector256<short>.Count)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     Vector256<byte> packedValue = Vector256.Create((byte)value);
@@ -422,9 +525,62 @@ namespace System
             else
             {
                 ref short currentSearchSpace = ref searchSpace;
-
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else condition for this if statement is identical in semantics to Avx2 specific code
-                if (Avx2.IsSupported && length > Vector256<short>.Count)
+                if (Avx512F.IsSupported && length > Vector512<short>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
+                {
+                    Vector512<byte> packedValue0 = Vector512.Create((byte)value0);
+                    Vector512<byte> packedValue1 = Vector512.Create((byte)value1);
+
+                    if (length > 2 * Vector512<short>.Count)
+                    {
+                        // Process the input in chunks of 32 characters (2 * Vector256<short>).
+                        // If the input length is a multiple of 32, don't consume the last 16 characters in this loop.
+                        // Let the fallback below handle it instead. This is why the condition is
+                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                        ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector512<short>.Count));
+
+                        do
+                        {
+                            Vector512<short> source0 = Vector512.LoadUnsafe(ref currentSearchSpace);
+                            Vector512<short> source1 = Vector512.LoadUnsafe(ref currentSearchSpace, (nuint)Vector512<short>.Count);
+                            Vector512<byte> packedSource = PackSources(source0, source1);
+                            Vector512<byte> result = Vector512.Equals(packedValue0, packedSource) | Vector512.Equals(packedValue1, packedSource);
+                            result = NegateIfNeeded<TNegator>(result);
+
+                            if (result != Vector512<byte>.Zero)
+                            {
+                                return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, result);
+                            }
+
+                            currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, 2 * Vector512<short>.Count);
+                        }
+                        while (Unsafe.IsAddressLessThan(ref currentSearchSpace, ref twoVectorsAwayFromEnd));
+                    }
+
+                    // We have 1-32 characters remaining. Process the first and last vector in the search space.
+                    // They may overlap, but we'll handle that in the index calculation if we do get a match.
+                    {
+                        ref short oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector512<short>.Count);
+
+                        ref short firstVector = ref Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd)
+                            ? ref oneVectorAwayFromEnd
+                            : ref currentSearchSpace;
+
+                        Vector512<short> source0 = Vector512.LoadUnsafe(ref firstVector);
+                        Vector512<short> source1 = Vector512.LoadUnsafe(ref oneVectorAwayFromEnd);
+                        Vector512<byte> packedSource = PackSources(source0, source1);
+                        Vector512<byte> result = Vector512.Equals(packedValue0, packedSource) | Vector512.Equals(packedValue1, packedSource);
+                        result = NegateIfNeeded<TNegator>(result);
+
+                        if (result != Vector512<byte>.Zero)
+                        {
+                            return ComputeFirstIndexOverlapped(ref searchSpace, ref firstVector, ref oneVectorAwayFromEnd, result);
+                        }
+                    }
+                }
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else condition for this if statement is identical in semantics to Avx2 specific code
+                else if (Avx2.IsSupported && length > Vector256<short>.Count)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     Vector256<byte> packedValue0 = Vector256.Create((byte)value0);
@@ -587,7 +743,62 @@ namespace System
                 ref short currentSearchSpace = ref searchSpace;
 
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else condition for this if statement is identical in semantics to Avx2 specific code
-                if (Avx2.IsSupported && length > Vector256<short>.Count)
+                if (Avx512F.IsSupported && length > Vector512<short>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
+                {
+                    Vector512<byte> packedValue0 = Vector512.Create((byte)value0);
+                    Vector512<byte> packedValue1 = Vector512.Create((byte)value1);
+                    Vector512<byte> packedValue2 = Vector512.Create((byte)value2);
+
+                    if (length > 2 * Vector512<short>.Count)
+                    {
+                        // Process the input in chunks of 32 characters (2 * Vector256<short>).
+                        // If the input length is a multiple of 32, don't consume the last 16 characters in this loop.
+                        // Let the fallback below handle it instead. This is why the condition is
+                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                        ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector512<short>.Count));
+
+                        do
+                        {
+                            Vector512<short> source0 = Vector512.LoadUnsafe(ref currentSearchSpace);
+                            Vector512<short> source1 = Vector512.LoadUnsafe(ref currentSearchSpace, (nuint)Vector256<short>.Count);
+                            Vector512<byte> packedSource = PackSources(source0, source1);
+                            Vector512<byte> result = Vector512.Equals(packedValue0, packedSource) | Vector512.Equals(packedValue1, packedSource) | Vector512.Equals(packedValue2, packedSource);
+                            result = NegateIfNeeded<TNegator>(result);
+
+                            if (result != Vector512<byte>.Zero)
+                            {
+                                return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, result);
+                            }
+
+                            currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, 2 * Vector512<short>.Count);
+                        }
+                        while (Unsafe.IsAddressLessThan(ref currentSearchSpace, ref twoVectorsAwayFromEnd));
+                    }
+
+                    // We have 1-32 characters remaining. Process the first and last vector in the search space.
+                    // They may overlap, but we'll handle that in the index calculation if we do get a match.
+                    {
+                        ref short oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector512<short>.Count);
+
+                        ref short firstVector = ref Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd)
+                            ? ref oneVectorAwayFromEnd
+                            : ref currentSearchSpace;
+
+                        Vector512<short> source0 = Vector512.LoadUnsafe(ref firstVector);
+                        Vector512<short> source1 = Vector512.LoadUnsafe(ref oneVectorAwayFromEnd);
+                        Vector512<byte> packedSource = PackSources(source0, source1);
+                        Vector512<byte> result = Vector512.Equals(packedValue0, packedSource) | Vector512.Equals(packedValue1, packedSource) | Vector512.Equals(packedValue2, packedSource);
+                        result = NegateIfNeeded<TNegator>(result);
+
+                        if (result != Vector512<byte>.Zero)
+                        {
+                            return ComputeFirstIndexOverlapped(ref searchSpace, ref firstVector, ref oneVectorAwayFromEnd, result);
+                        }
+                    }
+                }
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else condition for this if statement is identical in semantics to Avx2 specific code
+                else if (Avx2.IsSupported && length > Vector256<short>.Count)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     Vector256<byte> packedValue0 = Vector256.Create((byte)value0);
@@ -734,7 +945,61 @@ namespace System
                 ref short currentSearchSpace = ref searchSpace;
 
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else condition for this if statement is identical in semantics to Avx2 specific code
-                if (Avx2.IsSupported && length > Vector256<short>.Count)
+                if (Avx512F.IsSupported && length > Vector512<short>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
+                {
+                    Vector512<byte> lowVector = Vector512.Create((byte)lowInclusive);
+                    Vector512<byte> rangeVector = Vector512.Create((byte)rangeInclusive);
+
+                    if (length > 2 * Vector512<short>.Count)
+                    {
+                        // Process the input in chunks of 32 characters (2 * Vector256<short>).
+                        // If the input length is a multiple of 32, don't consume the last 16 characters in this loop.
+                        // Let the fallback below handle it instead. This is why the condition is
+                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                        ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector512<short>.Count));
+
+                        do
+                        {
+                            Vector512<short> source0 = Vector512.LoadUnsafe(ref currentSearchSpace);
+                            Vector512<short> source1 = Vector512.LoadUnsafe(ref currentSearchSpace, (nuint)Vector512<short>.Count);
+                            Vector512<byte> packedSource = PackSources(source0, source1);
+                            Vector512<byte> result = Vector512.LessThanOrEqual(packedSource - lowVector, rangeVector);
+                            result = NegateIfNeeded<TNegator>(result);
+
+                            if (result != Vector512<byte>.Zero)
+                            {
+                                return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, result);
+                            }
+
+                            currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, 2 * Vector512<short>.Count);
+                        }
+                        while (Unsafe.IsAddressLessThan(ref currentSearchSpace, ref twoVectorsAwayFromEnd));
+                    }
+
+                    // We have 1-32 characters remaining. Process the first and last vector in the search space.
+                    // They may overlap, but we'll handle that in the index calculation if we do get a match.
+                    {
+                        ref short oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector512<short>.Count);
+
+                        ref short firstVector = ref Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd)
+                            ? ref oneVectorAwayFromEnd
+                            : ref currentSearchSpace;
+
+                        Vector512<short> source0 = Vector512.LoadUnsafe(ref firstVector);
+                        Vector512<short> source1 = Vector512.LoadUnsafe(ref oneVectorAwayFromEnd);
+                        Vector512<byte> packedSource = PackSources(source0, source1);
+                        Vector512<byte> result = Vector512.LessThanOrEqual(packedSource - lowVector, rangeVector);
+                        result = NegateIfNeeded<TNegator>(result);
+
+                        if (result != Vector512<byte>.Zero)
+                        {
+                            return ComputeFirstIndexOverlapped(ref searchSpace, ref firstVector, ref oneVectorAwayFromEnd, result);
+                        }
+                    }
+                }
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else condition for this if statement is identical in semantics to Avx2 specific code
+                else if (Avx2.IsSupported && length > Vector256<short>.Count)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     Vector256<byte> lowVector = Vector256.Create((byte)lowInclusive);
@@ -854,6 +1119,19 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx512F))]
+        private static Vector512<byte> PackSources(Vector512<short> source0, Vector512<short> source1)
+        {
+            Debug.Assert(Vector512.IsHardwareAccelerated);
+            // Pack two vectors of characters into bytes. While the type is Vector256<short>, these are really UInt16 characters.
+            // X86: Downcast every character using saturation.
+            // - Values <= 32767 result in min(value, 255).
+            // - Values  > 32767 result in 0. Because of this we can't accept needles that contain 0.
+            return Vector512.Narrow(source0, source1).AsByte();
+            //return Avx512BW.PackUnsignedSaturate(source0, source1).AsByte();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> PackSources(Vector256<short> source0, Vector256<short> source1)
         {
@@ -888,6 +1166,11 @@ namespace System
             typeof(TNegator) == typeof(SpanHelpers.DontNegate<short>) ? result : ~result;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector512<byte> NegateIfNeeded<TNegator>(Vector512<byte> result)
+            where TNegator : struct, SpanHelpers.INegator<short> =>
+            typeof(TNegator) == typeof(SpanHelpers.DontNegate<short>) ? result : ~result;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeFirstIndex(ref short searchSpace, ref short current, Vector128<byte> equals)
         {
             uint notEqualsElements = equals.ExtractMostSignificantBits();
@@ -900,6 +1183,16 @@ namespace System
         private static int ComputeFirstIndex(ref short searchSpace, ref short current, Vector256<byte> equals)
         {
             uint notEqualsElements = FixUpPackedVector256Result(equals).ExtractMostSignificantBits();
+            int index = BitOperations.TrailingZeroCount(notEqualsElements);
+            return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(short));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx512F))]
+        private static int ComputeFirstIndex(ref short searchSpace, ref short current, Vector512<byte> equals)
+        {
+            //ulong notEqualsElements = FixUpPackedVector512Result(equals).ExtractMostSignificantBits();
+            ulong notEqualsElements = equals.ExtractMostSignificantBits();
             int index = BitOperations.TrailingZeroCount(notEqualsElements);
             return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(short));
         }
@@ -929,6 +1222,21 @@ namespace System
                 // We matched within the second vector
                 current0 = ref current1;
                 offsetInVector -= Vector256<short>.Count;
+            }
+            return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current0) / sizeof(short));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx512F))]
+        private static int ComputeFirstIndexOverlapped(ref short searchSpace, ref short current0, ref short current1, Vector512<byte> equals)
+        {
+            ulong notEqualsElements = equals.ExtractMostSignificantBits();
+            int offsetInVector = BitOperations.TrailingZeroCount(notEqualsElements);
+            if (offsetInVector >= Vector512<short>.Count)
+            {
+                // We matched within the second vector
+                current0 = ref current1;
+                offsetInVector -= Vector512<short>.Count;
             }
             return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current0) / sizeof(short));
         }
