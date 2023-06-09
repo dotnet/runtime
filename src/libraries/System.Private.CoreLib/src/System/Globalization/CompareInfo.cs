@@ -191,7 +191,7 @@ namespace System.Globalization
             }
             else
             {
-                IcuInitSortHandle();
+                IcuInitSortHandle(culture.InteropName!);
             }
         }
 
