@@ -1788,11 +1788,16 @@ __declspec(selectany) __declspec(thread) uint32_t t_GCThreadStaticBlocksSize;
 __declspec(selectany) __declspec(thread) void** t_NonGCThreadStaticBlocks;
 __declspec(selectany) __declspec(thread) void** t_GCThreadStaticBlocks;
 #else
-EXTERN_C __thread uint32_t t_NonGCMaxThreadStaticBlocks;
-EXTERN_C __thread void** t_NonGCThreadStaticBlocks;
+struct ThreadStatics
+{
+    uint32_t NonGCMaxThreadStaticBlocks;
+    void** NonGCThreadStaticBlocks;
 
-EXTERN_C __thread uint32_t t_GCMaxThreadStaticBlocks;
-EXTERN_C __thread void** t_GCThreadStaticBlocks;
+    uint32_t GCMaxThreadStaticBlocks;
+    void** GCThreadStaticBlocks;
+}
+__thread ThreadStatic t_threadStatics;
+
 
 EXTERN_C __thread uint32_t t_NonGCThreadStaticBlocksSize;
 EXTERN_C __thread uint32_t t_GCThreadStaticBlocksSize;
