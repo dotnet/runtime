@@ -71,4 +71,46 @@
     <Right>lib/netstandard2.0/Microsoft.Extensions.Logging.EventLog.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:Microsoft.Extensions.Logging.EventLoggerFactoryExtensions.AddEventLog(Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Extensions.Logging.EventLog.EventLogSettings):[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/net461/Microsoft.Extensions.Logging.EventLog.dll</Left>
+    <Right>lib/netstandard2.0/Microsoft.Extensions.Logging.EventLog.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:Microsoft.Extensions.Logging.EventLoggerFactoryExtensions.AddEventLog(Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Extensions.Logging.LogLevel):[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/net461/Microsoft.Extensions.Logging.EventLog.dll</Left>
+    <Right>lib/netstandard2.0/Microsoft.Extensions.Logging.EventLog.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:Microsoft.Extensions.Logging.EventLoggerFactoryExtensions.AddEventLog(Microsoft.Extensions.Logging.ILoggerFactory):[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/net461/Microsoft.Extensions.Logging.EventLog.dll</Left>
+    <Right>lib/netstandard2.0/Microsoft.Extensions.Logging.EventLog.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:Microsoft.Extensions.Logging.EventLoggerFactoryExtensions.AddEventLog(Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Extensions.Logging.EventLog.EventLogSettings):[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/Microsoft.Extensions.Logging.EventLog.dll</Left>
+    <Right>lib/netstandard2.0/Microsoft.Extensions.Logging.EventLog.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:Microsoft.Extensions.Logging.EventLoggerFactoryExtensions.AddEventLog(Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Extensions.Logging.LogLevel):[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/Microsoft.Extensions.Logging.EventLog.dll</Left>
+    <Right>lib/netstandard2.0/Microsoft.Extensions.Logging.EventLog.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:Microsoft.Extensions.Logging.EventLoggerFactoryExtensions.AddEventLog(Microsoft.Extensions.Logging.ILoggerFactory):[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/Microsoft.Extensions.Logging.EventLog.dll</Left>
+    <Right>lib/netstandard2.0/Microsoft.Extensions.Logging.EventLog.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
 </Suppressions>

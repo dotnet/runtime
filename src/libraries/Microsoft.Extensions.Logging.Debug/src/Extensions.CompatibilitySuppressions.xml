@@ -15,4 +15,25 @@
     <Right>lib/netstandard2.0/Microsoft.Extensions.Logging.Debug.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:Microsoft.Extensions.Logging.DebugLoggerFactoryExtensions.AddDebug(Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Extensions.Logging.LogLevel):[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/Microsoft.Extensions.Logging.Debug.dll</Left>
+    <Right>lib/netstandard2.0/Microsoft.Extensions.Logging.Debug.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:Microsoft.Extensions.Logging.DebugLoggerFactoryExtensions.AddDebug(Microsoft.Extensions.Logging.ILoggerFactory,System.Func{System.String,Microsoft.Extensions.Logging.LogLevel,System.Boolean}):[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/Microsoft.Extensions.Logging.Debug.dll</Left>
+    <Right>lib/netstandard2.0/Microsoft.Extensions.Logging.Debug.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:Microsoft.Extensions.Logging.DebugLoggerFactoryExtensions.AddDebug(Microsoft.Extensions.Logging.ILoggerFactory):[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/Microsoft.Extensions.Logging.Debug.dll</Left>
+    <Right>lib/netstandard2.0/Microsoft.Extensions.Logging.Debug.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
 </Suppressions>
