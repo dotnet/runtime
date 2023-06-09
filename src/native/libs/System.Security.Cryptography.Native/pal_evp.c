@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_evp.h"
+#include "pal_utilities.h"
 
 #include <assert.h>
 
@@ -72,7 +73,30 @@ int32_t CryptoNative_EvpDigestFinalXOF(EVP_MD_CTX* ctx, uint8_t* md, uint32_t le
         if (API_EXISTS(EVP_DigestFinalXOF))
         {
             ERR_clear_error();
-            return EVP_DigestFinalXOF(ctx, md, len);
+
+            // https://github.com/openssl/openssl/issues/9431
+            // EVP_DigestFinalXOF has a bug in some arch-optimized code paths where it cannot tolerate a zero length
+            // digest.
+            // If the caller asked for no bytes, use a temporary buffer to ask for 1 byte, then throw away the result.
+            // We don't want to skip calling FinalXOF entirely because we want to make sure the EVP_MD_CTX is in a
+            // finalized state regardless of the length of the digest.
+            // We can remove this work around when OpenSSL 3.0 is the minimum OpenSSL requirement.
+            if (len == 0)
+            {
+                uint8_t single[1] = { 0 };
+                int result = EVP_DigestFinalXOF(ctx, single, 1);
+                single[0] = 0; // Zero out our scratch destination.
+                return result;
+            }
+            else if (!md)
+            {
+                // Length is not zero but we don't have a buffer to write to.
+                return -1;
+            }
+            else
+            {
+                return EVP_DigestFinalXOF(ctx, md, len);
+            }
         }
     #endif
 
@@ -184,7 +208,7 @@ int32_t CryptoNative_EvpDigestXOFOneShot(const EVP_MD* type, const void* source,
         return 0;
     }
 
-    int32_t ret = EVP_DigestUpdate(ctx, source, (size_t)sourceSize);
+    int32_t ret = EVP_DigestUpdate(ctx, source, Int32ToSizeT(sourceSize));
 
     if (ret != SUCCESS)
     {
