@@ -54,7 +54,7 @@ extern PCODE GetPreStubEntryPoint();
 #define CALLDESCR_ARGREGS                       1   // CallDescrWorker has ArgumentRegister parameter
 #define CALLDESCR_FPARGREGS                     1   // CallDescrWorker has FloatArgumentRegisters parameter
 
-#define FLOAT_REGISTER_SIZE 16 // each register in FloatArgumentRegisters is 16 bytes.
+#define FLOAT_REGISTER_SIZE 8 // each register in FloatArgumentRegisters is 8 bytes.
 
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to arrive at the callsite.
@@ -273,7 +273,7 @@ inline BOOL isJump(PCODE pCode)
 
     TADDR pInstr = PCODEToPINSTR(pCode);
 
-    return *dac_cast<PTR_DWORD>(pInstr) == 0x58000050;
+    return *dac_cast<PTR_DWORD>(pInstr+12) == 0x00000013;
 }
 
 //------------------------------------------------------------------------
