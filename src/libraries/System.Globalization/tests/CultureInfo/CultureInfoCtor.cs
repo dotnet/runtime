@@ -465,18 +465,18 @@ namespace System.Globalization.Tests
             Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo("de-u-co-phonebk"));
         }
 
+        private static bool SupportRemoteExecutionWithIcu => RemoteExecutor.IsSupported && PlatformDetection.IsIcuGlobalization;
+
         [InlineData("xx-u-XX", "xx-u-xx")]
         [InlineData("xx-u-XX-u-yy", "xx-u-xx-u-yy")]
         [InlineData("xx-t-ja-JP", "xx-t-ja-jp")]
         [InlineData("qps-plocm", "qps-PLOCM")] // ICU normalize this name to "qps--plocm" which we normalize it back to "qps-plocm"
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [ConditionalTheory(nameof(SupportRemoteExecutionWithIcu))]
         public void TestCreationWithICUNormalizedNames(string cultureName, string expectedCultureName)
         {
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
             Assert.Equal(expectedCultureName, ci.Name);
         }
-
-        private static bool SupportRemoteExecutionWithIcu => RemoteExecutor.IsSupported && PlatformDetection.IsIcuGlobalization;
 
         [InlineData("xx-u-XX")]
         [InlineData("xx-u-XX-u-yy")]
