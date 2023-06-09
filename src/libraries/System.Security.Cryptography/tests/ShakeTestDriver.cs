@@ -345,6 +345,43 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(nameof(IsSupported))]
+        public void GetHashAndReset_ResetWithEmpty()
+        {
+            const int OutputLength = 64;
+
+            using (TShake shake = new TShake())
+            {
+                TShakeTrait.AppendData(shake, "habaneros"u8);
+                byte[] expected = TShakeTrait.GetHashAndReset(shake, OutputLength);
+                Assert.Equal(OutputLength, expected.Length);
+
+                TShakeTrait.AppendData(shake, "habaneros"u8);
+                byte[] hash = TShakeTrait.GetHashAndReset(shake, outputLength: 0); // Reset with empty buffer should still reset.
+                Assert.Empty(hash);
+
+                TShakeTrait.AppendData(shake, "habaneros"u8);
+                hash = TShakeTrait.GetHashAndReset(shake, OutputLength);
+                Assert.Equal(expected, hash);
+            }
+
+            using (TShake shake = new TShake())
+            {
+                byte[] expected = new byte[OutputLength];
+                TShakeTrait.AppendData(shake, "habaneros"u8);
+                TShakeTrait.GetHashAndReset(shake, expected);
+
+                byte[] hash = new byte[0];
+                TShakeTrait.AppendData(shake, "habaneros"u8);
+                TShakeTrait.GetHashAndReset(shake, hash); // Reset with empty buffer should still reset.
+
+                hash = new byte[OutputLength];
+                TShakeTrait.AppendData(shake, "habaneros"u8);
+                TShakeTrait.GetHashAndReset(shake, hash);
+                Assert.Equal(expected, hash);
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
         public void GetHashAndReset_Minimal()
         {
             using (TShake shake = new TShake())
