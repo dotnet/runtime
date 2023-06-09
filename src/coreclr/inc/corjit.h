@@ -340,7 +340,7 @@ public:
     {
         enum
         {
-            SIZE = 8,
+            SIZE = 16,
             SAMPLE_INTERVAL = 32,
             CLASS_FLAG     = 0x80000000,
             INTERFACE_FLAG = 0x40000000,
