@@ -437,9 +437,8 @@ __thread ThreadBuffer tls_CurrentThread;
 __thread InlinedThreadStaticRoot tls_InlinedThreadStatics;
 #endif
 
-#else
-// the root of inlined threadstatics storage
-// there is only one now,
+#elif defined(TARGET_ARM64)
+// the root of inlined threadstatics storage for ARM64
 // eventually this will be emitted by ILC and we may have more than one such variable
 EXTERN_C __declspec(thread) InlinedThreadStaticRoot tls_InlinedThreadStatics;
 __declspec(thread) InlinedThreadStaticRoot tls_InlinedThreadStatics;

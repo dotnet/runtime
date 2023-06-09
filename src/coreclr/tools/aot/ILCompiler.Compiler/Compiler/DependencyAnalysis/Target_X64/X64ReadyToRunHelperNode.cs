@@ -236,9 +236,6 @@ namespace ILCompiler.DependencyAnalysis
 
             if (factory.Target.IsWindows)
             {
-                // TODO: VS this is a temporary HACK.
-                //       until we emit proper TLS template on Windows, we will emit one in c++ and bind to that.
-                tlsRoot = factory.ExternSymbol("tls_InlinedThreadStatics");
                 if (singleFileExe)
                 {
                     // mov         rax,qword ptr gs:[58h]
