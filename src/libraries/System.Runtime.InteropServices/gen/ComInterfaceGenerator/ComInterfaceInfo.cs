@@ -33,16 +33,11 @@ namespace Microsoft.Interop
             // and is not marked static or sealed
             if (syntax.TypeParameterList is not null)
             {
-                // Verify the interface has no generic types or defined implementation
-                // and is not marked static or sealed
-                if (syntax.TypeParameterList is not null)
-                {
-                    return DiagnosticOrInterfaceInfo.From(
-                        DiagnosticInfo.Create(
-                            GeneratorDiagnostics.InvalidAttributedInterfaceGenericNotSupported,
-                            syntax.Identifier.GetLocation(),
-                            symbol.Name));
-                }
+                return DiagnosticOrInterfaceInfo.From(
+                    DiagnosticInfo.Create(
+                        GeneratorDiagnostics.InvalidAttributedInterfaceGenericNotSupported,
+                        syntax.Identifier.GetLocation(),
+                        symbol.Name));
             }
 
             if (!IsInPartialContext(symbol, syntax, out DiagnosticInfo? partialContextDiagnostic))
