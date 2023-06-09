@@ -1651,6 +1651,8 @@ public:
         return OperIsHWIntrinsic(gtOper);
     }
 
+    bool OperIsHWIntrinsic(NamedIntrinsic intrinsicId) const;
+
     // This is here for cleaner GT_LONG #ifdefs.
     static bool OperIsLong(genTreeOps gtOper)
     {

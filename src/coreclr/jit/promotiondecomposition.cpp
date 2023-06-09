@@ -698,21 +698,8 @@ private:
                 entry.ToReplacement->NeedsReadBack  = false;
             }
 
-            if (CanSkipEntry(entry, dstDeaths, remainderStrategy))
+            if (CanSkipEntry(entry, dstDeaths, remainderStrategy DEBUGARG(/* dump */ true)))
             {
-                if (entry.FromReplacement != nullptr)
-                {
-                    JITDUMP(
-                        "  Skipping dst+%03u <- V%02u (%s); it is up-to-date in its struct local and will be handled "
-                        "as part of the remainder\n",
-                        entry.Offset, entry.FromReplacement->LclNum, entry.FromReplacement->Description);
-                }
-                else if (entry.ToReplacement != nullptr)
-                {
-                    JITDUMP("  Skipping def of V%02u (%s); it is dying", entry.ToReplacement->LclNum,
-                            entry.ToReplacement->Description);
-                }
-
                 continue;
             }
 
@@ -781,13 +768,32 @@ private:
 
         if (remainderStrategy.Type == RemainderStrategy::Primitive)
         {
-            GenTree* src;
+            GenTree* src = nullptr;
             if (m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
             {
                 GenTreeLclVarCommon* srcLcl = m_src->AsLclVarCommon();
-                src = m_compiler->gtNewLclFldNode(srcLcl->GetLclNum(), remainderStrategy.PrimitiveType,
-                                                  srcLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset);
-                m_compiler->lvaSetVarDoNotEnregister(srcLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+
+                // Check if the source has a regularly promoted field at this offset.
+                LclVarDsc* srcLclDsc  = m_compiler->lvaGetDesc(srcLcl);
+                unsigned   srcLclOffs = srcLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset;
+
+                unsigned int fieldLcl =
+                    srcLclDsc->lvPromoted ? m_compiler->lvaGetFieldLocal(srcLclDsc, srcLclOffs) : BAD_VAR_NUM;
+                if (fieldLcl != BAD_VAR_NUM)
+                {
+                    LclVarDsc* dsc = m_compiler->lvaGetDesc(fieldLcl);
+                    if (genTypeSize(dsc->lvType) == genTypeSize(remainderStrategy.PrimitiveType))
+                    {
+                        src = m_compiler->gtNewLclvNode(fieldLcl, dsc->lvType);
+                    }
+                }
+
+                if (src == nullptr)
+                {
+                    src = m_compiler->gtNewLclFldNode(srcLcl->GetLclNum(), remainderStrategy.PrimitiveType, srcLclOffs);
+                    m_compiler->lvaSetVarDoNotEnregister(srcLcl->GetLclNum()
+                                                             DEBUGARG(DoNotEnregisterReason::LocalField));
+                }
             }
             else
             {
@@ -796,18 +802,44 @@ private:
                 PropagateIndirFlags(src, indirFlags);
             }
 
-            GenTree* store;
+            GenTree* store = nullptr;
             if (m_store->OperIsLocalStore())
             {
                 GenTreeLclVarCommon* dstLcl = m_store->AsLclVarCommon();
-                store = m_compiler->gtNewStoreLclFldNode(dstLcl->GetLclNum(), remainderStrategy.PrimitiveType,
-                                                         dstLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset, src);
-                m_compiler->lvaSetVarDoNotEnregister(dstLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+
+                // Check if the destination has a regularly promoted field at this offset.
+                LclVarDsc* dstLclDsc  = m_compiler->lvaGetDesc(dstLcl);
+                unsigned   dstLclOffs = dstLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset;
+
+                unsigned int fieldLcl =
+                    dstLclDsc->lvPromoted ? m_compiler->lvaGetFieldLocal(dstLclDsc, dstLclOffs) : BAD_VAR_NUM;
+                if (fieldLcl != BAD_VAR_NUM)
+                {
+                    LclVarDsc* dsc = m_compiler->lvaGetDesc(fieldLcl);
+                    if (genTypeSize(dsc->lvType) == genTypeSize(remainderStrategy.PrimitiveType))
+                    {
+                        // Since the destination is regularly promoted the
+                        // source must be physically promoted to get here. That
+                        // means we always expect to see a LCL_FLD for the
+                        // source here that we can retype to what matches the
+                        // promoted field.
+                        assert(src->OperIs(GT_LCL_FLD));
+                        src->gtType = dsc->lvType;
+
+                        store = m_compiler->gtNewStoreLclVarNode(fieldLcl, src);
+                    }
+                }
+
+                if (store == nullptr)
+                {
+                    store = m_compiler->gtNewStoreLclFldNode(dstLcl->GetLclNum(), src->TypeGet(), dstLclOffs, src);
+                    m_compiler->lvaSetVarDoNotEnregister(dstLcl->GetLclNum()
+                                                             DEBUGARG(DoNotEnregisterReason::LocalField));
+                }
             }
             else
             {
-                store = m_compiler->gtNewStoreIndNode(remainderStrategy.PrimitiveType,
-                                                      grabAddr(remainderStrategy.PrimitiveOffset), src);
+                store = m_compiler->gtNewStoreIndNode(src->TypeGet(), grabAddr(remainderStrategy.PrimitiveOffset), src);
                 PropagateIndirFlags(store, indirFlags);
             }
 
@@ -824,9 +856,13 @@ private:
     //
     // Parameters:
     //   entry             - The init/copy entry
+    //   deaths            - Liveness information for the destination; only valid if m_dstInvolvedReplacements is true.
     //   remainderStrategy - The strategy we are using for the remainder
+    //   dump              - Whether to JITDUMP decisions made
     //
-    bool CanSkipEntry(const Entry& entry, const StructDeaths& deaths, const RemainderStrategy& remainderStrategy)
+    bool CanSkipEntry(const Entry&             entry,
+                      const StructDeaths&      deaths,
+                      const RemainderStrategy& remainderStrategy DEBUGARG(bool dump = false))
     {
         if (entry.ToReplacement != nullptr)
         {
@@ -841,6 +877,32 @@ private:
             size_t replacementIndex = entry.ToReplacement - firstRep;
             if (deaths.IsReplacementDying((unsigned)replacementIndex))
             {
+#ifdef DEBUG
+                if (dump)
+                {
+                    JITDUMP("  Skipping def of V%02u (%s); it is dying\n", entry.ToReplacement->LclNum,
+                            entry.ToReplacement->Description);
+                }
+#endif
+
+                return true;
+            }
+        }
+        else
+        {
+            // If the destination has replacements we still have usable
+            // liveness information for the remainder. This case happens if the
+            // source was also promoted.
+            if (m_dstInvolvesReplacements && deaths.IsRemainderDying())
+            {
+#ifdef DEBUG
+                if (dump)
+                {
+                    JITDUMP("  Skipping write to dst+%03u; it is the remainder and the remainder is dying\n",
+                            entry.Offset);
+                }
+#endif
+
                 return true;
             }
         }
@@ -848,8 +910,20 @@ private:
         if (entry.FromReplacement != nullptr)
         {
             // Check if the remainder is going to handle it.
-            return (remainderStrategy.Type == RemainderStrategy::FullBlock) && !entry.FromReplacement->NeedsWriteBack &&
-                   (entry.ToLclNum == BAD_VAR_NUM);
+            if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && !entry.FromReplacement->NeedsWriteBack &&
+                (entry.ToLclNum == BAD_VAR_NUM))
+            {
+#ifdef DEBUG
+                if (dump)
+                {
+                    JITDUMP("  Skipping dst+%03u <- V%02u (%s); it is up-to-date in its struct local and will be "
+                            "handled as part of the remainder\n",
+                            entry.Offset, entry.FromReplacement->LclNum, entry.FromReplacement->Description);
+                }
+#endif
+
+                return true;
+            }
         }
 
         return false;
@@ -1336,7 +1410,7 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
 
         if ((dstRep < dstEndRep) && (srcRep < srcEndRep))
         {
-            if (srcRep->Offset - srcBaseOffs + genTypeSize(srcRep->AccessType) < dstRep->Offset - dstBaseOffs)
+            if (srcRep->Offset - srcBaseOffs + genTypeSize(srcRep->AccessType) <= dstRep->Offset - dstBaseOffs)
             {
                 // This source replacement ends before the next destination replacement starts.
                 // Write it directly to the destination struct local.
@@ -1348,7 +1422,7 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
                 continue;
             }
 
-            if (dstRep->Offset - dstBaseOffs + genTypeSize(dstRep->AccessType) < srcRep->Offset - srcBaseOffs)
+            if (dstRep->Offset - dstBaseOffs + genTypeSize(dstRep->AccessType) <= srcRep->Offset - srcBaseOffs)
             {
                 // Destination replacement ends before the next source replacement starts.
                 // Read it directly from the source struct local.
@@ -1402,7 +1476,7 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
                     {
                         plan->CopyBetweenReplacements(dstRep, fieldLcl, offs);
                         JITDUMP("  V%02u (%s)%s <- V%02u (%s)\n", dstRep->LclNum, dstRep->Description,
-                                LastUseString(dstLcl, dstRep), dsc->lvReason);
+                                LastUseString(dstLcl, dstRep), fieldLcl, dsc->lvReason);
                         dstRep++;
                         continue;
                     }

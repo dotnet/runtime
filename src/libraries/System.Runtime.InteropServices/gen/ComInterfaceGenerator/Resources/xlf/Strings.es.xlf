@@ -2,6 +2,26 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en" target-language="es" original="../Strings.resx">
     <body>
+      <trans-unit id="AddGeneratedComClassAddUnsafe">
+        <source>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM and allow unsafe code</source>
+        <target state="new">Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM and allow unsafe code</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AddGeneratedComClassAttributeDescription">
+        <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
+        <target state="new">This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AddGeneratedComClassAttributeMessage">
+        <source>Add the 'GeneratedComClassAttribute' to '{0}' to enable passing objects of type '{0}' to COM</source>
+        <target state="new">Add the 'GeneratedComClassAttribute' to '{0}' to enable passing objects of type '{0}' to COM</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AddGeneratedComClassAttributeTitle">
+        <source>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM</source>
+        <target state="new">Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM</target>
+        <note />
+      </trans-unit>
       <trans-unit id="AnalysisFailedDescription">
         <source>The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</source>
         <target state="translated">Se ha producido un error en el análisis necesario para generar código para esta interfaz o método debido a un patrón de código inesperado. Si está usando sintaxis nueva o no convencional, considere la posibilidad de usar otra sintaxis.</target>
@@ -37,6 +57,21 @@
         <target state="translated">La interfaz COM base no pudo generar el origen. ComInterfaceGenerator no generará el origen para esta interfaz.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceDescription">
+        <source>.NET COM hosting with 'EnableComHosting' only supports built-in COM interop. It does not support source-generated COM interop with 'GeneratedComInterfaceAttribute'.</source>
+        <target state="new">.NET COM hosting with 'EnableComHosting' only supports built-in COM interop. It does not support source-generated COM interop with 'GeneratedComInterfaceAttribute'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceMessage">
+        <source>.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'. Change any COM exposed interfaces implemented by '{0}' to use the 'System.Runtime.InteropServices.ComVisibleAttribute' instead</source>
+        <target state="new">.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'. Change any COM exposed interfaces implemented by '{0}' to use the 'System.Runtime.InteropServices.ComVisibleAttribute' instead</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceTitle">
+        <source>.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'</source>
+        <target state="new">.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">
         <source>Source-generated COM will ignore any configuration that is not supported.</source>
         <target state="translated">COM generado por el origen omitirá cualquier configuración que no se admita.</target>
@@ -70,6 +105,36 @@
       <trans-unit id="ConfigurationNotSupportedTitle">
         <source>Specified configuration is not supported by source-generated COM.</source>
         <target state="translated">COM generado por origen no admite la configuración especificada.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertComInterfaceMayProduceInvalidCode">
+        <source>Converting this interface to use 'GeneratedComInterfaceAttribute' may produce invalid code and may require additional work</source>
+        <target state="new">Converting this interface to use 'GeneratedComInterfaceAttribute' may produce invalid code and may require additional work</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToGeneratedComInterfaceAddUnsafe">
+        <source>Convert to 'GeneratedComInterface' and allow unsafe code</source>
+        <target state="new">Convert to 'GeneratedComInterface' and allow unsafe code</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToGeneratedComInterfaceDescription">
+        <source>Use 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</source>
+        <target state="new">Use 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToGeneratedComInterfaceMayRequireCustomMarshalling">
+        <source>Converting this API to 'GeneratedComInterfaceAttribute' will require additional code to provide custom marshallers for some parameters.</source>
+        <target state="new">Converting this API to 'GeneratedComInterfaceAttribute' will require additional code to provide custom marshallers for some parameters.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToGeneratedComInterfaceMessage">
+        <source>Mark the type '{0}' with 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</source>
+        <target state="new">Mark the type '{0}' with 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToGeneratedComInterfaceTitle">
+        <source>Convert to 'GeneratedComInterface'</source>
+        <target state="new">Convert to 'GeneratedComInterface'</target>
         <note />
       </trans-unit>
       <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
@@ -210,6 +275,21 @@
       <trans-unit id="MultipleComInterfaceBaseTypesTitle">
         <source>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</source>
         <target state="translated">La interfaz especificada deriva de dos o más interfaces con atributos "GeneratedComInterfaceAttribute".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComDescription">
+        <source>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime</source>
+        <target state="new">COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComMessage">
+        <source>The method '{0}' only supports runtime-based COM interop and will not work with type '{1}'</source>
+        <target state="new">The method '{0}' only supports runtime-based COM interop and will not work with type '{1}'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComTitle">
+        <source>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM</source>
+        <target state="new">COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">
