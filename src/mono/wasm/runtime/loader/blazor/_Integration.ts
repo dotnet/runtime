@@ -148,7 +148,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
         }
     }
     const applicationCulture = resourceLoader.startOptions.applicationCulture || ENVIRONMENT_IS_WEB ? (navigator.languages && navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale;
-    const icuDataResourceName = getICUResourceName(resourceLoader.bootConfig, applicationCulture);
+    const icuDataResourceName = getICUResourceName(resourceLoader.bootConfig, moduleConfig, applicationCulture);
     let hasIcuData = false;
     for (const name in resources.runtime) {
         const behavior = behaviorByName(name) as any;
@@ -239,23 +239,26 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     }
 }
 
-function getICUResourceName(bootConfig: BootJsonData, culture: string | undefined): string {
+function getICUResourceName(bootConfig: BootJsonData, moduleConfig: MonoConfigInternal, culture: string | undefined): string {
     if (bootConfig.icuDataMode === ICUDataMode.Custom) {
         const icuFiles = Object
             .keys(bootConfig.resources.runtime)
             .filter(n => n.startsWith("icudt") && n.endsWith(".dat"));
         if (icuFiles.length === 1) {
+            moduleConfig.globalizationMode = "icu";
             const customIcuFile = icuFiles[0];
             return customIcuFile;
         }
     }
 
     if (bootConfig.icuDataMode === ICUDataMode.Hybrid) {
+        moduleConfig.globalizationMode = "hybrid";
         const reducedICUResourceName = "icudt_hybrid.dat";
         return reducedICUResourceName;
     }
 
     if (!culture || bootConfig.icuDataMode === ICUDataMode.All) {
+        moduleConfig.globalizationMode = "icu";
         const combinedICUResourceName = "icudt.dat";
         return combinedICUResourceName;
     }
