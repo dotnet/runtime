@@ -6952,6 +6952,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_PXOR:
 			amd64_sse_pxor_reg_reg (code, ins->sreg1, ins->sreg2);
 			break;
+		case OP_VECTOR_ANDN:
+			g_assert (ins->dreg == ins->sreg1);
+			amd64_sse_pandn_reg_reg (code, ins->dreg, ins->sreg2);
+			break;
 
 		case OP_PADDB:
 			amd64_sse_paddb_reg_reg (code, ins->sreg1, ins->sreg2);
@@ -7296,11 +7300,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->inst_c0 == 0) {
 				amd64_sse_orpd_reg_reg (code, ins->dreg, ins->sreg2);
 			} else {
-				guint8 imm = 0b01001110;
-				amd64_sse_movaps_reg_reg (code, GP_SCRATCH_REG, ins->sreg2);
-				amd64_sse_pshufd_reg_reg_imm (code, GP_SCRATCH_REG, GP_SCRATCH_REG, imm);
-				amd64_sse_orpd_reg_reg (code, GP_SCRATCH_REG, ins->sreg1);
-				amd64_sse_movaps_reg_reg (code, ins->dreg, GP_SCRATCH_REG);
+				g_assert (ins->inst_c0 == 1);
+				amd64_movlhps_reg_reg (code, ins->dreg, ins->sreg2);
 			}
 			break;
 		}

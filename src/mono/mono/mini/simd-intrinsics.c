@@ -1404,8 +1404,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 #endif
 		switch (id) {
-		case SN_Abs:
-		case SN_AndNot:
 		case SN_Ceiling:
 		case SN_ConditionalSelect:
 		case SN_ConvertToDouble:
@@ -1485,10 +1483,14 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			// args [0] & ~vector(-0.0)
 			MonoInst *zero = emit_xzero(cfg, arg_class);	// 0.0
 			zero = emit_simd_ins (cfg, klass, OP_NEGATION, zero->dreg, -1); // -0.0
+			zero->inst_c1 = arg0_type;
 			MonoInst *ins = emit_simd_ins (cfg, klass, OP_VECTOR_ANDN, zero->dreg, args [0]->dreg);
 			ins->inst_c1 = arg0_type;
 			return ins;
 		} else {
+			if (!COMPILE_LLVM (cfg))
+				// FIXME:
+				return NULL;
 			return emit_simd_ins_for_sig (cfg, klass, OP_VECTOR_IABS, -1, arg0_type, fsig, args);
 		}
 #elif defined(TARGET_WASM)
