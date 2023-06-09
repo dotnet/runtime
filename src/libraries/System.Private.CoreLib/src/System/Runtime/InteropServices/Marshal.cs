@@ -807,7 +807,6 @@ namespace System.Runtime.InteropServices
                             HResult = errorCode
                         };
                     }
-                case HResults.FUSION_E_CACHEFILE_FAILED:
                 case HResults.FUSION_E_INVALID_NAME:
                 case HResults.FUSION_E_PRIVATE_ASM_DISALLOWED:
                 case HResults.FUSION_E_REF_DEF_MISMATCH:

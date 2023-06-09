@@ -617,40 +617,60 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
-        internal static void CheckDiagnosticMessages(
-            DiagnosticSeverity level,
-            ImmutableArray<Diagnostic> diagnostics,
-            (Location Location, string Message)[] expectedDiags,
-            bool sort = true)
+        public static Compilation CreateTypesAnnotatedWithJsonStringEnumConverter()
         {
-            ((string FileName, TextSpan, LinePositionSpan), string)[] actualDiags = diagnostics
-                .Where(diagnostic => diagnostic.Severity == level)
-                .Select(diagnostic => (GetLocationNormalForm(diagnostic.Location), diagnostic.GetMessage()))
-                .ToArray();
+            string source = """
+                using System.Text.Json.Serialization;
 
-            if (CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase))
-            {
-                ((string FileName, TextSpan, LinePositionSpan), string Message)[] expectedDiagsNormalized = expectedDiags
-                    .Select(diag => (GetLocationNormalForm(diag.Location), diag.Message))
-                    .ToArray();
-
-                if (sort)
+                namespace HelloWorld
                 {
-                    // Can't depend on reflection order when generating type metadata.
-                    Array.Sort(actualDiags);
-                    Array.Sort(expectedDiagsNormalized);
+                    [JsonSerializable(typeof(MyClass))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    public class MyClass
+                    {
+                        public Enum1 Enum1Prop { get; set; }
+
+                        [JsonConverter(typeof(JsonStringEnumConverter))]
+                        public Enum2 Enum2Prop { get; set; }
+                    }
+
+                    [JsonConverter(typeof(JsonStringEnumConverter))]
+                    public enum Enum1 { A, B, C };
+                    
+                    public enum Enum2 { A, B, C };
                 }
+                """;
 
-                Assert.Equal(expectedDiagsNormalized, actualDiags);
-            }
-            else
-            {
-                // for non-English runs, just compare the number of messages are the same
-                Assert.Equal(expectedDiags.Length, actualDiags.Length);
-            }
-
-            static (string FileName, TextSpan, LinePositionSpan) GetLocationNormalForm(Location location)
-                => (location.SourceTree?.FilePath ?? "", location.SourceSpan, location.GetLineSpan().Span);
+            return CreateCompilation(source);
         }
+
+        internal static void AssertEqualDiagnosticMessages(
+            IEnumerable<DiagnosticData> expectedDiags,
+            IEnumerable<Diagnostic> actualDiags)
+        {
+            HashSet<DiagnosticData> expectedSet = new(expectedDiags);
+            HashSet<DiagnosticData> actualSet = new(actualDiags.Select(d => new DiagnosticData(d.Severity, d.Location, d.GetMessage())));
+            AssertExtensions.Equal(expectedSet, actualSet);
+        }
+    }
+
+    public record struct DiagnosticData(
+        DiagnosticSeverity Severity,
+        string FilePath,
+        LinePositionSpan LinePositionSpan,
+        string Message)
+    {
+        public DiagnosticData(DiagnosticSeverity severity, Location location, string message)
+            : this(severity, location.SourceTree?.FilePath ?? "", location.GetLineSpan().Span, TrimCultureSensitiveMessage(message))
+        {
+        }
+
+        // for non-English runs, trim the message content since it might be translated.
+        private static string TrimCultureSensitiveMessage(string message) => s_IsEnglishCulture ? message : "";
+        private readonly static bool s_IsEnglishCulture = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+        public override string ToString() => $"{Severity}, {Message}, {FilePath}@{LinePositionSpan}";
     }
 }
