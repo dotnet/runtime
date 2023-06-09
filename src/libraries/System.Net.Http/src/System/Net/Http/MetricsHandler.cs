@@ -54,7 +54,7 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IRequestFailureM
 
     private async ValueTask<HttpResponseMessage> SendAsyncWithMetrics(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
     {
-        (long startTimestamp, bool recordCurrentRequsts) = RequestStart(request);
+        (long startTimestamp, bool recordCurrentRequests) = RequestStart(request);
         HttpResponseMessage? response = null;
         try
         {
@@ -71,7 +71,7 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IRequestFailureM
         }
         finally
         {
-            RequestStop(request, response, startTimestamp, recordCurrentRequsts);
+            RequestStop(request, response, startTimestamp, recordCurrentRequests);
         }
     }
 
