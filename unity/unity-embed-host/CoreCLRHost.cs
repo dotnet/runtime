@@ -19,17 +19,19 @@ static unsafe partial class CoreCLRHost
     static ALCWrapper alcWrapper;
     static FieldInfo assemblyHandleField;
     private static HostStructNative* _hostStructNative;
-    private static readonly Dictionary<Assembly, AssemblyPair> m_assemblies = new ();
+    private static readonly Dictionary<Assembly, AssemblyInfo> m_assemblies = new ();
 
-    private readonly struct AssemblyPair
+    private readonly struct AssemblyInfo
     {
-        public AssemblyPair(IntPtr handle, IntPtr name)
+        public AssemblyInfo(IntPtr handle, IntPtr name, IntPtr filename)
         {
             this.handle = handle;
             this.name = name;
+            this.filename = filename;
         }
         public readonly IntPtr handle;
         public readonly IntPtr name;
+        public readonly IntPtr filename;
     }
 
     internal static int InitMethod(HostStruct* functionStruct, int structSize, HostStructNative* functionStructNative, int structSizeNative)
@@ -63,27 +65,28 @@ static unsafe partial class CoreCLRHost
     public static IntPtr /*Assembly*/ load_assembly_from_data(byte* data, long size)
     {
         var assembly = alcWrapper.CallLoadFromAssemblyData(data, size);
-        return GetPairForAssembly(assembly).handle;
+        return GetInfoForAssembly(assembly).handle;
     }
 
     [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
     public static IntPtr /*Assembly*/ load_assembly_from_path(byte* path, int length)
     {
         var assembly = alcWrapper.CallLoadFromAssemblyPath(Encoding.UTF8.GetString(path, length));
-        return GetPairForAssembly(assembly).handle;
+        return GetInfoForAssembly(assembly).handle;
     }
 
-    private static AssemblyPair GetPairForAssembly(Assembly assembly)
+    private static AssemblyInfo GetInfoForAssembly(Assembly assembly)
     {
         lock (m_assemblies)
         {
-            if (!m_assemblies.TryGetValue(assembly, out var pair))
+            if (!m_assemblies.TryGetValue(assembly, out var info))
             {
-                pair = new AssemblyPair(GCHandle.ToIntPtr(GCHandle.Alloc(assembly)),
-                    Marshal.StringToHGlobalAnsi(assembly.GetName().Name));
-                m_assemblies[assembly] = pair;
+                info = new AssemblyInfo(GCHandle.ToIntPtr(GCHandle.Alloc(assembly)),
+                    Marshal.StringToHGlobalAnsi(assembly.GetName().Name),
+                    Marshal.StringToHGlobalAnsi(assembly.Location));
+                m_assemblies[assembly] = info;
             }
-            return pair;
+            return info;
         }
     }
 
@@ -127,7 +130,7 @@ static unsafe partial class CoreCLRHost
     public static IntPtr class_get_image([NativeCallbackType("MonoClass*")] IntPtr klass)
     {
         var type = klass.TypeFromHandleIntPtr();
-        return GetPairForAssembly(type.Assembly).handle;
+        return GetInfoForAssembly(type.Assembly).handle;
     }
 
     [return: NativeCallbackType("MonoImage*")]
@@ -139,14 +142,14 @@ static unsafe partial class CoreCLRHost
             foreach (var asm in context.Assemblies)
             {
                 if (Path.GetFileNameWithoutExtension(asm.GetLoadedModules(getResourceModules: true)[0].Name).Equals(sname))
-                    return GetPairForAssembly(asm).handle;
+                    return GetInfoForAssembly(asm).handle;
             }
         }
 
         foreach (var asm in alcWrapper.Assemblies)
         {
             if (Path.GetFileNameWithoutExtension(asm.GetLoadedModules(getResourceModules: true)[0].Name).Equals(sname))
-                return GetPairForAssembly(asm).handle;
+                return GetInfoForAssembly(asm).handle;
         }
 
         return nint.Zero;
@@ -160,7 +163,7 @@ static unsafe partial class CoreCLRHost
     [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
     public static IntPtr get_corlib()
     {
-        return GetPairForAssembly(typeof(Object).Assembly).handle;
+        return GetInfoForAssembly(typeof(Object).Assembly).handle;
     }
 
     [return: NativeWrapperType("MonoString*")]
@@ -339,7 +342,11 @@ static unsafe partial class CoreCLRHost
 
     [return: NativeCallbackType("const char*")]
     public static IntPtr image_get_name([NativeCallbackType("MonoImage*")] IntPtr image)
-        => GetPairForAssembly(image.AssemblyFromGCHandleIntPtr()).name;
+        => GetInfoForAssembly(image.AssemblyFromGCHandleIntPtr()).name;
+
+    [return: NativeCallbackType("const char*")]
+    public static IntPtr image_get_filename([NativeCallbackType("MonoImage*")] IntPtr image)
+        => GetInfoForAssembly(image.AssemblyFromGCHandleIntPtr()).filename;
 
     [return: NativeCallbackType("MonoReflectionMethod*")]
     public static IntPtr method_get_object(

@@ -479,6 +479,16 @@ public abstract class BaseEmbeddingApiTests
     [TestCase(typeof(IntPtr))]
     [TestCase(typeof(Mammal))]
     [TestCase(typeof(Socket))]
+    public void ImageGetFileName(Type type)
+    {
+        string? filename = Marshal.PtrToStringAnsi(ClrHost.image_get_filename(ClrHost.class_get_image(type)));
+        Assert.NotNull(filename);
+        Assert.That(type.Assembly.Location, Is.EqualTo(filename));
+    }
+
+    [TestCase(typeof(IntPtr))]
+    [TestCase(typeof(Mammal))]
+    [TestCase(typeof(Socket))]
     public void AssemblyGetObject(Type type)
     {
         var result = (Assembly)ClrHost.assembly_get_object(ClrHost.class_get_image(type));
