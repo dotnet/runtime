@@ -325,7 +325,7 @@ BOOL Assembler::AddMethod(Method *pMethod)
             if (SUCCEEDED(m_pImporter->GetMemberRefProps(desc->tkType, &parent, NULL, 0, NULL, NULL, NULL)))
             {
                 WCHAR name[128] = {};
-                ULONG nameLen = ARRAYSIZE(name);
+                ULONG nameLen = ARRAY_SIZE(name);
                 if (SUCCEEDED(m_pImporter->GetTypeRefProps(parent, NULL, name, nameLen, &nameLen)))
                 {
                     if (u16_strcmp(name, W("System.Runtime.CompilerServices.UnsafeAccessorAttribute")) == 0)
