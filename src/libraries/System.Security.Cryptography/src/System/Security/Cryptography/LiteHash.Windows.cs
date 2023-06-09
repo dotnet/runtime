@@ -4,6 +4,7 @@
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using Internal.Cryptography;
 
 using BCryptCreateHashFlags = Interop.BCrypt.BCryptCreateHashFlags;
 using BCryptOpenAlgorithmProviderFlags = Interop.BCrypt.BCryptOpenAlgorithmProviderFlags;
@@ -76,16 +77,19 @@ namespace System.Security.Cryptography
             }
         }
 
-        public readonly int Finalize(Span<byte> destination)
+        public readonly unsafe int Finalize(Span<byte> destination)
         {
-            NTSTATUS ntStatus = Interop.BCrypt.BCryptFinishHash(_hashHandle, destination, destination.Length, dwFlags: 0);
-
-            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+            fixed (byte* pDestination = &Helpers.GetNonNullPinnableReference(destination))
             {
-                throw Interop.BCrypt.CreateCryptographicException(ntStatus);
-            }
+                NTSTATUS ntStatus = Interop.BCrypt.BCryptFinishHash(_hashHandle, pDestination, destination.Length, dwFlags: 0);
 
-            return destination.Length;
+                if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+                {
+                    throw Interop.BCrypt.CreateCryptographicException(ntStatus);
+                }
+
+                return destination.Length;
+            }
         }
 
         [MemberNotNull(nameof(_hashHandle))]
@@ -112,11 +116,12 @@ namespace System.Security.Cryptography
             _hashHandle = hashHandle;
         }
 
-        public readonly void Current(Span<byte> destination)
+        public readonly unsafe void Current(Span<byte> destination)
         {
             using (SafeBCryptHashHandle tmpHash = Interop.BCrypt.BCryptDuplicateHash(_hashHandle))
+            fixed (byte* pDestination = &Helpers.GetNonNullPinnableReference(destination))
             {
-                NTSTATUS ntStatus = Interop.BCrypt.BCryptFinishHash(tmpHash, destination, destination.Length, dwFlags: 0);
+                NTSTATUS ntStatus = Interop.BCrypt.BCryptFinishHash(tmpHash, pDestination, destination.Length, dwFlags: 0);
 
                 if (ntStatus != NTSTATUS.STATUS_SUCCESS)
                 {

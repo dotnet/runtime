@@ -240,7 +240,7 @@ namespace System.Security.Cryptography
 
                 fixed (byte* pKey = &MemoryMarshal.GetReference(key))
                 fixed (byte* pSrc = &MemoryMarshal.GetReference(source))
-                fixed (byte* pDest = &MemoryMarshal.GetReference(destination))
+                fixed (byte* pDest = &Helpers.GetNonNullPinnableReference(destination))
                 {
                     NTSTATUS ntStatus = Interop.BCrypt.BCryptHash((uint)algHandle, pKey, key.Length, pSrc, source.Length, pDest, digestSizeInBytes);
 
