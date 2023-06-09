@@ -550,6 +550,12 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 
         if (isIsaSupported && comp->compSupportsHWIntrinsic(isa))
         {
+#ifdef TARGET_XARCH
+            if ((isa == InstructionSet_Vector512) && (comp->opts.Vector512Throttling()))
+            {
+                return NI_IsSupported_False;
+            }
+#endif
             if (!comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) || comp->compExactlyDependsOn(isa))
             {
                 return NI_IsSupported_True;
