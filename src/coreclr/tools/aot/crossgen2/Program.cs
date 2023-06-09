@@ -581,6 +581,8 @@ namespace ILCompiler
 
                     NodeFactoryOptimizationFlags nodeFactoryFlags = new NodeFactoryOptimizationFlags();
                     nodeFactoryFlags.OptimizeAsyncMethods = Get(_command.AsyncMethodOptimization);
+                    nodeFactoryFlags.DeterminismStress = Get(_command.DeterminismStress);
+                    nodeFactoryFlags.PrintReproArgs = Get(_command.PrintReproInstructions);
 
                     builder
                         .UseMapFile(Get(_command.Map))
@@ -608,8 +610,7 @@ namespace ILCompiler
                         .UseCompilationRoots(compilationRoots)
                         .UseOptimizationMode(optimizationMode);
 
-                    if (Get(_command.PrintReproInstructions))
-                        builder.UsePrintReproInstructions(CreateReproArgumentString);
+                    builder.UsePrintReproInstructions(CreateReproArgumentString);
 
                     compilation = builder.ToCompilation();
 
@@ -620,6 +621,9 @@ namespace ILCompiler
                     compilation.WriteDependencyLog(dgmlLogFileName);
 
                 compilation.Dispose();
+
+                if (((ReadyToRunCodegenCompilation)compilation).DeterminismCheckFailed)
+                    throw new Exception("Determinism Check Failed");
             }
         }
 
