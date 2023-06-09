@@ -23,8 +23,8 @@ namespace System.Diagnostics.Metrics
         private readonly List<Predicate<Instrument>> _instrumentConfigFuncs = new();
         public TimeSpan CollectionPeriod { get; private set; }
 
-        public readonly int MaxTimeSeries;
-        public readonly int MaxHistograms;
+        public int MaxTimeSeries { get; }
+        public int MaxHistograms { get; }
         private List<Instrument> _instrumentList = new();
         private readonly ConcurrentDictionary<Instrument, InstrumentState> _instrumentStates = new();
         private readonly CancellationTokenSource _cts = new();
@@ -162,10 +162,12 @@ namespace System.Diagnostics.Metrics
 
         public void Update()
         {
-            using MeterListener tempListener = new MeterListener();
-            tempListener.InstrumentPublished += PublishedInstrument;
-            tempListener.MeasurementsCompleted += CompletedMeasurements;
-            tempListener.Start();
+            using (MeterListener tempListener = new MeterListener())
+            {
+                tempListener.InstrumentPublished += PublishedInstrument;
+                tempListener.MeasurementsCompleted += CompletedMeasurements;
+                tempListener.Start();
+            }
 
             _initialInstrumentEnumerationComplete();
         }
