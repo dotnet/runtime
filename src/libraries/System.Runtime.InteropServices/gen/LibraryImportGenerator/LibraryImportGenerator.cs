@@ -53,10 +53,9 @@ namespace Microsoft.Interop
             var methodsWithDiagnostics = attributedMethods.Select(static (data, ct) =>
             {
                 DiagnosticInfo? diagnostic = GetDiagnosticIfInvalidMethodForGeneration(data.Syntax, data.Symbol);
-                if (diagnostic is not null)
-                    return DiagnosticOr<(MethodDeclarationSyntax Syntax, IMethodSymbol Symbol)>.From(diagnostic);
-                else
-                    return DiagnosticOr<(MethodDeclarationSyntax Syntax, IMethodSymbol Symbol)>.From((data.Syntax, data.Symbol));
+                return diagnostic is not null
+                    ? DiagnosticOr<(MethodDeclarationSyntax Syntax, IMethodSymbol Symbol)>.From(diagnostic)
+                    : DiagnosticOr<(MethodDeclarationSyntax Syntax, IMethodSymbol Symbol)>.From((data.Syntax, data.Symbol));
             });
 
             var methodsToGenerate = context.FilterAndReportDiagnostics(methodsWithDiagnostics);
