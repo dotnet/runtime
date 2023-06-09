@@ -42,6 +42,9 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #endif
+#ifdef _MSC_VER
+#pragma warning(disable:4996)
+#endif
 
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/IR/Function.h>
