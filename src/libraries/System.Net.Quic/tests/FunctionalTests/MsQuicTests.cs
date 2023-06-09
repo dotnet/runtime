@@ -116,16 +116,18 @@ namespace System.Net.Quic.Tests
 
                 await Task.Delay(100 * i);
 
-                if (wrListener.TryGetTarget(out _) ||
-                    wrClientConnection.TryGetTarget(out _) ||
-                    wrServerConnection.TryGetTarget(out _) ||
-                    wrClientStream.TryGetTarget(out _) ||
-                    wrServerStream.TryGetTarget(out _))
+                if (TestWeakReferences())
                 {
                     continue;
                 }
-
                 break;
+
+                bool TestWeakReferences()
+                    => wrListener.TryGetTarget(out _) ||
+                       wrClientConnection.TryGetTarget(out _) ||
+                       wrServerConnection.TryGetTarget(out _) ||
+                       wrClientStream.TryGetTarget(out _) ||
+                       wrServerStream.TryGetTarget(out _);
             }
 
             Assert.False(wrListener.TryGetTarget(out _));
@@ -138,8 +140,6 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task QuicRootedConnectionGetsReleased_ConnectFails()
         {
-            using var x = new TestEventListener(_output, "Private.InternalDiagnostics.System.Net.Quic");
-
             WeakReference<QuicConnection> wrServerConnection = default;
             // Set up all objects, keep their weak reference.
             var listenerOptions = CreateQuicListenerOptions();
@@ -164,10 +164,12 @@ namespace System.Net.Quic.Tests
 
                 await Task.Delay(100 * i);
 
-                if (wrServerConnection.TryGetTarget(out _))
+                if (TestWeakReferences())
                 {
                     continue;
                 }
+                bool TestWeakReferences()
+                    => wrServerConnection.TryGetTarget(out _);
 
                 break;
             }
