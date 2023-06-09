@@ -373,7 +373,7 @@ namespace Microsoft.Interop
             TypePositionInfo info,
             string? notSupportedDetails)
         {
-            CodeAnalysis.Location diagnosticLocation = CodeAnalysis.Location.None;
+            Location diagnosticLocation = CodeAnalysis.Location.None;
             string elementName = string.Empty;
 
             if (info.IsManagedReturnPosition)
