@@ -515,7 +515,15 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
     if (tree->OperIsAtomicOp())
     {
         // For atomic operations, the address is always the first operand.
-        addr = tree->gtGetOp1()->gtEffectiveVal(true);
+        if (tree->OperIs(GT_CMPXCHG))
+        {
+            // Special case: GT_CMPXCHG is not a GenTreeOp
+            addr = tree->AsCmpXchg()->gtOpLocation->gtEffectiveVal();
+        }
+        else
+        {
+            addr = tree->gtGetOp1()->gtEffectiveVal(true);
+        }
     }
     else
     {
