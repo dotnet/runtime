@@ -274,7 +274,7 @@
     <value>GeneratedComInterfaceAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
   </data>
   <data name="RequiresAllowUnsafeBlocksTitle" xml:space="preserve">
-    <value>LibraryImportAttribute requires unsafe code.</value>
+    <value>GeneratedComInterfaceAttribute requires unsafe code.</value>
   </data>
   <data name="ConvertToGeneratedComInterfaceDescription" xml:space="preserve">
     <value>Use 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</value>
