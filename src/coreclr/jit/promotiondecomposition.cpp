@@ -50,6 +50,7 @@ class DecompositionPlan
     };
 
     Compiler*                       m_compiler;
+    ReplaceVisitor*                 m_replacer;
     jitstd::vector<AggregateInfo*>& m_aggregates;
     PromotionLiveness*              m_liveness;
     GenTree*                        m_store;
@@ -61,6 +62,7 @@ class DecompositionPlan
 
 public:
     DecompositionPlan(Compiler*                       comp,
+                      ReplaceVisitor*                 replacer,
                       jitstd::vector<AggregateInfo*>& aggregates,
                       PromotionLiveness*              liveness,
                       GenTree*                        store,
@@ -68,6 +70,7 @@ public:
                       bool                            dstInvolvesReplacements,
                       bool                            srcInvolvesReplacements)
         : m_compiler(comp)
+        , m_replacer(replacer)
         , m_aggregates(aggregates)
         , m_liveness(liveness)
         , m_store(store)
@@ -718,6 +721,7 @@ private:
                     if (srcDeaths.IsReplacementDying((unsigned)replacementIndex))
                     {
                         src->gtFlags |= GTF_VAR_DEATH;
+                        m_replacer->CheckForwardSubForLastUse(entry.FromLclNum);
                     }
                 }
             }
@@ -1083,7 +1087,7 @@ void ReplaceVisitor::HandleStore(GenTree** use, GenTree* user)
         DecompositionStatementList result;
         EliminateCommasInBlockOp(store, &result);
 
-        DecompositionPlan plan(m_compiler, m_aggregates, m_liveness, store, src, dstInvolvesReplacements,
+        DecompositionPlan plan(m_compiler, this, m_aggregates, m_liveness, store, src, dstInvolvesReplacements,
                                srcInvolvesReplacements);
 
         if (dstInvolvesReplacements)
