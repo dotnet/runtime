@@ -646,7 +646,8 @@ if(LLVM_PREFIX)
 
   if(HOST_LINUX AND NOT "${TARGET_ARCH}" STREQUAL "wasm" AND ${llvm_api_version} GREATER_EQUAL 1600)
     set(MONO_stdlib "-stdlib=libc++")
-    set(MONO_cxx_lib "-lc++")
+    set(MONO_cxx_lib "-L${LLVM_PREFIX}/lib -lc++")
+    set(MONO_cxx_include "-I${LLVM_PREFIX}/include/c++/v1")
   endif()
 
   if(${llvm_api_version} GREATER_EQUAL 1600)
@@ -657,7 +658,7 @@ if(LLVM_PREFIX)
 
   # llvm-config --cflags
   set(llvm_cflags "-I${LLVM_PREFIX}/include -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
-  set(llvm_cxxflags "-I${LLVM_PREFIX}/include ${MONO_cxx_std_version} ${MONO_stdlib} -fno-exceptions -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+  set(llvm_cxxflags "-I${LLVM_PREFIX}/include ${MONO_cxx_include} ${MONO_cxx_std_version} ${MONO_stdlib} -fno-exceptions -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
   set(llvm_includedir "${LLVM_PREFIX}/include")
 
   if(HOST_LINUX)
