@@ -226,18 +226,19 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        // emits code that results in ThreadStaticBase referenced in RAX.
+        // may trash volatile registers. (there are calls to the slow helper and possibly to platform's TLS support)
         private static void EmitInlineTLSAccess(NodeFactory factory, ref X64Emitter encoder)
         {
             ISymbolNode getInlinedThreadStaticBaseSlow = factory.HelperEntrypoint(HelperEntrypoint.GetInlinedThreadStaticBaseSlow);
             ISymbolNode tlsRoot = factory.TlsRoot;
+            bool singleFileExe = factory.CompilationModuleGroup.IsSingleFileCompilation;
 
             if (factory.Target.IsWindows)
             {
-                // TODO: VS HACK until we emit proper TLS template on Windows
+                // TODO: VS this is a temporary HACK.
+                //       until we emit proper TLS template on Windows, we will emit one in c++ and bind to that.
                 tlsRoot = factory.ExternSymbol("tls_InlinedThreadStatics");
-
-                // TODO: VS can we know that we have a singlefile exe case?
-                bool singleFileExe = false;
                 if (singleFileExe)
                 {
                     // mov         rax,qword ptr gs:[58h]
@@ -278,8 +279,6 @@ namespace ILCompiler.DependencyAnalysis
             }
             else if (factory.Target.OperatingSystem == TargetOS.Linux)
             {
-                // TODO: VS can we know that we have a singlefile exe case?
-                bool singleFileExe = false;
                 if (singleFileExe)
                 {
                     // movq %fs:0x0,%rax
