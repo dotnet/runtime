@@ -543,7 +543,7 @@ namespace ILCompiler
                 dependencies.Add(factory.ReflectedMethod(target), "Target of a delegate");
 
                 if (target.IsVirtual)
-                    dependencies.Add(factory.DelegateTargetVirtualMethod(target), "Target of a delegate");
+                    dependencies.Add(factory.DelegateTargetVirtualMethod(target.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Target of a delegate");
             }
         }
 
