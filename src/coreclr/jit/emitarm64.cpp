@@ -14140,11 +14140,20 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                     emitIns_R_S(ins, attr, dataReg, lclNum, offset);
                 }
             }
+#ifdef _MSC_VER
             else if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
             {
                 // On Arm64, TEB is in r18, so load from the r18 as base.
                 emitIns_R_R_I(ins, attr, dataReg, REG_R18, addr->AsIntCon()->IconValue());
             }
+#else
+            else if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
+            {
+                assert(addr->AsIntCon()->IconValue() == 0);
+                // On non-windows, need to load the address from system register.
+                emitIns_R_R(INS_mrs, attr, dataReg, REG_TPID0);
+            }
+#endif
             else if (emitIns_valid_imm_for_ldst_offset(offset, emitTypeSize(indir->TypeGet())))
             {
                 // Then load/store dataReg from/to [memBase + offset]
