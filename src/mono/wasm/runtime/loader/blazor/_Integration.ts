@@ -103,8 +103,6 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     moduleConfig.assets = assets;
     moduleConfig.globalizationMode = "icu";
     moduleConfig.debugLevel = hasDebuggingEnabled(resourceLoader.bootConfig) ? 1 : 0;
-    moduleConfig.maxParallelDownloads = 1000000; // disable throttling parallel downloads
-    moduleConfig.enableDownloadRetry = false; // disable retry downloads
     moduleConfig.mainAssemblyName = resourceLoader.bootConfig.entryAssembly;
 
     // FIXME this mix of both formats is ugly temporary hack
