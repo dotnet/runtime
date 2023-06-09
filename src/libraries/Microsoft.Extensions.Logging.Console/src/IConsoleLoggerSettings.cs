@@ -6,7 +6,7 @@ using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Logging.Console
 {
-    [Obsolete("This method is retained only for compatibility. The recommended alternative is ConsoleLoggerOptions.")]
+    [Obsolete("This type is retained only for compatibility. The recommended alternative is ConsoleLoggerOptions.", error: true)]
     public interface IConsoleLoggerSettings
     {
         bool IncludeScopes { get; }

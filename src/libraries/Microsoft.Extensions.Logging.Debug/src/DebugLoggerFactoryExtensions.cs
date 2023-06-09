@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="factory">The extension method argument.</param>
         /// <param name="minLevel">The minimum <see cref="LogLevel"/> to be logged.  This parameter is no longer honored and will be ignored.</param>
-        [Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddDebug(this ILoggingBuilder builder).")]
+        [Obsolete("This method is retained only for compatibility. The recommended alternative is AddDebug(this ILoggingBuilder builder).", error: true)]
         public static ILoggerFactory AddDebug(this ILoggerFactory factory, LogLevel minLevel) => AddDebug(factory);
 
         /// <summary>
@@ -26,14 +26,14 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="factory">The extension method argument.</param>
         /// <param name="filter">The function used to filter events based on the log level.  This parameter is no longer honored and will be ignored.</param>
-        [Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddDebug(this ILoggingBuilder builder).")]
+        [Obsolete("This method is retained only for compatibility. The recommended alternative is AddDebug(this ILoggingBuilder builder).", error: true)]
         public static ILoggerFactory AddDebug(this ILoggerFactory factory, Func<string, LogLevel, bool> filter) => AddDebug(factory);
 
         /// <summary>
         /// Adds a debug logger that is enabled for <see cref="LogLevel"/>s of minLevel or higher.
         /// </summary>
         /// <param name="factory">The extension method argument.</param>
-        [Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddDebug(this ILoggingBuilder builder).")]
+        [Obsolete("This method is retained only for compatibility. The recommended alternative is AddDebug(this ILoggingBuilder builder).", error: true)]
         public static ILoggerFactory AddDebug(this ILoggerFactory factory)
         {
             factory.AddProvider(new DebugLoggerProvider());

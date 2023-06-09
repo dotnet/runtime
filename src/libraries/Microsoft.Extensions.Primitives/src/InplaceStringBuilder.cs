@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 namespace Microsoft.Extensions.Primitives
 {
     [DebuggerDisplay("Value = {_value}")]
-    [Obsolete("This method is retained only for compatibility. The recommended alternative is string.Create<TState> (int length, TState state, System.Buffers.SpanAction<char,TState> action).")]
+    [Obsolete("This type is retained only for compatibility. The recommended alternative is string.Create<TState> (int length, TState state, System.Buffers.SpanAction<char,TState> action).", error: true)]
     public struct InplaceStringBuilder
     {
         private int _offset;

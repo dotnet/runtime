@@ -8,11 +8,11 @@ namespace Microsoft.Extensions.Logging
 {
     public static partial class EventLoggerFactoryExtensions
     {
-        [System.ObsoleteAttribute("This method is obsolete and will be removed in a future version. The recommended alternative is AddEventLog(this ILoggingBuilder builder).")]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is AddEventLog(this ILoggingBuilder builder).", error: true)]
         public static Microsoft.Extensions.Logging.ILoggerFactory AddEventLog(this Microsoft.Extensions.Logging.ILoggerFactory factory) { throw null; }
-        [System.ObsoleteAttribute("This method is obsolete and will be removed in a future version. The recommended alternative is AddEventLog(this ILoggingBuilder builder).")]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is AddEventLog(this ILoggingBuilder builder).", error: true)]
         public static Microsoft.Extensions.Logging.ILoggerFactory AddEventLog(this Microsoft.Extensions.Logging.ILoggerFactory factory, Microsoft.Extensions.Logging.EventLog.EventLogSettings settings) { throw null; }
-        [System.ObsoleteAttribute("This method is obsolete and will be removed in a future version. The recommended alternative is AddEventLog(this ILoggingBuilder builder).")]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is AddEventLog(this ILoggingBuilder builder).", error: true)]
         public static Microsoft.Extensions.Logging.ILoggerFactory AddEventLog(this Microsoft.Extensions.Logging.ILoggerFactory factory, Microsoft.Extensions.Logging.LogLevel minLevel) { throw null; }
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddEventLog(this Microsoft.Extensions.Logging.ILoggingBuilder builder) { throw null; }
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddEventLog(this Microsoft.Extensions.Logging.ILoggingBuilder builder, Microsoft.Extensions.Logging.EventLog.EventLogSettings settings) { throw null; }

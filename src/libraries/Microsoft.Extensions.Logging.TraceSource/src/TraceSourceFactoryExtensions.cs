@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="sourceSwitch">The <see cref="SourceSwitch"/> to use.</param>
         /// <param name="listener">The <see cref="TraceListener"/> to use.</param>
         /// <returns>The <see cref="ILoggerFactory"/> so that additional calls can be chained.</returns>
-        [System.Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddTraceSource(this ILoggingBuilder builder).")]
+        [System.Obsolete("This method is retained only for compatibility. The recommended alternative is AddTraceSource(this ILoggingBuilder builder).")]
         public static ILoggerFactory AddTraceSource(this ILoggerFactory factory, System.Diagnostics.SourceSwitch sourceSwitch, System.Diagnostics.TraceListener listener)
         {
             ThrowHelper.ThrowIfNull(factory);
@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="factory">The <see cref="ILoggerFactory"/> to use.</param>
         /// <param name="sourceSwitch">The <see cref="SourceSwitch"/> to use.</param>
         /// <returns>The <see cref="ILoggerFactory"/> so that additional calls can be chained.</returns>
-        [System.Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddTraceSource(this ILoggingBuilder builder).")]
+        [System.Obsolete("This method is retained only for compatibility. The recommended alternative is AddTraceSource(this ILoggingBuilder builder).")]
         public static ILoggerFactory AddTraceSource(this ILoggerFactory factory, System.Diagnostics.SourceSwitch sourceSwitch)
         {
             ThrowHelper.ThrowIfNull(factory);
@@ -56,7 +56,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="switchName">The name of the <see cref="SourceSwitch"/> to use.</param>
         /// <param name="listener">The <see cref="TraceListener"/> to use.</param>
         /// <returns>The <see cref="ILoggerFactory"/> so that additional calls can be chained.</returns>
-        [System.Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddTraceSource(this ILoggingBuilder builder).")]
+        [System.Obsolete("This method is retained only for compatibility. The recommended alternative is AddTraceSource(this ILoggingBuilder builder).")]
         public static ILoggerFactory AddTraceSource(this ILoggerFactory factory, string switchName, System.Diagnostics.TraceListener listener)
         {
             ThrowHelper.ThrowIfNull(factory);
@@ -74,7 +74,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="factory">The <see cref="ILoggerFactory"/> to use.</param>
         /// <param name="switchName">The name of the <see cref="SourceSwitch"/> to use.</param>
         /// <returns>The <see cref="ILoggerFactory"/> so that additional calls can be chained.</returns>
-        [System.Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddTraceSource(this ILoggingBuilder builder).")]
+        [System.Obsolete("This method is retained only for compatibility. The recommended alternative is AddTraceSource(this ILoggingBuilder builder).")]
         public static ILoggerFactory AddTraceSource(this ILoggerFactory factory, string switchName)
         {
             ThrowHelper.ThrowIfNull(factory);

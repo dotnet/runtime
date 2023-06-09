@@ -29,29 +29,29 @@ namespace Microsoft.Extensions.Options
         public TOptions Value { get; }
 
         /// <summary>
-        /// This method is obsolete and will be removed in a future version.
+        /// This method is retained only for compatibility.
         /// </summary>
-        [Obsolete("This method is obsolete and will be removed in a future version.")]
+        [Obsolete("This method is retained only for compatibility.", error: true)]
         public void Add(string name, TOptions options)
         {
             throw new NotImplementedException();
         }
 
         /// <summary>
-        /// This method is obsolete and will be removed in a future version.
+        /// This method is retained only for compatibility.
         /// </summary>
         /// <param name="name">This parameter is ignored.</param>
         /// <returns>The <see cref="Value"/>.</returns>
-        [Obsolete("This method is obsolete and will be removed in a future version.")]
+        [Obsolete("This method is retained only for compatibility.", error: true)]
         public TOptions Get(string name)
         {
             return Value;
         }
 
         /// <summary>
-        /// This method is obsolete and will be removed in a future version.
+        /// This method is retained only for compatibility.
         /// </summary>
-        [Obsolete("This method is obsolete and will be removed in a future version.")]
+        [Obsolete("This method is retained only for compatibility.", error: true)]
         public bool Remove(string name)
         {
             throw new NotImplementedException();

@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="factory">The extension method argument.</param>
         /// <param name="settings">The <see cref="EventLogSettings"/>.</param>
-        [System.Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddEventLog(this ILoggingBuilder builder).")]
+        [System.Obsolete("This method is retained only for compatibility. The recommended alternative is AddEventLog(this ILoggingBuilder builder).", error: true)]
         public static ILoggerFactory AddEventLog(this ILoggerFactory factory, EventLog.EventLogSettings settings)
         {
             ThrowHelper.ThrowIfNull(factory);
@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="factory">The extension method argument.</param>
         /// <param name="minLevel">The minimum <see cref="LogLevel"/> to be logged</param>
-        [System.Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddEventLog(this ILoggingBuilder builder).")]
+        [System.Obsolete("This method is retained only for compatibility. The recommended alternative is AddEventLog(this ILoggingBuilder builder).", error: true)]
         public static ILoggerFactory AddEventLog(this ILoggerFactory factory, LogLevel minLevel) =>
             AddEventLog(factory, new EventLogSettings() { Filter = (_, logLevel) => logLevel >= minLevel });
 
@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.Logging
         /// Adds an event logger that is enabled for <see cref="LogLevel"/>.Information or higher.
         /// </summary>
         /// <param name="factory">The extension method argument.</param>
-        [System.Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddEventLog(this ILoggingBuilder builder).")]
+        [System.Obsolete("This method is retained only for compatibility. The recommended alternative is AddEventLog(this ILoggingBuilder builder).", error: true)]
         public static ILoggerFactory AddEventLog(this ILoggerFactory factory) => AddEventLog(factory, LogLevel.Information);
 
         /// <summary>

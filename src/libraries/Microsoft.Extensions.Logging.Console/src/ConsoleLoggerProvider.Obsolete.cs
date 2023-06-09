@@ -14,17 +14,17 @@ namespace Microsoft.Extensions.Logging.Console
 {
     public partial class ConsoleLoggerProvider : ILoggerProvider, ISupportExternalScope
     {
-        [Obsolete("This method is retained only for compatibility. The recommended alternative is using LoggerFactory to configure filtering and ConsoleLoggerOptions to configure logging options.")]
+        [Obsolete("This method is retained only for compatibility. The recommended alternative is using LoggerFactory to configure filtering and ConsoleLoggerOptions to configure logging options.", error: true)]
         public ConsoleLoggerProvider(IConsoleLoggerSettings settings)
             : this(ConsoleLoggerSettingsAdapter.GetOptionsMonitor(settings))
         { }
 
-        [Obsolete("This method is retained only for compatibility. The recommended alternative is using LoggerFactory to configure filtering and ConsoleLoggerOptions to configure logging options.")]
+        [Obsolete("This method is retained only for compatibility. The recommended alternative is using LoggerFactory to configure filtering and ConsoleLoggerOptions to configure logging options.", error: true)]
         public ConsoleLoggerProvider(System.Func<string, Logging.LogLevel, bool> filter, bool includeScopes, bool disableColors)
             : this(new ConsoleLoggerSettings() { DisableColors = disableColors, IncludeScopes = includeScopes })
         { }
 
-        [Obsolete("This method is retained only for compatibility. The recommended alternative is using LoggerFactory to configure filtering and ConsoleLoggerOptions to configure logging options.")]
+        [Obsolete("This method is retained only for compatibility. The recommended alternative is using LoggerFactory to configure filtering and ConsoleLoggerOptions to configure logging options.", error: true)]
         public ConsoleLoggerProvider(System.Func<string, Logging.LogLevel, bool> filter, bool includeScopes)
             : this(filter, includeScopes, false)
         { }

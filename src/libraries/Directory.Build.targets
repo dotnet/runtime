@@ -210,7 +210,7 @@
 
   <!-- All breaking changes in extensions happened after 2.2 -->
   <PropertyGroup>
-    <RunExtensionsCompat Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.')) AND '$(IsPackable)' == 'true' AND '$(DisableCheckExtensionsBackwardCompatibility)' != 'true'">true</RunExtensionsCompat>
+    <RunExtensionsCompat Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.')) AND '$(IsPackable)' == 'true' AND '$(DisableCheckExtensionsBackwardCompatibility)' != 'true' AND '$(DisablePackageBaselineValidation)' != 'true'">true</RunExtensionsCompat>
     <ExtensionsCompatVersion Condition="'$(ExtensionsCompatVersion)' == ''">2.2.0</ExtensionsCompatVersion>
     <ExtensionsApiCompatValidatePackageSemaphoreFile>$(IntermediateOutputPath)$(MSBuildThisFileName).semaphore</ExtensionsApiCompatValidatePackageSemaphoreFile>    
 

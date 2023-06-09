@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="factory">The extension method argument.</param>
         /// <returns>The <see cref="ILoggerFactory"/> so that additional calls can be chained.</returns>
-        [System.Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddEventSourceLogger(this ILoggingBuilder builder).")]
+        [System.Obsolete("This method is retained only for compatibility. The recommended alternative is AddEventSourceLogger(this ILoggingBuilder builder).", error: true)]
         public static ILoggerFactory AddEventSourceLogger(this ILoggerFactory factory)
         {
             ThrowHelper.ThrowIfNull(factory);
