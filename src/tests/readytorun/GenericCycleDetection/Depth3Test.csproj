@@ -6,6 +6,8 @@
     <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
     <!-- Without this flag Crossgen2 crashes after several minutes with arithmetic overflow -->
     <CrossGen2TestExtraArguments>--enable-generic-cycle-detection --maxgenericcycle:3 --maxgenericcyclebreadth:-1</CrossGen2TestExtraArguments>
+    <!-- This test OOMs Crossgen2 when running in 32-bit address space -->
+    <CLRTestTargetUnsupported Condition="'$(TargetBits)' != '32'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
