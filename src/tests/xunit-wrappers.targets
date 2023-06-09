@@ -4,7 +4,18 @@
       Projects="$(MSBuildProjectFile)"
       Targets="CreateXunitWrapper;BuildXunitWrapper"
       Properties="_CMDDIR=%(TestDirectories.Identity)"
-      Condition="'@(TestDirectories)' != ''" />
+      Condition="'@(TestDirectories)' != '' and '$(TestBuildMode)' != 'nativeaot'" />
+
+    <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
+      <SubfolderFullPaths Include="$([System.IO.Directory]::GetDirectories('%(TestDirectories.Identity)'))" />
+      <SubTestDirectories Include="@(SubfolderFullPaths->'$([System.IO.Path]::GetFullPath('%(SubfolderFullPaths.Identity)'))')" />
+    </ItemGroup>
+
+    <MSBuild
+      Projects="$(MSBuildProjectFile)"
+      Targets="CreateXunitWrapper;BuildXunitWrapper"
+      Properties="_CMDDIR=%(SubTestDirectories.Identity)"
+      Condition="'@(SubTestDirectories)' != '' and '$(TestBuildMode)' == 'nativeaot'" />
   </Target>
 
   <Target Name="CreateXunitWrapper" DependsOnTargets="CreateXunitFacts">
@@ -99,7 +110,8 @@ $(_XunitEpilog)
     <!-- NOTE! semicolons must be escaped with %3B boooo -->
 
     <PropertyGroup>
-      <CategoryWithSlash>$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '$(_CMDDIR)'))</CategoryWithSlash>
+      <CategoryWithSlashFullPath>$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '$(_CMDDIR)'))</CategoryWithSlashFullPath>
+      <CategoryWithSlash>$([System.Text.RegularExpressions.Regex]::Match('$(CategoryWithSlashFullPath)', '/(.*)').Groups[1].Value)</CategoryWithSlash>
       <Category Condition="'$(RunningOnUnix)' != 'true'" >$([System.String]::Copy('$(CategoryWithSlash)').Replace('\','.'))</Category>
       <Category Condition="'$(RunningOnUnix)' == 'true'" >$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','.'))</Category>
       <XunitWrapper>$(Category).XUnitWrapper</XunitWrapper>
