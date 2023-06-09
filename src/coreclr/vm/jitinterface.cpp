@@ -1170,6 +1170,16 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
             th = ClassLoader::LoadArrayTypeThrowing(th);
             break;
 
+        case CORINFO_TOKENKIND_Casting:
+            // Disallow ELEMENT_TYPE_BYREF and ELEMENT_TYPE_VOID
+            if (et == ELEMENT_TYPE_BYREF || et == ELEMENT_TYPE_VOID)
+                COMPlusThrow(kInvalidProgramException);
+
+            // isinst and castclass to Nullable<T> is same as underlying type
+            if (Nullable::IsNullableType(th))
+                th = th.AsMethodTable()->GetInstantiation()[0];
+            break;
+
         default:
             // Disallow ELEMENT_TYPE_BYREF and ELEMENT_TYPE_VOID
             if (et == ELEMENT_TYPE_BYREF || et == ELEMENT_TYPE_VOID)
