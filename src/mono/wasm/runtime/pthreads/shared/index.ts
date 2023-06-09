@@ -175,7 +175,12 @@ export function assert_synchronization_context(): void {
 
 // this is just for Debug build of the runtime, making it easier to debug worker threads
 export function set_thread_info(pthread_ptr: number, isAttached: boolean, hasInterop: boolean, hasSynchronization: boolean): void {
-    if (MonoWasmThreads && BuildConfiguration === "Debug") {
-        (globalThis as any).monoThreadInfo = new Function(`//# sourceURL=https://WorkerInfo/\r\nconsole.log("tid:0x${pthread_ptr.toString(16)} isAttached:${isAttached} hasInterop:${!!hasInterop} hasSynchronization:${hasSynchronization}" );`);
+    if (MonoWasmThreads && BuildConfiguration === "Debug" && !runtimeHelpers.cspPolicy) {
+        try {
+            (globalThis as any).monoThreadInfo = new Function(`//# sourceURL=https://WorkerInfo/\r\nconsole.log("tid:0x${pthread_ptr.toString(16)} isAttached:${isAttached} hasInterop:${!!hasInterop} hasSynchronization:${hasSynchronization}" );`);
+        }
+        catch (ex) {
+            runtimeHelpers.cspPolicy = true;
+        }
     }
 }

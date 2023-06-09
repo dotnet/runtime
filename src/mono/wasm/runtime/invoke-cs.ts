@@ -97,8 +97,13 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
         // this is just to make debugging easier. 
         // It's not CSP compliant and possibly not performant, that's why it's only enabled in debug builds
         // in Release configuration, it would be a trimmed by rollup
-        if (BuildConfiguration === "Debug") {
-            bound_fn = new Function("fn", "return (function JSExport_" + methodname + "(){ return fn.apply(this, arguments)});")(bound_fn);
+        if (BuildConfiguration === "Debug" && !runtimeHelpers.cspPolicy) {
+            try {
+                bound_fn = new Function("fn", "return (function JSExport_" + methodname + "(){ return fn.apply(this, arguments)});")(bound_fn);
+            }
+            catch (ex) {
+                runtimeHelpers.cspPolicy = true;
+            }
         }
 
         (<any>bound_fn)[bound_cs_function_symbol] = true;

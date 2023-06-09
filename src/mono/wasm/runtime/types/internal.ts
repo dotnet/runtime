@@ -159,6 +159,7 @@ export type RuntimeHelpers = {
     subtle: SubtleCrypto | null,
     updateMemoryViews: () => void
     runtimeReady: boolean,
+    cspPolicy: boolean,
 
     runtimeModuleUrl: string
     nativeModuleUrl: string
