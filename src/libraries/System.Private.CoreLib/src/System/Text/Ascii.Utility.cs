@@ -1100,7 +1100,7 @@ namespace System.Text
 
                 Vector128<short> vecWide = Sse2.X64.ConvertScalarToVector128UInt64(value).AsInt16();
                 Vector128<uint> vecNarrow = Sse2.PackUnsignedSaturate(vecWide, vecWide).AsUInt32();
-                Unsafe.WriteUnaligned<uint>(ref outputBuffer, Sse2.ConvertToUInt32(vecNarrow));
+                Unsafe.WriteUnaligned(ref outputBuffer, Sse2.ConvertToUInt32(vecNarrow));
             }
             else if (AdvSimd.IsSupported)
             {
@@ -1109,7 +1109,7 @@ namespace System.Text
 
                 Vector128<short> vecWide = Vector128.CreateScalarUnsafe(value).AsInt16();
                 Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(vecWide);
-                Unsafe.WriteUnaligned<uint>(ref outputBuffer, lower.AsUInt32().ToScalar());
+                Unsafe.WriteUnaligned(ref outputBuffer, lower.AsUInt32().ToScalar());
             }
 
             else
@@ -1245,7 +1245,7 @@ namespace System.Text
 
                         // TODO: Is the below logic also valid for big-endian platforms?
                         Vector<byte> asciiVector = Vector.Narrow(utf16VectorHigh, utf16VectorLow);
-                        Unsafe.WriteUnaligned<Vector<byte>>(pAsciiBuffer + currentOffset, asciiVector);
+                        Unsafe.WriteUnaligned(pAsciiBuffer + currentOffset, asciiVector);
 
                         currentOffset += SizeOfVector;
                     } while (currentOffset <= finalOffsetWhereCanLoop);
@@ -1727,8 +1727,8 @@ namespace System.Text
                         Vector.Widen(Vector.AsVectorByte(asciiVector), out Vector<ushort> utf16LowVector, out Vector<ushort> utf16HighVector);
 
                         // TODO: Is the below logic also valid for big-endian platforms?
-                        Unsafe.WriteUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset, utf16LowVector);
-                        Unsafe.WriteUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset + Vector<ushort>.Count, utf16HighVector);
+                        Unsafe.WriteUnaligned(pUtf16Buffer + currentOffset, utf16LowVector);
+                        Unsafe.WriteUnaligned(pUtf16Buffer + currentOffset + Vector<ushort>.Count, utf16HighVector);
 
                         currentOffset += SizeOfVector;
                     } while (currentOffset <= finalOffsetWhereCanLoop);
@@ -1846,13 +1846,13 @@ namespace System.Text
             {
                 Vector128<byte> vecNarrow = AdvSimd.DuplicateToVector128(value).AsByte();
                 Vector128<ulong> vecWide = AdvSimd.Arm64.ZipLow(vecNarrow, Vector128<byte>.Zero).AsUInt64();
-                Unsafe.WriteUnaligned<ulong>(ref Unsafe.As<char, byte>(ref outputBuffer), vecWide.ToScalar());
+                Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref outputBuffer), vecWide.ToScalar());
             }
             else if (Vector128.IsHardwareAccelerated)
             {
                 Vector128<byte> vecNarrow = Vector128.CreateScalar(value).AsByte();
                 Vector128<ulong> vecWide = Vector128.WidenLower(vecNarrow).AsUInt64();
-                Unsafe.WriteUnaligned<ulong>(ref Unsafe.As<char, byte>(ref outputBuffer), vecWide.ToScalar());
+                Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref outputBuffer), vecWide.ToScalar());
             }
             else
             {

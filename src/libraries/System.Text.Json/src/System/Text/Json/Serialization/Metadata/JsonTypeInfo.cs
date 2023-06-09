@@ -1125,7 +1125,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ParameterLookupKey key = new(propertyName, jsonProperty.PropertyType);
                 ParameterLookupValue value = new(jsonProperty);
 
-                if (!JsonHelpers.TryAdd(nameLookup, key, value))
+                if (!nameLookup.TryAdd(key, value))
                 {
                     // More than one property has the same case-insensitive name and Type.
                     // Remember so we can throw a nice exception if this property is used as a parameter name.
@@ -1287,7 +1287,7 @@ namespace System.Text.Json.Serialization.Metadata
             if (type == typeof(object) && converter.CanBePolymorphic)
             {
                 // System.Object is polymorphic and will not respect Properties
-                Debug.Assert(converter is ObjectConverter or ObjectConverterSlim);
+                Debug.Assert(converter is ObjectConverter);
                 return JsonTypeInfoKind.None;
             }
 
@@ -1405,7 +1405,8 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (jsonPropertyInfo.IsIgnored)
                 {
-                    (state.IgnoredProperties ??= new()).Add(memberName, jsonPropertyInfo);
+                    state.IgnoredProperties ??= new();
+                    state.IgnoredProperties[memberName] = jsonPropertyInfo;
                 }
             }
         }

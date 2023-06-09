@@ -112,6 +112,8 @@ namespace ILCompiler
             }, true, "Maximum number of threads to use during compilation");
         public Option<string> InstructionSet { get; } =
             new(new[] { "--instruction-set" }, "Instruction set to allow or disallow");
+        public Option<int> MaxVectorTBitWidth { get; } =
+            new(new[] { "--max-vectort-bitwidth" }, "Maximum width, in bits, that Vector<T> is allowed to be");
         public Option<string> Guard { get; } =
             new(new[] { "--guard" }, "Enable mitigations. Options: 'cf': CFG (Control Flow Guard, Windows only)");
         public Option<bool> Dehydrate { get; } =
@@ -210,6 +212,7 @@ namespace ILCompiler
             AddOption(RuntimeKnobs);
             AddOption(Parallelism);
             AddOption(InstructionSet);
+            AddOption(MaxVectorTBitWidth);
             AddOption(Guard);
             AddOption(Dehydrate);
             AddOption(PreinitStatics);

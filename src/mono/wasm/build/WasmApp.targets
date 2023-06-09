@@ -326,19 +326,15 @@
 
   <Target Name="_GetWasmGenerateAppBundleDependencies">
     <Warning Condition="'$(InvariantGlobalization)' == 'true' and '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) has no effect when %24(InvariantGlobalization) is set to true." />
+    <Warning Condition="'$(WasmIcuDataFileName)' != '' and '$(HybridGlobalization)' == 'true'" Text="%24(WasmIcuDataFileName) has no effect when %24(HybridGlobalization) is set to true." />
     <PropertyGroup>
-      <HybridGlobalization Condition="'$(InvariantGlobalization)' == 'true'">false</HybridGlobalization>
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.wasm'">true</_HasDotnetWasm>
       <_HasDotnetJsWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.worker.js'">true</_HasDotnetJsWorker>
       <_HasDotnetJsSymbols Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.js.symbols'">true</_HasDotnetJsSymbols>
       <_HasDotnetNativeJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.js'">true</_HasDotnetNativeJs>
-      <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and Exists('$(WasmIcuDataFileName)')">$(WasmIcuDataFileName)</_WasmIcuDataFileName>
-      <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and !Exists('$(WasmIcuDataFileName)')">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)</_WasmIcuDataFileName>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(HybridGlobalization)' == 'true' and '$(WasmIcuDataFileName)' == ''">
-      <!-- to be renamed to icudt_wasm.dat when the contents of the file get defined and it gets added to repo -->
-      <_WasmIcuDataFileName>$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat</_WasmIcuDataFileName>
+      <HybridGlobalization Condition="'$(InvariantGlobalization)' == 'true'">false</HybridGlobalization>
+      <_WasmIcuDataFileName Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIcuDataFileName)' != '' and Exists('$(WasmIcuDataFileName)')">$(WasmIcuDataFileName)</_WasmIcuDataFileName>
+      <_WasmIcuDataFileName Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIcuDataFileName)' != '' and !Exists('$(WasmIcuDataFileName)')">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)</_WasmIcuDataFileName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -355,12 +351,15 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
-      <_IcuAvailableDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_*" />
-      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"/>
-      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' == ''" Include="@(_IcuAvailableDataFiles)"/>
-      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' != ''" Include="$(_WasmIcuDataFileName)"/>
+      <_HybridGlobalizationDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_hybrid.dat"/>
+      <_IcuAvailableDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_*"  Exclude="@(_HybridGlobalizationDataFiles)"/>
+      <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_hybrid.dat"/>
+      <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"/>
+      <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' == ''" Include="@(_IcuAvailableDataFiles)"/>
+      <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' != ''" Include="$(_WasmIcuDataFileName)"/>
       <WasmNativeAsset Include="@(WasmIcuDataFileNames)"/>
     </ItemGroup>
+
   </Target>
 
   <Target Name="_WasmGenerateAppBundle"

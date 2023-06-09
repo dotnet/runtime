@@ -1166,7 +1166,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         // The return value will be on the X87 stack, and we will need to move it.
         dstCandidates = allRegs(registerType);
 #else  // !TARGET_X86
-        dstCandidates                     = RBM_FLOATRET;
+        dstCandidates = RBM_FLOATRET;
 #endif // !TARGET_X86
     }
     else
@@ -1378,12 +1378,10 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         {
             case GenTreeBlk::BlkOpKindUnroll:
             {
-#ifdef TARGET_AMD64
-                const bool canUse16BytesSimdMov = !blkNode->IsOnHeapAndContainsReferences();
-                const bool willUseSimdMov       = canUse16BytesSimdMov && (size >= 16);
-#else
-                const bool willUseSimdMov = (size >= 16);
-#endif
+                const bool canUse16BytesSimdMov =
+                    !blkNode->IsOnHeapAndContainsReferences() && compiler->IsBaselineSimdIsaSupported();
+                const bool willUseSimdMov = canUse16BytesSimdMov && (size >= XMM_REGSIZE_BYTES);
+
                 if (willUseSimdMov)
                 {
                     buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
@@ -1440,8 +1438,26 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 break;
 
             case GenTreeBlk::BlkOpKindUnroll:
-                if ((size % XMM_REGSIZE_BYTES) != 0)
+            {
+                unsigned regSize   = compiler->roundDownSIMDSize(size);
+                unsigned remainder = size;
+
+                if ((size >= regSize) && (regSize > 0))
                 {
+                    // We need a float temporary if we're doing SIMD operations
+
+                    buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                    SetContainsAVXFlags(size);
+
+                    remainder %= regSize;
+                }
+
+                if ((remainder > 0) && ((regSize == 0) || (isPow2(remainder) && (remainder <= REGSIZE_BYTES))))
+                {
+                    // We need an int temporary if we're not doing SIMD operations
+                    // or if are but the remainder is a power of 2 and less than the
+                    // size of a register
+
                     regMaskTP regMask = availableIntRegs;
 #ifdef TARGET_X86
                     if ((size & 1) != 0)
@@ -1453,13 +1469,8 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 #endif
                     internalIntDef = buildInternalIntRegisterDefForNode(blkNode, regMask);
                 }
-
-                if (size >= XMM_REGSIZE_BYTES)
-                {
-                    buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
-                    SetContainsAVXFlags(size);
-                }
                 break;
+            }
 
             case GenTreeBlk::BlkOpKindUnrollMemmove:
             {

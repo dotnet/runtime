@@ -143,7 +143,6 @@ DEFINE_EXCEPTION(g_SystemNS,           FieldAccessException,           false,  C
 
 DEFINE_EXCEPTION(g_IONS,               FileLoadException,              true,
                  COR_E_FILELOAD,
-                 FUSION_E_CACHEFILE_FAILED,
                  FUSION_E_INVALID_NAME,
                  FUSION_E_PRIVATE_ASM_DISALLOWED, 
                  FUSION_E_REF_DEF_MISMATCH,
