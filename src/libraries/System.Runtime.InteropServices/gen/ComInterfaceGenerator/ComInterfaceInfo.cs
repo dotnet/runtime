@@ -77,12 +77,12 @@ namespace Microsoft.Interop
             {
                 if (!typeDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
                 {
-                    return DiagnosticOrInterfaceInfo.From(
-                        DiagnosticInfo.Create(
+                    diagnostic = DiagnosticInfo.Create(
                             GeneratorDiagnostics.InvalidAttributedInterfaceMissingPartialModifiers,
                             syntax.Identifier.GetLocation(),
                             symbol.Name,
-                            typeDecl.Identifier));
+                            typeDecl.Identifier);
+                    return false;
                 }
             }
             diagnostic = null;
