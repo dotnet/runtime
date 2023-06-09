@@ -1174,6 +1174,10 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                 if (Nullable::IsNullableType(th))
                     th = th.AsMethodTable()->GetInstantiation()[0];
                 break;
+
+            default:
+                // No additional checks. Satisfy switch exhaustiveness check.
+                break;
         }
     }
 
