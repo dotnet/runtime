@@ -23670,6 +23670,16 @@ void gc_heap::garbage_collect (int n)
                                             STRESS_HEAP_ARG(n)
                                             );
 
+        if (settings.condemned_generation != max_generation)
+        {
+            // do more BGCs
+            if (((VolatileLoadWithoutBarrier (&settings.gc_index) % 5) == 0) && (!gc_heap::background_running_p ()))
+            {
+                settings.condemned_generation = max_generation;
+                should_do_blocking_collection = FALSE;
+            }
+        }
+
         STRESS_LOG1(LF_GCROOTS|LF_GC|LF_GCALLOC, LL_INFO10,
                 "condemned generation num: %d\n", settings.condemned_generation);
 
@@ -36784,6 +36794,12 @@ void gc_heap::recover_bgc_settings()
 
 void gc_heap::allow_fgc()
 {
+    // lengthen the BGC CM phase
+    if (cm_in_progress)
+    {
+        GCToOSInterface::YieldThread (0);
+    }
+
     assert (bgc_thread == GCToEEInterface::GetThread());
     bool bToggleGC = false;
 
