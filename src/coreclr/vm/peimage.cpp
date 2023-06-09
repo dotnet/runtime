@@ -387,20 +387,6 @@ void PEImage::GetMVID(GUID *pMvid)
 #endif // _DEBUG
 }
 
-void DECLSPEC_NORETURN PEImage::ThrowFormat(HRESULT hrError)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        THROWS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    EEFileLoadException::Throw(m_path, hrError);
-}
-
-
 //may outlive PEImage
 PEImage::IJWFixupData::IJWFixupData(void *pBase)
     : m_lock(CrstIJWFixupData),
