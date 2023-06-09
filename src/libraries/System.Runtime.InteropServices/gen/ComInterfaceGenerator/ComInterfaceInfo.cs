@@ -44,14 +44,14 @@ namespace Microsoft.Interop
                 }
             }
 
-            // Verify that the types the method is declared in are marked partial.
-            for (SyntaxNode? parentNode = syntax.Parent; parentNode is TypeDeclarationSyntax typeDecl; parentNode = parentNode.Parent)
+            // Verify that the types the interface is declared in are marked partial.
+            for (SyntaxNode? parentNode = syntax; parentNode is TypeDeclarationSyntax typeDecl; parentNode = parentNode.Parent)
             {
                 if (!typeDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
                 {
                     return DiagnosticOrInterfaceInfo.From(
                         DiagnosticInfo.Create(
-                            GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers,
+                            GeneratorDiagnostics.InvalidAttributedInterfaceMissingPartialModifiers,
                             syntax.Identifier.GetLocation(),
                             symbol.Name,
                             typeDecl.Identifier));
