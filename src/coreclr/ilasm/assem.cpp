@@ -315,6 +315,25 @@ BOOL Assembler::AddMethod(Method *pMethod)
     {
         if(fIsImport || IsMdAbstract(pMethod->m_Attr) || IsMdPinvokeImpl(pMethod->m_Attr)
            || IsMiRuntime(pMethod->m_wImplAttr) || IsMiInternalCall(pMethod->m_wImplAttr)) return TRUE;
+
+        // Check method attributes that indicate no method body is expected.
+        ULONG count = pMethod->m_CustomDescrList.COUNT();
+        for (ULONG i = 0; i < count; ++i)
+        {
+            CustomDescr* desc = pMethod->m_CustomDescrList.PEEK(i);
+            mdToken parent = mdTokenNil;
+            if (SUCCEEDED(m_pImporter->GetMemberRefProps(desc->tkType, &parent, NULL, 0, NULL, NULL, NULL)))
+            {
+                WCHAR name[128] = {};
+                ULONG nameLen = ARRAYSIZE(name);
+                if (SUCCEEDED(m_pImporter->GetTypeRefProps(parent, NULL, name, nameLen, &nameLen)))
+                {
+                    if (u16_strcmp(name, W("System.Runtime.CompilerServices.UnsafeAccessorAttribute")) == 0)
+                        return TRUE;
+                }
+            }
+        }
+
         if(OnErrGo)
         {
             report->error("Method has no body\n");
