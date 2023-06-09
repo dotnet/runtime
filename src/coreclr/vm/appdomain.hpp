@@ -1869,7 +1869,7 @@ public:
     BOOL IsCached(AssemblySpec *pSpec);
 #endif // DACCESS_COMPILE
 
-    BOOL AddFileToCache(AssemblySpec* pSpec, PEAssembly *pPEAssembly, BOOL fAllowFailure = FALSE);
+    BOOL AddFileToCache(AssemblySpec* pSpec, PEAssembly *pPEAssembly);
     BOOL RemoveFileFromCache(PEAssembly *pPEAssembly);
 
     BOOL AddAssemblyToCache(AssemblySpec* pSpec, DomainAssembly *pAssembly);

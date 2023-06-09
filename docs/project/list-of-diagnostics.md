@@ -212,10 +212,10 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1093`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
 |  __`SYSLIB1094`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
 |  __`SYSLIB1095`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
-|  __`SYSLIB1096`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
-|  __`SYSLIB1097`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
-|  __`SYSLIB1098`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
-|  __`SYSLIB1099`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
+|  __`SYSLIB1096`__ | Use 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time |
+|  __`SYSLIB1097`__ | This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type. |
+|  __`SYSLIB1098`__ | .NET COM hosting with 'EnableComHosting' only supports built-in COM interop. It does not support source-generated COM interop with 'GeneratedComInterfaceAttribute'. |
+|  __`SYSLIB1099`__ | COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime |
 |  __`SYSLIB1100`__ | Configuration binding generator: type is not supported. |
 |  __`SYSLIB1101`__ | Configuration binding generator: property on type is not supported. |
 |  __`SYSLIB1102`__ | Configuration binding generator: project's language version must be at least C# 11.|
