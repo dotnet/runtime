@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
@@ -12,9 +13,6 @@ namespace Internal.IL
 {
     public sealed class UnsafeAccessors
     {
-        private const string InvalidUnsafeAccessorUsage = "Invalid usage of UnsafeAccessorAttribute.";
-        private const string AmbiguityInUnsafeAccessorUsage = "Ambiguity in binding of UnsafeAccessorAttribute.";
-
         public static MethodIL TryGetIL(EcmaMethod method)
         {
             Debug.Assert(method != null);
@@ -27,7 +25,7 @@ namespace Internal.IL
 
             if (!TryParseUnsafeAccessorAttribute(method, decodedAttribute.Value, out UnsafeAccessorKind kind, out string name))
             {
-                ThrowHelper.ThrowBadImageFormatException(InvalidUnsafeAccessorUsage);
+                ThrowHelper.ThrowBadImageFormatException();
             }
 
             GenerationContext context = new()
@@ -44,6 +42,8 @@ namespace Internal.IL
                 firstArgType = sig[0];
             }
 
+            bool isAmbiguous = false;
+
             // Using the kind type, perform the following:
             //  1) Validate the basic type information from the signature.
             //  2) Resolve the name to the appropriate member.
@@ -56,14 +56,14 @@ namespace Internal.IL
                     // The name is defined by the runtime and should be empty.
                     if (retType.IsVoid || retType.IsByRef || !string.IsNullOrEmpty(name))
                     {
-                        ThrowHelper.ThrowBadImageFormatException(InvalidUnsafeAccessorUsage);
+                        ThrowHelper.ThrowBadImageFormatException();
                     }
 
                     const string ctorName = ".ctor";
                     context.TargetType = ValidateTargetType(retType);
-                    if (!TrySetTargetMethod(ref context, ctorName))
+                    if (!TrySetTargetMethod(ref context, ctorName, out isAmbiguous))
                     {
-                        ThrowHelper.ThrowMissingMethodException(context.TargetType, ctorName, null);
+                        return GenerateAccessorSpecificFailure(ref context, ctorName, isAmbiguous);
                     }
                     break;
                 case UnsafeAccessorKind.Method:
@@ -71,14 +71,14 @@ namespace Internal.IL
                     // Method access requires a target type.
                     if (firstArgType == null)
                     {
-                        ThrowHelper.ThrowBadImageFormatException(InvalidUnsafeAccessorUsage);
+                        ThrowHelper.ThrowBadImageFormatException();
                     }
 
                     context.TargetType = ValidateTargetType(firstArgType);
                     context.IsTargetStatic = kind == UnsafeAccessorKind.StaticMethod;
-                    if (!TrySetTargetMethod(ref context, name))
+                    if (!TrySetTargetMethod(ref context, name, out isAmbiguous))
                     {
-                        ThrowHelper.ThrowMissingMethodException(context.TargetType, name, null);
+                        return GenerateAccessorSpecificFailure(ref context, name, isAmbiguous);
                     }
                     break;
 
@@ -87,7 +87,7 @@ namespace Internal.IL
                     // Field access requires a single argument for target type and a return type.
                     if (sig.Length != 1 || retType.IsVoid)
                     {
-                        ThrowHelper.ThrowBadImageFormatException(InvalidUnsafeAccessorUsage);
+                        ThrowHelper.ThrowBadImageFormatException();
                     }
 
                     // The return type must be byref.
@@ -98,19 +98,19 @@ namespace Internal.IL
                             && firstArgType.IsValueType
                             && !firstArgType.IsByRef))
                     {
-                        ThrowHelper.ThrowBadImageFormatException(InvalidUnsafeAccessorUsage);
+                        ThrowHelper.ThrowBadImageFormatException();
                     }
 
                     context.TargetType = ValidateTargetType(firstArgType);
                     context.IsTargetStatic = kind == UnsafeAccessorKind.StaticField;
                     if (!TrySetTargetField(ref context, name, ((ParameterizedType)retType).GetParameterType()))
                     {
-                        ThrowHelper.ThrowMissingFieldException(context.TargetType, name);
+                        return GenerateAccessorSpecificFailure(ref context, name, isAmbiguous);
                     }
                     break;
 
                 default:
-                    ThrowHelper.ThrowBadImageFormatException(InvalidUnsafeAccessorUsage);
+                    ThrowHelper.ThrowBadImageFormatException();
                     break;
             }
 
@@ -197,7 +197,7 @@ namespace Internal.IL
             if ((targetType.IsParameterizedType && !targetType.IsArray)
                 || targetType.IsFunctionPointer)
             {
-                ThrowHelper.ThrowBadImageFormatException(InvalidUnsafeAccessorUsage);
+                ThrowHelper.ThrowBadImageFormatException();
             }
 
             return targetType;
@@ -317,7 +317,7 @@ namespace Internal.IL
             return true;
         }
 
-        private static bool TrySetTargetMethod(ref GenerationContext context, string name, bool ignoreCustomModifiers = true)
+        private static bool TrySetTargetMethod(ref GenerationContext context, string name, out bool isAmbiguous, bool ignoreCustomModifiers = true)
         {
             TypeDesc targetType = context.TargetType;
 
@@ -350,16 +350,18 @@ namespace Internal.IL
                         // We have detected ambiguity when ignoring custom modifiers.
                         // Start over, but look for a match requiring custom modifiers
                         // to match precisely.
-                        if (TrySetTargetMethod(ref context, name, ignoreCustomModifiers: false))
+                        if (TrySetTargetMethod(ref context, name, out isAmbiguous, ignoreCustomModifiers: false))
                             return true;
                     }
 
-                    ThrowHelper.ThrowAmbiguousMatchException(AmbiguityInUnsafeAccessorUsage);
+                    isAmbiguous = true;
+                    return false;
                 }
 
                 targetMaybe = md;
             }
 
+            isAmbiguous = false;
             context.TargetMethod = targetMaybe;
             return context.TargetMethod != null;
         }
@@ -433,6 +435,40 @@ namespace Internal.IL
             // Return from the generated stub
             codeStream.Emit(ILOpcode.ret);
             return emit.Link(context.TargetMethod ?? context.Declaration);
+        }
+
+        private static MethodIL GenerateAccessorSpecificFailure(ref GenerationContext context, string name, bool ambiguous)
+        {
+            ILEmitter emit = new ILEmitter();
+            ILCodeStream codeStream = emit.NewCodeStream();
+
+            MethodDesc md;
+            TypeSystemContext typeSysContext = context.Declaration.Context;
+            if (ambiguous)
+            {
+                codeStream.Emit(ILOpcode.ldstr, emit.NewToken("Ambiguity in binding of UnsafeAccessorAttribute."));
+
+                var type = context.Declaration.Context.SystemModule.GetType("System.Reflection", "AmbiguousMatchException");
+                MethodSignature ctorString = new(MethodSignatureFlags.None, 0, typeSysContext.GetWellKnownType(WellKnownType.Void), new[] { typeSysContext.GetWellKnownType(WellKnownType.String) });
+                md = type.GetMethod(".ctor", ctorString);
+            }
+            else
+            {
+                codeStream.Emit(ILOpcode.ldnull); // Not supplying class name
+                codeStream.Emit(ILOpcode.ldstr, emit.NewToken(name));
+
+                string exceptName = (context.Kind == UnsafeAccessorKind.Field || context.Kind == UnsafeAccessorKind.StaticField)
+                    ? nameof(MissingFieldException)
+                    : nameof(MissingMethodException);
+
+                var type = context.Declaration.Context.SystemModule.GetType("System", exceptName);
+                MethodSignature ctorStringString = new(MethodSignatureFlags.None, 0, typeSysContext.GetWellKnownType(WellKnownType.Void), new[] { typeSysContext.GetWellKnownType(WellKnownType.String), typeSysContext.GetWellKnownType(WellKnownType.String) });
+                md = type.GetMethod(".ctor", ctorStringString);
+            }
+
+            codeStream.Emit(ILOpcode.newobj, emit.NewToken(md));
+            codeStream.Emit(ILOpcode.throw_);
+            return emit.Link(context.Declaration);
         }
     }
 }

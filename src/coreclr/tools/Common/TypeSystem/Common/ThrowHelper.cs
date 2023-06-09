@@ -71,12 +71,6 @@ namespace Internal.TypeSystem
             throw new TypeSystemException.MarshalDirectiveException(ExceptionStringID.MarshalDirectiveGeneric);
         }
 
-        [System.Diagnostics.DebuggerHidden]
-        public static void ThrowAmbiguousMatchException(string message)
-        {
-            throw new TypeSystemException.AmbiguousMatchException(message);
-        }
-
         private static partial class Format
         {
             public static string OwningModule(TypeDesc type)

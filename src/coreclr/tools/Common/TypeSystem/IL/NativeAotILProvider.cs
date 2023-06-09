@@ -291,62 +291,73 @@ namespace Internal.IL
 
         public override MethodIL GetMethodIL(MethodDesc method)
         {
-            if (method is EcmaMethod ecmaMethod)
+            try
             {
-                if (ecmaMethod.IsIntrinsic)
+                if (method is EcmaMethod ecmaMethod)
                 {
-                    MethodIL result = TryGetIntrinsicMethodIL(ecmaMethod);
-                    if (result != null)
-                        return result;
-                }
+                    if (ecmaMethod.IsIntrinsic)
+                    {
+                        MethodIL result = TryGetIntrinsicMethodIL(ecmaMethod);
+                        if (result != null)
+                            return result;
+                    }
 
-                if (ecmaMethod.IsRuntimeImplemented)
-                {
-                    MethodIL result = TryGetRuntimeImplementedMethodIL(ecmaMethod);
-                    if (result != null)
-                        return result;
-                }
+                    if (ecmaMethod.IsRuntimeImplemented)
+                    {
+                        MethodIL result = TryGetRuntimeImplementedMethodIL(ecmaMethod);
+                        if (result != null)
+                            return result;
+                    }
 
-                MethodIL methodIL = EcmaMethodIL.Create(ecmaMethod);
-                if (methodIL != null)
-                    return methodIL;
-
-                methodIL = UnsafeAccessors.TryGetIL(ecmaMethod);
-                if (methodIL != null)
-                    return methodIL;
-
-                return null;
-            }
-            else
-            if (method is MethodForInstantiatedType || method is InstantiatedMethod)
-            {
-                // Intrinsics specialized per instantiation
-                if (method.IsIntrinsic)
-                {
-                    MethodIL methodIL = TryGetPerInstantiationIntrinsicMethodIL(method);
+                    MethodIL methodIL = EcmaMethodIL.Create(ecmaMethod);
                     if (methodIL != null)
                         return methodIL;
-                }
 
-                var methodDefinitionIL = GetMethodIL(method.GetTypicalMethodDefinition());
-                if (methodDefinitionIL == null)
+                    methodIL = UnsafeAccessors.TryGetIL(ecmaMethod);
+                    if (methodIL != null)
+                        return methodIL;
+
                     return null;
-                return new InstantiatedMethodIL(method, methodDefinitionIL);
+                }
+                else
+                if (method is MethodForInstantiatedType || method is InstantiatedMethod)
+                {
+                    // Intrinsics specialized per instantiation
+                    if (method.IsIntrinsic)
+                    {
+                        MethodIL methodIL = TryGetPerInstantiationIntrinsicMethodIL(method);
+                        if (methodIL != null)
+                            return methodIL;
+                    }
+
+                    var methodDefinitionIL = GetMethodIL(method.GetTypicalMethodDefinition());
+                    if (methodDefinitionIL == null)
+                        return null;
+                    return new InstantiatedMethodIL(method, methodDefinitionIL);
+                }
+                else
+                if (method is ILStubMethod)
+                {
+                    return ((ILStubMethod)method).EmitIL();
+                }
+                else
+                if (method is ArrayMethod)
+                {
+                    return ArrayMethodILEmitter.EmitIL((ArrayMethod)method);
+                }
+                else
+                {
+                    Debug.Assert(!(method is PInvokeTargetNativeMethod), "Who is asking for IL of PInvokeTargetNativeMethod?");
+                    return null;
+                }
             }
-            else
-            if (method is ILStubMethod)
+            catch
             {
-                return ((ILStubMethod)method).EmitIL();
-            }
-            else
-            if (method is ArrayMethod)
-            {
-                return ArrayMethodILEmitter.EmitIL((ArrayMethod)method);
-            }
-            else
-            {
-                Debug.Assert(!(method is PInvokeTargetNativeMethod), "Who is asking for IL of PInvokeTargetNativeMethod?");
-                return null;
+                ILEmitter emit = new ILEmitter();
+                ILCodeStream codeStream = emit.NewCodeStream();
+                MethodDesc throwHelper = method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowBadImageFormatException");
+                codeStream.EmitCallThrowHelper(emit, throwHelper);
+                return emit.Link(method);
             }
         }
     }
