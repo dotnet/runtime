@@ -69,7 +69,7 @@ public class EmbeddingHost
     static void RunExceptionsCauseAbortTest(GlobalConfig gConfig)
     {
         var result = RunManagedTests(gConfig,
-            nunitWhereStatement: "test == UnityEmbedHost.Tests.NativeEmbeddingApiTests.ExceptionDoesNotCauseACrash",
+            nunitWhereStatement: "test == UnityEmbedHost.Tests.NativeEmbeddingApiTests.ExceptionCausesACrash",
             captureOutput: true);
 
         const int expectedExitCode = 1;

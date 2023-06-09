@@ -17,7 +17,7 @@ public class NativeEmbeddingApiTests : BaseEmbeddingApiTests
 
     [Test]
     [Category("ExcludeFromNormalTestRun")]
-    public void ExceptionDoesNotCauseACrash()
+    public void ExceptionCausesACrash()
     {
         var fieldInfo = typeof(Cat).GetField(nameof(Cat.EarCount));
         // Pass the wrong type to cause an exception
