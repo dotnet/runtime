@@ -511,5 +511,33 @@ namespace ComInterfaceGenerator.Unit.Tests
                 .WithLocation(0).WithArguments("J");
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, expectedDiagnostic);
         }
+
+        internal class UnsafeBlocksNotAllowedTest : VerifyComInterfaceGenerator.Test
+        {
+            internal UnsafeBlocksNotAllowedTest(bool referenceAncillaryInterop) : base(referenceAncillaryInterop) { }
+            protected override CompilationOptions CreateCompilationOptions()
+                => new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: false);
+        }
+
+        [Fact]
+        public async Task VerifyGeneratedComInterfaceWithoutAllowUnsafeBlocksWarns()
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                partial interface {|#0:J|}
+                {
+                    void Method();
+                }
+                """;
+            DiagnosticResult expectedDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.RequiresAllowUnsafeBlocks)
+                .WithLocation(0);
+            var test = new UnsafeBlocksNotAllowedTest(false);
+            test.TestState.Sources.Add(source);
+            test.ExpectedDiagnostics.Add(expectedDiagnostic);
+            await test.RunAsync();
+        }
     }
 }
