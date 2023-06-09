@@ -38,7 +38,7 @@
 #endif
 
 // ArrayRef API is deprecated on C++17
-#if defined(__clang__) && _LIBCPP_STD_VER > 17
+#if defined(__clang__) && (_LIBCPP_STD_VER > 17 || defined(__APPLE__))
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #endif
