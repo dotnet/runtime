@@ -39,20 +39,4 @@ ProbeLoop:
 
 LEAF_END RhpStackProbe, _TEXT
 
-LEAF_ENTRY RhpGetInlinedThreadStaticBase, _TEXT
-        ; On exit:
-        ;   rax - the thread static base for the given type
-
-        ;; rcx = &tls_InlinedThreadStatics, TRASHES r8
-        INLINE_GET_TLS_VAR rcx, r8, tls_InlinedThreadStatics
-
-        ;; get per-thread storage
-        mov     rax, [rcx]
-        test    rax, rax
-        jz      RhpGetInlinedThreadStaticBaseSlow   ;; rcx contains the storage ref
-
-        ;; return it
-        ret
-LEAF_END RhpGetInlinedThreadStaticBase, _TEXT
-
 end
