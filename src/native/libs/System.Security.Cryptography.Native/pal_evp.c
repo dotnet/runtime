@@ -85,7 +85,7 @@ int32_t CryptoNative_EvpDigestFinalXOF(EVP_MD_CTX* ctx, uint8_t* md, uint32_t le
             {
                 uint8_t single[1] = { 0 };
                 int result = EVP_DigestFinalXOF(ctx, single, 1);
-                single[0] = 0; // Zero out our scratch destination.
+                OPENSSL_cleanse(single, sizeof(single));
                 return result;
             }
             else if (!md)
