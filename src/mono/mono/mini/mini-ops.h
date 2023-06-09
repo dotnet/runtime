@@ -1511,8 +1511,14 @@ MINI_OP(OP_XCOMPARE_SCALAR, "xcompare_scalar", XREG, XREG, XREG)
 MINI_OP(OP_XCOMPARE_FP, "xcompare_fp", XREG, XREG, XREG)
 MINI_OP(OP_XCOMPARE_FP_SCALAR, "xcompare_fp_scalar", XREG, XREG, XREG)
 
-/* Extract from XREG into IREG.
- *   inst_c0 - specific instruction, one of SIMD_EXTR_... */
+/*
+ * The input reg is the result ofg OP_XCOMPARE, i.e.
+ * every element is either 0 or 0xff.
+ * Compute an integer result based on whenever all or any
+ * bits are non-zero.
+ *   inst_c0 - specific instruction, one of SIMD_EXTR_...
+ *   inst_c1 - vector size in bytes
+ */
 MINI_OP(OP_XEXTRACT, "xextract", IREG, XREG, NONE)
 
 /*

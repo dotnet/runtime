@@ -7371,6 +7371,25 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg2);
 			break;
+		case OP_XEXTRACT: {
+			/* Elements are either 0 or 0xff */
+			g_assert (ins->inst_c1 == 16);
+			amd64_sse_pmovmskb_reg_reg (code, ins->dreg, ins->sreg1);
+			if (ins->inst_c0 == SIMD_EXTR_ARE_ALL_SET) {
+				/* dreg = (mask == 0xffff) */
+				amd64_alu_reg_imm_size (code, X86_CMP, ins->dreg, 0xffff, 4);
+				amd64_set_reg (code, X86_CC_EQ, ins->dreg, FALSE);
+				amd64_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
+			} else if (ins->inst_c0 == SIMD_EXTR_IS_ANY_SET) {
+				/* dreg = (mask != 0) */
+				amd64_alu_reg_imm_size (code, X86_CMP, ins->dreg, 0, 4);
+				amd64_set_reg (code, X86_CC_NE, ins->dreg, FALSE);
+				amd64_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
+			} else {
+				g_assert_not_reached ();
+			}
+			break;
+		}
 		case OP_STOREX_MEMBASE_REG:
 		case OP_STOREX_MEMBASE:
 			amd64_sse_movups_membase_reg (code, ins->dreg, ins->inst_offset, ins->sreg1);

@@ -1413,24 +1413,9 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_ConvertToUInt64:
 		case SN_CreateScalar:
 		case SN_CreateScalarUnsafe:
-		case SN_Equals:
-		case SN_EqualsAll:
-		case SN_EqualsAny:
 		case SN_ExtractMostSignificantBits:
 		case SN_GetLower:
 		case SN_GetUpper:
-		case SN_GreaterThan:
-		case SN_GreaterThanAll:
-		case SN_GreaterThanAny:
-		case SN_GreaterThanOrEqual:
-		case SN_GreaterThanOrEqualAll:
-		case SN_GreaterThanOrEqualAny:
-		case SN_LessThan:
-		case SN_LessThanAll:
-		case SN_LessThanAny:
-		case SN_LessThanOrEqual:
-		case SN_LessThanOrEqualAll:
-		case SN_LessThanOrEqualAny:
 		case SN_Narrow:
 		case SN_Shuffle:
 		case SN_Sqrt:
