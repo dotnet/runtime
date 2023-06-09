@@ -347,6 +347,18 @@ bool Compiler::bbInFilterILRange(BasicBlock* blk)
     return HBtab->InFilterRegionILRange(blk);
 }
 
+bool Compiler::bbInFilterBBRange(BasicBlock* blk)
+{
+    EHblkDsc* HBtab = ehGetBlockHndDsc(blk);
+
+    if (HBtab == nullptr)
+    {
+        return false;
+    }
+
+    return HBtab->InFilterRegionBBRange(blk);
+}
+
 // Given a handler region, find the innermost try region that contains it.
 // NOTE: handlerIndex is 1-based (0 means no handler).
 unsigned short Compiler::bbFindInnermostTryRegionContainingHandlerRegion(unsigned handlerIndex)
