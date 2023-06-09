@@ -16,15 +16,6 @@ using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    public static class TempExtensions
-    {
-        // TODO BPETIT REMOVE ME
-        internal static ServiceCallSite GetCallSite(this CallSiteFactory callSiteFactory, Type type, CallSiteChain callSiteChain)
-        {
-            return callSiteFactory.GetCallSite(ServiceIdentifier.FromServiceType(type), callSiteChain);
-        }
-    }
-
     public class CallSiteFactoryTest
     {
         [Fact]
@@ -1010,7 +1001,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             var callSiteFactory = new CallSiteFactory(collection.ToArray());
 
-            return type => callSiteFactory.GetCallSite(type, new CallSiteChain());
+            return type => callSiteFactory.GetCallSite(ServiceIdentifier.FromServiceType(type), new CallSiteChain());
         }
 
         private static IEnumerable<Type> GetParameters(ConstructorCallSite constructorCallSite) =>
