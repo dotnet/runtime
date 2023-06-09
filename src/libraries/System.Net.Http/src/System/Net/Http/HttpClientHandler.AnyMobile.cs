@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Net.Security;
 using System.Reflection;
@@ -71,6 +72,13 @@ namespace System.Net.Http
             }
 
             base.Dispose(disposing);
+        }
+
+        [CLSCompliant(false)]
+        public Meter Meter
+        {
+            get => throw new NotImplementedException();
+            set => throw new NotImplementedException();
         }
 
         [UnsupportedOSPlatform("browser")]

@@ -135,6 +135,8 @@ namespace System.Net.Http
         public long MaxRequestContentBufferSize { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public int MaxResponseHeadersLength { get { throw null; } set { } }
+        [System.CLSCompliantAttribute(false)]
+        public System.Diagnostics.Metrics.Meter Meter { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool PreAuthenticate { get { throw null; } set { } }
         public System.Collections.Generic.IDictionary<string, object?> Properties { get { throw null; } }
@@ -299,6 +301,11 @@ namespace System.Net.Http
         public void Set<TValue>(HttpRequestOptionsKey<TValue> key, TValue value) { throw null; }
     }
 
+    public static class HttpRequestOptionsExtensions
+    {
+        public static void SetCustomMetricsTags(this HttpRequestOptions options, IReadOnlyCollection<KeyValuePair<string, object?>> tags) { throw null; }
+    }
+
     public partial class HttpResponseMessage : System.IDisposable
     {
         public HttpResponseMessage() { }
@@ -391,6 +398,8 @@ namespace System.Net.Http
         public int MaxConnectionsPerServer { get { throw null; } set { } }
         public int MaxResponseDrainSize { get { throw null; } set { } }
         public int MaxResponseHeadersLength { get { throw null; } set { } }
+        [System.CLSCompliantAttribute(false)]
+        public System.Diagnostics.Metrics.Meter Meter { get { throw null; } set { } }
         public System.TimeSpan PooledConnectionIdleTimeout { get { throw null; } set { } }
         public System.TimeSpan PooledConnectionLifetime { get { throw null; } set { } }
         public bool PreAuthenticate { get { throw null; } set { } }

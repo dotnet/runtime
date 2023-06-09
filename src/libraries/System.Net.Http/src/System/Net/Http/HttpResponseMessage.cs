@@ -22,6 +22,8 @@ namespace System.Net.Http
         private HttpContent? _content;
         private bool _disposed;
 
+        internal IRequestFailureMetricsLogger? _requestFailedMetricsLogger;
+
         public Version Version
         {
             get { return _version; }

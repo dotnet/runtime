@@ -10,6 +10,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 #if TARGET_BROWSER
 using HttpHandlerType = System.Net.Http.BrowserHttpHandler;
 #else
@@ -21,11 +22,10 @@ namespace System.Net.Http
     public partial class HttpClientHandler : HttpMessageHandler
     {
         private readonly HttpHandlerType _underlyingHandler;
+        private HttpMessageHandler? _handler;
 
 #if TARGET_BROWSER
-        private HttpMessageHandler Handler { get; }
-#else
-        private HttpHandlerType Handler => _underlyingHandler;
+        private Meter _meter = MetricsHandler.DefaultMeter;
 #endif
 
         private ClientCertificateOption _clientCertificateOptions;
@@ -36,15 +36,25 @@ namespace System.Net.Http
         {
             _underlyingHandler = new HttpHandlerType();
 
+            ClientCertificateOptions = ClientCertificateOption.Manual;
+        }
+
+        private HttpMessageHandler SetupHandlerChain()
+        {
+            HttpMessageHandler handler = _underlyingHandler;
 #if TARGET_BROWSER
-            Handler = _underlyingHandler;
             if (DiagnosticsHandler.IsGloballyEnabled())
             {
-                Handler = new DiagnosticsHandler(Handler, DistributedContextPropagator.Current);
+                handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
             }
+            handler = new MetricsHandler(handler, _meter);
 #endif
-
-            ClientCertificateOptions = ClientCertificateOption.Manual;
+            // Ensure a single handler is used for all requests.
+            if (Interlocked.CompareExchange(ref _handler, handler, null) != null)
+            {
+                handler.Dispose();
+            }
+            return handler;
         }
 
         protected override void Dispose(bool disposing)
@@ -61,6 +71,29 @@ namespace System.Net.Http
         public virtual bool SupportsAutomaticDecompression => HttpHandlerType.SupportsAutomaticDecompression;
         public virtual bool SupportsProxy => HttpHandlerType.SupportsProxy;
         public virtual bool SupportsRedirectConfiguration => HttpHandlerType.SupportsRedirectConfiguration;
+
+        [CLSCompliant(false)]
+        public Meter Meter
+        {
+#if TARGET_BROWSER
+            get => _meter;
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                if (value.Name != "System.Net.Http")
+                {
+                    throw new ArgumentException("Meter name must be 'System.Net.Http'.");
+                }
+
+                CheckDisposedOrStarted();
+                _meter = value;
+            }
+#else
+            get => _underlyingHandler.Meter;
+            set => _underlyingHandler.Meter = value;
+#endif
+        }
+
 
         [UnsupportedOSPlatform("browser")]
         public bool UseCookies
@@ -304,10 +337,10 @@ namespace System.Net.Http
         //[UnsupportedOSPlatform("ios")]
         //[UnsupportedOSPlatform("tvos")]
         protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) =>
-            Handler.Send(request, cancellationToken);
+            (_handler ?? SetupHandlerChain()).Send(request, cancellationToken);
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-            Handler.SendAsync(request, cancellationToken);
+            (_handler ?? SetupHandlerChain()).SendAsync(request, cancellationToken);
 
         // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.
         private static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? s_dangerousAcceptAnyServerCertificateValidator;
@@ -323,5 +356,16 @@ namespace System.Net.Http
             // SslOptions is changed, since SslOptions itself does not do any such checks.
             _underlyingHandler.SslOptions = _underlyingHandler.SslOptions;
         }
+
+#if TARGET_BROWSER
+        private void CheckDisposedOrStarted()
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_handler != null)
+            {
+                throw new InvalidOperationException(SR.net_http_operation_started);
+            }
+        }
+#endif
     }
 }

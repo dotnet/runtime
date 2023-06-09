@@ -198,6 +198,8 @@
              Link="ProductionCode\System\Net\Http\HttpMessageInvoker.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpMethod.cs"
              Link="ProductionCode\System\Net\Http\HttpMethod.cs" />
+    <Compile Include="..\..\src\System\Net\Http\HttpMetrics.cs"
+             Link="ProductionCode\System\Net\Http\HttpMetrics.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpParseResult.cs"
              Link="ProductionCode\System\Net\Http\HttpParseResult.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpRequestException.cs"
