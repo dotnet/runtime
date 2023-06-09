@@ -355,8 +355,9 @@ namespace Internal.IL
             {
                 ILEmitter emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
-                MethodDesc throwHelper = method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowBadImageFormatException");
-                codeStream.EmitCallThrowHelper(emit, throwHelper);
+                var type = method.Context.SystemModule.GetType("System", "BadImageFormatException");
+                codeStream.Emit(ILOpcode.newobj, emit.NewToken(type.GetDefaultConstructor()));
+                codeStream.Emit(ILOpcode.throw_);
                 return emit.Link(method);
             }
         }

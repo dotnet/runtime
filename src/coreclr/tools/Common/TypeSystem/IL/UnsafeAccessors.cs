@@ -405,36 +405,43 @@ namespace Internal.IL
             }
 
             // Provide access to the target member
+            MethodDesc owningMethod;
             switch (context.Kind)
             {
                 case UnsafeAccessorKind.Constructor:
                     Debug.Assert(context.TargetMethod != null);
                     codeStream.Emit(ILOpcode.newobj, emit.NewToken(context.TargetMethod));
+                    owningMethod = context.Declaration;
                     break;
                 case UnsafeAccessorKind.Method:
                     Debug.Assert(context.TargetMethod != null);
                     codeStream.Emit(ILOpcode.callvirt, emit.NewToken(context.TargetMethod));
+                    owningMethod = context.TargetMethod;
                     break;
                 case UnsafeAccessorKind.StaticMethod:
                     Debug.Assert(context.TargetMethod != null);
                     codeStream.Emit(ILOpcode.call, emit.NewToken(context.TargetMethod));
+                    owningMethod = context.TargetMethod;
                     break;
                 case UnsafeAccessorKind.Field:
                     Debug.Assert(context.TargetField != null);
                     codeStream.Emit(ILOpcode.ldflda, emit.NewToken(context.TargetField));
+                    owningMethod = context.Declaration;
                     break;
                 case UnsafeAccessorKind.StaticField:
                     Debug.Assert(context.TargetField != null);
                     codeStream.Emit(ILOpcode.ldsflda, emit.NewToken(context.TargetField));
+                    owningMethod = context.Declaration;
                     break;
                 default:
                     Debug.Fail("Unknown UnsafeAccessorKind");
+                    owningMethod = null;
                     break;
             }
 
             // Return from the generated stub
             codeStream.Emit(ILOpcode.ret);
-            return emit.Link(context.TargetMethod ?? context.Declaration);
+            return emit.Link(owningMethod);
         }
 
         private static MethodIL GenerateAccessorSpecificFailure(ref GenerationContext context, string name, bool ambiguous)
