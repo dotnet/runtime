@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
+
 import cwraps from "./cwraps";
 import { Module, loaderHelpers } from "./globals";
 
@@ -49,8 +51,10 @@ export function mono_wasm_schedule_timer(shortestDueTimeMs: number): void {
     if (lastScheduledTimeoutId) {
         globalThis.clearTimeout(lastScheduledTimeoutId);
         lastScheduledTimeoutId = undefined;
-        // NOTE: Module.safeSetTimeout() does the runtimeKeepalivePush() but clearTimeout is asymmetric.
-        Module.runtimeKeepalivePop();
+        // NOTE: Multi-threaded Module.safeSetTimeout() does the runtimeKeepalivePush() 
+        // and non-Multi-threaded Module.safeSetTimeout does not runtimeKeepalivePush() 
+        // but clearTimeout does not runtimeKeepalivePop() so we need to do it here in MT only.
+        if (MonoWasmThreads) Module.runtimeKeepalivePop();
     }
     lastScheduledTimeoutId = Module.safeSetTimeout(mono_wasm_schedule_timer_tick, shortestDueTimeMs);
 }

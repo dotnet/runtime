@@ -41,7 +41,7 @@ export function init_managed_exports(): void {
     runtimeHelpers.javaScriptExports.call_entry_point = async (entry_point: MonoMethod, program_args?: string[]): Promise<number> => {
         const sp = Module.stackSave();
         try {
-            Module.runtimeKeepalivePush();
+            if (MonoWasmThreads) Module.runtimeKeepalivePush();
             const args = alloc_stack_frame(4);
             const res = get_arg(args, 1);
             const arg1 = get_arg(args, 2);
@@ -58,7 +58,7 @@ export function init_managed_exports(): void {
             }
             return await promise;
         } finally {
-            Module.runtimeKeepalivePop();// after await promise !
+            if (MonoWasmThreads) Module.runtimeKeepalivePop();// after await promise !
             Module.stackRestore(sp);
         }
     };
