@@ -2836,6 +2836,10 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 //
 void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
 {
+    if (strcmp(compiler->info.compMethodName, "Main") == 0)
+    {
+        printf("hello\n");
+    }
     GenTree* data = lclNode->gtOp1;
 
     // Stores from a multi-reg source are handled separately.
@@ -2947,6 +2951,15 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
                 inst_Mov_Extend(targetType, /* srcInReg */ true, targetReg, dataReg, /* canSkip */ true,
                                 emitActualTypeSize(targetType));
             }
+#ifndef _MSC_VER
+            else if (data->IsIconHandle(GTF_ICON_TLS_HDL))
+            {
+                assert(data->AsIntCon()->IconValue() == 0);
+                emitAttr    attr = emitActualTypeSize(targetType);
+                // On non-windows, need to load the address from system register.
+                emit->emitIns_R_R(INS_mrs, attr, targetReg, dataReg);
+            }
+#endif
             else
             {
                 inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);

@@ -937,10 +937,11 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SI_0B: // SI_0B   ................ ....bbbb........               imm4 - barrier
             break;
 
-        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva)
+        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
             datasize = id->idOpSize();
             assert(isGeneralRegister(id->idReg1()));
             assert(datasize == EA_8BYTE);
+            assert((id->idIns() != INS_mrs) || (id->idReg2() == REG_ZR));
             break;
 
         default:
@@ -4929,6 +4930,11 @@ void emitter::emitIns_R_R(
                 assert(isValidVectorElemsize(size));
                 fmt = IF_DV_2L;
             }
+            break;
+        case INS_mrs:
+            // assert(isVectorRegister(reg2));        
+            fmt = IF_SR_1A;
+
             break;
 
         default:
@@ -9067,9 +9073,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeReg_Tpid0()
 {
-    // op0 op1 CRn  CRm  op2
-    // 11  011 1101 0000 010
-    emitter::code_t sr = 0xd382;
+    // o0 op1 CRn  CRm  op2
+    // 1  011 1101 0000 010
+    // emitter::code_t sr = 0xd382;
+    emitter::code_t sr = 0x5e82;
     return sr << 5;
 }
 
@@ -11806,9 +11813,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva)
+        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
             assert(insOptsNone(id->idInsOpt()));
             code = emitInsCode(ins, fmt);
+            if (ins == INS_mrs)
+            {
+                code |= insEncodeReg_Tpid0();
+            }
             code |= insEncodeReg_Rt(id->idReg1()); // ttttt
             dst += emitOutput_Instr(dst, code);
             break;
@@ -13938,8 +13949,16 @@ void emitter::emitDispInsHelp(
             emitDispBarrier((insBarrier)emitGetInsSC(id));
             break;
 
-        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva)
-            emitDispReg(id->idReg1(), size, false);
+        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
+            if (ins == INS_mrs)
+            {
+                emitDispReg(id->idReg1(), size, true);
+                printf("tpidr_el0");
+            }
+            else
+            {
+                emitDispReg(id->idReg1(), size, false);
+            }
             break;
 
         default:
@@ -14140,20 +14159,11 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                     emitIns_R_S(ins, attr, dataReg, lclNum, offset);
                 }
             }
-#ifdef _MSC_VER
             else if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
             {
                 // On Arm64, TEB is in r18, so load from the r18 as base.
                 emitIns_R_R_I(ins, attr, dataReg, REG_R18, addr->AsIntCon()->IconValue());
             }
-#else
-            else if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
-            {
-                assert(addr->AsIntCon()->IconValue() == 0);
-                // On non-windows, need to load the address from system register.
-                emitIns_R_R(INS_mrs, attr, dataReg, REG_TPID0);
-            }
-#endif
             else if (emitIns_valid_imm_for_ldst_offset(offset, emitTypeSize(indir->TypeGet())))
             {
                 // Then load/store dataReg from/to [memBase + offset]
