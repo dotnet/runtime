@@ -271,7 +271,7 @@
     <value>GeneratedComInterfaceAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
   </data>
   <data name="RequiresAllowUnsafeBlocksMessage" xml:space="preserve">
-    <value>LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
+    <value>GeneratedComInterfaceAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
   </data>
   <data name="RequiresAllowUnsafeBlocksTitle" xml:space="preserve">
     <value>LibraryImportAttribute requires unsafe code.</value>
