@@ -16,10 +16,7 @@ namespace System
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct RuntimeTypeHandle : IEquatable<RuntimeTypeHandle>, ISerializable
     {
-        //
-        // Caution: There can be and are multiple MethodTable for the "same" type (e.g. int[]). That means
-        // you can't use the raw IntPtr value for comparisons.
-        //
+        private IntPtr _value;
 
         internal RuntimeTypeHandle(EETypePtr pEEType)
             : this(pEEType.RawValue)
@@ -123,7 +120,5 @@ namespace System
                 return _value == new IntPtr(0);
             }
         }
-
-        private IntPtr _value;
     }
 }

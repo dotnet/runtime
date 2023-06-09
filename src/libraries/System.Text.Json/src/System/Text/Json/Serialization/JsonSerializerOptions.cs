@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 
@@ -756,7 +757,13 @@ namespace System.Text.Json
 
         private JsonTypeInfo? GetTypeInfoNoCaching(Type type)
         {
-            JsonTypeInfo? info = (_effectiveJsonTypeInfoResolver ?? _typeInfoResolver)?.GetTypeInfo(type, this);
+            IJsonTypeInfoResolver? resolver = _effectiveJsonTypeInfoResolver ?? _typeInfoResolver;
+            if (resolver is null)
+            {
+                return null;
+            }
+
+            JsonTypeInfo? info = resolver.GetTypeInfo(type, this);
 
             if (info != null)
             {
@@ -768,6 +775,18 @@ namespace System.Text.Json
                 if (info.Options != this)
                 {
                     ThrowHelper.ThrowInvalidOperationException_ResolverTypeInfoOptionsNotCompatible();
+                }
+            }
+            else
+            {
+                Debug.Assert(_effectiveJsonTypeInfoResolver is null, "an effective resolver always returns metadata");
+
+                if (type == JsonTypeInfo.ObjectType)
+                {
+                    // If the resolver does not provide a JsonTypeInfo<object> instance, fill
+                    // with the serialization-only converter to enable polymorphic serialization.
+                    var converter = new SlimObjectConverter(resolver);
+                    info = new JsonTypeInfo<object>(converter, this);
                 }
             }
 

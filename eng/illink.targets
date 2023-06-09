@@ -2,8 +2,11 @@
 
   <PropertyGroup>
     <IsTrimmable Condition="'$(IsTrimmable)' == ''">true</IsTrimmable>
-    <!-- Don't use SDK's trimming functionality. -->
+    <!-- Don't use SDK's trimming functionality. 
+         TODO: Remove this once we build using preview 6 SDK. -->
     <_IsTrimmingEnabled>false</_IsTrimmingEnabled>
+    <!-- Same fix for preview 6 SDK. -->
+    <_RequiresILLinkPack>false</_RequiresILLinkPack>
     <PrepareResourcesDependsOn>_EmbedILLinkXmls;$(PrepareResourcesDependsOn)</PrepareResourcesDependsOn>
     <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true'">$(TargetsTriggeredByCompilation);ILLinkTrimAssembly</TargetsTriggeredByCompilation>
 

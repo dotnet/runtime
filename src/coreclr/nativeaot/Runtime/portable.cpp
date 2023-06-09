@@ -394,12 +394,6 @@ void * ReturnFromUniversalTransition_DebugStepTailCall;
 
 #endif // USE_PORTABLE_HELPERS
 
-// @TODO Implement CallDescrThunk
-EXTERN_C void * ReturnFromCallDescrThunk;
-#ifdef USE_PORTABLE_HELPERS
-void * ReturnFromCallDescrThunk;
-#endif
-
 #if defined(USE_PORTABLE_HELPERS)
 //
 // Return address hijacking
@@ -506,11 +500,6 @@ COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
     return 0;
-}
-
-COOP_PINVOKE_HELPER(void, RhCallDescrWorker, (void * callDescr))
-{
-    ASSERT_UNCONDITIONALLY("NYI");
 }
 
 COOP_PINVOKE_HELPER(void *, RhGetCommonStubAddress, ())

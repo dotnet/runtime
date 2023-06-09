@@ -10,7 +10,7 @@ using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
 using System.Reflection;
 
-namespace IntelHardwareIntrinsicTest._CpuId
+namespace XarchHardwareIntrinsicTest._CpuId
 {
     public class Program
     {
@@ -84,7 +84,7 @@ namespace IntelHardwareIntrinsicTest._CpuId
                 testResult = Fail;
             }
 
-            isHierarchyDisabled = isSse2HierarchyDisabled;
+            isHierarchyDisabled = isSse2HierarchyDisabled | !GetDotnetEnable("SSE3_4");
 
             if (IsBitIncorrect(ecx, 0, typeof(Sse3), Sse3.IsSupported, "SSE3", ref isHierarchyDisabled))
             {
@@ -145,12 +145,14 @@ namespace IntelHardwareIntrinsicTest._CpuId
 
             bool isAvx2HierarchyDisabled = isHierarchyDisabled;
 
+            isHierarchyDisabled = isAvxHierarchyDisabled;
+
             if (IsBitIncorrect(ebx, 3, typeof(Bmi1), Bmi1.IsSupported, "BMI1", ref isHierarchyDisabled))
             {
                 testResult = Fail;
             }
 
-            isHierarchyDisabled = isAvx2HierarchyDisabled;
+            isHierarchyDisabled = isAvxHierarchyDisabled;
 
             if (IsBitIncorrect(ebx, 8, typeof(Bmi2), Bmi2.IsSupported, "BMI2", ref isHierarchyDisabled))
             {

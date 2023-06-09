@@ -131,8 +131,9 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             Task<JSObject> modulePromise = JavaScriptImports.DynamicImport(moduleName, moduleUrl);
             var wrappedTask = CancelationHelper(modulePromise, cancellationToken);
-            await Task.Yield();// this helps to finish the import before we bind the module in [JSImport]
-            return await wrappedTask.ConfigureAwait(true);
+            return await wrappedTask.ConfigureAwait(
+                ConfigureAwaitOptions.ContinueOnCapturedContext |
+                ConfigureAwaitOptions.ForceYielding); // this helps to finish the import before we bind the module in [JSImport]
         }
 
         public static async Task<JSObject> CancelationHelper(Task<JSObject> jsTask, CancellationToken cancellationToken)
