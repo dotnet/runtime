@@ -1084,7 +1084,7 @@ open_symfile_from_bundle (MonoImage *image)
 {
 	const uint8_t *data = NULL;
 	uint32_t size = 0;
-	if (!mono_bundled_resources_get_assembly_resource_values (image->module_name, NULL, NULL, &data, &size))
+	if (!mono_bundled_resources_get_assembly_resource_symbol_values (image->module_name, &data, &size))
 		return NULL;
 
 	return mono_debug_open_image (image, data, size);
@@ -1095,7 +1095,8 @@ mono_get_symfile_bytes_from_bundle (const char *assembly_name, int *size)
 {
 	const uint8_t *symbol_data = NULL;
 	uint32_t symbol_size = 0;
-	mono_bundled_resources_get_assembly_resource_values (assembly_name, NULL, NULL, &symbol_data, &symbol_size);
+	if (!mono_bundled_resources_get_assembly_resource_symbol_values (assembly_name, &symbol_data, &symbol_size))
+		return NULL;
 
 	*size = symbol_size;
 	return (mono_byte *)symbol_data;

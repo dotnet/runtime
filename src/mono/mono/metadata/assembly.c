@@ -1459,7 +1459,7 @@ open_from_bundle_internal (MonoAssemblyLoadContext *alc, const char *filename, M
 
 	const uint8_t *data = NULL;
 	uint32_t size = 0;
-	if (mono_bundled_resources_get_assembly_resource_values (name, &data, &size, NULL, NULL))
+	if (mono_bundled_resources_get_assembly_resource_values (name, &data, &size))
 		image = mono_image_open_from_data_internal (alc, (char *)data, size, FALSE, status, FALSE, name, NULL);
 
 	g_free (name);

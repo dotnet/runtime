@@ -199,16 +199,14 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 		return;
 	}
 
-	if (mono_bundled_resources_get_assembly_resource_values (assembly->aname.name, NULL, NULL, NULL, NULL))
-		return;
+	gboolean already_loaded = mono_bundled_resources_get_assembly_resource_values (assembly->aname.name, NULL, NULL);
+	if (!already_loaded && !g_str_has_suffix (assembly->aname.name, ".dll")) {
+		char *assembly_name_with_extension = g_strdup_printf ("%s.dll", assembly->aname.name);
+		already_loaded = mono_bundled_resources_get_assembly_resource_values (assembly_name_with_extension, NULL, NULL);
+		g_free (assembly_name_with_extension);
+	}
 
-	size_t len = strlen (assembly->aname.name);
-	char *assembly_name_with_extension = (char *)g_malloc0 (sizeof(char) * (len + 5));
-	memcpy (assembly_name_with_extension, assembly->aname.name, len);
-	memcpy (assembly_name_with_extension + len, ".dll\0", 5);
-	gboolean mono_bundle_has_assembly = mono_bundled_resources_get_assembly_resource_values (assembly_name_with_extension, NULL, NULL, NULL, NULL);
-	g_free (assembly_name_with_extension);
-	if (mono_bundle_has_assembly)
+	if (already_loaded)
 		return;
 
 	if (mono_has_pdb_checksum ((char *) assembly_image->raw_data, assembly_image->raw_data_len)) { //if it's a release assembly we don't need to send to DebuggerProxy
@@ -445,11 +443,12 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 		}
 		else
 		{
-			unsigned int assembly_size = 0;
-			unsigned int symfile_size = 0;
 			const unsigned char* assembly_bytes = NULL;
+			unsigned int assembly_size = 0;
+			mono_bundled_resources_get_assembly_resource_values (assembly_name, &assembly_bytes, &assembly_size);
 			const unsigned char* pdb_bytes = NULL;
-			mono_bundled_resources_get_assembly_resource_values (assembly_name, &assembly_bytes, &assembly_size, &pdb_bytes, &symfile_size);
+			unsigned int symfile_size = 0;
+			mono_bundled_resources_get_assembly_resource_symbol_values (assembly_name, &pdb_bytes, &symfile_size);
 			m_dbgprot_buffer_init (&buf, assembly_size + symfile_size);
 			m_dbgprot_buffer_add_byte_array (&buf, (uint8_t *) assembly_bytes, assembly_size);
 			m_dbgprot_buffer_add_byte_array (&buf, (uint8_t *) pdb_bytes, symfile_size);

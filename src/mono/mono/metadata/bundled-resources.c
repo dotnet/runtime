@@ -262,15 +262,13 @@ bundled_resources_get_data_resource (const char *id)
 //  * id - Unique name of the resource
 //  ** data_out - address to point at assembly byte data
 //  ** size_out - address to point at assembly byte data size
-//  ** symbol_data_out - address to point at assembly symbol byte data
-//  ** symbol_size_out - address to point at assembly symbol byte data size
 //
 // Returns:
-//  bool - whether or not a valid MonoBundledAssemblyResource was found with key 'id'
+//  bool - whether or not a valid MonoBundledAssemblyResource->assembly was found with key 'id'
 //
 
 bool
-mono_bundled_resources_get_assembly_resource_values (const char *id, const uint8_t **data_out, uint32_t *size_out, const uint8_t **symbol_data_out, uint32_t *symbol_size_out)
+mono_bundled_resources_get_assembly_resource_values (const char *id, const uint8_t **data_out, uint32_t *size_out)
 {
 	MonoBundledAssemblyResource *bundled_assembly_resource = bundled_resources_get_assembly_resource (id);
 	if (!bundled_assembly_resource ||
@@ -282,6 +280,33 @@ mono_bundled_resources_get_assembly_resource_values (const char *id, const uint8
 		*data_out = bundled_assembly_resource->assembly.data;
 	if (size_out)
 		*size_out = bundled_assembly_resource->assembly.size;
+
+	return true;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// mono_bundled_resources_get_assembly_resource_symbol_values retrieves assembly symbol data associated
+// with a key equivalent to the requested resource id if found.
+//
+// Arguments:
+//  * id - Unique name of the resource
+//  ** symbol_data_out - address to point at assembly symbol byte data
+//  ** symbol_size_out - address to point at assembly symbol byte data size
+//
+// Returns:
+//  bool - whether or not a valid MonoBundledAssemblyResource->symbol_data was found with key 'id'
+//
+
+bool
+mono_bundled_resources_get_assembly_resource_symbol_values (const char *id, const uint8_t **symbol_data_out, uint32_t *symbol_size_out)
+{
+	MonoBundledAssemblyResource *bundled_assembly_resource = bundled_resources_get_assembly_resource (id);
+	if (!bundled_assembly_resource ||
+		!bundled_assembly_resource->symbol_data.data ||
+		bundled_assembly_resource->symbol_data.size == 0)
+		return false;
+
 	if (symbol_data_out)
 		*symbol_data_out = bundled_assembly_resource->symbol_data.data;
 	if (symbol_size_out)
