@@ -111,8 +111,8 @@
     <runtimelinuxmuslx64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23308.2</runtimelinuxmuslx64MicrosoftNETCoreRuntimeObjWriterVersion>
     <runtimewinarm64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23308.2</runtimewinarm64MicrosoftNETCoreRuntimeObjWriterVersion>
     <runtimewinx64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23308.2</runtimewinx64MicrosoftNETCoreRuntimeObjWriterVersion>
-    <runtimeosx110arm64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.23106.1</runtimeosx110arm64MicrosoftNETCoreRuntimeObjWriterVersion>
-    <runtimeosx1012x64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.23106.1</runtimeosx1012x64MicrosoftNETCoreRuntimeObjWriterVersion>
+    <runtimeosxarm64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23308.2</runtimeosxarm64MicrosoftNETCoreRuntimeObjWriterVersion>
+    <runtimeosxx64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23308.2</runtimeosxx64MicrosoftNETCoreRuntimeObjWriterVersion>
     <!-- Libraries dependencies -->
     <MicrosoftBclAsyncInterfacesVersion>6.0.0</MicrosoftBclAsyncInterfacesVersion>
     <MicrosoftBclHashCodeVersion>1.1.1</MicrosoftBclHashCodeVersion>
@@ -244,8 +244,8 @@
     <runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion>16.0.5-alpha.1.23308.2</runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion>
     <runtimewinarm64MicrosoftNETCoreRuntimeJITToolsVersion>16.0.5-alpha.1.23308.2</runtimewinarm64MicrosoftNETCoreRuntimeJITToolsVersion>
     <runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>16.0.5-alpha.1.23308.2</runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23106.1</runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23106.1</runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimeosxarm64MicrosoftNETCoreRuntimeJITToolsVersion>16.0.5-alpha.1.23308.2</runtimeosxarm64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimeosxx64MicrosoftNETCoreRuntimeJITToolsVersion>16.0.5-alpha.1.23308.2</runtimeosxx64MicrosoftNETCoreRuntimeJITToolsVersion>
     <!-- BrowserDebugProxy libs -->
     <MicrosoftExtensionsLoggingVersion>3.1.7</MicrosoftExtensionsLoggingVersion>
     <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>

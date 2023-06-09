@@ -36,13 +36,13 @@
       <Uri>https://github.com/dotnet/llvm-project</Uri>
       <Sha>992da97a50c240ec1edb38dd4f2cf82b9af11884</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx.11.0-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.23106.1">
+    <Dependency Name="runtime.osx-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.23308.2">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>76f334f354eb653a7b409a5319b591ea09df5a43</Sha>
+      <Sha>992da97a50c240ec1edb38dd4f2cf82b9af11884</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.23106.1">
+    <Dependency Name="runtime.osx-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.23308.2">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>76f334f354eb653a7b409a5319b591ea09df5a43</Sha>
+      <Sha>992da97a50c240ec1edb38dd4f2cf82b9af11884</Sha>
     </Dependency>
     <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.JIT.Tools" Version="16.0.5-alpha.1.23308.2">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
@@ -68,13 +68,13 @@
       <Uri>https://github.com/dotnet/llvm-project</Uri>
       <Sha>992da97a50c240ec1edb38dd4f2cf82b9af11884</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx.11.0-arm64.Microsoft.NETCore.Runtime.JIT.Tools" Version="1.0.0-alpha.1.23106.1">
+    <Dependency Name="runtime.osx-arm64.Microsoft.NETCore.Runtime.JIT.Tools" Version="16.0.5-alpha.1.23308.2">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>76f334f354eb653a7b409a5319b591ea09df5a43</Sha>
+      <Sha>992da97a50c240ec1edb38dd4f2cf82b9af11884</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.JIT.Tools" Version="1.0.0-alpha.1.23106.1">
+    <Dependency Name="runtime.osx-x64.Microsoft.NETCore.Runtime.JIT.Tools" Version="16.0.5-alpha.1.23308.2">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>76f334f354eb653a7b409a5319b591ea09df5a43</Sha>
+      <Sha>992da97a50c240ec1edb38dd4f2cf82b9af11884</Sha>
     </Dependency>
     <Dependency Name="System.CommandLine" Version="2.0.0-beta4.22564.1">
       <Uri>https://github.com/dotnet/command-line-api</Uri>
