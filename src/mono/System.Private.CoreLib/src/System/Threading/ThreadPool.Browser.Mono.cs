@@ -23,7 +23,7 @@ namespace System.Threading
         {
         }
 
-        internal bool Repeating => false;
+        internal static bool Repeating => false;
 
         public bool Unregister(WaitHandle? waitObject)
         {
