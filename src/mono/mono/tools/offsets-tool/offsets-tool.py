@@ -372,11 +372,11 @@ class OffsetsTool:
 			if type.size == -1:
 				continue
 			f.write ("DECL_SIZE2(%s,%s)\n" % (type.name, type.size))
-			done_fields = []
+			done_fields = {}
 			for field in type.fields:
 				if field.name not in done_fields:
 					f.write ("DECL_OFFSET2(%s,%s,%s)\n" % (type.name, field.name, field.offset))
-					done_fields.append(field.name)
+					done_fields [field.name] = field.name
 		f.write ("#endif //disable metadata check\n")
 
 		f.write ("#ifndef DISABLE_JIT_OFFSETS\n")
@@ -386,11 +386,11 @@ class OffsetsTool:
 			if type.size == -1:
 				continue
 			f.write ("DECL_SIZE2(%s,%s)\n" % (type.name, type.size))
-			done_fields = []
+			done_fields = {}
 			for field in type.fields:
 				if field.name not in done_fields:
 					f.write ("DECL_OFFSET2(%s,%s,%s)\n" % (type.name, field.name, field.offset))
-					done_fields.append(field.name)
+					done_fields [field.name] = field.name
 		f.write ("#endif //disable jit check\n")
 
 		f.write ("#endif //cross compiler checks\n")
