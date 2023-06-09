@@ -15,4 +15,32 @@
     <Right>lib/netstandard2.0/Microsoft.Extensions.Logging.TraceSource.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:Microsoft.Extensions.Logging.TraceSourceFactoryExtensions.AddTraceSource(Microsoft.Extensions.Logging.ILoggerFactory,System.Diagnostics.SourceSwitch,System.Diagnostics.TraceListener):[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/Microsoft.Extensions.Logging.TraceSource.dll</Left>
+    <Right>lib/netstandard2.0/Microsoft.Extensions.Logging.TraceSource.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:Microsoft.Extensions.Logging.TraceSourceFactoryExtensions.AddTraceSource(Microsoft.Extensions.Logging.ILoggerFactory,System.Diagnostics.SourceSwitch):[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/Microsoft.Extensions.Logging.TraceSource.dll</Left>
+    <Right>lib/netstandard2.0/Microsoft.Extensions.Logging.TraceSource.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:Microsoft.Extensions.Logging.TraceSourceFactoryExtensions.AddTraceSource(Microsoft.Extensions.Logging.ILoggerFactory,System.String,System.Diagnostics.TraceListener):[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/Microsoft.Extensions.Logging.TraceSource.dll</Left>
+    <Right>lib/netstandard2.0/Microsoft.Extensions.Logging.TraceSource.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:Microsoft.Extensions.Logging.TraceSourceFactoryExtensions.AddTraceSource(Microsoft.Extensions.Logging.ILoggerFactory,System.String):[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/Microsoft.Extensions.Logging.TraceSource.dll</Left>
+    <Right>lib/netstandard2.0/Microsoft.Extensions.Logging.TraceSource.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
 </Suppressions>

@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
-        [System.Obsolete("This is obsolete and will be removed in a future version.")]
+        [System.Obsolete("This property is retained only for compatibility.  Remove use and instead call MemoryCache.Compat as needed.", error: true)]
         public bool CompactOnMemoryPressure { get; set; }
 
         /// <summary>
