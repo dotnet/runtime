@@ -324,7 +324,6 @@ namespace Internal.Cryptography
             return (mode == CipherMode.CFB ? feedbackSizeInBits : algorithm.BlockSize) / 8;
         }
 
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe ref byte GetNonNullPinnableReference(Span<byte> buffer)
         {
