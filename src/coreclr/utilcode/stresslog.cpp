@@ -524,7 +524,7 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper() {
             if (msgs->isDead)
             {
                 BOOL hasTimeStamp = msgs->curPtr != (StressMsg *)msgs->chunkListTail->EndPtr();
-                if (hasTimeStamp && msgs->curPtr->timeStamp < recycleStamp)
+                if (hasTimeStamp && msgs->curPtr->GetTimeStamp() < recycleStamp)
                 {
                     skipInsert = TRUE;
                     InterlockedDecrement(&theLog.deadCount);
@@ -535,7 +535,7 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper() {
                 {
                     oldestDeadMsg = msgs;
                 }
-                else if (hasTimeStamp && oldestDeadMsg->curPtr->timeStamp > msgs->curPtr->timeStamp)
+                else if (hasTimeStamp && oldestDeadMsg->curPtr->GetTimeStamp() > msgs->curPtr->GetTimeStamp())
                 {
                     oldestDeadMsg = msgs;
                 }
@@ -764,8 +764,8 @@ FORCEINLINE void ThreadStressLog::LogMsg(unsigned facility, int cArgs, const cha
     // Get next available slot
     StressMsg* msg = AdvanceWrite(cArgs);
 
-    msg->timeStamp = getTimeStamp();
-    msg->facility = facility;
+    msg->SetTimeStamp(getTimeStamp());
+    msg->SetFacility(facility);
     msg->SetFormatOffset(offs);
     msg->SetNumberOfArgs(cArgs);
 

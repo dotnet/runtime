@@ -167,7 +167,7 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper(Thread * pThread) {
             if (msgs->isDead)
             {
                 bool hasTimeStamp = msgs->curPtr != (StressMsg *)msgs->chunkListTail->EndPtr();
-                if (hasTimeStamp && msgs->curPtr->timeStamp < recycleStamp)
+                if (hasTimeStamp && msgs->curPtr->GetTimeStamp() < recycleStamp)
                 {
                     skipInsert = TRUE;
                     PalInterlockedDecrement(&theLog.deadCount);
@@ -178,7 +178,7 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper(Thread * pThread) {
                 {
                     oldestDeadMsg = msgs;
                 }
-                else if (hasTimeStamp && oldestDeadMsg->curPtr->timeStamp > msgs->curPtr->timeStamp)
+                else if (hasTimeStamp && oldestDeadMsg->curPtr->GetTimeStamp() > msgs->curPtr->GetTimeStamp())
                 {
                     oldestDeadMsg = msgs;
                 }
@@ -321,8 +321,8 @@ void ThreadStressLog::LogMsg ( uint32_t facility, int cArgs, const char* format,
     // Get next available slot
     StressMsg* msg = AdvanceWrite(cArgs);
 
-    msg->timeStamp = getTimeStamp();
-    msg->facility = facility;
+    msg->SetTimeStamp(getTimeStamp());
+    msg->SetFacility(facility);
     msg->SetFormatOffset(offs);
     msg->SetNumberOfArgs(cArgs);
 
@@ -485,7 +485,7 @@ ThreadStressLog* StressLog::FindLatestThreadLog() const
     for (const ThreadStressLog* ptr = this->logs; ptr != NULL; ptr = ptr->next)
     {
         if (ptr->readPtr != NULL)
-            if (latestLog == 0 || ptr->readPtr->timeStamp > latestLog->readPtr->timeStamp)
+            if (latestLog == 0 || ptr->readPtr->GetTimeStamp() > latestLog->readPtr->GetTimeStamp())
                 latestLog = ptr;
     }
     return const_cast<ThreadStressLog*>(latestLog);
@@ -515,14 +515,14 @@ void StressLog::EnumerateStressMsgs(/*STRESSMSGCALLBACK*/void* smcbWrapper, /*EN
             if (hr != S_OK)
                 strcpy_s(format, _countof(format), "Could not read address of format string");
 
-            double deltaTime = ((double) (latestMsg->timeStamp - this->startTimeStamp)) / this->tickFrequency;
+            double deltaTime = ((double) (latestMsg->GetTimeStamp() - this->startTimeStamp)) / this->tickFrequency;
 
             // Pass a copy of the args to the callback to avoid foreign code overwriting the stress log
             // entries (this was the case for %s arguments)
             memcpy_s(argsCopy, sizeof(argsCopy), latestMsg->args, (latestMsg->numberOfArgs)*sizeof(void*));
 
             // @TODO: Truncating threadId to 32-bit
-            if (!smcb((UINT32)latestLog->threadId, deltaTime, latestMsg->facility, format, argsCopy, token))
+            if (!smcb((UINT32)latestLog->threadId, deltaTime, latestMsg->GetFacility(), format, argsCopy, token))
                 break;
         }
 

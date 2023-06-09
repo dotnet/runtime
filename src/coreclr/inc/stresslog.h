@@ -548,15 +548,31 @@ inline BOOL StressLog::LogOn(unsigned facility, unsigned level)
 // to fit more messages in a chunk.
 struct StressMsg
 {
+private:
     static const size_t formatOffsetLowBits = 26;
     static const size_t formatOffsetHighBits = 13;
 
-    uint32_t numberOfArgsLow  : 3;                   // at most 7 arguments here
-    uint32_t formatOffsetLow  : formatOffsetLowBits; // low bits offset of format string in modules
-    uint32_t numberOfArgsHigh : 3;                   // extend number of args in a backward compat way
-    uint32_t facility;                               // facility used to log the entry
-    uint64_t timeStamp : 51;                         // time when mssg was logged
-    uint64_t formatOffsetHigh: formatOffsetHighBits; // high bits of format string in modules
+    union
+    {
+        struct
+        {
+            // We split the format offset to ensure that we utilize every bit and that
+            // the compiler does not align the format offset to a new 64-bit boundary.
+            uint64_t facility: 32;                           // facility used to log the entry
+            uint64_t numberOfArgs : 6;                       // number of arguments
+            uint64_t formatOffsetLow: formatOffsetLowBits;   // offset of format string in modules
+            uint64_t formatOffsetHigh: formatOffsetHighBits; // offset of format string in modules
+            uint64_t timeStamp: 51;                          // time when msg was logged (100ns ticks since runtime start)
+        };
+
+        struct
+        {
+            uint64_t argsFacilityOffsetLow;
+            uint64_t timeStampOffsetHigh;
+        };
+    };
+
+public:
     void*     args[0];                               // size given by numberOfArgs
 
     void SetFormatOffset(uint64_t offset)
@@ -572,23 +588,42 @@ struct StressMsg
 
     void SetNumberOfArgs(uint32_t num)
     {
-        numberOfArgsLow = num & ((1 << 3) - 1);
-        numberOfArgsHigh = num >> 3;
+        numberOfArgs = num;
     }
 
     uint32_t GetNumberOfArgs()
     {
-        return numberOfArgsLow | (numberOfArgsHigh << 3);
+        return numberOfArgs;
+    }
+
+    void SetFacility(uint32_t fac)
+    {
+        facility = fac;
+    }
+
+    uint32_t GetFacility()
+    {
+        return facility;
+    }
+
+    uint64_t GetTimeStamp()
+    {
+        return timeStamp;
+    }
+
+    void SetTimeStamp(uint64_t time)
+    {
+        timeStamp = time;
     }
 
     static const size_t maxArgCnt = 63;
     static const int64_t maxOffset = (int64_t)1 << (formatOffsetLowBits + formatOffsetHighBits);
     static size_t maxMsgSize ()
     { return sizeof(StressMsg) + maxArgCnt*sizeof(void*); }
-
-    friend class ThreadStressLog;
-    friend class StressLog;
 };
+
+static_assert(sizeof(StressMsg) == sizeof(uint64_t) * 2, "StressMsg bitfields aren't aligned correctly");
+
 #ifdef HOST_64BIT
 #define STRESSLOG_CHUNK_SIZE (32 * 1024)
 #else //HOST_64BIT
@@ -699,7 +734,7 @@ public:
     long       chunkListLength; // how many stress log chunks are in this stress log
 
 #ifdef STRESS_LOG_READONLY
-    FORCEINLINE StressMsg* AdvanceRead();
+    FORCEINLINE StressMsg* AdvanceRead(uint32_t cArgs);
 #endif //STRESS_LOG_READONLY
     FORCEINLINE StressMsg* AdvanceWrite(int cArgs);
 
@@ -834,7 +869,7 @@ public:
     // Called while dumping.  Returns true after all messages in log were dumped
     FORCEINLINE BOOL CompletedDump ()
     {
-        return readPtr->timeStamp == 0
+        return readPtr->GetTimeStamp() == 0
                 //if read has passed end of list but write has not passed head of list yet, we are done
                 //if write has also wrapped, we are at the end if read pointer passed write pointer
                 || (readHasWrapped &&
@@ -864,10 +899,10 @@ public:
 // Called when dumping the log (by StressLog::Dump())
 // Updates readPtr to point to next stress messaage to be dumped
 // For convenience it returns the new value of readPtr
-inline StressMsg* ThreadStressLog::AdvanceRead() {
+inline StressMsg* ThreadStressLog::AdvanceRead(uint32_t cArgs) {
     STATIC_CONTRACT_LEAF;
     // advance the marker
-    readPtr = (StressMsg*)((char*)readPtr + sizeof(StressMsg) + readPtr->GetNumberOfArgs() * sizeof(void*));
+    readPtr = (StressMsg*)((char*)readPtr + sizeof(StressMsg) + cArgs * sizeof(void*));
     // wrap around if we need to
     if (readPtr >= (StressMsg *)curReadChunk->EndPtr ())
     {
