@@ -202,7 +202,26 @@ public:
                                uint64_t* pauseInfoRaw,
                                int kind)
     {
-        assert(0);
+        // Dummy implemnetation for now.
+        uint64_t totalReserved = m_pGlobalHeapEnd - m_pGlobalHeapStart;
+        uint64_t totalUsed = m_pGlobalHeapCurrent - m_pGlobalHeapStart;
+
+        *highMemLoadThresholdBytes = 93;
+        *totalAvailableMemoryBytes = totalReserved;
+        *lastRecordedMemLoadBytes = totalUsed / totalReserved;
+        *lastRecordedHeapSizeBytes = totalUsed;
+        *lastRecordedFragmentationBytes = 0;
+        *totalCommittedBytes = totalUsed;
+        *promotedBytes = totalUsed;
+        *pinnedObjectCount = 0;
+        *finalizationPendingCount = 0;
+        *index = 0;
+        *generation = 0;
+        *pauseTimePct = 0;
+        *isCompaction = false;
+        *isConcurrent = false;
+        *genInfoRaw = 0;
+        *pauseInfoRaw = 0;
     }
 
     // Get the last memory load in percentage observed by the last GC.
