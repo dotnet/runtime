@@ -22,7 +22,7 @@ namespace System.Net.Http
         private HttpContent? _content;
         private bool _disposed;
 
-        internal IRequestFailureMetricsLogger? _requestFailedMetricsLogger;
+        internal Action<HttpResponseMessage>? RequestFailedMetricsLogger { get; set; }
 
         public Version Version
         {

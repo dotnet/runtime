@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http;
 
-internal sealed class MetricsHandler : HttpMessageHandlerStage, IRequestFailureMetricsLogger
+internal sealed class MetricsHandler : HttpMessageHandlerStage
 {
     private readonly HttpMessageHandler _innerHandler;
     private readonly Meter _meter;
@@ -65,7 +65,7 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IRequestFailureM
             {
                 // No exception has been thrown to the point of reading headers, but errors can still occur while buffering the response content in HttpClient.
                 // We need to report http-client-failed-requests if it happens.
-                response._requestFailedMetricsLogger = this;
+                response.RequestFailedMetricsLogger = LogRequestFailed;
             }
             return response;
         }
@@ -178,7 +178,7 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IRequestFailureM
         return tags;
     }
 
-    void IRequestFailureMetricsLogger.LogRequestFailed(HttpResponseMessage response)
+    private void LogRequestFailed(HttpResponseMessage response)
     {
         Debug.Assert(response.RequestMessage is not null);
         TagList tags = InitializeCommonTags(response.RequestMessage);
@@ -223,9 +223,4 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IRequestFailureM
             // NOP to prevent disposing the global instance from arbitrary user code.
         }
     }
-}
-
-internal interface IRequestFailureMetricsLogger
-{
-    void LogRequestFailed(HttpResponseMessage response);
 }
