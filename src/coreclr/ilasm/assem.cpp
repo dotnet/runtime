@@ -296,60 +296,19 @@ BOOL Assembler::AddMethod(Method *pMethod)
         fIsInterface = IsTdInterface(pMethod->m_pClass->m_Attr);
         fIsImport = IsTdImport(pMethod->m_pClass->m_Attr);
     }
-    if(m_CurPC)
-    {
-        char sz[1024];
-        sz[0] = 0;
-        if(fIsImport) strcat_s(sz,1024," imported");
-        if(IsMdAbstract(pMethod->m_Attr)) strcat_s(sz,1024," abstract");
-        if(IsMdPinvokeImpl(pMethod->m_Attr)) strcat_s(sz,1024," pinvoke");
-        if(!IsMiIL(pMethod->m_wImplAttr)) strcat_s(sz,1024," non-IL");
-        if(IsMiRuntime(pMethod->m_wImplAttr)) strcat_s(sz,1024," runtime-supplied");
-        if(IsMiInternalCall(pMethod->m_wImplAttr)) strcat_s(sz,1024," an internal call");
-        if(strlen(sz))
-        {
-            report->error("Method cannot have body if it is%s\n",sz);
-        }
-    }
-    else // method has no body
-    {
-        if(fIsImport || IsMdAbstract(pMethod->m_Attr) || IsMdPinvokeImpl(pMethod->m_Attr)
-           || IsMiRuntime(pMethod->m_wImplAttr) || IsMiInternalCall(pMethod->m_wImplAttr)) return TRUE;
 
-        // Check method attributes that indicate no method body is expected.
-        ULONG count = pMethod->m_CustomDescrList.COUNT();
-        for (ULONG i = 0; i < count; ++i)
-        {
-            CustomDescr* desc = pMethod->m_CustomDescrList.PEEK(i);
-            mdToken parent = mdTokenNil;
-            if (SUCCEEDED(m_pImporter->GetMemberRefProps(desc->tkType, &parent, NULL, 0, NULL, NULL, NULL)))
-            {
-                WCHAR name[128] = {};
-                ULONG nameLen = ARRAY_SIZE(name);
-                if (SUCCEEDED(m_pImporter->GetTypeRefProps(parent, NULL, name, nameLen, &nameLen)))
-                {
-                    if (u16_strcmp(name, W("System.Runtime.CompilerServices.UnsafeAccessorAttribute")) == 0)
-                        return TRUE;
-                }
-            }
-        }
+    if(!m_CurPC) return TRUE; // method has no body, just emit empty method.
 
-        if(OnErrGo)
-        {
-            report->error("Method has no body\n");
-            return TRUE;
-        }
-        else
-        {
-            report->warn("Method has no body, 'ret' emitted\n");
-            Instr* pIns = GetInstr();
-            if(pIns)
-            {
-                memset(pIns,0,sizeof(Instr));
-                pIns->opcode = CEE_RET;
-                EmitOpcode(pIns);
-            }
-        }
+    char sz[1024] = {};
+    if(fIsImport) strcat_s(sz,1024," imported");
+    if(IsMdAbstract(pMethod->m_Attr)) strcat_s(sz,1024," abstract");
+    if(IsMdPinvokeImpl(pMethod->m_Attr)) strcat_s(sz,1024," pinvoke");
+    if(!IsMiIL(pMethod->m_wImplAttr)) strcat_s(sz,1024," non-IL");
+    if(IsMiRuntime(pMethod->m_wImplAttr)) strcat_s(sz,1024," runtime-supplied");
+    if(IsMiInternalCall(pMethod->m_wImplAttr)) strcat_s(sz,1024," an internal call");
+    if(strlen(sz))
+    {
+        report->error("Method cannot have body if it is%s\n",sz);
     }
 
     if(pMethod->m_Locals.COUNT()) pMethod->m_LocalsSig=0x11000001; // placeholder, the real token 2b defined in EmitMethod
