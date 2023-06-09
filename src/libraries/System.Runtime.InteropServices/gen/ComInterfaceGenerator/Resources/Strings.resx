@@ -267,4 +267,52 @@
   <data name="InvalidStringMarshallingConfigurationOnInterfaceMessage" xml:space="preserve">
     <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</value>
   </data>
+  <data name="ConvertToGeneratedComInterfaceDescription" xml:space="preserve">
+    <value>Use 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</value>
+  </data>
+  <data name="ConvertToGeneratedComInterfaceMayRequireCustomMarshalling" xml:space="preserve">
+    <value>Converting this API to 'GeneratedComInterfaceAttribute' will require additional code to provide custom marshallers for some parameters.</value>
+  </data>
+  <data name="ConvertToGeneratedComInterfaceMessage" xml:space="preserve">
+    <value>Mark the type '{0}' with 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</value>
+  </data>
+  <data name="ConvertToGeneratedComInterfaceTitle" xml:space="preserve">
+    <value>Convert to 'GeneratedComInterface'</value>
+  </data>
+  <data name="AddGeneratedComClassAttributeDescription" xml:space="preserve">
+    <value>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</value>
+  </data>
+  <data name="AddGeneratedComClassAttributeMessage" xml:space="preserve">
+    <value>Add the 'GeneratedComClassAttribute' to '{0}' to enable passing objects of type '{0}' to COM</value>
+  </data>
+  <data name="AddGeneratedComClassAttributeTitle" xml:space="preserve">
+    <value>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM</value>
+  </data>
+  <data name="ComHostingDoesNotSupportGeneratedComInterfaceDescription" xml:space="preserve">
+    <value>.NET COM hosting with 'EnableComHosting' only supports built-in COM interop. It does not support source-generated COM interop with 'GeneratedComInterfaceAttribute'.</value>
+  </data>
+  <data name="ComHostingDoesNotSupportGeneratedComInterfaceMessage" xml:space="preserve">
+    <value>.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'. Change any COM exposed interfaces implemented by '{0}' to use the 'System.Runtime.InteropServices.ComVisibleAttribute' instead</value>
+  </data>
+  <data name="ComHostingDoesNotSupportGeneratedComInterfaceTitle" xml:space="preserve">
+    <value>.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'</value>
+  </data>
+  <data name="AddGeneratedComClassAddUnsafe" xml:space="preserve">
+    <value>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM and allow unsafe code</value>
+  </data>
+  <data name="ConvertToGeneratedComInterfaceAddUnsafe" xml:space="preserve">
+    <value>Convert to 'GeneratedComInterface' and allow unsafe code</value>
+  </data>
+  <data name="RuntimeComApisDoNotSupportSourceGeneratedComDescription" xml:space="preserve">
+    <value>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime</value>
+  </data>
+  <data name="RuntimeComApisDoNotSupportSourceGeneratedComMessage" xml:space="preserve">
+    <value>The method '{0}' only supports runtime-based COM interop and will not work with type '{1}'</value>
+  </data>
+  <data name="RuntimeComApisDoNotSupportSourceGeneratedComTitle" xml:space="preserve">
+    <value>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM</value>
+  </data>
+  <data name="ConvertComInterfaceMayProduceInvalidCode" xml:space="preserve">
+    <value>Converting this interface to use 'GeneratedComInterfaceAttribute' may produce invalid code and may require additional work</value>
+  </data>
 </root>
