@@ -57,7 +57,9 @@
     <ItemGroup Condition="'@(LegacyRunnableTestPaths)' != ''">
       <LegacyRunnableTestPaths Separator="$([System.String]::Copy('%(LegacyRunnableTestPaths.Identity)').IndexOfAny('\\/', $(XunitTestBinBase.Length)))" />
       <LegacyRunnableTestPaths SecondSeparator="$([System.String]::Copy('%(LegacyRunnableTestPaths.Identity)').IndexOfAny('\\/', $([MSBuild]::Add(%(LegacyRunnableTestPaths.Separator), 1))))" />
+      <LegacyRunnableTestPaths ThirdSeparator="$([System.String]::Copy('%(LegacyRunnableTestPaths.Identity)').IndexOfAny('\\/', $([MSBuild]::Add(%(LegacyRunnableTestPaths.SecondSeparator), 1))))" />
       <LegacyRunnableTestPaths Separator="%(LegacyRunnableTestPaths.SecondSeparator)" Condition="'%(LegacyRunnableTestPaths.SecondSeparator)' != '-1'" />
+      <LegacyRunnableTestPaths Separator="%(LegacyRunnableTestPaths.ThirdSeparator)" Condition="'%(LegacyRunnableTestPaths.ThirdSeparator)' != '-1'" />
       <TestDirectoriesWithDup Include="$([System.String]::Copy('%(LegacyRunnableTestPaths.Identity)').Substring(0, %(LegacyRunnableTestPaths.Separator)))" />
     </ItemGroup>
 
@@ -601,7 +603,7 @@
   </Target>
 
   <Target Name="BuildAlliOSApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
-    <ItemGroup Condition="'$(TestBuildMode)' != 'nativeaot'" >
+    <ItemGroup>
       <RunProj Include="$(MSBuildProjectFile)">
         <Properties>_CMDDIR=%(TestDirectories.Identity)</Properties>
       </RunProj>
@@ -613,13 +615,6 @@
       Condition="'@(TestDirectories)' != '' and '$(TestBuildMode)' != 'nativeaot'"
     />
 
-    <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
-      <SubfolderFullPaths Include="$([System.IO.Directory]::GetDirectories('%(TestDirectories.Identity)'))" />
-      <SubTestDirectories Include="@(SubfolderFullPaths->'$([System.IO.Path]::GetFullPath('%(SubfolderFullPaths.Identity)'))')" />
-      <RunProj Include="$(MSBuildProjectFile)">
-        <Properties>_CMDDIR=%(SubTestDirectories.Identity)</Properties>
-      </RunProj>
-    </ItemGroup>
     <MSBuild
       Projects="@(RunProj)"
       Targets="BuildNativeAOTiOSApp"
