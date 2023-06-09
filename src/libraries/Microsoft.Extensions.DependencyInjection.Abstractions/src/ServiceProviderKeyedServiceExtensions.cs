@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 return (T?)keyedServiceProvider.GetKeyedService(typeof(T), serviceKey);
             }
 
-            throw new InvalidOperationException("TODO BPETIT");
+            throw new InvalidOperationException(SR.KeyedServicesNotSupported);
         }
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 return service;
             }
 
-            throw new InvalidOperationException("TODO BPETIT");
+            throw new InvalidOperationException(SR.KeyedServicesNotSupported);
         }
 
         /// <summary>
