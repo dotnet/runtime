@@ -352,18 +352,22 @@ export function generateWasmBody(
                     if (typeof (constantSize) !== "number") {
                         // size (FIXME: uint32 not int32)
                         append_ldloc(builder, sizeOffset, WasmOpcode.i32_load);
-                        builder.local("math_rhs32", WasmOpcode.tee_local);
+                        builder.local("count", WasmOpcode.tee_local);
                         // if size is 0 then don't do anything
                         builder.block(WasmValtype.void, WasmOpcode.if_); // if size
+                    } else {
+                        // Store the count into the local in case the unroll fails
+                        builder.i32_const(constantSize);
+                        builder.local("count", WasmOpcode.set_local);
                     }
 
                     // stash dest then check for null
                     append_ldloc(builder, destOffset, WasmOpcode.i32_load);
-                    builder.local("temp_ptr", WasmOpcode.tee_local);
+                    builder.local("dest_ptr", WasmOpcode.tee_local);
                     builder.appendU8(WasmOpcode.i32_eqz);
                     // stash src then check for null
                     append_ldloc(builder, srcOffset, WasmOpcode.i32_load);
-                    builder.local("math_lhs32", WasmOpcode.tee_local);
+                    builder.local("src_ptr", WasmOpcode.tee_local);
                     builder.appendU8(WasmOpcode.i32_eqz);
 
                     // now we memmove if both dest and src are valid. The stack currently has
@@ -375,12 +379,12 @@ export function generateWasmBody(
 
                     if (
                         (typeof (constantSize) !== "number") ||
-                        !try_append_memmove_fast(builder, 0, 0, constantSize, false, "temp_ptr", "math_lhs32")
+                        !try_append_memmove_fast(builder, 0, 0, constantSize, false, "dest_ptr", "src_ptr")
                     ) {
                         // We passed the null check so now prepare the stack
-                        builder.local("temp_ptr");
-                        builder.local("math_lhs32");
-                        builder.local("math_rhs32");
+                        builder.local("dest_ptr");
+                        builder.local("src_ptr");
+                        builder.local("count");
                         // wasm memmove with stack layout dest, src, count
                         builder.appendU8(WasmOpcode.PREFIX_sat);
                         builder.appendU8(10);
@@ -603,7 +607,7 @@ export function generateWasmBody(
                 // index
                 append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
                 // stash it, we'll be using it multiple times
-                builder.local("math_lhs32", WasmOpcode.tee_local);
+                builder.local("index", WasmOpcode.tee_local);
 
                 /*
                 const constantIndex = get_known_constant_value(getArgU16(ip, 3));
@@ -612,24 +616,27 @@ export function generateWasmBody(
                 */
 
                 // str
-                const ptrLocal = builder.options.zeroPageOptimization ? "math_rhs32" : "cknull_ptr";
+                let ptrLocal = "cknull_ptr";
                 if (builder.options.zeroPageOptimization && isZeroPageReserved()) {
                     // load string ptr and stash it
                     // if the string ptr is null, the length check will fail and we will bail out,
                     //  so the null check is not necessary
                     counters.nullChecksFused++;
                     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                    ptrLocal = "src_ptr";
                     builder.local(ptrLocal, WasmOpcode.tee_local);
                 } else
                     append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true);
 
+                // current stack layout is [index, ptr]
                 // get string length
                 builder.appendU8(WasmOpcode.i32_load);
                 builder.appendMemarg(getMemberOffset(JiterpMember.StringLength), 2);
+                // current stack layout is [index, length]
                 // index < length
                 builder.appendU8(WasmOpcode.i32_lt_s);
                 // index >= 0
-                builder.local("math_lhs32");
+                builder.local("index");
                 builder.i32_const(0);
                 builder.appendU8(WasmOpcode.i32_ge_s);
                 // (index >= 0) && (index < length)
@@ -644,7 +651,7 @@ export function generateWasmBody(
                 // Pre-load destination for the stloc at the end (we can't do this inside the block above)
                 builder.local("pLocals");
                 // (index * 2) + offsetof(MonoString, chars) + pString
-                builder.local("math_lhs32");
+                builder.local("index");
                 builder.i32_const(2);
                 builder.appendU8(WasmOpcode.i32_mul);
                 builder.local(ptrLocal);
@@ -661,19 +668,20 @@ export function generateWasmBody(
             case MintOpcode.MINT_GETITEM_LOCALSPAN: {
                 const elementSize = getArgI16(ip, 4);
                 builder.block();
-                // Load index and stash it in lhs32
+                // Load index and stash it
                 append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
-                builder.local("math_lhs32", WasmOpcode.tee_local);
+                builder.local("index", WasmOpcode.tee_local);
 
                 // Load address of the span structure
+                let ptrLocal = "cknull_ptr";
                 if (opcode === MintOpcode.MINT_GETITEM_SPAN) {
                     // span = *(MonoSpanOfVoid *)locals[2]
                     append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true);
                 } else {
                     // span = (MonoSpanOfVoid)locals[2]
                     append_ldloca(builder, getArgU16(ip, 2), 0);
-                    builder.local("cknull_ptr", WasmOpcode.tee_local);
-                    cknullOffset = -1;
+                    ptrLocal = "src_ptr";
+                    builder.local(ptrLocal, WasmOpcode.tee_local);
                 }
 
                 // length = span->length
@@ -684,7 +692,7 @@ export function generateWasmBody(
                 // index >= 0
                 // FIXME: It would be nice to optimize this down to a single (index < length) comparison
                 //  but interp.c doesn't do it - presumably because a span could be bigger than 2gb?
-                builder.local("math_lhs32");
+                builder.local("index");
                 builder.i32_const(0);
                 builder.appendU8(WasmOpcode.i32_ge_s);
                 // (index >= 0) && (index < length)
@@ -699,11 +707,11 @@ export function generateWasmBody(
                 builder.local("pLocals");
 
                 // src = span->_reference + (index * element_size);
-                builder.local("cknull_ptr");
+                builder.local(ptrLocal);
                 builder.appendU8(WasmOpcode.i32_load);
                 builder.appendMemarg(getMemberOffset(JiterpMember.SpanData), 2);
 
-                builder.local("math_lhs32");
+                builder.local("index");
                 builder.i32_const(elementSize);
                 builder.appendU8(WasmOpcode.i32_mul);
                 builder.appendU8(WasmOpcode.i32_add);
@@ -717,7 +725,7 @@ export function generateWasmBody(
                 builder.block();
                 // int len = LOCAL_VAR (ip [3], gint32);
                 append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
-                builder.local("math_rhs32", WasmOpcode.tee_local);
+                builder.local("count", WasmOpcode.tee_local);
                 builder.i32_const(0);
                 builder.appendU8(WasmOpcode.i32_ge_s);
                 builder.appendU8(WasmOpcode.br_if);
@@ -726,14 +734,14 @@ export function generateWasmBody(
                 builder.endBlock();
                 // gpointer span = locals + ip [1];
                 append_ldloca(builder, getArgU16(ip, 1), 16);
-                builder.local("math_lhs32", WasmOpcode.tee_local);
+                builder.local("dest_ptr", WasmOpcode.tee_local);
                 // *(gpointer*)span = ptr;
                 append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
                 builder.appendU8(WasmOpcode.i32_store);
                 builder.appendMemarg(0, 0);
                 // *(gint32*)((gpointer*)span + 1) = len;
-                builder.local("math_lhs32");
-                builder.local("math_rhs32");
+                builder.local("dest_ptr");
+                builder.local("count");
                 builder.appendU8(WasmOpcode.i32_store);
                 builder.appendMemarg(4, 0);
                 break;
@@ -864,13 +872,13 @@ export function generateWasmBody(
                 if (builder.options.zeroPageOptimization && isZeroPageReserved()) {
                     // Null check fusion is possible, so (obj->vtable) will be 0 for !obj
                     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
-                    builder.local("temp_ptr", WasmOpcode.tee_local);
+                    builder.local("dest_ptr", WasmOpcode.tee_local);
                     counters.nullChecksFused++;
                 } else {
                     builder.block(); // depth 0 -> 1 (null check block)
                     // src
                     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
-                    builder.local("temp_ptr", WasmOpcode.tee_local);
+                    builder.local("dest_ptr", WasmOpcode.tee_local);
                     // Null ptr check: If the ptr is non-null, skip this block
                     builder.appendU8(WasmOpcode.br_if);
                     builder.appendULeb(0);
@@ -883,14 +891,14 @@ export function generateWasmBody(
                     builder.appendULeb(1);
                     builder.endBlock(); // depth 1 -> 0 (end null check block)
                     // Put ptr back on the stack
-                    builder.local("temp_ptr");
+                    builder.local("dest_ptr");
                 }
 
                 // the special interface version signature is (obj, vtable, klass), but
                 //  the fast signature is (vtable, klass)
                 if (isSpecialInterface) {
                     // load a second copy of obj to build the helper arglist (obj, vtable, klass)
-                    builder.local("temp_ptr");
+                    builder.local("dest_ptr");
                 }
 
                 builder.appendU8(WasmOpcode.i32_load); // obj->vtable
@@ -902,14 +910,14 @@ export function generateWasmBody(
                 if (bailoutOnFailure) {
                     // generate a 1 for null ptrs so we don't bail out and instead write the 0
                     //  to the destination
-                    builder.local("temp_ptr");
+                    builder.local("dest_ptr");
                     builder.appendU8(WasmOpcode.i32_eqz);
                     builder.appendU8(WasmOpcode.i32_or);
                 }
 
                 builder.block(WasmValtype.void, WasmOpcode.if_); // if cast succeeded
                 builder.local("pLocals");
-                builder.local("temp_ptr");
+                builder.local("dest_ptr");
                 append_stloc_tail(builder, destOffset, WasmOpcode.i32_store);
                 builder.appendU8(WasmOpcode.else_); // else cast failed
                 if (bailoutOnFailure) {
@@ -949,13 +957,13 @@ export function generateWasmBody(
                 if (builder.options.zeroPageOptimization && isZeroPageReserved()) {
                     // Null check fusion is possible, so (obj->vtable)->klass will be 0 for !obj
                     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
-                    builder.local("temp_ptr", WasmOpcode.tee_local);
+                    builder.local("dest_ptr", WasmOpcode.tee_local);
                     counters.nullChecksFused++;
                 } else {
                     builder.block(); // depth 0 -> 1 (null check block)
                     // src
                     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
-                    builder.local("temp_ptr", WasmOpcode.tee_local);
+                    builder.local("dest_ptr", WasmOpcode.tee_local);
                     // Null ptr check: If the ptr is non-null, skip this block
                     builder.appendU8(WasmOpcode.br_if);
                     builder.appendULeb(0);
@@ -968,7 +976,7 @@ export function generateWasmBody(
                     builder.appendULeb(1);
                     builder.endBlock(); // depth 1 -> 0 (end null check block)
                     // Put ptr back on the stack
-                    builder.local("temp_ptr");
+                    builder.local("dest_ptr");
                 }
 
                 // If we're here the null check passed and we now need to type-check
@@ -978,14 +986,14 @@ export function generateWasmBody(
                 builder.appendMemarg(getMemberOffset(JiterpMember.VTableKlass), 0); // fixme: alignment
                 // Stash obj->vtable->klass so we can do a fast has_parent check later
                 if (canDoFastCheck)
-                    builder.local("temp_ptr2", WasmOpcode.tee_local);
+                    builder.local("src_ptr", WasmOpcode.tee_local);
                 builder.i32_const(klass);
                 builder.appendU8(WasmOpcode.i32_eq);
                 builder.block(WasmValtype.void, WasmOpcode.if_); // if A
 
                 // Fast type-check passed (exact match), so store the ptr and continue
                 builder.local("pLocals");
-                builder.local("temp_ptr");
+                builder.local("dest_ptr");
                 append_stloc_tail(builder, destOffset, WasmOpcode.i32_store);
 
                 // Fast type-check failed, so call the helper function
@@ -994,14 +1002,14 @@ export function generateWasmBody(
                 if (canDoFastCheck) {
                     // Fast path for ISINST_COMMON/CASTCLASS_COMMON. We know klass is a simple type
                     //  so all we need to do is a parentage check.
-                    builder.local("temp_ptr2"); // obj->vtable->klass
+                    builder.local("src_ptr"); // obj->vtable->klass
                     builder.ptr_const(klass);
                     builder.callImport("hasparent");
 
                     if (bailoutOnFailure) {
                         // generate a 1 for null ptrs so we don't bail out and instead write the 0
                         //  to the destination
-                        builder.local("temp_ptr");
+                        builder.local("dest_ptr");
                         builder.appendU8(WasmOpcode.i32_eqz);
                         builder.appendU8(WasmOpcode.i32_or);
                     }
@@ -1009,7 +1017,7 @@ export function generateWasmBody(
                     builder.block(WasmValtype.void, WasmOpcode.if_); // if B
                     // mono_class_has_parent_fast returned 1 so *destination = obj
                     builder.local("pLocals");
-                    builder.local("temp_ptr");
+                    builder.local("dest_ptr");
                     append_stloc_tail(builder, destOffset, WasmOpcode.i32_store);
                     builder.appendU8(WasmOpcode.else_); // else B
                     // mono_class_has_parent_fast returned 0
@@ -1028,7 +1036,7 @@ export function generateWasmBody(
                     // &dest
                     append_ldloca(builder, getArgU16(ip, 1), 4);
                     // src
-                    builder.local("temp_ptr");
+                    builder.local("dest_ptr");
                     // klass
                     builder.ptr_const(klass);
                     // opcode
@@ -1081,11 +1089,11 @@ export function generateWasmBody(
                 if (builder.options.zeroPageOptimization && isZeroPageReserved()) {
                     // Null check fusion is possible, so (obj->vtable)->klass will be 0 for !obj
                     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
-                    builder.local("temp_ptr", WasmOpcode.tee_local);
+                    builder.local("dest_ptr", WasmOpcode.tee_local);
                     counters.nullChecksFused++;
                 } else {
                     append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true);
-                    builder.local("temp_ptr", WasmOpcode.tee_local);
+                    builder.local("dest_ptr", WasmOpcode.tee_local);
                 }
 
                 // Fetch the object's klass so we can perform a type check
@@ -1095,14 +1103,14 @@ export function generateWasmBody(
                 builder.appendMemarg(getMemberOffset(JiterpMember.VTableKlass), 0); // fixme: alignment
 
                 // Stash obj->vtable->klass, then check klass->element_class == expected
-                builder.local("temp_ptr2", WasmOpcode.tee_local);
+                builder.local("src_ptr", WasmOpcode.tee_local);
                 builder.appendU8(WasmOpcode.i32_load);
                 builder.appendMemarg(elementClassOffset, 0);
                 builder.i32_const(elementClass);
                 builder.appendU8(WasmOpcode.i32_eq);
 
                 // Check klass->rank == 0
-                builder.local("temp_ptr2");
+                builder.local("src_ptr");
                 builder.appendU8(WasmOpcode.i32_load8_u); // rank is a uint8
                 builder.appendMemarg(getMemberOffset(JiterpMember.ClassRank), 0);
                 builder.appendU8(WasmOpcode.i32_eqz);
@@ -1115,7 +1123,7 @@ export function generateWasmBody(
                 // Type-check passed, so now compute the address of the object's data
                 //  and store the address
                 builder.local("pLocals");
-                builder.local("temp_ptr");
+                builder.local("dest_ptr");
                 builder.i32_const(getMemberOffset(JiterpMember.BoxedValueData));
                 builder.appendU8(WasmOpcode.i32_add);
                 append_stloc_tail(builder, destOffset, WasmOpcode.i32_store);
@@ -1269,12 +1277,12 @@ export function generateWasmBody(
                     builder.appendU8(WasmOpcode.i32_load);
                     builder.appendMemarg(clauseDataOffset, 0);
                     // Stash it in a variable because we're going to need to use it multiple times
-                    builder.local("math_lhs32", WasmOpcode.set_local);
+                    builder.local("index", WasmOpcode.set_local);
                     // Do a bunch of trivial comparisons to see if ret_ip is one of our expected return addresses,
                     //  and if it is, generate a branch back to the dispatcher at the top
                     for (let r = 0; r < builder.callHandlerReturnAddresses.length; r++) {
                         const ra = builder.callHandlerReturnAddresses[r];
-                        builder.local("math_lhs32");
+                        builder.local("index");
                         builder.ptr_const(ra);
                         builder.appendU8(WasmOpcode.i32_eq);
                         builder.block(WasmValtype.void, WasmOpcode.if_);
@@ -3093,22 +3101,25 @@ function append_getelema1(
     // load index for check
     append_ldloc(builder, indexOffset, WasmOpcode.i32_load);
     // stash it since we need it twice
-    builder.local("math_lhs32", WasmOpcode.tee_local);
+    builder.local("index", WasmOpcode.tee_local);
 
-    const ptrLocal = builder.options.zeroPageOptimization ? "math_rhs32" : "cknull_ptr";
+    let ptrLocal = "cknull_ptr";
     if (builder.options.zeroPageOptimization && isZeroPageReserved()) {
         // load array ptr and stash it
         // if the array ptr is null, the length check will fail and we will bail out
         counters.nullChecksFused++;
         append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
+        ptrLocal = "src_ptr";
         builder.local(ptrLocal, WasmOpcode.tee_local);
     } else
         // array null check
         append_ldloc_cknull(builder, objectOffset, ip, true);
 
+    // current stack layout is [index, ptr]
     // load array length
     builder.appendU8(WasmOpcode.i32_load);
     builder.appendMemarg(getMemberOffset(JiterpMember.ArrayLength), 2);
+    // current stack layout is [index, length]
     // check index < array.length, unsigned. if index is negative it will be interpreted as
     //  a massive value which is naturally going to be bigger than array.length. interp.c
     //  exploits this property so we can too
@@ -3125,9 +3136,11 @@ function append_getelema1(
     builder.i32_const(getMemberOffset(JiterpMember.ArrayData));
     builder.appendU8(WasmOpcode.i32_add);
 
-    builder.local("math_lhs32");
-    builder.i32_const(elementSize);
-    builder.appendU8(WasmOpcode.i32_mul);
+    builder.local("index");
+    if (elementSize != 1) {
+        builder.i32_const(elementSize);
+        builder.appendU8(WasmOpcode.i32_mul);
+    }
     builder.appendU8(WasmOpcode.i32_add);
     // append_getelema1 leaves the address on the stack
 }

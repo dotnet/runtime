@@ -74,9 +74,16 @@ namespace ILCompiler
             if (_singleFileCompilation && !_outNearInput)
                 throw new CommandLineException(SR.MissingOutNearInput);
 
+            // Crossgen2 is partial AOT and its pre-compiled methods can be
+            // thrown away at runtime if they mismatch in required ISAs or
+            // computed layouts of structs. Thus we want to ensure that usage
+            // of Vector<T> is only optimistic and doesn't hard code a dependency
+            // that would cause the entire image to be invalidated.
+            bool isVectorTOptimistic = true;
+
             TargetArchitecture targetArchitecture = Get(_command.TargetArchitecture);
             TargetOS targetOS = Get(_command.TargetOS);
-            InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), targetArchitecture, targetOS,
+            InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
                 SR.InstructionSetMustNotBe, SR.InstructionSetInvalidImplication);
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
             var targetDetails = new TargetDetails(targetArchitecture, targetOS, Crossgen2RootCommand.IsArmel ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
@@ -581,6 +588,8 @@ namespace ILCompiler
 
                     NodeFactoryOptimizationFlags nodeFactoryFlags = new NodeFactoryOptimizationFlags();
                     nodeFactoryFlags.OptimizeAsyncMethods = Get(_command.AsyncMethodOptimization);
+                    nodeFactoryFlags.DeterminismStress = Get(_command.DeterminismStress);
+                    nodeFactoryFlags.PrintReproArgs = Get(_command.PrintReproInstructions);
 
                     builder
                         .UseMapFile(Get(_command.Map))
@@ -608,8 +617,7 @@ namespace ILCompiler
                         .UseCompilationRoots(compilationRoots)
                         .UseOptimizationMode(optimizationMode);
 
-                    if (Get(_command.PrintReproInstructions))
-                        builder.UsePrintReproInstructions(CreateReproArgumentString);
+                    builder.UsePrintReproInstructions(CreateReproArgumentString);
 
                     compilation = builder.ToCompilation();
 
@@ -620,6 +628,9 @@ namespace ILCompiler
                     compilation.WriteDependencyLog(dgmlLogFileName);
 
                 compilation.Dispose();
+
+                if (((ReadyToRunCodegenCompilation)compilation).DeterminismCheckFailed)
+                    throw new Exception("Determinism Check Failed");
             }
         }
 

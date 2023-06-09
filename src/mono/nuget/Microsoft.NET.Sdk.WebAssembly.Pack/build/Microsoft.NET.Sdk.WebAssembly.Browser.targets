@@ -191,18 +191,22 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <Target Name="ResolveWasmOutputs" DependsOnTargets="_ResolveWasmOutputs" />
 
-  <Target Name="_ResolveWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild">
+  <Target Name="_GetWasmRuntimePackVersion">
+    <PropertyGroup>
+      <_WasmRuntimePackVersion>%(ResolvedRuntimePack.NuGetPackageVersion)</_WasmRuntimePackVersion>
+    </PropertyGroup>
+
+    <Error Code="WASM0005" Message="Unnable to resolve WebAssembly runtime pack version" Condition="'$(_WasmRuntimePackVersion)' == ''" />
+  </Target>
+
+  <Target Name="_ResolveWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild;_GetWasmRuntimePackVersion">
     <ItemGroup>
       <_WasmConfigFileCandidates Include="@(StaticWebAsset)" Condition="'%(SourceType)' == 'Discovered'" />
-      <_DotNetJsItem Include="@(ReferenceCopyLocalPaths)" Condition="('%(FileName)' == 'dotnet' or '%(FileName)' == 'dotnet.native') and '%(Extension)' == '.js'" />
 
       <!-- Remove dotnet.js/wasm from runtime pack, in favor of the relinked ones in @(WasmNativeAsset) -->
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
                                Condition="@(WasmNativeAsset->Count()) > 0 and ( '%(FileName)' == 'dotnet' or '%(FileName)' == 'dotnet.native' ) and ('%(Extension)' == '.wasm' or '%(Extension)' == '.js')" />
     </ItemGroup>
-    <PropertyGroup>
-      <_DotNetJsBuildVersion>%(_DotNetJsItem.NuGetPackageVersion)</_DotNetJsBuildVersion>
-    </PropertyGroup>
 
     <ComputeWasmBuildAssets
       Candidates="@(ReferenceCopyLocalPaths->Distinct());@(WasmNativeAsset)"
@@ -213,7 +217,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       ProjectSatelliteAssemblies="@(IntermediateSatelliteAssembliesWithTargetPath)"
       TimeZoneSupport="$(_BlazorEnableTimeZoneSupport)"
       InvariantGlobalization="$(_WasmInvariantGlobalization)"
-      DotNetJsVersion="$(_DotNetJsBuildVersion)"
+      DotNetJsVersion="$(_WasmRuntimePackVersion)"
       CopySymbols="$(_WasmCopyOutputSymbolsToOutputDirectory)"
       OutputPath="$(OutputPath)"
       FingerprintDotNetJs="$(WasmFingerprintDotnetJs)"
@@ -357,7 +361,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     BeforeTargets="PrepareForPublish" />
 
   <!-- Wasm's Nested publish is run just to build the native bits. We don't need to run blazor targets for that -->
-  <Target Name="ProcessPublishFilesForWasm" DependsOnTargets="_ResolveWasmConfiguration;LoadStaticWebAssetsBuildManifest" AfterTargets="ILLink" Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+  <Target Name="ProcessPublishFilesForWasm" DependsOnTargets="_ResolveWasmConfiguration;LoadStaticWebAssetsBuildManifest;_GetWasmRuntimePackVersion" AfterTargets="ILLink" Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
     <!-- The list of static web assets already contains all the assets from the build. We want to correct certain assets that might
          have changed as part of the publish process. We are going to do so as follows:
          * We will update Blazor runtime asset dlls if we are running PublishTrimmed
@@ -371,14 +375,6 @@ Copyright (c) .NET Foundation. All rights reserved.
         Condition="'%(StaticWebAsset.AssetTraitName)' == 'WasmResource' or '%(StaticWebAsset.AssetTraitName)' == 'Culture' or '%(AssetRole)' == 'Alternative'" />
     </ItemGroup>
 
-    <ItemGroup>
-      <_DotNetJsItem Include="@(ResolvedFileToPublish)" Condition="'%(ResolvedFileToPublish.DestinationSubPath)' == 'dotnet.js' AND '%(ResolvedFileToPublish.AssetType)' == 'native'" />
-    </ItemGroup>
-
-    <PropertyGroup>
-      <_DotNetJsVersion>%(_DotNetJsItem.NuGetPackageVersion)</_DotNetJsVersion>
-    </PropertyGroup>
-
     <ComputeWasmPublishAssets
       ResolvedFilesToPublish="@(ResolvedFileToPublish)"
       CustomIcuCandidate="$(_BlazorIcuDataFileName)"
@@ -388,7 +384,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       InvariantGlobalization="$(_WasmInvariantGlobalization)"
       CopySymbols="$(CopyOutputSymbolsToPublishDirectory)"
       ExistingAssets="@(_WasmPublishPrefilteredAssets)"
-      DotNetJsVersion="$(_DotNetJsVersion)"
+      DotNetJsVersion="$(_WasmRuntimePackVersion)"
       FingerprintDotNetJs="$(WasmFingerprintDotnetJs)"
       EnableThreads="$(_WasmEnableThreads)"
       IsWebCilEnabled="$(_WasmEnableWebcil)"
