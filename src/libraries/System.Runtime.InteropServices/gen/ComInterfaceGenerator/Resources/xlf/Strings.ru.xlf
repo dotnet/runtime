@@ -212,6 +212,21 @@
         <target state="translated">Указанный интерфейс является производным от двух или более интерфейсов с атрибутом "GeneratedComInterfaceAttribute".</target>
         <note />
       </trans-unit>
+      <trans-unit id="RequiresAllowUnsafeBlocksDescription">
+        <source>LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
+        <target state="new">LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresAllowUnsafeBlocksMessage">
+        <source>LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
+        <target state="new">LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresAllowUnsafeBlocksTitle">
+        <source>LibraryImportAttribute requires unsafe code.</source>
+        <target state="new">LibraryImportAttribute requires unsafe code.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">
         <source>For types that are not supported by source-generated COM, the resulting function pointer will rely on the underlying runtime to marshal the specified type.</source>
         <target state="translated">Для типов, которые не поддерживаются моделью COM генератора исходного кода, результирующий указатель на функцию будет выполнять маршалинг указанного типа на базе используемой среды выполнения.</target>

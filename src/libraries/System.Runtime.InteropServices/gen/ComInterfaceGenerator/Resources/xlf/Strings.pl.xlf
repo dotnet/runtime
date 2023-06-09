@@ -212,6 +212,21 @@
         <target state="translated">Określony interfejs pochodzi z co najmniej dwóch interfejsów z atrybutem „GeneratedComInterfaceAttribute”.</target>
         <note />
       </trans-unit>
+      <trans-unit id="RequiresAllowUnsafeBlocksDescription">
+        <source>LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
+        <target state="new">LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresAllowUnsafeBlocksMessage">
+        <source>LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
+        <target state="new">LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresAllowUnsafeBlocksTitle">
+        <source>LibraryImportAttribute requires unsafe code.</source>
+        <target state="new">LibraryImportAttribute requires unsafe code.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">
         <source>For types that are not supported by source-generated COM, the resulting function pointer will rely on the underlying runtime to marshal the specified type.</source>
         <target state="translated">W przypadku typów, które nie są obsługiwane przez COM wygenerowany przez źródło, wynikowy wskaźnik funkcji będzie polegał na bazowym środowisku uruchomieniowym w celu skierowania określonego typu.</target>

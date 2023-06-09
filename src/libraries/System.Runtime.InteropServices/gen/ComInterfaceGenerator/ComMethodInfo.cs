@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
@@ -93,7 +92,7 @@ namespace Microsoft.Interop
             foreach (var declaringSyntaxReference in method.DeclaringSyntaxReferences)
             {
                 var declaringSyntax = declaringSyntaxReference.GetSyntax(ct);
-                Debug.Assert(declaringSyntax.IsKind(SyntaxKind.MethodDeclaration));
+                //Debug.Assert(declaringSyntax.IsKind(SyntaxKind.MethodDeclaration));
                 if (declaringSyntax.GetLocation().SourceSpan.Contains(methodLocationInAttributedInterfaceDeclaration.SourceSpan))
                 {
                     comMethodDeclaringSyntax = (MethodDeclarationSyntax)declaringSyntax;

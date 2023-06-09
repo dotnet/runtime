@@ -3,23 +3,19 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.IO;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
 using Xunit;
-using System.Diagnostics;
-
-using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
 using StringMarshalling = System.Runtime.InteropServices.StringMarshalling;
-using System.Runtime.InteropServices.Marshalling;
-using Microsoft.CodeAnalysis.CSharp;
+using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
@@ -488,6 +484,32 @@ namespace ComInterfaceGenerator.Unit.Tests
             });
 
             await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task VerifyDiagnosticIsOnAttributedSyntax()
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                partial interface J
+                {
+                }
+
+                [GeneratedComInterface]
+                partial interface {|#0:J|}
+                {
+                    void Method();
+                }
+
+                partial interface J
+                {
+                }
+                """;
+            DiagnosticResult expectedDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidAttributedInterfaceMissingGuidAttribute)
+                .WithLocation(0).WithArguments("J");
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, expectedDiagnostic);
         }
     }
 }
