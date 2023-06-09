@@ -73,12 +73,16 @@ namespace DefaultNamespace {
             }
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static bool ObjectsAreSame()
+        {
+            return m_o == m_n.p;
+        }
 
         public static bool RunTest(int iObj)
         {
-
             GC.Collect();
-            if (m_o != m_n.p)
+            if (!ObjectsAreSame())
             {
                 return false;
             }
@@ -105,7 +109,6 @@ namespace DefaultNamespace {
                 Console.WriteLine (" objects have been finalized!" );
                 return false;
             }
-
         }
 
         public static int Main( String [] args )
@@ -125,8 +128,6 @@ namespace DefaultNamespace {
                     return 1;
                 }
             }
-            
-
 
             CreateObj(iObj);
             if (RunTest(iObj))

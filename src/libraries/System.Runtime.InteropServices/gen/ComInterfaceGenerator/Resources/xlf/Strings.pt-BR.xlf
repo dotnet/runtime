@@ -38,8 +38,8 @@
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedTitle">
-        <source>Analysis for generation has failed.</source>
-        <target state="translated">Falha na análise de geração.</target>
+        <source>Analysis for COM interface generation has failed.</source>
+        <target state="needs-review-translation">Falha na análise de geração.</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedDescription">
@@ -53,8 +53,8 @@
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedTitle">
-        <source>The base COM interface failed to generate source. ComInterfaceGenerator will not generate source for this interface.</source>
-        <target state="translated">A interface COM base falhou ao gerar a fonte. ComInterfaceGenerator não irá gerar fonte para esta interface.</target>
+        <source>The base COM interface failed to generate source. Code will not be generated for this interface.</source>
+        <target state="needs-review-translation">A interface COM base falhou ao gerar a fonte. ComInterfaceGenerator não irá gerar fonte para esta interface.</target>
         <note />
       </trans-unit>
       <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceDescription">
@@ -197,6 +197,21 @@
         <target state="translated">O valor fornecido não é um sinalizador conhecido da enumeração 'ExceptionMarshalling'.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidGeneratedComClassAttributeUsageDescription">
+        <source>Classes with 'GeneratedComClassAttribute' must implement one or more interfaces with 'GeneratedComInterfaceAttribute', be marked partial, and be non-generic.</source>
+        <target state="new">Classes with 'GeneratedComClassAttribute' must implement one or more interfaces with 'GeneratedComInterfaceAttribute', be marked partial, and be non-generic.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComClassAttributeUsageMissingPartialModifier">
+        <source>Class '{0}' or one of its containing types is not marked 'partial'.</source>
+        <target state="new">Class '{0}' or one of its containing types is not marked 'partial'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComClassAttributeUsageTitle">
+        <source>Invalid 'GeneratedComClassAttribute' usage</source>
+        <target state="new">Invalid 'GeneratedComClassAttribute' usage</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
         <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
         <target state="translated">As interfaces atribuídas com "GeneratedComInterfaceAttribute" devem ser parciais, não-genéricas e especificar um GUID com "System.Runtime.InteropServices.GuidAttribute".</target>
@@ -215,6 +230,11 @@
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageTitle">
         <source>Invalid 'GeneratedComInterfaceAttribute' usage.</source>
         <target state="translated">Uso de "GeneratedComInterfaceAttribute" inválido.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceUsageMissingPartialModifier">
+        <source>The interface '{0}' or one of its containing types is missing the 'partial' keyword. Code will not be generated for '{0}'.</source>
+        <target state="new">The interface '{0}' or one of its containing types is missing the 'partial' keyword. Code will not be generated for '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">

@@ -10,7 +10,6 @@ namespace Microsoft.Interop.Analyzers
         public static class Ids
         {
             public const string Prefix = "SYSLIB";
-            public const string InvalidGeneratedComAttributeUsage = Prefix + "1090";
             public const string ConvertToGeneratedComInterface = Prefix + "1096";
             public const string AddGeneratedComClassAttribute = Prefix + "1097";
             public const string ComHostingDoesNotSupportGeneratedComInterface = Prefix + "1098";
@@ -29,16 +28,6 @@ namespace Microsoft.Interop.Analyzers
         {
             return new LocalizableResourceString(resourceName, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
         }
-
-        public static readonly DiagnosticDescriptor InterfaceTypeNotSupported =
-            new DiagnosticDescriptor(
-                Ids.InvalidGeneratedComAttributeUsage,
-                GetResourceString(nameof(SR.InterfaceTypeNotSupportedTitle)),
-                GetResourceString(nameof(SR.InterfaceTypeNotSupportedMessage)),
-                Category,
-                DiagnosticSeverity.Error,
-                isEnabledByDefault: true,
-                description: GetResourceString(nameof(SR.InterfaceTypeNotSupportedMessage)));
 
         public static readonly DiagnosticDescriptor ConvertToGeneratedComInterface =
             new DiagnosticDescriptor(

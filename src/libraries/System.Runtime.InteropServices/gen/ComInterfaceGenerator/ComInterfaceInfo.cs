@@ -72,17 +72,17 @@ namespace Microsoft.Interop
 
         private static bool IsInPartialContext(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, [NotNullWhen(false)] out DiagnosticInfo? diagnostic)
         {
-            // Verify that the types the method is declared in are marked partial.
-            for (SyntaxNode? parentNode = syntax.Parent; parentNode is TypeDeclarationSyntax typeDecl; parentNode = parentNode.Parent)
+            // Verify that the types the interface is declared in are marked partial.
+            for (SyntaxNode? parentNode = syntax; parentNode is TypeDeclarationSyntax typeDecl; parentNode = parentNode.Parent)
             {
                 if (!typeDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
                 {
-                    diagnostic = DiagnosticInfo.Create(
-                        GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers,
-                        syntax.Identifier.GetLocation(),
-                        symbol.Name,
-                        typeDecl.Identifier);
-                    return false;
+                    return DiagnosticOrInterfaceInfo.From(
+                        DiagnosticInfo.Create(
+                            GeneratorDiagnostics.InvalidAttributedInterfaceMissingPartialModifiers,
+                            syntax.Identifier.GetLocation(),
+                            symbol.Name,
+                            typeDecl.Identifier));
                 }
             }
             diagnostic = null;

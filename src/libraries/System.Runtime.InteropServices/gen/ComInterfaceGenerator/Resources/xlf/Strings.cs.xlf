@@ -38,8 +38,8 @@
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedTitle">
-        <source>Analysis for generation has failed.</source>
-        <target state="translated">Analýza pro generování se nezdařila</target>
+        <source>Analysis for COM interface generation has failed.</source>
+        <target state="needs-review-translation">Analýza pro generování se nezdařila</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedDescription">
@@ -53,8 +53,8 @@
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedTitle">
-        <source>The base COM interface failed to generate source. ComInterfaceGenerator will not generate source for this interface.</source>
-        <target state="translated">Základnímu rozhraní COM se nepodařilo vygenerovat zdroj. ComInterfaceGenerator nevygeneruje zdroj pro toto rozhraní.</target>
+        <source>The base COM interface failed to generate source. Code will not be generated for this interface.</source>
+        <target state="needs-review-translation">Základnímu rozhraní COM se nepodařilo vygenerovat zdroj. ComInterfaceGenerator nevygeneruje zdroj pro toto rozhraní.</target>
         <note />
       </trans-unit>
       <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceDescription">
@@ -197,6 +197,21 @@
         <target state="translated">Zadaná hodnota není známý příznak výčtu ExceptionMarsnuming.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidGeneratedComClassAttributeUsageDescription">
+        <source>Classes with 'GeneratedComClassAttribute' must implement one or more interfaces with 'GeneratedComInterfaceAttribute', be marked partial, and be non-generic.</source>
+        <target state="new">Classes with 'GeneratedComClassAttribute' must implement one or more interfaces with 'GeneratedComInterfaceAttribute', be marked partial, and be non-generic.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComClassAttributeUsageMissingPartialModifier">
+        <source>Class '{0}' or one of its containing types is not marked 'partial'.</source>
+        <target state="new">Class '{0}' or one of its containing types is not marked 'partial'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComClassAttributeUsageTitle">
+        <source>Invalid 'GeneratedComClassAttribute' usage</source>
+        <target state="new">Invalid 'GeneratedComClassAttribute' usage</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
         <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
         <target state="translated">Rozhraní s atributem GeneratedComInterfaceAttribute musí být částečná, neobecná a musí určovat identifikátor GUID s atributem System.Runtime.InteropServices.GuidAttribute.</target>
@@ -215,6 +230,11 @@
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageTitle">
         <source>Invalid 'GeneratedComInterfaceAttribute' usage.</source>
         <target state="translated">Neplatné použití atributu GeneratedComInterfaceAttribute</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceUsageMissingPartialModifier">
+        <source>The interface '{0}' or one of its containing types is missing the 'partial' keyword. Code will not be generated for '{0}'.</source>
+        <target state="new">The interface '{0}' or one of its containing types is missing the 'partial' keyword. Code will not be generated for '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
