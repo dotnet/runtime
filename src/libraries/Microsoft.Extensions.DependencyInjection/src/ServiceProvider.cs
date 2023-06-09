@@ -120,9 +120,9 @@ namespace Microsoft.Extensions.DependencyInjection
             _callSiteValidator?.ValidateCallSite(callSite);
         }
 
-        private void OnResolve(Type serviceType, IServiceScope scope)
+        private void OnResolve(ServiceCallSite callSite, IServiceScope scope)
         {
-            _callSiteValidator?.ValidateResolution(serviceType, scope, Root);
+            _callSiteValidator?.ValidateResolution(callSite, scope, Root);
         }
 
         internal object? GetService(Type serviceType, ServiceProviderEngineScope serviceProviderEngineScope)
@@ -133,7 +133,6 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             Func<ServiceProviderEngineScope, object?> realizedService = _realizedServices.GetOrAdd(serviceType, _createServiceAccessor);
-            OnResolve(serviceType, serviceProviderEngineScope);
             DependencyInjectionEventSource.Log.ServiceResolved(this, serviceType);
             var result = realizedService.Invoke(serviceProviderEngineScope);
             System.Diagnostics.Debug.Assert(result is null || CallSiteFactory.IsService(serviceType));
@@ -176,7 +175,12 @@ namespace Microsoft.Extensions.DependencyInjection
                     return scope => value;
                 }
 
-                return _engine.RealizeService(callSite);
+                Func<ServiceProviderEngineScope, object?> realizedService = _engine.RealizeService(callSite);
+                return scope =>
+                {
+                    OnResolve(callSite, scope);
+                    return realizedService.Invoke(scope);
+                };
             }
 
             return _ => null;

@@ -10,21 +10,22 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
     internal sealed class CallSiteValidator: CallSiteVisitor<CallSiteValidator.CallSiteValidatorState, Type?>
     {
         // Keys are services being resolved via GetService, values - first scoped service in their call site tree
-        private readonly ConcurrentDictionary<Type, Type> _scopedServices = new ConcurrentDictionary<Type, Type>();
+        private readonly ConcurrentDictionary<ServiceCacheKey, Type> _scopedServices = new ConcurrentDictionary<ServiceCacheKey, Type>();
 
         public void ValidateCallSite(ServiceCallSite callSite)
         {
             Type? scoped = VisitCallSite(callSite, default);
             if (scoped != null)
             {
-                _scopedServices[callSite.ServiceType] = scoped;
+                _scopedServices[GetCacheKey(callSite)] = scoped;
             }
         }
 
-        public void ValidateResolution(Type serviceType, IServiceScope scope, IServiceScope rootScope)
+        public void ValidateResolution(ServiceCallSite callSite, IServiceScope scope, IServiceScope rootScope)
         {
+            Type serviceType = callSite.ServiceType;
             if (ReferenceEquals(scope, rootScope)
-                && _scopedServices.TryGetValue(serviceType, out Type? scopedService))
+                && _scopedServices.TryGetValue(GetCacheKey(callSite), out Type? scopedService))
             {
                 if (serviceType == scopedService)
                 {
@@ -96,6 +97,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         protected override Type? VisitServiceProvider(ServiceProviderCallSite serviceProviderCallSite, CallSiteValidatorState state) => null;
 
         protected override Type? VisitFactory(FactoryCallSite factoryCallSite, CallSiteValidatorState state) => null;
+
+        private static ServiceCacheKey GetCacheKey(ServiceCallSite callSite)
+        {
+            return callSite.Cache.Key.Equals(ServiceCacheKey.Empty)
+                ? new ServiceCacheKey(callSite.ServiceType, 0) : callSite.Cache.Key;
+        }
 
         internal struct CallSiteValidatorState
         {
