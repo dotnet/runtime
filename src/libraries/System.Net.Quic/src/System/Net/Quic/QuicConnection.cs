@@ -62,9 +62,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         // Validate and fill in defaults for the options.
         options.Validate(nameof(options));
-        return StartConnectAsync(options, cancellationToken);
+        return Core(options, cancellationToken);
 
-        static async ValueTask<QuicConnection> StartConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken)
+        static async ValueTask<QuicConnection> Core(QuicClientConnectionOptions options, CancellationToken cancellationToken)
         {
             QuicConnection connection = new QuicConnection();
             try
