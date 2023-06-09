@@ -308,19 +308,18 @@ namespace System.Security.Cryptography.Tests
         public void HashData_Minimal()
         {
             byte[] source = Array.Empty<byte>();
-            byte[] buffer = Array.Empty<byte>();
 
             byte[] result = TShakeTrait.HashData(source, outputLength: 0);
             Assert.Empty(result);
 
-            result = TShakeTrait.HashData(new ReadOnlySpan<byte>(source), outputLength: 0);
+            result = TShakeTrait.HashData(ReadOnlySpan<byte>.Empty, outputLength: 0);
             Assert.Empty(result);
 
             result = TShakeTrait.HashData(Stream.Null, outputLength: 0);
             Assert.Empty(result);
 
-            TShakeTrait.HashData(Stream.Null, buffer); // Assert.NoThrow
-            TShakeTrait.HashData(source, buffer); // Assert.NoThrow
+            TShakeTrait.HashData(Stream.Null, Span<byte>.Empty); // Assert.NoThrow
+            TShakeTrait.HashData(source, Span<byte>.Empty); // Assert.NoThrow
         }
 
         [ConditionalFact(nameof(IsSupported))]
@@ -329,7 +328,7 @@ namespace System.Security.Cryptography.Tests
             byte[] result = await TShakeTrait.HashDataAsync(Stream.Null, outputLength: 0);
             Assert.Empty(result);
 
-            await TShakeTrait.HashDataAsync(Stream.Null, Array.Empty<byte>()); // Assert.NoThrow
+            await TShakeTrait.HashDataAsync(Stream.Null, Memory<byte>.Empty); // Assert.NoThrow
         }
 
         [ConditionalFact(nameof(IsSupported))]
@@ -337,10 +336,26 @@ namespace System.Security.Cryptography.Tests
         {
             using (TShake shake = new TShake())
             {
+                TShakeTrait.AppendData(shake, Array.Empty<byte>());
+                TShakeTrait.AppendData(shake, ReadOnlySpan<byte>.Empty);
                 byte[] result = TShakeTrait.GetCurrentHash(shake, outputLength: 0);
                 Assert.Empty(result);
 
-                TShakeTrait.GetCurrentHash(shake, result); // Assert.NoThrow
+                TShakeTrait.GetCurrentHash(shake, Span<byte>.Empty); // Assert.NoThrow
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void GetHashAndReset_Minimal()
+        {
+            using (TShake shake = new TShake())
+            {
+                TShakeTrait.AppendData(shake, Array.Empty<byte>());
+                TShakeTrait.AppendData(shake, ReadOnlySpan<byte>.Empty);
+                byte[] result = TShakeTrait.GetHashAndReset(shake, outputLength: 0);
+                Assert.Empty(result);
+
+                TShakeTrait.GetHashAndReset(shake, Span<byte>.Empty); // Assert.NoThrow
             }
         }
 
@@ -378,18 +393,6 @@ namespace System.Security.Cryptography.Tests
                 TShakeTrait.AppendData(shake, "habaneros"u8);
                 TShakeTrait.GetHashAndReset(shake, hash);
                 Assert.Equal(expected, hash);
-            }
-        }
-
-        [ConditionalFact(nameof(IsSupported))]
-        public void GetHashAndReset_Minimal()
-        {
-            using (TShake shake = new TShake())
-            {
-                byte[] result = TShakeTrait.GetHashAndReset(shake, outputLength: 0);
-                Assert.Empty(result);
-
-                TShakeTrait.GetHashAndReset(shake, result); // Assert.NoThrow
             }
         }
 

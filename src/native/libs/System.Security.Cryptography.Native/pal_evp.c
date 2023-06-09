@@ -196,7 +196,7 @@ int32_t CryptoNative_EvpDigestXOFOneShot(const EVP_MD* type, const void* source,
 {
     ERR_clear_error();
 
-    if (type == NULL || sourceSize < 0 || md == NULL)
+    if (type == NULL || sourceSize < 0 || (md == NULL && len > 0))
     {
         return 0;
     }
