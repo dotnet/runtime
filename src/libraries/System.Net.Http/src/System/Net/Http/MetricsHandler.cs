@@ -55,31 +55,24 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IRequestFailureM
     private async ValueTask<HttpResponseMessage> SendAsyncWithMetrics(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
     {
         (long startTimestamp, bool recordCurrentRequsts) = RequestStart(request);
-        bool failed = false;
         HttpResponseMessage? response = null;
         try
         {
             response = async ?
                 await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false) :
                 _innerHandler.Send(request, cancellationToken);
-        }
-        catch
-        {
-            failed = true;
-            throw;
+            if (_failedRequests.Enabled)
+            {
+                // No exception has been thrown to the point of reading headers, but errors can still occur while buffering the response content in HttpClient.
+                // We need to report http-client-failed-requests if it happens.
+                response._requestFailedMetricsLogger = this;
+            }
+            return response;
         }
         finally
         {
-            RequestStop(request, response, startTimestamp, recordCurrentRequsts, failed);
+            RequestStop(request, response, startTimestamp, recordCurrentRequsts);
         }
-
-        if (!failed && _failedRequests.Enabled)
-        {
-            // Logs content read failures:
-            response._requestFailedMetricsLogger = this;
-        }
-
-        return response;
     }
 
     protected override void Dispose(bool disposing)
@@ -106,7 +99,7 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IRequestFailureM
         return (startTimestamp, recordCurrentRequests);
     }
 
-    private void RequestStop(HttpRequestMessage request, HttpResponseMessage? response, long startTimestamp, bool recordCurrentRequsts, bool failed)
+    private void RequestStop(HttpRequestMessage request, HttpResponseMessage? response, long startTimestamp, bool recordCurrentRequsts)
     {
         TagList tags = InitializeCommonTags(request);
 
@@ -116,7 +109,7 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IRequestFailureM
         }
 
         bool recordRequestDuration = _requestsDuration.Enabled;
-        bool recordFailedRequests = _failedRequests.Enabled && failed;
+        bool recordFailedRequests = _failedRequests.Enabled && response is null;
 
         if (recordRequestDuration || recordFailedRequests)
         {
