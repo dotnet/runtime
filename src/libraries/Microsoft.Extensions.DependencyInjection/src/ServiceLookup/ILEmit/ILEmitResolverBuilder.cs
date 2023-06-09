@@ -275,8 +275,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Debug.Assert(key.ServiceIdentifier != null);
             var id = key.ServiceIdentifier.Value;
 
-            // new ServiceCacheKey(typeof(key.Type), key.Slot)
-            // TODO BPETIT FIXME
+            // new ServiceCacheKey(key.ServiceKey, key.type, key.slot)
             AddConstant(argument, id.ServiceKey);
             argument.Generator.Emit(OpCodes.Ldtoken, id.ServiceType);
             argument.Generator.Emit(OpCodes.Call, GetTypeFromHandleMethod);

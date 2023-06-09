@@ -381,7 +381,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
                 else if (descriptor.KeyedImplementationFactory != null)
                 {
-                    // TODO BPETIT FIXEME
                     callSite = new FactoryCallSite(lifetime, descriptor.ServiceType, serviceIdentifier.ServiceKey!, descriptor.KeyedImplementationFactory);
                 }
                 else if (descriptor.ImplementationType != null)
