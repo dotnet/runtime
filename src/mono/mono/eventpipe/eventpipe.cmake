@@ -47,6 +47,8 @@ if(ENABLE_PERFTRACING)
 
     list(APPEND MONO_EVENTPIPE_SHIM_SOURCES
         ep-rt-mono.c
+        ep-rt-mono-runtime-provider.c
+        ep-rt-mono-profiler-provider.c
     )
 
     list(APPEND MONO_DIAGNOSTIC_SERVER_SHIM_SOURCES
