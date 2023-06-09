@@ -36,6 +36,7 @@ namespace Microsoft.Interop
         public const string UnmanagedCallersOnlyAttribute = "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute";
 
         public const string System_Runtime_InteropServices_ComImportAttribute = "System.Runtime.InteropServices.ComImportAttribute";
+        public const string System_Runtime_InteropServices_ComVisibleAttribute = "System.Runtime.InteropServices.ComVisibleAttribute";
 
         public const string VirtualMethodIndexAttribute = "System.Runtime.InteropServices.Marshalling.VirtualMethodIndexAttribute";
         public const string VirtualMethodIndexAttribute_ShortName = "VirtualMethodIndexAttribute";
@@ -116,7 +117,7 @@ namespace Microsoft.Interop
 
         public const string InterfaceTypeAttribute = "System.Runtime.InteropServices.InterfaceTypeAttribute";
 
-        public const string ComInterfaceTypeAttribute = "System.Runtime.InteropServices.ComInterfaceType";
+        public const string ComInterfaceType = "System.Runtime.InteropServices.ComInterfaceType";
 
         public const string System_Runtime_InteropServices_GuidAttribute = "System.Runtime.InteropServices.GuidAttribute";
 
@@ -149,5 +150,7 @@ namespace Microsoft.Interop
         public const string System_Runtime_InteropServices_Marshalling_SafeHandleMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller`1";
 
         public const string System_Runtime_InteropServices_Marshalling_ComInterfaceMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.ComInterfaceMarshaller`1";
+
+        public const string System_Runtime_InteropServices_Marshalling_ComObject = "System.Runtime.InteropServices.Marshalling.ComObject";
     }
 }

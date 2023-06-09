@@ -56,6 +56,8 @@ namespace ILCompiler.DependencyAnalysis
     {
         public bool OptimizeAsyncMethods;
         public TypeValidationRule TypeValidation;
+        public int DeterminismStress;
+        public bool PrintReproArgs;
     }
 
     // To make the code future compatible to the composite R2R story
