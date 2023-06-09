@@ -5,6 +5,7 @@ AssemblyDCEnd_V1
 AssemblyLoad_V1
 AssemblyUnload_V1
 BulkType
+ContentionLockCreated
 ContentionStart_V1
 ContentionStart_V2
 ContentionStop
@@ -23,7 +24,6 @@ ExceptionFinallyStart
 ExceptionFinallyStop
 ExceptionThrown_V1
 ExceptionThrownStop
-ContentionLockCreated
 MethodDCEndILToNativeMap
 MethodDCEnd_V1
 MethodDCEndVerbose_V1

@@ -23,6 +23,8 @@ namespace System.Threading
         {
         }
 
+        internal bool Repeating => false;
+
         public bool Unregister(WaitHandle? waitObject)
         {
             throw new PlatformNotSupportedException();
