@@ -552,6 +552,9 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     GenTree* tlsValue                        = nullptr;
     unsigned tlsLclNum                       = lvaGrabTemp(true DEBUGARG("TLS access"));
     lvaTable[tlsLclNum].lvType               = TYP_I_IMPL;
+    GenTree* maxThreadStaticBlocksValue = nullptr;
+    GenTree* threadStaticBlocksValue = nullptr;
+    GenTree* tlsValueDef = nullptr;
 
 #ifdef _MSC_VER
     size_t   tlsIndexValue = (size_t)threadStaticBlocksInfo.tlsIndex.addr;
@@ -576,21 +579,21 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
     // Cache the tls value
-    GenTree* tlsValueDef    = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
+    tlsValueDef    = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
     GenTree* tlsLclValueUse = gtNewLclVarNode(tlsLclNum);
 
     // Create tree for "maxThreadStaticBlocks = tls[offsetOfMaxThreadStaticBlocks]"
     GenTree* offsetOfMaxThreadStaticBlocks = gtNewIconNode(offsetOfMaxThreadStaticBlocksVal, TYP_I_IMPL);
     GenTree* maxThreadStaticBlocksRef =
         gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse), offsetOfMaxThreadStaticBlocks);
-    GenTree* maxThreadStaticBlocksValue =
+    maxThreadStaticBlocksValue =
         gtNewIndir(TYP_INT, maxThreadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
     // Create tree for "threadStaticBlockBase = tls[offsetOfThreadStaticBlocks]"
     GenTree* offsetOfThreadStaticBlocks = gtNewIconNode(offsetOfThreadStaticBlocksVal, TYP_I_IMPL);
     GenTree* threadStaticBlocksRef =
         gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse), offsetOfThreadStaticBlocks);
-    GenTree* threadStaticBlocksValue =
+    threadStaticBlocksValue =
         gtNewIndir(TYP_I_IMPL, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
 #elif defined(TARGET_ARM64)
@@ -601,21 +604,21 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     tlsValue = gtNewIconHandleNode(0, GTF_ICON_TLS_HDL);
 
     // Cache the tls value
-    GenTree* tlsValueDef    = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
+    tlsValueDef    = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
     GenTree* tlsLclValueUse = gtNewLclVarNode(tlsLclNum);
 
     // Create tree for "maxThreadStaticBlocks = tls[offsetOfMaxThreadStaticBlocks]"
     GenTree* offsetOfMaxThreadStaticBlocks = gtNewIconNode(offsetOfMaxThreadStaticBlocksVal, TYP_I_IMPL);
     GenTree* maxThreadStaticBlocksRef =
         gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse), offsetOfMaxThreadStaticBlocks);
-    GenTree* maxThreadStaticBlocksValue =
+    maxThreadStaticBlocksValue =
         gtNewIndir(TYP_INT, maxThreadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
     // Create tree for "threadStaticBlockBase = tls[offsetOfThreadStaticBlocks]"
     GenTree* offsetOfThreadStaticBlocks = gtNewIconNode(offsetOfThreadStaticBlocksVal, TYP_I_IMPL);
     GenTree* threadStaticBlocksRef =
         gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse), offsetOfThreadStaticBlocks);
-    GenTree* threadStaticBlocksValue =
+    threadStaticBlocksValue =
         gtNewIndir(TYP_I_IMPL, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
 #elif defined(TARGET_AMD64)
@@ -638,14 +641,14 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 #endif // UNIX_X86_ABI
 
     // Cache the tls value
-    GenTree* tlsValueDef              = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
+    tlsValueDef              = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
     GenTree* maxThreadStaticBlocksRef = gtNewLclVarNode(tlsLclNum);
-    GenTree* maxThreadStaticBlocksValue =
+    maxThreadStaticBlocksValue =
         gtNewIndir(TYP_INT, gtCloneExpr(maxThreadStaticBlocksRef), GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
     GenTree* threadStaticBlocksRef = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(maxThreadStaticBlocksRef),
                                                    gtNewIconNode(offsetOfThreadStaticBlocksVal, TYP_I_IMPL));
-    GenTree* threadStaticBlocksValue =
+    threadStaticBlocksValue =
         gtNewIndir(TYP_I_IMPL, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
 #endif // _MSC_VER

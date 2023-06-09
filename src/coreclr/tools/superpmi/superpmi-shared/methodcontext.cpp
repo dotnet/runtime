@@ -3668,7 +3668,7 @@ void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_
            value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadStaticBlocks, value.offsetOfGCDataPointer);
 #else
     printf("GetThreadLocalStaticBlocksInfo key %u, value tlsGetAddrFtnPtr-%016" PRIX64
-           ", descrAddrOfMaxThreadStaticBlock-%lu, offsetOfThreadStaticBlocks-%lu",
+           ", descrAddrOfMaxThreadStaticBlock-%lu, offsetOfThreadStaticBlocks-%u",
            key, value.tlsGetAddrFtnPtr, value.descrAddrOfMaxThreadStaticBlock, value.offsetOfThreadStaticBlocks);
 #endif
 }

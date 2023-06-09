@@ -1939,7 +1939,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    JIT_TO_EE_TRANSITION_LEAF();
+    JIT_TO_EE_TRANSITION();
 
 #ifdef _MSC_VER
     pInfo->tlsIndex.addr = (void*)static_cast<uintptr_t>(_tls_index);
@@ -1994,7 +1994,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
 
     pInfo->offsetOfGCDataPointer = static_cast<uint32_t>(PtrArray::GetDataOffset());
 
-    JIT_TO_EE_TRANSITION_LEAF();
+    EE_TO_JIT_TRANSITION();
 }
 
 //---------------------------------------------------------------------------------------
