@@ -1411,8 +1411,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_ConvertToSingle:
 		case SN_ConvertToUInt32:
 		case SN_ConvertToUInt64:
-		case SN_CreateScalar:
-		case SN_CreateScalarUnsafe:
 		case SN_ExtractMostSignificantBits:
 		case SN_GetLower:
 		case SN_GetUpper:
@@ -1660,33 +1658,30 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return emit_vector_create_elementwise (cfg, fsig, fsig->ret, arg0_type, args);
 		break;
 	}
-	case SN_CreateScalar: {
-		MonoType *etype = get_vector_t_elem_type (fsig->ret);
-		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
-			return NULL;
-		if (COMPILE_LLVM (cfg))
-			return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR, -1, arg0_type, fsig, args);
-		else {
-			if (type_enum_is_float (arg0_type)) {
-				return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_FLOAT, -1, arg0_type, fsig, args);
-			} else {
-				return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_INT, -1, arg0_type, fsig, args);
-			}
-		}
-
-	}
+	case SN_CreateScalar:
 	case SN_CreateScalarUnsafe: {
 		MonoType *etype = get_vector_t_elem_type (fsig->ret);
 		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 			return NULL;
-		if (COMPILE_LLVM (cfg))
-			return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE, -1, arg0_type, fsig, args);
-		else {
+		gboolean is_unsafe = id == SN_CreateScalarUnsafe;
+		if (COMPILE_LLVM (cfg)) {
+			return emit_simd_ins_for_sig (cfg, klass, is_unsafe ? OP_CREATE_SCALAR_UNSAFE : OP_CREATE_SCALAR, -1, arg0_type, fsig, args);
+		} else {
+#ifdef TARGET_AMD64
+			MonoInst *ins;
+
+			ins = emit_xzero (cfg, klass);
+			ins = emit_simd_ins (cfg, klass, type_to_insert_op (arg0_type), ins->dreg, args [0]->dreg);
+			ins->inst_c0 = 0;
+			ins->inst_c1 = arg0_type;
+			return ins;
+#else
 			if (type_enum_is_float (arg0_type)) {
-				return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE_FLOAT, -1, arg0_type, fsig, args);
+				return emit_simd_ins_for_sig (cfg, klass, is_unsafe ? OP_CREATE_SCALAR_UNSAFE_FLOAT : OP_CREATE_SCALAR_FLOAT, -1, arg0_type, fsig, args);
 			} else {
-				return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE_INT, -1, arg0_type, fsig, args);
+				return emit_simd_ins_for_sig (cfg, klass, is_unsafe ? OP_CREATE_SCALAR_UNSAFE_INT : OP_CREATE_SCALAR_INT, -1, arg0_type, fsig, args);
 			}
+#endif
 		}
 	}
 	case SN_Dot: {
