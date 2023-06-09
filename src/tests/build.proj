@@ -491,11 +491,9 @@
     <PropertyGroup>
       <CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(_CMDDIR)))))</CMDDIR_Grandparent>
       <TestingGroup>$([System.IO.Path]::GetFileName($(CMDDIR_Grandparent)))</TestingGroup>
-      <CategoryWithSlash>$([System.String]::Copy('$(_CMDDIR)').Replace("$(CMDDIR_Grandparent)/",""))</CategoryWithSlash>
+      <CategoryWithSlash>$(TestingGroup)/$([System.String]::Copy('$(_CMDDIR)').Replace("$(CMDDIR_Grandparent)/",""))</CategoryWithSlash>
       <TestName>$([System.IO.Path]::GetFileName($(_CMDDIR)))</TestName>
       <Category>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','_'))</Category>
-      <XUnitWrapperFileName>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/', '.')).XUnitWrapper.dll</XUnitWrapperFileName>
-      <XUnitWrapperDll>$(CMDDIR_GrandParent)/$(CategoryWithSlash)/$(XUnitWrapperFileName)</XUnitWrapperDll>
       <BuildDir>$(IntermediateOutputPath)\iOSApps\$(Category)</BuildDir>
       <FinalPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).app</FinalPath>
     </PropertyGroup>
@@ -563,7 +561,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <_NativeDependencies>$(IntermediateOutputPath)\..\$(TestingGroup)\$(CategoryWithSlash)\$(TestName)\native\$(TestName).o</_NativeDependencies>
+      <_NativeDependencies>$(IntermediateOutputPath)\..\$(CategoryWithSlash)\$(TestName)\native\$(TestName).o</_NativeDependencies>
       <DevTeamProvisioning>-</DevTeamProvisioning>
     </PropertyGroup>
 
