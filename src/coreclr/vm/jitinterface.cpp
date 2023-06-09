@@ -80,16 +80,17 @@ __declspec(selectany) __declspec(thread) void** t_GCThreadStaticBlocks;
 //#ifdef (HOST_AMD64)
 
 extern "C" void* __tls_get_addr(void* ti);
-struct ThreadStatics
+struct ThreadStaticBlockInfo
 {
     uint32_t NonGCMaxThreadStaticBlocks;
     void** NonGCThreadStaticBlocks;
 
     uint32_t GCMaxThreadStaticBlocks;
     void** GCThreadStaticBlocks;
-}
-__thread ThreadStatic t_ThreadStatics;
-
+};
+__thread ThreadStaticBlockInfo t_ThreadStatics;
+__thread uint32_t t_NonGCThreadStaticBlocksSize;
+__thread uint32_t t_GCThreadStaticBlocksSize;
 //#elif defined(HOST_ARM64)
 //
 //__thread uint32_t t_NonGCMaxThreadStaticBlocks;
@@ -2025,13 +2026,13 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     uint64_t threadStaticBaseOffset = getThreadStaticsBaseOffset();
     if (isGCType)
     {
-        pInfo->offsetOfMaxThreadStaticBlocks = threadStaticBaseOffset + offsetof(ThreadStatic, GCMaxThreadStaticBlocks);
-        pInfo->offsetOfThreadStaticBlocks = threadStaticBaseOffset + offsetof(ThreadStatic, GCThreadStaticBlocks);
+        pInfo->offsetOfMaxThreadStaticBlocks = threadStaticBaseOffset + offsetof(ThreadStaticBlockInfo, GCMaxThreadStaticBlocks);
+        pInfo->offsetOfThreadStaticBlocks = threadStaticBaseOffset + offsetof(ThreadStaticBlockInfo, GCThreadStaticBlocks);
     }
     else
     {
-        pInfo->offsetOfMaxThreadStaticBlocks = threadStaticBaseOffset + offsetof(ThreadStatic, NonGCMaxThreadStaticBlocks);
-        pInfo->offsetOfThreadStaticBlocks = threadStaticBaseOffset + offsetof(ThreadStatic, NonGCThreadStaticBlocks);
+        pInfo->offsetOfMaxThreadStaticBlocks = threadStaticBaseOffset + offsetof(ThreadStaticBlockInfo, NonGCMaxThreadStaticBlocks);
+        pInfo->offsetOfThreadStaticBlocks = threadStaticBaseOffset + offsetof(ThreadStaticBlockInfo, NonGCThreadStaticBlocks);
 
         // x64 and arm64:
         //TODO: Think if we should store the distance between (threadStaticBlock - maxThreadStaticBlock) or just the
