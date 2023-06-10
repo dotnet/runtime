@@ -764,7 +764,7 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
       osGroup: ios
-      ${{ if containsValue(parameters.runtimeFlavor, 'coreclr') }}:
+      ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
         hostOSGroup: osx
         hostArchType: x64
       archType: arm64
