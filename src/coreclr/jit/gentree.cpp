@@ -7191,9 +7191,9 @@ GenTreeOpCC* Compiler::gtNewOperCC(genTreeOps oper, var_types type, GenCondition
     return node;
 }
 
-GenTreeColon* Compiler::gtNewColonNode(var_types type, GenTree* elseNode, GenTree* thenNode)
+GenTreeColon* Compiler::gtNewColonNode(var_types type, GenTree* thenNode, GenTree* elseNode)
 {
-    return new (this, GT_COLON) GenTreeColon(TYP_INT, elseNode, thenNode);
+    return new (this, GT_COLON) GenTreeColon(type, thenNode, elseNode);
 }
 
 GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon)
