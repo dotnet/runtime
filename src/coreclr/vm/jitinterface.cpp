@@ -1176,7 +1176,6 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                 break;
 
             default:
-                // No additional checks. Satisfy switch exhaustiveness check.
                 break;
         }
     }
