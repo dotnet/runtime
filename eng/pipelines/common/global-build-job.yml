@@ -5,6 +5,7 @@ parameters:
   archType: ''
   hostedOs: ''
   hostedArch: ''
+  hostBuild: false
   osGroup: ''
   osSubgroup: ''
   container: ''
@@ -73,13 +74,13 @@ jobs:
       # Fixme: parameters.runtimeFlavor doesn't have expected value, should be fixed before merge
       - name: _osParameter
         value: -os ${{ parameters.osGroup }}
-      - ${{ if ne(parameters.hostedOs, '') }}:
+      - ${{ if eq(parameters.hostBuild, true) }}:
         - name: _osParameter
           value: -os ${{ parameters.hostedOs }}
 
       - name: _archParameter
         value: -arch ${{ parameters.archType }}
-      - ${{ if ne(parameters.hostedArch, '') }}:
+      - ${{ if eq(parameters.hostBuild, true) }}:
         - name: _archParameter
           value: -arch ${{ parameters.hostedArch }}
 
