@@ -848,6 +848,7 @@ typedef union {
 #define amd64_sse_pinsrq_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_op4_size_imm ((inst), (dreg), (reg), 0x66, 0x0f, 0x3a, 0x22, 8, (imm))
 #define amd64_sse_pinsrw_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_imm ((inst), (dreg), (reg), 0x66, 0x0f, 0xc4, (imm))
 #define amd64_sse_insertps_reg_reg(inst,dreg,reg,imm) emit_sse_reg_reg_op4_imm ((inst), (dreg), (reg), 0x66, 0x0f, 0x3a, 0x21, (imm))
+#define amd64_sse_pblendw_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_op4_imm ((inst), (dreg), (reg), 0x66, 0x0f, 0x3a, 0x0e, (imm))
 
 #define amd64_sse_pextrw_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_imm ((inst), (dreg), (reg), 0x66, 0x0f, 0xc5, (imm))
 

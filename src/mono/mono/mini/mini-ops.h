@@ -1559,7 +1559,9 @@ MINI_OP(OP_XOP_OVR_BYSCALAR_X_X_X, "xop_ovr_byscalar_x_x_x", XREG, XREG, XREG)
 
 MINI_OP(OP_XCONCAT, "xconcat", XREG, XREG, XREG)
 MINI_OP(OP_XCAST, "xcast", XREG, XREG, NONE)
+/* Return a new vector containing the lower half of the source */
 MINI_OP(OP_XLOWER, "xlower", XREG, XREG, NONE)
+/* Return a new vector containing the upper half of the source */
 MINI_OP(OP_XUPPER, "xupper", XREG, XREG, NONE)
 MINI_OP(OP_XWIDEN, "xwiden", XREG, XREG, NONE)
 MINI_OP(OP_XWIDEN_UNSAFE, "xwiden_unsafe", XREG, XREG, NONE)

@@ -1416,8 +1416,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_GetUpper:
 		case SN_Narrow:
 		case SN_Shuffle:
-		case SN_Sqrt:
-		case SN_Sum:
 		case SN_ToScalar:
 		case SN_ToVector128:
 		case SN_ToVector128Unsafe:

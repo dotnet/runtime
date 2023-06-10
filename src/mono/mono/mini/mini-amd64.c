@@ -6732,6 +6732,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
+		case OP_XOP_X_X: {
+			switch (ins->inst_c0) {
+			case INTRINS_SIMD_SQRT_R4:
+				amd64_sse_sqrtps_reg_reg (code, ins->dreg, ins->sreg1);
+				break;
+			case INTRINS_SIMD_SQRT_R8:
+				amd64_sse_sqrtpd_reg_reg (code, ins->dreg, ins->sreg1);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
 		case OP_SSE41_DPPS_IMM:
 			amd64_sse_dpps_reg_reg (code, ins->dreg, ins->sreg2, ins->inst_c0);
 			break;
@@ -7390,6 +7404,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
+		case OP_XLOWER:
+			amd64_sse_pxor_reg_reg (code, SIMD_TEMP_REG, SIMD_TEMP_REG);
+			amd64_sse_pblendw_reg_reg_imm (code, SIMD_TEMP_REG, ins->sreg1, 0b1111);
+			amd64_sse_movaps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
+			break;
+		case OP_XUPPER:
+			amd64_sse_pxor_reg_reg (code, SIMD_TEMP_REG, SIMD_TEMP_REG);
+			amd64_movhlps_reg_reg (code, SIMD_TEMP_REG, ins->sreg1);
+			amd64_sse_movaps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
+			break;
 		case OP_STOREX_MEMBASE_REG:
 		case OP_STOREX_MEMBASE:
 			amd64_sse_movups_membase_reg (code, ins->dreg, ins->inst_offset, ins->sreg1);
