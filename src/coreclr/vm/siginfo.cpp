@@ -3594,11 +3594,10 @@ ErrExit:
 #endif //!DACCESS_COMPILE
 } // CompareTypeTokens
 
-static DWORD ConsumeCustomModifiers(PCCOR_SIGNATURE& pSig, PCCOR_SIGNATURE pEndSig)
+static void ConsumeCustomModifiers(PCCOR_SIGNATURE& pSig, PCCOR_SIGNATURE pEndSig)
 {
     mdToken tk;
     CorElementType type;
-    DWORD count = 0;
 
     PCCOR_SIGNATURE pSigTmp = pSig;
     for (;;)
@@ -3612,10 +3611,9 @@ static DWORD ConsumeCustomModifiers(PCCOR_SIGNATURE& pSig, PCCOR_SIGNATURE pEndS
         case ELEMENT_TYPE_CMOD_OPT:
             IfFailThrow(CorSigUncompressToken_EndPtr(pSigTmp, pEndSig, &tk));
             pSig = pSigTmp;
-            count++;
             break;
         default:
-            return count;
+            return;
         }
     }
 }
@@ -3721,8 +3719,8 @@ MetaSig::CompareElementType(
     // Consume custom modifiers if they are being ignored.
     if (state->IgnoreCustomModifiers)
     {
-        state->CustomModifierCount1 = ConsumeCustomModifiers(pSig1, pEndSig1);
-        state->CustomModifierCount2 = ConsumeCustomModifiers(pSig2, pEndSig2);
+        ConsumeCustomModifiers(pSig1, pEndSig1);
+        ConsumeCustomModifiers(pSig2, pEndSig2);
     }
 
     CorElementType Type1 = ELEMENT_TYPE_MAX; // initialize to illegal
@@ -3870,9 +3868,6 @@ MetaSig::CompareElementType(
 
             IfFailThrow(CorSigUncompressToken_EndPtr(pSig1, pEndSig1, &tk1));
             IfFailThrow(CorSigUncompressToken_EndPtr(pSig2, pEndSig2, &tk2));
-
-            state->CustomModifierCount1++;
-            state->CustomModifierCount2++;
 
 #ifndef DACCESS_COMPILE
             if (!CompareTypeDefOrRefOrSpec(

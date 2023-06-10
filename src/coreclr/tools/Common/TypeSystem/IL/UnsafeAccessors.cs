@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using Internal.IL.Stubs;
@@ -260,7 +261,7 @@ namespace Internal.IL
                         // account for the difference in declarations.
                         string[] tmp = declIndex.Split('.');
                         int toUpdate = tmp.Length < 2 ? 0 : tmp.Length - 2;
-                        int idx = int.Parse(tmp[toUpdate]);
+                        int idx = int.Parse(tmp[toUpdate], CultureInfo.InvariantCulture);
                         idx--;
                         tmp[toUpdate] = idx.ToString();
                         declIndex = string.Join(".", tmp);

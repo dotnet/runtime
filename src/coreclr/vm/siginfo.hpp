@@ -952,10 +952,6 @@ class MetaSig
             // See TokenPairList for more use details.
             TokenPairList*  Visited;
 
-            // Custom modifiers found during the comparison.
-            DWORD CustomModifierCount1;
-            DWORD CustomModifierCount2;
-
             // Boolean indicating if custom modifiers should
             // be compared.
             bool IgnoreCustomModifiers;
@@ -964,8 +960,6 @@ class MetaSig
 
             CompareState(TokenPairList* list)
                 : Visited{ list }
-                , CustomModifierCount1{}
-                , CustomModifierCount2{}
                 , IgnoreCustomModifiers{ false }
             { }
         };
