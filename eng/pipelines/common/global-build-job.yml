@@ -14,6 +14,7 @@ parameters:
   dependsOn: []
   pool: ''
   platform: ''
+  hostPlatform: ''
   pgoType: ''
   condition: true
   useContinueOnErrorDuringBuild: false
@@ -69,14 +70,17 @@ jobs:
           - group: DotNet-HelixApi-Access
 
       # Fixme: parameters.runtimeFlavor doesn't have expected value, should be fixed before merge
-      # - name: _osParameter
-      #   value: -os ${{ parameters.osGroup }}
-      # - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), in(parameters.osGroup, 'ios', 'tvos', 'maccatalyst')) }}:
       - name: _osParameter
-        value: -os osx
+        value: -os ${{ parameters.osGroup }}
+      - ${{ if ne(parameters.hostOSGroup, '') }}:
+        - name: _osParameter
+          value: -os ${{ parameters.hostOSGroup }}
 
       - name: _archParameter
-        value: -arch x64
+        value: -arch ${{ parameters.archType }}
+      - ${{ if ne(parameters.hostArchType, '') }}:
+        - name: _archParameter
+          value: -arch ${{ parameters.hostArchType }}
 
       - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubGroup, '_bionic')) }}:
         - name: _osParameter
