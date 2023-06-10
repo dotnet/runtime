@@ -30,16 +30,6 @@ parameters:
   shouldContinueOnError: false
 
 steps:
-  # Build Native AOT runtime packs
-  # Fixme: parameters.runtimeFlavor doesn't have expected value, should be fixed before merge
-  # - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), in(parameters.osGroup, 'ios', 'tvos', 'maccatalyst')) }}:
-  - script: ./build.sh
-            clr.nativeaotruntime+clr.nativeaotlibs+libs
-            -c ${{ parameters.buildConfig }}
-            -os ${{ parameters.osGroup }}
-            -arch ${{ parameters.archType }}
-    displayName: "Build Native AOT runtime packs"
-
   - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
     parameters:
       osGroup: ${{ parameters.osGroup }}

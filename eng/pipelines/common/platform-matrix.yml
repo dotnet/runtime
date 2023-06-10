@@ -771,7 +771,7 @@ jobs:
       jobParameters:
         hostedOs: osx
         hostedArch: x64
-        hostBuild: true
+        isHostBuild: true
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
