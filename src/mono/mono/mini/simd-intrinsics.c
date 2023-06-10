@@ -1412,8 +1412,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_ConvertToUInt32:
 		case SN_ConvertToUInt64:
 		case SN_ExtractMostSignificantBits:
-		case SN_GetLower:
-		case SN_GetUpper:
 		case SN_Narrow:
 		case SN_Shuffle:
 		case SN_ToScalar:
@@ -1421,6 +1419,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_ToVector128Unsafe:
 		case SN_WidenLower:
 		case SN_WidenUpper:
+			return NULL;
+		case SN_GetLower:
+		case SN_GetUpper:
+			/* These return a Vector64 */
 			return NULL;
 		default:
 			break;
@@ -1869,7 +1871,14 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
 		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
 
-		if (COMPILE_LLVM(cfg) || type_to_width_log2 (arg0_type) == 3) {
+		gboolean use_xextract;
+#ifdef TARGET_AMD64
+		use_xextract = FALSE;
+#else
+		use_xextract = type_to_width_log2 (arg0_type) == 3;
+#endif
+
+		if (COMPILE_LLVM (cfg) || use_xextract) {
 			// Use optimized paths for 64-bit extractions or whatever LLVM yields if enabled.
 			int extract_op = type_to_xextract_op (arg0_type);
 			return emit_simd_ins_for_sig (cfg, klass, extract_op, -1, arg0_type, fsig, args);
@@ -2184,7 +2193,14 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
 		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
 
-		if (COMPILE_LLVM (cfg) || type_to_width_log2 (arg0_type) == 3) {
+		gboolean use_xextract;
+#ifdef TARGET_AMD64
+		use_xextract = FALSE;
+#else
+		use_xextract = type_to_width_log2 (arg0_type) == 3;
+#endif
+
+		if (COMPILE_LLVM (cfg) || use_xextract) {
 			int insert_op = type_to_xinsert_op (arg0_type);
 			MonoInst *ins = emit_simd_ins (cfg, klass, insert_op, args [0]->dreg, args [2]->dreg);
 			ins->sreg3 = args [1]->dreg;
