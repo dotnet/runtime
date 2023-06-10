@@ -14,15 +14,12 @@
     <TrimMode>Link</TrimMode>
     <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
 
-    <DevTeamProvisioning Condition="'$(DevTeamProvisioning)' == '' and '$(TargetOS)' != 'maccatalyst'">-</DevTeamProvisioning>
-    <UseMonoJustInterp Condition="'$(UseMonoJustInterp)' == '' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
-    <ShouldILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(UseMonoJustInterp)' != 'true'" >true</ShouldILStrip>
     <EnableDefaultAssembliesToBundle>true</EnableDefaultAssembliesToBundle>
     <AppleGenerateAppBundle>true</AppleGenerateAppBundle>
     <GenerateXcodeProject>true</GenerateXcodeProject>
     <UseConsoleUITemplate>false</UseConsoleUITemplate>
 
-    <BuildAppBundleAfterTargets>CopyFilesToPublishDirectory</BuildAppBundleAfterTargets>
+    <BuildAppBundleAfterTargets Condition="'$(ArchiveTests)' != 'true'">CopyFilesToPublishDirectory</BuildAppBundleAfterTargets>
     <BuildAppBundleAfterTargets Condition="'$(ArchiveTests)' == 'true'">CopyFilesToPublishDirectory;Build</BuildAppBundleAfterTargets>
     <BuildAppBundleDependsOnTargets Condition="'$(ArchiveTests)' == 'true'">Publish</BuildAppBundleDependsOnTargets>
   </PropertyGroup>
@@ -31,6 +28,11 @@
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets" />
 
   <Target Name="BuildAppBundle" AfterTargets="$(BuildAppBundleAfterTargets)" DependsOnTargets="$(BuildAppBundleDependsOnTargets)"/>
+  <Target Name="_SetAppleGenerateAppBundleProps" Condition="'$(TargetOS)' != 'ios' and '$(ArchiveTests)' != 'true'" BeforeTargets="_AppleGenerateAppBundle">
+    <PropertyGroup>
+      <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
+    </PropertyGroup>
+  </Target>
 
   <Target Name="RunAppBundle"
           AfterTargets="_AppleGenerateAppBundle"

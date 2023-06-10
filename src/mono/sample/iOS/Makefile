@@ -86,7 +86,7 @@ run-catalyst-interp: clean appbuilder
 	/p:TargetOS=maccatalyst \
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	/p:MonoEnableLLVM=False \
-	/p:MonoForceInterpreter=true
+	/p:MonoForceInterpreter=true \
 	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
 	/p:EnableAppSandbox=$(APP_SANDBOX) \
 	/bl
