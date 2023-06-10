@@ -99,7 +99,7 @@ REGDEF(V31,  31+VBASE, VMASK(31), "d31", "s31")
 
 REGDEF(SP,    0+NBASE, 0x0000,    "sp",  "wsp?")
 // This must be last!
-REGDEF(STK,   2+NBASE, 0x0000,    "STK", "STK")
+REGDEF(STK,   1+NBASE, 0x0000,    "STK", "STK")
 
 /*****************************************************************************/
 #undef  RMASK

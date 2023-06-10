@@ -3689,7 +3689,7 @@ void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
 #else
     pInfo->tlsGetAddrFtnPtr                     = value.tlsGetAddrFtnPtr;
     pInfo->descrAddrOfMaxThreadStaticBlock      = value.descrAddrOfMaxThreadStaticBlock;
-    pInfo->offsetOfThreadStaticBlocks        = value.offsetOfThreadStaticBlocks;
+    pInfo->offsetOfThreadStaticBlocks           = value.offsetOfThreadStaticBlocks;
 #endif
     pInfo->offsetOfGCDataPointer                = value.offsetOfGCDataPointer;
 }

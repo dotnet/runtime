@@ -2836,10 +2836,6 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 //
 void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
 {
-    if (strcmp(compiler->info.compMethodName, "Main") == 0)
-    {
-        printf("hello\n");
-    }
     GenTree* data = lclNode->gtOp1;
 
     // Stores from a multi-reg source are handled separately.

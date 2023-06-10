@@ -75,7 +75,6 @@ __declspec(selectany) __declspec(thread) uint32_t t_GCMaxThreadStaticBlocks;
 
 __declspec(selectany) __declspec(thread) void** t_NonGCThreadStaticBlocks;
 __declspec(selectany) __declspec(thread) void** t_GCThreadStaticBlocks;
-
 #else
 extern "C" void* __tls_get_addr(void* ti);
 struct ThreadStaticBlockInfo
@@ -90,7 +89,6 @@ __thread ThreadStaticBlockInfo t_ThreadStatics;
 __thread uint32_t t_NonGCThreadStaticBlocksSize;
 __thread uint32_t t_GCThreadStaticBlocksSize;
 #endif // _MSC_VER
-
 
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
 //
@@ -1582,7 +1580,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 fieldAccessor = CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
 
                 pResult->helper = getSharedStaticsHelper(pField, pFieldMT);
-#ifndef TARGET_ARM
+#if defined(TARGET_ARM) || (!defined(HOST_WINDOWS) && defined(TARGET_32BIT))
                 // For windows, we convert the TLS access to the optimized helper where we will store
                 // the static blocks in TLS directly and access them via inline code.
                 if ((pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR) ||
@@ -1597,7 +1595,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                     fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
                     pResult->helper = CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
                 }
-#endif // !TARGET_ARM
+#endif // !TARGET_ARM || (!HOST_WINDOWS && TARGET_32BIT)
             }
             else
             {
