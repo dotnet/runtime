@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
 using Internal.TypeSystem.Ecma;
-
-using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL
 {
@@ -16,12 +15,7 @@ namespace Internal.IL
     {
         public override MethodDebugInformation GetDebugInfo()
         {
-            if (_method.Module.PdbReader != null)
-            {
-                return new EcmaMethodDebugInformation(_method);
-            }
-
-            return MethodDebugInformation.None;
+            return new EcmaMethodDebugInformation(_method);
         }
     }
 
@@ -34,20 +28,34 @@ namespace Internal.IL
 
         public EcmaMethodDebugInformation(EcmaMethod method)
         {
-            Debug.Assert(method.Module.PdbReader != null);
             _method = method;
         }
 
-        public override bool IsStateMachineMoveNextMethod => _method.Module.PdbReader.GetStateMachineKickoffMethod(MetadataTokens.GetToken(_method.Handle)) != 0;
+        public override bool IsStateMachineMoveNextMethod
+        {
+            get
+            {
+                PdbSymbolReader reader = _method.Module.PdbReader;
+                return reader != null
+                    ? reader.GetStateMachineKickoffMethod(MetadataTokens.GetToken(_method.Handle)) != 0
+                    : false;
+            }
+        }
 
         public override IEnumerable<ILSequencePoint> GetSequencePoints()
         {
-            return _method.Module.PdbReader.GetSequencePointsForMethod(MetadataTokens.GetToken(_method.Handle));
+            PdbSymbolReader reader = _method.Module.PdbReader;
+            return reader != null
+                ? reader.GetSequencePointsForMethod(MetadataTokens.GetToken(_method.Handle))
+                : Array.Empty<ILSequencePoint>();
         }
 
         public override IEnumerable<ILLocalVariable> GetLocalVariables()
         {
-            return _method.Module.PdbReader.GetLocalVariableNamesForMethod(MetadataTokens.GetToken(_method.Handle));
+            PdbSymbolReader reader = _method.Module.PdbReader;
+            return reader != null
+                ? reader.GetLocalVariableNamesForMethod(MetadataTokens.GetToken(_method.Handle))
+                : Array.Empty<ILLocalVariable>();
         }
 
         public override IEnumerable<string> GetParameterNames()
