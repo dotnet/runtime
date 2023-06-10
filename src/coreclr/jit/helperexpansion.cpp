@@ -478,9 +478,9 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         return false;
     }
 
-    if (TargetOS::IsUnix())
+    if (TargetOS::IsUnix)
     {
-#if defined(TARGET_ARM) || !defined(TARGET_64BIT))
+#if defined(TARGET_ARM) || !defined(TARGET_64BIT)
         // On Arm, Thread execution blocks are accessed using co-processor registers and instructions such
         // as MRC and MCR are used to access them. We do not support them and so should never optimize the
         // field access using TLS.

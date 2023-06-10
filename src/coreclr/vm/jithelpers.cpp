@@ -1797,6 +1797,11 @@ struct ThreadStaticBlockInfo
     void** GCThreadStaticBlocks;
 };
 
+#define t_NonGCMaxThreadStaticBlocks t_ThreadStatics.NonGCMaxThreadStaticBlocks
+#define t_NonGCThreadStaticBlocks t_ThreadStatics.NonGCThreadStaticBlocks
+#define t_GCMaxThreadStaticBlocks t_ThreadStatics.GCMaxThreadStaticBlocks
+#define t_GCThreadStaticBlocks t_ThreadStatics.GCThreadStaticBlocks
+
 EXTERN_C __thread ThreadStaticBlockInfo t_ThreadStatics;
 EXTERN_C __thread uint32_t t_NonGCThreadStaticBlocksSize;
 EXTERN_C __thread uint32_t t_GCThreadStaticBlocksSize;
@@ -1870,22 +1875,22 @@ HCIMPL1(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, UINT32 staticBlockIn
 
         if (t_NonGCThreadStaticBlocksSize > 0)
         {
-            memcpy(newThreadStaticBlocks, t_ThreadStatics.NonGCThreadStaticBlocks, t_NonGCThreadStaticBlocksSize * sizeof(PTR_BYTE));
-            delete t_ThreadStatics.NonGCThreadStaticBlocks;
+            memcpy(newThreadStaticBlocks, t_NonGCThreadStaticBlocks, t_NonGCThreadStaticBlocksSize * sizeof(PTR_BYTE));
+            delete t_NonGCThreadStaticBlocks;
         }
 
         t_NonGCThreadStaticBlocksSize = newThreadStaticBlocksSize;
-        t_ThreadStatics.NonGCThreadStaticBlocks = newThreadStaticBlocks;
+        t_NonGCThreadStaticBlocks = newThreadStaticBlocks;
     }
 
-    void* currentEntry = t_ThreadStatics.NonGCThreadStaticBlocks[staticBlockIndex];
+    void* currentEntry = t_NonGCThreadStaticBlocks[staticBlockIndex];
     // We could be coming here 2nd time after running the ctor when we try to get the static block.
     // In such case, just avoid adding the same entry.
     if (currentEntry != staticBlock)
     {
         _ASSERTE(currentEntry == nullptr);
-        t_ThreadStatics.NonGCThreadStaticBlocks[staticBlockIndex] = staticBlock;
-        t_ThreadStatics.NonGCMaxThreadStaticBlocks = max(t_ThreadStatics.NonGCMaxThreadStaticBlocks, staticBlockIndex);
+        t_NonGCThreadStaticBlocks[staticBlockIndex] = staticBlock;
+        t_NonGCMaxThreadStaticBlocks = max(t_NonGCMaxThreadStaticBlocks, staticBlockIndex);
     }
     HELPER_METHOD_FRAME_END();
 
@@ -1964,22 +1969,22 @@ HCIMPL1(void*, JIT_GetSharedGCThreadStaticBaseOptimized, UINT32 staticBlockIndex
 
         if (t_GCThreadStaticBlocksSize > 0)
         {
-            memcpy(newThreadStaticBlocks, t_ThreadStatics.GCThreadStaticBlocks, t_GCThreadStaticBlocksSize * sizeof(PTR_BYTE));
-            delete t_ThreadStatics.GCThreadStaticBlocks;
+            memcpy(newThreadStaticBlocks, t_GCThreadStaticBlocks, t_GCThreadStaticBlocksSize * sizeof(PTR_BYTE));
+            delete t_GCThreadStaticBlocks;
         }
 
         t_GCThreadStaticBlocksSize = newThreadStaticBlocksSize;
-        t_ThreadStatics.GCThreadStaticBlocks = newThreadStaticBlocks;
+        t_GCThreadStaticBlocks = newThreadStaticBlocks;
     }
 
-    void* currentEntry = t_ThreadStatics.GCThreadStaticBlocks[staticBlockIndex];
+    void* currentEntry = t_GCThreadStaticBlocks[staticBlockIndex];
     // We could be coming here 2nd time after running the ctor when we try to get the static block.
     // In such case, just avoid adding the same entry.
     if (currentEntry != staticBlock)
     {
         _ASSERTE(currentEntry == nullptr);
-        t_ThreadStatics.GCThreadStaticBlocks[staticBlockIndex] = staticBlock;
-        t_ThreadStatics.GCMaxThreadStaticBlocks = max(t_ThreadStatics.GCMaxThreadStaticBlocks, staticBlockIndex);
+        t_GCThreadStaticBlocks[staticBlockIndex] = staticBlock;
+        t_GCMaxThreadStaticBlocks = max(t_GCMaxThreadStaticBlocks, staticBlockIndex);
     }
 
     // Get the data pointer of static block
