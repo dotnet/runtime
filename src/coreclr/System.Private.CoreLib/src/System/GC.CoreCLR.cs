@@ -17,13 +17,14 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Runtime.Versioning;
 
 namespace System
 {
     /// <summary>Specifies the behavior for a forced garbage collection.</summary>
     public enum GCCollectionMode
     {
-        /// <summary>The default setting for this enumeration, which is currently <see cref="GCCollectionMode.Forced" />.</summary>
+        /// <summary>The default setting for this enumeration, which is currently <see cref="Forced" />.</summary>
         Default = 0,
 
         /// <summary>Forces the garbage collection to occur immediately.</summary>
@@ -352,8 +353,8 @@ namespace System
             float diff;
             do
             {
-                GC.WaitForPendingFinalizers();
-                GC.Collect();
+                WaitForPendingFinalizers();
+                Collect();
                 size = newSize;
                 newSize = GetTotalMemory();
                 diff = ((float)(newSize - size)) / size;
@@ -640,8 +641,8 @@ namespace System
         /// Register a callback to be invoked when we allocated a certain amount of memory in the no GC region.
         /// <param name="totalSize">The total size of the no GC region. Must be a number > 0 or an ArgumentOutOfRangeException will be thrown.</param>
         /// <param name="callback">The callback to be executed when we allocated a certain amount of memory in the no GC region..</param>
-        /// <exception cref="System.ArgumentOutOfRangeException"> The <paramref name="totalSize"/> argument is less than or equal to 0.</exception>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="callback"/> argument is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"> The <paramref name="totalSize"/> argument is less than or equal to 0.</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="callback"/> argument is null.</exception>
         /// <exception cref="InvalidOperationException"><para>The GC is not currently under a NoGC region.</para>
         /// <para>-or-</para>
         /// <para>Another callback is already registered.</para>
@@ -907,7 +908,7 @@ namespace System
         /// <exception cref="InvalidOperationException">If the hard limit is invalid. This can happen, for example, with negative heap hard limit percentages.</exception>"
         ///
         /// </summary>
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("RefreshMemoryLimit is in preview.")]
+        [RequiresPreviewFeatures("RefreshMemoryLimit is in preview.")]
         public static void RefreshMemoryLimit()
         {
             ulong heapHardLimit = (AppContext.GetData("GCHeapHardLimit") as ulong?) ?? ulong.MaxValue;

@@ -104,12 +104,6 @@ namespace System.Text.Json.SourceGeneration
         public static bool IsVirtual(this ISymbol symbol)
             => symbol.IsVirtual || symbol.IsOverride || symbol.IsAbstract;
 
-        public static bool IsNestedPrivate(this ISymbol symbol)
-            => symbol.DeclaredAccessibility is Accessibility.Private && symbol.ContainingType != null;
-
-        public static bool IsPublic(this ITypeSymbol symbol)
-            => symbol.DeclaredAccessibility is Accessibility.Public && symbol.ContainingType is null;
-
         public static bool IsAssignableFrom(this ITypeSymbol? baseType, ITypeSymbol? type)
         {
             if (baseType is null || type is null)

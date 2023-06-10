@@ -261,16 +261,16 @@ namespace System
                         do
                         {
                             // unlike IndexOf, here we use LZCNT to process matches starting from the end
-                            int bitPos = 31 - BitOperations.LeadingZeroCount(mask);
+                            int highestSetBitIndex = 31 - BitOperations.LeadingZeroCount(mask);
                             if (valueLength == 2 || // we already matched two bytes
                                 SequenceEqual(
-                                    ref Unsafe.Add(ref searchSpace, offset + bitPos),
+                                    ref Unsafe.Add(ref searchSpace, offset + highestSetBitIndex),
                                     ref value, (nuint)(uint)valueLength)) // The (nuint)-cast is necessary to pick the correct overload
                             {
-                                return bitPos + offset;
+                                return highestSetBitIndex + offset;
                             }
                             // Clear the highest set bit.
-                            mask = BitOperations.ResetBit(mask, bitPos);
+                            mask = BitOperations.FlipBit(mask, highestSetBitIndex);
                         } while (mask != 0);
                     }
 
@@ -310,16 +310,16 @@ namespace System
                         do
                         {
                             // unlike IndexOf, here we use LZCNT to process matches starting from the end
-                            int bitPos = 31 - BitOperations.LeadingZeroCount(mask);
+                            int highestSetBitIndex = 31 - BitOperations.LeadingZeroCount(mask);
                             if (valueLength == 2 || // we already matched two bytes
                                 SequenceEqual(
-                                    ref Unsafe.Add(ref searchSpace, offset + bitPos),
+                                    ref Unsafe.Add(ref searchSpace, offset + highestSetBitIndex),
                                     ref value, (nuint)(uint)valueLength)) // The (nuint)-cast is necessary to pick the correct overload
                             {
-                                return bitPos + offset;
+                                return highestSetBitIndex + offset;
                             }
                             // Clear the highest set bit.
-                            mask = BitOperations.ResetBit(mask, bitPos);
+                            mask = BitOperations.FlipBit(mask, highestSetBitIndex);
                         } while (mask != 0);
                     }
 
@@ -355,10 +355,13 @@ namespace System
                 // Avx2 branch also operates on Sse2 sizes, so check is combined.
                 lengthToExamine = UnalignedCountVector128(searchSpace);
             }
+#if MONO
             else if (Vector.IsHardwareAccelerated)
             {
                 lengthToExamine = UnalignedCountVector(searchSpace);
             }
+#endif
+
         SequentialScan:
             while (lengthToExamine >= 8)
             {
@@ -517,6 +520,7 @@ namespace System
                     }
                 }
             }
+#if MONO
             else if (Vector.IsHardwareAccelerated)
             {
                 if (offset < (nuint)(uint)Length)
@@ -543,6 +547,7 @@ namespace System
                     }
                 }
             }
+#endif
 
             ThrowMustBeNullTerminatedString();
         Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
@@ -690,6 +695,7 @@ namespace System
                     goto NotEqual;
                 }
             }
+#if MONO
             else if (Vector.IsHardwareAccelerated && length >= (nuint)Vector<byte>.Count)
             {
                 nuint offset = 0;
@@ -718,6 +724,7 @@ namespace System
                 // This becomes a conditional jmp forward to not favor it.
                 goto NotEqual;
             }
+#endif
 
 #if TARGET_64BIT
             if (Vector128.IsHardwareAccelerated)
@@ -765,27 +772,6 @@ namespace System
             // - exceptions are conditional forwards jmps and not predicted
         NotEqual:
             return false;
-        }
-
-        // Vector sub-search adapted from https://github.com/aspnet/KestrelHttpServer/pull/1138
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int LocateFirstFoundByte(Vector<byte> match)
-        {
-            var vector64 = Vector.AsVectorUInt64(match);
-            ulong candidate = 0;
-            int i = 0;
-            // Pattern unrolled by jit https://github.com/dotnet/coreclr/pull/8001
-            for (; i < Vector<ulong>.Count; i++)
-            {
-                candidate = vector64[i];
-                if (candidate != 0)
-                {
-                    break;
-                }
-            }
-
-            // Single LEA instruction with jitted const (using function result)
-            return i * 8 + LocateFirstFoundByte(candidate);
         }
 
         public static unsafe int SequenceCompareTo(ref byte first, int firstLength, ref byte second, int secondLength)
@@ -907,6 +893,7 @@ namespace System
                     goto BytewiseCheck;
                 }
             }
+#if MONO
             else if (Vector.IsHardwareAccelerated)
             {
                 if (lengthToExamine > (nuint)Vector<byte>.Count)
@@ -923,6 +910,7 @@ namespace System
                     goto BytewiseCheck;
                 }
             }
+#endif
 
             if (lengthToExamine > (nuint)sizeof(nuint))
             {
@@ -1044,6 +1032,28 @@ namespace System
             return i + uint.TrailingZeroCount(mask);
         }
 
+#if MONO
+        // Vector sub-search adapted from https://github.com/aspnet/KestrelHttpServer/pull/1138
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int LocateFirstFoundByte(Vector<byte> match)
+        {
+            var vector64 = Vector.AsVectorUInt64(match);
+            ulong candidate = 0;
+            int i = 0;
+            // Pattern unrolled by jit https://github.com/dotnet/coreclr/pull/8001
+            for (; i < Vector<ulong>.Count; i++)
+            {
+                candidate = vector64[i];
+                if (candidate != 0)
+                {
+                    break;
+                }
+            }
+
+            // Single LEA instruction with jitted const (using function result)
+            return i * 8 + LocateFirstFoundByte(candidate);
+        }
+
         // Vector sub-search adapted from https://github.com/aspnet/KestrelHttpServer/pull/1138
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateLastFoundByte(Vector<byte> match)
@@ -1068,6 +1078,22 @@ namespace System
             // Single LEA instruction with jitted const (using function result)
             return i * 8 + LocateLastFoundByte(candidate);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector<byte> LoadVector(ref byte start, nuint offset)
+            => Unsafe.ReadUnaligned<Vector<byte>>(ref Unsafe.AddByteOffset(ref start, offset));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static nuint GetByteVectorSpanLength(nuint offset, int length)
+            => (nuint)(uint)((length - (int)offset) & ~(Vector<byte>.Count - 1));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe nuint UnalignedCountVector(byte* searchSpace)
+        {
+            nint unaligned = (nint)searchSpace & (Vector<byte>.Count - 1);
+            return (nuint)((Vector<byte>.Count - unaligned) & (Vector<byte>.Count - 1));
+        }
+#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateFirstFoundByte(ulong match)
@@ -1098,10 +1124,6 @@ namespace System
             => Unsafe.ReadUnaligned<nuint>(ref Unsafe.AddByteOffset(ref start, offset));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector<byte> LoadVector(ref byte start, nuint offset)
-            => Unsafe.ReadUnaligned<Vector<byte>>(ref Unsafe.AddByteOffset(ref start, offset));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<byte> LoadVector128(ref byte start, nuint offset)
             => Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.AddByteOffset(ref start, offset));
 
@@ -1110,23 +1132,12 @@ namespace System
             => Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.AddByteOffset(ref start, offset));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static nuint GetByteVectorSpanLength(nuint offset, int length)
-            => (nuint)(uint)((length - (int)offset) & ~(Vector<byte>.Count - 1));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static nuint GetByteVector128SpanLength(nuint offset, int length)
             => (nuint)(uint)((length - (int)offset) & ~(Vector128<byte>.Count - 1));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static nuint GetByteVector256SpanLength(nuint offset, int length)
             => (nuint)(uint)((length - (int)offset) & ~(Vector256<byte>.Count - 1));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe nuint UnalignedCountVector(byte* searchSpace)
-        {
-            nint unaligned = (nint)searchSpace & (Vector<byte>.Count - 1);
-            return (nuint)((Vector<byte>.Count - unaligned) & (Vector<byte>.Count - 1));
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe nuint UnalignedCountVector128(byte* searchSpace)

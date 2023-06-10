@@ -23,6 +23,8 @@ namespace ILCompiler
             new(new[] { "--reference", "-r" }, result => Helpers.BuildPathDictionary(result.Tokens, false), true, SR.ReferenceFiles);
         public Option<string> InstructionSet { get; } =
             new(new[] { "--instruction-set" }, SR.InstructionSets);
+        public Option<int> MaxVectorTBitWidth { get; } =
+            new(new[] { "--max-vectort-bitwidth" }, SR.MaxVectorTBitWidths);
         public Option<string[]> MibcFilePaths { get; } =
             new(new[] { "--mibc", "-m" }, Array.Empty<string>, SR.MibcFiles);
         public Option<string> OutputFilePath { get; } =
@@ -181,6 +183,9 @@ namespace ILCompiler
         public Option<bool> SynthesizeRandomMibc { get; } =
             new(new[] { "--synthesize-random-mibc" });
 
+        public Option<int> DeterminismStress { get; } =
+            new(new[] { "--determinism-stress" });
+
         public bool CompositeOrInputBubble { get; private set; }
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result { get; private set; }
@@ -193,6 +198,7 @@ namespace ILCompiler
             AddOption(UnrootedInputFilePaths);
             AddOption(ReferenceFilePaths);
             AddOption(InstructionSet);
+            AddOption(MaxVectorTBitWidth);
             AddOption(MibcFilePaths);
             AddOption(OutputFilePath);
             AddOption(CompositeRootPath);
@@ -246,6 +252,7 @@ namespace ILCompiler
             AddOption(MakeReproPath);
             AddOption(HotColdSplitting);
             AddOption(SynthesizeRandomMibc);
+            AddOption(DeterminismStress);
 
             this.SetHandler(context =>
             {
