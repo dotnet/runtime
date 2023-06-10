@@ -234,17 +234,16 @@ namespace System.Text.Json
 
                 // Allow the data to grow up to maximum possible capacity (~2G bytes) before encountering overflow.
                 // Note: Array.MaxLength exists only on .NET 6 or greater,
-                // so for the other versions value is hardcoded and taken from internal Array.MaxArrayLength
+                // so for the other versions value is hardcoded
+                const int MaxArrayLength = 0x7FFFFFC7;
 #if NET6_0_OR_GREATER
-                int maxArrayLength = Array.MaxLength;
-#else
-                const int maxArrayLength = 0x7FEFFFFF;
+                Debug.Assert(MaxArrayLength == Array.MaxLength);
 #endif
 
                 int newCapacity = toReturn.Length * 2;
 
                 // Note that this check works even when newCapacity overflowed thanks to the (uint) cast
-                if ((uint)newCapacity > maxArrayLength) newCapacity = maxArrayLength;
+                if ((uint)newCapacity > MaxArrayLength) newCapacity = MaxArrayLength;
 
                 _data = ArrayPool<byte>.Shared.Rent(newCapacity);
                 Buffer.BlockCopy(toReturn, 0, _data, 0, toReturn.Length);
