@@ -51,8 +51,6 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             new("--dump-worst-overlap-graphs") { DefaultValueFactory = _ => -1, Description = "Number of graphs to dump to .dot format in dump-worst-overlap-graphs-to directory" };
         public CliOption<string> DumpWorstOverlapGraphsTo { get; } =
             new("--dump-worst-overlap-graphs-to") { Description = "Number of graphs to dump to .dot format in dump-worst-overlap-graphs-to directory" };
-        public CliOption<bool> InheritTimestamp { get; } =
-            new("--inherit-timestamp") { Description = "If specified, set the output's timestamp to the max timestamp of the input files" };
         public CliOption<bool> AutomaticReferences { get; } =
             new("--automatic-references") { DefaultValueFactory = _ => true, Description = "Attempt to find references by using paths embedded in the trace file. Defaults to true" };
         public CliOption<AssemblyName[]> IncludedAssemblies { get; } =
@@ -174,7 +172,6 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 InputFilesToMerge,
                 OutputFilePath,
                 IncludedAssemblies,
-                InheritTimestamp,
                 _verbosity,
                 Compressed
             };
