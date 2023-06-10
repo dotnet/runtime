@@ -1403,6 +1403,9 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #ifdef TARGET_WIN32
 		return NULL;
 #endif
+		if (!is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSE41))
+			/* Some opcodes like pextrd require sse41 */
+			return NULL;
 	}
 #endif
 
