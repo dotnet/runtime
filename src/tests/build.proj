@@ -499,59 +499,11 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <AssemblyName>$(Category)</AssemblyName>
-      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'iossimulator'" >iossimulator</RuntimePackOSSuffix>
-      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'ios'" >ios</RuntimePackOSSuffix>
-      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'tvossimulator'" >tvossimulator</RuntimePackOSSuffix>
-      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'tvos'" >tvos</RuntimePackOSSuffix>
-      <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimePackOSSuffix)-$(TargetArchitecture)/$(Configuration)/runtimes/$(RuntimePackOSSuffix)-$(TargetArchitecture)</MicrosoftNetCoreAppRuntimePackDir>
-      <MicrosoftNetCoreAppRuntimePackNativeDir>$(MicrosoftNetCoreAppRuntimePackDir)/native</MicrosoftNetCoreAppRuntimePackNativeDir>
-    </PropertyGroup>
-
-    <PropertyGroup>
-      <!-- FIXME: Currently, tracing/eventpipe tests only work with the Mono Interpreter. Mono interpreter should be only enabled for simulator targets. -->
-      <MonoForceInterpreter>True</MonoForceInterpreter>
-    </PropertyGroup>
-    <ItemGroup>
-      <AllTestScripts Include="$(_CMDDIR)\**\*.sh" Exclude="$(_CMDDIR)\**\AppBundle\*.sh" />
-    </ItemGroup>
-    <ItemGroup>
-      <TestExclusions Include="@(ExcludeList->Metadata('FullPath'))" Condition="$(HaveExcludes)" />
-      <TestScripts Include="@(AllTestScripts)" Exclude="@(TestExclusions)" />
-      <TestDllPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
-      <TestDlls Include="%(TestDllPaths.Identity)" Condition="Exists(%(TestDllPaths.Identity))" />
-      <AssembliesInTestDirs Include="%(AllCMDsPresent.RelativeDir)*.dll" Exclude="@(TestAssemblies)"/>
-      <RuntimePackLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/**/*.dll" />
-      <TestTargetingPathLibs Include="$(TargetingPackPath)/*.dll" />
-    </ItemGroup>
-    <ItemGroup>
-      <ExtraDlls Include="%(TestDlls.RelativeDir)*.dll" Exclude="@(TestDlls)">
-        <TestDllFilename>@(TestDlls->'%(Filename)')</TestDllFilename>
-      </ExtraDlls>
-    </ItemGroup>
-    <PropertyGroup>
       <BundleDir>$([MSBuild]::NormalizeDirectory('$(BuildDir)', 'AppBundle'))</BundleDir>
+      <AssemblyName>$(Category)</AssemblyName>
+      <_NativeDependencies>$(IntermediateOutputPath)\..\$(CategoryWithSlash)\$(TestName)\native\$(TestName).o</_NativeDependencies>
+      <DevTeamProvisioning>-</DevTeamProvisioning>
     </PropertyGroup>
-
-    <RemoveDir Directories="$(BundleDir)" />
-    <RemoveDir Directories="$(BuildDir)" />
-
-    <MakeDir Directories="$(BuildDir)" />
-    <MakeDir Directories="$(BuildDir)/testdir-%(TestDlls.Filename)" />
-
-    <Copy
-        SourceFiles="@(RuntimePackLibs)"
-        DestinationFolder="$(BuildDir)" />
-
-    <Copy
-        SourceFiles="@(TestTargetingPathLibs)"
-        DestinationFolder="$(BuildDir)" />
-    <Copy
-        SourceFiles="%(TestDlls.Identity)"
-        DestinationFolder="$(BuildDir)/testdir-%(TestDlls.Filename)" />
-    <Copy
-        SourceFiles="%(ExtraDlls.Identity)"
-        DestinationFolder="$(BuildDir)/testdir-%(ExtraDlls.TestDllFilename)" />
 
     <ItemGroup>
       <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />
@@ -560,12 +512,10 @@
       <ExtraLinkerArguments Include="@(LinkerArg)" />
     </ItemGroup>
 
-    <PropertyGroup>
-      <_NativeDependencies>$(IntermediateOutputPath)\..\$(CategoryWithSlash)\$(TestName)\native\$(TestName).o</_NativeDependencies>
-      <DevTeamProvisioning>-</DevTeamProvisioning>
-    </PropertyGroup>
-
+    <RemoveDir Directories="$(BundleDir)" />
+    <RemoveDir Directories="$(BuildDir)" />
     <RemoveDir Directories="$(AppDir)" />
+    <MakeDir Directories="$(BuildDir)" />
 
     <AppleAppBuilderTask
         UseNativeAOTRuntime="true"
