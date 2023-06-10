@@ -210,14 +210,14 @@ jobs:
           displayName: Finalize CodeQL (manually-injected)
     #endif isSourceBuild
 
-  # Build Native AOT runtime packs
-  - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), in(parameters.osGroup, 'ios', 'tvos', 'maccatalyst')) }}:
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
-              clr.nativeaotruntime+clr.nativeaotlibs+libs
-              -c ${{ parameters.buildConfig }}
-              -os ${{ parameters.osGroup }}
-              -arch ${{ parameters.archType }}
-      displayName: "Build Native AOT runtime packs"
+    # Build Native AOT runtime packs
+    - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), in(parameters.osGroup, 'ios', 'tvos', 'maccatalyst')) }}:
+      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
+                clr.nativeaotruntime+clr.nativeaotlibs+libs
+                -c ${{ parameters.buildConfig }}
+                -os ${{ parameters.osGroup }}
+                -arch ${{ parameters.archType }}
+        displayName: "Build Native AOT runtime packs"
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos', 'android') }}:
       - script: |
