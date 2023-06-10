@@ -25,7 +25,7 @@ namespace Internal.IL
 
             if (!TryParseUnsafeAccessorAttribute(method, decodedAttribute.Value, out UnsafeAccessorKind kind, out string name))
             {
-                ThrowHelper.ThrowBadImageFormatException();
+                return GenerateAccessorBadImageFailure(method);
             }
 
             GenerationContext context = new()
@@ -56,11 +56,16 @@ namespace Internal.IL
                     // The name is defined by the runtime and should be empty.
                     if (retType.IsVoid || retType.IsByRef || !string.IsNullOrEmpty(name))
                     {
-                        ThrowHelper.ThrowBadImageFormatException();
+                        return GenerateAccessorBadImageFailure(method);
                     }
 
                     const string ctorName = ".ctor";
                     context.TargetType = ValidateTargetType(retType);
+                    if (context.TargetType == null)
+                    {
+                        return GenerateAccessorBadImageFailure(method);
+                    }
+
                     if (!TrySetTargetMethod(ref context, ctorName, out isAmbiguous))
                     {
                         return GenerateAccessorSpecificFailure(ref context, ctorName, isAmbiguous);
@@ -71,10 +76,15 @@ namespace Internal.IL
                     // Method access requires a target type.
                     if (firstArgType == null)
                     {
-                        ThrowHelper.ThrowBadImageFormatException();
+                        return GenerateAccessorBadImageFailure(method);
                     }
 
                     context.TargetType = ValidateTargetType(firstArgType);
+                    if (context.TargetType == null)
+                    {
+                        return GenerateAccessorBadImageFailure(method);
+                    }
+
                     context.IsTargetStatic = kind == UnsafeAccessorKind.StaticMethod;
                     if (!TrySetTargetMethod(ref context, name, out isAmbiguous))
                     {
@@ -87,7 +97,7 @@ namespace Internal.IL
                     // Field access requires a single argument for target type and a return type.
                     if (sig.Length != 1 || retType.IsVoid)
                     {
-                        ThrowHelper.ThrowBadImageFormatException();
+                        return GenerateAccessorBadImageFailure(method);
                     }
 
                     // The return type must be byref.
@@ -98,10 +108,15 @@ namespace Internal.IL
                             && firstArgType.IsValueType
                             && !firstArgType.IsByRef))
                     {
-                        ThrowHelper.ThrowBadImageFormatException();
+                        return GenerateAccessorBadImageFailure(method);
                     }
 
                     context.TargetType = ValidateTargetType(firstArgType);
+                    if (context.TargetType == null)
+                    {
+                        return GenerateAccessorBadImageFailure(method);
+                    }
+
                     context.IsTargetStatic = kind == UnsafeAccessorKind.StaticField;
                     if (!TrySetTargetField(ref context, name, ((ParameterizedType)retType).GetParameterType()))
                     {
@@ -110,8 +125,7 @@ namespace Internal.IL
                     break;
 
                 default:
-                    ThrowHelper.ThrowBadImageFormatException();
-                    break;
+                    return GenerateAccessorBadImageFailure(method);
             }
 
             // Generate the IL for the accessor.
@@ -476,6 +490,16 @@ namespace Internal.IL
             codeStream.Emit(ILOpcode.newobj, emit.NewToken(md));
             codeStream.Emit(ILOpcode.throw_);
             return emit.Link(context.Declaration);
+        }
+
+        private static MethodIL GenerateAccessorBadImageFailure(MethodDesc method)
+        {
+            ILEmitter emit = new ILEmitter();
+            ILCodeStream codeStream = emit.NewCodeStream();
+            var type = method.Context.SystemModule.GetType("System", "BadImageFormatException");
+            codeStream.Emit(ILOpcode.newobj, emit.NewToken(type.GetDefaultConstructor()));
+            codeStream.Emit(ILOpcode.throw_);
+            return emit.Link(method);
         }
     }
 }
