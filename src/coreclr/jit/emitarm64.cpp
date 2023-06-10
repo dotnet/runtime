@@ -9066,20 +9066,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Returns an encoding for the tpidr_el0 register.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeReg_Tpid0()
-{
-    // o0 op1 CRn  CRm  op2
-    // 1  011 1101 0000 010
-    // emitter::code_t sr = 0xd382;
-    emitter::code_t sr = 0x5e82;
-    return sr << 5;
-}
-
-/*****************************************************************************
- *
  *  Returns an encoding for the specified condition code.
  */
 

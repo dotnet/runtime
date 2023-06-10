@@ -311,9 +311,6 @@ static code_t insEncodeReg_Vm(regNumber reg);
 // Returns an encoding for the specified register used in the 'Va' position
 static code_t insEncodeReg_Va(regNumber reg);
 
-// Returns an encoding for the tpidr_el0 register.
-static code_t insEncodeReg_Tpid0();
-
 // Returns an encoding for the imm which represents the condition code.
 static code_t insEncodeCond(insCond cond);
 
