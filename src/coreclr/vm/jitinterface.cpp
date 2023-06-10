@@ -1580,8 +1580,13 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 fieldAccessor = CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
 
                 pResult->helper = getSharedStaticsHelper(pField, pFieldMT);
-#if defined(TARGET_ARM) || (!defined(HOST_WINDOWS) && defined(TARGET_32BIT))
-                // For windows, we convert the TLS access to the optimized helper where we will store
+#if defined(TARGET_ARM)
+                // Optimization is disabled for linux/windows arm
+#elif !defined(_MSC_VER) && defined(TARGET_32BIT)
+                // Optimization is disabled for linux/x86
+#else
+                // For windows x64/x86/arm64, linux x64/arm64:
+                // We convert the TLS access to the optimized helper where we will store
                 // the static blocks in TLS directly and access them via inline code.
                 if ((pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR) ||
                     (pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE))
@@ -1595,7 +1600,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                     fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
                     pResult->helper = CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
                 }
-#endif // !TARGET_ARM || (!HOST_WINDOWS && TARGET_32BIT)
+#endif // TARGET_ARM
             }
             else
             {
