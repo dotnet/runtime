@@ -263,7 +263,7 @@ inline PCODE decodeJump(PCODE pCode)
 
     TADDR pInstr = PCODEToPINSTR(pCode);
 
-    return *dac_cast<PTR_PCODE>(pInstr + 2*sizeof(DWORD));
+    return *dac_cast<PTR_PCODE>(pInstr + 16);
 }
 
 //------------------------------------------------------------------------
@@ -273,7 +273,7 @@ inline BOOL isJump(PCODE pCode)
 
     TADDR pInstr = PCODEToPINSTR(pCode);
 
-    return *dac_cast<PTR_DWORD>(pInstr+12) == 0x00000013;
+    return *dac_cast<PTR_DWORD>(pInstr+12) == 0x00000013; // nop
 }
 
 //------------------------------------------------------------------------
