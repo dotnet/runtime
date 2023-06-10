@@ -4674,8 +4674,8 @@ bool CEEInfo::satisfiesClassConstraints(CORINFO_CLASS_HANDLE cls)
 }
 
 /*********************************************************************/
-// Check if this is a single dimensional array type
-bool CEEInfo::isSDArray(CORINFO_CLASS_HANDLE  cls)
+// Check if this is a single dimensional, zero based array type
+bool CEEInfo::isSDArray(CORINFO_CLASS_HANDLE cls)
 {
     CONTRACTL {
         THROWS;
