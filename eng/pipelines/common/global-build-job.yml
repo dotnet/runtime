@@ -6,6 +6,8 @@ parameters:
   hostedOs: ''
   osGroup: ''
   osSubgroup: ''
+  hostOSGroup: ''
+  hostArchType: ''
   container: ''
   crossBuild: false
   variables: []
