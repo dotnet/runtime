@@ -181,17 +181,13 @@ namespace System.Threading.RateLimiting
                         do
                         {
                             RequestRegistration oldestRequest = _queue.DequeueHead();
-                            _queueCount -= oldestRequest.Count;
-                            Debug.Assert(_queueCount >= 0);
-                            if (!oldestRequest.TrySetResult(FailedLease))
+                            if (oldestRequest.TrySetResult(FailedLease))
                             {
-                                _queueCount += oldestRequest.Count;
-                            }
-                            else
-                            {
+                                // Updating queue count is handled by the cancellation/cleanup code
                                 Interlocked.Increment(ref _failedLeasesCount);
                             }
                             disposer.Add(oldestRequest);
+                            Debug.Assert(_queueCount >= 0);
                         }
                         while (_options.QueueLimit - _queueCount < permitCount);
                     }
@@ -335,7 +331,7 @@ namespace System.Threading.RateLimiting
                             ? _queue.DequeueHead()
                             : _queue.DequeueTail();
 
-                        _queueCount -= nextPendingRequest.Count;
+                        // Updating queue count is handled by the cancellation/cleanup code
                         _permitCount -= nextPendingRequest.Count;
                         _requestsPerSegment[_currentSegmentIndex] += nextPendingRequest.Count;
                         Debug.Assert(_permitCount >= 0);
@@ -345,8 +341,6 @@ namespace System.Threading.RateLimiting
                             // Queued item was canceled so add count back
                             _permitCount += nextPendingRequest.Count;
                             _requestsPerSegment[_currentSegmentIndex] -= nextPendingRequest.Count;
-                            // Updating queue count is handled by the cancellation code
-                            _queueCount += nextPendingRequest.Count;
                         }
                         else
                         {
@@ -395,6 +389,7 @@ namespace System.Threading.RateLimiting
                     disposer.Add(next);
                     next.TrySetResult(FailedLease);
                 }
+                Debug.Assert(_queueCount == 0);
             }
         }
 
@@ -468,17 +463,26 @@ namespace System.Threading.RateLimiting
 #endif
             }
 
-            public int Count { get; }
+            /// <remarks>
+            /// This property is only accessed under limiter lock.
+            /// </remarks>
+            public int Count { get; private set; }
 
             private static void Cancel(object? state)
             {
                 if (state is RequestRegistration registration && registration.TrySetCanceled(registration._cancellationToken))
                 {
-                    var limiter = (SlidingWindowRateLimiter)registration.Task.AsyncState!;
-                    lock (limiter.Lock)
-                    {
-                        limiter._queueCount -= registration.Count;
-                    }
+                    registration.Cleanup();
+                }
+            }
+
+            private void Cleanup()
+            {
+                var limiter = (SlidingWindowRateLimiter)Task.AsyncState!;
+                lock (limiter.Lock)
+                {
+                    limiter._queueCount -= Count;
+                    Count = 0;
                 }
             }
 
@@ -491,6 +495,7 @@ namespace System.Threading.RateLimiting
 
                 public void Add(RequestRegistration request)
                 {
+                    request.Cleanup();
                     request._next = _next;
                     _next = request;
                 }
