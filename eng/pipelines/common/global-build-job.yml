@@ -4,10 +4,9 @@ parameters:
   buildArgs: ''
   archType: ''
   hostedOs: ''
+  hostedArch: ''
   osGroup: ''
   osSubgroup: ''
-  hostOSGroup: ''
-  hostArchType: ''
   container: ''
   crossBuild: false
   variables: []
@@ -74,15 +73,15 @@ jobs:
       # Fixme: parameters.runtimeFlavor doesn't have expected value, should be fixed before merge
       - name: _osParameter
         value: -os ${{ parameters.osGroup }}
-      - ${{ if ne(parameters.hostOSGroup, '') }}:
+      - ${{ if ne(parameters.hostedOs, '') }}:
         - name: _osParameter
-          value: -os ${{ parameters.hostOSGroup }}
+          value: -os ${{ parameters.hostedOs }}
 
       - name: _archParameter
         value: -arch ${{ parameters.archType }}
-      - ${{ if ne(parameters.hostArchType, '') }}:
+      - ${{ if ne(parameters.hostedArch, '') }}:
         - name: _archParameter
-          value: -arch ${{ parameters.hostArchType }}
+          value: -arch ${{ parameters.hostedArch }}
 
       - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubGroup, '_bionic')) }}:
         - name: _osParameter

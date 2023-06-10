@@ -764,14 +764,13 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
       osGroup: ios
-      ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
-        hostOSGroup: osx
-        hostArchType: x64
       archType: arm64
       targetRid: ios-arm64
       platform: ios_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
+        hostedOs: osx
+        hostedArch: x64
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}

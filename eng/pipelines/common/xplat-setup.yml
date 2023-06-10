@@ -1,9 +1,8 @@
 parameters:
   jobTemplate: ''
   hostedOs: ''
+  hostedArch: ''
   osGroup: ''
-  hostOSGroup: ''
-  hostArchType: ''
   osSubgroup: ''
   archType: ''
   container: ''
@@ -127,9 +126,6 @@ jobs:
     archType: ${{ parameters.archType }}
     targetRid: ${{ parameters.targetRid }}
     platform: ${{ parameters.platform }}
-    hostOSGroup: ${{ parameters.hostOSGroup }}
-    hostArchType: ${{ parameters.hostArchType }}
-    runtimeFlavor: ${{ parameters.runtimeFlavor }}
 
     ${{ if ne(parameters.container, '') }}:
       ${{ if eq(parameters.container.registry, 'mcr') }}:
