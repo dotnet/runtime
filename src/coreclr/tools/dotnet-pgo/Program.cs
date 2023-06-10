@@ -438,14 +438,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 MibcConfig mergedConfig = ParseMibcConfigsAndMerge(tsc, mibcReaders);
                 var outputFileInfo = new FileInfo(outputPath);
-                int result = MibcEmitter.GenerateMibcFile(mergedConfig, tsc, outputFileInfo, mergedProfileData.Values, _command.ValidateOutputFile, !Get(_command.Compressed));
-                if (result == 0 && Get(_command.InheritTimestamp))
-                {
-                    outputFileInfo.CreationTimeUtc = paths.Max(f => new FileInfo(f).CreationTimeUtc);
-                    outputFileInfo.LastWriteTimeUtc = paths.Max(f => new FileInfo(f).LastWriteTimeUtc);
-                }
-
-                return result;
+                return MibcEmitter.GenerateMibcFile(mergedConfig, tsc, outputFileInfo, mergedProfileData.Values, _command.ValidateOutputFile, !Get(_command.Compressed));
             }
             finally
             {
