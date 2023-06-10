@@ -7414,6 +7414,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_movhlps_reg_reg (code, SIMD_TEMP_REG, ins->sreg1);
 			amd64_sse_movaps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
 			break;
+		case OP_CVT_FP_SI:
+			amd64_sse_cvttps2dq_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_CVT_SI_FP:
+			amd64_sse_cvtdq2ps_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
 		case OP_STOREX_MEMBASE_REG:
 		case OP_STOREX_MEMBASE:
 			amd64_sse_movups_membase_reg (code, ins->dreg, ins->inst_offset, ins->sreg1);

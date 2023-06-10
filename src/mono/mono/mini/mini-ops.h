@@ -1846,6 +1846,7 @@ MINI_OP(OP_CVT_SI_FP_SCALAR, "convert_si_to_fp_scalar", XREG, XREG, NONE)
 /* inst_c1 is one of the MONO_TYPE_ constants */
 MINI_OP(OP_NEGATION,        "negate", XREG, XREG, NONE)
 MINI_OP(OP_NEGATION_SCALAR, "negate_scalar", XREG, XREG, NONE)
+/* Select bits from src2/src3 using src1 */
 MINI_OP3(OP_BSL,            "bitwise_select", XREG, XREG, XREG, XREG)
 #endif // TARGET_ARM64 || TARGET_AMD64 || TARGET_WASM
 

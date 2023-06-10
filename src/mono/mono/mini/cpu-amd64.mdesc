@@ -606,6 +606,8 @@ ones_complement: dest:x src1:x len:16 clob:1
 negate: dest:x src1:x len:24 clob:1
 xlower: dest:x src1:x len:16
 xupper: dest:x src1:x len:16
+convert_fp_to_si: dest:x src1:x len:16
+convert_si_to_fp: dest:x src1:x len:16
 
 addps: dest:x src1:x src2:x len:4 clob:1
 divps: dest:x src1:x src2:x len:4 clob:1

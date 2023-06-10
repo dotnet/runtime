@@ -1403,30 +1403,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #ifdef TARGET_WIN32
 		return NULL;
 #endif
-		switch (id) {
-		case SN_ConditionalSelect:
-		case SN_ConvertToDouble:
-		case SN_ConvertToInt32:
-		case SN_ConvertToInt64:
-		case SN_ConvertToSingle:
-		case SN_ConvertToUInt32:
-		case SN_ConvertToUInt64:
-		case SN_ExtractMostSignificantBits:
-		case SN_Narrow:
-		case SN_Shuffle:
-		case SN_ToScalar:
-		case SN_ToVector128:
-		case SN_ToVector128Unsafe:
-		case SN_WidenLower:
-		case SN_WidenUpper:
-			return NULL;
-		case SN_GetLower:
-		case SN_GetUpper:
-			/* These return a Vector64 */
-			return NULL;
-		default:
-			break;
-		}
 	}
 #endif
 
@@ -1541,9 +1517,22 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #endif
 	}
 	case SN_ConditionalSelect: {
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
+
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
+
+#if defined(TARGET_AMD64)
+		if (!COMPILE_LLVM (cfg)) {
+			MonoInst *val1 = emit_simd_ins (cfg, klass, OP_XBINOP_FORCEINT, args [0]->dreg, args [1]->dreg);
+			val1->inst_c0 = XBINOP_FORCEINT_AND;
+			MonoInst *val2 = emit_simd_ins (cfg, klass, OP_VECTOR_ANDN, args [0]->dreg, args [2]->dreg);
+			MonoInst *ins = emit_simd_ins (cfg, klass, OP_XBINOP_FORCEINT, val1->dreg, val2->dreg);
+			ins->inst_c0 = XBINOP_FORCEINT_OR;
+			return ins;
+		}
+#endif
+
 		return emit_simd_ins_for_sig (cfg, klass, OP_BSL, -1, arg0_type, fsig, args);
 #else
 		return NULL;
@@ -1567,6 +1556,13 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			op = arg0_type == MONO_TYPE_I8 ? OP_CVT_SI_FP_SCALAR : OP_CVT_UI_FP_SCALAR;
 		else
 			op = arg0_type == MONO_TYPE_I8 ? OP_CVT_SI_FP : OP_CVT_UI_FP;
+
+#ifdef TARGET_AMD64
+		// Fall back to the c# code
+		if (!COMPILE_LLVM (cfg))
+			return NULL;
+#endif
+
 		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
 #else
 		return NULL;
@@ -1585,6 +1581,13 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		}
 #endif
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+
+#if defined(TARGET_AMD64)
+		if (!COMPILE_LLVM (cfg) && id == SN_ConvertToUInt32)
+			// FIXME:
+			return NULL;
+#endif
+
 		int op = id == SN_ConvertToInt32 ? OP_CVT_FP_SI : OP_CVT_FP_UI;
 		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
 #else
@@ -1611,6 +1614,13 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			op = size == 8 ? OP_CVT_FP_SI_SCALAR : OP_CVT_FP_SI;
 		else
 			op = size == 8 ? OP_CVT_FP_UI_SCALAR : OP_CVT_FP_UI;
+
+#if defined(TARGET_AMD64)
+		if (!COMPILE_LLVM (cfg))
+			// FIXME:
+			return NULL;
+#endif
+
 		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
 #else
 		return NULL;
@@ -1628,6 +1638,13 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #endif
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		int op = arg0_type == MONO_TYPE_I4 ? OP_CVT_SI_FP : OP_CVT_UI_FP;
+
+#if defined(TARGET_AMD64)
+		if (!COMPILE_LLVM (cfg) && op == OP_CVT_UI_FP)
+			// FIXME:
+			return NULL;
+#endif
+
 		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
 #else
 		return NULL;
@@ -1906,6 +1923,13 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		int op = id == SN_GetLower ? OP_XLOWER : OP_XUPPER;
+
+#ifdef TARGET_AMD64
+		if (!COMPILE_LLVM (cfg))
+			/* These return a Vector64 */
+			return NULL;
+#endif
+
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
 	}
 	case SN_GreaterThan:
@@ -2109,6 +2133,9 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (vector_size == 128 && (arg0_type == MONO_TYPE_I1 || arg0_type == MONO_TYPE_U1))
 			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBL1, 0, fsig, args);
 		return NULL;
+#elif defined(TARGET_AMD64)
+		// FIXME:
+		return NULL;
 #else
 		return NULL;
 #endif
@@ -2255,16 +2282,19 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		}
 #endif
 #if defined(TARGET_ARM64) || defined(TARGET_WASM)
-			int op = id == SN_WidenLower ? OP_XLOWER : OP_XUPPER;
-			MonoInst *lower_or_upper_half = emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
-			if (type_enum_is_float (arg0_type)) {
-				return emit_simd_ins (cfg, klass, OP_SIMD_FCVTL, lower_or_upper_half->dreg, -1);
-			} else {
-				int zero = alloc_ireg (cfg);
-				MONO_EMIT_NEW_ICONST (cfg, zero, 0);
-				op = type_enum_is_unsigned (arg0_type) ? OP_SIMD_USHLL : OP_SIMD_SSHLL;
-				return emit_simd_ins (cfg, klass, op, lower_or_upper_half->dreg, zero);
-			}
+		int op = id == SN_WidenLower ? OP_XLOWER : OP_XUPPER;
+		MonoInst *lower_or_upper_half = emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
+		if (type_enum_is_float (arg0_type)) {
+			return emit_simd_ins (cfg, klass, OP_SIMD_FCVTL, lower_or_upper_half->dreg, -1);
+		} else {
+			int zero = alloc_ireg (cfg);
+			MONO_EMIT_NEW_ICONST (cfg, zero, 0);
+			op = type_enum_is_unsigned (arg0_type) ? OP_SIMD_USHLL : OP_SIMD_SSHLL;
+			return emit_simd_ins (cfg, klass, op, lower_or_upper_half->dreg, zero);
+		}
+#elif defined(TARGET_AMD64)
+		// FIXME:
+		return NULL;
 #else
 		return NULL;
 #endif
