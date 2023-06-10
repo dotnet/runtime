@@ -724,22 +724,6 @@ void BroadcastConstantToSimd(TSimd* result, TBase arg0)
     }
 }
 
-template <typename TSimdDst, typename TSimdSrc, typename TBase>
-void CopyConstantSimd(TSimdDst* dst, TSimdSrc* src)
-{
-    assert(sizeof(TSimdDst) >= sizeof(TSimdSrc));
-    assert(sizeof(TSimdSrc) % sizeof(TBase) == 0);
-    assert(sizeof(TSimdDst) % sizeof(TBase) == 0);
-
-    uint32_t count = sizeof(TSimdSrc) / sizeof(TBase);
-
-    for (uint32_t i = 0; i < count; i++)
-    {
-        // Safely execute `dst[i] = src[i]`
-        memcpy(&dst->u8[i * sizeof(TBase)], &src->u8[i * sizeof(TBase)], sizeof(TBase));
-    }
-}
-
 #ifdef FEATURE_SIMD
 
 #ifdef TARGET_XARCH

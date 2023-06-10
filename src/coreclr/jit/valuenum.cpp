@@ -7860,87 +7860,6 @@ ValueNum EvaluateSimdFloatWithElement(
     }
 }
 
-template <typename TSimd>
-ValueNum ExtendConstantSimdFloat(ValueNumStore* vns, var_types dstType, TSimd* src)
-{
-    assert(genTypeSize(dstType) > sizeof(TSimd));
-
-    switch (dstType)
-    {
-        case TYP_SIMD12:
-        {
-            simd12_t newVec = simd12_t::Zero();
-            CopyConstantSimd<simd12_t, TSimd, float>(&newVec, src);
-            return vns->VNForSimd12Con(newVec);
-        }
-        case TYP_SIMD16:
-        {
-            simd16_t newVec = simd16_t::Zero();
-            CopyConstantSimd<simd16_t, TSimd, float>(&newVec, src);
-            return vns->VNForSimd16Con(newVec);
-        }
-#if defined TARGET_XARCH
-        case TYP_SIMD32:
-        {
-            simd32_t newVec = simd32_t::Zero();
-            CopyConstantSimd<simd32_t, TSimd, float>(&newVec, src);
-            return vns->VNForSimd32Con(newVec);
-        }
-        case TYP_SIMD64:
-        {
-            simd64_t newVec = simd64_t::Zero();
-            CopyConstantSimd<simd64_t, TSimd, float>(&newVec, src);
-            return vns->VNForSimd64Con(newVec);
-        }
-#endif
-        case TYP_SIMD8:
-        default:
-        {
-            unreached();
-        }
-    }
-}
-
-ValueNum ExtendConstantSimdFloat(ValueNumStore* vns, var_types dstType, ValueNum srcVN)
-{
-    assert(vns->IsVNConstant(srcVN));
-
-    switch (vns->TypeOfVN(srcVN))
-    {
-        case TYP_SIMD8:
-        {
-            simd8_t src = vns->GetConstantSimd8(srcVN);
-            return ExtendConstantSimdFloat<simd8_t>(vns, dstType, &src);
-        }
-        case TYP_SIMD12:
-        {
-            simd12_t src = vns->GetConstantSimd12(srcVN);
-            return ExtendConstantSimdFloat<simd12_t>(vns, dstType, &src);
-        }
-        case TYP_SIMD16:
-        {
-            simd16_t src = vns->GetConstantSimd16(srcVN);
-            return ExtendConstantSimdFloat<simd16_t>(vns, dstType, &src);
-        }
-#if defined TARGET_XARCH
-        case TYP_SIMD32:
-        {
-            simd32_t src = vns->GetConstantSimd32(srcVN);
-            return ExtendConstantSimdFloat<simd32_t>(vns, dstType, &src);
-        }
-        case TYP_SIMD64:
-        {
-            simd64_t src = vns->GetConstantSimd64(srcVN);
-            return ExtendConstantSimdFloat<simd64_t>(vns, dstType, &src);
-        }
-#endif
-        default:
-        {
-            unreached();
-        }
-    }
-}
-
 ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(var_types      type,
                                                   var_types      baseType,
                                                   NamedIntrinsic ni,
@@ -7964,20 +7883,10 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(var_types      type,
             case NI_Vector512_WithElement:
 #endif
             {
-                if (baseType != TYP_FLOAT) // No meaningful diffs for other base-types
+                // No meaningful diffs for other base-types.
+                if (baseType != TYP_FLOAT || TypeOfVN(arg0VN) != type)
                 {
                     break;
-                }
-
-                var_types srcType = TypeOfVN(arg0VN);
-                if (srcType != type)
-                {
-                    if (genTypeSize(srcType) > genTypeSize(type))
-                    {
-                        break;
-                    }
-
-                    arg0VN = ExtendConstantSimdFloat(this, type, arg0VN);
                 }
 
                 int   index = GetConstantInt32(arg1VN);
