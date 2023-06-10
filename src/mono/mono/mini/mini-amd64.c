@@ -7260,7 +7260,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_movd_xreg_reg_size (code, ins->dreg, ins->sreg1, 4);
 			break;
 		case OP_EXTRACT_I4:
-			amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 4);
+			if (ins->inst_c0) {
+				amd64_sse_pextrd_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
+			} else {
+				amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 4);
+			}
 			break;
 		case OP_EXTRACT_I8:
 			if (ins->inst_c0) {

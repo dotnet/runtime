@@ -781,10 +781,9 @@ xones: dest:x len:5
 xconst: dest:x len:12
 
 iconv_to_x: dest:x src1:i len:5
-extract_i4: dest:i src1:x len:5
 
+extract_i4: dest:i src1:x len:16
 extract_i8: dest:i src1:x len:9
-
 extract_i2: dest:i src1:x len:13
 extract_i1: dest:i src1:x len:13
 extract_r8: dest:f src1:x len:5
