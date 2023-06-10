@@ -367,7 +367,6 @@ public:
         weight_t countOverlappedReturnsWtd                = 0;
         weight_t countOverlappedRetbufsWtd                = 0;
         weight_t countOverlappedAssignedFromCallWtd       = 0;
-        weight_t countOverlappedDecomposableAssignmentWtd = 0;
 
         bool overlap = false;
         for (const Access& otherAccess : m_accesses)
@@ -389,9 +388,6 @@ public:
             countOverlappedReturnsWtd += otherAccess.CountReturnsWtd;
             countOverlappedRetbufsWtd += otherAccess.CountPassedAsRetbufWtd;
             countOverlappedAssignedFromCallWtd += otherAccess.CountAssignedFromCallWtd;
-            countOverlappedDecomposableAssignmentWtd +=
-                (otherAccess.CountAssignmentDestinationWtd + otherAccess.CountAssignmentSourceWtd -
-                 otherAccess.CountAssignedFromCallWtd);
         }
 
         weight_t costWithout = 0;
@@ -432,11 +428,11 @@ public:
         // Otherwise we cost it like a store to stack at 3 cycles.
         weight_t writeBackCost = comp->lvaIsImplicitByRefLocal(lclNum) && (access.AccessType == TYP_REF) ? 10 : 3;
 
-        // We write back before an overlapping struct use passed as an arg.
+        // We write back before an overlapping struct use passed as an arg, and before returns.
         // TODO-CQ: A store-forwarding optimization in lowering could get rid
         // of these copies; however, it requires lowering to be able to prove
         // that not writing the fields into the struct local is ok.
-        weight_t countWriteBacksWtd = countOverlappedCallArgWtd;
+        weight_t countWriteBacksWtd = countOverlappedCallArgWtd + countOverlappedReturnsWtd;
         costWith += countWriteBacksWtd * writeBackCost;
 
         // Overlapping assignments are decomposable so we don't cost them as
