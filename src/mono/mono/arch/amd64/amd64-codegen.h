@@ -851,6 +851,7 @@ typedef union {
 #define amd64_sse_pblendw_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_op4_imm ((inst), (dreg), (reg), 0x66, 0x0f, 0x3a, 0x0e, (imm))
 
 #define amd64_sse_pextrw_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_imm ((inst), (dreg), (reg), 0x66, 0x0f, 0xc5, (imm))
+#define amd64_sse_pextrb_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_op4_imm ((inst), (reg), (dreg), 0x66, 0x0f, 0x3a, 0x14, (imm))
 #define amd64_sse_pextrd_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_op4_imm ((inst), (reg), (dreg), 0x66, 0x0f, 0x3a, 0x16, (imm))
 
 #define amd64_sse_cvttsd2si_reg_xreg_size(inst,reg,xreg,size) emit_sse_reg_reg_size ((inst), (reg), (xreg), 0xf2, 0x0f, 0x2c, (size))
