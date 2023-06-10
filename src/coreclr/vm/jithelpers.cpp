@@ -1797,7 +1797,6 @@ struct ThreadStaticBlockInfo
     void** GCThreadStaticBlocks;
 };
 
-// struct ThreadStaticBlockInfo;
 EXTERN_C __thread ThreadStaticBlockInfo t_ThreadStatics;
 EXTERN_C __thread uint32_t t_NonGCThreadStaticBlocksSize;
 EXTERN_C __thread uint32_t t_GCThreadStaticBlocksSize;
