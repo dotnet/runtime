@@ -31,8 +31,8 @@ extern PCODE GetPreStubEntryPoint();
 
 #define STACK_ALIGN_SIZE                        16
 
-#define JUMP_ALLOCATE_SIZE                      16  // # bytes to allocate for a jump instruction
-#define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         16  // # bytes to allocate for a back to back jump instruction
+#define JUMP_ALLOCATE_SIZE                      40  // # bytes to allocate for a jump instruction
+#define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         40  // # bytes to allocate for a back to back jump instruction
 
 #define HAS_NDIRECT_IMPORT_PRECODE              1
 
@@ -54,7 +54,7 @@ extern PCODE GetPreStubEntryPoint();
 #define CALLDESCR_ARGREGS                       1   // CallDescrWorker has ArgumentRegister parameter
 #define CALLDESCR_FPARGREGS                     1   // CallDescrWorker has FloatArgumentRegisters parameter
 
-#define FLOAT_REGISTER_SIZE 16 // each register in FloatArgumentRegisters is 16 bytes.
+#define FLOAT_REGISTER_SIZE 8 // each register in FloatArgumentRegisters is 8 bytes.
 
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to arrive at the callsite.
@@ -263,7 +263,7 @@ inline PCODE decodeJump(PCODE pCode)
 
     TADDR pInstr = PCODEToPINSTR(pCode);
 
-    return *dac_cast<PTR_PCODE>(pInstr + 2*sizeof(DWORD));
+    return *dac_cast<PTR_PCODE>(pInstr + 4 * sizeof(UINT32));
 }
 
 //------------------------------------------------------------------------
