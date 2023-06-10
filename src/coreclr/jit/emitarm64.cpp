@@ -941,7 +941,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             datasize = id->idOpSize();
             assert(isGeneralRegister(id->idReg1()));
             assert(datasize == EA_8BYTE);
-            assert((id->idIns() != INS_mrs_tpid0) || (id->idReg2() == REG_ZR));
             break;
 
         default:
@@ -3742,8 +3741,9 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
             fmt = IF_SR_1A;
             break;
         case INS_mrs_tpid0:
+            id = emitNewInstrSmall(attr);
+            id->idReg1(reg);
             fmt = IF_SR_1A;
-
             break;
         default:
             unreached();
