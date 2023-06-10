@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
@@ -45,14 +44,14 @@ namespace Microsoft.Interop
                 }
             }
 
-            // Verify that the types the method is declared in are marked partial.
-            for (SyntaxNode? parentNode = syntax.Parent; parentNode is TypeDeclarationSyntax typeDecl; parentNode = parentNode.Parent)
+            // Verify that the types the interface is declared in are marked partial.
+            for (SyntaxNode? parentNode = syntax; parentNode is TypeDeclarationSyntax typeDecl; parentNode = parentNode.Parent)
             {
                 if (!typeDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
                 {
                     return DiagnosticOrInterfaceInfo.From(
                         DiagnosticInfo.Create(
-                            GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers,
+                            GeneratorDiagnostics.InvalidAttributedInterfaceMissingPartialModifiers,
                             syntax.Identifier.GetLocation(),
                             symbol.Name,
                             typeDecl.Identifier));
@@ -192,8 +191,8 @@ namespace Microsoft.Interop
 
         public override int GetHashCode()
         {
-            // ContainingSyntax and ContainingSyntaxContext do not implement GetHashCode
-            return HashCode.Combine(Type, TypeDefinitionContext, InterfaceId);
+            // ContainingSyntax does not implement GetHashCode
+            return HashCode.Combine(Type, ThisInterfaceKey, BaseInterfaceKey, TypeDefinitionContext, InterfaceId);
         }
 
         public bool Equals(ComInterfaceInfo other)
