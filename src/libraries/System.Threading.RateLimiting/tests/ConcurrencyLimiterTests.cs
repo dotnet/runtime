@@ -123,6 +123,41 @@ namespace System.Threading.RateLimiting.Test
             Assert.True(lease.IsAcquired);
         }
 
+#if DEBUG
+        [Fact]
+        public Task DoesNotDeadlockCleaningUpCanceledRequestedLease_Pre() =>
+            DoesNotDeadlockCleaningUpCanceledRequestedLease((limiter, hook) => limiter.ReleasePreHook += hook);
+
+        [Fact]
+        public Task DoesNotDeadlockCleaningUpCanceledRequestedLease_Post() =>
+            DoesNotDeadlockCleaningUpCanceledRequestedLease((limiter, hook) => limiter.ReleasePostHook += hook);
+
+        private async Task DoesNotDeadlockCleaningUpCanceledRequestedLease(Action<ConcurrencyLimiter, Action> attachHook)
+        {
+            using var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1
+            });
+            var lease = limiter.AttemptAcquire(1);
+            Assert.True(lease.IsAcquired);
+
+            var cts = new CancellationTokenSource();
+            _ = limiter.AcquireAsync(1, cts.Token);
+            attachHook(limiter, () =>
+            {
+                Task.Run(cts.Cancel);
+                Thread.Sleep(1);
+            });
+
+            var task1 = Task.Delay(1000);
+            var task2 = Task.Run(lease.Dispose);
+            Assert.Same(task2, await Task.WhenAny(task1, task2));
+            await task2;
+        }
+#endif
+
         [Fact]
         public override async Task FailsWhenQueuingMoreThanLimit_OldestFirst()
         {

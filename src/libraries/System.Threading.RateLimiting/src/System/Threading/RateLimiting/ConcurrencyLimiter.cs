@@ -216,6 +216,12 @@ namespace System.Threading.RateLimiting
             return false;
         }
 
+#if DEBUG
+        // for unit testing
+        internal event Action? ReleasePreHook;
+        internal event Action? ReleasePostHook;
+#endif
+
         private void Release(int releaseCount)
         {
             using var disposer = default(RequestRegistration.Disposer);
@@ -228,6 +234,10 @@ namespace System.Threading.RateLimiting
 
                 _permitCount += releaseCount;
                 Debug.Assert(_permitCount <= _options.PermitLimit);
+
+#if DEBUG
+                ReleasePreHook?.Invoke();
+#endif
 
                 while (_queue.Count > 0)
                 {
@@ -245,8 +255,14 @@ namespace System.Threading.RateLimiting
                             ? _queue.DequeueHead()
                             : _queue.DequeueTail();
                         disposer.Add(nextPendingRequest);
+                        continue;
                     }
-                    else if (_permitCount >= nextPendingRequest.Count)
+
+#if DEBUG
+                    ReleasePostHook?.Invoke();
+#endif
+
+                    if (_permitCount >= nextPendingRequest.Count)
                     {
                         nextPendingRequest =
                             _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
