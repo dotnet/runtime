@@ -152,7 +152,7 @@ namespace System.Runtime.InteropServices
                 }
             }
 
-            public ManagedObjectWrapperHolder? Holder
+            public WrappedObjectHolder? Holder
             {
                 get
                 {
@@ -160,7 +160,7 @@ namespace System.Runtime.InteropServices
                     if (handle == IntPtr.Zero)
                         return null;
                     else
-                        return Unsafe.As<ManagedObjectWrapperHolder>(GCHandle.FromIntPtr(handle).Target);
+                        return Unsafe.As<WrappedObjectHolder>(GCHandle.FromIntPtr(handle).Target);
                 }
             }
 
@@ -388,12 +388,12 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        internal unsafe class ManagedObjectWrapperHolder
+        internal unsafe class WrappedObjectHolder
         {
-            static ManagedObjectWrapperHolder()
+            static WrappedObjectHolder()
             {
                 delegate* unmanaged<IntPtr, bool> callback = &IsRootedCallback;
-                if (!RuntimeImports.RhRegisterRefCountedHandleCallback((nint)callback, typeof(ManagedObjectWrapperHolder).GetEEType()))
+                if (!RuntimeImports.RhRegisterRefCountedHandleCallback((nint)callback, typeof(WrappedObjectHolder).GetEEType()))
                 {
                     throw new OutOfMemoryException();
                 }
@@ -404,48 +404,58 @@ namespace System.Runtime.InteropServices
             {
                 // We are paused in the GC, so this is safe.
 #pragma warning disable CS8500 // Takes a pointer to a managed type
-                ManagedObjectWrapperHolder* holder = (ManagedObjectWrapperHolder*)&pObj;
+                WrappedObjectHolder* holder = (WrappedObjectHolder*)&pObj;
                 return holder->_wrapper->IsRooted;
 #pragma warning restore CS8500
             }
 
+            public object WrappedObject { get; }
+            private readonly ManagedObjectWrapper* _wrapper;
+
+            public WrappedObjectHolder(object wrappedObject, ManagedObjectWrapper* wrapper)
+            {
+                WrappedObject = wrappedObject;
+                _wrapper = wrapper;
+            }
+        }
+
+        internal unsafe class ManagedObjectWrapperHolder
+        {
             private ManagedObjectWrapper* _wrapper;
-            private object? _strongWrappedObject;
-            private GCHandle _weakWrappedObject;
+            private GCHandle _wrappedObject;
             private bool _exposed;
 
             public ManagedObjectWrapperHolder(ManagedObjectWrapper* wrapper, object wrappedObject)
             {
                 _wrapper = wrapper;
-                _strongWrappedObject = wrappedObject;
-                _weakWrappedObject = GCHandle.Alloc(wrappedObject, GCHandleType.WeakTrackResurrection);
-                _wrapper->HolderHandle = RuntimeImports.RhHandleAllocRefCounted(this);
+                _wrappedObject = GCHandle.Alloc(wrappedObject, GCHandleType.WeakTrackResurrection);
+                _wrapper->HolderHandle = RuntimeImports.RhHandleAllocRefCounted(null);
             }
 
             public unsafe IntPtr ComIp => _wrapper->As(in ComWrappers.IID_IUnknown);
 
-            // If the wrapped object is resurrected, restore our strong reference.
-            public object WrappedObject => _strongWrappedObject ??= _weakWrappedObject.Target!;
-
-            public uint AddRef()
+            public uint AddRef(object wrappedObject)
             {
+                _exposed = true;
                 uint ret = _wrapper->AddRef();
-                if (ret == 1)
+                // Now that the MOW's ref-counted handle is rooting its object,
+                // ensure that the handle points to something.
+                WrappedObjectHolder? holder = (WrappedObjectHolder?)RuntimeImports.RhHandleGet(_wrapper->HolderHandle);
+                if (holder is null)
                 {
-                    _exposed = true;
-                    // In case the wrapped object was resurrected,
-                    // restore our strong reference to it.
-                    _strongWrappedObject ??= _weakWrappedObject.Target!;
+                    RuntimeImports.RhHandleSet(_wrapper->HolderHandle, new WrappedObjectHolder(wrappedObject, _wrapper));
                 }
+                else
+                {
+                    Debug.Assert(ReferenceEquals(wrappedObject, holder.WrappedObject));
+                }
+                GC.KeepAlive(this);
                 return ret;
             }
 
             ~ManagedObjectWrapperHolder()
             {
-                // release our strong reference to the object
-                _strongWrappedObject = null;
-
-                if (_exposed && _weakWrappedObject.Target != null)
+                if (_exposed && _wrappedObject.Target != null)
                 {
                     // The wrapped object has not been fully collected, so it is still
                     // potentially reachable via the CWT. Keep ourselves alive in case
@@ -459,8 +469,8 @@ namespace System.Runtime.InteropServices
                 {
                     NativeMemory.Free(_wrapper);
                     _wrapper = null;
-                    if (_weakWrappedObject.IsAllocated)
-                        _weakWrappedObject.Free();
+                    if (_wrappedObject.IsAllocated)
+                        _wrappedObject.Free();
                 }
                 else
                 {
@@ -545,7 +555,7 @@ namespace System.Runtime.InteropServices
                 ManagedObjectWrapper* value = CreateCCW(c, flags);
                 return new ManagedObjectWrapperHolder(value, c);
             });
-            ccwValue.AddRef();
+            ccwValue.AddRef(instance);
             return ccwValue.ComIp;
         }
 
