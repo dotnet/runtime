@@ -685,23 +685,27 @@ mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void 
 	MONO_EXIT_GC_UNSAFE;
 }
 
-EMSCRIPTEN_KEEPALIVE MonoObject*
-mono_wasm_invoke_method_bound (MonoMethod *method, void* args)// JSMarshalerArguments
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_invoke_method_bound (MonoMethod *method, void* args /*JSMarshalerArguments*/, MonoObject **_out_exc)
 {
-	MonoObject *exc = NULL;
-	MonoObject *res;
-
+	PPVOLATILE(MonoObject) out_exc = _out_exc;
 	void *invoke_args[1] = { args };
+	int is_err = 0;
 
-	mono_runtime_invoke (method, NULL, invoke_args, &exc);
-	if (exc) {
-		MonoObject *exc2 = NULL;
-		res = (MonoObject*)mono_object_to_string (exc, &exc2);
+	MONO_ENTER_GC_UNSAFE;
+	mono_runtime_invoke (method, NULL, invoke_args, (MonoObject **)out_exc);
+
+	// this failure is unlikely because it would be runtime error, not application exception.
+	// the application exception is passed inside JSMarshalerArguments `args`
+	if (*_out_exc) {
+		PVOLATILE(MonoObject) exc2 = NULL;
+		store_volatile(_out_exc, (MonoObject*)mono_object_to_string (*out_exc, (MonoObject **)&exc2));
 		if (exc2)
-			res = (MonoObject*) mono_string_new (root_domain, "Exception Double Fault");
-		return res;
+			store_volatile(_out_exc, (MonoObject*)mono_string_new (root_domain, "Exception Double Fault"));
+		is_err = 1;
 	}
-	return NULL;
+	MONO_EXIT_GC_UNSAFE;
+	return is_err;
 }
 
 EMSCRIPTEN_KEEPALIVE MonoMethod*

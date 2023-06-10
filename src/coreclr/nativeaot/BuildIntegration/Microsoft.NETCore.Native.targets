@@ -43,6 +43,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <UseSystemResourceKeys Condition="$(IlcDisableReflection) == 'true'">true</UseSystemResourceKeys>
     <EventSourceSupport Condition="$(IlcDisableReflection) == 'true'">false</EventSourceSupport>
     <EventSourceSupport Condition="$(EventSourceSupport) == ''">false</EventSourceSupport>
+    <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == ''">false</DynamicCodeSupport>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(SuppressAotAnalysisWarnings)' == 'true'">
