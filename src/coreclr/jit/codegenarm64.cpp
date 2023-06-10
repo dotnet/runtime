@@ -2955,9 +2955,9 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             else if (data->IsIconHandle(GTF_ICON_TLS_HDL))
             {
                 assert(data->AsIntCon()->IconValue() == 0);
-                emitAttr    attr = emitActualTypeSize(targetType);
+                emitAttr attr = emitActualTypeSize(targetType);
                 // On non-windows, need to load the address from system register.
-                emit->emitIns_R_R(INS_mrs, attr, targetReg, dataReg);
+                emit->emitIns_R(INS_mrs_tpid0, attr, targetReg);
             }
 #endif
             else

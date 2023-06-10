@@ -941,7 +941,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             datasize = id->idOpSize();
             assert(isGeneralRegister(id->idReg1()));
             assert(datasize == EA_8BYTE);
-            assert((id->idIns() != INS_mrs) || (id->idReg2() == REG_ZR));
+            assert((id->idIns() != INS_mrs_tpid0) || (id->idReg2() == REG_ZR));
             break;
 
         default:
@@ -3741,7 +3741,10 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
             id->idReg1(reg);
             fmt = IF_SR_1A;
             break;
+        case INS_mrs_tpid0:
+            fmt = IF_SR_1A;
 
+            break;
         default:
             unreached();
     }
@@ -4930,11 +4933,6 @@ void emitter::emitIns_R_R(
                 assert(isValidVectorElemsize(size));
                 fmt = IF_DV_2L;
             }
-            break;
-        case INS_mrs:
-            // assert(isVectorRegister(reg2));        
-            fmt = IF_SR_1A;
-
             break;
 
         default:
@@ -11816,10 +11814,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
             assert(insOptsNone(id->idInsOpt()));
             code = emitInsCode(ins, fmt);
-            if (ins == INS_mrs)
-            {
-                code |= insEncodeReg_Tpid0();
-            }
             code |= insEncodeReg_Rt(id->idReg1()); // ttttt
             dst += emitOutput_Instr(dst, code);
             break;
@@ -13950,7 +13944,7 @@ void emitter::emitDispInsHelp(
             break;
 
         case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
-            if (ins == INS_mrs)
+            if (ins == INS_mrs_tpid0)
             {
                 emitDispReg(id->idReg1(), size, true);
                 printf("tpidr_el0");

@@ -507,10 +507,10 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     CORINFO_THREAD_STATIC_BLOCKS_INFO threadStaticBlocksInfo;
     info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo, isGCThreadStatic);
 
-    uint32_t offsetOfThreadStaticBlocksVal = threadStaticBlocksInfo.offsetOfThreadStaticBlocks;
+    uint32_t offsetOfThreadStaticBlocksVal    = threadStaticBlocksInfo.offsetOfThreadStaticBlocks;
     uint32_t offsetOfMaxThreadStaticBlocksVal = threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks;
     JITDUMP("offsetOfThreadStaticBlocks= %u\n", offsetOfThreadStaticBlocksVal);
-    
+
 #ifdef _MSC_VER
     JITDUMP("getThreadLocalStaticBlocksInfo (%s)\n:", isGCThreadStatic ? "GC" : "Non-GC");
     JITDUMP("tlsIndex= %u\n", (ssize_t)threadStaticBlocksInfo.tlsIndex.addr);
@@ -564,9 +564,9 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     GenTree* tlsValue                        = nullptr;
     unsigned tlsLclNum                       = lvaGrabTemp(true DEBUGARG("TLS access"));
     lvaTable[tlsLclNum].lvType               = TYP_I_IMPL;
-    GenTree* maxThreadStaticBlocksValue = nullptr;
-    GenTree* threadStaticBlocksValue = nullptr;
-    GenTree* tlsValueDef = nullptr;
+    GenTree* maxThreadStaticBlocksValue      = nullptr;
+    GenTree* threadStaticBlocksValue         = nullptr;
+    GenTree* tlsValueDef                     = nullptr;
 
 #ifdef _MSC_VER
     size_t   tlsIndexValue = (size_t)threadStaticBlocksInfo.tlsIndex.addr;
@@ -589,7 +589,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     // Base of coreclr's thread local storage
     tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
-    
+
 #elif defined(TARGET_ARM64)
     // Mark this ICON as a TLS_HDL, codegen will do:
     // mrs xt, tpidr_elf0
@@ -619,7 +619,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 #endif // _MSC_VER
 
     // Cache the tls value
-    tlsValueDef = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
+    tlsValueDef             = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
     GenTree* tlsLclValueUse = gtNewLclVarNode(tlsLclNum);
 
     // Create tree for "maxThreadStaticBlocks = tls[offsetOfMaxThreadStaticBlocks]"
