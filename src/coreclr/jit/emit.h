@@ -725,11 +725,12 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:   17 bits
-        // amd64: 17 bits
-        // arm:   16 bits
-        // arm64: 17 bits
+        // x86:         17 bits
+        // amd64:       17 bits
+        // arm:         16 bits
+        // arm64:       17 bits
         // loongarch64: 14 bits
+        // risc-v:      14 bits
 
     private:
 #if defined(TARGET_XARCH)
@@ -766,11 +767,12 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:   38 bits
-        // amd64: 38 bits
-        // arm:   32 bits
-        // arm64: 31 bits
+        // x86:         38 bits
+        // amd64:       38 bits
+        // arm:         32 bits
+        // arm64:       31 bits
         // loongarch64: 28 bits
+        // risc-v:      28 bits
 
         unsigned _idSmallDsc : 1;  // is this a "small" descriptor?
         unsigned _idLargeCns : 1;  // does a large constant     follow?
@@ -817,11 +819,12 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:   47 bits
-        // amd64: 47 bits
-        // arm:   48 bits
-        // arm64: 50 bits
+        // x86:         47 bits
+        // amd64:       47 bits
+        // arm:         48 bits
+        // arm64:       50 bits
         // loongarch64: 46 bits
+        // risc-v:      46 bits
 
         //
         // How many bits have been used beyond the first 32?
@@ -871,11 +874,12 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here (with/without prev offset, assuming host==target):
-        // x86:   53/49 bits
-        // amd64: 54/49 bits
-        // arm:   54/50 bits
-        // arm64: 57/52 bits
+        // x86:         53/49 bits
+        // amd64:       54/49 bits
+        // arm:         54/50 bits
+        // arm64:       57/52 bits
         // loongarch64: 53/48 bits
+        // risc-v:      53/48 bits
         CLANG_FORMAT_COMMENT_ANCHOR;
 
 #define ID_EXTRA_BITS (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS + ID_EXTRA_PREV_OFFSET_BITS)
@@ -884,18 +888,43 @@ protected:
 
 #define ID_BIT_SMALL_CNS (32 - ID_EXTRA_BITS)
         C_ASSERT(ID_BIT_SMALL_CNS > 0);
-#define ID_MIN_SMALL_CNS 0
-#define ID_MAX_SMALL_CNS (int)((1 << ID_BIT_SMALL_CNS) - 1U)
 
         ////////////////////////////////////////////////////////////////////////
         // Small constant size (with/without prev offset, assuming host==target):
-        // x86:   12/16 bits
-        // amd64: 11/16 bits
-        // arm:   10/14 bits
-        // arm64: 7/12 bits
+        // x86:         11/15 bits
+        // amd64:       10/15 bits
+        // arm:         10/14 bits
+        // arm64:        7/12 bits
         // loongarch64: 11/16 bits
+        // risc-v:      11/16 bits
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
+#if defined(TARGET_XARCH)
+// On xarch we have a few different immediate sizes we can encounter:
+// *  8-bit: Can be used directly as 8-bit or sign-extended to 16, 32, or 64-bits
+// * 16-bit: Can be used directly as 16-bit
+// * 32-bit: Can be used directly as 32-bit or sign-extended to 64-bits
+// * 64-bit: Can be used directly as 64-bit
+//
+// The 64-bit version is only found for a specific `mov` instruction
+//
+// The 16-bit version is uncommon since the JIT uses 32-bits as its "natural size"
+// and so it requires specific optimizations/scenarios to be encountered
+//
+// The 8-bit and 32-bit are both fairly common, particularly the 8-bit since its
+// the only size used for SIMD instructions.
+//
+// Given that, we will differ from other platforms and store a signed value. This
+// allows us to store at least [-512, +511] and covers all the common cases for
+// 8-bit sign-extended values that are most common for the architecture
+#define ID_MIN_SMALL_CNS (int)(0 - (1 << (ID_BIT_SMALL_CNS - 1)))
+#define ID_MAX_SMALL_CNS (int)((1 << (ID_BIT_SMALL_CNS - 1)) - 1)
+        signed _idSmallCns : ID_BIT_SMALL_CNS;
+#else
+#define ID_MIN_SMALL_CNS 0
+#define ID_MAX_SMALL_CNS (int)((1 << ID_BIT_SMALL_CNS) - 1U)
         unsigned _idSmallCns : ID_BIT_SMALL_CNS;
+#endif
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here: 64 bits, all architectures, by design.
@@ -1646,6 +1675,18 @@ protected:
 
 #endif // EMIT_BACKWARDS_NAVIGATION
 
+#if defined(TARGET_XARCH)
+        ssize_t idSmallCns() const
+        {
+            return _idSmallCns;
+        }
+        void idSmallCns(ssize_t value)
+        {
+            assert(fitsInSmallCns(value));
+            _idSmallCns = value;
+            assert(value == idSmallCns());
+        }
+#else
         unsigned idSmallCns() const
         {
             return _idSmallCns;
@@ -1655,6 +1696,7 @@ protected:
             assert(fitsInSmallCns(value));
             _idSmallCns = value;
         }
+#endif
 
         inline const idAddrUnion* idAddr() const
         {
