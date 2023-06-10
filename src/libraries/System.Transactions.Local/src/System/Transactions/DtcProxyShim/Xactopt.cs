@@ -45,8 +45,6 @@ internal struct Xactopt
         }
 
         public static unsafe Xactopt ConvertToManaged(XactoptNative unmanaged)
-        {
-            return new(unmanaged.UlTimeout, Encoding.ASCII.GetString(unmanaged.SzDescription, 40));
-        }
+        => new(unmanaged.UlTimeout, Encoding.ASCII.GetString(unmanaged.SzDescription, 40));
     }
 }
