@@ -2161,7 +2161,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 if (engine != RegexEngine.NonBacktracking) // Hangs, or effectively hangs. https://github.com/dotnet/runtime/issues/84188
                 {
-                    yield return new object[] { engine, "(", "a", ")*", "a", 2000, 1 };
+                    yield return new object[] { engine, "(", "a", ")*", "a", 2000, 1000 };
                 }
 
                 yield return new object[] { engine, "(", "[aA]", ")+", "aA", 2000, 3000 };
