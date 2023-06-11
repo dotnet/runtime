@@ -179,7 +179,7 @@ namespace System.Threading.RateLimiting
                                 // Updating queue count is handled by the cancellation/cleanup code
                                 Interlocked.Increment(ref _failedLeasesCount);
                             }
-                            disposer.Add(oldestRequest);
+                            disposer.CleanupAndAdd(oldestRequest);
                             Debug.Assert(_queueCount >= 0);
                         }
                         while (_options.QueueLimit - _queueCount < tokenCount);
@@ -324,7 +324,7 @@ namespace System.Threading.RateLimiting
                             _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
                             ? queue.DequeueHead()
                             : queue.DequeueTail();
-                        disposer.Add(nextPendingRequest);
+                        disposer.CleanupAndAdd(nextPendingRequest);
                     }
                     else if (_tokenCount >= nextPendingRequest.Count)
                     {
@@ -347,7 +347,7 @@ namespace System.Threading.RateLimiting
                         {
                             Interlocked.Increment(ref _successfulLeasesCount);
                         }
-                        disposer.Add(nextPendingRequest);
+                        disposer.CleanupAndAdd(nextPendingRequest);
                         Debug.Assert(_queueCount >= 0);
                     }
                     else
@@ -387,7 +387,7 @@ namespace System.Threading.RateLimiting
                     RequestRegistration next = _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
                         ? _queue.DequeueHead()
                         : _queue.DequeueTail();
-                    disposer.Add(next);
+                    disposer.CleanupAndAdd(next);
                     next.TrySetResult(FailedLease);
                 }
                 Debug.Assert(_queueCount == 0);
@@ -494,7 +494,7 @@ namespace System.Threading.RateLimiting
             {
                 private RequestRegistration? _next;
 
-                public void Add(RequestRegistration request)
+                public void CleanupAndAdd(RequestRegistration request)
                 {
                     request.Cleanup();
                     request._next = _next;
