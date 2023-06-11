@@ -450,10 +450,10 @@ public:
         // Note: Technically we also introduce writebacks before returns that
         // we could account for, however the returns we see during physical
         // promotion are only for structs returned in registers and in most
-        // cases the writeback introduced is just replacing an existing
-        // "natural" writeback so it ends up being zero cost.
+        // cases the writeback introduced means we can eliminate an earlier
+        // "natural" writeback, balancing out the cost.
         // Thus _not_ accounting for these is a CQ improvements.
-        // (Additionally, if it were we could teach the backend some
+        // (Additionally, if it weren't we could teach the backend some
         // store-forwarding/forward sub to make the write backs "free".)
         weight_t countWriteBacksWtd = countOverlappedCallArgWtd;
         costWith += countWriteBacksWtd * writeBackCost;
