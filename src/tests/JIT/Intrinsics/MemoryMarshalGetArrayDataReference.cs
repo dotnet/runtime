@@ -126,12 +126,12 @@ namespace MemoryMarshalGetArrayDataReferenceTest
             IsTrue(Unsafe.AreSame(ref MemoryMarshal.GetArrayDataReference(NoInline<Array>(testByteArray)), ref testByteArray[0]));
             IsTrue(Unsafe.AreSame(ref ptrMd(NoInline(testByteArray)), ref testByteArray[0]));
 
-            IsTrue(Unsafe.AreSame(ref MemoryMarshal.GetArrayDataReference((Array)testStringArray), ref testStringArray[0]));
-            IsTrue(Unsafe.AreSame(ref ptrMd(testStringArray), ref testStringArray[0]));
+            IsTrue(Unsafe.AreSame(ref Unsafe.As<byte, string>(ref MemoryMarshal.GetArrayDataReference((Array)testStringArray)), ref testStringArray[0]));
+            IsTrue(Unsafe.AreSame(ref Unsafe.As<byte, string>(ref ptrMd(testStringArray)), ref testStringArray[0]));
 
-            IsTrue(Unsafe.AreSame(ref MemoryMarshal.GetArrayDataReference((Array)NoInline(testStringArray)), ref testStringArray[0]));
-            IsTrue(Unsafe.AreSame(ref MemoryMarshal.GetArrayDataReference(NoInline<Array>(testStringArray)), ref testStringArray[0]));
-            IsTrue(Unsafe.AreSame(ref ptrMd(NoInline(testStringArray)), ref testStringArray[0]));
+            IsTrue(Unsafe.AreSame(ref Unsafe.As<byte, string>(ref MemoryMarshal.GetArrayDataReference((Array)NoInline(testStringArray))), ref testStringArray[0]));
+            IsTrue(Unsafe.AreSame(ref Unsafe.As<byte, string>(ref MemoryMarshal.GetArrayDataReference(NoInline<Array>(testStringArray))), ref testStringArray[0]));
+            IsTrue(Unsafe.AreSame(ref Unsafe.As<byte, string>(ref ptrMd(NoInline(testStringArray))), ref testStringArray[0]));
 
             byte[,] testByteMdArray = new byte[1, 1];
             IsTrue(Unsafe.AreSame(ref MemoryMarshal.GetArrayDataReference(testByteMdArray), ref testByteMdArray[0, 0]));
@@ -141,10 +141,10 @@ namespace MemoryMarshalGetArrayDataReferenceTest
             IsTrue(Unsafe.AreSame(ref ptrMd(NoInline(testByteMdArray)), ref testByteMdArray[0, 0]));
 
             string[,] testStringMdArray = new string[1, 1];
-            IsTrue(Unsafe.AreSame(ref Unsafe.As<byte, string>(refMemoryMarshal.GetArrayDataReference(testStringMdArray)), ref testStringMdArray[0, 0]));
-            IsTrue(Unsafe.AreSame(ref Unsafe.As<byte, string>(refptrMd(testStringMdArray)), ref testStringMdArray[0, 0]));
+            IsTrue(Unsafe.AreSame(ref Unsafe.As<byte, string>(ref MemoryMarshal.GetArrayDataReference(testStringMdArray)), ref testStringMdArray[0, 0]));
+            IsTrue(Unsafe.AreSame(ref Unsafe.As<byte, string>(ref ptrMd(testStringMdArray)), ref testStringMdArray[0, 0]));
 
-            IsTrue(Unsafe.AreSame(ref Unsafe.As<byte, string>(refMemoryMarshal.GetArrayDataReference(NoInline(testStringMdArray))), ref testStringMdArray[0, 0]));
+            IsTrue(Unsafe.AreSame(ref Unsafe.As<byte, string>(ref MemoryMarshal.GetArrayDataReference(NoInline(testStringMdArray))), ref testStringMdArray[0, 0]));
             IsTrue(Unsafe.AreSame(ref Unsafe.As<byte, string>(ref ptrMd(NoInline(testStringMdArray))), ref testStringMdArray[0, 0]));
 
             Array nonZeroArray = Array.CreateInstance(typeof(string), new [] { 1 }, new [] { -1 });
