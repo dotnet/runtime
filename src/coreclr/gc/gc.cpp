@@ -3017,7 +3017,7 @@ const size_t uninitialized_end_gen0_region_space = (size_t)(-1);
 #endif //USE_REGIONS
 
 // budget smoothing
-size_t     gc_heap::smoothed_desired_per_heap[total_generation_count];
+size_t     gc_heap::smoothed_desired_total[total_generation_count];
 /* end of static initialization */
 
 // This is for methods that need to iterate through all SOH heap segments/regions.
@@ -21899,10 +21899,12 @@ size_t gc_heap::exponential_smoothing (int gen, size_t collection_count, size_t 
     // apply some smoothing.
     size_t smoothing = min(3, collection_count);
 
-    size_t new_smoothed_desired_per_heap = desired_per_heap / smoothing + ((smoothed_desired_per_heap[gen] / smoothing) * (smoothing - 1));
+    size_t desired_total = desired_per_heap * n_heaps;
+    size_t new_smoothed_desired_total = desired_total / smoothing + ((smoothed_desired_total[gen] / smoothing) * (smoothing - 1));
+    smoothed_desired_total[gen] = new_smoothed_desired_total;
+    size_t new_smoothed_desired_per_heap = new_smoothed_desired_total / n_heaps;
     dprintf (2, ("new smoothed_desired_per_heap for gen %d = %zd, desired_per_heap = %zd", gen, new_smoothed_desired_per_heap, desired_per_heap));
-    smoothed_desired_per_heap[gen] = new_smoothed_desired_per_heap;
-    return Align (smoothed_desired_per_heap[gen], get_alignment_constant (gen <= soh_gen2));
+    return Align (new_smoothed_desired_per_heap, get_alignment_constant (gen <= soh_gen2));
 }
 
 //internal part of gc used by the serial and concurrent version
@@ -42634,7 +42636,7 @@ bool gc_heap::init_dynamic_data()
     if (heap_number == 0)
     {
         process_start_time = now;
-        smoothed_desired_per_heap[0] = dynamic_data_of (0)->min_size;
+        smoothed_desired_total[0] = dynamic_data_of (0)->min_size * n_heaps;
 #ifdef HEAP_BALANCE_INSTRUMENTATION
         last_gc_end_time_us = now;
         dprintf (HEAP_BALANCE_LOG, ("qpf=%zd, start: %zd(%d)", qpf, start_raw_ts, now));
@@ -48123,7 +48125,12 @@ HRESULT GCHeap::Initialize()
         if (GCConfig::GetHeapCount() == 0 && GCConfig::GetGCDynamicAdaptationMode() == 1)
         {
             // ... start with only 1 heap
+            gc_heap::smoothed_desired_total[0] /= gc_heap::n_heaps;
             gc_heap::g_heaps[0]->change_heap_count (1);
+        }
+        else
+        {
+            gc_heap::dynamic_heap_count_data.new_n_heaps = gc_heap::n_heaps;
         }
 #endif //DYNAMIC_HEAP_COUNT
         GCScan::GcRuntimeStructuresValid (TRUE);
