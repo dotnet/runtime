@@ -7814,8 +7814,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
     return VNForFunc(type, func, arg0VN, arg1VN);
 }
 
-ValueNum EvaluateSimdFloatWithElement(
-    ValueNumStore* vns, var_types type, var_types baseType, ValueNum arg0VN, int index, float value)
+ValueNum EvaluateSimdFloatWithElement(ValueNumStore* vns, var_types type, ValueNum arg0VN, int index, float value)
 {
     assert(vns->IsVNConstant(arg0VN));
 
@@ -7891,7 +7890,10 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(var_types      type,
 
                 int   index = GetConstantInt32(arg1VN);
                 float value = GetConstantSingle(arg2VN);
-                return EvaluateSimdFloatWithElement(this, type, baseType, arg0VN, index, value);
+
+                assert(static_cast<unsigned>(index) < genTypeSize(type) / genTypeSize(baseType));
+
+                return EvaluateSimdFloatWithElement(this, type, arg0VN, index, value);
             }
             default:
             {
