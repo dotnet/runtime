@@ -23,7 +23,9 @@ namespace System.Threading
         {
         }
 
-        internal static bool Repeating => false;
+#pragma warning disable CA1822 // Mark members as static
+        internal bool Repeating => false;
+#pragma warning restore CA1822
 
         public bool Unregister(WaitHandle? waitObject)
         {
