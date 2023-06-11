@@ -2773,7 +2773,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     bool                 isExact;
                     CORINFO_CLASS_HANDLE arrayHnd = gtGetClassHandle(array, &isExact, &notNull);
-                    if (!info.compCompHnd->isSDArray(arrayHnd))
+                    if ((arrayHnd == NO_CLASS_HANDLE) || !info.compCompHnd->isSDArray(arrayHnd))
                     {
                         return nullptr;
                     }
