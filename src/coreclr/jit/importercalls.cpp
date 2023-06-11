@@ -2779,6 +2779,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     }
                     jitType = info.compCompHnd->getChildType(arrayHnd, &elemHnd);
                 }
+                
+                assert(jitType != CORINFO_TYPE_UNDEF);
+                assert((jitType != CORINFO_TYPE_VALUECLASS) || (elemHnd != NO_CLASS_HANDLE));
 
                 if (!notNull && fgAddrCouldBeNull(array))
                 {
