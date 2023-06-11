@@ -79,13 +79,25 @@ cd src\libraries\System.Collections.Immutable\tests
 dotnet build /t:Test
 ```
 
-It is possible to pass parameters to the underlying xunit runner via the `XUnitOptions` parameter, e.g.:
+This one command builds the library under test, then the test library, then runs the tests in the test library.
+
+### Running only certain tests
+
+It is possible to pass parameters to the underlying xunit runner via the `XUnitOptions` parameter, e.g., to filter to tests in just one fixture (class):
 
 ```cmd
 dotnet build /t:Test /p:XUnitOptions="-class Test.ClassUnderTests"
 ```
 
-Which is very useful when you want to run tests as `x86` on a `x64` machine:
+or to just one test method:
+
+```cmd
+dotnet build /t:test /p:outerloop=true /p:xunitoptions="-method System.Text.RegularExpressions.Tests.RegexMatchTests.StressTestDeepNestingOfLoops"
+```
+
+### Running only specific architectures
+
+To run tests as `x86` on a `x64` machine:
 
 ```cmd
 dotnet build /t:Test /p:TargetArchitecture=x86
@@ -145,3 +157,6 @@ It is important to highlight that these tests do not use the standard XUnit test
 - `-nonamespace`
 - `-parallel`
 
+### Viewing XUnit logs
+
+It's usually sufficient to see the test failure output in the console. There is a test log file though and you can find it in a location like `...\runtime\artifacts\bin\System.Text.RegularExpressions.Tests\Debug\net8.0\testResults.xml`. It can be helpful for example to grep through a series of failures, or see how long a slow test actually took.
