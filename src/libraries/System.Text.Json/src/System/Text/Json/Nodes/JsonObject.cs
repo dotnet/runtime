@@ -70,10 +70,6 @@ namespace System.Text.Json.Nodes
             _jsonElement = element;
         }
 
-        /// <summary>
-        /// Clone json node.
-        /// </summary>
-        /// <returns></returns>
         internal JsonNode DeepCloneObject()
         {
             if (_jsonElement.HasValue)

@@ -681,7 +681,7 @@ namespace System.Text.Json.Nodes
         public System.Text.Json.Nodes.JsonObject AsObject() { throw null; }
         public System.Text.Json.Nodes.JsonValue AsValue() { throw null; }
         public System.Text.Json.Nodes.JsonNode DeepClone() { throw null; }
-        public static bool DeepEquals(JsonNode? node1, JsonNode? node2) { throw null; }
+        public static bool DeepEquals(System.Text.Json.Nodes.JsonNode? node1, System.Text.Json.Nodes.JsonNode? node2) { throw null; }
         public string GetPropertyName() { throw null; }
         public string GetPath() { throw null; }
         public virtual T GetValue<T>() { throw null; }

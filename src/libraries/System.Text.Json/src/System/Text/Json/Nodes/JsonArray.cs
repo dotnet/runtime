@@ -48,10 +48,6 @@ namespace System.Text.Json.Nodes
             InitializeFromArray(items);
         }
 
-        /// <summary>
-        /// Clone json node.
-        /// </summary>
-        /// <returns></returns>
         internal JsonNode DeepCloneArray()
         {
             if (_jsonElement.HasValue)
