@@ -2760,10 +2760,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 assert(sig->numArgs == 1);
 
-                GenTree*             array = impPopStack().val;
-                CORINFO_CLASS_HANDLE elemHnd;
-                CorInfoType          jitType;
+                GenTree*             array   = impPopStack().val;
                 bool                 notNull = false;
+                CORINFO_CLASS_HANDLE elemHnd = NO_CLASS_HANDLE;
+                CorInfoType          jitType;
                 if (sig->sigInst.methInstCount == 1)
                 {
                     elemHnd = sig->sigInst.methInst[0];
@@ -2771,7 +2771,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 }
                 else
                 {
-                    bool                 isExact;
+                    bool                 isExact  = false;
                     CORINFO_CLASS_HANDLE arrayHnd = gtGetClassHandle(array, &isExact, &notNull);
                     if ((arrayHnd == NO_CLASS_HANDLE) || !info.compCompHnd->isSDArray(arrayHnd))
                     {
