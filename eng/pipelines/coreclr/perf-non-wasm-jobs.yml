@@ -223,7 +223,7 @@ jobs:
     parameters:
       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
       buildConfig: release
-      runtimeFlavor: mono
+      runtimeFlavor: coreclr
       platforms:
         - osx_x64
       jobParameters:
@@ -239,7 +239,7 @@ jobs:
     parameters:
       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
       buildConfig: release
-      runtimeFlavor: mono
+      runtimeFlavor: coreclr
       platforms:
         - osx_x64
       jobParameters:
