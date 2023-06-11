@@ -2760,7 +2760,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 assert(sig->numArgs == 1);
 
-                GenTree*             array = impPopStack().val
+                GenTree*             array = impPopStack().val;
                 CORINFO_CLASS_HANDLE elemHnd;
                 CorInfoType          jitType;
                 bool                 notNull = false;
