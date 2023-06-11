@@ -7817,6 +7817,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
 ValueNum EvaluateSimdFloatWithElement(ValueNumStore* vns, var_types type, ValueNum arg0VN, int index, float value)
 {
     assert(vns->IsVNConstant(arg0VN));
+    assert(static_cast<unsigned>(index) < genTypeSize(type) / genTypeSize(TYP_FLOAT));
 
     switch (type)
     {
@@ -7882,16 +7883,16 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(var_types      type,
             case NI_Vector512_WithElement:
 #endif
             {
+                int index = GetConstantInt32(arg1VN);
+
                 // No meaningful diffs for other base-types.
-                if (baseType != TYP_FLOAT || TypeOfVN(arg0VN) != type)
+                if (baseType != TYP_FLOAT || TypeOfVN(arg0VN) != type ||
+                    static_cast<unsigned>(index) >= genTypeSize(type) / genTypeSize(baseType))
                 {
                     break;
                 }
 
-                int   index = GetConstantInt32(arg1VN);
                 float value = GetConstantSingle(arg2VN);
-
-                assert(static_cast<unsigned>(index) < genTypeSize(type) / genTypeSize(baseType));
 
                 return EvaluateSimdFloatWithElement(this, type, arg0VN, index, value);
             }
