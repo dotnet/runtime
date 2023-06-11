@@ -7,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace System.Text.Json.Nodes.Tests
@@ -36,7 +35,7 @@ namespace System.Text.Json.Nodes.Tests
         public static void FromElement_WrongNodeTypeThrows(string json)
         {
             using (JsonDocument document = JsonDocument.Parse(json))
-            Assert.Throws<InvalidOperationException>(() => JsonArray.Create(document.RootElement));
+                Assert.Throws<InvalidOperationException>(() => JsonArray.Create(document.RootElement));
         }
 
         [Fact]
@@ -492,9 +491,7 @@ namespace System.Text.Json.Nodes.Tests
         [Fact]
         public static void DeepClone()
         {
-            var nestedArray = new JsonArray();
-            nestedArray.Add("elem0");
-            nestedArray.Add("elem1");
+            var nestedArray = new JsonArray("elem0", "elem1");
             var nestedJsonObj = new JsonObject()
             {
                 { "Nine", 9 },
@@ -539,7 +536,7 @@ namespace System.Text.Json.Nodes.Tests
         }
 
         [Fact]
-        public static void DeepClone_FromElement()
+        public static void DeepCloneFromElement()
         {
             using (JsonDocument document = JsonDocument.Parse("[\"abc\", 10]"))
             {
@@ -553,16 +550,96 @@ namespace System.Text.Json.Nodes.Tests
         }
 
         [Fact]
+        public static void DeepEquals()
+        {
+            var array = new JsonArray() { null, 10, "str" };
+            var sameArray = new JsonArray() { null, 10, "str" };
+
+            Assert.True(JsonNode.DeepEquals(array, array));
+            Assert.True(JsonNode.DeepEquals(array, sameArray));
+            Assert.True(JsonNode.DeepEquals(sameArray, array));
+
+            Assert.False(JsonNode.DeepEquals(array, null));
+
+            var diffArray = new JsonArray() { null, 10, "s" };
+            Assert.False(JsonNode.DeepEquals(array, diffArray));
+            Assert.False(JsonNode.DeepEquals(diffArray, array));
+        }
+
+        [Fact]
+        public static void DeepEqualsFromElement()
+        {
+            using (JsonDocument document = JsonDocument.Parse("[1, 2, 4]"))
+            {
+                JsonArray array = JsonArray.Create(document.RootElement);
+                using (JsonDocument document2 = JsonDocument.Parse("[1, 2,    4]"))
+                {
+                    JsonArray array2 = JsonArray.Create(document2.RootElement);
+                    Assert.True(JsonNode.DeepEquals(array, array2));
+                }
+                using (JsonDocument document3 = JsonDocument.Parse("[2, 1, 4]"))
+                {
+                    JsonArray array2 = JsonArray.Create(document3.RootElement);
+                    Assert.False(JsonNode.DeepEquals(array, array2));
+                }
+            }
+        }
+
+        [Fact]
         public static void UpdateClonedObjectNotAffectOriginal()
         {
-            var jArray = new JsonArray();
-            jArray.Add(10);
-            jArray.Add(20);
-
+            var jArray = new JsonArray(10, 20);
+            
             var clone = jArray.DeepClone().AsArray();
             clone[1] = 3;
 
             Assert.Equal(20, jArray[1].GetValue<int>());
+        }
+
+        [Fact]
+        public static void GetValueKind()
+        {
+            Assert.Equal(JsonValueKind.Array, new JsonArray().GetValueKind());
+        }
+
+        [Fact]
+        public static void GetElementIndex()
+        {
+            var trueValue = JsonValue.Create(true);
+            var falseValue = JsonValue.Create(false);
+            var numberValue = JsonValue.Create(15);
+            var stringValue = JsonValue.Create("ssss");
+            var nestedObject = new JsonObject();
+            var nestedArray = new JsonArray();
+
+            var array = new JsonArray();
+            array.Add(trueValue);
+            array.Add(falseValue);
+            array.Add(numberValue);
+            array.Add(stringValue);
+            array.Add(nestedObject);
+            array.Add(nestedArray);
+
+            Assert.Equal(0, trueValue.GetElementIndex());
+            Assert.Equal(1, falseValue.GetElementIndex());
+            Assert.Equal(2, numberValue.GetElementIndex());
+            Assert.Equal(3, stringValue.GetElementIndex());
+            Assert.Equal(4, nestedObject.GetElementIndex());
+            Assert.Equal(5, nestedArray.GetElementIndex());
+        }
+
+        [Fact]
+        public static void GetValues()
+        {
+            JsonArray jsonArray = new JsonArray(1, 2, 3, 2);
+            
+            IEnumerable<int> values = jsonArray.GetValues<int>();
+
+            Assert.Equal(jsonArray.Count, values.Count());
+            Assert.Equal(1, values.ElementAt(0));
+            Assert.Equal(2, values.ElementAt(1));
+            Assert.Equal(3, values.ElementAt(2));
+            Assert.Equal(2, values.ElementAt(3));
         }
     }
 }

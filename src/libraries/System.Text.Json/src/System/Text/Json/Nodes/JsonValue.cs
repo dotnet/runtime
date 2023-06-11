@@ -96,6 +96,10 @@ namespace System.Text.Json.Nodes
             Parent?.GetPath(path, this);
         }
 
+        internal abstract JsonNode DeepCloneValue();
+
+        internal abstract JsonValueKind GetInternalValueKind();
+
         /// <summary>
         ///   Tries to obtain the current JSON value and returns a value that indicates whether the operation succeeded.
         /// </summary>

@@ -28,7 +28,7 @@ namespace System.Text.Json.Nodes
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
-        public override JsonNode DeepClone() => JsonSerializer.SerializeToNode(_value)!;
+        internal override JsonNode DeepCloneValue() => JsonSerializer.SerializeToNode(_value)!;
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
@@ -40,7 +40,7 @@ namespace System.Text.Json.Nodes
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
-        public override JsonValueKind GetValueKind()
+        internal override JsonValueKind GetInternalValueKind()
         {
             JsonNode? jsonNode = JsonSerializer.SerializeToNode(_value);
             return jsonNode is null ? JsonValueKind.Null : jsonNode.GetValueKind();

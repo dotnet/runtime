@@ -1037,6 +1037,51 @@ namespace System.Text.Json.Nodes.Tests
         }
 
         [Fact]
+        public static void DeepEquals()
+        {
+            var jObject = new JsonObject();
+            jObject["One"] = 1;
+            jObject["array"] = new JsonArray() { "a", "b" };
+
+            var sameJObject = new JsonObject();
+            sameJObject["One"] = 1;
+            sameJObject["array"] = new JsonArray() { "a", "b" };
+
+            Assert.True(JsonNode.DeepEquals(jObject, jObject));
+            Assert.True(JsonNode.DeepEquals(jObject, sameJObject));
+            Assert.True(JsonNode.DeepEquals(sameJObject, jObject));
+
+            Assert.True(JsonNode.DeepEquals(null, null));
+            Assert.False(JsonNode.DeepEquals(jObject, null));
+            Assert.False(JsonNode.DeepEquals(null, jObject));
+
+            var diffJObject = new JsonObject();
+            diffJObject["One"] = 3;
+
+            Assert.False(JsonNode.DeepEquals(diffJObject, jObject));
+            Assert.False(JsonNode.DeepEquals(jObject, diffJObject));
+        }
+
+        [Fact]
+        public static void DeepEqualFromElement()
+        {
+            using (JsonDocument document = JsonDocument.Parse("{\"One\": 1, \"String\": \"abc\"}"))
+            {
+                JsonObject jObject = JsonObject.Create(document.RootElement);
+                using (JsonDocument document2 = JsonDocument.Parse("{\"One\":     1, \"String\":     \"abc\"}   "))
+                {
+                    JsonObject jObject2 = JsonObject.Create(document2.RootElement);
+                    Assert.True(JsonNode.DeepEquals(jObject, jObject2));
+                }
+                using (JsonDocument document3 = JsonDocument.Parse("{\"One\": 3, \"String\": \"abc\"}"))
+                {
+                    JsonObject jObject3 = JsonObject.Create(document3.RootElement);
+                    Assert.False(JsonNode.DeepEquals(jObject, jObject3));
+                }
+            }
+        }
+
+        [Fact]
         public static void UpdateClonedObjectNotAffectOriginal()
         {
             var jObject = new JsonObject();
@@ -1047,6 +1092,23 @@ namespace System.Text.Json.Nodes.Tests
             clone["One"] = 3;
 
             Assert.Equal(1, jObject["One"].GetValue<int>());
+        }
+
+        [Fact]
+        public static void GetValueKind()
+        {
+            Assert.Equal(JsonValueKind.Object, new JsonObject().GetValueKind());
+        }
+
+        [Fact]
+        public static void GetPropertyName()
+        {
+            var jObject = new JsonObject();
+            var jValue = JsonValue.Create(10);
+            jObject.Add("value", jValue);
+
+            Assert.Equal("value", jValue.GetPropertyName());
+            Assert.Equal("value", jObject["value"].GetPropertyName());
         }
     }
 }

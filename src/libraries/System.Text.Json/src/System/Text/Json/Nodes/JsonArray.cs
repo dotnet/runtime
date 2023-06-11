@@ -52,7 +52,7 @@ namespace System.Text.Json.Nodes
         /// Clone json node.
         /// </summary>
         /// <returns></returns>
-        public override JsonNode DeepClone()
+        internal JsonNode DeepCloneArray()
         {
             if (_jsonElement.HasValue)
             {
@@ -61,33 +61,59 @@ namespace System.Text.Json.Nodes
 
             var jsonArray = new JsonArray(Options);
 
-            if (_list is not null)
+            for (int i = 0; i < List.Count; i++)
             {
-                for (int i = 0; i < _list.Count; i++)
+                JsonNode? item = List[i];
+                if (item is null)
                 {
-                    JsonNode? item = _list[i];
-                    if (item is null)
-                    {
-                        jsonArray.Add(null);
-                    }
-                    else
-                    {
-                        jsonArray.Add(item.DeepClone());
-                    }
+                    jsonArray.Add(null);
+                }
+                else
+                {
+                    jsonArray.Add(item.DeepClone());
                 }
             }
 
             return jsonArray;
         }
 
-        public override JsonValueKind GetValueKind()
-        {
-            return JsonValueKind.Array;
-        }
-
         internal override bool DeepEquals(JsonNode? node)
         {
+            if (node is null || node is not JsonArray array)
+            {
+                return false;
+            }
+
+            if (List.Count != array.List.Count)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < List.Count; i++)
+            {
+                JsonNode? currentItem = List[i];
+                JsonNode? otherItem = array.List[i];
+
+                if (!DeepEquals(currentItem, otherItem))
+                {
+                    return false;
+                }
+            }
+
             return true;
+        }
+
+        internal int GetElementIndex(JsonNode? node)
+        {
+            return List.IndexOf(node);
+        }
+
+        public IEnumerable<T> GetValues<T>()
+        {
+            foreach (JsonNode? item in List)
+            {
+                yield return item!.GetValue<T>();
+            }
         }
 
         private void InitializeFromArray(JsonNode?[] items)

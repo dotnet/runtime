@@ -74,7 +74,7 @@ namespace System.Text.Json.Nodes
         /// Clone json node.
         /// </summary>
         /// <returns></returns>
-        public override JsonNode DeepClone()
+        internal JsonNode DeepCloneObject()
         {
             if (_jsonElement.HasValue)
             {
@@ -99,6 +99,14 @@ namespace System.Text.Json.Nodes
             }
 
             return jObject;
+        }
+
+        internal string GetPropertyName(JsonNode? node)
+        {
+            InitializeIfRequired();
+            Debug.Assert(_dictionary != null);
+            KeyValuePair<string, JsonNode?>? item = _dictionary.FindValue(node);
+            return item.HasValue ? item.Value.Key : string.Empty;
         }
 
         /// <summary>
@@ -180,11 +188,6 @@ namespace System.Text.Json.Nodes
             }
 
             return true;
-        }
-
-        public override JsonValueKind GetValueKind()
-        {
-            return JsonValueKind.Object;
         }
 
         internal JsonNode? GetItem(string propertyName)

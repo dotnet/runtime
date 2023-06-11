@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Nodes
 {
@@ -236,9 +238,57 @@ namespace System.Text.Json.Nodes
         /// Clone json node.
         /// </summary>
         /// <returns></returns>
-        public abstract JsonNode DeepClone();
+        public JsonNode DeepClone()
+        {
+            if (this is JsonObject jObject)
+            {
+                return jObject.DeepCloneObject();
+            }
+            else if (this is JsonArray jArray)
+            {
+                return jArray.DeepCloneArray();
+            }
+            else
+            {
+                return AsValue().DeepCloneValue();
+            }
+        }
 
-        public abstract JsonValueKind GetValueKind();
+        public JsonValueKind GetValueKind()
+        {
+            if (this is JsonObject)
+            {
+                return JsonValueKind.Object;
+            }
+            else if (this is JsonArray)
+            {
+                return JsonValueKind.Array;
+            }
+            else
+            {
+                return AsValue().GetInternalValueKind();
+            }
+        }
+
+        public string GetPropertyName()
+        {
+            if (_parent is JsonObject jObject)
+            {
+                return jObject.GetPropertyName(this);
+            }
+
+            throw new InvalidOperationException(SR.Format(SR.NodeWrongType, nameof(JsonObject)));
+        }
+
+        public int GetElementIndex()
+        {
+            if (_parent is JsonArray jArray)
+            {
+                return jArray.GetElementIndex(this);
+            }
+
+            throw new InvalidOperationException(SR.Format(SR.NodeWrongType, nameof(JsonArray)));
+        }
 
         public static bool DeepEquals(JsonNode? node1, JsonNode? node2)
         {
@@ -271,6 +321,28 @@ namespace System.Text.Json.Nodes
         }
 
         internal abstract bool DeepEquals(JsonNode? node);
+
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        public void ReplaceWith<T>(T value)
+        {
+            JsonValue? jsonValue = JsonValue.Create(value);
+
+            if(jsonValue is null)
+            {
+                return;
+            }
+
+            if (_parent is null)
+            {
+                return;
+            }
+            if (value is null)
+            {
+                return;
+            }
+            return;
+        }
 
         internal void AssignParent(JsonNode parent)
         {

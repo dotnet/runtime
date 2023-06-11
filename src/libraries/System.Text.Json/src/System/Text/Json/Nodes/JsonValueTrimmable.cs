@@ -52,7 +52,7 @@ namespace System.Text.Json.Nodes
             }
         }
 
-        public override JsonNode DeepClone()
+        internal override JsonNode DeepCloneValue()
         {
             if (_converter is not null)
             {
@@ -75,10 +75,15 @@ namespace System.Text.Json.Nodes
             if (_jsonTypeInfo is not null)
             {
                 JsonNode? jsonNode = JsonSerializer.SerializeToNode(_value, _jsonTypeInfo);
-                return DeepEquals(node, jsonNode);
+                return DeepEquals(jsonNode, node);
             }
             else
             {
+                if (node is JsonArray || node is JsonObject)
+                {
+                    return false;
+                }
+
                 if (node is JsonValueTrimmable<JsonElement> jsonElementNodeOther && _value is JsonElement jsonElementCurrent)
                 {
                     if (jsonElementNodeOther._value.ValueKind != jsonElementCurrent.ValueKind)
@@ -99,17 +104,23 @@ namespace System.Text.Json.Nodes
                     }
                 }
 
-                if (node is JsonValueTrimmable<TValue> jsonValueNodeOther)
+                using var currentOutput = new PooledByteBufferWriter(JsonSerializerOptions.BufferSizeDefault);
+                using (var writer = new Utf8JsonWriter(currentOutput, default))
                 {
-                    Debug.Assert(jsonValueNodeOther._value is not null);
-                    return jsonValueNodeOther._value.Equals(_value);
+                    WriteTo(writer);
                 }
 
-                return false;
+                using var anotherOutput = new PooledByteBufferWriter(JsonSerializerOptions.BufferSizeDefault);
+                using (var writer = new Utf8JsonWriter(anotherOutput, default))
+                {
+                    node.WriteTo(writer);
+                }
+
+                return Encoding.UTF8.GetString(currentOutput.WrittenMemory.ToArray()) == Encoding.UTF8.GetString(anotherOutput.WrittenMemory.ToArray());
             }
         }
 
-        public override JsonValueKind GetValueKind()
+        internal override JsonValueKind GetInternalValueKind()
         {
             if (_jsonTypeInfo is not null)
             {
@@ -117,10 +128,13 @@ namespace System.Text.Json.Nodes
             }
             else
             {
-                Debug.Assert(_converter is not null);
+                if (_value is JsonElement element)
+                {
+                    return element.ValueKind;
+                }
 
                 using var output = new PooledByteBufferWriter(JsonSerializerOptions.BufferSizeDefault);
-                using (var writer = new Utf8JsonWriter(output, default(JsonWriterOptions)))
+                using (var writer = new Utf8JsonWriter(output, default))
                 {
                     WriteTo(writer);
                 }
