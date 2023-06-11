@@ -14682,6 +14682,7 @@ namespace System.Text
         public bool Equals(System.ReadOnlySpan<char> span) { throw null; }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Text.StringBuilder? sb) { throw null; }
         public System.Text.StringBuilder.ChunkEnumerator GetChunks() { throw null; }
+        public System.Text.StringBuilder.ChunkReverseEnumerator GetReverseChunks() { throw null; }
         public System.Text.StringBuilder Insert(int index, bool value) { throw null; }
         public System.Text.StringBuilder Insert(int index, byte value) { throw null; }
         public System.Text.StringBuilder Insert(int index, char value) { throw null; }
@@ -14739,6 +14740,15 @@ namespace System.Text
             public System.ReadOnlyMemory<char> Current { get { throw null; } }
             [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
             public System.Text.StringBuilder.ChunkEnumerator GetEnumerator() { throw null; }
+            public bool MoveNext() { throw null; }
+        }
+        public partial struct ChunkReverseEnumerator
+        {
+            private object _dummy;
+            private int _dummyPrimitive;
+            public System.ReadOnlyMemory<char> Current { get { throw null; } }
+            [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+            public System.Text.StringBuilder.ChunkReverseEnumerator GetEnumerator() { throw null; }
             public bool MoveNext() { throw null; }
         }
     }
