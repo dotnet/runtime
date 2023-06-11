@@ -2784,7 +2784,9 @@ namespace Internal.JitInterface
                 result = asCorInfoType(returnType, clsRet);
             }
             else
+            {
                 *clsRet = null;
+            }
 
             return result;
         }
