@@ -75,9 +75,14 @@ namespace System.Text.Json.Nodes
 
         internal override bool DeepEquals(JsonNode? node)
         {
-            if (node is null || node is not JsonArray array)
+            if (node is null || node is JsonObject)
             {
                 return false;
+            }
+
+            if (node is not JsonArray array)
+            {
+                return node.DeepEquals(this);
             }
 
             if (List.Count != array.List.Count)

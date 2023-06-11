@@ -571,6 +571,18 @@ namespace System.Text.Json.Nodes.Tests
         }
 
         [Fact]
+        public static void DeepEqualsWithJsonValueArrayType()
+        {
+            var array = new JsonArray();
+            array.Add(JsonValue.Create(2));
+            array.Add(JsonValue.Create(3));
+            array.Add(JsonValue.Create(4));
+            var value = JsonValue.Create(new long[] { 2, 3, 4 });
+
+            Assert.True(JsonNode.DeepEquals(array, value));
+        }
+
+        [Fact]
         public static void DeepEqualsFromElement()
         {
             using (JsonDocument document = JsonDocument.Parse("[1, 2, 4]"))

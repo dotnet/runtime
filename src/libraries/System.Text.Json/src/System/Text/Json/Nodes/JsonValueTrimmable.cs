@@ -56,7 +56,9 @@ namespace System.Text.Json.Nodes
         {
             if (_converter is not null)
             {
-                return new JsonValueTrimmable<TValue>(_value, _converter, Options);
+                return _value is JsonElement element
+                    ? new JsonValueTrimmable<JsonElement>(element.Clone(), JsonMetadataServices.JsonElementConverter, Options)
+                    : new JsonValueTrimmable<TValue>(_value, _converter, Options);
             }
             else
             {

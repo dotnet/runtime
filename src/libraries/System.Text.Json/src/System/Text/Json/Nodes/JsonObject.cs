@@ -147,12 +147,7 @@ namespace System.Text.Json.Nodes
 
         internal override bool DeepEquals(JsonNode? node)
         {
-            if (node is null)
-            {
-                return false;
-            }
-
-            if (node is JsonArray)
+            if (node is null || node is JsonArray)
             {
                 return false;
             }
