@@ -7885,9 +7885,11 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(var_types      type,
             {
                 int index = GetConstantInt32(arg1VN);
 
+                assert(varTypeIsSIMD(type));
+
                 // No meaningful diffs for other base-types.
-                if (baseType != TYP_FLOAT || TypeOfVN(arg0VN) != type ||
-                    static_cast<unsigned>(index) >= genTypeSize(type) / genTypeSize(baseType))
+                if ((baseType != TYP_FLOAT) || (TypeOfVN(arg0VN) != type) ||
+                    (static_cast<unsigned>(index) >= (genTypeSize(type) / genTypeSize(baseType))))
                 {
                     break;
                 }
