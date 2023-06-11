@@ -2760,7 +2760,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 assert(sig->numArgs == 1);
 
-                GenTree*             array   = impPopStack().val;
+                GenTree*             array   = impStackTop().val;
                 bool                 notNull = false;
                 CORINFO_CLASS_HANDLE elemHnd = NO_CLASS_HANDLE;
                 CorInfoType          jitType;
@@ -2780,6 +2780,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     jitType = info.compCompHnd->getChildType(arrayHnd, &elemHnd);
                 }
                 
+                array = impPopStack().val;
+
                 assert(jitType != CORINFO_TYPE_UNDEF);
                 assert((jitType != CORINFO_TYPE_VALUECLASS) || (elemHnd != NO_CLASS_HANDLE));
 
