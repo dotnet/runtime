@@ -422,14 +422,15 @@ namespace System.Runtime.InteropServices
         internal unsafe class ManagedObjectWrapperHolder
         {
             private ManagedObjectWrapper* _wrapper;
-            private GCHandle _wrappedObject;
+            private DependentHandle _wrappedObject;
             private bool _exposed;
 
             public ManagedObjectWrapperHolder(ManagedObjectWrapper* wrapper, object wrappedObject)
             {
                 _wrapper = wrapper;
-                _wrappedObject = GCHandle.Alloc(wrappedObject, GCHandleType.WeakTrackResurrection);
-                _wrapper->HolderHandle = RuntimeImports.RhHandleAllocRefCounted(null);
+                var wrappedObjectHolder = new WrappedObjectHolder(wrappedObject, _wrapper);
+                _wrappedObject = new DependentHandle(wrappedObject, wrappedObjectHolder);
+                _wrapper->HolderHandle = RuntimeImports.RhHandleAllocRefCounted(wrappedObjectHolder);
             }
 
             public unsafe IntPtr ComIp => _wrapper->As(in ComWrappers.IID_IUnknown);
@@ -438,17 +439,6 @@ namespace System.Runtime.InteropServices
             {
                 _exposed = true;
                 uint ret = _wrapper->AddRef();
-                // Now that the MOW's ref-counted handle is rooting its object,
-                // ensure that the handle points to something.
-                WrappedObjectHolder? holder = (WrappedObjectHolder?)RuntimeImports.RhHandleGet(_wrapper->HolderHandle);
-                if (holder is null)
-                {
-                    RuntimeImports.RhHandleSet(_wrapper->HolderHandle, new WrappedObjectHolder(wrappedObject, _wrapper));
-                }
-                else
-                {
-                    Debug.Assert(ReferenceEquals(wrappedObject, holder.WrappedObject));
-                }
                 GC.KeepAlive(this);
                 return ret;
             }
@@ -469,8 +459,7 @@ namespace System.Runtime.InteropServices
                 {
                     NativeMemory.Free(_wrapper);
                     _wrapper = null;
-                    if (_wrappedObject.IsAllocated)
-                        _wrappedObject.Free();
+                    _wrappedObject.Dispose();
                 }
                 else
                 {
