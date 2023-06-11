@@ -1110,5 +1110,17 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Equal("value", jValue.GetPropertyName());
             Assert.Equal("value", jObject["value"].GetPropertyName());
         }
+
+        [Fact]
+        public static void ReplaceWith()
+        {
+            var jObject = new JsonObject();
+            var jValue = JsonValue.Create(10);
+            jObject["value"] = jValue;
+            jObject["value"].ReplaceWith(5);
+
+            Assert.Null(jValue.Parent);
+            Assert.Equal("{\"value\":5}", jObject.ToJsonString());
+        }
     }
 }

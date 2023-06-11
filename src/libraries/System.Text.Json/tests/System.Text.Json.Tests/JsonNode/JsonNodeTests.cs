@@ -120,5 +120,23 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Throws<InvalidOperationException>(() => JsonNode.Parse("{}").GetElementIndex());
             Assert.Throws<InvalidOperationException>(() => JsonNode.Parse("5").GetElementIndex());
         }
+
+
+        [Fact]
+        public static void ReplaceWith()
+        {
+            JsonNode jsonNode = JsonNode.Parse("[90, 2, 3]");
+            jsonNode[1].ReplaceWith(12);
+            jsonNode[2].ReplaceWith("str");
+
+            Assert.Equal(12, jsonNode[1].GetValue<int>());
+            Assert.Equal("str", jsonNode[2].GetValue<string>());
+
+            Assert.Equal("[90,12,\"str\"]", jsonNode.ToJsonString());
+
+            jsonNode = JsonNode.Parse("{\"a\": \"b\"}");
+            jsonNode["a"].ReplaceWith("c");
+            Assert.Equal("{\"a\":\"c\"}", jsonNode.ToJsonString());
+        }
     }
 }

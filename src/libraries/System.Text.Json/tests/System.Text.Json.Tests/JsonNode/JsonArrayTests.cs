@@ -564,6 +564,10 @@ namespace System.Text.Json.Nodes.Tests
             var diffArray = new JsonArray() { null, 10, "s" };
             Assert.False(JsonNode.DeepEquals(array, diffArray));
             Assert.False(JsonNode.DeepEquals(diffArray, array));
+
+            diffArray = new JsonArray() { null, 10 };
+            Assert.False(JsonNode.DeepEquals(array, diffArray));
+            Assert.False(JsonNode.DeepEquals(diffArray, array));
         }
 
         [Fact]
@@ -640,6 +644,18 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Equal(2, values.ElementAt(1));
             Assert.Equal(3, values.ElementAt(2));
             Assert.Equal(2, values.ElementAt(3));
+        }
+
+        [Fact]
+        public static void ReplaceWith()
+        {
+            var jArray = new JsonArray();
+            var jValue = JsonValue.Create(10);
+            jArray.Add(jValue);
+            jArray[0].ReplaceWith(5);
+
+            Assert.Null(jValue.Parent);
+            Assert.Equal("[5]", jArray.ToJsonString());
         }
     }
 }

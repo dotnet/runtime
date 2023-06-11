@@ -322,26 +322,28 @@ namespace System.Text.Json.Nodes
 
         internal abstract bool DeepEquals(JsonNode? node);
 
-        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(JsonValue.CreateUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonValue.CreateDynamicCodeMessage)]
         public void ReplaceWith<T>(T value)
         {
-            JsonValue? jsonValue = JsonValue.Create(value);
-
-            if(jsonValue is null)
-            {
-                return;
-            }
-
             if (_parent is null)
             {
                 return;
             }
-            if (value is null)
+
+            JsonValue? jsonValue = JsonValue.Create(value);
+
+            if (_parent is JsonObject jsonObject)
             {
+                jsonObject.SetItem(GetPropertyName(), jsonValue);
                 return;
             }
-            return;
+
+            if (_parent is JsonArray jsonArray)
+            {
+                jsonArray.SetItem(GetElementIndex(), jsonValue);
+                return;
+            }
         }
 
         internal void AssignParent(JsonNode parent)
