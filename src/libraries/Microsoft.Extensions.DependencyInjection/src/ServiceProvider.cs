@@ -133,7 +133,6 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             Func<ServiceProviderEngineScope, object?> realizedService = _realizedServices.GetOrAdd(serviceType, _createServiceAccessor);
-            DependencyInjectionEventSource.Log.ServiceResolved(this, serviceType);
             var result = realizedService.Invoke(serviceProviderEngineScope);
             System.Diagnostics.Debug.Assert(result is null || CallSiteFactory.IsService(serviceType));
             return result;
@@ -172,13 +171,18 @@ namespace Microsoft.Extensions.DependencyInjection
                 if (callSite.Cache.Location == CallSiteResultCacheLocation.Root)
                 {
                     object? value = CallSiteRuntimeResolver.Instance.Resolve(callSite, Root);
-                    return scope => value;
+                    return scope =>
+                    {
+                        DependencyInjectionEventSource.Log.ServiceResolved(this, serviceType);
+                        return value;
+                    };
                 }
 
                 Func<ServiceProviderEngineScope, object?> realizedService = _engine.RealizeService(callSite);
                 return scope =>
                 {
                     OnResolve(callSite, scope);
+                    DependencyInjectionEventSource.Log.ServiceResolved(this, serviceType);
                     return realizedService.Invoke(scope);
                 };
             }
