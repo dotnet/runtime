@@ -2779,7 +2779,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     }
                     jitType = info.compCompHnd->getChildType(arrayHnd, &elemHnd);
                 }
-                
+
                 array = impPopStack().val;
 
                 assert(jitType != CORINFO_TYPE_UNDEF);
