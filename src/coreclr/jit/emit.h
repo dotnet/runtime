@@ -917,14 +917,28 @@ protected:
 // Given that, we will differ from other platforms and store a signed value. This
 // allows us to store at least [-512, +511] and covers all the common cases for
 // 8-bit sign-extended values that are most common for the architecture
-#define ID_MIN_SMALL_CNS (int)(0 - (1 << (ID_BIT_SMALL_CNS - 1)))
-#define ID_MAX_SMALL_CNS (int)((1 << (ID_BIT_SMALL_CNS - 1)) - 1)
+#define ID_ADJ_SMALL_CNS (int)(1 << (ID_BIT_SMALL_CNS - 1))
+#define ID_IDX_SMALL_CNS(x)                                                                                            \
+    (x >= ((SMALL_CNS_TSZ / 2) - 1)) ? (SMALL_CNS_TSZ - 1)                                                             \
+                                     : ((x >= (0 - SMALL_CNS_TSZ / 2)) ? (x + (SMALL_CNS_TSZ / 2)) : 0)
+
         signed _idSmallCns : ID_BIT_SMALL_CNS;
 #else
-#define ID_MIN_SMALL_CNS 0
-#define ID_MAX_SMALL_CNS (int)((1 << ID_BIT_SMALL_CNS) - 1U)
+#define ID_ADJ_SMALL_CNS 0
+#define ID_IDX_SMALL_CNS(x) (x >= (SMALL_CNS_TSZ - 1)) ? (SMALL_CNS_TSZ - 1) : x
+
         unsigned _idSmallCns : ID_BIT_SMALL_CNS;
 #endif
+
+#define ID_CNT_SMALL_CNS (int)(1 << ID_BIT_SMALL_CNS)
+#define ID_MIN_SMALL_CNS (int)(0 - ID_ADJ_SMALL_CNS)
+#define ID_MAX_SMALL_CNS (int)(ID_CNT_SMALL_CNS - ID_ADJ_SMALL_CNS - 1)
+
+#define ID_INC_SMALL_CNS(x)                                                                                            \
+    {                                                                                                                  \
+        emitSmallCnsCnt++;                                                                                             \
+        emitSmallCns[ID_IDX_SMALL_CNS(x)]++;                                                                           \
+    }
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here: 64 bits, all architectures, by design.
@@ -3477,11 +3491,7 @@ inline emitter::instrDesc* emitter::emitNewInstrLclVarPair(emitAttr attr, cnsval
         instrDescLclVarPair* id = emitAllocInstrLclVarPair(attr);
         id->idSmallCns(cns);
 #if EMITTER_STATS
-        emitSmallCnsCnt++;
-        if ((cns - ID_MIN_SMALL_CNS) >= (SMALL_CNS_TSZ - 1))
-            emitSmallCns[SMALL_CNS_TSZ - 1]++;
-        else
-            emitSmallCns[cns - ID_MIN_SMALL_CNS]++;
+        ID_INC_SMALL_CNS(cns);
 #endif
         return id;
     }
@@ -3539,11 +3549,7 @@ inline emitter::instrDesc* emitter::emitNewInstrCns(emitAttr attr, cnsval_ssize_
         id->idSmallCns(cns);
 
 #if EMITTER_STATS
-        emitSmallCnsCnt++;
-        if ((cns - ID_MIN_SMALL_CNS) >= (SMALL_CNS_TSZ - 1))
-            emitSmallCns[SMALL_CNS_TSZ - 1]++;
-        else
-            emitSmallCns[cns - ID_MIN_SMALL_CNS]++;
+        ID_INC_SMALL_CNS(cns);
 #endif
 
         return id;
@@ -3611,11 +3617,7 @@ inline emitter::instrDesc* emitter::emitNewInstrSC(emitAttr attr, cnsval_ssize_t
         id->idSmallCns(cns);
 
 #if EMITTER_STATS
-        emitSmallCnsCnt++;
-        if ((cns - ID_MIN_SMALL_CNS) >= (SMALL_CNS_TSZ - 1))
-            emitSmallCns[SMALL_CNS_TSZ - 1]++;
-        else
-            emitSmallCns[cns - ID_MIN_SMALL_CNS]++;
+        ID_INC_SMALL_CNS(cns);
 #endif
 
         return id;

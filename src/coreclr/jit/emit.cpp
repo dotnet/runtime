@@ -478,22 +478,40 @@ void emitterStats(FILE* fout)
     if (emitter::emitSmallCnsCnt > 0)
     {
         fprintf(fout, "\n\n");
+#if defined(TARGET_XARCH)
+        fprintf(fout, "Common small constants >= %2d, <= %2d\n", ID_MIN_SMALL_CNS, ID_MAX_SMALL_CNS);
+#else
         fprintf(fout, "Common small constants >= %2u, <= %2u\n", ID_MIN_SMALL_CNS, ID_MAX_SMALL_CNS);
+#endif
 
+        // Only print constants representing more than 0.1% of the total constants
         unsigned m = emitter::emitSmallCnsCnt / 1000 + 1;
 
-        for (int i = ID_MIN_SMALL_CNS; (i <= ID_MAX_SMALL_CNS) && (i < SMALL_CNS_TSZ); i++)
+        for (int i = 0; (i <= ID_CNT_SMALL_CNS) && (i < SMALL_CNS_TSZ); i++)
         {
-            unsigned c = emitter::emitSmallCns[i - ID_MIN_SMALL_CNS];
+            unsigned c = emitter::emitSmallCns[i];
+
             if (c >= m)
             {
-                if (i == SMALL_CNS_TSZ - 1)
+                // Adjust the index to match the allowed value range
+                int v = i;
+
+                if (ID_ADJ_SMALL_CNS != 0)
                 {
-                    fprintf(fout, "cns[>=%4d] = %u\n", i, c);
+                    v -= (SMALL_CNS_TSZ / 2);
+                }
+
+                if ((ID_ADJ_SMALL_CNS != 0) && (i == 0))
+                {
+                    fprintf(fout, "cns[<=%4d] = %u\n", v, c);
+                }
+                else if (i == SMALL_CNS_TSZ - 1)
+                {
+                    fprintf(fout, "cns[>=%4d] = %u\n", v, c);
                 }
                 else
                 {
-                    fprintf(fout, "cns[%4d] = %u\n", i, c);
+                    fprintf(fout, "cns[  %4d] = %u\n", v, c);
                 }
             }
         }
@@ -2642,11 +2660,7 @@ emitter::instrDesc* emitter::emitNewInstrCnsDsp(emitAttr size, target_ssize_t cn
             id->idSmallCns(cns);
 
 #if EMITTER_STATS
-            emitSmallCnsCnt++;
-            if ((cns - ID_MIN_SMALL_CNS) >= (SMALL_CNS_TSZ - 1))
-                emitSmallCns[SMALL_CNS_TSZ - 1]++;
-            else
-                emitSmallCns[cns - ID_MIN_SMALL_CNS]++;
+            ID_INC_SMALL_CNS(cns);
             emitSmallDspCnt++;
 #endif
 
@@ -2677,11 +2691,7 @@ emitter::instrDesc* emitter::emitNewInstrCnsDsp(emitAttr size, target_ssize_t cn
 
 #if EMITTER_STATS
             emitLargeDspCnt++;
-            emitSmallCnsCnt++;
-            if ((cns - ID_MIN_SMALL_CNS) >= (SMALL_CNS_TSZ - 1))
-                emitSmallCns[SMALL_CNS_TSZ - 1]++;
-            else
-                emitSmallCns[cns - ID_MIN_SMALL_CNS]++;
+            ID_INC_SMALL_CNS(cns);
 #endif
 
             return id;
