@@ -391,6 +391,7 @@ IGCHeapInternal* CreateGCHeap() {
 
 void GCHeap::DiagTraceGCSegments()
 {
+    return;
 #ifdef FEATURE_EVENT_TRACE
     heap_segment* seg = 0;
 #ifdef MULTIPLE_HEAPS

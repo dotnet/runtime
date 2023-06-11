@@ -1609,6 +1609,8 @@ private:
 
     PER_HEAP_ISOLATED_METHOD void fire_pevents();
 
+    PER_HEAP_ISOLATED_METHOD void fire_committed_usage_events();
+
 #ifdef FEATURE_BASICFREEZE
     PER_HEAP_ISOLATED_METHOD void walk_read_only_segment(heap_segment *seg, void *pvContext, object_callback_func pfnMethodTable, object_callback_func pfnObjRef);
 #endif
