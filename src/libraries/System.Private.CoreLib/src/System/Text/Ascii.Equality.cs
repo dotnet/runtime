@@ -65,6 +65,10 @@ namespace System.Text
             {
                 ref TLeft currentLeftSearchSpace = ref left;
                 ref TRight currentRightSearchSpace = ref right;
+                // Add Vector256<TLeft>.Count because TLeft == TRight
+                // Or we are in the Widen case where we iterate 2 * TRight.Count which is the same as TLeft.Count
+                Debug.Assert(Vector256<TLeft>.Count == Vector256<TRight>.Count
+                    || (typeof(TLoader) == typeof(WideningLoader) && Vector256<TLeft>.Count == Vector256<TRight>.Count * 2));
                 ref TRight oneVectorAwayFromRightEnd = ref Unsafe.Add(ref currentRightSearchSpace, length - (uint)Vector256<TLeft>.Count);
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
@@ -410,22 +414,22 @@ namespace System.Text
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(Avx))]
-            public static bool Compare256(ref byte left, ref ushort right)
+            public static bool Compare256(ref byte utf8, ref ushort utf16)
             {
+                // We widen the utf8 param so we can compare it to utf16, this doubles how much of the utf16 vector we search
                 Debug.Assert(Vector256<byte>.Count == Vector256<ushort>.Count * 2);
 
-                Vector256<byte> leftNotWidened = Vector256.LoadUnsafe(ref left);
+                Vector256<byte> leftNotWidened = Vector256.LoadUnsafe(ref utf8);
                 if (!AllCharsInVectorAreAscii(leftNotWidened))
                 {
                     return false;
                 }
 
                 (Vector256<ushort> lower, Vector256<ushort> upper) = Vector256.Widen(leftNotWidened);
-                Vector256<ushort> rightValues0 = Vector256.LoadUnsafe(ref right);
-                Vector256<ushort> rightValues1 = Vector256.LoadUnsafe(ref Unsafe.Add(ref right, (uint)Vector256<ushort>.Count));
+                Vector256<ushort> rightValues0 = Vector256.LoadUnsafe(ref utf16);
+                Vector256<ushort> rightValues1 = Vector256.LoadUnsafe(ref utf16, (uint)Vector256<ushort>.Count);
 
-                if (!Vector256<ushort>.AllBitsSet.Equals(
-                    Vector256.BitwiseAnd(Vector256.Equals(lower, rightValues0), Vector256.Equals(upper, rightValues1))))
+                if (((lower ^ rightValues0) | (upper ^ rightValues1)) != Vector256<ushort>.Zero)
                 {
                     return false;
                 }
