@@ -646,6 +646,103 @@ namespace System.Text
         }
 
         /// <summary>
+        /// GetReverseChunks returns ChunkReverseEnumerator that follows the IEnumerable pattern
+        /// and thus can be used in a C# 'foreach' statements to retrieve the data in the
+        /// StringBuilder as chunks (ReadOnlyMemory) of characters. ChunkReverseEnumerator return
+        /// chunks in reverse order and can be used only in code where the reverse order is not a
+        /// hindrance. For example, when simply copying content. ChunkReverseEnumerator is more
+        /// performance and memory effective than ChunkReverseEnumerator for more than one chunk.
+        /// An example use is:
+        ///
+        ///      foreach (ReadOnlyMemory&lt;char&gt; chunk in sb.GetReverseChunks())
+        ///         foreach (char c in chunk.Span)
+        ///             { /* operation on c }
+        ///
+        /// It is undefined what happens if the StringBuilder is modified while the chunk
+        /// enumeration is incomplete.  StringBuilder is also not thread-safe, so operating
+        /// on it with concurrent threads is illegal.  Finally the ReadOnlyMemory chunks returned
+        /// are NOT guaranteed to remain unchanged if the StringBuilder is modified, so do
+        /// not cache them for later use either.  This API's purpose is efficiently extracting
+        /// the data of a CONSTANT StringBuilder.
+        ///
+        /// Creating a ReadOnlySpan from a ReadOnlyMemory  (the .Span property) is expensive
+        /// compared to the fetching of the character, so create a local variable for the SPAN
+        /// if you need to use it in a nested for statement.  For example
+        ///
+        ///    foreach (ReadOnlyMemory&lt;char&gt; chunk in sb.GetReverseChunks())
+        ///    {
+        ///         var span = chunk.Span;
+        ///         for (int i = 0; i &lt; span.Length; i++)
+        ///             { /* operation on span[i] */ }
+        ///    }
+        /// </summary>
+        public ChunkReverseEnumerator GetReverseChunks() => new ChunkReverseEnumerator(this);
+
+        /// <summary>
+        /// ChunkReverseEnumerator supports both the IEnumerable and IEnumerator pattern so foreach
+        /// works (see GetReverseChunks). It needs to be public (so the compiler can use it when
+        /// building a foreach statement) but users typically don't use it explicitly. (which is
+        /// why it is a nested type).
+        /// </summary>
+        public struct ChunkReverseEnumerator
+        {
+            private readonly StringBuilder _firstChunk; // The first StringBuilder chunk (which is the end of the logical string)
+            private StringBuilder? _currentChunk;        // The chunk that this enumerator is currently returning (Current).
+
+            /// <summary>
+            /// Implement IEnumerable.GetEnumerator() to return  'this' as the IEnumerator
+            /// </summary>
+            [EditorBrowsable(EditorBrowsableState.Never)] // Only here to make foreach work
+            public ChunkReverseEnumerator GetEnumerator() => this;
+
+            /// <summary>
+            /// Implements the IEnumerator pattern.
+            /// </summary>
+            public bool MoveNext()
+            {
+                if (_currentChunk == null)
+                {
+                    _currentChunk = _firstChunk;
+                    return true;
+                }
+
+                var previous = _currentChunk.m_ChunkPrevious;
+                if (previous == null)
+                {
+                    return false;
+                }
+
+                _currentChunk = previous;
+                return true;
+            }
+
+            /// <summary>
+            /// Implements the IEnumerator pattern.
+            /// </summary>
+            public ReadOnlyMemory<char> Current
+            {
+                get
+                {
+                    if (_currentChunk == null)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
+                    }
+
+                    return new ReadOnlyMemory<char>(_currentChunk.m_ChunkChars, 0, _currentChunk.m_ChunkLength);
+                }
+            }
+
+            #region private
+            internal ChunkReverseEnumerator(StringBuilder stringBuilder)
+            {
+                Debug.Assert(stringBuilder != null);
+                _firstChunk = stringBuilder;
+                _currentChunk = null;
+            }
+            #endregion
+        }
+
+        /// <summary>
         /// Appends a character 0 or more times to the end of this builder.
         /// </summary>
         /// <param name="value">The character to append.</param>
