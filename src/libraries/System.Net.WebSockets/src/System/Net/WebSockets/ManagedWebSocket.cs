@@ -697,6 +697,21 @@ namespace System.Net.WebSockets
                                 // Make sure we have the first two bytes, which includes the start of the payload length.
                                 if (_receiveBufferCount < 2)
                                 {
+                                    if (payloadBuffer.IsEmpty)
+                                    {
+                                        // The caller has issued a zero-byte read.  The only meaningful reason to do that is to
+                                        // wait for data to be available without actually consuming any of it. If we just pass down
+                                        // our internal buffer, the underlying stream might end up renting and/or pinning a buffer
+                                        // for the duration of the operation, which isn't necessary when we don't actually want to
+                                        // consume anything. Instead, we issue a zero-byte read against the underlying stream;
+                                        // given that the receive buffer currently stores fewer than the minimum number of bytes
+                                        // necessary for a header, it's safe to issue a read (if there were at least the minimum
+                                        // number of bytes available, we could end up issuing a read that would erroneously wait
+                                        // for data that would never arrive). Once that read completes, we can proceed with any
+                                        // other reads necessary, and they'll have a reduced chance of pinning the receive buffer.
+                                        await _stream.ReadAsync(Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
+                                    }
+
                                     await EnsureBufferContainsAsync(2, cancellationToken).ConfigureAwait(false);
                                 }
 
