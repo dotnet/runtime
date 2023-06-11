@@ -235,9 +235,8 @@ namespace System.Text.Json.Nodes
         }
 
         /// <summary>
-        /// Clone json node.
+        /// Creates a new instance of the <see cref="JsonNode"/>. All children nodes are recursively cloned.
         /// </summary>
-        /// <returns></returns>
         public JsonNode DeepClone()
         {
             if (this is JsonObject jObject)
@@ -254,6 +253,9 @@ namespace System.Text.Json.Nodes
             }
         }
 
+        /// <summary>
+        /// Returns <see cref="JsonValueKind"/> of current instance.
+        /// </summary>
         public JsonValueKind GetValueKind()
         {
             if (this is JsonObject)
@@ -270,6 +272,12 @@ namespace System.Text.Json.Nodes
             }
         }
 
+        /// <summary>
+        /// Returns property name from parent object.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The current parent is not a <see cref="JsonObject"/>
+        /// </exception>
         public string GetPropertyName()
         {
             if (_parent is JsonObject jObject)
@@ -280,6 +288,12 @@ namespace System.Text.Json.Nodes
             throw new InvalidOperationException(SR.Format(SR.NodeWrongType, nameof(JsonObject)));
         }
 
+        /// <summary>
+        /// Returns index from parent array.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The current parent is not a <see cref="JsonArray"/>
+        /// </exception>
         public int GetElementIndex()
         {
             if (_parent is JsonArray jArray)
@@ -290,6 +304,12 @@ namespace System.Text.Json.Nodes
             throw new InvalidOperationException(SR.Format(SR.NodeWrongType, nameof(JsonArray)));
         }
 
+        /// <summary>
+        /// Compares the values of two nodes, including the values of all descendant nodes.
+        /// </summary>
+        /// <param name="node1">The <see cref="JsonNode"/> to compare.</param>
+        /// <param name="node2">The <see cref="JsonNode"/> to compare.</param>
+        /// <returns><c>true</c> if the tokens are equal; otherwise <c>false</c>.</returns>
         public static bool DeepEquals(JsonNode? node1, JsonNode? node2)
         {
             if (node1 is null && node2 is null)
@@ -312,16 +332,17 @@ namespace System.Text.Json.Nodes
                 return jsonArray.DeepEquals(node2);
             }
 
-            if (node1 is JsonValue jsonValue)
-            {
-                return jsonValue.DeepEquals(node2);
-            }
-
-            return true;
+            Debug.Assert(node1 is not null);
+            return node1.AsValue().DeepEquals(node2);
         }
 
         internal abstract bool DeepEquals(JsonNode? node);
 
+        /// <summary>
+        /// Replaces this node with a new value.
+        /// </summary>
+        /// <typeparam name="T">The type of value to be replaced.</typeparam>
+        /// <param name="value">Value that replaces this node.</param>
         [RequiresUnreferencedCode(JsonValue.CreateUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonValue.CreateDynamicCodeMessage)]
         public void ReplaceWith<T>(T value)

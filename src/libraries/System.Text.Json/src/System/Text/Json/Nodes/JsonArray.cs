@@ -108,6 +108,10 @@ namespace System.Text.Json.Nodes
             return List.IndexOf(node);
         }
 
+        /// <summary>
+        /// Returns enumerator that wraps calls to <see cref="JsonNode.GetValue{T}"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the value to obtain from the <see cref="JsonValue"/>.</typeparam>
         public IEnumerable<T> GetValues<T>()
         {
             foreach (JsonNode? item in List)
