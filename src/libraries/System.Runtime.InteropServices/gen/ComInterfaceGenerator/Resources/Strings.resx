@@ -267,6 +267,15 @@
   <data name="InvalidStringMarshallingConfigurationOnInterfaceMessage" xml:space="preserve">
     <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</value>
   </data>
+  <data name="RequiresAllowUnsafeBlocksDescription" xml:space="preserve">
+    <value>GeneratedComInterfaceAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
+  </data>
+  <data name="RequiresAllowUnsafeBlocksMessage" xml:space="preserve">
+    <value>GeneratedComInterfaceAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
+  </data>
+  <data name="RequiresAllowUnsafeBlocksTitle" xml:space="preserve">
+    <value>GeneratedComInterfaceAttribute requires unsafe code.</value>
+  </data>
   <data name="InvalidGeneratedComInterfaceUsageMissingPartialModifier" xml:space="preserve">
     <value>The interface '{0}' or one of its containing types is missing the 'partial' keyword. Code will not be generated for '{0}'.</value>
   </data>

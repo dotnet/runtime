@@ -8,8 +8,7 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.Interop;
-using DiagnosticOrInterfaceInfo = Microsoft.Interop.DiagnosticOr<(Microsoft.Interop.ComInterfaceInfo InterfaceInfo, Microsoft.CodeAnalysis.INamedTypeSymbol Symbol) >;
+using DiagnosticOrInterfaceInfo = Microsoft.Interop.DiagnosticOr<(Microsoft.Interop.ComInterfaceInfo InterfaceInfo, Microsoft.CodeAnalysis.INamedTypeSymbol Symbol)>;
 
 namespace Microsoft.Interop
 {
@@ -26,37 +25,23 @@ namespace Microsoft.Interop
         Guid InterfaceId,
         Location DiagnosticLocation)
     {
-        public static DiagnosticOrInterfaceInfo From(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, CancellationToken _)
+        public static DiagnosticOrInterfaceInfo From(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, StubEnvironment env, CancellationToken _)
         {
+            if (env.Compilation.Options is not CSharpCompilationOptions { AllowUnsafe: true }) // Unsafe code enabled
+                return DiagnosticOrInterfaceInfo.From(DiagnosticInfo.Create(GeneratorDiagnostics.RequiresAllowUnsafeBlocks, syntax.Identifier.GetLocation()));
             // Verify the method has no generic types or defined implementation
             // and is not marked static or sealed
             if (syntax.TypeParameterList is not null)
             {
-                // Verify the interface has no generic types or defined implementation
-                // and is not marked static or sealed
-                if (syntax.TypeParameterList is not null)
-                {
-                    return DiagnosticOrInterfaceInfo.From(
-                        DiagnosticInfo.Create(
-                            GeneratorDiagnostics.InvalidAttributedInterfaceGenericNotSupported,
-                            syntax.Identifier.GetLocation(),
-                            symbol.Name));
-                }
+                return DiagnosticOrInterfaceInfo.From(
+                    DiagnosticInfo.Create(
+                        GeneratorDiagnostics.InvalidAttributedInterfaceGenericNotSupported,
+                        syntax.Identifier.GetLocation(),
+                        symbol.Name));
             }
 
-            // Verify that the types the interface is declared in are marked partial.
-            for (SyntaxNode? parentNode = syntax; parentNode is TypeDeclarationSyntax typeDecl; parentNode = parentNode.Parent)
-            {
-                if (!typeDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
-                {
-                    return DiagnosticOrInterfaceInfo.From(
-                        DiagnosticInfo.Create(
-                            GeneratorDiagnostics.InvalidAttributedInterfaceMissingPartialModifiers,
-                            syntax.Identifier.GetLocation(),
-                            symbol.Name,
-                            typeDecl.Identifier));
-                }
-            }
+            if (!IsInPartialContext(symbol, syntax, out DiagnosticInfo? partialContextDiagnostic))
+                return DiagnosticOrInterfaceInfo.From(partialContextDiagnostic);
 
             if (!TryGetGuid(symbol, syntax, out Guid? guid, out DiagnosticInfo? guidDiagnostic))
                 return DiagnosticOrInterfaceInfo.From(guidDiagnostic);
@@ -76,8 +61,27 @@ namespace Microsoft.Interop
                     new ContainingSyntaxContext(syntax),
                     new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
                     guid ?? Guid.Empty,
-                    symbol.Locations[0]),
+                    syntax.Identifier.GetLocation()),
                 symbol));
+        }
+
+        private static bool IsInPartialContext(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, [NotNullWhen(false)] out DiagnosticInfo? diagnostic)
+        {
+            // Verify that the types the interface is declared in are marked partial.
+            for (SyntaxNode? parentNode = syntax; parentNode is TypeDeclarationSyntax typeDecl; parentNode = parentNode.Parent)
+            {
+                if (!typeDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
+                {
+                    diagnostic = DiagnosticInfo.Create(
+                            GeneratorDiagnostics.InvalidAttributedInterfaceMissingPartialModifiers,
+                            syntax.Identifier.GetLocation(),
+                            symbol.Name,
+                            typeDecl.Identifier);
+                    return false;
+                }
+            }
+            diagnostic = null;
+            return true;
         }
 
         private static bool StringMarshallingIsValid(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, INamedTypeSymbol? baseSymbol, [NotNullWhen(false)] out DiagnosticInfo? stringMarshallingDiagnostic)
