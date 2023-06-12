@@ -409,7 +409,9 @@ if [[ -n "$wasm_bundle_directory" ]]; then
         wasm_args="$wasm_args --module"
     fi
 
-    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --wasmArgs \"$wasm_args\" --cli \$HELIX_CORRELATION_PAYLOAD/dotnet/dotnet --wasmDataDir \$HELIX_CORRELATION_PAYLOAD/wasm-data"
+    # Workaround: adding an extra space for `--wasmArgs \"--module --expose_wasm\"` argument, so bdn does
+    # not treat `--module --expose_wasm` as a bdn argument.
+    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --wasmArgs \" $wasm_args\" --cli \$HELIX_CORRELATION_PAYLOAD/dotnet/dotnet --wasmDataDir \$HELIX_CORRELATION_PAYLOAD/wasm-data"
     if [[ "$wasmaot" == "true" ]]; then
         extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --aotcompilermode wasm --buildTimeout 3600"
     fi
