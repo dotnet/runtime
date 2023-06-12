@@ -23,6 +23,7 @@ static unsafe class UnsafeAccessorsTests
         public const string StaticMethodVoidName = nameof(_MVV);
         public const string MethodVoidName = nameof(_mvv);
         public const string MethodNameAmbiguous = nameof(_Ambiguous);
+        public const string MethodPointerName = nameof(_Pointer);
 
         private static string _F = PrivateStatic;
         private string _f;
@@ -44,6 +45,9 @@ static unsafe class UnsafeAccessorsTests
         // Used to validate ambiguity is handled via custom modifiers.
         private string _Ambiguous(delegate* unmanaged[Cdecl, MemberFunction]<void> fptr) { return nameof(CallConvCdecl); }
         private string _Ambiguous(delegate* unmanaged[Stdcall, MemberFunction]<void> fptr) { return nameof(CallConvStdcall); }
+
+        // Used to validate pointer values.
+        private static string _Pointer(void* ptr) => "void*";
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -314,25 +318,30 @@ static unsafe class UnsafeAccessorsTests
     {
         Console.WriteLine($"Running {nameof(Verify_InvalidTargetUnsafeAccessor)}");
 
-        Assert.Throws<MissingMethodException>(() => MethodNotFound(null));
-        Assert.Throws<MissingMethodException>(() => StaticMethodNotFound(null));
+        const string DoesNotExist = "_DoesNotExist_";
+        AssertExtensions.ThrowsMissingMemberException<MissingMethodException>(DoesNotExist, () => MethodNotFound(null));
+        AssertExtensions.ThrowsMissingMemberException<MissingMethodException>(DoesNotExist, () => StaticMethodNotFound(null));
 
-        Assert.Throws<MissingFieldException>(() => FieldNotFound(null));
-        Assert.Throws<MissingFieldException>(() => StaticFieldNotFound(null));
+        AssertExtensions.ThrowsMissingMemberException<MissingFieldException>(DoesNotExist, () => FieldNotFound(null));
+        AssertExtensions.ThrowsMissingMemberException<MissingFieldException>(DoesNotExist, () => StaticFieldNotFound(null));
 
         Assert.Throws<AmbiguousMatchException>(
             () => CallAmbiguousMethod(CallPrivateConstructorClass(), null));
 
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name="_DoesNotExist_")]
+        AssertExtensions.ThrowsMissingMemberException<MissingMethodException>(
+            UserDataClass.MethodPointerName,
+            () => CallPointerMethod(null, null));
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name=DoesNotExist)]
         extern static void MethodNotFound(UserDataClass d);
 
-        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name="_DoesNotExist_")]
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name=DoesNotExist)]
         extern static void StaticMethodNotFound(UserDataClass d);
 
-        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_DoesNotExist_")]
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name=DoesNotExist)]
         extern static ref string FieldNotFound(UserDataClass d);
 
-        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name="_DoesNotExist_")]
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=DoesNotExist)]
         extern static ref string StaticFieldNotFound(UserDataClass d);
 
         // This is an ambiguous match since there are two methods each with two custom modifiers.
@@ -340,6 +349,10 @@ static unsafe class UnsafeAccessorsTests
         // precise match and that also fails because the custom modifiers don't match precisely.
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name=UserDataClass.MethodNameAmbiguous)]
         extern static string CallAmbiguousMethod(UserDataClass d, delegate* unmanaged[Stdcall, SuppressGCTransition]<void> fptr);
+
+        // Pointers generally degrade to `void*`, but that isn't true for UnsafeAccessor signature validation.
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name=UserDataClass.MethodPointerName)]
+        extern static string CallPointerMethod(UserDataClass d, delegate* unmanaged[Stdcall, SuppressGCTransition]<void> fptr);
     }
 
     [Fact]
