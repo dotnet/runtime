@@ -727,33 +727,32 @@ bool LinearScan::isContainableMemoryOp(GenTree* node)
 //
 void LinearScan::addRefsForPhysRegMask(regMaskTP mask, LsraLocation currentLoc, RefType refType, bool isLastUse)
 {
-    if (refType == RefTypeKill)
-    {
-        // The mask identifies a set of registers that will be used during
-        // codegen. Mark these as modified here, so when we do final frame
-        // layout, we'll know about all these registers. This is especially
-        // important if mask contains callee-saved registers, which affect the
-        // frame size since we need to save/restore them. In the case where we
-        // have a copyBlk with GC pointers, can need to call the
-        // CORINFO_HELP_ASSIGN_BYREF helper, which kills callee-saved RSI and
-        // RDI, if LSRA doesn't assign RSI/RDI, they wouldn't get marked as
-        // modified until codegen, which is too late.
-        compiler->codeGen->regSet.rsSetRegsModified(mask DEBUGARG(true));
-    }
+    assert(refType == RefTypeKill);
 
-    for (regNumber reg = REG_FIRST; mask; reg = REG_NEXT(reg), mask >>= 1)
+    // The mask identifies a set of registers that will be used during
+    // codegen. Mark these as modified here, so when we do final frame
+    // layout, we'll know about all these registers. This is especially
+    // important if mask contains callee-saved registers, which affect the
+    // frame size since we need to save/restore them. In the case where we
+    // have a copyBlk with GC pointers, can need to call the
+    // CORINFO_HELP_ASSIGN_BYREF helper, which kills callee-saved RSI and
+    // RDI, if LSRA doesn't assign RSI/RDI, they wouldn't get marked as
+    // modified until codegen, which is too late.
+    compiler->codeGen->regSet.rsSetRegsModified(mask DEBUGARG(true));
+
+    for (regMaskTP candidates = mask; candidates != RBM_NONE;)
     {
-        if (mask & 1)
+        regMaskTP candidateBit = genFindLowestBit(candidates);
+        regNumber reg          = genRegNumFromMask(candidateBit);
+        candidates &= ~candidateBit;
+        // This assumes that these are all "special" RefTypes that
+        // don't need to be recorded on the tree (hence treeNode is nullptr)
+        RefPosition* pos = newRefPosition(reg, currentLoc, refType, nullptr,
+                                          genRegMask(reg)); // This MUST occupy the physical register (obviously)
+
+        if (isLastUse)
         {
-            // This assumes that these are all "special" RefTypes that
-            // don't need to be recorded on the tree (hence treeNode is nullptr)
-            RefPosition* pos = newRefPosition(reg, currentLoc, refType, nullptr,
-                                              genRegMask(reg)); // This MUST occupy the physical register (obviously)
-
-            if (isLastUse)
-            {
-                pos->lastUse = true;
-            }
+            pos->lastUse = true;
         }
     }
 }

@@ -4440,6 +4440,9 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         resetRegState();
         setRegsInUse(liveRegs);
     }
+
+#ifdef TARGET_ARM
+
     for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord = getRegisterRecord(reg);
@@ -4472,7 +4475,6 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                     clearAssignedInterval(physRegRecord ARM_ARG(assignedInterval->registerType));
                 }
 
-#ifdef TARGET_ARM
                 // unassignPhysReg, above, may have restored a 'previousInterval', in which case we need to
                 // get the value of 'physRegRecord->assignedInterval' rather than using 'assignedInterval'.
                 if (physRegRecord->assignedInterval != nullptr)
@@ -4486,10 +4488,8 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                     reg = REG_NEXT(reg);
                     makeRegAvailable(reg, physRegRecord->registerType);
                 }
-#endif // TARGET_ARM
             }
         }
-#ifdef TARGET_ARM
         else
         {
             Interval* assignedInterval = physRegRecord->assignedInterval;
@@ -4501,8 +4501,46 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                 reg = REG_NEXT(reg);
             }
         }
-#endif // TARGET_ARM
     }
+#else
+    regMaskTP deadCandidates   = ~liveRegs;
+    regMaskTP deadCandidateBit = genFindLowestBit(deadCandidates);
+    regMaskTP maxCandidateBit  = 1ULL << (availableRegCount - 1);
+    while (deadCandidateBit < maxCandidateBit)
+    {
+        deadCandidateBit            = genFindLowestBit(deadCandidates);
+        regNumber  reg              = genRegNumFromMask(deadCandidateBit);
+        RegRecord* physRegRecord    = getRegisterRecord(reg);
+        deadCandidates &= ~deadCandidateBit;
+
+        makeRegAvailable(reg, physRegRecord->registerType);
+        Interval* assignedInterval = physRegRecord->assignedInterval;
+
+        if (assignedInterval != nullptr)
+        {
+            assert(assignedInterval->isLocalVar || assignedInterval->isConstant || assignedInterval->IsUpperVector());
+
+            if (!assignedInterval->isConstant && assignedInterval->assignedReg == physRegRecord)
+            {
+                assignedInterval->isActive = false;
+                if (assignedInterval->getNextRefPosition() == nullptr)
+                {
+                    unassignPhysReg(physRegRecord, nullptr);
+                }
+                if (!assignedInterval->IsUpperVector())
+                {
+                    inVarToRegMap[assignedInterval->getVarIndex(compiler)] = REG_STK;
+                }
+            }
+            else
+            {
+                // This interval may still be active, but was in another register in an
+                // intervening block.
+                clearAssignedInterval(physRegRecord ARM_ARG(assignedInterval->registerType));
+            }
+        }
+    }
+#endif // TARGET_ARM
 }
 
 //------------------------------------------------------------------------
