@@ -180,21 +180,28 @@ unsigned emitter::emitTotalIGExtend;
 
 unsigned emitter::emitTotalIDescSmallCnt;
 unsigned emitter::emitTotalIDescCnt;
-unsigned emitter::emitTotalIDescJmpCnt;
-#if !defined(TARGET_ARM64)
-unsigned emitter::emitTotalIDescLblCnt;
-#endif // !defined(TARGET_ARM64)
 unsigned emitter::emitTotalIDescCnsCnt;
 unsigned emitter::emitTotalIDescDspCnt;
-unsigned emitter::emitTotalIDescCnsDspCnt;
+#ifdef TARGET_ARM64
+unsigned emitter::emitTotalIDescLclVarPairCnt;
+unsigned emitter::emitTotalIDescLclVarPairCnsCnt;
+#endif // TARGET_ARM64
+#ifdef TARGET_ARM
+unsigned emitter::emitTotalIDescRelocCnt;
+#endif // TARGET_ARM
 #ifdef TARGET_XARCH
 unsigned emitter::emitTotalIDescAmdCnt;
 unsigned emitter::emitTotalIDescCnsAmdCnt;
 #endif // TARGET_XARCH
+unsigned emitter::emitTotalIDescCnsDspCnt;
+#if FEATURE_LOOP_ALIGN
+unsigned emitter::emitTotalIDescAlignCnt;
+#endif // FEATURE_LOOP_ALIGN
+unsigned emitter::emitTotalIDescJmpCnt;
+#if !defined(TARGET_ARM64)
+unsigned emitter::emitTotalIDescLblCnt;
+#endif // !defined(TARGET_ARM64)
 unsigned emitter::emitTotalIDescCGCACnt;
-#ifdef TARGET_ARM
-unsigned emitter::emitTotalIDescRelocCnt;
-#endif // TARGET_ARM
 
 unsigned emitter::emitSmallDspCnt;
 unsigned emitter::emitLargeDspCnt;
@@ -207,8 +214,6 @@ unsigned emitter::emitInt16CnsCnt;
 unsigned emitter::emitInt32CnsCnt;
 unsigned emitter::emitNegCnsCnt;
 unsigned emitter::emitPow2CnsCnt;
-
-unsigned emitter::emitTotalDescAlignCnt;
 
 void emitterStaticStats(FILE* fout)
 {
@@ -465,37 +470,45 @@ void emitterStats(FILE* fout)
         fprintf(fout, "A total of %8zu desc.  bytes\n", emitter::emitTotalIGsize);
         fprintf(fout, "\n");
 
-        fprintf(fout, "Total instructions:    %8u\n", emitter::emitTotalInsCnt);
-        fprintf(fout, "Total small instrDesc: %8u (%5.2f%%)\n", emitter::emitTotalIDescSmallCnt,
+        fprintf(fout, "Total instructions:           %8u\n", emitter::emitTotalInsCnt);
+        fprintf(fout, "Total small instrDesc:        %8u (%5.2f%%)\n", emitter::emitTotalIDescSmallCnt,
                 100.0 * emitter::emitTotalIDescSmallCnt / emitter::emitTotalInsCnt);
-        fprintf(fout, "Total instrDesc:       %8u (%5.2f%%)\n", emitter::emitTotalIDescCnt,
+        fprintf(fout, "Total instrDesc:              %8u (%5.2f%%)\n", emitter::emitTotalIDescCnt,
                 100.0 * emitter::emitTotalIDescCnt / emitter::emitTotalInsCnt);
-        fprintf(fout, "Total instrDescJmp:    %8u (%5.2f%%)\n", emitter::emitTotalIDescJmpCnt,
-                100.0 * emitter::emitTotalIDescJmpCnt / emitter::emitTotalInsCnt);
-#if !defined(TARGET_ARM64)
-        fprintf(fout, "Total instrDescLbl:    %8u (%5.2f%%)\n", emitter::emitTotalIDescLblCnt,
-                100.0 * emitter::emitTotalIDescLblCnt / emitter::emitTotalInsCnt);
-#endif // !defined(TARGET_ARM64)
-        fprintf(fout, "Total instrDescCns:    %8u (%5.2f%%)\n", emitter::emitTotalIDescCnsCnt,
+        fprintf(fout, "Total instrDescCns:           %8u (%5.2f%%)\n", emitter::emitTotalIDescCnsCnt,
                 100.0 * emitter::emitTotalIDescCnsCnt / emitter::emitTotalInsCnt);
-        fprintf(fout, "Total instrDescDsp:    %8u (%5.2f%%)\n", emitter::emitTotalIDescDspCnt,
+        fprintf(fout, "Total instrDescDsp:           %8u (%5.2f%%)\n", emitter::emitTotalIDescDspCnt,
                 100.0 * emitter::emitTotalIDescDspCnt / emitter::emitTotalInsCnt);
-        fprintf(fout, "Total instrDescCnsDsp: %8u (%5.2f%%)\n", emitter::emitTotalIDescCnsDspCnt,
-                100.0 * emitter::emitTotalIDescCnsDspCnt / emitter::emitTotalInsCnt);
-#ifdef TARGET_XARCH
-        fprintf(fout, "Total instrDescAmd:    %8u (%5.2f%%)\n", emitter::emitTotalIDescAmdCnt,
-                100.0 * emitter::emitTotalIDescAmdCnt / emitter::emitTotalInsCnt);
-        fprintf(fout, "Total instrDescCnsAmd: %8u (%5.2f%%)\n", emitter::emitTotalIDescCnsAmdCnt,
-                100.0 * emitter::emitTotalIDescCnsAmdCnt / emitter::emitTotalInsCnt);
-#endif // TARGET_XARCH
-        fprintf(fout, "Total instrDescCGCA:   %8u (%5.2f%%)\n", emitter::emitTotalIDescCGCACnt,
-                100.0 * emitter::emitTotalIDescCGCACnt / emitter::emitTotalInsCnt);
+#ifdef TARGET_ARM64
+        fprintf(fout, "Total instrDescLclVarPair:    %8u (%5.2f%%)\n", emitter::emitTotalIDescLclVarPairCnt,
+                100.0 * emitter::emitTotalIDescLclVarPairCnt / emitter::emitTotalInsCnt);
+        fprintf(fout, "Total instrDescLclVarPairCns: %8u (%5.2f%%)\n", emitter::emitTotalIDescLclVarPairCnsCnt,
+                100.0 * emitter::emitTotalIDescLclVarPairCnsCnt / emitter::emitTotalInsCnt);
+#endif // TARGET_ARM64
 #ifdef TARGET_ARM
-        fprintf(fout, "Total instrDescReloc:  %8u (%5.2f%%)\n", emitter::emitTotalIDescRelocCnt,
+        fprintf(fout, "Total instrDescReloc:         %8u (%5.2f%%)\n", emitter::emitTotalIDescRelocCnt,
                 100.0 * emitter::emitTotalIDescRelocCnt / emitter::emitTotalInsCnt);
 #endif // TARGET_ARM
-        fprintf(fout, "Total instrDescAlign:  %8u (%5.2f%%)\n", emitter::emitTotalDescAlignCnt,
-                100.0 * emitter::emitTotalDescAlignCnt / emitter::emitTotalInsCnt);
+#ifdef TARGET_XARCH
+        fprintf(fout, "Total instrDescAmd:           %8u (%5.2f%%)\n", emitter::emitTotalIDescAmdCnt,
+                100.0 * emitter::emitTotalIDescAmdCnt / emitter::emitTotalInsCnt);
+        fprintf(fout, "Total instrDescCnsAmd:        %8u (%5.2f%%)\n", emitter::emitTotalIDescCnsAmdCnt,
+                100.0 * emitter::emitTotalIDescCnsAmdCnt / emitter::emitTotalInsCnt);
+#endif // TARGET_XARCH
+        fprintf(fout, "Total instrDescCnsDsp:        %8u (%5.2f%%)\n", emitter::emitTotalIDescCnsDspCnt,
+                100.0 * emitter::emitTotalIDescCnsDspCnt / emitter::emitTotalInsCnt);
+#if FEATURE_LOOP_ALIGN
+        fprintf(fout, "Total instrDescAlign:         %8u (%5.2f%%)\n", emitter::emitTotalIDescAlignCnt,
+                100.0 * emitter::emitTotalIDescAlignCnt / emitter::emitTotalInsCnt);
+#endif // FEATURE_LOOP_ALIGN
+        fprintf(fout, "Total instrDescJmp:           %8u (%5.2f%%)\n", emitter::emitTotalIDescJmpCnt,
+                100.0 * emitter::emitTotalIDescJmpCnt / emitter::emitTotalInsCnt);
+#if !defined(TARGET_ARM64)
+        fprintf(fout, "Total instrDescLbl:           %8u (%5.2f%%)\n", emitter::emitTotalIDescLblCnt,
+                100.0 * emitter::emitTotalIDescLblCnt / emitter::emitTotalInsCnt);
+#endif // !defined(TARGET_ARM64)
+        fprintf(fout, "Total instrDescCGCA:          %8u (%5.2f%%)\n", emitter::emitTotalIDescCGCACnt,
+                100.0 * emitter::emitTotalIDescCGCACnt / emitter::emitTotalInsCnt);
 
         fprintf(fout, "\n");
     }

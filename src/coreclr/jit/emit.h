@@ -2754,6 +2754,9 @@ private:
 #if defined(TARGET_ARM64)
     instrDescLclVarPair* emitAllocInstrLclVarPair(emitAttr attr)
     {
+#if EMITTER_STATS
+        emitTotalIDescLclVarPairCnt++;
+#endif // EMITTER_STATS
         instrDescLclVarPair* result = (instrDescLclVarPair*)emitAllocAnyInstr(sizeof(instrDescLclVarPair), attr);
         result->idSetIsLclVarPair();
         return result;
@@ -2761,6 +2764,9 @@ private:
 
     instrDescLclVarPairCns* emitAllocInstrLclVarPairCns(emitAttr attr, cnsval_size_t cns)
     {
+#if EMITTER_STATS
+        emitTotalIDescLclVarPairCnsCnt++;
+#endif // EMITTER_STATS
         instrDescLclVarPairCns* result =
             (instrDescLclVarPairCns*)emitAllocAnyInstr(sizeof(instrDescLclVarPairCns), attr);
         result->idSetIsLargeCns();
@@ -2834,7 +2840,7 @@ private:
     instrDescAlign* emitAllocInstrAlign()
     {
 #if EMITTER_STATS
-        emitTotalDescAlignCnt++;
+        emitTotalIDescAlignCnt++;
 #endif // EMITTER_STATS
         return (instrDescAlign*)emitAllocAnyInstr(sizeof(instrDescAlign), EA_1BYTE);
     }
@@ -3175,21 +3181,28 @@ public:
 
     static unsigned emitTotalIDescSmallCnt;
     static unsigned emitTotalIDescCnt;
-    static unsigned emitTotalIDescJmpCnt;
-#if !defined(TARGET_ARM64)
-    static unsigned emitTotalIDescLblCnt;
-#endif // !defined(TARGET_ARM64)
     static unsigned emitTotalIDescCnsCnt;
     static unsigned emitTotalIDescDspCnt;
-    static unsigned emitTotalIDescCnsDspCnt;
+#ifdef TARGET_ARM64
+    static unsigned emitTotalIDescLclVarPairCnt;
+    static unsigned emitTotalIDescLclVarPairCnsCnt;
+#endif // TARGET_ARM64
+#ifdef TARGET_ARM
+    static unsigned emitTotalIDescRelocCnt;
+#endif // TARGET_ARM
 #ifdef TARGET_XARCH
     static unsigned emitTotalIDescAmdCnt;
     static unsigned emitTotalIDescCnsAmdCnt;
 #endif // TARGET_XARCH
+    static unsigned emitTotalIDescCnsDspCnt;
+#if FEATURE_LOOP_ALIGN
+    static unsigned emitTotalIDescAlignCnt;
+#endif // FEATURE_LOOP_ALIGN
+    static unsigned emitTotalIDescJmpCnt;
+#if !defined(TARGET_ARM64)
+    static unsigned emitTotalIDescLblCnt;
+#endif // !defined(TARGET_ARM64)
     static unsigned emitTotalIDescCGCACnt;
-#ifdef TARGET_ARM
-    static unsigned emitTotalIDescRelocCnt;
-#endif // TARGET_ARM
 
     static size_t emitTotMemAlloc;
 
@@ -3205,8 +3218,6 @@ public:
     static unsigned emitInt32CnsCnt;
     static unsigned emitNegCnsCnt;
     static unsigned emitPow2CnsCnt;
-
-    static unsigned emitTotalDescAlignCnt;
 
     static unsigned emitIFcounts[IF_COUNT];
 
