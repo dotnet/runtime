@@ -245,6 +245,11 @@ namespace System.Text.Json
                 // Note that this check works even when newCapacity overflowed thanks to the (uint) cast
                 if ((uint)newCapacity > MaxArrayLength) newCapacity = MaxArrayLength;
 
+                // If the maximum capacity has already been reached,
+                // then set the new capacity to be larger than what is possible
+                // so that ArrayPool.Rent throws an OutOfMemoryException for us.
+                if (newCapacity == toReturn.Length) newCapacity = int.MaxValue;
+
                 _data = ArrayPool<byte>.Shared.Rent(newCapacity);
                 Buffer.BlockCopy(toReturn, 0, _data, 0, toReturn.Length);
 
