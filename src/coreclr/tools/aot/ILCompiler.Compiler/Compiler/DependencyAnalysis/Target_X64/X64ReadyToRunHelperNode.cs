@@ -232,7 +232,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             ISymbolNode getInlinedThreadStaticBaseSlow = factory.HelperEntrypoint(HelperEntrypoint.GetInlinedThreadStaticBaseSlow);
             ISymbolNode tlsRoot = factory.TlsRoot;
-            bool singleFileExe = factory.CompilationModuleGroup.IsSingleFileCompilation;
+            // IsSingleFileCompilation is not enough to guarantee that we can use "Initial Executable" optimizations.
+            // we need a special compiler flag analogous to /GA. Just assume "false" for now.
+            // bool singleFileExe = factory.CompilationModuleGroup.IsSingleFileCompilation;
+            bool singleFileExe = false;
 
             if (factory.Target.IsWindows)
             {
@@ -293,7 +296,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     // data16 data16 rex.W callq __tls_get_addr@PLT
                     encoder.Builder.EmitBytes(new byte[] { 0x66, 0x66, 0x48, 0xE8 });
-                    encoder.Builder.EmitReloc(factory.ExternSymbol("__tls_get_addr"), RelocType.IMAGE_REL_BASED_REL32, -4);
+                    encoder.Builder.EmitReloc(factory.ExternSymbol("__tls_get_addr"), RelocType.IMAGE_REL_BASED_REL32);
 
                     encoder.EmitMOV(Register.RDI, Register.RAX);
                 }
