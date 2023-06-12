@@ -4508,9 +4508,9 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     regMaskTP maxCandidateBit  = 1ULL << (availableRegCount - 1);
     while (deadCandidateBit < maxCandidateBit)
     {
-        deadCandidateBit            = genFindLowestBit(deadCandidates);
-        regNumber  reg              = genRegNumFromMask(deadCandidateBit);
-        RegRecord* physRegRecord    = getRegisterRecord(reg);
+        deadCandidateBit         = genFindLowestBit(deadCandidates);
+        regNumber  reg           = genRegNumFromMask(deadCandidateBit);
+        RegRecord* physRegRecord = getRegisterRecord(reg);
         deadCandidates &= ~deadCandidateBit;
 
         makeRegAvailable(reg, physRegRecord->registerType);
