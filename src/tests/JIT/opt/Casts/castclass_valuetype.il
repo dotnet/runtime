@@ -23,17 +23,17 @@
     {
       // castclass valuetype
       ldc.i4.s 1234
-      box [System.Runtime]System.Int32
-      castclass [System.Runtime]System.Int32
-      unbox [System.Runtime]System.Int32
+      box int32
+      castclass int32
+      unbox int32
       call void [System.Runtime]System.Int32::ToString()
       call void [System.Console]System.Console::WriteLine(class [System.Runtime]System.String)
 
       // castclass nullable
       ldc.i4.s 1234
-      box [System.Runtime]System.Int32
-      castclass valuetype [System.Runtime]System.Nullable`1<[System.Runtime]System.Int32>
-      unbox [System.Runtime]System.Int32
+      box int32
+      castclass valuetype [System.Runtime]System.Nullable`1<int32>
+      unbox int32
       call void [System.Runtime]System.Int32::ToString()
       call void [System.Console]System.Console::WriteLine(class [System.Runtime]System.String)
 
