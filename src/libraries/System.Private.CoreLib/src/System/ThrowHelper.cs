@@ -700,7 +700,6 @@ namespace System
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedNumericsVectorBaseType<T>()
-            where T : struct
         {
             if (!Vector<T>.IsSupported)
             {
@@ -713,7 +712,6 @@ namespace System
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedIntrinsicsVector64BaseType<T>()
-            where T : struct
         {
             if (!Vector64<T>.IsSupported)
             {
@@ -726,7 +724,6 @@ namespace System
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedIntrinsicsVector128BaseType<T>()
-            where T : struct
         {
             if (!Vector128<T>.IsSupported)
             {
@@ -739,7 +736,6 @@ namespace System
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedIntrinsicsVector256BaseType<T>()
-            where T : struct
         {
             if (!Vector256<T>.IsSupported)
             {
@@ -752,7 +748,6 @@ namespace System
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedIntrinsicsVector512BaseType<T>()
-            where T : struct
         {
             if (!Vector512<T>.IsSupported)
             {

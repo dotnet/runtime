@@ -256,6 +256,8 @@ namespace ILCompiler
 
         public ProfileDataManager ProfileData => _profileData;
 
+        public bool DeterminismCheckFailed { get; set; }
+
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
         private readonly int _customPESectionAlignment;
@@ -806,9 +808,9 @@ namespace ILCompiler
                     Logger.Writer.WriteLine("Compiling " + methodName);
                 }
 
-                if (_printReproInstructions != null)
+                if (_nodeFactory.OptimizationFlags.PrintReproArgs)
                 {
-                    Logger.Writer.WriteLine($"Single method repro args:{_printReproInstructions(method)}");
+                    Logger.Writer.WriteLine($"Single method repro args:{GetReproInstructions(method)}");
                 }
 
                 try
@@ -884,6 +886,11 @@ namespace ILCompiler
         public override void Dispose()
         {
             Array.Clear(_corInfoImpls);
+        }
+
+        public string GetReproInstructions(MethodDesc method)
+        {
+            return _printReproInstructions(method);
         }
     }
 }

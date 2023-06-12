@@ -6713,6 +6713,10 @@ struct GenTreeVecCon : public GenTree
     {
         assert(varTypeIsSIMD(type));
 
+        // Some uses of GenTreeVecCon do not specify all bits in the vector they are using but failing to zero out the
+        // buffer will cause determinism issues with the compiler.
+        memset(&gtSimdVal, 0, sizeof(gtSimdVal));
+
 #if defined(TARGET_XARCH)
         assert(sizeof(simd_t) == sizeof(simd64_t));
 #else
