@@ -24,6 +24,7 @@ static unsafe class UnsafeAccessorsTests
         public const string MethodVoidName = nameof(_mvv);
         public const string MethodNameAmbiguous = nameof(_Ambiguous);
         public const string MethodPointerName = nameof(_Pointer);
+        public const string MethodCallConvBitsName = nameof(_CallConvBits);
 
         private static string _F = PrivateStatic;
         private string _f;
@@ -43,11 +44,15 @@ static unsafe class UnsafeAccessorsTests
         private string Prop { get; init; }
 
         // Used to validate ambiguity is handled via custom modifiers.
-        private string _Ambiguous(delegate* unmanaged[Cdecl, MemberFunction]<void> fptr) { return nameof(CallConvCdecl); }
-        private string _Ambiguous(delegate* unmanaged[Stdcall, MemberFunction]<void> fptr) { return nameof(CallConvStdcall); }
+        private string _Ambiguous(delegate* unmanaged[Cdecl, MemberFunction]<void> fptr) => nameof(CallConvCdecl);
+        private string _Ambiguous(delegate* unmanaged[Stdcall, MemberFunction]<void> fptr) => nameof(CallConvStdcall);
 
         // Used to validate pointer values.
         private static string _Pointer(void* ptr) => "void*";
+
+        // Used to validate the embedded callconv bits (non-unmanaged bit) in
+        // ECMA-335 signatures for methods.
+        private static string _CallConvBits(delegate* unmanaged[Cdecl]<void> fptr) => nameof(CallConvCdecl);
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -347,6 +352,10 @@ static unsafe class UnsafeAccessorsTests
             isNativeAot ? null : UserDataClass.MethodPointerName,
             () => CallPointerMethod(null, null));
 
+        AssertExtensions.ThrowsMissingMemberException<MissingMethodException>(
+            isNativeAot ? null : UserDataClass.MethodCallConvBitsName,
+            () => CallCallConvBitsMethod(null, null));
+
         Assert.Throws<AmbiguousMatchException>(
             () => CallAmbiguousMethod(CallPrivateConstructorClass(), null));
 
@@ -365,6 +374,12 @@ static unsafe class UnsafeAccessorsTests
         // Pointers generally degrade to `void*`, but that isn't true for UnsafeAccessor signature validation.
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name=UserDataClass.MethodPointerName)]
         extern static string CallPointerMethod(UserDataClass d, delegate* unmanaged[Stdcall]<void> fptr);
+
+        // This is used to validate the ECMA-335 calling convention bits are checked
+        // before checking the custom modifiers that encode the calling conventions
+        // when there is more than one or one option doesn't have an existing bit.
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name=UserDataClass.MethodCallConvBitsName)]
+        extern static string CallCallConvBitsMethod(UserDataClass d, delegate* unmanaged[Cdecl, SuppressGCTransition]<void> fptr);
 
         // This is an ambiguous match since there are two methods each with two custom modifiers.
         // Therefore the default "ignore custom modifiers" logic fails. The fallback is for a
