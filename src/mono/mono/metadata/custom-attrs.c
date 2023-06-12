@@ -91,7 +91,7 @@ lookup_custom_attr (MonoImage *image, gpointer member)
 }
 
 static gboolean
-custom_attr_visible (MonoImage *image, MonoReflectionCustomAttrHandle cattr, MonoReflectionMethodHandle ctor_handle, MonoMethod **ctor_method)
+custom_attr_visible (MonoImage *target_image, MonoReflectionCustomAttrHandle cattr, MonoReflectionMethodHandle ctor_handle, MonoMethod **ctor_method)
 // ctor_handle is local to this function, allocated by its caller for efficiency.
 {
 	MONO_REQ_GC_UNSAFE_MODE;
@@ -101,10 +101,13 @@ custom_attr_visible (MonoImage *image, MonoReflectionCustomAttrHandle cattr, Mon
 
 	/* FIXME: Need to do more checks */
 	if (*ctor_method) {
-		MonoClass *klass = (*ctor_method)->klass;
-		if (m_class_get_image (klass) != image) {
-			const int visibility = (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_VISIBILITY_MASK);
-			if ((visibility != TYPE_ATTRIBUTE_PUBLIC) && (visibility != TYPE_ATTRIBUTE_NESTED_PUBLIC))
+		MonoClass *cattr_klass = (*ctor_method)->klass;
+		MonoImage *cattr_image = m_class_get_image (cattr_klass);
+		// To determine the visibility of a custom attribute we need to compare assembly images of the source: custom attribute, and the target: type/module/assembly
+		// This is required as a module has a different MonoImage compared to its owning assembly.
+		if (cattr_image->assembly->image != target_image->assembly->image) {
+			const int cattr_visibility = (mono_class_get_flags (cattr_klass) & TYPE_ATTRIBUTE_VISIBILITY_MASK);
+			if ((cattr_visibility != TYPE_ATTRIBUTE_PUBLIC) && (cattr_visibility != TYPE_ATTRIBUTE_NESTED_PUBLIC))
 				return FALSE;
 		}
 	}
