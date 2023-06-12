@@ -586,9 +586,14 @@ namespace Internal.TypeSystem
             return ResolveVariantInterfaceMethodToVirtualMethodOnType(interfaceMethod, (MetadataType)currentType);
         }
 
-        public override MethodDesc ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType, Func<TypeDesc, bool> inVersionBubble)
+        public override MethodDesc ResolveInterfaceMethodToStaticVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType)
         {
-            return ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod, (MetadataType)currentType, inVersionBubble);
+            return ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod, (MetadataType)currentType);
+        }
+
+        public override MethodDesc ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType)
+        {
+            return ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod, (MetadataType)currentType);
         }
 
         //////////////////////// INTERFACE RESOLUTION
@@ -914,22 +919,13 @@ namespace Internal.TypeSystem
         /// <param name="interfaceMethod">Interface method to resolve</param>
         /// <param name="currentType">Type to attempt virtual static method resolution on</param>
         /// <returns>MethodDesc of the resolved virtual static method, null when not found (runtime lookup must be used)</returns>
-        public static MethodDesc ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType, Func<TypeDesc, bool> inVersionBubble)
+        public static MethodDesc ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType)
         {
             TypeDesc interfaceType = interfaceMethod.OwningType;
-            if (!inVersionBubble(interfaceType))
-            {
-                return null;
-            }
 
             // Search for match on a per-level in the type hierarchy
             for (TypeDesc typeToCheck = currentType; typeToCheck != null; typeToCheck = typeToCheck.BaseType)
             {
-                if (!inVersionBubble(typeToCheck))
-                {
-                    return null;
-                }
-
                 MethodDesc resolvedMethodOnType = TryResolveVirtualStaticMethodOnThisType(typeToCheck, interfaceMethod);
                 if (resolvedMethodOnType != null)
                 {
@@ -954,12 +950,6 @@ namespace Internal.TypeSystem
 
                     if (runtimeInterfaceType.CanCastTo(interfaceType))
                     {
-                        if (!inVersionBubble(runtimeInterfaceType))
-                        {
-                            // Fail the resolution if a candidate variant interface match is outside of the version bubble
-                            return null;
-                        }
-
                         // Attempt to resolve on variance matched interface
                         MethodDesc runtimeInterfaceMethod = TryResolveInterfaceMethodOnVariantCompatibleInterface(runtimeInterfaceType, interfaceMethod);
 

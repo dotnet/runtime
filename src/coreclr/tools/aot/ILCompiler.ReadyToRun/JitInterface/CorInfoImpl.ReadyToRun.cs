@@ -1891,7 +1891,7 @@ namespace Internal.JitInterface
                 MethodDesc directMethod;
                 if (isStaticVirtual)
                 {
-                    directMethod = constrainedType.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(originalMethod, _compilation.CompilationModuleGroup.VersionsWithType);
+                    directMethod = constrainedType.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(originalMethod);
                     if (directMethod == null)
                     {
                         throw new RequiresRuntimeJitException(originalMethod.ToString());
