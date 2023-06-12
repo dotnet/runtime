@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Type? scoped = VisitCallSite(callSite, default);
             if (scoped != null)
             {
-                _scopedServices[GetCacheKey(callSite)] = scoped;
+                _scopedServices[callSite.Cache.Key] = scoped;
             }
         }
 
@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             Type serviceType = callSite.ServiceType;
             if (ReferenceEquals(scope, rootScope)
-                && _scopedServices.TryGetValue(GetCacheKey(callSite), out Type? scopedService))
+                && _scopedServices.TryGetValue(callSite.Cache.Key, out Type? scopedService))
             {
                 if (serviceType == scopedService)
                 {
@@ -97,12 +97,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         protected override Type? VisitServiceProvider(ServiceProviderCallSite serviceProviderCallSite, CallSiteValidatorState state) => null;
 
         protected override Type? VisitFactory(FactoryCallSite factoryCallSite, CallSiteValidatorState state) => null;
-
-        private static ServiceCacheKey GetCacheKey(ServiceCallSite callSite)
-        {
-            return callSite.Cache.Key.Equals(ServiceCacheKey.Empty)
-                ? new ServiceCacheKey(callSite.ServiceType, 0) : callSite.Cache.Key;
-        }
 
         internal struct CallSiteValidatorState
         {
