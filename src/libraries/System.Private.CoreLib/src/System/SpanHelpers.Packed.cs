@@ -114,7 +114,7 @@ namespace System
             {
                 ref short currentSearchSpace = ref searchSpace;
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else condition for this if statement is identical in semantics to Avx2 specific code
-                if (Avx512F.IsSupported && length > Vector512<short>.Count)
+                if (Avx512BW.IsSupported && Vector512.IsHardwareAccelerated && length > Vector512<short>.Count)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     Vector512<byte> packedValue = Vector512.Create((byte)value);
@@ -314,7 +314,7 @@ namespace System
                 ref short currentSearchSpace = ref searchSpace;
 
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else condition for this if statement is identical in semantics to Avx2 specific code
-                if (Avx512F.IsSupported && length > Vector512<short>.Count)
+                if (Avx512BW.IsSupported && Vector512.IsHardwareAccelerated && length > Vector512<short>.Count)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     Vector512<byte> packedValue = Vector512.Create((byte)value);
@@ -526,7 +526,7 @@ namespace System
             {
                 ref short currentSearchSpace = ref searchSpace;
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else condition for this if statement is identical in semantics to Avx2 specific code
-                if (Avx512F.IsSupported && length > Vector512<short>.Count)
+                if (Avx512BW.IsSupported && Vector512.IsHardwareAccelerated && length > Vector512<short>.Count)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     Vector512<byte> packedValue0 = Vector512.Create((byte)value0);
@@ -743,7 +743,7 @@ namespace System
                 ref short currentSearchSpace = ref searchSpace;
 
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else condition for this if statement is identical in semantics to Avx2 specific code
-                if (Avx512F.IsSupported && length > Vector512<short>.Count)
+                if (Avx512BW.IsSupported && Vector512.IsHardwareAccelerated && length > Vector512<short>.Count)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     Vector512<byte> packedValue0 = Vector512.Create((byte)value0);
@@ -945,7 +945,7 @@ namespace System
                 ref short currentSearchSpace = ref searchSpace;
 
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else condition for this if statement is identical in semantics to Avx2 specific code
-                if (Avx512F.IsSupported && length > Vector512<short>.Count)
+                if (Avx512BW.IsSupported && Vector512.IsHardwareAccelerated && length > Vector512<short>.Count)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     Vector512<byte> lowVector = Vector512.Create((byte)lowInclusive);
@@ -1119,15 +1119,15 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Avx512F))]
+        [CompExactlyDependsOn(typeof(Avx512BW))]
         private static Vector512<byte> PackSources(Vector512<short> source0, Vector512<short> source1)
         {
-            Debug.Assert(Vector512.IsHardwareAccelerated);
+            Debug.Assert(Avx512BW.IsSupported);
             // Pack two vectors of characters into bytes. While the type is Vector256<short>, these are really UInt16 characters.
             // X86: Downcast every character using saturation.
             // - Values <= 32767 result in min(value, 255).
             // - Values  > 32767 result in 0. Because of this we can't accept needles that contain 0.
-            return Vector512.Narrow(source0, source1).AsByte();
+            return Avx512BW.PackUnsignedSaturate(source0, source1).AsByte();
             //return Avx512BW.PackUnsignedSaturate(source0, source1).AsByte();
         }
 
@@ -1191,8 +1191,7 @@ namespace System
         [CompExactlyDependsOn(typeof(Avx512F))]
         private static int ComputeFirstIndex(ref short searchSpace, ref short current, Vector512<byte> equals)
         {
-            //ulong notEqualsElements = FixUpPackedVector512Result(equals).ExtractMostSignificantBits();
-            ulong notEqualsElements = equals.ExtractMostSignificantBits();
+            ulong notEqualsElements = FixUpPackedVector512Result(equals).ExtractMostSignificantBits();
             int index = BitOperations.TrailingZeroCount(notEqualsElements);
             return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(short));
         }
@@ -1251,6 +1250,18 @@ namespace System
             // We want to swap the X and Y bits
             // 1, 1, 1, 1, 1, 1, 1, 1, X, X, X, X, X, X, X, X, Y, Y, Y, Y, Y, Y, Y, Y, 2, 2, 2, 2, 2, 2, 2, 2
             return Avx2.Permute4x64(result.AsInt64(), 0b_11_01_10_00).AsByte();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx512F))]
+        private static Vector512<byte> FixUpPackedVector512Result(Vector512<byte> result)
+        {
+            Debug.Assert(Avx512F.IsSupported);
+            // Avx512BW.PackUnsignedSaturate(Vector512.Create((short)1), Vector512.Create((short)2)) will result in
+            // 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2
+            // We want to swap the X and Y bits
+            // 1, 1, 1, 1, 1, 1, 1, 1, X, X, X, X, X, X, X, X, Y, Y, Y, Y, Y, Y, Y, Y, 2, 2, 2, 2, 2, 2, 2, 2
+            return Avx512F.PermuteVar8x64(result.AsInt64(), Vector512.Create((long)0, 2, 4, 6, 1, 3, 5, 7)).AsByte();
         }
     }
 }
