@@ -180,7 +180,6 @@ namespace System.Buffers
         /// <param name="startIndex">The index to start in this builder.</param>
         /// <param name="length">The number of characters to read in this builder.</param>
         public static ReadOnlySequence<char> AsSequence(this StringBuilder source, int startIndex, int length)
-        //=> AsSequence(source).Slice(startIndex, length);
         {
             int currentLength = source.Length;
             ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
@@ -208,36 +207,30 @@ namespace System.Buffers
                 memory = enumerator.Current;
                 currentLength -= memory.Length;
             }
-            while (currentLength >= endIndex);
+            while (endIndex <= currentLength);
 
             {
-                if (startIndex - currentLength is int memoryIndex && memoryIndex >= 0)
+                if (startIndex - currentLength is int memoryIndex && memoryIndex >= 0) // SingleSegment
                 {
-                    // SingleSegment
                     memory = memory.Slice(memoryIndex, length);
                     return new ReadOnlySequence<char>(memory);
                 }
             }
 
-            memory = memory.Slice(0, endIndex - currentLength);
-            ReadOnlyMemorySegment<char> endSegment = new ReadOnlyMemorySegment<char>(
-                memory, currentLength - startIndex);
+            endIndex -= currentLength;
+            ReadOnlyMemorySegment<char> endSegment = new ReadOnlyMemorySegment<char>(memory, currentLength);
 
             ReadOnlyMemorySegment<char> startSegment = endSegment;
-            while (true)
+            do
             {
                 enumerator.MoveNext(); // Always true;
                 memory = enumerator.Current;
-                currentLength -= memory.Length;
-                if (currentLength <= startIndex)
-                    break;
                 startSegment = new ReadOnlyMemorySegment<char>(memory, startSegment);
+                currentLength -= memory.Length;
             }
+            while (startIndex < currentLength);
 
-            memory = memory.Slice(startIndex - currentLength);
-            startSegment = new ReadOnlyMemorySegment<char>(memory, startSegment);
-
-            return new ReadOnlySequence<char>(startSegment, 0, endSegment, endSegment.Memory.Length);
+            return new ReadOnlySequence<char>(startSegment, startIndex - currentLength, endSegment, endIndex);
         }
     }
 }

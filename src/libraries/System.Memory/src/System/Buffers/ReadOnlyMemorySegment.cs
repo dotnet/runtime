@@ -16,9 +16,6 @@ namespace System.Buffers
             Memory = memory;
             Next = next;
             RunningIndex = next.RunningIndex - memory.Length;
-
-            if (RunningIndex < 0)
-                ArgumentOutOfRangeException.ThrowIfNegative(RunningIndex);
         }
 
         /// <summary>
@@ -26,9 +23,6 @@ namespace System.Buffers
         /// </summary>
         public ReadOnlyMemorySegment(ReadOnlyMemory<T> memory, long runningIndex)
         {
-            if (runningIndex < 0)
-                ArgumentOutOfRangeException.ThrowIfNegative(runningIndex);
-
             Memory = memory;
             RunningIndex = runningIndex;
         }
