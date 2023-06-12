@@ -1358,6 +1358,7 @@ void ReplaceVisitor::LoadStoreAroundCall(GenTreeCall* call, GenTree* user)
             if ((m_aggregates[argNodeLcl->GetLclNum()] != nullptr) && IsPromotedStructLocalDying(argNodeLcl))
             {
                 argNodeLcl->gtFlags |= GTF_VAR_DEATH;
+                CheckForwardSubForLastUse(argNodeLcl->GetLclNum());
             }
         }
     }
@@ -1498,7 +1499,11 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
         *use = m_compiler->gtNewLclvNode(rep.LclNum, accessType);
     }
 
-    (*use)->gtFlags |= lcl->gtFlags & GTF_VAR_DEATH;
+    if ((lcl->gtFlags & GTF_VAR_DEATH) != 0)
+    {
+        (*use)->gtFlags |= GTF_VAR_DEATH;
+        CheckForwardSubForLastUse(rep.LclNum);
+    }
 
     if (isDef)
     {
@@ -1538,6 +1543,30 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
     }
 
     m_madeChanges = true;
+}
+
+//------------------------------------------------------------------------
+// CheckForwardSubForLastUse:
+//   Indicate that a local has a last use in the current statement and that
+//   there thus may be a forward substitution opportunity.
+//
+// Parameters:
+//   lclNum - The local number with a last use in this statement.
+//
+void ReplaceVisitor::CheckForwardSubForLastUse(unsigned lclNum)
+{
+    if (m_currentBlock->firstStmt() == m_currentStmt)
+    {
+        return;
+    }
+
+    Statement* prevStmt = m_currentStmt->GetPrevStmt();
+    GenTree*   prevNode = prevStmt->GetRootNode();
+
+    if (prevNode->OperIsLocalStore() && (prevNode->AsLclVarCommon()->GetLclNum() == lclNum))
+    {
+        m_mayHaveForwardSub = true;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1780,7 +1809,7 @@ PhaseStatus Promotion::Run()
         for (Statement* stmt : bb->Statements())
         {
             DISPSTMT(stmt);
-            replacer.StartStatement();
+            replacer.StartStatement(stmt);
             replacer.WalkTree(stmt->GetRootNodePointer(), nullptr);
 
             if (replacer.MadeChanges())
@@ -1789,6 +1818,15 @@ PhaseStatus Promotion::Run()
                 m_compiler->gtUpdateStmtSideEffects(stmt);
                 JITDUMP("New statement:\n");
                 DISPSTMT(stmt);
+            }
+
+            if (replacer.MayHaveForwardSubOpportunity())
+            {
+                JITDUMP("Invoking forward sub due to a potential opportunity\n");
+                while ((stmt != bb->firstStmt()) && m_compiler->fgForwardSubStatement(stmt->GetPrevStmt()))
+                {
+                    m_compiler->fgRemoveStmt(bb, stmt->GetPrevStmt());
+                }
             }
         }
 
