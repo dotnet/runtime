@@ -43,14 +43,6 @@ namespace ILCompiler
         {
             var builder = default(ArrayBuilder<KeyValuePair<string, string>>);
 
-            if (_optimizationMode != OptimizationMode.PreferSize)
-            {
-                // Enable GDV with multiple guesses - it's useful even without PGO as we can still
-                // devirtualize virtual calls when we know that the number of their targets is limited.
-                // It can be overridden by --codegenopt:JitGuardedDevirtualizationMaxTypeChecks=X
-                builder.Add(new KeyValuePair<string, string>("JitGuardedDevirtualizationMaxTypeChecks", "3"));
-            }
-
             foreach (string param in options)
             {
                 int indexOfEquals = param.IndexOf('=');
