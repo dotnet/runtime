@@ -60,7 +60,6 @@ export async function mono_wasm_init_diagnostics(): Promise<void> {
             }
         }
     }
-
 }
 
 function boolsyOption(x: string | boolean): boolean {
