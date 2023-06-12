@@ -951,7 +951,7 @@ namespace Internal.TypeSystem
                     if (runtimeInterfaceType.CanCastTo(interfaceType))
                     {
                         // Attempt to resolve on variance matched interface
-                        MethodDesc runtimeInterfaceMethod = TryResolveInterfaceMethodOnVariantCompatibleInterface(runtimeInterfaceType, interfaceMethod);
+                        MethodDesc runtimeInterfaceMethod = runtimeInterfaceType.FindMethodOnExactTypeWithMatchingTypicalMethod(interfaceMethod);
 
                         if (runtimeInterfaceMethod != null)
                         {
@@ -997,16 +997,16 @@ namespace Internal.TypeSystem
             {
                 foreach (MethodImplRecord methodImpl in mdType.FindMethodsImplWithMatchingDeclName(interfaceMethod.Name) ?? Array.Empty<MethodImplRecord>())
                 {
-                    if (methodImpl.Decl == interfaceMethod)
+                    if (methodImpl.Decl == interfaceMethod.GetMethodDefinition())
                     {
                         MethodDesc resolvedMethodImpl = methodImpl.Body;
                         if (resolvedMethodImpl.OwningType != mdType)
                         {
                             ThrowHelper.ThrowMissingMethodException(constrainedType, resolvedMethodImpl.Name, resolvedMethodImpl.Signature);
                         }
-                        if (interfaceMethod.HasInstantiation || methodImpl.Body.HasInstantiation || constrainedType.HasInstantiation)
+                        if (interfaceMethod.HasInstantiation)
                         {
-                            resolvedMethodImpl = resolvedMethodImpl.InstantiateSignature(constrainedType.Instantiation, interfaceMethod.Instantiation);
+                            resolvedMethodImpl = resolvedMethodImpl.MakeInstantiatedMethod(interfaceMethod.Instantiation);
                         }
                         if (resolvedMethodImpl != null)
                         {
