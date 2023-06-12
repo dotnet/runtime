@@ -4457,6 +4457,74 @@
     "any",
     "base"
   ],
+  "debian.12": [
+    "debian.12",
+    "debian",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "debian.12-arm": [
+    "debian.12-arm",
+    "debian.12",
+    "debian-arm",
+    "debian",
+    "linux-arm",
+    "linux",
+    "unix-arm",
+    "unix",
+    "any",
+    "base"
+  ],
+  "debian.12-arm64": [
+    "debian.12-arm64",
+    "debian.12",
+    "debian-arm64",
+    "debian",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "debian.12-armel": [
+    "debian.12-armel",
+    "debian.12",
+    "debian-armel",
+    "debian",
+    "linux-armel",
+    "linux",
+    "unix-armel",
+    "unix",
+    "any",
+    "base"
+  ],
+  "debian.12-x64": [
+    "debian.12-x64",
+    "debian.12",
+    "debian-x64",
+    "debian",
+    "linux-x64",
+    "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "debian.12-x86": [
+    "debian.12-x86",
+    "debian.12",
+    "debian-x86",
+    "debian",
+    "linux-x86",
+    "linux",
+    "unix-x86",
+    "unix",
+    "any",
+    "base"
+  ],
   "debian.8": [
     "debian.8",
     "debian",
