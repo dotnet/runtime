@@ -3639,7 +3639,7 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     Agnostic_GetThreadLocalStaticBlocksInfo value;
     ZeroMemory(&value, sizeof(value));
 
-#ifdef _MSC_VER
+#ifdef TARGET_WINDOWS
     value.tlsIndex.handle                       = CastHandle(pInfo->tlsIndex.addr);
     value.tlsIndex.accessType                   = pInfo->tlsIndex.accessType;
     value.offsetOfMaxThreadStaticBlocks         = pInfo->offsetOfMaxThreadStaticBlocks;
@@ -3649,7 +3649,7 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     value.tlsGetAddrFtnPtr                      = pInfo->tlsGetAddrFtnPtr;
     value.descrAddrOfMaxThreadStaticBlock       = pInfo->descrAddrOfMaxThreadStaticBlock;
     value.offsetOfThreadStaticBlocks         = pInfo->offsetOfThreadStaticBlocks;
-#endif
+#endif // TARGET_WINDOWS
     value.offsetOfGCDataPointer                 = pInfo->offsetOfGCDataPointer;
 
     // This data is same for entire process, so just add it against key '0'.
@@ -3660,7 +3660,7 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
 
 void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value)
 {
-#ifdef _MSC_VER
+#ifdef TARGET_WINDOWS
     printf("GetThreadLocalStaticBlocksInfo key %u, value tlsIndex-%016" PRIX64
            ", offsetOfThreadLocalStoragePointer-%u, offsetOfMaxThreadStaticBlocks-%u"
            ", offsetOfThreadStaticBlocks-%u offsetOfGCDataPointer-%u",
@@ -3670,7 +3670,7 @@ void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_
     printf("GetThreadLocalStaticBlocksInfo key %u, value tlsGetAddrFtnPtr-%016" PRIX64
            ", descrAddrOfMaxThreadStaticBlock-%lu, offsetOfThreadStaticBlocks-%u",
            key, value.tlsGetAddrFtnPtr, value.descrAddrOfMaxThreadStaticBlock, value.offsetOfThreadStaticBlocks);
-#endif
+#endif // TARGET_WINDOWS
 }
 
 void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)

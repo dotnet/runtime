@@ -1152,8 +1152,8 @@ namespace Internal.JitInterface
     {
         public CORINFO_CONST_LOOKUP tlsIndex;
         public uint offsetOfThreadLocalStoragePointer;
-        public ulong tlsGetAddrFtnPtr;
-        public ulong descrAddrOfMaxThreadStaticBlock;
+        public nuint tlsGetAddrFtnPtr;
+        public nuint descrAddrOfMaxThreadStaticBlock;
         public CORINFO_CONST_LOOKUP offsetOfMaxThreadStaticBlocks;
         public CORINFO_CONST_LOOKUP offsetOfThreadStaticBlocks;
         public CORINFO_CONST_LOOKUP offsetOfGCDataPointer;
