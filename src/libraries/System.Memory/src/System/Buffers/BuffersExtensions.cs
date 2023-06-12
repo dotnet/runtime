@@ -210,7 +210,8 @@ namespace System.Buffers
             while (endIndex <= currentLength);
 
             {
-                if (startIndex - currentLength is int memoryIndex && memoryIndex >= 0) // SingleSegment
+                int memoryIndex = startIndex - currentLength;
+                if (memoryIndex >= 0) // SingleSegment
                 {
                     memory = memory.Slice(memoryIndex, length);
                     return new ReadOnlySequence<char>(memory);
