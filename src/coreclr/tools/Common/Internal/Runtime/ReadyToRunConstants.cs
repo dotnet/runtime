@@ -105,6 +105,11 @@ namespace Internal.ReadyToRunConstants
         MoreThanTwo = 3
     }
 
+    public enum ReadyToRunEnclosingTypeMap : uint
+    {
+        MaxTypeCount = 0xFFFE
+    }
+
     public enum DictionaryEntryKind
     {
         EmptySlot = 0,

@@ -141,6 +141,11 @@ enum class ReadyToRunGenericInfoGenericCount : uint32_t
     MoreThanTwo = 3
 };
 
+enum class ReadyToRunEnclosingTypeMap
+{
+    MaxTypeCount = 0xFFFE
+};
+
 //
 // READYTORUN_IMPORT_SECTION describes image range with references to code or runtime data structures
 //

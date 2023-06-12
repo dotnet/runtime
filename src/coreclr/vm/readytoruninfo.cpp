@@ -1798,6 +1798,7 @@ const ReadyToRun_MethodIsGenericMap ReadyToRun_MethodIsGenericMap::EmptyInstance
 mdTypeDef ReadyToRun_EnclosingTypeMap::GetEnclosingType(mdTypeDef input, IMDInternalImport* pImport) const
 {
     uint32_t rid = RidFromToken(input);
+    _ASSERTE(TypeCount <= (uint32_t)ReadyToRunEnclosingTypeMap::MaxTypeCount);
     if ((rid > TypeCount) || (rid == 0))
     {
         mdTypeDef enclosingType;
@@ -1818,6 +1819,7 @@ mdTypeDef ReadyToRun_EnclosingTypeMap::GetEnclosingType(mdTypeDef input, IMDInte
 HRESULT ReadyToRun_EnclosingTypeMap::GetEnclosingTypeNoThrow(mdTypeDef input, mdTypeDef *pEnclosingType, IMDInternalImport* pImport) const
 {
     uint32_t rid = RidFromToken(input);
+    _ASSERTE(TypeCount <= (uint32_t)ReadyToRunEnclosingTypeMap::MaxTypeCount);
     if ((rid > TypeCount) || (rid == 0))
     {
         return pImport->GetNestedClassProps(input, pEnclosingType);
@@ -1942,7 +1944,7 @@ bool ReadyToRun_MethodIsGenericMap::IsGeneric(mdMethodDef input, bool *foundResu
         return 0;
     }
 
-    uint8_t chunk = ((uint8_t*)&MethodCount)[((rid - 1) / 8) + 4];
+    uint8_t chunk = ((uint8_t*)&MethodCount)[((rid - 1) / 8) + sizeof(uint32_t)];
     chunk >>= 7 - ((rid - 1) % 8);
     return !!(chunk & 1);
 }

@@ -20,19 +20,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public EnclosingTypeMapNode(EcmaModule module) : base(module)
         {
             _metadata = module.MetadataReader;
-            // This map is only valid for assemblies with <= 0xFFFE types defined within
+            // This map is only valid for assemblies with <= ReadyToRunEnclosingTypeMap.MaxTypeCount types defined within
             if (!IsSupported(_metadata))
-                throw new InternalCompilerErrorException("EnclosingTypeMap made for assembly with more than 0xFFFE types");
+                throw new InternalCompilerErrorException($"EnclosingTypeMap made for assembly with more than 0x{(uint)ReadyToRunEnclosingTypeMap.MaxTypeCount:x} types");
         }
 
         public static bool IsSupported(MetadataReader metadata)
         {
-            // This map is only valid for assemblies with <= 0xFFFE types defined within
+            // This map is only valid for assemblies with <= ReadyToRunEnclosingTypeMap.MaxTypeCount types defined within
             // and really shouldn't be generated for tiny assemblies, as the map provides very little to no value
             // in those situations
             int typeDefinitionCount = metadata.TypeDefinitions.Count;
 
-            return ((typeDefinitionCount > 10) && (typeDefinitionCount <= 0xFFFE));
+            return ((typeDefinitionCount > 10) && (typeDefinitionCount <= (int)ReadyToRunEnclosingTypeMap.MaxTypeCount));
         }
 
         public override int ClassCode => 990540812;
@@ -48,8 +48,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.AddSymbol(this);
 
-            // This map is only valid for assemblies with <= 0xFFFE types defined within
-            Debug.Assert(_metadata.TypeDefinitions.Count <= 0xFFFE);
+            // This map is only valid for assemblies with <= ReadyToRunEnclosingTypeMap.MaxTypeCount types defined within
+            Debug.Assert(_metadata.TypeDefinitions.Count <= (int)ReadyToRunEnclosingTypeMap.MaxTypeCount);
             builder.EmitUShort(checked((ushort)_metadata.TypeDefinitions.Count));
 
             foreach (var typeDefinitionHandle in _metadata.TypeDefinitions)

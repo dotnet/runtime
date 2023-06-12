@@ -161,6 +161,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     if (factory.OptimizationFlags.TypeValidation == TypeValidationRule.AutomaticWithLogging)
                     {
+                        // If we are in automatic with logging mode, we reach here when we are unable to enable
+                        // skip validation. When logging is enabled, write out the reasons we found for
+                        // not doing so.
                         foreach (string reason in _shouldAddSkipTypeValidationFlag.Result.reasons)
                             System.Console.WriteLine(reason);
                     }
