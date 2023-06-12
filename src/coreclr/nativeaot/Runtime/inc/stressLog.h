@@ -488,34 +488,21 @@ public:
 #endif
 
 //==========================================================================================
-// The order of fields is important.  Keep the prefix length as the first field.
-// And make sure the timeStamp field is naturally alligned, so we don't waste
-// space on 32-bit platforms
+// The order of fields is important.  Ensure that we minimize padding
+// to fit more messages in a chunk.
 struct StressMsg
 {
 private:
     static const size_t formatOffsetLowBits = 26;
     static const size_t formatOffsetHighBits = 13;
 
-    union
-    {
-        struct
-        {
-            // We split the format offset to ensure that we utilize every bit and that
-            // the compiler does not align the format offset to a new 64-bit boundary.
-            uint64_t facility: 32;                           // facility used to log the entry
-            uint64_t numberOfArgs : 6;                       // number of arguments
-            uint64_t formatOffsetLow: formatOffsetLowBits;   // offset of format string in modules
-            uint64_t formatOffsetHigh: formatOffsetHighBits; // offset of format string in modules
-            uint64_t timeStamp: 51;                          // time when msg was logged (100ns ticks since runtime start)
-        };
-
-        struct
-        {
-            uint64_t argsFacilityOffsetLow;
-            uint64_t timeStampOffsetHigh;
-        };
-    };
+    // We split the format offset to ensure that we utilize every bit and that
+    // the compiler does not align the format offset to a new 64-bit boundary.
+    uint64_t facility: 32;                           // facility used to log the entry
+    uint64_t numberOfArgs : 6;                       // number of arguments
+    uint64_t formatOffsetLow: formatOffsetLowBits;   // offset of format string in modules
+    uint64_t formatOffsetHigh: formatOffsetHighBits; // offset of format string in modules
+    uint64_t timeStamp: 51;                          // time when msg was logged (100ns ticks since runtime start)
 
 public:
     void*     args[0];                               // size given by numberOfArgs
