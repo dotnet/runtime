@@ -81,8 +81,24 @@ export function setup_proxy_console(id: string, console: Console, origin: string
     }
 
     const methods = ["debug", "trace", "warn", "info", "error"];
+    for (const m of methods) {
+        if (typeof (anyConsole[m]) !== "function") {
+            anyConsole[m] = proxyConsoleMethod(`console.${m}: `, console.log, false);
+        }
+    }
 
     const consoleUrl = `${origin}/console`.replace("https://", "wss://").replace("http://", "ws://");
+
+    consoleWebSocket = new WebSocket(consoleUrl);
+    consoleWebSocket.addEventListener("open", () => {
+        originalConsole.log(`browser: [${id}] Console websocket connected.`);
+    });
+    consoleWebSocket.addEventListener("error", (event) => {
+        originalConsole.error(`[${id}] websocket error: ${event}`, event);
+    });
+    consoleWebSocket.addEventListener("close", (event) => {
+        originalConsole.error(`[${id}] websocket closed: ${event}`, event);
+    });
 
     const send = (msg: string) => {
         if (consoleWebSocket.readyState === WebSocket.OPEN) {
@@ -93,27 +109,6 @@ export function setup_proxy_console(id: string, console: Console, origin: string
         }
     };
 
-    try {
-        for (const m of methods) {
-            if (typeof (anyConsole[m]) !== "function") {
-                anyConsole[m] = proxyConsoleMethod(`console.${m}: `, console.log, false);
-            }
-        }
-
-        consoleWebSocket = new WebSocket(consoleUrl);
-        consoleWebSocket.addEventListener("open", () => {
-            for (const m of ["log", ...methods])
-                anyConsole[m] = proxyConsoleMethod(`console.${m}`, send, true);
-
-            originalConsole.log(`browser: [${id}] Console websocket connected.`);
-        });
-        consoleWebSocket.addEventListener("error", (event) => {
-            originalConsole.error(`[${id}] websocket error: ${event}`, event);
-        });
-        consoleWebSocket.addEventListener("close", (event) => {
-            originalConsole.error(`[${id}] websocket closed: ${event}`, event);
-        });
-    } catch (e) {
-        originalConsole.error(`[${id}] setup_proxy_console failed: ${e}`, e);
-    }
+    for (const m of ["log", ...methods])
+        anyConsole[m] = proxyConsoleMethod(`console.${m}`, send, true);
 }

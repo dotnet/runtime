@@ -53,7 +53,7 @@ export function init_managed_exports(): void {
             marshal_array_to_cs_impl(arg2, program_args, MarshalerType.String);
             invoke_method_and_handle_exception(call_entry_point, args);
             let promise = marshal_task_to_js(res, undefined, marshal_int32_to_js);
-            if (!promise) {
+            if (promise === null || promise === undefined) {
                 promise = Promise.resolve(0);
             }
             return await promise;
