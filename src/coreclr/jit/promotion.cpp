@@ -538,12 +538,19 @@ public:
 #endif
 };
 
+struct CandidateStore
+{
+    GenTree*    Store;
+    BasicBlock* Block;
+};
+
 // Visitor that records information about uses of struct locals.
 class LocalsUseVisitor : public GenTreeVisitor<LocalsUseVisitor>
 {
-    Promotion*  m_prom;
-    LocalUses** m_uses;
-    BasicBlock* m_curBB = nullptr;
+    Promotion*                 m_prom;
+    LocalUses**                m_uses;
+    BasicBlock*                m_curBB = nullptr;
+    ArrayStack<CandidateStore> m_candidateStores;
 
 public:
     enum
@@ -551,7 +558,10 @@ public:
         DoPreOrder = true,
     };
 
-    LocalsUseVisitor(Promotion* prom) : GenTreeVisitor(prom->m_compiler), m_prom(prom)
+    LocalsUseVisitor(Promotion* prom)
+        : GenTreeVisitor(prom->m_compiler)
+        , m_prom(prom)
+        , m_candidateStores(prom->m_compiler->getAllocator(CMK_Promotion))
     {
         m_uses = new (prom->m_compiler, CMK_Promotion) LocalUses*[prom->m_compiler->lvaCount]{};
     }
@@ -566,22 +576,6 @@ public:
     void SetBB(BasicBlock* bb)
     {
         m_curBB = bb;
-    }
-
-    //------------------------------------------------------------------------
-    // GetUsesByLocal:
-    //   Get the uses information for a specified local.
-    //
-    // Parameters:
-    //   bb - The current basic block.
-    //
-    // Returns:
-    //   Information about uses, or null if this local has no uses information
-    //   associated with it.
-    //
-    LocalUses* GetUsesByLocal(unsigned lcl)
-    {
-        return m_uses[lcl];
     }
 
     fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
@@ -612,6 +606,16 @@ public:
                     accessType   = lcl->TypeGet();
                     accessLayout = accessType == TYP_STRUCT ? lcl->GetLayout(m_compiler) : nullptr;
                     accessFlags  = ClassifyLocalAccess(lcl, user);
+
+                    if (lcl->TypeIs(TYP_STRUCT) &&
+                        ((user != nullptr) && user->OperIsLocalStore() && user->Data()->OperIsLocalRead()))
+                    {
+                        // Make sure we add it only once if both the destination and source are candidates.
+                        if ((m_candidateStores.Height() <= 0) || (m_candidateStores.Top().Store != user))
+                        {
+                            m_candidateStores.Push(CandidateStore{user, m_curBB});
+                        }
+                    }
                 }
 
                 LocalUses* uses = GetOrCreateUses(lcl->GetLclNum());
@@ -621,6 +625,77 @@ public:
         }
 
         return fgWalkResult::WALK_CONTINUE;
+    }
+
+    bool PickPromotions(jitstd::vector<AggregateInfo*>& aggregates)
+    {
+        unsigned numLocals = (unsigned)aggregates.size();
+        JITDUMP("Picking promotions\n");
+
+        bool any = false;
+
+        for (unsigned lclNum = 0; lclNum < numLocals; lclNum++)
+        {
+            LocalUses* uses = m_uses[lclNum];
+            if (uses == nullptr)
+            {
+                continue;
+            }
+
+            if (m_compiler->verbose)
+            {
+                uses->Dump(lclNum);
+            }
+
+            uses->PickPromotions(m_compiler, lclNum, &aggregates[lclNum]);
+
+            if (aggregates[lclNum] == nullptr)
+            {
+                continue;
+            }
+
+            AggregateInfo* agg = aggregates[lclNum];
+
+            any                               = true;
+            jitstd::vector<Replacement>& reps = agg->Replacements;
+
+            assert(reps.size() > 0);
+#ifdef DEBUG
+            JITDUMP("V%02u promoted with %d replacements\n", lclNum, (int)reps.size());
+            for (const Replacement& rep : reps)
+            {
+                JITDUMP("  [%03u..%03u) promoted as %s V%02u\n", rep.Offset, rep.Offset + genTypeSize(rep.AccessType),
+                        varTypeName(rep.AccessType), rep.LclNum);
+            }
+#endif
+
+            JITDUMP("Computing unpromoted remainder for V%02u\n", lclNum);
+            StructSegments unpromotedParts =
+                Promotion::SignificantSegments(m_compiler, m_compiler->lvaGetDesc(lclNum)->GetLayout());
+            for (size_t i = 0; i < reps.size(); i++)
+            {
+                unpromotedParts.Subtract(
+                    StructSegments::Segment(reps[i].Offset, reps[i].Offset + genTypeSize(reps[i].AccessType)));
+            }
+
+            JITDUMP("  Remainder: ");
+            DBEXEC(m_compiler->verbose, unpromotedParts.Dump());
+            JITDUMP("\n\n");
+
+            StructSegments::Segment unpromotedSegment;
+            if (unpromotedParts.CoveringSegment(&unpromotedSegment))
+            {
+                agg->UnpromotedMin = unpromotedSegment.Start;
+                agg->UnpromotedMax = unpromotedSegment.End;
+                assert(unpromotedSegment.Start < unpromotedSegment.End);
+            }
+            else
+            {
+                // Aggregate is fully promoted, leave UnpromotedMin == UnpromotedMax to indicate this.
+            }
+        }
+
+        return any;
     }
 
 private:
@@ -1739,80 +1814,11 @@ PhaseStatus Promotion::Run()
         }
     }
 
-    unsigned numLocals = m_compiler->lvaCount;
-
-#ifdef DEBUG
-    if (m_compiler->verbose)
-    {
-        for (unsigned lcl = 0; lcl < m_compiler->lvaCount; lcl++)
-        {
-            LocalUses* uses = localsUse.GetUsesByLocal(lcl);
-            if (uses != nullptr)
-            {
-                uses->Dump(lcl);
-            }
-        }
-    }
-#endif
-
     // Pick promotions based on the use information we just collected.
-    bool                           anyReplacements = false;
     jitstd::vector<AggregateInfo*> aggregates(m_compiler->lvaCount, nullptr, m_compiler->getAllocator(CMK_Promotion));
-    for (unsigned i = 0; i < numLocals; i++)
+    if (!localsUse.PickPromotions(aggregates))
     {
-        LocalUses* uses = localsUse.GetUsesByLocal(i);
-        if (uses == nullptr)
-        {
-            continue;
-        }
-
-        uses->PickPromotions(m_compiler, i, &aggregates[i]);
-
-        if (aggregates[i] == nullptr)
-        {
-            continue;
-        }
-
-        jitstd::vector<Replacement>& reps = aggregates[i]->Replacements;
-
-        assert(reps.size() > 0);
-        anyReplacements = true;
-#ifdef DEBUG
-        JITDUMP("V%02u promoted with %d replacements\n", i, (int)reps.size());
-        for (const Replacement& rep : reps)
-        {
-            JITDUMP("  [%03u..%03u) promoted as %s V%02u\n", rep.Offset, rep.Offset + genTypeSize(rep.AccessType),
-                    varTypeName(rep.AccessType), rep.LclNum);
-        }
-#endif
-
-        JITDUMP("Computing unpromoted remainder for V%02u\n", i);
-        StructSegments unpromotedParts = SignificantSegments(m_compiler, m_compiler->lvaGetDesc(i)->GetLayout());
-        for (size_t i = 0; i < reps.size(); i++)
-        {
-            unpromotedParts.Subtract(
-                StructSegments::Segment(reps[i].Offset, reps[i].Offset + genTypeSize(reps[i].AccessType)));
-        }
-
-        JITDUMP("  Remainder: ");
-        DBEXEC(m_compiler->verbose, unpromotedParts.Dump());
-        JITDUMP("\n\n");
-
-        StructSegments::Segment unpromotedSegment;
-        if (unpromotedParts.CoveringSegment(&unpromotedSegment))
-        {
-            aggregates[i]->UnpromotedMin = unpromotedSegment.Start;
-            aggregates[i]->UnpromotedMax = unpromotedSegment.End;
-            assert(unpromotedSegment.Start < unpromotedSegment.End);
-        }
-        else
-        {
-            // Aggregate is fully promoted, leave UnpromotedMin == UnpromotedMax to indicate this.
-        }
-    }
-
-    if (!anyReplacements)
-    {
+        // No promotions picked.
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
@@ -1857,17 +1863,17 @@ PhaseStatus Promotion::Run()
     // Insert initial IR to read arguments/OSR locals into replacement locals,
     // and add necessary explicit zeroing.
     Statement* prevStmt = nullptr;
-    for (unsigned lclNum = 0; lclNum < numLocals; lclNum++)
+    for (AggregateInfo* agg : aggregates)
     {
-        if (aggregates[lclNum] == nullptr)
+        if (agg == nullptr)
         {
             continue;
         }
 
-        LclVarDsc* dsc = m_compiler->lvaGetDesc(lclNum);
+        LclVarDsc* dsc = m_compiler->lvaGetDesc(agg->LclNum);
         if (dsc->lvIsParam || dsc->lvIsOSRLocal)
         {
-            InsertInitialReadBack(lclNum, aggregates[lclNum]->Replacements, &prevStmt);
+            InsertInitialReadBack(agg->LclNum, agg->Replacements, &prevStmt);
         }
         else if (dsc->lvSuppressedZeroInit)
         {
@@ -1876,7 +1882,7 @@ PhaseStatus Promotion::Run()
             // Now that we are promoting some fields that assumption may be
             // invalidated for those fields, and we may need to insert explicit
             // zero inits again.
-            ExplicitlyZeroInitReplacementLocals(lclNum, aggregates[lclNum]->Replacements, &prevStmt);
+            ExplicitlyZeroInitReplacementLocals(agg->LclNum, agg->Replacements, &prevStmt);
         }
     }
 
