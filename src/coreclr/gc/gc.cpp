@@ -6991,7 +6991,8 @@ void gc_heap::gc_thread_function ()
 
     while (1)
     {
-        assert (!gc_t_join.joined());
+        // inactive GC threads may observe gc_t_join.joined() being true here
+        assert ((n_heaps <= heap_number) || !gc_t_join.joined());
 
         if (heap_number == 0)
         {
@@ -7020,7 +7021,9 @@ void gc_heap::gc_thread_function ()
             {
                 settings.init_mechanisms();
                 // make sure the other gc threads cannot see this as a request to change heap count
+#ifdef DYNAMIC_HEAP_COUNT
                 assert (dynamic_heap_count_data.new_n_heaps == n_heaps);
+#endif //DYNAMIC_HEAP_COUNT
                 gc_start_event.Set();
             }
             dprintf (3, (ThreadStressLog::gcServerThread0StartMsg(), heap_number));
@@ -18619,6 +18622,14 @@ enter_msl_status gc_heap::trigger_gc_for_alloc (int gen_number, gc_reason gr,
     }
 #endif //BACKGROUND_GC
 
+#ifdef MULTIPLE_HEAPS
+    if (!loh_p)
+    {
+        add_saved_spinlock_info (loh_p, me_release, take_state, msl_status);
+        leave_spin_lock (msl);
+    }
+#endif //MULTIPLE_HEAPS
+
     vm_heap->GarbageCollectGeneration (gen_number, gr);
 
 #ifdef MULTIPLE_HEAPS
@@ -25071,6 +25082,9 @@ void gc_heap::check_heap_count ()
         if ((new_n_heaps < n_heaps) && (dynamic_heap_count_data.lowest_heap_with_msl_uoh != -1))
         {
             new_n_heaps = min (dynamic_heap_count_data.lowest_heap_with_msl_uoh, new_n_heaps);
+
+            // but not down to zero, obviously...
+            new_n_heaps = max (new_n_heaps, 1);
         }
 #else //STRESS_DYNAMIC_HEAP_COUNT
         int new_n_heaps = n_heaps;
@@ -48128,10 +48142,7 @@ HRESULT GCHeap::Initialize()
             gc_heap::smoothed_desired_total[0] /= gc_heap::n_heaps;
             gc_heap::g_heaps[0]->change_heap_count (1);
         }
-        else
-        {
-            gc_heap::dynamic_heap_count_data.new_n_heaps = gc_heap::n_heaps;
-        }
+        gc_heap::dynamic_heap_count_data.new_n_heaps = gc_heap::n_heaps;
 #endif //DYNAMIC_HEAP_COUNT
         GCScan::GcRuntimeStructuresValid (TRUE);
 
@@ -48942,10 +48953,9 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
 #ifdef MULTIPLE_HEAPS
         if (flags & GC_ALLOC_FINALIZE)
         {
-            // the heap may have changed due to heap balancing - it's important
+            // the heap may have changed due to heap balancing or heaps going out of service
             // to register the object for finalization on the heap it was allocated on
-            hp = acontext->get_alloc_heap()->pGenGCHeap;
-            assert ((newAlloc == nullptr) || (hp == gc_heap::heap_of ((uint8_t*)newAlloc)));
+            hp = (newAlloc == nullptr) ? acontext->get_alloc_heap()->pGenGCHeap : gc_heap::heap_of ((uint8_t*)newAlloc);
         }
 #endif //MULTIPLE_HEAPS
 
@@ -50022,6 +50032,9 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
 
 size_t      GCHeap::GetTotalBytesInUse ()
 {
+    // take lock here to ensure gc_heap::n_heaps doesn't change under us
+    enter_spin_lock (&pGenGCHeap->gc_lock);
+
 #ifdef MULTIPLE_HEAPS
     //enumerate all the heaps and get their size.
     size_t tot_size = 0;
@@ -50030,10 +50043,12 @@ size_t      GCHeap::GetTotalBytesInUse ()
         GCHeap* Hp = gc_heap::g_heaps [i]->vm_heap;
         tot_size += Hp->ApproxTotalBytesInUse();
     }
-    return tot_size;
 #else
-    return ApproxTotalBytesInUse();
+    size_t tot_size = ApproxTotalBytesInUse();
 #endif //MULTIPLE_HEAPS
+    leave_spin_lock (&pGenGCHeap->gc_lock);
+
+    return tot_size;
 }
 
 // Get the total allocated bytes
@@ -50085,7 +50100,6 @@ int GCHeap::CollectionCount (int generation, int get_bgc_fgc_count)
 size_t GCHeap::ApproxTotalBytesInUse(BOOL small_heap_only)
 {
     size_t totsize = 0;
-    enter_spin_lock (&pGenGCHeap->gc_lock);
 
     // For gen0 it's a bit complicated because we are currently allocating in it. We get the fragmentation first
     // just so that we don't give a negative number for the resulting size.
@@ -50143,7 +50157,7 @@ size_t GCHeap::ApproxTotalBytesInUse(BOOL small_heap_only)
             totsize += pGenGCHeap->generation_size (i) - generation_free_list_space (gen) - generation_free_obj_space (gen);
         }
     }
-    leave_spin_lock (&pGenGCHeap->gc_lock);
+
     return totsize;
 }
 
