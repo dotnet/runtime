@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
@@ -36,7 +35,7 @@ namespace Microsoft.Interop
             return methods.ToImmutable().ToSequenceEqual();
         }
 
-        private static Diagnostic? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax comMethodDeclaringSyntax, IMethodSymbol method)
+        private static DiagnosticInfo? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax comMethodDeclaringSyntax, IMethodSymbol method)
         {
             // Verify the method has no generic types or defined implementation
             // and is not marked static or sealed
@@ -44,13 +43,13 @@ namespace Microsoft.Interop
                 || comMethodDeclaringSyntax.Body is not null
                 || comMethodDeclaringSyntax.Modifiers.Any(SyntaxKind.SealedKeyword))
             {
-                return Diagnostic.Create(GeneratorDiagnostics.InvalidAttributedMethodSignature, comMethodDeclaringSyntax.Identifier.GetLocation(), method.Name);
+                return DiagnosticInfo.Create(GeneratorDiagnostics.InvalidAttributedMethodSignature, comMethodDeclaringSyntax.Identifier.GetLocation(), method.Name);
             }
 
             // Verify the method does not have a ref return
             if (method.ReturnsByRef || method.ReturnsByRefReadonly)
             {
-                return Diagnostic.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, comMethodDeclaringSyntax.Identifier.GetLocation(), "ref return", method.ToDisplayString());
+                return DiagnosticInfo.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, comMethodDeclaringSyntax.Identifier.GetLocation(), "ref return", method.ToDisplayString());
             }
 
             return null;
@@ -84,7 +83,7 @@ namespace Microsoft.Interop
 
             if (methodLocationInAttributedInterfaceDeclaration is null)
             {
-                return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(Diagnostic.Create(GeneratorDiagnostics.MethodNotDeclaredInAttributedInterface, method.Locations.FirstOrDefault(), method.ToDisplayString()));
+                return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(DiagnosticInfo.Create(GeneratorDiagnostics.MethodNotDeclaredInAttributedInterface, method.Locations.FirstOrDefault(), method.ToDisplayString()));
             }
 
 
@@ -93,7 +92,6 @@ namespace Microsoft.Interop
             foreach (var declaringSyntaxReference in method.DeclaringSyntaxReferences)
             {
                 var declaringSyntax = declaringSyntaxReference.GetSyntax(ct);
-                Debug.Assert(declaringSyntax.IsKind(SyntaxKind.MethodDeclaration));
                 if (declaringSyntax.GetLocation().SourceSpan.Contains(methodLocationInAttributedInterfaceDeclaration.SourceSpan))
                 {
                     comMethodDeclaringSyntax = (MethodDeclarationSyntax)declaringSyntax;
@@ -102,7 +100,7 @@ namespace Microsoft.Interop
             }
             if (comMethodDeclaringSyntax is null)
             {
-                return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(Diagnostic.Create(GeneratorDiagnostics.CannotAnalyzeMethodPattern, method.Locations.FirstOrDefault(), method.ToDisplayString()));
+                return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(DiagnosticInfo.Create(GeneratorDiagnostics.CannotAnalyzeMethodPattern, method.Locations.FirstOrDefault(), method.ToDisplayString()));
             }
 
             var diag = GetDiagnosticIfInvalidMethodForGeneration(comMethodDeclaringSyntax, method);

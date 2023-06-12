@@ -197,6 +197,9 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? JsonUnmappedMemberHandlingAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonUnmappedMemberHandlingAttribute", ref _JsonUnmappedMemberHandlingAttributeType);
         private Option<INamedTypeSymbol?> _JsonUnmappedMemberHandlingAttributeType;
 
+        public INamedTypeSymbol? JsonStringEnumConverterType => GetOrResolveType("System.Text.Json.Serialization.JsonStringEnumConverter", ref _JsonStringEnumConverterType);
+        private Option<INamedTypeSymbol?> _JsonStringEnumConverterType;
+
         // Unsupported types
         public INamedTypeSymbol? DelegateType => _DelegateType ??= Compilation.GetSpecialType(SpecialType.System_Delegate);
         private INamedTypeSymbol? _DelegateType;
@@ -213,6 +216,11 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? UIntPtrType => GetOrResolveType(typeof(UIntPtr), ref _UIntPtrType);
         private Option<INamedTypeSymbol?> _UIntPtrType;
 
+        public INamedTypeSymbol? MemoryType => GetOrResolveType(typeof(Memory<>), ref _MemoryType);
+        private Option<INamedTypeSymbol?> _MemoryType;
+
+        public INamedTypeSymbol? ReadOnlyMemoryType => GetOrResolveType(typeof(ReadOnlyMemory<>), ref _ReadOnlyMemoryType);
+        private Option<INamedTypeSymbol?> _ReadOnlyMemoryType;
 
         public bool IsImmutableEnumerableType(ITypeSymbol type, out string? factoryTypeFullName)
         {

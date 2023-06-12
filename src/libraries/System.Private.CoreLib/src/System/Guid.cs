@@ -849,7 +849,7 @@ namespace System
             var g = new byte[16];
             if (BitConverter.IsLittleEndian)
             {
-                MemoryMarshal.TryWrite<Guid>(g, ref Unsafe.AsRef(in this));
+                MemoryMarshal.TryWrite(g, ref Unsafe.AsRef(in this));
             }
             else
             {

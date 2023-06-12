@@ -346,7 +346,8 @@ declare enum ICUDataMode {
     Sharded = 0,
     All = 1,
     Invariant = 2,
-    Custom = 3
+    Custom = 3,
+    Hybrid = 4
 }
 
 declare global {

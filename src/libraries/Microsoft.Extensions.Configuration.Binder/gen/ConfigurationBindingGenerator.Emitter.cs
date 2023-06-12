@@ -176,7 +176,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (_generationSpec.ShouldEmitMethods(BinderMethodSpecifier.GetValue_TypeOf_key_defaultValue))
                 {
                     EmitBlankLineIfRequired();
-                    _writer.WriteLine($"public static object? {Identifier.GetValue}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.Type} {Identifier.type}, string {Identifier.key}, object? {Identifier.defaultValue}) =>" +
+                    _writer.WriteLine($"public static object? {Identifier.GetValue}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.Type} {Identifier.type}, string {Identifier.key}, object? {Identifier.defaultValue}) => " +
                         $"{expressionForGetValueCore}({Identifier.configuration}, {Identifier.type}, {Identifier.key}) ?? {Identifier.defaultValue};");
                 }
             }
@@ -527,7 +527,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     _precedingBlockExists = true;
                 }
 
-                if (_generationSpec.ShouldEmitMethods(BinderMethodSpecifier.RootMethodsWithConfigOptions))
+                if (_generationSpec.ShouldEmitMethods(BinderMethodSpecifier.MethodsThatAssessBinderOptions))
                 {
                     _writer.WriteBlankLine();
                     EmitGetBinderOptionsHelper();

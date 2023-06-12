@@ -637,5 +637,23 @@ namespace Microsoft.Extensions
             public TimeOnly Prop22 { get; set; }
 #endif
         }
+
+        public class ClassWithParameterlessAndParameterizedCtor
+        {
+            public ClassWithParameterlessAndParameterizedCtor() => MyInt = 1;
+
+            public ClassWithParameterlessAndParameterizedCtor(int myInt) => MyInt = 10;
+
+            public int MyInt { get; }
+        }
+
+        public struct StructWithParameterlessAndParameterizedCtor
+        {
+            public StructWithParameterlessAndParameterizedCtor() => MyInt = 1;
+
+            public StructWithParameterlessAndParameterizedCtor(int myInt) => MyInt = 10;
+
+            public int MyInt { get; }
+        }
     }
 }

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #include <emscripten.h>
+#include <emscripten/stack.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -219,7 +220,7 @@ mono_wasm_assembly_already_added (const char *assembly_name)
 
 	WasmAssembly *entry = assemblies;
 	while (entry != NULL) {
-		int entry_name_minus_extn_len = strlen(entry->assembly.name) - 4;
+		int entry_name_minus_extn_len = strrchr (entry->assembly.name, '.') - entry->assembly.name;
 		if (entry_name_minus_extn_len == strlen(assembly_name) && strncmp (entry->assembly.name, assembly_name, entry_name_minus_extn_len) == 0)
 			return 1;
 		entry = entry->next;
@@ -684,23 +685,28 @@ mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void 
 	MONO_EXIT_GC_UNSAFE;
 }
 
-EMSCRIPTEN_KEEPALIVE MonoObject*
-mono_wasm_invoke_method_bound (MonoMethod *method, void* args)// JSMarshalerArguments
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_invoke_method_bound (MonoMethod *method, void* args /*JSMarshalerArguments*/, MonoString **out_exc)
 {
-	MonoObject *exc = NULL;
-	MonoObject *res;
+	PVOLATILE(MonoObject) temp_exc = NULL;
 
 	void *invoke_args[1] = { args };
+	int is_err = 0;
 
-	mono_runtime_invoke (method, NULL, invoke_args, &exc);
-	if (exc) {
-		MonoObject *exc2 = NULL;
-		res = (MonoObject*)mono_object_to_string (exc, &exc2);
+	MONO_ENTER_GC_UNSAFE;
+	mono_runtime_invoke (method, NULL, invoke_args, (MonoObject **)&temp_exc);
+
+	// this failure is unlikely because it would be runtime error, not application exception.
+	// the application exception is passed inside JSMarshalerArguments `args`
+	if (temp_exc) {
+		PVOLATILE(MonoObject) exc2 = NULL;
+		store_volatile((MonoObject**)out_exc, (MonoObject*)mono_object_to_string ((MonoObject*)temp_exc, (MonoObject **)&exc2));
 		if (exc2)
-			res = (MonoObject*) mono_string_new (root_domain, "Exception Double Fault");
-		return res;
+			store_volatile((MonoObject**)out_exc, (MonoObject*)mono_string_new (root_domain, "Exception Double Fault"));
+		is_err = 1;
 	}
-	return NULL;
+	MONO_EXIT_GC_UNSAFE;
+	return is_err;
 }
 
 EMSCRIPTEN_KEEPALIVE MonoMethod*
@@ -1412,4 +1418,15 @@ EMSCRIPTEN_KEEPALIVE double mono_wasm_get_f64_unaligned (const double *src) {
 
 EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_get_i32_unaligned (const int32_t *src) {
 	return *src;
+}
+
+EMSCRIPTEN_KEEPALIVE int mono_wasm_is_zero_page_reserved () {
+	// If the stack is above the first 512 bytes of memory this indicates that it is safe
+	//  to optimize out null checks for operations that also do a bounds check, like string
+	//  and array element loads. (We already know that Emscripten malloc will never allocate
+	//  data at 0.) This is the default behavior for Emscripten release builds and is
+	//  controlled by the emscripten GLOBAL_BASE option (default value 1024).
+	// clang/llvm may perform this optimization if --low-memory-unused is set.
+	// https://github.com/emscripten-core/emscripten/issues/19389
+	return (emscripten_stack_get_base() > 512) && (emscripten_stack_get_end() > 512);
 }

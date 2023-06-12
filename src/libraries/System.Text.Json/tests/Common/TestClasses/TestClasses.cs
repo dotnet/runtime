@@ -461,7 +461,11 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (data is JsonElement element)
                 {
-                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
+#if BUILDING_SOURCE_GENERATOR_TESTS
+                    SimpleTestClass obj = JsonSerializer.Deserialize(element, System.Text.Json.SourceGeneration.Tests.CollectionTests_Default.CollectionTestsContext_Default.Default.SimpleTestClass);
+#else
+                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element);
+#endif
                     obj.Verify();
                 }
                 else
@@ -510,7 +514,11 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (data is JsonElement element)
                 {
-                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
+#if BUILDING_SOURCE_GENERATOR_TESTS
+                    SimpleTestClass obj = JsonSerializer.Deserialize(element, System.Text.Json.SourceGeneration.Tests.CollectionTests_Default.CollectionTestsContext_Default.Default.SimpleTestClass);
+#else
+                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element);
+#endif
                     obj.Verify();
                 }
                 else
@@ -561,7 +569,11 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (data is JsonElement element)
                 {
-                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
+#if BUILDING_SOURCE_GENERATOR_TESTS
+                    SimpleTestClass obj = JsonSerializer.Deserialize(element, System.Text.Json.SourceGeneration.Tests.CollectionTests_Default.CollectionTestsContext_Default.Default.SimpleTestClass);
+#else
+                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element);
+#endif
                     obj.Verify();
                 }
                 else

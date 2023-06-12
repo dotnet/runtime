@@ -10,6 +10,7 @@
   <ItemGroup>
     <Compile Include="structpasstest.cs" />
     <Compile Include="structpasstest1.cs" />
+    <Compile Include="structpasstest2.cs" />
     <Compile Include="structrettest.cs" />
     <Compile Include="structpinvoketests.cs" />
   </ItemGroup>

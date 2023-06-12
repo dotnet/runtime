@@ -12,7 +12,7 @@ internal static partial class Interop
     /// increasing buffer until the size is big enough.
     /// </summary>
     internal static bool CallStringMethod<TArg1, TArg2, TArg3>(
-        SpanFunc<char, TArg1, TArg2, TArg3, Interop.Globalization.ResultCode> interopCall,
+        SpanFunc<char, TArg1, TArg2, TArg3, Globalization.ResultCode> interopCall,
         TArg1 arg1, TArg2 arg2, TArg3 arg3,
         out string? result)
     {
@@ -20,19 +20,19 @@ internal static partial class Interop
         const int MaxHeapSize = 1280; // max from previous version of the code, starting at 80 and doubling four times
 
         Span<char> buffer = stackalloc char[InitialSize];
-        Interop.Globalization.ResultCode resultCode = interopCall(buffer, arg1, arg2, arg3);
+        Globalization.ResultCode resultCode = interopCall(buffer, arg1, arg2, arg3);
 
-        if (resultCode == Interop.Globalization.ResultCode.Success)
+        if (resultCode == Globalization.ResultCode.Success)
         {
             result = buffer.Slice(0, buffer.IndexOf('\0')).ToString();
             return true;
         }
 
-        if (resultCode == Interop.Globalization.ResultCode.InsufficientBuffer)
+        if (resultCode == Globalization.ResultCode.InsufficientBuffer)
         {
             // Increase the string size and try again
             buffer = new char[MaxHeapSize];
-            if (interopCall(buffer, arg1, arg2, arg3) == Interop.Globalization.ResultCode.Success)
+            if (interopCall(buffer, arg1, arg2, arg3) == Globalization.ResultCode.Success)
             {
                 result = buffer.Slice(0, buffer.IndexOf('\0')).ToString();
                 return true;

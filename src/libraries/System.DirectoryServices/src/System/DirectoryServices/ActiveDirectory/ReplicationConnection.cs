@@ -53,7 +53,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // doing the search to find the connection object based on its name
                 ADSearcher adSearcher = new ADSearcher(de,
                                                       "(&(objectClass=nTDSConnection)(objectCategory=NTDSConnection)(name=" + Utils.GetEscapedFilterValue(name) + "))",
-                                                      new string[] { "distinguishedName" },
+                                                      ActiveDirectorySite.s_distinguishedName,
                                                       SearchScope.OneLevel,
                                                       false, /* no paged search */
                                                       false /* don't cache results */);

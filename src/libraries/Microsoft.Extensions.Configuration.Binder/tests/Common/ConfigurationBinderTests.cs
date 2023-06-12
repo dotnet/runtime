@@ -1855,22 +1855,20 @@ namespace Microsoft.Extensions
             Assert.Equal(1, obj.MyInt);
         }
 
-        public class ClassWithParameterlessAndParameterizedCtor
+        [Fact]
+        public void BindRootStructIsNoOp()
         {
-            public ClassWithParameterlessAndParameterizedCtor() => MyInt = 1;
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "Int32": 9,
+                    "Boolean": true,
+                }
+                """);
 
-            public ClassWithParameterlessAndParameterizedCtor(int myInt) => MyInt = 10;
-
-            public int MyInt { get; }
-        }
-
-        public struct StructWithParameterlessAndParameterizedCtor
-        {
-            public StructWithParameterlessAndParameterizedCtor() => MyInt = 1;
-
-            public StructWithParameterlessAndParameterizedCtor(int myInt) => MyInt = 10;
-
-            public int MyInt { get; }
+            StructWithNestedStructs.DeeplyNested obj = new();
+            configuration.Bind(obj);
+            Assert.Equal(0, obj.Int32);
+            Assert.False(obj.Boolean);
         }
     }
 }

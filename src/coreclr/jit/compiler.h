@@ -7128,9 +7128,10 @@ public:
     void pickGDV(GenTreeCall*           call,
                  IL_OFFSET              ilOffset,
                  bool                   isInterface,
-                 CORINFO_CLASS_HANDLE*  classGuess,
-                 CORINFO_METHOD_HANDLE* methodGuess,
-                 unsigned*              likelihood);
+                 CORINFO_CLASS_HANDLE*  classGuesses,
+                 CORINFO_METHOD_HANDLE* methodGuesses,
+                 int*                   candidatesCount,
+                 unsigned*              likelihoods);
 
     void considerGuardedDevirtualization(GenTreeCall*            call,
                                          IL_OFFSET               ilOffset,
@@ -8653,7 +8654,7 @@ private:
 
     // Get the number of bytes in a System.Numeric.Vector<T> for the current compilation.
     // Note - cannot be used for System.Runtime.Intrinsic
-    unsigned getVectorTByteLength()
+    uint32_t getVectorTByteLength()
     {
         // We need to report the ISA dependency to the VM so that scenarios
         // such as R2R work correctly for larger vector sizes, so we always
@@ -8661,17 +8662,31 @@ private:
         CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_XARCH)
-        if (compExactlyDependsOn(InstructionSet_AVX2))
+        // TODO-XArch: Add support for 512-bit Vector<T>
+        assert(!compIsaSupportedDebugOnly(InstructionSet_VectorT512));
+
+        if (compExactlyDependsOn(InstructionSet_VectorT256))
         {
-            // TODO-XArch-AVX512 : Return ZMM_REGSIZE_BYTES once Vector<T> supports AVX512.
+            assert(!compIsaSupportedDebugOnly(InstructionSet_VectorT128));
             return YMM_REGSIZE_BYTES;
         }
-        else
+        else if (compExactlyDependsOn(InstructionSet_VectorT128))
         {
             return XMM_REGSIZE_BYTES;
         }
+        else
+        {
+            return 0;
+        }
 #elif defined(TARGET_ARM64)
-        return FP_REGSIZE_BYTES;
+        if (compExactlyDependsOn(InstructionSet_VectorT128))
+        {
+            return FP_REGSIZE_BYTES;
+        }
+        else
+        {
+            return 0;
+        }
 #else
         assert(!"getVectorTByteLength() unimplemented on target arch");
         unreached();
@@ -8690,23 +8705,33 @@ private:
     uint32_t getMaxVectorByteLength() const
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
         {
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
-            {
-                return ZMM_REGSIZE_BYTES;
-            }
-            else
-            {
-                return YMM_REGSIZE_BYTES;
-            }
+            return ZMM_REGSIZE_BYTES;
         }
-        else
+        else if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+        {
+            return YMM_REGSIZE_BYTES;
+        }
+        else if (compOpportunisticallyDependsOn(InstructionSet_SSE))
         {
             return XMM_REGSIZE_BYTES;
         }
+        else
+        {
+            assert((JitConfig.EnableHWIntrinsic() == 0) || (JitConfig.EnableSSE() == 0));
+            return 0;
+        }
 #elif defined(TARGET_ARM64)
-        return FP_REGSIZE_BYTES;
+        if (compOpportunisticallyDependsOn(InstructionSet_AdvSimd))
+        {
+            return FP_REGSIZE_BYTES;
+        }
+        else
+        {
+            assert((JitConfig.EnableHWIntrinsic() == 0) || (JitConfig.EnableArm64AdvSimd() == 0));
+            return 0;
+        }
 #else
         assert(!"getMaxVectorByteLength() unimplemented on target arch");
         unreached();

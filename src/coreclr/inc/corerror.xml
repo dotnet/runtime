@@ -184,12 +184,6 @@
 	<Comment> The given assembly name was invalid. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131052">
-	<SymbolicName>FUSION_E_CACHEFILE_FAILED</SymbolicName>
-	<Message>"Failed to add file to AppDomain cache."</Message>
-	<Comment> Failed to add file to AppDomain cache </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131053">
 	<SymbolicName>FUSION_E_APP_DOMAIN_LOCKED</SymbolicName>
 	<Message>"The requested assembly version conflicts with what is already bound in the app domain or specified in the manifest."</Message>
@@ -1603,7 +1597,7 @@
 <HRESULT NumericValue="0x80131603">
 	<SymbolicName>COR_E_TARGET</SymbolicName>
 	<Message>"Attempt to invoke non-static method with a null Object."</Message>
-	<Comment> - If you attempt to invoke a non-static method with a null Object - If you atte</Comment>
+	<Comment>If you attempt to invoke a non-static method with a null Object</Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131604">

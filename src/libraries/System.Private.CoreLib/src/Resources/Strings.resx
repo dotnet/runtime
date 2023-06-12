@@ -172,17 +172,26 @@
   <data name="AppDomain_Policy_PrincipalTwice" xml:space="preserve">
     <value>Default principal object cannot be set twice.</value>
   </data>
-  <data name="AmbiguousImplementationException_NullMessage" xml:space="preserve">
-    <value>Ambiguous implementation found.</value>
-  </data>
   <data name="Arg_AccessException" xml:space="preserve">
     <value>Cannot access member.</value>
   </data>
   <data name="Arg_AccessViolationException" xml:space="preserve">
     <value>Attempted to read or write protected memory. This is often an indication that other memory is corrupt.</value>
   </data>
-  <data name="Arg_AmbiguousMatchException" xml:space="preserve">
+  <data name="Arg_AmbiguousImplementationException_NoMessage" xml:space="preserve">
+    <value>Ambiguous implementation found.</value>
+  </data>
+  <data name="Arg_AmbiguousMatchException_Attribute" xml:space="preserve">
+    <value>Multiple custom attributes of the same type '{0}' found.</value>
+  </data>
+  <data name="Arg_AmbiguousMatchException_NoMessage" xml:space="preserve">
     <value>Ambiguous match found.</value>
+  </data>
+  <data name="Arg_AmbiguousMatchException_CustomAttributeData" xml:space="preserve">
+    <value>Ambiguous match found for '{0}'.</value>
+  </data>
+  <data name="Arg_AmbiguousMatchException_MemberInfo" xml:space="preserve">
+    <value>Ambiguous match found for '{0} {1}'.</value>
   </data>
   <data name="Arg_ApplicationException" xml:space="preserve">
     <value>Error in the application.</value>
@@ -3299,9 +3308,6 @@
   <data name="Resources_StreamNotValid" xml:space="preserve">
     <value>Stream is not a valid resource file.</value>
   </data>
-  <data name="RFLCT_AmbigCust" xml:space="preserve">
-    <value>Multiple custom attributes of the same type found.</value>
-  </data>
   <data name="InvalidFilterCriteriaException_CritInt" xml:space="preserve">
     <value>An Int32 must be provided for the filter criteria.</value>
   </data>
@@ -3502,6 +3508,9 @@
   </data>
   <data name="Task_WaitMulti_NullTask" xml:space="preserve">
     <value>The tasks array included at least one null element.</value>
+  </data>
+  <data name="TaskT_ConfigureAwait_InvalidOptions" xml:space="preserve">
+    <value>Task&lt;TResult&gt;.ConfigureAwait does not support ConfigureAwaitOptions.SuppressThrowing. To suppress throwing, instead cast the Task&lt;TResult&gt; to its base class Task and await that with SuppressThrowing.</value>
   </data>
   <data name="TaskCanceledException_ctor_DefaultMessage" xml:space="preserve">
     <value>A task was canceled.</value>

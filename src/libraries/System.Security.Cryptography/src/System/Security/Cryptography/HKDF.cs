@@ -286,6 +286,18 @@ namespace System.Security.Cryptography
             {
                 return HMACSHA512.HashSizeInBytes;
             }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA3_256)
+            {
+                return HMACSHA3_256.HashSizeInBytes;
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA3_384)
+            {
+                return HMACSHA3_384.HashSizeInBytes;
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA3_512)
+            {
+                return HMACSHA3_512.HashSizeInBytes;
+            }
             else if (hashAlgorithmName == HashAlgorithmName.MD5)
             {
                 return HMACMD5.HashSizeInBytes;
