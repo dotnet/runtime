@@ -478,9 +478,9 @@ instrDesc* emitNewInstrCallInd(int              argCnt,
                                regMaskTP        byrefRegs,
                                emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
 
-void    emitGetInsCns(const instrDesc* id, CnsVal* cv) const;
+void emitGetInsCns(const instrDesc* id, CnsVal* cv) const;
 ssize_t emitGetInsAmdCns(const instrDesc* id, CnsVal* cv) const;
-void    emitGetInsDcmCns(const instrDesc* id, CnsVal* cv) const;
+void emitGetInsDcmCns(const instrDesc* id, CnsVal* cv) const;
 ssize_t emitGetInsAmdAny(const instrDesc* id) const;
 
 /************************************************************************/
