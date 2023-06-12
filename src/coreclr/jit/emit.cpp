@@ -315,49 +315,58 @@ void emitterStaticStats(FILE* fout)
     fprintf(fout, "Size of insPlaceholderGroupData     = %zu\n", sizeof(insPlaceholderGroupData));
 
     fprintf(fout, "\n");
-    fprintf(fout, "SMALL_IDSC_SIZE           = %2u\n", SMALL_IDSC_SIZE);
-    fprintf(fout, "Size of instrDesc       = %2zu\n", sizeof(emitter::instrDesc));
-    fprintf(fout, "Size of instrDescCns    = %2zu\n", sizeof(emitter::instrDescCns));
-    fprintf(fout, "Size of instrDescDsp    = %2zu\n", sizeof(emitter::instrDescDsp));
-    fprintf(fout, "Size of instrDescCnsDsp = %2zu\n", sizeof(emitter::instrDescCnsDsp));
-#ifdef TARGET_XARCH
-    fprintf(fout, "Size of instrDescAmd    = %2zu\n", sizeof(emitter::instrDescAmd));
-    fprintf(fout, "Size of instrDescCnsAmd = %2zu\n", sizeof(emitter::instrDescCnsAmd));
-#endif // TARGET_XARCH
+    fprintf(fout, "SMALL_IDSC_SIZE                = %2u\n", SMALL_IDSC_SIZE);
+    fprintf(fout, "Size of instrDesc              = %2zu\n", sizeof(emitter::instrDesc));
+    fprintf(fout, "Size of instrDescCns           = %2zu\n", sizeof(emitter::instrDescCns));
+    fprintf(fout, "Size of instrDescDsp           = %2zu\n", sizeof(emitter::instrDescDsp));
+#ifdef TARGET_ARM64
+    fprintf(fout, "Size of instrDescLclVarPair    = %2zu\n", sizeof(emitter::instrDescLclVarPair));
+    fprintf(fout, "Size of instrDescLclVarPairCns = %2zu\n", sizeof(emitter::instrDescLclVarPairCns));
+#endif // TARGET_ARM64
 #ifdef TARGET_ARM
-    fprintf(fout, "Size of instrDescReloc  = %2zu\n", sizeof(emitter::instrDescReloc));
+    fprintf(fout, "Size of instrDescReloc         = %2zu\n", sizeof(emitter::instrDescReloc));
 #endif // TARGET_ARM
+#ifdef TARGET_XARCH
+    fprintf(fout, "Size of instrDescAmd           = %2zu\n", sizeof(emitter::instrDescAmd));
+    fprintf(fout, "Size of instrDescCnsAmd        = %2zu\n", sizeof(emitter::instrDescCnsAmd));
+#endif // TARGET_XARCH
+    fprintf(fout, "Size of instrDescCnsDsp        = %2zu\n", sizeof(emitter::instrDescCnsDsp));
 #if FEATURE_LOOP_ALIGN
-    fprintf(fout, "Size of instrDescAlign  = %2zu\n", sizeof(emitter::instrDescAlign));
+    fprintf(fout, "Size of instrDescAlign         = %2zu\n", sizeof(emitter::instrDescAlign));
 #endif // FEATURE_LOOP_ALIGN
-    fprintf(fout, "Size of instrDescJmp    = %2zu\n", sizeof(emitter::instrDescJmp));
+    fprintf(fout, "Size of instrDescJmp           = %2zu\n", sizeof(emitter::instrDescJmp));
 #if !defined(TARGET_ARM64)
-    fprintf(fout, "Size of instrDescLbl    = %2zu\n", sizeof(emitter::instrDescLbl));
+    fprintf(fout, "Size of instrDescLbl           = %2zu\n", sizeof(emitter::instrDescLbl));
 #endif // !defined(TARGET_ARM64)
-    fprintf(fout, "Size of instrDescCGCA   = %2zu\n", sizeof(emitter::instrDescCGCA));
+    fprintf(fout, "Size of instrDescCGCA          = %2zu\n", sizeof(emitter::instrDescCGCA));
 
     fprintf(fout, "\n");
-    fprintf(fout, "igBuffSize                    = %2zu\n", igBuffSize);
-    fprintf(fout, "SMALL_IDSC_SIZE per IG buffer = %2zu\n", igBuffSize / SMALL_IDSC_SIZE);
-    fprintf(fout, "instrDesc       per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDesc));
-    fprintf(fout, "instrDescCns    per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescCns));
-    fprintf(fout, "instrDescDsp    per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescDsp));
-    fprintf(fout, "instrDescCnsDsp per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescCnsDsp));
-#ifdef TARGET_XARCH
-    fprintf(fout, "instrDescAmd    per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescAmd));
-    fprintf(fout, "instrDescCnsAmd per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescCnsAmd));
-#endif // TARGET_XARCH
+    fprintf(fout, "igBuffSize                           = %2zu\n", igBuffSize);
+    fprintf(fout, "SMALL_IDSC_SIZE        per IG buffer = %2zu\n", igBuffSize / SMALL_IDSC_SIZE);
+    fprintf(fout, "instrDesc              per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDesc));
+    fprintf(fout, "instrDescCns           per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescCns));
+    fprintf(fout, "instrDescDsp           per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescDsp));
+#ifdef TARGET_ARM64
+    fprintf(fout, "instrDescLclVarPair    per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescLclVarPair));
+    fprintf(fout, "instrDescLclVarPairCns per IG buffer = %2zu\n",
+            igBuffSize / sizeof(emitter::instrDescLclVarPairCns));
+#endif // TARGET_ARM64
 #ifdef TARGET_ARM
-    fprintf(fout, "instrDescReloc  per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescReloc));
+    fprintf(fout, "instrDescReloc         per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescReloc));
 #endif // TARGET_ARM
+#ifdef TARGET_XARCH
+    fprintf(fout, "instrDescAmd           per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescAmd));
+    fprintf(fout, "instrDescCnsAmd        per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescCnsAmd));
+#endif // TARGET_XARCH
+    fprintf(fout, "instrDescCnsDsp        per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescCnsDsp));
 #if FEATURE_LOOP_ALIGN
-    fprintf(fout, "instrDescAlign  per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescAlign));
+    fprintf(fout, "instrDescAlign         per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescAlign));
 #endif // FEATURE_LOOP_ALIGN
-    fprintf(fout, "instrDescJmp    per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescJmp));
+    fprintf(fout, "instrDescJmp           per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescJmp));
 #if !defined(TARGET_ARM64)
-    fprintf(fout, "instrDescLbl    per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescLbl));
+    fprintf(fout, "instrDescLbl           per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescLbl));
 #endif // !defined(TARGET_ARM64)
-    fprintf(fout, "instrDescCGCA   per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescCGCA));
+    fprintf(fout, "instrDescCGCA          per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescCGCA));
 
     fprintf(fout, "\n");
     fprintf(fout, "GCInfo::regPtrDsc:\n");
