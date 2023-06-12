@@ -49,6 +49,13 @@
     <ILStrip
       TrimIndividualMethods="$(TrimIndividualMethods)"
       Assemblies="@(BundleAssemblies)">
+      <Output TaskParameter="TrimmedAssemblies" ItemName="TrimmedAssemblies" />
     </ILStrip>
+
+    <Copy
+        SourceFiles="@(TrimmedAssemblies->Metadata('TrimmedAssemblyFileName'))"
+        DestinationFiles="@(TrimmedAssemblies)"
+        OverwriteReadOnlyFiles="true"
+    />
   </Target>
 </Project>

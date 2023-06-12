@@ -735,8 +735,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         if (CollectCompiledMethods)
         {
-            string assemblyFileName = Path.GetFileName(assembly);
-            string assemblyName = assemblyFileName.Replace(".", "_");
+            string assemblyName = assemblyFilename.Replace(".", "_");
             string outputFileName = assemblyName + "_compiled_methods.txt";
             string outputFilePath;
             if (string.IsNullOrEmpty(CompiledMethodsOutputDirectory))

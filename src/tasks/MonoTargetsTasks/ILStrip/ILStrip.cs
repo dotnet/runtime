@@ -36,6 +36,17 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     /// </summary>
     public bool TrimIndividualMethods { get; set; }
 
+    /// <summary>
+    /// Assembilies got trimmed successfully.
+    ///
+    /// Successful trimming will set the following metadata on the items:
+    ///  - TrimmedAssemblyFileName
+    /// </summary>
+    [Output]
+    public ITaskItem[]? TrimmedAssemblies { get; set; }
+
+    private List<ITaskItem> trimmedAssemblies = new List<ITaskItem>();
+
     public override bool Execute()
     {
         if (Assemblies.Length == 0)
@@ -61,6 +72,11 @@ public class ILStrip : Microsoft.Build.Utilities.Task
                                                                 state.Stop();
                                                         }
                                                     });
+
+        if (TrimIndividualMethods)
+        {
+            TrimmedAssemblies = trimmedAssemblies.ToArray();
+        }
 
         if (!result.IsCompleted && !Log.HasLoggedErrors)
         {
@@ -151,7 +167,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             }
             if (isTrimmed)
             {
-                ReplaceAssemblyWithTrimmedOne(assemblyFilePath, trimmedAssemblyFilePath);
+                AddItemToTrimmedList(assemblyFilePath, trimmedAssemblyFilePath);
             }
         }
 
@@ -280,9 +296,10 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         ArrayPool<byte>.Shared.Return(zeroBuffer);
     }
 
-    private static void ReplaceAssemblyWithTrimmedOne(string assemblyFilePath, string trimmedAssemblyFilePath)
+    private void AddItemToTrimmedList(string assemblyFilePath, string trimmedAssemblyFilePath)
     {
-        File.Delete(assemblyFilePath);
-        File.Move(trimmedAssemblyFilePath, assemblyFilePath);
+        var trimmedAssemblyItem = new TaskItem(assemblyFilePath);
+        trimmedAssemblyItem.SetMetadata("TrimmedAssemblyFileName", trimmedAssemblyFilePath);
+        trimmedAssemblies.Add(trimmedAssemblyItem);
     }
 }
