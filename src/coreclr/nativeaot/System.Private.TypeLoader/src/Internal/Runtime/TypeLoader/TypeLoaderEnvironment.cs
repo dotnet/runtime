@@ -16,6 +16,7 @@ using Internal.NativeFormat;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
+using System.Runtime.CompilerServices;
 
 namespace Internal.Runtime.TypeLoader
 {
@@ -33,7 +34,7 @@ namespace Internal.Runtime.TypeLoader
 
         public override IntPtr GetThreadStaticGCDescForDynamicType(TypeManagerHandle typeManagerHandle, int index)
         {
-            return TypeLoaderEnvironment.Instance.GetThreadStaticGCDescForDynamicType(typeManagerHandle, (uint)index);
+            return TypeLoaderEnvironment.InstanceOrNull.GetThreadStaticGCDescForDynamicType(typeManagerHandle, (uint)index);
         }
 
         public override IntPtr GenericLookupFromContextAndSignature(IntPtr context, IntPtr signature, out IntPtr auxResult)
@@ -109,7 +110,32 @@ namespace Internal.Runtime.TypeLoader
         [ThreadStatic]
         private static bool t_isReentrant;
 
-        public static TypeLoaderEnvironment Instance { get; } = new TypeLoaderEnvironment();
+        private static TypeLoaderEnvironment s_instance;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static TypeLoaderEnvironment InitializeInstance()
+        {
+            TypeLoaderEnvironment instance = new TypeLoaderEnvironment();
+            if (Interlocked.CompareExchange(ref s_instance, instance, null) == null)
+                return instance;
+            return s_instance;
+        }
+
+        public static TypeLoaderEnvironment Instance
+        {
+            get
+            {
+                return s_instance ?? InitializeInstance();
+            }
+        }
+
+        public static TypeLoaderEnvironment InstanceOrNull
+        {
+            get
+            {
+                return s_instance;
+            }
+        }
 
         // Cache the NativeReader in each module to avoid looking up the NativeLayoutInfo blob each
         // time we call GetNativeLayoutInfoReader(). The dictionary is a thread static variable to ensure
