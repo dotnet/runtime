@@ -199,9 +199,11 @@ unsigned emitter::emitTotalIDescRelocCnt;
 unsigned emitter::emitSmallDspCnt;
 unsigned emitter::emitLargeDspCnt;
 
+unsigned emitter::emitSmallCns[SMALL_CNS_TSZ];
 unsigned emitter::emitSmallCnsCnt;
 unsigned emitter::emitLargeCnsCnt;
-unsigned emitter::emitSmallCns[SMALL_CNS_TSZ];
+unsigned emitter::emitNegCnsCnt;
+unsigned emitter::emitPow2CnsCnt;
 
 unsigned emitter::emitTotalDescAlignCnt;
 
@@ -469,9 +471,16 @@ void emitterStats(FILE* fout)
 
     if ((emitter::emitSmallCnsCnt > 0) || (emitter::emitLargeCnsCnt > 0))
     {
-        fprintf(fout, "SmallCnsCnt = %6u\n", emitter::emitSmallCnsCnt);
-        fprintf(fout, "LargeCnsCnt = %6u (%3u %% of total)\n", emitter::emitLargeCnsCnt,
-                100 * emitter::emitLargeCnsCnt / (emitter::emitLargeCnsCnt + emitter::emitSmallCnsCnt));
+        unsigned emitTotalCnsCnt = emitter::emitLargeCnsCnt + emitter::emitSmallCnsCnt;
+
+        fprintf(fout, "SmallCnsCnt = %8u (%5.2f%%)\n", emitter::emitSmallCnsCnt,
+                (100.0 * emitter::emitSmallCnsCnt) / emitTotalCnsCnt);
+        fprintf(fout, "LargeCnsCnt = %8u (%5.2f%%)\n", emitter::emitLargeCnsCnt,
+                (100.0 * emitter::emitLargeCnsCnt) / emitTotalCnsCnt);
+        fprintf(fout, "NegCnsCnt   = %8u (%5.2f%%)\n", emitter::emitNegCnsCnt,
+                (100.0 * emitter::emitNegCnsCnt) / emitTotalCnsCnt);
+        fprintf(fout, "Pow2CnsCnt  = %8u (%5.2f%%)\n", emitter::emitPow2CnsCnt,
+                (100.0 * emitter::emitPow2CnsCnt) / emitTotalCnsCnt);
     }
 
     // Print out the most common small constants.
@@ -481,7 +490,7 @@ void emitterStats(FILE* fout)
         fprintf(fout, "Common small constants >= %2d, <= %2d\n", ID_MIN_SMALL_CNS, ID_MAX_SMALL_CNS);
 
         // Only print constants representing more than 0.1% of the total constants
-        unsigned m = emitter::emitSmallCnsCnt / 1000 + 1;
+        unsigned m = (emitter::emitSmallCnsCnt / 1000) + 1;
 
         for (int i = 0; (i <= ID_CNT_SMALL_CNS) && (i < SMALL_CNS_TSZ); i++)
         {
@@ -497,15 +506,15 @@ void emitterStats(FILE* fout)
 
                 if (i == 0)
                 {
-                    fprintf(fout, "cns[<=%4d] = %u\n", v, c);
+                    fprintf(fout, "cns[<=%4d] = %8u (%5.2f%%)\n", v, c, (100.0 * c) / emitter::emitSmallCnsCnt);
                 }
                 else if (i == (SMALL_CNS_TSZ - 1))
                 {
-                    fprintf(fout, "cns[>=%4d] = %u\n", v, c);
+                    fprintf(fout, "cns[>=%4d] = %8u (%5.2f%%)\n", v, c, (100.0 * c) / emitter::emitSmallCnsCnt);
                 }
                 else
                 {
-                    fprintf(fout, "cns[  %4d] = %u\n", v, c);
+                    fprintf(fout, "cns[  %4d] = %8u (%5.2f%%)\n", v, c, (100.0 * c) / emitter::emitSmallCnsCnt);
                 }
             }
         }
@@ -2654,7 +2663,7 @@ emitter::instrDesc* emitter::emitNewInstrCnsDsp(emitAttr size, target_ssize_t cn
             id->idSmallCns(cns);
 
 #if EMITTER_STATS
-            ID_INC_SMALL_CNS(cns);
+            TrackSmallCns(cns);
             emitSmallDspCnt++;
 #endif
 
@@ -2665,7 +2674,7 @@ emitter::instrDesc* emitter::emitNewInstrCnsDsp(emitAttr size, target_ssize_t cn
             instrDescCns* id = emitAllocInstrCns(size, cns);
 
 #if EMITTER_STATS
-            emitLargeCnsCnt++;
+            TrackLargeCns(cns);
             emitSmallDspCnt++;
 #endif
 
@@ -2684,8 +2693,8 @@ emitter::instrDesc* emitter::emitNewInstrCnsDsp(emitAttr size, target_ssize_t cn
             id->idSmallCns(cns);
 
 #if EMITTER_STATS
+            TrackSmallCns(cns);
             emitLargeDspCnt++;
-            ID_INC_SMALL_CNS(cns);
 #endif
 
             return id;
@@ -2701,8 +2710,8 @@ emitter::instrDesc* emitter::emitNewInstrCnsDsp(emitAttr size, target_ssize_t cn
             id->iddcDspVal = dsp;
 
 #if EMITTER_STATS
+            TrackLargeCns(cns);
             emitLargeDspCnt++;
-            emitLargeCnsCnt++;
 #endif
 
             return id;

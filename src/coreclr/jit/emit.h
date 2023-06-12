@@ -899,25 +899,14 @@ protected:
         // risc-v:      11/16 bits
         CLANG_FORMAT_COMMENT_ANCHOR;
 
-// We encounter many constants, but there is a disproportionate amount that are in the range [-1, +4]
-// and otherwise powers of 2. We therefore allow the tracked range here to incldue negative values.
-
 #define ID_ADJ_SMALL_CNS (int)(1 << (ID_BIT_SMALL_CNS - 1))
 #define ID_CNT_SMALL_CNS (int)(1 << ID_BIT_SMALL_CNS)
 
 #define ID_MIN_SMALL_CNS (int)(0 - ID_ADJ_SMALL_CNS)
 #define ID_MAX_SMALL_CNS (int)(ID_CNT_SMALL_CNS - ID_ADJ_SMALL_CNS - 1)
 
-#define ID_IDX_SMALL_CNS(x)                                                                                            \
-    (x >= ((SMALL_CNS_TSZ / 2) - 1)) ? (SMALL_CNS_TSZ - 1)                                                             \
-                                     : ((x >= (0 - SMALL_CNS_TSZ / 2)) ? (x + (SMALL_CNS_TSZ / 2)) : 0)
-
-#define ID_INC_SMALL_CNS(x)                                                                                            \
-    {                                                                                                                  \
-        emitSmallCnsCnt++;                                                                                             \
-        emitSmallCns[ID_IDX_SMALL_CNS(x)]++;                                                                           \
-    }
-
+        // We encounter many constants, but there is a disproportionate amount that are in the range [-1, +4]
+        // and otherwise powers of 2. We therefore allow the tracked range here to incldue negative values.
         signed _idSmallCns : ID_BIT_SMALL_CNS;
 
         ////////////////////////////////////////////////////////////////////////
@@ -1491,7 +1480,7 @@ protected:
 
 #endif // TARGET_RISCV64
 
-        inline static bool fitsInSmallCns(ssize_t val)
+        inline static bool fitsInSmallCns(cnsval_ssize_t val)
         {
             return ((val >= ID_MIN_SMALL_CNS) && (val <= ID_MAX_SMALL_CNS));
         }
@@ -1669,11 +1658,11 @@ protected:
 
 #endif // EMIT_BACKWARDS_NAVIGATION
 
-        ssize_t idSmallCns() const
+        signed idSmallCns() const
         {
             return _idSmallCns;
         }
-        void idSmallCns(ssize_t value)
+        void idSmallCns(cnsval_ssize_t value)
         {
             assert(fitsInSmallCns(value));
             _idSmallCns = value;
@@ -3223,14 +3212,60 @@ public:
     static unsigned emitSmallDspCnt;
     static unsigned emitLargeDspCnt;
 
-    static unsigned emitSmallCnsCnt;
 #define SMALL_CNS_TSZ 256
     static unsigned emitSmallCns[SMALL_CNS_TSZ];
+    static unsigned emitSmallCnsCnt;
     static unsigned emitLargeCnsCnt;
+    static unsigned emitNegCnsCnt;
+    static unsigned emitPow2CnsCnt;
+
     static unsigned emitTotalDescAlignCnt;
 
     static unsigned emitIFcounts[IF_COUNT];
 
+    void TrackCns(cnsval_ssize_t value)
+    {
+        if (value < 0)
+        {
+            emitNegCnsCnt++;
+        }
+
+        if (isPow2(value))
+        {
+            emitPow2CnsCnt++;
+        }
+    }
+
+    void TrackSmallCns(cnsval_ssize_t value)
+    {
+        // We only track a subset of the allowed small constants and
+        // so we'll split the tracked range between positive/negative
+        // aggregating those outside the tracked range into the min/max
+        // instead.
+
+        assert(fitsInSmallCns(value));
+        uint32_t index = 0;
+
+        if (value >= ((SMALL_CNS_TSZ / 2) - 1))
+        {
+            index = static_cast<uint32_t>(SMALL_CNS_TSZ - 1);
+        }
+        else if (value >= (0 - SMALL_CNS_TSZ / 2))
+        {
+            index = static_cast<uint32_t>(value + (SMALL_CNS_TSZ / 2));
+        }
+
+        emitSmallCnsCnt++;
+        emitSmallCns[index]++;
+
+        TrackCns(value);
+    }
+
+    void TrackLargeCns(cnsval_ssize_t value)
+    {
+        emitLargeCnsCnt++;
+        TrackCns(value);
+    }
 #endif // EMITTER_STATS
 
 /*************************************************************************
@@ -3458,17 +3493,21 @@ inline emitter::instrDesc* emitter::emitNewInstrLclVarPair(emitAttr attr, cnsval
     {
         instrDescLclVarPair* id = emitAllocInstrLclVarPair(attr);
         id->idSmallCns(cns);
+
 #if EMITTER_STATS
-        ID_INC_SMALL_CNS(cns);
+        TrackSmallCns(cns);
 #endif
+
         return id;
     }
     else
     {
         instrDescLclVarPairCns* id = emitAllocInstrLclVarPairCns(attr, cns);
+
 #if EMITTER_STATS
-        emitLargeCnsCnt++;
+        TrackLargeCns(cns);
 #endif
+
         return id;
     }
 }
@@ -3517,7 +3556,7 @@ inline emitter::instrDesc* emitter::emitNewInstrCns(emitAttr attr, cnsval_ssize_
         id->idSmallCns(cns);
 
 #if EMITTER_STATS
-        ID_INC_SMALL_CNS(cns);
+        TrackSmallCns(cns);
 #endif
 
         return id;
@@ -3527,7 +3566,7 @@ inline emitter::instrDesc* emitter::emitNewInstrCns(emitAttr attr, cnsval_ssize_
         instrDescCns* id = emitAllocInstrCns(attr, cns);
 
 #if EMITTER_STATS
-        emitLargeCnsCnt++;
+        TrackLargeCns(cns);
 #endif
 
         return id;
@@ -3585,7 +3624,7 @@ inline emitter::instrDesc* emitter::emitNewInstrSC(emitAttr attr, cnsval_ssize_t
         id->idSmallCns(cns);
 
 #if EMITTER_STATS
-        ID_INC_SMALL_CNS(cns);
+        TrackSmallCns(cns);
 #endif
 
         return id;
@@ -3595,7 +3634,7 @@ inline emitter::instrDesc* emitter::emitNewInstrSC(emitAttr attr, cnsval_ssize_t
         instrDescCns* id = emitAllocInstrCns(attr, cns);
 
 #if EMITTER_STATS
-        emitLargeCnsCnt++;
+        TrackLargeCns(cns);
 #endif
 
         return id;
