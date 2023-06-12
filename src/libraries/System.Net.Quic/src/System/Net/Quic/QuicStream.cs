@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -695,6 +696,10 @@ public sealed partial class QuicStream
 
         // Wait for SHUTDOWN_COMPLETE, the last event, so that all resources can be safely released.
         await valueTask.ConfigureAwait(false);
+        Debug.Assert(_startedTcs.IsCompleted);
+        // TODO: Revisit this with https://github.com/dotnet/runtime/issues/79818 and https://github.com/dotnet/runtime/issues/79911
+        Debug.Assert(_receiveTcs.KeepAliveReleased);
+        Debug.Assert(_sendTcs.KeepAliveReleased);
         _handle.Dispose();
 
         lock (_sendBuffersLock)

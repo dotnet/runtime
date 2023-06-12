@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
@@ -617,6 +618,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         // Wait for SHUTDOWN_COMPLETE, the last event, so that all resources can be safely released.
         await valueTask.ConfigureAwait(false);
+        Debug.Assert(_connectedTcs.IsCompleted);
         _handle.Dispose();
 
         _configuration?.Dispose();
