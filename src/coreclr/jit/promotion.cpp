@@ -916,7 +916,6 @@ public:
             return false;
         }
 
-        int iters = 0;
         if (m_candidateStores.Height() > 0)
         {
             // Now look for induced accesses due to assignment decomposition.
@@ -928,7 +927,7 @@ public:
             // collections need more than 10 iterations and 99.5% of methods
             // need fewer than 5 iterations.
             // (Also note that this part of physical promotion does not seem to have measurable impact on TP.)
-            while (iters < 10)
+            for (int iters = 0; iters < 10; iters++)
             {
                 for (int i = 0; i < m_candidateStores.Height(); i++)
                 {
