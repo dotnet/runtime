@@ -518,15 +518,14 @@ namespace System.IO
                     }
                     break;
                 default:
+                    if (_stream.CanSeek)
+                    {
+                        _stream.Seek(numBytes, SeekOrigin.Current);
+                        return;
+                    }
                     byte[] buffer = ArrayPool<byte>.Shared.Rent(numBytes);
-                    try
-                    {
-                        _stream.ReadExactly(buffer.AsSpan(0, numBytes));
-                    }
-                    finally
-                    {
-                        ArrayPool<byte>.Shared.Return(buffer);
-                    }
+                    _stream.ReadExactly(buffer.AsSpan(0, numBytes));
+                    ArrayPool<byte>.Shared.Return(buffer);
                     break;
             }
         }
