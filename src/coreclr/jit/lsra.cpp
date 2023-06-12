@@ -4503,6 +4503,10 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         }
     }
 #else
+    if (compiler->info.compMethodHashPrivate == 0x8e7151c9)
+    {
+        printf("hello\n");
+    }
     regMaskTP deadCandidates   = ~liveRegs;
     regMaskTP deadCandidateBit = genFindLowestBit(deadCandidates);
     regMaskTP maxCandidateBit  = 1ULL << (availableRegCount - 1);
