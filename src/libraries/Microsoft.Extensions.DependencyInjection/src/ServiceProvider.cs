@@ -183,7 +183,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 {
                     OnResolve(callSite, scope);
                     DependencyInjectionEventSource.Log.ServiceResolved(this, serviceType);
-                    return realizedService.Invoke(scope);
+                    return realizedService(scope);
                 };
             }
 
