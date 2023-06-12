@@ -45,7 +45,8 @@ namespace System.Buffers
         public static System.SequencePosition? PositionOf<T>(this in System.Buffers.ReadOnlySequence<T> source, T value) where T : System.IEquatable<T>? { throw null; }
         public static T[] ToArray<T>(this in System.Buffers.ReadOnlySequence<T> sequence) { throw null; }
         public static void Write<T>(this System.Buffers.IBufferWriter<T> writer, System.ReadOnlySpan<T> value) { }
-        public static ReadOnlySequence<char> AsSequence(this System.Text.StringBuilder builder) { throw null; }
+        public static ReadOnlySequence<char> AsSequence(this System.Text.StringBuilder source) { throw null; }
+        public static ReadOnlySequence<char> AsSequence(this System.Text.StringBuilder source, int startIndex, int length) { throw null; }
     }
     public partial interface IBufferWriter<T>
     {

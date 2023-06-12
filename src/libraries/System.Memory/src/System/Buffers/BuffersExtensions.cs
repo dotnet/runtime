@@ -158,17 +158,84 @@ namespace System.Buffers
         /// <summary>
         /// Return <see cref="StringBuilder"/> content as <see cref="ReadOnlySequence{Char}"/>
         /// </summary>
-        public static ReadOnlySequence<char> AsSequence(this StringBuilder builder)
+        public static ReadOnlySequence<char> AsSequence(this StringBuilder source)
         {
-            StringBuilder.ChunkReverseEnumerator enumerator = builder.GetReverseChunks().GetEnumerator();
+            StringBuilder.ChunkReverseEnumerator enumerator = source.GetReverseChunks().GetEnumerator();
 
             enumerator.MoveNext(); // Always true;
             ReadOnlyMemorySegment<char> endSegment = new ReadOnlyMemorySegment<char>(
-                enumerator.Current, builder.Length - enumerator.Current.Length);
+                enumerator.Current, source.Length - enumerator.Current.Length);
 
             ReadOnlyMemorySegment<char> startSegment = endSegment;
             while (enumerator.MoveNext())
                 startSegment = new ReadOnlyMemorySegment<char>(enumerator.Current, startSegment);
+
+            return new ReadOnlySequence<char>(startSegment, 0, endSegment, endSegment.Memory.Length);
+        }
+
+        /// <summary>
+        /// Return part of <see cref="StringBuilder"/> content as <see cref="ReadOnlySequence{Char}"/>
+        /// </summary>
+        /// <param name="source">The source <see cref="StringBuilder"/></param>
+        /// <param name="startIndex">The index to start in this builder.</param>
+        /// <param name="length">The number of characters to read in this builder.</param>
+        public static ReadOnlySequence<char> AsSequence(this StringBuilder source, int startIndex, int length)
+        //=> AsSequence(source).Slice(startIndex, length);
+        {
+            int currentLength = source.Length;
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+            if (startIndex > currentLength)
+            {
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, currentLength);
+            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+
+            if (length == 0)
+                return ReadOnlySequence<char>.Empty;
+
+            if (startIndex > currentLength - length)
+            {
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(length, currentLength - startIndex);
+            }
+
+            int endIndex = startIndex + length;
+            StringBuilder.ChunkReverseEnumerator enumerator = source.GetReverseChunks().GetEnumerator();
+
+            ReadOnlyMemory<char> memory;
+            do
+            {
+                enumerator.MoveNext(); // Always true;
+                memory = enumerator.Current;
+                currentLength -= memory.Length;
+            }
+            while (currentLength >= endIndex);
+
+            {
+                if (startIndex - currentLength is int memoryIndex && memoryIndex >= 0)
+                {
+                    // SingleSegment
+                    memory = memory.Slice(memoryIndex, length);
+                    return new ReadOnlySequence<char>(memory);
+                }
+            }
+
+            memory = memory.Slice(0, endIndex - currentLength);
+            ReadOnlyMemorySegment<char> endSegment = new ReadOnlyMemorySegment<char>(
+                memory, currentLength - startIndex);
+
+            ReadOnlyMemorySegment<char> startSegment = endSegment;
+            while (true)
+            {
+                enumerator.MoveNext(); // Always true;
+                memory = enumerator.Current;
+                currentLength -= memory.Length;
+                if (currentLength <= startIndex)
+                    break;
+                startSegment = new ReadOnlyMemorySegment<char>(memory, startSegment);
+            }
+
+            memory = memory.Slice(startIndex - currentLength);
+            startSegment = new ReadOnlyMemorySegment<char>(memory, startSegment);
 
             return new ReadOnlySequence<char>(startSegment, 0, endSegment, endSegment.Memory.Length);
         }

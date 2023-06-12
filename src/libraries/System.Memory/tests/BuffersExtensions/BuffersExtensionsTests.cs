@@ -24,7 +24,7 @@ namespace System.Buffers.Tests
             var bufferWriter = new TestBufferWriterMultiSegment();
             bufferWriter.Write("Hello"u8);
             bufferWriter.Write(" World!"u8);
-            Assert.Equal(12, bufferWriter.Comitted.Count);
+            Assert.Equal(12, bufferWriter.Committed.Count);
             Assert.Equal("Hello World!", bufferWriter.ToString());
         }
 
@@ -122,7 +122,7 @@ namespace System.Buffers.Tests
             private byte[] _current = new byte[0];
             private List<byte[]> _committed = new List<byte[]>();
 
-            public List<byte[]> Comitted => _committed;
+            public List<byte[]> Committed => _committed;
 
             public void Advance(int bytes)
             {
@@ -170,6 +170,8 @@ namespace System.Buffers.Tests
         [Fact]
         public void StringBuilderAsSequence()
         {
+            var random = new Random(218904821);
+
             // Test on a variety of lengths, at least up to the point of 9 8K chunks = 72K because this is where
             // we start using a different technique for creating the ChunkEnumerator.   200 * 500 = 100K which hits this.
             for (int i = 0; i < 200; i++)
@@ -186,13 +188,58 @@ namespace System.Buffers.Tests
                     inBuilder.Append("_abcdefghijklmnopqrstuvwxyz01234567890__Abcdefghijklmnopqrstuvwxyz01234567890__ABcdefghijklmnopqrstuvwxyz01234567890_");
                 }
 
-                // Copy the string out (not using StringBuilder).
+                // The strings formed by concatenating the chunks should be the same as the value in the StringBuilder.
                 var sequence = inBuilder.AsSequence();
                 var outStr = sequence.ToString();
+                Assert.Equal(outStr, inBuilder.ToString());
 
                 // The strings formed by concatenating the chunks should be the same as the value in the StringBuilder.
-                Assert.Equal(outStr, inBuilder.ToString());
+                sequence = inBuilder.AsSequence(0, inBuilder.Length);
+                outStr = sequence.ToString();
+                Assert.Equal(outStr, inBuilder.ToString(0, inBuilder.Length));
+
+                // Execute 10 tests with random startIndex and length
+                for (var t = 0; t < 10; t++)
+                {
+                    var startIndex = random.Next(0, inBuilder.Length + 1);
+                    var length = random.Next(0, inBuilder.Length - startIndex + 1);
+
+                    // The strings formed by concatenating the chunks should be the same as the value in the StringBuilder.
+                    sequence = inBuilder.AsSequence(startIndex, 0);
+                    outStr = sequence.ToString();
+                    Assert.Equal(outStr, inBuilder.ToString(startIndex, 0));
+
+                    if (length > 0)
+                    {
+                        // The strings formed by concatenating the chunks should be the same as the value in the StringBuilder.
+                        sequence = inBuilder.AsSequence(startIndex, 1);
+                        outStr = sequence.ToString();
+                        Assert.Equal(outStr, inBuilder.ToString(startIndex, 1));
+                    }
+
+                    // The strings formed by concatenating the chunks should be the same as the value in the StringBuilder.
+                    sequence = inBuilder.AsSequence(0, length);
+                    outStr = sequence.ToString();
+                    Assert.Equal(outStr, inBuilder.ToString(0, length));
+
+                    // The strings formed by concatenating the chunks should be the same as the value in the StringBuilder.
+                    sequence = inBuilder.AsSequence(startIndex, length);
+                    outStr = sequence.ToString();
+                    Assert.Equal(outStr, inBuilder.ToString(startIndex, length));
+                }
             }
+        }
+
+        [Fact]
+        public void StringBuilderAsSequence_Invalid()
+        {
+            var builder = new StringBuilder("Hello");
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.AsSequence(-1, 0)); // Start index < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => builder.AsSequence(0, -1)); // Length < 0
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.AsSequence(6, 0)); // Length + start index > builder.Length
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => builder.AsSequence(5, 1)); // Length + start index > builder.Length
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => builder.AsSequence(4, 2)); // Length + start index > builder.Length
         }
     }
 }
