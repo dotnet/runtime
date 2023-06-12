@@ -79,7 +79,6 @@ cd src\libraries\System.Collections.Immutable\tests
 dotnet build /t:Test
 ```
 
-
 ### Running only certain tests
 
 It is possible to pass parameters to the underlying xunit runner via the `XUnitOptions` parameter, e.g., to filter to tests in just one fixture (class):
