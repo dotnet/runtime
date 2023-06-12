@@ -794,7 +794,7 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
             }
             else
             {
-                assert(id == NI_AVX512F_CompareNotLessThanMask);
+                assert(id == NI_AVX512F_CompareNotLessThanOrEqualMask);
                 return static_cast<int>(IntComparisonMode::GreaterThan);
             }
             break;

@@ -16810,7 +16810,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 }
 
                 assert(isLowSimdReg(op3Reg));
-                cnsVal.cnsVal = (cnsVal.cnsVal - XMMBASE) << 4;
+                cnsVal.cnsVal = static_cast<int8_t>((cnsVal.cnsVal - XMMBASE) << 4);
             }
 
             if (EncodedBySSE38orSSE3A(ins))
@@ -17075,7 +17075,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 }
 
                 assert(isLowSimdReg(op3Reg));
-                cnsVal.cnsVal = (cnsVal.cnsVal - XMMBASE) << 4;
+                cnsVal.cnsVal = static_cast<int8_t>((cnsVal.cnsVal - XMMBASE) << 4);
             }
 
             if (EncodedBySSE38orSSE3A(ins))
@@ -17335,7 +17335,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 }
 
                 assert(isLowSimdReg(op3Reg));
-                cnsVal.cnsVal = (cnsVal.cnsVal - XMMBASE) << 4;
+                cnsVal.cnsVal = static_cast<int8_t>((cnsVal.cnsVal - XMMBASE) << 4);
             }
 
             if (EncodedBySSE38orSSE3A(ins))
