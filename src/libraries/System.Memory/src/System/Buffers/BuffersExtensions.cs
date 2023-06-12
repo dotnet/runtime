@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace System.Buffers
 {
@@ -109,7 +110,7 @@ namespace System.Buffers
         /// <summary>
         /// Writes contents of <paramref name="value"/> to <paramref name="writer"/>
         /// </summary>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the <paramref name="writer"/> is shorter than the <paramref name="value"/>.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -152,6 +153,24 @@ namespace System.Buffers
 
                 return;
             }
+        }
+
+        /// <summary>
+        /// Return <see cref="StringBuilder"/> content as <see cref="ReadOnlySequence{Char}"/>
+        /// </summary>
+        public static ReadOnlySequence<char> AsSequence(this StringBuilder builder)
+        {
+            StringBuilder.ChunkReverseEnumerator enumerator = builder.GetReverseChunks().GetEnumerator();
+
+            enumerator.MoveNext(); // Always true;
+            ReadOnlyMemorySegment<char> endSegment = new ReadOnlyMemorySegment<char>(
+                enumerator.Current, builder.Length - enumerator.Current.Length);
+
+            ReadOnlyMemorySegment<char> startSegment = endSegment;
+            while (enumerator.MoveNext())
+                startSegment = new ReadOnlyMemorySegment<char>(enumerator.Current, startSegment);
+
+            return new ReadOnlySequence<char>(startSegment, 0, endSegment, endSegment.Memory.Length);
         }
     }
 }

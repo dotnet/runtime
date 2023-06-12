@@ -23,6 +23,7 @@
     <Compile Include="System\Buffers\ReadOnlySequenceDebugView.cs" />
     <Compile Include="System\Buffers\ReadOnlySequenceSegment.cs" />
     <Compile Include="System\Buffers\ReadOnlySequence.Helpers.cs" />
+    <Compile Include="System\Buffers\ReadOnlyMemorySegment.cs" />
     <Compile Include="System\Buffers\SequenceReader.cs" />
     <Compile Include="System\Buffers\SequenceReader.Search.cs" />
     <Compile Include="System\Buffers\SequenceReaderExtensions.Binary.cs" />

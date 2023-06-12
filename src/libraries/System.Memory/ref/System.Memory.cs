@@ -45,6 +45,7 @@ namespace System.Buffers
         public static System.SequencePosition? PositionOf<T>(this in System.Buffers.ReadOnlySequence<T> source, T value) where T : System.IEquatable<T>? { throw null; }
         public static T[] ToArray<T>(this in System.Buffers.ReadOnlySequence<T> sequence) { throw null; }
         public static void Write<T>(this System.Buffers.IBufferWriter<T> writer, System.ReadOnlySpan<T> value) { }
+        public static ReadOnlySequence<char> AsSequence(this System.Text.StringBuilder builder) { throw null; }
     }
     public partial interface IBufferWriter<T>
     {
@@ -67,6 +68,11 @@ namespace System.Buffers
         public System.ReadOnlyMemory<T> Memory { get { throw null; } protected set { } }
         public System.Buffers.ReadOnlySequenceSegment<T>? Next { get { throw null; } protected set { } }
         public long RunningIndex { get { throw null; } protected set { } }
+    }
+    public partial class ReadOnlyMemorySegment<T> : ReadOnlySequenceSegment<T>
+    {
+        public ReadOnlyMemorySegment(System.ReadOnlyMemory<T> memory, System.Buffers.ReadOnlySequenceSegment<T> next) { throw null; }
+        public ReadOnlyMemorySegment(System.ReadOnlyMemory<T> memory, long runningIndex) { throw null; }
     }
     public readonly partial struct ReadOnlySequence<T>
     {
