@@ -105,6 +105,16 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     moduleConfig.debugLevel = hasDebuggingEnabled(resourceLoader.bootConfig) ? 1 : 0;
     moduleConfig.mainAssemblyName = resourceLoader.bootConfig.entryAssembly;
 
+    const anyBootConfig = (resourceLoader.bootConfig as any);
+    for (const key in resourceLoader.bootConfig) {
+        if (Object.prototype.hasOwnProperty.call(anyBootConfig, key)) {
+            if (anyBootConfig[key] === null) {
+                delete anyBootConfig[key];
+            }
+
+        }
+    }
+
     // FIXME this mix of both formats is ugly temporary hack
     Object.assign(moduleConfig, {
         ...resourceLoader.bootConfig,
