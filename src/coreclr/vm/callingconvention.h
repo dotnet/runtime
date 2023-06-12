@@ -926,7 +926,9 @@ public:
         {
             // TODO-RISCV64: support SIMD.
             // Dividing by 8 as size of each register in FloatArgumentRegisters is 8 bytes.
-            pLoc->m_idxFloatReg = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters()) / 8;
+            const int floatRegOfsInBytes = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters());
+            _ASSERTE((floatRegOfsInBytes % FLOAT_REGISTER_SIZE) == 0);
+            pLoc->m_idxFloatReg = floatRegOfsInBytes / FLOAT_REGISTER_SIZE;
 
             assert(!m_argTypeHandle.IsHFA());
 

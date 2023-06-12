@@ -62,6 +62,7 @@ namespace ILCompiler
             public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
             {
                 var builder = new ObjectDataBuilder(factory.TypeSystemContext.Target, relocsOnly);
+                builder.RequireInitialPointerAlignment();
                 builder.AddSymbol(this);
 
                 var settings = new Dictionary<string, ISymbolNode>();

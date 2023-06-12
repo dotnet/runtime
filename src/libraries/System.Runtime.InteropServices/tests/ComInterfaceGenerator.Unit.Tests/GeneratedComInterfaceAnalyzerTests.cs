@@ -212,9 +212,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
-                        .WithArguments(TypeNames.ComInterfaceTypeAttribute + "." + nameof(ComInterfaceType.InterfaceIsIDispatch)));
+                        .WithArguments(TypeNames.ComInterfaceType + "." + nameof(ComInterfaceType.InterfaceIsIDispatch)));
             }
 
             [Fact]
@@ -232,7 +232,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
                         .WithArguments("2"));
             }
@@ -252,9 +252,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
-                        .WithArguments(TypeNames.ComInterfaceTypeAttribute + "." + nameof(ComInterfaceType.InterfaceIsIInspectable)));
+                        .WithArguments(TypeNames.ComInterfaceType + "." + nameof(ComInterfaceType.InterfaceIsIInspectable)));
             }
 
             [Fact]
@@ -272,7 +272,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
                         .WithArguments("3"));
             }
@@ -292,9 +292,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
-                        .WithArguments(TypeNames.ComInterfaceTypeAttribute + "." + nameof(ComInterfaceType.InterfaceIsDual)));
+                        .WithArguments(TypeNames.ComInterfaceType + "." + nameof(ComInterfaceType.InterfaceIsDual)));
             }
 
             [Fact]
@@ -312,7 +312,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
                         .WithArguments("0"));
             }
@@ -374,9 +374,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
-                        .WithArguments(TypeNames.ComInterfaceTypeAttribute + "." + nameof(ComInterfaceType.InterfaceIsIDispatch)));
+                        .WithArguments(TypeNames.ComInterfaceType + "." + nameof(ComInterfaceType.InterfaceIsIDispatch)));
             }
 
             [Fact]
@@ -396,7 +396,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
                         .WithArguments("2"));
             }
@@ -418,9 +418,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
-                        .WithArguments(TypeNames.ComInterfaceTypeAttribute + "." + nameof(ComInterfaceType.InterfaceIsIInspectable)));
+                        .WithArguments(TypeNames.ComInterfaceType + "." + nameof(ComInterfaceType.InterfaceIsIInspectable)));
             }
 
             [Fact]
@@ -440,7 +440,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
                         .WithArguments("3"));
             }
@@ -462,9 +462,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
-                        .WithArguments(TypeNames.ComInterfaceTypeAttribute + "." + nameof(ComInterfaceType.InterfaceIsDual)));
+                        .WithArguments(TypeNames.ComInterfaceType + "." + nameof(ComInterfaceType.InterfaceIsDual)));
             }
 
             [Fact]
@@ -484,7 +484,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
                         .WithArguments("0"));
             }

@@ -37,7 +37,7 @@ namespace Microsoft.Interop
             int hash = 0;
             foreach (KeyValuePair<MarshalMode, CustomTypeMarshallerData> mode in Modes)
             {
-                hash ^= mode.Key.GetHashCode() ^ mode.Value.GetHashCode();
+                hash = HashCode.Combine(hash, mode.Key, mode.Value);
             }
             return hash;
         }
