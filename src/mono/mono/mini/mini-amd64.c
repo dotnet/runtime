@@ -7322,7 +7322,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_INSERT_R8: {
 			if (ins->inst_c0 == 0) {
-				amd64_sse_orpd_reg_reg (code, ins->dreg, ins->sreg2);
+				amd64_sse_blendpd_reg_reg (code, ins->dreg, ins->sreg2, 0b1);
 			} else {
 				g_assert (ins->inst_c0 == 1);
 				amd64_movlhps_reg_reg (code, ins->dreg, ins->sreg2);
