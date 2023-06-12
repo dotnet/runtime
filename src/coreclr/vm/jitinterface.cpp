@@ -1582,7 +1582,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 pResult->helper = getSharedStaticsHelper(pField, pFieldMT);
 #if defined(TARGET_ARM)
                 // Optimization is disabled for linux/windows arm
-#elif !defined(_MSC_VER) && defined(TARGET_32BIT)
+#elif !defined(TARGET_WINDOWS) && defined(TARGET_X86)
                 // Optimization is disabled for linux/x86
 #else
                 // For windows x64/x86/arm64, linux x64/arm64:
@@ -1917,9 +1917,8 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
         pInfo->offsetOfMaxThreadStaticBlocks = threadStaticBaseOffset + offsetof(ThreadStaticBlockInfo, NonGCMaxThreadStaticBlocks);
         pInfo->offsetOfThreadStaticBlocks = threadStaticBaseOffset + offsetof(ThreadStaticBlockInfo, NonGCThreadStaticBlocks);
     }
-    pInfo->offsetOfGCDataPointer = static_cast<uint32_t>(PtrArray::GetDataOffset());
-
 #endif // _MSC_VER
+    pInfo->offsetOfGCDataPointer = static_cast<uint32_t>(PtrArray::GetDataOffset());
 
     EE_TO_JIT_TRANSITION();
 }
