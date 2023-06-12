@@ -115,7 +115,7 @@ namespace System.ComponentModel.Composition
 
         internal static void Constructor_DirectoryAsCodeBaseArgument_ShouldThrowFileLoad(Func<string, AssemblyCatalog> catalogCreator)
         {
-            string directory = Environment.GetFolderPath(Environment.SpecialFolder.System);
+            string directory = Environment.SystemDirectory;
             Assert.True(Directory.Exists(directory));
 
             Assert.Throws<FileLoadException>(() => catalogCreator(directory));

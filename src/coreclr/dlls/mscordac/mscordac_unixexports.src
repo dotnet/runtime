@@ -55,6 +55,7 @@ nativeStringResourceTable_mscorrc
 #PAL_fprintf
 #PAL__wcstoui64
 #PAL_wcstoul
+#PAL_wcstod
 #PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange
 #PAL_VirtualUnwindOutOfProc
 #PAL_wcslen

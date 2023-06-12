@@ -59,6 +59,7 @@ typedef enum {
 
 // This is sorted.
 // grep ICALL_EXPORT | sort | uniq
+ICALL_EXPORT void ves_icall_System_Reflection_AssemblyName_FreeAssemblyName(MonoAssemblyName* aname, MonoBoolean free_struct);
 ICALL_EXPORT MonoAssemblyName* ves_icall_System_Reflection_AssemblyName_GetNativeName (MonoAssembly*);
 ICALL_EXPORT MonoBoolean ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStack (void);
 ICALL_EXPORT MonoBoolean ves_icall_System_Threading_Thread_YieldInternal (void);
@@ -174,7 +175,6 @@ ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_
 ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIOPack (intptr_t native_overlapped, intptr_t overlapped, uint16_t clr_instance_id);
 
 ICALL_EXPORT void ves_icall_Mono_RuntimeGPtrArrayHandle_GPtrArrayFree (GPtrArray *ptr_array);
-ICALL_EXPORT void ves_icall_Mono_RuntimeMarshal_FreeAssemblyName (MonoAssemblyName *aname, MonoBoolean free_struct);
 ICALL_EXPORT void ves_icall_Mono_SafeStringMarshal_GFree (void *c_str);
 ICALL_EXPORT char* ves_icall_Mono_SafeStringMarshal_StringToUtf8 (MonoString *volatile* s);
 ICALL_EXPORT MonoType* ves_icall_Mono_RuntimeClassHandle_GetTypeFromClass (MonoClass *klass);
@@ -183,6 +183,16 @@ ICALL_EXPORT gpointer ves_icall_System_Threading_LowLevelLifoSemaphore_InitInter
 ICALL_EXPORT void     ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal (gpointer sem_ptr);
 ICALL_EXPORT gint32   ves_icall_System_Threading_LowLevelLifoSemaphore_TimedWaitInternal (gpointer sem_ptr, gint32 timeout_ms);
 ICALL_EXPORT void     ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal (gpointer sem_ptr, gint32 count);
+
+/* include these declarations if we're in the threaded wasm runtime, or if we're building a wasm-targeting cross compiler and we need to support --print-icall-table */
+#if (defined(HOST_BROWSER) && !defined(DISABLE_THREADS)) || (defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP))
+ICALL_EXPORT gpointer ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_InitInternal (void);
+ICALL_EXPORT void   ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_PrepareAsyncWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timeout_cb, intptr_t user_data);
+
+ICALL_EXPORT MonoBoolean ves_icall_System_Threading_WebWorkerEventLoop_HasUnsettledInteropPromisesNative(void);
+ICALL_EXPORT void ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal (void);
+ICALL_EXPORT void ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal (void);
+#endif
 
 #ifdef TARGET_AMD64
 ICALL_EXPORT void ves_icall_System_Runtime_Intrinsics_X86_X86Base___cpuidex (int abcd[4], int function_id, int subfunction_id);

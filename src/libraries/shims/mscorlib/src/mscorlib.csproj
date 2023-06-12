@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(CoreLibProject)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel\src\System.ComponentModel.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Console\src\System.Console.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.StackTrace\src\System.Diagnostics.StackTrace.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.FileSystem.AccessControl\src\System.IO.FileSystem.AccessControl.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.FileSystem.DriveInfo\src\System.IO.FileSystem.DriveInfo.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.IsolatedStorage\src\System.IO.IsolatedStorage.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ObjectModel\src\System.ObjectModel.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.TypeExtensions\src\System.Reflection.TypeExtensions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Resources.Writer\src\System.Resources.Writer.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.VisualC\src\System.Runtime.CompilerServices.VisualC.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Claims\src\System.Security.Claims.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography\src\System.Security.Cryptography.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.AccessControl\src\System.Threading.AccessControl.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Tasks.Parallel\src\System.Threading.Tasks.Parallel.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -25,6 +25,8 @@ namespace System.Text.Json.Serialization.Converters
         internal override bool SupportsCreateObjectDelegate => Converter.SupportsCreateObjectDelegate;
         internal override bool CanHaveMetadata => Converter.CanHaveMetadata;
 
+        internal override bool CanPopulate => Converter.CanPopulate;
+
         public JsonMetadataServicesConverter(JsonConverter<T> converter)
         {
             ConverterStrategy = converter.ConverterStrategy;

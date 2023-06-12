@@ -27,7 +27,7 @@ namespace Xunit
         ZapDisable = 1 << 5, // DOTNET_ZapDisable is set.
 
         // GCStress3 forces a GC at various locations, typically transitions
-        // to/from the VM from managed code. 
+        // to/from the VM from managed code.
         GCStress3 = 1 << 6,  // DOTNET_GCStress includes mode 0x3.
 
         // GCStressC forces a GC at every JIT-generated code instruction,

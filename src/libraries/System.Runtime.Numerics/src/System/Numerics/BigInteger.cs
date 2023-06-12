@@ -3150,8 +3150,8 @@ namespace System.Numerics
                 Debug.Assert(_bits.Length > 0);
                 // Wasted space: _bits[0] could have been packed into _sign
                 Debug.Assert(_bits.Length > 1 || _bits[0] >= kuMaskHighBit);
-                // Wasted space: leading zeros could have been truncated
-                Debug.Assert(_bits[_bits.Length - 1] != 0);
+                //// Wasted space: leading zeros could have been truncated // TODO: https://github.com/dotnet/runtime/issues/84991
+                //Debug.Assert(_bits[_bits.Length - 1] != 0);
                 // Arrays larger than this can't fit into a Span<byte>
                 Debug.Assert(_bits.Length <= MaxLength);
             }

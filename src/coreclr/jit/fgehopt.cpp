@@ -1035,7 +1035,7 @@ PhaseStatus Compiler::fgCloneFinally()
         // statement after the finally, so they can share the clone.
         //
         // Clone the finally body, and splice it into the flow graph
-        // within in the parent region of the try.
+        // within the parent region of the try.
         //
         const unsigned  finallyTryIndex = firstBlock->bbTryIndex;
         BasicBlock*     insertAfter     = nullptr;
@@ -1048,6 +1048,10 @@ PhaseStatus Compiler::fgCloneFinally()
         {
             BasicBlock* newBlock;
 
+            // Avoid asserts when `fgNewBBinRegion` verifies the handler table, by mapping any cloned finally
+            // return blocks to BBJ_ALWAYS (which we would do below if we didn't do it here).
+            BBjumpKinds bbNewJumpKind = (block->bbJumpKind == BBJ_EHFINALLYRET) ? BBJ_ALWAYS : block->bbJumpKind;
+
             if (block == firstBlock)
             {
                 // Put first cloned finally block into the appropriate
@@ -1055,7 +1059,7 @@ PhaseStatus Compiler::fgCloneFinally()
                 // callfinallys, depending on the EH implementation.
                 const unsigned    hndIndex = 0;
                 BasicBlock* const nearBlk  = cloneInsertAfter;
-                newBlock                   = fgNewBBinRegion(block->bbJumpKind, finallyTryIndex, hndIndex, nearBlk);
+                newBlock                   = fgNewBBinRegion(bbNewJumpKind, finallyTryIndex, hndIndex, nearBlk);
 
                 // If the clone ends up just after the finally, adjust
                 // the stopping point for finally traversal.
@@ -1069,7 +1073,7 @@ PhaseStatus Compiler::fgCloneFinally()
             {
                 // Put subsequent blocks in the same region...
                 const bool extendRegion = true;
-                newBlock                = fgNewBBafter(block->bbJumpKind, insertAfter, extendRegion);
+                newBlock                = fgNewBBafter(bbNewJumpKind, insertAfter, extendRegion);
             }
 
             cloneBBCount++;
@@ -1121,7 +1125,7 @@ PhaseStatus Compiler::fgCloneFinally()
         JITDUMP("Cloned finally blocks are: " FMT_BB " ... " FMT_BB "\n", blockMap[firstBlock]->bbNum,
                 blockMap[lastBlock]->bbNum);
 
-        // Redirect redirect any branches within the newly-cloned
+        // Redirect any branches within the newly-cloned
         // finally, and any finally returns to jump to the return
         // point.
         for (BasicBlock* block = firstBlock; block != nextBlock; block = block->bbNext)
@@ -1134,7 +1138,7 @@ PhaseStatus Compiler::fgCloneFinally()
                 GenTree*   finallyRetExpr = finallyRet->GetRootNode();
                 assert(finallyRetExpr->gtOper == GT_RETFILT);
                 fgRemoveStmt(newBlock, finallyRet);
-                newBlock->bbJumpKind = BBJ_ALWAYS;
+                assert(newBlock->bbJumpKind == BBJ_ALWAYS); // we mapped this above already
                 newBlock->bbJumpDest = normalCallFinallyReturn;
 
                 fgAddRefPred(normalCallFinallyReturn, newBlock);
@@ -1231,6 +1235,17 @@ PhaseStatus Compiler::fgCloneFinally()
             JITDUMP("All callfinallys retargeted; changing finally to fault.\n");
             HBtab->ebdHandlerType  = EH_HANDLER_FAULT_WAS_FINALLY;
             firstBlock->bbCatchTyp = BBCT_FAULT;
+
+            // Change all BBJ_EHFINALLYRET to BBJ_EHFAULTRET in the now-fault region.
+            BasicBlock* const hndBegIter = HBtab->ebdHndBeg;
+            BasicBlock* const hndEndIter = HBtab->ebdHndLast->bbNext;
+            for (BasicBlock* block = hndBegIter; block != hndEndIter; block = block->bbNext)
+            {
+                if (block->bbJumpKind == BBJ_EHFINALLYRET)
+                {
+                    block->bbJumpKind = BBJ_EHFAULTRET;
+                }
+            }
         }
         else
         {

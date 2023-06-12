@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 // Repro for issue fixed 18582 (also seein in 23309) -- stack overflow when remorphing
 // call with a lot of arguments and some CSEs when running with limited stack (as is
@@ -105,7 +106,7 @@ public class GitHub_18582
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int q() => s_x + 1;
 
-    public static void Test()
+    internal static void Test()
     {
         int z = s_x;
         Consume(
@@ -198,7 +199,8 @@ public class GitHub_18582
 
     static int s_x;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         s_x = 1;
         int expected = 8;

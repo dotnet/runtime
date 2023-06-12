@@ -16,6 +16,8 @@ using Microsoft.Build.Utilities;
 
 internal static class Utils
 {
+    public static string WebcilInWasmExtension = ".wasm";
+
     private static readonly object s_SyncObj = new object();
 
     public static string GetEmbeddedResource(string file)
@@ -67,6 +69,9 @@ internal static class Utils
             using StreamWriter sw = new(file);
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
+                // set encoding to UTF-8 -> full Unicode support is needed for usernames -
+                // `command` contains tmp dir path with the username
+                sw.WriteLine(@"%SystemRoot%\System32\chcp.com 65001>nul");
                 sw.WriteLine("setlocal");
                 sw.WriteLine("set errorlevel=dummy");
                 sw.WriteLine("set errorlevel=");
@@ -191,29 +196,6 @@ internal static class Utils
 
         logger.LogMessage(debugMessageImportance, $"{msgPrefix}Exit code: {process.ExitCode}");
         return (process.ExitCode, outputBuilder.ToString().Trim('\r', '\n'));
-    }
-
-    internal static string CreateTemporaryBatchFile(string command)
-    {
-        string extn = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".cmd" : ".sh";
-        string file = Path.Combine(Path.GetTempPath(), $"tmp{Guid.NewGuid():N}{extn}");
-
-        using StreamWriter sw = new(file);
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-                sw.WriteLine("setlocal");
-                sw.WriteLine("set errorlevel=dummy");
-                sw.WriteLine("set errorlevel=");
-        }
-        else
-        {
-            // Use sh rather than bash, as not all 'nix systems necessarily have Bash installed
-            sw.WriteLine("#!/bin/sh");
-        }
-
-        sw.WriteLine(command);
-
-        return file;
     }
 
     public static bool CopyIfDifferent(string src, string dst, bool useHash)

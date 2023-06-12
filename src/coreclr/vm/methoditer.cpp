@@ -24,7 +24,7 @@ BOOL LoadedMethodDescIterator::Next(
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
+        MODE_ANY;
     }
     CONTRACTL_END
 
@@ -203,15 +203,11 @@ MethodDesc *LoadedMethodDescIterator::Current()
         return m_mainMD;
     }
 
-    MethodTable *pMT = m_typeIteratorEntry->GetTypeHandle().GetMethodTable();
+    MethodTable *pMT = m_typeIteratorEntry->GetTypeHandle().GetMethodTable()->GetCanonicalMethodTable();
     PREFIX_ASSUME(pMT != NULL);
-    _ASSERTE(pMT);
-
-    return pMT->GetMethodDescForSlot(m_mainMD->GetSlot());
+    return pMT->GetParallelMethodDesc(m_mainMD);
 }
 
-// Initialize the iterator. It will cover generics + prejitted;
-// but it is not EnC aware.
 void
 LoadedMethodDescIterator::Start(
     AppDomain * pAppDomain,

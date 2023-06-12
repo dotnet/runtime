@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <StrongNameKeyId>ECMA</StrongNameKeyId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Xml.XmlSerializer\src\System.Xml.XmlSerializer.csproj" />
+  </ItemGroup>
+
+</Project>

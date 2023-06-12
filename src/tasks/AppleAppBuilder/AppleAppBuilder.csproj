@@ -20,6 +20,11 @@
     <Compile Include="Xcode.cs" />
   </ItemGroup>
 
-  <Target Name="GetFilesToPackage" />
+  <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
+    <ItemGroup>
+      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*"
+                      TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
+    </ItemGroup>
+  </Target>
 
 </Project>

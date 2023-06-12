@@ -546,9 +546,15 @@ apply_change_to_evaluation_area (MonoVariableRelationsEvaluationArea *area, Mono
 static void
 remove_change_from_evaluation_area (MonoAdditionalVariableRelation *change)
 {
-	if (change->insertion_point != NULL) {
-		change->insertion_point->next = change->relation.next;
-		change->relation.next = NULL;
+	//change->relation.relation = MONO_ANY_RELATION;
+	MonoSummarizedValueRelation *rel = change->insertion_point;
+	while (rel) {
+		if (rel->next == &(change->relation)) {
+			rel->next = rel->next->next;
+			break;
+		} else {
+			rel = rel->next;
+		}
 	}
 }
 

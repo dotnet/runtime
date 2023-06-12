@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
+using Xunit;
 
 public struct A
 {
@@ -8,7 +9,7 @@ public struct A
     public short b;
 }
 
-class TailCallStructPassing
+public class TailCallStructPassing
 {
     public static int bar(int count, A temp)
     {
@@ -50,7 +51,8 @@ class TailCallStructPassing
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         A temp = new A();
         temp.a = 50;

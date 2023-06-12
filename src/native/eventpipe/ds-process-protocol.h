@@ -165,6 +165,32 @@ void
 ds_set_environment_variable_payload_free (DiagnosticsSetEnvironmentVariablePayload *payload);
 
 /*
+* DiagnosticsEnablePerfmapPayload
+*/
+
+#if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)
+struct _DiagnosticsEnablePerfmapPayload {
+#else
+struct _DiagnosticsEnablePerfmapPayload_Internal {
+#endif
+	uint8_t * incoming_buffer;
+
+	uint32_t perfMapType;
+};
+
+#if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)
+struct _DiagnosticsEnablePerfmapPayload {
+	uint8_t _internal [sizeof (struct _DiagnosticsEnablePerfmapPayload_Internal)];
+};
+#endif
+
+DiagnosticsEnablePerfmapPayload *
+ds_enable_perfmap_payload_alloc (void);
+
+void
+ds_enable_perfmap_payload_free (DiagnosticsEnablePerfmapPayload *payload);
+
+/*
  * DiagnosticsProcessProtocolHelper.
  */
 

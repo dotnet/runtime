@@ -8,4 +8,4 @@ export type {
 
 export type {
     PromiseAndController,
-} from "../../promise-controller";
+} from "../../types/internal";

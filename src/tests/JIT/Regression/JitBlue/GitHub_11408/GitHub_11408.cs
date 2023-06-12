@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class GitHub_11408
 {
@@ -25,7 +26,8 @@ class GitHub_11408
             foo((IntPtr)(&x));
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             bar();
 

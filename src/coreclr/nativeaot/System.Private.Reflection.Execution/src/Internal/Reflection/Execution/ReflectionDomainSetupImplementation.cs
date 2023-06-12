@@ -44,15 +44,5 @@ namespace Internal.Reflection.Execution
             string pertainantString = MissingMetadataExceptionCreator.ComputeUsefulPertainantIfPossible(pertainant);
             return new NotSupportedException(SR.Format(resourceName, pertainantString ?? "?"));
         }
-
-        public sealed override Exception CreateMissingArrayTypeException(Type elementType, bool isMultiDim, int rank)
-        {
-            return MissingMetadataExceptionCreator.CreateMissingArrayTypeException(elementType, isMultiDim, rank);
-        }
-
-        public sealed override Exception CreateMissingConstructedGenericTypeException(Type genericTypeDefinition, Type[] genericTypeArguments)
-        {
-            return MissingMetadataExceptionCreator.CreateMissingConstructedGenericTypeException(genericTypeDefinition, genericTypeArguments);
-        }
     }
 }

@@ -17,7 +17,9 @@ namespace System
     public readonly struct Int128
         : IBinaryInteger<Int128>,
           IMinMaxValue<Int128>,
-          ISignedNumber<Int128>
+          ISignedNumber<Int128>,
+          IUtf8SpanFormattable,
+          IBinaryIntegerParseAndFormatInfo<Int128>
     {
         internal const int Size = 16;
 
@@ -118,75 +120,50 @@ namespace System
             return Number.TryFormatInt128(this, format, provider, destination, out charsWritten);
         }
 
-        public static Int128 Parse(string s)
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            ArgumentNullException.ThrowIfNull(s);
-            return Number.ParseInt128(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            return Number.TryFormatInt128(this, format, provider, utf8Destination, out bytesWritten);
         }
 
-        public static Int128 Parse(string s, NumberStyles style)
-        {
-            ArgumentNullException.ThrowIfNull(s);
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseInt128(s, style, NumberFormatInfo.CurrentInfo);
-        }
+        public static Int128 Parse(string s) => Parse(s, NumberStyles.Integer, provider: null);
 
-        public static Int128 Parse(string s, IFormatProvider? provider)
-        {
-            ArgumentNullException.ThrowIfNull(s);
-            return Number.ParseInt128(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
-        }
+        public static Int128 Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
+
+        public static Int128 Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Integer, provider);
 
         public static Int128 Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
-            ArgumentNullException.ThrowIfNull(s);
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseInt128(s, style, NumberFormatInfo.GetInstance(provider));
+            if (s is null) { ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s); }
+            return Parse(s.AsSpan(), style, provider);
         }
 
         public static Int128 Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseInt128(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<Int128>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static bool TryParse([NotNullWhen(true)] string? s, out Int128 result)
-        {
-            if (s is not null)
-            {
-                return Number.TryParseInt128IntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
-            }
-            else
-            {
-                result = default;
-                return false;
-            }
-        }
+        public static bool TryParse([NotNullWhen(true)] string? s, out Int128 result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
-        public static bool TryParse(ReadOnlySpan<char> s, out Int128 result)
-        {
-            return Number.TryParseInt128IntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
-        }
+        public static bool TryParse(ReadOnlySpan<char> s, out Int128 result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Int128 result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
 
-            if (s is not null)
+            if (s is null)
             {
-                return Number.TryParseInt128(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
-            }
-            else
-            {
-                result = default;
+                result = 0;
                 return false;
             }
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Int128 result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseInt128(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         //
@@ -2192,5 +2169,25 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         public static Int128 operator +(Int128 value) => value;
+
+        //
+        // IBinaryIntegerParseAndFormatInfo
+        //
+
+        static bool IBinaryIntegerParseAndFormatInfo<Int128>.IsSigned => true;
+
+        static int IBinaryIntegerParseAndFormatInfo<Int128>.MaxDigitCount => 39; // 170_141_183_460_469_231_731_687_303_715_884_105_727
+
+        static int IBinaryIntegerParseAndFormatInfo<Int128>.MaxHexDigitCount => 32; // 0x7FFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF
+
+        static Int128 IBinaryIntegerParseAndFormatInfo<Int128>.MaxValueDiv10 => new Int128(0x0CCC_CCCC_CCCC_CCCC, 0xCCCC_CCCC_CCCC_CCCC);
+
+        static string IBinaryIntegerParseAndFormatInfo<Int128>.OverflowMessage => SR.Overflow_Int128;
+
+        static bool IBinaryIntegerParseAndFormatInfo<Int128>.IsGreaterThanAsUnsigned(Int128 left, Int128 right) => (UInt128)(left) > (UInt128)(right);
+
+        static Int128 IBinaryIntegerParseAndFormatInfo<Int128>.MultiplyBy10(Int128 value) => value * 10;
+
+        static Int128 IBinaryIntegerParseAndFormatInfo<Int128>.MultiplyBy16(Int128 value) => value * 16;
     }
 }

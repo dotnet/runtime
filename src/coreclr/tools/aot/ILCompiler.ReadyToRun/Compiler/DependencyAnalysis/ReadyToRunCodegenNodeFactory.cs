@@ -47,6 +47,8 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class NodeFactoryOptimizationFlags
     {
         public bool OptimizeAsyncMethods;
+        public int DeterminismStress;
+        public bool PrintReproArgs;
     }
 
     // To make the code future compatible to the composite R2R story
@@ -742,7 +744,7 @@ namespace ILCompiler.DependencyAnalysis
             Header.Add(Internal.Runtime.ReadyToRunSectionType.InstanceMethodEntryPoints, InstanceEntryPointTable, InstanceEntryPointTable);
 
             ImportSectionsTable = new ImportSectionsTableNode(this);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable, ImportSectionsTable.StartSymbol);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable, ImportSectionsTable);
 
             DebugInfoTable = new DebugInfoTableNode();
             Header.Add(Internal.Runtime.ReadyToRunSectionType.DebugInfo, DebugInfoTable, DebugInfoTable);

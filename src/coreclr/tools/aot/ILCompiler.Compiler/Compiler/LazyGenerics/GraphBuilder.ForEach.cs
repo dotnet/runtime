@@ -24,12 +24,12 @@ namespace ILCompiler
             /// This method also records bindings for any generic instances it finds inside the tree expression.
             /// Sometimes, this side-effect is all that's wanted - in such cases, invoke this method with a default collector.
             /// </summary>
-            private void ForEachEmbeddedGenericFormal(TypeDesc typeExpression, Instantiation typeContext, Instantiation methodContext, ref EmbeddingStateList collector)
+            private static void ForEachEmbeddedGenericFormal(TypeDesc typeExpression, Instantiation typeContext, Instantiation methodContext, ref EmbeddingStateList collector)
             {
                 ForEachEmbeddedGenericFormalWorker(typeExpression, typeContext, methodContext, ref collector, depth: 0);
             }
 
-            private void ForEachEmbeddedGenericFormalWorker(TypeDesc type, Instantiation typeContext, Instantiation methodContext, ref EmbeddingStateList collector, int depth)
+            private static void ForEachEmbeddedGenericFormalWorker(TypeDesc type, Instantiation typeContext, Instantiation methodContext, ref EmbeddingStateList collector, int depth)
             {
                 switch (type.Category)
                 {

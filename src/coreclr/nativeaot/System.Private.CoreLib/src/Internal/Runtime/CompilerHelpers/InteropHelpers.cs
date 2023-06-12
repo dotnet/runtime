@@ -310,8 +310,8 @@ namespace Internal.Runtime.CompilerHelpers
 
                 hModule = NativeLibrary.LoadBySearch(
                     callingAssembly,
-                    searchAssemblyDirectory: false,
-                    dllImportSearchPathFlags: 0,
+                    searchAssemblyDirectory: (dllImportSearchPath & (uint)DllImportSearchPath.AssemblyDirectory) != 0,
+                    dllImportSearchPathFlags: (int)(dllImportSearchPath & ~(uint)DllImportSearchPath.AssemblyDirectory),
                     ref loadLibErrorTracker,
                     moduleName);
 

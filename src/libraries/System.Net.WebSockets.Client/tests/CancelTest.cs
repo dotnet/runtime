@@ -30,6 +30,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/83579", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ConnectAsync_Cancel_ThrowsCancellationException(Uri server)
         {
             using (var cws = new ClientWebSocket())

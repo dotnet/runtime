@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="loop3_r.il" />
+    <Compile Include="loop3.il" />
+  </ItemGroup>
+</Project>

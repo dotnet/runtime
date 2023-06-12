@@ -34,12 +34,27 @@ namespace Mono.Linker.Tests.TestCases
 			return TestNamesBySuiteName();
 		}
 
+		public static IEnumerable<object[]> Reflection ()
+		{
+			return TestNamesBySuiteName ();
+		}
+
 		public static IEnumerable<object[]> Repro ()
 		{
 			return TestNamesBySuiteName ();
 		}
 
 		public static IEnumerable<object[]> RequiresCapability ()
+		{
+			return TestNamesBySuiteName ();
+		}
+
+		public static IEnumerable<object[]> SingleFile ()
+		{
+			return TestNamesBySuiteName ();
+		}
+
+		public static IEnumerable<object[]> UnreachableBlock ()
 		{
 			return TestNamesBySuiteName ();
 		}

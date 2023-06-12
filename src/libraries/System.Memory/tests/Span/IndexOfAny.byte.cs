@@ -533,28 +533,28 @@ namespace System.SpanTests
         private static int IndexOf(Span<byte> span, byte value)
         {
             int index = span.IndexOf(value);
-            Assert.Equal(index, span.IndexOfAny(IndexOfAnyValues.Create(stackalloc byte[] { value })));
+            Assert.Equal(index, span.IndexOfAny(SearchValues.Create(stackalloc byte[] { value })));
             return index;
         }
 
         private static int IndexOfAny(Span<byte> span, byte value0, byte value1)
         {
             int index = span.IndexOfAny(value0, value1);
-            Assert.Equal(index, span.IndexOfAny(IndexOfAnyValues.Create(stackalloc byte[] { value0, value1 })));
+            Assert.Equal(index, span.IndexOfAny(SearchValues.Create(stackalloc byte[] { value0, value1 })));
             return index;
         }
 
         private static int IndexOfAny(Span<byte> span, byte value0, byte value1, byte value2)
         {
             int index = span.IndexOfAny(value0, value1, value2);
-            Assert.Equal(index, span.IndexOfAny(IndexOfAnyValues.Create(stackalloc byte[] { value0, value1, value2 })));
+            Assert.Equal(index, span.IndexOfAny(SearchValues.Create(stackalloc byte[] { value0, value1, value2 })));
             return index;
         }
 
         private static int IndexOfAny(Span<byte> span, ReadOnlySpan<byte> values)
         {
             int index = span.IndexOfAny(values);
-            Assert.Equal(index, span.IndexOfAny(IndexOfAnyValues.Create(values)));
+            Assert.Equal(index, span.IndexOfAny(SearchValues.Create(values)));
             return index;
         }
     }

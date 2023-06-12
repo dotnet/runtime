@@ -50,7 +50,7 @@ namespace System.Text.Json
                     // We just read a property. The only valid next tokens are EndObject and PropertyName.
                     Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
 
-                    if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Ref))
+                    if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Ref) != 0)
                     {
                         // No properties whatsoever should follow a $ref property.
                         ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties(reader.GetSpan(), ref state);
@@ -75,7 +75,7 @@ namespace System.Text.Json
                             if (!converter.CanHaveMetadata)
                             {
                                 // Should not be permitted unless the converter is capable of handling metadata.
-                                ThrowHelper.ThrowJsonException_MetadataCannotParsePreservedObjectIntoImmutable(converter.TypeToConvert);
+                                ThrowHelper.ThrowJsonException_MetadataCannotParsePreservedObjectIntoImmutable(converter.Type!);
                             }
 
                             break;
@@ -91,7 +91,7 @@ namespace System.Text.Json
                             if (converter.IsValueType)
                             {
                                 // Should not be permitted if the converter is a struct.
-                                ThrowHelper.ThrowJsonException_MetadataInvalidReferenceToValueType(converter.TypeToConvert);
+                                ThrowHelper.ThrowJsonException_MetadataInvalidReferenceToValueType(converter.Type!);
                             }
                             if (state.Current.MetadataPropertyNames != 0)
                             {
@@ -427,7 +427,7 @@ namespace System.Text.Json
 
         internal static void ValidateMetadataForObjectConverter(ref ReadStack state)
         {
-            if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Values))
+            if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Values) != 0)
             {
                 // Object converters do not support $values metadata.
                 ThrowHelper.ThrowJsonException_MetadataUnexpectedProperty(s_valuesPropertyName, ref state);
@@ -446,14 +446,14 @@ namespace System.Text.Json
                     if (state.Current.MetadataPropertyNames != MetadataPropertyName.Ref)
                     {
                         // Read the entire JSON object while parsing for metadata: for collection converters this is only legal for $ref nodes.
-                        ThrowHelper.ThrowJsonException_MetadataPreservedArrayValuesNotFound(ref state, converter.TypeToConvert);
+                        ThrowHelper.ThrowJsonException_MetadataPreservedArrayValuesNotFound(ref state, converter.Type!);
                     }
                     break;
 
                 default:
                     Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
                     // Do not tolerate non-metadata properties in collection converters.
-                    ThrowHelper.ThrowJsonException_MetadataInvalidPropertyInArrayMetadata(ref state, converter.TypeToConvert, reader);
+                    ThrowHelper.ThrowJsonException_MetadataInvalidPropertyInArrayMetadata(ref state, converter.Type!, reader);
                     break;
             }
         }

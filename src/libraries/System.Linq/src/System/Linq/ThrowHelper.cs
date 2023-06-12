@@ -29,6 +29,9 @@ namespace System.Linq
         [DoesNotReturn]
         internal static void ThrowNotSupportedException() => throw new NotSupportedException();
 
+        [DoesNotReturn]
+        internal static void ThrowOverflowException() => throw new OverflowException();
+
         private static string GetArgumentString(ExceptionArgument argument)
         {
             switch (argument)

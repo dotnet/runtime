@@ -3,8 +3,9 @@
 //
 
 using System;
+using Xunit;
 
-internal unsafe class test1
+public unsafe class test1
 {
     static public int f(int i)
     {
@@ -13,7 +14,7 @@ internal unsafe class test1
         return p[0];
     }
 
-    static public void f0()
+    internal void f0()
     {
         while (true)
         {
@@ -21,12 +22,13 @@ internal unsafe class test1
         }
     }
 
-    static public void f1()
+    internal void f1()
     {
         char* p = stackalloc char[1000000];
     }
 
-    unsafe public static int Main()
+    [Fact]
+    unsafe public static int TestEntryPoint()
     {
         bool pass = true;
 

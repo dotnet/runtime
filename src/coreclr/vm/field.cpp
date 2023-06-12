@@ -672,6 +672,32 @@ UINT FieldDesc::LoadSize()
     return size;
 }
 
+UINT FieldDesc::GetSize(MethodTable *pMTOfValueTypeField)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        FORBID_FAULT;
+    }
+    CONTRACTL_END
+
+    CorElementType type = GetFieldType();
+    UINT size = GetSizeForCorElementType(type);
+    if (size == (UINT) -1)
+    {
+        LOG((LF_CLASSLOADER, LL_INFO10000, "FieldDesc::GetSize %s::%s\n", GetApproxEnclosingMethodTable()->GetDebugClassName(), m_debugName));
+        CONSISTENCY_CHECK(GetFieldType() == ELEMENT_TYPE_VALUETYPE);
+        TypeHandle t = (pMTOfValueTypeField != NULL) ? TypeHandle(pMTOfValueTypeField) : LookupApproxFieldTypeHandle();
+        _ASSERTE(!t.IsNull());
+        size = t.GetMethodTable()->GetNumInstanceFieldBytes();
+    }
+
+    return size;
+}
+
 UINT FieldDesc::GetSize()
 {
     CONTRACTL

@@ -37,14 +37,13 @@ Install the following packages for the toolchain:
 * liblttng-ust-dev
 * libssl-dev
 * libkrb5-dev
-* libnuma-dev (optional, enables numa support)
 * zlib1g-dev
 * ninja-build (optional, enables building native code with ninja instead of make)
 
 ```bash
 sudo apt install -y cmake llvm lld clang build-essential \
 python-is-python3 curl git lldb libicu-dev liblttng-ust-dev \
-libssl-dev libnuma-dev libkrb5-dev zlib1g-dev ninja-build
+libssl-dev libkrb5-dev zlib1g-dev ninja-build
 ```
 
 You now have all the required components.

@@ -8,6 +8,8 @@
     <PropertyGroup>
       <_IsSharedLibrary>false</_IsSharedLibrary>
       <_IsSharedLibrary Condition="'$(NativeLib)' == 'shared'">true</_IsSharedLibrary>
+      <_UsesCustomRuntimeInitCallback>false</_UsesCustomRuntimeInitCallback>
+      <_UsesCustomRuntimeInitCallback Condition="$(CustomRuntimeInitCallback) != ''">true</_UsesCustomRuntimeInitCallback>
     </PropertyGroup>
 
     <ItemGroup>
@@ -16,17 +18,21 @@
     </ItemGroup>
 
     <LibraryBuilderTask
-      Assemblies="@(AppAssembliesInternal)"
+      Assemblies="@(_AssembliesToBundleInternal)"
+      AssembliesLocation="$(AssembliesLocation)"
       ExtraLinkerArguments="@(_ExtraLinkerArgs)"
       ExtraSources="@(_ExtraLibrarySources)"
       IsSharedLibrary="$(_IsSharedLibrary)"
-      Name="$(AssemblyName)"
       MonoRuntimeHeaders="$(_MonoHeaderPath)"
+      Name="$(AssemblyName)"
       OutputDirectory="$(BundleDir)"
       RuntimeIdentifier="$(RuntimeIdentifier)"
       RuntimeLibraries="@(_RuntimeLibraries)"
-      TargetOS="$(TargetOS)">
+      TargetOS="$(TargetOS)"
+      UsesCustomRuntimeInitCallback="$(_UsesCustomRuntimeInitCallback)"
+      UsesRuntimeInitCallback="$(_UsesRuntimeInitCallback)">
       <Output TaskParameter="OutputPath" PropertyName="LibraryOutputPath" />
+      <Output TaskParameter="ExportedSymbols" ItemName="LibraryRuntimeExportedSymbols" />
     </LibraryBuilderTask>
   </Target>
 

@@ -3,15 +3,17 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
-class Test
+public class Test
 {    
     static bool _fTestFailed = false;
     static bool _fTestDone = false;
     static ManualResetEvent _mre;
     static AutoResetEvent _are = new AutoResetEvent(false);
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Thread th = new Thread(new ThreadStart(Thread2));
         th.Start();

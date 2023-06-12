@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 interface I<T>
 {
@@ -33,7 +34,7 @@ sealed class L : K, I<object>
     }
 }
 
-class F
+public class F
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static bool IsIString<T>(I<T> i)
@@ -140,7 +141,8 @@ class F
         return i is K;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var j = new J();
         var k = new K();

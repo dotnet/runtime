@@ -33,7 +33,8 @@
     <HighAOTResourceRequiringProject Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\FunctionalTests\System.Text.RegularExpressions.Tests.csproj" />
 
     <!-- https://github.com/dotnet/runtime/issues/61524 - OOM while linking -->
-    <HighAOTResourceRequiringProject Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
+    <!-- Disabled due to crash - https://github.com/dotnet/runtime/issues/86164 -->
+    <!--<HighAOTResourceRequiringProject Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />-->
   </ItemGroup>
 
   <!-- Samples which are too complex for CI -->
@@ -50,6 +51,7 @@
   <!-- Samples that require a multi-threaded runtime -->
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(MonoWasmBuildVariant)' != 'multithread'" >
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-threads\Wasm.Browser.Threads.Sample.csproj" />
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-threads-minimal\Wasm.Browser.Threads.Minimal.Sample.csproj" />
   </ItemGroup>
 
   <!-- Samples that require a perf-tracing wasm runtime -->
@@ -67,6 +69,9 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\UnitTests\System.Text.RegularExpressions.Unit.Tests.csproj" />
     <!-- Normally run with HighAOT, but disabling there, and for AOT - https://github.com/dotnet/runtime/issues/71848 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\FunctionalTests\System.Text.RegularExpressions.Tests.csproj" />
+
+    <!-- Normally run with HighAOT, but disabling there, and for AOT - https://github.com/dotnet/runtime/issues/86164 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
   </ItemGroup>
 
   <!-- Projects that don't support code coverage measurement. -->
@@ -133,8 +138,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.UnitTests\LibraryImportGenerator.Unit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\ComInterfaceGenerator.Unit.Tests\ComInterfaceGenerator.Unit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\JSImportGenerator.UnitTest\JSImportGenerator.Unit.Tests.csproj" />
-    <!-- Issue: https://github.com/dotnet/runtime/issues/63723 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Drawing.Common\tests\System.Drawing.Common.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' != 'windows'">
@@ -401,14 +404,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets\tests\System.Net.WebSockets.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetArchitecture)' == 's390x' and '$(RunDisableds390xTests)' != 'true'">
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Drawing.Common\tests\System.Drawing.Common.Tests.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetArchitecture)' == 'ppc64le' and '$(RunDisabledppc64leTests)' != 'true'">
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Drawing.Common\tests\System.Drawing.Common.Tests.csproj" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TestSingleFile)' == 'true' and '$(TestNativeAot)' != 'true'">
     <!-- Run only a small randomly chosen set of passing test suites -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
@@ -417,9 +412,13 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(RunDisabledNativeAotTests)' != 'true'">
-    <!-- https://github.com/dotnet/runtime/issues/73431 -->
+    <!-- https://github.com/dotnet/runtime/issues/87078 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn3.11.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn4.4.Tests.csproj" />
+
+    <!-- https://github.com/dotnet/runtime/issues/83167 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Vectors\tests\System.Numerics.Vectors.Tests.csproj"
+                       Condition="'$(TargetArchitecture)' == 'arm64'" />
 
     <!-- https://github.com/dotnet/runtime/issues/72908 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.MetadataLoadContext\tests\System.Reflection.MetadataLoadContext.Tests.csproj" />
@@ -456,19 +455,15 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Unit.Tests\System.Text.Json.SourceGeneration.Roslyn4.4.Unit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\FunctionalTests\System.Text.RegularExpressions.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\JSImportGenerator.UnitTest\JSImportGenerator.Unit.Tests.csproj" />
-
-    <!-- Depends on DNNE. Not particularly interesting because it tests marshalling-less p/invoke only. Low priority -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.Tests\LibraryImportGenerator.Tests.csproj" />
-    
-    <!-- Depends on DNNE -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\ComInterfaceGenerator.Tests\ComInterfaceGenerator.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Binder\tests\SourceGenerationTests\Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.CoreLib/tests/IntrinsicsInSystemPrivatecoreLibAnalyzer.Tests/IntrinsicsInSystemPrivateCoreLib.Tests.csproj" />
 
     <!-- Many test failures due to trimming and MakeGeneric. XmlSerializer is not currently supported with NativeAOT. Low priority -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.XmlSerializer.Generator\tests\Microsoft.XmlSerializer.Generator.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ServiceModel.Syndication\tests\System.ServiceModel.Syndication.Tests.csproj" />
 
     <!-- Not supported with trimming. Low priority -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Binder\tests\Microsoft.Extensions.Configuration.Binder.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Binder\tests\UnitTests\Microsoft.Extensions.Configuration.Binder.Tests.csproj" />
 
     <!-- Built-in COM. Low priority -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Speech\tests\System.Speech.Tests.csproj" />
@@ -514,7 +509,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Formats.Cbor\tests\System.Formats.Cbor.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Queryable\tests\System.Linq.Queryable.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ObjectModel\tests\System.ObjectModel.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.Legacy.UnitTests\System.Runtime.InteropServices.JavaScript.Legacy.UnitTests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.Legacy.UnitTests\System.Runtime.InteropServices.JavaScript.Legacy.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\XmlSerializer\ReflectionOnly\System.Xml.XmlSerializer.ReflectionOnly.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\NlsTests\System.Runtime.Nls.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Formatters\tests\System.Runtime.Serialization.Formatters.Tests.csproj" />
@@ -561,6 +556,12 @@
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Threading\tests\System.Threading.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\System.Runtime.InteropServices.UnitTests\System.Runtime.InteropServices.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(MonoWasmBuildVariant)' == 'multithread'">
+    <!-- Don't want the default smoke tests - just verify that threading works -->
+    <SmokeTestProject Remove="@(SmokeTestProject)" />
+    <SmokeTestProject Include="$(MonoProjectRoot)sample\wasm\browser-threads-minimal\Wasm.Browser.Threads.Minimal.Sample.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -631,9 +632,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'iossimulator'">
-    <!-- https://github.com/dotnet/runtime/issues/57666 -->
-    <!-- <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
-                      BuildInParallel="false" /> -->
+    <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
+                      BuildInParallel="false" />
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
@@ -646,9 +646,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'maccatalyst'">
-    <!-- https://github.com/dotnet/runtime/issues/57666 -->
-    <!-- <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
-                      BuildInParallel="false" /> -->
+    <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
+                      BuildInParallel="false" />
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />

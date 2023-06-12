@@ -3,13 +3,15 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class ValueNumberingCheckedIntegerArithmeticWithConstants
 {
     private static int _global = 0;
     private static int _counter = 100;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         RuntimeHelpers.RunClassConstructor(typeof(ValueNumberingCheckedIntegerArithmeticWithConstants).TypeHandle);
         TestInt32();

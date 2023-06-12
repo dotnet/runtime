@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class GitHub_10621
 {
@@ -14,7 +15,8 @@ public class GitHub_10621
 
     // An empty try with nested try finallys where
     // the inner finally cannot be cloned.
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int x = 0;
         try {

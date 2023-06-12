@@ -169,6 +169,32 @@ namespace System.IO.Hashing
 
         private static uint Update(uint crc, ReadOnlySpan<byte> source)
         {
+#if NET7_0_OR_GREATER
+            if (CanBeVectorized(source))
+            {
+                return UpdateVectorized(crc, source);
+            }
+#endif
+
+            return UpdateScalar(crc, source);
+        }
+
+        private static uint UpdateScalar(uint crc, ReadOnlySpan<byte> source)
+        {
+#if NET6_0_OR_GREATER
+            // Use ARM intrinsics for CRC if available. This is used for the trailing bytes on the vectorized path
+            // and is the primary method if the vectorized path is unavailable.
+            if (System.Runtime.Intrinsics.Arm.Crc32.Arm64.IsSupported)
+            {
+                return UpdateScalarArm64(crc, source);
+            }
+
+            if (System.Runtime.Intrinsics.Arm.Crc32.IsSupported)
+            {
+                return UpdateScalarArm32(crc, source);
+            }
+#endif
+
             ReadOnlySpan<uint> crcLookup = CrcLookup;
             for (int i = 0; i < source.Length; i++)
             {

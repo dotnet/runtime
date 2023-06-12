@@ -29,6 +29,8 @@
              Link="Common\System\CharArrayHelpers.cs" />
     <Compile Include="$(CommonPath)System\StringExtensions.cs"
              Link="Common\System\StringExtensions.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" 
+             Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs"
              Link="Common\System\IO\StreamHelpers.CopyValidation.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs"

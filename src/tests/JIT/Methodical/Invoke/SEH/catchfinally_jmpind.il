@@ -11,7 +11,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'catchfinally_jmpind'// as "catchfinally_tail"
+.assembly ASSEMBLY_NAME// as "catchfinally_tail"
 {
 }
 .assembly extern xunit.core {}

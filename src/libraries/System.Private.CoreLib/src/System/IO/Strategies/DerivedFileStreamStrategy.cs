@@ -21,6 +21,7 @@ namespace System.IO.Strategies
         {
             _fileStream = fileStream;
             _strategy = strategy;
+            IsDerived = true;
         }
 
         public override bool CanRead => _strategy.CanRead;
@@ -146,7 +147,7 @@ namespace System.IO.Strategies
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             => _fileStream.BaseCopyToAsync(destination, bufferSize, cancellationToken);
 
-        public override ValueTask DisposeAsync() => _strategy.DisposeAsync();
+        public override ValueTask DisposeAsync() => _fileStream.BaseDisposeAsync();
 
         protected sealed override void Dispose(bool disposing) => _strategy.DisposeInternal(disposing);
     }

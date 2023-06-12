@@ -98,8 +98,8 @@ namespace ILCompiler.DependencyAnalysis
 
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             int cctorContextSize = NonGCStaticsNode.GetClassConstructorContextSize(factory.Target);
-                            AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg0, null, factory.Target.PointerSize - cctorContextSize, 0, AddrModeSize.Int32);
-                            encoder.EmitCMP(ref initialized, 1);
+                            AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg0, null, -cctorContextSize, 0, AddrModeSize.Int64);
+                            encoder.EmitCMP(ref initialized, 0);
                             encoder.EmitRETIfEqual();
 
                             AddrMode loadCctor = new AddrMode(encoder.TargetRegister.Arg0, null, -cctorContextSize, 0, AddrModeSize.Int64);
@@ -132,8 +132,8 @@ namespace ILCompiler.DependencyAnalysis
                             EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg0, nonGcRegionLookup, relocsOnly);
 
                             int cctorContextSize = NonGCStaticsNode.GetClassConstructorContextSize(factory.Target);
-                            AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg0, null, factory.Target.PointerSize - cctorContextSize, 0, AddrModeSize.Int32);
-                            encoder.EmitCMP(ref initialized, 1);
+                            AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg0, null, -cctorContextSize, 0, AddrModeSize.Int64);
+                            encoder.EmitCMP(ref initialized, 0);
                             encoder.EmitRETIfEqual();
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);

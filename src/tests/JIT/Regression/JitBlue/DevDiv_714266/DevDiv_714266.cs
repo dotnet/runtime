@@ -4,6 +4,7 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Based on DevDiv_714266, the issue reporoduced with JitStressRegs=0x1.
 // `minRegCandidateCount` for `RefTypeUpperVectorSaveDef` did not count one temporary register
@@ -14,13 +15,12 @@ using System.Runtime.CompilerServices;
 public class DevDiv_714266
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-
-    public static void CallWithoutUsesAndDefs()
+    internal static void CallWithoutUsesAndDefs()
     {
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void MethodWithManyLiveVectors()
+    internal static void MethodWithManyLiveVectors()
     {
         Vector<float> v = new Vector<float>();
 
@@ -52,7 +52,8 @@ public class DevDiv_714266
         });
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         MethodWithManyLiveVectors();
         return 100;

@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class MiscMethods
 {
@@ -130,7 +131,8 @@ public class BringUpTest_InstanceCalls
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         MiscMethods m = new MiscMethods(10,20);
         if (!m.InstanceCalls(m)) return Fail;

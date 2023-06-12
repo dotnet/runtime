@@ -1708,7 +1708,7 @@ void ResolveFuncEvalGenericArgInfo(DebuggerEval *pDE)
     // If this is a new object operation, then we should have a .ctor.
     if ((pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT) && !pDE->m_md->IsCtor())
     {
-        COMPlusThrow(kArgumentException, W("Argument_MissingDefaultConstructor"));
+        COMPlusThrow(kArgumentException, W("Arg_NoDefCTorWithoutTypeName"));
     }
 
     pDE->m_md->EnsureActive();

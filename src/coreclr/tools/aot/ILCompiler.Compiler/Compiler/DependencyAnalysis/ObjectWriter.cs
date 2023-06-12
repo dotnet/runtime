@@ -535,9 +535,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 byte[] blobSymbolName = _sb.Append(_currentNodeZeroTerminatedName).ToUtf8String().UnderlyingArray;
 
-                ObjectNodeSection section = ObjectNodeSection.XDataSection;
-                if (ShouldShareSymbol(node))
-                    section = GetSharedSection(section, _sb.ToString());
+                ObjectNodeSection section = GetSharedSection(ObjectNodeSection.XDataSection, _sb.ToString());
                 SwitchSection(_nativeObjectWriter, section.Name, GetCustomSectionAttributes(section), section.ComdatName);
 
                 EmitAlignment(4);
@@ -992,7 +990,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     ObjectData nodeContents = node.GetData(factory);
 
-                    dumper?.DumpObjectNode(factory.NameMangler, node, nodeContents);
+                    dumper?.DumpObjectNode(factory, node, nodeContents);
 
 #if DEBUG
                     foreach (ISymbolNode definedSymbol in nodeContents.DefinedSymbols)
@@ -1136,7 +1134,12 @@ namespace ILCompiler.DependencyAnalysis
                     // Emit the last CFI to close the frame.
                     objectWriter.EmitCFICodes(nodeContents.Data.Length);
 
-                    if (objectWriter.HasFunctionDebugInfo())
+                    // Generate debug info if we have sequence points, or on Windows, we can also
+                    // generate even if no sequence points.
+                    bool generateDebugInfo = objectWriter.HasFunctionDebugInfo();
+                    generateDebugInfo |= factory.Target.IsWindows && objectWriter.HasModuleDebugInfo();
+
+                    if (generateDebugInfo)
                     {
                         objectWriter.EmitDebugVarInfo(node);
                         objectWriter.EmitDebugEHClauseInfo(node);
@@ -1163,7 +1166,7 @@ namespace ILCompiler.DependencyAnalysis
                     if (logger.IsVerbose)
                         logger.LogMessage($"Freeing up memory");
 
-                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive);
+                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
                 }
 
                 if (logger.IsVerbose)

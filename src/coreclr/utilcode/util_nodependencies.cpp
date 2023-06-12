@@ -621,7 +621,7 @@ LPCWSTRToGuid(
     // covering the 128-bit GUID. The string includes enclosing braces, which are an OLE convention.
 
     // Verify the surrounding syntax.
-    if (wcslen(szGuid) != 38 || szGuid[0] != '{' || szGuid[9] != '-' ||
+    if (u16_strlen(szGuid) != 38 || szGuid[0] != '{' || szGuid[9] != '-' ||
         szGuid[14] != '-' || szGuid[19] != '-' || szGuid[24] != '-' || szGuid[37] != '}')
     {
         return FALSE;

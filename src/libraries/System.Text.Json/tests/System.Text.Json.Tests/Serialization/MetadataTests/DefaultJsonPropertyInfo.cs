@@ -1,15 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text.Json.Nodes;
-using System.Text.Json.Nodes.Tests;
 using System.Text.Json.Serialization.Metadata;
-using System.Text.Json.Tests;
-using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -63,11 +56,13 @@ namespace System.Text.Json.Serialization.Tests
             public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options)
             {
                 JsonTypeInfo? typeInfo = _context.GetTypeInfo(type, options);
-                Assert.NotNull(typeInfo);
 
-                foreach (var modifier in _modifiers)
+                if (typeInfo != null)
                 {
-                    modifier(typeInfo);
+                    foreach (var modifier in _modifiers)
+                    {
+                        modifier(typeInfo);
+                    }
                 }
 
                 return typeInfo;

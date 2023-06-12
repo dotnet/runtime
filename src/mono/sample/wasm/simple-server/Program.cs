@@ -5,6 +5,7 @@ using System.Net;
 using System.Diagnostics;
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
+using System;
 
 namespace HttpServer
 {
@@ -19,6 +20,7 @@ namespace HttpServer
     {
         private bool Verbose = false;
         private ConcurrentDictionary<string, Session> Sessions = new ConcurrentDictionary<string, Session>();
+        private Dictionary<string, byte[]> cache = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
 
         public static int Main()
         {
@@ -83,7 +85,7 @@ namespace HttpServer
             }
             else
             {
-                System.Console.WriteLine("Don't know how to open url on this OS platform");
+                Console.WriteLine("Don't know how to open url on this OS platform");
             }
 
             proc.StartInfo = si;
@@ -100,6 +102,31 @@ namespace HttpServer
                 ServeAsync(context);
             else if (context.Request.HttpMethod == "POST")
                 ReceivePostAsync(context);
+        }
+
+        private async Task<byte[]?> GetFileContent(string path)
+        {
+            if (Verbose)
+                await Console.Out.WriteLineAsync($"get content for: {path}");
+
+            if (cache.ContainsKey(path))
+            {
+                if (Verbose)
+                    await Console.Out.WriteLineAsync($"returning cached content for: {path}");
+
+                return cache[path];
+            }
+
+            var content = await File.ReadAllBytesAsync(path).ConfigureAwait(false);
+            if (content == null)
+                return null;
+
+            if (Verbose)
+                await Console.Out.WriteLineAsync($"adding content to cache for: {path}");
+
+            cache[path] = content;
+
+            return content;
         }
 
         private async void ReceivePostAsync(HttpListenerContext context)
@@ -165,15 +192,17 @@ namespace HttpServer
             byte[]? buffer;
             try
             {
-                buffer = await File.ReadAllBytesAsync(path).ConfigureAwait(false);
-                if (throttleMbps > 0) {
+                buffer = await GetFileContent(path);
+
+                if (buffer != null && throttleMbps > 0)
+                {
                     double delaySeconds = (buffer.Length * 8) / (throttleMbps * 1024 * 1024);
                     int delayMs = (int)(delaySeconds * 1000);
-                    if(session != null)
+                    if (session != null)
                     {
                         Task currentDelay;
                         int myIndex;
-                        lock(session)
+                        lock (session)
                         {
                             currentDelay = session.CurrentDelay;
                             myIndex = session.Started;
@@ -185,10 +214,10 @@ namespace HttpServer
                             // wait for everybody else to finish in this while loop
                             await currentDelay;
 
-                            lock(session)
+                            lock (session)
                             {
                                 // it's my turn to insert delay for others
-                                if(session.Finished == myIndex)
+                                if (session.Finished == myIndex)
                                 {
                                     session.CurrentDelay = Task.Delay(delayMs);
                                     break;
@@ -202,10 +231,10 @@ namespace HttpServer
                         // wait my own delay
                         await Task.Delay(delayMs + latencyMs);
 
-                        lock(session)
+                        lock (session)
                         {
                             session.Finished++;
-                            if(session.Finished == session.Started)
+                            if (session.Finished == session.Started)
                             {
                                 Sessions.TryRemove(sessionId!, out _);
                             }

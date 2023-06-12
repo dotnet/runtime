@@ -4,14 +4,11 @@
 #include "ModuleHeaders.h"
 #include "ICodeManager.h"
 
-class DispatchMap;
-
 class TypeManager
 {
     // NOTE: Part of this layout is a contract with the managed side in TypeManagerHandle.cs
     HANDLE                      m_osModule;
     ReadyToRunHeader *          m_pHeader;
-    DispatchMap**               m_pDispatchMapTable;
     uint8_t*                    m_pStaticsGCDataSection;
     uint8_t*                    m_pThreadStaticsDataSection;
     void**                      m_pClasslibFunctions;

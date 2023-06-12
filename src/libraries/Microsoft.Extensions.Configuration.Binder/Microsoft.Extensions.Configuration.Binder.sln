@@ -1,4 +1,5 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# 
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{5FB89358-3575-45AA-ACFE-EF3598B9AB7E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Configuration.Abstractions", "..\Microsoft.Extensions.Configuration.Abstractions\ref\Microsoft.Extensions.Configuration.Abstractions.csproj", "{CB09105A-F475-4A91-8836-434FA175F4F9}"
@@ -8,8 +9,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Configuration.Binder", "ref\Microsoft.Extensions.Configuration.Binder.csproj", "{F05212B2-FD66-4E8E-AEA0-FAC06A0D6808}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Configuration.Binder", "src\Microsoft.Extensions.Configuration.Binder.csproj", "{8C7443D8-864A-4DAE-8835-108580C289F5}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Configuration.Binder.Tests", "tests\Microsoft.Extensions.Configuration.Binder.Tests.csproj", "{FD4C7C59-55A7-42C8-9B75-43728FAFDD84}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Configuration", "..\Microsoft.Extensions.Configuration\ref\Microsoft.Extensions.Configuration.csproj", "{39D99379-E744-4295-9CA8-B5C6DE286EA0}"
 EndProject
@@ -34,6 +33,12 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{94EEF122-C307-4BF0-88FE-263B89B59F9F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "gen", "gen", "{CC3961B0-C62D-44B9-91DB-11D94A3F91A5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Extensions.Configuration.Binder.SourceGeneration", "gen\Microsoft.Extensions.Configuration.Binder.SourceGeneration.csproj", "{D4B3EEA1-7394-49EA-A088-897C0CD26D11}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests", "tests\SourceGenerationTests\Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests.csproj", "{56F4D38E-41A0-45E2-9F04-9E670D002E71}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Extensions.Configuration.Binder.Tests", "tests\UnitTests\Microsoft.Extensions.Configuration.Binder.Tests.csproj", "{75BA0154-A24D-421E-9046-C7949DF12A55}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -61,10 +66,6 @@ Global
 		{8C7443D8-864A-4DAE-8835-108580C289F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8C7443D8-864A-4DAE-8835-108580C289F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8C7443D8-864A-4DAE-8835-108580C289F5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FD4C7C59-55A7-42C8-9B75-43728FAFDD84}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FD4C7C59-55A7-42C8-9B75-43728FAFDD84}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FD4C7C59-55A7-42C8-9B75-43728FAFDD84}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FD4C7C59-55A7-42C8-9B75-43728FAFDD84}.Release|Any CPU.Build.0 = Release|Any CPU
 		{39D99379-E744-4295-9CA8-B5C6DE286EA0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{39D99379-E744-4295-9CA8-B5C6DE286EA0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{39D99379-E744-4295-9CA8-B5C6DE286EA0}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -97,13 +98,36 @@ Global
 		{6E58AF2F-AB35-4279-9135-67E97BCE1432}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6E58AF2F-AB35-4279-9135-67E97BCE1432}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6E58AF2F-AB35-4279-9135-67E97BCE1432}.Release|Any CPU.Build.0 = Release|Any CPU
+		{06BAC1EF-96B3-4F9A-A962-D10204EAF6EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06BAC1EF-96B3-4F9A-A962-D10204EAF6EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{06BAC1EF-96B3-4F9A-A962-D10204EAF6EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06BAC1EF-96B3-4F9A-A962-D10204EAF6EF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C459288D-8A57-456E-B5B3-861C8043EEE0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C459288D-8A57-456E-B5B3-861C8043EEE0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C459288D-8A57-456E-B5B3-861C8043EEE0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C459288D-8A57-456E-B5B3-861C8043EEE0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D4B3EEA1-7394-49EA-A088-897C0CD26D11}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4B3EEA1-7394-49EA-A088-897C0CD26D11}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4B3EEA1-7394-49EA-A088-897C0CD26D11}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4B3EEA1-7394-49EA-A088-897C0CD26D11}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EA44B6C3-BC98-4253-8BDE-5848942967A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EA44B6C3-BC98-4253-8BDE-5848942967A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EA44B6C3-BC98-4253-8BDE-5848942967A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EA44B6C3-BC98-4253-8BDE-5848942967A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{56F4D38E-41A0-45E2-9F04-9E670D002E71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{56F4D38E-41A0-45E2-9F04-9E670D002E71}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{56F4D38E-41A0-45E2-9F04-9E670D002E71}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{56F4D38E-41A0-45E2-9F04-9E670D002E71}.Release|Any CPU.Build.0 = Release|Any CPU
+		{75BA0154-A24D-421E-9046-C7949DF12A55}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{75BA0154-A24D-421E-9046-C7949DF12A55}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{75BA0154-A24D-421E-9046-C7949DF12A55}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{75BA0154-A24D-421E-9046-C7949DF12A55}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{5FB89358-3575-45AA-ACFE-EF3598B9AB7E} = {AAE738F3-89AC-4406-B1D9-A61A2C3A1CF0}
-		{FD4C7C59-55A7-42C8-9B75-43728FAFDD84} = {AAE738F3-89AC-4406-B1D9-A61A2C3A1CF0}
 		{CB09105A-F475-4A91-8836-434FA175F4F9} = {F43534CA-C419-405E-B239-CDE2BDC703BE}
 		{F05212B2-FD66-4E8E-AEA0-FAC06A0D6808} = {F43534CA-C419-405E-B239-CDE2BDC703BE}
 		{39D99379-E744-4295-9CA8-B5C6DE286EA0} = {F43534CA-C419-405E-B239-CDE2BDC703BE}
@@ -116,6 +140,12 @@ Global
 		{9B21B87F-084B-411B-A513-C22B5B961BF3} = {94EEF122-C307-4BF0-88FE-263B89B59F9F}
 		{05B7F752-4991-4DC8-9B06-8269211E7817} = {CC3961B0-C62D-44B9-91DB-11D94A3F91A5}
 		{6E58AF2F-AB35-4279-9135-67E97BCE1432} = {CC3961B0-C62D-44B9-91DB-11D94A3F91A5}
+		{06BAC1EF-96B3-4F9A-A962-D10204EAF6EF} = {CC3961B0-C62D-44B9-91DB-11D94A3F91A5}
+		{C459288D-8A57-456E-B5B3-861C8043EEE0} = {CC3961B0-C62D-44B9-91DB-11D94A3F91A5}
+		{D4B3EEA1-7394-49EA-A088-897C0CD26D11} = {CC3961B0-C62D-44B9-91DB-11D94A3F91A5}
+		{EA44B6C3-BC98-4253-8BDE-5848942967A6} = {AAE738F3-89AC-4406-B1D9-A61A2C3A1CF0}
+		{56F4D38E-41A0-45E2-9F04-9E670D002E71} = {AAE738F3-89AC-4406-B1D9-A61A2C3A1CF0}
+		{75BA0154-A24D-421E-9046-C7949DF12A55} = {AAE738F3-89AC-4406-B1D9-A61A2C3A1CF0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A97DC4BF-32F0-46E8-B91C-84D1E7F2A27E}

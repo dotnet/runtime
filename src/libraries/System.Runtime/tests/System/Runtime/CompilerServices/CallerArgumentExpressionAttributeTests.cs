@@ -26,6 +26,6 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal("new object()", GetValue(new object()));
         }
 
-        private static string GetValue(object argument, [CallerArgumentExpression("argument")] string expr = null) => expr;
+        private static string GetValue(object argument, [CallerArgumentExpression(nameof(argument))] string expr = null) => expr;
     }
 }

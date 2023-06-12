@@ -74,36 +74,23 @@ namespace System.Text
         {
             ArgumentNullException.ThrowIfNull(format);
 
-            if (!TryParse(format, out CompositeFormat? compositeFormat))
+            var segments = new List<(string? Literal, int ArgIndex, int Alignment, string? Format)>();
+            int failureOffset = default;
+            ExceptionResource failureReason = default;
+            if (!TryParseLiterals(format, segments, ref failureOffset, ref failureReason))
             {
-                ThrowHelper.ThrowFormatInvalidString();
+                ThrowHelper.ThrowFormatInvalidString(failureOffset, failureReason);
             }
 
-            return compositeFormat;
-        }
-
-        /// <summary>Try to parse the composite format string <paramref name="format"/>.</summary>
-        /// <param name="format">The string to parse.</param>
-        /// <param name="compositeFormat">The parsed <see cref="CompositeFormat"/> if parsing was successful; otherwise, null.</param>
-        /// <returns><see langword="true"/> the <paramref name="format"/> can be parsed successfully; otherwise, <see langword="false"/>.</returns>
-        public static bool TryParse([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string? format, [NotNullWhen(true)] out CompositeFormat? compositeFormat)
-        {
-            if (format is not null)
-            {
-                var segments = new List<(string? Literal, int ArgIndex, int Alignment, string? Format)>();
-                if (TryParseLiterals(format, segments))
-                {
-                    compositeFormat = new CompositeFormat(format, segments.ToArray());
-                    return true;
-                }
-            }
-
-            compositeFormat = null;
-            return false;
+            return new CompositeFormat(format, segments.ToArray());
         }
 
         /// <summary>Gets the original composite format string used to create this <see cref="CompositeFormat"/> instance.</summary>
         public string Format { get; }
+
+        /// <summary>Gets the minimum number of arguments that must be passed to a formatting operation using this <see cref="CompositeFormat"/>.</summary>
+        /// <remarks>It's permissible to supply more arguments than this value, but it's an error to pass fewer.</remarks>
+        public int MinimumArgumentCount => _argsRequired;
 
         /// <summary>Throws an exception if the specified number of arguments is fewer than the number required.</summary>
         /// <param name="numArgs">The number of arguments provided by the caller.</param>
@@ -119,8 +106,10 @@ namespace System.Text
         /// <summary>Parse the composite format string into segments.</summary>
         /// <param name="format">The format string.</param>
         /// <param name="segments">The list into which to store the segments.</param>
+        /// <param name="failureOffset">The offset at which a parsing error occured if <see langword="false"/> is returned.</param>
+        /// <param name="failureReason">The reason for a parsing failure if <see langword="false"/> is returned.</param>
         /// <returns>true if the format string can be parsed successfully; otherwise, false.</returns>
-        private static bool TryParseLiterals(ReadOnlySpan<char> format, List<(string? Literal, int ArgIndex, int Alignment, string? Format)> segments)
+        private static bool TryParseLiterals(ReadOnlySpan<char> format, List<(string? Literal, int ArgIndex, int Alignment, string? Format)> segments, ref int failureOffset, ref ExceptionResource failureReason)
         {
             // This parsing logic is copied from string.Format.  It's the same code modified to not format
             // as part of parsing and instead store the parsed literals and argument specifiers (alignment
@@ -161,7 +150,7 @@ namespace System.Text
                     char brace = format[pos];
                     if (!TryMoveNext(format, ref pos, out ch))
                     {
-                        return false;
+                        goto FailureUnclosedFormatItem;
                     }
                     if (brace == ch)
                     {
@@ -173,7 +162,7 @@ namespace System.Text
                     // This wasn't an escape, so it must be an opening brace.
                     if (brace != '{')
                     {
-                        return false;
+                        goto FailureUnexpectedClosingBrace;
                     }
 
                     // Proceed to parse the hole.
@@ -197,14 +186,14 @@ namespace System.Text
                 int index = ch - '0';
                 if ((uint)index >= 10u)
                 {
-                    return false;
+                    goto FailureExpectedAsciiDigit;
                 }
 
                 // Common case is a single digit index followed by a closing brace.  If it's not a closing brace,
                 // proceed to finish parsing the full hole format.
                 if (!TryMoveNext(format, ref pos, out ch))
                 {
-                    return false;
+                    goto FailureUnclosedFormatItem;
                 }
                 if (ch != '}')
                 {
@@ -214,7 +203,7 @@ namespace System.Text
                         index = index * 10 + ch - '0';
                         if (!TryMoveNext(format, ref pos, out ch))
                         {
-                            return false;
+                            goto FailureUnclosedFormatItem;
                         }
                     }
 
@@ -223,7 +212,7 @@ namespace System.Text
                     {
                         if (!TryMoveNext(format, ref pos, out ch))
                         {
-                            return false;
+                            goto FailureUnclosedFormatItem;
                         }
                     }
 
@@ -240,7 +229,7 @@ namespace System.Text
                         {
                             if (!TryMoveNext(format, ref pos, out ch))
                             {
-                                return false;
+                                goto FailureUnclosedFormatItem;
                             }
                         }
                         while (ch == ' ');
@@ -252,7 +241,7 @@ namespace System.Text
                             leftJustify = -1;
                             if (!TryMoveNext(format, ref pos, out ch))
                             {
-                                return false;
+                                goto FailureUnclosedFormatItem;
                             }
                         }
 
@@ -260,18 +249,18 @@ namespace System.Text
                         width = ch - '0';
                         if ((uint)width >= 10u)
                         {
-                            return false;
+                            goto FailureExpectedAsciiDigit;
                         }
                         if (!TryMoveNext(format, ref pos, out ch))
                         {
-                            return false;
+                            goto FailureUnclosedFormatItem;
                         }
                         while (char.IsAsciiDigit(ch))
                         {
                             width = width * 10 + ch - '0';
                             if (!TryMoveNext(format, ref pos, out ch))
                             {
-                                return false;
+                                goto FailureUnclosedFormatItem;
                             }
                         }
                         width *= leftJustify;
@@ -281,7 +270,7 @@ namespace System.Text
                         {
                             if (!TryMoveNext(format, ref pos, out ch))
                             {
-                                return false;
+                                goto FailureUnclosedFormatItem;
                             }
                         }
                     }
@@ -293,7 +282,7 @@ namespace System.Text
                         if (ch != ':')
                         {
                             // Unexpected character
-                            return false;
+                            goto FailureUnclosedFormatItem;
                         }
 
                         // Search for the closing brace; everything in between is the format,
@@ -303,7 +292,7 @@ namespace System.Text
                         {
                             if (!TryMoveNext(format, ref pos, out ch))
                             {
-                                return false;
+                                goto FailureUnclosedFormatItem;
                             }
 
                             if (ch == '}')
@@ -315,7 +304,7 @@ namespace System.Text
                             if (ch == '{')
                             {
                                 // Braces inside the argument hole are not supported
-                                return false;
+                                goto FailureUnclosedFormatItem;
                             }
                         }
 
@@ -331,6 +320,21 @@ namespace System.Text
 
                 // Continue parsing the rest of the format string.
             }
+
+            FailureUnexpectedClosingBrace:
+            failureReason = ExceptionResource.Format_UnexpectedClosingBrace;
+            failureOffset = pos;
+            return false;
+
+            FailureUnclosedFormatItem:
+            failureReason = ExceptionResource.Format_UnclosedFormatItem;
+            failureOffset = pos;
+            return false;
+
+            FailureExpectedAsciiDigit:
+            failureReason = ExceptionResource.Format_ExpectedAsciiDigit;
+            failureOffset = pos;
+            return false;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static bool TryMoveNext(ReadOnlySpan<char> format, ref int pos, out char nextChar)

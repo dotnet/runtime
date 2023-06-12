@@ -74,9 +74,16 @@ namespace ILCompiler
             if (_singleFileCompilation && !_outNearInput)
                 throw new CommandLineException(SR.MissingOutNearInput);
 
+            // Crossgen2 is partial AOT and its pre-compiled methods can be
+            // thrown away at runtime if they mismatch in required ISAs or
+            // computed layouts of structs. Thus we want to ensure that usage
+            // of Vector<T> is only optimistic and doesn't hard code a dependency
+            // that would cause the entire image to be invalidated.
+            bool isVectorTOptimistic = true;
+
             TargetArchitecture targetArchitecture = Get(_command.TargetArchitecture);
             TargetOS targetOS = Get(_command.TargetOS);
-            InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), targetArchitecture, targetOS,
+            InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
                 SR.InstructionSetMustNotBe, SR.InstructionSetInvalidImplication);
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
             var targetDetails = new TargetDetails(targetArchitecture, targetOS, Crossgen2RootCommand.IsArmel ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
@@ -120,7 +127,7 @@ namespace ILCompiler
             //
             // Initialize type system context
             //
-            _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, versionBubbleIncludesCoreLib);
+            _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, versionBubbleIncludesCoreLib, instructionSetSupport);
 
             string compositeRootPath = Get(_command.CompositeRootPath);
 
@@ -262,7 +269,7 @@ namespace ILCompiler
                     {
                         bool singleCompilationVersionBubbleIncludesCoreLib = versionBubbleIncludesCoreLib || (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0);
 
-                        typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib, _typeSystemContext);
+                        typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib, _typeSystemContext.InstructionSetSupport, _typeSystemContext);
                         typeSystemContext.InputFilePaths = singleCompilationInputFilePaths;
                         typeSystemContext.ReferenceFilePaths = referenceFilePaths;
                         typeSystemContext.SetSystemModule((EcmaModule)typeSystemContext.GetModuleForSimpleName(systemModuleName));
@@ -402,6 +409,7 @@ namespace ILCompiler
                     groupConfig.CrossModuleInlining = groupConfig.CrossModuleGenericCompilation; // Currently we set these flags to the same values
                     groupConfig.CrossModuleInlineable = crossModuleInlineableCode;
                     groupConfig.CompileAllPossibleCrossModuleCode = false;
+                    groupConfig.InstructionSetSupport = instructionSetSupport;
 
                     // Handle non-local generics command line option
                     ModuleDesc nonLocalGenericsHome = compileBubbleGenerics ? inputModules[0] : null;
@@ -580,6 +588,8 @@ namespace ILCompiler
 
                     NodeFactoryOptimizationFlags nodeFactoryFlags = new NodeFactoryOptimizationFlags();
                     nodeFactoryFlags.OptimizeAsyncMethods = Get(_command.AsyncMethodOptimization);
+                    nodeFactoryFlags.DeterminismStress = Get(_command.DeterminismStress);
+                    nodeFactoryFlags.PrintReproArgs = Get(_command.PrintReproInstructions);
 
                     builder
                         .UseMapFile(Get(_command.Map))
@@ -607,8 +617,7 @@ namespace ILCompiler
                         .UseCompilationRoots(compilationRoots)
                         .UseOptimizationMode(optimizationMode);
 
-                    if (Get(_command.PrintReproInstructions))
-                        builder.UsePrintReproInstructions(CreateReproArgumentString);
+                    builder.UsePrintReproInstructions(CreateReproArgumentString);
 
                     compilation = builder.ToCompilation();
 
@@ -619,6 +628,9 @@ namespace ILCompiler
                     compilation.WriteDependencyLog(dgmlLogFileName);
 
                 compilation.Dispose();
+
+                if (((ReadyToRunCodegenCompilation)compilation).DeterminismCheckFailed)
+                    throw new Exception("Determinism Check Failed");
             }
         }
 
@@ -638,11 +650,9 @@ namespace ILCompiler
         {
             ModuleDesc systemModule = context.SystemModule;
 
-            TypeDesc foundType = systemModule.GetTypeByCustomAttributeTypeName(typeName, false, (typeDefName, module, throwIfNotFound) =>
-            {
-                return (MetadataType)context.GetCanonType(typeDefName)
-                    ?? CustomAttributeTypeNameParser.ResolveCustomAttributeTypeDefinitionName(typeDefName, module, throwIfNotFound);
-            });
+            TypeDesc foundType = systemModule.GetTypeByCustomAttributeTypeName(typeName, false,
+                (module, typeDefName) => (MetadataType)module.Context.GetCanonType(typeDefName));
+
             if (foundType == null)
                 throw new CommandLineException(string.Format(SR.TypeNotFound, typeName));
 

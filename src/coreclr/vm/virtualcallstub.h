@@ -261,11 +261,7 @@ public:
 #ifndef DACCESS_COMPILE
     VirtualCallStubManager()
         : StubManager(),
-          lookup_rangeList(),
-          resolve_rangeList(),
-          dispatch_rangeList(),
           cache_entry_rangeList(),
-          vtable_rangeList(),
           parentDomain(NULL),
           m_loaderAllocator(NULL),
           m_initialReservedMemForHeaps(NULL),
@@ -296,183 +292,57 @@ public:
     ~VirtualCallStubManager();
 #endif // !DACCESS_COMPILE
 
-
-    enum StubKind {
-        SK_UNKNOWN,
-        SK_LOOKUP,      // Lookup Stubs are SLOW stubs that simply call into the runtime to do all work.
-        SK_DISPATCH,    // Dispatch Stubs have a fast check for one type otherwise jumps to runtime.  Works for monomorphic sites
-        SK_RESOLVE,     // Resolve Stubs do a hash lookup before fallling back to the runtime.  Works for polymorphic sites.
-        SK_VTABLECALL,  // Stub that jumps to a target method using vtable-based indirections. Works for non-interface calls.
-        SK_BREAKPOINT
-    };
-
-    // peek at the assembly code and predict which kind of a stub we have
-    StubKind predictStubKind(PCODE stubStartAddress);
-
-    /* know thine own stubs.  It is possible that when multiple
-    virtualcallstub managers are built that these may need to become
-    non-static, and the callers modified accordingly */
-    StubKind getStubKind(PCODE stubStartAddress, BOOL usePredictStubKind = TRUE)
+    static BOOL isStubStatic(PCODE addr)
     {
         WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
+        StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(addr);
 
-        // This method can called with stubStartAddress==NULL, e.g. when handling null reference exceptions
-        // caused by IP=0. Early out for this case to avoid confusing handled access violations inside predictStubKind.
-        if (PCODEToPINSTR(stubStartAddress) == NULL)
-            return SK_UNKNOWN;
-
-        // Rather than calling IsInRange(stubStartAddress) for each possible stub kind
-        // we can peek at the assembly code and predict which kind of a stub we have
-        StubKind predictedKind = (usePredictStubKind) ? predictStubKind(stubStartAddress) : SK_UNKNOWN;
-
-        if (predictedKind == SK_DISPATCH)
-        {
-            if (isDispatchingStub(stubStartAddress))
-                return SK_DISPATCH;
-        }
-        else if (predictedKind == SK_LOOKUP)
-        {
-            if (isLookupStub(stubStartAddress))
-                return SK_LOOKUP;
-        }
-        else if (predictedKind == SK_RESOLVE)
-        {
-            if (isResolvingStub(stubStartAddress))
-                return SK_RESOLVE;
-        }
-        else if (predictedKind == SK_VTABLECALL)
-        {
-            if (isVTableCallStub(stubStartAddress))
-                return SK_VTABLECALL;
-        }
-
-        // This is the slow case. If the predict returned SK_UNKNOWN, SK_BREAKPOINT,
-        // or the predict was found to be incorrect when checked against the RangeLists
-        // (isXXXStub), then we'll check each stub heap in sequence.
-        if (isDispatchingStub(stubStartAddress))
-            return SK_DISPATCH;
-        else if (isLookupStub(stubStartAddress))
-            return SK_LOOKUP;
-        else if (isResolvingStub(stubStartAddress))
-            return SK_RESOLVE;
-        else if (isVTableCallStub(stubStartAddress))
-            return SK_VTABLECALL;
-
-        return SK_UNKNOWN;
-    }
-
-    inline BOOL isStub(PCODE stubStartAddress)
-    {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-
-        return (getStubKind(stubStartAddress) != SK_UNKNOWN);
-    }
-
-    BOOL isDispatchingStub(PCODE stubStartAddress)
-    {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-
-        return GetDispatchRangeList()->IsInRange(stubStartAddress);
-    }
-
-    BOOL isResolvingStub(PCODE stubStartAddress)
-    {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-
-        return GetResolveRangeList()->IsInRange(stubStartAddress);
-    }
-
-    BOOL isLookupStub(PCODE stubStartAddress)
-    {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-
-        return GetLookupRangeList()->IsInRange(stubStartAddress);
-    }
-
-    BOOL isVTableCallStub(PCODE stubStartAddress)
-    {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-
-        return GetVTableCallRangeList()->IsInRange(stubStartAddress);
+        return sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB ||
+               sk == STUB_CODE_BLOCK_VSD_LOOKUP_STUB ||
+               sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB ||
+               sk == STUB_CODE_BLOCK_VSD_VTABLE_STUB;
     }
 
     static BOOL isDispatchingStubStatic(PCODE addr)
     {
         WRAPPER_NO_CONTRACT;
-        StubKind stubKind;
-        FindStubManager(addr, &stubKind);
-        return stubKind == SK_DISPATCH;
+        StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(addr);
+
+        return sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB;
     }
 
     static BOOL isResolvingStubStatic(PCODE addr)
     {
         WRAPPER_NO_CONTRACT;
-        StubKind stubKind;
-        FindStubManager(addr, &stubKind);
-        return stubKind == SK_RESOLVE;
+        StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(addr);
+
+        return sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB;
     }
 
     static BOOL isLookupStubStatic(PCODE addr)
     {
         WRAPPER_NO_CONTRACT;
-        StubKind stubKind;
-        FindStubManager(addr, &stubKind);
-        return stubKind == SK_LOOKUP;
+        StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(addr);
+
+        return sk == STUB_CODE_BLOCK_VSD_LOOKUP_STUB;
     }
 
     static BOOL isVtableCallStubStatic(PCODE addr)
     {
         WRAPPER_NO_CONTRACT;
-        StubKind stubKind;
-        FindStubManager(addr, &stubKind);
-        return stubKind == SK_VTABLECALL;
+        StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(addr);
+
+        return sk == STUB_CODE_BLOCK_VSD_VTABLE_STUB;
     }
 
     //use range lists to track the chunks of memory that are part of each heap
-    LockedRangeList lookup_rangeList;
-    LockedRangeList resolve_rangeList;
-    LockedRangeList dispatch_rangeList;
     LockedRangeList cache_entry_rangeList;
-    LockedRangeList vtable_rangeList;
 
     // Get dac-ized pointers to rangelist.
-    RangeList* GetLookupRangeList()
-    {
-        SUPPORTS_DAC;
-
-        TADDR addr = PTR_HOST_MEMBER_TADDR(VirtualCallStubManager, this, lookup_rangeList);
-        return PTR_RangeList(addr);
-    }
-    RangeList* GetResolveRangeList()
-    {
-        SUPPORTS_DAC;
-
-        TADDR addr = PTR_HOST_MEMBER_TADDR(VirtualCallStubManager, this, resolve_rangeList);
-        return PTR_RangeList(addr);
-    }
-    RangeList* GetDispatchRangeList()
-    {
-        SUPPORTS_DAC;
-
-        TADDR addr = PTR_HOST_MEMBER_TADDR(VirtualCallStubManager, this, dispatch_rangeList);
-        return PTR_RangeList(addr);
-    }
     RangeList* GetCacheEntryRangeList()
     {
         SUPPORTS_DAC;
         TADDR addr = PTR_HOST_MEMBER_TADDR(VirtualCallStubManager, this, cache_entry_rangeList);
-        return PTR_RangeList(addr);
-    }
-    RangeList* GetVTableCallRangeList()
-    {
-        SUPPORTS_DAC;
-        TADDR addr = PTR_HOST_MEMBER_TADDR(VirtualCallStubManager, this, vtable_rangeList);
         return PTR_RangeList(addr);
     }
 
@@ -508,17 +378,6 @@ private:
 
     VTableCallHolder* GenerateVTableCallStub(DWORD slot);
 
-    template <typename STUB_HOLDER>
-    void AddToCollectibleVSDRangeList(STUB_HOLDER *holder)
-    {
-        if (m_loaderAllocator->IsCollectible())
-        {
-            parentDomain->GetCollectibleVSDRanges()->AddRange(reinterpret_cast<BYTE *>(holder->stub()),
-                reinterpret_cast<BYTE *>(holder->stub()) + holder->stub()->size(),
-                this);
-        }
-    }
-
     // The resolve cache is static across all AppDomains
     ResolveCacheElem *GenerateResolveCacheElem(void *addrOfCode,
                                                void *pMTExpected,
@@ -551,7 +410,7 @@ public:
     static size_t GetTokenFromStub(PCODE stub);
 
     //This is used to get the token out of a stub and we know the stub manager and stub kind
-    static size_t GetTokenFromStubQuick(VirtualCallStubManager * pMgr, PCODE stub, StubKind kind);
+    static size_t GetTokenFromStubQuick(VirtualCallStubManager * pMgr, PCODE stub, StubCodeBlockKind kind);
 
     // General utility functions
     // Quick lookup in the cache. NOTHROW, GC_NOTRIGGER
@@ -595,7 +454,7 @@ private:
     static void STDCALL BackPatchWorkerStatic(PCODE returnAddr, TADDR siteAddrForRegisterIndirect);
 
 public:
-    PCODE ResolveWorker(StubCallSite* pCallSite, OBJECTREF *protectedObj, DispatchToken token, StubKind stubKind);
+    PCODE ResolveWorker(StubCallSite* pCallSite, OBJECTREF *protectedObj, DispatchToken token, StubCodeBlockKind stubKind);
     void BackPatchWorker(StubCallSite* pCallSite);
 
     //Change the callsite to point to stub
@@ -617,12 +476,6 @@ public:
             retval+=indcell_heap->GetSize();
         if(cache_entry_heap)
             retval+=cache_entry_heap->GetSize();
-        if(lookup_heap)
-            retval+=lookup_heap->GetSize();
-         if(dispatch_heap)
-            retval+=dispatch_heap->GetSize();
-         if(resolve_heap)
-            retval+=resolve_heap->GetSize();
          return retval;
     };
 
@@ -720,10 +573,10 @@ private:
 
     PTR_LoaderHeap  indcell_heap;       // indirection cells go here
     PTR_LoaderHeap  cache_entry_heap;   // resolve cache elem entries go here
-    PTR_LoaderHeap  lookup_heap;        // lookup stubs go here
-    PTR_LoaderHeap  dispatch_heap;      // dispatch stubs go here
-    PTR_LoaderHeap  resolve_heap;       // resolve stubs go here
-    PTR_LoaderHeap  vtable_heap;        // vtable-based jump stubs go here
+    PTR_CodeFragmentHeap  lookup_heap;        // lookup stubs go here
+    PTR_CodeFragmentHeap  dispatch_heap;      // dispatch stubs go here
+    PTR_CodeFragmentHeap  resolve_heap;       // resolve stubs go here
+    PTR_CodeFragmentHeap  vtable_heap;        // vtable-based jump stubs go here
 
 #ifdef TARGET_AMD64
     // When we layout the stub heaps, we put them close together in a sequential order
@@ -770,8 +623,7 @@ private:
 public:
     // Given a stub address, find the VCSManager that owns it.
     static VirtualCallStubManager *FindStubManager(PCODE addr,
-                                                   StubKind* wbStubKind = NULL,
-                                                   BOOL usePredictStubKind = TRUE);
+                                                   StubCodeBlockKind* wbStubKind = NULL);
 
 #ifndef DACCESS_COMPILE
     // insert a linked list of indirection cells at the beginning of m_RecycledIndCellList
@@ -818,19 +670,7 @@ protected:
         WRAPPER_NO_CONTRACT;
         CONSISTENCY_CHECK(isStub(addr));
 
-        if (isLookupStub(addr))
-        {
-            return W("VSD_LookupStub");
-        }
-        else if (isDispatchingStub(addr))
-        {
-            return W("VSD_DispatchStub");
-        }
-        else
-        {
-            CONSISTENCY_CHECK(isResolvingStub(addr));
-            return W("VSD_ResolveStub");
-        }
+        return W("Unexpected. RangeSectionStubManager should report the name");
     }
 #endif
 };

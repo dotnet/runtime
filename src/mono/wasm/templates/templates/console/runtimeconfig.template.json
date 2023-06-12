@@ -6,7 +6,8 @@
                 "js-path": "main.mjs",
                 "Host": "nodejs",
                 "host-args": [
-                    "--experimental-wasm-simd"
+                    "--experimental-wasm-simd",
+                    "--experimental-wasm-eh"
                 ]
             }
         ]

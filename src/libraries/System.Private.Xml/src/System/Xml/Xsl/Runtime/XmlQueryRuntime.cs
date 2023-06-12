@@ -480,18 +480,18 @@ namespace System.Xml.Xsl.Runtime
             Debug.Assert(XmlILTypeHelper.GetStorageType(xmlType).IsAssignableFrom(value.GetType()),
                          "Values passed to ChangeTypeXsltArgument should be in ILGen's default Clr representation.");
 
-            Debug.Assert(destinationType == XsltConvert.ObjectType || !destinationType.IsAssignableFrom(value.GetType()),
+            Debug.Assert(destinationType == typeof(object) || !destinationType.IsAssignableFrom(value.GetType()),
                          $"No need to call ChangeTypeXsltArgument since value is already assignable to destinationType {destinationType}");
 
             switch (xmlType.TypeCode)
             {
                 case XmlTypeCode.String:
-                    if (destinationType == XsltConvert.DateTimeType)
+                    if (destinationType == typeof(DateTime))
                         value = XsltConvert.ToDateTime((string)value);
                     break;
 
                 case XmlTypeCode.Double:
-                    if (destinationType != XsltConvert.DoubleType)
+                    if (destinationType != typeof(double))
                         value = Convert.ChangeType(value, destinationType, CultureInfo.InvariantCulture);
                     break;
 
@@ -499,11 +499,11 @@ namespace System.Xml.Xsl.Runtime
                     Debug.Assert(xmlType != XmlQueryTypeFactory.Node && xmlType != XmlQueryTypeFactory.NodeS,
                                  "Rtf values should have been eliminated by caller.");
 
-                    if (destinationType == XsltConvert.XPathNodeIteratorType)
+                    if (destinationType == typeof(XPathNodeIterator))
                     {
                         value = new XPathArrayIterator((IList)value);
                     }
-                    else if (destinationType == XsltConvert.XPathNavigatorArrayType)
+                    else if (destinationType == typeof(XPathNavigator[]))
                     {
                         // Copy sequence to XPathNavigator[]
                         IList<XPathNavigator> seq = (IList<XPathNavigator>)value;
@@ -519,7 +519,7 @@ namespace System.Xml.Xsl.Runtime
                 case XmlTypeCode.Item:
                     {
                         // Only typeof(object) is supported as a destination type
-                        if (destinationType != XsltConvert.ObjectType)
+                        if (destinationType != typeof(object))
                             throw new XslTransformException(SR.Xslt_UnsupportedClrType, destinationType.Name);
 
                         // Convert to default, backwards-compatible representation
@@ -579,12 +579,12 @@ namespace System.Xml.Xsl.Runtime
             switch (xmlType.TypeCode)
             {
                 case XmlTypeCode.String:
-                    if (value.GetType() == XsltConvert.DateTimeType)
+                    if (value.GetType() == typeof(DateTime))
                         value = XsltConvert.ToString((DateTime)value);
                     break;
 
                 case XmlTypeCode.Double:
-                    if (value.GetType() != XsltConvert.DoubleType)
+                    if (value.GetType() != typeof(double))
                         value = ((IConvertible)value).ToDouble(null);
 
                     break;
@@ -641,7 +641,7 @@ namespace System.Xml.Xsl.Runtime
                                 break;
 
                             case XmlTypeCode.String:
-                                if (sourceType == XsltConvert.DateTimeType)
+                                if (sourceType == typeof(DateTime))
                                     value = new XmlQueryItemSequence(new XmlAtomicValue(XmlSchemaType.GetBuiltInSimpleType(XmlTypeCode.String), XsltConvert.ToString((DateTime)value)));
                                 else
                                     value = new XmlQueryItemSequence(new XmlAtomicValue(XmlSchemaType.GetBuiltInSimpleType(XmlTypeCode.String), value));

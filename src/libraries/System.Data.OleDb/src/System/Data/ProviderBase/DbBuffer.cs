@@ -14,29 +14,23 @@ namespace System.Data.ProviderBase
     {
         private readonly int _bufferLength;
 
-        private DbBuffer(int initialSize, bool zeroBuffer) : base(IntPtr.Zero, true)
+        protected unsafe DbBuffer(int initialSize) : base(IntPtr.Zero, true)
         {
             if (0 < initialSize)
             {
-                uint flags = ((zeroBuffer) ? Interop.Kernel32.LMEM_ZEROINIT : Interop.Kernel32.LMEM_FIXED);
-
                 _bufferLength = initialSize;
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 { }
                 finally
                 {
-                    base.handle = Interop.Kernel32.LocalAlloc(flags, (nuint)initialSize);
+                    base.handle = (IntPtr)Interop.Kernel32.LocalAllocZeroed((uint)initialSize);
                 }
                 if (IntPtr.Zero == base.handle)
                 {
                     throw new OutOfMemoryException();
                 }
             }
-        }
-
-        protected DbBuffer(int initialSize) : this(initialSize, true)
-        {
         }
 
         protected DbBuffer(IntPtr invalidHandleValue, bool ownsHandle) : base(invalidHandleValue, ownsHandle)
@@ -347,12 +341,12 @@ namespace System.Data.ProviderBase
             return BitConverter.Int32BitsToSingle(value);
         }
 
-        protected override bool ReleaseHandle()
+        protected override unsafe bool ReleaseHandle()
         {
             // NOTE: The SafeHandle class guarantees this will be called exactly once.
-            IntPtr ptr = base.handle;
+            void* ptr = (void*)base.handle;
             base.handle = IntPtr.Zero;
-            if (IntPtr.Zero != ptr)
+            if (ptr is not null)
             {
                 Interop.Kernel32.LocalFree(ptr);
             }

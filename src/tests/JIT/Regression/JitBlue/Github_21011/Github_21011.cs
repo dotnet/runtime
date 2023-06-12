@@ -4,10 +4,12 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
+using Xunit;
 
 public class Test_Github_21011
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Test_Github_21011 test = new Test_Github_21011();
         test.GetPair();

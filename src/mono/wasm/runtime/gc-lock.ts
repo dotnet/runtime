@@ -1,5 +1,5 @@
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { ENVIRONMENT_IS_PTHREAD } from "./imports";
+import { ENVIRONMENT_IS_PTHREAD } from "./globals";
 import cwraps from "./cwraps";
 
 let locked = false;

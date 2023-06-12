@@ -61,7 +61,7 @@
 #undef DS_EXIT_BLOCKING_PAL_SECTION
 #define DS_EXIT_BLOCKING_PAL_SECTION \
 	MONO_REQ_GC_SAFE_MODE \
-	MONO_EXIT_GC_SAFE \
+	MONO_EXIT_GC_SAFE; \
 	MONO_REQ_GC_UNSAFE_MODE
 
 bool
@@ -223,6 +223,20 @@ ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *valu
 	g_free (valueNarrow);
 
 	return success ? DS_IPC_S_OK : DS_IPC_E_FAIL;
+}
+
+static
+uint32_t
+ds_rt_enable_perfmap (uint32_t type)
+{
+	return DS_IPC_E_NOTSUPPORTED;
+}
+
+static
+uint32_t
+ds_rt_disable_perfmap (void)
+{
+	return DS_IPC_E_NOTSUPPORTED;
 }
 
 /*

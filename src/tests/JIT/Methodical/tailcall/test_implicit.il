@@ -6,7 +6,7 @@
 .assembly extern System.Runtime.Extensions { auto }
 .assembly extern mscorlib { auto }
 
-.assembly 'test_implicit'
+.assembly ASSEMBLY_NAME
 {
 
 

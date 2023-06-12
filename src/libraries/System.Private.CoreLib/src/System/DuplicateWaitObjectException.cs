@@ -10,6 +10,8 @@
 **
 =============================================================================*/
 
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System
@@ -17,7 +19,7 @@ namespace System
     // The DuplicateWaitObjectException is thrown when an object
     // appears more than once in the list of objects to WaitAll or WaitAny.
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class DuplicateWaitObjectException : ArgumentException
     {
         // Creates a new DuplicateWaitObjectException with its message
@@ -46,6 +48,8 @@ namespace System
             HResult = HResults.COR_E_DUPLICATEWAITOBJECT;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected DuplicateWaitObjectException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

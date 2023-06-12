@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public class test1
 {
@@ -12,12 +13,13 @@ public class test1
         return 1.0;
     }
 
-    public static void foo()
+    internal static void foo()
     {
         Console.Write(".");
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         double c = 100.0;
         double a = f1();

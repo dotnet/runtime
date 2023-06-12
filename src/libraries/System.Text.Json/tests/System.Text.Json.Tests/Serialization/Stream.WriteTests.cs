@@ -290,7 +290,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(1000, false, false)]
         public async Task VeryLargeJsonFileTest(int payloadSize, bool ignoreNull, bool writeIndented)
         {
-            List<Order> list = JsonTestHelper.PopulateLargeObject(payloadSize);
+            List<Order> list = Order.PopulateLargeObject(payloadSize);
 
             JsonSerializerOptions options = new JsonSerializerOptions
             {
@@ -338,10 +338,10 @@ namespace System.Text.Json.Serialization.Tests
 
             int length = ListLength * depthFactor;
             List<Order>[] orders = new List<Order>[length];
-            orders[0] = JsonTestHelper.PopulateLargeObject(1);
+            orders[0] = Order.PopulateLargeObject(1);
             for (int i = 1; i < length; i++ )
             {
-                orders[i] = JsonTestHelper.PopulateLargeObject(1);
+                orders[i] = Order.PopulateLargeObject(1);
                 orders[i - 1][0].RelatedOrder = orders[i];
             }
 
@@ -382,10 +382,10 @@ namespace System.Text.Json.Serialization.Tests
 
             int length = ListLength * depthFactor;
             List<Order>[] orders = new List<Order>[length];
-            orders[0] = JsonTestHelper.PopulateLargeObject(1000);
+            orders[0] = Order.PopulateLargeObject(1000);
             for (int i = 1; i < length; i++)
             {
-                orders[i] = JsonTestHelper.PopulateLargeObject(1);
+                orders[i] = Order.PopulateLargeObject(1);
                 orders[i - 1][0].RelatedOrder = orders[i];
             }
 

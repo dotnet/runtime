@@ -2813,7 +2813,7 @@ metadata_foreach_custom_attr_from_index (MonoImage *image, guint32 idx, MonoAsse
 		if (!custom_attr_class_name_from_method_token (image, mtoken, &assembly_token, &nspace, &name))
 			continue;
 
-		stop_iterating = func (image, assembly_token, nspace, name, mtoken, user_data);
+		stop_iterating = func (image, assembly_token, nspace, name, mtoken, cols, user_data);
 	}
 }
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
@@ -24,7 +25,8 @@ namespace Test
                 Method1(af[(int)m_uStatic + (iLocal - m_iStatic)]);
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try { Static1(); }
             catch (Exception) { }

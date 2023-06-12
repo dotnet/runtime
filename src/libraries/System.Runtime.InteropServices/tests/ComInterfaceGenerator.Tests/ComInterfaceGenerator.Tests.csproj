@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IsPackable>false</IsPackable>
@@ -7,14 +7,14 @@
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <!-- These tests pull the attributes from Ancillary.Interop, so we don't need to include the attribute sources in this assembly. -->
     <IncludeLibraryImportGeneratorSources>false</IncludeLibraryImportGeneratorSources>
-    <!-- suppress warning when referencing architecture specific NativeExports.csproj -->
-    <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
+    <ReferencesNativeExports>true</ReferencesNativeExports>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
+    <Compile Include="..\TestAssets\SharedTypes\ComInterfaces\*.cs" Link="ComInterfaces\%(FileName).cs" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\..\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
     <ProjectReference Include="..\Ancillary.Interop\Ancillary.Interop.csproj" />

@@ -82,7 +82,7 @@ namespace System.Net.Http.Tests
             HeaderUtilities.CheckValidQuotedString("\"x\"", "param");
             HeaderUtilities.CheckValidQuotedString("\"x y\"", "param");
 
-            AssertExtensions.Throws<ArgumentException>("param", () => { HeaderUtilities.CheckValidQuotedString(null, "param"); });
+            AssertExtensions.Throws<ArgumentNullException>("param", () => { HeaderUtilities.CheckValidQuotedString(null, "param"); });
             AssertExtensions.Throws<ArgumentException>("param", () => { HeaderUtilities.CheckValidQuotedString("", "param"); });
             Assert.Throws<FormatException>(() => { HeaderUtilities.CheckValidQuotedString("\"x", "param"); });
             Assert.Throws<FormatException>(() => { HeaderUtilities.CheckValidQuotedString("\"x\"y", "param"); });

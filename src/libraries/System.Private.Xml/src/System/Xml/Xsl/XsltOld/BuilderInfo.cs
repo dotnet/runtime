@@ -169,7 +169,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void ValueAppend(string? s, bool disableEscaping)
         {
-            if (s == null || s.Length == 0)
+            if (string.IsNullOrEmpty(s))
             {
                 return;
             }

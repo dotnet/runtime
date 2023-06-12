@@ -16,7 +16,7 @@ namespace Internal.Runtime
         public const uint Signature = 0x00525452; // 'RTR'
 
         public const ushort CurrentMajorVersion = 9;
-        public const ushort CurrentMinorVersion = 0;
+        public const ushort CurrentMinorVersion = 1;
     }
 #if READYTORUN
 #pragma warning disable 0169
@@ -78,7 +78,7 @@ namespace Internal.Runtime
         StringTable = 200, // Unused
         GCStaticRegion = 201,
         ThreadStaticRegion = 202,
-        InterfaceDispatchTable = 203,
+        // Unused = 203,
         TypeManagerIndirection = 204,
         EagerCctor = 205,
         FrozenObjectRegion = 206,

@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection.Metadata;
 using ILCompiler.Logging;
 using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
@@ -56,11 +57,23 @@ namespace ILCompiler.Dataflow
                 field.DoesFieldRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _);
         }
 
+        internal static void CheckAndReportAllRequires(in DiagnosticContext diagnosticContext, TypeSystemEntity calledMember)
+        {
+            CheckAndReportRequires(diagnosticContext, calledMember, DiagnosticUtilities.RequiresUnreferencedCodeAttribute);
+            CheckAndReportRequires(diagnosticContext, calledMember, DiagnosticUtilities.RequiresDynamicCodeAttribute);
+            CheckAndReportRequires(diagnosticContext, calledMember, DiagnosticUtilities.RequiresAssemblyFilesAttribute);
+        }
+
         internal static void CheckAndReportRequires(in DiagnosticContext diagnosticContext, TypeSystemEntity calledMember, string requiresAttributeName)
         {
             if (!calledMember.DoesMemberRequire(requiresAttributeName, out var requiresAttribute))
                 return;
 
+            ReportRequires(diagnosticContext, calledMember, requiresAttributeName, requiresAttribute.Value);
+        }
+
+        internal static void ReportRequires(in DiagnosticContext diagnosticContext, TypeSystemEntity calledMember, string requiresAttributeName, in CustomAttributeValue<TypeDesc> requiresAttribute)
+        {
             DiagnosticId diagnosticId = requiresAttributeName switch
             {
                 DiagnosticUtilities.RequiresUnreferencedCodeAttribute => DiagnosticId.RequiresUnreferencedCode,
@@ -69,8 +82,8 @@ namespace ILCompiler.Dataflow
                 _ => throw new NotImplementedException($"{requiresAttributeName} is not a valid supported Requires attribute"),
             };
 
-            string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(requiresAttribute.Value));
-            string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(requiresAttribute.Value));
+            string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(requiresAttribute));
+            string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(requiresAttribute));
 
             diagnosticContext.AddDiagnostic(diagnosticId, calledMember.GetDisplayName(), arg1, arg2);
         }
@@ -122,7 +135,42 @@ namespace ILCompiler.Dataflow
             DynamicallyAccessedMemberTypes annotation = flowAnnotations.GetTypeAnnotation(type);
             Debug.Assert(annotation != DynamicallyAccessedMemberTypes.None);
             var reflectionMarker = new ReflectionMarker(logger, factory, flowAnnotations, typeHierarchyDataFlowOrigin: type, enabled: true);
-            reflectionMarker.MarkTypeForDynamicallyAccessedMembers(new MessageOrigin(type), type, annotation, type.GetDisplayName());
+
+            // We need to apply annotations to this type, and its base/interface types (recursively)
+            // But the annotations on base/interfaces may already be applied so we don't need to apply those
+            // again (and should avoid doing so as it would produce extra warnings).
+            MessageOrigin origin = new MessageOrigin(type);
+            if (type.HasBaseType)
+            {
+                var baseAnnotation = flowAnnotations.GetTypeAnnotation(type.BaseType);
+                var annotationToApplyToBase = Annotations.GetMissingMemberTypes(annotation, baseAnnotation);
+
+                // Apply any annotations that didn't exist on the base type to the base type.
+                // This may produce redundant warnings when the annotation is DAMT.All or DAMT.PublicConstructors and the base already has a
+                // subset of those annotations.
+                reflectionMarker.MarkTypeForDynamicallyAccessedMembers(origin, type.BaseType, annotationToApplyToBase, type.GetDisplayName(), declaredOnly: false);
+            }
+
+            // Most of the DynamicallyAccessedMemberTypes don't select members on interfaces. We only need to apply
+            // annotations to interfaces separately if dealing with DAMT.All or DAMT.Interfaces.
+            if (annotation.HasFlag(DynamicallyAccessedMemberTypes.Interfaces))
+            {
+                var annotationToApplyToInterfaces = annotation == DynamicallyAccessedMemberTypes.All ? annotation : DynamicallyAccessedMemberTypes.Interfaces;
+                foreach (var iface in type.RuntimeInterfaces)
+                {
+                    if (flowAnnotations.GetTypeAnnotation(iface).HasFlag(annotationToApplyToInterfaces))
+                        continue;
+
+                    // Apply All or Interfaces to the interface type.
+                    // DAMT.All may produce redundant warnings from implementing types, when the interface type already had some annotations.
+                    reflectionMarker.MarkTypeForDynamicallyAccessedMembers(origin, iface, annotationToApplyToInterfaces, type.GetDisplayName(), declaredOnly: false);
+                }
+            }
+
+            // The annotations this type inherited from its base types or interfaces should not produce
+            // warnings on the respective base/interface members, since those are already covered by applying
+            // the annotations to those types. So we only need to handle the members directly declared on this type.
+            reflectionMarker.MarkTypeForDynamicallyAccessedMembers(new MessageOrigin(type), type, annotation, type.GetDisplayName(), declaredOnly: true);
             return reflectionMarker.Dependencies;
         }
 
@@ -152,6 +200,11 @@ namespace ILCompiler.Dataflow
         {
             _origin = _origin.WithInstructionOffset(methodBody, offset);
 
+            if (field.DoesFieldRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) ||
+                field.DoesFieldRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _) ||
+                field.DoesFieldRequire(DiagnosticUtilities.RequiresAssemblyFilesAttribute, out _))
+                TrimAnalysisPatterns.Add(new TrimAnalysisFieldAccessPattern(field, _origin));
+
             ProcessGenericArgumentDataFlow(field);
 
             return _annotations.GetFieldValue(field);
@@ -159,8 +212,7 @@ namespace ILCompiler.Dataflow
 
         private void HandleStoreValueWithDynamicallyAccessedMembers(MethodIL methodBody, int offset, ValueWithDynamicallyAccessedMembers targetValue, MultiValue sourceValue, string reason)
         {
-            // We must record all field accesses since we need to check RUC/RDC/RAF attributes on them regardless of annotations
-            if (targetValue.DynamicallyAccessedMemberTypes != 0 || targetValue is FieldValue)
+            if (targetValue.DynamicallyAccessedMemberTypes != 0)
             {
                 _origin = _origin.WithInstructionOffset(methodBody, offset);
                 HandleAssignmentPattern(_origin, sourceValue, targetValue, reason);
@@ -176,7 +228,7 @@ namespace ILCompiler.Dataflow
         protected override void HandleStoreMethodReturnValue(MethodIL methodBody, int offset, MethodReturnValue returnValue, MultiValue valueToStore)
             => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, returnValue, valueToStore, returnValue.Method.GetDisplayName());
 
-        protected override void HandleTypeReflectionAccess(MethodIL methodBody, int offset, TypeDesc accessedType)
+        protected override void HandleTypeTokenAccess(MethodIL methodBody, int offset, TypeDesc accessedType)
         {
             // Note that ldtoken alone is technically a reflection access to the type
             // it doesn't lead to full reflection marking of the type
@@ -187,20 +239,20 @@ namespace ILCompiler.Dataflow
             ProcessGenericArgumentDataFlow(accessedType);
         }
 
-        protected override void HandleMethodReflectionAccess(MethodIL methodBody, int offset, MethodDesc accessedMethod)
+        protected override void HandleMethodTokenAccess(MethodIL methodBody, int offset, MethodDesc accessedMethod)
         {
             _origin = _origin.WithInstructionOffset(methodBody, offset);
 
-            TrimAnalysisPatterns.Add(new TrimAnalysisReflectionAccessPattern(accessedMethod, _origin));
+            TrimAnalysisPatterns.Add(new TrimAnalysisTokenAccessPattern(accessedMethod, _origin));
 
             ProcessGenericArgumentDataFlow(accessedMethod);
         }
 
-        protected override void HandleFieldReflectionAccess(MethodIL methodBody, int offset, FieldDesc accessedField)
+        protected override void HandleFieldTokenAccess(MethodIL methodBody, int offset, FieldDesc accessedField)
         {
             _origin = _origin.WithInstructionOffset(methodBody, offset);
 
-            TrimAnalysisPatterns.Add(new TrimAnalysisReflectionAccessPattern(accessedField, _origin));
+            TrimAnalysisPatterns.Add(new TrimAnalysisTokenAccessPattern(accessedField, _origin));
 
             ProcessGenericArgumentDataFlow(accessedField);
         }
@@ -348,9 +400,7 @@ namespace ILCompiler.Dataflow
                             }
                         }
 
-                        CheckAndReportRequires(diagnosticContext, calledMethod, DiagnosticUtilities.RequiresUnreferencedCodeAttribute);
-                        CheckAndReportRequires(diagnosticContext, calledMethod, DiagnosticUtilities.RequiresDynamicCodeAttribute);
-                        CheckAndReportRequires(diagnosticContext, calledMethod, DiagnosticUtilities.RequiresAssemblyFilesAttribute);
+                        CheckAndReportAllRequires(diagnosticContext, calledMethod);
 
                         return handleCallAction.Invoke(calledMethod, instanceValue, argumentValues, intrinsicId, out methodReturnValue);
                     }
@@ -531,6 +581,27 @@ namespace ILCompiler.Dataflow
                             }
                         }
                     }
+                    break;
+
+                //
+                // string System.Reflection.Assembly.Location getter
+                // string System.Reflection.AssemblyName.CodeBase getter
+                // string System.Reflection.AssemblyName.EscapedCodeBase getter
+                //
+                case IntrinsicId.Assembly_get_Location:
+                case IntrinsicId.AssemblyName_get_CodeBase:
+                case IntrinsicId.AssemblyName_get_EscapedCodeBase:
+                    diagnosticContext.AddDiagnostic(DiagnosticId.AvoidAssemblyLocationInSingleFile, calledMethod.GetDisplayName());
+                    break;
+
+                //
+                // string System.Reflection.Assembly.GetFile(string)
+                // string System.Reflection.Assembly.GetFiles()
+                // string System.Reflection.Assembly.GetFiles(bool)
+                //
+                case IntrinsicId.Assembly_GetFile:
+                case IntrinsicId.Assembly_GetFiles:
+                    diagnosticContext.AddDiagnostic(DiagnosticId.AvoidAssemblyGetFilesInSingleFile, calledMethod.GetDisplayName());
                     break;
 
                 default:

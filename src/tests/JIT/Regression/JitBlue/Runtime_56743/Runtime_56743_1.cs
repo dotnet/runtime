@@ -3,11 +3,13 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public unsafe class Runtime_56743_1
 {
     [MethodImpl(MethodImplOptions.NoOptimization)]
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = Foo(default);
         return result == 0 ? 100 : -1;

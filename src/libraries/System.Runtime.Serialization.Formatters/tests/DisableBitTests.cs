@@ -36,6 +36,27 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [ConditionalFact(nameof(ShouldRunFullFeatureSwitchEnablementChecks))]
+        public static void EnabledThroughFeatureSwitch()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions[EnableBinaryFormatterSwitchName] = bool.TrueString;
+
+            RemoteExecutor.Invoke(() =>
+            {
+                // Test serialization
+
+                MemoryStream ms = new MemoryStream();
+                new BinaryFormatter().Serialize(ms, "A string to serialize.");
+
+                // Test round-trippability
+
+                ms.Position = 0;
+                object roundTripped = new BinaryFormatter().Deserialize(ms);
+                Assert.Equal("A string to serialize.", roundTripped);
+            }, options).Dispose();
+        }
+
+        [ConditionalFact(nameof(ShouldRunFullFeatureSwitchEnablementChecks))]
         public static void DisabledThroughFeatureSwitch()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();

@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class ComparisonTestAndTestChains
 {
@@ -179,7 +180,8 @@ public class ComparisonTestAndTestChains
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (!Eq_byte_bool(10, false))
         {

@@ -3,8 +3,9 @@
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <OutputType>exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- https://github.com/dotnet/runtime/issues/36028 -->
+    <!-- Tracing tests routinely time out with jitstress and gcstress -->
     <GCStressIncompatible>true</GCStressIncompatible>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <ItemGroup>

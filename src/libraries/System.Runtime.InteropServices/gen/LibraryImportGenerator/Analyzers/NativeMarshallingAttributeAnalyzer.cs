@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using static Microsoft.Interop.Analyzers.AnalyzerDiagnostics;
+using Microsoft.CodeAnalysis.Operations;
 
 namespace Microsoft.Interop.Analyzers
 {
@@ -67,9 +68,7 @@ namespace Microsoft.Interop.Analyzers
         {
             var perCompilationAnalyzer = new PerCompilationAnalyzer(context.Compilation);
 
-            // TODO: Change this from a SyntaxNode action to an operation attribute once attribute application is represented in the
-            // IOperation tree by Roslyn.
-            context.RegisterSyntaxNodeAction(perCompilationAnalyzer.AnalyzeAttribute, SyntaxKind.Attribute);
+            context.RegisterOperationAction(perCompilationAnalyzer.AnalyzeAttribute, OperationKind.Attribute);
         }
 
         private sealed partial class PerCompilationAnalyzer
@@ -81,20 +80,27 @@ namespace Microsoft.Interop.Analyzers
                 _compilation = compilation;
             }
 
-            public void AnalyzeAttribute(SyntaxNodeAnalysisContext context)
+            public void AnalyzeAttribute(OperationAnalysisContext context)
             {
-                AttributeSyntax syntax = (AttributeSyntax)context.Node;
-                ISymbol attributedSymbol = context.ContainingSymbol!;
-
-                AttributeData? attr = syntax.FindAttributeData(attributedSymbol);
-                if (attr?.AttributeClass?.ToDisplayString() == TypeNames.NativeMarshallingAttribute
-                    && attr.AttributeConstructor is not null)
+                IAttributeOperation attr = (IAttributeOperation)context.Operation;
+                if (attr.Operation is IObjectCreationOperation attrCreation
+                    && attrCreation.Type.ToDisplayString() == TypeNames.NativeMarshallingAttribute)
                 {
-                    INamedTypeSymbol? entryType = (INamedTypeSymbol?)attr.ConstructorArguments[0].Value;
-                    AnalyzeManagedTypeMarshallingInfo(
-                        GetSymbolType(attributedSymbol),
-                        DiagnosticReporter.CreateForLocation(syntax.FindArgumentWithNameOrArity("nativeType", 0).FindTypeExpressionOrNullLocation(), context.ReportDiagnostic),
-                        entryType);
+                    IArgumentOperation marshallerEntryPointTypeArgument = attrCreation.GetArgumentByOrdinal(0);
+                    if (marshallerEntryPointTypeArgument.Value.IsNullLiteralOperation())
+                    {
+                        DiagnosticReporter diagnosticFactory = DiagnosticReporter.CreateForLocation(marshallerEntryPointTypeArgument.Value.Syntax.GetLocation(), context.ReportDiagnostic);
+                        diagnosticFactory.CreateAndReportDiagnostic(
+                            MarshallerEntryPointTypeMustBeNonNullRule,
+                            GetSymbolType(context.ContainingSymbol!).ToDisplayString());
+                    }
+                    if (marshallerEntryPointTypeArgument.Value is ITypeOfOperation typeOfOp)
+                    {
+                        AnalyzeManagedTypeMarshallingInfo(
+                            GetSymbolType(context.ContainingSymbol!),
+                            DiagnosticReporter.CreateForLocation(((TypeOfExpressionSyntax)typeOfOp.Syntax).Type.GetLocation(), context.ReportDiagnostic),
+                            (INamedTypeSymbol?)typeOfOp.TypeOperand);
+                    }
                 }
             }
 
@@ -103,14 +109,6 @@ namespace Microsoft.Interop.Analyzers
                 DiagnosticReporter diagnosticFactory,
                 INamedTypeSymbol? entryType)
             {
-                if (entryType is null)
-                {
-                    diagnosticFactory.CreateAndReportDiagnostic(
-                        MarshallerEntryPointTypeMustBeNonNullRule,
-                        managedType.ToDisplayString());
-                    return;
-                }
-
                 if (!ManualTypeMarshallingHelper.HasEntryPointMarshallerAttribute(entryType))
                 {
                     diagnosticFactory.CreateAndReportDiagnostic(

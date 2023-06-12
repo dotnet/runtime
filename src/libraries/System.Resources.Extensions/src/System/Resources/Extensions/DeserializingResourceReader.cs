@@ -11,7 +11,11 @@ namespace System.Resources.Extensions
     public partial class DeserializingResourceReader
     {
         private bool _assumeBinaryFormatter;
+
+// Issue https://github.com/dotnet/runtime/issues/39292 tracks finding an alternative to BinaryFormatter
+#pragma warning disable SYSLIB0011
         private BinaryFormatter? _formatter;
+#pragma warning restore SYSLIB0011
 
         private bool ValidateReaderType(string readerType)
         {

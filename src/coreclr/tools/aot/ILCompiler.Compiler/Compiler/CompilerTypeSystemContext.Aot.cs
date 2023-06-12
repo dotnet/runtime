@@ -38,6 +38,7 @@ namespace ILCompiler
         private TypeDesc[] _arrayOfTInterfaces;
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
         private MetadataType _arrayOfTType;
+        private MetadataType _attributeType;
 
         public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode, DelegateFeature delegateFeatures, int genericCycleCutoffPoint = DefaultGenericCycleCutoffPoint)
             : base(details)
@@ -132,6 +133,8 @@ namespace ILCompiler
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private IEnumerable<MethodDesc> GetAllMethods(TypeDesc type, bool virtualOnly)
         {
+            MetadataType attributeType = _attributeType ??= SystemModule.GetType("System", "Attribute");
+
             if (type.IsDelegate)
             {
                 return GetAllMethodsForDelegate(type, virtualOnly);
@@ -143,6 +146,10 @@ namespace ILCompiler
             else if (type.IsValueType)
             {
                 return GetAllMethodsForValueType(type, virtualOnly);
+            }
+            else if (type.CanCastTo(attributeType))
+            {
+                return GetAllMethodsForAttribute(type, virtualOnly);
             }
 
             return virtualOnly ? type.GetVirtualMethods() : type.GetMethods();

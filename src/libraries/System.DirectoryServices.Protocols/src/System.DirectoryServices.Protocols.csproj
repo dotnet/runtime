@@ -56,6 +56,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs">
       <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Obsoletions.cs">
+      <Link>Common\System\Obsoletions.cs</Link>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">

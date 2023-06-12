@@ -229,7 +229,6 @@ namespace System.Reflection.Metadata
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/79043", TestRuntimes.Mono)]
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
         public void AsyncMethodChanges()
         {
@@ -409,6 +408,16 @@ namespace System.Reflection.Metadata
 
                 Assert.True ((addedEventToken & 0x00ffffff) < 4);
                 
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                var addedFirstPropInfo = x2.GetType().GetProperty("AddedFirstProp");
+                var firstPropSetter = addedFirstPropInfo.GetSetMethod();
+                Assert.NotNull (firstPropSetter);
+
+                var addedSecondPropInfo = x2.GetType().GetProperty("AddedSecondProp");
+                var secondPropGetter = addedSecondPropInfo.GetGetMethod();
+                Assert.NotNull (secondPropGetter);
 
             });
         }

@@ -249,7 +249,7 @@ namespace System.Reflection.Emit
 
         private RuntimeTypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
-            ArgumentNullException.ThrowIfNull(name, "fullname");
+            Debug.Assert(name is not null);
             ITypeIdentifier ident = TypeIdentifiers.FromInternal(name);
             if (name_cache.ContainsKey(ident))
                 throw new ArgumentException(SR.Argument_DuplicateTypeName);
@@ -426,8 +426,9 @@ namespace System.Reflection.Emit
             return index;
         }
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
+            CustomAttributeBuilder customBuilder = new CustomAttributeBuilder(con, binaryAttribute);
             if (cattrs != null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
@@ -440,11 +441,6 @@ namespace System.Reflection.Emit
                 cattrs = new CustomAttributeBuilder[1];
                 cattrs[0] = customBuilder;
             }
-        }
-
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
-        {
-            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
         /*
                 internal ISymbolDocumentWriter? DefineDocument (string url, Guid language, Guid languageVendor, Guid documentType)
@@ -532,7 +528,7 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(type);
             if (type.IsByRef)
-                throw new ArgumentException("type can't be a byref type", nameof(type));
+                throw new ArgumentException(SR.Argument_CannotBeByRefType, nameof(type));
             return type.MetadataToken;
         }
 
@@ -869,7 +865,7 @@ namespace System.Reflection.Emit
                 return Array.Empty<object>();
 
             if (attributeType is TypeBuilder)
-                throw new InvalidOperationException("First argument to GetCustomAttributes can't be a TypeBuilder");
+                throw new InvalidOperationException(SR.InvalidOperation_CannotHaveFirstArgumentAsTypeBuilder);
 
             List<object> results = new List<object>();
             for (int i = 0; i < cattrs.Length; i++)
@@ -877,7 +873,7 @@ namespace System.Reflection.Emit
                 Type t = cattrs[i].Ctor.GetType();
 
                 if (t is TypeBuilder)
-                    throw new InvalidOperationException("Can't construct custom attribute for TypeBuilder type");
+                    throw new InvalidOperationException(SR.InvalidOperation_CannotConstructCustomAttributeForTypeBuilderType);
 
                 if (attributeType == null || attributeType.IsAssignableFrom(t))
                     results.Add(cattrs[i].Invoke());
@@ -895,7 +891,7 @@ namespace System.Reflection.Emit
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             if (!global_type_created)
-                throw new InvalidOperationException("Module-level fields cannot be retrieved until after the CreateGlobalFunctions method has been called for the module.");
+                throw new InvalidOperationException(SR.InvalidOperation_ModuleFieldsMethodsRelyOnCreateGlobalFunctionsMethod);
             return global_type!.AsType().GetField(name, bindingAttr);
         }
 
@@ -903,7 +899,7 @@ namespace System.Reflection.Emit
         public override FieldInfo[] GetFields(BindingFlags bindingFlags)
         {
             if (!global_type_created)
-                throw new InvalidOperationException("Module-level fields cannot be retrieved until after the CreateGlobalFunctions method has been called for the module.");
+                throw new InvalidOperationException(SR.InvalidOperation_ModuleFieldsMethodsRelyOnCreateGlobalFunctionsMethod);
             return global_type!.AsType().GetFields(bindingFlags);
         }
 
@@ -911,7 +907,7 @@ namespace System.Reflection.Emit
         public override MethodInfo[] GetMethods(BindingFlags bindingFlags)
         {
             if (!global_type_created)
-                throw new InvalidOperationException("Module-level methods cannot be retrieved until after the CreateGlobalFunctions method has been called for the module.");
+                throw new InvalidOperationException(SR.InvalidOperation_ModuleFieldsMethodsRelyOnCreateGlobalFunctionsMethod);
             return global_type!.AsType().GetMethods(bindingFlags);
         }
 

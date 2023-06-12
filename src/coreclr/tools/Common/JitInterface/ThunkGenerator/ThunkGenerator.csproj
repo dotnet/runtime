@@ -3,6 +3,9 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+
+    <!-- TODO: run ThunkGenerator on CI to detect new code analysis issues early -->
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
 </Project>

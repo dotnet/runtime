@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 public unsafe class testout1
 {
     public struct VT_0_8_5
@@ -3442,7 +3443,8 @@ public unsafe class testout1
         return retval_0;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int retval;
         retval = Convert.ToInt32(Func_0());

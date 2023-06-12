@@ -22,6 +22,7 @@ namespace Sample
                 new TryCatchFilterInline(),
                 new TryCatchFilterThrow(),
                 new TryCatchFilterThrowApplies(),
+                new TryFinally(),
             };
         }
 
@@ -206,6 +207,27 @@ namespace Sample
             {
                 if (doThrow)
                     throw new System.Exception("Reached DoThrow and threw");
+            }
+        }
+
+        class TryFinally : ExcMeasurement
+        {
+            public override string Name => "TryFinally";
+            int j = 1;
+
+            public override void RunStep()
+            {
+                int i = 0;
+                try
+                {
+                    i += j;
+                }
+                finally
+                {
+                    i += j;
+                }
+                if (i != 2)
+                    throw new System.Exception("Internal error");
             }
         }
     }

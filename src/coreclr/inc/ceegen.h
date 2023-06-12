@@ -185,7 +185,6 @@ class CCeeGen : public ICeeGenInternal {
 
     CeeGenTokenMapper *m_pTokenMap;
     BOOLEAN m_fTokenMapSupported;   // temporary to support both models
-    IMapToken *m_pRemapHandler;
 
     CeeSection **m_sections;
     short m_numSections;
@@ -238,9 +237,6 @@ class CCeeGen : public ICeeGenInternal {
         ULONG RVA,
         UCHAR **lpBuffer);
 
-    STDMETHODIMP GetIMapTokenIface (
-        IUnknown **pIMapToken);
-
     STDMETHODIMP GenerateCeeFile ();
 
     STDMETHODIMP GetIlSection (
@@ -276,8 +272,6 @@ class CCeeGen : public ICeeGenInternal {
         UCHAR **lpBuffer);                  // [OUT] Returned buffer
 
 
-    STDMETHODIMP AddNotificationHandler(IUnknown *pHandler);
-
     // Write the metadata in "emitter" to the default metadata section is "section" is 0
     // If 'section != 0, it will put the data in 'buffer'.  This
     // buffer is assumed to be in 'section' at 'offset' and of size 'buffLen'
@@ -307,14 +301,6 @@ class CCeeGen : public ICeeGenInternal {
         LIMITED_METHOD_CONTRACT;
         return m_pTokenMap;
     }
-
-    virtual HRESULT addNotificationHandler(IUnknown *pHandler);
-
-    //Clone is actually a misnomer here.  This method will copy all of the
-    //instance variables and then do a deep copy (as necessary) of the sections.
-    //Section data will be appended onto any information already in the section.
-    //This is done to support the DynamicIL -> PersistedIL transform.
-    virtual HRESULT cloneInstance(CCeeGen *destination);
 };
 
 // ***** CeeSection inline methods

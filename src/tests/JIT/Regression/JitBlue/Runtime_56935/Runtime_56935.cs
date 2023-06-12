@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Runtime_56935
 {
@@ -10,7 +11,8 @@ namespace Runtime_56935
     {
         static int clsFld;
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int zeroVal = 0;
 

@@ -10,6 +10,7 @@
 **
 ===========================================================*/
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -47,6 +48,8 @@ namespace System.Threading
             m_isFlowSuppressed = isFlowSuppressed;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -211,7 +214,7 @@ namespace System.Threading
         /// </summary>
         /// <remarks>
         /// To revert to the current execution context; capture it before Restore, and Restore it again.
-        /// It will not automatically be reverted unlike <see cref="ExecutionContext.Run"/>.
+        /// It will not automatically be reverted unlike <see cref="Run"/>.
         /// </remarks>
         /// <param name="executionContext">The ExecutionContext to set.</param>
         /// <exception cref="InvalidOperationException"><paramref name="executionContext"/> is null.</exception>
@@ -347,7 +350,7 @@ namespace System.Threading
             }
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         internal static void CheckThreadPoolAndContextsAreDefault()
         {
             Debug.Assert(!Thread.IsThreadStartSupported || Thread.CurrentThread.IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads

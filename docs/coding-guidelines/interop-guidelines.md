@@ -1,6 +1,8 @@
 Interop Guidelines
 ==================
 
+We follow the [best practices for native interop](https://learn.microsoft.com/en-us/dotnet/standard/native-interop/best-practices) with the additional guidelines below that are specific to this repo.
+
 ## Goals
 We have the following goals related to interop code being used in dotnet/runtime:
 

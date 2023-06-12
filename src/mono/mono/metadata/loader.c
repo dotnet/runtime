@@ -486,9 +486,16 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 		return NULL;
 	}
 	int mcount = mono_class_get_method_count (klass);
-	MonoMethod **klass_methods = m_class_get_methods (klass);
-	for (i = 0; i < mcount; ++i) {
-		MonoMethod *m = klass_methods [i];
+	i = -1;
+	gpointer iter = NULL;
+	MonoMethod *m = NULL;
+	gboolean matched = FALSE;
+	/* FIXME: metadata-update iterating using
+	 * mono_class_get_methods will break if `m` is NULL.  Need to
+	 * reconcile with the `if (!m)` "we must cope" comment below.
+	 */
+	while ((m = mono_class_get_methods (klass, &iter))) {
+		++i;
 		MonoMethodSignature *msig;
 
 		/* We must cope with failing to load some of the types. */
@@ -507,16 +514,33 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 			continue;
 
 		if (sig->call_convention == MONO_CALL_VARARG) {
-			if (mono_metadata_signature_vararg_match (sig, msig))
+			if (mono_metadata_signature_vararg_match (sig, msig)) {
+				matched = TRUE;
 				break;
+			}
 		} else {
-			if (mono_metadata_signature_equal (sig, msig))
+			if (mono_metadata_signature_equal (sig, msig)) {
+				matched = TRUE;
 				break;
+			}
 		}
 	}
 
-	if (i < mcount)
-		return mono_class_get_method_by_index (from_class, i);
+	if (matched) {
+		if (i < mcount)
+			return mono_class_get_method_by_index (from_class, i);
+		else if (m != NULL) {
+			// FIXME: metadata-update: hack
+			// it's from a metadata-update, probably
+			m = mono_class_inflate_generic_method_full_checked (
+				m, from_class, mono_class_get_context (from_class), error);
+			mono_error_assert_ok (error);
+			g_assert (m != NULL);
+			g_assert (m->klass == from_class);
+			g_assert (m->is_inflated);
+			return m;
+		}
+	}
 	return NULL;
 }
 

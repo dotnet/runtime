@@ -16,6 +16,7 @@
  */
 
 using System;
+using Xunit;
 
 struct VT
 {
@@ -75,7 +76,8 @@ public class DblArray3
 
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

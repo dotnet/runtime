@@ -69,7 +69,8 @@ namespace Internal.Runtime.TypeLoader
 
                     // Arrays of pointers don't implement generic interfaces and are special cases. They use
                     // typeof(char*[]) as their template.
-                    if (TypeBeingBuilt.IsSzArray && ((ArrayType)TypeBeingBuilt).ElementType.IsPointer)
+                    if (TypeBeingBuilt.IsSzArray && ((ArrayType)TypeBeingBuilt).ElementType is TypeDesc elementType &&
+                        (elementType.IsPointer || elementType.IsFunctionPointer))
                     {
                         _templateType = TypeBeingBuilt.Context.ResolveRuntimeTypeHandle(typeof(char*[]).TypeHandle);
                         _templateTypeLoaderNativeLayout = false;
@@ -252,12 +253,13 @@ namespace Internal.Runtime.TypeLoader
                 // Template type loader case
                 unsafe
                 {
-                    if (TypeBeingBuilt.IsPointer || TypeBeingBuilt.IsByRef)
+                    if (TypeBeingBuilt.IsPointer || TypeBeingBuilt.IsByRef || TypeBeingBuilt.IsFunctionPointer)
                     {
                         // Pointers and byrefs don't have vtable slots
                         return 0;
                     }
-                    if (TypeBeingBuilt.IsMdArray || (TypeBeingBuilt.IsSzArray && ((ArrayType)TypeBeingBuilt).ElementType.IsPointer))
+                    if (TypeBeingBuilt.IsMdArray || (TypeBeingBuilt.IsSzArray && ((ArrayType)TypeBeingBuilt).ElementType is TypeDesc elementType
+                        && (elementType.IsPointer || elementType.IsFunctionPointer)))
                     {
                         // MDArray types and pointer arrays have the same vtable as the System.Array type they "derive" from.
                         // They do not implement the generic interfaces that make this interesting for normal arrays.
@@ -355,7 +357,8 @@ namespace Internal.Runtime.TypeLoader
                         Debug.Assert(TypeBeingBuilt.RetrieveRuntimeTypeHandleIfPossible() ||
                              TypeBeingBuilt.IsTemplateCanonical() ||
                              (TypeBeingBuilt is PointerType) ||
-                             (TypeBeingBuilt is ByRefType));
+                             (TypeBeingBuilt is ByRefType) ||
+                             (TypeBeingBuilt is FunctionPointerType));
                         _instanceGCLayout = s_emptyLayout;
                     }
                 }
@@ -458,7 +461,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 ArrayType typeAsArrayType = TypeBeingBuilt as ArrayType;
                 if (typeAsArrayType != null)
-                    return !typeAsArrayType.ParameterType.IsValueType && !typeAsArrayType.ParameterType.IsPointer;
+                    return !typeAsArrayType.ParameterType.IsValueType && !typeAsArrayType.ParameterType.IsPointer && !typeAsArrayType.ParameterType.IsFunctionPointer;
                 else
                     return false;
             }

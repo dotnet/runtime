@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -450,6 +451,8 @@ namespace System
         //
         // ISerializable constructor
         //
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected Uri(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             string? uriString = serializationInfo.GetString("AbsoluteUri"); // Do not rename (binary serialization)
@@ -1458,8 +1461,8 @@ namespace System
                 char.IsAsciiHexDigit(pattern[index + 2]);
         }
 
-        private static readonly IndexOfAnyValues<char> s_schemeChars =
-            IndexOfAnyValues.Create("+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+        private static readonly SearchValues<char> s_schemeChars =
+            SearchValues.Create("+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
 
         // CheckSchemeName
         //
@@ -1780,8 +1783,8 @@ namespace System
         //
         // Returns true if a colon is found in the first path segment, false otherwise
         //
-        private static readonly IndexOfAnyValues<char> s_segmentSeparatorChars =
-            IndexOfAnyValues.Create(@":\/?#");
+        private static readonly SearchValues<char> s_segmentSeparatorChars =
+            SearchValues.Create(@":\/?#");
 
         private static bool CheckForColonInFirstPathSegment(string uriString)
         {

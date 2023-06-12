@@ -15,6 +15,8 @@
     <Compile Include="NlsSwitchTests.cs" />
     <Compile Include="..\CompareInfo\CompareInfoTests.cs"
              Link="CompareInfo\CompareInfoTests.cs" />
+    <Compile Include="..\CompareInfo\CompareInfoTestsBase.cs"
+             Link="CompareInfo\CompareInfoTestsBase.cs" />
     <Compile Include="..\CompareInfo\CompareInfoTests.IndexOf.cs"
              Link="CompareInfo\CompareInfoTests.IndexOf.cs" />
     <Compile Include="..\CompareInfo\CompareInfoTests.IsPrefix.cs"

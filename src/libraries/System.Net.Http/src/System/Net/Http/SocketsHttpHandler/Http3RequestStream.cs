@@ -352,7 +352,7 @@ namespace System.Net.Http
 
             _headerState = HeaderState.TrailingHeaders;
 
-            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop((int)_response.StatusCode);
         }
 
         private async Task SendContentAsync(HttpContent content, CancellationToken cancellationToken)

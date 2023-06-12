@@ -12,10 +12,7 @@
     <FeatureWasmThreads Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmThreads>
     <WasmEnableLegacyJsInterop Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
     <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
-    <DefineConstants Condition="'$(WasmEnableLegacyJsInterop)' == 'true'" >$(DefineConstants);ENABLE_LEGACY_JS_INTEROP</DefineConstants>
-    <ILLinkDescriptorsLibraryBuildXml
-      Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableLegacyJsInterop)' == 'true'"
-      >$(MonoProjectRoot)wasm\build\ILLink.Descriptors.LegacyJsInterop.xml</ILLinkDescriptorsLibraryBuildXml>
+    <DefineConstants Condition="'$(WasmEnableLegacyJsInterop)' == 'false'" >$(DefineConstants);DISABLE_LEGACY_JS_INTEROP</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -61,12 +58,10 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.JSObject.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.String.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.Exception.cs" />
-
-    <Compile Include="System\Runtime\InteropServices\JavaScript\JSSynchronizationContext.cs" />
   </ItemGroup>
 
   <!-- only include legacy interop when WasmEnableLegacyJsInterop is enabled -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableLegacyJsInterop)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableLegacyJsInterop)' != 'false'">
     <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\LegacyExports.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Runtime.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Array.cs" />
@@ -75,6 +70,12 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Function.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Uint8Array.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\LegacyHostImplementation.cs" />
+  </ItemGroup>
+
+  <!-- only include threads support when FeatureWasmThreads is enabled -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(FeatureWasmThreads)' == 'true'">
+    <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorker.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSSynchronizationContext.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -57,6 +57,7 @@
         typedef uint16_t UINT16;
     #endif // _INC_WINDOWS
 
+    #include "clretwallmain.h"
     #include "etwevents.h"
     #include "eventtrace.h"
 
@@ -95,6 +96,18 @@ typedef DPTR(IGCHeap) PTR_IGCHeap;
 typedef DPTR(uint32_t) PTR_uint32_t;
 
 enum CLRDataEnumMemoryFlags : int;
+
+struct GCHeapHardLimitInfo
+{
+    uint64_t heapHardLimit;
+    uint64_t heapHardLimitPercent;
+    uint64_t heapHardLimitSOH;
+    uint64_t heapHardLimitLOH;
+    uint64_t heapHardLimitPOH;
+    uint64_t heapHardLimitSOHPercent;
+    uint64_t heapHardLimitLOHPercent;
+    uint64_t heapHardLimitPOHPercent;
+};
 
 /* _TRUNCATE */
 #if !defined (_TRUNCATE)

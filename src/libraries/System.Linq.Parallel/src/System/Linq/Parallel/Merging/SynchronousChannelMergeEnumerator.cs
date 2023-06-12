@@ -84,7 +84,7 @@ namespace System.Linq.Parallel
             }
 
             // If the index has reached the end, we bail.
-            while (_channelIndex != _channels.Length)
+            while (_channelIndex < _channels.Length)
             {
                 SynchronousChannel<T> current = _channels[_channelIndex];
                 Debug.Assert(current != null);

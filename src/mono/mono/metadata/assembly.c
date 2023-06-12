@@ -44,6 +44,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/metadata/mono-private-unstable.h>
+#include <mono/metadata/webcil-loader.h>
 
 #ifndef HOST_WIN32
 #include <sys/types.h>
@@ -1465,6 +1466,13 @@ bundled_assembly_match (const char *bundled_name, const char *name)
 		if (bprefix == nprefix && strncmp (bundled_name, name, bprefix) == 0)
 			return TRUE;
 	}
+	/* if they want a .dll and we have the matching .wasm webcil-in-wasm, return it */
+	if (g_str_has_suffix (bundled_name, MONO_WEBCIL_IN_WASM_EXTENSION) && g_str_has_suffix (name, ".dll")) {
+		size_t bprefix = strlen (bundled_name) - strlen (MONO_WEBCIL_IN_WASM_EXTENSION);
+		size_t nprefix = strlen (name) - strlen (".dll");
+		if (bprefix == nprefix && strncmp (bundled_name, name, bprefix) == 0)
+			return TRUE;
+	}
 	return FALSE;
 #endif
 }
@@ -1785,7 +1793,7 @@ struct HasReferenceAssemblyAttributeIterData {
 };
 
 static gboolean
-has_reference_assembly_attribute_iterator (MonoImage *image, guint32 typeref_scope_token, const char *nspace, const char *name, guint32 method_token, gpointer user_data)
+has_reference_assembly_attribute_iterator (MonoImage *image, guint32 typeref_scope_token, const char *nspace, const char *name, guint32 method_token, guint32 *cols, gpointer user_data)
 {
 	gboolean stop_scanning = FALSE;
 	struct HasReferenceAssemblyAttributeIterData *iter_data = (struct HasReferenceAssemblyAttributeIterData*)user_data;
@@ -2734,6 +2742,12 @@ mono_assembly_load_corlib (void)
 	if (!corlib) {
 		/* Maybe its in a bundle */
 		char *corlib_name = g_strdup_printf ("%s.webcil", MONO_ASSEMBLY_CORLIB_NAME);
+		corlib = mono_assembly_request_open (corlib_name, &req, &status);
+		g_free (corlib_name);
+	}
+	if (!corlib) {
+		/* Maybe its in a bundle */
+		char *corlib_name = g_strdup_printf ("%s%s", MONO_ASSEMBLY_CORLIB_NAME, MONO_WEBCIL_IN_WASM_EXTENSION);
 		corlib = mono_assembly_request_open (corlib_name, &req, &status);
 		g_free (corlib_name);
 	}

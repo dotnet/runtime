@@ -47,7 +47,7 @@ struct _ ## name ## _custom_params_t { \
 DN_DEFINE_VECTOR_T_STRUCT (dn_vector, uint8_t);
 
 typedef enum {
-	DN_VECTOR_ATTRIBUTE_DISABLE_MEMORY_INIT = 0x1
+	DN_VECTOR_ATTRIBUTE_MEMORY_INIT = 0x1
 } dn_vector_attribute;
 
 #endif /* __DN_VECTOR_TYPES_H__ */

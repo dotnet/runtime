@@ -3,6 +3,7 @@
 
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -208,6 +209,8 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
 #pragma warning disable SYSLIB0026
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public X509Certificate(SerializationInfo info, StreamingContext context) : this()
 #pragma warning restore SYSLIB0026
         {

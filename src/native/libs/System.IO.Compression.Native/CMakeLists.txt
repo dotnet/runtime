@@ -104,6 +104,7 @@ else ()
 
     if (CLR_CMAKE_HOST_ARCH_I386 OR CLR_CMAKE_HOST_ARCH_AMD64)
         include(${CLR_SRC_NATIVE_DIR}/external/zlib-intel.cmake)
+        add_definitions(-DINTERNAL_ZLIB_INTEL)
     else ()
         include(${CLR_SRC_NATIVE_DIR}/external/zlib.cmake)
     endif ()

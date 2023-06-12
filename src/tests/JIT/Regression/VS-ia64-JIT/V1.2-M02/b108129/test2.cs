@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
+using Xunit;
 
 namespace JitTest.HFA
 {
@@ -19,7 +20,8 @@ namespace JitTest.HFA
         [DllImport("test2", EntryPoint = "GetDoubleConst")]
         public static extern double GetDoubleConst();
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             System.Console.WriteLine("Int32 Const = " + GetInt32Const());
             System.Console.WriteLine("Int64 Const = " + GetInt64Const());

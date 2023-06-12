@@ -23,7 +23,9 @@ namespace System
           IEquatable<ushort>,
           IBinaryInteger<ushort>,
           IMinMaxValue<ushort>,
-          IUnsignedNumber<ushort>
+          IUnsignedNumber<ushort>,
+          IUtf8SpanFormattable,
+          IBinaryIntegerParseAndFormatInfo<ushort>
     {
         private readonly ushort m_value; // Do not rename (binary serialization)
 
@@ -113,95 +115,50 @@ namespace System
             return Number.TryFormatUInt32(m_value, format, provider, destination, out charsWritten);
         }
 
-        public static ushort Parse(string s)
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Parse((ReadOnlySpan<char>)s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            return Number.TryFormatUInt32(m_value, format, provider, utf8Destination, out bytesWritten);
         }
 
-        public static ushort Parse(string s, NumberStyles style)
-        {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Parse((ReadOnlySpan<char>)s, style, NumberFormatInfo.CurrentInfo);
-        }
+        public static ushort Parse(string s) => Parse(s, NumberStyles.Integer, provider: null);
 
-        public static ushort Parse(string s, IFormatProvider? provider)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Parse((ReadOnlySpan<char>)s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
-        }
+        public static ushort Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
+
+        public static ushort Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Integer, provider);
 
         public static ushort Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Parse((ReadOnlySpan<char>)s, style, NumberFormatInfo.GetInstance(provider));
+            if (s is null) { ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s); }
+            return Parse(s.AsSpan(), style, provider);
         }
 
         public static ushort Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Parse(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<ushort>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        private static ushort Parse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info)
-        {
-            Number.ParsingStatus status = Number.TryParseUInt32(s, style, info, out uint i);
-            if (status != Number.ParsingStatus.OK)
-            {
-                Number.ThrowOverflowOrFormatException(status, s, TypeCode.UInt16);
-            }
+        public static bool TryParse([NotNullWhen(true)] string? s, out ushort result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
-            if (i > MaxValue) Number.ThrowOverflowException(TypeCode.UInt16);
-            return (ushort)i;
-        }
-
-        public static bool TryParse([NotNullWhen(true)] string? s, out ushort result)
-        {
-            if (s == null)
-            {
-                result = 0;
-                return false;
-            }
-
-            return TryParse((ReadOnlySpan<char>)s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
-        }
-
-        public static bool TryParse(ReadOnlySpan<char> s, out ushort result)
-        {
-            return TryParse(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
-        }
+        public static bool TryParse(ReadOnlySpan<char> s, out ushort result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out ushort result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
 
-            if (s == null)
+            if (s is null)
             {
                 result = 0;
                 return false;
             }
-
-            return TryParse((ReadOnlySpan<char>)s, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out ushort result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return TryParse(s, style, NumberFormatInfo.GetInstance(provider), out result);
-        }
-
-        private static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out ushort result)
-        {
-            if (Number.TryParseUInt32(s, style, info, out uint i) != Number.ParsingStatus.OK
-                || i > MaxValue)
-            {
-                result = 0;
-                return false;
-            }
-            result = (ushort)i;
-            return true;
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         //
@@ -1222,5 +1179,25 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static ushort IUnaryPlusOperators<ushort, ushort>.operator +(ushort value) => (ushort)(+value);
+
+        //
+        // IBinaryIntegerParseAndFormatInfo
+        //
+
+        static bool IBinaryIntegerParseAndFormatInfo<ushort>.IsSigned => false;
+
+        static int IBinaryIntegerParseAndFormatInfo<ushort>.MaxDigitCount => 5; // 65_535
+
+        static int IBinaryIntegerParseAndFormatInfo<ushort>.MaxHexDigitCount => 4; // 0xFFFF
+
+        static ushort IBinaryIntegerParseAndFormatInfo<ushort>.MaxValueDiv10 => MaxValue / 10;
+
+        static string IBinaryIntegerParseAndFormatInfo<ushort>.OverflowMessage => SR.Overflow_UInt16;
+
+        static bool IBinaryIntegerParseAndFormatInfo<ushort>.IsGreaterThanAsUnsigned(ushort left, ushort right) => left > right;
+
+        static ushort IBinaryIntegerParseAndFormatInfo<ushort>.MultiplyBy10(ushort value) => (ushort)(value * 10);
+
+        static ushort IBinaryIntegerParseAndFormatInfo<ushort>.MultiplyBy16(ushort value) => (ushort)(value * 16);
     }
 }

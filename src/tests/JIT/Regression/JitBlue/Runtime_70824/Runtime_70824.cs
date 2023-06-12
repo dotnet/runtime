@@ -3,10 +3,12 @@
 
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public unsafe class Runtime_70824
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         long lng = 2;
         float flt = 3;

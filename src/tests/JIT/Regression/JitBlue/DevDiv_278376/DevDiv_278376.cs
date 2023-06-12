@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 // NOTE: the bug for this test was an assertion in RyuJIT/x86 when generating code for a double-returning call that
 //       was spilled by the RA and subsequently used. The call in question is the call to `C.GetDouble` in `C.Test`.
@@ -29,7 +30,8 @@ public sealed class C
         return 100;
     }
     
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return Test(false);
     }
