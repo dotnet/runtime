@@ -951,7 +951,7 @@ public:
                     }
                     else if (srcDsc->lvPromoted)
                     {
-                        InduceAccessesFromRegularlyPromotedStruct(aggregates, store, store, candidateStore.Block);
+                        InduceAccessesFromRegularlyPromotedStruct(aggregates, store, src, candidateStore.Block);
                     }
                     else
                     {
