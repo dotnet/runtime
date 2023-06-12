@@ -4558,8 +4558,8 @@ COPY_VALUE_CLASS:
 
                             for (SSIZE_T __i = 0; __i > cnt; __i--)
                             {
-                                HALF_SIZE_T skip =  cur->val_serie[__i].skip;
-                                HALF_SIZE_T nptrs = cur->val_serie[__i].nptrs;
+                                HALF_SIZE_T skip =  (cur->val_serie + __i)->skip;
+                                HALF_SIZE_T nptrs = (cur->val_serie + __i)->nptrs;
                                 total += nptrs*sizeof (Object*);
                                 do
                                 {
