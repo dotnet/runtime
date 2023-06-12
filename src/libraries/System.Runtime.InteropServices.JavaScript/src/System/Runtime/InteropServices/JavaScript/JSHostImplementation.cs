@@ -199,8 +199,12 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
 #if FEATURE_WASM_THREADS
-        public static void InstallWebWorkerInterop(bool installJSSynchronizationContext)
+        public static void InstallWebWorkerInterop(bool installJSSynchronizationContext, bool isMainThread)
         {
+            if (isMainThread)
+            {
+                SetJSSynchronizationContextType();
+            }
             Interop.Runtime.InstallWebWorkerInterop(installJSSynchronizationContext);
             if (installJSSynchronizationContext)
             {
@@ -236,6 +240,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private static FieldInfo? thread_id_Field;
         private static FieldInfo? external_eventloop_Field;
+        private static FieldInfo? task_s_jsSynchronizationContextType_Field;
 
         // FIXME: after https://github.com/dotnet/runtime/issues/86040 replace with
         // [UnsafeAccessor(UnsafeAccessorKind.Field, Name="external_eventloop")]
@@ -259,6 +264,16 @@ namespace System.Runtime.InteropServices.JavaScript
                 thread_id_Field = typeof(Thread).GetField("thread_id", BindingFlags.NonPublic | BindingFlags.Instance)!;
             }
             return (int)(long)thread_id_Field.GetValue(Thread.CurrentThread)!;
+        }
+
+        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, "System.Threading.Tasks.Task", "System.Private.CoreLib")]
+        public static void SetJSSynchronizationContextType()
+        {
+            if (task_s_jsSynchronizationContextType_Field == null)
+            {
+                task_s_jsSynchronizationContextType_Field = typeof(Task).GetField("s_jsSynchronizationContextType", BindingFlags.NonPublic | BindingFlags.Static)!;
+            }
+            task_s_jsSynchronizationContextType_Field.SetValue(null, typeof(JSSynchronizationContext));
         }
 
 #endif

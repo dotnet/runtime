@@ -136,6 +136,10 @@ namespace System.Threading.Tasks
         private int StateFlagsForDebugger => m_stateFlags; // Private property used by a debugger to access this Task's state flags
         private TaskStateFlags StateFlags => (TaskStateFlags)(m_stateFlags & ~(int)TaskStateFlags.OptionsMask); // Private property used to help with debugging
 
+#if FEATURE_WASM_THREADS
+        private static Type? s_jsSynchronizationContextType;
+#endif
+
         [Flags]
         internal enum TaskStateFlags
         {
@@ -2515,6 +2519,14 @@ namespace System.Threading.Tasks
                     goto HaveTaskContinuation;
                 }
             }
+#if FEATURE_WASM_THREADS
+            // when JSSynchronizationContext is installed, we use it regardless of continueOnCapturedContext
+            else if (SynchronizationContext.Current is SynchronizationContext syncCtx && syncCtx.GetType() == s_jsSynchronizationContextType)
+            {
+                tc = new SynchronizationContextAwaitTaskContinuation(syncCtx, continuationAction, flowExecutionContext);
+                goto HaveTaskContinuation;
+            }
+#endif
 
             if (flowExecutionContext)
             {
