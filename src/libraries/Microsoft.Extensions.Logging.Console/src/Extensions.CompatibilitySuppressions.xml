@@ -58,6 +58,27 @@
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider.#ctor(Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings)</Target>
+    <Left>lib/netstandard2.0/Microsoft.Extensions.Logging.Console.dll</Left>
+    <Right>lib/netstandard2.0/Microsoft.Extensions.Logging.Console.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider.#ctor(System.Func{System.String,Microsoft.Extensions.Logging.LogLevel,System.Boolean},System.Boolean,System.Boolean)</Target>
+    <Left>lib/netstandard2.0/Microsoft.Extensions.Logging.Console.dll</Left>
+    <Right>lib/netstandard2.0/Microsoft.Extensions.Logging.Console.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider.#ctor(System.Func{System.String,Microsoft.Extensions.Logging.LogLevel,System.Boolean},System.Boolean)</Target>
+    <Left>lib/netstandard2.0/Microsoft.Extensions.Logging.Console.dll</Left>
+    <Right>lib/netstandard2.0/Microsoft.Extensions.Logging.Console.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
     <Target>M:Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider.#ctor(Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings):[T:System.ObsoleteAttribute]</Target>
     <Left>lib/netstandard2.0/Microsoft.Extensions.Logging.Console.dll</Left>

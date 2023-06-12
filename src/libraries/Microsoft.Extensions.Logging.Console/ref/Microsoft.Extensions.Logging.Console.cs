@@ -100,14 +100,8 @@ namespace Microsoft.Extensions.Logging.Console
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class ConsoleLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, Microsoft.Extensions.Logging.ISupportExternalScope, System.IDisposable
     {
-        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is using LoggerFactory to configure filtering and ConsoleLoggerOptions to configure logging options.", error: true)]
-        public ConsoleLoggerProvider(Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings settings) { }
         public ConsoleLoggerProvider(Microsoft.Extensions.Options.IOptionsMonitor<Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions> options) { }
         public ConsoleLoggerProvider(Microsoft.Extensions.Options.IOptionsMonitor<Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions> options, System.Collections.Generic.IEnumerable<Microsoft.Extensions.Logging.Console.ConsoleFormatter>? formatters) { }
-        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is using LoggerFactory to configure filtering and ConsoleLoggerOptions to configure logging options.", error: true)]
-        public ConsoleLoggerProvider(System.Func<string, Microsoft.Extensions.Logging.LogLevel, bool> filter, bool includeScopes) { }
-        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is using LoggerFactory to configure filtering and ConsoleLoggerOptions to configure logging options.", error: true)]
-        public ConsoleLoggerProvider(System.Func<string, Microsoft.Extensions.Logging.LogLevel, bool> filter, bool includeScopes, bool disableColors) { }
         public Microsoft.Extensions.Logging.ILogger CreateLogger(string name) { throw null; }
         public void Dispose() { }
         public void SetScopeProvider(Microsoft.Extensions.Logging.IExternalScopeProvider scopeProvider) { }
