@@ -111,7 +111,7 @@ jobs:
       platforms:
       - ios_arm64
       jobParameters:
-        buildArgs: -s clr+clr.aot+libs -c $(_BuildConfig) -rc $(_BuildConfig)
+        buildArgs: -s clr.aot+libs -c $(_BuildConfig) -rc $(_BuildConfig)
         nameSuffix: iOSNativeAOT
         isOfficialBuild: false
         extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-sample-apps.yml
