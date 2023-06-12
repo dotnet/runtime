@@ -288,6 +288,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         throw new FormatException($"Unable to parse '{token.Value}' as an Assembly Name.");
                     }
                 }
+                return includedAssemblies.ToArray();
             }
 
             return Array.Empty<AssemblyName>();
