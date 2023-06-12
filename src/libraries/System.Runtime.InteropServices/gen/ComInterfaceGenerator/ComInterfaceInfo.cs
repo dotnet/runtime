@@ -8,7 +8,6 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.Interop;
 using DiagnosticOrInterfaceInfo = Microsoft.Interop.DiagnosticOr<(Microsoft.Interop.ComInterfaceInfo InterfaceInfo, Microsoft.CodeAnalysis.INamedTypeSymbol Symbol)>;
 
 namespace Microsoft.Interop
@@ -44,14 +43,13 @@ namespace Microsoft.Interop
             if (!IsInPartialContext(symbol, syntax, out DiagnosticInfo? partialContextDiagnostic))
                 return DiagnosticOrInterfaceInfo.From(partialContextDiagnostic);
 
-            // a higher enum value is more accessible
-            if (symbol.DeclaredAccessibility - Accessibility.Internal < 0)
+            if (!symbol.IsAccessibleFromFileScopedClass(out var details))
             {
                 return DiagnosticOrInterfaceInfo.From(DiagnosticInfo.Create(
                     GeneratorDiagnostics.InvalidAttributedInterfaceNotAccessible,
-                    symbol.Locations[0],
+                    syntax.GetLocation(),
                     symbol.ToDisplayString(),
-                    symbol.DeclaredAccessibility.ToString().ToLowerInvariant()));
+                    details));
             }
 
             if (!TryGetGuid(symbol, syntax, out Guid? guid, out DiagnosticInfo? guidDiagnostic))
@@ -84,10 +82,10 @@ namespace Microsoft.Interop
                 if (!typeDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
                 {
                     diagnostic = DiagnosticInfo.Create(
-                            GeneratorDiagnostics.InvalidAttributedInterfaceMissingPartialModifiers,
-                            syntax.Identifier.GetLocation(),
-                            symbol.Name,
-                            typeDecl.Identifier);
+                        GeneratorDiagnostics.InvalidAttributedInterfaceMissingPartialModifiers,
+                        syntax.Identifier.GetLocation(),
+                        symbol.Name,
+                        typeDecl.Identifier);
                     return false;
                 }
             }
@@ -97,7 +95,8 @@ namespace Microsoft.Interop
 
         private static bool StringMarshallingIsValid(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, INamedTypeSymbol? baseSymbol, [NotNullWhen(false)] out DiagnosticInfo? stringMarshallingDiagnostic)
         {
-            var attrInfo = GeneratedComInterfaceData.From(GeneratedComInterfaceCompilationData.GetAttributeDataFromInterfaceSymbol(symbol));
+            var attrSymbolInfo = GeneratedComInterfaceCompilationData.GetAttributeDataFromInterfaceSymbol(symbol);
+            var attrInfo = GeneratedComInterfaceData.From(attrSymbolInfo);
             if (attrInfo.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling) || attrInfo.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshallingCustomType))
             {
                 if (attrInfo.StringMarshalling is StringMarshalling.Custom)
@@ -111,13 +110,13 @@ namespace Microsoft.Interop
                             SR.InvalidStringMarshallingConfigurationMissingCustomType);
                         return false;
                     }
-                    // a higher enum value is more accessible
-                    if (attrInfo.StringMarshallingCustomTypeAccessibility - Accessibility.Internal < 0)
+                    if (!attrSymbolInfo.StringMarshallingCustomType.IsAccessibleFromFileScopedClass(out var details))
                     {
                         stringMarshallingDiagnostic = DiagnosticInfo.Create(
                             GeneratorDiagnostics.StringMarshallingCustomTypeNotAccessibleByGeneratedCode,
                             syntax.Identifier.GetLocation(),
-                            attrInfo.StringMarshallingCustomType.FullTypeName.Replace("global::", ""));
+                            attrInfo.StringMarshallingCustomType.FullTypeName.Replace("global::", ""),
+                            details);
                         return false;
                     }
                 }
