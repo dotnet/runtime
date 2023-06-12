@@ -79,7 +79,6 @@ cd src\libraries\System.Collections.Immutable\tests
 dotnet build /t:Test
 ```
 
-This one command builds the library under test, then the test library, then runs the tests in the test library.
 
 ### Running only certain tests
 
@@ -159,4 +158,4 @@ It is important to highlight that these tests do not use the standard XUnit test
 
 ### Viewing XUnit logs
 
-It's usually sufficient to see the test failure output in the console. There is a test log file though and you can find it in a location like `...\runtime\artifacts\bin\System.Text.RegularExpressions.Tests\Debug\net8.0\testResults.xml`. It can be helpful for example to grep through a series of failures, or see how long a slow test actually took.
+It's usually sufficient to see the test failure output in the console. There is also a test log file, which you can find in a location like `...\runtime\artifacts\bin\System.Text.RegularExpressions.Tests\Debug\net8.0\testResults.xml`. It can be helpful, for example, to grep through a series of failures, or to see how long a slow test actually took.
