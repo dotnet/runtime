@@ -207,15 +207,16 @@ namespace System.CommandLine
                 Dictionary<string, string> outputToReproPackageFileName = new();
 
                 List<string> rspFile = new List<string>();
-                foreach (CliOption<object> option in res.CommandResult.Command.Options)
+                foreach (CliOption option in res.CommandResult.Command.Options)
                 {
-                    if (res.GetResult(option) == null || option.Name == "make-repro-path")
+                    OptionResult optionResult = res.GetResult(option);
+                    if (optionResult is null || option.Name == "make-repro-path")
                     {
                         continue;
                     }
 
-                    object val = res.CommandResult.GetValue(option);
-                    if (val is not null)
+                    object val = optionResult.GetValueOrDefault<object>();
+                    if (val is not null && !optionResult.Implicit)
                     {
                         if (val is IEnumerable<string> || val is IDictionary<string, string>)
                         {
@@ -263,9 +264,15 @@ namespace System.CommandLine
                     }
                 }
 
-                foreach (CliArgument<object> argument in res.CommandResult.Command.Arguments)
+                foreach (CliArgument argument in res.CommandResult.Command.Arguments)
                 {
-                    object val = res.CommandResult.GetValue(argument);
+                    ArgumentResult argumentResult = res.GetResult(argument);
+                    if (argumentResult is null)
+                    {
+                        continue;
+                    }
+
+                    object val = argumentResult.GetValueOrDefault<object>();
                     if (val is IEnumerable<string> || val is IDictionary<string, string>)
                     {
                         if (val is not IEnumerable<string> values)
