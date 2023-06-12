@@ -323,7 +323,10 @@ struct insGroup
 
     // Try to do better packing based on how large regMaskSmall is (8, 16, or 64 bits).
     CLANG_FORMAT_COMMENT_ANCHOR;
-#if REGMASK_BITS <= 32
+
+#if !(REGMASK_BITS <= 32)
+    regMaskSmall igGCregs; // set of registers with live GC refs
+#endif                     // !(REGMASK_BITS <= 32)
 
     union {
         BYTE*                    igData;   // addr of instruction descriptors
@@ -334,36 +337,17 @@ struct insGroup
     // Last instruction in group, if any (nullptr if none); used for backwards navigation.
     // (Should be type emitter::instrDesc*).
     void* igLastIns;
-#endif
+#endif // EMIT_BACKWARDS_NAVIGATION
 
 #if EMIT_TRACK_STACK_DEPTH
     unsigned igStkLvl; // stack level on entry
-#endif
-    regMaskSmall  igGCregs; // set of registers with live GC refs
-    unsigned char igInsCnt; // # of instructions  in this group
+#endif                 // EMIT_TRACK_STACK_DEPTH
 
-#else // REGMASK_BITS
-
+#if REGMASK_BITS <= 32
     regMaskSmall igGCregs; // set of registers with live GC refs
-
-    union {
-        BYTE*                    igData;   // addr of instruction descriptors
-        insPlaceholderGroupData* igPhData; // when igFlags & IGF_PLACEHOLDER
-    };
-
-#if EMIT_BACKWARDS_NAVIGATION
-    // Last instruction in group, if any (nullptr if none); used for backwards navigation.
-    // (Should be type emitter::instrDesc*).
-    void*    igLastIns;
-#endif
-
-#if EMIT_TRACK_STACK_DEPTH
-    unsigned igStkLvl; // stack level on entry
-#endif
+#endif                     // REGMASK_BITS <= 32
 
     unsigned char igInsCnt; // # of instructions  in this group
-
-#endif // REGMASK_BITS
 
     VARSET_VALRET_TP igGCvars() const
     {
@@ -3262,8 +3246,6 @@ public:
         {
             emitPow2CnsCnt++;
         }
-
-
     }
 
     void TrackSmallCns(cnsval_ssize_t value)
