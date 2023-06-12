@@ -2784,9 +2784,9 @@ namespace Internal.JitInterface
                 result = asCorInfoType(returnType, clsRet);
             }
             else
-#pragma warning disable IDE0059 // Unnecessary assignment of a value
-                clsRet = null;
-#pragma warning restore IDE0059 // Unnecessary assignment of a value
+            {
+                *clsRet = null;
+            }
 
             return result;
         }
