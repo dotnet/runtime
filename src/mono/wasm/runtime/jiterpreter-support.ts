@@ -8,7 +8,7 @@ import { WasmOpcode, WasmSimdOpcode } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
 import { mono_log_error, mono_log_info } from "./logging";
-import { localHeapViewU8 } from "./memory";
+import { localHeapViewU8, localHeapViewU32 } from "./memory";
 import { utf8ToString } from "./strings";
 
 export const maxFailures = 2,
@@ -1531,9 +1531,9 @@ export function try_append_memset_fast(builder: WasmBuilder, localOffset: number
     if (value !== 0)
         return false;
 
-    const destLocal = destOnStack ? "math_lhs32" : "pLocals";
+    const destLocal = destOnStack ? "memop_dest" : "pLocals";
     if (destOnStack)
-        builder.local("math_lhs32", WasmOpcode.set_local);
+        builder.local(destLocal, WasmOpcode.set_local);
 
     let offset = destOnStack ? 0 : localOffset;
 
@@ -1616,8 +1616,9 @@ export function try_append_memmove_fast(
         return false;
 
     if (addressesOnStack) {
-        destLocal = destLocal || "math_lhs32";
-        srcLocal = srcLocal || "math_rhs32";
+        destLocal = destLocal || "memop_dest";
+        srcLocal = srcLocal || "memop_src";
+        // Stack layout is [..., dest, src]
         builder.local(srcLocal, WasmOpcode.set_local);
         builder.local(destLocal, WasmOpcode.set_local);
     } else if (!destLocal || !srcLocal) {
@@ -1784,6 +1785,8 @@ export function bytesFromHex(hex: string): Uint8Array {
     return bytes;
 }
 
+let observedTaintedZeroPage : boolean | undefined;
+
 export function isZeroPageReserved(): boolean {
     // FIXME: This check will always return true on worker threads.
     // Right now the jiterpreter is disabled when threading is active, so that's not an issue.
@@ -1793,14 +1796,26 @@ export function isZeroPageReserved(): boolean {
     if (!cwraps.mono_wasm_is_zero_page_reserved())
         return false;
 
+    // If we ever saw garbage written to the zero page, never use it
+    if (observedTaintedZeroPage === true)
+        return false;
+
     // Determine whether emscripten's stack checker or some other troublemaker has
     //  written junk at the start of memory. The previous cwraps call will have
     //  checked whether the stack starts at zero or not (on the main thread).
     // We can't do this in the C helper because emcc/asan might be checking pointers.
-    return (Module.HEAPU32[0] === 0) &&
-        (Module.HEAPU32[1] === 0) &&
-        (Module.HEAPU32[2] === 0) &&
-        (Module.HEAPU32[3] === 0);
+    const heapU32 = localHeapViewU32();
+    for (let i = 0; i < 8; i++) {
+        if (heapU32[i] !== 0) {
+            if (observedTaintedZeroPage === false)
+                mono_log_error(`Zero page optimizations are enabled but garbage appeared in memory at address ${i * 4}: ${heapU32[i]}`);
+            observedTaintedZeroPage = true;
+            return false;
+        }
+    }
+
+    observedTaintedZeroPage = false;
+    return true;
 }
 
 export type JiterpreterOptions = {

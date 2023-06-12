@@ -540,9 +540,9 @@ int CmpMsg(const void* p1, const void* p2)
     const StressThreadAndMsg* msg1 = (const StressThreadAndMsg*)p1;
     const StressThreadAndMsg* msg2 = (const StressThreadAndMsg*)p2;
 
-    if (msg1->msg->timeStamp < msg2->msg->timeStamp)
+    if (msg1->msg->GetTimeStamp() < msg2->msg->GetTimeStamp())
         return 1;
-    if (msg1->msg->timeStamp > msg2->msg->timeStamp)
+    if (msg1->msg->GetTimeStamp() > msg2->msg->GetTimeStamp())
         return -11;
 
     if (msg1->threadId < msg2->threadId)
@@ -1141,8 +1141,8 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
             while (msg < endMsg)
             {
                 totalMsgCount++;
-                char* format = (char*)(hdr->moduleImage + msg->formatOffset);
-                double deltaTime = ((double)(msg->timeStamp - hdr->startTimeStamp)) / hdr->tickFrequency;
+                char* format = (char*)(hdr->moduleImage + msg->GetFormatOffset());
+                double deltaTime = ((double)(msg->GetTimeStamp() - hdr->startTimeStamp)) / hdr->tickFrequency;
                 bool fIgnoreMessage = false;
                 if (fTimeFilter)
                 {
@@ -1156,10 +1156,10 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
                         fIgnoreMessage = true;
                     }
                 }
-                int numberOfArgs = (msg->numberOfArgsX << 3) + msg->numberOfArgs;
+                int numberOfArgs = msg->GetNumberOfArgs();
                 if (!fIgnoreMessage)
                 {
-                    bool fIncludeMessage = s_showAllMessages || FilterMessage(hdr, tsl, msg->facility, format, deltaTime, numberOfArgs, msg->args);
+                    bool fIncludeMessage = s_showAllMessages || FilterMessage(hdr, tsl, msg->GetFacility(), format, deltaTime, numberOfArgs, msg->args);
                     if (!fIncludeMessage && s_valueFilterCount > 0)
                     {
                         for (int i = 0; i < numberOfArgs; i++)
@@ -1215,7 +1215,7 @@ static double FindLatestTime(StressLog::StressLogHeader* hdr)
     for (ThreadStressLog* tsl = StressLog::TranslateMemoryMappedPointer(hdr->logs.t); tsl != nullptr; tsl = StressLog::TranslateMemoryMappedPointer(tsl->next))
     {
         StressMsg* msg = StressLog::TranslateMemoryMappedPointer(tsl->curPtr);
-        double deltaTime = ((double)(msg->timeStamp - hdr->startTimeStamp)) / hdr->tickFrequency;
+        double deltaTime = ((double)(msg->GetTimeStamp() - hdr->startTimeStamp)) / hdr->tickFrequency;
         latestTime = max(latestTime, deltaTime);
     }
     return latestTime;
@@ -1236,13 +1236,13 @@ static void PrintFriendlyNumber(LONGLONG n)
 static void PrintMessage(CorClrData& corClrData, FILE *outputFile, uint64_t threadId, StressMsg* msg)
 {
     void* argBuffer[StressMsg::maxArgCnt];
-    char* format = (char*)(s_hdr->moduleImage + msg->formatOffset);
-    int numberOfArgs = (msg->numberOfArgsX << 3) + msg->numberOfArgs;
+    char* format = (char*)(s_hdr->moduleImage + msg->GetFormatOffset());
+    int numberOfArgs = msg->GetNumberOfArgs();
     for (int i = 0; i < numberOfArgs; i++)
     {
         argBuffer[i] = msg->args[i];
     }
-    double deltaTime = ((double)(msg->timeStamp - s_hdr->startTimeStamp)) / s_hdr->tickFrequency;
+    double deltaTime = ((double)(msg->GetTimeStamp() - s_hdr->startTimeStamp)) / s_hdr->tickFrequency;
     if (!s_printHexTidForGcThreads)
     {
         GcThread gcThread;
@@ -1255,7 +1255,7 @@ static void PrintMessage(CorClrData& corClrData, FILE *outputFile, uint64_t thre
                 threadId |= 0x4000000000000000;
         }
     }
-    formatOutput(&corClrData, outputFile, format, threadId, deltaTime, msg->facility, argBuffer, s_fPrintFormatStrings);
+    formatOutput(&corClrData, outputFile, format, threadId, deltaTime, msg->GetFacility(), argBuffer, s_fPrintFormatStrings);
 }
 
 int ProcessStressLog(void* baseAddress, int argc, char* argv[])
@@ -1384,7 +1384,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
         for (int msgIndex = 0; msgIndex < s_msgCount; msgIndex++)
         {
             StressMsg* msg = s_threadMsgBuf[msgIndex].msg;
-            double deltaTime = ((double)(msg->timeStamp - hdr->startTimeStamp)) / hdr->tickFrequency;
+            double deltaTime = ((double)(msg->GetTimeStamp() - hdr->startTimeStamp)) / hdr->tickFrequency;
             if (startTime <= deltaTime && deltaTime <= endTime)
             {
                 s_threadMsgBuf[remMsgCount] = s_threadMsgBuf[msgIndex];

@@ -920,7 +920,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             JsonTypeInfo jsonTypeInfo;
 
-            if (converter.TypeToConvert == type)
+            if (converter.Type == type)
             {
                 // For performance, avoid doing a reflection-based instantiation
                 // if the converter type matches that of the declared type.
@@ -1125,7 +1125,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ParameterLookupKey key = new(propertyName, jsonProperty.PropertyType);
                 ParameterLookupValue value = new(jsonProperty);
 
-                if (!JsonHelpers.TryAdd(nameLookup, key, value))
+                if (!nameLookup.TryAdd(key, value))
                 {
                     // More than one property has the same case-insensitive name and Type.
                     // Remember so we can throw a nice exception if this property is used as a parameter name.
