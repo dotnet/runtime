@@ -899,46 +899,26 @@ protected:
         // risc-v:      11/16 bits
         CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(TARGET_XARCH)
-// On xarch we have a few different immediate sizes we can encounter:
-// *  8-bit: Can be used directly as 8-bit or sign-extended to 16, 32, or 64-bits
-// * 16-bit: Can be used directly as 16-bit
-// * 32-bit: Can be used directly as 32-bit or sign-extended to 64-bits
-// * 64-bit: Can be used directly as 64-bit
-//
-// The 64-bit version is only found for a specific `mov` instruction
-//
-// The 16-bit version is uncommon since the JIT uses 32-bits as its "natural size"
-// and so it requires specific optimizations/scenarios to be encountered
-//
-// The 8-bit and 32-bit are both fairly common, particularly the 8-bit since its
-// the only size used for SIMD instructions.
-//
-// Given that, we will differ from other platforms and store a signed value. This
-// allows us to store at least [-512, +511] and covers all the common cases for
-// 8-bit sign-extended values that are most common for the architecture
+// We encounter many constants, but there is a disproportionate amount that are in the range [-1, +4]
+// and otherwise powers of 2. We therefore allow the tracked range here to incldue negative values.
+
 #define ID_ADJ_SMALL_CNS (int)(1 << (ID_BIT_SMALL_CNS - 1))
+#define ID_CNT_SMALL_CNS (int)(1 << ID_BIT_SMALL_CNS)
+
+#define ID_MIN_SMALL_CNS (int)(0 - ID_ADJ_SMALL_CNS)
+#define ID_MAX_SMALL_CNS (int)(ID_CNT_SMALL_CNS - ID_ADJ_SMALL_CNS - 1)
+
 #define ID_IDX_SMALL_CNS(x)                                                                                            \
     (x >= ((SMALL_CNS_TSZ / 2) - 1)) ? (SMALL_CNS_TSZ - 1)                                                             \
                                      : ((x >= (0 - SMALL_CNS_TSZ / 2)) ? (x + (SMALL_CNS_TSZ / 2)) : 0)
-
-        signed _idSmallCns : ID_BIT_SMALL_CNS;
-#else
-#define ID_ADJ_SMALL_CNS 0
-#define ID_IDX_SMALL_CNS(x) (x >= (SMALL_CNS_TSZ - 1)) ? (SMALL_CNS_TSZ - 1) : x
-
-        unsigned _idSmallCns : ID_BIT_SMALL_CNS;
-#endif
-
-#define ID_CNT_SMALL_CNS (int)(1 << ID_BIT_SMALL_CNS)
-#define ID_MIN_SMALL_CNS (int)(0 - ID_ADJ_SMALL_CNS)
-#define ID_MAX_SMALL_CNS (int)(ID_CNT_SMALL_CNS - ID_ADJ_SMALL_CNS - 1)
 
 #define ID_INC_SMALL_CNS(x)                                                                                            \
     {                                                                                                                  \
         emitSmallCnsCnt++;                                                                                             \
         emitSmallCns[ID_IDX_SMALL_CNS(x)]++;                                                                           \
     }
+
+        signed _idSmallCns : ID_BIT_SMALL_CNS;
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here: 64 bits, all architectures, by design.
@@ -1689,7 +1669,6 @@ protected:
 
 #endif // EMIT_BACKWARDS_NAVIGATION
 
-#if defined(TARGET_XARCH)
         ssize_t idSmallCns() const
         {
             return _idSmallCns;
@@ -1700,17 +1679,6 @@ protected:
             _idSmallCns = value;
             assert(value == idSmallCns());
         }
-#else
-        unsigned idSmallCns() const
-        {
-            return _idSmallCns;
-        }
-        void idSmallCns(size_t value)
-        {
-            assert(fitsInSmallCns(value));
-            _idSmallCns = value;
-        }
-#endif
 
         inline const idAddrUnion* idAddr() const
         {

@@ -478,11 +478,7 @@ void emitterStats(FILE* fout)
     if (emitter::emitSmallCnsCnt > 0)
     {
         fprintf(fout, "\n\n");
-#if defined(TARGET_XARCH)
         fprintf(fout, "Common small constants >= %2d, <= %2d\n", ID_MIN_SMALL_CNS, ID_MAX_SMALL_CNS);
-#else
-        fprintf(fout, "Common small constants >= %2u, <= %2u\n", ID_MIN_SMALL_CNS, ID_MAX_SMALL_CNS);
-#endif
 
         // Only print constants representing more than 0.1% of the total constants
         unsigned m = emitter::emitSmallCnsCnt / 1000 + 1;
@@ -493,19 +489,17 @@ void emitterStats(FILE* fout)
 
             if (c >= m)
             {
+                // We make and assumption that MIN is negative and MAX is positive
+                assert((ID_MIN_SMALL_CNS < 0) && (ID_MAX_SMALL_CNS > 0));
+
                 // Adjust the index to match the allowed value range
-                int v = i;
+                int v = i - (SMALL_CNS_TSZ / 2);
 
-                if (ID_ADJ_SMALL_CNS != 0)
-                {
-                    v -= (SMALL_CNS_TSZ / 2);
-                }
-
-                if ((ID_ADJ_SMALL_CNS != 0) && (i == 0))
+                if (i == 0)
                 {
                     fprintf(fout, "cns[<=%4d] = %u\n", v, c);
                 }
-                else if (i == SMALL_CNS_TSZ - 1)
+                else if (i == (SMALL_CNS_TSZ - 1))
                 {
                     fprintf(fout, "cns[>=%4d] = %u\n", v, c);
                 }
