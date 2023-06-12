@@ -271,9 +271,6 @@ namespace System.IO
                 return string.Empty;
             }
 
-            _decoder ??= _encoding.GetDecoder();
-            _charBuffer ??= new char[_maxCharsSize];
-
             Span<byte> charBytes = stackalloc byte[MaxCharBytesSize];
 
             StringBuilder? sb = null;
@@ -291,6 +288,9 @@ namespace System.IO
                 {
                     return _encoding.GetString(charBytes[..n]);
                 }
+
+                _decoder ??= _encoding.GetDecoder();
+                _charBuffer ??= new char[_maxCharsSize];
 
                 charsRead = _decoder.GetChars(charBytes[..n], _charBuffer, flush: false);
 
