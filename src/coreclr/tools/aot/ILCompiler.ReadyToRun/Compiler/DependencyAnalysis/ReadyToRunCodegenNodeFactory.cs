@@ -47,6 +47,8 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class NodeFactoryOptimizationFlags
     {
         public bool OptimizeAsyncMethods;
+        public int DeterminismStress;
+        public bool PrintReproArgs;
     }
 
     // To make the code future compatible to the composite R2R story

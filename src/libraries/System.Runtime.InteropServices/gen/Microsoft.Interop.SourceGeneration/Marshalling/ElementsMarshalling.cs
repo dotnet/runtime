@@ -58,7 +58,7 @@ namespace Microsoft.Interop
     }
 
 #pragma warning disable SA1400 // Access modifier should be declared https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3659
-    static file class ElementsMarshallingCollectionSourceExtensions
+    file static class ElementsMarshallingCollectionSourceExtensions
 #pragma warning restore SA1400 // Access modifier should be declared
     {
         public static StatementSyntax GetNumElementsAssignmentFromManagedValuesSource(this IElementsMarshallingCollectionSource source, TypePositionInfo info, StubCodeContext context)

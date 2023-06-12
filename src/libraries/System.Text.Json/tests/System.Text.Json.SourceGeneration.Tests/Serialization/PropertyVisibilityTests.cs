@@ -403,10 +403,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             JsonConverter obj = JsonMetadataServices.BooleanConverter;
 
-            string json = JsonSerializer.Serialize(obj, PublicContext.Default.Options);
-            Assert.Equal("{}", json);
-
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<JsonConverter>(json, PublicContext.Default.Options));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(obj, PublicContext.Default.Options));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<JsonConverter>("{}", PublicContext.Default.Options));
         }
 
         [Fact]

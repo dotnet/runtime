@@ -199,6 +199,10 @@
       <EmccExportedRuntimeMethod Include="removeRunDependency" />
       <EmccExportedRuntimeMethod Include="addRunDependency" />
       <EmccExportedRuntimeMethod Include="addFunction" />
+      <EmccExportedRuntimeMethod Include="safeSetTimeout" />
+      <EmccExportedRuntimeMethod Include="runtimeKeepalivePush" />
+      <EmccExportedRuntimeMethod Include="runtimeKeepalivePop" />
+      <EmccExportedRuntimeMethod Include="maybeExit" />
 
       <EmccExportedFunction Include="_free" />
       <EmccExportedFunction Include="_htons" />
@@ -256,6 +260,9 @@
       <EmccExportedFunction Include="_sinhf" />
       <EmccExportedFunction Include="_tanf" />
       <EmccExportedFunction Include="_tanhf" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(MonoWasmThreads)' == 'true'">
+      <EmccExportedFunction Include="_emscripten_main_runtime_thread_id"  />
     </ItemGroup>
     <ItemGroup Condition="'$(MonoWasmThreads)' == 'true'">
       <EmccExportedFunction Include="_emscripten_main_runtime_thread_id"  />
