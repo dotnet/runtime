@@ -53,12 +53,6 @@ namespace System.Runtime.CompilerServices
     /// The first argument must be passed as <code>ref</code> for instance fields and methods on structs.
     /// The value of the first argument is not used by the implementation for <code>static</code> fields and methods.
     ///
-    /// The generic parameters of the <code>extern static</code> method are a concatenation of the type and
-    /// method generic arguments of the target method. For example,
-    /// <code>extern static void Method1&lt;T1, T2&gt;(Class1&lt;T1&gt; @this)</code>
-    /// can be used to call <code>Class1&lt;T1&gt;.Method1&lt;T2&gt;()</code>. The generic constraints of the
-    /// <code>extern static</code> method must match generic constraints of the target type, field or method.
-    ///
     /// Return type is considered for the signature match. modreqs and modopts are initially not considered for
     /// the signature match. However, if an ambiguity exists ignoring modreqs and modopts, a precise match
     /// is attempted. If an ambiguity still exists <see cref="System.Reflection.AmbiguousMatchException" /> is thrown.
@@ -66,6 +60,14 @@ namespace System.Runtime.CompilerServices
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
     public sealed class UnsafeAccessorAttribute : Attribute
     {
+        // Block of text to include above when Generics support is added:
+        //
+        // The generic parameters of the <code>extern static</code> method are a concatenation of the type and
+        // method generic arguments of the target method. For example,
+        // <code>extern static void Method1&lt;T1, T2&gt;(Class1&lt;T1&gt; @this)</code>
+        // can be used to call <code>Class1&lt;T1&gt;.Method1&lt;T2&gt;()</code>. The generic constraints of the
+        // <code>extern static</code> method must match generic constraints of the target type, field or method.
+
         /// <summary>
         /// Instantiates an <see cref="UnsafeAccessorAttribute"/> providing access to a member of kind <see cref="UnsafeAccessorKind"/>.
         /// </summary>
