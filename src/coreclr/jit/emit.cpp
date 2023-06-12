@@ -202,6 +202,9 @@ unsigned emitter::emitLargeDspCnt;
 unsigned emitter::emitSmallCns[SMALL_CNS_TSZ];
 unsigned emitter::emitSmallCnsCnt;
 unsigned emitter::emitLargeCnsCnt;
+unsigned emitter::emitInt8CnsCnt;
+unsigned emitter::emitInt16CnsCnt;
+unsigned emitter::emitInt32CnsCnt;
 unsigned emitter::emitNegCnsCnt;
 unsigned emitter::emitPow2CnsCnt;
 
@@ -469,14 +472,20 @@ void emitterStats(FILE* fout)
     stkDepthTable.dump(fout);
     fprintf(fout, "\n");
 
-    if ((emitter::emitSmallCnsCnt > 0) || (emitter::emitLargeCnsCnt > 0))
-    {
-        unsigned emitTotalCnsCnt = emitter::emitLargeCnsCnt + emitter::emitSmallCnsCnt;
+    unsigned emitTotalCnsCnt = emitter::emitLargeCnsCnt + emitter::emitSmallCnsCnt;
 
+    if (emitTotalCnsCnt != 0)
+    {
         fprintf(fout, "SmallCnsCnt = %8u (%5.2f%%)\n", emitter::emitSmallCnsCnt,
                 (100.0 * emitter::emitSmallCnsCnt) / emitTotalCnsCnt);
         fprintf(fout, "LargeCnsCnt = %8u (%5.2f%%)\n", emitter::emitLargeCnsCnt,
                 (100.0 * emitter::emitLargeCnsCnt) / emitTotalCnsCnt);
+        fprintf(fout, "Int8CnsCnt  = %8u (%5.2f%%)\n", emitter::emitInt8CnsCnt,
+                (100.0 * emitter::emitInt8CnsCnt) / emitTotalCnsCnt);
+        fprintf(fout, "Int16CnsCnt = %8u (%5.2f%%)\n", emitter::emitInt16CnsCnt,
+                (100.0 * emitter::emitInt16CnsCnt) / emitTotalCnsCnt);
+        fprintf(fout, "Int32CnsCnt = %8u (%5.2f%%)\n", emitter::emitInt32CnsCnt,
+                (100.0 * emitter::emitInt32CnsCnt) / emitTotalCnsCnt);
         fprintf(fout, "NegCnsCnt   = %8u (%5.2f%%)\n", emitter::emitNegCnsCnt,
                 (100.0 * emitter::emitNegCnsCnt) / emitTotalCnsCnt);
         fprintf(fout, "Pow2CnsCnt  = %8u (%5.2f%%)\n", emitter::emitPow2CnsCnt,
@@ -484,7 +493,7 @@ void emitterStats(FILE* fout)
     }
 
     // Print out the most common small constants.
-    if (emitter::emitSmallCnsCnt > 0)
+    if (emitter::emitSmallCnsCnt != 0)
     {
         fprintf(fout, "\n\n");
         fprintf(fout, "Common small constants >= %2d, <= %2d\n", ID_MIN_SMALL_CNS, ID_MAX_SMALL_CNS);
@@ -506,15 +515,15 @@ void emitterStats(FILE* fout)
 
                 if (i == 0)
                 {
-                    fprintf(fout, "cns[<=%4d] = %8u (%5.2f%%)\n", v, c, (100.0 * c) / emitter::emitSmallCnsCnt);
+                    fprintf(fout, "cns[<=%4d] = %8u (%5.2f%%)\n", v, c, (100.0 * c) / emitTotalCnsCnt);
                 }
                 else if (i == (SMALL_CNS_TSZ - 1))
                 {
-                    fprintf(fout, "cns[>=%4d] = %8u (%5.2f%%)\n", v, c, (100.0 * c) / emitter::emitSmallCnsCnt);
+                    fprintf(fout, "cns[>=%4d] = %8u (%5.2f%%)\n", v, c, (100.0 * c) / emitTotalCnsCnt);
                 }
                 else
                 {
-                    fprintf(fout, "cns[  %4d] = %8u (%5.2f%%)\n", v, c, (100.0 * c) / emitter::emitSmallCnsCnt);
+                    fprintf(fout, "cns[  %4d] = %8u (%5.2f%%)\n", v, c, (100.0 * c) / emitTotalCnsCnt);
                 }
             }
         }

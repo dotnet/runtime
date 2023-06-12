@@ -3216,6 +3216,9 @@ public:
     static unsigned emitSmallCns[SMALL_CNS_TSZ];
     static unsigned emitSmallCnsCnt;
     static unsigned emitLargeCnsCnt;
+    static unsigned emitInt8CnsCnt;
+    static unsigned emitInt16CnsCnt;
+    static unsigned emitInt32CnsCnt;
     static unsigned emitNegCnsCnt;
     static unsigned emitPow2CnsCnt;
 
@@ -3228,12 +3231,39 @@ public:
         if (value < 0)
         {
             emitNegCnsCnt++;
+
+            if (value >= INT8_MIN)
+            {
+                emitInt8CnsCnt++;
+            }
+            else if (value >= INT16_MIN)
+            {
+                emitInt16CnsCnt++;
+            }
+            else if (value >= INT32_MIN)
+            {
+                emitInt32CnsCnt++;
+            }
+        }
+        else if (value <= INT8_MAX)
+        {
+            emitInt8CnsCnt++;
+        }
+        else if (value <= INT16_MAX)
+        {
+            emitInt16CnsCnt++;
+        }
+        else if (value <= INT32_MAX)
+        {
+            emitInt32CnsCnt++;
         }
 
         if (isPow2(value))
         {
             emitPow2CnsCnt++;
         }
+
+
     }
 
     void TrackSmallCns(cnsval_ssize_t value)
