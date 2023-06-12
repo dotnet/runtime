@@ -77,7 +77,7 @@ namespace System.Text.Json.Nodes
                 return new JsonObject(_jsonElement!.Value.Clone(), Options);
             }
 
-            var jObject = new JsonObject();
+            var jObject = new JsonObject(Options);
 
             if (_dictionary is not null)
             {

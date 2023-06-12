@@ -64,7 +64,7 @@ namespace System.Text.Json.Nodes
             {
                 Debug.Assert(_jsonTypeInfo != null);
                 return JsonSerializer.SerializeToNode(_value, _jsonTypeInfo)!;
-            };
+            }
         }
 
         internal override bool DeepEquals(JsonNode? node)

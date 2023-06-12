@@ -52,7 +52,7 @@ namespace System.Text.Json.Nodes
         {
             if (_jsonElement.HasValue)
             {
-                return new JsonArray(_jsonElement.Value.Clone());
+                return new JsonArray(_jsonElement.Value.Clone(), Options);
             }
 
             var jsonArray = new JsonArray(Options);
