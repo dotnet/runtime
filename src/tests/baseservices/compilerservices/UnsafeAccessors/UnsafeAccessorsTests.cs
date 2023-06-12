@@ -224,6 +224,13 @@ static unsafe class UnsafeAccessorsTests
         extern static string GetPrivateMethod(UserDataClass d, string s, ref string sr, in string si);
     }
 
+    // These are defined outside of the test to validate lookup using the name of
+    // the declaration as opposed to the Name field.
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod)]
+    extern static void _MVV(UserDataClass d);
+    [UnsafeAccessor(UnsafeAccessorKind.Method)]
+    extern static void _mvv(UserDataClass d);
+
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_AccessStaticMethodVoidClass()
@@ -231,6 +238,7 @@ static unsafe class UnsafeAccessorsTests
         Console.WriteLine($"Running {nameof(Verify_AccessStaticMethodVoidClass)}");
 
         GetPrivateStaticMethod((UserDataClass)null);
+        _MVV((UserDataClass)null);
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name=UserDataClass.StaticMethodVoidName)]
         extern static void GetPrivateStaticMethod(UserDataClass d);
@@ -244,6 +252,7 @@ static unsafe class UnsafeAccessorsTests
 
         var local = CallPrivateConstructorClass();
         GetPrivateMethod(local);
+        _mvv(local);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name=UserDataClass.MethodVoidName)]
         extern static void GetPrivateMethod(UserDataClass d);
@@ -318,19 +327,28 @@ static unsafe class UnsafeAccessorsTests
     {
         Console.WriteLine($"Running {nameof(Verify_InvalidTargetUnsafeAccessor)}");
 
+        bool isNativeAot = TestLibrary.Utilities.IsNativeAot;
         const string DoesNotExist = "_DoesNotExist_";
-        AssertExtensions.ThrowsMissingMemberException<MissingMethodException>(DoesNotExist, () => MethodNotFound(null));
-        AssertExtensions.ThrowsMissingMemberException<MissingMethodException>(DoesNotExist, () => StaticMethodNotFound(null));
+        AssertExtensions.ThrowsMissingMemberException<MissingMethodException>(
+            isNativeAot ? null : DoesNotExist,
+            () => MethodNotFound(null));
+        AssertExtensions.ThrowsMissingMemberException<MissingMethodException>(
+            isNativeAot ? null : DoesNotExist,
+            () => StaticMethodNotFound(null));
 
-        AssertExtensions.ThrowsMissingMemberException<MissingFieldException>(DoesNotExist, () => FieldNotFound(null));
-        AssertExtensions.ThrowsMissingMemberException<MissingFieldException>(DoesNotExist, () => StaticFieldNotFound(null));
+        AssertExtensions.ThrowsMissingMemberException<MissingFieldException>(
+            isNativeAot ? null : DoesNotExist,
+            () => FieldNotFound(null));
+        AssertExtensions.ThrowsMissingMemberException<MissingFieldException>(
+            isNativeAot ? null : DoesNotExist,
+            () => StaticFieldNotFound(null));
+
+        AssertExtensions.ThrowsMissingMemberException<MissingMethodException>(
+            isNativeAot ? null : UserDataClass.MethodPointerName,
+            () => CallPointerMethod(null, null));
 
         Assert.Throws<AmbiguousMatchException>(
             () => CallAmbiguousMethod(CallPrivateConstructorClass(), null));
-
-        AssertExtensions.ThrowsMissingMemberException<MissingMethodException>(
-            UserDataClass.MethodPointerName,
-            () => CallPointerMethod(null, null));
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name=DoesNotExist)]
         extern static void MethodNotFound(UserDataClass d);
@@ -344,15 +362,15 @@ static unsafe class UnsafeAccessorsTests
         [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=DoesNotExist)]
         extern static ref string StaticFieldNotFound(UserDataClass d);
 
+        // Pointers generally degrade to `void*`, but that isn't true for UnsafeAccessor signature validation.
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name=UserDataClass.MethodPointerName)]
+        extern static string CallPointerMethod(UserDataClass d, delegate* unmanaged[Stdcall]<void> fptr);
+
         // This is an ambiguous match since there are two methods each with two custom modifiers.
         // Therefore the default "ignore custom modifiers" logic fails. The fallback is for a
         // precise match and that also fails because the custom modifiers don't match precisely.
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name=UserDataClass.MethodNameAmbiguous)]
         extern static string CallAmbiguousMethod(UserDataClass d, delegate* unmanaged[Stdcall, SuppressGCTransition]<void> fptr);
-
-        // Pointers generally degrade to `void*`, but that isn't true for UnsafeAccessor signature validation.
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name=UserDataClass.MethodPointerName)]
-        extern static string CallPointerMethod(UserDataClass d, delegate* unmanaged[Stdcall, SuppressGCTransition]<void> fptr);
     }
 
     [Fact]

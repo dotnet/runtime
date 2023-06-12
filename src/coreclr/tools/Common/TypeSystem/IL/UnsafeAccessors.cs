@@ -183,7 +183,7 @@ namespace Internal.IL
                 // as empty at the use site.
                 if (kind is not UnsafeAccessorKind.Constructor)
                 {
-                    name = nameMaybe;
+                    name = method.Name;
                 }
             }
 
