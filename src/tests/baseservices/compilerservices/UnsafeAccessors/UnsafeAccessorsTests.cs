@@ -26,6 +26,7 @@ static unsafe class UnsafeAccessorsTests
         public const string MethodPointerName = nameof(_Pointer);
         public const string MethodCdeclCallConvBitName = nameof(_CdeclCallConvBit);
         public const string MethodStdcallCallConvBitName = nameof(_StdcallCallConvBit);
+        public const string MethodManagedCallConvBitName = nameof(_ManagedCallConvBit);
 
         private static string _F = PrivateStatic;
         private string _f;
@@ -51,10 +52,11 @@ static unsafe class UnsafeAccessorsTests
         // Used to validate pointer values.
         private static string _Pointer(void* ptr) => "void*";
 
-        // Used to validate the embedded callconv bits (non-unmanaged bit) in
+        // Used to validate the embedded callconv bits in
         // ECMA-335 signatures for methods.
         private string _CdeclCallConvBit(delegate* unmanaged[Cdecl]<void> fptr) => nameof(CallConvCdecl);
         private string _StdcallCallConvBit(delegate* unmanaged[Stdcall]<void> fptr) => nameof(CallConvStdcall);
+        private string _ManagedCallConvBit(delegate* <void> fptr) => "Managed";
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -330,9 +332,9 @@ static unsafe class UnsafeAccessorsTests
 
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
-    public static void Verify_CallConvBitsAreTreatedAsCustomModifiersAndIgnored()
+    public static void Verify_UnmanagedCallConvBitAreTreatedAsCustomModifiersAndIgnored()
     {
-        Console.WriteLine($"Running {nameof(Verify_CallConvBitsAreTreatedAsCustomModifiersAndIgnored)}");
+        Console.WriteLine($"Running {nameof(Verify_UnmanagedCallConvBitAreTreatedAsCustomModifiersAndIgnored)}");
 
         var ud = CallPrivateConstructorClass();
         Assert.Equal(nameof(CallConvCdecl), CallCdeclMethod(ud, null));
@@ -348,6 +350,25 @@ static unsafe class UnsafeAccessorsTests
         // See comment above regarding naming.
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name=UserDataClass.MethodStdcallCallConvBitName)]
         extern static string CallStdcallMethod(UserDataClass d, delegate* unmanaged[Cdecl]<void> fptr);
+    }
+
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
+    public static void Verify_ManagedUnmanagedFunctionPointersDontMatch()
+    {
+        Console.WriteLine($"Running {nameof(Verify_ManagedUnmanagedFunctionPointersDontMatch)}");
+
+        var ud = CallPrivateConstructorClass();
+        Assert.Throws<MissingMethodException>(() => CallCdeclMethod(ud, null));
+        Assert.Throws<MissingMethodException>(() => CallManagedMethod(ud, null));
+
+        // Managed calling conventions don't match on unmanaged function pointers
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name=UserDataClass.MethodCdeclCallConvBitName)]
+        extern static string CallCdeclMethod(UserDataClass d, delegate* <void> fptr);
+
+        // Unmanaged calling conventions don't match on managed function pointers
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name=UserDataClass.MethodManagedCallConvBitName)]
+        extern static string CallManagedMethod(UserDataClass d, delegate* unmanaged[Cdecl]<void> fptr);
     }
 
     [Fact]

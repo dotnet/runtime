@@ -963,6 +963,30 @@ TypeHandle SigPointer::GetTypeHandleNT(Module* pModule,
 
 #endif // #ifndef DACCESS_COMPILE
 
+// Normalizing function pointer calling convention means
+// simply treating it as either "managed" or "unmanaged".
+static uint32_t NormalizeFnPtrCallingConvention(uint32_t callConv)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // Only have an unmanaged\managed status, and not the unmanaged CALLCONV_ value.
+    switch (callConv & IMAGE_CEE_CS_CALLCONV_MASK)
+    {
+    case IMAGE_CEE_CS_CALLCONV_C:
+    case IMAGE_CEE_CS_CALLCONV_STDCALL:
+    case IMAGE_CEE_CS_CALLCONV_THISCALL:
+    case IMAGE_CEE_CS_CALLCONV_FASTCALL:
+        // Strip the calling convention.
+        callConv &= ~IMAGE_CEE_CS_CALLCONV_MASK;
+        // Normalize to unmanaged.
+        callConv |= IMAGE_CEE_CS_CALLCONV_UNMANAGED;
+        break;
+    default:
+        break;
+    }
+
+    return callConv;
+}
 
 #ifdef _PREFAST_
 #pragma warning(push)
@@ -1739,7 +1763,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             TypeHandle *retAndArgTypes = (TypeHandle*) _alloca(cAllocaSize);
             bool fReturnTypeOrParameterNotLoaded = false;
 
-            for (unsigned i = 0; i <= cArgs; i++)
+            for (uint32_t i = 0; i <= cArgs; i++)
             {
                 // Lookup type handle.
                 retAndArgTypes[i] = psig.GetTypeHandleThrowing(pOrigModule,
@@ -1765,18 +1789,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                 break;
             }
 
-            // Only have an unmanaged\managed status, and not the unmanaged CALLCONV_ value.
-            switch (uCallConv & IMAGE_CEE_CS_CALLCONV_MASK)
-            {
-                case IMAGE_CEE_CS_CALLCONV_C:
-                case IMAGE_CEE_CS_CALLCONV_STDCALL:
-                case IMAGE_CEE_CS_CALLCONV_THISCALL:
-                case IMAGE_CEE_CS_CALLCONV_FASTCALL:
-                    // Strip the calling convention.
-                    uCallConv &= ~IMAGE_CEE_CS_CALLCONV_MASK;
-                    // Normalize to unmanaged.
-                    uCallConv |= IMAGE_CEE_CS_CALLCONV_UNMANAGED;
-            }
+            uCallConv = NormalizeFnPtrCallingConvention(uCallConv);
 
             // Find an existing function pointer or make a new one
             thRet = ClassLoader::LoadFnptrTypeThrowing((BYTE) uCallConv, cArgs, retAndArgTypes, fLoadTypes, level);
@@ -3929,15 +3942,15 @@ MetaSig::CompareElementType(
             IfFailThrow(CorSigUncompressElementType_EndPtr(pSig2, pEndSig2, &callingConvention2));
 
             // Calling conventions are generally treated as custom modifiers.
-            // When callers request calling conventions to be ignored, we also ignore
-            // calling conventions and this is okay. It is okay because calling conventions,
-            // when more than one is defined (for example, SuppressGCTransition), all
-            // become encoded as custom modifiers.
-            if (!state->IgnoreCustomModifiers
-                && callingConvention1 != callingConvention2)
-            {
+            // When callers request custom modifiers to be ignored, we also ignore
+            // specific unmanaged calling conventions and this is okay. It is okay
+            // because unmanaged calling conventions, when more than one is defined
+            // (for example, SuppressGCTransition), all become encoded as custom modifiers.
+            bool callConvMismatch = state->IgnoreCustomModifiers
+                ? NormalizeFnPtrCallingConvention(callingConvention1) != NormalizeFnPtrCallingConvention(callingConvention2)
+                : callingConvention1 != callingConvention2;
+            if (callConvMismatch)
                 return FALSE;
-            }
 
             DWORD argCnt1;
             IfFailThrow(CorSigUncompressData_EndPtr(pSig1, pEndSig1, &argCnt1));
