@@ -65,6 +65,12 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
     public override bool Execute()
     {
+        if (!Directory.Exists(OutputDirectory))
+        {
+            Log.LogError($"OutputDirectory={OutputDirectory} doesn't exist.");
+            return false;
+        }
+
         List<ITaskItem> bundledResources = new(FilesToBundle.Length);
         foreach (ITaskItem bundledResource in FilesToBundle)
         {
