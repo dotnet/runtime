@@ -189,7 +189,7 @@ jobs:
 
     # Check if zip installed
     - script: |
-        if [ -x "$(command -v zip)" ]; echo "##vso[task.setvariable variable=IsZipInstalled]true"
+        if [ -x "$(command -v zip)" ]; then echo "##vso[task.setvariable variable=IsZipInstalled]true"
         else echo "##vso[task.setvariable variable=IsZipInstalled]false";
         fi
       displayName: Check zip tool (Linux/Darwin)
