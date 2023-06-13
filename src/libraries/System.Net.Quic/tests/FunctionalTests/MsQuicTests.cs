@@ -58,7 +58,7 @@ namespace System.Net.Quic.Tests
             _certificates = setup;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
         public async Task QuicRootedObjectGetReleased()
         {
             async Task<(WeakReference<QuicListener>, WeakReference<QuicConnection>, WeakReference<QuicConnection>, WeakReference<QuicStream>, WeakReference<QuicStream>)> GetWeakReferencesAsync()
@@ -137,7 +137,7 @@ namespace System.Net.Quic.Tests
             Assert.False(wrServerStream.TryGetTarget(out _));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
         public async Task QuicRootedConnectionGetsReleased_ConnectFails()
         {
             WeakReference<QuicConnection> wrServerConnection = default;
