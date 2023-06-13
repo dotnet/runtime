@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { GlobalObjects, MonoClass } from "../types";
+import type { GlobalObjects, MonoClass } from "../types/internal";
 import type { VoidPtr } from "../types/emscripten";
 import type { BINDINGType, MONOType } from "./export-types";
 

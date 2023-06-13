@@ -12,7 +12,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void Ctor_ETagNull_Throw()
         {
-            AssertExtensions.Throws<ArgumentException>("tag", () => { new EntityTagHeaderValue(null); });
+            AssertExtensions.Throws<ArgumentNullException>("tag", () => { new EntityTagHeaderValue(null); });
         }
 
         [Fact]

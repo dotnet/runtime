@@ -292,6 +292,22 @@ TBase EvaluateUnaryScalarSpecialized(genTreeOps oper, TBase arg0)
             return ~arg0;
         }
 
+        case GT_LZCNT:
+        {
+            if (sizeof(TBase) == sizeof(uint32_t))
+            {
+                uint32_t result = BitOperations::LeadingZeroCount(static_cast<uint32_t>(arg0));
+                return static_cast<TBase>(result);
+            }
+            else if (sizeof(TBase) == sizeof(uint64_t))
+            {
+                uint64_t result = BitOperations::LeadingZeroCount(static_cast<uint64_t>(arg0));
+                return static_cast<TBase>(result);
+            }
+
+            unreached();
+        }
+
         default:
         {
             unreached();
@@ -503,6 +519,18 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
         case GT_OR:
         {
             return arg0 | arg1;
+        }
+
+        case GT_ROL:
+        {
+            return EvaluateBinaryScalarSpecialized<TBase>(GT_LSH, arg0, arg1) |
+                   EvaluateBinaryScalarRSZ<TBase>(arg0, (sizeof(TBase) * 8) - arg1);
+        }
+
+        case GT_ROR:
+        {
+            return EvaluateBinaryScalarRSZ<TBase>(arg0, arg1) |
+                   EvaluateBinaryScalarSpecialized<TBase>(GT_LSH, arg0, (sizeof(TBase) * 8) - arg1);
         }
 
         case GT_RSH:

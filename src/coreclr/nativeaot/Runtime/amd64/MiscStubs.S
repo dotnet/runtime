@@ -45,57 +45,20 @@ LOCAL_LABEL(ProbeLoop):
         ret
 NESTED_END RhpStackProbe, _TEXT
 
-NESTED_ENTRY RhpGetThreadStaticBaseForType, _TEXT, NoHandler
-        // On entry:
-        //   rdi - TypeManagerSlot*
-        //   rsi - type index
+NESTED_ENTRY RhpGetInlinedThreadStaticBase, _TEXT, NoHandler
         // On exit:
         //   rax - the thread static base for the given type
 
-        push_nonvol_reg rbx
-        push_nonvol_reg r12
-
-        mov     rbx, rdi               // Save TypeManagerSlot*
-        mov     r12, rsi               // Save type index
-
-        // rax = GetThread()
-        INLINE_GETTHREAD
-
-        mov     r8d, [rbx + 8]         // Get ModuleIndex out of the TypeManagerSlot
+        // rdi = &tls_InlinedThreadStatics
+        INLINE_GET_TLS_VAR tls_InlinedThreadStatics
+        mov     rdi, rax
 
         // get per-thread storage
-        mov     rax, [rax + OFFSETOF__Thread__m_pThreadLocalModuleStatics]
-
-        // get per-module storage
+        mov     rax, [rdi]
         test    rax, rax
-        jz      LOCAL_LABEL(RhpGetThreadStaticBaseForType_RarePath)
-        cmp     r8d, [rax + OFFSETOF__Array__m_Length]
-        jae     LOCAL_LABEL(RhpGetThreadStaticBaseForType_RarePath)
-        mov     rax, [rax + r8 * 8 + 0x10]
+        jz      C_FUNC(RhpGetInlinedThreadStaticBaseSlow)    // rdi contains the storage ref
 
-        // get the actual per-type storage
-        test    rax, rax
-        jz      LOCAL_LABEL(RhpGetThreadStaticBaseForType_RarePath)
-        cmp     r12d, [rax + OFFSETOF__Array__m_Length]
-        jae     LOCAL_LABEL(RhpGetThreadStaticBaseForType_RarePath)
-        mov     rax, [rax + r12 * 8 + 0x10]
-
-        // if have storage, return it
-        test    rax, rax
-        jz      LOCAL_LABEL(RhpGetThreadStaticBaseForType_RarePath)
-
-        .cfi_remember_state
-        pop_nonvol_reg r12
-        pop_nonvol_reg rbx
+        // return it
         ret
+NESTED_END RhpGetInlinedThreadStaticBase, _TEXT
 
-        .cfi_restore_state
-        .cfi_def_cfa_offset 24  // workaround cfi_restore_state bug
-LOCAL_LABEL(RhpGetThreadStaticBaseForType_RarePath):
-        mov         rdi, rbx    // restore TypeManagerSlot*
-        mov         rsi, r12    // restore type index
-
-        pop_nonvol_reg r12
-        pop_nonvol_reg rbx
-        jmp C_FUNC(RhpGetThreadStaticBaseForTypeSlow)
-NESTED_END RhpGetThreadStaticBaseForType, _TEXT

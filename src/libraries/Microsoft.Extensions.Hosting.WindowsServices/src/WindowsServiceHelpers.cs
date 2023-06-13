@@ -19,7 +19,13 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         [SupportedOSPlatformGuard("windows")]
         public static bool IsWindowsService()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (
+#if NETFRAMEWORK
+                Environment.OSVersion.Platform != PlatformID.Win32NT
+#else
+                !RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+#endif
+                )
             {
                 return false;
             }

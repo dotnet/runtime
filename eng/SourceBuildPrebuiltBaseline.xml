@@ -1,5 +1,18 @@
+<!-- See aka.ms/dotnet/prebuilts for guidance on what pre-builts are and how to eliminate them. -->
 <UsageData>
   <IgnorePatterns>
-    <UsagePattern IdentityGlob="*/*" />
+    <UsagePattern IdentityGlob="Microsoft.SourceBuild.Intermediate.*" />
+    
+    <!-- Allowed and pinned to major version due to https://github.com/dotnet/source-build/issues/3228 -->
+    <UsagePattern IdentityGlob="Microsoft.NETCore.App.Crossgen2.linux-x64/*8.*" />
+    <UsagePattern IdentityGlob="Microsoft.NETCore.App.Runtime.linux-x64/*8.*" />
+    <UsagePattern IdentityGlob="*Microsoft.DotNet.ILCompiler/*8.*" />
+    
+    <!-- Will be removed once https://github.com/NuGet/Home/issues/11059 is resolved -->
+    <UsagePattern IdentityGlob="Nuget.*/*" />
+
+    <!-- Analyzers cannot be SBRPed + an older release version is being used, meaning there is no intermediate for it
+         In full source build, this version is overridden by previous repo outputs or come from previously source-built artifacts. -->
+    <UsagePattern IdentityGlob="Microsoft.CodeAnalysis.Analyzers/*" />
   </IgnorePatterns>
 </UsageData>

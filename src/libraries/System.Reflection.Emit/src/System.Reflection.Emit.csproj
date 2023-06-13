@@ -8,6 +8,7 @@
     <Compile Include="System\Reflection\Emit\CustomAttributeWrapper.cs" />
     <Compile Include="System\Reflection\Emit\AssemblyBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\FieldBuilderImpl.cs" />
+    <Compile Include="System\Reflection\Emit\GenericTypeParameterBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\MethodBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\ModuleBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\ParameterBuilderImpl.cs" />

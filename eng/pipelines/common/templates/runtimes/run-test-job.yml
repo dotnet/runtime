@@ -291,7 +291,7 @@ jobs:
                   -arch $(archType)
                   /p:BuildMonoAotCrossCompiler=true
                   /p:BuildMonoAotCrossCompilerOnly=true
-                  /p:MonoLibClang="/usr/lib/llvm-9/lib/libclang-9.so.1"
+                  /p:MonoLibClang="/usr/local/lib/libclang.so.16"
                   /p:MonoAOTEnableLLVM=true
                   /p:MonoAOTLLVMUseCxx11Abi=true
           displayName: "Build Mono LLVM AOT cross compiler"
@@ -537,8 +537,8 @@ jobs:
           - defaultpgo
         ${{ if in(parameters.testGroup, 'pgostress') }}:
           # We run a limited number of scenarios on the win-arm64 queues as we hit frequent timeouts on those queues otherwise.
-          # The loss of coverage is not critical as win-arm64/win-arm32 are practically equivalent to linux-arm64/linux-arm32 to the JIT.
-          ${{ if and(eq(parameters.osGroup, 'windows'), or(eq(parameters.archType, 'arm64'), eq(parameters.archType, 'arm'))) }}:
+          # The loss of coverage is not critical as win-arm64 is practically equivalent to linux-arm64 to the JIT.
+          ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.archType, 'arm64')) }}:
             scenarios:
             - fullpgo
             - fullpgo_random_gdv_edge
@@ -571,7 +571,7 @@ jobs:
           - jitelthookenabled
           - jitelthookenabled_tiered
         ${{ if in(parameters.testGroup, 'jit-experimental') }}:
-          ${{ if and(eq(parameters.osGroup, 'windows'), or(eq(parameters.archType, 'arm64'), eq(parameters.archType, 'arm'))) }}:
+          ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.archType, 'arm64')) }}:
             scenarios:
             - jitosr_stress
             - jitpartialcompilation_pgo

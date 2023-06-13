@@ -335,6 +335,8 @@ namespace pal
     bool is_emulating_x64();
 
     bool are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2);
+
+    void initialize_createdump();
 }
 
 #endif // PAL_H

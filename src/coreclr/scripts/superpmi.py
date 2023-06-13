@@ -40,7 +40,7 @@ from coreclr_arguments import *
 from jitutil import TempDir, ChangeDir, remove_prefix, is_zero_length_file, is_nonzero_length_file, \
     make_safe_filename, find_file, download_one_url, download_files, report_azure_error, \
     require_azure_storage_libraries, authenticate_using_azure, \
-    create_unique_directory_name, create_unique_file_name, get_files_from_path
+    create_unique_directory_name, create_unique_file_name, get_files_from_path, determine_jit_name
 
 locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.UTF-8'
 
@@ -642,7 +642,7 @@ class SuperPMICollect:
 
         self.collection_shim_path = os.path.join(self.core_root, self.collection_shim_name)
 
-        self.jit_path = os.path.join(coreclr_args.core_root, determine_jit_name(coreclr_args))
+        self.jit_path = os.path.join(coreclr_args.core_root, get_jit_name(coreclr_args))
         self.superpmi_path = determine_superpmi_tool_path(coreclr_args)
         self.mcs_path = determine_mcs_tool_path(coreclr_args)
 
@@ -1734,7 +1734,6 @@ class SuperPMIReplayAsmDiffs:
                 with ChangeDir(self.coreclr_args.core_root):
                     command = [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                     return_code = run_and_log(command)
-                    logging.debug("return_code: %s", return_code)
 
                 base_metrics = read_csv_metrics(base_metrics_summary_file)
                 diff_metrics = read_csv_metrics(diff_metrics_summary_file)
@@ -2462,7 +2461,10 @@ class SuperPMIReplayThroughputDiff:
                 with ChangeDir(self.coreclr_args.core_root):
                     command = [self.pin_path] + pin_options + ["--"] + [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                     return_code = run_and_log(command)
-                    logging.debug("return_code: %s", return_code)
+
+                if return_code != 0:
+                    command_string = " ".join(command)
+                    logging.debug("'%s': Error return code: %s", command_string, return_code)
 
                 base_metrics = read_csv_metrics(base_metrics_summary_file)
                 diff_metrics = read_csv_metrics(diff_metrics_summary_file)
@@ -2688,8 +2690,8 @@ def determine_pmi_location(coreclr_args):
     return pmi_location
 
 
-def determine_jit_name(coreclr_args):
-    """ Determine the jit based on the OS. If "-jit_name" is specified, then use the specified jit.
+def get_jit_name(coreclr_args):
+    """ Determine the JIT file name to use based on the platform. If "-jit_name" is specified, then use the specified jit.
         This function is called for cases where the "-jit_name" flag is not used, so be careful not
         to depend on the "jit_name" attribute existing.
 
@@ -2704,30 +2706,7 @@ def determine_jit_name(coreclr_args):
     if hasattr(coreclr_args, "jit_name") and coreclr_args.jit_name is not None:
         return coreclr_args.jit_name
 
-    jit_base_name = "clrjit"
-
-    if coreclr_args.arch != coreclr_args.target_arch or coreclr_args.host_os != coreclr_args.target_os:
-        # If `-target_arch` or `-target_os` was specified, then figure out the name of the cross-compiler JIT to use.
-
-        if coreclr_args.target_arch.startswith("arm"):
-            os_name = "universal"
-        elif coreclr_args.target_os == "osx" or coreclr_args.target_os == "linux":
-            os_name = "unix"
-        elif coreclr_args.target_os == "windows":
-            os_name = "win"
-        else:
-            raise RuntimeError("Unknown OS.")
-
-        jit_base_name = 'clrjit_{}_{}_{}'.format(os_name, coreclr_args.target_arch, coreclr_args.arch)
-
-    if coreclr_args.host_os == "osx":
-        return "lib" + jit_base_name + ".dylib"
-    elif coreclr_args.host_os == "linux":
-        return "lib" + jit_base_name + ".so"
-    elif coreclr_args.host_os == "windows":
-        return jit_base_name + ".dll"
-    else:
-        raise RuntimeError("Unknown OS.")
+    return determine_jit_name(coreclr_args.host_os, coreclr_args.target_os, coreclr_args.arch, coreclr_args.target_arch)
 
 
 def find_tool(coreclr_args, tool_name, search_core_root=True, search_product_location=True, search_path=True, throw_on_not_found=True):
@@ -3648,7 +3627,7 @@ def process_base_jit_path_arg(coreclr_args):
         for git_hash in change_list_hashes:
             logging.debug("%s: %s", hashnum, git_hash)
 
-            jit_name = determine_jit_name(coreclr_args)
+            jit_name = get_jit_name(coreclr_args)
             basejit_dir = os.path.join(default_basejit_root_dir, "{}.{}.{}.{}".format(git_hash, coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type))
             basejit_path = os.path.join(basejit_dir, jit_name)
             if os.path.isfile(basejit_path):
@@ -3724,7 +3703,8 @@ def download_clrjit_pintool(coreclr_args):
         return
 
     pin_dir_path = get_pintools_path(coreclr_args)
-    pintools_rel_path = "{}/{}/{}.zip".format(az_pintools_root_folder, pintools_current_version, coreclr_args.host_os.lower())
+    extension = "zip" if coreclr_args.host_os.lower() == "windows" else "tar.gz"
+    pintools_rel_path = "{}/{}/{}.{}".format(az_pintools_root_folder, pintools_current_version, coreclr_args.host_os.lower(), extension)
     pintool_uri = "{}/{}".format(az_blob_storage_superpmi_container_uri, pintools_rel_path)
     local_files = download_files([pintool_uri], pin_dir_path, verbose=False, is_azure_storage=True, fail_if_not_found=False)
     if len(local_files) <= 0:
@@ -3839,7 +3819,7 @@ def setup_args(args):
     def setup_jit_path_arg(jit_path):
         if jit_path is not None:
             return os.path.abspath(jit_path)
-        return find_tool(coreclr_args, determine_jit_name(coreclr_args), search_path=False)  # It doesn't make sense to search PATH for the JIT dll.
+        return find_tool(coreclr_args, get_jit_name(coreclr_args), search_path=False)  # It doesn't make sense to search PATH for the JIT dll.
 
     def setup_error_limit(error_limit):
         if error_limit is None:
@@ -3928,7 +3908,7 @@ def setup_args(args):
                             "Unable to set jit_name.")
 
         coreclr_args.verify(args,
-                            "altjit",                   # Must be set before `jit_path` (determine_jit_name() depends on it)
+                            "altjit",                   # Must be set before `jit_path` (get_jit_name() depends on it)
                             lambda unused: True,
                             "Unable to set altjit.")
 

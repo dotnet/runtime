@@ -17,8 +17,6 @@ class CILJit : public ICorJitCompiler
     void getVersionIdentifier(GUID* versionIdentifier /* OUT */
                               );
 
-    unsigned getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags);
-
     void setTargetOS(CORINFO_OS os);
 };
 
@@ -42,12 +40,6 @@ void Compiler::eeGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                               CORINFO_FIELD_INFO*     pResult)
 {
     info.compCompHnd->getFieldInfo(pResolvedToken, info.compMethodHnd, accessFlags, pResult);
-}
-
-FORCEINLINE
-uint32_t Compiler::eeGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
-{
-    return info.compCompHnd->getThreadLocalFieldInfo(field);
 }
 
 /*****************************************************************************

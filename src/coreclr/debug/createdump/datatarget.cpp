@@ -4,12 +4,6 @@
 #include "createdump.h"
 #include <dbgtargetcontext.h>
 
-#if defined(HOST_ARM64)
-// Flag to check if atomics feature is available on
-// the machine
-bool g_arm64_atomics_present = false;
-#endif
-
 DumpDataTarget::DumpDataTarget(CrashInfo& crashInfo) :
     m_ref(1),
     m_crashInfo(crashInfo)

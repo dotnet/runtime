@@ -10,7 +10,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'r8NaNconv' {}
+.assembly ASSEMBLY_NAME {}
 .assembly extern xunit.core {}
 .namespace Test_r8NaNconv
 {

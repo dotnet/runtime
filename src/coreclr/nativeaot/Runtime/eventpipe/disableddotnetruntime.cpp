@@ -12,10 +12,6 @@ This file is generated using the logic from <root>/src/scripts/genEventPipe.py
 #include "eventpipeadapter.h"
 #include "gcheaputilities.h"
 
-#if defined(TARGET_UNIX)
-#define wcslen PAL_wcslen
-#endif
-
 #ifndef ERROR_WRITE_FAULT
 #define ERROR_WRITE_FAULT 29L
 #endif
@@ -39,8 +35,8 @@ ULONG EventPipeWriteEventExceptionThrown_V1(
     const GUID * ActivityId,
     const GUID * RelatedActivityId
 )
-{ 
-    return 0; 
+{
+    return 0;
 }
 
 ULONG EventPipeWriteEventGCAllocationTick_V1(

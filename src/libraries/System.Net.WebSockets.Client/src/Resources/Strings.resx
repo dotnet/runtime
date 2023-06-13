@@ -93,9 +93,6 @@
   <data name="net_WebSockets_InvalidCharInProtocolString" xml:space="preserve">
     <value>The WebSocket protocol '{0}' is invalid because it contains the invalid character '{1}'.</value>
   </data>
-  <data name="net_WebSockets_InvalidEmptySubProtocol" xml:space="preserve">
-    <value>Empty string is not a valid subprotocol value. Please use \"null\" to specify no value.</value>
-  </data>
   <data name="net_WebSockets_ReasonNotNull" xml:space="preserve">
     <value>The close status description '{0}' is invalid. When using close status code '{1}' the description must be null.</value>
   </data>

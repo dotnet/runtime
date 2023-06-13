@@ -21,13 +21,13 @@ namespace System.Net.Mime
         // characters allowed inside of comments
         internal static readonly bool[] Ctext = CreateCharactersAllowedInComments();
 
-        private static readonly IndexOfAnyValues<char> s_charactersAllowedInHeaderNames =
+        private static readonly SearchValues<char> s_charactersAllowedInHeaderNames =
             // ftext = %d33-57 / %d59-126
-            IndexOfAnyValues.Create("!\"#$%&'()*+,-./0123456789;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
+            SearchValues.Create("!\"#$%&'()*+,-./0123456789;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
 
-        private static readonly IndexOfAnyValues<char> s_charactersAllowedInTokens =
+        private static readonly SearchValues<char> s_charactersAllowedInTokens =
             // ttext = %d33-126 except '()<>@,;:\"/[]?='
-            IndexOfAnyValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz{|}~");
+            SearchValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz{|}~");
 
         internal const char Quote = '\"';
         internal const char Space = ' ';

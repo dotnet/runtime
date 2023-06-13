@@ -811,7 +811,7 @@ namespace System.Net.Mail
 
         private void CheckHostAndPort()
         {
-            if (_host == null || _host.Length == 0)
+            if (string.IsNullOrEmpty(_host))
             {
                 throw new InvalidOperationException(SR.UnspecifiedHost);
             }

@@ -183,7 +183,7 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
         BYTE x = (BYTE)(reg - REG_F8);
         assert(0 <= x && x <= 0x13);
 
-        pu->AddCode(0xDC | (BYTE)(x >> 3), (BYTE)(x << 4) | (BYTE)(z >> 8), (BYTE)z); // TODO NEED TO CHECK LATER
+        pu->AddCode(0xDC | (BYTE)(x >> 4), (BYTE)(x << 4) | (BYTE)(z >> 8), (BYTE)z);
     }
 }
 
@@ -551,19 +551,19 @@ void DumpUnwindInfo(Compiler*         comp,
                    getRegName(REG_F24 + x, true), getRegName(REG_F24 + x + 1, true), (z + 1) * 8);
         }
 #endif
-        else if (b1 == 0xDC)
+        else if ((b1 & 0xDC) == 0xDC)
         {
-            // save_freg: 11011100 | 0xxxzzzz | zzzzzzzz : save reg f(24 + #X) at [sp + #Z * 8], offset <= 2047
+            // save_freg: 1101110x | xxxxzzzz | zzzzzzzz : save reg f(8 + #X) at [sp + #Z * 8], offset <= 2047
             assert(i + 1 < countOfUnwindCodes);
             b2 = *pUnwindCode++;
             b3 = *pUnwindCode++;
             i += 2;
 
-            x = (DWORD)(b2 >> 4);
-            z = ((DWORD)(b2 & 0xF) << 8) | (DWORD)b3;
+            x = (DWORD)((b1 & 0x1) << 4) | (DWORD)(b2 >> 4);
+            z = ((DWORD)(2 & 0xF) << 8) | (DWORD)b3;
 
             printf("    %02X %02X %02X      save_freg X#%u Z#%u (0x%02X); fsd %s, [sp, #%u]\n", b1, b2, b3, x, z, z,
-                   getRegName(REG_F24 + x), z * 8);
+                   getRegName(REG_F8 + x), z * 8);
         }
 #if 0
         else if (b1 == 0xDE)
@@ -669,6 +669,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 void Compiler::unwindBegProlog()
 {
     assert(compGeneratingProlog);
+    assert(!compGeneratingUnwindProlog);
+    compGeneratingUnwindProlog = true;
 
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
@@ -696,11 +698,15 @@ void Compiler::unwindBegProlog()
 void Compiler::unwindEndProlog()
 {
     assert(compGeneratingProlog);
+    assert(compGeneratingUnwindProlog);
+    compGeneratingUnwindProlog = false;
 }
 
 void Compiler::unwindBegEpilog()
 {
     assert(compGeneratingEpilog);
+    assert(!compGeneratingUnwindEpilog);
+    compGeneratingUnwindEpilog = true;
 
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
@@ -715,6 +721,8 @@ void Compiler::unwindBegEpilog()
 void Compiler::unwindEndEpilog()
 {
     assert(compGeneratingEpilog);
+    assert(compGeneratingUnwindEpilog);
+    compGeneratingUnwindEpilog = false;
 }
 
 // The instructions between the last captured "current state" and the current instruction

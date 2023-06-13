@@ -518,7 +518,7 @@ namespace System.Globalization.Tests
                 Assert.Equal(expected && !char.IsSurrogate(c), CompareInfo.IsSortable(c));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void VersionTest()
         {
             SortVersion sv1 = CultureInfo.GetCultureInfo("en-US").CompareInfo.Version;

@@ -207,6 +207,10 @@ int main(const int argc, const pal::char_t *argv[])
             bool launch_as_if_dotnet = pal::strcmp(scenario, _X("non_context_mixed_dotnet")) == 0;
             success = host_context_test::non_context_mixed(check_properties, hostfxr_path, app_or_config_path, config_path, remaining_argc, remaining_argv, launch_as_if_dotnet, test_output);
         }
+        else if (pal::strcmp(scenario, _X("get_runtime_delegate_for_active_context")) == 0)
+        {
+            success = host_context_test::get_runtime_delegate_for_active_context(hostfxr_path, app_or_config_path, test_output);
+        }
         else
         {
             std::cerr << "Invalid scenario" << std::endl;

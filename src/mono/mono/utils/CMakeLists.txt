@@ -184,7 +184,10 @@ set(utils_common_sources
     options.h
     options-def.h
     options.c
-	ftnptr.h)
+    ftnptr.h
+    wasm-module-reader.h
+    wasm-module-reader.c
+  )
 
 if(MONO_CROSS_COMPILE)
 set(utils_arch_sources mach-support-unknown.c)

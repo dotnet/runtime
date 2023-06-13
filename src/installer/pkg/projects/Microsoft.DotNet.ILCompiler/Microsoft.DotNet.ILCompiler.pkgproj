@@ -27,7 +27,6 @@
     <ItemGroup>
       <File Include="$(CoreCLRBuildIntegrationDir)*" TargetPath="build" />
       <File Include="$(CoreCLRILCompilerDir)netstandard\*" TargetPath="tools/netstandard" />
-      <File Include="sdk\Sdk.props" TargetPath="sdk" />
     </ItemGroup>
   </Target>
 

@@ -24,7 +24,6 @@ namespace System
         }
     }
 
-    [ReflectionBlocked]
     public class RuntimeExceptionHelpers
     {
         //------------------------------------------------------------------------------------------------------------

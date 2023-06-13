@@ -17,7 +17,6 @@ namespace System.Security.Cryptography
         {
             // This class wraps DES
             _impl = DES.Create();
-            _impl.FeedbackSize = 8;
         }
 
         public override int BlockSize

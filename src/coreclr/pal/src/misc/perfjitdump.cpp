@@ -139,17 +139,15 @@ struct PerfJitDumpState
         enabled(false),
         fd(-1),
         mmapAddr(MAP_FAILED),
-        mutex(PTHREAD_MUTEX_INITIALIZER),
         codeIndex(0)
     {}
 
     volatile bool enabled;
     int fd;
     void *mmapAddr;
-    pthread_mutex_t mutex;
     volatile uint64_t codeIndex;
 
-    int FatalError(bool locked)
+    int FatalError()
     {
         enabled = false;
 
@@ -165,11 +163,6 @@ struct PerfJitDumpState
             fd = -1;
         }
 
-        if (locked)
-        {
-            pthread_mutex_unlock(&mutex);
-        }
-
         return -1;
     }
 
@@ -180,10 +173,8 @@ struct PerfJitDumpState
         // Write file header
         FileHeader header;
 
-        result = pthread_mutex_lock(&mutex);
-
         if (result != 0)
-            return FatalError(false);
+            return FatalError();
 
         if (enabled)
             goto exit;
@@ -193,39 +184,37 @@ struct PerfJitDumpState
         result = snprintf(jitdumpPath, sizeof(jitdumpPath), "%s/jit-%i.dump", path, getpid());
 
         if (result >= PATH_MAX)
-            return FatalError(true);
+            return FatalError();
 
         result = open(jitdumpPath, O_CREAT|O_TRUNC|O_RDWR|O_CLOEXEC, S_IRUSR|S_IWUSR );
 
         if (result == -1)
-            return FatalError(true);
+            return FatalError();
 
         fd = result;
 
         result = write(fd, &header, sizeof(FileHeader));
 
         if (result == -1)
-            return FatalError(true);
+            return FatalError();
 
         result = fsync(fd);
 
         if (result == -1)
-            return FatalError(true);
+            return FatalError();
 
         // mmap jitdump file
         // this is a marker for perf inject to find the jitdumpfile
         mmapAddr = mmap(nullptr, sizeof(FileHeader), PROT_READ | PROT_EXEC, MAP_PRIVATE, fd, 0);
 
         if (mmapAddr == MAP_FAILED)
-            return FatalError(true);
+            return FatalError();
 
         enabled = true;
 
 exit:
-        result = pthread_mutex_unlock(&mutex);
-
         if (result != 0)
-            return FatalError(false);
+            return FatalError();
 
         return 0;
     }
@@ -258,10 +247,8 @@ exit:
 
             size_t itemsWritten = 0;
 
-            result = pthread_mutex_lock(&mutex);
-
             if (result != 0)
-                return FatalError(false);
+                return FatalError();
 
             if (!enabled)
                 goto exit;
@@ -281,7 +268,7 @@ exit:
                     if (errno == EINTR)
                         continue;
 
-                    return FatalError(true);
+                    return FatalError();
                 }
 
                 // Detect unexpected failure cases.
@@ -312,10 +299,8 @@ exit:
             } while (true);
 
 exit:
-            result = pthread_mutex_unlock(&mutex);
-
             if (result != 0)
-                return FatalError(false);
+                return FatalError();
         }
         return 0;
     }
@@ -328,11 +313,8 @@ exit:
         {
             enabled = false;
 
-            // Lock the mutex
-            result = pthread_mutex_lock(&mutex);
-
             if (result != 0)
-                return FatalError(false);
+                return FatalError();
 
             if (!enabled)
                 goto exit;
@@ -340,24 +322,22 @@ exit:
             result = munmap(mmapAddr, sizeof(FileHeader));
 
             if (result == -1)
-                return FatalError(true);
+                return FatalError();
 
             mmapAddr = MAP_FAILED;
 
             result = fsync(fd);
 
             if (result == -1)
-                return FatalError(true);
+                return FatalError();
 
             result = close(fd);
 
             if (result == -1)
-                return FatalError(true);
+                return FatalError();
 
             fd = -1;
 exit:
-            result = pthread_mutex_unlock(&mutex);
-
             if (result != 0)
                 return -1;
         }
@@ -378,6 +358,13 @@ PALAPI
 PAL_PerfJitDump_Start(const char* path)
 {
     return GetState().Start(path);
+}
+
+bool
+PALAPI
+PAL_PerfJitDump_IsStarted()
+{
+    return GetState().enabled;
 }
 
 int
@@ -401,6 +388,13 @@ PALAPI
 PAL_PerfJitDump_Start(const char* path)
 {
     return 0;
+}
+
+bool
+PALAPI
+PAL_PerfJitDump_IsStarted()
+{
+    return false;
 }
 
 int

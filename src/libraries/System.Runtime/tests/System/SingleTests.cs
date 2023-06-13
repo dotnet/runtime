@@ -321,6 +321,12 @@ namespace System.Tests
             Assert.Equal(0xFF800000u, BitConverter.SingleToUInt32Bits(float.NegativeInfinity));
         }
 
+        [Fact]
+        public static void NegativeZero()
+        {
+            Assert.Equal(0x80000000u, BitConverter.SingleToUInt32Bits(float.NegativeZero));
+        }
+
         public static IEnumerable<object[]> Parse_Valid_TestData()
         {
             NumberStyles defaultStyle = NumberStyles.Float | NumberStyles.AllowThousands;

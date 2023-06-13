@@ -21,8 +21,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
     /// <summary>Provides an event source for tracing Dataflow information.</summary>
     [EventSource(
         Name = "System.Threading.Tasks.Dataflow.DataflowEventSource",
-        Guid = "16F53577-E41D-43D4-B47E-C17025BF4025",
-        LocalizationResources = "FxResources.System.Threading.Tasks.Dataflow.SR")]
+        Guid = "16F53577-E41D-43D4-B47E-C17025BF4025")]
     internal sealed class DataflowEtwProvider : EventSource
     {
         /// <summary>

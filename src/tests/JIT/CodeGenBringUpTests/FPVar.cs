@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_FPVar
 {
     const int Pass = 100;
@@ -17,7 +18,8 @@ public class BringUpTest_FPVar
        return z; 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         float y = FPVar(1f, 1f);
         Console.WriteLine(y);

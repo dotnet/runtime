@@ -96,6 +96,19 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector128<ushort> PermuteVar8x16(Vector128<ushort> left, Vector128<ushort> control) => PermuteVar8x16(left, control);
 
             /// <summary>
+            /// __m128i _mm_permutex2var_epi16 (__m128i a, __m128i idx, __m128i b)
+            ///   VPERMI2W xmm1 {k1}{z}, xmm2, xmm3/m128
+            ///   VPERMT2W xmm1 {k1}{z}, xmm2, xmm3/m128
+            /// </summary>
+            public static Vector128<short> PermuteVar8x16x2(Vector128<short> lower, Vector128<short> indices, Vector128<short> upper) => PermuteVar8x16x2(lower, indices, upper);
+            /// <summary>
+            /// __m128i _mm_permutex2var_epi16 (__m128i a, __m128i idx, __m128i b)
+            ///   VPERMI2W xmm1 {k1}{z}, xmm2, xmm3/m128
+            ///   VPERMT2W xmm1 {k1}{z}, xmm2, xmm3/m128
+            /// </summary>
+            public static Vector128<ushort> PermuteVar8x16x2(Vector128<ushort> lower, Vector128<ushort> indices, Vector128<ushort> upper) => PermuteVar8x16x2(lower, indices, upper);
+
+            /// <summary>
             /// __m256i _mm256_permutevar16x16_epi16 (__m256i a, __m256i b)
             ///   VPERMW ymm1 {k1}{z}, ymm2, ymm3/m256
             /// </summary>
@@ -105,6 +118,19 @@ namespace System.Runtime.Intrinsics.X86
             ///   VPERMW ymm1 {k1}{z}, ymm2, ymm3/m256
             /// </summary>
             public static Vector256<ushort> PermuteVar16x16(Vector256<ushort> left, Vector256<ushort> control) => PermuteVar16x16(left, control);
+
+            /// <summary>
+            /// __m256i _mm256_permutex2var_epi16 (__m256i a, __m256i idx, __m256i b)
+            ///   VPERMI2W ymm1 {k1}{z}, ymm2, ymm3/m256
+            ///   VPERMT2W ymm1 {k1}{z}, ymm2, ymm3/m256
+            /// </summary>
+            public static Vector256<short> PermuteVar16x16x2(Vector256<short> lower, Vector256<short> indices, Vector256<short> upper) => PermuteVar16x16x2(lower, indices, upper);
+            /// <summary>
+            /// __m256i _mm256_permutex2var_epi16 (__m256i a, __m256i idx, __m256i b)
+            ///   VPERMI2W ymm1 {k1}{z}, ymm2, ymm3/m256
+            ///   VPERMT2W ymm1 {k1}{z}, ymm2, ymm3/m256
+            /// </summary>
+            public static Vector256<ushort> PermuteVar16x16x2(Vector256<ushort> lower, Vector256<ushort> indices, Vector256<ushort> upper) => PermuteVar16x16x2(lower, indices, upper);
 
             /// <summary>
             /// __m128i _mm_sllv_epi16 (__m128i a, __m128i count)
@@ -158,6 +184,17 @@ namespace System.Runtime.Intrinsics.X86
             ///   VPSRLVW ymm1 {k1}{z}, ymm2, ymm3/m256
             /// </summary>
             public static Vector256<ushort> ShiftRightLogicalVariable(Vector256<ushort> value, Vector256<ushort> count) => ShiftRightLogicalVariable(value, count);
+
+            /// <summary>
+            /// __m128i _mm_dbsad_epu8 (__m128i a, __m128i b, int imm8)
+            ///   VDBPSADBW xmm1 {k1}{z}, xmm2, xmm3/m128
+            /// </summary>
+            public static Vector128<ushort> SumAbsoluteDifferencesInBlock32(Vector128<byte> left, Vector128<byte> right, [ConstantExpected] byte control) => SumAbsoluteDifferencesInBlock32(left, right, control);
+            /// <summary>
+            /// __m256i _mm256_dbsad_epu8 (__m256i a, __m256i b, int imm8)
+            ///   VDBPSADBW ymm1 {k1}{z}, ymm2, ymm3/m256
+            /// </summary>
+            public static Vector256<ushort> SumAbsoluteDifferencesInBlock32(Vector256<byte> left, Vector256<byte> right, [ConstantExpected] byte control) => SumAbsoluteDifferencesInBlock32(left, right, control);
         }
 
         [Intrinsic]
@@ -453,6 +490,19 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<ushort> PermuteVar32x16(Vector512<ushort> left, Vector512<ushort> control) => PermuteVar32x16(left, control);
 
         /// <summary>
+        /// __m512i _mm512_permutex2var_epi16 (__m512i a, __m512i idx, __m512i b)
+        ///   VPERMI2W zmm1 {k1}{z}, zmm2, zmm3/m512
+        ///   VPERMT2W zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<short> PermuteVar32x16x2(Vector512<short> lower, Vector512<short> indices, Vector512<short> upper) => PermuteVar32x16x2(lower, indices, upper);
+        /// <summary>
+        /// __m512i _mm512_permutex2var_epi16 (__m512i a, __m512i idx, __m512i b)
+        ///   VPERMI2W zmm1 {k1}{z}, zmm2, zmm3/m512
+        ///   VPERMT2W zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<ushort> PermuteVar32x16x2(Vector512<ushort> lower, Vector512<ushort> indices, Vector512<ushort> upper) => PermuteVar32x16x2(lower, indices, upper);
+
+        /// <summary>
         /// __m512i _mm512_sll_epi16 (__m512i a, __m128i count)
         ///   VPSLLW zmm1 {k1}{z}, zmm2, xmm3/m128
         /// </summary>
@@ -659,6 +709,12 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPSADBW zmm1 {k1}{z}, zmm2, zmm3/m512
         /// </summary>
         public static Vector512<ushort> SumAbsoluteDifferences(Vector512<byte> left, Vector512<byte> right) => SumAbsoluteDifferences(left, right);
+
+        /// <summary>
+        /// __m512i _mm512_dbsad_epu8 (__m512i a, __m512i b, int imm8)
+        ///   VDBPSADBW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<ushort> SumAbsoluteDifferencesInBlock32(Vector512<byte> left, Vector512<byte> right, [ConstantExpected] byte control) => SumAbsoluteDifferencesInBlock32(left, right, control);
 
         /// <summary>
         /// __m512i _mm512_unpackhi_epi8 (__m512i a, __m512i b)

@@ -87,7 +87,6 @@
     <Compile Include="Span\IndexOfAny.T.cs" />
     <Compile Include="Span\IndexOfAnyExcept.T.cs" />
     <Compile Include="Span\IndexOfAnyInRange.cs" />
-    <Compile Include="Span\IndexOfAnyValues.cs" />
     <Compile Include="Span\IndexOfSequence.byte.cs" />
     <Compile Include="Span\IndexOfSequence.char.cs" />
     <Compile Include="Span\IndexOfSequence.T.cs" />
@@ -103,6 +102,7 @@
     <Compile Include="Span\Overlaps.cs" />
     <Compile Include="Span\Replace.T.cs" />
     <Compile Include="Span\Reverse.cs" />
+    <Compile Include="Span\SearchValues.cs" />
     <Compile Include="Span\SequenceCompareTo.bool.cs" />
     <Compile Include="Span\SequenceCompareTo.byte.cs" />
     <Compile Include="Span\SequenceCompareTo.char.cs" />
@@ -272,6 +272,8 @@
     <Compile Include="Base64\Base64DecoderUnitTests.cs" />
     <Compile Include="Base64\Base64EncoderUnitTests.cs" />
     <Compile Include="Base64\Base64TestHelper.cs" />
+    <Compile Include="Base64\Base64TestBase.cs" />
+    <Compile Include="Base64\Base64ValidationUnitTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs"

@@ -99,6 +99,7 @@ public:
 
     bool RegisterTypeManager(TypeManager * pTypeManager);
     TypeManagerList& GetTypeManagerList();
+    TypeManager* GetSingleTypeManager();
     OsModuleList* GetOsModuleList();
 
     bool RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange);

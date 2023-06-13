@@ -29,7 +29,7 @@ namespace System.Reflection.Emit
         internal static DllImportData CreateDllImportData(CustomAttributeInfo attr, out bool preserveSig)
         {
             string? moduleName = (string?)attr._ctorArgs[0];
-            if (moduleName == null || moduleName.Length == 0)
+            if (string.IsNullOrEmpty(moduleName))
             {
                 throw new ArgumentException(SR.Argument_DllNameCannotBeEmpty);
             }

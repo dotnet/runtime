@@ -42,7 +42,7 @@ StringTableEntry* CeeSectionString::createEntry(_In_z_ LPWSTR target, ULONG hash
     entry->m_next = NULL;
     entry->m_hashId = hashId;
     entry->m_offset = dataLen();
-    size_t len = (wcslen(target)+1) * sizeof(WCHAR);
+    size_t len = (u16_strlen(target)+1) * sizeof(WCHAR);
     if (len > UINT32_MAX) {
         delete entry;
         return NULL;
@@ -70,7 +70,7 @@ StringTableEntry *CeeSectionString::findStringInsert(
         cur = cur->m_next;
     }
     while (cur && cur->m_hashId == hashId) {
-        if (wcscmp(target, (LPWSTR)(computePointer(cur->m_offset))) == 0)
+        if (u16_strcmp(target, (LPWSTR)(computePointer(cur->m_offset))) == 0)
             return cur;
         prev = cur;
         cur = cur->m_next;

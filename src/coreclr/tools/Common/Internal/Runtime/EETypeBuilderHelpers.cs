@@ -123,6 +123,11 @@ namespace Internal.Runtime
                 flagsEx |= (ushort)EETypeFlagsEx.IsTrackedReferenceWithFinalizerFlag;
             }
 
+            if (type.IsIDynamicInterfaceCastable)
+            {
+                flagsEx |= (ushort)EETypeFlagsEx.IDynamicInterfaceCastableFlag;
+            }
+
             return flagsEx;
         }
 

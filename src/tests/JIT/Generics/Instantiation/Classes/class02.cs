@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public struct ValX0 { }
 public struct ValY0 { }
@@ -68,7 +69,8 @@ public class Test_class02
 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Eval((new Gen<int, int>(new int(), new int())).InstVerify(typeof(int), typeof(int)));
         Eval((new Gen<int, double>(new int(), new double())).InstVerify(typeof(int), typeof(double)));

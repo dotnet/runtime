@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Xunit;
 using static Microsoft.Interop.Analyzers.NativeMarshallingAttributeAnalyzer;
 
-using VerifyCS = LibraryImportGenerator.UnitTests.Verifiers.CSharpAnalyzerVerifier<
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpAnalyzerVerifier<
     Microsoft.Interop.Analyzers.NativeMarshallingAttributeAnalyzer>;
 
 namespace LibraryImportGenerator.UnitTests

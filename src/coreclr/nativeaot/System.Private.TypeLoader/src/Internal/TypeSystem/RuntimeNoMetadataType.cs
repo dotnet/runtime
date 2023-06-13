@@ -296,9 +296,7 @@ namespace Internal.TypeSystem.NoMetadata
             Debug.Assert(!genericDefinitionHandle.IsNull());
 
 #if DEBUG
-            TypeReferenceHandle typeRefHandle;
             QTypeDefinition qTypeDefinition;
-            MetadataReader reader;
 
             string enclosingDummy;
 
@@ -308,12 +306,6 @@ namespace Internal.TypeSystem.NoMetadata
                 TypeDefinitionHandle typeDefHandle = qTypeDefinition.NativeFormatHandle;
                 typeDefHandle.GetFullName(qTypeDefinition.NativeFormatReader, out name, out enclosingDummy, out nsName);
                 assemblyName = typeDefHandle.GetContainingModuleName(qTypeDefinition.NativeFormatReader);
-            }
-            // Try to get the name from diagnostic metadata
-            else if (TypeLoaderEnvironment.TryGetTypeReferenceForNamedType(genericDefinitionHandle, out reader, out typeRefHandle))
-            {
-                typeRefHandle.GetFullName(reader, out name, out enclosingDummy, out nsName);
-                assemblyName = typeRefHandle.GetContainingModuleName(reader);
             }
             else
 #endif

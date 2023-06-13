@@ -60,7 +60,7 @@ namespace System.Net
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "parameter errorCode is an enum and is trimmer safe")]
-        [Event(OperationReturnedSomethingId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(OperationReturnedSomethingId, Keywords = Keywords.Default, Level = EventLevel.Informational, Message = "{0} returned {1}.")]
         public void OperationReturnedSomething(string operation, Interop.SECURITY_STATUS errorCode) =>
             WriteEvent(OperationReturnedSomethingId, operation, errorCode);
 

@@ -55,7 +55,7 @@ namespace Internal.NativeFormat
         // unused                   = 0x4d,
         ClassConstructorPointer     = 0x4e,
         // unused                   = 0x4f,
-        GenericVarianceInfo         = 0x50,
+        // unused                   = 0x50,
         // unused                   = 0x51,
 
         // Add new custom bag elements that don't match to something you'd find in the ECMA metadata here.

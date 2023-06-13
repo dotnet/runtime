@@ -28,7 +28,7 @@ namespace System.Net.Http.Headers
         {
             CheckCode(code);
             CheckAgent(agent);
-            HeaderUtilities.CheckValidQuotedString(text, nameof(text));
+            HeaderUtilities.CheckValidQuotedString(text);
 
             _code = code;
             _agent = agent;
@@ -39,7 +39,7 @@ namespace System.Net.Http.Headers
         {
             CheckCode(code);
             CheckAgent(agent);
-            HeaderUtilities.CheckValidQuotedString(text, nameof(text));
+            HeaderUtilities.CheckValidQuotedString(text);
 
             _code = code;
             _agent = agent;
@@ -282,10 +282,7 @@ namespace System.Net.Http.Headers
 
         private static void CheckAgent(string agent)
         {
-            if (string.IsNullOrEmpty(agent))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(agent));
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(agent);
 
             // 'receivedBy' can either be a host or a token. Since a token is a valid host, we only verify if the value
             // is a valid host.

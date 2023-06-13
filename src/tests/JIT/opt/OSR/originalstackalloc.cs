@@ -3,10 +3,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Original method has stackalloc, osr does not
 
-class OriginalStackalloc
+public class OriginalStackalloc
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static unsafe int F(int from, int to, int s)
@@ -20,7 +21,8 @@ class OriginalStackalloc
         return *result;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Console.WriteLine($"starting sum");
         int result = F(0, 1_000_000, 1);

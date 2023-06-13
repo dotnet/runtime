@@ -13,7 +13,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection
 {
-    [ReflectionBlocked]
     public abstract class EnumInfo
     {
         private protected EnumInfo(Type underlyingType, string[] names, bool isFlags)
@@ -28,7 +27,6 @@ namespace System.Reflection
         internal bool HasFlagsAttribute { get; }
     }
 
-    [ReflectionBlocked]
     public sealed class EnumInfo<TStorage> : EnumInfo
         where TStorage : struct, INumber<TStorage>
     {

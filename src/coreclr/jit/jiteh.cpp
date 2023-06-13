@@ -2360,9 +2360,9 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             arg->gtFlags |= GTF_ORDER_SIDEEFF;
             unsigned tempNum         = lvaGrabTemp(false DEBUGARG("SpillCatchArg"));
             lvaTable[tempNum].lvType = TYP_REF;
-            GenTree* argAsg          = gtNewTempAssign(tempNum, arg);
+            GenTree* argStore        = gtNewTempStore(tempNum, arg);
             arg                      = gtNewLclvNode(tempNum, TYP_REF);
-            fgInsertStmtAtBeg(filterBb, gtNewStmt(argAsg, handlerBb->firstStmt()->GetDebugInfo()));
+            fgInsertStmtAtBeg(filterBb, gtNewStmt(argStore, handlerBb->firstStmt()->GetDebugInfo()));
 
             // Create "catchArg is TException" tree
             GenTree* runtimeLookup;

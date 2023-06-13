@@ -206,11 +206,6 @@ namespace Internal.TypeSystem
                 return handle;
             }
 
-            if (type.IsFunctionPointer)
-            {
-                throw new ArgumentException("type");
-            }
-
             EntityHandle typeHandle;
 
             if (type.IsTypeDefinition && type is MetadataType metadataType)

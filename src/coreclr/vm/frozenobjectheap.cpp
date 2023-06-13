@@ -164,6 +164,7 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
 {
     _ASSERT(m_pStart != nullptr && m_Size > 0 && m_SegmentHandle != nullptr); // Expected to be inited
     _ASSERT(IS_ALIGNED(m_pCurrent, DATA_ALIGNMENT));
+    _ASSERT(IS_ALIGNED(objectSize, DATA_ALIGNMENT));
     _ASSERT(objectSize <= FOH_COMMIT_SIZE);
     _ASSERT(m_pCurrent >= m_pStart + sizeof(ObjHeader));
 
@@ -226,9 +227,7 @@ Object* FrozenObjectSegment::GetNextObject(Object* obj) const
     uint8_t* nextObj = (reinterpret_cast<uint8_t*>(obj) + ALIGN_UP(obj->GetSize(), DATA_ALIGNMENT));
     if (nextObj < m_pCurrent)
     {
-        Object* result = reinterpret_cast<Object*>(nextObj);
-        INDEBUG(result->Validate());
-        return result;
+        return reinterpret_cast<Object*>(nextObj);
     }
 
     // Current object is the last one in the segment

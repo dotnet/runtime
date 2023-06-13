@@ -6,7 +6,6 @@ namespace System.Diagnostics
     /// <summary>
     /// Annotations used by debugger
     /// </summary>
-    [System.Runtime.CompilerServices.ReflectionBlocked]
     public static class DebugAnnotations
     {
         /// <summary>

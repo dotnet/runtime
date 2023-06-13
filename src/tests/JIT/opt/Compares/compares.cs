@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class FullRangeComparisonTest
 {
@@ -75,11 +76,13 @@ public class FullRangeComparisonTest
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void consume<T>(T a1, T a2) {}
+    internal static void consume<T>(T a1, T a2) {}
 
     /* If conditions that are consumed. */
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(10, 11)]
     public static void Eq_byte_consume(byte a1, byte a2) {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
         // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{eq|ne}}
@@ -91,6 +94,8 @@ public class FullRangeComparisonTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(10, 11)]
     public static void Ne_short_consume(short a1, short a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
@@ -103,6 +108,8 @@ public class FullRangeComparisonTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(10, 11)]
     public static void Lt_int_consume(int a1, int a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
@@ -115,6 +122,8 @@ public class FullRangeComparisonTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(10, 11)]
     public static void Le_long_consume(long a1, long a2)
     {
         // ARM64-FULL-LINE:      cmp {{x[0-9]+}}, {{x[0-9]+}}
@@ -127,6 +136,8 @@ public class FullRangeComparisonTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(10, 11)]
     public static void Gt_ushort_consume(ushort a1, ushort a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
@@ -139,6 +150,8 @@ public class FullRangeComparisonTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(10, 11)]
     public static void Ge_uint_consume(uint a1, uint a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
@@ -151,6 +164,8 @@ public class FullRangeComparisonTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(10, 11)]
     public static void Eq_ulong_consume(ulong a1, ulong a2)
     {
         // ARM64-FULL-LINE:      cmp {{x[0-9]+}}, {{x[0-9]+}}
@@ -163,6 +178,8 @@ public class FullRangeComparisonTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(10.1F, 11.1F, 12, 13)]
     public static void Ne_float_int_consume(float f1, float f2, int a1, int a2)
     {
         // ARM64-FULL-LINE:      fcmp {{s[0-9]+}}, {{s[0-9]+}}
@@ -176,6 +193,8 @@ public class FullRangeComparisonTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(10.1, 11.1, 12, 13)]
     public static void Lt_double_long_consume(double f1, double f2, long a1, long a2)
     {
         // ARM64-FULL-LINE:      fcmp {{d[0-9]+}}, {{d[0-9]+}}
@@ -188,6 +207,8 @@ public class FullRangeComparisonTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(10.1, 11.1, 12, 13)]
     public static void Eq_double_long_consume(double f1, double f2, long a1, long a2)
     {
         // ARM64-FULL-LINE:      fcmp {{d[0-9]+}}, {{d[0-9]+}}
@@ -201,6 +222,8 @@ public class FullRangeComparisonTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(10.1, 11.1, 12, 13)]
     public static void Ne_double_int_consume(double f1, double f2, int a1, int a2)
     {
         // ARM64-FULL-LINE:      fcmp {{d[0-9]+}}, {{d[0-9]+}}
@@ -216,6 +239,8 @@ public class FullRangeComparisonTest
     /* If/Else conditions that consume. */
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(20, 21)]
     public static void Ne_else_byte_consume(byte a1, byte a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
@@ -228,6 +253,8 @@ public class FullRangeComparisonTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(10, 11)]
     public static void Lt_else_short_consume(short a1, short a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
@@ -240,6 +267,8 @@ public class FullRangeComparisonTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(10, 11)]
     public static void Le_else_int_consume(int a1, int a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
@@ -252,6 +281,8 @@ public class FullRangeComparisonTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(10, 11)]
     public static void Gt_else_long_consume(long a1, long a2)
     {
         // ARM64-FULL-LINE:      cmp {{x[0-9]+}}, {{x[0-9]+}}
@@ -264,6 +295,8 @@ public class FullRangeComparisonTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(10, 11)]
     public static void Ge_else_ushort_consume(ushort a1, ushort a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
@@ -276,6 +309,8 @@ public class FullRangeComparisonTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(10, 11)]
     public static void Eq_else_uint_consume(uint a1, uint a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
@@ -288,6 +323,8 @@ public class FullRangeComparisonTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(10, 11)]
     public static void Ne_else_ulong_consume(ulong a1, ulong a2)
     {
         // ARM64-FULL-LINE:      cmp {{x[0-9]+}}, {{x[0-9]+}}
@@ -300,6 +337,8 @@ public class FullRangeComparisonTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(10.1F, 11.1F, 12, 13)]
     public static void Lt_else_float_int_consume(float f1, float f2, int a1, int a2)
     {
         // ARM64-FULL-LINE:      fcmp {{s[0-9]+}}, {{s[0-9]+}}
@@ -312,6 +351,8 @@ public class FullRangeComparisonTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(10.1, 11.1, 12, 13)]
     public static void Le_else_double_int_consume(double f1, double f2, int a1, int a2)
     {
         // ARM64-FULL-LINE:      fcmp {{d[0-9]+}}, {{d[0-9]+}}
@@ -425,7 +466,8 @@ public class FullRangeComparisonTest
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // Optimize comparison with full range values
         // RHS Const Optimization
@@ -550,28 +592,6 @@ public class FullRangeComparisonTest
             Console.WriteLine("FullRangeComparisonTest:EqualsOrGreaterThan_MaxValue_LHSConst_SideEffects(null) failed");
             return 101;
         }
-
-        Eq_byte_consume(10, 11);
-        Ne_short_consume(10, 11);
-        Lt_int_consume(10, 11);
-        Le_long_consume(10, 11);
-        Gt_ushort_consume(10, 11);
-        Ge_uint_consume(10, 11);
-        Eq_ulong_consume(10, 11);
-        Ne_float_int_consume(10.1F, 11.1F, 12, 13);
-        Lt_double_long_consume(10.1, 11.1, 12, 13);
-        Eq_double_long_consume(10.1, 11.1, 12, 13);
-        Ne_double_int_consume(10.1, 11.1, 12, 13);
-
-        Ne_else_byte_consume(20, 21);
-        Lt_else_short_consume(10, 11);
-        Le_else_int_consume(10, 11);
-        Gt_else_long_consume(10, 11);
-        Ge_else_ushort_consume(10, 11);
-        Eq_else_uint_consume(10, 11);
-        Ne_else_ulong_consume(10, 11);
-        Lt_else_float_int_consume(10.1F, 11.1F, 12, 13);
-        Le_else_double_int_consume(10.1, 11.1, 12, 13);
 
         if (Lt_else_byte_return(10,11) != 10)
         {

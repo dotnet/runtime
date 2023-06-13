@@ -9,7 +9,7 @@
 .assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 
 .assembly extern mscorlib { }
-.assembly 'sizeof_Target_32Bit_x86'
+.assembly ASSEMBLY_NAME
 {
 }
 .assembly extern xunit.core {}

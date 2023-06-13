@@ -1999,7 +1999,7 @@ VirtualCallStubManager::Resolver(
         GCStress<cfg_any>::MaybeTrigger();
 
         // In case of ICastable, instead of trying to find method implementation in the real object type
-        // we call pObj.GetValueInternal() and call Resolver() again with whatever type it returns.
+        // we call Resolver() again with whatever type it returns.
         // It allows objects that implement ICastable to mimic behavior of other types.
         MethodTable * pTokenMT = GetTypeFromToken(token);
 

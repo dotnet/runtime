@@ -17,9 +17,6 @@
       <Platform>x86</Platform>
     </OfficialBuildRID>
     <OfficialBuildRID Include="win-x64"/>
-    <OfficialBuildRID Include="win-arm">
-      <Platform>arm</Platform>
-    </OfficialBuildRID>
     <OfficialBuildRID Include="win-arm64">
       <Platform>arm64</Platform>
     </OfficialBuildRID>

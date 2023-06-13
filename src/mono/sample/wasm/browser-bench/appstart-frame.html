@@ -9,8 +9,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script type="module" src="./frame-main.js"></script>
   <script type='module' src="./dotnet.js"></script>
-  <link rel="preload" href="./mono-config.json" as="fetch" crossorigin="anonymous">
-  <link rel="prefetch" href="./dotnet.wasm" as="fetch" crossorigin="anonymous">
+  <link rel="preload" href="./_framework/blazor.boot.json" as="fetch" crossorigin="anonymous">
+  <link rel="prefetch" href="./dotnet.native.js" as="fetch" crossorigin="anonymous">
+  <link rel="prefetch" href="./dotnet.runtime.js" as="fetch" crossorigin="anonymous">
+  <link rel="prefetch" href="./dotnet.native.wasm" as="fetch" crossorigin="anonymous">
   <!-- users should consider if they optimize for the first load or subsequent load from memory snapshot -->
   <link rel="prefetch" href="./managed/System.Private.CoreLib.dll" as="fetch" crossorigin="anonymous">
 </head>

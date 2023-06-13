@@ -216,7 +216,9 @@ namespace System.Net.Security
                 ProtocolToken message;
                 do
                 {
-                    message = await ReceiveBlobAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
+                    int frameSize = await ReceiveTlsFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
+                    ProcessTlsFrame(frameSize, out message);
+
                     if (message.Size > 0)
                     {
                         await TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(message.Payload!, 0, message.Size), cancellationToken).ConfigureAwait(false);
@@ -245,7 +247,7 @@ namespace System.Net.Security
         private async Task ForceAuthenticationAsync<TIOAdapter>(bool receiveFirst, byte[]? reAuthenticationData, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
-            ProtocolToken message;
+            ProtocolToken message = default;
             bool handshakeCompleted = false;
 
             if (reAuthenticationData == null)
@@ -256,12 +258,12 @@ namespace System.Net.Security
                     throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "authenticate"));
                 }
             }
-
             try
             {
                 if (!receiveFirst)
                 {
-                    message = NextMessage(reAuthenticationData);
+                    NextMessage(reAuthenticationData, out message);
+
                     if (message.Size > 0)
                     {
                         await TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(message.Payload!, 0, message.Size), cancellationToken).ConfigureAwait(false);
@@ -289,7 +291,8 @@ namespace System.Net.Security
 
                 while (!handshakeCompleted)
                 {
-                    message = await ReceiveBlobAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
+                    int frameSize = await ReceiveTlsFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
+                    ProcessTlsFrame(frameSize, out message);
 
                     ReadOnlyMemory<byte> payload = default;
                     if (message.Size > 0)
@@ -355,7 +358,8 @@ namespace System.Net.Security
 
         }
 
-        private async ValueTask<ProtocolToken> ReceiveBlobAsync<TIOAdapter>(CancellationToken cancellationToken)
+        // This method will make sure we have at least one full TLS frame buffered.
+        private async ValueTask<int> ReceiveTlsFrameAsync<TIOAdapter>(CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
             int frameSize = await EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
@@ -430,11 +434,11 @@ namespace System.Net.Security
 
             }
 
-            return ProcessBlob(frameSize);
+            return frameSize;
         }
 
         // Calls crypto on received data. No IO inside.
-        private ProtocolToken ProcessBlob(int frameSize)
+        private void ProcessTlsFrame(int frameSize, out ProtocolToken message)
         {
             int chunkSize = frameSize;
 
@@ -467,18 +471,18 @@ namespace System.Net.Security
                 _buffer.DiscardEncrypted(frameSize);
             }
 
-            return NextMessage(availableData.Slice(0, chunkSize));
+            NextMessage(availableData.Slice(0, chunkSize), out message);
         }
 
         //
         //  This is to reset auth state on remote side.
         //  If this write succeeds we will allow auth retrying.
         //
-        private void SendAuthResetSignal(ProtocolToken? message, ExceptionDispatchInfo exception)
+        private void SendAuthResetSignal(ReadOnlySpan<byte> alert, ExceptionDispatchInfo exception)
         {
             SetException(exception.SourceException);
 
-            if (message == null || message.Size == 0)
+            if (alert.Length == 0)
             {
                 //
                 // We don't have an alert to send so cannot retry and fail prematurely.
@@ -486,7 +490,7 @@ namespace System.Net.Security
                 exception.Throw();
             }
 
-            InnerStream.Write(message.Payload!, 0, message.Size);
+            InnerStream.Write(alert);
 
             exception.Throw();
         }
@@ -499,7 +503,7 @@ namespace System.Net.Security
         //
         // - Returns false if failed to verify the Remote Cert
         //
-        private bool CompleteHandshake(ref ProtocolToken? alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
+        private bool CompleteHandshake(ref ProtocolToken alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
         {
             ProcessHandshakeSuccess();
 
@@ -527,7 +531,7 @@ namespace System.Net.Security
             // The Java TrustManager callback is called only when the peer has a certificate. It's possible that
             // the peer didn't provide any certificate (for example when the peer is the client) and the validation
             // result hasn't been set. In that case we still need to run the verification at this point.
-            if (TryGetRemoteCertificateValidationResult(out sslPolicyErrors, out chainStatus, out alertToken, out bool isValid))
+            if (TryGetRemoteCertificateValidationResult(out sslPolicyErrors, out chainStatus, ref alertToken, out bool isValid))
             {
                 _handshakeCompleted = isValid;
                 return isValid;
@@ -546,23 +550,23 @@ namespace System.Net.Security
 
         private void CompleteHandshake(SslAuthenticationOptions sslAuthenticationOptions)
         {
-            ProtocolToken? alertToken = null;
+            ProtocolToken alertToken = default;
             if (!CompleteHandshake(ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
             {
                 if (sslAuthenticationOptions!.CertValidationDelegate != null)
                 {
                     // there may be some chain errors but the decision was made by custom callback. Details should be tracing if enabled.
-                    SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_custom_validation, null)));
+                    SendAuthResetSignal(new ReadOnlySpan<byte>(alertToken.Payload), ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_custom_validation, null)));
                 }
                 else if (sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors && chainStatus != X509ChainStatusFlags.NoError)
                 {
                     // We failed only because of chain and we have some insight.
-                    SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_chain_validation, chainStatus), null)));
+                    SendAuthResetSignal(new ReadOnlySpan<byte>(alertToken.Payload), ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_chain_validation, chainStatus), null)));
                 }
                 else
                 {
                     // Simple add sslPolicyErrors as crude info.
-                    SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, sslPolicyErrors), null)));
+                    SendAuthResetSignal(new ReadOnlySpan<byte>(alertToken.Payload), ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, sslPolicyErrors), null)));
                 }
             }
         }
