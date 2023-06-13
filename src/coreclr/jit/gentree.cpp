@@ -21830,13 +21830,11 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
 
     if (needsZero)
     {
-        assert(!compIsaSupportedDebugOnly(InstructionSet_SSSE3));
+        assert((simdSize == 32) || !compIsaSupportedDebugOnly(InstructionSet_SSSE3));
 
         op2                          = gtNewVconNode(type, simdBaseJitType);
-        op2->AsVecCon()->gtSimd16Val = mskCns.v128[0];
-
-        GenTree* zero = gtNewZeroConNode(type, simdBaseJitType);
-        retNode       = gtNewSimdCndSelNode(type, op2, retNode, zero, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+        op2->AsVecCon()->gtSimd32Val = mskCns;
+        retNode = gtNewSimdBinOpNode(GT_AND, type, op2, retNode, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
     }
 
     return retNode;
