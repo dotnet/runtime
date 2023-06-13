@@ -179,14 +179,14 @@ jobs:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
             unpackFolder: $(librariesDownloadDir)/BrowserWasm
-            artifactFileName: BrowserWasm.zip
+            artifactFileName: BrowserWasm.tar.gz
             artifactName: BrowserWasm
             displayName: BrowserWasm
       - ${{ if ne(parameters.downloadSpecificBuild.buildId, '') }}:
         - template: /eng/pipelines/common/download-specific-artifact-step.yml
           parameters:
             unpackFolder: $(librariesDownloadDir)/BrowserWasm
-            artifactFileName: BrowserWasm.zip
+            artifactFileName: BrowserWasm.tar.gz
             artifactName: BrowserWasm
             displayName: BrowserWasm
             ${{ insert }}: ${{ parameters.downloadSpecificBuild }}
