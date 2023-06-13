@@ -43,7 +43,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (!state.SupportContinuation &&
                 jsonTypeInfo.CanUseSerializeHandler &&
-                !JsonSerializer.NumberHandlingNeedWhenWriting(state.Current.NumberHandling) &&
+                !JsonHelpers.RequiresSpecialNumberHandlingOnWrite(state.Current.NumberHandling) &&
                 !state.CurrentContainsMetadata) // Do not use the fast path if state needs to write metadata.
             {
                 ((JsonTypeInfo<T>)jsonTypeInfo).SerializeHandler!(writer, value);

@@ -7,13 +7,11 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Text.Encodings.Web;
 using System.Text.Json.Tests;
 using System.Threading.Tasks;
 using Xunit;
-using System.Runtime.InteropServices;
 
 namespace System.Text.Json.Serialization.Tests
 {

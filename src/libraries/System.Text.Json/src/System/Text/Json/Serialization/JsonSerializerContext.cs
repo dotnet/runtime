@@ -68,7 +68,7 @@ namespace System.Text.Json.Serialization
                 options.Encoder == null &&
                 // Disallow custom number handling we'd need to honor when writing.
                 // AllowReadingFromString and Strict are fine since there's no action to take when writing.
-                !JsonSerializer.NumberHandlingNeedWhenWriting(Options.NumberHandling) &&
+                !JsonHelpers.RequiresSpecialNumberHandlingOnWrite(options.NumberHandling) &&
                 options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.None &&
 #pragma warning disable SYSLIB0020
                 !options.IgnoreNullValues && // This property is obsolete.
