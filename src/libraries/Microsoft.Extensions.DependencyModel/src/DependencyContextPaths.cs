@@ -12,6 +12,8 @@ namespace Microsoft.Extensions.DependencyModel
         private const string DepsFilesProperty = "APP_CONTEXT_DEPS_FILES";
         private const string FxDepsFileProperty = "FX_DEPS_FILE";
 
+        private static readonly char[] s_semicolon = new[] { ';' };
+
         public static DependencyContextPaths Current { get; } = GetCurrent();
 
         public string? Application { get; }
@@ -19,8 +21,6 @@ namespace Microsoft.Extensions.DependencyModel
         public string? SharedRuntime { get; }
 
         public IEnumerable<string> NonApplicationPaths { get; }
-
-        private static readonly char[] s_semicolon = new[] { ';' };
 
         public DependencyContextPaths(
             string? application,
