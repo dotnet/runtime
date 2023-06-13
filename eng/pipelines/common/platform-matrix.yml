@@ -674,9 +674,10 @@ jobs:
       platform: maccatalyst_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
-        hostedOs: osx
-        hostedArch: x64
-        isHostBuild: true
+        ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
+          hostedOs: osx
+          hostedArch: x64
+          isHostBuild: true
         ${{ if eq(parameters.runtimeFlavor, '') }}:
           runtimeFlavor: mono
         ${{ else }}:
@@ -699,9 +700,10 @@ jobs:
       platform: maccatalyst_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
-        hostedOs: osx
-        hostedArch: x64
-        isHostBuild: true
+        ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
+          hostedOs: osx
+          hostedArch: x64
+          isHostBuild: true
         ${{ if eq(parameters.runtimeFlavor, '') }}:
           runtimeFlavor: mono
         ${{ else }}:
@@ -724,9 +726,10 @@ jobs:
       platform: tvos_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
-        hostedOs: osx
-        hostedArch: x64
-        isHostBuild: true
+        ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
+          hostedOs: osx
+          hostedArch: x64
+          isHostBuild: true
         ${{ if eq(parameters.runtimeFlavor, '') }}:
           runtimeFlavor: mono
         ${{ else }}:
@@ -749,9 +752,10 @@ jobs:
       platform: tvossimulator_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
-        hostedOs: osx
-        hostedArch: x64
-        isHostBuild: true
+        ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
+          hostedOs: osx
+          hostedArch: x64
+          isHostBuild: true
         ${{ if eq(parameters.runtimeFlavor, '') }}:
           runtimeFlavor: mono
         ${{ else }}:
@@ -774,9 +778,10 @@ jobs:
       platform: tvossimulator_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
-        hostedOs: osx
-        hostedArch: x64
-        isHostBuild: true
+        ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
+          hostedOs: osx
+          hostedArch: x64
+          isHostBuild: true
         ${{ if eq(parameters.runtimeFlavor, '') }}:
           runtimeFlavor: mono
         ${{ else }}:
@@ -799,9 +804,10 @@ jobs:
       platform: ios_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
-        hostedOs: osx
-        hostedArch: x64
-        isHostBuild: true
+        ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
+          hostedOs: osx
+          hostedArch: x64
+          isHostBuild: true
         ${{ if eq(parameters.runtimeFlavor, '') }}:
           runtimeFlavor: mono
         ${{ else }}:
@@ -824,9 +830,10 @@ jobs:
       platform: iossimulator_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
-        hostedOs: osx
-        hostedArch: x64
-        isHostBuild: true
+        ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
+          hostedOs: osx
+          hostedArch: x64
+          isHostBuild: true
         ${{ if eq(parameters.runtimeFlavor, '') }}:
           runtimeFlavor: mono
         ${{ else }}:
@@ -849,9 +856,10 @@ jobs:
       platform: iossimulator_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
-        hostedOs: osx
-        hostedArch: x64
-        isHostBuild: true
+        ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
+          hostedOs: osx
+          hostedArch: x64
+          isHostBuild: true
         ${{ if eq(parameters.runtimeFlavor, '') }}:
           runtimeFlavor: mono
         ${{ else }}:
