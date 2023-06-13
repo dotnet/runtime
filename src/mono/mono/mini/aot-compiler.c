@@ -10724,9 +10724,11 @@ emit_llvm_file (MonoAotCompile *acfg)
 		// FIXME: This doesn't work yet
 		opts = g_strdup ("");
 	} else {
-		opts = g_strdup ("-disable-tail-calls -place-safepoints -spp-all-backedges -enable-new-pm=0");
-#if (LLVM_API_VERSION >= 1300 && LLVM_API_VERSION < 1600)
-		/* The safepoints pass requires the old pass manager, has been ported to new pass manager in LLVM 16 packages */
+#if LLVM_API_VERSION >= 1600
+		/* The safepoints pass requires new pass manager syntax*/
+		opts = g_strdup ("-disable-tail-calls -passes=place-safepoints -spp-all-backedges");
+#elif LLVM_API_VERSION >= 1300
+		/* The safepoints pass requires the old pass manager */
 		opts = g_strdup ("-disable-tail-calls -place-safepoints -spp-all-backedges -enable-new-pm=0");
 #else
 		opts = g_strdup ("-disable-tail-calls -place-safepoints -spp-all-backedges");
