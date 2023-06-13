@@ -62,8 +62,11 @@ internal static class Threading
         Console.WriteLine("    ThreadPoolTests.WorkQueueDepletionTest");
         ThreadPoolTests.WorkQueueDepletionTest();
 
+// Globalization not supported
+#if !TARGET_IOS && !TARGET_TVOS && !TARGET_MACCATALYST
         // Console.WriteLine("    ThreadPoolTests.WorkerThreadStateReset");
         // ThreadPoolTests.WorkerThreadStateReset();
+#endif
 
         // This test is not applicable (and will not pass) on Windows since it uses the Windows OS-provided thread pool.
         // Console.WriteLine("    ThreadPoolTests.SettingMinThreadsWillCreateThreadsUpToMinimum");
