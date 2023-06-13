@@ -34,14 +34,6 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// Initializes a new instance.
-        /// </summary>
-        /// <param name="root">The configuration root.</param>
-        /// <param name="path">The path to this section.</param>
-        public ConfigurationSection(ConfigurationRoot root, string path) : this((IConfigurationRoot)root, path)
-        { }
-
-        /// <summary>
         /// Gets the full path to this section from the <see cref="IConfigurationRoot"/>.
         /// </summary>
         public string Path => _path;
