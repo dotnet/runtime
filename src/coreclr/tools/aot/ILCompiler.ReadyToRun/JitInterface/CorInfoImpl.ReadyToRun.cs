@@ -644,7 +644,7 @@ namespace Internal.JitInterface
             public int HashCode = 0;
         }
 
-        private ConditionalWeakTable<MethodDesc, DeterminismData> _determinismTable = new ConditionalWeakTable<MethodDesc, DeterminismData>();
+        private static ConditionalWeakTable<MethodDesc, DeterminismData> _determinismTable = new ConditionalWeakTable<MethodDesc, DeterminismData>();
 
         partial void DetermineIfCompilationShouldBeRetried(ref CompilationResult result)
         {
