@@ -111,7 +111,6 @@ if (WIN32)
     windows/PalRedhawkCommon.cpp
     windows/PalRedhawkMinWin.cpp
     ${GC_DIR}/windows/gcenv.windows.cpp
-    eventtrace.cpp
     rheventtrace.cpp
   )
 
@@ -222,6 +221,9 @@ endif()
 
 if(FEATURE_EVENT_TRACE)
   add_definitions(-DFEATURE_EVENT_TRACE)
+  list(APPEND COMMON_RUNTIME_SOURCES
+    eventtrace.cpp
+  )
 endif()
 
 add_definitions(-DFEATURE_BASICFREEZE)

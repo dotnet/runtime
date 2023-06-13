@@ -16,7 +16,7 @@
 #include "slist.h"
 #include "varint.h"
 #include "regdisplay.h"
-#include "stackframeiterator.h"
+#include "StackFrameIterator.h"
 #include "thread.h"
 #include "threadstore.h"
 #include "threadstore.inl"
@@ -25,7 +25,9 @@
 
 #define Win32EventWrite PalEventWrite
 
+#ifdef FEATURE_ETW
 #include "eventtracepriv.h"
+#endif // FEATURE_ETW
 
 volatile LONGLONG ETW::GCLog::s_l64LastClientSequenceNumber = 0;
 
@@ -37,11 +39,12 @@ volatile LONGLONG ETW::GCLog::s_l64LastClientSequenceNumber = 0;
 // Simple helpers called by the GC to decide whether it needs to do a walk of heap
 // objects and / or roots.
 
+#ifdef FEATURE_ETW
+
 BOOL ETW::GCLog::ShouldWalkHeapObjectsForEtw()
 {
     LIMITED_METHOD_CONTRACT;
-    return ETW_TRACING_CATEGORY_ENABLED(
-        MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context,
+    return RUNTIME_PROVIDER_CATEGORY_ENABLED(
         TRACE_LEVEL_INFORMATION,
         CLR_GCHEAPDUMP_KEYWORD);
 }
@@ -49,8 +52,7 @@ BOOL ETW::GCLog::ShouldWalkHeapObjectsForEtw()
 BOOL ETW::GCLog::ShouldWalkHeapRootsForEtw()
 {
     LIMITED_METHOD_CONTRACT;
-    return ETW_TRACING_CATEGORY_ENABLED(
-        MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context,
+    return RUNTIME_PROVIDER_CATEGORY_ENABLED(
         TRACE_LEVEL_INFORMATION,
         CLR_GCHEAPDUMP_KEYWORD);
 }
@@ -58,8 +60,7 @@ BOOL ETW::GCLog::ShouldWalkHeapRootsForEtw()
 BOOL ETW::GCLog::ShouldTrackMovementForEtw()
 {
     LIMITED_METHOD_CONTRACT;
-    return ETW_TRACING_CATEGORY_ENABLED(
-        MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context,
+    return RUNTIME_PROVIDER_CATEGORY_ENABLED(
         TRACE_LEVEL_INFORMATION,
         CLR_GCHEAPSURVIVALANDMOVEMENT_KEYWORD);
 }
@@ -444,6 +445,8 @@ void ETW::GCLog::ForceGC(LONGLONG l64ClientSequenceNumber)
     ForceGCForDiagnostics();
 }
 
+#endif // FEATURE_ETW
+
 //---------------------------------------------------------------------------------------
 //
 // Helper to fire the GCStart event.  Figures out which version of GCStart to fire, and
@@ -458,14 +461,8 @@ void ETW::GCLog::FireGcStart(ETW_GC_INFO* pGcInfo)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if !defined(FEATURE_PAL) || defined(FEATURE_DTRACE)
-
-    if (EventPipeAdapter_Enabled() || ETW_TRACING_CATEGORY_ENABLED(
-        MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context,
-        TRACE_LEVEL_INFORMATION,
-        CLR_GC_KEYWORD))
+    if (RUNTIME_PROVIDER_CATEGORY_ENABLED(TRACE_LEVEL_INFORMATION, CLR_GC_KEYWORD))
     {
-#if !defined(FEATURE_PAL)
         // If the controller specified a client sequence number for us to log with this
         // GCStart, then retrieve it
         LONGLONG l64ClientSequenceNumberToLog = 0;
@@ -473,25 +470,16 @@ void ETW::GCLog::FireGcStart(ETW_GC_INFO* pGcInfo)
             (pGcInfo->GCStart.Depth == GCHeapUtilities::GetGCHeap()->GetMaxGeneration()) &&
             (pGcInfo->GCStart.Reason == ETW_GC_INFO::GC_INDUCED))
         {
-#ifdef FEATURE_NATIVEAOT
             // No InterlockedExchange64 on Redhawk (presumably b/c there is no compiler
             // intrinsic for this on x86, even though there is one for InterlockedCompareExchange64)
             l64ClientSequenceNumberToLog = PalInterlockedCompareExchange64(&s_l64LastClientSequenceNumber, 0, s_l64LastClientSequenceNumber);
-#else
-            l64ClientSequenceNumberToLog = InterlockedExchange64(&s_l64LastClientSequenceNumber, 0);
-#endif
         }
 
         FireEtwGCStart_V2(pGcInfo->GCStart.Count, pGcInfo->GCStart.Depth, pGcInfo->GCStart.Reason, pGcInfo->GCStart.Type, GetClrInstanceId(), l64ClientSequenceNumberToLog);
-
-#elif defined(FEATURE_DTRACE)
-        FireEtwGCStart(pGcInfo->GCStart.Count, pGcInfo->GCStart.Reason);
-#endif
     }
-
-#endif // defined(FEATURE_PAL) || defined(FEATURE_DTRACE)
 }
 
+#ifdef FEATURE_ETW
 //---------------------------------------------------------------------------------------
 //
 // Contains code common to profapi and ETW scenarios where the profiler wants to force
@@ -1089,8 +1077,7 @@ void ETW::GCLog::EndHeapDump(ProfilerWalkHeapContext* profilerWalkHeapContext)
         return;
 
     // If the GC events are enabled, flush any remaining root, node, and / or edge data
-    if (ETW_TRACING_CATEGORY_ENABLED(
-        MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context,
+    if (RUNTIME_PROVIDER_CATEGORY_ENABLED(
         TRACE_LEVEL_INFORMATION,
         CLR_GCHEAPDUMP_KEYWORD))
     {
@@ -1136,8 +1123,7 @@ void ETW::GCLog::EndHeapDump(ProfilerWalkHeapContext* profilerWalkHeapContext)
     }
 
     // Ditto for type events
-    if (ETW_TRACING_CATEGORY_ENABLED(
-        MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context,
+    if (RUNTIME_PROVIDER_CATEGORY_ENABLED(
         TRACE_LEVEL_INFORMATION,
         CLR_TYPE_KEYWORD))
     {
@@ -1149,3 +1135,5 @@ void ETW::GCLog::EndHeapDump(ProfilerWalkHeapContext* profilerWalkHeapContext)
     profilerWalkHeapContext->pvEtwContext = NULL;
     delete pContext;
 }
+
+#endif // FEATURE_ETW

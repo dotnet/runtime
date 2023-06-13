@@ -39,10 +39,7 @@
 
 void BulkTypeEventLogger::LogTypeAndParameters(uint64_t thAsAddr, ETW::TypeSystemLog::TypeLogBehavior typeLogBehavior)
 {
-    if (!ETW_TRACING_CATEGORY_ENABLED(
-        MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context,
-        TRACE_LEVEL_INFORMATION,
-        CLR_TYPE_KEYWORD))
+    if (!RUNTIME_PROVIDER_CATEGORY_ENABLED(TRACE_LEVEL_INFORMATION, CLR_TYPE_KEYWORD))
     {
         return;
     }
@@ -342,10 +339,7 @@ void ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(BulkTypeEventLogger * p
 {
 #if defined(FEATURE_EVENT_TRACE)
 
-    if (!ETW_TRACING_CATEGORY_ENABLED(
-        MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context,
-        TRACE_LEVEL_INFORMATION,
-        CLR_TYPE_KEYWORD))
+    if (!RUNTIME_PROVIDER_CATEGORY_ENABLED(TRACE_LEVEL_INFORMATION, CLR_TYPE_KEYWORD))
     {
         return;
     }

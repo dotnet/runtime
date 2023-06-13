@@ -106,31 +106,19 @@ struct ProfilingScanContext;
 #define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) \
     (ETW_TRACING_INITIALIZED(Context.RegistrationHandle) && ETW_CATEGORY_ENABLED(Context, Level, Keyword))
 
+bool DotNETRuntimeProvider_IsEnabled(unsigned char level, unsigned long long keyword);
+
+#ifdef FEATURE_ETW
+#define RUNTIME_PROVIDER_CATEGORY_ENABLED(Level, Keyword) \
+    (DotNETRuntimeProvider_IsEnabled(Level, Keyword) || ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, Level, Keyword))
+#else
+#define RUNTIME_PROVIDER_CATEGORY_ENABLED(Level, Keyword) \
+    DotNETRuntimeProvider_IsEnabled(Level, Keyword)
+#endif // FEATURE_ETW
+
 #else // FEATURE_EVENT_TRACE
 
 #include "etmdummy.h"
 #endif // FEATURE_EVENT_TRACE
-
-// These parts of the ETW namespace are common for both FEATURE_NATIVEAOT and
-// !FEATURE_NATIVEAOT builds.
-
-
-struct ProfilingScanContext;
-struct ProfilerWalkHeapContext;
-class Object;
-
-namespace ETW
-{
-    // Class to wrap the logging of threads (runtime and rundown providers)
-    class ThreadLog
-    {
-    private:
-        static DWORD GetEtwThreadFlags(Thread * pThread);
-
-    public:
-        static void FireThreadCreated(Thread * pThread);
-        static void FireThreadDC(Thread * pThread);
-    };
-};
 
 #endif //_ETWTRACER_HXX_

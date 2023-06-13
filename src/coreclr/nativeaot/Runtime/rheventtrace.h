@@ -9,16 +9,7 @@
 #define __RHEVENTTRACE_INCLUDED
 
 
-#ifdef FEATURE_ETW
-
-// FireEtwGCPerHeapHistorySpecial() has to be defined manually rather than via the manifest because it does
-// not have a standard signature.
-#define FireEtwGCPerHeapHistorySpecial(DataPerHeap, DataSize, ClrId) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCPerHeapHistory)) ? Template_GCPerHeapHistorySpecial(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCPerHeapHistory, DataPerHeap, DataSize, ClrId) : 0
-
-// Map the CLR private provider to our version so we can avoid inserting more #ifdef's in the code.
-#define MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context
-#define MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context
-#define Microsoft_Windows_DotNETRuntimeHandle Microsoft_Windows_Redhawk_GC_PublicHandle
+#ifdef FEATURE_EVENT_TRACE
 
 #define CLR_GC_KEYWORD 0x1
 #define CLR_FUSION_KEYWORD 0x4
@@ -47,6 +38,15 @@
 #ifndef ERROR_SUCCESS
 #define ERROR_SUCCESS   0
 #endif
+
+#endif // FEATURE_EVENT_TRACE
+
+#ifdef FEATURE_ETW
+
+// Map the CLR private provider to our version so we can avoid inserting more #ifdef's in the code.
+#define MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context
+#define MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context
+#define Microsoft_Windows_DotNETRuntimeHandle Microsoft_Windows_Redhawk_GC_PublicHandle
 
 #undef ETW_TRACING_INITIALIZED
 #define ETW_TRACING_INITIALIZED(RegHandle) (RegHandle != NULL)
@@ -91,8 +91,6 @@ namespace ETW
     };
 };
 
-#else
-#define FireEtwGCPerHeapHistorySpecial(DataPerHeap, DataSize, ClrId)
-#endif
+#endif // FEATURE_ETW
 
 #endif //__RHEVENTTRACE_INCLUDED
