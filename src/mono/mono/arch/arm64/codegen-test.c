@@ -482,6 +482,16 @@ main (int argc, char *argv [])
 	arm_neon_addp (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
 	arm_neon_faddp (code, VREG_FULL, TYPE_F32, ARMREG_R0, ARMREG_R1, ARMREG_R2);
 
+	// crc32
+	arm_crc32b (code, ARMREG_R1, ARMREG_R2, ARMREG_R3);
+	arm_crc32h (code, ARMREG_R1, ARMREG_R2, ARMREG_R3);
+	arm_crc32w (code, ARMREG_R1, ARMREG_R2, ARMREG_R3);
+	arm_crc32x (code, ARMREG_R1, ARMREG_R2, ARMREG_R3);
+	arm_crc32cb (code, ARMREG_R1, ARMREG_R2, ARMREG_R3);
+	arm_crc32ch (code, ARMREG_R1, ARMREG_R2, ARMREG_R3);
+	arm_crc32cw (code, ARMREG_R1, ARMREG_R2, ARMREG_R3);
+	arm_crc32cx (code, ARMREG_R1, ARMREG_R2, ARMREG_R3);
+
 	for (i = 0; i < code - buf; ++i)
 		printf (".byte %d\n", buf [i]);
 	printf ("\n");

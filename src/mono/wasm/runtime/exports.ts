@@ -20,7 +20,7 @@ import { initializeReplacements } from "./polyfills";
 import { mono_bind_static_method } from "./net6-legacy/method-calls";
 import { export_binding_api, export_internal_api, export_mono_api } from "./net6-legacy/exports-legacy";
 import { initializeLegacyExports } from "./net6-legacy/globals";
-import { mono_wasm_stringify_as_error_with_stack } from "./logging";
+import { mono_log_warn, mono_wasm_stringify_as_error_with_stack } from "./logging";
 import { instantiate_asset, instantiate_symbols_asset } from "./assets";
 import { jiterpreter_dump_stats } from "./jiterpreter";
 
@@ -77,7 +77,7 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             module.mono_bind_static_method = (fqn: string, signature: string/*ArgsMarshalString*/): Function => {
-                console.warn("MONO_WASM: Module.mono_bind_static_method is obsolete, please use [JSExportAttribute] interop instead");
+                mono_log_warn("Module.mono_bind_static_method is obsolete, please use [JSExportAttribute] interop instead");
                 return mono_bind_static_method(fqn, signature);
             };
         }
@@ -93,7 +93,7 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
                     if (is_nullish(value)) {
                         const stack = (new Error()).stack;
                         const nextLine = stack ? stack.substr(stack.indexOf("\n", 8) + 1) : "";
-                        console.warn(`MONO_WASM: global ${name} is obsolete, please use Module.${name} instead ${nextLine}`);
+                        mono_log_warn(`global ${name} is obsolete, please use Module.${name} instead ${nextLine}`);
                         value = provider();
                     }
                     return value;

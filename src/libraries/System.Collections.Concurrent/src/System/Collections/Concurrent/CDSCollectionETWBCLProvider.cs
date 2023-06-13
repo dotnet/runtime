@@ -21,8 +21,6 @@ namespace System.Collections.Concurrent
     [EventSource(
         Name = "System.Collections.Concurrent.ConcurrentCollectionsEventSource",
         Guid = "35167F8E-49B2-4b96-AB86-435B59336B5E"
-        //TODO:Bug455853:Add support for reading localized string in the EventSource il2il transform
-        //,LocalizationResources = "mscorlib"
         )]
     internal sealed class CDSCollectionETWBCLProvider : EventSource
     {

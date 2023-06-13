@@ -1134,7 +1134,12 @@ namespace ILCompiler.DependencyAnalysis
                     // Emit the last CFI to close the frame.
                     objectWriter.EmitCFICodes(nodeContents.Data.Length);
 
-                    if (objectWriter.HasFunctionDebugInfo())
+                    // Generate debug info if we have sequence points, or on Windows, we can also
+                    // generate even if no sequence points.
+                    bool generateDebugInfo = objectWriter.HasFunctionDebugInfo();
+                    generateDebugInfo |= factory.Target.IsWindows && objectWriter.HasModuleDebugInfo();
+
+                    if (generateDebugInfo)
                     {
                         objectWriter.EmitDebugVarInfo(node);
                         objectWriter.EmitDebugEHClauseInfo(node);

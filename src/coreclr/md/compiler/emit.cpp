@@ -114,7 +114,7 @@ STDMETHODIMP RegMeta::DefineMethod(           // S_OK or error.
 
     if (!u16_strcmp(szName, W(".ctor")) || // COR_CTOR_METHOD_NAME_W
         !u16_strcmp(szName, W(".cctor")) || // COR_CCTOR_METHOD_NAME_W
-        !u16_strcmp(szName, W("_VtblGap")) )
+        !u16_strncmp(szName, W("_VtblGap"), 8) ) // All methods that begin with the characters "_VtblGap" are considered to be VTable Gap methods
     {
         dwMethodFlags |= mdRTSpecialName | mdSpecialName;
     }

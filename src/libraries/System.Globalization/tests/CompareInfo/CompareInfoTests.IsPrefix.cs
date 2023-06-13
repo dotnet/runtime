@@ -79,7 +79,7 @@ namespace System.Globalization.Tests
 
             // Platform differences
             // in HybridGlobalization on Browser we use TextEncoder that is not supported for v8 and the manual decoding works like NLS
-            bool behavesLikeNls = PlatformDetection.IsNlsGlobalization || 
+            bool behavesLikeNls = PlatformDetection.IsNlsGlobalization ||
                 (PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsBrowserDomSupportedOrNodeJS);
             if (behavesLikeNls)
             {
@@ -114,9 +114,6 @@ namespace System.Globalization.Tests
             {
                 yield return new object[] { s_invariantCompare, "dzxyz", "\u01F3", supportedIgnoreNonSpaceOption, true, 2 };
                 yield return new object[] { s_invariantCompare, "\u01F3xyz", "dz", supportedIgnoreNonSpaceOption, true, 1 };
-            }
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
-            {
                 yield return new object[] { s_germanCompare, "Strasse xyz", "stra\u00DFe", supportedIgnoreCaseIgnoreNonSpaceOptions, true, 7 };
                 yield return new object[] { s_germanCompare, "stra\u00DFe xyz", "Strasse", supportedIgnoreCaseIgnoreNonSpaceOptions, true, 6 };
             }

@@ -170,13 +170,18 @@ namespace System.Buffers
             return false;
         }
 
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static int IndexOfAnyVectorized<TNegator, TOptimizations>(ref short searchSpace, int searchSpaceLength, ref Vector256<byte> bitmapRef)
             where TNegator : struct, INegator
             where TOptimizations : struct, IOptimizations
         {
             ref short currentSearchSpace = ref searchSpace;
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (Avx2.IsSupported && searchSpaceLength > 2 * Vector128<short>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
                 Vector256<byte> bitmap256 = bitmapRef;
 
@@ -231,7 +236,9 @@ namespace System.Buffers
 
             Vector128<byte> bitmap = bitmapRef._lower;
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (!Avx2.IsSupported && searchSpaceLength > 2 * Vector128<short>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
                 // Process the input in chunks of 16 characters (2 * Vector128<short>).
                 // We're mainly interested in a single byte of each character, and the core lookup operates on a Vector128<byte>.
@@ -280,13 +287,18 @@ namespace System.Buffers
             return -1;
         }
 
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static int LastIndexOfAnyVectorized<TNegator, TOptimizations>(ref short searchSpace, int searchSpaceLength, ref Vector256<byte> bitmapRef)
             where TNegator : struct, INegator
             where TOptimizations : struct, IOptimizations
         {
             ref short currentSearchSpace = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else clause is semantically equivalent
             if (Avx2.IsSupported && searchSpaceLength > 2 * Vector128<short>.Count)
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
                 Vector256<byte> bitmap256 = bitmapRef;
 
@@ -390,12 +402,17 @@ namespace System.Buffers
             return -1;
         }
 
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static int IndexOfAnyVectorized<TNegator>(ref byte searchSpace, int searchSpaceLength, ref Vector256<byte> bitmapRef)
             where TNegator : struct, INegator
         {
             ref byte currentSearchSpace = ref searchSpace;
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (Avx2.IsSupported && searchSpaceLength > Vector128<byte>.Count)
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
                 Vector256<byte> bitmap256 = bitmapRef;
 
@@ -495,12 +512,17 @@ namespace System.Buffers
             return -1;
         }
 
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static int LastIndexOfAnyVectorized<TNegator>(ref byte searchSpace, int searchSpaceLength, ref Vector256<byte> bitmapRef)
             where TNegator : struct, INegator
         {
             ref byte currentSearchSpace = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (Avx2.IsSupported && searchSpaceLength > Vector128<byte>.Count)
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
                 Vector256<byte> bitmap256 = bitmapRef;
 
@@ -600,12 +622,17 @@ namespace System.Buffers
             return -1;
         }
 
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static int IndexOfAnyVectorizedAnyByte<TNegator>(ref byte searchSpace, int searchSpaceLength, ref Vector512<byte> bitmapsRef)
             where TNegator : struct, INegator
         {
             ref byte currentSearchSpace = ref searchSpace;
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (Avx2.IsSupported && searchSpaceLength > Vector128<byte>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
                 Vector256<byte> bitmap256_0 = bitmapsRef._lower;
                 Vector256<byte> bitmap256_1 = bitmapsRef._upper;
@@ -660,7 +687,9 @@ namespace System.Buffers
             Vector128<byte> bitmap0 = bitmapsRef._lower._lower;
             Vector128<byte> bitmap1 = bitmapsRef._upper._lower;
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (!Avx2.IsSupported && searchSpaceLength > Vector128<byte>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
                 // Process the input in chunks of 16 bytes.
                 // If the input length is a multiple of 16, don't consume the last 16 characters in this loop.
@@ -707,13 +736,18 @@ namespace System.Buffers
             return -1;
         }
 
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static int LastIndexOfAnyVectorizedAnyByte<TNegator>(ref byte searchSpace, int searchSpaceLength, ref Vector512<byte> bitmapsRef)
             where TNegator : struct, INegator
         {
             ref byte currentSearchSpace = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (Avx2.IsSupported && searchSpaceLength > Vector128<byte>.Count)
             {
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 Vector256<byte> bitmap256_0 = bitmapsRef._lower;
                 Vector256<byte> bitmap256_1 = bitmapsRef._upper;
 
@@ -767,7 +801,9 @@ namespace System.Buffers
             Vector128<byte> bitmap0 = bitmapsRef._lower._lower;
             Vector128<byte> bitmap1 = bitmapsRef._upper._lower;
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (!Avx2.IsSupported && searchSpaceLength > Vector128<byte>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
                 // Process the input in chunks of 16 bytes.
                 // If the input length is a multiple of 16, don't consume the last 16 characters in this loop.
@@ -815,6 +851,9 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> IndexOfAnyLookup<TNegator, TOptimizations>(Vector128<short> source0, Vector128<short> source1, Vector128<byte> bitmapLookup)
             where TNegator : struct, INegator
             where TOptimizations : struct, IOptimizations
@@ -827,6 +866,9 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> IndexOfAnyLookupCore(Vector128<byte> source, Vector128<byte> bitmapLookup)
         {
             // On X86, the Ssse3.Shuffle instruction will already perform an implicit 'AND 0xF' on the indices, so we can skip it.
@@ -854,6 +896,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> IndexOfAnyLookup<TNegator, TOptimizations>(Vector256<short> source0, Vector256<short> source1, Vector256<byte> bitmapLookup)
             where TNegator : struct, INegator
             where TOptimizations : struct, IOptimizations
@@ -865,8 +908,8 @@ namespace System.Buffers
             return TNegator.NegateIfNeeded(result);
         }
 
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> IndexOfAnyLookupCore(Vector256<byte> source, Vector256<byte> bitmapLookup)
         {
             // See comments in IndexOfAnyLookupCore(Vector128<byte>) above for more details.
@@ -878,6 +921,9 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> IndexOfAnyLookup<TNegator>(Vector128<byte> source, Vector128<byte> bitmapLookup0, Vector128<byte> bitmapLookup1)
             where TNegator : struct, INegator
         {
@@ -899,8 +945,8 @@ namespace System.Buffers
             return TNegator.NegateIfNeeded(result);
         }
 
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> IndexOfAnyLookup<TNegator>(Vector256<byte> source, Vector256<byte> bitmapLookup0, Vector256<byte> bitmapLookup1)
             where TNegator : struct, INegator
         {
@@ -970,8 +1016,8 @@ namespace System.Buffers
             return offsetInVector - Vector128<short>.Count + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref secondVector) / (nuint)sizeof(T));
         }
 
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static unsafe int ComputeFirstIndex<T, TNegator>(ref T searchSpace, ref T current, Vector256<byte> result)
             where TNegator : struct, INegator
         {
@@ -986,8 +1032,8 @@ namespace System.Buffers
             return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static unsafe int ComputeFirstIndexOverlapped<T, TNegator>(ref T searchSpace, ref T current0, ref T current1, Vector256<byte> result)
             where TNegator : struct, INegator
         {
@@ -1008,8 +1054,8 @@ namespace System.Buffers
             return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current0) / (nuint)sizeof(T));
         }
 
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static unsafe int ComputeLastIndex<T, TNegator>(ref T searchSpace, ref T current, Vector256<byte> result)
             where TNegator : struct, INegator
         {
@@ -1024,8 +1070,8 @@ namespace System.Buffers
             return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static unsafe int ComputeLastIndexOverlapped<T, TNegator>(ref T searchSpace, ref T secondVector, Vector256<byte> result)
             where TNegator : struct, INegator
         {
@@ -1046,8 +1092,8 @@ namespace System.Buffers
             return offsetInVector - Vector256<short>.Count + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref secondVector) / (nuint)sizeof(T));
         }
 
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> FixUpPackedVector256Result(Vector256<byte> result)
         {
             Debug.Assert(Avx2.IsSupported);
@@ -1103,6 +1149,8 @@ namespace System.Buffers
         {
             // Replace with Vector128.NarrowWithSaturation once https://github.com/dotnet/runtime/issues/75724 is implemented.
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [CompExactlyDependsOn(typeof(Sse2))]
+            [CompExactlyDependsOn(typeof(PackedSimd))]
             public static Vector128<byte> PackSources(Vector128<ushort> lower, Vector128<ushort> upper)
             {
                 Vector128<short> lowerMin = Vector128.Min(lower, Vector128.Create((ushort)255)).AsInt16();
@@ -1114,7 +1162,7 @@ namespace System.Buffers
             }
 
             // Replace with Vector256.NarrowWithSaturation once https://github.com/dotnet/runtime/issues/75724 is implemented.
-            [BypassReadyToRun]
+            [CompExactlyDependsOn(typeof(Avx2))]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<byte> PackSources(Vector256<ushort> lower, Vector256<ushort> upper)
             {
@@ -1127,6 +1175,9 @@ namespace System.Buffers
         internal readonly struct Default : IOptimizations
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [CompExactlyDependsOn(typeof(Sse2))]
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [CompExactlyDependsOn(typeof(PackedSimd))]
             public static Vector128<byte> PackSources(Vector128<ushort> lower, Vector128<ushort> upper)
             {
                 return
@@ -1135,7 +1186,7 @@ namespace System.Buffers
                     PackedSimd.ConvertNarrowingUnsignedSaturate(lower.AsInt16(), upper.AsInt16());
             }
 
-            [BypassReadyToRun]
+            [CompExactlyDependsOn(typeof(Avx2))]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<byte> PackSources(Vector256<ushort> lower, Vector256<ushort> upper)
             {

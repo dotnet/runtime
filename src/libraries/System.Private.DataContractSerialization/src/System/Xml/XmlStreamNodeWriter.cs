@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.IO;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using System.Diagnostics;
@@ -361,7 +362,7 @@ namespace System.Xml
                 fixed (byte* _bytes = &buffer[offset])
                 {
                     // Fast path for small strings, use Encoding.GetBytes for larger strings since it is faster when vectorization is possible
-                    if ((uint)charCount < 32)
+                    if (!Vector128.IsHardwareAccelerated || (uint)charCount < 32)
                     {
                         byte* bytes = _bytes;
                         char* charsMax = &chars[charCount];

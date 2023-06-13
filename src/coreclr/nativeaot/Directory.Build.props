@@ -65,8 +65,7 @@
     <DefineConstants Condition="'$(FeatureObjCMarshal)' == 'true'">FEATURE_OBJCMARSHAL;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
-    <FeaturePerfTracing>false</FeaturePerfTracing>
-    <FeaturePerfTracing Condition="'$(TargetsWindows)' == 'true'">true</FeaturePerfTracing>
+    <FeaturePerfTracing>true</FeaturePerfTracing>
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">FEATURE_PERFTRACING;$(DefineConstants)</DefineConstants>

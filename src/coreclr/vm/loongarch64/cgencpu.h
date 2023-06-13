@@ -248,7 +248,7 @@ inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
     pCode[0] = 0x18000095; //pcaddi  $r21,4
     pCode[1] = 0x28c002b5; //ld.d  $r21,$r21,0
     pCode[2] = 0x4c0002a0; //jirl  $r0,$r21,0
-    pCode[3] = 0x03400000; //padding nop. Also used for isJump.
+    pCode[3] = 0x03400000; //padding nop.
 
     // Ensure that the updated instructions get updated in the I-Cache
     ClrFlushInstructionCache(pBufferRX, 16);
@@ -267,24 +267,6 @@ inline PCODE decodeJump(PCODE pCode)
     TADDR pInstr = PCODEToPINSTR(pCode);
 
     return *dac_cast<PTR_PCODE>(pInstr + 16);
-}
-
-//------------------------------------------------------------------------
-inline BOOL isJump(PCODE pCode)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    TADDR pInstr = PCODEToPINSTR(pCode);
-
-    return *dac_cast<PTR_DWORD>(pInstr+12) == 0x03400000; //nop
-}
-
-//------------------------------------------------------------------------
-inline BOOL isBackToBackJump(PCODE pBuffer)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    return isJump(pBuffer);
 }
 
 //------------------------------------------------------------------------

@@ -79,13 +79,13 @@ const signed char       opcodeSizes[] =
 // clang-format on
 
 const BYTE varTypeClassification[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) tf,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) tf,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE varTypeRegister[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) regTyp,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) regTyp,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -111,7 +111,7 @@ extern const BYTE opcodeArgKinds[] = {
 const char* varTypeName(var_types vt)
 {
     static const char* const varTypeNames[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) nm,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) nm,
 #include "typelist.h"
 #undef DEF_TP
     };

@@ -8,6 +8,8 @@
 
 #include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/webcil-loader.h"
+#include "mono/utils/mono-logger-internals.h"
+#include "mono/utils/wasm-module-reader.h"
 
 /* keep in sync with webcil-writer */
 enum {
@@ -35,12 +37,23 @@ typedef struct MonoWebCilHeader {
 } MonoWebCilHeader;
 
 static gboolean
+find_webcil_in_wasm (const uint8_t *ptr, const uint8_t *boundp, const uint8_t **webcil_payload_start);
+
+static gboolean
 webcil_image_match (MonoImage *image)
 {
+	gboolean success = FALSE;
 	if (image->raw_data_len >= sizeof (MonoWebCilHeader)) {
-		return image->raw_data[0] == 'W' && image->raw_data[1] == 'b' && image->raw_data[2] == 'I' && image->raw_data[3] == 'L';
+		success = image->raw_data[0] == 'W' && image->raw_data[1] == 'b' && image->raw_data[2] == 'I' && image->raw_data[3] == 'L';
+
+		if (!success && mono_wasm_module_is_wasm ((const uint8_t*)image->raw_data, (const uint8_t*)image->raw_data + image->raw_data_len)) {
+			/* if it's a WebAssembly module, assume it's webcil-in-wasm and
+			 * optimistically return TRUE
+			 */
+			success = TRUE;
+		}
 	}
-	return FALSE;
+	return success;
 }
 
 /*
@@ -49,9 +62,23 @@ webcil_image_match (MonoImage *image)
  * most of MonoDotNetHeader is unused and left uninitialized (assumed zero);
  */
 static int32_t
-do_load_header (const char *raw_data, uint32_t raw_data_len, int32_t offset, MonoDotNetHeader *header)
+do_load_header (const char *raw_data, uint32_t raw_data_len, int32_t offset, MonoDotNetHeader *header, int32_t *raw_data_rva_map_wasm_bump)
 {
 	MonoWebCilHeader wcheader;
+	const uint8_t *raw_data_bound = (const uint8_t*)raw_data + raw_data_len;
+	*raw_data_rva_map_wasm_bump = 0;
+	if (mono_wasm_module_is_wasm ((const uint8_t*)raw_data, raw_data_bound)) {
+		/* assume it's webcil wrapped in wasm */
+		const uint8_t *webcil_segment_start = NULL;
+		if (!find_webcil_in_wasm ((const uint8_t*)raw_data, raw_data_bound, &webcil_segment_start))
+			return -1;
+		// HACK: adjust all the rva physical offsets by this amount
+		int32_t offset_adjustment = (int32_t)(webcil_segment_start - (const uint8_t*)raw_data);
+		*raw_data_rva_map_wasm_bump = offset_adjustment;
+		// skip to the beginning of the webcil payload
+		offset += offset_adjustment;
+	}
+
 	if (offset + sizeof (MonoWebCilHeader) > raw_data_len)
 		return -1;
 	memcpy (&wcheader, raw_data + offset, sizeof (wcheader));
@@ -72,7 +99,7 @@ do_load_header (const char *raw_data, uint32_t raw_data_len, int32_t offset, Mon
 }
 
 int32_t
-mono_webcil_load_section_table (const char *raw_data, uint32_t raw_data_len, int32_t offset, MonoSectionTable *t)
+mono_webcil_load_section_table (const char *raw_data, uint32_t raw_data_len, int32_t offset, int32_t webcil_section_adjustment, MonoSectionTable *t)
 {
 	/* WebCIL section table entries are a subset of a PE section
 	 * header. Initialize just the parts we have.
@@ -87,7 +114,7 @@ mono_webcil_load_section_table (const char *raw_data, uint32_t raw_data_len, int
 	t->st_virtual_size = GUINT32_FROM_LE (st [0]);
 	t->st_virtual_address = GUINT32_FROM_LE (st [1]);
 	t->st_raw_data_size = GUINT32_FROM_LE (st [2]);
-	t->st_raw_data_ptr = GUINT32_FROM_LE (st [3]);
+	t->st_raw_data_ptr = GUINT32_FROM_LE (st [3]) + (uint32_t)webcil_section_adjustment;
 	offset += sizeof(st);
 	return offset;
 }
@@ -99,14 +126,30 @@ webcil_image_load_pe_data (MonoImage *image)
 	MonoCLIImageInfo *iinfo;
 	MonoDotNetHeader *header;
 	int32_t offset = 0;
+	int32_t webcil_section_adjustment = 0;
 	int top;
 
 	iinfo = image->image_info;
 	header = &iinfo->cli_header;
 
-	offset = do_load_header (image->raw_data, image->raw_data_len, offset, header);
+	offset = do_load_header (image->raw_data, image->raw_data_len, offset, header, &webcil_section_adjustment);
 	if (offset == -1)
 		goto invalid_image;
+	/* HACK! RVAs and debug table entry pointers are from the beginning of the webcil payload. adjust MonoImage:raw_data to point to it */
+	g_assert (image->ref_count == 1);
+	// NOTE: image->storage->raw_data could be shared if we loaded this image multiple times (for different ALCs, for example)
+	// Do not adjust image->storage->raw_data.
+#ifdef ENABLE_WEBCIL
+	int32_t old_adjustment;
+	old_adjustment = mono_atomic_cas_i32 ((volatile gint32*)&image->storage->webcil_section_adjustment, webcil_section_adjustment, 0);
+	g_assert (old_adjustment == 0 || old_adjustment == webcil_section_adjustment);
+#endif
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Adjusting offset image %s [%p].", image->name, image);
+	image->raw_data += webcil_section_adjustment;
+	image->raw_data_len -= webcil_section_adjustment;
+	offset -= webcil_section_adjustment;
+	// parts of ecma-335 loading depend on 4-byte alignment of the image
+	g_assertf (((intptr_t)image->raw_data) % 4 == 0, "webcil image %s [%p] raw data %p not 4 byte aligned\n", image->name, image, image->raw_data);
 
 	top = iinfo->cli_header.coff.coff_sections;
 
@@ -116,7 +159,7 @@ webcil_image_load_pe_data (MonoImage *image)
 
 	for (int i = 0; i < top; i++) {
 		MonoSectionTable *t = &iinfo->cli_section_tables [i];
-		offset = mono_webcil_load_section_table (image->raw_data, image->raw_data_len, offset, t);
+		offset = mono_webcil_load_section_table (image->raw_data, image->raw_data_len, offset, /*webcil_section_adjustment*/ 0, t);
 		if (offset == -1)
 			goto invalid_image;
 	}
@@ -164,7 +207,55 @@ mono_webcil_loader_install (void)
 }
 
 int32_t
-mono_webcil_load_cli_header (const char *raw_data, uint32_t raw_data_len, int32_t offset, MonoDotNetHeader *header)
+mono_webcil_load_cli_header (const char *raw_data, uint32_t raw_data_len, int32_t offset, MonoDotNetHeader *header, int32_t *webcil_section_adjustment)
 {
-	return do_load_header (raw_data, raw_data_len, offset, header);
+	return do_load_header (raw_data, raw_data_len, offset, header, webcil_section_adjustment);
+}
+
+struct webcil_in_wasm_ud
+{
+	const uint8_t *data_segment_1_start;
+};
+
+static gboolean
+webcil_in_wasm_section_visitor (uint8_t sec_code, const uint8_t *sec_content, uint32_t sec_length, gpointer user_data, gboolean *should_stop)
+{
+	*should_stop = FALSE;
+	if (sec_code != MONO_WASM_MODULE_DATA_SECTION)
+		return TRUE;
+	struct webcil_in_wasm_ud *data = (struct webcil_in_wasm_ud *)user_data;
+
+	*should_stop = TRUE; // we don't care about the sections after the data section
+	const uint8_t *ptr = sec_content;
+	const uint8_t *boundp = sec_content + sec_length;
+
+	uint32_t num_segments = 0;
+	if (!mono_wasm_module_decode_uleb128 (ptr, boundp, &ptr, &num_segments))
+		return FALSE;
+
+	if (num_segments != 2)
+		return FALSE;
+
+	// skip over data segment 0, it's the webcil payload length as a u32 plus padding - we don't care about it
+	uint32_t passive_segment_len = 0;
+	const uint8_t *passive_segment_start = NULL;
+	if (!mono_wasm_module_decode_passive_data_segment (ptr, boundp, &ptr, &passive_segment_len, &passive_segment_start))
+		return FALSE;
+	// data segment 1 is the actual webcil payload.
+	if (!mono_wasm_module_decode_passive_data_segment (ptr, boundp, &ptr, &passive_segment_len, &passive_segment_start))
+		return FALSE;
+	data->data_segment_1_start = passive_segment_start;
+	return TRUE;
+}
+
+static gboolean
+find_webcil_in_wasm (const uint8_t *ptr, const uint8_t *boundp, const uint8_t **webcil_payload_start)
+{
+	struct webcil_in_wasm_ud user_data = {0,};
+	MonoWasmModuleVisitor visitor = {0,};
+	visitor.section_visitor = &webcil_in_wasm_section_visitor;
+	if (!mono_wasm_module_visit(ptr, boundp, &visitor, &user_data))
+		return FALSE;
+	*webcil_payload_start = user_data.data_segment_1_start;
+	return TRUE;
 }

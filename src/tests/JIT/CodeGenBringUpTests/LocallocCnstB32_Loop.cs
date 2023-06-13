@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_LocallocCnstB32_Loop
 {
     const int Pass = 100;
@@ -35,7 +36,8 @@ public class BringUpTest_LocallocCnstB32_Loop
         return -1;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int ret;
 

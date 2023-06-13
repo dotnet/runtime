@@ -333,11 +333,6 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(srcCount == 2);
             break;
 
-        case GT_ASG:
-            noway_assert(!"We should never hit any assignment operator in lowering");
-            srcCount = 0;
-            break;
-
         case GT_ADD_LO:
         case GT_ADD_HI:
         case GT_SUB_LO:

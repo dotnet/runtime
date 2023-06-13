@@ -1231,9 +1231,10 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 #define DEFAULT_BYTE_EVEX_PREFIX_MASK 0xFFFFFFFF00000000ULL
 #define LBIT_IN_BYTE_EVEX_PREFIX 0x0000002000000000ULL
 #define LPRIMEBIT_IN_BYTE_EVEX_PREFIX 0x0000004000000000ULL
+#define EVEX_B_BIT 0x0000001000000000ULL
 
 //------------------------------------------------------------------------
-// AddEvexPrefix: Add default EVEX perfix with only LL' bits set.
+// AddEvexPrefix: Add default EVEX prefix with only LL' bits set.
 //
 // Arguments:
 //    ins -- processor instruction to check.
@@ -1265,6 +1266,22 @@ emitter::code_t emitter::AddEvexPrefix(instruction ins, code_t code, emitAttr at
         // Set L' bits to 11 in case of instructions that operate on 512-bits.
         code |= LPRIMEBIT_IN_BYTE_EVEX_PREFIX;
     }
+    return code;
+}
+
+//------------------------------------------------------------------------
+// AddEvexPrefix: set Evex.b bit if EvexbContext is set in instruction descritor.
+//
+// Arguments:
+//    code -- opcode bits.
+//
+// Return Value:
+//    encoded code with Evex.b set if needed.
+//
+emitter::code_t emitter::AddEvexbBit(code_t code)
+{
+    assert(hasEvexPrefix(code));
+    code |= EVEX_B_BIT;
     return code;
 }
 
@@ -6667,7 +6684,8 @@ void emitter::emitIns_R_S_I(instruction ins, emitAttr attr, regNumber reg1, int 
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_R_R_A(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, GenTreeIndir* indir)
+void emitter::emitIns_R_R_A(
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, GenTreeIndir* indir, insOpts instOptions)
 {
     assert(IsAvx512OrPriorInstruction(ins));
     assert(IsThreeOperandAVXInstruction(ins));
@@ -6678,6 +6696,11 @@ void emitter::emitIns_R_R_A(instruction ins, emitAttr attr, regNumber reg1, regN
     id->idIns(ins);
     id->idReg1(reg1);
     id->idReg2(reg2);
+    if (instOptions == INS_OPTS_EVEX_b)
+    {
+        assert(UseEvexEncoding());
+        id->idSetEvexbContext();
+    }
 
     emitHandleMemOp(indir, id, (ins == INS_mulx) ? IF_RWR_RWR_ARD : emitInsModeFormat(ins, IF_RRD_RRD_ARD), ins);
 
@@ -6778,8 +6801,13 @@ void emitter::emitIns_R_AR_R(instruction ins,
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_R_R_C(
-    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, CORINFO_FIELD_HANDLE fldHnd, int offs)
+void emitter::emitIns_R_R_C(instruction          ins,
+                            emitAttr             attr,
+                            regNumber            reg1,
+                            regNumber            reg2,
+                            CORINFO_FIELD_HANDLE fldHnd,
+                            int                  offs,
+                            insOpts              instOptions)
 {
     assert(IsAvx512OrPriorInstruction(ins));
     assert(IsThreeOperandAVXInstruction(ins));
@@ -6797,6 +6825,11 @@ void emitter::emitIns_R_R_C(
     id->idReg1(reg1);
     id->idReg2(reg2);
     id->idAddr()->iiaFieldHnd = fldHnd;
+    if (instOptions == INS_OPTS_EVEX_b)
+    {
+        assert(UseEvexEncoding());
+        id->idSetEvexbContext();
+    }
 
     UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -6829,7 +6862,8 @@ void emitter::emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg,
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_R_R_S(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int varx, int offs)
+void emitter::emitIns_R_R_S(
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int varx, int offs, insOpts instOptions)
 {
     assert(IsAvx512OrPriorInstruction(ins));
     assert(IsThreeOperandAVXInstruction(ins));
@@ -6842,6 +6876,11 @@ void emitter::emitIns_R_R_S(instruction ins, emitAttr attr, regNumber reg1, regN
     id->idReg2(reg2);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
 
+    if (instOptions == INS_OPTS_EVEX_b)
+    {
+        assert(UseEvexEncoding());
+        id->idSetEvexbContext();
+    }
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
 #endif
@@ -7622,7 +7661,10 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber reg, regNum
     emitIns_R_ARX(ins, attr, reg, base, REG_NA, 1, disp);
 }
 
-void emitter::emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, ssize_t disp)
+void emitter::emitIns_R_AI(instruction ins,
+                           emitAttr    attr,
+                           regNumber   ireg,
+                           ssize_t disp DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     assert((CodeGen::instIsFP(ins) == false) && (EA_SIZE(attr) <= EA_8BYTE) && (ireg != REG_NA));
     noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), ireg));
@@ -7637,6 +7679,11 @@ void emitter::emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, ssize
 
     id->idAddr()->iiaAddrMode.amBaseReg = REG_NA;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
+
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idFlags     = gtFlags;
+    id->idDebugOnlyInfo()->idMemCookie = targetHandle;
+#endif
 
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
 
@@ -8126,14 +8173,15 @@ void emitter::emitIns_SIMD_R_R_I(instruction ins, emitAttr attr, regNumber targe
 //    indir     -- The GenTreeIndir used for the memory address
 //
 void emitter::emitIns_SIMD_R_R_A(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, GenTreeIndir* indir)
+    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, GenTreeIndir* indir, insOpts instOptions)
 {
     if (UseSimdEncoding())
     {
-        emitIns_R_R_A(ins, attr, targetReg, op1Reg, indir);
+        emitIns_R_R_A(ins, attr, targetReg, op1Reg, indir, instOptions);
     }
     else
     {
+        assert(instOptions == INS_OPTS_NONE);
         emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_A(ins, attr, targetReg, indir);
     }
@@ -8151,15 +8199,21 @@ void emitter::emitIns_SIMD_R_R_A(
 //    fldHnd    -- The CORINFO_FIELD_HANDLE used for the memory address
 //    offs      -- The offset added to the memory address from fldHnd
 //
-void emitter::emitIns_SIMD_R_R_C(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, CORINFO_FIELD_HANDLE fldHnd, int offs)
+void emitter::emitIns_SIMD_R_R_C(instruction          ins,
+                                 emitAttr             attr,
+                                 regNumber            targetReg,
+                                 regNumber            op1Reg,
+                                 CORINFO_FIELD_HANDLE fldHnd,
+                                 int                  offs,
+                                 insOpts              instOptions)
 {
     if (UseSimdEncoding())
     {
-        emitIns_R_R_C(ins, attr, targetReg, op1Reg, fldHnd, offs);
+        emitIns_R_R_C(ins, attr, targetReg, op1Reg, fldHnd, offs, instOptions);
     }
     else
     {
+        assert(instOptions == INS_OPTS_NONE);
         emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_C(ins, attr, targetReg, fldHnd, offs);
     }
@@ -8214,14 +8268,15 @@ void emitter::emitIns_SIMD_R_R_R(
 //    offs      -- The offset added to the memory address from varx
 //
 void emitter::emitIns_SIMD_R_R_S(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, int varx, int offs)
+    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, int varx, int offs, insOpts instOptions)
 {
     if (UseSimdEncoding())
     {
-        emitIns_R_R_S(ins, attr, targetReg, op1Reg, varx, offs);
+        emitIns_R_R_S(ins, attr, targetReg, op1Reg, varx, offs, instOptions);
     }
     else
     {
+        assert(instOptions == INS_OPTS_NONE);
         emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_S(ins, attr, targetReg, varx, offs);
     }
@@ -15709,7 +15764,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 // Return Value:
 //    size in bytes.
 //
-ssize_t emitter::GetInputSizeInBytes(instrDesc* id)
+ssize_t emitter::GetInputSizeInBytes(instrDesc* id) const
 {
     insFlags inputSize = static_cast<insFlags>((CodeGenInterface::instInfo[id->idIns()] & Input_Mask));
 
@@ -15776,9 +15831,54 @@ ssize_t emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspI
 
     ssize_t disp8Compression = 1;
 
+    if ((tt & INS_TT_MEM128) != 0)
+    {
+        // These instructions can be one of two tuple types, so we need to find the right one
+
+        instruction ins    = id->idIns();
+        insFormat   insFmt = id->idInsFmt();
+
+        if ((tt & INS_TT_FULL) != 0)
+        {
+            assert(tt == (INS_TT_FULL | INS_TT_MEM128));
+            assert((ins == INS_pslld) || (ins == INS_psrad) || (ins == INS_psrld) || (ins == INS_psllq) ||
+                   (ins == INS_vpsraq) || (ins == INS_psrlq));
+        }
+        else
+        {
+            assert(tt == (INS_TT_FULL_MEM | INS_TT_MEM128));
+            assert((ins == INS_psllw) || (ins == INS_psraw) || (ins == INS_psrlw));
+        }
+
+        switch (insFmt)
+        {
+            case IF_RWR_RRD_ARD:
+            case IF_RWR_RRD_MRD:
+            case IF_RWR_RRD_SRD:
+            {
+                tt = static_cast<insTupleType>(tt & INS_TT_MEM128);
+                break;
+            }
+
+            case IF_RWR_ARD_CNS:
+            case IF_RWR_MRD_CNS:
+            case IF_RWR_SRD_CNS:
+            {
+                tt = static_cast<insTupleType>(tt & ~INS_TT_MEM128);
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
     switch (tt)
     {
         case INS_TT_FULL:
+        {
             assert(inputSize == 4 || inputSize == 8);
             if (HasEmbeddedBroadcast(id))
             {
@@ -15791,7 +15891,10 @@ ssize_t emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspI
                 disp8Compression = vectorLength;
             }
             break;
+        }
+
         case INS_TT_HALF:
+        {
             assert(inputSize == 4);
             if (HasEmbeddedBroadcast(id))
             {
@@ -15804,57 +15907,92 @@ ssize_t emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspI
                 disp8Compression = vectorLength / 2;
             }
             break;
+        }
+
         case INS_TT_FULL_MEM:
+        {
             // N = vector length in bytes
             disp8Compression = vectorLength;
             break;
+        }
+
         case INS_TT_TUPLE1_SCALAR:
         {
             disp8Compression = inputSize;
             break;
         }
+
         case INS_TT_TUPLE1_FIXED:
+        {
             // N = input size in bytes, 32bit and 64bit only
             assert(inputSize == 4 || inputSize == 8);
             disp8Compression = inputSize;
             break;
+        }
+
         case INS_TT_TUPLE2:
+        {
             // N = input size in bytes * 2, 32bit and 64bit for 256 bit and 512 bit only
             assert((inputSize == 4) || (inputSize == 8 && vectorLength >= 32));
             disp8Compression = inputSize * 2;
             break;
+        }
+
         case INS_TT_TUPLE4:
+        {
             // N = input size in bytes * 4, 32bit for 256 bit and 512 bit, 64bit for 512 bit
             assert((inputSize == 4 && vectorLength >= 32) || (inputSize == 8 && vectorLength >= 64));
             disp8Compression = inputSize * 4;
             break;
+        }
+
         case INS_TT_TUPLE8:
+        {
             // N = input size in bytes * 8, 32bit for 512 only
             assert((inputSize == 4 && vectorLength >= 64));
             disp8Compression = inputSize * 8;
             break;
+        }
+
         case INS_TT_HALF_MEM:
+        {
             // N = vector length in bytes / 2
             disp8Compression = vectorLength / 2;
             break;
+        }
+
         case INS_TT_QUARTER_MEM:
+        {
             // N = vector length in bytes / 4
             disp8Compression = vectorLength / 4;
             break;
+        }
+
         case INS_TT_EIGHTH_MEM:
+        {
             // N = vector length in bytes / 8
             disp8Compression = vectorLength / 8;
             break;
+        }
+
         case INS_TT_MEM128:
+        {
             // N = 16
             disp8Compression = 16;
             break;
+        }
+
         case INS_TT_MOVDDUP:
+        {
             // N = vector length in bytes / 2
             disp8Compression = (vectorLength == 16) ? (vectorLength / 2) : vectorLength;
             break;
+        }
+
         default:
+        {
             unreached();
+        }
     }
 
     // If we can evenly divide dsp by the disp8Compression, we can attempt to use it in a disp8 byte form
@@ -18718,6 +18856,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_pcmpgtq:
         case INS_psadbw:
         case INS_vdbpsadbw:
+        case INS_vpcmpgtq:
         case INS_vpermps:
         case INS_vpermpd:
         case INS_vpermpd_reg:
@@ -18742,6 +18881,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vinserti32x8:
         case INS_vinserti64x2:
         case INS_vinserti64x4:
+        case INS_vpermb:
         case INS_vpermi2d:
         case INS_vpermi2pd:
         case INS_vpermi2ps:
@@ -19151,16 +19291,22 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
-        case INS_kmovb_msk:
-        case INS_kmovw_msk:
-        case INS_kmovd_msk:
-        case INS_kmovq_msk:
         case INS_kmovb_gpr:
         case INS_kmovw_gpr:
         case INS_kmovd_gpr:
         case INS_kmovq_gpr:
         {
             result.insLatency += PERFSCORE_LATENCY_3C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+        }
+
+        case INS_kmovb_msk:
+        case INS_kmovw_msk:
+        case INS_kmovd_msk:
+        case INS_kmovq_msk:
+        {
+            result.insLatency += PERFSCORE_LATENCY_1C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
         }
@@ -19194,12 +19340,71 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
-        case INS_kortestb:
-        case INS_kortestw:
-        case INS_kortestd:
-        case INS_kortestq:
+        case INS_kandb:
+        case INS_kandd:
+        case INS_kandq:
+        case INS_kandw:
+        case INS_kandnb:
+        case INS_kandnd:
+        case INS_kandnq:
+        case INS_kandnw:
+        case INS_knotb:
+        case INS_knotd:
+        case INS_knotq:
+        case INS_knotw:
+        case INS_korb:
+        case INS_kord:
+        case INS_korq:
+        case INS_korw:
+        case INS_kxnorb:
+        case INS_kxnord:
+        case INS_kxnorq:
+        case INS_kxnorw:
+        case INS_kxorb:
+        case INS_kxord:
+        case INS_kxorq:
+        case INS_kxorw:
         {
             result.insLatency += PERFSCORE_LATENCY_1C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+        }
+
+        case INS_kortestb:
+        case INS_kortestd:
+        case INS_kortestq:
+        case INS_kortestw:
+        case INS_ktestb:
+        case INS_ktestd:
+        case INS_ktestq:
+        case INS_ktestw:
+        {
+            // Keep these in a separate group as there isn't a documented latency
+            // Similar instructions have a 1 cycle latency, however
+
+            result.insLatency += PERFSCORE_LATENCY_1C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+
+            break;
+        }
+
+        case INS_kaddb:
+        case INS_kaddd:
+        case INS_kaddq:
+        case INS_kaddw:
+        case INS_kshiftlb:
+        case INS_kshiftld:
+        case INS_kshiftlq:
+        case INS_kshiftlw:
+        case INS_kshiftrb:
+        case INS_kshiftrd:
+        case INS_kshiftrq:
+        case INS_kshiftrw:
+        case INS_kunpckbw:
+        case INS_kunpckdq:
+        case INS_kunpckwd:
+        {
+            result.insLatency += PERFSCORE_LATENCY_4C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
         }

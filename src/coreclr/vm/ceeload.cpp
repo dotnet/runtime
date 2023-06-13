@@ -352,12 +352,6 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
     pPEAssembly->AddRef();
 }
 
-BOOL Module::IsPersistedObject(void *address)
-{
-    LIMITED_METHOD_CONTRACT;
-    return FALSE;
-}
-
 uint32_t Module::GetNativeMetadataAssemblyCount()
 {
     if (m_pNativeImage != NULL)

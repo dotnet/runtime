@@ -34,7 +34,7 @@ namespace System.Diagnostics.Tracing
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall)]
-        internal static partial void LogThreadPoolWorkerThreadAdjustmentAdjustment(double AverageThroughput, uint NewWorkerThreadCount, NativeRuntimeEventSource.ThreadAdjustmentReasonMap Reason, ushort ClrInstanceID);
+        internal static partial void LogThreadPoolWorkerThreadAdjustmentAdjustment(double AverageThroughput, uint NewWorkerThreadCount, ThreadAdjustmentReasonMap Reason, ushort ClrInstanceID);
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall)]

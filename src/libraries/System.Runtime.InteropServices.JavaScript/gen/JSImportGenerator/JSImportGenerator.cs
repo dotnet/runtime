@@ -25,7 +25,7 @@ namespace Microsoft.Interop.JavaScript
             MethodSignatureDiagnosticLocations DiagnosticLocation,
             JSImportData JSImportData,
             MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion, JSGeneratorOptions)> GeneratorFactoryKey,
-            SequenceEqualImmutableArray<Diagnostic> Diagnostics);
+            SequenceEqualImmutableArray<DiagnosticInfo> Diagnostics);
 
         public static class StepNames
         {
@@ -69,13 +69,13 @@ namespace Microsoft.Interop.JavaScript
                 if (data.Right.IsEmpty // no attributed methods
                     || data.Left.Compilation.Options is CSharpCompilationOptions { AllowUnsafe: true }) // Unsafe code enabled
                 {
-                    return ImmutableArray<Diagnostic>.Empty;
+                    return ImmutableArray<DiagnosticInfo>.Empty;
                 }
 
-                return ImmutableArray.Create(Diagnostic.Create(GeneratorDiagnostics.JSImportRequiresAllowUnsafeBlocks, null));
+                return ImmutableArray.Create(DiagnosticInfo.Create(GeneratorDiagnostics.JSImportRequiresAllowUnsafeBlocks, null));
             }));
 
-            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateSingleStub = methodsToGenerate
+            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>)> generateSingleStub = methodsToGenerate
                 .Combine(stubEnvironment)
                 .Combine(stubOptions)
                 .Select(static (data, ct) => new
@@ -201,7 +201,7 @@ namespace Microsoft.Interop.JavaScript
                 new MethodSignatureDiagnosticLocations(originalSyntax),
                 jsImportData,
                 CreateGeneratorFactory(environment, options),
-                new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
+                new SequenceEqualImmutableArray<DiagnosticInfo>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
         }
 
         private static MarshallingGeneratorFactoryKey<(TargetFramework, Version, JSGeneratorOptions)> CreateGeneratorFactory(StubEnvironment env, JSGeneratorOptions options)
@@ -211,7 +211,7 @@ namespace Microsoft.Interop.JavaScript
             return MarshallingGeneratorFactoryKey.Create((env.TargetFramework, env.TargetFrameworkVersion, options), jsGeneratorFactory);
         }
 
-        private static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateSource(
+        private static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateSource(
             IncrementalStubGenerationContext incrementalContext)
         {
             var diagnostics = new GeneratorDiagnostics();

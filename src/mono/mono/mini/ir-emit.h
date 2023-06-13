@@ -668,7 +668,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 
 #define MONO_EMIT_NEW_VZERO(cfg,dr,kl) do { \
 		MonoInst *__inst; \
-		MONO_INST_NEW ((cfg), (__inst), MONO_CLASS_IS_SIMD (cfg, kl) ? OP_XZERO : OP_VZERO); \
+		MONO_INST_NEW ((cfg), (__inst), mini_class_is_simd (cfg, kl) ? OP_XZERO : OP_VZERO); \
 		__inst->dreg = dr; \
 		(__inst)->type = STACK_VTYPE; \
 		(__inst)->klass = (kl); \

@@ -10,11 +10,11 @@ namespace System.Text.Json.SourceGeneration
         /// </summary>
         TypeUnsupportedBySourceGen = 0,
         Object = 1,
-        KnownType = 2,
+        BuiltInSupportType = 2,
         /// <summary>
         /// Known types such as System.Type and System.IntPtr that throw NotSupportedException.
         /// </summary>
-        KnownUnsupportedType = 3,
+        UnsupportedType = 3,
         TypeWithDesignTimeProvidedCustomConverter = 4,
         Enumerable = 5,
         Dictionary = 6,

@@ -139,7 +139,7 @@ namespace System.Tests
             Thread.Sleep(100);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsPreciseGcSupported))]
         public void SignalHandlerNotCalledWhenFinalized()
         {
             PosixSignal signal = PosixSignal.SIGCONT;

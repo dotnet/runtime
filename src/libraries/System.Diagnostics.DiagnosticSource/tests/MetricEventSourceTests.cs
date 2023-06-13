@@ -594,7 +594,7 @@ namespace System.Diagnostics.Metrics.Tests
                 l.Add(123_456_789_012);
                 dec.Add(123_456_789_012_345);
                 f.Add(123_456.789F);
-                d.Add(87_654_321_987_654.4);
+                d.Add(5.25);
 
                 i.Add(1);
                 s.Add(1);
@@ -611,7 +611,7 @@ namespace System.Diagnostics.Metrics.Tests
                 l.Add(123_456_789_012);
                 dec.Add(123_456_789_012_345);
                 f.Add(123_456.789F);
-                d.Add(87_654_321_987_654.4);
+                d.Add(5.25);
 
                 i.Add(1);
                 s.Add(1);
@@ -632,7 +632,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCounterEventsPresent(events, meter.Name, l.Name, "", "", ("123456789013", "123456789013"), ("123456789013", "246913578026"));
             AssertCounterEventsPresent(events, meter.Name, dec.Name, "", "", ("123456789012346", "123456789012346"), ("123456789012346", "246913578024692"));
             AssertCounterEventsPresent(events, meter.Name, f.Name, "", "", ("123457.7890625", "123457.7890625"), ("123457.7890625", "246915.578125"));
-            AssertCounterEventsPresent(events, meter.Name, d.Name, "", "", ("87654321987655.4", "87654321987655.4"), ("87654321987655.4", "175308643975310.8"));
+            AssertCounterEventsPresent(events, meter.Name, d.Name, "", "", ("6.25", "6.25"), ("6.25", "12.5"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 

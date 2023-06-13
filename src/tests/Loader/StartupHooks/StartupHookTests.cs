@@ -16,7 +16,15 @@ public unsafe class StartupHookTests
 
     private static delegate*<void> ProcessStartupHooks = (delegate*<void>)s_startupHookProvider.GetMethod("ProcessStartupHooks", BindingFlags.NonPublic | BindingFlags.Static).MethodHandle.GetFunctionPointer();
 
-    public static bool IsSupported = ((delegate*<bool>)s_startupHookProvider.GetProperty(nameof(IsSupported), BindingFlags.NonPublic | BindingFlags.Static).GetMethod.MethodHandle.GetFunctionPointer())();
+    private static bool IsUnsupportedPlatform =
+        // these platforms need special setup for startup hooks
+        OperatingSystem.IsAndroid() ||
+        OperatingSystem.IsIOS() ||
+        OperatingSystem.IsTvOS() ||
+        OperatingSystem.IsBrowser() ||
+        OperatingSystem.IsWasi();
+
+    public static bool IsSupported = !IsUnsupportedPlatform && ((delegate*<bool>)s_startupHookProvider.GetProperty(nameof(IsSupported), BindingFlags.NonPublic | BindingFlags.Static).GetMethod.MethodHandle.GetFunctionPointer())();
 
     [Fact]
     public static void ValidHookName()

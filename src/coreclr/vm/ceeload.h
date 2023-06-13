@@ -1079,9 +1079,6 @@ public:
     // Note that this may require calling into managed code (to resolve security policy).
     BOOL IsSymbolReadingEnabled(void);
 
-    BOOL IsPersistedObject(void *address);
-
-
     // Get the in-memory symbol stream for this module, if any.
     // If none, this will return null.  This is used by modules loaded in-memory (eg. from a byte-array)
     // and by dynamic modules.

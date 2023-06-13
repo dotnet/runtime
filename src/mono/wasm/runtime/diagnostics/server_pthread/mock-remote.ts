@@ -4,7 +4,6 @@
 import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
 import type { Mock } from "../mock";
 import { mock } from "../mock";
-import { runtimeHelpers } from "../../globals";
 
 export function importAndInstantiateMock(mockURL: string): Promise<Mock> {
     if (monoDiagnosticsMock) {
@@ -12,7 +11,7 @@ export function importAndInstantiateMock(mockURL: string): Promise<Mock> {
         const scriptURL = mockURL.substring(mockPrefix.length);
         return import(scriptURL).then((mockModule) => {
             const script = mockModule.default;
-            return mock(script, { trace: runtimeHelpers.diagnosticTracing });
+            return mock(script);
         });
     } else {
         return Promise.resolve(undefined as unknown as Mock);

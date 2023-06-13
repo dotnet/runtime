@@ -4,8 +4,10 @@
 using System;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.Configuration.Test;
+using Microsoft.Extensions.FileProviders;
 using Xunit;
 
 namespace Microsoft.Extensions.Configuration
@@ -218,6 +220,65 @@ namespace Microsoft.Extensions.Configuration
         {
             var exception = Assert.Throws<FormatException>(() => LoadProvider(@""));
             Assert.Contains("Could not parse the JSON file.", exception.Message);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void AddJsonFile_FileProvider_Gets_Disposed_When_It_Was_Not_Created_By_The_User(bool disposeConfigRoot)
+        {
+            string filePath = Path.Combine(Path.GetTempPath(), $"{nameof(AddJsonFile_FileProvider_Gets_Disposed_When_It_Was_Not_Created_By_The_User)}.json");
+            File.WriteAllText(filePath, @"{ ""some"": ""value"" }");
+
+            IConfigurationRoot config = new ConfigurationBuilder().AddJsonFile(filePath, optional: false).Build();
+            JsonConfigurationProvider jsonConfigurationProvider = config.Providers.OfType<JsonConfigurationProvider>().Single();
+
+            Assert.NotNull(jsonConfigurationProvider.Source.FileProvider);
+            PhysicalFileProvider fileProvider = (PhysicalFileProvider)jsonConfigurationProvider.Source.FileProvider;
+            Assert.False(GetIsDisposed(fileProvider));
+
+            if (disposeConfigRoot)
+            {
+                (config as IDisposable).Dispose(); // disposing ConfigurationRoot
+            }
+            else
+            {
+                jsonConfigurationProvider.Dispose(); // disposing JsonConfigurationProvider
+            }
+
+            Assert.True(GetIsDisposed(fileProvider));
+        }
+
+        [Fact]
+        public void AddJsonFile_FileProvider_Is_Not_Disposed_When_It_Is_Owned_By_The_User()
+        {
+            string filePath = Path.Combine(Path.GetTempPath(), $"{nameof(AddJsonFile_FileProvider_Is_Not_Disposed_When_It_Is_Owned_By_The_User)}.json");
+            File.WriteAllText(filePath, @"{ ""some"": ""value"" }");
+
+            PhysicalFileProvider fileProvider = new(Path.GetDirectoryName(filePath));
+            JsonConfigurationProvider configurationProvider = new(new JsonConfigurationSource()
+            {
+                Path = filePath,
+                FileProvider = fileProvider
+            });
+            IConfigurationRoot config = new ConfigurationBuilder().AddJsonFile(configurationProvider.Source.FileProvider, filePath, optional: true, reloadOnChange: false).Build();
+
+            Assert.False(GetIsDisposed(fileProvider));
+
+            (config as IDisposable).Dispose(); // disposing ConfigurationRoot that does not own the provider
+            Assert.False(GetIsDisposed(fileProvider));
+
+            configurationProvider.Dispose(); // disposing JsonConfigurationProvider that does not own the provider
+            Assert.False(GetIsDisposed(fileProvider));
+
+            fileProvider.Dispose(); // disposing PhysicalFileProvider itself
+            Assert.True(GetIsDisposed(fileProvider));
+        }
+
+        private static bool GetIsDisposed(PhysicalFileProvider fileProvider)
+        {
+            System.Reflection.FieldInfo isDisposedField = typeof(PhysicalFileProvider).GetField("_disposed", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            return (bool)isDisposedField.GetValue(fileProvider);
         }
     }
 }

@@ -688,6 +688,49 @@ namespace
 
         return success && rcClose == StatusCode::Success;
     }
+
+    bool get_runtime_delegate_for_active_context_test(
+        const hostfxr_exports &hostfxr,
+        const pal::char_t *config_path,
+        hostfxr_delegate_type delegate_type1,
+        hostfxr_delegate_type delegate_type2,
+        const pal::char_t *log_prefix,
+        pal::stringstream_t &test_output)
+    {
+        hostfxr_handle handle;
+        if (!init_for_config(hostfxr, config_path, &handle, log_prefix, test_output))
+            return false;
+
+        void *delegate1 = nullptr;
+        // Check that using get_runtime_delegate with the active host context will fail
+        // due to the runtime not being loaded yet.
+        bool success = get_runtime_delegate(hostfxr, nullptr, delegate_type1, &delegate1, log_prefix, test_output);
+        if (success)
+        {
+            test_output << log_prefix << _X("get_runtime_delegate with active context succeeded unexpectedly.") << std::endl;
+            return false;
+        }
+        if (nullptr != delegate1)
+        {
+            test_output << log_prefix << _X("Unexpectedly got a runtime delegate when get_runtime_delegate failed.") << std::endl;
+            return false;
+        }
+
+        // Successfully get first delegate with a defined handle.
+        success = get_runtime_delegate(hostfxr, handle, delegate_type1, &delegate1, log_prefix, test_output);
+
+        // Testing that using the active host context works for get_runtime_delegate
+        // by passing nullptr for handle parameter. The runtime must be loaded for this to succeed;
+        // the first successful call to get_runtime_delegate with a defined handle ensures that it is loaded.
+        void *delegate2;
+        success &= get_runtime_delegate(hostfxr, nullptr, delegate_type2, &delegate2, log_prefix, test_output);
+
+        int rcClose = hostfxr.close(handle);
+        if (rcClose != StatusCode::Success)
+            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rcClose << std::endl;
+
+        return success && rcClose == StatusCode::Success;
+    }
 }
 
 host_context_test::check_properties host_context_test::check_properties_from_string(const pal::char_t *str)
@@ -999,4 +1042,14 @@ bool host_context_test::app_get_function_pointer(
     hostfxr_exports hostfxr{ hostfxr_path };
 
     return app_get_function_pointer_test(hostfxr, argc, argv, config_log_prefix, test_output);
+}
+
+bool host_context_test::get_runtime_delegate_for_active_context(
+    const pal::string_t &hostfxr_path,
+    const pal::char_t *config_path,
+    pal::stringstream_t &test_output)
+{
+    hostfxr_exports hostfxr{ hostfxr_path };
+
+    return get_runtime_delegate_for_active_context_test(hostfxr, config_path, first_delegate_type, secondary_delegate_type, config_log_prefix, test_output);
 }

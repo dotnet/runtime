@@ -27,6 +27,11 @@ namespace System.Text.Json.Tests.SourceGenRegressionTests.Net60
                 return this.ClassWithCustomConverter;
             }
         
+            if (type == typeof(global::System.Text.Json.Tests.SourceGenRegressionTests.Net60.MyLinkedList))
+            {
+                return this.MyLinkedList;
+            }
+        
             return null!;
         }
     }
