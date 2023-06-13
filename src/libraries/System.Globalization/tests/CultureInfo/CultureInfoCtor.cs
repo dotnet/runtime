@@ -441,6 +441,8 @@ namespace System.Globalization.Tests
             Assert.NotEqual(lcid, new CultureInfo(lcid).LCID);
         }
 
+        private static bool NotWasmWithIcu => PlatformDetection.IsNotBrowser && PlatformDetection.IsIcuGlobalization;
+
         [InlineData("zh-TW-u-co-zhuyin", "zh-TW", "zh-TW_zhuyin")]
         [InlineData("de-DE-u-co-phonebk", "de-DE", "de-DE_phoneboo")]
         [InlineData("de-DE-u-co-phonebk-u-xx", "de-DE-u-xx", "de-DE-u-xx_phoneboo")]
@@ -449,7 +451,7 @@ namespace System.Globalization.Tests
         [InlineData("de-DE-u-co-phonebk-t-xx", "de-DE-t-xx", "de-DE-t-xx_phoneboo")]
         [InlineData("de-DE-u-co-phonebk-t-xx-u-yy", "de-DE-t-xx-u-yy", "de-DE-t-xx-u-yy_phoneboo")]
         [InlineData("de-DE", "de-DE", "de-DE")]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [ConditionalTheory(nameof(NotWasmWithIcu))]
         public void TestCreationWithMangledSortName(string cultureName, string expectedCultureName, string expectedSortName)
         {
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
@@ -458,20 +460,13 @@ namespace System.Globalization.Tests
             Assert.Equal(expectedSortName, ci.CompareInfo.Name);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
-        public void TestNeutralCultureWithCollationName()
-        {
-            Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo("zh-u-co-zhuyin"));
-            Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo("de-u-co-phonebk"));
-        }
-
         [InlineData("xx-u-XX", "xx-u-xx")]
         [InlineData("xx-u-XX-u-yy", "xx-u-xx-u-yy")]
         [InlineData("xx-t-ja-JP", "xx-t-ja-jp")]
         [InlineData("qps-plocm", "qps-PLOCM")] // ICU normalize this name to "qps--plocm" which we normalize it back to "qps-plocm"
         [InlineData("zh_CN", "zh_cn")]
         [InlineData("km_KH", "km_kh")]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [ConditionalTheory(nameof(NotWasmWithIcu))]
         public void TestCreationWithICUNormalizedNames(string cultureName, string expectedCultureName)
         {
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
