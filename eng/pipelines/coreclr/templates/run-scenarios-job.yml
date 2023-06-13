@@ -187,17 +187,19 @@ jobs:
         PERFLAB_TARGET_FRAMEWORKS: net7.0
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Darwin'))
 
-    # Install zip tool (Linux)
+    # Check if zip installed
     - script: |
-        packages='zip'
-        if [ -x "$(command -v apk)" ];        then apk add --no-cache $packages
-        elif [ -x "$(command -v apt-get)" ];  then apt-get install $packages
-        elif [ -x "$(command -v yum)" ];      then yum install $packages
-        elif [ -x "$(command -v dnf)" ];      then dnf install $packagesNeeded
-        else echo "Failed to install package, no package manager matched";
+        if [ -x "$(command -v zip)" ]; echo "##vso[task.setvariable variable=IsZipInstalled]true"
+        else echo "##vso[task.setvariable variable=IsZipInstalled]false";
         fi
-      displayName: Install zip tool (Linux)
-      condition: and(succeeded(), eq(variables['Agent.Os'], 'Linux'))
+      displayName: Check zip tool (Linux/Darwin)
+      condition: and(succeeded(), or(eq(variables['Agent.Os'], 'Linux'), eq(variables['Agent.Os'], 'Darwin')))
+
+    # Zip should always be installed on windows, so set the variable to true.
+    - script: |
+        echo "##vso[task.setvariable variable=IsZipInstalled]true";
+      displayName: Set installed zip tool (Windows)
+      condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
 
     # Zip the workitem directory (for xharness based workitems)
     - task: ArchiveFiles@2
@@ -206,6 +208,18 @@ jobs:
         includeRootFolder: false
         archiveFile: '$(WorkItemDirectory).zip'
         verbose: True
+      condition: and(succeeded(), eq(variables['IsZipInstalled'], 'true'))
+
+    # tar the workitem directory (for xharness based workitems)
+    - task: ArchiveFiles@2
+      inputs:
+        archiveType: tar
+        tarCompression: gz
+        rootFolderOrFile: '$(WorkItemDirectory)'
+        includeRootFolder: false
+        archiveFile: '$(WorkItemDirectory).tar.gz'
+        verbose: True
+      condition: and(succeeded(), eq(variables['IsZipInstalled'], 'false'))
 
     # run perf testing in helix
     - template: /eng/pipelines/coreclr/templates/perf-send-to-helix.yml
