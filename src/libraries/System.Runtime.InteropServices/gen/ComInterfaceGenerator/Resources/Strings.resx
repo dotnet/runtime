@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -268,13 +268,13 @@
     <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</value>
   </data>
   <data name="RequiresAllowUnsafeBlocksDescription" xml:space="preserve">
-    <value>GeneratedComInterfaceAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
+    <value>'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
   </data>
   <data name="RequiresAllowUnsafeBlocksMessage" xml:space="preserve">
-    <value>GeneratedComInterfaceAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
+    <value>'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
   </data>
   <data name="RequiresAllowUnsafeBlocksTitle" xml:space="preserve">
-    <value>GeneratedComInterfaceAttribute requires unsafe code.</value>
+    <value>'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code.</value>
   </data>
   <data name="InvalidGeneratedComInterfaceUsageMissingPartialModifier" xml:space="preserve">
     <value>The interface '{0}' or one of its containing types is missing the 'partial' keyword. Code will not be generated for '{0}'.</value>
@@ -283,7 +283,7 @@
     <value>Classes with 'GeneratedComClassAttribute' must implement one or more interfaces with 'GeneratedComInterfaceAttribute', be marked partial, and be non-generic.</value>
   </data>
   <data name="InvalidGeneratedComClassAttributeUsageMissingPartialModifier" xml:space="preserve">
-    <value>Class '{0}' or one of its containing types is not marked 'partial'.</value>
+    <value>Class '{0}' with 'GeneratedComClassAttribute' or one of its containing types is not marked 'partial'.</value>
   </data>
   <data name="InvalidGeneratedComClassAttributeUsageTitle" xml:space="preserve">
     <value>Invalid 'GeneratedComClassAttribute' usage</value>
@@ -335,6 +335,12 @@
   </data>
   <data name="ConvertComInterfaceMayProduceInvalidCode" xml:space="preserve">
     <value>Converting this interface to use 'GeneratedComInterfaceAttribute' may produce invalid code and may require additional work</value>
+  </data>
+  <data name="ClassDoesNotImplementAnyGeneratedComInterfacesDescription" xml:space="preserve">
+    <value>A class with 'GeneratedComClassAttribute' must implement at least one interface with 'GeneratedComInterfaceAttribute' or else the generated code with not have an effect.</value>
+  </data>
+  <data name="ClassDoesNotImplementAnyGeneratedComInterfacesMessage" xml:space="preserve">
+    <value>Class '{0}' with 'GeneratedComClassAttribute' does not implement any interfaces with 'GeneratedComInterfaceAttribute'. Source will not be generated for '{0}'.</value>
   </data>
   <data name="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedDescription" xml:space="preserve">
     <value>Casting between a 'ComImport' type and a source-generated COM type is not supported and will fail at runtime</value>
