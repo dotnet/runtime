@@ -45,7 +45,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     [Output]
     public ITaskItem[]? TrimmedAssemblies { get; set; }
 
-    private List<ITaskItem> trimmedAssemblies = new List<ITaskItem>();
+    private readonly List<ITaskItem> _trimmedAssemblies = new();
 
     public override bool Execute()
     {
