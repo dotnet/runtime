@@ -30,10 +30,10 @@ namespace Microsoft.Interop
         {
             unsafe
             {
-                return IsBlittableWorker(type, ImmutableHashSet.Create<ITypeSymbol>(SymbolEqualityComparer.Default), &IsConsideredBlittableWorker);
+                return IsBlittableWorker(type, ImmutableHashSet.Create<ITypeSymbol>(SymbolEqualityComparer.Default), compilation: null, &IsConsideredBlittableWorker);
             }
 
-            static bool IsConsideredBlittableWorker(ITypeSymbol t, ImmutableHashSet<ITypeSymbol> seenTypes)
+            static bool IsConsideredBlittableWorker(ITypeSymbol t, ImmutableHashSet<ITypeSymbol> seenTypes, Compilation compilation)
             {
                 return t.IsUnmanagedType;
             }
@@ -50,14 +50,15 @@ namespace Microsoft.Interop
         /// </remarks>
         /// <param name="type">The type to check.</param>
         /// <returns>Returns true if strictly blittable, otherwise false.</returns>
-        public static bool IsStrictlyBlittable(this ITypeSymbol type)
+        /// <param name="compilation">The compilation context of the source being compiled.</param>
+        public static bool IsStrictlyBlittableInContext(this ITypeSymbol type, Compilation compilation)
         {
             unsafe
             {
-                return IsBlittableWorker(type, ImmutableHashSet.Create<ITypeSymbol>(SymbolEqualityComparer.Default), &IsStrictlyBlittableWorker);
+                return IsBlittableWorker(type, ImmutableHashSet.Create<ITypeSymbol>(SymbolEqualityComparer.Default), compilation, &IsStrictlyBlittableWorker);
             }
 
-            static unsafe bool IsStrictlyBlittableWorker(ITypeSymbol t, ImmutableHashSet<ITypeSymbol> seenTypes)
+            static unsafe bool IsStrictlyBlittableWorker(ITypeSymbol t, ImmutableHashSet<ITypeSymbol> seenTypes, Compilation compilation)
             {
                 if (t.SpecialType is not SpecialType.None)
                 {
@@ -68,20 +69,20 @@ namespace Microsoft.Interop
                     // If the containing assembly for the type is backed by metadata (non-null),
                     // then the type is not internal and therefore coming from a reference assembly
                     // that we can not confirm is strictly blittable.
-                    if (t.ContainingAssembly is not null
-                        && t.ContainingAssembly.GetMetadata() is not null)
+                    if (t.ContainingAssembly is not ISourceAssemblySymbol sourceAssembly
+                        || sourceAssembly.Compilation != compilation)
                     {
                         return false;
                     }
 
-                    return t.HasOnlyBlittableFields(seenTypes, &IsStrictlyBlittableWorker);
+                    return t.HasOnlyBlittableFields(seenTypes, compilation, &IsStrictlyBlittableWorker);
                 }
 
                 return false;
             }
         }
 
-        private static unsafe bool IsBlittableWorker(this ITypeSymbol type, ImmutableHashSet<ITypeSymbol> seenTypes, delegate*<ITypeSymbol, ImmutableHashSet<ITypeSymbol>, bool> isBlittable)
+        private static unsafe bool IsBlittableWorker(this ITypeSymbol type, ImmutableHashSet<ITypeSymbol> seenTypes, Compilation compilation, delegate*<ITypeSymbol, ImmutableHashSet<ITypeSymbol>, Compilation, bool> isBlittable)
         {
             // Assume that type parameters that can be blittable are blittable.
             // We'll re-evaluate blittability for generic fields of generic types at instantiation time.
@@ -89,7 +90,7 @@ namespace Microsoft.Interop
             {
                 return true;
             }
-            if (type.IsAutoLayout() || !isBlittable(type, seenTypes))
+            if (type.IsAutoLayout() || !isBlittable(type, seenTypes, compilation))
             {
                 return false;
             }
@@ -121,7 +122,7 @@ namespace Microsoft.Interop
             return type.IsReferenceType;
         }
 
-        private static unsafe bool HasOnlyBlittableFields(this ITypeSymbol type, ImmutableHashSet<ITypeSymbol> seenTypes, delegate*<ITypeSymbol, ImmutableHashSet<ITypeSymbol>, bool> isBlittable)
+        private static unsafe bool HasOnlyBlittableFields(this ITypeSymbol type, ImmutableHashSet<ITypeSymbol> seenTypes, Compilation compilation, delegate*<ITypeSymbol, ImmutableHashSet<ITypeSymbol>, Compilation, bool> isBlittable)
         {
             if (seenTypes.Contains(type))
             {
@@ -134,7 +135,7 @@ namespace Microsoft.Interop
             {
                 if (!field.IsStatic)
                 {
-                    if (!IsBlittableWorker(field.Type, seenTypes.Add(type), isBlittable))
+                    if (!IsBlittableWorker(field.Type, seenTypes.Add(type), compilation, isBlittable))
                     {
                         return false;
                     }
