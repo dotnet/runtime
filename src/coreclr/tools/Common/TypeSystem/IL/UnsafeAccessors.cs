@@ -227,26 +227,72 @@ namespace Internal.IL
             // If we are, do it first.
             if (!ignoreCustomModifiers)
             {
-                // Compare custom modifiers on the signatures.
-                var declCustomMod = declSig.GetEmbeddedSignatureData(EmbeddedSignatureDataKind.RequiredCustomModifier, EmbeddedSignatureDataKind.OptionalCustomModifier) ?? Array.Empty<EmbeddedSignatureData>();
-                var maybeCustomMod = maybeSig.GetEmbeddedSignatureData(EmbeddedSignatureDataKind.RequiredCustomModifier, EmbeddedSignatureDataKind.OptionalCustomModifier) ?? Array.Empty<EmbeddedSignatureData>();
-                if (!CompareEmbeddedData(context.Kind, declCustomMod, maybeCustomMod))
+                // Compare any unmanaged callconv and custom modifiers on the signatures.
+                // We treat unmanaged calling conventions at the same level of precedance
+                // as custom modifiers, eventhough they are normally bits in a signature.
+                ReadOnlySpan<EmbeddedSignatureDataKind> kinds = new EmbeddedSignatureDataKind[]
+                {
+                    EmbeddedSignatureDataKind.UnmanagedCallConv,
+                    EmbeddedSignatureDataKind.RequiredCustomModifier,
+                    EmbeddedSignatureDataKind.OptionalCustomModifier
+                };
+
+                var declData = declSig.GetEmbeddedSignatureData(kinds) ?? Array.Empty<EmbeddedSignatureData>();
+                var maybeData = maybeSig.GetEmbeddedSignatureData(kinds) ?? Array.Empty<EmbeddedSignatureData>();
+                if (declData.Length != maybeData.Length)
                 {
                     return false;
                 }
+
+                // Validate the custom modifiers match precisely.
+                for (int i = 0; i < declData.Length; ++i)
+                {
+                    EmbeddedSignatureData dd = declData[i];
+                    EmbeddedSignatureData md = maybeData[i];
+                    if (dd.kind != md.kind || dd.type != md.type)
+                    {
+                        return false;
+                    }
+
+                    // The indices on non-constructor declarations require
+                    // some slight modification since there is always an extra
+                    // argument in the declaration compared to the target.
+                    string declIndex = dd.index;
+                    if (context.Kind != UnsafeAccessorKind.Constructor)
+                    {
+                        string unmanagedCallConvMaybe = string.Empty;
+
+                        // Check for and drop the unmanaged calling convention
+                        // value suffix to add it back after updating below.
+                        if (declIndex.Contains('|'))
+                        {
+                            Debug.Assert(dd.kind == EmbeddedSignatureDataKind.UnmanagedCallConv);
+                            var tmp = declIndex.Split('|');
+                            Debug.Assert(tmp.Length == 2);
+                            declIndex = tmp[0];
+                            unmanagedCallConvMaybe = "|" + tmp[1];
+                        }
+
+                        // Decrement the second to last index by one to
+                        // account for the difference in declarations.
+                        string[] lvls = declIndex.Split('.');
+                        int toUpdate = lvls.Length < 2 ? 0 : lvls.Length - 2;
+                        int idx = int.Parse(lvls[toUpdate], CultureInfo.InvariantCulture);
+                        idx--;
+                        lvls[toUpdate] = idx.ToString();
+                        declIndex = string.Join(".", lvls) + unmanagedCallConvMaybe;
+                    }
+
+                    if (declIndex != md.index)
+                    {
+                        return false;
+                    }
+                }
             }
 
-            // Validate calling convention.
+            // Validate calling convention of declaration.
             if ((declSig.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask)
                 != (maybeSig.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask))
-            {
-                return false;
-            }
-
-            // Compare unmanaged callconv on the signatures.
-            var declUnmanaged = declSig.GetEmbeddedSignatureData(EmbeddedSignatureDataKind.UnmanagedCallConv) ?? Array.Empty<EmbeddedSignatureData>();
-            var maybeUnmanaged = maybeSig.GetEmbeddedSignatureData(EmbeddedSignatureDataKind.UnmanagedCallConv) ?? Array.Empty<EmbeddedSignatureData>();
-            if (!CompareEmbeddedData(context.Kind, declUnmanaged, maybeUnmanaged))
             {
                 return false;
             }
@@ -300,64 +346,6 @@ namespace Internal.IL
             }
 
             return true;
-
-            static bool CompareEmbeddedData(
-                UnsafeAccessorKind kind,
-                EmbeddedSignatureData[] declData,
-                EmbeddedSignatureData[] maybeData)
-            {
-                if (declData.Length != maybeData.Length)
-                {
-                    return false;
-                }
-
-                // Validate the custom modifiers match precisely.
-                for (int i = 0; i < declData.Length; ++i)
-                {
-                    EmbeddedSignatureData dd = declData[i];
-                    EmbeddedSignatureData md = maybeData[i];
-                    if (dd.kind != md.kind || dd.type != md.type)
-                    {
-                        return false;
-                    }
-
-                    // The indices on non-constructor declarations require
-                    // some slight modification since there is always an extra
-                    // argument in the declaration compared to the target.
-                    string declIndex = dd.index;
-                    if (kind != UnsafeAccessorKind.Constructor)
-                    {
-                        string unmanagedCallConvMaybe = string.Empty;
-
-                        // Check for and drop the unmanaged calling convention
-                        // value suffix to add it back after updating below.
-                        if (declIndex.Contains('|'))
-                        {
-                            Debug.Assert(dd.kind == EmbeddedSignatureDataKind.UnmanagedCallConv);
-                            var tmp = declIndex.Split('|');
-                            Debug.Assert(tmp.Length == 2);
-                            declIndex = tmp[0];
-                            unmanagedCallConvMaybe = "|" + tmp[1];
-                        }
-
-                        // Decrement the second to last index by one to
-                        // account for the difference in declarations.
-                        string[] lvls = declIndex.Split('.');
-                        int toUpdate = lvls.Length < 2 ? 0 : lvls.Length - 2;
-                        int idx = int.Parse(lvls[toUpdate], CultureInfo.InvariantCulture);
-                        idx--;
-                        lvls[toUpdate] = idx.ToString();
-                        declIndex = string.Join(".", lvls) + unmanagedCallConvMaybe;
-                    }
-
-                    if (declIndex != md.index)
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
         }
 
         private static bool TrySetTargetMethod(ref GenerationContext context, string name, out bool isAmbiguous, bool ignoreCustomModifiers = true)

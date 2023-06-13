@@ -24,7 +24,8 @@ static unsafe class UnsafeAccessorsTests
         public const string MethodVoidName = nameof(_mvv);
         public const string MethodNameAmbiguous = nameof(_Ambiguous);
         public const string MethodPointerName = nameof(_Pointer);
-        public const string MethodCallConvBitsName = nameof(_CallConvBits);
+        public const string MethodCdeclCallConvBitName = nameof(_CdeclCallConvBit);
+        public const string MethodStdcallCallConvBitName = nameof(_StdcallCallConvBit);
 
         private static string _F = PrivateStatic;
         private string _f;
@@ -52,7 +53,8 @@ static unsafe class UnsafeAccessorsTests
 
         // Used to validate the embedded callconv bits (non-unmanaged bit) in
         // ECMA-335 signatures for methods.
-        private static string _CallConvBits(delegate* unmanaged[Cdecl]<void> fptr) => nameof(CallConvCdecl);
+        private string _CdeclCallConvBit(delegate* unmanaged[Cdecl]<void> fptr) => nameof(CallConvCdecl);
+        private string _StdcallCallConvBit(delegate* unmanaged[Stdcall]<void> fptr) => nameof(CallConvStdcall);
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -328,6 +330,28 @@ static unsafe class UnsafeAccessorsTests
 
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
+    public static void Verify_CallConvBitsAreTreatedAsCustomModifiersAndIgnored()
+    {
+        Console.WriteLine($"Running {nameof(Verify_CallConvBitsAreTreatedAsCustomModifiersAndIgnored)}");
+
+        var ud = CallPrivateConstructorClass();
+        Assert.Equal(nameof(CallConvCdecl), CallCdeclMethod(ud, null));
+        Assert.Equal(nameof(CallConvStdcall), CallStdcallMethod(ud, null));
+
+        // The names of the declarations don't match the calling conventions in the function
+        // pointer signature, this is by design for this test. The intent here is to validate that
+        // calling conventions, when encoded in the ECMA-335 bits, are ignored on the first pass
+        // in the same way custom modifiers are ignored.
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name=UserDataClass.MethodCdeclCallConvBitName)]
+        extern static string CallCdeclMethod(UserDataClass d, delegate* unmanaged[Stdcall]<void> fptr);
+
+        // See comment above regarding naming.
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name=UserDataClass.MethodStdcallCallConvBitName)]
+        extern static string CallStdcallMethod(UserDataClass d, delegate* unmanaged[Cdecl]<void> fptr);
+    }
+
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_InvalidTargetUnsafeAccessor()
     {
         Console.WriteLine($"Running {nameof(Verify_InvalidTargetUnsafeAccessor)}");
@@ -352,10 +376,6 @@ static unsafe class UnsafeAccessorsTests
             isNativeAot ? null : UserDataClass.MethodPointerName,
             () => CallPointerMethod(null, null));
 
-        AssertExtensions.ThrowsMissingMemberException<MissingMethodException>(
-            isNativeAot ? null : UserDataClass.MethodCallConvBitsName,
-            () => CallCallConvBitsMethod(null, null));
-
         Assert.Throws<AmbiguousMatchException>(
             () => CallAmbiguousMethod(CallPrivateConstructorClass(), null));
 
@@ -374,12 +394,6 @@ static unsafe class UnsafeAccessorsTests
         // Pointers generally degrade to `void*`, but that isn't true for UnsafeAccessor signature validation.
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name=UserDataClass.MethodPointerName)]
         extern static string CallPointerMethod(UserDataClass d, delegate* unmanaged[Stdcall]<void> fptr);
-
-        // This is used to validate the ECMA-335 calling convention bits are checked
-        // before checking the custom modifiers that encode the calling conventions
-        // when there is more than one or one option doesn't have an existing bit.
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name=UserDataClass.MethodCallConvBitsName)]
-        extern static string CallCallConvBitsMethod(UserDataClass d, delegate* unmanaged[Cdecl, SuppressGCTransition]<void> fptr);
 
         // This is an ambiguous match since there are two methods each with two custom modifiers.
         // Therefore the default "ignore custom modifiers" logic fails. The fallback is for a

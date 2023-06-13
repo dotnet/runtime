@@ -184,12 +184,17 @@ namespace Internal.TypeSystem
             }
         }
 
-        public EmbeddedSignatureData[] GetEmbeddedSignatureData(params EmbeddedSignatureDataKind[] kinds)
+        public EmbeddedSignatureData[] GetEmbeddedSignatureData()
+        {
+            return GetEmbeddedSignatureData(default);
+        }
+
+        public EmbeddedSignatureData[] GetEmbeddedSignatureData(ReadOnlySpan<EmbeddedSignatureDataKind> kinds)
         {
             if ((_embeddedSignatureData == null) || (_embeddedSignatureData.Length == 0))
                 return null;
 
-            if (kinds.Length == 0)
+            if (kinds.IsEmpty)
                 return (EmbeddedSignatureData[])_embeddedSignatureData.Clone();
 
             List<EmbeddedSignatureData> ret = new();

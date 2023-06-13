@@ -3927,7 +3927,14 @@ MetaSig::CompareElementType(
             IfFailThrow(CorSigUncompressElementType_EndPtr(pSig1, pEndSig1, &callingConvention1));
             CorElementType callingConvention2 = ELEMENT_TYPE_MAX; // initialize to illegal
             IfFailThrow(CorSigUncompressElementType_EndPtr(pSig2, pEndSig2, &callingConvention2));
-            if (callingConvention1 != callingConvention2)
+
+            // Calling conventions are generally treated as custom modifiers.
+            // When callers request calling conventions to be ignored, we also ignore
+            // calling conventions and this is okay. It is okay because calling conventions,
+            // when more than one is defined (for example, SuppressGCTransition), all
+            // become encoded as custom modifiers.
+            if (!state->IgnoreCustomModifiers
+                && callingConvention1 != callingConvention2)
             {
                 return FALSE;
             }
