@@ -28,7 +28,7 @@ namespace Sample
         [JSImport("globalThis.console.log")]
         private static partial void GlobalThisConsoleLog(string text);
 
-        const string fetchhelper = "./fetchelper.js";
+        const string fetchhelper = "../fetchhelper.js";
 
         [JSImport("responseText", fetchhelper)]
         private static partial Task<string> FetchHelperResponseText(JSObject response, int delayMs);
@@ -40,7 +40,7 @@ namespace Sample
         internal static Task TestHelloWebWorker()
         {
             Console.WriteLine($"smoke: TestHelloWebWorker 1 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
-            Task t= WebWorker.RunAsync(() => 
+            Task t = WebWorker.RunAsync(() =>
             {
                 Console.WriteLine($"smoke: TestHelloWebWorker 2 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                 GlobalThisConsoleLog($"smoke: TestHelloWebWorker 3 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
@@ -50,7 +50,8 @@ namespace Sample
             return t.ContinueWith(Gogo);
         }
 
-        private static void Gogo(Task t){
+        private static void Gogo(Task t)
+        {
             Console.WriteLine($"smoke: TestHelloWebWorker 6 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
         }
 
@@ -82,9 +83,9 @@ namespace Sample
         internal static void StartTimerFromWorker()
         {
             Console.WriteLine("smoke: StartTimerFromWorker 1 utc {0}", DateTime.UtcNow.ToUniversalTime());
-            WebWorker.RunAsync(async () => 
+            WebWorker.RunAsync(async () =>
             {
-                while (!_timerDone)    
+                while (!_timerDone)
                 {
                     await Task.Delay(1 * 1000);
                     Console.WriteLine("smoke: StartTimerFromWorker 2 utc {0}", DateTime.UtcNow.ToUniversalTime());
@@ -97,26 +98,24 @@ namespace Sample
         internal static void StartAllocatorFromWorker()
         {
             Console.WriteLine("smoke: StartAllocatorFromWorker 1 utc {0}", DateTime.UtcNow.ToUniversalTime());
-            WebWorker.RunAsync(async () => 
+            WebWorker.RunAsync(async () =>
             {
-                while (!_timerDone)    
+                while (!_timerDone)
                 {
                     await Task.Delay(1 * 100);
                     var x = new List<int[]>();
                     for (int i = 0; i < 1000; i++)
                     {
-                        var v=new int[1000];
+                        var v = new int[1000];
                         v[i] = i;
                         x.Add(v);
                     }
-                    Console.WriteLine("smoke: StartAllocatorFromWorker 2 utc {0} {1} {2}", DateTime.UtcNow.ToUniversalTime(),x[1][1], GC.GetTotalAllocatedBytes());
+                    Console.WriteLine("smoke: StartAllocatorFromWorker 2 utc {0} {1} {2}", DateTime.UtcNow.ToUniversalTime(), x[1][1], GC.GetTotalAllocatedBytes());
                 }
                 Console.WriteLine("smoke: StartAllocatorFromWorker done utc {0}", DateTime.UtcNow.ToUniversalTime());
             });
         }
 
-        const string fetchhelper = "../fetchhelper.js";
-        
         [JSExport]
         internal static void StopTimerFromWorker()
         {
@@ -127,7 +126,7 @@ namespace Sample
         public static async Task TestCallSetTimeoutOnWorker()
         {
             await WebWorker.RunAsync(() => TimeOutThenComplete());
-            Console.WriteLine ($"XYZ: Main Thread caught task tid:{Thread.CurrentThread.ManagedThreadId}");
+            Console.WriteLine($"XYZ: Main Thread caught task tid:{Thread.CurrentThread.ManagedThreadId}");
         }
 
         [JSExport]
@@ -148,11 +147,11 @@ namespace Sample
                 Console.WriteLine($"smoke: FetchBackground 5 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                 if (ok)
                 {
-                    #if DEBUG
+#if DEBUG
                     var text = await FetchHelperResponseText(r, 5000);
-                    #else
+#else
                     var text = await FetchHelperResponseText(r, 25000);
-                    #endif
+#endif
                     Console.WriteLine($"smoke: FetchBackground 6 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                     return text;
                 }
@@ -190,21 +189,23 @@ namespace Sample
         private static async Task TimeOutThenComplete()
         {
             var tcs = new TaskCompletionSource();
-            Console.WriteLine ($"smoke: Task running tid:{Thread.CurrentThread.ManagedThreadId}");
-            GlobalThisSetTimeout(() => {
+            Console.WriteLine($"smoke: Task running tid:{Thread.CurrentThread.ManagedThreadId}");
+            GlobalThisSetTimeout(() =>
+            {
                 tcs.SetResult();
-                Console.WriteLine ($"smoke: Timeout fired tid:{Thread.CurrentThread.ManagedThreadId}");
+                Console.WriteLine($"smoke: Timeout fired tid:{Thread.CurrentThread.ManagedThreadId}");
             }, 250);
-            Console.WriteLine ($"smoke: Task sleeping tid:{Thread.CurrentThread.ManagedThreadId}");
+            Console.WriteLine($"smoke: Task sleeping tid:{Thread.CurrentThread.ManagedThreadId}");
             await tcs.Task;
-            Console.WriteLine ($"smoke: Task resumed tid:{Thread.CurrentThread.ManagedThreadId}");
+            Console.WriteLine($"smoke: Task resumed tid:{Thread.CurrentThread.ManagedThreadId}");
         }
 
         [JSExport]
         public static async Task<int> RunBackgroundThreadCompute()
         {
             var tcs = new TaskCompletionSource<int>();
-            var t = new Thread(() => {
+            var t = new Thread(() =>
+            {
                 var n = CountingCollatzTest();
                 tcs.SetResult(n);
             });
@@ -216,7 +217,8 @@ namespace Sample
         public static async Task<int> RunBackgroundLongRunningTaskCompute()
         {
             var factory = new TaskFactory();
-            var t = factory.StartNew<int> (() => {
+            var t = factory.StartNew<int>(() =>
+            {
                 var n = CountingCollatzTest();
                 return n;
             }, TaskCreationOptions.LongRunning);
@@ -226,17 +228,19 @@ namespace Sample
         [JSExport]
         public static async Task<int> RunBackgroundTaskRunCompute()
         {
-            var t1 = Task.Run (() => {
+            var t1 = Task.Run(() =>
+            {
                 var n = CountingCollatzTest();
                 return n;
             });
-            var t2 = Task.Run (() => {
+            var t2 = Task.Run(() =>
+            {
                 var n = CountingCollatzTest();
                 return n;
             });
-            var rs = await Task.WhenAll (new [] { t1, t2 });
+            var rs = await Task.WhenAll(new[] { t1, t2 });
             if (rs[0] != rs[1])
-                throw new Exception ($"Results from two tasks {rs[0]}, {rs[1]}, differ");
+                throw new Exception($"Results from two tasks {rs[0]}, {rs[1]}, differ");
             return rs[0];
         }
 
@@ -255,8 +259,9 @@ namespace Sample
             int bigly = 0;
             int hugely = 0;
             int maxSteps = 0;
-            for (int n = 1; n < maxInput; n++) {
-                int steps = CountingCollatz ((long)n, limit);
+            for (int n = 1; n < maxInput; n++)
+            {
+                int steps = CountingCollatz((long)n, limit);
                 if (steps > maxSteps)
                     maxSteps = steps;
                 if (steps > 120)
@@ -265,7 +270,7 @@ namespace Sample
                     hugely++;
             }
 
-            Console.WriteLine ($"Bigly: {bigly}, Hugely: {hugely}, maxSteps: {maxSteps}");
+            Console.WriteLine($"Bigly: {bigly}, Hugely: {hugely}, maxSteps: {maxSteps}");
 
             if (bigly == 86187 && hugely == 0 && maxSteps == 382)
                 return 524;
@@ -274,11 +279,12 @@ namespace Sample
         }
 
 
-        private static int CountingCollatz (long n, int limit)
+        private static int CountingCollatz(long n, int limit)
         {
             int steps = 0;
-            while (n > 1) {
-                n = Collatz1 (n);
+            while (n > 1)
+            {
+                n = Collatz1(n);
                 steps++;
                 if (steps >= limit)
                     break;
@@ -286,7 +292,7 @@ namespace Sample
             return steps;
         }
 
-        private static long Collatz1 (long n)
+        private static long Collatz1(long n)
         {
             if (n <= 0)
                 throw new Exception("Unexpected non-positive input");
