@@ -189,15 +189,15 @@ jobs:
 
     # Check if zip installed
     - script: |
-        if [ -x "$(command -v zip)" ]; then echo "##vso[task.setvariable variable=IsZipInstalled]true"
-        else echo "##vso[task.setvariable variable=IsZipInstalled]false";
+        if [ -x "$(command -v zip)" ]; then echo "##vso[task.setvariable variable=IsZipInstalled;]true"
+        else echo "##vso[task.setvariable variable=IsZipInstalled;]false";
         fi
       displayName: Check zip tool (Linux/Darwin)
       condition: and(succeeded(), or(eq(variables['Agent.Os'], 'Linux'), eq(variables['Agent.Os'], 'Darwin')))
 
     # Zip should always be installed on windows, so set the variable to true.
-    - script: |
-        echo "##vso[task.setvariable variable=IsZipInstalled]true";
+    - powershell: |
+        Write-Host "##vso[task.setvariable variable=IsZipInstalled;]true"
       displayName: Set installed zip tool (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
 
