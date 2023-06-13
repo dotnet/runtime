@@ -119,7 +119,4 @@
     <Reference Include="System.Threading.ThreadPool" />
     <Reference Include="System.Xml.ReaderWriter" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\System.Runtime.InteropServices\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
-  </ItemGroup>
 </Project>
