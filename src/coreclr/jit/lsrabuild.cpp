@@ -742,9 +742,7 @@ void LinearScan::addRefsForPhysRegMask(regMaskTP mask, LsraLocation currentLoc, 
 
     for (regMaskTP candidates = mask; candidates != RBM_NONE;)
     {
-        regMaskTP candidateBit = genFindLowestBit(candidates);
-        regNumber reg          = genRegNumFromMask(candidateBit);
-        candidates &= ~candidateBit;
+        regNumber reg = genFirstRegNumFromMaskAndToggle(candidates);
         // This assumes that these are all "special" RefTypes that
         // don't need to be recorded on the tree (hence treeNode is nullptr)
         RefPosition* pos = newRefPosition(reg, currentLoc, refType, nullptr,
