@@ -98,7 +98,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
 
     moduleConfig.applicationEnvironment = applicationEnvironment;
 
-    moduleConfig.remoteSources = resourceLoader.bootConfig.resources.remoteSources;
+    moduleConfig.remoteSources = (resourceLoader.bootConfig.resources as any).remoteSources;
     moduleConfig.assetsHash = resourceLoader.bootConfig.resources.hash;
     moduleConfig.assets = assets;
     moduleConfig.globalizationMode = "icu";
@@ -111,7 +111,6 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
             if (anyBootConfig[key] === null) {
                 delete anyBootConfig[key];
             }
-
         }
     }
 

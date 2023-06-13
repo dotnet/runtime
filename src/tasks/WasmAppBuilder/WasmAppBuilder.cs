@@ -316,7 +316,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             if (name == "environmentVariables")
                 config.environmentVariables = valueObject;
             else if (name == "diagnosticTracing")
-                config.diagnosticTracing = valueObject;
+                config.diagnosticTracing = valueObject == true || valueObject == bool.TrueString;
             else
                 extraConfiguration[name] = valueObject;
         }

@@ -14,7 +14,7 @@ export interface BootJsonData {
     readonly startupMemoryCache: boolean | undefined;
     readonly runtimeOptions: string[] | undefined;
     readonly environmentVariables?: { [name: string]: string };
-    readonly diagnosticTracing?: { [name: string]: string };
+    readonly diagnosticTracing?: boolean;
     readonly pthreadPoolSize: number;
 
     // These properties are tacked on, and not found in the boot.json file
@@ -35,7 +35,6 @@ export interface ResourceGroups {
     readonly extensions?: BootJsonDataExtension
     readonly runtimeAssets: ExtendedResourceList;
     readonly vfs?: { [virtualPath: string]: ResourceList };
-    readonly remoteSources?: string[];
 }
 
 export type ResourceList = { [name: string]: string };
