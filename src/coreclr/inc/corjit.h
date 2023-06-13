@@ -340,8 +340,8 @@ public:
     {
         enum
         {
-            SIZE = 8,
-            SAMPLE_INTERVAL = 32,
+            SIZE = 32,
+            SAMPLE_INTERVAL = 64,
             CLASS_FLAG     = 0x80000000,
             INTERFACE_FLAG = 0x40000000,
             DELEGATE_FLAG  = 0x20000000,

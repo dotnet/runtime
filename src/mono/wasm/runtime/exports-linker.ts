@@ -12,7 +12,7 @@ import { mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry 
 import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue, mono_jiterp_do_jit_call_indirect } from "./jiterpreter-jit-call";
 import { mono_wasm_marshal_promise } from "./marshal-to-js";
 import { mono_wasm_eventloop_has_unsettled_interop_promises } from "./pthreads/shared/eventloop";
-import { mono_wasm_pthread_on_pthread_attached } from "./pthreads/worker";
+import { mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_detached } from "./pthreads/worker";
 import { mono_wasm_schedule_timer, schedule_background_exec } from "./scheduling";
 import { mono_wasm_asm_loaded } from "./startup";
 import { mono_wasm_diagnostic_server_on_server_thread_created } from "./diagnostics/server_pthread";
@@ -20,27 +20,34 @@ import { mono_wasm_diagnostic_server_on_runtime_server_init, mono_wasm_event_pip
 import { mono_wasm_diagnostic_server_stream_signal_work_available } from "./diagnostics/server_pthread/stream-queue";
 import { mono_wasm_trace_logger } from "./logging";
 import { mono_wasm_profiler_leave, mono_wasm_profiler_enter } from "./profiler";
-import { mono_wasm_create_cs_owned_object_ref } from "./net6-legacy/cs-to-js";
-import { mono_wasm_typed_array_to_array_ref } from "./net6-legacy/js-to-cs";
-import { mono_wasm_typed_array_from_ref } from "./net6-legacy/buffers";
+import { mono_wasm_change_case, mono_wasm_change_case_invariant } from "./hybrid-globalization/change-case";
+import { mono_wasm_compare_string, mono_wasm_ends_with, mono_wasm_starts_with, mono_wasm_index_of } from "./hybrid-globalization/collations";
+import { mono_wasm_install_js_worker_interop, mono_wasm_uninstall_js_worker_interop } from "./pthreads/shared";
+
 import {
     mono_wasm_invoke_js_blazor, mono_wasm_invoke_js_with_args_ref, mono_wasm_get_object_property_ref, mono_wasm_set_object_property_ref,
     mono_wasm_get_by_index_ref, mono_wasm_set_by_index_ref, mono_wasm_get_global_object_ref
 } from "./net6-legacy/method-calls";
-import { mono_wasm_change_case, mono_wasm_change_case_invariant } from "./hybrid-globalization/change-case";
-import { mono_wasm_compare_string, mono_wasm_ends_with, mono_wasm_starts_with, mono_wasm_index_of } from "./hybrid-globalization/collations";
+import { mono_wasm_create_cs_owned_object_ref } from "./net6-legacy/cs-to-js";
+import { mono_wasm_typed_array_to_array_ref } from "./net6-legacy/js-to-cs";
+import { mono_wasm_typed_array_from_ref } from "./net6-legacy/buffers";
 
 // the methods would be visible to EMCC linker
 // --- keep in sync with dotnet.cjs.lib.js ---
 const mono_wasm_threads_exports = !MonoWasmThreads ? undefined : {
     // mono-threads-wasm.c
     mono_wasm_pthread_on_pthread_attached,
+    mono_wasm_pthread_on_pthread_detached,
     // threads.c
     mono_wasm_eventloop_has_unsettled_interop_promises,
     // diagnostics_server.c
     mono_wasm_diagnostic_server_on_server_thread_created,
     mono_wasm_diagnostic_server_on_runtime_server_init,
     mono_wasm_diagnostic_server_stream_signal_work_available,
+
+    // corebindings.c
+    mono_wasm_install_js_worker_interop,
+    mono_wasm_uninstall_js_worker_interop,
 };
 
 const mono_wasm_legacy_interop_exports = !WasmEnableLegacyJsInterop ? undefined : {

@@ -57,7 +57,7 @@ ThreadStressLog* ThreadStressLog::FindLatestThreadLog() const
     for (const ThreadStressLog* ptr = this; ptr != NULL; ptr = ptr->next)
     {
         if (ptr->readPtr != NULL)
-            if (latestLog == 0 || ptr->readPtr->timeStamp > latestLog->readPtr->timeStamp)
+            if (latestLog == 0 || ptr->readPtr->GetTimeStamp() > latestLog->readPtr->GetTimeStamp())
                 latestLog = ptr;
     }
     return const_cast<ThreadStressLog*>(latestLog);
@@ -423,9 +423,9 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
 
         // TODO: fix on 64 bit
         inProcPtr->Activate ();
-        if (inProcPtr->readPtr->timeStamp > lastTimeStamp)
+        if (inProcPtr->readPtr->GetTimeStamp() > lastTimeStamp)
         {
-            lastTimeStamp = inProcPtr->readPtr->timeStamp;
+            lastTimeStamp = inProcPtr->readPtr->GetTimeStamp();
         }
 
         outProcPtr = TO_CDADDR(inProcPtr->next);
@@ -489,14 +489,14 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
         }
 
         StressMsg* latestMsg = latestLog->readPtr;
-        if (latestMsg->formatOffset != 0 && !latestLog->CompletedDump())
+        if (latestMsg->GetFormatOffset() != 0 && !latestLog->CompletedDump())
         {
-            TADDR taFmt = (latestMsg->formatOffset) + TO_TADDR(g_hThisInst);
+            TADDR taFmt = (latestMsg->GetFormatOffset()) + TO_TADDR(g_hThisInst);
             hr = memCallBack->ReadVirtual(TO_CDADDR(taFmt), format, 256, 0);
             if (hr != S_OK)
                 strcpy_s(format, ARRAY_SIZE(format), "Could not read address of format string");
 
-            double deltaTime = ((double) (latestMsg->timeStamp - inProcLog.startTimeStamp)) / inProcLog.tickFrequency;
+            double deltaTime = ((double) (latestMsg->GetTimeStamp() - inProcLog.startTimeStamp)) / inProcLog.tickFrequency;
             if (bDoGcHist)
             {
                 if (strcmp(format, ThreadStressLog::TaskSwitchMsg()) == 0)
@@ -515,13 +515,13 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
                 else
                 {
                     args = latestMsg->args;
-                    formatOutput(memCallBack, file, format, (unsigned)latestLog->threadId, deltaTime, latestMsg->facility, args);
+                    formatOutput(memCallBack, file, format, (unsigned)latestLog->threadId, deltaTime, latestMsg->GetFacility(), args);
                 }
             }
             msgCtr++;
         }
 
-        latestLog->readPtr = latestLog->AdvanceRead();
+        latestLog->readPtr = latestLog->AdvanceRead(latestMsg->GetNumberOfArgs());
         if (latestLog->CompletedDump())
         {
             latestLog->readPtr = NULL;

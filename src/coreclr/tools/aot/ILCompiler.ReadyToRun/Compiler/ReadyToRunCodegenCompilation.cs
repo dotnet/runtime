@@ -106,6 +106,8 @@ namespace ILCompiler
                 }
             }
 
+            _nodeFactory.DetectGenericCycles(caller, callee);
+
             return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);
         }
 
@@ -255,6 +257,8 @@ namespace ILCompiler
         private readonly HashSet<MethodWithGCInfo> _methodsToRecompile = new HashSet<MethodWithGCInfo>();
 
         public ProfileDataManager ProfileData => _profileData;
+
+        public bool DeterminismCheckFailed { get; set; }
 
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
@@ -424,7 +428,9 @@ namespace ILCompiler
                 win32Resources: new Win32Resources.ResourceData(inputModule),
                 flags,
                 _nodeFactory.OptimizationFlags,
-                _nodeFactory.ImageBase);
+                _nodeFactory.ImageBase,
+                genericCycleDepthCutoff: -1, // We don't need generic cycle detection when rewriting component assemblies
+                genericCycleBreadthCutoff: -1); // as we're not actually compiling anything
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance);
             DependencyAnalyzerBase<NodeFactory> componentGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(componentFactory, comparer);
@@ -806,9 +812,9 @@ namespace ILCompiler
                     Logger.Writer.WriteLine("Compiling " + methodName);
                 }
 
-                if (_printReproInstructions != null)
+                if (_nodeFactory.OptimizationFlags.PrintReproArgs)
                 {
-                    Logger.Writer.WriteLine($"Single method repro args:{_printReproInstructions(method)}");
+                    Logger.Writer.WriteLine($"Single method repro args:{GetReproInstructions(method)}");
                 }
 
                 try
@@ -884,6 +890,11 @@ namespace ILCompiler
         public override void Dispose()
         {
             Array.Clear(_corInfoImpls);
+        }
+
+        public string GetReproInstructions(MethodDesc method)
+        {
+            return _printReproInstructions(method);
         }
     }
 }
