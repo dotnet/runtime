@@ -929,9 +929,29 @@ namespace Internal.IL
                             nextBasicBlock = _basicBlocks[_currentOffset + 5];
                             if (nextBasicBlock == null)
                             {
+                                // We expect pattern:
+                                //
+                                // ldtoken Foo
+                                // call GetTypeFromHandle
+                                // ldtoken Bar
+                                // call GetTypeFromHandle
+                                // call Equals
+                                //
+                                // We check for both ldtoken cases
                                 if ((ILOpcode)_ilBytes[_currentOffset + 5] == ILOpcode.call)
                                 {
                                     methodToken = ReadILTokenAt(_currentOffset + 6);
+                                    method = (MethodDesc)_methodIL.GetObject(methodToken);
+                                    isTypeEquals = IsTypeEquals(method);
+                                }
+                                else if ((ILOpcode)_ilBytes[_currentOffset + 5] == ILOpcode.ldtoken
+                                    && _basicBlocks[_currentOffset + 10] == null
+                                    && (ILOpcode)_ilBytes[_currentOffset + 10] == ILOpcode.call
+                                    && methodToken == ReadILTokenAt(_currentOffset + 11)
+                                    && _basicBlocks[_currentOffset + 15] == null
+                                    && (ILOpcode)_ilBytes[_currentOffset + 15] == ILOpcode.call)
+                                {
+                                    methodToken = ReadILTokenAt(_currentOffset + 16);
                                     method = (MethodDesc)_methodIL.GetObject(methodToken);
                                     isTypeEquals = IsTypeEquals(method);
                                 }

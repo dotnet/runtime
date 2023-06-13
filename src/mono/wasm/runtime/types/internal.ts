@@ -131,6 +131,9 @@ export type LoaderHelpers = {
     out(message: string): void;
     err(message: string): void;
     getApplicationEnvironment?: (bootConfigResponse: Response) => string | null;
+
+    isChromium: boolean,
+    isFirefox: boolean,
 }
 export type RuntimeHelpers = {
     config: MonoConfigInternal;
@@ -156,6 +159,7 @@ export type RuntimeHelpers = {
     subtle: SubtleCrypto | null,
     updateMemoryViews: () => void
     runtimeReady: boolean,
+    cspPolicy: boolean,
 
     runtimeModuleUrl: string
     nativeModuleUrl: string
@@ -413,6 +417,10 @@ export declare interface EmscriptenModuleInternal {
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
     onConfigLoaded?: (config: MonoConfig, api: RuntimeAPI) => void | Promise<void>;
+    safeSetTimeout(func: Function, timeout: number): number;
+    runtimeKeepalivePush(): void;
+    runtimeKeepalivePop(): void;
+    maybeExit(): void;
 }
 
 /// A PromiseController encapsulates a Promise together with easy access to its resolve and reject functions.

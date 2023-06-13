@@ -6373,6 +6373,35 @@ regNumber CodeGen::getCallIndirectionCellReg(GenTreeCall* call)
     return result;
 }
 
+//------------------------------------------------------------------------
+// genDefinePendingLabel - If necessary, define the pending call label after a
+// call instruction was emitted.
+//
+// Arguments:
+//    call - the call node
+//
+void CodeGen::genDefinePendingCallLabel(GenTreeCall* call)
+{
+    // for pinvoke/intrinsic/tailcalls we may have needed to get the address of
+    // a label.
+    if (!genPendingCallLabel)
+    {
+        return;
+    }
+
+    // For certain indirect calls we may introduce helper calls before that we need to skip:
+    // - CFG may introduce a call to the validator first
+    // - Generic virtual methods may compute the target dynamically through a separate helper call
+    if (call->IsHelperCall(compiler, CORINFO_HELP_VALIDATE_INDIRECT_CALL) ||
+        call->IsHelperCall(compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR))
+    {
+        return;
+    }
+
+    genDefineInlineTempLabel(genPendingCallLabel);
+    genPendingCallLabel = nullptr;
+}
+
 /*****************************************************************************
  *
  *  Generates code for all the function and funclet prologs and epilogs.

@@ -3283,7 +3283,7 @@ namespace System.Text.Json.Serialization.Tests
                 => new DictionaryWithPrivateKeyAndValueType { _values = { [PrivateEnum.A] = PrivateEnum.B, [PrivateEnum.B] = PrivateEnum.C } };
 
             public void Validate() => Assert.Equal(new KeyValuePair<PrivateEnum, PrivateEnum>[] { new(PrivateEnum.A, PrivateEnum.B), new(PrivateEnum.B, PrivateEnum.C) }, this);
-            public string GetExpectedJson() => """{"A":1,"B":2}"""; // cf. https://github.com/dotnet/runtime/issues/87129
+            public string GetExpectedJson() => """{"A":1,"B":2}""";
 
             PrivateEnum IDictionary<PrivateEnum, PrivateEnum>.this[PrivateEnum key] { get => _values[key]; set => _values[key] = value; }
             ICollection<PrivateEnum> IDictionary<PrivateEnum, PrivateEnum>.Keys => _values.Keys;

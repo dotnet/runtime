@@ -34,6 +34,12 @@ struct UnixNativeMethodInfo
     PTR_VOID pMethodStartAddress;
     PTR_UInt8 pMainLSDA;
     PTR_UInt8 pLSDA;
+
+    // Subset of unw_proc_info_t required for unwinding
+    unw_word_t start_ip;
+    unw_word_t unwind_info;
+    uint32_t format;
+
     bool executionAborted;
 };
 
@@ -57,42 +63,11 @@ UnixNativeCodeManager::~UnixNativeCodeManager()
 }
 
 // Virtually unwind stack to the caller of the context specified by the REGDISPLAY
-bool UnixNativeCodeManager::VirtualUnwind(REGDISPLAY* pRegisterSet)
+bool UnixNativeCodeManager::VirtualUnwind(MethodInfo* pMethodInfo, REGDISPLAY* pRegisterSet)
 {
-#if _LIBUNWIND_SUPPORT_DWARF_UNWIND
-    uintptr_t pc = pRegisterSet->GetIP();
-    if (pc >= (uintptr_t)m_pvManagedCodeStartRange &&
-        pc < (uintptr_t)m_pvManagedCodeStartRange + m_cbManagedCodeRange)
-    {
-        return UnwindHelpers::StepFrame(pRegisterSet, m_UnwindInfoSections);
-    }
-#endif
+    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
 
-    return UnwindHelpers::StepFrame(pRegisterSet);
-}
-
-// Find LSDA and start address for a function at address controlPC
-bool UnixNativeCodeManager::FindProcInfo(uintptr_t controlPC, uintptr_t* startAddress, uintptr_t* endAddress, uintptr_t* lsda)
-{
-    unw_proc_info_t procInfo;
-
-    if (!UnwindHelpers::GetUnwindProcInfo((PCODE)controlPC, m_UnwindInfoSections, &procInfo))
-    {
-        return false;
-    }
-
-    assert((procInfo.start_ip <= controlPC) && (controlPC < procInfo.end_ip));
-
-#if defined(HOST_ARM)
-    // libunwind fills by reference not by value for ARM
-    *lsda = *((uintptr_t *)procInfo.lsda);
-#else
-    *lsda = procInfo.lsda;
-#endif
-    *startAddress = procInfo.start_ip;
-    *endAddress = procInfo.end_ip;
-
-    return true;
+    return UnwindHelpers::StepFrame(pRegisterSet, pNativeMethodInfo->start_ip, pNativeMethodInfo->format, pNativeMethodInfo->unwind_info);
 }
 
 bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
@@ -106,13 +81,27 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
     }
 
     UnixNativeMethodInfo * pMethodInfo = (UnixNativeMethodInfo *)pMethodInfoOut;
-    uintptr_t startAddress, endAddress;
-    uintptr_t lsda;
 
-    if (!FindProcInfo((uintptr_t)ControlPC, &startAddress, &endAddress, &lsda))
+    // Find LSDA and start address for a function at address controlPC
+
+    unw_proc_info_t procInfo;
+
+    if (!UnwindHelpers::GetUnwindProcInfo((PCODE)ControlPC, m_UnwindInfoSections, &procInfo))
     {
         return false;
     }
+
+    assert((procInfo.start_ip <= (PCODE)ControlPC) && ((PCODE)ControlPC < procInfo.end_ip));
+
+    pMethodInfo->start_ip = procInfo.start_ip;
+    pMethodInfo->format = procInfo.format;
+    pMethodInfo->unwind_info = procInfo.unwind_info;
+
+    uintptr_t lsda = procInfo.lsda;
+#if defined(HOST_ARM)
+    // libunwind fills by reference not by value for ARM
+    lsda = *((uintptr_t *)ldsa);
+#endif
 
     PTR_UInt8 p = dac_cast<PTR_UInt8>(lsda);
 
@@ -126,12 +115,12 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
         pMethodInfo->pMainLSDA = p + *dac_cast<PTR_Int32>(p);
         p += sizeof(int32_t);
 
-        pMethodInfo->pMethodStartAddress = dac_cast<PTR_VOID>(startAddress - *dac_cast<PTR_Int32>(p));
+        pMethodInfo->pMethodStartAddress = dac_cast<PTR_VOID>(procInfo.start_ip - *dac_cast<PTR_Int32>(p));
     }
     else
     {
         pMethodInfo->pMainLSDA = dac_cast<PTR_UInt8>(lsda);
-        pMethodInfo->pMethodStartAddress = dac_cast<PTR_VOID>(startAddress);
+        pMethodInfo->pMethodStartAddress = dac_cast<PTR_VOID>(procInfo.start_ip);
     }
 
     pMethodInfo->executionAborted = false;
@@ -304,7 +293,7 @@ uintptr_t UnixNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
         // The passed in pRegisterSet should be left intact
         REGDISPLAY localRegisterSet = *pRegisterSet;
 
-        bool result = VirtualUnwind(&localRegisterSet);
+        bool result = VirtualUnwind(pMethodInfo, &localRegisterSet);
         assert(result);
 
         // All common ABIs have outgoing arguments under caller SP (minus slot reserved for return address).
@@ -369,7 +358,7 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
         *ppPreviousTransitionFrame = NULL;
     }
 
-    if (!VirtualUnwind(pRegisterSet))
+    if (!VirtualUnwind(pMethodInfo, pRegisterSet))
     {
         return false;
     }
@@ -532,14 +521,12 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(PTR_VOID pvAddress)
         if ((uintptr_t)pvAddress >= (uintptr_t)m_pvManagedCodeStartRange &&
             (uintptr_t)pvAddress < (uintptr_t)m_pvManagedCodeStartRange + m_cbManagedCodeRange)
         {
-            size_t startAddress;
-            size_t endAddress;
-            uintptr_t lsda;
+            unw_proc_info_t procInfo;
 
-            bool result = FindProcInfo((uintptr_t)pvAddress, &startAddress, &endAddress, &lsda);
+            bool result = UnwindHelpers::GetUnwindProcInfo((PCODE)pvAddress, m_UnwindInfoSections, &procInfo);
             ASSERT(result);
 
-            if (branchTarget < startAddress || branchTarget >= endAddress)
+            if (branchTarget < procInfo.start_ip || branchTarget >= procInfo.end_ip)
             {
                 return trailingEpilogueInstructions;
             }
@@ -730,7 +717,7 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     // and obtain the location of the return address on the stack
 #if defined(TARGET_AMD64)
 
-    if (!VirtualUnwind(pRegisterSet))
+    if (!VirtualUnwind(pMethodInfo, pRegisterSet))
     {
         return false;
     }
@@ -755,7 +742,7 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     }
 
     PTR_UIntNative pLR = pRegisterSet->pLR;
-    if (!VirtualUnwind(pRegisterSet))
+    if (!VirtualUnwind(pMethodInfo, pRegisterSet))
     {
         return false;
     }

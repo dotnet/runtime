@@ -296,6 +296,20 @@ namespace Microsoft.Diagnostics.NETCore.Client
             return await helper.ReadEnvironmentAsync(response.Continuation, token).ConfigureAwait(false);
         }
 
+        public void ApplyStartupHook(string startupHookPath)
+        {
+            IpcMessage message = CreateApplyStartupHookMessage(startupHookPath);
+            IpcMessage response = IpcClient.SendMessage(_endpoint, message);
+            ValidateResponseMessage(response, nameof(ApplyStartupHook));
+        }
+
+        internal async Task ApplyStartupHookAsync(string startupHookPath, CancellationToken token)
+        {
+            IpcMessage message = CreateApplyStartupHookMessage(startupHookPath);
+            IpcMessage response = await IpcClient.SendMessageAsync(_endpoint, message, token).ConfigureAwait(false);
+            ValidateResponseMessage(response, nameof(ApplyStartupHookAsync));
+        }
+
         /// <summary>
         /// Get all the active processes that can be attached to.
         /// </summary>
@@ -364,7 +378,7 @@ namespace Microsoft.Diagnostics.NETCore.Client
             return TryGetProcessInfo2FromResponse(response2, nameof(GetProcessInfoAsync));
         }
 
-        private static byte[] SerializePayload<T>(T arg)
+        public static byte[] SerializePayload<T>(T arg)
         {
             using (var stream = new MemoryStream())
             using (var writer = new BinaryWriter(stream))
@@ -539,6 +553,15 @@ namespace Microsoft.Diagnostics.NETCore.Client
 
             byte[] payload = SerializePayload(dumpPath, (uint)dumpType, (uint)flags);
             return new IpcMessage(DiagnosticsServerCommandSet.Dump, (byte)command, payload);
+        }
+
+        private static IpcMessage CreateApplyStartupHookMessage(string startupHookPath)
+        {
+            if (string.IsNullOrEmpty(startupHookPath))
+                throw new ArgumentException($"{nameof(startupHookPath)} required");
+
+            byte[] serializedConfiguration = SerializePayload(startupHookPath);
+            return new IpcMessage(DiagnosticsServerCommandSet.Process, (byte)ProcessCommandId.ApplyStartupHook, serializedConfiguration);
         }
 
         private static ProcessInfo GetProcessInfoFromResponse(IpcResponse response, string operationName)

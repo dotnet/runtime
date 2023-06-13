@@ -7,6 +7,7 @@
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
   </PropertyGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)Analyzers.targets" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
   <Import Project="$(RepositoryEngineeringDir)generators.targets" />
@@ -35,7 +36,6 @@
       unconditionally in Microsoft.NETCoreSdk.BundledVersions.props.
     -->
     <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
-    <EnableNETAnalyzers Condition="'$(EnableNETAnalyzers)' == ''">$(RunAnalyzers)</EnableNETAnalyzers>
     <!-- SDK sets product to assembly but we want it to be our product name -->
     <Product>Microsoft%AE .NET</Product>
     <!-- Use the .NET product branding version for informational version description -->

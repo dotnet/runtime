@@ -823,7 +823,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 										string actualName = memberDefinition.DeclaringType.FullName + "." + memberDefinition.Name;
 
 										if (actualName.StartsWith (expectedMember.DeclaringType.FullName) &&
-											actualName.Contains ("<" + expectedMember.Name + ">")) {
+											(actualName.Contains ("<" + expectedMember.Name + ">") ||
+											 actualName.EndsWith ("get_" + expectedMember.Name) ||
+											 actualName.EndsWith ("set_" + expectedMember.Name))) {
 											expectedWarningFound = true;
 											loggedMessages.Remove (loggedMessage);
 											break;
