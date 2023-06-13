@@ -17,7 +17,7 @@ namespace DebuggerTests
 {
     internal class InspectorClient : DevToolsClient
     {
-        protected ConcurrentDictionary<MessageId, TaskCompletionSource<Result>> pending_cmds = new ConcurrentDictionary<MessageId, TaskCompletionSource<Result>>();
+        protected readonly ConcurrentDictionary<MessageId, TaskCompletionSource<Result>> pending_cmds = new();
         protected Func<string, string, JObject, CancellationToken, Task> onEvent;
         protected int next_cmd_id;
 
