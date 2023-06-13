@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             RemoteExecutor.Invoke((certName) =>
             {
-                AppDomain.CurrentDomain.SetData("System.Security.Cryptography.Pkcs12UnspecifiedPasswordIterationLimit", -2);
+                AppContext.SetData("System.Security.Cryptography.Pkcs12UnspecifiedPasswordIterationLimit", -2);
 
                 PfxInfo pfxInfo = s_certificatesDictionary[certName];
 
