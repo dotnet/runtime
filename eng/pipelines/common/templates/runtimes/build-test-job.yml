@@ -74,15 +74,15 @@ jobs:
         value: ''
 
       - name: runtimeFlavorArgs
-        value: '-nativeaot'
+        value: ''
 
-      # - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-      #   - name: runtimeFlavorArgs
-      #     value: '-mono'
+      - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+        - name: runtimeFlavorArgs
+          value: '-mono'
 
-      # - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), in(parameters.osGroup, 'ios', 'tvos', 'maccatalyst')) }}:
-      #   - name: runtimeFlavorArgs
-      #     value: '-nativeaot'
+      - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), in(parameters.osGroup, 'ios', 'iossimulator', 'tvos', 'tvossimulator', 'maccatalyst')) }}:
+        - name: runtimeFlavorArgs
+          value: '-nativeaot'
 
       - name: testTreeFilterArg
         value: ''
