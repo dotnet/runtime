@@ -25,6 +25,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
     public bool UseWebcil { get; set; }
     public bool WasmIncludeFullIcuData { get; set; }
     public string? WasmIcuDataFileName { get; set; }
+    public string? RuntimeAssetsLocation { get; set; }
 
     // <summary>
     // Extra json elements to add to _framework/blazor.boot.json
@@ -86,11 +87,16 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         };
 
         // Create app
-        var frameworkPath = Path.Combine(AppDir, "_framework");
+        var frameworkPath = !string.IsNullOrEmpty(RuntimeAssetsLocation)
+            ? Path.Combine(AppDir, RuntimeAssetsLocation)
+            : AppDir;
+
         Directory.CreateDirectory(AppDir!);
         Directory.CreateDirectory(frameworkPath);
+
         if (UseWebcil)
             Log.LogMessage(MessageImportance.Normal, "Converting assemblies to Webcil");
+
         foreach (var assembly in _assemblies)
         {
             if (UseWebcil)
