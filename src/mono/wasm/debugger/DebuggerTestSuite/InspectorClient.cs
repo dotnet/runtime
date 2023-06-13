@@ -97,11 +97,7 @@ namespace DebuggerTests
             var tcs = new TaskCompletionSource<Result>();
 
             MessageId msgId = new MessageId(sessionId.sessionId, id);
-            pending_cmds.AddOrUpdate(msgId, tcs, (key, oldValue) => {
-                if (oldValue != tcs)
-                    logger.LogDebug($"Updating the pending command, key = {key}, oldValue= {oldValue}, newValue = {tcs}");
-                return tcs;
-            });
+            pending_cmds.AddOrUpdate(msgId, tcs,  (key, oldValue) => tcs);
 
             var str = o.ToString();
 

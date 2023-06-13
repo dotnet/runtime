@@ -234,12 +234,7 @@ class FirefoxInspectorClient : InspectorClient
             throw new Exception($"No 'to' field found in '{args}'");
 
         msgId = new FirefoxMessageId("", 0, to_str);
-        pending_cmds.AddOrUpdate(msgId, tcs, (key, oldValue) => {
-            if (oldValue != tcs)
-                logger.LogDebug($"Updating the pending command, key = {key}, oldValue= {oldValue}, newValue = {tcs}");
-            logger.LogTrace($"SendCommand: to: {args}");
-            return tcs;
-        });
+        pending_cmds.AddOrUpdate(msgId, tcs,  (key, oldValue) => tcs);
 
         var msg = args.ToString(Formatting.None);
         var bytes = Encoding.UTF8.GetBytes(msg);
