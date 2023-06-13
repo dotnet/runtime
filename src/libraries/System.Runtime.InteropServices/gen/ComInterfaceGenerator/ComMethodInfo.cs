@@ -57,7 +57,7 @@ namespace Microsoft.Interop
 
         private static bool IsComMethodCandidate(ISymbol member)
         {
-            return member.Kind == SymbolKind.Method && !member.IsStatic;
+            return member.Kind == SymbolKind.Method && member is IMethodSymbol { IsStatic: false, MethodKind: MethodKind.Ordinary };
         }
 
         private static DiagnosticOr<(ComMethodInfo, IMethodSymbol)> CalculateMethodInfo(ComInterfaceInfo ifaceContext, IMethodSymbol method, CancellationToken ct)

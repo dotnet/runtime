@@ -49,6 +49,8 @@ namespace Microsoft.Interop
             });
             var interfaceSymbolsWithoutDiagnostics = context.FilterAndReportDiagnostics(interfaceSymbolOrDiagnostics);
 
+            context.RegisterDiagnostics(interfaceSymbolsWithoutDiagnostics.SelectMany((data, ct) => GetDiagnosticsForInvalidMembers(data.Symbol)));
+
             var interfaceContextsOrDiagnostics = interfaceSymbolsWithoutDiagnostics
                 .Select((data, ct) => data.InterfaceInfo!)
                 .Collect()
@@ -193,6 +195,32 @@ namespace Microsoft.Interop
             {
                 context.AddSource(data.TypeName.Replace("global::", ""), data.Source);
             });
+        }
+
+        private static ImmutableArray<DiagnosticInfo> GetDiagnosticsForInvalidMembers(INamedTypeSymbol symbol)
+        {
+            ImmutableArray<DiagnosticInfo>.Builder diagnostics = ImmutableArray.CreateBuilder<DiagnosticInfo>();
+            foreach (ISymbol member in symbol.GetMembers())
+            {
+                if (member.IsStatic)
+                {
+                    continue;
+                }
+
+                DiagnosticDescriptor? descriptor = member.Kind switch
+                {
+                    SymbolKind.Property => GeneratorDiagnostics.InstancePropertyDeclaredInInterface,
+                    SymbolKind.Event => GeneratorDiagnostics.InstanceEventDeclaredInInterface,
+                    _ => null
+                };
+
+                if (descriptor is not null)
+                {
+                    diagnostics.Add(member.CreateDiagnosticInfo(descriptor, member.Name, symbol.ToDisplayString()));
+                }
+            }
+
+            return diagnostics.ToImmutable();
         }
 
         private static readonly AttributeSyntax s_iUnknownDerivedAttributeTemplate =
