@@ -76,6 +76,21 @@ namespace Microsoft.Interop.Analyzers
             if (dllImportData == null)
                 return;
 
+            if (dllImportData.ThrowOnUnmappableCharacter == true)
+            {
+                // LibraryImportGenerator doesn't support ThrowOnUnmappableCharacter = true
+                return;
+            }
+
+            if (dllImportData.BestFitMapping != false)
+            {
+                // LibraryImportGenerator doesn't support BestFitMapping = true
+                if (IsBestFitMapping(method, dllImportData))
+                {
+                    return;
+                }
+            }
+
             // Ignore methods already marked LibraryImport
             // This can be the case when the generator creates an extern partial function for blittable signatures.
             foreach (AttributeData attr in method.GetAttributes())
@@ -137,6 +152,26 @@ namespace Microsoft.Interop.Analyzers
             properties.Add(MayRequireAdditionalWork, mayRequireAdditionalWork.ToString());
 
             context.ReportDiagnostic(method.CreateDiagnosticInfo(ConvertToLibraryImport, properties.ToImmutable(), method.Name).ToDiagnostic());
+        }
+
+        private static bool IsBestFitMapping(IMethodSymbol method, DllImportData? dllImportData)
+        {
+            if (dllImportData.BestFitMapping == true)
+            {
+                return true;
+            }
+            AttributeData? bestFitMappingContainingType = method.ContainingType.GetAttributes().FirstOrDefault(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_InteropServices_BestFitMappingAttribute);
+            if (bestFitMappingContainingType is not null)
+            {
+                return bestFitMappingContainingType.ConstructorArguments[0].Value is true;
+            }
+            AttributeData? bestFitMappingContainingAssembly = method.ContainingAssembly.GetAttributes().FirstOrDefault(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_InteropServices_BestFitMappingAttribute);
+            if (bestFitMappingContainingAssembly is not null)
+            {
+                return bestFitMappingContainingAssembly.ConstructorArguments[0].Value is true;
+            }
+
+            return false;
         }
 
         private static bool HasUnsupportedMarshalAsInfo(TypePositionInfo info)
