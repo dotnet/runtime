@@ -271,7 +271,7 @@
   <UsingTask TaskName="AppleAppBuilderTask" AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
-  <Target Name="BuildiOSApp">
+  <Target Name="BuildMonoiOSApp">
     <PropertyGroup>
       <CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(_CMDDIR)))))</CMDDIR_Grandparent>
       <CategoryWithSlash>$([System.String]::Copy('$(_CMDDIR)').Replace("$(CMDDIR_Grandparent)/",""))</CategoryWithSlash>
