@@ -370,6 +370,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [OuterLoop("Uses external servers")]
         public async Task ConnectAsync_InvalidName_ThrowsSocketException()
         {
             string name = $"{Guid.NewGuid().ToString("N")}.microsoft.com.";
