@@ -42,6 +42,8 @@ namespace ILCompiler
         private CompositeImageSettings _compositeImageSettings;
         private ulong _imageBase;
         private NodeFactoryOptimizationFlags _nodeFactoryOptimizationFlags = new NodeFactoryOptimizationFlags();
+        private int _genericCycleDetectionDepthCutoff = -1;
+        private int _genericCycleDetectionBreadthCutoff = -1;
 
         private string _jitPath;
         private string _outputFile;
@@ -210,6 +212,13 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseGenericCycleDetection(int depthCutoff, int breadthCutoff)
+        {
+            _genericCycleDetectionDepthCutoff = depthCutoff;
+            _genericCycleDetectionBreadthCutoff = breadthCutoff;
+            return this;
+        }
+
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
@@ -260,7 +269,10 @@ namespace ILCompiler
                 flags,
                 _nodeFactoryOptimizationFlags,
                 _imageBase,
-                automaticTypeValidation ? singleModule : null);
+                automaticTypeValidation ? singleModule : null,
+                genericCycleDepthCutoff: _genericCycleDetectionDepthCutoff,
+                genericCycleBreadthCutoff: _genericCycleDetectionBreadthCutoff
+                );
 
             factory.CompositeImageSettings = _compositeImageSettings;
 

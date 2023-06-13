@@ -198,7 +198,9 @@ namespace ILCompiler.DependencyAnalysis
             ReadyToRunFlags flags,
             NodeFactoryOptimizationFlags nodeFactoryOptimizationFlags,
             ulong imageBase,
-            EcmaModule associatedModule)
+            EcmaModule associatedModule,
+            int genericCycleDepthCutoff,
+            int genericCycleBreadthCutoff)
         {
             OptimizationFlags = nodeFactoryOptimizationFlags;
             TypeSystemContext = context;
@@ -227,6 +229,13 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             CreateNodeCaches();
+
+            if (genericCycleBreadthCutoff >= 0 || genericCycleDepthCutoff >= 0)
+            {
+                _genericCycleDetector = new LazyGenericsSupport.GenericCycleDetector(
+                    depthCutoff: genericCycleDepthCutoff,
+                    breadthCutoff: genericCycleBreadthCutoff);
+            }
         }
 
         private void CreateNodeCaches()
@@ -399,6 +408,8 @@ namespace ILCompiler.DependencyAnalysis
         public ImportSectionNode ILBodyPrecodeImports;
 
         private NodeCache<ReadyToRunHelper, Import> _constructedHelpers;
+
+        private LazyGenericsSupport.GenericCycleDetector _genericCycleDetector;
 
         public Import GetReadyToRunHelperCell(ReadyToRunHelper helperId)
         {
@@ -1038,6 +1049,11 @@ namespace ILCompiler.DependencyAnalysis
         public CopiedManagedResourcesNode CopiedManagedResources(EcmaModule module)
         {
             return _copiedManagedResources.GetOrAdd(module);
+        }
+
+        public void DetectGenericCycles(TypeSystemEntity caller, TypeSystemEntity callee)
+        {
+            _genericCycleDetector?.DetectCycle(caller, callee);
         }
     }
 }

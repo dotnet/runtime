@@ -329,6 +329,28 @@ ds_rt_disable_perfmap (void)
 #endif // FEATURE_PERFMAP
 }
 
+static ep_char16_t * _ds_rt_coreclr_diagnostic_startup_hook_paths = NULL;
+
+static
+uint32_t
+ds_rt_apply_startup_hook (const ep_char16_t *startup_hook_path)
+{
+	HRESULT hr = S_OK;
+	// This is set to true when the EE has initialized, which occurs after
+	// the diagnostic suspension point has completed.
+	if (g_fEEStarted)
+	{
+		// TODO: Support loading and executing startup hook after EE has completely initialized.
+		return DS_IPC_E_INVALIDARG;
+	}
+	else
+	{
+		Assembly::AddDiagnosticStartupHookPath(reinterpret_cast<LPCWSTR>(startup_hook_path));
+	}
+
+	return DS_IPC_S_OK;
+}
+
 /*
 * DiagnosticServer.
 */

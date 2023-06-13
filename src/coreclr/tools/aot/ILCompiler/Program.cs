@@ -92,7 +92,9 @@ namespace ILCompiler
             var targetAbi = TargetAbi.NativeAot;
             var targetDetails = new TargetDetails(targetArchitecture, targetOS, targetAbi, simdVectorLength);
             CompilerTypeSystemContext typeSystemContext =
-                new CompilerTypeSystemContext(targetDetails, genericsMode, supportsReflection ? DelegateFeature.All : 0, Get(_command.MaxGenericCycle));
+                new CompilerTypeSystemContext(targetDetails, genericsMode, supportsReflection ? DelegateFeature.All : 0,
+                    genericCycleDepthCutoff: Get(_command.MaxGenericCycleDepth),
+                    genericCycleBreadthCutoff: Get(_command.MaxGenericCycleBreadth));
 
             //
             // TODO: To support our pre-compiled test tree, allow input files that aren't managed assemblies since

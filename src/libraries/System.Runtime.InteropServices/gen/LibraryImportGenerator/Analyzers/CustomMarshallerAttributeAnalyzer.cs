@@ -4,13 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
@@ -395,6 +391,17 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.ManagedTypeMustBeNonNullDescription)));
 
+        /// <inheritdoc cref="SR.MarshalModeMustBeValidEnumValue" />
+        public static readonly DiagnosticDescriptor MarshalModeMustBeValidValue =
+            new DiagnosticDescriptor(
+                Ids.InvalidCustomMarshallerAttributeUsage,
+                GetResourceString(nameof(SR.InvalidMarshalModeTitle)),
+                GetResourceString(nameof(SR.MarshalModeMustBeValidEnumValue)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.MarshalModeMustBeValidEnumValue)));
+
         // We are intentionally using the same diagnostic IDs as the parent type.
         // These diagnostics are the same diagnostics, but with a different severity,
         // as the Default marshaller shape can have support for the managed-to-unmanaged shape
@@ -676,11 +683,19 @@ namespace Microsoft.Interop.Analyzers
                             {
                                 return;
                             }
+                            var marshalModeArgument = attrCreation.GetArgumentByOrdinal(1);
+                            if (marshalModeArgument.Value is not IFieldReferenceOperation { ConstantValue.Value: var marshalMode }
+                                || !Enum.IsDefined(typeof(MarshalMode), (MarshalMode)marshalMode))
+                            {
+                                DiagnosticReporter marshalModeReporter = DiagnosticReporter.CreateForLocation(marshalModeArgument.Syntax.GetLocation(), context.ReportDiagnostic);
+                                marshalModeReporter.CreateAndReportDiagnostic(MarshalModeMustBeValidValue);
+                                return;
+                            }
 
                             AnalyzeMarshallerType(
                                 marshallerTypeReporter,
                                 managedType,
-                                (MarshalMode)attrCreation.GetArgumentByOrdinal(1).Value.ConstantValue.Value,
+                                (MarshalMode)marshalMode,
                                 (INamedTypeSymbol)marshallerType,
                                 ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryType));
                         }
