@@ -48,29 +48,27 @@ namespace System.Collections.Frozen
         {
             const int MaxSubstringLengthLimit = 8; // arbitrary small-ish limit... t's not worth the increase in algorithmic complexity to analyze longer substrings
 
-            SubstringComparer leftComparer = ignoreCase ? new LeftJustifiedCaseInsensitiveSubstringComparer() : new LeftJustifiedSubstringComparer();
-            HashSet<string> leftSet = new HashSet<string>(
+            SubstringComparer comparer = ignoreCase ? new JustifiedCaseInsensitiveSubstringComparer() : new JustifiedSubstringComparer();
+            HashSet<string> set = new HashSet<string>(
 #if NET6_0_OR_GREATER
                 uniqueStrings.Length,
 #endif
-                leftComparer);
-
-            HashSet<string>? rightSet = null;
-            SubstringComparer? rightComparer = null;
+                comparer);
 
             // For each substring length...
             int maxSubstringLength = Math.Min(minLength, MaxSubstringLengthLimit);
             for (int count = 1; count <= maxSubstringLength; count++)
             {
-                leftComparer.Count = count;
+                comparer.IsLeft = true;
+                comparer.Count = count;
 
                 // For each index, get a uniqueness factor for the left-justified substrings.
                 // If any is above our threshold, we're done.
                 for (int index = 0; index <= minLength - count; index++)
                 {
-                    leftComparer.Index = index;
+                    comparer.Index = index;
 
-                    if (HasSufficientUniquenessFactor(leftSet, uniqueStrings))
+                    if (HasSufficientUniquenessFactor(set, uniqueStrings))
                     {
                         results = CreateAnalysisResults(
                             uniqueStrings, ignoreCase, minLength, maxLength, index, count,
@@ -85,18 +83,8 @@ namespace System.Collections.Frozen
                 // right-justified substrings, and so we also check right-justification.
                 if (minLength != maxLength)
                 {
-                    // Lazily-initialize the right-comparer/set state, as it's often not needed.
-                    if (rightComparer is null)
-                    {
-                        rightComparer = ignoreCase ? new RightJustifiedCaseInsensitiveSubstringComparer() : new RightJustifiedSubstringComparer();
-                        rightSet = new HashSet<string>(
-#if NET6_0_OR_GREATER
-                            uniqueStrings.Length,
-#endif
-                            rightComparer);
-                    }
-                    rightComparer.Count = count;
-                    Debug.Assert(rightSet is not null);
+                    // toggle the direction and re-use the comparer and hashset (HasSufficientUniquenessFactor clears it)
+                    comparer.IsLeft = false;
 
                     // For each index, get a uniqueness factor for the right-justified substrings.
                     // If any is above our threshold, we're done.
@@ -104,11 +92,11 @@ namespace System.Collections.Frozen
                     {
                         // Get a uniqueness factor for the right-justified substrings.
                         // If it's above our threshold, we're done.
-                        rightComparer.Index = -index - count;
-                        if (HasSufficientUniquenessFactor(rightSet, uniqueStrings))
+                        comparer.Index = -index - count;
+                        if (HasSufficientUniquenessFactor(set, uniqueStrings))
                         {
                             results = CreateAnalysisResults(
-                                uniqueStrings, ignoreCase, minLength, maxLength, rightComparer.Index, count,
+                                uniqueStrings, ignoreCase, minLength, maxLength, comparer.Index, count,
                                 static (string s, int index, int count) => s.AsSpan(s.Length + index, count));
                             return true;
                         }
@@ -279,32 +267,21 @@ namespace System.Collections.Frozen
         {
             public int Index;
             public int Count;
+            public bool IsLeft;
             public abstract bool Equals(string? x, string? y);
             public abstract int GetHashCode(string s);
         }
 
-        private sealed class LeftJustifiedSubstringComparer : SubstringComparer
+        private sealed class JustifiedSubstringComparer : SubstringComparer
         {
-            public override bool Equals(string? x, string? y) => x.AsSpan(Index, Count).SequenceEqual(y.AsSpan(Index, Count));
-            public override int GetHashCode(string s) => Hashing.GetHashCodeOrdinal(s.AsSpan(Index, Count));
+            public override bool Equals(string? x, string? y) => x.AsSpan(IsLeft ? Index : (x!.Length + Index), Count).SequenceEqual(y.AsSpan(IsLeft ? Index : (y!.Length + Index), Count));
+            public override int GetHashCode(string s) => Hashing.GetHashCodeOrdinal(s.AsSpan(IsLeft ? Index : (s.Length + Index), Count));
         }
 
-        private sealed class LeftJustifiedCaseInsensitiveSubstringComparer : SubstringComparer
+        private sealed class JustifiedCaseInsensitiveSubstringComparer : SubstringComparer
         {
-            public override bool Equals(string? x, string? y) => x.AsSpan(Index, Count).Equals(y.AsSpan(Index, Count), StringComparison.OrdinalIgnoreCase);
-            public override int GetHashCode(string s) => Hashing.GetHashCodeOrdinalIgnoreCase(s.AsSpan(Index, Count));
-        }
-
-        private sealed class RightJustifiedSubstringComparer : SubstringComparer
-        {
-            public override bool Equals(string? x, string? y) => x.AsSpan(x!.Length + Index, Count).SequenceEqual(y.AsSpan(y!.Length + Index, Count));
-            public override int GetHashCode(string s) => Hashing.GetHashCodeOrdinal(s.AsSpan(s.Length + Index, Count));
-        }
-
-        private sealed class RightJustifiedCaseInsensitiveSubstringComparer : SubstringComparer
-        {
-            public override bool Equals(string? x, string? y) => x.AsSpan(x!.Length + Index, Count).Equals(y.AsSpan(y!.Length + Index, Count), StringComparison.OrdinalIgnoreCase);
-            public override int GetHashCode(string s) => Hashing.GetHashCodeOrdinalIgnoreCase(s.AsSpan(s.Length + Index, Count));
+            public override bool Equals(string? x, string? y) => x.AsSpan(IsLeft ? Index : (x!.Length + Index), Count).Equals(y.AsSpan(IsLeft ? Index : (y!.Length + Index), Count), StringComparison.OrdinalIgnoreCase);
+            public override int GetHashCode(string s) => Hashing.GetHashCodeOrdinalIgnoreCase(s.AsSpan(IsLeft ? Index : (s.Length + Index), Count));
         }
     }
 }
