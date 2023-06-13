@@ -27,7 +27,7 @@
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-tls-inline.h>
 #include <mono/utils/mono-threads.h>
-#include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-memory-model.h>
 
 #ifdef HAVE_ALLOCA_H
 #   include <alloca.h>

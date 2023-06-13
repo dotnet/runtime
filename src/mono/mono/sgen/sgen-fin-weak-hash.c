@@ -23,7 +23,7 @@
 #include "mono/sgen/sgen-pointer-queue.h"
 #include "mono/sgen/sgen-client.h"
 #include "mono/sgen/gc-internal-agnostic.h"
-#include "mono/utils/mono-membar.h"
+#include "mono/utils/mono-memory-model.h"
 #include "mono/utils/atomic.h"
 #include "mono/utils/unlocked.h"
 

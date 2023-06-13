@@ -36,7 +36,7 @@
 #include <mono/utils/monobitset.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-mmap.h>
-#include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-coop.h>
