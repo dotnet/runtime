@@ -49,7 +49,7 @@ namespace Tracing.Tests.ApplyStartupHookValidation
                         Logger.logger.Log($"Sent: {message.ToString()}");
                         IpcMessage response = IpcClient.SendMessage(stream, message);
                         Logger.logger.Log($"Received: {response.ToString()}");
-                        CheckResponse(response, ref fSuccess);
+                        fSuccess &= CheckResponse(response);
                     }
 
                     Logger.logger.Log("Waiting to accept diagnostic connection.");
@@ -66,7 +66,7 @@ namespace Tracing.Tests.ApplyStartupHookValidation
                         Logger.logger.Log($"Sent: {message.ToString()}");
                         IpcMessage response = IpcClient.SendMessage(stream, message);
                         Logger.logger.Log($"Received: {response.ToString()}");
-                        CheckResponse(response, ref fSuccess);
+                        fSuccess &= CheckResponse(response);
                     }
                 }
             );
@@ -126,9 +126,9 @@ namespace Tracing.Tests.ApplyStartupHookValidation
                         Logger.logger.Log($"Sent: {message.ToString()}");
                         IpcMessage response = IpcClient.SendMessage(stream, message);
                         Logger.logger.Log($"received: {response.ToString()}");
-                        CheckResponse(response, ref fSuccess);
+                        fSuccess &= CheckResponse(response);
                         
-                        Logger.logger.Log("Start waiting for any managed event.");
+                        Logger.logger.Log("Start waiting for any event that indicates managed code is running.");
                         await completionSource.Task.ConfigureAwait(false);
 
                         Logger.logger.Log("Stopping trace.");
@@ -149,7 +149,7 @@ namespace Tracing.Tests.ApplyStartupHookValidation
                         Logger.logger.Log($"Sent: {message.ToString()}");
                         IpcMessage response = IpcClient.SendMessage(stream, message);
                         Logger.logger.Log($"Received: {response.ToString()}");
-                        CheckResponse(response, ref fSuccess);
+                        fSuccess &= CheckResponse(response);
                     }
                 }
             );
@@ -168,12 +168,10 @@ namespace Tracing.Tests.ApplyStartupHookValidation
             return new IpcMessage(0x04, 0x07, serializedConfiguration);
         }
 
-        private static void CheckResponse(IpcMessage response, ref bool fSuccess)
+        private static bool CheckResponse(IpcMessage response)
         {
-            bool success = response.Header.CommandId == (byte)0; // DiagnosticsServerResponseId.OK
-            string status = success ? "success" : "failed";
-            Logger.logger.Log($"Response status: {status}");
-            fSuccess &= success;
+            Logger.logger.Log($"Response CommandId: {response.Header.CommandId}");
+            return response.Header.CommandId == (byte)0; // DiagnosticsServerResponseId.OK;
         }
 
         public static async Task<int> Main(string[] args)
