@@ -4654,14 +4654,14 @@ emit_x86_intrinsics (
 			case MONO_TYPE_U:
 #endif
 			case MONO_TYPE_I4:
-			case MONO_TYPE_U4: op = OP_SSE2_MOVD; break;
+			case MONO_TYPE_U4: op = OP_SIMD_LOAD_SCALAR_I4; break;
 #if TARGET_SIZEOF_VOID_P == 8
 			case MONO_TYPE_I:
 			case MONO_TYPE_U:
 #endif
 			case MONO_TYPE_I8:
-			case MONO_TYPE_U8: op = OP_SSE2_MOVQ; break;
-			case MONO_TYPE_R8: op = OP_SSE2_MOVUPD; break;
+			case MONO_TYPE_U8: op = OP_SIMD_LOAD_SCALAR_I8; break;
+			case MONO_TYPE_R8: op = OP_SIMD_LOAD_SCALAR_R8; break;
 			default: g_assert_not_reached(); break;
 			}
 			return emit_simd_ins_for_sig (cfg, klass, op, 0, 0, fsig, args);
@@ -5114,6 +5114,8 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_Dot, OP_XOP_X_X_X, INTRINS_WASM_DOT},
 	{SN_ExtractLane},
 	{SN_Floor, OP_XOP_OVR_X_X, INTRINS_SIMD_FLOOR},
+	{SN_LoadScalarVector128},
+	{SN_LoadVector128, OP_LOADX_MEMBASE},
 	{SN_Max, OP_XBINOP, OP_IMIN, OP_XBINOP, OP_IMIN_UN, OP_XBINOP, OP_FMIN},
 	{SN_Min, OP_XBINOP, OP_IMAX, OP_XBINOP, OP_IMAX_UN, OP_XBINOP, OP_FMAX},
 	{SN_Multiply},
@@ -5210,8 +5212,9 @@ emit_wasm_supported_intrinsics (
 	}
 
 	if (feature == MONO_CPU_WASM_SIMD) {
-		if ((id != SN_Splat && !is_element_type_primitive (fsig->params [0])) ||
-		    (id == SN_Splat && !MONO_TYPE_IS_VECTOR_PRIMITIVE(fsig->params [0])))
+		if ((id != SN_Splat && id != SN_Store && id != SN_LoadScalarVector128 && !is_element_type_primitive (fsig->params [0])) ||
+		    (id == SN_Splat && !MONO_TYPE_IS_VECTOR_PRIMITIVE(fsig->params [0])) ||
+		    (id == SN_Store && !is_element_type_primitive (fsig->params [1])))
 			return NULL;
 
 		uint16_t op = info->default_op;
@@ -5437,6 +5440,28 @@ emit_wasm_supported_intrinsics (
 			}
 			case SN_ExtractLane: {
 				op = type_to_xextract_op (arg0_type);
+				break;
+			}
+			case SN_LoadScalarVector128: {
+				switch (arg0_type) {
+				case MONO_TYPE_I:
+				case MONO_TYPE_U:
+				case MONO_TYPE_I4:
+				case MONO_TYPE_U4:
+				case MONO_TYPE_R4: // use OP_SIMD_LOAD_SCALAR_I4 to make llvm emit the v128.load32_zero
+					op = OP_SIMD_LOAD_SCALAR_I4;
+					break;
+				case MONO_TYPE_I8:
+				case MONO_TYPE_U8:
+				case MONO_TYPE_R8: // use OP_SIMD_LOAD_SCALAR_I8 to make llvm emit the v128.load64_zero
+					op = OP_SIMD_LOAD_SCALAR_I8;
+					break;
+				default:
+					g_assert_not_reached();
+					return NULL;
+				}
+
+				// continue with default emit
 				break;
 			}
 			case SN_ReplaceLane: {
