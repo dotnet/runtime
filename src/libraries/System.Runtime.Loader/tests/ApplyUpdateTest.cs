@@ -876,6 +876,22 @@ namespace System.Reflection.Metadata
                 
                 ApplyUpdateUtil.ApplyUpdate(assm);
 
+                var fi = x.GetType().GetField("myAddedField", BindingFlags.Instance | BindingFlags.NonPublic);
+
+                Assert.NotNull(fi);
+
+                Assert.Equal ("myAddedField", fi.Name);
+
+                Assert.Equal (typeof(string), fi.FieldType);
+
+                var fi2 = y.GetType().GetField("myAddedField", BindingFlags.Instance | BindingFlags.NonPublic);
+
+                Assert.NotNull(fi2);
+
+                Assert.Equal ("myAddedField", fi2.Name);
+
+                Assert.Equal (typeof(double), fi2.FieldType);
+
                 // there are two updates - the first adds the fields, the second one updates the
                 // methods to use the new fields
                 ApplyUpdateUtil.ApplyUpdate(assm);
