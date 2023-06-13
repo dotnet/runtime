@@ -28,6 +28,16 @@ namespace Internal.Cryptography.Pal
 
             try
             {
+                X509ContentType contentType = X509Certificate2.GetCertContentType(data);
+                switch (contentType)
+                {
+                    case X509ContentType.Cert:
+                    case X509ContentType.Pkcs7:
+                        break;
+                    default:
+                        return null;
+                }
+
                 X509Certificate2 certificate = new X509Certificate2(data);
                 certificate.ThrowIfInvalid();
                 return certificate;

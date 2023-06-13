@@ -169,7 +169,7 @@ namespace System.Net.Security.Tests
             if (PlatformDetection.IsWindows)
             {
                 X509Certificate2 ephemeral = endEntity;
-                endEntity = new X509Certificate2(endEntity.Export(X509ContentType.Pfx));
+                endEntity = new X509Certificate2(endEntity.Export(X509ContentType.Pfx), (string)null, X509KeyStorageFlags.DefaultKeySet);
                 ephemeral.Dispose();
             }
 

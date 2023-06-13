@@ -55,7 +55,7 @@ namespace Internal.Cryptography.Pal
                 TryReadX509Pem(rawData, out cert) ||
                 PkcsFormatReader.TryReadPkcs7Der(rawData, out cert) ||
                 PkcsFormatReader.TryReadPkcs7Pem(rawData, out cert) ||
-                PkcsFormatReader.TryReadPkcs12(rawData, password, ephemeralSpecified, out cert, out openSslException))
+                PkcsFormatReader.TryReadPkcs12(rawData, password, ephemeralSpecified, readingFromFile: false, out cert, out openSslException))
             {
                 if (cert == null)
                 {
@@ -90,6 +90,7 @@ namespace Internal.Cryptography.Pal
                     File.ReadAllBytes(fileName),
                     password,
                     ephemeralSpecified,
+                    readingFromFile: true,
                     out pal,
                     out Exception? exception);
 

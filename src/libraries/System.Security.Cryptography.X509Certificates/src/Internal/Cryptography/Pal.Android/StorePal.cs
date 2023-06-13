@@ -18,7 +18,7 @@ namespace Internal.Cryptography.Pal
             throw new NotImplementedException($"{nameof(StorePal)}.{nameof(FromHandle)}");
         }
 
-        public static ILoaderPal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        private static ILoaderPal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, bool readingFromFile, X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);
 
@@ -27,6 +27,7 @@ namespace Internal.Cryptography.Pal
 
             if (contentType == X509ContentType.Pkcs12)
             {
+                X509Certificate.EnforceIterationCountLimit(rawData, readingFromFile, password.PasswordProvided);
                 ICertificatePal[] certPals = ReadPkcs12Collection(rawData, password, ephemeralSpecified);
                 return new AndroidCertLoader(certPals);
             }
@@ -37,10 +38,15 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        public static ILoaderPal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        {
+            return FromBlob(rawData, password, readingFromFile: false, keyStorageFlags: keyStorageFlags);
+        }
+
         public static ILoaderPal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             byte[] fileBytes = File.ReadAllBytes(fileName);
-            return FromBlob(fileBytes, password, keyStorageFlags);
+            return FromBlob(fileBytes, password, readingFromFile: true, keyStorageFlags: keyStorageFlags);
         }
 
         public static IExportPal FromCertificate(ICertificatePalCore cert)

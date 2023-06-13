@@ -99,6 +99,7 @@ namespace Internal.Cryptography.Pal
             ReadOnlySpan<byte> rawData,
             X509ContentType contentType,
             SafePasswordHandle password,
+            bool readingFromFile,
             X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);
@@ -124,6 +125,7 @@ namespace Internal.Cryptography.Pal
                     throw new PlatformNotSupportedException(SR.Cryptography_X509_PKCS12_PersistKeySetNotSupported);
                 }
 
+                X509Certificate.EnforceIterationCountLimit(rawData, readingFromFile, password.PasswordProvided);
                 return ImportPkcs12(rawData, password, ephemeralSpecified);
             }
 
@@ -152,6 +154,15 @@ namespace Internal.Cryptography.Pal
             SafePasswordHandle password,
             X509KeyStorageFlags keyStorageFlags)
         {
+            return FromBlob(rawData, password, readingFromFile: false, keyStorageFlags);
+        }
+
+        public static ICertificatePal FromBlob(
+            ReadOnlySpan<byte> rawData,
+            SafePasswordHandle password,
+            bool readingFromFile,
+            X509KeyStorageFlags keyStorageFlags)
+        {
             Debug.Assert(password != null);
 
             ICertificatePal? result = null;
@@ -159,11 +170,11 @@ namespace Internal.Cryptography.Pal
                 rawData,
                 (derData, contentType) =>
                 {
-                    result = FromDerBlob(derData, contentType, password, keyStorageFlags);
+                    result = FromDerBlob(derData, contentType, password, readingFromFile, keyStorageFlags);
                     return false;
                 });
 
-            return result ?? FromDerBlob(rawData, GetDerCertContentType(rawData), password, keyStorageFlags);
+            return result ?? FromDerBlob(rawData, GetDerCertContentType(rawData), password, readingFromFile, keyStorageFlags);
         }
 
         public void DisposeTempKeychain()
