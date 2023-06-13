@@ -59,7 +59,7 @@
       <LegacyRunnableTestPaths SecondSeparator="$([System.String]::Copy('%(LegacyRunnableTestPaths.Identity)').IndexOfAny('\\/', $([MSBuild]::Add(%(LegacyRunnableTestPaths.Separator), 1))))" />
       <LegacyRunnableTestPaths ThirdSeparator="$([System.String]::Copy('%(LegacyRunnableTestPaths.Identity)').IndexOfAny('\\/', $([MSBuild]::Add(%(LegacyRunnableTestPaths.SecondSeparator), 1))))" />
       <LegacyRunnableTestPaths Separator="%(LegacyRunnableTestPaths.SecondSeparator)" Condition="'%(LegacyRunnableTestPaths.SecondSeparator)' != '-1'" />
-      <LegacyRunnableTestPaths Separator="%(LegacyRunnableTestPaths.ThirdSeparator)" Condition="'%(LegacyRunnableTestPaths.ThirdSeparator)' != '-1'" />
+      <LegacyRunnableTestPaths Separator="%(LegacyRunnableTestPaths.ThirdSeparator)" Condition="'%(LegacyRunnableTestPaths.ThirdSeparator)' != '-1' and '$(TestBuildMode)' == 'nativeaot'" />
       <TestDirectoriesWithDup Include="$([System.String]::Copy('%(LegacyRunnableTestPaths.Identity)').Substring(0, %(LegacyRunnableTestPaths.Separator)))" />
     </ItemGroup>
 
