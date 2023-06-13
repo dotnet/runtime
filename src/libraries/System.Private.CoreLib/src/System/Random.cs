@@ -277,7 +277,11 @@ namespace System
             for (int i = 1; i < values.Length; i++)
             {
                 int index = chooser.NextIndex();
-                (values[i], values[index]) = (values[index], values[i]);
+
+                // This pattern is faster than tuple deconstruction for large structs
+                var swap = values[index];
+                values[index] = values[i];
+                values[i] = swap;
             }
         }
 
@@ -288,19 +292,17 @@ namespace System
             private int _chunk;
             private int _chunkRemaining;
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public IncreasingUniform(Random random)
             {
-            _random = random;
-            _chunk = 0;
-            _n = 1;
-            _chunkRemaining = 0;
+                _random = random;
+                _chunk = 0;
+                _n = 1;
+                _chunkRemaining = 0;
             }
 
             /// <summary>
             /// Increase n by one and then return a random positive integer less than the new n
             /// </summary>
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int NextIndex()
             {
                 int nextN = _n + 1;
@@ -334,16 +336,15 @@ namespace System
             /// <summary>
             /// Calculate the highest (x,k) such that x = n*n+1*..*n+k-1 where x is a 32 bit integer.
             /// </summary>
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static (int, int) CalculateBound(int n)
             {
                 int count;
                 switch (n)
                 {
                     case 2:
-                        return (479001600, 11); //12 factorial
+                        return (479001600, 11); // 12 factorial
                     case 13:
-                        return (253955520, 7); //19 factorial / 12 factorial
+                        return (253955520, 7); // 19 factorial / 12 factorial
                     case < 34:
                         count = 6;
                         break;
@@ -367,7 +368,6 @@ namespace System
                 return (product, count);
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static int GetProduct(int n, int multiplications)
             {
                 int product = n;
