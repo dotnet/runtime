@@ -22615,7 +22615,6 @@ void gc_heap::merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n
         generation_free_list_space (gen) -= free_list_space_decrease;
 
         assert (free_list_space_decrease <= dd_fragmentation (dd));
-        dd_fragmentation (dd) -= free_list_space_decrease;
 
         size_t free_list_space_increase = 0;
         for (int from_hn = 0; from_hn < from_n_heaps; from_hn++)
@@ -22626,8 +22625,6 @@ void gc_heap::merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n
         }
         dprintf (8888, ("heap %d gen %d %zd free list space moved from other heaps", hn, gen_idx, free_list_space_increase));
         generation_free_list_space (gen) += free_list_space_increase;
-
-        dd_fragmentation (dd) += free_list_space_increase;
     }
 
 #ifdef _DEBUG
@@ -24850,8 +24847,6 @@ void gc_heap::recommission_heap()
 
         // copy some fields from heap0
 
-        // this is used by the allocator
-        dd_new_allocation (dd) = dd_new_allocation (heap0_dd);
 
         // this is copied to dd_previous_time_clock at the start of GC
         dd_time_clock     (dd) = dd_time_clock (heap0_dd);
@@ -24872,6 +24867,9 @@ void gc_heap::recommission_heap()
 
         // this value will just be incremented, not re-initialized
         dd_gc_clock                        (dd) = dd_gc_clock (heap0_dd);
+
+        // this is used by the allocator, but will be set later
+        dd_new_allocation                  (dd) = UNINITIALIZED_VALUE;
 
         // set the fields that are supposed to be set by the next GC to
         // a special value to help in debugging
@@ -25514,6 +25512,56 @@ bool gc_heap::change_heap_count (int new_n_heaps)
     #ifdef BACKGROUND_GC
         bgc_t_join.update_n_threads(new_n_heaps);
     #endif //BACKGROUND_GC
+
+        // compute the total budget per generation over the old heaps
+        // and figure out what the new budget per heap is
+        ptrdiff_t budget_per_heap[total_generation_count];
+        for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
+        {
+            ptrdiff_t total_budget = 0;
+            for (int i = 0; i < old_n_heaps; i++)
+            {
+                gc_heap* hp = g_heaps[i];
+
+                dynamic_data* dd = hp->dynamic_data_of (gen_idx);
+                total_budget += dd_new_allocation (dd);
+            }
+            // distribute the total budget for this generation over all new heaps if we are increasing heap count,
+            // but keep the budget per heap if we are decreasing heap count
+            int max_n_heaps = max (old_n_heaps, new_n_heaps);
+            budget_per_heap[gen_idx] = Align (total_budget/max_n_heaps, get_alignment_constant (gen_idx <= max_generation));
+
+            dprintf (6666, ("g%d: total budget: %zd budget per heap: %zd", gen_idx, total_budget, budget_per_heap[gen_idx]));
+        }
+
+        // distribute the new budget per heap over the new heaps
+        // and recompute the current size of the generation
+        for (int i = 0; i < new_n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+
+            for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
+            {
+                // distribute the total budget over all heaps, but don't go below the min budget
+                dynamic_data* dd = hp->dynamic_data_of (gen_idx);
+                dd_new_allocation (dd) = max (budget_per_heap[gen_idx], (ptrdiff_t)dd_min_size (dd));
+
+                // recompute dd_fragmentation and dd_current_size
+                generation* gen = hp->generation_of (gen_idx);
+                size_t gen_size = hp->generation_size (gen_idx);
+                dd_fragmentation (dd) = generation_free_list_space (gen);
+                assert (gen_size >= dd_fragmentation (dd));
+                dd_current_size (dd) = gen_size;
+
+                dprintf (6666, ("h%d g%d: new allocation: %zd generation_size: %zd fragmentation: %zd current_size: %zd",
+                    i,
+                    gen_idx,
+                    dd_new_allocation (dd),
+                    gen_size,
+                    dd_fragmentation (dd),
+                    dd_current_size (dd)));
+            }
+        }
 
         // put heaps that going idle now into the decommissioned state
         for (int i = n_heaps; i < old_n_heaps; i++)
