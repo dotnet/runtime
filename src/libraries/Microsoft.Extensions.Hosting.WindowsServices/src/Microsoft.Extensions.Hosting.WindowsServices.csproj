@@ -7,7 +7,7 @@
     <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
     <PackageDescription>.NET hosting infrastructure for Windows Services.</PackageDescription>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <ServicingVersion>1</ServicingVersion>
   </PropertyGroup>
 
