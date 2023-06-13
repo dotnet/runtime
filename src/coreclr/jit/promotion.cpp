@@ -204,7 +204,7 @@ bool AggregateInfo::OverlappingReplacements(unsigned      offset,
 
 struct PrimitiveAccess
 {
-    weight_t  CountWtd;
+    weight_t  CountWtd = 0;
     unsigned  Offset;
     var_types AccessType;
 
