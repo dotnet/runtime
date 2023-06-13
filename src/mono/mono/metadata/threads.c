@@ -46,6 +46,7 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/os-event.h>
 #include <mono/utils/mono-threads-debug.h>
+#include <mono/utils/mono-threads-wasm.h>
 #include <mono/utils/unlocked.h>
 #include <mono/utils/ftnptr.h>
 #include <mono/metadata/w32handle.h>
@@ -1068,7 +1069,7 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 
 	/* Don't need to close the handle to this thread, even though we took a
 	 * reference in mono_thread_attach (), because the GC will do it
-	 * when the Thread object is finalised.
+	 * when the Thread object is finalized.
 	 */
 }
 
@@ -1273,7 +1274,7 @@ start_wrapper (gpointer data)
 		/* if the thread wants to stay alive, don't clean up after it */
 		if (mono_thread_platform_external_eventloop_keepalive_check ()) {
 			/* while we wait in the external eventloop, we're GC safe */
-			MONO_REQ_GC_SAFE_MODE;
+			MONO_ENTER_GC_SAFE_UNBALANCED;
 			return 0;
 		}
 	}

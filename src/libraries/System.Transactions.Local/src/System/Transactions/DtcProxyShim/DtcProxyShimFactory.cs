@@ -260,7 +260,7 @@ internal sealed partial class DtcProxyShimFactory
         out OletxTransactionIsolationLevel isolationLevel,
         out TransactionShim transactionShim)
     {
-        var cloner = (ITransactionCloner)transactionNative;
+        var cloner = (ITransactionCloner)TransactionInterop.GetITransactionFromIDtcTransaction(transactionNative);
         cloner.CloneWithCommitDisabled(out ITransaction transaction);
 
         SetupTransaction(transaction, managedIdentifier, out transactionIdentifier, out isolationLevel, out transactionShim);

@@ -57,6 +57,21 @@
         <target state="needs-review-translation">La interfaz COM base no pudo generar el origen. ComInterfaceGenerator no generará el origen para esta interfaz.</target>
         <note />
       </trans-unit>
+      <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedDescription">
+        <source>Casting between a 'ComImport' type and a source-generated COM type is not supported and will fail at runtime</source>
+        <target state="new">Casting between a 'ComImport' type and a source-generated COM type is not supported and will fail at runtime</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedMessage">
+        <source>Casting between a 'ComImport' type and a source-generated COM type is not supported</source>
+        <target state="new">Casting between a 'ComImport' type and a source-generated COM type is not supported</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedTitle">
+        <source>Casting between a 'ComImport' type and a source-generated COM type is not supported</source>
+        <target state="new">Casting between a 'ComImport' type and a source-generated COM type is not supported</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ClassDoesNotImplementAnyGeneratedComInterfacesDescription">
         <source>A class with 'GeneratedComClassAttribute' must implement at least one interface with 'GeneratedComInterfaceAttribute' or else the generated code with not have an effect.</source>
         <target state="new">A class with 'GeneratedComClassAttribute' must implement at least one interface with 'GeneratedComInterfaceAttribute' or else the generated code with not have an effect.</target>

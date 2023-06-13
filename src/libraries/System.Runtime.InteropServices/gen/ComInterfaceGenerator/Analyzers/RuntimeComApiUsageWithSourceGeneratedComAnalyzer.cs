@@ -18,7 +18,7 @@ namespace Microsoft.Interop.Analyzers
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class RuntimeComApiUsageWithSourceGeneratedComAnalyzer : DiagnosticAnalyzer
     {
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(RuntimeComApisDoNotSupportSourceGeneratedCom);
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(RuntimeComApisDoNotSupportSourceGeneratedCom, CastsBetweenRuntimeComAndSourceGeneratedComNotSupported);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -129,6 +129,60 @@ namespace Microsoft.Interop.Analyzers
                         }
                     }
                 }, OperationKind.Invocation);
+
+                var getObjectForIUnknown = marshalType.GetMembers("GetObjectForIUnknown")[0];
+
+                context.RegisterOperationAction(context =>
+                {
+                    var operation = (IConversionOperation)context.Operation;
+                    if (operation.Type is INamedTypeSymbol { IsComImport: true })
+                    {
+                        IOperation operand = operation.Operand;
+                        if (operand is IConversionOperation { Type.SpecialType: SpecialType.System_Object } objConversion)
+                        {
+                            operand = objConversion.Operand;
+                        }
+                        foreach (var recognizer in sourceGeneratedComRecognizers)
+                        {
+                            if (recognizer(operand.Type))
+                            {
+                                context.ReportDiagnostic(
+                                    Diagnostic.Create(
+                                        CastsBetweenRuntimeComAndSourceGeneratedComNotSupported,
+                                        operation.Syntax.GetLocation()));
+                                break;
+                            }
+                        }
+                    }
+
+                    foreach (var recognizer in sourceGeneratedComRecognizers)
+                    {
+                        if (recognizer(operation.Type))
+                        {
+                            IOperation operand = operation.Operand;
+                            if (operand is IConversionOperation { Type.SpecialType: SpecialType.System_Object } objConversion)
+                            {
+                                operand = objConversion.Operand;
+                            }
+                            if (operand.Type is INamedTypeSymbol { IsComImport: true })
+                            {
+                                context.ReportDiagnostic(
+                                    Diagnostic.Create(
+                                        CastsBetweenRuntimeComAndSourceGeneratedComNotSupported,
+                                            operation.Syntax.GetLocation()));
+                                break;
+                            }
+                            else if (operand is IInvocationOperation invocation && invocation.TargetMethod.Equals(getObjectForIUnknown, SymbolEqualityComparer.Default))
+                            {
+                                context.ReportDiagnostic(
+                                    Diagnostic.Create(
+                                        CastsBetweenRuntimeComAndSourceGeneratedComNotSupported,
+                                            operation.Syntax.GetLocation()));
+                                break;
+                            }
+                        }
+                    }
+                }, OperationKind.Conversion);
 
                 static Func<IInvocationOperation, (ITypeSymbol Type, Location location)?> CreateArgumentTypeLookup(int ordinal) => invocation => invocation.GetArgumentByOrdinal(ordinal).Value switch
                 {
