@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.DependencyModel
 #if NETCOREAPP
             const char separator = ';';
 #else
-            // This method is only executed at startup. No need to cache the char[].
+            // This method is only executed once at startup. No need to cache the char[].
             char[] separator = { ';' };
 #endif
             string[]? files = depsFiles?.Split(separator, StringSplitOptions.RemoveEmptyEntries);
