@@ -179,25 +179,24 @@ jobs:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
             unpackFolder: $(librariesDownloadDir)/BrowserWasm
-            artifactFileName: BrowserWasm.zip
+            artifactFileName: BrowserWasm.tar.gz
             artifactName: BrowserWasm
             displayName: BrowserWasm
       - ${{ if ne(parameters.downloadSpecificBuild.buildId, '') }}:
         - template: /eng/pipelines/common/download-specific-artifact-step.yml
           parameters:
             unpackFolder: $(librariesDownloadDir)/BrowserWasm
-            artifactFileName: BrowserWasm.zip
+            artifactFileName: BrowserWasm.tar.gz
             artifactName: BrowserWasm
             displayName: BrowserWasm
             ${{ insert }}: ${{ parameters.downloadSpecificBuild }}
 
-      # Using test-main-7.0.js, since we are building with tfm:net7.0
       - script: >-
           mkdir -p $(librariesDownloadDir)/bin/wasm/wasm-data &&
           mkdir -p $(librariesDownloadDir)/bin/wasm/dotnet &&
           cp -r $(librariesDownloadDir)/BrowserWasm/staging/dotnet-latest/* $(librariesDownloadDir)/bin/wasm/dotnet &&
           cp -r $(librariesDownloadDir)/BrowserWasm/staging/built-nugets $(librariesDownloadDir)/bin/wasm &&
-          cp src/mono/wasm/Wasm.Build.Tests/data/test-main-7.0.js $(librariesDownloadDir)/bin/wasm/wasm-data/test-main.js &&
+          cp src/mono/wasm/test-main.js $(librariesDownloadDir)/bin/wasm/wasm-data/test-main.js &&
           find $(librariesDownloadDir)/bin/wasm -type d &&
           find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \;
         displayName: "Create wasm directory (Linux)"
