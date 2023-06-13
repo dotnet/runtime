@@ -419,36 +419,23 @@ namespace ComInterfaceGenerator.Unit.Tests
         public static IEnumerable<object[]> InterfaceVisibilities()
         {
             var emptyDiagnostics = new DiagnosticResult[] { };
-            var diagnostic = new DiagnosticResult[]{
+            var privateDiagnostic = new DiagnosticResult[]{
                     new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedInterfaceNotAccessible)
                     .WithLocation(0)
-                    .WithArguments("Test.IStringMarshalling")
+                    .WithArguments("Test.IComInterface", "'Test.IComInterface' has accessibility 'private'.")
+            };
+            var protectedDiagnostic = new DiagnosticResult[]{
+                    new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedInterfaceNotAccessible)
+                    .WithLocation(0)
+                    .WithArguments("Test.IComInterface", "'Test.IComInterface' has accessibility 'protected'.")
             };
 
             var group = new List<(string, DiagnosticResult[], string)>()
             {
                 ("public", emptyDiagnostics, ID()),
                 ("internal", emptyDiagnostics, ID()),
-                (
-                    "protected",
-                    new DiagnosticResult[]
-                    {
-                        new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedInterfaceNotAccessible)
-                            .WithLocation(0)
-                            .WithArguments("Test.IComInterface", "protected")
-                    },
-                    ID()
-                ),
-                (
-                    "private",
-                    new DiagnosticResult[]
-                    {
-                        new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedInterfaceNotAccessible)
-                            .WithLocation(0)
-                            .WithArguments("Test.IComInterface", "private")
-                    },
-                    ID()
-                ),
+                ("protected", protectedDiagnostic, ID()),
+                ("private", privateDiagnostic, ID()),
             };
             foreach (var (interfaceVisibility, diagnostics, id) in group)
             {
@@ -474,10 +461,15 @@ namespace ComInterfaceGenerator.Unit.Tests
         public static IEnumerable<object[]> StringMarshallingCustomTypeVisibilities()
         {
             var emptyDiagnostics = new DiagnosticResult[] { };
-            var diagnostic = new DiagnosticResult[]{
+            var privateDiagnostic = new DiagnosticResult[]{
                     new DiagnosticResult(GeneratorDiagnostics.StringMarshallingCustomTypeNotAccessibleByGeneratedCode)
                     .WithLocation(0)
-                    .WithArguments("Test.CustomStringMarshallingType")
+                    .WithArguments("Test.CustomStringMarshallingType", "'Test.CustomStringMarshallingType' has accessibility 'private'.")
+                };
+            var protectedDiagnostic = new DiagnosticResult[]{
+                    new DiagnosticResult(GeneratorDiagnostics.StringMarshallingCustomTypeNotAccessibleByGeneratedCode)
+                    .WithLocation(0)
+                    .WithArguments("Test.CustomStringMarshallingType", "'Test.CustomStringMarshallingType' has accessibility 'protected'.")
                 };
 
             var group = new List<(string, string, DiagnosticResult[], string)>()
@@ -485,12 +477,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                 ("public", "public", emptyDiagnostics, ID()),
                 // Technically we don't support inheriting from a GeneratedComInterface from another assembly, so this should be okay
                 ("public", "internal", emptyDiagnostics, ID()),
-                ("public", "protected", diagnostic, ID()),
-                ("public", "private", diagnostic, ID()),
+                ("public", "protected", protectedDiagnostic, ID()),
+                ("public", "private", privateDiagnostic, ID()),
                 ("internal", "public", emptyDiagnostics, ID()),
                 ("internal", "internal", emptyDiagnostics, ID()),
-                ("internal", "protected", diagnostic, ID()),
-                ("internal", "private", diagnostic, ID()),
+                ("internal", "protected", protectedDiagnostic, ID()),
+                ("internal", "private", privateDiagnostic, ID()),
             };
             foreach (var (interfaceVisibility, customTypeVisibility, diagnostics, id) in group)
             {

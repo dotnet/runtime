@@ -47,7 +47,7 @@ namespace Microsoft.Interop
             {
                 return DiagnosticOrInterfaceInfo.From(DiagnosticInfo.Create(
                     GeneratorDiagnostics.InvalidAttributedInterfaceNotAccessible,
-                    syntax.GetLocation(),
+                    syntax.Identifier.GetLocation(),
                     symbol.ToDisplayString(),
                     details));
             }
