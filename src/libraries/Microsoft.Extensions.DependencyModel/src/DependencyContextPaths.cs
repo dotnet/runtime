@@ -12,8 +12,6 @@ namespace Microsoft.Extensions.DependencyModel
         private const string DepsFilesProperty = "APP_CONTEXT_DEPS_FILES";
         private const string FxDepsFileProperty = "FX_DEPS_FILE";
 
-        private static readonly char[] s_semicolon = new[] { ';' };
-
         public static DependencyContextPaths Current { get; } = GetCurrent();
 
         public string? Application { get; }
@@ -42,7 +40,13 @@ namespace Microsoft.Extensions.DependencyModel
 
         internal static DependencyContextPaths Create(string? depsFiles, string? sharedRuntime)
         {
-            string[]? files = depsFiles?.Split(s_semicolon, StringSplitOptions.RemoveEmptyEntries);
+#if NETCOREAPP
+            const char separator = ';';
+#else
+            // This method is only executed at startup. No need to cache the char[].
+            char[] separator = { ';' };
+#endif
+            string[]? files = depsFiles?.Split(separator, StringSplitOptions.RemoveEmptyEntries);
             string? application = files != null && files.Length > 0 ? files[0] : null;
 
             string[]? nonApplicationPaths = files?

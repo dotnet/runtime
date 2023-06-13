@@ -277,6 +277,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "GetEntryAssembly() returns null")]
         public void DefaultWorksCorrectly()
         {
             // only need to assert the context contains non-null properties.
