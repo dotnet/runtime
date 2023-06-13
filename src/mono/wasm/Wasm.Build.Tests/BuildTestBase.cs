@@ -386,9 +386,15 @@ namespace Wasm.Build.Tests
                 options.InitProject?.Invoke();
 
                 File.WriteAllText(Path.Combine(_projectDir, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
-                File.Copy(Path.Combine(AppContext.BaseDirectory,
-                                        options.TargetFramework == "net8.0" ? "test-main.js" : "data/test-main-7.0.js"),
-                            Path.Combine(_projectDir, "test-main.js"));
+                File.Copy(
+                    Path.Combine(
+                        AppContext.BaseDirectory,
+                        string.IsNullOrEmpty(options.TargetFramework) || options.TargetFramework == "net8.0"
+                            ? "test-main.js"
+                            : "data/test-main-7.0.js"
+                    ),
+                    Path.Combine(_projectDir, "test-main.js")
+                );
 
                 File.WriteAllText(Path.Combine(_projectDir!, "index.html"), @"<html><body><script type=""module"" src=""test-main.js""></script></body></html>");
             }
