@@ -23690,6 +23690,16 @@ void gc_heap::garbage_collect (int n)
                                             STRESS_HEAP_ARG(n)
                                             );
 
+        if (settings.condemned_generation != max_generation)
+        {
+            // do more BGCs
+            if (((VolatileLoadWithoutBarrier (&settings.gc_index) % 5) == 0) && (!gc_heap::background_running_p ()))
+            {
+                settings.condemned_generation = max_generation;
+                should_do_blocking_collection = FALSE;
+            }
+        }
+
         STRESS_LOG1(LF_GCROOTS|LF_GC|LF_GCALLOC, LL_INFO10,
                 "condemned generation num: %d\n", settings.condemned_generation);
 
@@ -36823,6 +36833,12 @@ void gc_heap::recover_bgc_settings()
 
 void gc_heap::allow_fgc()
 {
+    // lengthen the BGC CM phase
+    if (cm_in_progress)
+    {
+        GCToOSInterface::YieldThread (0);
+    }
+
     assert (bgc_thread == GCToEEInterface::GetThread());
     bool bToggleGC = false;
 
@@ -44391,14 +44407,15 @@ CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int g
         uint8_t* current_lowest_address = background_saved_lowest_address;
         uint8_t* current_highest_address = background_saved_highest_address;
 
-        if ((result < current_highest_address) && (result >= current_lowest_address))
-        {
-            dprintf (3, ("Clearing mark bit at address %zx",
-                     (size_t)(&mark_array [mark_word_of (result)])));
+        //if ((result < current_highest_address) && (result >= current_lowest_address))
+        //{
+        //    dprintf (3, ("Clearing mark bit at address %zx",
+        //             (size_t)(&mark_array [mark_word_of (result)])));
 
-            mark_array_clear_marked (result);
-        }
-        if (current_c_gc_state != c_gc_state_free)
+        //    mark_array_clear_marked (result);
+        //}
+        //if (current_c_gc_state != c_gc_state_free)
+        if (current_c_gc_state == c_gc_state_planning)
         {
             dprintf (3, ("Concurrent allocation of a large object %zx",
                         (size_t)obj));
