@@ -5133,7 +5133,7 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_ShiftLeft, OP_SIMD_SHL},
 	{SN_ShiftRightArithmetic, OP_SIMD_SSHR},
 	{SN_ShiftRightLogical, OP_SIMD_USHR},
-	{SN_Shuffle, OP_WASM_SIMD_SHUFFLE},
+	{SN_Shuffle},
 	{SN_SignExtendWideningLower, OP_WASM_SIMD_SEXT_LOWER},
 	{SN_SignExtendWideningUpper, OP_WASM_SIMD_SEXT_UPPER},
 	{SN_Splat},
@@ -5506,6 +5506,13 @@ emit_wasm_supported_intrinsics (
 
 				return NULL;
 			}
+		case SN_Shuffle: {
+			/*
+			 * FIXME: llvm.wasm_shuffle causes llvm to crash if the shuffle argument is not a constant,
+			 * and we can't determine that here since the JIT has no vector constants.
+			 */
+			return NULL;
+		}
 		}
 
 		// default emit path for cases with op set
