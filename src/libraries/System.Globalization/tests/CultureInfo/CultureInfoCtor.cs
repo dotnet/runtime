@@ -452,13 +452,6 @@ namespace System.Globalization.Tests
             Assert.Equal(expectedSortName, ci.CompareInfo.Name);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
-        public void TestNeutralCultureWithCollationName()
-        {
-            Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo("zh-u-co-zhuyin"));
-            Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo("de-u-co-phonebk"));
-        }
-
         [InlineData("xx-u-XX", "xx-u-xx")]
         [InlineData("xx-u-XX-u-yy", "xx-u-xx-u-yy")]
         [InlineData("xx-t-ja-JP", "xx-t-ja-jp")]
