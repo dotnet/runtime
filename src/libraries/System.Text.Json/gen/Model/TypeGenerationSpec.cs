@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Text.Json.Serialization;
+using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -55,11 +56,11 @@ namespace System.Text.Json.SourceGeneration
         public required JsonUnmappedMemberHandling? UnmappedMemberHandling { get; init; }
         public required JsonObjectCreationHandling? PreferredPropertyObjectCreationHandling { get; init; }
 
-        public required ImmutableEquatableArray<PropertyGenerationSpec>? PropertyGenSpecs { get; init; }
+        public required ImmutableEquatableArray<PropertyGenerationSpec> PropertyGenSpecs { get; init; }
 
-        public required ImmutableEquatableArray<ParameterGenerationSpec>? CtorParamGenSpecs { get; init; }
+        public required ImmutableEquatableArray<ParameterGenerationSpec> CtorParamGenSpecs { get; init; }
 
-        public required ImmutableEquatableArray<PropertyInitializerGenerationSpec>? PropertyInitializerSpecs { get; init; }
+        public required ImmutableEquatableArray<PropertyInitializerGenerationSpec> PropertyInitializerSpecs { get; init; }
 
         public required CollectionType CollectionType { get; init; }
 
@@ -79,10 +80,51 @@ namespace System.Text.Json.SourceGeneration
         /// </summary>
         public required TypeRef? RuntimeTypeRef { get; init; }
 
-        public required TypeRef? ExtensionDataPropertyType { get; init; }
+        public required bool HasExtensionDataPropertyType { get; init; }
 
         public required TypeRef? ConverterType { get; init; }
 
         public required string? ImmutableCollectionFactoryMethod { get; init; }
+
+        public bool IsFastPathSupported()
+        {
+            if (IsPolymorphic)
+            {
+                return false;
+            }
+
+            switch (ClassType)
+            {
+                case ClassType.Object:
+                    if (HasExtensionDataPropertyType)
+                    {
+                        return false;
+                    }
+
+                    foreach (PropertyGenerationSpec property in PropertyGenSpecs)
+                    {
+                        if (property.PropertyType.SpecialType is SpecialType.System_Object ||
+                            property.NumberHandling is JsonNumberHandling.AllowNamedFloatingPointLiterals
+                                                    or JsonNumberHandling.WriteAsString ||
+                            property.ConverterType != null)
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+
+                case ClassType.Enumerable:
+                    return CollectionType != CollectionType.IAsyncEnumerableOfT &&
+                           CollectionValueType!.SpecialType is not SpecialType.System_Object;
+
+                case ClassType.Dictionary:
+                    return CollectionKeyType!.SpecialType is SpecialType.System_String &&
+                           CollectionValueType!.SpecialType is not SpecialType.System_Object;
+
+                default:
+                    return false;
+            }
+        }
     }
 }

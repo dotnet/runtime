@@ -106,6 +106,8 @@ namespace ILCompiler
                 }
             }
 
+            _nodeFactory.DetectGenericCycles(caller, callee);
+
             return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);
         }
 
@@ -426,7 +428,9 @@ namespace ILCompiler
                 win32Resources: new Win32Resources.ResourceData(inputModule),
                 flags,
                 _nodeFactory.OptimizationFlags,
-                _nodeFactory.ImageBase);
+                _nodeFactory.ImageBase,
+                genericCycleDepthCutoff: -1, // We don't need generic cycle detection when rewriting component assemblies
+                genericCycleBreadthCutoff: -1); // as we're not actually compiling anything
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance);
             DependencyAnalyzerBase<NodeFactory> componentGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(componentFactory, comparer);
