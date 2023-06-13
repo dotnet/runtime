@@ -75,7 +75,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
         if (TrimIndividualMethods)
         {
-            TrimmedAssemblies = trimmedAssemblies.ToArray();
+            TrimmedAssemblies = _trimmedAssemblies.ToArray();
         }
 
         if (!result.IsCompleted && !Log.HasLoggedErrors)
@@ -147,9 +147,9 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         using FileStream fs = File.Open(assemblyFilePath, FileMode.Open);
         using PEReader peReader = new(fs, PEStreamOptions.LeaveOpen);
         MetadataReader mr = peReader.GetMetadataReader();
-        string guidValue = ComputeGuid(mr);
+        string actualGuidValue = ComputeGuid(mr);
         string? expectedGuidValue = sr.ReadLine();
-        if (!string.Equals(guidValue, expectedGuidValue, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(actualGuidValue, expectedGuidValue, StringComparison.OrdinalIgnoreCase))
         {
             Log.LogError($"[ILStrip] GUID value of {assemblyFilePath} doesn't match the value listed in {methodTokenFile}.");
             return true;
@@ -297,6 +297,6 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     {
         var trimmedAssemblyItem = new TaskItem(assemblyFilePath);
         trimmedAssemblyItem.SetMetadata("TrimmedAssemblyFileName", trimmedAssemblyFilePath);
-        trimmedAssemblies.Add(trimmedAssemblyItem);
+        _trimmedAssemblies.Add(trimmedAssemblyItem);
     }
 }
