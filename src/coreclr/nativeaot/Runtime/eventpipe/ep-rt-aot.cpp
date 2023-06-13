@@ -11,6 +11,7 @@
 
 #ifdef TARGET_WINDOWS
 #include <windows.h>
+#include <Psapi.h>
 #else
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -41,7 +42,6 @@ thread_local EventPipeAotThreadHolderTLS EventPipeAotThreadHolderTLS::g_threadHo
 ep_rt_lock_handle_t _ep_rt_aot_config_lock_handle;
 CrstStatic _ep_rt_aot_config_lock;
 
-ep_char8_t *volatile _ep_rt_aot_diagnostics_cmd_line;
 
 #ifndef TARGET_UNIX
 uint32_t *_ep_rt_aot_proc_group_offsets;
@@ -85,12 +85,39 @@ ep_rt_aot_sample_profiler_write_sampling_event_for_threads (
 {
 }
 
+#if defined (__linux__)
+extern char *__progname;
+#endif
+
 const ep_char8_t *
 ep_rt_aot_entrypoint_assembly_name_get_utf8 (void) 
 {
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement EventPipe assembly name - return filename in nativeaot?
+#ifdef HOST_WINDOWS
+    ep_char8_t *buffer = reinterpret_cast<ep_char8_t *>(malloc(MAX_PATH));
+    GetProcessImageFileNameA(GetCurrentProcess(), buffer, MAX_PATH);
+    char* process_name = (strrchr(buffer, '\\') + 1);
+    if (process_name != NULL)
+    {
+        char* extension = strrchr(process_name, '.');
+        if (extension != NULL)
+        {
+            *extension = '\0';
+        }
+        return reinterpret_cast<const ep_char8_t*>(process_name);
+    }
     return reinterpret_cast<const ep_char8_t*>("");
+#else
+#if defined (__linux__)
+    char *process_name = __progname;
+    char *dot = strrchr(process_name, '.');
+    if (dot != NULL) {
+        *dot = '\0';
+    }
+    return reinterpret_cast<const ep_char8_t*>(process_name);
+#else
+    return reinterpret_cast<const ep_char8_t*>("");
+#endif
+#endif // HOST_WINDOWS
 }
 
 const ep_char8_t *
@@ -101,6 +128,17 @@ ep_rt_aot_diagnostics_command_line_get (void)
 #ifdef TARGET_WINDOWS
     const ep_char16_t* command_line = reinterpret_cast<const ep_char16_t *>(::GetCommandLineW());
     return ep_rt_utf16_to_utf8_string(command_line, -1);
+#elif TARGET_LINUX
+    FILE *cmdline_file = ::fopen("/proc/self/cmdline", "r");
+    if (cmdline_file == nullptr)
+        return "";
+
+    char *line = NULL;
+    size_t line_len = 0;
+    if (::getline (&line, &line_len, cmdline_file) == -1)
+        return "";
+
+    return reinterpret_cast<const ep_char8_t*>(line);
 #else
     return "";
 #endif
