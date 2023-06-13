@@ -49,19 +49,39 @@ namespace System
                 startupHookParts.AddRange(startupHooksVariable.Split(Path.PathSeparator));
             }
 
-            // Process each startup hook
+            // Parse startup hooks variable
+            StartupHookNameOrPath[] startupHooks = new StartupHookNameOrPath[startupHookParts.Count];
             for (int i = 0; i < startupHookParts.Count; i++)
             {
-                CallStartupHook(startupHookParts[i]);
+                ParseStartupHook(ref startupHooks[i], startupHookParts[i]);
+            }
+
+            // Call each startup hook
+            for (int i = 0; i < startupHooks.Length; i++)
+            {
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
+                CallStartupHook(startupHooks[i]);
+#pragma warning restore IL2026
             }
         }
 
+        // Parse a string specifying a single entry containing a startup hook,
+        // and call the hook.
         private static unsafe void CallStartupHook(char* pStartupHookPart)
         {
-            CallStartupHook(new string(pStartupHookPart));
+            if (!IsSupported)
+                return;
+
+            StartupHookNameOrPath startupHook = default(StartupHookNameOrPath);
+
+            ParseStartupHook(ref startupHook, new string(pStartupHookPart));
+
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
+            CallStartupHook(startupHook);
+#pragma warning restore IL2026
         }
 
-        private static void CallStartupHook(string startupHookPart)
+        private static void ParseStartupHook(ref StartupHookNameOrPath startupHook, string startupHookPart)
         {
             ReadOnlySpan<char> disallowedSimpleAssemblyNameChars = stackalloc char[4]
             {
@@ -70,8 +90,6 @@ namespace System
                 ' ',
                 ','
             };
-
-            StartupHookNameOrPath startupHook = default(StartupHookNameOrPath);
 
             if (string.IsNullOrEmpty(startupHookPart))
             {
@@ -110,10 +128,6 @@ namespace System
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidStartupHookSimpleAssemblyName, startupHookPart), assemblyNameException);
                 }
             }
-
-#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
-            CallStartupHook(startupHook);
-#pragma warning restore IL2026
         }
 
         // Load the specified assembly, and call the specified type's
