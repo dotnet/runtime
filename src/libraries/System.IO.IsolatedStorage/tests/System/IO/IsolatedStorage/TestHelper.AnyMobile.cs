@@ -13,6 +13,7 @@ namespace System.IO.IsolatedStorage
             List<string> roots = new List<string>();
             string userRoot = Helper.GetDataDirectory(IsolatedStorageScope.User);
             string randomUserRoot = Helper.GetRandomDirectory(userRoot, IsolatedStorageScope.User);
+            roots.Add(userRoot);
             roots.Add(randomUserRoot);
 
             return roots;
