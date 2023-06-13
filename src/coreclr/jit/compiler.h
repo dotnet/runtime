@@ -8722,7 +8722,6 @@ private:
             // TODO: We should be returning 0 here, but there are a number of
             // places that don't quite get handled correctly in that scenario
 
-            assert((JitConfig.EnableHWIntrinsic() == 0) || (JitConfig.EnableSSE() == 0));
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
@@ -8735,7 +8734,6 @@ private:
             // TODO: We should be returning 0 here, but there are a number of
             // places that don't quite get handled correctly in that scenario
 
-            assert((JitConfig.EnableHWIntrinsic() == 0) || (JitConfig.EnableArm64AdvSimd() == 0));
             return FP_REGSIZE_BYTES;
         }
 #else
