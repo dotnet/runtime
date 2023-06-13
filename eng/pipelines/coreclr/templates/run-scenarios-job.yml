@@ -187,6 +187,11 @@ jobs:
         PERFLAB_TARGET_FRAMEWORKS: net7.0
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Darwin'))
 
+    # Install zip tool on linux
+    - script: sudo apt-get install zip --no-upgrade # Install zip tool only if not already installed
+      displayName: Install zip tool (Linux)
+      condition: and(succeeded(), eq(variables['Agent.Os'], 'Linux'))
+
     # Zip the workitem directory (for xharness based workitems)
     - task: ArchiveFiles@2
       inputs:
