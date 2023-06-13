@@ -1293,7 +1293,7 @@ namespace
                     if (TrySetTargetMethod(cxt, methodName, false /* ignoreCustomModifiers */))
                         return true;
                 }
-                COMPlusThrow(kAmbiguousMatchException, BFA_AMBIGUOUS_UNSAFEACCESSOR);
+                COMPlusThrow(kAmbiguousMatchException, W("Arg_AmbiguousMatchException_UnsafeAccessor"));
             }
             targetMaybe = curr;
         }

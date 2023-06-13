@@ -477,6 +477,9 @@
     <Compile Include="..\..\Common\TypeSystem\IL\EcmaMethodIL.Symbols.cs">
       <Link>IL\EcmaMethodIL.Symbols.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\HelperExtensions.cs">
+      <Link>IL\HelperExtensions.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\MethodIL.cs">
       <Link>IL\MethodIL.cs</Link>
     </Compile>

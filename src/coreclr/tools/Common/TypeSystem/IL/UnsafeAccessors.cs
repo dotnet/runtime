@@ -17,7 +17,6 @@ namespace Internal.IL
         public static MethodIL TryGetIL(EcmaMethod method)
         {
             Debug.Assert(method != null);
-
             CustomAttributeValue<TypeDesc>? decodedAttribute = method.GetDecodedCustomAttribute("System.Runtime.CompilerServices", "UnsafeAccessorAttribute");
             if (!decodedAttribute.HasValue)
             {
@@ -473,32 +472,38 @@ namespace Internal.IL
             ILEmitter emit = new ILEmitter();
             ILCodeStream codeStream = emit.NewCodeStream();
 
-            MethodDesc md;
+            ILCodeLabel label = emit.NewCodeLabel();
+            codeStream.EmitLabel(label);
+
+            MethodDesc thrower;
             TypeSystemContext typeSysContext = context.Declaration.Context;
             if (ambiguous)
             {
-                codeStream.Emit(ILOpcode.ldstr, emit.NewToken("Ambiguity in binding of UnsafeAccessorAttribute."));
-
-                var type = context.Declaration.Context.SystemModule.GetType("System.Reflection", "AmbiguousMatchException");
-                MethodSignature ctorString = new(MethodSignatureFlags.None, 0, typeSysContext.GetWellKnownType(WellKnownType.Void), new[] { typeSysContext.GetWellKnownType(WellKnownType.String) });
-                md = type.GetMethod(".ctor", ctorString);
+                codeStream.EmitLdc((int)ExceptionStringID.AmbiguousMatchUnsafeAccessor);
+                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowAmbiguousMatchException");
             }
             else
             {
-                codeStream.Emit(ILOpcode.ldnull); // Not supplying class name
+
+                ExceptionStringID id;
+                if (context.Kind == UnsafeAccessorKind.Field || context.Kind == UnsafeAccessorKind.StaticField)
+                {
+                    id = ExceptionStringID.MissingField;
+                    thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowMissingFieldException");
+                }
+                else
+                {
+                    id = ExceptionStringID.MissingMethod;
+                    thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowMissingMethodException");
+                }
+
+                codeStream.EmitLdc((int)id);
                 codeStream.Emit(ILOpcode.ldstr, emit.NewToken(name));
-
-                string exceptName = (context.Kind == UnsafeAccessorKind.Field || context.Kind == UnsafeAccessorKind.StaticField)
-                    ? nameof(MissingFieldException)
-                    : nameof(MissingMethodException);
-
-                var type = context.Declaration.Context.SystemModule.GetType("System", exceptName);
-                MethodSignature ctorStringString = new(MethodSignatureFlags.None, 0, typeSysContext.GetWellKnownType(WellKnownType.Void), new[] { typeSysContext.GetWellKnownType(WellKnownType.String), typeSysContext.GetWellKnownType(WellKnownType.String) });
-                md = type.GetMethod(".ctor", ctorStringString);
             }
 
-            codeStream.Emit(ILOpcode.newobj, emit.NewToken(md));
-            codeStream.Emit(ILOpcode.throw_);
+            Debug.Assert(thrower != null);
+            codeStream.Emit(ILOpcode.call, emit.NewToken(thrower));
+            codeStream.Emit(ILOpcode.br, label);
             return emit.Link(context.Declaration);
         }
 
@@ -506,9 +511,14 @@ namespace Internal.IL
         {
             ILEmitter emit = new ILEmitter();
             ILCodeStream codeStream = emit.NewCodeStream();
-            var type = method.Context.SystemModule.GetType("System", "BadImageFormatException");
-            codeStream.Emit(ILOpcode.newobj, emit.NewToken(type.GetDefaultConstructor()));
-            codeStream.Emit(ILOpcode.throw_);
+
+            ILCodeLabel label = emit.NewCodeLabel();
+            codeStream.EmitLabel(label);
+            codeStream.EmitLdc((int)ExceptionStringID.BadImageFormatGeneric);
+            MethodDesc thrower = method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowBadImageFormatException");
+            codeStream.Emit(ILOpcode.call, emit.NewToken(thrower));
+            codeStream.Emit(ILOpcode.br, label);
+
             return emit.Link(method);
         }
     }
