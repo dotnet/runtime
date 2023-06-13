@@ -4503,14 +4503,17 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         }
     }
 #else
-    if (compiler->info.compMethodHashPrivate == 0x8e7151c9)
+    regMaskTP deadCandidates = ~liveRegs;
+    if (availableRegCount < (sizeof(regMaskTP) * 8))
     {
-        printf("hello\n");
+        // Mask out the bits that are between 64 ~ availableRegCount
+        // so we do not visit them in below loop.
+        regMaskTP unusedRegMask = (1ULL << availableRegCount) - 1;
+        deadCandidates &= unusedRegMask;
     }
-    regMaskTP deadCandidates   = ~liveRegs;
+
     regMaskTP deadCandidateBit = genFindLowestBit(deadCandidates);
-    regMaskTP maxCandidateBit  = 1ULL << (availableRegCount - 1);
-    while (deadCandidateBit < maxCandidateBit)
+    while (deadCandidates != RBM_NONE)
     {
         deadCandidateBit         = genFindLowestBit(deadCandidates);
         regNumber  reg           = genRegNumFromMask(deadCandidateBit);
