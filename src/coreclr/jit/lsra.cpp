@@ -4518,7 +4518,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         deadCandidateBit         = genFindLowestBit(deadCandidates);
         regNumber  reg           = genRegNumFromMask(deadCandidateBit);
         RegRecord* physRegRecord = getRegisterRecord(reg);
-        deadCandidates &= ~deadCandidateBit;
+        deadCandidates ^= deadCandidateBit;
 
         makeRegAvailable(reg, physRegRecord->registerType);
         Interval* assignedInterval = physRegRecord->assignedInterval;
