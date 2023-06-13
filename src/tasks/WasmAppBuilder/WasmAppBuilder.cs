@@ -314,11 +314,22 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 return false;
 
             if (name == "environmentVariables")
+            {
                 config.environmentVariables = valueObject;
+            }
             else if (name == "diagnosticTracing")
-                config.diagnosticTracing = valueObject == true || valueObject == bool.TrueString;
+            {
+                if (valueObject is bool boolValue)
+                    config.diagnosticTracing = boolValue;
+                else if (valueObject is string stringValue)
+                    config.diagnosticTracing = stringValue == bool.TrueString;
+                else
+                    throw new LogAsErrorException($"Unsupported value of type '{valueObject?.GetType()?.FullName}' for extra config 'diagnosticTracing'.");
+            }
             else
+            {
                 extraConfiguration[name] = valueObject;
+            }
         }
 
         if (extraConfiguration.Count > 0)
