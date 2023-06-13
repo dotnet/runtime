@@ -281,7 +281,7 @@ namespace System
             }
         }
 
-        private ref struct IncreasingUniform
+        private struct IncreasingUniform
         {
             private readonly Random _random;
             private int _n;
@@ -312,7 +312,7 @@ namespace System
                 }
                 else
                 {
-                    _chunkRemaining -= 1;
+                    _chunkRemaining--;
                 }
 
                 int result;

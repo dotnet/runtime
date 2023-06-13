@@ -779,7 +779,7 @@ namespace System.Tests
                 for (int j = 0; j < len; j++)
                 {
                     int index = array[j];
-                    counts[j,index] += 1;
+                    counts[j, index]++;
                 }
             }
     
