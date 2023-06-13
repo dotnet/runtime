@@ -230,9 +230,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 Assert.Empty(result.AllGeneratedTypes);
             }
 
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
+            Assert.Empty(result.Diagnostics);
         }
 
         [Theory]
@@ -262,10 +260,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
             Assert.Empty(result.AllGeneratedTypes);
-
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
+            Assert.Empty(result.Diagnostics);
         }
 
         [Fact]
@@ -602,9 +597,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             ImmutableArray<Diagnostic> generatorDiags = result.NewCompilation.GetDiagnostics();
 
             // No diagnostics expected.
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+            Assert.Empty(result.Diagnostics);
         }
 
         [Fact]
@@ -632,9 +625,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             ImmutableArray<Diagnostic> generatorDiags = result.NewCompilation.GetDiagnostics();
 
             // No diagnostics expected.
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+            Assert.Empty(result.Diagnostics);
         }
 
         [Fact]
@@ -695,9 +686,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             ImmutableArray<Diagnostic> generatorDiags = result.NewCompilation.GetDiagnostics();
 
             // No diagnostics expected.
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+            Assert.Empty(result.Diagnostics);
         }
 
         [Fact]

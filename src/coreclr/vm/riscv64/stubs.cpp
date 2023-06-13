@@ -1318,7 +1318,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
         _ASSERTE(pEntry->dstofs != ShuffleEntry::HELPERREG);
         _ASSERTE(pEntry->srcofs != ShuffleEntry::HELPERREG);
 
-        EmitMovReg(IntReg((pEntry->dstofs & ShuffleEntry::OFSREGMASK) + 4), IntReg((pEntry->srcofs & ShuffleEntry::OFSREGMASK) + 4));
+        EmitMovReg(IntReg((pEntry->dstofs & ShuffleEntry::OFSREGMASK) + 10), IntReg((pEntry->srcofs & ShuffleEntry::OFSREGMASK) + 10));
     }
 
     MetaSig msig(pSharedMD);

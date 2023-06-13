@@ -77,6 +77,12 @@ namespace ILCompiler
             new(new[] { "--resilient" }, SR.ResilientOption);
         public Option<string> ImageBase { get; } =
             new(new[] { "--imagebase" }, SR.ImageBase);
+        public Option<bool> EnableGenericCycleDetection { get; } =
+            new(new[] { "--enable-generic-cycle-detection" }, SR.EnableGenericCycleDetection);
+        public Option<int> GenericCycleDepthCutoff { get; } =
+            new(new[] { "--maxgenericcycle" }, () => ReadyToRunCompilerContext.DefaultGenericCycleDepthCutoff, SR.GenericCycleDepthCutoff);
+        public Option<int> GenericCycleBreadthCutoff { get; } =
+            new(new[] { "--maxgenericcyclebreadth" }, () => ReadyToRunCompilerContext.DefaultGenericCycleBreadthCutoff, SR.GenericCycleBreadthCutoff);
         public Option<TargetArchitecture> TargetArchitecture { get; } =
             new(new[] { "--targetarch" }, result =>
             {
@@ -183,6 +189,9 @@ namespace ILCompiler
         public Option<bool> SynthesizeRandomMibc { get; } =
             new(new[] { "--synthesize-random-mibc" });
 
+        public Option<int> DeterminismStress { get; } =
+            new(new[] { "--determinism-stress" });
+
         public bool CompositeOrInputBubble { get; private set; }
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result { get; private set; }
@@ -222,6 +231,9 @@ namespace ILCompiler
             AddOption(SupportIbc);
             AddOption(Resilient);
             AddOption(ImageBase);
+            AddOption(EnableGenericCycleDetection);
+            AddOption(GenericCycleDepthCutoff);
+            AddOption(GenericCycleBreadthCutoff);
             AddOption(TargetArchitecture);
             AddOption(TargetOS);
             AddOption(JitPath);
@@ -249,6 +261,7 @@ namespace ILCompiler
             AddOption(MakeReproPath);
             AddOption(HotColdSplitting);
             AddOption(SynthesizeRandomMibc);
+            AddOption(DeterminismStress);
 
             this.SetHandler(context =>
             {
