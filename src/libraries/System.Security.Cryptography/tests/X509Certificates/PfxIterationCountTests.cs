@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public abstract partial class PfxIterationCountTests
     {
         private const long DefaultIterationLimit = 600_000;

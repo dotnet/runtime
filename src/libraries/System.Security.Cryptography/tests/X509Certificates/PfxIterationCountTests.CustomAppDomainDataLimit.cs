@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     // AppContext and AppDomain are the same in this context.
     public class PfxIterationCountTests_CustomAppDomainDataLimit
     {
