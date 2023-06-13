@@ -49,6 +49,12 @@ struct Access
     unsigned     Offset;
     var_types    AccessType;
 
+    weight_t CountWtd                 = 0;
+    weight_t CountAssignedFromCallWtd = 0;
+    weight_t CountCallArgsWtd         = 0;
+    weight_t CountPassedAsRetbufWtd   = 0;
+
+#ifdef DEBUG
     // Number of times we saw this access.
     unsigned Count = 0;
     // Number of times this access is on the RHS of an assignment.
@@ -59,13 +65,10 @@ struct Access
     unsigned CountReturns               = 0;
     unsigned CountPassedAsRetbuf        = 0;
 
-    weight_t CountWtd                      = 0;
     weight_t CountAssignmentSourceWtd      = 0;
     weight_t CountAssignmentDestinationWtd = 0;
-    weight_t CountAssignedFromCallWtd      = 0;
-    weight_t CountCallArgsWtd              = 0;
     weight_t CountReturnsWtd               = 0;
-    weight_t CountPassedAsRetbufWtd        = 0;
+#endif
 
     Access(unsigned offset, var_types accessType, ClassLayout* layout)
         : Layout(layout), Offset(offset), AccessType(accessType)
@@ -97,13 +100,15 @@ struct Access
 
 enum class AccessKindFlags : uint32_t
 {
-    None                    = 0,
-    IsCallArg               = 1,
-    IsAssignmentSource      = 2,
-    IsAssignmentDestination = 4,
-    IsCallRetBuf            = 8,
-    IsAssignedFromCall      = 16,
+    None               = 0,
+    IsCallArg          = 1,
+    IsAssignedFromCall = 2,
+    IsCallRetBuf       = 4,
+#ifdef DEBUG
+    IsAssignmentSource      = 8,
+    IsAssignmentDestination = 16,
     IsReturned              = 32,
+#endif
 };
 
 inline constexpr AccessKindFlags operator~(AccessKindFlags a)
@@ -252,8 +257,25 @@ public:
             access = &*m_accesses.insert(m_accesses.begin() + index, Access(offs, accessType, accessLayout));
         }
 
-        access->Count++;
         access->CountWtd += weight;
+
+        if ((flags & AccessKindFlags::IsCallArg) != AccessKindFlags::None)
+        {
+            access->CountCallArgsWtd += weight;
+        }
+
+        if ((flags & AccessKindFlags::IsCallRetBuf) != AccessKindFlags::None)
+        {
+            access->CountPassedAsRetbufWtd += weight;
+        }
+
+        if ((flags & AccessKindFlags::IsAssignedFromCall) != AccessKindFlags::None)
+        {
+            access->CountAssignedFromCallWtd += weight;
+        }
+
+#ifdef DEBUG
+        access->Count++;
 
         if ((flags & AccessKindFlags::IsAssignmentSource) != AccessKindFlags::None)
         {
@@ -265,23 +287,16 @@ public:
         {
             access->CountAssignmentDestination++;
             access->CountAssignmentDestinationWtd += weight;
-
-            if ((flags & AccessKindFlags::IsAssignedFromCall) != AccessKindFlags::None)
-            {
-                access->CountAssignedFromCallWtd += weight;
-            }
         }
 
         if ((flags & AccessKindFlags::IsCallArg) != AccessKindFlags::None)
         {
             access->CountCallArgs++;
-            access->CountCallArgsWtd += weight;
         }
 
         if ((flags & AccessKindFlags::IsCallRetBuf) != AccessKindFlags::None)
         {
             access->CountPassedAsRetbuf++;
-            access->CountPassedAsRetbufWtd += weight;
         }
 
         if ((flags & AccessKindFlags::IsReturned) != AccessKindFlags::None)
@@ -289,6 +304,7 @@ public:
             access->CountReturns++;
             access->CountReturnsWtd += weight;
         }
+#endif
     }
 
     //------------------------------------------------------------------------
@@ -363,11 +379,9 @@ public:
     //
     bool EvaluateReplacement(Compiler* comp, unsigned lclNum, const Access& access)
     {
-        weight_t countOverlappedCallArgWtd                = 0;
-        weight_t countOverlappedReturnsWtd                = 0;
-        weight_t countOverlappedRetbufsWtd                = 0;
-        weight_t countOverlappedAssignedFromCallWtd       = 0;
-        weight_t countOverlappedDecomposableAssignmentWtd = 0;
+        weight_t countOverlappedCallArgWtd          = 0;
+        weight_t countOverlappedRetbufsWtd          = 0;
+        weight_t countOverlappedAssignedFromCallWtd = 0;
 
         bool overlap = false;
         for (const Access& otherAccess : m_accesses)
@@ -386,12 +400,8 @@ public:
             }
 
             countOverlappedCallArgWtd += otherAccess.CountCallArgsWtd;
-            countOverlappedReturnsWtd += otherAccess.CountReturnsWtd;
             countOverlappedRetbufsWtd += otherAccess.CountPassedAsRetbufWtd;
             countOverlappedAssignedFromCallWtd += otherAccess.CountAssignedFromCallWtd;
-            countOverlappedDecomposableAssignmentWtd +=
-                (otherAccess.CountAssignmentDestinationWtd + otherAccess.CountAssignmentSourceWtd -
-                 otherAccess.CountAssignedFromCallWtd);
         }
 
         weight_t costWithout = 0;
@@ -436,6 +446,15 @@ public:
         // TODO-CQ: A store-forwarding optimization in lowering could get rid
         // of these copies; however, it requires lowering to be able to prove
         // that not writing the fields into the struct local is ok.
+        //
+        // Note: Technically we also introduce writebacks before returns that
+        // we could account for, however the returns we see during physical
+        // promotion are only for structs returned in registers and in most
+        // cases the writeback introduced means we can eliminate an earlier
+        // "natural" writeback, balancing out the cost.
+        // Thus _not_ accounting for these is a CQ improvements.
+        // (Additionally, if it weren't we could teach the backend some
+        // store-forwarding/forward sub to make the write backs "free".)
         weight_t countWriteBacksWtd = countOverlappedCallArgWtd;
         costWith += countWriteBacksWtd * writeBackCost;
 
@@ -643,7 +662,7 @@ private:
         AccessKindFlags flags = AccessKindFlags::None;
         if (lcl->OperIsLocalStore())
         {
-            flags |= AccessKindFlags::IsAssignmentDestination;
+            INDEBUG(flags |= AccessKindFlags::IsAssignmentDestination);
 
             if (lcl->AsLclVarCommon()->Data()->gtEffectiveVal()->IsCall())
             {
@@ -668,6 +687,7 @@ private:
             }
         }
 
+#ifdef DEBUG
         if (user->OperIsStore() && (user->Data() == lcl))
         {
             flags |= AccessKindFlags::IsAssignmentSource;
@@ -678,6 +698,7 @@ private:
             assert(user->gtGetOp1() == lcl);
             flags |= AccessKindFlags::IsReturned;
         }
+#endif
 
         return flags;
     }

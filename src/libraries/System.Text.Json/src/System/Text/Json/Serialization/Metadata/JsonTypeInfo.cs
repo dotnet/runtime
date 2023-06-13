@@ -920,7 +920,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             JsonTypeInfo jsonTypeInfo;
 
-            if (converter.TypeToConvert == type)
+            if (converter.Type == type)
             {
                 // For performance, avoid doing a reflection-based instantiation
                 // if the converter type matches that of the declared type.
