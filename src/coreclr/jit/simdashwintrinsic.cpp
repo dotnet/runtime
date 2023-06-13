@@ -219,8 +219,14 @@ SimdAsHWIntrinsicClassId SimdAsHWIntrinsicInfo::lookupClassId(Compiler*   comp,
                 }
 #endif // TARGET_XARCH
 
-                assert(vectorTByteLength == 16);
-                return SimdAsHWIntrinsicClassId::VectorT128;
+                if (vectorTByteLength == 16)
+                {
+                    return SimdAsHWIntrinsicClassId::VectorT128;
+                }
+                else
+                {
+                    return SimdAsHWIntrinsicClassId::Unknown;
+                }
             }
             break;
         }
@@ -2277,8 +2283,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     if (copyBlkDst != nullptr)
     {
         assert(copyBlkSrc != nullptr);
-        GenTree* dest    = gtNewLoadValueNode(simdType, copyBlkDst);
-        GenTree* retNode = gtNewAssignNode(dest, copyBlkSrc);
+        GenTree* retNode = gtNewStoreValueNode(simdType, copyBlkDst, copyBlkSrc);
 
         return retNode;
     }

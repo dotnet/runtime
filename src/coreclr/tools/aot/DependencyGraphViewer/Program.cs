@@ -17,7 +17,7 @@ using Microsoft.Diagnostics.Tracing.Session;
 
 namespace DependencyLogViewer
 {
-	public class BoxDisplay
+    public class BoxDisplay
     {
         public Node node;
         public List<string> reason;

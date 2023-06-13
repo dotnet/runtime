@@ -104,9 +104,9 @@ namespace System
 
         public static void Clear() => throw new PlatformNotSupportedException();
         public static void SetCursorPosition(int left, int top) => throw new PlatformNotSupportedException();
-        public static bool IsInputRedirectedCore() => throw new PlatformNotSupportedException();
-        public static bool IsOutputRedirectedCore() => throw new PlatformNotSupportedException();
-        public static bool IsErrorRedirectedCore() => throw new PlatformNotSupportedException();
+        public static bool IsInputRedirectedCore() => true;
+        public static bool IsOutputRedirectedCore() => true;
+        public static bool IsErrorRedirectedCore() => true;
 
         public static int BufferWidth
         {

@@ -32,6 +32,7 @@ namespace Microsoft.Interop
         public InteropAttributeMember IsUserDefined { get; init; }
         public bool SetLastError { get; init; }
         public StringMarshalling StringMarshalling { get; init; }
+        public ManagedTypeInfo? StringMarshallingCustomType { get; init; }
     }
 
     /// <summary>

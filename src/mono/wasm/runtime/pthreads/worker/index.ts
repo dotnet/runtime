@@ -4,9 +4,10 @@
 /// <reference lib="webworker" />
 
 import MonoWasmThreads from "consts:monoWasmThreads";
+
 import { Module, ENVIRONMENT_IS_PTHREAD } from "../../globals";
-import { makeChannelCreatedMonoMessage } from "../shared";
-import type { pthread_ptr } from "../shared/types";
+import { makeChannelCreatedMonoMessage, set_thread_info } from "../shared";
+import type { pthreadPtr } from "../shared/types";
 import { is_nullish } from "../../types/internal";
 import type { MonoThreadMessage } from "../shared";
 import {
@@ -18,6 +19,7 @@ import {
 } from "./events";
 import { preRunWorker } from "../../startup";
 import { mono_log_debug } from "../../logging";
+import { mono_set_thread_id } from "../../logging";
 
 // re-export some of the events types
 export {
@@ -30,7 +32,7 @@ export {
 
 class WorkerSelf implements PThreadSelf {
     readonly isBrowserThread = false;
-    constructor(readonly pthread_id: pthread_ptr, readonly portToBrowser: MessagePort) { }
+    constructor(readonly pthreadId: pthreadPtr, readonly portToBrowser: MessagePort) { }
     postMessageToBrowser(message: MonoThreadMessage, transfer?: Transferable[]) {
         if (transfer) {
             this.portToBrowser.postMessage(message, transfer);
@@ -64,7 +66,7 @@ function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>
 }
 
 
-function setupChannelToMainThread(pthread_ptr: pthread_ptr): PThreadSelf {
+function setupChannelToMainThread(pthread_ptr: pthreadPtr): PThreadSelf {
     mono_log_debug("creating a channel", pthread_ptr);
     const channel = new MessageChannel();
     const workerPort = channel.port1;
@@ -78,13 +80,22 @@ function setupChannelToMainThread(pthread_ptr: pthread_ptr): PThreadSelf {
 
 
 /// This is an implementation detail function.
-/// Called in the worker thread from mono when a pthread becomes attached to the mono runtime.
-export function mono_wasm_pthread_on_pthread_attached(pthread_id: pthread_ptr): void {
+/// Called in the worker thread (not main thread) from mono when a pthread becomes attached to the mono runtime.
+export function mono_wasm_pthread_on_pthread_attached(pthread_id: number): void {
     const self = pthread_self;
-    mono_assert(self !== null && self.pthread_id == pthread_id, "expected pthread_self to be set already when attaching");
-    mono_log_debug("attaching pthread to runtime 0x" + pthread_id.toString(16));
+    mono_assert(self !== null && self.pthreadId == pthread_id, "expected pthread_self to be set already when attaching");
+    mono_set_thread_id("0x" + pthread_id.toString(16));
+    mono_log_debug("attaching pthread to mono runtime 0x" + pthread_id.toString(16));
     preRunWorker();
+    set_thread_info(pthread_id, true, false, false);
     currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadAttached, self));
+}
+
+/// Called in the worker thread (not main thread) from mono when a pthread becomes detached from the mono runtime.
+export function mono_wasm_pthread_on_pthread_detached(pthread_id: number): void {
+    mono_log_debug("detaching pthread from mono runtime 0x" + pthread_id.toString(16));
+    set_thread_info(pthread_id, false, false, false);
+    mono_set_thread_id("");
 }
 
 /// This is an implementation detail function.

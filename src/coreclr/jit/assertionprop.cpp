@@ -1263,8 +1263,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     // └──▌  ADD       int
                     //    ├──▌  LCL_VAR   int    V10 tmp6        -> copy propagated to [V35 tmp31]
                     //    └──▌  COMMA     int
-                    //       ├──▌  ASG       int
-                    //       │  ├──▌  LCL_VAR   int    V35 tmp31
+                    //       ├──▌  STORE_LCL_VAR int    V35 tmp31
                     //       │  └──▌  LCL_FLD   int    V03 loc1         [+4]
                     if (lclVar2->lvRedefinedInEmbeddedStatement)
                     {
@@ -1697,7 +1696,7 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
 
         case O2K_ZEROOBJ:
         {
-            // We only make these assertion for assignments (not control flow).
+            // We only make these assertion for stores (not control flow).
             assert(assertion->assertionKind == OAK_EQUAL);
             // We use "optLocalAssertionIsEqualOrNotEqual" to find these.
             assert(assertion->op2.u1.iconVal == 0);
@@ -2080,8 +2079,8 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     // Look through any CSEs so we see the actual trees providing values, if possible.
     // This is important for exact type assertions, which need to see the GT_IND.
     //
-    GenTree* op1 = relop->AsOp()->gtOp1->gtCommaAssignVal();
-    GenTree* op2 = relop->AsOp()->gtOp2->gtCommaAssignVal();
+    GenTree* op1 = relop->AsOp()->gtOp1->gtCommaStoreVal();
+    GenTree* op2 = relop->AsOp()->gtOp2->gtCommaStoreVal();
 
     // Check for op1 or op2 to be lcl var and if so, keep it in op1.
     if ((op1->gtOper != GT_LCL_VAR) && (op2->gtOper == GT_LCL_VAR))
@@ -2231,9 +2230,8 @@ AssertionIndex Compiler::optAssertionGenPhiDefn(GenTree* tree)
 
 /*****************************************************************************
  *
- *  If this statement creates a value assignment or assertion
- *  then assign an index to the given value assignment by adding
- *  it to the lookup table, if necessary.
+ *  If this node creates an assertion then assign an index to the assertion
+ *  by adding it to the lookup table, if necessary.
  */
 void Compiler::optAssertionGen(GenTree* tree)
 {
@@ -2258,7 +2256,7 @@ void Compiler::optAssertionGen(GenTree* tree)
     switch (tree->OperGet())
     {
         case GT_STORE_LCL_VAR:
-            // VN takes care of non local assertions for assignments and data flow.
+            // VN takes care of non local assertions for data flow.
             if (optLocalAssertionProp)
             {
                 assertionInfo = optCreateAssertion(tree, tree->AsLclVar()->Data(), OAK_EQUAL);
@@ -2587,7 +2585,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
             }
             else
             {
-                // Implicit assignment conversion to float or double
+                // Implicit conversion to float or double
                 assert(varTypeIsFloating(tree->TypeGet()));
                 conValTree = gtNewDconNode(value, tree->TypeGet());
             }
@@ -2604,7 +2602,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
             }
             else
             {
-                // Implicit assignment conversion to float or double
+                // Implicit conversion to float or double
                 assert(varTypeIsFloating(tree->TypeGet()));
                 conValTree = gtNewDconNode(value, tree->TypeGet());
             }
@@ -2631,7 +2629,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                 switch (tree->TypeGet())
                 {
                     case TYP_INT:
-                        // Implicit assignment conversion to smaller integer
+                        // Implicit conversion to smaller integer
                         conValTree = gtNewIconNode(static_cast<int>(value));
                         break;
 
@@ -2693,7 +2691,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                         break;
 
                     case TYP_LONG:
-                        // Implicit assignment conversion to larger integer
+                        // Implicit conversion to larger integer
                         conValTree = gtNewLconNode(value);
                         break;
 
@@ -3486,7 +3484,7 @@ GenTree* Compiler::optAssertionProp_LocalStore(ASSERT_VALARG_TP assertions, GenT
         }
     }
 
-    // We might have simplified the value but were not able to remove the assignment
+    // We might have simplified the value but were not able to remove the store.
     //
     if (madeChanges)
     {
@@ -3959,7 +3957,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
             // Note we can't trust the OAK_EQUAL as the value could end up being a NaN
             // violating the assertion. However, we create OAK_EQUAL assertions for floating
             // point only on JTrue nodes, so if the condition held earlier, it will hold
-            // now. We don't create OAK_EQUAL assertion on floating point from GT_ASG
+            // now. We don't create OAK_EQUAL assertion on floating point from stores
             // because we depend on value num which would constant prop the NaN.
             op1->BashToConst(0.0, op1->TypeGet());
             op2->BashToConst(0.0, op2->TypeGet());
@@ -4872,7 +4870,7 @@ void Compiler::optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& ac
             }
         }
     }
-    // Is curAssertion a constant assignment of a 32-bit integer?
+    // Is curAssertion a constant store of a 32-bit integer?
     // (i.e  GT_LVL_VAR X  == GT_CNS_INT)
     else if ((curAssertion->assertionKind == OAK_EQUAL) && (curAssertion->op1.kind == O1K_LCLVAR) &&
              (curAssertion->op2.kind == O2K_CONST_INT))
@@ -5119,7 +5117,7 @@ void Compiler::optImpliedByCopyAssertion(AssertionDsc* copyAssertion, AssertionD
         return;
     }
 
-    // Is depAssertion a constant assignment of a 32-bit integer?
+    // Is depAssertion a constant store of a 32-bit integer?
     // (i.e  GT_LVL_VAR X == GT_CNS_INT)
     bool depIsConstAssertion = ((depAssertion->assertionKind == OAK_EQUAL) && (depAssertion->op1.kind == O1K_LCLVAR) &&
                                 (depAssertion->op2.kind == O2K_CONST_INT));
@@ -5930,7 +5928,7 @@ PhaseStatus Compiler::optAssertionPropMain()
     // Assertion prop can speculatively create trees.
     INDEBUG(const unsigned baseTreeID = compGenTreeID);
 
-    // First discover all value assignments and record them in the table.
+    // First discover all assertions and record them in the table.
     for (BasicBlock* const block : Blocks())
     {
         compCurBB = block;

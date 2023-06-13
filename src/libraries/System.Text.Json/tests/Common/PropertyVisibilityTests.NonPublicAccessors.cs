@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -394,6 +395,67 @@ namespace System.Text.Json.Serialization.Tests
         {
             [JsonInclude]
             protected string MyString { get; init; }
+        }
+
+        [Fact]
+        public async Task CanAlwaysRoundtripInternalJsonIncludeProperties()
+        {
+            // Internal JsonInclude properties should be honored
+            // by both reflection and the source generator.
+
+            var value = new ClassWithInternalJsonIncludeProperties { X = 1, Y = 2 };
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal("""{"X":1,"Y":2}""", json);
+
+            value = await Serializer.DeserializeWrapper<ClassWithInternalJsonIncludeProperties>(json);
+            Assert.Equal(1, value.X);
+            Assert.Equal(2, value.Y);
+        }
+
+        public class ClassWithInternalJsonIncludeProperties
+        {
+            [JsonInclude]
+            public int X { get; internal set; }
+            [JsonInclude]
+            public int Y { internal get; set; }
+        }
+
+        [Fact]
+        public virtual async Task ClassWithIgnoredAndPrivateMembers_DoesNotIncludeIgnoredMetadata()
+        {
+            JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true);
+
+            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(ClassWithIgnoredAndPrivateMembers));
+
+            // The contract surfaces the ignored properties but not the private ones
+            Assert.Equal(2, typeInfo.Properties.Count);
+            Assert.Contains(typeInfo.Properties, prop => prop.Name == "PublicIgnoredField");
+            Assert.Contains(typeInfo.Properties, prop => prop.Name == "PublicIgnoredProperty");
+
+            // The ignored properties included in the contract do not specify any accessor delegates.
+            Assert.All(typeInfo.Properties, prop => Assert.True(prop.Get is null));
+            Assert.All(typeInfo.Properties, prop => Assert.True(prop.Set is null));
+
+            string json = await Serializer.SerializeWrapper(new ClassWithIgnoredAndPrivateMembers(), options);
+            Assert.Equal("{}", json);
+        }
+
+        public class ClassWithIgnoredAndPrivateMembers
+        {
+            [JsonIgnore]
+            public TypeThatShouldNotBeGenerated PublicIgnoredField = new();
+
+            private TypeThatShouldNotBeGenerated PrivateField = new();
+
+            [JsonIgnore]
+            public TypeThatShouldNotBeGenerated PublicIgnoredProperty { get; set; } = new();
+
+            private TypeThatShouldNotBeGenerated PrivateProperty { get; set; } = new();
+        }
+
+        public class TypeThatShouldNotBeGenerated
+        {
+            private protected object _thisLock = new object();
         }
     }
 }

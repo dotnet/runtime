@@ -1367,11 +1367,21 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* 
     }
 
     uint64_t uiValue;
-    if (!g_pRhConfig->ReadConfigValue(privateKey, &uiValue))
-        return false;
+    if (g_pRhConfig->ReadConfigValue(privateKey, &uiValue))
+    {
+        *value = uiValue != 0;
+        return true;
+    }
 
-    *value = uiValue != 0;
-    return true;
+    if (publicKey)
+    {
+        if (g_pRhConfig->ReadKnobBooleanValue(publicKey, value))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 extern GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
@@ -1379,14 +1389,6 @@ extern bool g_gcHeapHardLimitInfoSpecified;
 
 bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publicKey, int64_t* value)
 {
-#ifdef UNICODE
-    size_t keyLength = strlen(privateKey) + 1;
-    TCHAR* pKey = (TCHAR*)_alloca(sizeof(TCHAR) * keyLength);
-    for (size_t i = 0; i < keyLength; i++)
-        pKey[i] = privateKey[i];
-#else
-    const TCHAR* pKey = privateKey;
-#endif
     if (g_gcHeapHardLimitInfoSpecified)
     {
         if ((g_gcHeapHardLimitInfo.heapHardLimit != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimit") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimit; return true; }
@@ -1400,11 +1402,22 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
     }
 
     uint64_t uiValue;
-    if (!g_pRhConfig->ReadConfigValue(privateKey, &uiValue))
-        return false;
+    if (g_pRhConfig->ReadConfigValue(privateKey, &uiValue))
+    {
+        *value = uiValue;
+        return true;
+    }
 
-    *value = uiValue;
-    return true;
+    if (publicKey)
+    {
+        if (g_pRhConfig->ReadKnobUInt64Value(publicKey, &uiValue))
+        {
+            *value = uiValue;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void GCToEEInterface::LogErrorToHost(const char *message)

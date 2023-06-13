@@ -193,109 +193,115 @@ namespace System.Collections.Frozen
         {
             IEqualityComparer<TKey> comparer = source.Comparer;
 
-            if (typeof(TKey).IsValueType)
+            // Optimize for value types when the default comparer is being used. In such a case, the implementation
+            // may use {Equality}Comparer<TKey>.Default.Compare/Equals/GetHashCode directly, with generic specialization enabling
+            // the Equals/GetHashCode methods to be devirtualized and possibly inlined.
+            if (typeof(TKey).IsValueType && ReferenceEquals(comparer, EqualityComparer<TKey>.Default))
             {
-                // Optimize for value types when the default comparer is being used. In such a case, the implementation
-                // may use {Equality}Comparer<TKey>.Default.Compare/Equals/GetHashCode directly, with generic specialization enabling
-                // the Equals/GetHashCode methods to be devirtualized and possibly inlined.
-                if (ReferenceEquals(comparer, EqualityComparer<TKey>.Default))
+                if (source.Count <= Constants.MaxItemsInSmallValueTypeFrozenCollection)
                 {
-                    if (source.Count <= Constants.MaxItemsInSmallValueTypeFrozenCollection)
+                    // If the key is a something we know we can efficiently compare, use a specialized implementation
+                    // that will enable quickly ruling out values outside of the range of keys stored.
+                    if (Constants.IsKnownComparable<TKey>())
                     {
-                        // If the key is a something we know we can efficiently compare, use a specialized implementation
-                        // that will enable quickly ruling out values outside of the range of keys stored.
-                        if (Constants.IsKnownComparable<TKey>())
-                        {
-                            return (FrozenDictionary<TKey, TValue>)(object)new SmallValueTypeComparableFrozenDictionary<TKey, TValue>(source);
-                        }
-
-                        // Otherwise, use an implementation optimized for a small number of value types using the default comparer.
-                        return (FrozenDictionary<TKey, TValue>)(object)new SmallValueTypeDefaultComparerFrozenDictionary<TKey, TValue>(source);
+                        return (FrozenDictionary<TKey, TValue>)(object)new SmallValueTypeComparableFrozenDictionary<TKey, TValue>(source);
                     }
 
-                    // Use a hash-based implementation.
-
-                    // For Int32 keys, we can reuse the key storage as the hash storage, saving on space and extra indirection.
-                    if (typeof(TKey) == typeof(int))
-                    {
-                        return (FrozenDictionary<TKey, TValue>)(object)new Int32FrozenDictionary<TValue>((Dictionary<int, TValue>)(object)source);
-                    }
-
-                    // Fallback to an implementation usable with any value type and the default comparer.
-                    return new ValueTypeDefaultComparerFrozenDictionary<TKey, TValue>(source);
+                    // Otherwise, use an implementation optimized for a small number of value types using the default comparer.
+                    return (FrozenDictionary<TKey, TValue>)(object)new SmallValueTypeDefaultComparerFrozenDictionary<TKey, TValue>(source);
                 }
-            }
-            else if (typeof(TKey) == typeof(string))
-            {
-                // If the key is a string and the comparer is known to provide ordinal (case-sensitive or case-insensitive) semantics,
-                // we can use an implementation that's able to examine and optimize based on lengths and/or subsequences within those strings.
-                if (ReferenceEquals(comparer, EqualityComparer<TKey>.Default) ||
-                    ReferenceEquals(comparer, StringComparer.Ordinal) ||
-                    ReferenceEquals(comparer, StringComparer.OrdinalIgnoreCase))
+
+                // Use a hash-based implementation.
+
+                // For Int32 keys, we can reuse the key storage as the hash storage, saving on space and extra indirection.
+                if (typeof(TKey) == typeof(int))
                 {
-                    Dictionary<string, TValue> stringEntries = (Dictionary<string, TValue>)(object)source;
-                    IEqualityComparer<string> stringComparer = (IEqualityComparer<string>)(object)comparer;
+                    return (FrozenDictionary<TKey, TValue>)(object)new Int32FrozenDictionary<TValue>((Dictionary<int, TValue>)(object)source);
+                }
 
-                    FrozenDictionary<string, TValue>? frozenDictionary = LengthBucketsFrozenDictionary<TValue>.CreateLengthBucketsFrozenDictionaryIfAppropriate(stringEntries, stringComparer);
-                    if (frozenDictionary is not null)
+                // Fallback to an implementation usable with any value type and the default comparer.
+                return new ValueTypeDefaultComparerFrozenDictionary<TKey, TValue>(source);
+            }
+
+            // Optimize for string keys with the default, Ordinal, or OrdinalIgnoreCase comparers.
+            // If the key is a string and the comparer is known to provide ordinal (case-sensitive or case-insensitive) semantics,
+            // we can use an implementation that's able to examine and optimize based on lengths and/or subsequences within those strings.
+            if (typeof(TKey) == typeof(string) &&
+                (ReferenceEquals(comparer, EqualityComparer<TKey>.Default) || ReferenceEquals(comparer, StringComparer.Ordinal) || ReferenceEquals(comparer, StringComparer.OrdinalIgnoreCase)))
+            {
+                Dictionary<string, TValue> stringEntries = (Dictionary<string, TValue>)(object)source;
+                IEqualityComparer<string> stringComparer = (IEqualityComparer<string>)(object)comparer;
+
+                // Calculate the minimum and maximum lengths of the strings in the dictionary. Several of the analyses need this.
+                int minLength = int.MaxValue, maxLength = 0;
+                foreach (KeyValuePair<string, TValue> kvp in stringEntries)
+                {
+                    if (kvp.Key.Length < minLength) minLength = kvp.Key.Length;
+                    if (kvp.Key.Length > maxLength) maxLength = kvp.Key.Length;
+                }
+                Debug.Assert(minLength >= 0 && maxLength >= minLength);
+
+                // Try to create an implementation that uses length buckets, where each bucket contains up to only a few strings of the same length.
+                FrozenDictionary<string, TValue>? frozenDictionary = LengthBucketsFrozenDictionary<TValue>.CreateLengthBucketsFrozenDictionaryIfAppropriate(stringEntries, stringComparer, minLength, maxLength);
+                if (frozenDictionary is not null)
+                {
+                    return (FrozenDictionary<TKey, TValue>)(object)frozenDictionary;
+                }
+
+                // Analyze the keys for unique substrings and create an implementation that minimizes the cost of hashing keys.
+                string[] entries = (string[])(object)source.Keys.ToArray();
+                KeyAnalyzer.AnalysisResults analysis = KeyAnalyzer.Analyze(entries, ReferenceEquals(stringComparer, StringComparer.OrdinalIgnoreCase), minLength, maxLength);
+                if (analysis.SubstringHashing)
+                {
+                    if (analysis.RightJustifiedSubstring)
                     {
-                        return (FrozenDictionary<TKey, TValue>)(object)frozenDictionary;
-                    }
-
-                    string[] entries = (string[])(object)source.Keys.ToArray();
-
-                    KeyAnalyzer.Analyze(entries, ReferenceEquals(stringComparer, StringComparer.OrdinalIgnoreCase), out KeyAnalyzer.AnalysisResults results);
-                    if (results.SubstringHashing)
-                    {
-                        if (results.RightJustifiedSubstring)
+                        if (analysis.IgnoreCase)
                         {
-                            if (results.IgnoreCase)
-                            {
-                                frozenDictionary = results.AllAscii
-                                    ? new OrdinalStringFrozenDictionary_RightJustifiedCaseInsensitiveAsciiSubstring<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount)
-                                    : new OrdinalStringFrozenDictionary_RightJustifiedCaseInsensitiveSubstring<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount);
-                            }
-                            else
-                            {
-                                frozenDictionary = results.HashCount == 1
-                                    ? new OrdinalStringFrozenDictionary_RightJustifiedSingleChar<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex)
-                                    : new OrdinalStringFrozenDictionary_RightJustifiedSubstring<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount);
-                            }
+                            frozenDictionary = analysis.AllAsciiIfIgnoreCase
+                                ? new OrdinalStringFrozenDictionary_RightJustifiedCaseInsensitiveAsciiSubstring<TValue>(stringEntries, entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount)
+                                : new OrdinalStringFrozenDictionary_RightJustifiedCaseInsensitiveSubstring<TValue>(stringEntries, entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
                         }
                         else
                         {
-                            if (results.IgnoreCase)
-                            {
-                                frozenDictionary = results.AllAscii
-                                    ? new OrdinalStringFrozenDictionary_LeftJustifiedCaseInsensitiveAsciiSubstring<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount)
-                                    : new OrdinalStringFrozenDictionary_LeftJustifiedCaseInsensitiveSubstring<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount);
-                            }
-                            else
-                            {
-                                frozenDictionary = results.HashCount == 1
-                                    ? new OrdinalStringFrozenDictionary_LeftJustifiedSingleChar<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex)
-                                    : new OrdinalStringFrozenDictionary_LeftJustifiedSubstring<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount);
-                            }
+                            frozenDictionary = analysis.HashCount == 1
+                                ? new OrdinalStringFrozenDictionary_RightJustifiedSingleChar<TValue>(stringEntries, entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex)
+                                : new OrdinalStringFrozenDictionary_RightJustifiedSubstring<TValue>(stringEntries, entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
                         }
                     }
                     else
                     {
-                        if (results.IgnoreCase)
+                        if (analysis.IgnoreCase)
                         {
-                            frozenDictionary = results.AllAscii
-                                ? new OrdinalStringFrozenDictionary_FullCaseInsensitiveAscii<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff)
-                                : new OrdinalStringFrozenDictionary_FullCaseInsensitive<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff);
+                            frozenDictionary = analysis.AllAsciiIfIgnoreCase
+                                ? new OrdinalStringFrozenDictionary_LeftJustifiedCaseInsensitiveAsciiSubstring<TValue>(stringEntries, entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount)
+                                : new OrdinalStringFrozenDictionary_LeftJustifiedCaseInsensitiveSubstring<TValue>(stringEntries, entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
                         }
                         else
                         {
-                            frozenDictionary = new OrdinalStringFrozenDictionary_Full<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff);
+                            frozenDictionary = analysis.HashCount == 1
+                                ? new OrdinalStringFrozenDictionary_LeftJustifiedSingleChar<TValue>(stringEntries, entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex)
+                                : new OrdinalStringFrozenDictionary_LeftJustifiedSubstring<TValue>(stringEntries, entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
                         }
                     }
-
-                    return (FrozenDictionary<TKey, TValue>)(object)frozenDictionary;
                 }
+                else
+                {
+                    if (analysis.IgnoreCase)
+                    {
+                        frozenDictionary = analysis.AllAsciiIfIgnoreCase
+                            ? new OrdinalStringFrozenDictionary_FullCaseInsensitiveAscii<TValue>(stringEntries, entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff)
+                            : new OrdinalStringFrozenDictionary_FullCaseInsensitive<TValue>(stringEntries, entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
+                    }
+                    else
+                    {
+                        frozenDictionary = new OrdinalStringFrozenDictionary_Full<TValue>(stringEntries, entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
+                    }
+                }
+
+                return (FrozenDictionary<TKey, TValue>)(object)frozenDictionary;
             }
 
+            // Optimize for very small numbers of items by using a specialized implementation that just does a linear search.
             if (source.Count <= Constants.MaxItemsInSmallFrozenCollection)
             {
                 // Use the specialized dictionary for low item counts.

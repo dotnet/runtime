@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { isMonoWorkerMessageChannelCreated, monoSymbol, makeMonoThreadMessageApplyMonoConfig, isMonoWorkerMessagePreload, MonoWorkerMessage } from "../shared";
-import { pthread_ptr } from "../shared/types";
+import { pthreadPtr } from "../shared/types";
 import { MonoThreadMessage } from "../shared";
 import Internals from "../shared/emscripten-internals";
 import { createPromiseController, runtimeHelpers } from "../../globals";
@@ -10,67 +10,67 @@ import { PromiseController } from "../../types/internal";
 import { MonoConfig } from "../../types";
 import { mono_log_debug } from "../../logging";
 
-const threads: Map<pthread_ptr, Thread> = new Map();
+const threads: Map<pthreadPtr, Thread> = new Map();
 
 export interface Thread {
-    readonly pthread_ptr: pthread_ptr;
+    readonly pthreadPtr: pthreadPtr;
     readonly worker: Worker;
     readonly port: MessagePort;
     postMessageToWorker<T extends MonoThreadMessage>(message: T): void;
 }
 
 class ThreadImpl implements Thread {
-    constructor(readonly pthread_ptr: pthread_ptr, readonly worker: Worker, readonly port: MessagePort) { }
+    constructor(readonly pthreadPtr: pthreadPtr, readonly worker: Worker, readonly port: MessagePort) { }
     postMessageToWorker<T extends MonoThreadMessage>(message: T): void {
         this.port.postMessage(message);
     }
 }
 
-const thread_promises: Map<pthread_ptr, PromiseController<Thread>[]> = new Map();
+const threadPromises: Map<pthreadPtr, PromiseController<Thread>[]> = new Map();
 
 /// wait until the thread with the given id has set up a message port to the runtime
-export function waitForThread(pthread_ptr: pthread_ptr): Promise<Thread> {
-    if (threads.has(pthread_ptr)) {
-        return Promise.resolve(threads.get(pthread_ptr)!);
+export function waitForThread(pthreadPtr: pthreadPtr): Promise<Thread> {
+    if (threads.has(pthreadPtr)) {
+        return Promise.resolve(threads.get(pthreadPtr)!);
     }
     const promiseAndController = createPromiseController<Thread>();
-    const arr = thread_promises.get(pthread_ptr);
+    const arr = threadPromises.get(pthreadPtr);
     if (arr === undefined) {
-        thread_promises.set(pthread_ptr, [promiseAndController.promise_control]);
+        threadPromises.set(pthreadPtr, [promiseAndController.promise_control]);
     } else {
         arr.push(promiseAndController.promise_control);
     }
     return promiseAndController.promise;
 }
 
-function resolvePromises(pthread_ptr: pthread_ptr, thread: Thread): void {
-    const arr = thread_promises.get(pthread_ptr);
+function resolvePromises(pthreadPtr: pthreadPtr, thread: Thread): void {
+    const arr = threadPromises.get(pthreadPtr);
     if (arr !== undefined) {
         arr.forEach((controller) => controller.resolve(thread));
-        thread_promises.delete(pthread_ptr);
+        threadPromises.delete(pthreadPtr);
     }
 }
 
-function addThread(pthread_ptr: pthread_ptr, worker: Worker, port: MessagePort): Thread {
-    const thread = new ThreadImpl(pthread_ptr, worker, port);
-    threads.set(pthread_ptr, thread);
+function addThread(pthreadPtr: pthreadPtr, worker: Worker, port: MessagePort): Thread {
+    const thread = new ThreadImpl(pthreadPtr, worker, port);
+    threads.set(pthreadPtr, thread);
     return thread;
 }
 
-function removeThread(pthread_ptr: pthread_ptr): void {
-    threads.delete(pthread_ptr);
+function removeThread(pthreadPtr: pthreadPtr): void {
+    threads.delete(pthreadPtr);
 }
 
 /// Given a thread id, return the thread object with the worker where the thread is running, and a message port.
-export function getThread(pthread_ptr: pthread_ptr): Thread | undefined {
-    const thread = threads.get(pthread_ptr);
+export function getThread(pthreadPtr: pthreadPtr): Thread | undefined {
+    const thread = threads.get(pthreadPtr);
     if (thread === undefined) {
         return undefined;
     }
-    // validate that the worker is still running pthread_ptr
+    // validate that the worker is still running pthreadPtr
     const worker = thread.worker;
-    if (Internals.getThreadId(worker) !== pthread_ptr) {
-        removeThread(pthread_ptr);
+    if (Internals.getThreadId(worker) !== pthreadPtr) {
+        removeThread(pthreadPtr);
         thread.port.close();
         return undefined;
     }
@@ -78,7 +78,7 @@ export function getThread(pthread_ptr: pthread_ptr): Thread | undefined {
 }
 
 /// Returns all the threads we know about
-export const getThreadIds = (): IterableIterator<pthread_ptr> => threads.keys();
+export const getThreadIds = (): IterableIterator<pthreadPtr> => threads.keys();
 
 function monoDedicatedChannelMessageFromWorkerToMain(event: MessageEvent<unknown>, thread: Thread): void {
     // TODO: add callbacks that will be called from here
@@ -96,11 +96,11 @@ function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMes
     else if (isMonoWorkerMessageChannelCreated(data)) {
         mono_log_debug("received the channel created message", data, worker);
         const port = data[monoSymbol].port;
-        const pthread_id = data[monoSymbol].thread_id;
-        const thread = addThread(pthread_id, worker, port);
+        const pthreadId = data[monoSymbol].threadId;
+        const thread = addThread(pthreadId, worker, port);
         port.addEventListener("message", (ev) => monoDedicatedChannelMessageFromWorkerToMain(ev, thread));
         port.start();
-        resolvePromises(pthread_id, thread);
+        resolvePromises(pthreadId, thread);
     }
 }
 
