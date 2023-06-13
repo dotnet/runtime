@@ -120,55 +120,52 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         if (string.IsNullOrEmpty(methodTokenFile))
         {
             Log.LogError($"Metadata MethodTokenFile of {assemblyItem.ItemSpec} is empty");
+            return true;
         }
         if (!File.Exists(methodTokenFile))
         {
-            Log.LogMessage(MessageImportance.Low, $"{methodTokenFile} doesn't exist.");
+            Log.LogError($"{methodTokenFile} doesn't exist.");
             return true;
         }
 
         using StreamReader sr = new(methodTokenFile);
+        string? assemblyFilePath = sr.ReadLine();
+        if (string.IsNullOrEmpty(assemblyFilePath))
         {
-            string? assemblyFilePath = sr.ReadLine();
-            if (string.IsNullOrEmpty(assemblyFilePath))
-            {
-                return true;
-            }
+            Log.LogError($"The first line of {assemblyFilePath} is empty.");
+            return true;
+        }
 
-            if (!File.Exists(assemblyFilePath))
-            {
-                Log.LogError($"{assemblyFilePath} read from {methodTokenFile} doesn't exist.");
-                return true;
-            }
+        if (!File.Exists(assemblyFilePath))
+        {
+            Log.LogError($"{assemblyFilePath} read from {methodTokenFile} doesn't exist.");
+            return true;
+        }
 
-            string trimmedAssemblyFilePath = ComputeTrimmedAssemblyPath(assemblyFilePath);
-            bool isTrimmed = false;
+        string trimmedAssemblyFilePath = ComputeTrimmedAssemblyPath(assemblyFilePath);
+        bool isTrimmed = false;
+        using FileStream fs = File.Open(assemblyFilePath, FileMode.Open);
+        using PEReader peReader = new(fs, PEStreamOptions.LeaveOpen);
+        MetadataReader mr = peReader.GetMetadataReader();
+        string guidValue = ComputeGuid(mr);
+        string? expectedGuidValue = sr.ReadLine();
+        if (!string.Equals(guidValue, expectedGuidValue, StringComparison.OrdinalIgnoreCase))
+        {
+            Log.LogError($"[ILStrip] GUID value of {assemblyFilePath} doesn't match the value listed in {methodTokenFile}.");
+            return true;
+        }
 
-            using FileStream fs = File.Open(assemblyFilePath, FileMode.Open);
-            {
-                using PEReader peReader = new(fs, PEStreamOptions.LeaveOpen);
-                MetadataReader mr = peReader.GetMetadataReader();
+        string? line = sr.ReadLine();
+        if (!string.IsNullOrEmpty(line))
+        {
+            isTrimmed = true;
+            Dictionary<int, int> methodBodyUses = ComputeMethodBodyUsage(mr, sr, line, methodTokenFile);
+            CreateTrimmedAssembly(peReader, trimmedAssemblyFilePath, fs, methodBodyUses);
+        }
 
-                string guidValue = ComputeGuid(mr);
-                string? expectedGuidValue = sr.ReadLine();
-                if (!string.Equals(guidValue, expectedGuidValue, StringComparison.OrdinalIgnoreCase))
-                {
-                    Log.LogError($"[ILStrip] GUID value of {assemblyFilePath} doesn't match the value listed in {methodTokenFile}.");
-                    return true;
-                }
-
-                string? line = sr.ReadLine();
-                if (!string.IsNullOrEmpty(line))
-                {
-                    isTrimmed = true;
-                    Dictionary<int, int> method_body_uses = ComputeMethodBodyUsage(mr, sr, line, methodTokenFile);
-                    CreateTrimmedAssembly(peReader, trimmedAssemblyFilePath, fs, method_body_uses);
-                }
-            }
-            if (isTrimmed)
-            {
-                AddItemToTrimmedList(assemblyFilePath, trimmedAssemblyFilePath);
-            }
+        if (isTrimmed)
+        {
+            AddItemToTrimmedList(assemblyFilePath, trimmedAssemblyFilePath);
         }
 
         return true;
@@ -180,11 +177,11 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         string? assemblyName = Path.GetFileNameWithoutExtension(assemblyFilePath);
         if (string.IsNullOrEmpty(assemblyPath))
         {
-            return (assemblyName + "_new.dll");
+            return (assemblyName + "_trimmed.dll");
         }
         else
         {
-            return Path.Combine(assemblyPath, (assemblyName + "_new.dll"));
+            return Path.Combine(assemblyPath, (assemblyName + "_trimmed.dll"));
         }
     }
 
@@ -197,8 +194,8 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
     private Dictionary<int, int> ComputeMethodBodyUsage(MetadataReader mr, StreamReader sr, string? line, string methodTokenFile)
     {
-        Dictionary<int, int> token_to_rva = new();
-        Dictionary<int, int> method_body_uses = new();
+        Dictionary<int, int> tokenToRva = new();
+        Dictionary<int, int> methodBodyUses = new();
 
         foreach (MethodDefinitionHandle mdefh in mr.MethodDefinitions)
         {
@@ -206,15 +203,15 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             MethodDefinition mdef = mr.GetMethodDefinition(mdefh);
             int rva = mdef.RelativeVirtualAddress;
 
-            token_to_rva.Add(methodToken, rva);
+            tokenToRva.Add(methodToken, rva);
 
-            if (method_body_uses.TryGetValue(rva, out var _))
+            if (methodBodyUses.TryGetValue(rva, out var _))
             {
-                method_body_uses[rva]++;
+                methodBodyUses[rva]++;
             }
             else
             {
-                method_body_uses.Add(rva, 1);
+                methodBodyUses.Add(rva, 1);
             }
         }
 
@@ -225,9 +222,9 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             {
                 Log.LogError($"Method token: {line} in {methodTokenFile} is not a valid hex value.");
             }
-            if (token_to_rva.TryGetValue(methodToken2Trim, out int rva2Trim))
+            if (tokenToRva.TryGetValue(methodToken2Trim, out int rva2Trim))
             {
-                method_body_uses[rva2Trim]--;
+                methodBodyUses[rva2Trim]--;
             }
             else
             {
@@ -235,10 +232,10 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             }
         } while ((line = sr.ReadLine()) != null);
 
-        return method_body_uses;
+        return methodBodyUses;
     }
 
-    private void CreateTrimmedAssembly(PEReader peReader, string trimmedAssemblyFilePath, FileStream fs, Dictionary<int, int> method_body_uses)
+    private void CreateTrimmedAssembly(PEReader peReader, string trimmedAssemblyFilePath, FileStream fs, Dictionary<int, int> methodBodyUses)
     {
         using FileStream os = File.Open(trimmedAssemblyFilePath, FileMode.Create);
         {
@@ -246,7 +243,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             MemoryStream memStream = new MemoryStream((int)fs.Length);
             fs.CopyTo(memStream);
 
-            foreach (var kvp in method_body_uses)
+            foreach (var kvp in methodBodyUses)
             {
                 int rva = kvp.Key;
                 int count = kvp.Value;
