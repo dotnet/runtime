@@ -2620,13 +2620,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (simdSize == 32)
             {
-                if (!compExactlyDependsOn(InstructionSet_AVX2))
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX2))
                 {
                     // While we could accelerate some functions on hardware with only AVX support
                     // it's likely not worth it overall given that IsHardwareAccelerated reports false
                     break;
                 }
-                else if (varTypeIsSmallInt(simdBaseType))
+                else if ((varTypeIsByte(simdBaseType) &&
+                          !compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI_VL)) ||
+                         (varTypeIsShort(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL)))
                 {
                     bool crossLane = false;
 
@@ -2663,7 +2665,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
             else if (simdSize == 64)
             {
-                if (varTypeIsByte(simdBaseType))
+                if (varTypeIsByte(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI))
                 {
                     // TYP_BYTE, TYP_UBYTE need AVX512VBMI.
                     break;
@@ -2673,7 +2675,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 assert(simdSize == 16);
 
-                if (varTypeIsSmallInt(simdBaseType) && !compExactlyDependsOn(InstructionSet_SSSE3))
+                if (varTypeIsSmallInt(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSSE3))
                 {
                     // TYP_BYTE, TYP_UBYTE, TYP_SHORT, and TYP_USHORT need SSSE3 to be able to shuffle any operation
                     break;
