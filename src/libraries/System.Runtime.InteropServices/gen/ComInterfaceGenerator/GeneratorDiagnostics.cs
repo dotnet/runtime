@@ -20,6 +20,7 @@ namespace Microsoft.Interop
             public const string InvalidLibraryImportAttributeUsage = Prefix + "1050";
             public const string TypeNotSupported = Prefix + "1051";
             public const string ConfigurationNotSupported = Prefix + "1052";
+            public const string RequiresAllowUnsafeBlocks = Prefix + "1062";
             public const string InvalidGeneratedComInterfaceAttributeUsage = Prefix + "1090";
             public const string MethodNotDeclaredInAttributedInterface = Prefix + "1091";
             public const string MultipleComInterfaceBaseTypes = Prefix + "1092";
@@ -29,6 +30,16 @@ namespace Microsoft.Interop
         }
 
         private const string Category = "ComInterfaceGenerator";
+
+        public static readonly DiagnosticDescriptor RequiresAllowUnsafeBlocks =
+            new DiagnosticDescriptor(
+                Ids.RequiresAllowUnsafeBlocks,
+                GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksTitle)),
+                GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksDescription)));
 
         /// <inheritdoc cref="SR.InvalidAttributedMethodSignatureMessage"/>
         public static readonly DiagnosticDescriptor InvalidAttributedMethodSignature =
@@ -396,7 +407,7 @@ namespace Microsoft.Interop
             TypePositionInfo info,
             string? notSupportedDetails)
         {
-            CodeAnalysis.Location diagnosticLocation = CodeAnalysis.Location.None;
+            Location diagnosticLocation = CodeAnalysis.Location.None;
             string elementName = string.Empty;
 
             if (info.IsManagedReturnPosition)

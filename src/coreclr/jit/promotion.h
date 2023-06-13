@@ -299,6 +299,7 @@ public:
 private:
     GenTree** InsertMidTreeReadBacksIfNecessary(GenTree** use);
     void LoadStoreAroundCall(GenTreeCall* call, GenTree* user);
+    GenTree** EffectiveUse(GenTree** use);
     bool IsPromotedStructLocalDying(GenTreeLclVarCommon* structLcl);
     void ReplaceLocal(GenTree** use, GenTree* user);
     void CheckForwardSubForLastUse(unsigned lclNum);
