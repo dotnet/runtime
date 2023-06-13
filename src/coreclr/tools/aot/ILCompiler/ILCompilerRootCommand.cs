@@ -138,8 +138,10 @@ namespace ILCompiler
             new(new[] { "--directpinvoke" }, Array.Empty<string>, "PInvoke to call directly");
         public Option<string[]> DirectPInvokeLists { get; } =
             new(new[] { "--directpinvokelist" }, Array.Empty<string>, "File with list of PInvokes to call directly");
-        public Option<int> MaxGenericCycle { get; } =
-            new(new[] { "--maxgenericcycle" }, () => CompilerTypeSystemContext.DefaultGenericCycleCutoffPoint, "Max depth of generic cycle");
+        public Option<int> MaxGenericCycleDepth { get; } =
+            new(new[] { "--maxgenericcycle" }, () => CompilerTypeSystemContext.DefaultGenericCycleDepthCutoff, "Max depth of generic cycle");
+        public Option<int> MaxGenericCycleBreadth { get; } =
+            new(new[] { "--maxgenericcyclebreadth" }, () => CompilerTypeSystemContext.DefaultGenericCycleBreadthCutoff, "Max breadth of generic cycle expansion");
         public Option<string[]> RootedAssemblies { get; } =
             new(new[] { "--root" }, Array.Empty<string>, "Fully generate given assembly");
         public Option<IEnumerable<string>> ConditionallyRootedAssemblies { get; } =
@@ -225,7 +227,8 @@ namespace ILCompiler
             AddOption(SingleWarnDisabledAssemblies);
             AddOption(DirectPInvokes);
             AddOption(DirectPInvokeLists);
-            AddOption(MaxGenericCycle);
+            AddOption(MaxGenericCycleDepth);
+            AddOption(MaxGenericCycleBreadth);
             AddOption(RootedAssemblies);
             AddOption(ConditionallyRootedAssemblies);
             AddOption(TrimmedAssemblies);

@@ -422,6 +422,7 @@ extends:
           platforms:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
             - normal
             - WasmTestOnBrowser
@@ -431,6 +432,7 @@ extends:
           platforms:
             - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
             - WasmTestOnBrowser
 
@@ -443,6 +445,7 @@ extends:
           runAOT: false
           shouldRunSmokeOnly: false
           alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
       # AOT Library tests
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -453,6 +456,7 @@ extends:
           runAOT: true
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
         parameters:
@@ -470,6 +474,7 @@ extends:
             - browser_wasm
             - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
       # Wasm Debugger tests
       - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
@@ -478,6 +483,7 @@ extends:
             - browser_wasm
             - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
       # Wasm runtime tests
       - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
@@ -485,6 +491,7 @@ extends:
           platforms:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
       # Build and Smoke Tests only - Wasm Threading Legs
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -492,7 +499,7 @@ extends:
           platforms:
             - browser_wasm
           nameSuffix: _Threading_Smoke
-          extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:_WasmPThreadPoolSize=8
+          extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:_WasmPThreadPoolSize=8 /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
           scenarios:
@@ -503,7 +510,7 @@ extends:
           platforms:
             - browser_wasm
           nameSuffix: _Threading_PerfTracing
-          extraBuildArgs: /p:MonoWasmBuildVariant=perftrace
+          extraBuildArgs: /p:MonoWasmBuildVariant=perftrace /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           alwaysRun: ${{ variables.isRollingBuild }}
 
       # WASI/WASM
@@ -514,7 +521,7 @@ extends:
             - wasi_wasm
             - wasi_wasm_win
           nameSuffix: '_Smoke'
-          extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true
+          extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           shouldContinueOnError: true
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
@@ -526,6 +533,7 @@ extends:
           platforms:
             - wasi_wasm
             - wasi_wasm_win
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           alwaysRun: ${{ variables.isRollingBuild }}
 
       #

@@ -10,6 +10,7 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-threads-api.h>
 #include <mono/utils/mono-threads-debug.h>
+#include <mono/utils/checked-build.h>
 
 #include <glib.h>
 
@@ -22,6 +23,7 @@
 #ifndef DISABLE_THREADS
 #include <emscripten/threading.h>
 #endif
+
 
 #define round_down(addr, val) ((void*)((addr) & ~((val) - 1)))
 
@@ -305,6 +307,7 @@ gboolean
 mono_thread_platform_external_eventloop_keepalive_check (void)
 {
 #if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+	MONO_REQ_GC_SAFE_MODE;
 	/* if someone called emscripten_runtime_keepalive_push (), the
 	 * thread will stay alive in the JS event loop after returning
 	 * from the thread's main function.
@@ -402,6 +405,16 @@ mono_current_thread_schedule_background_job (background_job_cb cb)
 #endif /*DISABLE_THREADS*/
 }
 
+#ifndef DISABLE_THREADS
+void
+mono_target_thread_schedule_background_job (MonoNativeThreadId target_thread, background_job_cb cb)
+{
+	THREADS_DEBUG ("worker %p queued job %p to worker %p \n", (gpointer)pthread_self(), (gpointer) cb, (gpointer) target_thread);
+	// NOTE: here the cb is [UnmanagedCallersOnly] which wraps it with MONO_ENTER_GC_UNSAFE/MONO_EXIT_GC_UNSAFE
+	mono_threads_wasm_async_run_in_target_thread_vi ((pthread_t) target_thread, (void*)mono_current_thread_schedule_background_job, (gpointer)cb);
+}
+#endif /*DISABLE_THREADS*/
+
 G_EXTERN_C
 EMSCRIPTEN_KEEPALIVE void
 mono_background_exec (void);
@@ -463,8 +476,8 @@ mono_threads_wasm_browser_thread_tid (void)
 }
 
 #ifndef DISABLE_THREADS
-extern void
-mono_wasm_pthread_on_pthread_attached (gpointer pthread_id);
+extern void mono_wasm_pthread_on_pthread_attached (MonoNativeThreadId pthread_id);
+extern void mono_wasm_pthread_on_pthread_detached (MonoNativeThreadId pthread_id);
 #endif
 
 void
@@ -484,6 +497,21 @@ mono_threads_wasm_on_thread_attached (void)
 #endif
 }
 
+void
+mono_threads_wasm_on_thread_detached (void)
+{
+#ifdef DISABLE_THREADS
+	return;
+#else
+	if (mono_threads_wasm_is_browser_thread ()) {
+		return;
+	}
+	// Notify JS that the pthread attachd to Mono
+	pthread_t id = pthread_self ();
+
+	mono_wasm_pthread_on_pthread_detached (id);
+#endif
+}
 
 #ifndef DISABLE_THREADS
 void
