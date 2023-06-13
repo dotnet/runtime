@@ -22,7 +22,7 @@ public class EmitBundleObjectFiles : EmitBundleBase
         return base.Execute();
     }
 
-    public override bool Emit(string destinationFile, Action<Stream> inputProvider)
+    public override bool EmitBundleFile(string destinationFile, Action<Stream> EmitBundleFile)
     {
         if (Path.GetDirectoryName(destinationFile) is string destDir && !string.IsNullOrEmpty(destDir))
             Directory.CreateDirectory(destDir);
@@ -31,8 +31,8 @@ public class EmitBundleObjectFiles : EmitBundleBase
                             ClangExecutable!,
                             args: $"-xc -o \"{destinationFile}\" -c -",
                             envVars: null, workingDir: null, silent: true, logStdErrAsMessage: false,
-                            debugMessageImportance: MessageImportance.Low, label: null,
-                            inputProvider);
+                            debugMessageImportance: MessageImportance.Low, label: Path.GetFileName(destinationFile),
+                            EmitBundleFile);
         if (exitCode != 0)
         {
             Log.LogError($"Failed to compile with exit code {exitCode}{Environment.NewLine}Output: {output}");

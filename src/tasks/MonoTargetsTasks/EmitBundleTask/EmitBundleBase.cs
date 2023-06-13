@@ -19,9 +19,11 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 {
     private CancellationTokenSource BuildTaskCancelled { get; } = new();
 
-    private Dictionary<string, string> resourceDataSymbolDictionary = new();
+    private readonly Dictionary<string, string> _resourceDataSymbolDictionary = new();
 
-    private Dictionary<string, string[]> resourcesForDataSymbolDictionary= new();
+    private readonly Dictionary<string, string[]> _resourcesForDataSymbolDictionary = new();
+
+    private const string RegisteredName = "RegisteredName";
 
     /// Truncate encoded hashes used in file names and symbols to 24 characters.
     /// Represents a 128-bit hash output encoded in base64 format.
@@ -31,7 +33,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
     /// Could have RegisteredName, otherwise it would be the filename.
     /// RegisteredName should be prefixed with namespace in form of unix like path. For example: "/usr/share/zoneinfo/"
     [Required]
-    public ITaskItem[] FilesToBundle { get; set; } = default!;
+    public ITaskItem[] FilesToBundle { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
     /// The function to call before mono runtime initialization
@@ -48,7 +50,8 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
     /// <summary>
     /// Path to store build artifacts
     /// <summary>
-    public string OutputDirectory {get; set; } = default!;
+    [Required]
+    public string? OutputDirectory { get; set; }
 
     /// <summary>
     /// Resources that were bundled
@@ -87,9 +90,8 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                     if (resourcePath.EndsWith(".resources.dll", StringComparison.InvariantCultureIgnoreCase) || isSatelliteAssembly)
                     {
                         bundledResource.SetMetadata("ResourceType", "SatelliteAssemblyResource");
-                        if (isSatelliteAssembly) {
+                        if (isSatelliteAssembly)
                             bundledResource.SetMetadata("Culture", managedAssemblyCulture);
-                        }
                     }
                 }
             }
@@ -99,41 +101,37 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                     Log.LogMessage(MessageImportance.High, $"Resource '{resourcePath}' was interpreted with ResourceType 'DataResource' but has a '.dll' extension. Error: {e}");
             }
 
-            var registeredName = bundledResource.GetMetadata("RegisteredName");
+            var registeredName = bundledResource.GetMetadata(RegisteredName);
             if (string.IsNullOrEmpty(registeredName))
             {
                 string culture = bundledResource.GetMetadata("Culture");
-                if (!string.IsNullOrEmpty(culture))
-                {
-                    registeredName = culture + "/" + Path.GetFileName(resourcePath);
-                }
-                else
-                {
-                    registeredName = Path.GetFileName(resourcePath);
-                }
-                bundledResource.SetMetadata("RegisteredName", registeredName);
+                registeredName = !string.IsNullOrEmpty(culture) ? culture + "/" + Path.GetFileName(resourcePath) : Path.GetFileName(resourcePath);
+                bundledResource.SetMetadata(RegisteredName, registeredName);
             }
 
             string resourceDataSymbol = $"bundled_resource_{ToSafeSymbolName(TruncateEncodedHash(Utils.ComputeHashEx(resourcePath, Utils.HashAlgorithmType.SHA256, Utils.HashEncodingType.Base64Safe), MaxEncodedHashLength))}";
-            if (resourceDataSymbolDictionary.ContainsKey(registeredName))
+            if (_resourceDataSymbolDictionary.ContainsKey(registeredName))
             {
-                throw new LogAsErrorException($"Multiple resources have the same RegisteredName '{registeredName}'. Ensure {nameof(FilesToBundle)} 'RegisteredName' metadata are set and unique.");
+                throw new LogAsErrorException($"Multiple resources have the same {RegisteredName} '{registeredName}'. Ensure {nameof(FilesToBundle)} 'RegisteredName' metadata are set and unique.");
             }
-            resourceDataSymbolDictionary.Add(registeredName, resourceDataSymbol);
+            _resourceDataSymbolDictionary.Add(registeredName, resourceDataSymbol);
 
-            bundledResource.SetMetadata("DestinationFile", Path.Combine(OutputDirectory, resourceDataSymbol + GetDestinationFileExtension()));
+            string destinationFile = Path.Combine(OutputDirectory, resourceDataSymbol + GetDestinationFileExtension());
+            bundledResource.SetMetadata("DestinationFile", destinationFile);
 
             string[] resourcesWithDataSymbol;
-            if (resourcesForDataSymbolDictionary.TryGetValue(resourceDataSymbol, out string[]? resourcesAlreadyWithDataSymbol))
+            if (_resourcesForDataSymbolDictionary.TryGetValue(resourceDataSymbol, out string[]? resourcesAlreadyWithDataSymbol))
             {
-                resourcesForDataSymbolDictionary.Remove(resourceDataSymbol);
+                _resourcesForDataSymbolDictionary.Remove(resourceDataSymbol);
+                Log.LogMessage(MessageImportance.Low, $"Resource '{registeredName}' has the same output destination file '{destinationFile}' as '{string.Join("', '", resourcesAlreadyWithDataSymbol)}'");
                 resourcesWithDataSymbol = resourcesAlreadyWithDataSymbol.Append(registeredName).ToArray();
             }
             else
             {
-                resourcesWithDataSymbol = new[] {registeredName};
+                resourcesWithDataSymbol = new[] { registeredName };
+                Log.LogMessage(MessageImportance.Low, $"Resource '{registeredName}' is associated with output destination file '{destinationFile}'");
             }
-            resourcesForDataSymbolDictionary.Add(resourceDataSymbol, resourcesWithDataSymbol);
+            _resourcesForDataSymbolDictionary.Add(resourceDataSymbol, resourcesWithDataSymbol);
 
             bundledResources.Add(bundledResource);
         }
@@ -157,14 +155,15 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
             var inputFile = contentSourceFile.ItemSpec;
             var destinationFile = contentSourceFile.GetMetadata("DestinationFile");
-            var registeredName = contentSourceFile.GetMetadata("RegisteredName");
+            var registeredName = contentSourceFile.GetMetadata(RegisteredName);
 
             var count = Interlocked.Increment(ref verboseCount);
             Log.LogMessage(MessageImportance.Low, "{0}/{1} Bundling {2} ...", count, remainingDestinationFilesToBundle.Length, registeredName);
 
             Log.LogMessage(MessageImportance.Low, "Bundling {0} into {1}", inputFile, destinationFile);
-            var symbolName = resourceDataSymbolDictionary[registeredName];
-            if (!Emit(destinationFile, (codeStream) => {
+            var symbolName = _resourceDataSymbolDictionary[registeredName];
+            if (!EmitBundleFile(destinationFile, (codeStream) =>
+            {
                 using var inputStream = File.OpenRead(inputFile);
                 using var outputUtf8Writer = new StreamWriter(codeStream, Utf8NoBom);
                 BundleFileToCSource(symbolName, inputStream, outputUtf8Writer);
@@ -176,8 +175,8 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
         foreach (ITaskItem bundledResource in bundledResources)
         {
-            string registeredName = bundledResource.GetMetadata("RegisteredName");
-            string resourceDataSymbol = resourceDataSymbolDictionary[registeredName];
+            string registeredName = bundledResource.GetMetadata(RegisteredName);
+            string resourceDataSymbol = _resourceDataSymbolDictionary[registeredName];
             bundledResource.SetMetadata("DataSymbol", $"{resourceDataSymbol}_data");
             bundledResource.SetMetadata("DataLenSymbol", $"{resourceDataSymbol}_data_len");
             bundledResource.SetMetadata("DataLenSymbolValue", symbolDataLen[resourceDataSymbol].ToString());
@@ -191,10 +190,10 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
             var files = bundledResources.Select(bundledResource => {
                 var resourceType = bundledResource.GetMetadata("ResourceType");
-                var registeredName = bundledResource.GetMetadata("RegisteredName");
+                var registeredName = bundledResource.GetMetadata(RegisteredName);
                 var resourceName = ToSafeSymbolName(registeredName, false);
                 // Different timezone resources may have the same contents, use registered name to differentiate preallocated resources
-                var resourceDataSymbol = resourceDataSymbolDictionary[registeredName];
+                var resourceDataSymbol = _resourceDataSymbolDictionary[registeredName];
 
                 string culture = bundledResource.GetMetadata("Culture");
                 string? resourceSymbolName = null;
@@ -207,7 +206,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             Log.LogMessage(MessageImportance.Low, $"Bundling {files.Count} files for {BundleRegistrationFunctionName}");
 
             // Generate source file to preallocate resources and register bundled resources
-            Emit(Path.Combine(OutputDirectory, BundleFile), (outputStream) =>
+            EmitBundleFile(Path.Combine(OutputDirectory, BundleFile), (outputStream) =>
             {
                 using var outputUtf8Writer = new StreamWriter(outputStream, Utf8NoBom);
                 GenerateBundledResourcePreallocationAndRegistration(resourceSymbols, BundleRegistrationFunctionName, files, outputUtf8Writer);
@@ -252,7 +251,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
         return lookup;
     }
 
-    public abstract bool Emit(string destinationFile, Action<Stream> inputProvider);
+    public abstract bool EmitBundleFile(string destinationFile, Action<Stream> writeToOutputStream);
 
     public abstract string GetDestinationFileExtension();
 
@@ -264,8 +263,8 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
         HashSet<string> resourcesAdded = new (); // Different Timezone resources may have the same contents
         foreach (var uniqueDestinationFile in uniqueDestinationFiles)
         {
-            string registeredName = uniqueDestinationFile.GetMetadata("RegisteredName");
-            string resourceDataSymbol = resourceDataSymbolDictionary[registeredName];
+            string registeredName = uniqueDestinationFile.GetMetadata(RegisteredName);
+            string resourceDataSymbol = _resourceDataSymbolDictionary[registeredName];
             if (!resourcesAdded.Contains(resourceDataSymbol))
             {
                 resourceSymbols.AppendLine($"extern uint8_t {resourceDataSymbol}_data[];");
@@ -385,7 +384,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
         outputUtf8Writer.WriteLine("#include <stdint.h>");
 
-        string[] resourcesForDataSymbol = resourcesForDataSymbolDictionary[symbolName];
+        string[] resourcesForDataSymbol = _resourcesForDataSymbolDictionary[symbolName];
         outputUtf8Writer.WriteLine($"// Resource Registered Names: {string.Join(", ", resourcesForDataSymbol)}");
         outputUtf8Writer.Write($"uint8_t {symbolName}_data[] = {{");
         outputUtf8Writer.Flush();
@@ -443,12 +442,9 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
     }
 
     private static string TruncateEncodedHash(string encodedHash, int maxEncodedHashLength)
-    {
-        if (string.IsNullOrEmpty(encodedHash))
-            return string.Empty;
-
-        return encodedHash.Substring(0, Math.Min(encodedHash.Length, maxEncodedHashLength));
-    }
+        => string.IsNullOrEmpty(encodedHash)
+            ? string.Empty
+            : encodedHash.Substring(0, Math.Min(encodedHash.Length, maxEncodedHashLength));
 
     // Equivalent to "isalnum"
     private static bool IsAlphanumeric(char c) => c

@@ -10,11 +10,11 @@ using Microsoft.Build.Framework;
 // For emcc it's not possible, so we need to write the code to disk first and then compile it in MSBuild.
 public class EmitBundleSourceFiles : EmitBundleBase
 {
-    public override bool Emit(string destinationFile, Action<Stream> inputProvider)
+    public override bool EmitBundleFile(string destinationFile, Action<Stream> EmitBundleFile)
     {
         using (var fileStream = File.Create(destinationFile))
         {
-            inputProvider(fileStream);
+            EmitBundleFile(fileStream);
         }
 
         return true;

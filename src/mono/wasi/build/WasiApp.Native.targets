@@ -359,19 +359,19 @@
       BundleRegistrationFunctionName="mono_register_assemblies_bundle"
       BundleFile="$(_WasmAssembliesBundleObjectFile)"
       OutputDirectory="$(_WasmIntermediateOutputPath)">
-      <Output TaskParameter="BundledResources" ItemName="BundledWasmAssemblies" />
+      <Output TaskParameter="BundledResources" ItemName="_WasmBundledAssemblies" />
     </EmitBundleObjectFiles>
 
     <ItemGroup>
       <_WasiObjectFilesForBundle Include="$(_WasmIntermediateOutputPath)$(_WasmAssembliesBundleObjectFile)" />
-      <_WasiObjectFilesForBundle Include="%(BundledWasmAssemblies.DestinationFile)" />
+      <_WasiObjectFilesForBundle Include="%(_WasmBundledAssemblies.DestinationFile)" />
     </ItemGroup>
 
     <!-- Clean up the bundle-objects dir - remove anything we no longer need -->
     <ItemGroup>
       <WasmBundleFileToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
       <WasmBundleFileToDelete Remove="$(_WasmIntermediateOutputPath)$(_WasmAssembliesBundleObjectFile)" />
-      <WasmBundleFileToDelete Remove="%(BundledWasmAssemblies.DestinationFile)" />
+      <WasmBundleFileToDelete Remove="%(_WasmBundledAssemblies.DestinationFile)" />
     </ItemGroup>
 
     <EmitBundleObjectFiles
