@@ -2753,6 +2753,16 @@ void           LinearScan::buildIntervals()
         availableRegCount = REG_INT_COUNT;
     }
 
+    if (availableRegCount < (sizeof(regMaskTP) * 8))
+    {
+        // Mask out the bits that are between 64 ~ availableRegCount
+        actualRegistersMask = (1ULL << availableRegCount) - 1;
+    }
+    else
+    {
+        actualRegistersMask = ~RBM_NONE;
+    }
+
 #ifdef DEBUG
     // Make sure we don't have any blocks that were not visited
     for (BasicBlock* const block : compiler->Blocks())

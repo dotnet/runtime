@@ -4503,13 +4503,9 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     }
 #else
     regMaskTP deadCandidates = ~liveRegs;
-    if (availableRegCount < (sizeof(regMaskTP) * 8))
-    {
-        // Mask out the bits that are between 64 ~ availableRegCount
-        // so we do not visit them in below loop.
-        regMaskTP unusedRegMask = (1ULL << availableRegCount) - 1;
-        deadCandidates &= unusedRegMask;
-    }
+
+    // Only focus on actual registers present
+    deadCandidates &= actualRegistersMask;
 
     // regMaskTP deadCandidateBit = genFindLowestBit(deadCandidates);
     while (deadCandidates != RBM_NONE)
