@@ -67,9 +67,8 @@ namespace Microsoft.Interop
                 }
                 else if (t.IsValueType)
                 {
-                    // If the containing assembly for the type is backed by metadata (non-null),
-                    // then the type is not internal and therefore coming from a reference assembly
-                    // that we can not confirm is strictly blittable.
+                    // If the containing assembly for the type is not the same assembly as the assembly defining the interop stub,
+                    // then we can't trust the type definition as it may differ at runtime from the compile-time definition.
                     if (t.ContainingAssembly is not ISourceAssemblySymbol sourceAssembly
                         || sourceAssembly.Compilation != compilation)
                     {
@@ -91,6 +90,13 @@ namespace Microsoft.Interop
             {
                 return true;
             }
+
+            // Treat pointers as always blittable.
+            if (type.TypeKind is TypeKind.Pointer or TypeKind.FunctionPointer)
+            {
+                return true;
+            }
+
             if (type.IsAutoLayout() || !isBlittable(type, seenTypes, compilation))
             {
                 return false;
