@@ -7,7 +7,7 @@
 // @TODO: Audit native events in NativeAOT Runtime
 
 #include "clreventpipewriteevents.h"
-#include "etwevents.h"
+#include "EtwEvents.h"
 
 inline BOOL EventEnabledDestroyGCHandle(void) {return EventPipeEventEnabledDestroyGCHandle();}
 
