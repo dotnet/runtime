@@ -187,8 +187,15 @@ jobs:
         PERFLAB_TARGET_FRAMEWORKS: net7.0
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Darwin'))
 
-    # Install zip tool on linux
-    - script: sudo apt-get install zip --no-upgrade # Install zip tool only if not already installed
+    # Install zip tool on Mariner
+    - script: |
+        packagesNeeded='zip'
+        if [ -x "$(command -v apk)" ];       then apk add --no-cache $packagesNeeded
+        elif [ -x "$(command -v apt-get)" ]; then apt-get install $packagesNeeded
+        elif [ -x "$(command -v dnf)" ];     then dnf install $packagesNeeded
+        elif [ -x "$(command -v yum)" ];  then yum install $packagesNeeded
+        elif [ -x "$(command -v zypper)" ];  then zypper install $packagesNeeded
+        else echo "FAILED TO INSTALL PACKAGE: Package manager not found. You must manually install: $packagesNeeded">&2; fi
       displayName: Install zip tool (Linux)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Linux'))
 
