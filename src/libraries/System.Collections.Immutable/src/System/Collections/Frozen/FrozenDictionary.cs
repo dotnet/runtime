@@ -232,24 +232,26 @@ namespace System.Collections.Frozen
                 Dictionary<string, TValue> stringEntries = (Dictionary<string, TValue>)(object)source;
                 IEqualityComparer<string> stringComparer = (IEqualityComparer<string>)(object)comparer;
 
+                // this array is needed for every strategy
+                string[] entries = (string[])(object)source.Keys.ToArray();
+
                 // Calculate the minimum and maximum lengths of the strings in the dictionary. Several of the analyses need this.
                 int minLength = int.MaxValue, maxLength = 0;
-                foreach (KeyValuePair<string, TValue> kvp in stringEntries)
+                foreach (string key in entries)
                 {
-                    if (kvp.Key.Length < minLength) minLength = kvp.Key.Length;
-                    if (kvp.Key.Length > maxLength) maxLength = kvp.Key.Length;
+                    if (key.Length < minLength) minLength = key.Length;
+                    if (key.Length > maxLength) maxLength = key.Length;
                 }
                 Debug.Assert(minLength >= 0 && maxLength >= minLength);
 
                 // Try to create an implementation that uses length buckets, where each bucket contains up to only a few strings of the same length.
-                FrozenDictionary<string, TValue>? frozenDictionary = LengthBucketsFrozenDictionary<TValue>.CreateLengthBucketsFrozenDictionaryIfAppropriate(stringEntries, stringComparer, minLength, maxLength);
+                FrozenDictionary<string, TValue>? frozenDictionary = LengthBucketsFrozenDictionary<TValue>.CreateLengthBucketsFrozenDictionaryIfAppropriate(stringEntries, stringComparer, minLength, maxLength, entries);
                 if (frozenDictionary is not null)
                 {
                     return (FrozenDictionary<TKey, TValue>)(object)frozenDictionary;
                 }
 
                 // Analyze the keys for unique substrings and create an implementation that minimizes the cost of hashing keys.
-                string[] entries = (string[])(object)source.Keys.ToArray();
                 KeyAnalyzer.AnalysisResults analysis = KeyAnalyzer.Analyze(entries, ReferenceEquals(stringComparer, StringComparer.OrdinalIgnoreCase), minLength, maxLength);
                 if (analysis.SubstringHashing)
                 {
