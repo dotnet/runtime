@@ -83,7 +83,7 @@ namespace System.Net
             {
                 // root can't be -1 here, since we've already checked for ending '/' in ListenerPrefix.
                 int root = p.IndexOf('/', colon, p.Length - colon);
-                string portString = p.Substring(colon + 1, root - colon - 1);
+                ReadOnlySpan<char> portString = p.AsSpan(colon + 1, root - colon - 1);
 
                 int port;
                 if (!int.TryParse(portString, out port) || port <= 0 || port >= 65536)

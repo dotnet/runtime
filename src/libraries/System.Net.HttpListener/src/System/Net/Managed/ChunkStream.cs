@@ -304,12 +304,12 @@ namespace System.Net
             return State.Body;
         }
 
-        private static string RemoveChunkExtension(string input)
+        private static ReadOnlySpan<char> RemoveChunkExtension(ReadOnlySpan<char> input)
         {
             int idx = input.IndexOf(';');
             if (idx == -1)
                 return input;
-            return input.Substring(0, idx);
+            return input.Slice(0, idx);
         }
 
         private State ReadCRLF(byte[] buffer, ref int offset, int size)
