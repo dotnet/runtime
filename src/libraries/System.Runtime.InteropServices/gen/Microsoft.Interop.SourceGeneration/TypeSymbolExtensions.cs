@@ -30,7 +30,8 @@ namespace Microsoft.Interop
         {
             unsafe
             {
-                return IsBlittableWorker(type, ImmutableHashSet.Create<ITypeSymbol>(SymbolEqualityComparer.Default), compilation: null, &IsConsideredBlittableWorker);
+                // We can pass a null Compilation here since our blittability check does not depend on the compilation.
+                return IsBlittableWorker(type, ImmutableHashSet.Create<ITypeSymbol>(SymbolEqualityComparer.Default), compilation: null!, &IsConsideredBlittableWorker);
             }
 
             static bool IsConsideredBlittableWorker(ITypeSymbol t, ImmutableHashSet<ITypeSymbol> seenTypes, Compilation compilation)
