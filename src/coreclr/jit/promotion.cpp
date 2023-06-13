@@ -1171,8 +1171,12 @@ private:
             {
                 for (Replacement* rep = firstRep; rep < endRep; rep++)
                 {
-                    InduceAccess(aggregates, candidate->GetLclNum(), candOffs + (rep->Offset - inducerOffs),
-                                 rep->AccessType, block);
+                    if ((rep->Offset >= inducerOffs) &&
+                        (rep->Offset + genTypeSize(rep->AccessType) <= (inducerOffs + size)))
+                    {
+                        InduceAccess(aggregates, candidate->GetLclNum(), candOffs + (rep->Offset - inducerOffs),
+                                     rep->AccessType, block);
+                    }
                 }
             }
         }
