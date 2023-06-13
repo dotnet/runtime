@@ -383,7 +383,7 @@ namespace System.Net.Quic.Tests
             };
 
             SocketException ex = await Assert.ThrowsAsync<SocketException>(() => QuicConnection.ConnectAsync(options).AsTask());
-            Assert.Equal(SocketError.HostNotFound, ((SocketException)ex).SocketErrorCode );
+            Assert.Equal(SocketError.HostNotFound, ex.SocketErrorCode);
         }
 
         [Fact]
