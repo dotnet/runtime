@@ -4,8 +4,7 @@
 // File: delayloadhook.cpp
 //
 
-#include "stdafx.h"
-
+#include <windows.h>
 #include <delayimp.h>
 
 FARPROC WINAPI secureDelayHook(unsigned dliNotify, PDelayLoadInfo pdli)
