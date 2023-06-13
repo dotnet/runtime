@@ -665,7 +665,10 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
                                                                       IDS_CLASSLOAD_VALUECLASSTOOLARGE);
                 }
 
-                val_serie_item *val_item = &(pSeries->val_serie[-index]);
+                // pSeries->val_serie is a fixed sized array.
+                // Use pointer arithmetic instead of direct array access to avoid compilers, specifically GCC,
+                // to discover undefined behavior and generate unintended code when optimization is turned on.
+                val_serie_item *val_item = pSeries->val_serie - index;
 
                 val_item->set_val_serie_item (NumPtrs, (unsigned short)skip);
             }

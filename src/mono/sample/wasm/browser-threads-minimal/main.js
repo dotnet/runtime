@@ -8,16 +8,38 @@ const assemblyName = "Wasm.Browser.Threads.Minimal.Sample.dll";
 
 try {
     const { setModuleImports, getAssemblyExports, runMain } = await dotnet
-        .withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
+        //.withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
+        .withDiagnosticTracing(true)
+        .withConfig({
+            pthreadPoolSize: 6,
+        })
         .withElementOnExit()
         .withExitCodeLogging()
         .create();
 
     const exports = await getAssemblyExports(assemblyName);
 
+    console.log("smoke: running TestHelloWebWorker");
+    await exports.Sample.Test.TestHelloWebWorker();
+    await exports.Sample.Test.TestHelloWebWorker();
+    await exports.Sample.Test.TestHelloWebWorker();
+    await exports.Sample.Test.TestHelloWebWorker();
+    await exports.Sample.Test.TestHelloWebWorker();
+    await exports.Sample.Test.TestHelloWebWorker();
+    await exports.Sample.Test.TestHelloWebWorker();
+    await exports.Sample.Test.TestHelloWebWorker();
+    console.log("smoke: TestHelloWebWorker done");
+
     console.log("smoke: running TestCanStartThread");
     await exports.Sample.Test.TestCanStartThread();
     console.log("smoke: TestCanStartThread done");
+
+    console.log("smoke: running TestTLS");
+    await exports.Sample.Test.TestTLS();
+    console.log("smoke: TestTLS done");
+
+    console.log("smoke: running StartTimerFromWorker");
+    exports.Sample.Test.StartTimerFromWorker();
 
     console.log("smoke: running TestCallSetTimeoutOnWorker");
     await exports.Sample.Test.TestCallSetTimeoutOnWorker();
@@ -50,9 +72,29 @@ try {
     }
     console.log("smoke: TaskRunCompute done");
 
+    console.log("smoke: running StartAllocatorFromWorker");
+    exports.Sample.Test.StartAllocatorFromWorker();
+
+    await delay(5000);
+
+    console.log("smoke: running GCCollect");
+    exports.Sample.Test.GCCollect();
+
+    await delay(5000);
+
+    console.log("smoke: running GCCollect");
+    exports.Sample.Test.GCCollect();
+
+    console.log("smoke: running StopTimerFromWorker");
+    exports.Sample.Test.StopTimerFromWorker();
 
     let exit_code = await runMain(assemblyName, []);
     exit(exit_code);
 } catch (err) {
     exit(2, err);
 }
+
+function delay(timeoutMs) {
+    return new Promise(resolve => setTimeout(resolve, timeoutMs));
+}
+

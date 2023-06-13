@@ -4334,9 +4334,6 @@ collect_dedup_method (MonoAotCompile *acfg, MonoMethod *method)
 static int
 add_method_full (MonoAotCompile *acfg, MonoMethod *method, gboolean extra, int depth)
 {
-	if (collect_dedup_method (acfg, method))
-		return -1;
-
 	int index;
 
 	index = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->method_indexes, method));
@@ -4422,6 +4419,9 @@ add_extra_method_full (MonoAotCompile *acfg, MonoMethod *method, gboolean prefer
 		method = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
 		mono_error_assert_ok (error);
 	}
+
+	if (collect_dedup_method (acfg, method))
+		return;
 
 	if (acfg->aot_opts.log_generics)
 		aot_printf (acfg, "%*sAdding method %s.\n", depth, "", mono_method_get_full_name (method));

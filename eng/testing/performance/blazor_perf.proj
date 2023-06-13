@@ -3,11 +3,14 @@
     <LogDirectory Condition="'$(AGENT_OS)' == 'Windows_NT'">%HELIX_WORKITEM_UPLOAD_ROOT%\</LogDirectory>
     <LogDirectory Condition="'$(AGENT_OS)' != 'Windows_NT'">%24{HELIX_WORKITEM_UPLOAD_ROOT}/</LogDirectory>
 
+    <EnvVars Condition="'$(AGENT_OS)' == 'Windows_NT'">set RestoreAdditionalProjectSources=%HELIX_CORRELATION_PAYLOAD%\built-nugets &amp; </EnvVars>
+    <EnvVars Condition="'$(AGENT_OS)' != 'Windows_NT'">export RestoreAdditionalProjectSources=$HELIX_CORRELATION_PAYLOAD/built-nugets &amp;&amp; </EnvVars>
+
     <Python>python3</Python>
     <HelixPreCommands Condition="'$(AGENT_OS)' != 'Windows_NT'">$(HelixPreCommands);chmod +x $HELIX_WORKITEM_PAYLOAD/SOD/SizeOnDisk</HelixPreCommands>
 
     <PublishArgs>--has-workload --readonly-dotnet --msbuild "/p:_TrimmerDumpDependencies=true" --msbuild /warnaserror:NU1602,NU1604 --msbuild-static AdditionalMonoLinkerOptions=%27&quot;%24(AdditionalMonoLinkerOptions) --dump-dependencies&quot;%27 --binlog $(LogDirectory)blazor_publish.binlog</PublishArgs>
-    <PublishCommand>$(Python) pre.py publish $(PublishArgs)</PublishCommand>
+    <PublishCommand>$(EnvVars) $(Python) pre.py publish $(PublishArgs)</PublishCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">

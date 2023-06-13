@@ -146,8 +146,7 @@ enum insFlags : uint64_t
     // Avx
     INS_Flags_IsDstDstSrcAVXInstruction = 1ULL << 26,
     INS_Flags_IsDstSrcSrcAVXInstruction = 1ULL << 27,
-    INS_Flags_IsMskSrcSrcEvexInstruction = 1ULL << 28,
-    INS_Flags_Is3OperandInstructionMask = (INS_Flags_IsDstDstSrcAVXInstruction | INS_Flags_IsDstSrcSrcAVXInstruction | INS_Flags_IsMskSrcSrcEvexInstruction),
+    INS_Flags_Is3OperandInstructionMask = (INS_Flags_IsDstDstSrcAVXInstruction | INS_Flags_IsDstSrcSrcAVXInstruction),
 
     // w and s bits
     INS_FLAGS_Has_Wbit = 1ULL << 29,
@@ -180,8 +179,18 @@ enum insFlags : uint64_t
 
     KInstruction = 1ULL << 41,
 
+    // EVEX feature: embedded broadcast
+    INS_Flags_EmbeddedBroadcastSupported = 1ULL << 42,
+
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,
+};
+
+enum insOpts: unsigned
+{
+    INS_OPTS_NONE,
+
+    INS_OPTS_EVEX_b
 };
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)

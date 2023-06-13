@@ -303,7 +303,7 @@ namespace System.Threading.Tasks
         /// </param>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-        [Event(TASKWAITBEGIN_ID, Version = 3, Task = TplEventSource.Tasks.TaskWait, Opcode = EventOpcode.Send,
+        [Event(TASKWAITBEGIN_ID, Version = 3, Task = Tasks.TaskWait, Opcode = EventOpcode.Send,
          Level = EventLevel.Informational, Keywords = Keywords.TaskTransfer | Keywords.Tasks,
          Message = "Beginning wait ({3}) on Task {2}.")]
         public void TaskWaitBegin(
@@ -545,7 +545,7 @@ namespace System.Threading.Tasks
         [NonEvent]
         public void IncompleteAsyncMethod(IAsyncStateMachineBox stateMachineBox)
         {
-            System.Diagnostics.Debug.Assert(stateMachineBox != null);
+            Diagnostics.Debug.Assert(stateMachineBox != null);
             if (IsEnabled() && IsEnabled(EventLevel.Warning, Keywords.AsyncMethod))
             {
                 IAsyncStateMachine stateMachine = stateMachineBox.GetStateMachineObject();

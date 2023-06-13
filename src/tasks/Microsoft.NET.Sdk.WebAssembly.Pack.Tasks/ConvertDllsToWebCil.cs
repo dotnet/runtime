@@ -66,7 +66,7 @@ public class ConvertDllsToWebCil : Task
                 var tmpDir = IntermediateOutputPath;
                 if (!Directory.Exists(tmpDir))
                     Directory.CreateDirectory(tmpDir);
-                var tmpWebcil = string.Concat (tmpDir, webcilFileName);
+                var tmpWebcil = Path.Combine(tmpDir, webcilFileName);
                 var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: filePath, outputPath: tmpWebcil, logger: Log);
                 webcilWriter.ConvertToWebcil();
 

@@ -534,12 +534,9 @@ private:
             return call;
         }
 
-        //------------------------------------------------------------------------
-        // ClearFlag: clear guarded devirtualization candidate flag from the original call.
-        //
         virtual void ClearFlag()
         {
-            origCall->ClearGuardedDevirtualizationCandidate();
+            // We remove the GDV flag from the call in the CreateElse
         }
 
         virtual UINT8 GetChecksCount()
@@ -587,9 +584,18 @@ private:
                 prevCheckBlock->bbJumpDest = checkBlock;
                 compiler->fgAddRefPred(checkBlock, prevCheckBlock);
 
-                // Weight for the new secondary check is the difference between the previous check and the thenBlock.
-                checkBlock->inheritWeightPercentage(prevCheckBlock,
-                                                    100 - origCall->GetGDVCandidateInfo(checkIdx)->likelihood);
+                // Calculate the total likelihood for this check as a sum of likelihoods
+                // of all previous candidates (thenBlocks)
+                unsigned checkLikelihood = 100;
+                for (uint8_t previousCandidate = 0; previousCandidate < checkIdx; previousCandidate++)
+                {
+                    checkLikelihood -= origCall->GetGDVCandidateInfo(previousCandidate)->likelihood;
+                }
+
+                // Make sure we didn't overflow
+                assert(checkLikelihood <= 100);
+
+                checkBlock->inheritWeightPercentage(currBlock, checkLikelihood);
             }
 
             // Find last arg with a side effect. All args with any effect
@@ -839,6 +845,7 @@ private:
             // special candidate helper and we need to use the new 'this'.
             GenTreeCall* call = compiler->gtCloneCandidateCall(origCall);
             call->gtArgs.GetThisArg()->SetEarlyNode(compiler->gtNewLclvNode(thisTemp, TYP_REF));
+
             call->SetIsGuarded();
 
             JITDUMP("Direct call [%06u] in block " FMT_BB "\n", compiler->dspTreeID(call), block->bbNum);
@@ -994,12 +1001,16 @@ private:
             // Make sure it didn't overflow
             assert(elseLikelihood <= 100);
 
+            // Remove everything related to inlining from the original call
+            origCall->ClearInlineInfo();
+
             elseBlock->inheritWeightPercentage(currBlock, elseLikelihood);
 
             GenTreeCall* call    = origCall;
             Statement*   newStmt = compiler->gtNewStmt(call, stmt->GetDebugInfo());
 
             call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
+
             call->SetIsGuarded();
 
             JITDUMP("Residual call [%06u] moved to block " FMT_BB "\n", compiler->dspTreeID(call), elseBlock->bbNum);
