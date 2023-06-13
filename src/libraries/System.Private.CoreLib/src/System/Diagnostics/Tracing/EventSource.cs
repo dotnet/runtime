@@ -6133,7 +6133,7 @@ namespace System.Diagnostics.Tracing
     /// </summary>
     internal struct ManifestEnvelope
     {
-        public const int MaxChunkSize = 0xFF00;
+        public const int MaxChunkSize = 0xF700;
         public enum ManifestFormats : byte
         {
             SimpleXmlFormat = 1,          // simply dump the XML manifest as UTF8
