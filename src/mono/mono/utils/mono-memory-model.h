@@ -34,20 +34,6 @@ mono_memory_barrier (void)
 	MemoryBarrier ();
 }
 
-static inline void
-mono_memory_read_barrier (void)
-{
-	_ReadBarrier ();
-	MemoryBarrier ();
-}
-
-static inline void
-mono_memory_write_barrier (void)
-{
-	_WriteBarrier ();
-	MemoryBarrier ();
-}
-
 #define mono_compiler_barrier() _ReadWriteBarrier ()
 
 #elif defined(USE_GCC_ATOMIC_OPS) || defined(HOST_WASM)
@@ -56,18 +42,6 @@ static inline void
 mono_memory_barrier (void)
 {
 	__sync_synchronize ();
-}
-
-static inline void
-mono_memory_read_barrier (void)
-{
-	mono_memory_barrier ();
-}
-
-static inline void
-mono_memory_write_barrier (void)
-{
-	mono_memory_barrier ();
 }
 
 #define mono_compiler_barrier() asm volatile("": : :"memory")
@@ -110,8 +84,6 @@ enum {
 };
 
 #define MEMORY_BARRIER mono_memory_barrier ()
-#define LOAD_BARRIER mono_memory_read_barrier ()
-#define STORE_BARRIER mono_memory_write_barrier ()
 
 #if defined(__i386__) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_X64)
 /*
@@ -141,8 +113,8 @@ AND R0, R0, #0
 LDR R3, [R4, R0]
 */
 
-#define STORE_STORE_FENCE STORE_BARRIER
-#define LOAD_LOAD_FENCE LOAD_BARRIER
+#define STORE_STORE_FENCE MEMORY_BARRIER
+#define LOAD_LOAD_FENCE MEMORY_BARRIER
 #define STORE_LOAD_FENCE MEMORY_BARRIER
 #define STORE_ACQUIRE_FENCE MEMORY_BARRIER
 #define STORE_RELEASE_FENCE MEMORY_BARRIER
@@ -160,8 +132,8 @@ LDR R3, [R4, R0]
 #else
 
 /*default implementation with the weakest possible memory model */
-#define STORE_STORE_FENCE STORE_BARRIER
-#define LOAD_LOAD_FENCE LOAD_BARRIER
+#define STORE_STORE_FENCE MEMORY_BARRIER
+#define LOAD_LOAD_FENCE MEMORY_BARRIER
 #define STORE_LOAD_FENCE MEMORY_BARRIER
 #define LOAD_STORE_FENCE MEMORY_BARRIER
 #define STORE_ACQUIRE_FENCE MEMORY_BARRIER
@@ -235,5 +207,18 @@ Acquire/release semantics macros.
 	*(target) = (value);	\
 	STORE_ACQUIRE_FENCE;	\
 	}
+
+
+static inline void
+mono_memory_read_barrier (void)
+{
+	LOAD_LOAD_FENCE;
+}
+
+static inline void
+mono_memory_write_barrier (void)
+{
+	STORE_STORE_FENCE;
+}
 
 #endif /* _MONO_UTILS_MONO_MEMMODEL_H_ */
