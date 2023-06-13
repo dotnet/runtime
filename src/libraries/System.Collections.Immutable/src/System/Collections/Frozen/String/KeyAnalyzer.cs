@@ -46,7 +46,6 @@ namespace System.Collections.Frozen
         /// <summary>Try to find the minimal unique substring index/length to use for comparisons.</summary>
         private static bool TryUseSubstring(ReadOnlySpan<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength, out AnalysisResults results)
         {
-            const double SufficientUniquenessFactor = 0.95; // 95% is good enough
             const int MaxSubstringLengthLimit = 8; // arbitrary small-ish limit... t's not worth the increase in algorithmic complexity to analyze longer substrings
 
             SubstringComparer leftComparer = ignoreCase ? new LeftJustifiedCaseInsensitiveSubstringComparer() : new LeftJustifiedSubstringComparer();
@@ -70,8 +69,8 @@ namespace System.Collections.Frozen
                 for (int index = 0; index <= minLength - count; index++)
                 {
                     leftComparer.Index = index;
-                    double factor = GetUniquenessFactor(leftSet, uniqueStrings);
-                    if (factor >= SufficientUniquenessFactor)
+
+                    if (HasSufficientUniquenessFactor(leftSet, uniqueStrings))
                     {
                         results = CreateAnalysisResults(
                             uniqueStrings, ignoreCase, minLength, maxLength, index, count,
@@ -106,8 +105,7 @@ namespace System.Collections.Frozen
                         // Get a uniqueness factor for the right-justified substrings.
                         // If it's above our threshold, we're done.
                         rightComparer.Index = -index - count;
-                        double factor = GetUniquenessFactor(rightSet, uniqueStrings);
-                        if (factor >= SufficientUniquenessFactor)
+                        if (HasSufficientUniquenessFactor(rightSet, uniqueStrings))
                         {
                             results = CreateAnalysisResults(
                                 uniqueStrings, ignoreCase, minLength, maxLength, rightComparer.Index, count,
@@ -235,15 +233,23 @@ namespace System.Collections.Frozen
 #endif
         }
 
-        private static double GetUniquenessFactor(HashSet<string> set, ReadOnlySpan<string> uniqueStrings)
+        private static bool HasSufficientUniquenessFactor(HashSet<string> set, ReadOnlySpan<string> uniqueStrings)
         {
             set.Clear();
+
+            // SufficientUniquenessFactor of 95% is good enough.
+            // Instead of ensuring that 95% of data is good, we stop when we know that at least 5% is bad.
+            int acceptableNonUniqueCount = uniqueStrings.Length / 20;
+
             foreach (string s in uniqueStrings)
             {
-                set.Add(s);
+                if (!set.Add(s) && --acceptableNonUniqueCount < 0)
+                {
+                    return false;
+                }
             }
 
-            return set.Count / (double)uniqueStrings.Length;
+            return true;
         }
 
         internal readonly struct AnalysisResults
