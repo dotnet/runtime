@@ -871,12 +871,14 @@ namespace Internal.JitInterface
                         if (helperId == ReadyToRunHelperId.MethodEntry && pGenericLookupKind.runtimeLookupArgs != null)
                         {
                             constrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *(CORINFO_RESOLVED_TOKEN*)pGenericLookupKind.runtimeLookupArgs);
+                            _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, constrainedType);
                         }
                         object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                         if (helperArg is MethodDesc methodDesc)
                         {
                             var methodIL = HandleToObject(pResolvedToken.tokenScope);
                             MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
+                            _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
                             helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false, context: sharedMethod);
                         }
                         else if (helperArg is FieldDesc fieldDesc)
@@ -2259,6 +2261,11 @@ namespace Internal.JitInterface
                 out callerMethod,
                 out callerModule,
                 out useInstantiatingStub);
+
+            if (callerMethod.HasInstantiation || callerMethod.OwningType.HasInstantiation)
+            {
+                _compilation.NodeFactory.DetectGenericCycles(callerMethod, methodToCall);
+            }
 
             if (pResult->thisTransform == CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS)
             {
