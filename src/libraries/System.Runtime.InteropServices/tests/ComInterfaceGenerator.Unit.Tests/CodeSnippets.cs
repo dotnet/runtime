@@ -344,6 +344,17 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
             
             {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
+
+            interface IOtherInterface
+            {
+                int Property { get; set; }
+            
+                public static int StaticProperty { get; set; }
+            
+                event EventHandler Event;
+            
+                public static event EventHandler StaticEvent;
+            }
             """;
 
         public class ManagedToUnmanaged : IVirtualMethodIndexSignatureProvider
