@@ -280,12 +280,6 @@
       <_MonoCXXFLAGS Include="-stdlib=libc++" />
       <_MonoCMakeArgs Include="-DMONO_SET_RPATH_ORIGIN=true" />
     </ItemGroup>
-    <ItemGroup Condition="'$(HostOS)' == 'Linux' and (('$(MonoAOTEnableLLVM)' == 'true' and '$(MonoUseLibCxx)' == 'true') or '$(TargetArchitecture)' == 'wasm')">
-      <_MonoAOTCXXFLAGS Include="-I$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\include\c++\v1" />
-      <_MonoAOTCXXFLAGS Include="-L$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib" />
-      <_MonoAOTCXXFLAGS Include="-stdlib=libc++" />
-      <MonoAOTCMakeArgs Include="-DMONO_SET_RPATH_ORIGIN=true" />
-    </ItemGroup>
 
     <!-- ARM Linux cross build options on CI -->
     <ItemGroup Condition="'$(TargetsAndroid)' != 'true' and '$(TargetsLinuxBionic)' != 'true' and '$(MonoCrossDir)' != '' and ('$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armv6' or '$(TargetArchitecture)' == 'arm64')">
@@ -711,6 +705,13 @@
       <_MonoLLVMTargetArchitecture>$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
       <_MonoLLVMTargetArchitecture Condition="'$(AotHostArchitecture)' != ''">$(AotHostArchitecture)</_MonoLLVMTargetArchitecture>
     </PropertyGroup>
+
+    <ItemGroup Condition="'$(HostOS)' == 'Linux' and (('$(MonoAOTEnableLLVM)' == 'true' and '$(MonoUseLibCxx)' == 'true') or '$(TargetArchitecture)' == 'wasm')">
+      <_MonoAOTCXXFLAGS Include="-I$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\include\c++\v1" />
+      <_MonoAOTCXXFLAGS Include="-L$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib" />
+      <_MonoAOTCXXFLAGS Include="-stdlib=libc++" />
+      <MonoAOTCMakeArgs Include="-DMONO_SET_RPATH_ORIGIN=true" />
+    </ItemGroup>
 
     <!-- macOS host specific options -->
     <ItemGroup Condition="'$(AotHostOS)' == 'osx' or $([MSBuild]::IsOSPlatform('OSX'))">
