@@ -405,18 +405,18 @@ namespace System.Runtime.Intrinsics.Wasm
         public static unsafe Vector128<nint>   LoadScalarAndSplatVector128(nint*   address) { throw new PlatformNotSupportedException(); }
         public static unsafe Vector128<nuint>  LoadScalarAndSplatVector128(nuint*  address) { throw new PlatformNotSupportedException(); }
 
-        public static unsafe Vector128<sbyte>  LoadScalarAndInsert(sbyte*  address, Vector128<sbyte>  vector, byte index) { throw new PlatformNotSupportedException(); }
-        public static unsafe Vector128<byte>   LoadScalarAndInsert(byte*   address, Vector128<byte>   vector, byte index) { throw new PlatformNotSupportedException(); }
-        public static unsafe Vector128<short>  LoadScalarAndInsert(short*  address, Vector128<short>  vector, byte index) { throw new PlatformNotSupportedException(); }
-        public static unsafe Vector128<ushort> LoadScalarAndInsert(ushort* address, Vector128<ushort> vector, byte index) { throw new PlatformNotSupportedException(); }
-        public static unsafe Vector128<int>    LoadScalarAndInsert(int*    address, Vector128<int>    vector, byte index) { throw new PlatformNotSupportedException(); }
-        public static unsafe Vector128<uint>   LoadScalarAndInsert(uint*   address, Vector128<uint>   vector, byte index) { throw new PlatformNotSupportedException(); }
-        public static unsafe Vector128<long>   LoadScalarAndInsert(long*   address, Vector128<long>   vector, byte index) { throw new PlatformNotSupportedException(); }
-        public static unsafe Vector128<ulong>  LoadScalarAndInsert(ulong*  address, Vector128<ulong>  vector, byte index) { throw new PlatformNotSupportedException(); }
-        public static unsafe Vector128<float>  LoadScalarAndInsert(float*  address, Vector128<float>  vector, byte index) { throw new PlatformNotSupportedException(); }
-        public static unsafe Vector128<double> LoadScalarAndInsert(double* address, Vector128<double> vector, byte index) { throw new PlatformNotSupportedException(); }
-        public static unsafe Vector128<nint>   LoadScalarAndInsert(nint*   address, Vector128<nint>   vector, byte index) { throw new PlatformNotSupportedException(); }
-        public static unsafe Vector128<nuint>  LoadScalarAndInsert(nuint*  address, Vector128<nuint>  vector, byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<sbyte>  LoadScalarAndInsert(sbyte*  address, Vector128<sbyte>  vector, [ConstantExpected(Max = (byte)(15))] byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<byte>   LoadScalarAndInsert(byte*   address, Vector128<byte>   vector, [ConstantExpected(Max = (byte)(15))] byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<short>  LoadScalarAndInsert(short*  address, Vector128<short>  vector, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ushort> LoadScalarAndInsert(ushort* address, Vector128<ushort> vector, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<int>    LoadScalarAndInsert(int*    address, Vector128<int>    vector, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<uint>   LoadScalarAndInsert(uint*   address, Vector128<uint>   vector, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<long>   LoadScalarAndInsert(long*   address, Vector128<long>   vector, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ulong>  LoadScalarAndInsert(ulong*  address, Vector128<ulong>  vector, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<float>  LoadScalarAndInsert(float*  address, Vector128<float>  vector, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<double> LoadScalarAndInsert(double* address, Vector128<double> vector, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<nint>   LoadScalarAndInsert(nint*   address, Vector128<nint>   vector, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<nuint>  LoadScalarAndInsert(nuint*  address, Vector128<nuint>  vector, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
 
         public static unsafe Vector128<short>  LoadWideningVector128(sbyte*  address) { throw new PlatformNotSupportedException(); }
         public static unsafe Vector128<ushort> LoadWideningVector128(byte*   address) { throw new PlatformNotSupportedException(); }
