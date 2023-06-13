@@ -6578,6 +6578,26 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<double> CompareGreaterThanOrEqual(Vector128<double> left, Vector128<double> right) { throw null; }
         public static Vector128<nint>   CompareGreaterThanOrEqual(Vector128<nint>   left, Vector128<nint>   right) { throw null; }
         public static Vector128<nuint>  CompareGreaterThanOrEqual(Vector128<nuint>  left, Vector128<nuint>  right) { throw null; }
+        public static unsafe Vector128<sbyte>  LoadVector128(sbyte*  address) { throw null; }
+        public static unsafe Vector128<byte>   LoadVector128(byte*   address) { throw null; }
+        public static unsafe Vector128<short>  LoadVector128(short*  address) { throw null; }
+        public static unsafe Vector128<ushort> LoadVector128(ushort* address) { throw null; }
+        public static unsafe Vector128<int>    LoadVector128(int*    address) { throw null; }
+        public static unsafe Vector128<uint>   LoadVector128(uint*   address) { throw null; }
+        public static unsafe Vector128<long>   LoadVector128(long*   address) { throw null; }
+        public static unsafe Vector128<ulong>  LoadVector128(ulong*  address) { throw null; }
+        public static unsafe Vector128<float>  LoadVector128(float*  address) { throw null; }
+        public static unsafe Vector128<double> LoadVector128(double* address) { throw null; }
+        public static unsafe Vector128<nint>   LoadVector128(nint*   address) { throw null; }
+        public static unsafe Vector128<nuint>  LoadVector128(nuint*  address) { throw null; }
+        public static unsafe Vector128<int>    LoadScalarVector128(int*    address) { throw null; }
+        public static unsafe Vector128<uint>   LoadScalarVector128(uint*   address) { throw null; }
+        public static unsafe Vector128<long>   LoadScalarVector128(long*   address) { throw null; }
+        public static unsafe Vector128<ulong>  LoadScalarVector128(ulong*  address) { throw null; }
+        public static unsafe Vector128<float>  LoadScalarVector128(float*  address) { throw null; }
+        public static unsafe Vector128<double> LoadScalarVector128(double* address) { throw null; }
+        public static unsafe Vector128<nint>   LoadScalarVector128(nint*   address) { throw null; }
+        public static unsafe Vector128<nuint>  LoadScalarVector128(nuint*  address) { throw null; }
         public static Vector128<float>  Negate(Vector128<float>  value) { throw null; }
         public static Vector128<double> Negate(Vector128<double> value) { throw null; }
         public static Vector128<float>  Abs(Vector128<float>  value) { throw null; }
