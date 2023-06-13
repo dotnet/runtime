@@ -12,10 +12,6 @@ namespace Microsoft.Interop
     /// </summary>
     internal sealed record ComInterfaceAndMethodsContext(ComInterfaceContext Interface, SequenceEqualImmutableArray<ComMethodContext> Methods)
     {
-        // Change Calc all methods to return an ordered list of all the methods and the data in comInterfaceandMethodsContext
-        // Have a step that runs CalculateMethodStub on each of them.
-        // Call GroupMethodsByInterfaceForGeneration
-
         /// <summary>
         /// COM methods that are declared on the attributed interface declaration.
         /// </summary>

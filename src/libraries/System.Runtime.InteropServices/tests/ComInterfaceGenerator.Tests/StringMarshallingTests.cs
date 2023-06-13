@@ -78,7 +78,6 @@ namespace ComInterfaceGenerator.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/85795", TargetFrameworkMonikers.Any)]
         public void RcwToCcw()
         {
             var cw = new StrategyBasedComWrappers();

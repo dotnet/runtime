@@ -248,10 +248,14 @@ class DecompositionPlan;
 
 class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
 {
+    friend class DecompositionPlan;
+
     jitstd::vector<AggregateInfo*>& m_aggregates;
     PromotionLiveness*              m_liveness;
     bool                            m_madeChanges         = false;
     bool                            m_hasPendingReadBacks = false;
+    bool                            m_mayHaveForwardSub   = false;
+    Statement*                      m_currentStmt         = nullptr;
     BasicBlock*                     m_currentBlock        = nullptr;
 
 public:
@@ -271,6 +275,11 @@ public:
         return m_madeChanges;
     }
 
+    bool MayHaveForwardSubOpportunity()
+    {
+        return m_mayHaveForwardSub;
+    }
+
     void StartBlock(BasicBlock* block)
     {
         m_currentBlock = block;
@@ -278,9 +287,11 @@ public:
 
     void EndBlock();
 
-    void StartStatement()
+    void StartStatement(Statement* stmt)
     {
-        m_madeChanges = false;
+        m_currentStmt       = stmt;
+        m_madeChanges       = false;
+        m_mayHaveForwardSub = false;
     }
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user);
@@ -288,8 +299,10 @@ public:
 private:
     GenTree** InsertMidTreeReadBacksIfNecessary(GenTree** use);
     void LoadStoreAroundCall(GenTreeCall* call, GenTree* user);
+    GenTree** EffectiveUse(GenTree** use);
     bool IsPromotedStructLocalDying(GenTreeLclVarCommon* structLcl);
     void ReplaceLocal(GenTree** use, GenTree* user);
+    void CheckForwardSubForLastUse(unsigned lclNum);
     void StoreBeforeReturn(GenTreeUnOp* ret);
     void WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs, unsigned size);
     bool MarkForReadBack(unsigned lcl, unsigned offs, unsigned size);

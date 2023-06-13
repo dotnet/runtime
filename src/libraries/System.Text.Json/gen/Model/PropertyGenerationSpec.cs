@@ -137,5 +137,47 @@ namespace System.Text.Json.SourceGeneration
         /// Design-time specified custom converter type.
         /// </summary>
         public required TypeRef? ConverterType { get; init; }
+
+        /// <summary>
+        /// Determines if the specified property should be included in the fast-path method body.
+        /// </summary>
+        public bool ShouldIncludePropertyForFastPath(ContextGenerationSpec contextSpec)
+        {
+            // Discard ignored properties
+            if (DefaultIgnoreCondition is JsonIgnoreCondition.Always)
+            {
+                return false;
+            }
+
+            // Discard properties without getters
+            if (!CanUseGetter)
+            {
+                return false;
+            }
+
+            // Discard fields when JsonInclude or IncludeFields aren't enabled.
+            if (!IsProperty && !HasJsonInclude && !contextSpec.IncludeFields)
+            {
+                return false;
+            }
+
+            // Ignore read-only properties/fields if enabled in configuration.
+            if (IsReadOnly)
+            {
+                if (IsProperty)
+                {
+                    if (contextSpec.IgnoreReadOnlyProperties)
+                    {
+                        return false;
+                    }
+                }
+                else if (contextSpec.IgnoreReadOnlyFields)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
     }
 }
