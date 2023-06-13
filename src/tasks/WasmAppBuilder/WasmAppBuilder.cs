@@ -319,10 +319,8 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             }
             else if (name == "diagnosticTracing")
             {
-                if (valueObject is bool boolValue)
+                if (valueObject is bool boolValue || (valueObject is string stringValue && bool.TryParse(stringValue, out boolValue)))
                     config.diagnosticTracing = boolValue;
-                else if (valueObject is string stringValue && bool.TryParse(stringValue, out bool stringToboolValue))
-                    config.diagnosticTracing = stringToboolValue;
                 else
                     throw new LogAsErrorException($"Unsupported value '{valueObject}' of type '{valueObject?.GetType()?.FullName}' for extra config 'diagnosticTracing'.");
             }
