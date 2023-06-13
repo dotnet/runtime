@@ -90,6 +90,7 @@ internal sealed class JSEngineHost
                                     msg => { if (msg != null) _logger.LogInformation(msg); },
                                     msg => { if (msg != null) _logger.LogInformation(msg); });
 
+        Console.WriteLine ($"JS host exited with {exitCode}");
         return exitCode;
     }
 }
