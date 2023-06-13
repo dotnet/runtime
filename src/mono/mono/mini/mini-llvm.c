@@ -10122,6 +10122,8 @@ MONO_RESTORE_WARNING
 				case MONO_TYPE_R8:
 					rtype = v128_i8_t;
 					break;
+				default:
+					g_assert_not_reached();
 			}
 			LLVMTypeRef srctype = LLVMGetElementType (rtype);
 			LLVMValueRef addr = convert (ctx, lhs, pointer_type (srctype));
@@ -10197,6 +10199,8 @@ MONO_RESTORE_WARNING
 					rtype = v128_r8_t;
 					elems = 2;
 					break;
+				default:
+					g_assert_not_reached();
 			}
 			LLVMTypeRef srctype = LLVMGetElementType (rtype);
 			LLVMValueRef addr = convert (ctx, lhs, pointer_type (srctype));
