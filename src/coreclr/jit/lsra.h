@@ -1661,7 +1661,7 @@ private:
     VarToRegMap* outVarToRegMaps;
 
     // A temporary VarToRegMap used during the resolution of critical edges.
-    VarToRegMap sharedCriticalVarToRegMap;
+    VarToRegMap          sharedCriticalVarToRegMap;
     PhasedVar<regMaskTP> actualRegistersMask;
     PhasedVar<regMaskTP> availableIntRegs;
     PhasedVar<regMaskTP> availableFloatRegs;
