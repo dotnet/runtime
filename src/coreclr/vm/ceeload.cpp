@@ -2311,26 +2311,17 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
                             "reachable or needs to be reimplemented for CoreCLR!");
         }
 
-        // We're going to be working with Windows PDB format symbols. Attempt to CoCreate the symbol binder.
-        // CoreCLR supports not having a symbol reader installed, so CoCreate searches the PATH env var
-        // and then tries coreclr dll location.
-        // On desktop, the framework installer is supposed to install diasymreader.dll as well
-        // and so this shouldn't happen.
-        hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, NATIVE_SYMBOL_READER_DLL, IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
+        PathString symbolReaderPath;
+        hr = GetClrModuleDirectory(symbolReaderPath);
         if (FAILED(hr))
         {
-            PathString symbolReaderPath;
-            hr = GetClrModuleDirectory(symbolReaderPath);
-            if (FAILED(hr))
-            {
-                RETURN (NULL);
-            }
-            symbolReaderPath.Append(NATIVE_SYMBOL_READER_DLL);
-            hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, symbolReaderPath.GetUnicode(), IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
-            if (FAILED(hr))
-            {
-                RETURN (NULL);
-            }
+            RETURN (NULL);
+        }
+        symbolReaderPath.Append(NATIVE_SYMBOL_READER_DLL);
+        hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, symbolReaderPath.GetUnicode(), IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
+        if (FAILED(hr))
+        {
+            RETURN (NULL);
         }
 
         LOG((LF_CORDB, LL_INFO10, "M::GISUR: Created binder\n"));

@@ -160,6 +160,25 @@ namespace Microsoft.Interop
         protected abstract InvocationExpressionSyntax GetUnmanagedValuesSource(TypePositionInfo info, StubCodeContext context);
         protected abstract InvocationExpressionSyntax GetManagedValuesDestination(TypePositionInfo info, StubCodeContext context);
 
+        protected IEnumerable<StatementSyntax> DeclareLastIndexMarshalledIfNeeded(
+            TypePositionInfo info,
+            StubCodeContext context)
+        {
+            // We need to declare the last index marshalled variable if the collection is not multi-dimensional.
+            // If it is multidimensional, we will just clear each allocated span.
+            if (UsesLastIndexMarshalled(info, context))
+            {
+                yield return LocalDeclarationStatement(
+                    VariableDeclaration(
+                        PredefinedType(Token(SyntaxKind.IntKeyword)),
+                    SingletonSeparatedList(
+                        VariableDeclarator(
+                            Identifier(MarshallerHelpers.GetLastIndexMarshalledIdentifier(info, context)),
+                            null,
+                            EqualsValueClause(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0)))))));
+            }
+        }
+
         protected StatementSyntax GenerateByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context)
         {
             // If the parameter is marshalled by-value [Out], then we don't marshal the contents of the collection.
@@ -180,8 +199,10 @@ namespace Microsoft.Interop
 
             // ReadOnlySpan<T> <managedSpan> = <GetManagedValuesSource>
             // Span<TUnmanagedElement> <nativeSpan> = <GetUnmanagedValuesDestination>
+            // <if multidimensional collection> <nativeSpan>.Clear()
             // << marshal contents >>
-            return Block(
+            var statements = new List<StatementSyntax>()
+            {
                 LocalDeclarationStatement(VariableDeclaration(
                     GenericName(
                         Identifier(TypeNames.System_ReadOnlySpan),
@@ -198,14 +219,27 @@ namespace Microsoft.Interop
                         VariableDeclarator(
                             Identifier(nativeSpanIdentifier))
                         .WithInitializer(EqualsValueClause(
-                            GetUnmanagedValuesDestination(info, context)))))),
-                GenerateContentsMarshallingStatement(
+                            GetUnmanagedValuesDestination(info, context))))))
+            };
+            // If it is a multidimensional array, we will just clear each allocated span.
+            if (!UsesLastIndexMarshalled(info, context))
+            {
+                // <nativeSpanIdentifier>.Clear()
+                statements.Add(ExpressionStatement(
+                    InvocationExpression(
+                        MemberAccessExpression(
+                            SyntaxKind.SimpleMemberAccessExpression,
+                            IdentifierName(nativeSpanIdentifier),
+                            IdentifierName("Clear")))));
+            }
+            statements.Add(GenerateContentsMarshallingStatement(
                     info,
                     context,
                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                         IdentifierName(MarshallerHelpers.GetManagedSpanIdentifier(info, context)),
                         IdentifierName("Length")),
                     StubCodeContext.Stage.Marshal));
+            return Block(statements);
         }
 
         public StatementSyntax GenerateUnmarshalStatement(TypePositionInfo info, StubCodeContext context)
@@ -315,13 +349,42 @@ namespace Microsoft.Interop
                     StubCodeContext.Stage.Unmarshal));
         }
 
+        private Dictionary<(TypePositionInfo, StubCodeContext), bool> _usesLastIndexMarshalledCache = new();
+
+        protected bool UsesLastIndexMarshalled(TypePositionInfo info, StubCodeContext context)
+        {
+            var cleanupContext = context with { CurrentStage = StubCodeContext.Stage.Cleanup };
+            if (_usesLastIndexMarshalledCache.TryGetValue((info, cleanupContext), out bool result))
+                return result;
+            bool usesLastIndexMarshalled = !(ShouldCleanupAllElements(info, context) || !GenerateElementStages(info, cleanupContext, out _, out _, StubCodeContext.Stage.Cleanup).Any());
+            _usesLastIndexMarshalledCache.Add((info, cleanupContext), usesLastIndexMarshalled);
+            return usesLastIndexMarshalled;
+        }
+
+        protected static bool ShouldCleanupAllElements(TypePositionInfo info, StubCodeContext context)
+        {
+            // AdditionalTemporaryStateLivesAcrossStages implies that it is an outer collection
+            // Out parameters means that the contents are created by the P/Invoke and assumed to have successfully created all elements
+            return !context.AdditionalTemporaryStateLivesAcrossStages || info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out || info.RefKind == RefKind.Out;
+        }
+
         protected StatementSyntax GenerateElementCleanupStatement(TypePositionInfo info, StubCodeContext context)
         {
             string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(info, context);
+            ExpressionSyntax indexConstraintName;
+            if (ShouldCleanupAllElements(info, context))
+            {
+                indexConstraintName = MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                        IdentifierName(nativeSpanIdentifier),
+                        IdentifierName("Length"));
+            }
+            else
+            {
+                indexConstraintName = IdentifierName(MarshallerHelpers.GetLastIndexMarshalledIdentifier(info, context));
+            }
+
             StatementSyntax contentsCleanupStatements = GenerateContentsMarshallingStatement(info, context,
-                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                        IdentifierName(MarshallerHelpers.GetNativeSpanIdentifier(info, context)),
-                        IdentifierName("Length")),
+                        indexConstraintName,
                         StubCodeContext.Stage.Cleanup);
 
             if (contentsCleanupStatements.IsKind(SyntaxKind.EmptyStatement))
@@ -342,21 +405,22 @@ namespace Microsoft.Interop
                 contentsCleanupStatements);
         }
 
-        protected StatementSyntax GenerateContentsMarshallingStatement(
+        private List<StatementSyntax> GenerateElementStages(
             TypePositionInfo info,
             StubCodeContext context,
-            ExpressionSyntax lengthExpression,
-            params StubCodeContext.Stage[] stagesToGeneratePerElement)
+            out LinearCollectionElementMarshallingCodeContext elementSetupSubContext,
+            out TypePositionInfo localElementInfo,
+            params StubCodeContext.Stage[] stages)
         {
             string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(info, context);
             string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(info, context);
-            var elementSetupSubContext = new LinearCollectionElementMarshallingCodeContext(
+            elementSetupSubContext = new LinearCollectionElementMarshallingCodeContext(
                 StubCodeContext.Stage.Setup,
                 managedSpanIdentifier,
                 nativeSpanIdentifier,
                 context);
 
-            TypePositionInfo localElementInfo = _elementInfo with
+            localElementInfo = _elementInfo with
             {
                 InstanceIdentifier = info.InstanceIdentifier,
                 RefKind = info.IsByRef ? info.RefKind : info.ByValueContentsMarshalKind.GetRefKindForByValueContentsKind(),
@@ -365,11 +429,22 @@ namespace Microsoft.Interop
             };
 
             List<StatementSyntax> elementStatements = new();
-            foreach (StubCodeContext.Stage stage in stagesToGeneratePerElement)
+            foreach (StubCodeContext.Stage stage in stages)
             {
                 var elementSubContext = elementSetupSubContext with { CurrentStage = stage };
-                elementStatements.AddRange(_elementMarshaller.Generate(localElementInfo, elementSubContext));
+                elementStatements.AddRange( _elementMarshaller.Generate(localElementInfo, elementSubContext));
             }
+            return elementStatements;
+
+        }
+
+        protected StatementSyntax GenerateContentsMarshallingStatement(
+            TypePositionInfo info,
+            StubCodeContext context,
+            ExpressionSyntax lengthExpression,
+            params StubCodeContext.Stage[] stagesToGeneratePerElement)
+        {
+            var elementStatements = GenerateElementStages(info, context, out var elementSetupSubContext, out var localElementInfo, stagesToGeneratePerElement);
 
             if (elementStatements.Any())
             {
@@ -384,8 +459,16 @@ namespace Microsoft.Interop
                 }
 
                 // Iterate through the elements of the native collection to marshal them
-                return MarshallerHelpers.GetForLoop(lengthExpression, elementSetupSubContext.IndexerIdentifier)
-                    .WithStatement(marshallingStatement);
+                ForStatementSyntax forLoop = MarshallerHelpers.GetForLoop(lengthExpression, elementSetupSubContext.IndexerIdentifier)
+                    .WithStatement(Block(marshallingStatement));
+                // If we're tracking LastIndexMarshalled, increment that too
+                if (context.CurrentStage == StubCodeContext.Stage.Marshal && UsesLastIndexMarshalled(info, context))
+                {
+                    forLoop = forLoop.AddIncrementors(
+                        PrefixUnaryExpression(SyntaxKind.PreIncrementExpression,
+                            IdentifierName(MarshallerHelpers.GetLastIndexMarshalledIdentifier(info, context))));
+                }
+                return forLoop;
             }
 
             return EmptyStatement();

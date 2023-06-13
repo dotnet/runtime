@@ -414,7 +414,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 // Read it back as a collection, there should be only one cert, and it should
                 // be equal to the one we started with.
-                using (ImportedCollection ic = Cert.Import(pkcs12Bytes))
+                using (ImportedCollection ic = Cert.Import(pkcs12Bytes, (string?)null, X509KeyStorageFlags.DefaultKeySet))
                 {
                     X509Certificate2Collection fromPfx = ic.Collection;
 
