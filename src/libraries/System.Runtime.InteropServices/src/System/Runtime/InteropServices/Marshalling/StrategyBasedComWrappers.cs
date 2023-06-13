@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.Marshalling
 {
@@ -17,7 +18,16 @@ namespace System.Runtime.InteropServices.Marshalling
 
         protected static IIUnknownCacheStrategy CreateDefaultCacheStrategy() => new DefaultCaching();
 
-        protected virtual IIUnknownInterfaceDetailsStrategy GetOrCreateInterfaceDetailsStrategy() => DefaultIUnknownInterfaceDetailsStrategy;
+        protected virtual IIUnknownInterfaceDetailsStrategy GetOrCreateInterfaceDetailsStrategy()
+        {
+            if (ComObject.ComImportInteropEnabled && RuntimeFeature.IsDynamicCodeSupported)
+            {
+#pragma warning disable IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
+                return ComImportInteropInterfaceDetailsStrategy.Instance;
+#pragma warning restore IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
+            }
+            return DefaultIUnknownInterfaceDetailsStrategy;
+        }
 
         protected virtual IIUnknownStrategy GetOrCreateIUnknownStrategy() => DefaultIUnknownStrategy;
 
