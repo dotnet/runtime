@@ -3606,6 +3606,8 @@ method_entry (ThreadContext *context, InterpFrame *frame,
 			frame->stack = (stackval*)context->stack_pointer;
 			return slow;
 		}
+	} else {
+		mono_memory_read_barrier ();
 	}
 
 	return slow;
