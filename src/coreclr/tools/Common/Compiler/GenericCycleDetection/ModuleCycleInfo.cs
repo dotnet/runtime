@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using System.Reflection.Metadata.Ecma335;
 
 #if !READYTORUN
 using ILLink.Shared;
@@ -74,6 +75,23 @@ namespace ILCompiler
 
         internal sealed class GenericCycleDetector
         {
+            /// <summary>
+            /// When the number of TypeSpec entries in an assembly being scanned is larger than
+            /// or equal to this number, we assume it's "generic-heavy" and analyze it on one thread
+            /// only as otherwise parallel analysis of the same assembly on multiple threads
+            /// generally just slows down the process. The setting of the cutoff was based on
+            /// analyzing the .NET Core runtime framework, ASP.NET assemblies and assemblies
+            /// used by CoreCLR runtime testing where the biggest number of TypeSpec rows
+            /// (3855) corresponds to FSharp.Core, followed by Microsoft.CodeAnalysis (3148)
+            /// and Microsoft.CodeAnalysis.CSharp (2512). The assembly LanguageExt.Core quoted
+            /// in the GitHub issue
+            ///
+            /// https://github.com/dotnet/runtime/issues/66079
+            ///
+            /// has about 37K TypeSpec entries.
+            /// </summary>
+            private const int MinimumTypeSpecCountToAnalyzeSingleThreaded = 5000;
+
             private readonly CycleInfoHashtable _hashtable = new CycleInfoHashtable();
 
             private readonly struct EntityPair : IEquatable<EntityPair>
@@ -191,7 +209,20 @@ namespace ILCompiler
                 EcmaModule ownerModule = (entity as EcmaType)?.EcmaModule ?? (entity as EcmaMethod)?.Module;
                 if (ownerModule != null)
                 {
-                    cycleInfo = _hashtable.GetOrCreateValue(ownerModule);
+                    if (!_hashtable.TryGetValue(ownerModule, out cycleInfo))
+                    {
+                        if (ownerModule.MetadataReader.GetTableRowCount(TableIndex.TypeSpec) < MinimumTypeSpecCountToAnalyzeSingleThreaded)
+                        {
+                            cycleInfo = _hashtable.GetOrCreateValue(ownerModule);
+                        }
+                        else
+                        {
+                            lock (ownerModule)
+                            {
+                                cycleInfo = _hashtable.GetOrCreateValue(ownerModule);
+                            }
+                        }
+                    }
                     return cycleInfo.FormsCycle(entity);
                 }
                 else
