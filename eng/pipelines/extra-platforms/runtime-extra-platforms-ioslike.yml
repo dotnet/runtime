@@ -12,7 +12,7 @@ parameters:
 
 jobs:
 
-- ${{ if eq(parameters.isCoreclrOnlyBuild, false)) }}:
+- ${{ if eq(parameters.isCoreclrOnlyBuild, false) }}:
   #
   # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
   # Build the whole product using Mono and run libraries tests
@@ -89,7 +89,7 @@ jobs:
           testBuildArgs: tree tracing/eventpipe
           testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
-- ${{ if eq(parameters.isMonoOnlyBuild, false)) }}:
+- ${{ if eq(parameters.isMonoOnlyBuild, false) }}:
   #
   # Build the whole product using NativeAOT for iOS/tvOS and run runtime tests with iOS/tvOS devices
   #
