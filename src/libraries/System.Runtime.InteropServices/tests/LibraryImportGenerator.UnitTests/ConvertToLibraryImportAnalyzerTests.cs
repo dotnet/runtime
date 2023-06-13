@@ -317,5 +317,20 @@ namespace LibraryImportGenerator.UnitTests
                """;
             await VerifyCS.VerifyAnalyzerAsync(source);
         }
+
+        [Fact]
+        public async Task Varargs_NoDiagnostic()
+        {
+            string source = """
+              using System.Runtime.InteropServices;
+              partial class Test
+              {
+                  [DllImport("DoesNotExist")]
+                  public static extern void Method2(__arglist);
+              }
+
+              """;
+            await VerifyCS.VerifyAnalyzerAsync(source);
+        }
     }
 }

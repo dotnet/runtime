@@ -91,6 +91,12 @@ namespace Microsoft.Interop.Analyzers
                 }
             }
 
+            if (method.IsVararg)
+            {
+                // LibraryImportGenerator doesn't support varargs
+                return;
+            }
+
             // Ignore methods already marked LibraryImport
             // This can be the case when the generator creates an extern partial function for blittable signatures.
             foreach (AttributeData attr in method.GetAttributes())
