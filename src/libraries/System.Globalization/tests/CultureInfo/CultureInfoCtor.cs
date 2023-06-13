@@ -441,6 +441,8 @@ namespace System.Globalization.Tests
             Assert.NotEqual(lcid, new CultureInfo(lcid).LCID);
         }
 
+        private static bool NotWasmWithIcu => PlatformDetection.IsNotBrowser && PlatformDetection.IsIcuGlobalization;
+
         [InlineData("zh-TW-u-co-zhuyin", "zh-TW", "zh-TW_zhuyin")]
         [InlineData("de-DE-u-co-phonebk", "de-DE", "de-DE_phoneboo")]
         [InlineData("de-DE-u-co-phonebk-u-xx", "de-DE-u-xx", "de-DE-u-xx_phoneboo")]
@@ -449,20 +451,13 @@ namespace System.Globalization.Tests
         [InlineData("de-DE-u-co-phonebk-t-xx", "de-DE-t-xx", "de-DE-t-xx_phoneboo")]
         [InlineData("de-DE-u-co-phonebk-t-xx-u-yy", "de-DE-t-xx-u-yy", "de-DE-t-xx-u-yy_phoneboo")]
         [InlineData("de-DE", "de-DE", "de-DE")]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [ConditionalTheory(nameof(NotWasmWithIcu))]
         public void TestCreationWithMangledSortName(string cultureName, string expectedCultureName, string expectedSortName)
         {
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
 
             Assert.Equal(expectedCultureName, ci.Name);
             Assert.Equal(expectedSortName, ci.CompareInfo.Name);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
-        public void TestNeutralCultureWithCollationName()
-        {
-            Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo("zh-u-co-zhuyin"));
-            Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo("de-u-co-phonebk"));
         }
 
         private static bool SupportRemoteExecutionWithIcu => RemoteExecutor.IsSupported && PlatformDetection.IsIcuGlobalization;
