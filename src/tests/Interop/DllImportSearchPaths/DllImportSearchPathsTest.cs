@@ -10,13 +10,19 @@ using Xunit;
 public class DllImportSearchPathsTest
 {
     private static string Subdirectory => Path.Combine(NativeLibraryToLoad.GetDirectory(), "subdirectory");
+    private static bool CanLoadAssemblyInSubdirectory =>
+        !TestLibrary.Utilities.IsMonoLLVMFULLAOT &&
+        !OperatingSystem.IsAndroid() &&
+        !OperatingSystem.IsIOS() &&
+        !OperatingSystem.IsTvOS() &&
+        !OperatingSystem.IsBrowser();
 
     static int Main(string[] args)
     {
         try
         {
             AssemblyDirectory_NotFound();
-            if (!TestLibrary.Utilities.IsMonoLLVMFULLAOT)
+            if (CanLoadAssemblyInSubdirectory)
                 AssemblyDirectory_Found();
 
             if (OperatingSystem.IsWindows())
