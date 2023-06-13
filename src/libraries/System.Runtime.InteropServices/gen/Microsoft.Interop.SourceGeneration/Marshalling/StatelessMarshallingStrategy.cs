@@ -514,7 +514,7 @@ namespace Microsoft.Interop
             IMarshallingGenerator elementMarshaller,
             TypePositionInfo elementInfo,
             ExpressionSyntax numElementsExpression)
-            : base (unmanagedElementType, elementMarshaller, elementInfo)
+            : base(unmanagedElementType, elementMarshaller, elementInfo)
         {
             _marshallerTypeSyntax = marshallerTypeSyntax;
             _nativeTypeSyntax = nativeTypeSyntax;
@@ -530,6 +530,12 @@ namespace Microsoft.Interop
 
             if (!elementCleanup.IsKind(SyntaxKind.EmptyStatement))
             {
+                if (!UsesLastIndexMarshalled(info, context))
+                {
+                    // numElementsIdentifier is declared in setup
+                    string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
+                    yield return ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, IdentifierName(numElementsIdentifier), _numElementsExpression));
+                }
                 yield return elementCleanup;
             }
         }
@@ -621,6 +627,11 @@ namespace Microsoft.Interop
                 {
                     InstanceIdentifier = numElementsIdentifier
                 }, context);
+
+            foreach (var statement in DeclareLastIndexMarshalledIfNeeded(info, context))
+            {
+                yield return statement;
+            }
         }
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
