@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
+
 import cwraps from "./cwraps";
-import { loaderHelpers } from "./globals";
+import { Module, loaderHelpers } from "./globals";
 
 let spread_timers_maximum = 0;
 let pump_count = 0;
@@ -26,6 +28,7 @@ export function prevent_timer_throttling(): void {
 }
 
 function prevent_timer_throttling_tick() {
+    Module.maybeExit();
     cwraps.mono_wasm_execute_timer();
     pump_count++;
     mono_background_exec_until_done();
@@ -40,7 +43,7 @@ function mono_background_exec_until_done() {
 
 export function schedule_background_exec(): void {
     ++pump_count;
-    globalThis.setTimeout(mono_background_exec_until_done, 0);
+    Module.safeSetTimeout(mono_background_exec_until_done, 0);
 }
 
 let lastScheduledTimeoutId: any = undefined;
@@ -48,10 +51,15 @@ export function mono_wasm_schedule_timer(shortestDueTimeMs: number): void {
     if (lastScheduledTimeoutId) {
         globalThis.clearTimeout(lastScheduledTimeoutId);
         lastScheduledTimeoutId = undefined;
+        // NOTE: Multi-threaded Module.safeSetTimeout() does the runtimeKeepalivePush() 
+        // and non-Multi-threaded Module.safeSetTimeout does not runtimeKeepalivePush() 
+        // but clearTimeout does not runtimeKeepalivePop() so we need to do it here in MT only.
+        if (MonoWasmThreads) Module.runtimeKeepalivePop();
     }
-    lastScheduledTimeoutId = globalThis.setTimeout(mono_wasm_schedule_timer_tick, shortestDueTimeMs);
+    lastScheduledTimeoutId = Module.safeSetTimeout(mono_wasm_schedule_timer_tick, shortestDueTimeMs);
 }
 
 function mono_wasm_schedule_timer_tick() {
+    lastScheduledTimeoutId = undefined;
     cwraps.mono_wasm_execute_timer();
 }

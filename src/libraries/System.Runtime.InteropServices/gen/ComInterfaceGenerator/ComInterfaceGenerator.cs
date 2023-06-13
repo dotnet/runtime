@@ -42,10 +42,10 @@ namespace Microsoft.Interop
                         : null)
                 .Where(
                     static modelData => modelData is not null);
-
-            var interfaceSymbolOrDiagnostics = attributedInterfaces.Select(static (data, ct) =>
+            var stubEnvironment = context.CreateStubEnvironmentProvider();
+            var interfaceSymbolOrDiagnostics = attributedInterfaces.Combine(stubEnvironment).Select(static (data, ct) =>
             {
-                return ComInterfaceInfo.From(data.Symbol, data.Syntax, ct);
+                return ComInterfaceInfo.From(data.Left.Symbol, data.Left.Syntax, data.Right, ct);
             });
             var interfaceSymbolsWithoutDiagnostics = context.FilterAndReportDiagnostics(interfaceSymbolOrDiagnostics);
 
@@ -59,7 +59,7 @@ namespace Microsoft.Interop
 
             var comMethodsAndSymbolsOrDiagnostics = interfaceSymbolsWithoutDiagnostics.Select(ComMethodInfo.GetMethodsFromInterface);
             var methodInfoAndSymbolGroupedByInterface = context
-                .FilterAndReportDiagnostics<(ComMethodInfo MethodInfo, IMethodSymbol Symbol)> (comMethodsAndSymbolsOrDiagnostics);
+                .FilterAndReportDiagnostics<(ComMethodInfo MethodInfo, IMethodSymbol Symbol)>(comMethodsAndSymbolsOrDiagnostics);
 
             var methodInfosGroupedByInterface = methodInfoAndSymbolGroupedByInterface
                 .Select(static (methods, ct) =>
@@ -84,7 +84,7 @@ namespace Microsoft.Interop
                 .Select((data, ct) => data.ToDictionary(static x => x.MethodInfo, static x => x.Symbol));
             var comMethodContexts = comMethodContextBuilders
                 .Combine(methodInfoToSymbolMap)
-                .Combine(context.CreateStubEnvironmentProvider())
+                .Combine(stubEnvironment)
                 .Select((param, ct) =>
                 {
                     var ((data, symbolMap), env) = param;
@@ -212,9 +212,9 @@ namespace Microsoft.Interop
         private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ManagedTypeInfo owningInterface, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
-            INamedTypeSymbol? lcidConversionAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.LCIDConversionAttribute);
-            INamedTypeSymbol? suppressGCTransitionAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.SuppressGCTransitionAttribute);
-            INamedTypeSymbol? unmanagedCallConvAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.UnmanagedCallConvAttribute);
+            INamedTypeSymbol? lcidConversionAttrType = environment.LcidConversionAttrType;
+            INamedTypeSymbol? suppressGCTransitionAttrType = environment.SuppressGCTransitionAttrType;
+            INamedTypeSymbol? unmanagedCallConvAttrType = environment.UnmanagedCallConvAttrType;
             // Get any attributes of interest on the method
             AttributeData? lcidConversionAttr = null;
             AttributeData? suppressGCTransitionAttribute = null;

@@ -1,12 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
@@ -231,7 +230,7 @@ namespace Microsoft.Interop
             string? notSupportedDetails,
             ImmutableDictionary<string, string> diagnosticProperties)
         {
-            CodeAnalysis.Location diagnosticLocation = CodeAnalysis.Location.None;
+            Location diagnosticLocation = Location.None;
             string elementName = string.Empty;
 
             if (info.IsManagedReturnPosition)

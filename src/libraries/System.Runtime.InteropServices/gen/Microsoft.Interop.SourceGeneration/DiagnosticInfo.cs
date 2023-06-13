@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -24,7 +23,7 @@ namespace Microsoft.Interop
             properties: Properties?.Map,
             messageArgs: MessageArgs.Array.ToArray());
 
-        public static DiagnosticInfo Create(DiagnosticDescriptor descriptor, CodeAnalysis.Location location, params object?[] messageArgs)
+        public static DiagnosticInfo Create(DiagnosticDescriptor descriptor, Location location, params object?[] messageArgs)
         {
             return new DiagnosticInfo()
             {
@@ -36,7 +35,7 @@ namespace Microsoft.Interop
             };
         }
 
-        public static DiagnosticInfo Create(DiagnosticDescriptor descriptor, CodeAnalysis.Location location, ImmutableDictionary<string, string>? properties, params object?[] messageArgs)
+        public static DiagnosticInfo Create(DiagnosticDescriptor descriptor, Location location, ImmutableDictionary<string, string>? properties, params object?[] messageArgs)
         {
             return new DiagnosticInfo()
             {
@@ -48,7 +47,7 @@ namespace Microsoft.Interop
             };
         }
 
-        public static DiagnosticInfo Create(DiagnosticDescriptor descriptor, CodeAnalysis.Location location, IEnumerable<Location>? additionalLocations, ImmutableDictionary<string, string>? properties, params object?[] messageArgs)
+        public static DiagnosticInfo Create(DiagnosticDescriptor descriptor, Location location, IEnumerable<Location>? additionalLocations, ImmutableDictionary<string, string>? properties, params object?[] messageArgs)
         {
             return new DiagnosticInfo()
             {

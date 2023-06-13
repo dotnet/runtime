@@ -438,13 +438,6 @@
     <Compile Include="Compiler\FeatureSwitchManager.cs" />
     <Compile Include="Compiler\GeneratingMetadataManager.cs" />
     <Compile Include="Compiler\GenericRootProvider.cs" />
-    <Compile Include="Compiler\LazyGenerics\ModuleCycleInfo.cs" />
-    <Compile Include="Compiler\LazyGenerics\Graph.cs" />
-    <Compile Include="Compiler\LazyGenerics\Graph.Cycles.cs" />
-    <Compile Include="Compiler\LazyGenerics\Graph.Vertex.cs" />
-    <Compile Include="Compiler\LazyGenerics\GraphBuilder.cs" />
-    <Compile Include="Compiler\LazyGenerics\GraphBuilder.ForEach.cs" />
-    <Compile Include="Compiler\LazyGenerics\GraphBuilder.MethodCall.cs" />
     <Compile Include="Compiler\HardwareIntrinsicHelpers.Aot.cs" />
     <Compile Include="Compiler\IInliningPolicy.cs" />
     <Compile Include="Compiler\Logging\NativeAotFatalErrorException.cs" />
@@ -711,4 +704,6 @@
   </ItemGroup>
 
   <Import Project="..\..\..\..\tools\illink\src\ILLink.Shared\ILLink.Shared.projitems" Label="Shared" />
+  <Import Project="..\..\Common\Compiler\GenericCycleDetection\GenericCycleDetection.projitems" />
+
 </Project>
