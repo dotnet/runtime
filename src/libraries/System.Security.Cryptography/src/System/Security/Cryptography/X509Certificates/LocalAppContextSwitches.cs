@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Globalization;
+
 namespace System
 {
     internal static partial class LocalAppContextSwitches
@@ -20,7 +22,7 @@ namespace System
 
             try
             {
-                return Convert.ToInt64(data);
+                return Convert.ToInt64(data, CultureInfo.InvariantCulture);
             }
             catch
             {
