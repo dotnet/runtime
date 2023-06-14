@@ -21,6 +21,7 @@ namespace System.Runtime.InteropServices.Marshalling
 
         [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "Runtime-based COM interop is not supported with trimming enabled.")]
         [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "Runtime-based COM interop is not supported with trimming enabled.")]
+        [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Runtime-based COM interop is not supported with trimming enabled.")]
         public IIUnknownDerivedDetails? GetIUnknownDerivedDetails(RuntimeTypeHandle type)
         {
             Type runtimeType = Type.GetTypeFromHandle(type)!;
@@ -34,12 +35,17 @@ namespace System.Runtime.InteropServices.Marshalling
                 AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("ComImportForwarder"), AssemblyBuilderAccess.RunAndCollect);
                 ModuleBuilder module = assembly.DefineDynamicModule("ComImportForwarder");
 
-                TypeBuilder implementation = module.DefineType("InterfaceForwarder", TypeAttributes.Interface, parent: null, interfaces: runtimeType.GetInterfaces());
+                ConstructorInfo ignoresAccessChecksToAttributeConstructor = GetMagicAttributeConstructor(module);
+
+                assembly.SetCustomAttribute(new CustomAttributeBuilder(ignoresAccessChecksToAttributeConstructor, new object[] { typeof(IComImportAdapter).Assembly.GetName().Name! }));
+
+                TypeBuilder implementation = module.DefineType("InterfaceForwarder", TypeAttributes.Interface | TypeAttributes.Abstract, parent: null, interfaces: runtimeType.GetInterfaces());
                 implementation.AddInterfaceImplementation(runtimeType);
                 implementation.SetCustomAttribute(new CustomAttributeBuilder(typeof(DynamicInterfaceCastableImplementationAttribute).GetConstructor(Array.Empty<Type>())!, Array.Empty<object>()));
 
                 foreach (Type iface in implementation.GetInterfaces())
                 {
+                    assembly.SetCustomAttribute(new CustomAttributeBuilder(ignoresAccessChecksToAttributeConstructor, new object[] { iface.Assembly.GetName().Name! }));
                     foreach (MethodInfo method in iface.GetMethods())
                     {
                         ParameterInfo[] parameters = method.GetParameters();
@@ -52,13 +58,13 @@ namespace System.Runtime.InteropServices.Marshalling
                         ILGenerator il = builder.GetILGenerator();
                         il.Emit(OpCodes.Ldarg_0);
                         il.Emit(OpCodes.Castclass, typeof(IComImportAdapter));
-                        il.Emit(OpCodes.Call, IComImportAdapter.GetRuntimeCallableWrapperMethod);
+                        il.Emit(OpCodes.Callvirt, IComImportAdapter.GetRuntimeCallableWrapperMethod);
                         il.Emit(OpCodes.Castclass, iface);
                         for (int i = 0; i < parameters.Length; i++)
                         {
                             il.Emit(OpCodes.Ldarg, i + 1);
                         }
-                        il.Emit(OpCodes.Call, method);
+                        il.Emit(OpCodes.Callvirt, method);
                         il.Emit(OpCodes.Ret);
                         implementation.DefineMethodOverride(builder, method);
                     }
@@ -69,6 +75,65 @@ namespace System.Runtime.InteropServices.Marshalling
 
             return new ComImportDetails(runtimeType.GUID, implementationType);
         }
+
+        private static void SkipVisibilityChecksFor(AssemblyBuilder assemblyBuilder, ConstructorInfo ignoresAccessChecksToAttributeConstructor, Type type)
+        {
+            var attributeBuilder = new CustomAttributeBuilder(ignoresAccessChecksToAttributeConstructor, new object[] { type.GetTypeInfo().Assembly.GetName().Name! });
+            assemblyBuilder.SetCustomAttribute(attributeBuilder);
+        }
+
+        private static ConstructorInfo GetMagicAttributeConstructor(ModuleBuilder moduleBuilder)
+        {
+            var magicAttribute = EmitMagicAttribute(moduleBuilder);
+            return magicAttribute.GetConstructor(new Type[] { typeof(string) })!;
+        }
+
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        private static Type EmitMagicAttribute(ModuleBuilder moduleBuilder)
+        {
+            var tb = moduleBuilder.DefineType(
+                "System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute",
+                TypeAttributes.NotPublic,
+                typeof(Attribute));
+
+            var attributeUsage = new CustomAttributeBuilder(
+                AttributeUsageCtor,
+                new object[] { AttributeTargets.Assembly },
+                new PropertyInfo[] { AttributeUsageAllowMultipleProperty },
+                new object[] { false });
+            tb.SetCustomAttribute(attributeUsage);
+
+            var cb = tb.DefineConstructor(
+                MethodAttributes.Public |
+                MethodAttributes.HideBySig |
+                MethodAttributes.SpecialName |
+                MethodAttributes.RTSpecialName,
+                CallingConventions.Standard,
+                new Type[] { typeof(string) });
+            cb.DefineParameter(1, ParameterAttributes.None, "assemblyName");
+
+            var il = cb.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Call, AttributeBaseClassCtor);
+            il.Emit(OpCodes.Ret);
+
+            return tb.CreateType()!;
+        }
+
+        /// <summary>
+        /// The <see cref="Attribute.Attribute()"/> constructor.
+        /// </summary>
+        private static readonly ConstructorInfo AttributeBaseClassCtor = typeof(Attribute).GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)[0];
+
+        /// <summary>
+        /// The <see cref="AttributeUsageAttribute(AttributeTargets)"/> constructor.
+        /// </summary>
+        private static readonly ConstructorInfo AttributeUsageCtor = typeof(AttributeUsageAttribute).GetConstructor(new Type[] { typeof(AttributeTargets) })!;
+
+        /// <summary>
+        /// The <see cref="AttributeUsageAttribute.AllowMultiple"/> property.
+        /// </summary>
+        private static readonly PropertyInfo AttributeUsageAllowMultipleProperty = typeof(AttributeUsageAttribute).GetProperty(nameof(AttributeUsageAttribute.AllowMultiple))!;
 
         private sealed class ComImportDetails(Guid iid, Type implementation) : IIUnknownDerivedDetails
         {

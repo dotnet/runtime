@@ -8,6 +8,7 @@
     <!-- These tests pull the attributes from Ancillary.Interop, so we don't need to include the attribute sources in this assembly. -->
     <IncludeLibraryImportGeneratorSources>false</IncludeLibraryImportGeneratorSources>
     <ReferencesNativeExports>true</ReferencesNativeExports>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
 
   <ItemGroup>
