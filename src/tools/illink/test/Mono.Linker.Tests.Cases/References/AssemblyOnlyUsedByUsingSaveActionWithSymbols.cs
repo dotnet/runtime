@@ -26,7 +26,7 @@ namespace Mono.Linker.Tests.Cases.References
 	// Here to assert that the test is setup correctly to preserve unused code in the saved assembly.  This is an important aspect of the bug
 	[KeptMemberInAssembly ("saved.dll", typeof (AssemblyOnlyUsedByUsing_UnusedUsing), "Unused()")]
 
-	// The library should be gone.  The `using` statement leaves no traces in the IL so nothing in `library` will be marked
+	// The library should be gone. The `using` statement leaves no traces in the IL so nothing in `library` will be marked
 	[RemovedAssembly ("library.dll")]
 	// The `save` action results in the reference to System.Runtime being resolved into a reference directly to System.Private.CoreLib.
 	// The reference to `library` is kept, because it is referenced from a typeref that is referenced from the debug info.

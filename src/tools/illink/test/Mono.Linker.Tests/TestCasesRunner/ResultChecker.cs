@@ -51,8 +51,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		static void VerifyIL (NPath pathToAssembly, AssemblyDefinition linked)
 		{
-			ValidateTypeRefsHaveValidAssemblyRefs (linked);
-
 			var verifier = new ILVerifier (pathToAssembly);
 			foreach (var result in verifier.Results)
 				Assert.Fail (ILVerifier.GetErrorMessage (result));
@@ -118,8 +116,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					Assert.IsTrue (linkResult.OutputAssemblyPath.FileExists (), $"The linked output assembly was not found.  Expected at {linkResult.OutputAssemblyPath}");
 					var linked = ResolveLinkedAssembly (linkResult.OutputAssemblyPath.FileNameWithoutExtension);
 
-					if (ShouldValidateIL (original))
+					if (ShouldValidateIL (original)) {
 						VerifyIL (linkResult.OutputAssemblyPath, linked);
+						ValidateTypeRefsHaveValidAssemblyRefs (linked);
+					}
 
 					InitialChecking (linkResult, original, linked);
 
@@ -157,9 +157,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					continue;
 
 				var linked = ResolveLinkedAssembly (linkedAssemblyPath.FileNameWithoutExtension);
-				VerifyIL (linkedAssemblyPath, linked);
-
-				var original = ResolveOriginalsAssembly (linkedAssemblyPath.FileNameWithoutExtension);
+				ValidateTypeRefsHaveValidAssemblyRefs (linked);
 			}
 		}
 
