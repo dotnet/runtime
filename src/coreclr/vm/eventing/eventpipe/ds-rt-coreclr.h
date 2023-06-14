@@ -303,7 +303,7 @@ ds_rt_enable_perfmap (uint32_t type)
 
 #ifdef FEATURE_PERFMAP
 	PerfMap::PerfMapType perfMapType = (PerfMap::PerfMapType)type;
-	if (perfMapType == PerfMap::PerfMapType::DISABLED || perfMapType > PerfMap::PerfMapType::JITDUMP)
+	if (perfMapType == PerfMap::PerfMapType::DISABLED || perfMapType > PerfMap::PerfMapType::PERFMAP)
 	{
 		return DS_IPC_E_INVALIDARG;
 	}
