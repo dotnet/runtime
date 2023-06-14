@@ -7738,15 +7738,15 @@ GenTree* Compiler::gtNewGenericCon(var_types type, uint8_t* cnsVal)
     typ val;                                                                                                           \
     memcpy(&val, cnsVal, sizeof(typ));
 
+        case TYP_BYTE:
+        {
+            READ_VALUE(int8_t);
+            return gtNewIconNode(val);
+        }
         case TYP_BOOL:
         case TYP_UBYTE:
         {
             READ_VALUE(uint8_t);
-            return gtNewIconNode(val);
-        }
-        case TYP_BYTE:
-        {
-            READ_VALUE(int8_t);
             return gtNewIconNode(val);
         }
         case TYP_SHORT:
