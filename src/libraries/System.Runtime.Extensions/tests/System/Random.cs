@@ -761,12 +761,12 @@ namespace System.Tests
         [InlineData(1000, 49, 2465)]
         public static void Shuffle_Array_Fairness(int runs, int len, double critical)
         {
-          // Test that repeatedly shuffling an array puts each value in each position a roughly equal number of times.
-          // This does not prove that the shuffle is fair but will at least fail if the shuffle is obviously unfair.
-          // This is a "Chi Squared Goodness of fit" problem.
-          // The number of degrees of freedom is (len - 1)*(len - 1).
-          // The significance is 0.01 so this test should naturally fail for 1 in 100 seeds.
-          // To calculate the critical values I used an Excel formula e.g. `=Round(CHISQ.INV.RT(0.01,49 * 49))`
+            // Test that repeatedly shuffling an array puts each value in each position a roughly equal number of times.
+            // This does not prove that the shuffle is fair but will at least fail if the shuffle is obviously unfair.
+            // This is a "Chi Squared Goodness of fit" problem.
+            // The number of degrees of freedom is (len - 1)*(len - 1).
+            // The significance is 0.01 so this test should naturally fail for 1 in 100 seeds.
+            // To calculate the critical values I used an Excel formula e.g. `=Round(CHISQ.INV.RT(0.01,49 * 49))`
 
             int[,] buckets = new int[len, len];
             var rng = new Random(123);
@@ -787,8 +787,8 @@ namespace System.Tests
                     buckets[j, index]++;
                 }
             }
-    
-            double expectedPerBucket = (double) runs / len;
+
+            double expectedPerBucket = (double)runs / len;
             double chiSquare = 0;
             foreach (var bucket in buckets)
             {

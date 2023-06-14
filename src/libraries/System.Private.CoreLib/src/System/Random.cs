@@ -404,7 +404,6 @@ namespace System
             [System.Diagnostics.Conditional("DEBUG")]
             private static void AssertIsThreshold(int k, int t)
             {
-
                 static bool IsProductI32(int n, int multiplications)
                 {
                     try
