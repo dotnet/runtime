@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Extensions.Logging
 {
@@ -19,14 +20,14 @@ namespace Microsoft.Extensions.Logging
         private const string NullFormat = "[null]";
 
         private static int s_count;
-        private static readonly ConcurrentDictionary<string, LogValuesFormatter> s_formatters = new ConcurrentDictionary<string, LogValuesFormatter>();
+        private static readonly ConcurrentDictionary<string, FormattedLogValuesMetadata> s_formatters = new ConcurrentDictionary<string, FormattedLogValuesMetadata>();
 
-        private readonly LogValuesFormatter? _formatter;
+        private readonly FormattedLogValuesMetadata? _metadata;
         private readonly object?[]? _values;
         private readonly string _originalMessage;
 
         // for testing purposes
-        internal LogValuesFormatter? Formatter => _formatter;
+        internal FormattedLogValuesMetadata? Metadata => _metadata;
 
         public FormattedLogValues(string? format, params object?[]? values)
         {
@@ -34,23 +35,23 @@ namespace Microsoft.Extensions.Logging
             {
                 if (s_count >= MaxCachedFormatters)
                 {
-                    if (!s_formatters.TryGetValue(format, out _formatter))
+                    if (!s_formatters.TryGetValue(format, out _metadata))
                     {
-                        _formatter = new LogValuesFormatter(format);
+                        _metadata = new FormattedLogValuesMetadata(format);
                     }
                 }
                 else
                 {
-                    _formatter = s_formatters.GetOrAdd(format, f =>
+                    _metadata = s_formatters.GetOrAdd(format, f =>
                     {
                         Interlocked.Increment(ref s_count);
-                        return new LogValuesFormatter(f);
+                        return new FormattedLogValuesMetadata(f);
                     });
                 }
             }
             else
             {
-                _formatter = null;
+                _metadata = null;
             }
 
             _originalMessage = format ?? NullFormat;
@@ -71,7 +72,7 @@ namespace Microsoft.Extensions.Logging
                     return new KeyValuePair<string, object?> ("{OriginalFormat}", _originalMessage);
                 }
 
-                return _formatter!.GetValue(_values!, index);
+                return new KeyValuePair<string, object?>(_metadata!.GetPropertyInfo(index).Name, _values![index]);
             }
         }
 
@@ -79,12 +80,12 @@ namespace Microsoft.Extensions.Logging
         {
             get
             {
-                if (_formatter == null)
+                if (_metadata == null)
                 {
                     return 1;
                 }
 
-                return _formatter.PropertyCount + 1;
+                return _metadata.PropertyCount + 1;
             }
         }
 
@@ -96,19 +97,67 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
+        public object?[]? Values => _values;
+
         public override string ToString()
         {
-            if (_formatter == null)
+            if (_metadata == null)
             {
                 return _originalMessage;
             }
 
-            return _formatter.Format(_values);
+            // this could be done a little more efficiently by caching CompositeFormat parsed earlier
+            // creating a FormattingState and directly passing the values. It would avoid allocating
+            // the delegate and the delegate closure.
+            return _metadata.Formatter(this, null);
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+    }
+
+    internal class FormattedLogValuesMetadata : ILogMetadata<FormattedLogValues>
+    {
+        private LogPropertyInfo[] _propertyInfo;
+        private Func<FormattedLogValues, Exception?, string>? _formatter;
+        public FormattedLogValuesMetadata(string originalFormat)
+        {
+            OriginalFormat = originalFormat;
+            MessageFormatHelper.Parse(originalFormat, out _propertyInfo);
+        }
+
+        public LogLevel LogLevel => throw new NotImplementedException();
+        public EventId EventId => throw new NotImplementedException();
+        public string OriginalFormat { get; private set; }
+        public int PropertyCount => _propertyInfo != null ? _propertyInfo.Length : 0;
+        public LogPropertyInfo GetPropertyInfo(int index) => _propertyInfo[index];
+        public VisitPropertyListAction<FormattedLogValues, TCookie> CreatePropertyListVisitor<TCookie>(IPropertyVisitorFactory<TCookie> propertyVisitorFactory)
+        {
+            VisitPropertyAction<object?, TCookie> visitProperty = propertyVisitorFactory.GetPropertyVisitor<object?>();
+            return VisitProperties;
+
+            void VisitProperties(ref FormattedLogValues flv, ref Span<byte> spanCookie, ref TCookie cookie)
+            {
+                object?[]? values = flv.Values;
+                if(values != null)
+                {
+                    for(int i = 0; i < values.Length;i++)
+                    {
+                        visitProperty(i, values[i], ref spanCookie, ref cookie);
+                    }
+                }
+            }
+        }
+
+        internal Func<FormattedLogValues, Exception?, string> Formatter
+        {
+            get
+            {
+                _formatter ??= this.CreateStringMessageFormatter();
+                return _formatter;
+            }
         }
     }
 }

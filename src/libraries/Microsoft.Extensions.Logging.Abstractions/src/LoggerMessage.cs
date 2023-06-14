@@ -5,6 +5,8 @@ using System;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.Serialization;
 using System.Threading;
 using Microsoft.Extensions.Logging.Abstractions;
 using static Microsoft.Extensions.Logging.LoggerMessage;
@@ -52,11 +54,11 @@ namespace Microsoft.Extensions.Logging
         /// <returns>A delegate which when invoked creates a log scope.</returns>
         public static Func<ILogger, T1, T2, IDisposable?> DefineScope<T1, T2>(string formatString)
         {
-            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 2);
+            LogValuesMetadata<T1, T2> metadata = LogValues<T1, T2>.CreateMetadata(LogLevel.None, default, formatString);
 
             return (logger, arg1, arg2) =>
             {
-                return logger.BeginScope(new LogValues<T1, T2>(formatter, arg1, arg2));
+                return logger.BeginScope(new LogValues<T1, T2>(metadata, arg1, arg2));
             };
         }
 
@@ -287,7 +289,7 @@ namespace Microsoft.Extensions.Logging
             void Log(ILogger logger, T1 arg1, T2 arg2, Exception? exception)
             {
                 LogValues<T1, T2> state = new LogValues<T1, T2>(metadata, arg1, arg2);
-                LogEntry<LogValues<T1, T2>> entry = new LogEntry<LogValues<T1, T2>>(logLevel, category: null!, eventId, state, exception, LogValues<T1, T2>.Callback);
+                LogEntry<LogValues<T1, T2>> entry = new LogEntry<LogValues<T1, T2>>(logLevel, category: null!, eventId, state, exception, metadata.MessageFormatter);
                 LogCore(ref pipeline, logger, metadata, ref entry, needFullEnabledCheck);
             }
         }
@@ -598,111 +600,39 @@ namespace Microsoft.Extensions.Logging
 
         internal class LogValuesMetadata<T1, T2> : LogValuesMetadata, ILogMetadata<LogValues<T1, T2>>
         {
-            public LogValuesMetadata(string format, LogLevel level, EventId eventId, object[]?[]? metadata = null) : base(format, level, eventId, metadata) { }
-
-            public void AppendFormattedMessage(in LogValues<T1, T2> state, IBufferWriter<char> buffer)
+            public LogValuesMetadata(string format, LogLevel level, EventId eventId, object[]?[]? metadata = null) : base(format, level, eventId, metadata)
             {
-                BufferWriter<char> writer = new BufferWriter<char>(buffer);
-                foreach ((string? Literal, int ArgIndex, int Alignment, string? Format) segment in CompositeFormat._segments)
-                {
-                    int index = segment.ArgIndex;
-                    switch (index)
-                    {
-                        case 0:
-                            AppendFormattedPropertyValue(state._value0, ref writer, segment.Alignment, segment.Format);
-                            break;
-                        case 1:
-                            AppendFormattedPropertyValue(state._value1, ref writer, segment.Alignment, segment.Format);
-                            break;
-                        default:
-                            writer.Write(segment.Literal.AsSpan());
-                            break;
-                    }
-                }
-                writer.Flush();
+                MessageFormatter = LogMetadataExtensions.CreateStringMessageFormatter(this);
             }
 
-            public FormatPropertyListAction<LogValues<T1, T2>> GetPropertyListFormatter(IPropertyFormatterFactory propertyFormatterFactory)
+            public VisitPropertyListAction<LogValues<T1, T2>, TCookie> CreatePropertyListVisitor<TCookie>(IPropertyVisitorFactory<TCookie> visitorFactory)
             {
-                FormatPropertyAction<T1> formatter0 = propertyFormatterFactory.GetPropertyFormatter<T1>(0, GetPropertyInfo(0));
-                FormatPropertyAction<T2> formatter1 = propertyFormatterFactory.GetPropertyFormatter<T2>(1, GetPropertyInfo(1));
-                return FormatPropertyList;
+                VisitPropertyAction<T1, TCookie> visit0 = visitorFactory.GetPropertyVisitor<T1>();
+                VisitPropertyAction<T2, TCookie> visit1 = visitorFactory.GetPropertyVisitor<T2>();
+                return Visit;
 
-                void FormatPropertyList(in LogValues<T1, T2> tstate, ref BufferWriter<byte> writer)
+                void Visit(ref LogValues<T1, T2> value, ref Span<byte> spanCookie, ref TCookie cookie)
                 {
-                    formatter0(tstate._value0, ref writer);
-                    formatter1(tstate._value1, ref writer);
+                    visit0(0, value._value0, ref spanCookie, ref cookie);
+                    visit1(1, value._value1, ref spanCookie, ref cookie);
                 }
             }
 
-            public Action<LogValues<T1, T2>, IBufferWriter<char>> GetMessageFormatter(PropertyCustomFormatter[] customPropertyFormatters) =>
-                (state, buffer) => AppendFormattedMessage(state, buffer, customPropertyFormatters);
-
-            private void AppendFormattedMessage(in LogValues<T1, T2> state, IBufferWriter<char> buffer, PropertyCustomFormatter[] customFormatters)
-            {
-                BufferWriter<char> writer = new BufferWriter<char>(buffer);
-                foreach ((string? Literal, int ArgIndex, int Alignment, string? Format) segment in CompositeFormat._segments)
-                {
-                    int index = segment.ArgIndex;
-                    switch (index)
-                    {
-                        case 0:
-                            AppendCustomFormattedProperty(index, state._value0, ref writer, segment.Alignment, segment.Format, customFormatters[index]);
-                            break;
-                        case 1:
-                            AppendCustomFormattedProperty(index, state._value1, ref writer, segment.Alignment, segment.Format, customFormatters[index]);
-                            break;
-                        default:
-                            writer.Write(segment.Literal.AsSpan());
-                            break;
-                    }
-                }
-                writer.Flush();
-            }
-
-            private static void AppendCustomFormattedProperty<T>(int index, T value, ref BufferWriter<char> writer, int alignment, string? format, PropertyCustomFormatter? formatter)
-            {
-                if (formatter == null)
-                {
-                    AppendFormattedPropertyValue(value, ref writer, alignment, format);
-                }
-                else
-                {
-                    writer.Flush();
-                    if (value is string strVal)
-                    {
-                        formatter.AppendFormatted(index, strVal, writer.Writer);
-                    }
-                    else if (value is int intVal)
-                    {
-                        formatter.AppendFormatted(index, intVal, writer.Writer);
-                    }
-                    else
-                    {
-                        formatter.AppendFormatted(index, value, writer.Writer);
-                    }
-                }
-            }
-
-            public Func<LogValues<T1, T2>, Exception?, string> GetStringMessageFormatter() => LogValues<T1, T2>.Callback;
+            public Func<LogValues<T1, T2>, Exception?, string> MessageFormatter;
         }
 
         internal readonly struct LogValues<T0, T1> : IReadOnlyList<KeyValuePair<string, object?>>
         {
-            public static readonly Func<LogValues<T0, T1>, Exception?, string> Callback = (state, exception) => state.ToString();
-
-            private readonly LogValuesFormatter _formatter;
+            private readonly LogValuesMetadata<T0, T1> _formatter;
             internal readonly T0 _value0;
             internal readonly T1 _value1;
 
-            public LogValues(LogValuesFormatter formatter, T0 value0, T1 value1)
+            public LogValues(LogValuesMetadata<T0, T1> formatter, T0 value0, T1 value1)
             {
                 _formatter = formatter;
                 _value0 = value0;
                 _value1 = value1;
             }
-
-            public ILogMetadata<LogValues<T0, T1>>? Metadata => _formatter as LogValuesMetadata<T0, T1>;
 
             public KeyValuePair<string, object?> this[int index]
             {
@@ -732,7 +662,7 @@ namespace Microsoft.Extensions.Logging
                 }
             }
 
-            public override string ToString() => _formatter.Format(_value0, _value1);
+            public override string ToString() => _formatter.MessageFormatter(this, null);
 
             IEnumerator IEnumerable.GetEnumerator()
             {

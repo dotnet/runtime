@@ -6,18 +6,6 @@
 
 namespace Microsoft.Extensions.Logging
 {
-    public ref partial struct BufferWriter<T>
-    {
-        private object _dummy;
-        private int _dummyPrimitive;
-        public BufferWriter(System.Buffers.IBufferWriter<T> bufferWriter) { throw null; }
-        public System.Span<T> CurrentSpan { get { throw null; } }
-        public System.Buffers.IBufferWriter<T> Writer { get { throw null; } }
-        public void Advance(int len) { }
-        public void EnsureSize(int minSize) { }
-        public void Flush() { }
-        public void Grow(int minSize) { }
-    }
     public readonly partial struct EventId : System.IEquatable<Microsoft.Extensions.Logging.EventId>
     {
         private readonly object _dummy;
@@ -33,9 +21,15 @@ namespace Microsoft.Extensions.Logging
         public static bool operator !=(Microsoft.Extensions.Logging.EventId left, Microsoft.Extensions.Logging.EventId right) { throw null; }
         public override string ToString() { throw null; }
     }
-    public delegate void FormatPropertyAction<PropType>(PropType propertyValue, ref Microsoft.Extensions.Logging.BufferWriter<byte> bufferWriter);
-    public delegate void FormatPropertyListAction<TState>(in TState state, ref Microsoft.Extensions.Logging.BufferWriter<byte> bufferWriter);
-    public delegate void FormatSpanPropertyAction(System.ReadOnlySpan<char> propertyValue, ref Microsoft.Extensions.Logging.BufferWriter<byte> bufferWriter);
+    public delegate void VisitPropertyListAction<TState, TCookie>(ref TState state, ref System.Span<byte> spanCookie, ref TCookie cookie);
+    public delegate void VisitPropertyAction<PropType, TCookie>(int propIndex, PropType propValue, ref System.Span<byte> spanCookie, ref TCookie cookie);
+    public delegate void VisitSpanPropertyAction<TCookie>(int propIndex, scoped System.ReadOnlySpan<char> propValue, ref System.Span<byte> spanCookie, ref TCookie cookie);
+
+    public interface IPropertyVisitorFactory<TCookie>
+    {
+        VisitPropertyAction<PropType, TCookie> GetPropertyVisitor<PropType>();
+        VisitSpanPropertyAction<TCookie> GetSpanPropertyVisitor();
+    }
     public partial interface IExternalScopeProvider
     {
         void ForEachScope<TState>(System.Action<object?, TState> callback, TState state);
@@ -75,20 +69,12 @@ namespace Microsoft.Extensions.Logging
         Microsoft.Extensions.Logging.LogLevel LogLevel { get; }
         string OriginalFormat { get; }
         int PropertyCount { get; }
-        void AppendFormattedMessage(in TState state, System.Buffers.IBufferWriter<char> buffer);
-        System.Action<TState, System.Buffers.IBufferWriter<char>> GetMessageFormatter(Microsoft.Extensions.Logging.PropertyCustomFormatter[] customFormatters);
         Microsoft.Extensions.Logging.LogPropertyInfo GetPropertyInfo(int index);
-        Microsoft.Extensions.Logging.FormatPropertyListAction<TState> GetPropertyListFormatter(Microsoft.Extensions.Logging.IPropertyFormatterFactory propertyFormatterFactory);
-        System.Func<TState, System.Exception?, string> GetStringMessageFormatter();
+        Microsoft.Extensions.Logging.VisitPropertyListAction<TState, TCookie> CreatePropertyListVisitor<TCookie>(Microsoft.Extensions.Logging.IPropertyVisitorFactory<TCookie> propertyVisitorFactory);
     }
     public partial interface IProcessorFactory
     {
         Microsoft.Extensions.Logging.ILogEntryProcessor GetProcessor(Microsoft.Extensions.Logging.ILogEntryProcessor nextProcessor);
-    }
-    public partial interface IPropertyFormatterFactory
-    {
-        Microsoft.Extensions.Logging.FormatPropertyAction<PropType> GetPropertyFormatter<PropType>(int propertyIndex, Microsoft.Extensions.Logging.LogPropertyInfo metadata);
-        Microsoft.Extensions.Logging.FormatSpanPropertyAction GetSpanPropertyFormatter(int propertyIndex, Microsoft.Extensions.Logging.LogPropertyInfo metadata);
     }
     public partial interface ISupportExternalScope
     {
@@ -225,19 +211,19 @@ namespace Microsoft.Extensions.Logging
         public ProcessorFactory(System.Func<Microsoft.Extensions.Logging.ILogEntryProcessor, T> getProcessor) { }
         public Microsoft.Extensions.Logging.ILogEntryProcessor GetProcessor(Microsoft.Extensions.Logging.ILogEntryProcessor nextProcessor) { throw null; }
     }
-    public abstract partial class PropertyCustomFormatter
-    {
-        protected PropertyCustomFormatter() { }
-        public virtual void AppendFormatted(int index, int value, System.Buffers.IBufferWriter<char> buffer) { }
-        public virtual void AppendFormatted(int index, System.ReadOnlySpan<char> value, System.Buffers.IBufferWriter<char> buffer) { }
-        public virtual void AppendFormatted(int index, string value, System.Buffers.IBufferWriter<char> buffer) { }
-        public abstract void AppendFormatted<T>(int index, T value, System.Buffers.IBufferWriter<char> buffer);
-    }
     public abstract partial class ScopeHandler<TState> where TState : notnull
     {
         protected ScopeHandler() { }
         public abstract System.IDisposable? HandleBeginScope(ref TState state);
         public abstract bool IsEnabled(Microsoft.Extensions.Logging.LogLevel level);
+    }
+
+    public delegate void FormatLogMessage<TState>(ref TState state, System.Buffers.IBufferWriter<byte> bufferWriter);
+
+    public static partial class LogMetadataExtensions
+    {
+        public static FormatLogMessage<TState> CreateMessageFormatter<TState>(this ILogMetadata<TState> metadata) { throw null; }
+        public static System.Func<TState, System.Exception?, string> CreateStringMessageFormatter<TState>(this ILogMetadata<TState> metadata) { throw null; }
     }
 }
 namespace Microsoft.Extensions.Logging.Abstractions

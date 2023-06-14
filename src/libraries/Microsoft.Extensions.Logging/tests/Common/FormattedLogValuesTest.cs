@@ -127,12 +127,12 @@ namespace Microsoft.Extensions.Logging.Test
             }
 
             // check cached formatter
-            var formatter = new FormattedLogValues("0{i}", 0).Formatter;
-            Assert.Same(formatter, new FormattedLogValues("0{i}", 0).Formatter);
+            var formatter = new FormattedLogValues("0{i}", 0).Metadata;
+            Assert.Same(formatter, new FormattedLogValues("0{i}", 0).Metadata);
 
             // check non-cached formatter
-            formatter = new FormattedLogValues("test {}", 0).Formatter;
-            Assert.NotSame(formatter, new FormattedLogValues("test {}", 0).Formatter);
+            formatter = new FormattedLogValues("test {}", 0).Metadata;
+            Assert.NotSame(formatter, new FormattedLogValues("test {}", 0).Metadata);
         }
 
         // message format, format arguments, expected message

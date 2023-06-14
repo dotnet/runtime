@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Logging
 
             enabled = true;
             dynamicCheckRequired = true;
-            return new DynamicDispatchToLoggers<TState>(this, metadata?.GetStringMessageFormatter());
+            return new DynamicDispatchToLoggers<TState>(this);
         }
 
         public ScopeHandler<TState> GetScopeHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled) where TState : notnull
@@ -177,17 +177,15 @@ namespace Microsoft.Extensions.Logging
         private sealed class DynamicDispatchToLoggers<TState> : LogEntryHandler<TState>
         {
             private DispatchProcessor _processor;
-            private Func<TState, Exception?, string>? _formatter;
 
-            public DynamicDispatchToLoggers(DispatchProcessor processor, Func<TState, Exception?, string>? formatter)
+            public DynamicDispatchToLoggers(DispatchProcessor processor)
             {
                 _processor = processor;
-                _formatter = formatter;
             }
 
             public override void HandleLogEntry(ref LogEntry<TState> logEntry)
             {
-                Func<TState, Exception?, string>? formatter = logEntry.Formatter ?? _formatter;
+                Func<TState, Exception?, string> formatter = logEntry.Formatter;
                 formatter ??= (TState s, Exception? _) => s == null ? "" : s.ToString() ?? "";
                 LoggerInformation[] loggers = _processor._loggers!;
                 List<Exception>? exceptions = null;

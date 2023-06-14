@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers;
 using System.Threading;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -65,13 +64,13 @@ namespace Microsoft.Extensions.Logging
 
     public struct LogPropertyInfo
     {
-        public LogPropertyInfo(string name, object[]? metadata)
+        public LogPropertyInfo(string name, object[]? metadata = null)
         {
             Name = name;
             Metadata = metadata;
         }
         public string Name { get; }
-        public object[]? Metadata { get; }
+        public object[]? Metadata { get; internal set; }
     }
 
     public interface ILogMetadata<TState>
@@ -81,28 +80,16 @@ namespace Microsoft.Extensions.Logging
         string OriginalFormat { get; }
         int PropertyCount { get; }
         LogPropertyInfo GetPropertyInfo(int index);
-        void AppendFormattedMessage(in TState state, IBufferWriter<char> buffer);
-        Action<TState, IBufferWriter<char>> GetMessageFormatter(PropertyCustomFormatter[] customFormatters);
-        FormatPropertyListAction<TState> GetPropertyListFormatter(IPropertyFormatterFactory propertyFormatterFactory);
-        Func<TState, Exception?, string> GetStringMessageFormatter();
+        VisitPropertyListAction<TState, TCookie> CreatePropertyListVisitor<TCookie>(IPropertyVisitorFactory<TCookie> propertyVisitorFactory);
     }
 
-    public delegate void FormatPropertyListAction<TState>(in TState state, ref BufferWriter<byte> bufferWriter);
-    public delegate void FormatPropertyAction<PropType>(PropType propertyValue, ref BufferWriter<byte> bufferWriter);
-    public delegate void FormatSpanPropertyAction(scoped ReadOnlySpan<char> propertyValue, ref BufferWriter<byte> bufferWriter);
+    public delegate void VisitPropertyListAction<TState, TCookie>(ref TState state, ref Span<byte> spanCookie, ref TCookie cookie);
+    public delegate void VisitPropertyAction<PropType, TCookie>(int propIndex, PropType propValue, ref Span<byte> spanCookie, ref TCookie cookie);
+    public delegate void VisitSpanPropertyAction<TCookie>(int propIndex, scoped ReadOnlySpan<char> propValue, ref Span<byte> spanCookie, ref TCookie cookie);
 
-    public interface IPropertyFormatterFactory
+    public interface IPropertyVisitorFactory<TCookie>
     {
-        FormatPropertyAction<PropType> GetPropertyFormatter<PropType>(int propertyIndex, LogPropertyInfo metadata);
-        FormatSpanPropertyAction GetSpanPropertyFormatter(int propertyIndex, LogPropertyInfo metadata);
-    }
-
-    public abstract class PropertyCustomFormatter
-    {
-        //TODO: we can expand this with overrides for other commonly logged value types
-        public virtual void AppendFormatted(int index, ReadOnlySpan<char> value, IBufferWriter<char> buffer) => AppendFormatted(index, value.ToString(), buffer);
-        public virtual void AppendFormatted(int index, int value, IBufferWriter<char> buffer) => AppendFormatted<int>(index, value, buffer);
-        public virtual void AppendFormatted(int index, string value, IBufferWriter<char> buffer) => AppendFormatted<string>(index, value, buffer);
-        public abstract void AppendFormatted<T>(int index, T value, IBufferWriter<char> buffer);
+        VisitPropertyAction<PropType, TCookie> GetPropertyVisitor<PropType>();
+        VisitSpanPropertyAction<TCookie> GetSpanPropertyVisitor();
     }
 }

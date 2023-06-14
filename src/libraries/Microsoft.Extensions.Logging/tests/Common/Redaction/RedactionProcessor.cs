@@ -143,137 +143,11 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
         public IRedactor Redactor;
     }
 
-
-    internal class RedactedPropertyFormatter : PropertyCustomFormatter
-    {
-        const int MaxStackAllocChars = 256;
-        IRedactor _redactor;
-
-        public RedactedPropertyFormatter(IRedactor redactor)
-        {
-            _redactor = redactor;
-        }
-
-        public override void AppendFormatted(int index, string value, IBufferWriter<char> buffer)
-        {
-            int len = _redactor.GetRedactedLength(value);
-            if (len != 0)
-            {
-                Span<char> redactedBuffer = buffer.GetSpan(len);
-                _redactor.Redact(value, redactedBuffer);
-                buffer.Advance(len);
-            }
-        }
-
-        public override void AppendFormatted<T>(int index, T value, IBufferWriter<char> buffer)
-        {
-            if (value == null)
-            {
-                return;
-            }
-            if (value is ISpanFormattable)
-            {
-                Span<char> unredactedBuffer = stackalloc char[MaxStackAllocChars];
-                if (((ISpanFormattable)value).TryFormat(unredactedBuffer, out int charsWritten2, null, null))
-                {
-                    unredactedBuffer = unredactedBuffer.Slice(0, charsWritten2);
-                    int len2 = _redactor.GetRedactedLength(unredactedBuffer);
-                    if (len2 != 0)
-                    {
-                        Span<char> redactedBuffer2 = buffer.GetSpan(len2);
-                        _redactor.Redact(unredactedBuffer, redactedBuffer2);
-                        buffer.Advance(len2);
-                    }
-                    return;
-                }
-            }
-            string? unredactedValue = value.ToString();
-            int len = _redactor.GetRedactedLength(unredactedValue);
-            if (len != 0)
-            {
-                Span<char> redactedBuffer = buffer.GetSpan(len);
-                _redactor.Redact(unredactedValue, redactedBuffer);
-                buffer.Advance(len);
-            }
-        }
-    }
-
-    internal class ChainedRedactedPropertyFormatter : PropertyCustomFormatter
-    {
-        const int MaxStackAllocChars = 256;
-        IRedactor _redactor;
-        PropertyCustomFormatter _nextFormatter;
-
-        public ChainedRedactedPropertyFormatter(IRedactor redactor, PropertyCustomFormatter nextFormatter)
-        {
-            _redactor = redactor;
-            _nextFormatter = nextFormatter;
-        }
-
-        public override void AppendFormatted(int index, string value, IBufferWriter<char> buffer)
-        {
-            int len = _redactor.GetRedactedLength(value);
-            if (len <= MaxStackAllocChars)
-            {
-                Span<char> redactedBuffer = stackalloc char[len];
-                _redactor.Redact(value, redactedBuffer);
-                _nextFormatter.AppendFormatted(index, redactedBuffer, buffer);
-            }
-            else
-            {
-                string redactedValue = _redactor.Redact(value);
-                _nextFormatter.AppendFormatted(index, redactedValue, buffer);
-            }
-        }
-
-        public override void AppendFormatted<T>(int index, T value, IBufferWriter<char> buffer)
-        {
-            if (value == null)
-            {
-                return;
-            }
-            else if (value is ISpanFormattable)
-            {
-                Span<char> unredactedBuffer = stackalloc char[MaxStackAllocChars];
-                if (((ISpanFormattable)value).TryFormat(unredactedBuffer, out int charsWritten2, null, null))
-                {
-                    unredactedBuffer = unredactedBuffer.Slice(0, charsWritten2);
-                    int len2 = _redactor.GetRedactedLength(unredactedBuffer);
-                    if (len2 <= MaxStackAllocChars)
-                    {
-                        Span<char> redactedBuffer2 = stackalloc char[len2];
-                        _redactor.Redact(unredactedBuffer, redactedBuffer2);
-                        _nextFormatter.AppendFormatted(index, redactedBuffer2, buffer);
-                    }
-                    else
-                    {
-                        string redactedValue = _redactor.Redact(unredactedBuffer);
-                        _nextFormatter.AppendFormatted(index, redactedValue, buffer);
-                    }
-                    return;
-                }
-            }
-            string? unredactedValue = value.ToString();
-            int len = _redactor.GetRedactedLength(unredactedValue);
-            if (len <= MaxStackAllocChars)
-            {
-                Span<char> redactedBuffer = stackalloc char[len];
-                _redactor.Redact(unredactedValue, redactedBuffer);
-                _nextFormatter.AppendFormatted(index, redactedBuffer, buffer);
-            }
-            else
-            {
-                string redactedValue = _redactor.Redact(unredactedValue);
-                _nextFormatter.AppendFormatted(index, redactedValue, buffer);
-            }
-        }
-    }
-
     internal class RedactedLogMetadata<T> : ILogMetadata<RedactedValues<T>>
     {
         private readonly ILogMetadata<T> _originalMetadata;
         private readonly PropertyRedaction[] _redactions;
-        private Action<T, IBufferWriter<char>>? _defaultFormatter;
+        private Func<RedactedValues<T>, Exception?, string> _formatter;
 
         public RedactedLogMetadata(ILogMetadata<T> metadata, PropertyRedaction[] redactions)
         {
@@ -303,195 +177,144 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
 
         public int PropertyCount => _originalMetadata.PropertyCount;
 
-        public void AppendFormattedMessage(in RedactedValues<T> state, IBufferWriter<char> buffer)
-        {
-            if (_defaultFormatter == null)
-            {
-                RedactedPropertyFormatter[] propertyRedactors = new RedactedPropertyFormatter[PropertyCount];
-                foreach (PropertyRedaction redaction in _redactions)
-                {
-                    propertyRedactors[redaction.Index] = new RedactedPropertyFormatter(redaction.Redactor);
-                }
-                // this could be overwritten by another thread in a race but it doesn't matter
-                // as any copy of this delegate will have the same functionality
-                _defaultFormatter = _originalMetadata.GetMessageFormatter(propertyRedactors);
-            }
-            _defaultFormatter(state.OriginalState, buffer);
-        }
-
-        public Action<RedactedValues<T>, IBufferWriter<char>> GetMessageFormatter(PropertyCustomFormatter[] customFormatters)
-        {
-            PropertyCustomFormatter[] wrappedFormatters = new PropertyCustomFormatter[customFormatters.Length];
-            Array.Copy(customFormatters, wrappedFormatters, customFormatters.Length);
-            foreach (PropertyRedaction redaction in _redactions)
-            {
-                PropertyCustomFormatter nextFormatter = wrappedFormatters[redaction.Index];
-                wrappedFormatters[redaction.Index] = nextFormatter == null ?
-                    new RedactedPropertyFormatter(redaction.Redactor) :
-                    new ChainedRedactedPropertyFormatter(redaction.Redactor, nextFormatter);
-            }
-            Action<T, IBufferWriter<char>> innerFormatter = _originalMetadata.GetMessageFormatter(wrappedFormatters);
-            return (state, buffer) => innerFormatter(state.OriginalState, buffer);
-        }
-
         public LogPropertyInfo GetPropertyInfo(int index) => _originalMetadata.GetPropertyInfo(index);
 
-        class Slot { public ArrayBufferWriter<char>? Buffer; }
-        static ThreadLocal<Slot?> t_slot = new ThreadLocal<Slot?>();
-
-        public string FormatMessage(in RedactedValues<T> state)
+        internal string FormatMessage(in RedactedValues<T> state)
         {
-            Slot? tstate = t_slot.Value;
-            if (tstate == null)
+            if(_formatter == null)
             {
-                tstate = new Slot();
-                t_slot.Value = tstate;
+                // multiple threads could race to set this and overwrite one another
+                // but it doesn't matter.
+                _formatter = this.CreateStringMessageFormatter();
             }
-            ArrayBufferWriter<char> arrayBuffer = tstate.Buffer ?? new ArrayBufferWriter<char>();
-            tstate.Buffer = null;
-            AppendFormattedMessage(state, arrayBuffer);
-            string ret = new string(arrayBuffer.WrittenSpan);
-            arrayBuffer.Clear();
-            tstate.Buffer = arrayBuffer;
-            return ret;
+            return _formatter(state, null);
         }
 
-        public Func<RedactedValues<T>, Exception?, string> GetStringMessageFormatter() => RedactedValues<T>.Callback;
-
-        class RedactedPropertyFormatterFactory : IPropertyFormatterFactory
+        class RedactedValuePropertyVisitorFactory<TCookie> : IPropertyVisitorFactory<TCookie>
         {
             const int MaxStackAllocChars = 256;
-            RedactedLogMetadata<T> _metadata;
-            IPropertyFormatterFactory _wrappedFormatterFactory;
 
-            public RedactedPropertyFormatterFactory(RedactedLogMetadata<T> metadata, IPropertyFormatterFactory wrappedFormatterFactory)
+            RedactedLogMetadata<T> _metadata;
+            IPropertyVisitorFactory<TCookie> _innerFactory;
+            VisitPropertyAction<string, TCookie> _stringVisitor;
+            VisitSpanPropertyAction<TCookie> _spanVisitor;
+
+            public RedactedValuePropertyVisitorFactory(RedactedLogMetadata<T> metadata, IPropertyVisitorFactory<TCookie> innerFactory)
             {
                 _metadata = metadata;
-                _wrappedFormatterFactory = wrappedFormatterFactory;
+                _innerFactory = innerFactory;
+                _stringVisitor = _innerFactory.GetPropertyVisitor<string>();
+                _spanVisitor = _innerFactory.GetSpanPropertyVisitor();
             }
 
-            public FormatPropertyAction<PropType> GetPropertyFormatter<PropType>(int propertyIndex, LogPropertyInfo metadata)
+            public VisitPropertyAction<PropType, TCookie> GetPropertyVisitor<PropType>()
             {
-                PropertyRedaction? redaction = _metadata.GetRedactionForIndex(propertyIndex);
-                if (!redaction.HasValue)
-                {
-                    return _wrappedFormatterFactory.GetPropertyFormatter<PropType>(propertyIndex, _metadata.GetPropertyInfo(propertyIndex));
-                }
-                else
-                {
-                    return GetRedactedPropertyFormatter<PropType>(propertyIndex, metadata, redaction.Value.Redactor);
-                }
-            }
+                VisitPropertyAction<PropType, TCookie> unredactedVisit = _innerFactory.GetPropertyVisitor<PropType>();
+                return Visit;
 
-            public FormatSpanPropertyAction GetSpanPropertyFormatter(int propertyIndex, LogPropertyInfo metadata)
-            {
-                PropertyRedaction? redaction = _metadata.GetRedactionForIndex(propertyIndex);
-                if (!redaction.HasValue)
+                void Visit(int propIndex, PropType value, ref Span<byte> spanCookie, ref TCookie cookie)
                 {
-                    return _wrappedFormatterFactory.GetSpanPropertyFormatter(propertyIndex, _metadata.GetPropertyInfo(propertyIndex));
-                }
-                else
-                {
-                    return GetRedactedSpanPropertyFormatter(propertyIndex, metadata, redaction.Value.Redactor);
-                }
-            }
-
-            private FormatSpanPropertyAction GetRedactedSpanPropertyFormatter(int propertyIndex, LogPropertyInfo metadata, IRedactor redactor)
-            {
-                FormatSpanPropertyAction wrappedFormatter = _wrappedFormatterFactory.GetSpanPropertyFormatter(propertyIndex, _metadata.GetPropertyInfo(propertyIndex));
-                return FormatRedactedProperty;
-
-                void FormatRedactedProperty(scoped ReadOnlySpan<char> value, ref BufferWriter<byte> writer)
-                {
-                    int len = redactor.GetRedactedLength(value);
-                    if (len <= MaxStackAllocChars)
+                    IRedactor? redactor = _metadata.GetPropertyRedactor(propIndex);
+                    if(redactor == null)
                     {
-                        Span<char> redactedBuffer = stackalloc char[len];
-                        redactor.Redact(value, redactedBuffer);
-                        wrappedFormatter(redactedBuffer, ref writer);
-                    }
-                    else
-                    {
-                        string redactedValue = redactor.Redact(value);
-                        wrappedFormatter(redactedValue, ref writer);
-                    }
-                }
-            }
-
-            private FormatPropertyAction<PropType> GetRedactedPropertyFormatter<PropType>(int propertyIndex, LogPropertyInfo metadata, IRedactor redactor)
-            {
-                FormatSpanPropertyAction wrappedFormatter = _wrappedFormatterFactory.GetSpanPropertyFormatter(propertyIndex, _metadata.GetPropertyInfo(propertyIndex));
-                return FormatRedactedProperty;
-
-                void FormatRedactedProperty(PropType value, ref BufferWriter<byte> writer)
-                {
-                    if (value == null)
-                    {
+                        unredactedVisit(propIndex, value, ref spanCookie, ref cookie);
                         return;
                     }
-                    else if (value is ISpanFormattable)
+
+                    Span<char> unredactedBuffer = stackalloc char[MaxStackAllocChars];
+                    if (TryGetUnredactedBuffer(value, ref unredactedBuffer))
                     {
-                        Span<char> unredactedBuffer = stackalloc char[MaxStackAllocChars];
-                        if (((ISpanFormattable)value).TryFormat(unredactedBuffer, out int charsWritten2, null, null))
+                        int len2 = redactor.GetRedactedLength(unredactedBuffer);
+                        if (len2 <= MaxStackAllocChars)
                         {
-                            unredactedBuffer = unredactedBuffer.Slice(0, charsWritten2);
-                            int len2 = redactor!.GetRedactedLength(unredactedBuffer);
-                            if (len2 <= MaxStackAllocChars)
-                            {
-                                Span<char> redactedBuffer2 = stackalloc char[len2];
-                                redactor!.Redact(unredactedBuffer, redactedBuffer2);
-                                wrappedFormatter(redactedBuffer2, ref writer);
-                            }
-                            else
-                            {
-                                string redactedValue = redactor.Redact(unredactedBuffer);
-                                wrappedFormatter(redactedValue, ref writer);
-                            }
-                            return;
+                            Span<char> redactedBuffer2 = stackalloc char[len2];
+                            redactor.Redact(unredactedBuffer, redactedBuffer2);
+                            _spanVisitor(propIndex, redactedBuffer2, ref spanCookie, ref cookie);
                         }
+                        else
+                        {
+                            string redactedValue = redactor.Redact(unredactedBuffer);
+                            _stringVisitor(propIndex, redactedValue, ref spanCookie, ref cookie);
+                        }
+                        return;
                     }
+
                     string? unredactedValue = value.ToString();
                     int len = redactor.GetRedactedLength(unredactedValue);
                     if (len <= MaxStackAllocChars)
                     {
                         Span<char> redactedBuffer = stackalloc char[len];
                         redactor.Redact(unredactedValue, redactedBuffer);
-                        wrappedFormatter(redactedBuffer, ref writer);
+                        _spanVisitor(propIndex, redactedBuffer, ref spanCookie, ref cookie);
                     }
                     else
                     {
                         string redactedValue = redactor.Redact(unredactedValue);
-                        wrappedFormatter(redactedValue, ref writer);
+                        _stringVisitor(propIndex, redactedValue, ref spanCookie, ref cookie);
+                    }
+                }
+            }
+
+            private bool TryGetUnredactedBuffer<TProp>(TProp value, ref Span<char> unredactedBuffer)
+            {
+                if (value == null)
+                {
+                    unredactedBuffer = default;
+                    return true;
+                }
+                else if (value is ISpanFormattable)
+                {
+                    if (((ISpanFormattable)value).TryFormat(unredactedBuffer, out int charsWritten2, null, null))
+                    {
+                        unredactedBuffer = unredactedBuffer.Slice(0, charsWritten2);
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            public VisitSpanPropertyAction<TCookie> GetSpanPropertyVisitor()
+            {
+                return Visit;
+
+                void Visit(int propIndex, scoped ReadOnlySpan<char> value, ref Span<byte> spanCookie, ref TCookie cookie)
+                {
+                    IRedactor? redactor = _metadata.GetPropertyRedactor(propIndex);
+                    if (redactor == null)
+                    {
+                        _spanVisitor(propIndex, value, ref spanCookie, ref cookie);
+                        return;
+                    }
+
+                    int len = redactor.GetRedactedLength(value);
+                    if (len <= MaxStackAllocChars)
+                    {
+                        Span<char> redactedBuffer2 = stackalloc char[len];
+                        redactor.Redact(value, redactedBuffer2);
+                        _spanVisitor(propIndex, redactedBuffer2, ref spanCookie, ref cookie);
+                    }
+                    else
+                    {
+                        string redactedValue = redactor.Redact(value);
+                        _stringVisitor(propIndex, redactedValue, ref spanCookie, ref cookie);
                     }
                 }
             }
         }
 
-        public FormatPropertyListAction<RedactedValues<T>> GetPropertyListFormatter(IPropertyFormatterFactory propertyFormatterFactory)
+        public VisitPropertyListAction<RedactedValues<T>, TCookie> CreatePropertyListVisitor<TCookie>(IPropertyVisitorFactory<TCookie> visitor)
         {
-            FormatPropertyListAction<T> wrappedFormatPropertyList = _originalMetadata.GetPropertyListFormatter(new RedactedPropertyFormatterFactory(this, propertyFormatterFactory));
-            return FormatPropertyList;
+            VisitPropertyListAction<T,TCookie> innerListVisitor = _originalMetadata.CreatePropertyListVisitor(new RedactedValuePropertyVisitorFactory<TCookie>(this, visitor));
+            return VisitPropertyList;
 
-            void FormatPropertyList(in RedactedValues<T> state, ref BufferWriter<byte> writer)
+            void VisitPropertyList(ref RedactedValues<T> tState, ref Span<byte> spanCookie, ref TCookie cookie)
             {
-                wrappedFormatPropertyList(in state.OriginalState, ref writer);
+                innerListVisitor(ref tState.OriginalState, ref spanCookie, ref cookie);
             }
-        }
-
-        private PropertyRedaction? GetRedactionForIndex(int propIndex)
-        {
-            foreach (PropertyRedaction redaction in _redactions)
-            {
-                if (redaction.Index == propIndex)
-                {
-                    return redaction;
-                }
-            }
-            return null;
         }
     }
 
-    internal readonly struct RedactedValues<T> : IReadOnlyList<KeyValuePair<string, object?>>
+    internal struct RedactedValues<T> : IReadOnlyList<KeyValuePair<string, object?>>
     {
         public RedactedValues(RedactedLogMetadata<T> metadata, in T originalState)
         {
@@ -500,7 +323,7 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
         }
 
         public readonly RedactedLogMetadata<T> Metadata;
-        public readonly T OriginalState;
+        public T OriginalState;
 
         public override string ToString() => Metadata.FormatMessage(this);
 

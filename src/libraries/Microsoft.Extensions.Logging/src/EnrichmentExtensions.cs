@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Extensions.Logging
 {
+    /*
     public static class EnrichmentExtensions
     {
         public static ILoggingBuilder Enrich<T>(this ILoggingBuilder builder, string propertyName, Func<T> valueFunc)
@@ -642,5 +643,5 @@ namespace Microsoft.Extensions.Logging
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-    }
+    }*/
 }
