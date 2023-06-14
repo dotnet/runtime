@@ -2159,13 +2159,17 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                yield return new object[] { engine, "(", "a", ")*", "a", 2000, 1000 };
+                if (engine != RegexEngine.NonBacktracking) // Hangs, or effectively hangs. https://github.com/dotnet/runtime/issues/84188
+                {
+                    yield return new object[] { engine, "(", "a", ")*", "a", 2000, 1000 };
+                }
+
                 yield return new object[] { engine, "(", "[aA]", ")+", "aA", 2000, 3000 };
                 yield return new object[] { engine, "(", "ab", "){0,1}", "ab", 2000, 1000 };
             }
         }
 
-        [OuterLoop("Can take over 10 seconds")]
+        [OuterLoop("Can take a few seconds")]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // consumes a lot of memory
         [MemberData(nameof(StressTestDeepNestingOfLoops_TestData))]
         public async Task StressTestDeepNestingOfLoops(RegexEngine engine, string begin, string inner, string end, string input, int pattern_repetition, int input_repetition)

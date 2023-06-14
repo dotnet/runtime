@@ -10,6 +10,7 @@
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <UsingToolXliff>true</UsingToolXliff>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -47,10 +48,13 @@
     <Compile Include="..\Common\JsonUnmappedMemberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonUnmappedMemberHandling.cs" />
     <Compile Include="..\Common\ThrowHelper.cs" Link="Common\System\Text\Json\ThrowHelper.cs" />
     <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
+    <Compile Include="Helpers\DiagnosticInfo.cs" />
     <Compile Include="Helpers\ImmutableEquatableArray.cs" />
     <Compile Include="Helpers\KnownTypeSymbols.cs" />
     <Compile Include="Helpers\RoslynExtensions.cs" />
+    <Compile Include="Helpers\SourceWriter.cs" />
     <Compile Include="JsonConstants.cs" />
+    <Compile Include="JsonSourceGenerator.DiagnosticDescriptors.cs" />
     <Compile Include="JsonSourceGenerator.Emitter.cs" />
     <Compile Include="JsonSourceGenerator.Emitter.ExceptionMessages.cs" />
     <Compile Include="JsonSourceGenerator.Parser.cs" />
@@ -62,7 +66,6 @@
     <Compile Include="Model\ParameterGenerationSpec.cs" />
     <Compile Include="Model\PropertyGenerationSpec.cs" />
     <Compile Include="Model\PropertyInitializerGenerationSpec.cs" />
-    <Compile Include="Model\SourceGenerationSpec.cs" />
     <Compile Include="Model\TypeGenerationSpec.cs" />
     <Compile Include="Model\TypeRef.cs" />
   </ItemGroup>

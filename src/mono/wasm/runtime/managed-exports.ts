@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
+
 import { GCHandle, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod } from "./types/internal";
 import cwraps from "./cwraps";
-import { runtimeHelpers, ENVIRONMENT_IS_PTHREAD, Module } from "./globals";
+import { runtimeHelpers, Module } from "./globals";
 import { alloc_stack_frame, get_arg, get_arg_gc_handle, set_arg_type, set_gc_handle } from "./marshal";
 import { invoke_method_and_handle_exception } from "./invoke-cs";
 import { marshal_array_to_cs_impl, marshal_exception_to_cs, marshal_intptr_to_cs } from "./marshal-to-cs";
@@ -21,8 +23,8 @@ export function init_managed_exports(): void {
     if (!runtimeHelpers.runtime_interop_exports_class)
         throw "Can't find " + runtimeHelpers.runtime_interop_namespace + "." + runtimeHelpers.runtime_interop_exports_classname + " class";
 
-    const install_sync_context = cwraps.mono_wasm_assembly_find_method(runtimeHelpers.runtime_interop_exports_class, "InstallSynchronizationContext", -1);
-    // mono_assert(install_sync_context, "Can't find InstallSynchronizationContext method");
+    const install_sync_context = MonoWasmThreads ? get_method("InstallSynchronizationContext") : undefined;
+    mono_assert(!MonoWasmThreads || install_sync_context, "Can't find InstallSynchronizationContext method");
     const call_entry_point = get_method("CallEntrypoint");
     mono_assert(call_entry_point, "Can't find CallEntrypoint method");
     const release_js_owned_object_by_gc_handle_method = get_method("ReleaseJSOwnedObjectByGCHandle");
@@ -36,9 +38,10 @@ export function init_managed_exports(): void {
     const get_managed_stack_trace_method = get_method("GetManagedStackTrace");
     mono_assert(get_managed_stack_trace_method, "Can't find GetManagedStackTrace method");
 
-    runtimeHelpers.javaScriptExports.call_entry_point = (entry_point: MonoMethod, program_args?: string[]) => {
+    runtimeHelpers.javaScriptExports.call_entry_point = async (entry_point: MonoMethod, program_args?: string[]): Promise<number> => {
         const sp = Module.stackSave();
         try {
+            Module.runtimeKeepalivePush();
             const args = alloc_stack_frame(4);
             const res = get_arg(args, 1);
             const arg1 = get_arg(args, 2);
@@ -49,12 +52,13 @@ export function init_managed_exports(): void {
             }
             marshal_array_to_cs_impl(arg2, program_args, MarshalerType.String);
             invoke_method_and_handle_exception(call_entry_point, args);
-            const promise = marshal_task_to_js(res, undefined, marshal_int32_to_js);
-            if (!promise) {
-                return Promise.resolve(0);
+            let promise = marshal_task_to_js(res, undefined, marshal_int32_to_js);
+            if (promise === null || promise === undefined) {
+                promise = Promise.resolve(0);
             }
-            return promise;
+            return await promise;
         } finally {
+            Module.runtimeKeepalivePop();// after await promise !
             Module.stackRestore(sp);
         }
     };
@@ -153,7 +157,7 @@ export function init_managed_exports(): void {
         }
     };
 
-    if (install_sync_context) {
+    if (MonoWasmThreads && install_sync_context) {
         runtimeHelpers.javaScriptExports.install_synchronization_context = () => {
             const sp = Module.stackSave();
             try {
@@ -163,10 +167,6 @@ export function init_managed_exports(): void {
                 Module.stackRestore(sp);
             }
         };
-
-        if (!ENVIRONMENT_IS_PTHREAD)
-            // Install our sync context so that async continuations will migrate back to this thread (the main thread) automatically
-            runtimeHelpers.javaScriptExports.install_synchronization_context();
     }
 }
 

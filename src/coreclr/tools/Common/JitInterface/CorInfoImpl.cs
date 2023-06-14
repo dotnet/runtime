@@ -149,9 +149,6 @@ namespace Internal.JitInterface
             ref CORINFO_METHOD_INFO info, uint flags, out IntPtr nativeEntry, out uint codeSize);
 
         [DllImport(JitSupportLibrary)]
-        private static extern uint GetMaxIntrinsicSIMDVectorLength(IntPtr jit, CORJIT_FLAGS* flags);
-
-        [DllImport(JitSupportLibrary)]
         private static extern IntPtr AllocException([MarshalAs(UnmanagedType.LPWStr)]string message, int messageLength);
 
         [DllImport(JitSupportLibrary)]
@@ -555,6 +552,17 @@ namespace Internal.JitInterface
                 {
                     if (computedNodes.Add(fixup))
                     {
+                        if (fixup is IMethodNode methodNode)
+                        {
+                            try
+                            {
+                                _compilation.NodeFactory.DetectGenericCycles(_methodCodeNode.Method, methodNode.Method);
+                            }
+                            catch (TypeLoadException)
+                            {
+                                throw new RequiresRuntimeJitException("Requires runtime JIT - potential generic cycle detected");
+                            }
+                        }
                         _methodCodeNode.Fixups.Add(fixup);
                     }
                 }
@@ -2787,9 +2795,9 @@ namespace Internal.JitInterface
                 result = asCorInfoType(returnType, clsRet);
             }
             else
-#pragma warning disable IDE0059 // Unnecessary assignment of a value
-                clsRet = null;
-#pragma warning restore IDE0059 // Unnecessary assignment of a value
+            {
+                *clsRet = null;
+            }
 
             return result;
         }

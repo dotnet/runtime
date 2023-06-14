@@ -5,7 +5,7 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
 
 import { DotnetModuleInternal, CharPtrNull } from "./types/internal";
-import { disableLegacyJsInterop, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers } from "./globals";
+import { disableLegacyJsInterop, ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers } from "./globals";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
@@ -14,7 +14,7 @@ import { initialize_marshalers_to_cs } from "./marshal-to-cs";
 import { initialize_marshalers_to_js } from "./marshal-to-js";
 import { init_polyfills_async } from "./polyfills";
 import * as pthreads_worker from "./pthreads/worker";
-import { string_decoder } from "./strings";
+import { strings_init, utf8ToString } from "./strings";
 import { init_managed_exports } from "./managed-exports";
 import { cwraps_internal } from "./exports-internal";
 import { CharPtr, InstantiateWasmCallBack, InstantiateWasmSuccessCallback } from "./types/emscripten";
@@ -24,13 +24,14 @@ import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "
 import { export_linker } from "./exports-linker";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { getMemorySnapshot, storeMemorySnapshot, getMemorySnapshotSize } from "./snapshot";
+import { mono_log_debug, mono_log_warn, mono_set_thread_id } from "./logging";
+import { getBrowserThreadID } from "./pthreads/shared";
 
 // legacy
 import { init_legacy_exports } from "./net6-legacy/corebindings";
 import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
 import { BINDING, MONO } from "./net6-legacy/globals";
-import { mono_log_debug, mono_log_warn } from "./logging";
-
+import { localHeapViewU8 } from "./memory";
 
 // default size if MonoConfig.pthreadPoolSize is undefined
 const MONO_PTHREAD_POOL_SIZE = 4;
@@ -195,14 +196,6 @@ async function preInitWorkerAsync() {
 }
 
 export function preRunWorker() {
-    const mark = startMeasure();
-    try {
-        bindings_init();
-        endMeasure(mark, MeasuredBlock.preRunWorker);
-    } catch (err) {
-        loaderHelpers.abort_startup(err, true);
-        throw err;
-    }
     // signal next stage
     runtimeHelpers.afterPreRun.promise_control.resolve();
 }
@@ -263,16 +256,17 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
                 // we could enable diagnostics after the snapshot is taken
                 await mono_wasm_init_diagnostics();
             }
+            const tid = getBrowserThreadID();
+            mono_set_thread_id(`0x${tid.toString(16)}-main`);
             await instantiateWasmPThreadWorkerPool();
         }
 
         bindings_init();
-        if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
+        if (MonoWasmThreads) {
+            runtimeHelpers.javaScriptExports.install_synchronization_context();
+        }
 
-        setTimeout(() => {
-            // when there are free CPU cycles
-            string_decoder.init_fields();
-        });
+        if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
 
         if (runtimeHelpers.config.startupOptions && INTERNAL.resourceLoader) {
             if (INTERNAL.resourceLoader.bootConfig.debugBuild && INTERNAL.resourceLoader.bootConfig.cacheBootResources) {
@@ -516,8 +510,9 @@ async function mono_wasm_before_memory_snapshot() {
     if (runtimeHelpers.loadedMemorySnapshot) {
         // get the bytes after we re-sized the memory, so that we don't have too much memory in use at the same time
         const memoryBytes = await getMemorySnapshot();
-        mono_assert(memoryBytes!.byteLength === Module.HEAP8.byteLength, "Loaded memory is not the expected size");
-        Module.HEAP8.set(new Int8Array(memoryBytes!), 0);
+        const heapU8 = localHeapViewU8();
+        mono_assert(memoryBytes!.byteLength === heapU8.byteLength, "Loaded memory is not the expected size");
+        heapU8.set(new Uint8Array(memoryBytes!), 0);
         mono_log_debug("Loaded WASM linear memory from browser cache");
 
         // all things below are loaded from the snapshot
@@ -550,7 +545,7 @@ async function mono_wasm_before_memory_snapshot() {
     if (runtimeHelpers.config.startupMemoryCache) {
         // this would install the mono_jiterp_do_jit_call_indirect
         cwraps.mono_jiterp_update_jit_call_dispatcher(-1);
-        await storeMemorySnapshot(Module.HEAP8.buffer);
+        await storeMemorySnapshot(localHeapViewU8().buffer);
         runtimeHelpers.storeMemorySnapshotPending = false;
     }
 
@@ -584,8 +579,9 @@ export function bindings_init(): void {
     runtimeHelpers.mono_wasm_bindings_is_ready = true;
     try {
         const mark = startMeasure();
+        strings_init();
         init_managed_exports();
-        if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
+        if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop && !ENVIRONMENT_IS_PTHREAD) {
             init_legacy_exports();
         }
         initialize_marshalers_to_js();
@@ -603,14 +599,14 @@ export function mono_wasm_asm_loaded(assembly_name: CharPtr, assembly_ptr: numbe
     // Only trigger this codepath for assemblies loaded after app is ready
     if (runtimeHelpers.mono_wasm_runtime_is_ready !== true)
         return;
-
-    const assembly_name_str = assembly_name !== CharPtrNull ? Module.UTF8ToString(assembly_name).concat(".dll") : "";
-    const assembly_data = new Uint8Array(Module.HEAPU8.buffer, assembly_ptr, assembly_len);
+    const heapU8 = localHeapViewU8();
+    const assembly_name_str = assembly_name !== CharPtrNull ? utf8ToString(assembly_name).concat(".dll") : "";
+    const assembly_data = new Uint8Array(heapU8.buffer, assembly_ptr, assembly_len);
     const assembly_b64 = toBase64StringImpl(assembly_data);
 
     let pdb_b64;
     if (pdb_ptr) {
-        const pdb_data = new Uint8Array(Module.HEAPU8.buffer, pdb_ptr, pdb_len);
+        const pdb_data = new Uint8Array(heapU8.buffer, pdb_ptr, pdb_len);
         pdb_b64 = toBase64StringImpl(pdb_data);
     }
 
@@ -645,7 +641,7 @@ export function mono_wasm_set_main_args(name: string, allRuntimeArguments: strin
 export async function configureWorkerStartup(module: DotnetModuleInternal): Promise<void> {
     // This is a good place for subsystems to attach listeners for pthreads_worker.currentWorkerThreadEvents
     pthreads_worker.currentWorkerThreadEvents.addEventListener(pthreads_worker.dotnetPthreadCreated, (ev) => {
-        mono_log_debug("pthread created 0x" + ev.pthread_self.pthread_id.toString(16));
+        mono_log_debug("pthread created 0x" + ev.pthread_self.pthreadId.toString(16));
     });
 
     // these are the only events which are called on worker

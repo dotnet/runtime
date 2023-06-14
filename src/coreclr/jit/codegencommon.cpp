@@ -4655,7 +4655,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 //    initReg -- scratch register to use if needed
 //    pInitRegZeroed -- [IN,OUT] if init reg is zero (on entry/exit)
 //
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed)
 #else
 void CodeGen::genEnregisterOSRArgsAndLocals()
@@ -4796,7 +4796,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 
         GetEmitter()->emitIns_R_AR(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset);
 
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
         // Patchpoint offset is from top of Tier0 frame
         //
@@ -5436,7 +5436,7 @@ void CodeGen::genFnProlog()
         psiBegProlog();
     }
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     // For arm64 OSR, emit a "phantom prolog" to account for the actions taken
     // in the tier0 frame that impact FP and SP on entry to the OSR method.
     //
@@ -5451,7 +5451,7 @@ void CodeGen::genFnProlog()
         // SP is tier0 method's SP.
         compiler->unwindAllocStack(tier0FrameSize);
     }
-#endif // defined(TARGET_ARM64)
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
 #ifdef DEBUG
 
@@ -5774,6 +5774,14 @@ void CodeGen::genFnProlog()
     {
         initReg = REG_IP1;
     }
+#elif defined(TARGET_LOONGARCH64)
+    // For loongarch64 OSR root frames, we may need a scratch register for large
+    // offset addresses. Use a register that won't be allocated.
+    //
+    if (isRoot && compiler->opts.IsOSR())
+    {
+        initReg = REG_SCRATCH;
+    }
 #endif
 
     noway_assert(!compiler->compMethodRequiresPInvokeFrame() || (initReg != REG_PINVOKE_FRAME));
@@ -5827,7 +5835,7 @@ void CodeGen::genFnProlog()
         //
         extraFrameSize = compiler->compCalleeRegsPushed * REGSIZE_BYTES;
     }
-#endif // TARGET_ARM64
+#endif // TARGET_AMD64
 
     if (doubleAlignOrFramePointerUsed())
     {
@@ -6087,7 +6095,7 @@ void CodeGen::genFnProlog()
         // Otherwise we'll do some of these fetches twice.
         //
         CLANG_FORMAT_COMMENT_ANCHOR;
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         genEnregisterOSRArgsAndLocals(initReg, &initRegZeroed);
 #else
         genEnregisterOSRArgsAndLocals();
@@ -6363,6 +6371,35 @@ regNumber CodeGen::getCallIndirectionCellReg(GenTreeCall* call)
 #endif
 
     return result;
+}
+
+//------------------------------------------------------------------------
+// genDefinePendingLabel - If necessary, define the pending call label after a
+// call instruction was emitted.
+//
+// Arguments:
+//    call - the call node
+//
+void CodeGen::genDefinePendingCallLabel(GenTreeCall* call)
+{
+    // for pinvoke/intrinsic/tailcalls we may have needed to get the address of
+    // a label.
+    if (!genPendingCallLabel)
+    {
+        return;
+    }
+
+    // For certain indirect calls we may introduce helper calls before that we need to skip:
+    // - CFG may introduce a call to the validator first
+    // - Generic virtual methods may compute the target dynamically through a separate helper call
+    if (call->IsHelperCall(compiler, CORINFO_HELP_VALIDATE_INDIRECT_CALL) ||
+        call->IsHelperCall(compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR))
+    {
+        return;
+    }
+
+    genDefineInlineTempLabel(genPendingCallLabel);
+    genPendingCallLabel = nullptr;
 }
 
 /*****************************************************************************

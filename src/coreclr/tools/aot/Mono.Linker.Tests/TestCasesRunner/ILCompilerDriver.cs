@@ -25,7 +25,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			ComputeDefaultOptions (out var targetOS, out var targetArchitecture);
 			var targetDetails = new TargetDetails (targetArchitecture, targetOS, TargetAbi.NativeAot);
 			CompilerTypeSystemContext typeSystemContext =
-				new CompilerTypeSystemContext (targetDetails, SharedGenericsMode.CanonicalReferenceTypes, DelegateFeature.All, genericCycleCutoffPoint: -1);
+				new CompilerTypeSystemContext (targetDetails, SharedGenericsMode.CanonicalReferenceTypes, DelegateFeature.All, genericCycleDepthCutoff: -1);
 
 			typeSystemContext.InputFilePaths = options.InputFilePaths;
 			typeSystemContext.ReferenceFilePaths = options.ReferenceFilePaths;
@@ -111,7 +111,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				Array.Empty<KeyValuePair<string, bool>> (),
 				Array.Empty<string> (),
 				options.AdditionalRootAssemblies.ToArray (),
-				options.TrimAssemblies.ToArray ());
+				options.TrimAssemblies.ToArray (),
+				Array.Empty<string> ());
 
 			PInvokeILEmitterConfiguration pinvokePolicy = new ILCompilerTestPInvokePolicy ();
 			InteropStateManager interopStateManager = new InteropStateManager (typeSystemContext.GeneratedAssembly);

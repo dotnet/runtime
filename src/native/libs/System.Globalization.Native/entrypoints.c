@@ -59,6 +59,7 @@ static const Entry s_globalizationNative[] =
     DllImportEntry(GlobalizationNative_ToUnicode)
     DllImportEntry(GlobalizationNative_WindowsIdToIanaId)
 #ifdef __APPLE__
+    DllImportEntry(GlobalizationNative_CompareStringNative)
     DllImportEntry(GlobalizationNative_GetLocaleNameNative)
     DllImportEntry(GlobalizationNative_GetLocaleInfoStringNative)
     DllImportEntry(GlobalizationNative_GetLocaleInfoIntNative)

@@ -56,7 +56,9 @@ endif()
 if(CLR_CMAKE_TARGET_WIN32)
     add_definitions(-DUNICODE)
     list(APPEND SOURCES
-        ../apphost.windows.cpp)
+        ../apphost.windows.cpp
+        ${CLR_SRC_NATIVE_DIR}/libs/Common/delayloadhook_windows.cpp
+    )
 
     list(APPEND HEADERS
         ../apphost.windows.h)
@@ -106,6 +108,9 @@ if(CLR_CMAKE_TARGET_WIN32)
 
     # Delay load libraries required for WinRT as that is not supported on all platforms
     add_linker_flag("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
+
+    # Delay load version.dll so that we can specify how to search when loading it as it is not part of Windows' known DLLs
+    add_linker_flag("/DELAYLOAD:version.dll")
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
@@ -157,7 +162,7 @@ else()
     include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
     append_extra_compression_libs(NATIVE_LIBS)
 
-    if (NOT CLR_CMAKE_TARGET_TVOS) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
+    if (NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_HOST_ANDROID) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
         # Additional requirements for System.Net.Security.Native
         include(${CLR_SRC_NATIVE_DIR}/libs/System.Net.Security.Native/extra_libs.cmake)
         append_extra_security_libs(NATIVE_LIBS)
@@ -167,7 +172,7 @@ else()
     include(${CLR_SRC_NATIVE_DIR}/libs/System.Native/extra_libs.cmake)
     append_extra_system_libs(NATIVE_LIBS)
 
-    if(NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+    if(NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_HOST_ANDROID)
         # Additional requirements for System.Security.Cryptography.Native.OpenSsl
         include(${CLR_SRC_NATIVE_DIR}/libs/System.Security.Cryptography.Native/extra_libs.cmake)
         append_extra_cryptography_libs(NATIVE_LIBS)

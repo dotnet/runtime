@@ -23,12 +23,10 @@ namespace System.Text.Json.Serialization.Tests
                 return;
             }
 
-            JsonSerializerOptions options = new JsonSerializerOptions
-            {
-                DefaultBufferSize = bufferSize
-            };
+            JsonSerializerOptions options = Serializer.CreateOptions(makeReadOnly: false);
+            options.DefaultBufferSize = bufferSize;
 
-            string expectedJson = JsonSerializer.Serialize(source);
+            string expectedJson = JsonSerializer.Serialize(source, options);
 
             using var stream = new Utf8MemoryStream();
             var asyncEnumerable = new MockedAsyncEnumerable<TElement>(source, delayInterval);
@@ -48,37 +46,10 @@ namespace System.Text.Json.Serialization.Tests
                 return;
             }
 
-            JsonSerializerOptions options = new JsonSerializerOptions
-            {
-                DefaultBufferSize = bufferSize
-            };
+            JsonSerializerOptions options = Serializer.CreateOptions(makeReadOnly: false);
+            options.DefaultBufferSize = bufferSize;
 
-            string expectedJson = JsonSerializer.Serialize(new { Data = source });
-
-            using var stream = new Utf8MemoryStream();
-            var asyncEnumerable = new MockedAsyncEnumerable<TElement>(source, delayInterval);
-            await StreamingSerializer.SerializeWrapper(stream, new AsyncEnumerableDto<TElement> { Data = asyncEnumerable }, options);
-
-            JsonTestHelper.AssertJsonEqual(expectedJson, stream.AsString());
-            Assert.Equal(1, asyncEnumerable.TotalCreatedEnumerators);
-            Assert.Equal(1, asyncEnumerable.TotalDisposedEnumerators);
-        }
-
-        [Theory]
-        [MemberData(nameof(GetAsyncEnumerableSources))]
-        public async Task WriteNestedAsyncEnumerable_DTO<TElement>(IEnumerable<TElement> source, int delayInterval, int bufferSize)
-        {
-            if (StreamingSerializer?.IsAsyncSerializer != true)
-            {
-                return;
-            }
-
-            JsonSerializerOptions options = new JsonSerializerOptions
-            {
-                DefaultBufferSize = bufferSize
-            };
-
-            string expectedJson = JsonSerializer.Serialize(new { Data = source });
+            string expectedJson = JsonSerializer.Serialize(new EnumerableDto<TElement> { Data = source }, options);
 
             using var stream = new Utf8MemoryStream();
             var asyncEnumerable = new MockedAsyncEnumerable<TElement>(source, delayInterval);
@@ -100,11 +71,9 @@ namespace System.Text.Json.Serialization.Tests
 
             // Primarily tests the ability of NullableConverter to flow async serialization state
 
-            JsonSerializerOptions options = new JsonSerializerOptions
-            {
-                DefaultBufferSize = bufferSize,
-                IncludeFields = true,
-            };
+            JsonSerializerOptions options = Serializer.CreateOptions(makeReadOnly: false);
+            options.DefaultBufferSize = bufferSize;
+            options.IncludeFields = true;
 
             string expectedJson = JsonSerializer.Serialize<(IEnumerable<TElement>, bool)?>((source, false), options);
 
@@ -164,9 +133,20 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(1, longRunningEnumerable.TotalDisposedEnumerators);
         }
 
+        public class EnumerableDto<TElement>
+        {
+            public IEnumerable<TElement> Data { get; set; }
+        }
+
         public class AsyncEnumerableDto<TElement>
         {
             public IAsyncEnumerable<TElement> Data { get; set; }
+        }
+
+        public class EnumerableDtoWithTwoProperties<TElement>
+        {
+            public IEnumerable<TElement> Data1 { get; set; }
+            public IEnumerable<TElement> Data2 { get; set; }
         }
 
         public class AsyncEnumerableDtoWithTwoProperties<TElement>
@@ -184,12 +164,10 @@ namespace System.Text.Json.Serialization.Tests
                 return;
             }
 
-            JsonSerializerOptions options = new JsonSerializerOptions
-            {
-                DefaultBufferSize = bufferSize
-            };
+            JsonSerializerOptions options = Serializer.CreateOptions(makeReadOnly: false);
+            options.DefaultBufferSize = bufferSize;
 
-            string expectedJson = JsonSerializer.Serialize(new { Data1 = source, Data2 = source });
+            string expectedJson = JsonSerializer.Serialize(new EnumerableDtoWithTwoProperties<TElement> { Data1 = source, Data2 = source }, options);
 
             using var stream = new Utf8MemoryStream();
             var asyncEnumerable = new MockedAsyncEnumerable<TElement>(source, delayInterval);
@@ -209,13 +187,11 @@ namespace System.Text.Json.Serialization.Tests
                 return;
             }
 
-            JsonSerializerOptions options = new JsonSerializerOptions
-            {
-                DefaultBufferSize = bufferSize
-            };
+            JsonSerializerOptions options = Serializer.CreateOptions(makeReadOnly: false);
+            options.DefaultBufferSize = bufferSize;
 
             const int OuterEnumerableCount = 5;
-            string expectedJson = JsonSerializer.Serialize(Enumerable.Repeat(source, OuterEnumerableCount));
+            string expectedJson = JsonSerializer.Serialize(Enumerable.Repeat(source, OuterEnumerableCount), options);
 
             var innerAsyncEnumerable = new MockedAsyncEnumerable<TElement>(source, delayInterval);
             var outerAsyncEnumerable =

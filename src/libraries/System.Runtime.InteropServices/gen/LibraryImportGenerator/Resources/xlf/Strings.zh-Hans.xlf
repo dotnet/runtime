@@ -217,6 +217,11 @@
         <target state="translated">指定的托管类型无效</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidMarshalModeTitle">
+        <source>Invalid 'MarshalMode' value.</source>
+        <target state="new">Invalid 'MarshalMode' value.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidMarshallerTypeTitle">
         <source>Specified marshaller type is invalid</source>
         <target state="translated">指定的封送处理程序类型无效</target>
@@ -310,6 +315,11 @@
       <trans-unit id="ManagedTypeMustBeNonNullMessage">
         <source>The managed type for the entry-point marshaller type '{0}' must not be 'null'</source>
         <target state="translated">入口点封送处理程序类型“{0}”的托管类型不能为“null”</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalModeMustBeValidEnumValue">
+        <source>The 'marshalMode' argument of 'CustomMarshallerAttribute' must be a valid enum value of 'MarshalMode'.</source>
+        <target state="new">The 'marshalMode' argument of 'CustomMarshallerAttribute' must be a valid enum value of 'MarshalMode'.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">

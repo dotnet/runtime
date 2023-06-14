@@ -832,7 +832,7 @@ namespace System.Xml.Schema
 
             XmlSchema schemaToUpdate = redefineEntry.schemaToUpdate;
             ArrayList includesOfRedefine = new ArrayList();
-            GetIncludedSet(originalSchema, includesOfRedefine);
+            Preprocessor.GetIncludedSet(originalSchema, includesOfRedefine);
             string targetNS = schemaToUpdate.TargetNamespace ?? string.Empty;
 
             XmlSchemaObjectCollection items = redefine.Items;
@@ -951,7 +951,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private void GetIncludedSet(XmlSchema schema, ArrayList includesList)
+        private static void GetIncludedSet(XmlSchema schema, ArrayList includesList)
         {
             if (includesList.Contains(schema))
             {

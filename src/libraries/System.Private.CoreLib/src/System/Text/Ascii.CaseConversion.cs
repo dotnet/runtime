@@ -339,7 +339,7 @@ namespace System.Text
 
                 if (conversionIsWidthPreserving)
                 {
-                    Unsafe.WriteUnaligned<ulong>(&pDest[i], nextBlockAsUInt64);
+                    Unsafe.WriteUnaligned(&pDest[i], nextBlockAsUInt64);
                 }
                 else
                 {
@@ -354,7 +354,7 @@ namespace System.Text
                     {
                         Vector128<ushort> blockAsVectorOfUInt16 = blockAsVectorOfUInt64.AsUInt16();
                         Vector128<uint> narrowedBlock = Vector128.Narrow(blockAsVectorOfUInt16, blockAsVectorOfUInt16).AsUInt32();
-                        Unsafe.WriteUnaligned<uint>(&pDest[i], narrowedBlock.ToScalar());
+                        Unsafe.WriteUnaligned(&pDest[i], narrowedBlock.ToScalar());
                     }
                 }
 
@@ -398,7 +398,7 @@ namespace System.Text
 
                 if (conversionIsWidthPreserving)
                 {
-                    Unsafe.WriteUnaligned<uint>(&pDest[i], nextBlockAsUInt32);
+                    Unsafe.WriteUnaligned(&pDest[i], nextBlockAsUInt32);
                 }
                 else
                 {
@@ -408,13 +408,13 @@ namespace System.Text
                     if (conversionIsWidening)
                     {
                         Vector128<ulong> widenedBlock = Vector128.WidenLower(blockAsVectorOfUInt32.AsByte()).AsUInt64();
-                        Unsafe.WriteUnaligned<ulong>(&pDest[i], widenedBlock.ToScalar());
+                        Unsafe.WriteUnaligned(&pDest[i], widenedBlock.ToScalar());
                     }
                     else
                     {
                         Vector128<ushort> blockAsVectorOfUInt16 = blockAsVectorOfUInt32.AsUInt16();
                         Vector128<ushort> narrowedBlock = Vector128.Narrow(blockAsVectorOfUInt16, blockAsVectorOfUInt16).AsUInt16();
-                        Unsafe.WriteUnaligned<ushort>(&pDest[i], narrowedBlock.ToScalar());
+                        Unsafe.WriteUnaligned(&pDest[i], narrowedBlock.ToScalar());
                     }
                 }
 

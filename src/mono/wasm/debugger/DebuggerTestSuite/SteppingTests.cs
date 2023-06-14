@@ -702,8 +702,8 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-step.cs", 15, 12, "MoveNext");
         }
 
-        // [ConditionalFact(nameof(RunningOnChrome))]
-        //[ActiveIssue("https://github.com/dotnet/runtime/issues/42421")]
+        [ConditionalFact(nameof(RunningOnChrome))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42421")]
         public async Task StepOutOfAsyncMethod()
         {
             string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
@@ -865,8 +865,8 @@ namespace DebuggerTests
                 method_name);
         }
 
-        // [ConditionalTheory(nameof(RunningOnChrome))]
-        //[ActiveIssue("https://github.com/dotnet/runtime/issues/73867")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73867")]
         [InlineData(184, 20, 161, 8, "HiddenLinesContainingStartOfAnAsyncBlock")]
         [InlineData(206, 20, 201, 8, "HiddenLinesAtTheEndOfANestedAsyncBlockWithWithLineDefaultOutsideTheMethod")]
         [InlineData(224, 20, 220, 8, "HiddenLinesAtTheEndOfANestedAsyncBlockWithWithLineDefaultOutsideTheMethod2")]
@@ -885,6 +885,7 @@ namespace DebuggerTests
         [InlineData(153, 20, 155, 16, "HiddenLinesAtTheEndOfANestedAsyncBlockWithNoLinesAtEndOfTheMethod.AnonymousMethod__1")]
         [InlineData(154, 20, 155, 16, "HiddenLinesAtTheEndOfANestedAsyncBlockWithNoLinesAtEndOfTheMethod.AnonymousMethod__1")]
         [InlineData(170, 20, 172, 16, "HiddenLinesAtTheEndOfANestedAsyncBlockWithBreakableLineAtEndOfTheMethod.AnonymousMethod__1")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
         public async Task BreakpointOnHiddenLineShouldStopAtEarliestNextAvailableLineAsync(int line_bp, int column_bp, int line_pause, int column_pause, string method_name)
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-async-test.cs", line_bp, column_bp);
@@ -1219,6 +1220,7 @@ namespace DebuggerTests
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
         public async Task SkipWasmFunctionsAccordinglyJustMyCode(bool justMyCode)
         {
             await SetJustMyCode(justMyCode);

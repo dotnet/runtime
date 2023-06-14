@@ -276,6 +276,19 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 Subject.Fallbacks.Should().BeEquivalentTo("win7-x64", "win7-x86");
         }
 
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "GetEntryAssembly() returns null")]
+        public void DefaultWorksCorrectly()
+        {
+            // only need to assert the context contains non-null properties.
+
+            var context = DependencyContext.Default;
+            Assert.NotNull(context);
+            Assert.NotNull(context.RuntimeGraph);
+            Assert.NotNull(context.RuntimeLibraries);
+            Assert.NotNull(context.Target);
+        }
+
         private TargetInfo CreateTargetInfo()
         {
             return new TargetInfo(

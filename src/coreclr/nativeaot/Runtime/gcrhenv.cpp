@@ -49,25 +49,6 @@
 #include "holder.h"
 #include "volatile.h"
 
-#ifdef FEATURE_ETW
-    #ifndef _INC_WINDOWS
-        typedef void* LPVOID;
-        typedef uint32_t UINT;
-        typedef void* PVOID;
-        typedef uint64_t ULONGLONG;
-        typedef uint32_t ULONG;
-        typedef int64_t LONGLONG;
-        typedef uint8_t BYTE;
-        typedef uint16_t UINT16;
-    #endif // _INC_WINDOWS
-
-    #include "etwevents.h"
-    #include "eventtrace.h"
-#else // FEATURE_ETW
-    #include "etmdummy.h"
-    #define ETW_EVENT_ENABLED(e,f) false
-#endif // FEATURE_ETW
-
 GPTR_IMPL(MethodTable, g_pFreeObjectEEType);
 
 #include "gctoclreventsink.h"
@@ -1176,9 +1157,9 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
     }
 }
 
-void GCToEEInterface::EnableFinalization(bool foundFinalizers)
+void GCToEEInterface::EnableFinalization(bool gcHasWorkForFinalizerThread)
 {
-    if (foundFinalizers)
+    if (gcHasWorkForFinalizerThread)
         RhEnableFinalization();
 }
 
@@ -1366,40 +1347,58 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* 
         return true;
     }
 
-#ifdef UNICODE
-    size_t keyLength = strlen(privateKey) + 1;
-    TCHAR* pKey = (TCHAR*)_alloca(sizeof(TCHAR) * keyLength);
-    for (size_t i = 0; i < keyLength; i++)
-        pKey[i] = privateKey[i];
-#else
-    const TCHAR* pKey = privateKey;
-#endif
-
     uint64_t uiValue;
-    if (!g_pRhConfig->ReadConfigValue(pKey, &uiValue))
-        return false;
+    if (g_pRhConfig->ReadConfigValue(privateKey, &uiValue))
+    {
+        *value = uiValue != 0;
+        return true;
+    }
 
-    *value = uiValue != 0;
-    return true;
+    if (publicKey)
+    {
+        if (g_pRhConfig->ReadKnobBooleanValue(publicKey, value))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
+
+extern GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
+extern bool g_gcHeapHardLimitInfoSpecified;
 
 bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publicKey, int64_t* value)
 {
-#ifdef UNICODE
-    size_t keyLength = strlen(privateKey) + 1;
-    TCHAR* pKey = (TCHAR*)_alloca(sizeof(TCHAR) * keyLength);
-    for (size_t i = 0; i < keyLength; i++)
-        pKey[i] = privateKey[i];
-#else
-    const TCHAR* pKey = privateKey;
-#endif
+    if (g_gcHeapHardLimitInfoSpecified)
+    {
+        if ((g_gcHeapHardLimitInfo.heapHardLimit != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimit") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimit; return true; }
+        if ((g_gcHeapHardLimitInfo.heapHardLimitPercent != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimitPercent") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitPercent; return true; }
+        if ((g_gcHeapHardLimitInfo.heapHardLimitSOH != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimitSOH") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitSOH; return true; }
+        if ((g_gcHeapHardLimitInfo.heapHardLimitLOH != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimitLOH") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitLOH; return true; }
+        if ((g_gcHeapHardLimitInfo.heapHardLimitPOH != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimitPOH") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitPOH; return true; }
+        if ((g_gcHeapHardLimitInfo.heapHardLimitSOHPercent != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimitSOHPercent") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitSOHPercent; return true; }
+        if ((g_gcHeapHardLimitInfo.heapHardLimitLOHPercent != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimitLOHPercent") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitLOHPercent; return true; }
+        if ((g_gcHeapHardLimitInfo.heapHardLimitPOHPercent != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimitPOHPercent") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitPOHPercent; return true; }
+    }
 
     uint64_t uiValue;
-    if (!g_pRhConfig->ReadConfigValue(pKey, &uiValue))
-        return false;
+    if (g_pRhConfig->ReadConfigValue(privateKey, &uiValue))
+    {
+        *value = uiValue;
+        return true;
+    }
 
-    *value = uiValue;
-    return true;
+    if (publicKey)
+    {
+        if (g_pRhConfig->ReadKnobUInt64Value(publicKey, &uiValue))
+        {
+            *value = uiValue;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void GCToEEInterface::LogErrorToHost(const char *message)

@@ -769,9 +769,9 @@ bool Compiler::optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenT
 // optCheckIterInLoopTest: Check if iter var is used in loop test.
 //
 // Arguments:
-//      loopInd       loopIndex
-//      test          "jtrue" tree or an asg of the loop iter termination condition
-//      iterVar       loop iteration variable.
+//      loopInd - loopIndex
+//      test    - "jtrue" tree or an store of the loop iter termination condition
+//      iterVar - loop iteration variable.
 //
 //  Operation:
 //      The test tree is parsed to check if "iterVar" matches the lhs of the condition
@@ -891,16 +891,10 @@ bool Compiler::optCheckIterInLoopTest(unsigned loopInd, GenTree* test, unsigned 
 }
 
 //----------------------------------------------------------------------------------
-// optIsLoopIncrTree: Check if loop is a tree of form v += 1 or v = v + 1
+// optIsLoopIncrTree: Check if loop is a tree of form v = v op const.
 //
 // Arguments:
-//      incr        The incr tree to be checked. Whether incr tree is
-//                  oper-equal(+=, -=...) type nodes or v=v+1 type ASG nodes.
-//
-//  Operation:
-//      The test tree is parsed to check if "iterVar" matches the lhs of the condition
-//      and the rhs limit is extracted from the "test" tree. The limit information is
-//      added to the loop table.
+//      incr - The incr tree to be checked.
 //
 //  Return Value:
 //      iterVar local num if the iterVar is found, otherwise BAD_VAR_NUM.
@@ -912,7 +906,7 @@ unsigned Compiler::optIsLoopIncrTree(GenTree* incr)
     unsigned   iterVar = incr->IsLclVarUpdateTree(&incrVal, &updateOper);
     if (iterVar != BAD_VAR_NUM)
     {
-        // We have v = v op y type asg node.
+        // We have v = v op y type node.
         switch (updateOper)
         {
             case GT_ADD:
@@ -5718,12 +5712,6 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
     oper = tree->OperGet();
     kind = tree->OperKind();
 
-    if (oper == GT_ASG)
-    {
-        noway_assert(doit == false);
-        return false;
-    }
-
     ValueNumPair NoVNPair = ValueNumPair();
 
     if (kind & GTK_LEAF)
@@ -9302,7 +9290,7 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
         for (unsigned defIndex = 1; defIndex < defCount; defIndex++)
         {
             LclSsaVarDsc*        defDsc = varDsc->lvPerSsaData.GetSsaDefByIndex(defIndex);
-            GenTreeLclVarCommon* store  = defDsc->GetAssignment();
+            GenTreeLclVarCommon* store  = defDsc->GetDefNode();
 
             if (store != nullptr)
             {
