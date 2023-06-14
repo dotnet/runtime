@@ -324,40 +324,58 @@ namespace System
                 }
                 else
                 {
-                    result = (_chunk % nextN);
+                    result = _chunk % nextN;
                     _chunk /= nextN;
                 }
-
 
                 _n = nextN;
                 return result;
             }
 
             /// <summary>
-            /// Calculate the highest (x,k) such that x = n*n+1*..*n+k-1 where x is a 32 bit integer.
+            /// Calculate the highest (x,k) such that x = n*n+1*..*n+k-1 where x is a 32 bit integer,
+            /// assuming n is 2, 13, or >= 20
             /// </summary>
             private static (int, int) CalculateBound(int n)
             {
+                // This method should always first be called with 2, then 13, then higher numbers starting at 20
+                Debug.Assert(n == 2 || n == 13 || n > 19);
+                // Threshold_6 is the highest value of n for which k will be 6
+                const int Threshold_6 = 33;
+                const int Threshold_5 = 71;
+                const int Threshold_4 = 213;
+                const int Threshold_3 = 1289;
+                const int Threshold_2 = 46340;
+                AssertIsThreshold(6, Threshold_6);
+                AssertIsThreshold(5, Threshold_5);
+                AssertIsThreshold(4, Threshold_4);
+                AssertIsThreshold(3, Threshold_3);
+                AssertIsThreshold(2, Threshold_2);
+
                 int count;
                 switch (n)
                 {
                     case 2:
-                        return (479001600, 11); // 12 factorial
+                        const int Product_2_11 = 2 * 3 * 4 * 5 * 6 * 7 * 8 * 9 * 10 * 11 * 12;
+                        Debug.Assert(Product_2_11 == 479001600);
+                        return (Product_2_11, 11);
                     case 13:
-                        return (253955520, 7); // 19 factorial / 12 factorial
-                    case < 34:
+                        const int Product_13_7 = 13 * 14 * 15 * 16 * 17 * 18 * 19;
+                        Debug.Assert(Product_13_7 == 253955520);
+                        return (Product_13_7, 7);
+                    case <= Threshold_6:
                         count = 6;
                         break;
-                    case < 72:
+                    case <= Threshold_5:
                         count = 5;
                         break;
-                    case < 214:
+                    case <= Threshold_4:
                         count = 4;
                         break;
-                    case < 1290:
+                    case <= Threshold_3:
                         count = 3;
                         break;
-                    case < 46341:
+                    case <= Threshold_2:
                         count = 2;
                         break;
                     default:
@@ -373,11 +391,43 @@ namespace System
                 int product = n;
                 while (multiplications > 0)
                 {
-                    product *= (n + multiplications);
+                    product *= n + multiplications;
                     multiplications--;
                 }
 
                 return product;
+            }
+
+            /// <summary>
+            /// Checks that t*t+1*..*t+k-1 is a 32 bit integer, and that t is the highest integer such that this is the case
+            /// </summary>
+            [System.Diagnostics.Conditional("DEBUG")]
+            private static void AssertIsThreshold(int k, int t)
+            {
+
+                static bool IsProductI32(int n, int multiplications)
+                {
+                    try
+                    {
+                        checked
+                        {
+                            int product = n;
+                            while (multiplications > 0)
+                            {
+                                product *= n + multiplications;
+                                multiplications--;
+                            }
+                        }
+                    }
+                    catch (OverflowException)
+                    {
+                        return false;
+                    }
+                    return true;
+                }
+
+                Debug.Assert(IsProductI32(t, k - 1), $"k = {k}; t = {t}");
+                Debug.Assert(!IsProductI32(t, k), $"k + 1 = {k + 1}; t = {t}");
             }
         }
 
