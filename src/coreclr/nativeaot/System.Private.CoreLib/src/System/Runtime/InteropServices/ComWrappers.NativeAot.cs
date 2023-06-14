@@ -536,7 +536,14 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(instance);
 
-            ManagedObjectWrapperHolder ccwValue = _ccwTable.GetValue(instance, (c) =>
+            ManagedObjectWrapperHolder? ccwValue;
+            if (_ccwTable.TryGetValue(instance, out ccwValue))
+            {
+                ccwValue.AddRef();
+                return ccwValue.ComIp;
+            }
+
+            ccwValue = _ccwTable.GetValue(instance, (c) =>
             {
                 ManagedObjectWrapper* value = CreateCCW(c, flags);
                 return new ManagedObjectWrapperHolder(value, c);
