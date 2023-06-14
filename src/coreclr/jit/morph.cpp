@@ -1109,7 +1109,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         // here we consider spilling it into a local. We also need to spill it in case we have a node that we do not
         // currently handle in multi-reg morphing.
         //
-        if (varTypeIsStruct(argx) && !arg.m_needTmp)
+        if (varTypeIsStruct(argx) && !arg.m_evaluateEarly)
         {
             if ((arg.AbiInfo.NumRegs > 0) && ((arg.AbiInfo.NumRegs + arg.AbiInfo.GetStackSlotsNumber()) > 1))
             {
@@ -1190,7 +1190,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
             GenTree* argx = arg.GetEarlyNode();
             assert(!comp->gtTreeContainsOper(argx, GT_QMARK));
 
-            // Examine the register args that are currently not marked needTmp
+            // Examine the register args that are currently not marked evaluateEarly
             //
             if (!arg.m_evaluateEarly && (arg.AbiInfo.GetRegNum() != REG_STK))
             {
@@ -1272,17 +1272,17 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
     // more complex arguments before the simpler arguments. We use the late
     // list to keep the sorted result at this point, and the ordering ends up
     // looking like:
-    //     +------------------------------------+  <--- end of sortedArgs
-    //     |          constants                 |
-    //     +------------------------------------+
-    //     |    local var / local field         |
-    //     +------------------------------------+
-    //     | remaining arguments sorted by cost |
-    //     +------------------------------------+
-    //     | temps (CallArg::m_needTmp == true) |
-    //     +------------------------------------+
-    //     |  args with calls (GTF_CALL)        |
-    //     +------------------------------------+  <--- start of sortedArgs
+    //     +------------------------------------------+  <--- end of sortedArgs
+    //     |                constants                 |
+    //     +------------------------------------------+
+    //     |          local var / local field         |
+    //     +------------------------------------------+
+    //     |    remaining arguments sorted by cost    |
+    //     +------------------------------------------+
+    //     | temps (CallArg::m_evaluateEarly == true) |
+    //     +------------------------------------------+
+    //     |        args with calls (GTF_CALL)        |
+    //     +------------------------------------------+  <--- start of sortedArgs
     //
 
     unsigned argCount = 0;
@@ -1771,13 +1771,13 @@ void CallArgs::EvalArgsEarly(Compiler* comp, GenTreeCall* call)
 #endif
             }
         }
-        else // curArgTabEntry->needTmp == false
+        else
         {
             //   On x86 -
-            //      Only register args are replaced with placeholder nodes
+            //      Only register args are are moved to late nodes
             //      and the stack based arguments are evaluated and pushed in order.
             //
-            //   On Arm/x64 - When needTmp is false and needPlace is false,
+            //   On Arm/x64 - When evaluateEarly is false and needPlace is false,
             //      the non-register arguments are evaluated and stored in order.
             //      When needPlace is true we have a nested call that comes after
             //      this argument so we have to replace it in the gtCallArgs list

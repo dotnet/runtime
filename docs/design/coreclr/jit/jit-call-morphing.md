@@ -27,11 +27,13 @@ new LclVar to preserve the order of evaluation rule.
 Each argument is an arbitrary expression tree.  The JIT tracks a summary of observable side-effects
 using a set of five bit flags in every GenTree node: `GTF_ASG`, `GTF_CALL`, `GTF_EXCEPT`, `GTF_GLOB_REF`,
 and `GTF_ORDER_SIDEEFF`.  These flags are propagated up the tree so that the top node has a particular
-flag set if any of its child nodes has the flag set.  Decisions about whether to evaluate arguments
-into temp LclVars are made by examining these flags on each of the arguments.
+flag set if any of its child nodes has the flag set.  Decisions about whether we need to take special
+case to evaluate arguments in order are made by examining these flags on each of the arguments.
+Typically, evaluating an argument early means creating a temporary local and assigning it as part of
+the early list in the GenTreeCall node.
 
 
-*Our design goal for call sites is to create a few temp LclVars as possible, while preserving the
+*Our design goal for call sites is to create as few temp LclVars as possible, while preserving the
 order of evaluation rules of IL and C#.*
 
 
@@ -77,7 +79,7 @@ them there while pushing some new arguments for a nested call.  Thus we allow ne
 calls for x86 but do not allow them for the other architectures.
 
 
-Rules for when Arguments must be evaluated into temp LclVars
+Rules for when Arguments must be evaluated early
 -----------------
 
 During the first Morph phase known as global Morph we call `CallArgs::ArgsComplete()`
@@ -85,19 +87,19 @@ after we have completed determining ABI information for each arg. This method ap
 the following rules:
 
 1. When an argument is marked as containing an assignment using `GTF_ASG`, then we
-force all previous non-constant arguments to be evaluated into temps.  This is very
+force all previous non-constant arguments to be evaluated early.  This is very
 conservative, but at this phase of the JIT it is rare to have an assignment subtree
 as part of an argument.
 2. When an argument is marked as containing a call using the `GTF_CALL` flag, then
 we force that argument and any previous argument that is marked with any of the
-`GTF_ALL_EFFECT` flags into temps.
+`GTF_ALL_EFFECT` flags to be evaluated early.
 	* Additionally, for `FEATURE_FIXED_OUT_ARGS`, any previous stack based args that
-    we haven't marked as needing a temp but still need to store in the outgoing args
-    area is marked as needing a placeholder temp using `needPlace`.
-3. We force any arguments that use `localloc` to be evaluated into temps.
+    we haven't marked as needing early evaluating but still need to store in the outgoing
+    args area is marked as needing a placeholder temp using `needPlace`.
+3. We force any arguments that use `localloc` to be evaluated early.
 4. We mark any address taken locals with the `GTF_GLOB_REF` flag. For two special
-cases we call `SetNeedsTemp()` and set up the temp in `fgMorphArgs`. `SetNeedsTemp`
-records the tmpNum used and sets `isTmp` so that we handle it like the other temps.
+cases we call `CallArgs::SetTemp()` and set up the temp earlier in `fgMorphArgs`.
+`CallArgs::SetTemp` records the tmpNum used and sets `isTmp` so that we handle it like the other temps.
 The special cases are for `GT_MKREFANY` and for a `TYP_STRUCT` argument passed by
 value when we can't optimize away the extra copy.
 
@@ -120,13 +122,13 @@ LclFlds and put them before the constant args.
 to the least complex.
 
 
-Evaluating Args into new LclVar temps and the creation of the LateArgs
+Evaluating Args early and the creation of the LateArgs
 -----------------
 
-After calling `SortArgs()`, the `EvalArgsToTemps()` method is called to create
+After calling `SortArgs()`, the `EvalArgsEarly()` method is called to create
 the temp assignments and to populate the LateArgs list.
 
-For arguments that are marked as needing a temp:
+For arguments that are marked as evaluating early:
 -----------------
 
 1. We create an assignment using `gtNewTempAssign`. This assignment replaces
@@ -134,12 +136,15 @@ the original argument in the early argument list.  After we create the assignmen
 the argument is marked with `m_isTmp = true`.
 2. Arguments that are already marked with `m_isTmp` are treated similarly as
 above except we don't create an assignment for them.
-3. A `TYP_STRUCT` argument passed by value will have `m_isTmp` set to true
-and will use a `GT_COPYBLK` or a `GT_COPYOBJ` to perform the assignment of the temp.
-4. The assignment node or the CopyBlock node is referred to as `arg1 SETUP` in the JitDump.
+3. Some arguments may not need to have temps created, e.g. for a comma
+with an invariant effective value but side effects in it. The side effects may
+extracted directly to the setup node and the invariant node put in the late arg list.
+4. A `TYP_STRUCT` argument passed by value will have `m_isTmp` set to true
+and will use a block copy to perform the assignment of the temp.
+5. The store or the CopyBlock node is referred to as `arg1 SETUP` in the JitDump.
 
 
-For arguments that are marked as not needing a temp:
+For arguments that are marked as not requiring early evaluation:
 -----------------
 
 1. If this is an argument that is passed in a register, then the existing
@@ -152,6 +157,6 @@ evaluated directly into the outgoing arg area or pushed on the stack.
 After the Call node is fully morphed the LateArgs list will contain the arguments
 passed in registers as well as additional ones for `m_needPlace` marked
 arguments whenever we have a nested call for a stack based argument.
-When `m_needTmp` is true the LateArg will be a LclVar that was created
-to evaluate the arg (single-def/single-use).  When `m_needTmp` is false
-the LateArg can be an arbitrary expression tree.
+When `m_evaluateEarly` is true the LateArg will be a LclVar that was created
+to evaluate the arg (single-def/single-use) or a simple invariant tree.
+When `m_evaluateEarly` is false the LateArg can be an arbitrary expression tree.
