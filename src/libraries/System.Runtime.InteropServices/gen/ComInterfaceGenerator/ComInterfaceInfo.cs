@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -68,17 +67,14 @@ namespace Microsoft.Interop
         private static bool IsInPartialContext(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, [NotNullWhen(false)] out DiagnosticInfo? diagnostic)
         {
             // Verify that the types the interface is declared in are marked partial.
-            for (SyntaxNode? parentNode = syntax; parentNode is TypeDeclarationSyntax typeDecl; parentNode = parentNode.Parent)
+            if (!syntax.IsInPartialContext(out var nonPartialIdentifier))
             {
-                if (!typeDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
-                {
-                    diagnostic = DiagnosticInfo.Create(
-                            GeneratorDiagnostics.InvalidAttributedInterfaceMissingPartialModifiers,
-                            syntax.Identifier.GetLocation(),
-                            symbol.Name,
-                            typeDecl.Identifier);
-                    return false;
-                }
+                diagnostic = DiagnosticInfo.Create(
+                        GeneratorDiagnostics.InvalidAttributedInterfaceMissingPartialModifiers,
+                        syntax.Identifier.GetLocation(),
+                        symbol.Name,
+                        nonPartialIdentifier);
+                return false;
             }
             diagnostic = null;
             return true;

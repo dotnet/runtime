@@ -31,6 +31,7 @@ namespace Microsoft.Interop
 
         private const string Category = "ComInterfaceGenerator";
 
+        /// <inheritdoc cref="SR.RequiresAllowUnsafeBlocksMessage"/>
         public static readonly DiagnosticDescriptor RequiresAllowUnsafeBlocks =
             new DiagnosticDescriptor(
                 Ids.RequiresAllowUnsafeBlocks,
@@ -326,6 +327,18 @@ namespace Microsoft.Interop
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.InterfaceTypeNotSupportedMessage)));
+
+        /// <inheritdoc cref="SR.ClassDoesNotImplementAnyGeneratedComInterfacesMessage"/>
+        public static readonly DiagnosticDescriptor ClassDoesNotImplementAnyGeneratedComInterface =
+            new DiagnosticDescriptor(
+                Ids.InvalidGeneratedComClassAttributeUsage,
+                GetResourceString(nameof(SR.InvalidGeneratedComClassAttributeUsageTitle)),
+                GetResourceString(nameof(SR.ClassDoesNotImplementAnyGeneratedComInterfacesMessage)),
+                Category,
+                DiagnosticSeverity.Warning,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.ClassDoesNotImplementAnyGeneratedComInterfacesDescription)));
+
 
         private readonly List<DiagnosticInfo> _diagnostics = new List<DiagnosticInfo>();
 

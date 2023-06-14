@@ -72,6 +72,16 @@
         <target state="new">Casting between a 'ComImport' type and a source-generated COM type is not supported</target>
         <note />
       </trans-unit>
+      <trans-unit id="ClassDoesNotImplementAnyGeneratedComInterfacesDescription">
+        <source>A class with 'GeneratedComClassAttribute' must implement at least one interface with 'GeneratedComInterfaceAttribute' or else the generated code with not have an effect.</source>
+        <target state="new">A class with 'GeneratedComClassAttribute' must implement at least one interface with 'GeneratedComInterfaceAttribute' or else the generated code with not have an effect.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClassDoesNotImplementAnyGeneratedComInterfacesMessage">
+        <source>Class '{0}' with 'GeneratedComClassAttribute' does not implement any interfaces with 'GeneratedComInterfaceAttribute'. Source will not be generated for '{0}'.</source>
+        <target state="new">Class '{0}' with 'GeneratedComClassAttribute' does not implement any interfaces with 'GeneratedComInterfaceAttribute'. Source will not be generated for '{0}'.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceDescription">
         <source>.NET COM hosting with 'EnableComHosting' only supports built-in COM interop. It does not support source-generated COM interop with 'GeneratedComInterfaceAttribute'.</source>
         <target state="new">.NET COM hosting with 'EnableComHosting' only supports built-in COM interop. It does not support source-generated COM interop with 'GeneratedComInterfaceAttribute'.</target>
@@ -218,8 +228,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComClassAttributeUsageMissingPartialModifier">
-        <source>Class '{0}' or one of its containing types is not marked 'partial'.</source>
-        <target state="new">Class '{0}' or one of its containing types is not marked 'partial'.</target>
+        <source>Class '{0}' with 'GeneratedComClassAttribute' or one of its containing types is not marked 'partial'.</source>
+        <target state="new">Class '{0}' with 'GeneratedComClassAttribute' or one of its containing types is not marked 'partial'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComClassAttributeUsageTitle">
@@ -313,18 +323,18 @@
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescription">
-        <source>GeneratedComInterfaceAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
-        <target state="new">GeneratedComInterfaceAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</target>
+        <source>'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
+        <target state="new">'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksMessage">
-        <source>GeneratedComInterfaceAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
-        <target state="new">GeneratedComInterfaceAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</target>
+        <source>'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
+        <target state="new">'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksTitle">
-        <source>GeneratedComInterfaceAttribute requires unsafe code.</source>
-        <target state="new">GeneratedComInterfaceAttribute requires unsafe code.</target>
+        <source>'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code.</source>
+        <target state="new">'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code.</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComDescription">

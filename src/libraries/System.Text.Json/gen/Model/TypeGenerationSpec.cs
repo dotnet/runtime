@@ -93,6 +93,11 @@ namespace System.Text.Json.SourceGeneration
                 return false;
             }
 
+            if (JsonHelpers.RequiresSpecialNumberHandlingOnWrite(NumberHandling))
+            {
+                return false;
+            }
+
             switch (ClassType)
             {
                 case ClassType.Object:
@@ -104,8 +109,7 @@ namespace System.Text.Json.SourceGeneration
                     foreach (PropertyGenerationSpec property in PropertyGenSpecs)
                     {
                         if (property.PropertyType.SpecialType is SpecialType.System_Object ||
-                            property.NumberHandling is JsonNumberHandling.AllowNamedFloatingPointLiterals
-                                                    or JsonNumberHandling.WriteAsString ||
+                            property.NumberHandling != null ||
                             property.ConverterType != null)
                         {
                             return false;
