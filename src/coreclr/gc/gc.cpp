@@ -25991,8 +25991,8 @@ BOOL gc_heap::background_mark (uint8_t* o, uint8_t* low, uint8_t* high)
         {                                                                   \
             for (ptrdiff_t __i = 0; __i > cnt; __i--)                         \
             {                                                               \
-                HALF_SIZE_T skip =  cur->val_serie[__i].skip;               \
-                HALF_SIZE_T nptrs = cur->val_serie[__i].nptrs;              \
+                HALF_SIZE_T skip =  (cur->val_serie + __i)->skip;           \
+                HALF_SIZE_T nptrs = (cur->val_serie + __i)->nptrs;          \
                 uint8_t** ppstop = parm + nptrs;                            \
                 if (!start_useful || (uint8_t*)ppstop > (start))            \
                 {                                                           \
