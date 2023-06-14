@@ -3017,7 +3017,7 @@ const size_t uninitialized_end_gen0_region_space = (size_t)(-1);
 #endif //USE_REGIONS
 
 // budget smoothing
-size_t     gc_heap::smoothed_desired_per_heap[total_generation_count];
+size_t     gc_heap::smoothed_desired_total[total_generation_count];
 /* end of static initialization */
 
 // This is for methods that need to iterate through all SOH heap segments/regions.
@@ -21891,10 +21891,25 @@ size_t gc_heap::exponential_smoothing (int gen, size_t collection_count, size_t 
     // apply some smoothing.
     size_t smoothing = min(3, collection_count);
 
-    size_t new_smoothed_desired_per_heap = desired_per_heap / smoothing + ((smoothed_desired_per_heap[gen] / smoothing) * (smoothing - 1));
+    size_t desired_total = desired_per_heap * n_heaps;
+    size_t new_smoothed_desired_total = desired_total / smoothing + ((smoothed_desired_total[gen] / smoothing) * (smoothing - 1));
+    smoothed_desired_total[gen] = new_smoothed_desired_total;
+    size_t new_smoothed_desired_per_heap = new_smoothed_desired_total / n_heaps;
+
+    // make sure we have at least dd_min_size
+#ifdef MULTIPLE_HEAPS
+    gc_heap* hp = g_heaps[0];
+#else //MULTIPLE_HEAPS
+    gc_heap* hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+    dynamic_data* dd = hp->dynamic_data_of (gen);
+    new_smoothed_desired_per_heap = max (new_smoothed_desired_per_heap, dd_min_size (dd));
+
+    // align properly
+    new_smoothed_desired_per_heap = Align (new_smoothed_desired_per_heap, get_alignment_constant (gen <= soh_gen2));
     dprintf (2, ("new smoothed_desired_per_heap for gen %d = %zd, desired_per_heap = %zd", gen, new_smoothed_desired_per_heap, desired_per_heap));
-    smoothed_desired_per_heap[gen] = new_smoothed_desired_per_heap;
-    return Align (smoothed_desired_per_heap[gen], get_alignment_constant (gen <= soh_gen2));
+
+    return new_smoothed_desired_per_heap;
 }
 
 //internal part of gc used by the serial and concurrent version
@@ -25976,8 +25991,8 @@ BOOL gc_heap::background_mark (uint8_t* o, uint8_t* low, uint8_t* high)
         {                                                                   \
             for (ptrdiff_t __i = 0; __i > cnt; __i--)                         \
             {                                                               \
-                HALF_SIZE_T skip =  (cur->val_serie + __i)->skip;           \
-                HALF_SIZE_T nptrs = (cur->val_serie + __i)->nptrs;          \
+                HALF_SIZE_T skip =  cur->val_serie[__i].skip;               \
+                HALF_SIZE_T nptrs = cur->val_serie[__i].nptrs;              \
                 uint8_t** ppstop = parm + nptrs;                            \
                 if (!start_useful || (uint8_t*)ppstop > (start))            \
                 {                                                           \
@@ -42682,7 +42697,7 @@ bool gc_heap::init_dynamic_data()
     if (heap_number == 0)
     {
         process_start_time = now;
-        smoothed_desired_per_heap[0] = dynamic_data_of (0)->min_size;
+        smoothed_desired_total[0] = dynamic_data_of (0)->min_size * n_heaps;
 #ifdef HEAP_BALANCE_INSTRUMENTATION
         last_gc_end_time_us = now;
         dprintf (HEAP_BALANCE_LOG, ("qpf=%zd, start: %zd(%d)", qpf, start_raw_ts, now));
@@ -48162,6 +48177,7 @@ HRESULT GCHeap::Initialize()
         if (GCConfig::GetHeapCount() == 0 && GCConfig::GetGCDynamicAdaptationMode() == 1)
         {
             // ... start with only 1 heap
+            gc_heap::smoothed_desired_total[0] /= gc_heap::n_heaps;
             gc_heap::g_heaps[0]->change_heap_count (1);
         }
 #endif //DYNAMIC_HEAP_COUNT
