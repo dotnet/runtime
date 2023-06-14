@@ -1468,7 +1468,7 @@ CallArgs::CallArgs()
     , m_hasRegArgs(false)
     , m_hasStackArgs(false)
     , m_argsComplete(false)
-    , m_needsTemps(false)
+    , m_needsEarlyEvaluation(false)
 #ifdef UNIX_X86_ABI
     , m_alignmentDone(false)
 #endif
@@ -9296,7 +9296,7 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
     m_hasRegArgs               = other->m_hasRegArgs;
     m_hasStackArgs             = other->m_hasStackArgs;
     m_argsComplete             = other->m_argsComplete;
-    m_needsTemps               = other->m_needsTemps;
+    m_needsEarlyEvaluation     = other->m_needsEarlyEvaluation;
 
     // Unix x86 flags related to stack alignment intentionally not copied as
     // they depend on where the call will be inserted.
@@ -9311,7 +9311,7 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
         carg->m_tmpNum          = arg.m_tmpNum;
         carg->m_signatureType   = arg.m_signatureType;
         carg->m_wellKnownArg    = arg.m_wellKnownArg;
-        carg->m_needTmp         = arg.m_needTmp;
+        carg->m_evaluateEarly   = arg.m_evaluateEarly;
         carg->m_needPlace       = arg.m_needPlace;
         carg->m_isTmp           = arg.m_isTmp;
         carg->m_processed       = arg.m_processed;

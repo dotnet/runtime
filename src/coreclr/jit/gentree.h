@@ -4571,8 +4571,9 @@ class CallArg
     var_types m_signatureType : 5;
     // The type of well-known argument this is.
     WellKnownArg m_wellKnownArg : 5;
-    // True when we force this argument's evaluation into a temp LclVar.
-    bool m_needTmp : 1;
+    // True if this argument needs to be evaluated in the early list (usually
+    // by introducing a copy into a temp LclVar).
+    bool m_evaluateEarly : 1;
     // True when we must replace this argument with a placeholder node.
     bool m_needPlace : 1;
     // True when we setup a temp LclVar for this argument.
@@ -4590,7 +4591,7 @@ private:
         , m_tmpNum(BAD_VAR_NUM)
         , m_signatureType(TYP_UNDEF)
         , m_wellKnownArg(WellKnownArg::None)
-        , m_needTmp(false)
+        , m_evaluateEarly(false)
         , m_needPlace(false)
         , m_isTmp(false)
         , m_processed(false)
@@ -4679,8 +4680,8 @@ class CallArgs
     // True if we have one or more stack arguments.
     bool m_hasStackArgs : 1;
     bool m_argsComplete : 1;
-    // One or more arguments must be copied to a temp by EvalArgsToTemps.
-    bool m_needsTemps : 1;
+    // One or more arguments must be evaluated early by EvalArgsEarly.
+    bool m_needsEarlyEvaluation : 1;
 #ifdef UNIX_X86_ABI
     // Updateable flag, set to 'true' after we've done any required alignment.
     bool m_alignmentDone : 1;
@@ -4736,8 +4737,8 @@ public:
     void AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call);
 
     void ArgsComplete(Compiler* comp, GenTreeCall* call);
-    void EvalArgsToTemps(Compiler* comp, GenTreeCall* call);
-    void SetNeedsTemp(CallArg* arg);
+    void EvalArgsEarly(Compiler* comp, GenTreeCall* call);
+    void SetEvaluateEarly(CallArg* arg);
     bool IsNonStandard(Compiler* comp, GenTreeCall* call, CallArg* arg);
 
     GenTree* MakeTmpArgNode(Compiler* comp, CallArg* arg);
@@ -4753,7 +4754,7 @@ public:
     bool AreArgsComplete() const { return m_argsComplete; }
     bool HasRegArgs() const { return m_hasRegArgs; }
     bool HasStackArgs() const { return m_hasStackArgs; }
-    bool NeedsTemps() const { return m_needsTemps; }
+    bool NeedsEarlyEvaluation() const { return m_needsEarlyEvaluation; }
 
 #ifdef UNIX_X86_ABI
     void ComputeStackAlignment(unsigned curStackLevelInBytes)

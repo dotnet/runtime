@@ -767,9 +767,9 @@ void CallArg::Dump(Compiler* comp)
     {
         printf(", isSplit");
     }
-    if (m_needTmp)
+    if (m_evaluateEarly)
     {
-        printf(", tmpNum=V%02u", m_tmpNum);
+        printf(", evaluateEarly", m_tmpNum);
     }
     if (m_needPlace)
     {
@@ -778,6 +778,7 @@ void CallArg::Dump(Compiler* comp)
     if (m_isTmp)
     {
         printf(", isTmp");
+        printf(", tmpNum=V%02u", m_tmpNum);
     }
     if (m_processed)
     {
@@ -917,7 +918,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
             // for FEATURE_FIXED_OUT_ARGS.
             if (canEvalToTemp && ((argCount > 1) || argx->OperIsCopyBlkOp() || (FEATURE_FIXED_OUT_ARGS && arg.m_isTmp)))
             {
-                SetNeedsTemp(&arg);
+                SetEvaluateEarly(&arg);
             }
             else
             {
@@ -944,7 +945,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 
                 if ((prevArg.GetEarlyNode() != nullptr) && !prevArg.GetEarlyNode()->IsInvariant())
                 {
-                    SetNeedsTemp(&prevArg);
+                    SetEvaluateEarly(&prevArg);
                 }
             }
         }
@@ -996,12 +997,12 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
             {
                 if (argCount > 1) // If this is not the only argument
                 {
-                    SetNeedsTemp(&arg);
+                    SetEvaluateEarly(&arg);
                 }
                 else if (varTypeIsFloating(argx->TypeGet()) && (argx->OperGet() == GT_CALL))
                 {
                     // Spill all arguments that are floating point calls
-                    SetNeedsTemp(&arg);
+                    SetEvaluateEarly(&arg);
                 }
             }
 
@@ -1026,7 +1027,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 //  we require that they be evaluated into a temp
                 if ((prevArg.GetEarlyNode() != nullptr) && ((prevArg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT) != 0))
                 {
-                    SetNeedsTemp(&prevArg);
+                    SetEvaluateEarly(&prevArg);
                 }
 #if FEATURE_FIXED_OUT_ARGS
                 // Or, if they are stored into the FIXED_OUT_ARG area
@@ -1093,7 +1094,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                         if ((prevArg.GetEarlyNode() != nullptr) &&
                             ((prevArg.GetEarlyNode()->gtFlags & GTF_EXCEPT) != 0))
                         {
-                            SetNeedsTemp(&prevArg);
+                            SetEvaluateEarly(&prevArg);
                         }
                     }
                 }
@@ -1115,12 +1116,12 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 if ((argx->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0)
                 {
                     // Spill multireg struct arguments that have Assignments or Calls embedded in them.
-                    SetNeedsTemp(&arg);
+                    SetEvaluateEarly(&arg);
                 }
                 else if (!argx->OperIsLocalRead() && !argx->OperIsIndir())
                 {
                     // TODO-CQ: handle HWI/SIMD/COMMA nodes in multi-reg morphing.
-                    SetNeedsTemp(&arg);
+                    SetEvaluateEarly(&arg);
                 }
                 else
                 {
@@ -1130,7 +1131,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     if (argx->GetCostEx() > (6 * IND_COST_EX))
                     {
                         // Spill multireg struct arguments that are expensive to evaluate twice.
-                        SetNeedsTemp(&arg);
+                        SetEvaluateEarly(&arg);
                     }
                 }
             }
@@ -1153,7 +1154,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     if (!arg.AbiInfo.IsSplit() || (structSize <= 16))
 #endif // TARGET_ARM
                     {
-                        SetNeedsTemp(&arg);
+                        SetEvaluateEarly(&arg);
                     }
                 }
             }
@@ -1191,7 +1192,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 
             // Examine the register args that are currently not marked needTmp
             //
-            if (!arg.m_needTmp && (arg.AbiInfo.GetRegNum() != REG_STK))
+            if (!arg.m_evaluateEarly && (arg.AbiInfo.GetRegNum() != REG_STK))
             {
                 if (hasStackArgsWeCareAbout)
                 {
@@ -1204,7 +1205,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     //
                     if (argx->gtFlags & GTF_EXCEPT)
                     {
-                        SetNeedsTemp(&arg);
+                        SetEvaluateEarly(&arg);
                         continue;
                     }
 #else
@@ -1216,7 +1217,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 
                         if (comp->gtTreeContainsOper(argx, GT_LCLHEAP))
                         {
-                            SetNeedsTemp(&arg);
+                            SetEvaluateEarly(&arg);
                             continue;
                         }
                     }
@@ -1235,13 +1236,13 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
     {
         // Always evaluate 'this' to temp.
         assert(HasThisPointer());
-        SetNeedsTemp(GetThisArg());
+        SetEvaluateEarly(GetThisArg());
 
         for (CallArg& arg : EarlyArgs())
         {
             if ((arg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT) != 0)
             {
-                SetNeedsTemp(&arg);
+                SetEvaluateEarly(&arg);
             }
         }
     }
@@ -1397,7 +1398,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
             //
             if (!arg->m_processed)
             {
-                if (arg->m_needTmp)
+                if (arg->m_evaluateEarly)
                 {
                     arg->m_processed = true;
 
@@ -1589,7 +1590,8 @@ GenTree* CallArgs::MakeTmpArgNode(Compiler* comp, CallArg* arg)
 }
 
 //------------------------------------------------------------------------------
-// EvalArgsToTemps: Handle arguments that were marked as requiring temps.
+// EvalArgsEarly: Handle arguments that were marked as needing to be evaluated
+// early.
 //
 // Remarks:
 //   This is the main function responsible for assigning late nodes in arguments.
@@ -1613,7 +1615,7 @@ GenTree* CallArgs::MakeTmpArgNode(Compiler* comp, CallArg* arg)
 //        Arguments that are passed on stack and that do not need an explicit
 //        assignment in the early node list do not require any late node.
 //
-void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
+void CallArgs::EvalArgsEarly(Compiler* comp, GenTreeCall* call)
 {
     CallArg*  inlineTable[32];
     size_t    numArgs = call->gtArgs.CountArgs();
@@ -1640,19 +1642,31 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
         assert(!arg.m_needPlace);
 
         // On x86 and other archs that use push instructions to pass arguments:
-        //   Only the register arguments need to be replaced with placeholder nodes.
-        //   Stacked arguments are evaluated and pushed (or stored into the stack) in order.
+        //   Only the register arguments need to be handled by this logic.
+        //   Stack arguments are evaluated and pushed (or stored into the stack) in order.
         //
         if (arg.AbiInfo.GetRegNum() == REG_STK)
             continue;
 #endif
 
-        if (arg.m_needTmp)
+        if (arg.m_evaluateEarly)
         {
             if (arg.m_isTmp)
             {
                 // Create a copy of the temp to go into the late argument list
                 defArg = MakeTmpArgNode(comp, &arg);
+            }
+            // We may have marked the arg as "evaluate early" because of a
+            // comma, but if the effective node is invariant we can skip
+            // creating the temp as an optimization but still extract the side
+            // effects as the setup to ensure correct ordering.
+            else if (comp->opts.OptimizationEnabled() && argx->gtEffectiveVal()->IsInvariant())
+            {
+                defArg = argx->gtEffectiveVal();
+                comp->gtExtractSideEffList(argx, &setupArg);
+
+                // Reset it here and update it to the new setupArg below if non-null.
+                arg.SetEarlyNode(nullptr);
             }
             else
             {
@@ -1839,12 +1853,13 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------------
-// SetNeedsTemp: Set the specified argument as requiring evaluation into a temp.
+// SetEvaluateEarly: Set the specified argument as requiring early evaluation
+// (usually copying it into a temp).
 //
-void CallArgs::SetNeedsTemp(CallArg* arg)
+void CallArgs::SetEvaluateEarly(CallArg* arg)
 {
-    arg->m_needTmp = true;
-    m_needsTemps   = true;
+    arg->m_evaluateEarly   = true;
+    m_needsEarlyEvaluation = true;
 }
 
 //------------------------------------------------------------------------------
@@ -3153,7 +3168,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             // up.
             if (!reMorphing && call->IsExpandedEarly() && call->IsVirtualVtable() && !argx->OperIsLocal())
             {
-                call->gtArgs.SetNeedsTemp(&arg);
+                call->gtArgs.SetEvaluateEarly(&arg);
             }
         }
 
@@ -3478,10 +3493,10 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     // If we are remorphing or don't have any register arguments or other arguments that need
     // temps, then we don't need to call SortArgs() and EvalArgsToTemps().
     //
-    if (!reMorphing && (call->gtArgs.HasRegArgs() || call->gtArgs.NeedsTemps()))
+    if (!reMorphing && (call->gtArgs.HasRegArgs() || call->gtArgs.NeedsEarlyEvaluation()))
     {
         // Do the 'defer or eval to temp' analysis.
-        call->gtArgs.EvalArgsToTemps(this, call);
+        call->gtArgs.EvalArgsEarly(this, call);
     }
 
     if (hasMultiregStructArgs)
@@ -3929,14 +3944,21 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     //
     if (opts.OptimizationEnabled() && arg->AbiInfo.PassedByRef)
     {
+        GenTree** effectiveUse = &arg->EarlyNodeRef();
+        while ((*effectiveUse)->OperIs(GT_COMMA))
+        {
+            effectiveUse = &(*effectiveUse)->AsOp()->gtOp2;
+        }
+        GenTree* effectiveArg = *effectiveUse;
+
         GenTree*             implicitByRefLclAddr;
         GenTreeLclVarCommon* implicitByRefLcl =
-            argx->IsImplicitByrefParameterValuePostMorph(this, &implicitByRefLclAddr);
+            effectiveArg->IsImplicitByrefParameterValuePostMorph(this, &implicitByRefLclAddr);
 
         GenTreeLclVarCommon* lcl = implicitByRefLcl;
-        if ((lcl == nullptr) && argx->OperIsLocal())
+        if ((lcl == nullptr) && effectiveArg->OperIsLocal())
         {
-            lcl = argx->AsLclVarCommon();
+            lcl = effectiveArg->AsLclVarCommon();
         }
 
         if (lcl != nullptr)
@@ -3967,7 +3989,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
             {
                 if (implicitByRefLcl != nullptr)
                 {
-                    arg->SetEarlyNode(implicitByRefLclAddr);
+                    *effectiveUse = implicitByRefLclAddr;
                 }
                 else
                 {
@@ -3990,6 +4012,12 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
                     // at that point, which first requires ABI determination to
                     // be moved earlier.
                     fgRemarkGlobalUses = true;
+                }
+
+                // If the arg was a comma then make sure we retype the whole comma chain.
+                if (argx->OperIs(GT_COMMA))
+                {
+                    argx->ChangeType((*effectiveUse)->TypeGet());
                 }
 
                 JITDUMP("did not need to make outgoing copy for last use of V%02d\n", varNum);
@@ -7927,13 +7955,11 @@ GenTree* Compiler::fgExpandVirtualVtableCallTarget(GenTreeCall* call)
 
     // fgMorphArgs must enforce this invariant by creating a temp
     //
-    assert(thisPtr->OperIsLocal());
+    assert(thisPtr->OperIsLocal() || thisPtr->IsInvariant());
 
     // Make a copy of the thisPtr by cloning
     //
-    thisPtr = gtClone(thisPtr, true);
-
-    noway_assert(thisPtr != nullptr);
+    thisPtr = gtCloneExpr(thisPtr);
 
     // Get hold of the vtable offset
     unsigned vtabOffsOfIndirection;
