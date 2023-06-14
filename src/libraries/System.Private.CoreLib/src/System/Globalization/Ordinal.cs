@@ -70,7 +70,7 @@ namespace System.Globalization
                 return InvariantModeCasing.CompareStringIgnoreCase(ref strA, lengthA, ref strB, lengthB);
             }
 
-#if TARGET_WINDOWS && ((WASM_BUILD_NATIVE && ICU_OR_NLS_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
+#if TARGET_WINDOWS && ICU_OR_NLS_GLOBALIZATION
             if (GlobalizationMode.UseNls)
             {
                 return CompareInfo.NlsCompareStringOrdinalIgnoreCase(ref strA, lengthA, ref strB, lengthB);
@@ -307,7 +307,7 @@ namespace System.Globalization
                 return InvariantModeCasing.IndexOfIgnoreCase(source, value);
             }
 
-#if TARGET_WINDOWS && ((WASM_BUILD_NATIVE && ICU_OR_NLS_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
+#if TARGET_WINDOWS && ICU_OR_NLS_GLOBALIZATION
             if (GlobalizationMode.UseNls)
             {
                 return CompareInfo.NlsIndexOfOrdinalCore(source, value, ignoreCase: true, fromBeginning: true);
@@ -599,7 +599,7 @@ namespace System.Globalization
                 return ignoreCase ? InvariantModeCasing.LastIndexOfIgnoreCase(source.AsSpan(startIndex, count), value) : LastIndexOf(source, value, startIndex, count);
             }
 
-#if TARGET_WINDOWS && ((WASM_BUILD_NATIVE && ICU_OR_NLS_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
+#if TARGET_WINDOWS && ICU_OR_NLS_GLOBALIZATION
             if (GlobalizationMode.UseNls)
             {
                 return CompareInfo.NlsLastIndexOfOrdinalCore(source, value, startIndex, count, ignoreCase);
@@ -656,7 +656,7 @@ namespace System.Globalization
                 return InvariantModeCasing.LastIndexOfIgnoreCase(source, value);
             }
 
-#if TARGET_WINDOWS && ((WASM_BUILD_NATIVE && ICU_OR_NLS_GLOBALIZATION) || (!WASM_BUILD_NATIVE))
+#if TARGET_WINDOWS && ICU_OR_NLS_GLOBALIZATION
             if (GlobalizationMode.UseNls)
             {
                 return CompareInfo.NlsIndexOfOrdinalCore(source, value, ignoreCase: true, fromBeginning: false);

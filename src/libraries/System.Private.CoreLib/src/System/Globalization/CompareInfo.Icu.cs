@@ -185,7 +185,7 @@ namespace System.Globalization
                 return -1;
 
             InteropCall:
-#if TARGET_BROWSER
+#if (HYBRID_GLOBALIZATION && TARGET_BROWSER)
                 if (GlobalizationMode.Hybrid)
                 {
                     int result = Interop.JsGlobalization.IndexOf(m_name, b, target.Length, a, source.Length, options, fromBeginning, out int exception, out object ex_result);
@@ -284,7 +284,7 @@ namespace System.Globalization
                 return -1;
 
             InteropCall:
-#if TARGET_BROWSER
+#if (HYBRID_GLOBALIZATION && TARGET_BROWSER)
                 if (GlobalizationMode.Hybrid)
                 {
                     int result = Interop.JsGlobalization.IndexOf(m_name, b, target.Length, a, source.Length, options, fromBeginning, out int exception, out object ex_result);

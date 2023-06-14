@@ -29,6 +29,11 @@
     <DefineConstants Condition="'$(Is64Bit)' != 'true'">$(DefineConstants);TARGET_32BIT</DefineConstants>
     <DefineConstants Condition="'$(Is64Bit)' == 'true'">$(DefineConstants);TARGET_64BIT</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup>    
+    <DefineConstants Condition="'$(HybridGlobalization)' == 'true'">$(DefineConstants);HYBRID_GLOBALIZATION</DefineConstants>
+    <DefineConstants Condition="'$(InvariantGlobalization)' == 'true'">$(DefineConstants);INVARIANT_GLOBALIZATION</DefineConstants>
+    <DefineConstants Condition="'$(InvariantGlobalization)' != 'true' AND '$(HybridGlobalization)' != 'true'">$(DefineConstants);ICU_OR_NLS_GLOBALIZATION</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup>
     <DefineConstants Condition="'$(TargetsUnix)' == 'true'">$(DefineConstants);TARGET_UNIX</DefineConstants>
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);TARGET_WINDOWS</DefineConstants>
