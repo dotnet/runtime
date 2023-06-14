@@ -408,6 +408,11 @@ namespace System.Reflection.Metadata
 
                 Assert.True ((addedEventToken & 0x00ffffff) < 4);
                 
+                fi = x2.GetType().GetField("AddedDateTime");
+                Assert.NotNull(fi);
+                var dt = DateTime.Now;
+                fi.SetValue(x2, dt);
+                Assert.Equal(dt, fi.GetValue(x2));
 
                 ApplyUpdateUtil.ApplyUpdate(assm);
 
@@ -418,6 +423,8 @@ namespace System.Reflection.Metadata
                 var addedSecondPropInfo = x2.GetType().GetProperty("AddedSecondProp");
                 var secondPropGetter = addedSecondPropInfo.GetGetMethod();
                 Assert.NotNull (secondPropGetter);
+
+                Assert.Equal(dt, x2.GetDateTime());
 
             });
         }
