@@ -163,6 +163,10 @@
                       Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.Ref.sfxproj"
                       Properties="@(_DefaultPropsForNuGetBuild, ';')"
                       Descriptor="Ref pack"/>
+      <_NuGetsToBuild Include="$(LibrariesShippingPackagesDir)Microsoft.NET.Runtime.WebAssembly.Sdk.$(PackageVersionForWorkloadManifests).nupkg"
+                      Project="$(RepoRoot)src\mono\nuget\Microsoft.NET.Runtime.WebAssembly.Sdk/Microsoft.NET.Runtime.WebAssembly.Sdk.pkgproj"
+                      Properties="@(_DefaultPropsForNuGetBuild, ';')"
+                      Descriptor="WebAssembly sdk pack"/>
     </ItemGroup>
   </Target>
 

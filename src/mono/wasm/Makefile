@@ -85,6 +85,16 @@ app-builder:
 build-tasks:
 	$(DOTNET) build $(TOP)/src/tasks/WasmBuildTasks $(MSBUILD_ARGS)
 
+rebuild-packs:
+	(cd $(TOP)/artifacts/packages/$(CONFIG)/Shipping/ && \
+		rm -f Microsoft.NET.Runtime.WebAssembly.Sdk.*nupkg; \
+		rm -f Microsoft.NET.Runtime.MonoTargets.Sdk.*nupkg; \
+		rm -f Microsoft.NET.Runtime.MonoAOTCompiler.Task.*nupkg; \
+		rm -f Microsoft.NET.Runtime.WebAssembly.Templates.*nupkg; \
+		rm -f Microsoft.NET.Sdk.WebAssembly.Pack.*nupkg; \
+		rm -f Microsoft.NET.Workload.Mono.ToolChain.*Manifest*nupkg)
+	EMSDK_PATH=$(EMSDK_PATH) $(TOP)/build.sh mono+mono.packages -os browser -c $(CONFIG) --binaryLog /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
+
 clean:
 	$(RM) -rf $(BUILDS_OBJ_DIR)
 
