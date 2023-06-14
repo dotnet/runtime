@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.Options
@@ -27,34 +28,5 @@ namespace Microsoft.Extensions.Options
         /// The options instance.
         /// </summary>
         public TOptions Value { get; }
-
-        /// <summary>
-        /// This method is retained only for compatibility.
-        /// </summary>
-        [Obsolete("This method is retained only for compatibility.", error: true)]
-        public void Add(string name, TOptions options)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// This method is retained only for compatibility.
-        /// </summary>
-        /// <param name="name">This parameter is ignored.</param>
-        /// <returns>The <see cref="Value"/>.</returns>
-        [Obsolete("This method is retained only for compatibility.", error: true)]
-        public TOptions Get(string name)
-        {
-            return Value;
-        }
-
-        /// <summary>
-        /// This method is retained only for compatibility.
-        /// </summary>
-        [Obsolete("This method is retained only for compatibility.", error: true)]
-        public bool Remove(string name)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

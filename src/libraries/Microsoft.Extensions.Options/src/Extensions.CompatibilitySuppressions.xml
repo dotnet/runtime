@@ -2,6 +2,27 @@
 <!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Microsoft.Extensions.Options.OptionsWrapper`1.Add(System.String,`0)</Target>
+    <Left>lib/netstandard2.0/Microsoft.Extensions.Options.dll</Left>
+    <Right>lib/netstandard2.0/Microsoft.Extensions.Options.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Microsoft.Extensions.Options.OptionsWrapper`1.Get(System.String)</Target>
+    <Left>lib/netstandard2.0/Microsoft.Extensions.Options.dll</Left>
+    <Right>lib/netstandard2.0/Microsoft.Extensions.Options.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Microsoft.Extensions.Options.OptionsWrapper`1.Remove(System.String)</Target>
+    <Left>lib/netstandard2.0/Microsoft.Extensions.Options.dll</Left>
+    <Right>lib/netstandard2.0/Microsoft.Extensions.Options.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
     <Target>M:Microsoft.Extensions.Options.OptionsWrapper`1.Add(System.String,`0):[T:System.ObsoleteAttribute]</Target>
     <Left>lib/netstandard2.0/Microsoft.Extensions.Options.dll</Left>
