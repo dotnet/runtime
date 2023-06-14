@@ -234,8 +234,6 @@ public sealed partial class QuicStream
     /// <returns>An asynchronous task that completes with the opened <see cref="QuicStream" />.</returns>
     internal ValueTask StartAsync(CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
-
         _startedTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken);
         {
             unsafe
