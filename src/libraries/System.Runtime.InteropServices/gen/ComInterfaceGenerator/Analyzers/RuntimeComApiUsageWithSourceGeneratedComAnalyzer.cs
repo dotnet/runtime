@@ -147,7 +147,7 @@ namespace Microsoft.Interop.Analyzers
                         {
                             // Some operations like the "null" literal expression don't have a type.
                             // These expressions definitely aren't a source-generated COM type, so we can skip them.
-                            continue;
+                            return;
                         }
                         foreach (var recognizer in sourceGeneratedComRecognizers)
                         {
