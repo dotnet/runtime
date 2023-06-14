@@ -152,7 +152,7 @@ namespace System.Runtime.InteropServices
                 }
             }
 
-            public WrappedObjectHolder? Holder
+            public ManagedObjectWrapperHolder? Holder
             {
                 get
                 {
@@ -160,7 +160,7 @@ namespace System.Runtime.InteropServices
                     if (handle == IntPtr.Zero)
                         return null;
                     else
-                        return Unsafe.As<WrappedObjectHolder>(GCHandle.FromIntPtr(handle).Target);
+                        return Unsafe.As<ManagedObjectWrapperHolder>(GCHandle.FromIntPtr(handle).Target);
                 }
             }
 
@@ -388,12 +388,12 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        internal unsafe class WrappedObjectHolder
+        internal unsafe class ManagedObjectWrapperHolder
         {
-            static WrappedObjectHolder()
+            static ManagedObjectWrapperHolder()
             {
                 delegate* unmanaged<IntPtr, bool> callback = &IsRootedCallback;
-                if (!RuntimeImports.RhRegisterRefCountedHandleCallback((nint)callback, typeof(WrappedObjectHolder).GetEEType()))
+                if (!RuntimeImports.RhRegisterRefCountedHandleCallback((nint)callback, typeof(ManagedObjectWrapperHolder).GetEEType()))
                 {
                     throw new OutOfMemoryException();
                 }
@@ -404,48 +404,44 @@ namespace System.Runtime.InteropServices
             {
                 // We are paused in the GC, so this is safe.
 #pragma warning disable CS8500 // Takes a pointer to a managed type
-                WrappedObjectHolder* holder = (WrappedObjectHolder*)&pObj;
+                ManagedObjectWrapperHolder* holder = (ManagedObjectWrapperHolder*)&pObj;
                 return holder->_wrapper->IsRooted;
 #pragma warning restore CS8500
             }
 
-            public object WrappedObject { get; }
-            private readonly ManagedObjectWrapper* _wrapper;
-
-            public WrappedObjectHolder(object wrappedObject, ManagedObjectWrapper* wrapper)
-            {
-                WrappedObject = wrappedObject;
-                _wrapper = wrapper;
-            }
-        }
-
-        internal unsafe class ManagedObjectWrapperHolder
-        {
             private ManagedObjectWrapper* _wrapper;
-            private DependentHandle _wrappedObject;
-            private bool _exposed;
+            private readonly ManagedObjectWrapperReleaser _releaser;
+            private readonly object _wrappedObject;
 
             public ManagedObjectWrapperHolder(ManagedObjectWrapper* wrapper, object wrappedObject)
             {
                 _wrapper = wrapper;
-                var wrappedObjectHolder = new WrappedObjectHolder(wrappedObject, _wrapper);
-                _wrappedObject = new DependentHandle(wrappedObject, wrappedObjectHolder);
-                _wrapper->HolderHandle = RuntimeImports.RhHandleAllocRefCounted(wrappedObjectHolder);
+                _wrappedObject = wrappedObject;
+                _releaser = new ManagedObjectWrapperReleaser(wrapper, wrappedObject);
+                _wrapper->HolderHandle = RuntimeImports.RhHandleAllocRefCounted(this);
             }
 
             public unsafe IntPtr ComIp => _wrapper->As(in ComWrappers.IID_IUnknown);
 
-            public uint AddRef(object wrappedObject)
+            public object WrappedObject => _wrappedObject;
+
+            public uint AddRef() => _wrapper->AddRef();
+        }
+
+        internal unsafe class ManagedObjectWrapperReleaser
+        {
+            private ManagedObjectWrapper* _wrapper;
+            private GCHandle _wrappedObject;
+
+            public ManagedObjectWrapperReleaser(ManagedObjectWrapper* wrapper, object wrappedObject)
             {
-                _exposed = true;
-                uint ret = _wrapper->AddRef();
-                GC.KeepAlive(this);
-                return ret;
+                _wrapper = wrapper;
+                _wrappedObject = GCHandle.Alloc(wrappedObject, GCHandleType.WeakTrackResurrection);
             }
 
-            ~ManagedObjectWrapperHolder()
+            ~ManagedObjectWrapperReleaser()
             {
-                if (_exposed && _wrappedObject.Target != null)
+                if (_wrappedObject.IsAllocated && _wrappedObject.Target != null)
                 {
                     // The wrapped object has not been fully collected, so it is still
                     // potentially reachable via the Conditional Weak Table.
@@ -459,7 +455,8 @@ namespace System.Runtime.InteropServices
                 {
                     NativeMemory.Free(_wrapper);
                     _wrapper = null;
-                    _wrappedObject.Dispose();
+                    if (_wrappedObject.IsAllocated)
+                        _wrappedObject.Free();
                 }
                 else
                 {
@@ -544,7 +541,7 @@ namespace System.Runtime.InteropServices
                 ManagedObjectWrapper* value = CreateCCW(c, flags);
                 return new ManagedObjectWrapperHolder(value, c);
             });
-            ccwValue.AddRef(instance);
+            ccwValue.AddRef();
             return ccwValue.ComIp;
         }
 
