@@ -841,6 +841,14 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level /* = CLASS_LOADED */)
         else
         {
             _ASSERTE(TypeFromToken(defToken) == mdtTypeDef);
+
+            bool foundResult = false;
+            if (!GetModule()->m_pTypeGenericInfoMap->HasConstraints(defToken, &foundResult) && foundResult)
+            {
+                m_numConstraints = 0;
+                return;
+            }
+
             TypeHandle genericType = LoadOwnerType();
             _ASSERTE(genericType.IsGenericTypeDefinition());
 

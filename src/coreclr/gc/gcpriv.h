@@ -2215,6 +2215,8 @@ private:
 
     PER_HEAP_METHOD bool should_move_heap (GCSpinLock* msl);
 
+    PER_HEAP_METHOD enter_msl_status enter_spin_lock_msl_helper (GCSpinLock* msl);
+
     PER_HEAP_METHOD enter_msl_status enter_spin_lock_msl (GCSpinLock* msl);
 
     PER_HEAP_METHOD size_t get_full_compact_gc_count();
@@ -3160,7 +3162,7 @@ private:
     PER_HEAP_ISOLATED_METHOD void grow_mark_list();
 
 #ifdef USE_REGIONS
-    PER_HEAP_METHOD uint8_t** get_region_mark_list (uint8_t* start, uint8_t* end, uint8_t*** mark_list_end);
+    PER_HEAP_METHOD uint8_t** get_region_mark_list (BOOL& use_mark_list, uint8_t* start, uint8_t* end, uint8_t*** mark_list_end);
 #endif //USE_REGIONS
 
 #ifdef BACKGROUND_GC
@@ -4244,13 +4246,21 @@ private:
         {
             uint64_t    elapsed_between_gcs;    // time between gcs in microseconds
             uint64_t    gc_elapsed_time;        // time the gc took
-            uint64_t    msl_wait_time;          // time the allocator spent waiting for the msl lock
+            uint64_t    soh_msl_wait_time;      // time the allocator spent waiting for the soh msl lock
+            uint64_t    uoh_msl_wait_time;      // time the allocator spent waiting for the uoh msl lock
             size_t      allocating_thread_count;// number of allocating threads
             size_t      heap_size;
         };
 
         unsigned        sample_index;
         sample          samples[sample_size];
+
+        float median_percent_overhead;          // estimated overhead of allocator + gc
+        float percent_heap_space_cost_per_heap; // percent space cost of adding a heap
+        float overhead_reduction_per_step_up;   // percentage effect on overhead of increasing heap count
+        float overhead_increase_per_step_down;  // percentage effect on overhead of decreasing heap count
+        float space_cost_increase_per_step_up;  // percentage effect on space of increasing heap count
+        float space_cost_decrease_per_step_down;// percentage effect on space of decreasing heap count
 
         int             new_n_heaps;
 #ifdef STRESS_DYNAMIC_HEAP_COUNT

@@ -219,8 +219,14 @@ SimdAsHWIntrinsicClassId SimdAsHWIntrinsicInfo::lookupClassId(Compiler*   comp,
                 }
 #endif // TARGET_XARCH
 
-                assert(vectorTByteLength == 16);
-                return SimdAsHWIntrinsicClassId::VectorT128;
+                if (vectorTByteLength == 16)
+                {
+                    return SimdAsHWIntrinsicClassId::VectorT128;
+                }
+                else
+                {
+                    return SimdAsHWIntrinsicClassId::Unknown;
+                }
             }
             break;
         }

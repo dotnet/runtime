@@ -299,7 +299,10 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                         JITDUMP(" Found Vector<%s>\n", varTypeName(JitType2PreciseVarType(simdBaseJitType)));
                         size = getVectorTByteLength();
 
-                        assert(size != 0);
+                        if (size == 0)
+                        {
+                            return CORINFO_TYPE_UNDEF;
+                        }
                         break;
                     }
 

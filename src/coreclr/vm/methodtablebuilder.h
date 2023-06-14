@@ -2485,8 +2485,7 @@ public:
     //
     static void
     CopyExactParentSlots(
-        MethodTable *pMT,
-        MethodTable *pApproxParentMT);
+        MethodTable *pMT);
 
     // --------------------------------------------------------------------------------------------
     // This is used at load time, using metadata-based comparisons. It returns the array of dispatch

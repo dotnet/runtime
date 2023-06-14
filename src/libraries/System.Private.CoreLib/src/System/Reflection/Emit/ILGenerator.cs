@@ -126,7 +126,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.NotSupported_OutputStreamUsingTypeBuilder);
             }
             parameterTypes[0] = cls;
-            MethodInfo? mi = typeof(System.IO.TextWriter).GetMethod("WriteLine", parameterTypes);
+            MethodInfo? mi = typeof(IO.TextWriter).GetMethod("WriteLine", parameterTypes);
             if (mi == null)
             {
                 throw new ArgumentException(SR.Argument_EmitWriteLineType, nameof(localBuilder));
@@ -163,7 +163,7 @@ namespace System.Reflection.Emit
                 throw new NotSupportedException(SR.NotSupported_OutputStreamUsingTypeBuilder);
             }
             parameterTypes[0] = cls;
-            MethodInfo? mi = typeof(System.IO.TextWriter).GetMethod("WriteLine", parameterTypes);
+            MethodInfo? mi = typeof(IO.TextWriter).GetMethod("WriteLine", parameterTypes);
             if (mi == null)
             {
                 throw new ArgumentException(SR.Argument_EmitWriteLineType, nameof(fld));
