@@ -11,7 +11,6 @@
 
 #ifdef TARGET_WINDOWS
 #include <windows.h>
-#include <Psapi.h>
 #else
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -92,32 +91,61 @@ extern char *__progname;
 const ep_char8_t *
 ep_rt_aot_entrypoint_assembly_name_get_utf8 (void) 
 {
+    // Although PalGetModuleFileName exists, non-windows implementation has issues and we use __progname for Linux.
+    // Cannot use __cpp_threadsafe_static_init feature since it will bring in the C++ runtime and need to use threadsafe way to initialize entrypoint_assembly_name
+    static const ep_char8_t * entrypoint_assembly_name = nullptr;
+    if (entrypoint_assembly_name == nullptr) {
+        const ep_char8_t * entrypoint_assembly_name_local;
 #ifdef HOST_WINDOWS
-    ep_char8_t *buffer = reinterpret_cast<ep_char8_t *>(malloc(MAX_PATH));
-    GetProcessImageFileNameA(GetCurrentProcess(), buffer, MAX_PATH);
-    char* process_name = (strrchr(buffer, '\\') + 1);
-    if (process_name != NULL)
-    {
-        char* extension = strrchr(process_name, '.');
-        if (extension != NULL)
-        {
-            *extension = '\0';
+        const TCHAR * wszModuleFileName = NULL;
+        if(PalGetModuleFileName(&wszModuleFileName, nullptr) == 0)
+            entrypoint_assembly_name_local = reinterpret_cast<const ep_char8_t*>("");
+        else {
+            const wchar_t* process_name = wcsrchr(wszModuleFileName, '\\');
+            if (process_name != NULL) {
+                const wchar_t* extension = wcschr(process_name + 1, '.');
+                if (extension != NULL) {
+                    // We don't want to include the first '\'
+                    size_t len = extension - (process_name + 1);
+                    wchar_t* process_name_wo_ext = reinterpret_cast<wchar_t *>(malloc(len + 1));
+                    wcsncpy(process_name_wo_ext, process_name + 1, len);
+                    process_name_wo_ext[len] = L'\0';
+                    const ep_char16_t* process_name_wo_ext_l = reinterpret_cast<const ep_char16_t *>(process_name_wo_ext);
+                    entrypoint_assembly_name_local = ep_rt_utf16_to_utf8_string(process_name_wo_ext_l, -1);
+                } else {
+                    const ep_char16_t* process_name_l = reinterpret_cast<const ep_char16_t *>(process_name + 1);
+                    entrypoint_assembly_name_local = ep_rt_utf16_to_utf8_string(process_name_l, -1);
+                }
+            }
+            else
+                entrypoint_assembly_name_local = reinterpret_cast<const ep_char8_t*>("");
         }
-        return reinterpret_cast<const ep_char8_t*>(process_name);
-    }
-    return reinterpret_cast<const ep_char8_t*>("");
 #else
 #if defined (__linux__)
-    char *process_name = __progname;
-    char *dot = strrchr(process_name, '.');
-    if (dot != NULL) {
-        *dot = '\0';
+        size_t program_len = strlen(__progname);
+        ep_char8_t *process_name =  reinterpret_cast<ep_char8_t *>(malloc(program_len + 1));
+        if (process_name == NULL)
+            entrypoint_assembly_name_local = reinterpret_cast<const ep_char8_t*>("");
+        else {
+            memcpy (process_name, __progname, program_len);
+            process_name[program_len] = '\0';
+            char *dot = strrchr(process_name, '.');
+            if (dot != NULL) {
+                *dot = '\0';
+        }
+        entrypoint_assembly_name_local = reinterpret_cast<const ep_char8_t*>(process_name);
     }
-    return reinterpret_cast<const ep_char8_t*>(process_name);
 #else
-    return reinterpret_cast<const ep_char8_t*>("");
-#endif
+        entrypoint_assembly_name_local = reinterpret_cast<const ep_char8_t*>("");
+#endif // __linux__
 #endif // HOST_WINDOWS
+
+        if (PalInterlockedCompareExchangePointer((void**)(&entrypoint_assembly_name), (void*)(entrypoint_assembly_name_local), nullptr) != nullptr)
+        {
+            delete[] entrypoint_assembly_name_local;
+        }
+    }
+    return reinterpret_cast<const char*>(entrypoint_assembly_name);
 }
 
 const ep_char8_t *
@@ -426,10 +454,10 @@ ep_rt_aot_file_close (ep_rt_file_handle_t file_handle)
 
 bool
 ep_rt_aot_file_write (
-	ep_rt_file_handle_t file_handle,
-	const uint8_t *buffer,
-	uint32_t bytes_to_write,
-	uint32_t *bytes_written)
+    ep_rt_file_handle_t file_handle,
+    const uint8_t *buffer,
+    uint32_t bytes_to_write,
+    uint32_t *bytes_written)
 {
 #ifdef TARGET_WINDOWS
     return ::WriteFile (file_handle, buffer, bytes_to_write, reinterpret_cast<LPDWORD>(bytes_written), NULL) != FALSE;
@@ -722,12 +750,12 @@ void ep_rt_aot_lock_requires_lock_not_held (const ep_rt_lock_handle_t *lock)
 void ep_rt_aot_spin_lock_requires_lock_held (const ep_rt_spin_lock_handle_t *spin_lock)
 {
     EP_ASSERT (ep_rt_spin_lock_is_valid (spin_lock));
-	EP_ASSERT (spin_lock->lock->OwnedByCurrentThread ());
+    EP_ASSERT (spin_lock->lock->OwnedByCurrentThread ());
 }
 
 void ep_rt_aot_spin_lock_requires_lock_not_held (const ep_rt_spin_lock_handle_t *spin_lock)
 {
-	EP_ASSERT (spin_lock->lock == NULL || !spin_lock->lock->OwnedByCurrentThread ());
+    EP_ASSERT (spin_lock->lock == NULL || !spin_lock->lock->OwnedByCurrentThread ());
 }
 
 #endif /* EP_CHECKED_BUILD */
