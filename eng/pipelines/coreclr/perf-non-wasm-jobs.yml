@@ -29,9 +29,9 @@ jobs:
       jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
       buildConfig: release
       platforms:
-      #- linux_x64
+      - linux_x64
       - windows_x64
-      #- windows_x86
+      - windows_x86
       # - linux_musl_x64
       jobParameters:
         testGroup: perf
@@ -396,9 +396,9 @@ jobs:
       buildConfig: release
       runtimeFlavor: coreclr
       platforms:
-      #- linux_x64
+      - linux_x64
       - windows_x64
-      #- windows_x86
+      - windows_x86
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
