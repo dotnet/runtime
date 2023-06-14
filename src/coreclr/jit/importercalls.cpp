@@ -3649,8 +3649,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         {
                             impAppendTree(gtNewNullCheck(op1, compCurBB), CHECK_SPILL_ALL, impCurStmtDI);
                         }
+                        else if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_IND_VOLATILE)) != 0)
+                        {
+                            impAppendTree(gtUnusedValNode(op1), CHECK_SPILL_ALL, impCurStmtDI);
+                        }
                         GenTree* handle = gtNewIconEmbClsHndNode(typeHnd);
-                        retNode = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, handle);
+                        retNode         = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, handle);
                     }
                 }
 
