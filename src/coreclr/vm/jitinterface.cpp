@@ -1833,6 +1833,9 @@ void* getThreadStaticDescriptor(uint8_t* p)
     return *(uint32_t*)p + (p + 4);
 }
 
+#ifdef TARGET_OSX
+
+#else
 void* getThreadStaticsBaseOffset()
 {
     uint8_t* p;
@@ -1847,9 +1850,26 @@ void* getThreadStaticsBaseOffset()
 
     return getThreadStaticDescriptor(p);
 }
+#endif // TARGET_OSX
 #endif // HOST_AMD64
 
 #ifdef HOST_ARM64
+
+#ifdef TARGET_OSX
+uint64_t getThreadStaticsBaseOffset()
+{
+    uint64_t tlvGetAddr;
+    __asm__ (
+    "adrp x0, t_ThreadStatics@TLVPPAGE\n"
+    "ldr x0, [x0, t_ThreadStatics@TLVPPAGEOFF]\n"
+    "ldr %[result], [x0]\n"
+    : [result] "=r" (p)
+    :
+    : "x0", "x1"
+    );
+    return tlvGetAddr;
+}
+#else
 uint64_t getThreadStaticsBaseOffset()
 {
     uint64_t offset;
@@ -1867,6 +1887,7 @@ uint64_t getThreadStaticsBaseOffset()
 
     return offset;
 }
+#endif // TARGET_OSX
 #endif  // HOST_ARM64
 #endif // !_MSC_VER
 
@@ -1899,13 +1920,22 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
 #else
     uint64_t threadStaticBaseOffset = 0;
 #if defined(TARGET_AMD64)
-    // get the address of tls_get_addr system method and base address
-    // of struct
+    // For Linux/x64, get the address of tls_get_addr system method and the base address
+    // of struct that we will pass to it.
     pInfo->tlsGetAddrFtnPtr = (size_t)&__tls_get_addr;
     pInfo->descrAddrOfMaxThreadStaticBlock = (size_t)getThreadStaticsBaseOffset();
 
 #elif defined(TARGET_ARM64)
+#ifdef TARGET_OSX
+    // For OSX/arm64, need to get the address of relevant tlv_get_addr of thread static
+    // variable that will be invoked during runtime to get the right address of corresponding
+    // thread.
+    pInfo->descrAddrOfMaxThreadStaticBlock = (size_t)getThreadStaticsBaseOffset();
+#else
+    // For Linux/arm64, just get the offset of thread static variable, and during execution,
+    // this offset, taken from trpid_elp0 system register gives back the thread variable address.
     threadStaticBaseOffset = getThreadStaticsBaseOffset();
+#endif // TARGET_OSX
 #endif
     if (isGCType)
     {

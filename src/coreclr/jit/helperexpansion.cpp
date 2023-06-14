@@ -590,11 +590,21 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     else
     {
 #if defined(TARGET_ARM64)
-        // Mark this ICON as a TLS_HDL, codegen will do:
-        // mrs xt, tpidr_elf0
-        // mov xd, [xt+cns]
-        tlsValue = gtNewIconHandleNode(0, GTF_ICON_TLS_HDL);
-
+        if (TargetOS::IsMacOS)
+        {
+            GenTree* tls_get_addr_val =
+                gtNewIconHandleNode(threadStaticBlocksInfo.descrAddrOfMaxThreadStaticBlock, GTF_ICON_FTN_ADDR);
+            tlsValue                  = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
+            GenTreeCall* tlsRefCall   = tlsValue->AsCall();
+            tlsRefCall->gtFlags |= GTF_EXCEPT | (tls_get_addr_val->gtFlags & GTF_GLOB_EFFECT);
+        }
+        else
+        {
+            // Mark this ICON as a TLS_HDL, codegen will do:
+            // mrs xt, tpidr_elf0
+            // mov xd, [xt+cns]
+            tlsValue = gtNewIconHandleNode(0, GTF_ICON_TLS_HDL);
+        }
 #elif defined(TARGET_AMD64)
 
         GenTree* tls_get_addr_val = gtNewIconHandleNode(threadStaticBlocksInfo.tlsGetAddrFtnPtr, GTF_ICON_FTN_ADDR);
