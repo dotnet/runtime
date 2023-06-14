@@ -919,12 +919,32 @@ namespace Internal.TypeSystem
         /// <param name="interfaceMethod">Interface method to resolve</param>
         /// <param name="currentType">Type to attempt virtual static method resolution on</param>
         /// <returns>MethodDesc of the resolved virtual static method, null when not found (runtime lookup must be used)</returns>
+        public static MethodDesc ResolveInterfaceMethodToStaticVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType)
+        {
+            // Search for match on a per-level in the type hierarchy
+            for (MetadataType typeToCheck = currentType; typeToCheck != null; typeToCheck = typeToCheck.MetadataBaseType)
+            {
+                MethodDesc resolvedMethodOnType = TryResolveVirtualStaticMethodOnThisType(typeToCheck, interfaceMethod);
+                if (resolvedMethodOnType != null)
+                {
+                    return resolvedMethodOnType;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Try to resolve a given virtual static interface method on a given constrained type and its base types.
+        /// </summary>
+        /// <param name="interfaceMethod">Interface method to resolve</param>
+        /// <param name="currentType">Type to attempt virtual static method resolution on</param>
+        /// <returns>MethodDesc of the resolved virtual static method, null when not found (runtime lookup must be used)</returns>
         public static MethodDesc ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType)
         {
             TypeDesc interfaceType = interfaceMethod.OwningType;
 
             // Search for match on a per-level in the type hierarchy
-            for (TypeDesc typeToCheck = currentType; typeToCheck != null; typeToCheck = typeToCheck.BaseType)
+            for (MetadataType typeToCheck = currentType; typeToCheck != null; typeToCheck = typeToCheck.MetadataBaseType)
             {
                 MethodDesc resolvedMethodOnType = TryResolveVirtualStaticMethodOnThisType(typeToCheck, interfaceMethod);
                 if (resolvedMethodOnType != null)
@@ -952,11 +972,7 @@ namespace Internal.TypeSystem
                     {
                         // Attempt to resolve on variance matched interface
                         MethodDesc runtimeInterfaceMethod = runtimeInterfaceType.FindMethodOnExactTypeWithMatchingTypicalMethod(interfaceMethod);
-
-                        if (runtimeInterfaceMethod != null)
-                        {
-                            resolvedMethodOnType = TryResolveVirtualStaticMethodOnThisType(typeToCheck, runtimeInterfaceMethod);
-                        }
+                        resolvedMethodOnType = TryResolveVirtualStaticMethodOnThisType(typeToCheck, runtimeInterfaceMethod);
                         if (resolvedMethodOnType != null)
                         {
                             return resolvedMethodOnType;
@@ -967,54 +983,34 @@ namespace Internal.TypeSystem
             return null;
         }
 
-        private static MethodDesc TryResolveInterfaceMethodOnVariantCompatibleInterface(TypeDesc compatibleInterfaceType, MethodDesc interfaceMethod)
-        {
-            Debug.Assert(compatibleInterfaceType.CanCastTo(interfaceMethod.OwningType));
-            if (compatibleInterfaceType is MetadataType mdType)
-            {
-                foreach (MethodDesc runtimeInterfaceMethod in mdType.GetVirtualMethods())
-                {
-                    if (runtimeInterfaceMethod.Name == interfaceMethod.Name &&
-                        runtimeInterfaceMethod.Signature == interfaceMethod.Signature)
-                    {
-                        return runtimeInterfaceMethod;
-                    }
-                }
-            }
-            return null;
-        }
-
         /// <summary>
         /// Try to resolve a given virtual static interface method on a given constrained type and return the resolved method or null when not found.
         /// </summary>
         /// <param name="constrainedType">Type to attempt method resolution on</param>
-        /// <param name="interfaceType">Interface declaring the method</param>
         /// <param name="interfaceMethod">Method to resolve</param>
         /// <returns>MethodDesc of the resolved method or null when not found (runtime lookup must be used)</returns>
-        private static MethodDesc TryResolveVirtualStaticMethodOnThisType(TypeDesc constrainedType, MethodDesc interfaceMethod)
+        private static MethodDesc TryResolveVirtualStaticMethodOnThisType(MetadataType constrainedType, MethodDesc interfaceMethod)
         {
-            if (constrainedType is MetadataType mdType)
+            Debug.Assert(interfaceMethod.Signature.IsStatic);
+
+            MethodImplRecord[] possibleImpls = constrainedType.FindMethodsImplWithMatchingDeclName(interfaceMethod.Name);
+            if (possibleImpls == null)
+                return null;
+
+            MethodDesc interfaceMethodDefinition = interfaceMethod.GetMethodDefinition();
+            foreach (MethodImplRecord methodImpl in possibleImpls)
             {
-                foreach (MethodImplRecord methodImpl in mdType.FindMethodsImplWithMatchingDeclName(interfaceMethod.Name) ?? Array.Empty<MethodImplRecord>())
+                if (methodImpl.Decl == interfaceMethodDefinition)
                 {
-                    if (methodImpl.Decl == interfaceMethod.GetMethodDefinition())
+                    MethodDesc resolvedMethodImpl = methodImpl.Body;
+                    if (interfaceMethod != interfaceMethodDefinition)
                     {
-                        MethodDesc resolvedMethodImpl = methodImpl.Body;
-                        if (resolvedMethodImpl.OwningType != mdType)
-                        {
-                            ThrowHelper.ThrowMissingMethodException(constrainedType, resolvedMethodImpl.Name, resolvedMethodImpl.Signature);
-                        }
-                        if (interfaceMethod.HasInstantiation)
-                        {
-                            resolvedMethodImpl = resolvedMethodImpl.MakeInstantiatedMethod(interfaceMethod.Instantiation);
-                        }
-                        if (resolvedMethodImpl != null)
-                        {
-                            return resolvedMethodImpl;
-                        }
+                        resolvedMethodImpl = resolvedMethodImpl.MakeInstantiatedMethod(interfaceMethod.Instantiation);
                     }
+                    return resolvedMethodImpl;
                 }
             }
+
             return null;
         }
     }
