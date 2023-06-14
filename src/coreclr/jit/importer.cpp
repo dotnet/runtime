@@ -3649,7 +3649,7 @@ GenTree* Compiler::impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueTy
         else
         {
             setMethodHasFrozenObjects();
-            tree         = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+            tree         = gtNewIconEmbHndNode((void*)(ssize_t)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
             tree->gtType = TYP_REF;
             INDEBUG(tree->AsIntCon()->gtTargetHandle = ptr);
         }
