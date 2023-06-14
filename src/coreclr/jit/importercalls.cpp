@@ -4240,7 +4240,14 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             // stobj !!T
             // ret
 
-            return nullptr;
+            CORINFO_CLASS_HANDLE typeHnd = sig->sigInst.methInst[0];
+            ClassLayout*         layout  = nullptr;
+            var_types            type    = TypeHandleToVarType(typeHnd, &layout);
+
+            GenTree* source = impPopStack().val;
+            GenTree* dest   = impPopStack().val;
+
+            return gtNewStoreValueNode(type, layout, dest, gtNewLoadValueNode(type, layout, source));
         }
 
         case NI_SRCS_UNSAFE_CopyBlock:
