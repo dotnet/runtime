@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -65,15 +66,21 @@ public class BuildPublishTests : BuildTestBase
     }
 
     [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void DefaultTemplate_BuildNative_WithWorkload(string config)
+    [InlineData("Debug", false)]
+    [InlineData("Release", false)]
+    [InlineData("Debug", true)]
+    [InlineData("Release", true)]
+    public void DefaultTemplate_CheckFingerprinting(string config, bool expectFingerprintOnDotnetJs)
     {
-        string id = $"blz_buildandbuildnative_{config}_{Path.GetRandomFileName()}";
+        string id = $"blz_checkfingerprinting_{config}_{Path.GetRandomFileName()}";
 
         CreateBlazorWasmTemplateProject(id);
 
-        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked), "/p:WasmBuildNative=true");
+        var options = new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true, ExpectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs);
+        var finterprintingArg = expectFingerprintOnDotnetJs ? "/p:WasmFingerprintDotnetJs=true" : string.Empty;
+
+        BlazorBuild(options, "/p:WasmBuildNative=true", finterprintingArg);
+        BlazorPublish(options, "/p:WasmBuildNative=true", finterprintingArg);
     }
 
     // Disabling for now - publish folder can have more than one dotnet*hash*js, and not sure
@@ -83,18 +90,18 @@ public class BuildPublishTests : BuildTestBase
     //[InlineData("Release")]
     //public void DefaultTemplate_AOT_OnlyWithPublishCommandLine_Then_PublishNoAOT(string config)
     //{
-        //string id = $"blz_aot_pub_{config}";
-        //CreateBlazorWasmTemplateProject(id);
+    //string id = $"blz_aot_pub_{config}";
+    //CreateBlazorWasmTemplateProject(id);
 
-        //// No relinking, no AOT
-        //BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack);
+    //// No relinking, no AOT
+    //BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack);
 
-        //// AOT=true only for the publish command line, similar to what
-        //// would happen when setting it in Publish dialog for VS
-        //BlazorPublish(new BlazorBuildOptions(id, config, expectedFileType: NativeFilesType.AOT, "-p:RunAOTCompilation=true");
+    //// AOT=true only for the publish command line, similar to what
+    //// would happen when setting it in Publish dialog for VS
+    //BlazorPublish(new BlazorBuildOptions(id, config, expectedFileType: NativeFilesType.AOT, "-p:RunAOTCompilation=true");
 
-        //// publish again, no AOT
-        //BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked);
+    //// publish again, no AOT
+    //BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked);
     //}
 
     [Theory]
@@ -212,7 +219,7 @@ public class BuildPublishTests : BuildTestBase
         string razorClassLibraryFileName = UseWebcil ? $"RazorClassLibrary{WebcilInWasmExtension}" : "RazorClassLibrary.dll";
         AddItemsPropertiesToProject(wasmProjectFile, extraItems: @$"
             <ProjectReference Include=""..\\RazorClassLibrary\\RazorClassLibrary.csproj"" />
-            <BlazorWebAssemblyLazyLoad Include=""{ razorClassLibraryFileName }"" />
+            <BlazorWebAssemblyLazyLoad Include=""{razorClassLibraryFileName}"" />
         ");
 
         _projectDir = wasmProjectDir;

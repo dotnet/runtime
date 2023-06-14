@@ -169,7 +169,7 @@ namespace Microsoft.Interop
     }
 
 #pragma warning disable SA1400 // Access modifier should be declared https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3659
-    sealed file record OwnedValueCodeContext : StubCodeContext
+    file sealed record OwnedValueCodeContext : StubCodeContext
 #pragma warning restore SA1400 // Access modifier should be declared
     {
         private readonly StubCodeContext _innerContext;
@@ -197,7 +197,7 @@ namespace Microsoft.Interop
     }
 
 #pragma warning disable SA1400 // Access modifier should be declared https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3659
-    static file class OwnershipTrackingHelpers
+    file static class OwnershipTrackingHelpers
 #pragma warning restore SA1400 // Access modifier should be declared
     {
         public const string OwnOriginalValueIdentifier = "ownOriginal";

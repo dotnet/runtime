@@ -613,7 +613,7 @@ extern "C" UInt32_BOOL CloseHandle(HANDLE handle)
     return success ? UInt32_TRUE : UInt32_FALSE;
 }
 
-REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ const wchar_t* pName)
+REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ const WCHAR* pName)
 {
     UnixEvent event = UnixEvent(manualReset, initialState);
     if (!event.Initialize())
@@ -890,12 +890,6 @@ REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size
 #else
     __builtin___clear_cache((char *)pAddress, (char *)pAddress + size);
 #endif
-}
-
-REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)
-{
-    static void* pBuffer;
-    return PalInterlockedExchangePointer(&pBuffer, pNewBuffer);
 }
 
 extern "C" HANDLE GetCurrentProcess()

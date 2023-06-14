@@ -143,7 +143,7 @@ class FirefoxInspectorClient : InspectorClient
                     return null;
 
                 var messageId = new FirefoxMessageId("", 0, from_str);
-                if (pending_cmds.Remove(messageId, out var item))
+                if (pending_cmds.TryRemove(messageId, out var item))
                     item.SetResult(Result.FromJsonFirefox(res));
                 else
                     logger.LogDebug($"HandleMessage: Could not find any pending cmd for {messageId}. msg: {msg}");
@@ -156,7 +156,7 @@ class FirefoxInspectorClient : InspectorClient
                 return null;
 
             var messageId = new FirefoxMessageId("", 0, from_str);
-            if (pending_cmds.Remove(messageId, out var item))
+            if (pending_cmds.TryRemove(messageId, out var item))
             {
                 item.SetResult(Result.FromJsonFirefox(res));
                 return null;
@@ -234,8 +234,7 @@ class FirefoxInspectorClient : InspectorClient
             throw new Exception($"No 'to' field found in '{args}'");
 
         msgId = new FirefoxMessageId("", 0, to_str);
-        pending_cmds[msgId] = tcs;
-        logger.LogTrace($"SendCommand: to: {args}");
+        pending_cmds.AddOrUpdate(msgId, tcs,  (key, oldValue) => tcs);
 
         var msg = args.ToString(Formatting.None);
         var bytes = Encoding.UTF8.GetBytes(msg);

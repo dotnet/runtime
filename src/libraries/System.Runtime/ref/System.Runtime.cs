@@ -2190,7 +2190,7 @@ namespace System
         public const double MinValue = -1.7976931348623157E+308;
         public const double NaN = 0.0 / 0.0;
         public const double NegativeInfinity = -1.0 / 0.0;
-        public const double NegativeZero = -0;
+        public const double NegativeZero = -0.0;
         public const double Pi = 3.141592653589793;
         public const double PositiveInfinity = 1.0 / 0.0;
         public const double Tau = 6.283185307179586;
@@ -4879,7 +4879,7 @@ namespace System
         public const float MinValue = -3.4028235E+38f;
         public const float NaN = 0.0f / 0.0f;
         public const float NegativeInfinity = -1.0f / 0.0f;
-        public const float NegativeZero = -0f;
+        public const float NegativeZero = -0.0f;
         public const float Pi = 3.1415927f;
         public const float PositiveInfinity = 1.0f / 0.0f;
         public const float Tau = 6.2831855f;
