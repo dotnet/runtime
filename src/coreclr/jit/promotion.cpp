@@ -457,6 +457,7 @@ public:
                 }
 
                 overlapsOtherInducedAccess = true;
+                break;
             }
 
             if (overlapsOtherInducedAccess)
@@ -943,7 +944,6 @@ public:
             // pathological cases. From measurements no methods in our own
             // collections need more than 10 iterations and 99.5% of methods
             // need fewer than 5 iterations.
-            // (Also note that this part of physical promotion does not seem to have measurable impact on TP.)
             for (int iters = 0; iters < 10; iters++)
             {
                 for (int i = 0; i < m_candidateStores.Height(); i++)
