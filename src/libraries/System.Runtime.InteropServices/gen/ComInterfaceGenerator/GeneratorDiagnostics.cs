@@ -31,6 +31,7 @@ namespace Microsoft.Interop
 
         private const string Category = "ComInterfaceGenerator";
 
+        /// <inheritdoc cref="SR.RequiresAllowUnsafeBlocksMessage"/>
         public static readonly DiagnosticDescriptor RequiresAllowUnsafeBlocks =
             new DiagnosticDescriptor(
                 Ids.RequiresAllowUnsafeBlocks,
@@ -117,6 +118,16 @@ namespace Microsoft.Interop
             DiagnosticSeverity.Error,
             isEnabledByDefault: true,
             description: GetResourceString(nameof(SR.InvalidStringMarshallingConfigurationDescription)));
+
+        /// <inheritdoc cref="SR.StringMarshallingCustomTypeNotAccessibleByGeneratedCode"/>
+        public static readonly DiagnosticDescriptor StringMarshallingCustomTypeNotAccessibleByGeneratedCode =
+            new DiagnosticDescriptor(
+            Ids.InvalidGeneratedComInterfaceAttributeUsage,
+            GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageTitle)),
+            GetResourceString(nameof(SR.StringMarshallingCustomTypeNotAccessibleByGeneratedCode)),
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
 
         /// <inheritdoc cref="SR.InvalidExceptionMarshallingConfigurationMessage"/>
         public static readonly DiagnosticDescriptor InvalidExceptionMarshallingConfiguration =
@@ -239,6 +250,17 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.MethodNotDeclaredInAttributedInterfaceDescription)));
 
+        /// <inheritdoc cref="SR.InvalidGeneratedComInterfaceAttributeUsageInterfaceNotAccessible"/>
+        public static readonly DiagnosticDescriptor InvalidAttributedInterfaceNotAccessible =
+            new DiagnosticDescriptor(
+                Ids.InvalidGeneratedComInterfaceAttributeUsage,
+                GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageTitle)),
+                GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageInterfaceNotAccessible)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageDescription)));
+
         /// <inheritdoc cref="SR.InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute"/>
         public static readonly DiagnosticDescriptor InvalidAttributedInterfaceMissingGuidAttribute =
             new DiagnosticDescriptor(
@@ -326,6 +348,18 @@ namespace Microsoft.Interop
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.InterfaceTypeNotSupportedMessage)));
+
+        /// <inheritdoc cref="SR.ClassDoesNotImplementAnyGeneratedComInterfacesMessage"/>
+        public static readonly DiagnosticDescriptor ClassDoesNotImplementAnyGeneratedComInterface =
+            new DiagnosticDescriptor(
+                Ids.InvalidGeneratedComClassAttributeUsage,
+                GetResourceString(nameof(SR.InvalidGeneratedComClassAttributeUsageTitle)),
+                GetResourceString(nameof(SR.ClassDoesNotImplementAnyGeneratedComInterfacesMessage)),
+                Category,
+                DiagnosticSeverity.Warning,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.ClassDoesNotImplementAnyGeneratedComInterfacesDescription)));
+
 
         private readonly List<DiagnosticInfo> _diagnostics = new List<DiagnosticInfo>();
 

@@ -213,7 +213,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-Oz -Wl,-O0 -Wl,--lto-O0</EmccLinkOptimizationFlag>
+      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-O2 -Wl,-O0 -Wl,--lto-O0</EmccLinkOptimizationFlag>
     </PropertyGroup>
 
     <ItemGroup>

@@ -298,6 +298,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new GenericVirtualMethodImplNode(method);
             });
 
+            _genericMethodEntries = new NodeCache<MethodDesc, GenericMethodsHashtableEntryNode>(method =>
+            {
+                return new GenericMethodsHashtableEntryNode(method);
+            });
+
             _gvmTableEntries = new NodeCache<TypeDesc, TypeGVMEntriesNode>(type =>
             {
                 return new TypeGVMEntriesNode(type);
@@ -959,6 +964,12 @@ namespace ILCompiler.DependencyAnalysis
         public GenericVirtualMethodImplNode GenericVirtualMethodImpl(MethodDesc method)
         {
             return _gvmImpls.GetOrAdd(method);
+        }
+
+        private NodeCache<MethodDesc, GenericMethodsHashtableEntryNode> _genericMethodEntries;
+        public GenericMethodsHashtableEntryNode GenericMethodsHashtableEntry(MethodDesc method)
+        {
+            return _genericMethodEntries.GetOrAdd(method);
         }
 
         private NodeCache<TypeDesc, TypeGVMEntriesNode> _gvmTableEntries;
