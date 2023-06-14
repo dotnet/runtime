@@ -141,9 +141,7 @@ ep_rt_aot_entrypoint_assembly_name_get_utf8 (void)
 #endif // HOST_WINDOWS
 
         if (PalInterlockedCompareExchangePointer((void**)(&entrypoint_assembly_name), (void*)(entrypoint_assembly_name_local), nullptr) != nullptr)
-        {
             delete[] entrypoint_assembly_name_local;
-        }
     }
     return reinterpret_cast<const char*>(entrypoint_assembly_name);
 }
@@ -163,9 +161,12 @@ ep_rt_aot_diagnostics_command_line_get (void)
 
     char *line = NULL;
     size_t line_len = 0;
-    if (::getline (&line, &line_len, cmdline_file) == -1)
+    if (::getline (&line, &line_len, cmdline_file) == -1) {
+        ::fclose (cmdline_file);
         return "";
+    }
 
+    ::fclose (cmdline_file);
     return reinterpret_cast<const ep_char8_t*>(line);
 #else
     return "";
