@@ -27,6 +27,8 @@ namespace System.Net.Security
         private const int HandshakeTypeOffsetSsl2 = 2;                       // Offset of HelloType in Sslv2 and Unified frames
         private const int HandshakeTypeOffsetTls = 5;                        // Offset of HelloType in Sslv3 and TLS frames
 
+        private const int UnknownTlsFrameLength = int.MaxValue;              // frame too short to determine length
+
         private bool _receivedEOF;
 
         // Used by Telemetry to ensure we log connection close exactly once
@@ -211,12 +213,10 @@ namespace System.Net.Security
                     throw SslStreamPal.GetException(status);
                 }
 
-                _buffer.EnsureAvailableSpace(InitialHandshakeBufferSize);
-
                 ProtocolToken message;
                 do
                 {
-                    int frameSize = await ReceiveTlsFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
+                    int frameSize = await ReceiveHandshakeFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
                     ProcessTlsFrame(frameSize, out message);
 
                     if (message.Size > 0)
@@ -291,7 +291,7 @@ namespace System.Net.Security
 
                 while (!handshakeCompleted)
                 {
-                    int frameSize = await ReceiveTlsFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
+                    int frameSize = await ReceiveHandshakeFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
                     ProcessTlsFrame(frameSize, out message);
 
                     ReadOnlyMemory<byte> payload = default;
@@ -359,10 +359,10 @@ namespace System.Net.Security
         }
 
         // This method will make sure we have at least one full TLS frame buffered.
-        private async ValueTask<int> ReceiveTlsFrameAsync<TIOAdapter>(CancellationToken cancellationToken)
+        private async ValueTask<int> ReceiveHandshakeFrameAsync<TIOAdapter>(CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
-            int frameSize = await EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
+            int frameSize = await EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken, InitialHandshakeBufferSize).ConfigureAwait(false);
 
             if (frameSize == 0)
             {
@@ -699,37 +699,37 @@ namespace System.Net.Security
 
         private bool HaveFullTlsFrame(out int frameSize)
         {
-            if (_buffer.EncryptedLength < TlsFrameHelper.HeaderSize)
-            {
-                frameSize = int.MaxValue;
-                return false;
-            }
-
             frameSize = GetFrameSize(_buffer.EncryptedReadOnlySpan);
             return _buffer.EncryptedLength >= frameSize;
         }
 
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
-        private async ValueTask<int> EnsureFullTlsFrameAsync<TIOAdapter>(CancellationToken cancellationToken)
+        private async ValueTask<int> EnsureFullTlsFrameAsync<TIOAdapter>(CancellationToken cancellationToken, int estimatedSize)
             where TIOAdapter : IReadWriteAdapter
         {
-            int frameSize;
-            if (HaveFullTlsFrame(out frameSize))
+            if (HaveFullTlsFrame(out int frameSize))
             {
                 return frameSize;
             }
 
-            if (frameSize != int.MaxValue)
+            // Do zero byte read to conserve resources:
+            // 1. We postpone allocation of read buffers. For example Kestrel may have idle connections without buffer until new request comes in.
+            // 2. The underlying stream may need to allocate GCHandle for async IO. If we postpone that until we have some data, we may be able to avoid it.
+            //    That is not only important for CPU but also for memory fragmentation as pinned buffers are difficult to deal with.
+            // Note that if the underlying stream does not support blocking on zero byte reads, then this will
+            // complete immediately and won't save any memory, but will still function correctly.
+            await TIOAdapter.ReadAsync(InnerStream, Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
+
+            if (frameSize == UnknownTlsFrameLength)
             {
-                // make sure we have space for the whole frame
-                _buffer.EnsureAvailableSpace(frameSize - _buffer.EncryptedLength);
+                // We do not have enough data to determine frame size. Use provided estimate e.g.
+                // full TLS frame for read, and somewhat shorter frame for handshake or renegotiation
+                _buffer.EnsureAvailableSpace(estimatedSize);
             }
             else
             {
-                // move existing data to the beginning of the buffer (they will
-                // be couple of bytes only, otherwise we would have entire
-                // header and know exact size)
-                _buffer.EnsureAvailableSpace(_buffer.Capacity - _buffer.EncryptedLength);
+                // make sure we have space for the whole frame
+                _buffer.EnsureAvailableSpace(frameSize - _buffer.EncryptedLength);
             }
 
             while (_buffer.EncryptedLength < frameSize)
@@ -819,11 +819,12 @@ namespace System.Net.Security
             try
             {
                 int processedLength = 0;
+                int nextTlsFrameLength = UnknownTlsFrameLength;
 
                 if (_buffer.DecryptedLength != 0)
                 {
                     processedLength = CopyDecryptedData(buffer);
-                    if (processedLength == buffer.Length || !HaveFullTlsFrame(out _))
+                    if (processedLength == buffer.Length || !HaveFullTlsFrame(out nextTlsFrameLength))
                     {
                         // We either filled whole buffer or used all buffered frames.
                         return processedLength;
@@ -832,32 +833,19 @@ namespace System.Net.Security
                     buffer = buffer.Slice(processedLength);
                 }
 
-                if (_receivedEOF)
+                if (_receivedEOF && nextTlsFrameLength == UnknownTlsFrameLength)
                 {
+                    // there should be no frames waiting for processing
                     Debug.Assert(_buffer.EncryptedLength == 0);
                     // We received EOF during previous read but had buffered data to return.
                     return 0;
                 }
 
-                if (buffer.Length == 0 && _buffer.ActiveLength == 0)
-                {
-                    // User requested a zero-byte read, and we have no data available in the buffer for processing.
-                    // This zero-byte read indicates their desire to trade off the extra cost of a zero-byte read
-                    // for reduced memory consumption when data is not immediately available.
-                    // So, we will issue our own zero-byte read against the underlying stream and defer buffer allocation
-                    // until data is actually available from the underlying stream.
-                    // Note that if the underlying stream does not supporting blocking on zero byte reads, then this will
-                    // complete immediately and won't save any memory, but will still function correctly.
-                    await TIOAdapter.ReadAsync(InnerStream, Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
-                }
-
                 Debug.Assert(_buffer.DecryptedLength == 0);
-
-                _buffer.EnsureAvailableSpace(ReadBufferSize - _buffer.ActiveLength);
 
                 while (true)
                 {
-                    int payloadBytes = await EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
+                    int payloadBytes = await EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken, ReadBufferSize).ConfigureAwait(false);
                     if (payloadBytes == 0)
                     {
                         _receivedEOF = true;
@@ -1009,6 +997,11 @@ namespace System.Net.Security
         // Returns TLS Frame size including header size.
         private int GetFrameSize(ReadOnlySpan<byte> buffer)
         {
+            if (buffer.Length < TlsFrameHelper.HeaderSize)
+            {
+                return UnknownTlsFrameLength;
+            }
+
             if (!TlsFrameHelper.TryGetFrameHeader(buffer, ref _lastFrame.Header))
             {
                 throw new IOException(SR.net_ssl_io_frame);
