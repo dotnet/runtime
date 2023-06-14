@@ -149,8 +149,6 @@ extends:
           - linux_arm
           - linux_arm64
           - linux_musl_x64
-          - browser_wasm
-          - wasi_wasm
           - linux_bionic_arm64
           - linux_bionic_x64
           # - linux_musl_arm
@@ -173,8 +171,24 @@ extends:
           runtimeFlavor: mono
           platforms:
           - browser_wasm
+          - wasi_wasm
           jobParameters:
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoWasmBuildVariant=perftrace
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+            nameSuffix: AllSubsets_Mono
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+            extraStepsParameters:
+              name: MonoRuntimePacks
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          runtimeFlavor: mono
+          platforms:
+          - browser_wasm
+          jobParameters:
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoWasmBuildVariant=perftrace /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
             nameSuffix: AllSubsets_Mono_perftrace
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             runtimeVariant: perftrace
@@ -190,7 +204,7 @@ extends:
           platforms:
           - browser_wasm
           jobParameters:
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoWasmBuildVariant=multithread
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoWasmBuildVariant=multithread /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
             nameSuffix: AllSubsets_Mono_multithread
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             runtimeVariant: multithread

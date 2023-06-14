@@ -36,7 +36,7 @@ namespace System.Collections.Frozen
         }
 
         internal static LengthBucketsFrozenDictionary<TValue>? CreateLengthBucketsFrozenDictionaryIfAppropriate(
-            Dictionary<string, TValue> source, IEqualityComparer<string> comparer, int minLength, int maxLength)
+            Dictionary<string, TValue> source, IEqualityComparer<string> comparer, int minLength, int maxLength, string[] keys)
         {
             Debug.Assert(source.Count != 0);
             Debug.Assert(comparer == EqualityComparer<string>.Default || comparer == StringComparer.Ordinal || comparer == StringComparer.OrdinalIgnoreCase);
@@ -81,7 +81,6 @@ namespace System.Collections.Frozen
                 return null;
             }
 
-            var keys = new string[source.Count];
             var values = new TValue[keys.Length];
             var lengthBuckets = new KeyValuePair<string, int>[spread][];
 

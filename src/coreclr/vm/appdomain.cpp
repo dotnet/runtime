@@ -3262,7 +3262,7 @@ PVOID AppDomain::GetFriendlyNameNoSet(bool* isUtf8)
 
 #ifndef DACCESS_COMPILE
 
-BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly * pPEAssembly, BOOL fAllowFailure)
+BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly * pPEAssembly)
 {
     CONTRACTL
     {
@@ -3274,25 +3274,10 @@ BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly * pPEAssembly, BO
     }
     CONTRACTL_END;
 
-    {
-        GCX_PREEMP();
-        DomainCacheCrstHolderForGCCoop holder(this);
+    GCX_PREEMP();
+    DomainCacheCrstHolderForGCCoop holder(this);
 
-        // !!! suppress exceptions
-        if(!m_AssemblyCache.StorePEAssembly(pSpec, pPEAssembly) && !fAllowFailure)
-        {
-            // TODO: Disabling the below assertion as currently we experience
-            // inconsistency on resolving the Microsoft.Office.Interop.MSProject.dll
-            // This causes below assertion to fire and crashes the VS. This issue
-            // is being tracked with Dev10 Bug 658555. Brought back it when this bug
-            // is fixed.
-            // _ASSERTE(FALSE);
-
-            EEFileLoadException::Throw(pSpec, FUSION_E_CACHEFILE_FAILED, NULL);
-        }
-    }
-
-    return TRUE;
+    return m_AssemblyCache.StorePEAssembly(pSpec, pPEAssembly);
 }
 
 BOOL AppDomain::AddAssemblyToCache(AssemblySpec* pSpec, DomainAssembly *pAssembly)
@@ -3505,10 +3490,10 @@ BOOL AppDomain::PostBindResolveAssembly(AssemblySpec  *pPrePolicySpec,
             // The binder does a re-fetch of the
             // original binding spec and therefore will not cause inconsistency here.
             // For the purposes of the resolve event, failure to add to the cache still is a success.
-            AddFileToCache(pPrePolicySpec, result, TRUE /* fAllowFailure */);
+            AddFileToCache(pPrePolicySpec, result);
             if (*ppFailedSpec != pPrePolicySpec)
             {
-                AddFileToCache(pPostPolicySpec, result, TRUE /* fAllowFailure */ );
+                AddFileToCache(pPostPolicySpec, result);
             }
         }
     }
@@ -3569,7 +3554,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                     // Failure to add simply means someone else beat us to it. In that case
                     // the FindCachedFile call below (after catch block) will update result
                     // to the cached value.
-                    AddFileToCache(pSpec, result, TRUE /*fAllowFailure*/);
+                    AddFileToCache(pSpec, result);
                 }
                 else
                 {

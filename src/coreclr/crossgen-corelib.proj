@@ -45,6 +45,9 @@
     <MergedMibcPath>$([MSBuild]::NormalizePath('$(BinDir)', 'StandardOptimizationData.mibc'))</MergedMibcPath>
   </PropertyGroup>
 
+  <!-- Creates a hash file that changes whenever the input mibc file modification times change.
+       This will trigger a re-merge when updating to a new version of the optimization data,
+       even if the new timestamps are still days in the past. -->
   <Target Name="GenerateMergeMibcFilesInputCache">
     <ItemGroup>
       <_MergeMibcFilesInputCache Include="@(OptimizationMibcFiles)" />

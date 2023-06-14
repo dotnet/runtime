@@ -17881,9 +17881,9 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
 
         case GT_CNS_INT:
         {
-            if (tree->IsIconHandle(GTF_ICON_OBJ_HDL))
+            if (obj->IsIconHandle(GTF_ICON_OBJ_HDL))
             {
-                objClass = info.compCompHnd->getObjectType((CORINFO_OBJECT_HANDLE)tree->AsIntCon()->IconValue());
+                objClass = info.compCompHnd->getObjectType((CORINFO_OBJECT_HANDLE)obj->AsIntCon()->IconValue());
                 if (objClass != NO_CLASS_HANDLE)
                 {
                     // if we managed to get a class handle it's definitely not null
@@ -17898,14 +17898,14 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         {
             // If we see a RET_EXPR, recurse through to examine the
             // return value expression.
-            GenTree* retExpr = tree->AsRetExpr()->gtInlineCandidate;
+            GenTree* retExpr = obj->AsRetExpr()->gtInlineCandidate;
             objClass         = gtGetClassHandle(retExpr, pIsExact, pIsNonNull);
             break;
         }
 
         case GT_CALL:
         {
-            GenTreeCall* call = tree->AsCall();
+            GenTreeCall* call = obj->AsCall();
             if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
             {
                 NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
@@ -23322,7 +23322,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 #if defined(TARGET_XARCH)
     uint8_t  control   = 0;
     bool     crossLane = false;
-    bool     needsZero = varTypeIsSmallInt(simdBaseType) && (simdSize != 64);
+    bool     needsZero = varTypeIsSmallInt(simdBaseType) && (simdSize <= 16);
     uint64_t value     = 0;
     simd_t   vecCns    = {};
     simd_t   mskCns    = {};
@@ -23395,7 +23395,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
 
-        if (varTypeIsSmallInt(simdBaseType))
+        if ((varTypeIsByte(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI_VL)) ||
+            (varTypeIsShort(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL)))
         {
             if (crossLane)
             {
@@ -23448,6 +23449,31 @@ GenTree* Compiler::gtNewSimdShuffleNode(
             // swap the operands to match the encoding requirements
             retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX2_PermuteVar8x32, simdBaseJitType, simdSize);
         }
+        else if (elementSize == 2)
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW_VL));
+            for (uint32_t i = 0; i < elementCount; i++)
+            {
+                vecCns.u16[i] = (uint8_t)(vecCns.u8[i * elementSize] / elementSize);
+            }
+
+            op2                        = gtNewVconNode(type);
+            op2->AsVecCon()->gtSimdVal = vecCns;
+
+            // swap the operands to match the encoding requirements
+            retNode =
+                gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512BW_VL_PermuteVar16x16, simdBaseJitType, simdSize);
+        }
+        else if (elementSize == 1)
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512VBMI_VL));
+            op2                        = gtNewVconNode(type);
+            op2->AsVecCon()->gtSimdVal = vecCns;
+
+            // swap the operands to match the encoding requirements
+            retNode =
+                gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512VBMI_VL_PermuteVar32x8, simdBaseJitType, simdSize);
+        }
         else
         {
             assert(elementSize == 8);
@@ -23458,6 +23484,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     }
     else if (simdSize == 64)
     {
+        assert(IsBaselineVector512IsaSupportedDebugOnly());
         if (elementSize == 4)
         {
             for (uint32_t i = 0; i < elementCount; i++)
@@ -23483,6 +23510,15 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 
             // swap the operands to match the encoding requirements
             retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512BW_PermuteVar32x16, simdBaseJitType, simdSize);
+        }
+        else if (elementSize == 1)
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512VBMI));
+            op2                        = gtNewVconNode(type);
+            op2->AsVecCon()->gtSimdVal = vecCns;
+
+            // swap the operands to match the encoding requirements
+            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512VBMI_PermuteVar64x8, simdBaseJitType, simdSize);
         }
         else
         {

@@ -266,10 +266,10 @@ namespace System.Text.Json.Serialization.Metadata
                     if (default(T) is null)
                     {
                         Debug.Assert(CanDeserialize || EffectiveObjectCreationHandling == JsonObjectCreationHandling.Populate);
-                        ThrowHelper.ThrowInvalidOperationException_DeserializeUnableToAssignNull(EffectiveConverter.TypeToConvert);
+                        ThrowHelper.ThrowInvalidOperationException_DeserializeUnableToAssignNull(EffectiveConverter.Type);
                     }
 
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(EffectiveConverter.TypeToConvert);
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(EffectiveConverter.Type);
                 }
 
                 if (!IgnoreNullTokensOnRead)
@@ -335,7 +335,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 if (default(T) is not null)
                 {
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(EffectiveConverter.TypeToConvert);
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(EffectiveConverter.Type);
                 }
 
                 value = default(T);

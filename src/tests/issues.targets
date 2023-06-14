@@ -850,6 +850,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/more_tailcalls/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Tailcalls</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_87393/Runtime_87393/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Tailcalls</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/throwbox/fault_throwbox/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Non-exception throws</Issue>
         </ExcludeList>
@@ -1598,6 +1601,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/more_tailcalls/**">
             <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_87393/**">
+            <Issue>FSharp Test</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/mutual_recursion/**">
             <Issue>FSharp Test</Issue>
