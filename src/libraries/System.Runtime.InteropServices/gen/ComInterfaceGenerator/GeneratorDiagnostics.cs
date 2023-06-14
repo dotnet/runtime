@@ -119,6 +119,16 @@ namespace Microsoft.Interop
             isEnabledByDefault: true,
             description: GetResourceString(nameof(SR.InvalidStringMarshallingConfigurationDescription)));
 
+        /// <inheritdoc cref="SR.StringMarshallingCustomTypeNotAccessibleByGeneratedCode"/>
+        public static readonly DiagnosticDescriptor StringMarshallingCustomTypeNotAccessibleByGeneratedCode =
+            new DiagnosticDescriptor(
+            Ids.InvalidGeneratedComInterfaceAttributeUsage,
+            GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageTitle)),
+            GetResourceString(nameof(SR.StringMarshallingCustomTypeNotAccessibleByGeneratedCode)),
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
         /// <inheritdoc cref="SR.InvalidExceptionMarshallingConfigurationMessage"/>
         public static readonly DiagnosticDescriptor InvalidExceptionMarshallingConfiguration =
             new DiagnosticDescriptor(
@@ -239,6 +249,17 @@ namespace Microsoft.Interop
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.MethodNotDeclaredInAttributedInterfaceDescription)));
+
+        /// <inheritdoc cref="SR.InvalidGeneratedComInterfaceAttributeUsageInterfaceNotAccessible"/>
+        public static readonly DiagnosticDescriptor InvalidAttributedInterfaceNotAccessible =
+            new DiagnosticDescriptor(
+                Ids.InvalidGeneratedComInterfaceAttributeUsage,
+                GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageTitle)),
+                GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageInterfaceNotAccessible)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageDescription)));
 
         /// <inheritdoc cref="SR.InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute"/>
         public static readonly DiagnosticDescriptor InvalidAttributedInterfaceMissingGuidAttribute =

@@ -220,7 +220,7 @@
     <value>Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</value>
   </data>
   <data name="InvalidGeneratedComInterfaceAttributeUsageDescription" xml:space="preserve">
-    <value>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</value>
+    <value>Interfaces attributed with 'GeneratedComInterfaceAttribute' must have 'public' or 'internal' accessibility and be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</value>
   </data>
   <data name="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute" xml:space="preserve">
     <value>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is missing 'System.Runtime.InteropServices.GuidAttribute'.</value>
@@ -266,6 +266,14 @@
   </data>
   <data name="InvalidStringMarshallingConfigurationOnInterfaceMessage" xml:space="preserve">
     <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</value>
+  </data>
+  <data name="InvalidGeneratedComInterfaceAttributeUsageInterfaceNotAccessible" xml:space="preserve">
+    <value>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is not accessible by generated code. The interface and all containing types must have accessibility 'internal' or 'public' for generated code to access it. {1}</value>
+    <comment>{1} is details about which type/containing type is not accessible</comment>
+  </data>
+  <data name="StringMarshallingCustomTypeNotAccessibleByGeneratedCode" xml:space="preserve">
+    <value>The type '{0}' specified as 'GeneratedComInterfaceAttribute.StringMarshallingCustomType' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</value>
+    <comment>{1} is details about which type/containing type is not accessible</comment>
   </data>
   <data name="RequiresAllowUnsafeBlocksDescription" xml:space="preserve">
     <value>'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
