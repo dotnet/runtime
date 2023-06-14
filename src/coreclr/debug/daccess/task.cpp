@@ -5225,14 +5225,9 @@ EnumMethodInstances::Next(ClrDataAccess* dac,
         }
     }
 
+    if (!m_methodIter.Current()->HasNativeCodeReJITAware())
     {
-        CodeVersionManager *pCodeVersionManager = m_methodIter.Current()->GetCodeVersionManager();
-        CodeVersionManager::LockHolder codeVersioningLockHolder;
-        ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(PTR_MethodDesc(m_methodIter.Current()));
-        if (ilVersion.IsDefaultVersion() && !m_methodIter.Current()->HasNativeCode())
-        {
-            goto NextMethod;
-        }
+        goto NextMethod;
     }
 
     *instance = new (nothrow)
@@ -5248,7 +5243,7 @@ EnumMethodInstances::CdStart(MethodDesc* methodDesc,
                              CLRDATA_ENUM* handle)
 {
     if (!methodDesc->HasClassOrMethodInstantiation() &&
-        !methodDesc->HasNativeCode())
+        !methodDesc->HasNativeCodeReJITAware())
     {
         *handle = 0;
         return S_FALSE;
