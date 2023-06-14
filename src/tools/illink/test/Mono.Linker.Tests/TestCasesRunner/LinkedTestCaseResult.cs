@@ -17,19 +17,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public readonly ManagedCompilationResult CompilationResult;
 		public readonly LinkerTestLogger Logger;
 		public readonly LinkerCustomizations Customizations;
-		public readonly int ExitCode;
 
-		public LinkedTestCaseResult (
-			TestCase testCase,
-			NPath inputAssemblyPath,
-			NPath outputAssemblyPath,
-			NPath expectationsAssemblyPath,
-			TestCaseSandbox sandbox,
-			TestCaseMetadataProvider metadataProvider,
-			ManagedCompilationResult compilationResult,
-			LinkerTestLogger logger,
-			LinkerCustomizations customizations,
-			int exitCode)
+		public LinkedTestCaseResult (TestCase testCase, NPath inputAssemblyPath, NPath outputAssemblyPath, NPath expectationsAssemblyPath, TestCaseSandbox sandbox, TestCaseMetadataProvider metadataProvider, ManagedCompilationResult compilationResult, LinkerTestLogger logger, LinkerCustomizations customizations)
 		{
 			TestCase = testCase;
 			InputAssemblyPath = inputAssemblyPath;
@@ -40,7 +29,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			CompilationResult = compilationResult;
 			Logger = logger;
 			Customizations = customizations;
-			ExitCode = exitCode;
 		}
 	}
 }

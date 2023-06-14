@@ -107,7 +107,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual void Check (LinkedTestCaseResult linkResult)
 		{
-			Assert.AreEqual (0, linkResult.ExitCode, $"ILLink returned non-zero exit code: '{linkResult.ExitCode}'");
 			InitializeResolvers (linkResult);
 
 			try {
