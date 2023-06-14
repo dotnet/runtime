@@ -47,7 +47,7 @@
         IL_0001: stloc.0
         IL_0002: ldc.i4.m1
         IL_0003: stloc.1
-        IL_0004: ldc.i4.0
+        IL_0004: ldc.i4.5
         IL_0005: stloc.2
         IL_0006: ldc.r8 1
         IL_000b: call !!1 Unsafe::BitCast<float32, int32>(!!0)
@@ -56,7 +56,7 @@
         IL_001a: bne.un.s IL_0021
 
         IL_001c: ldloc.2
-        IL_001d: ldc.i4.s 10
+        IL_001d: ldc.i4.s 5
         IL_001f: add
         IL_0020: stloc.2
 
