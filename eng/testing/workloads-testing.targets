@@ -200,6 +200,7 @@
                      LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"
                      SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"
+                     OnlyUpdate="$(OnlyUpdateWorkload)"
       />
 
     <Touch Files="$(_SdkWithNoWorkloadStampPath)" AlwaysCreate="true" />

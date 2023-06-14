@@ -10,11 +10,8 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Xml.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-
-#nullable enable
 
 namespace Microsoft.Workload.Build.Tasks
 {
@@ -41,7 +38,7 @@ namespace Microsoft.Workload.Build.Tasks
         [Required, NotNull]
         public string         SdkWithNoWorkloadInstalledPath { get; set; } = string.Empty;
 
-        public bool           OnlyUpdateManifests{ get; set; }
+        public bool           OnlyUpdate { get; set; }
 
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
         private string AllManifestsStampPath => Path.Combine(SdkWithNoWorkloadInstalledPath, ".all-manifests.stamp");
@@ -68,11 +65,17 @@ namespace Microsoft.Workload.Build.Tasks
                 if (!InstallAllManifests())
                     return false;
 
-                if (OnlyUpdateManifests)
-                    return !Log.HasLoggedErrors;
+                // if (OnlyUpdate)
+                //     return !Log.HasLoggedErrors;
 
                 if (InstallTargets.Length == 0)
                     throw new LogAsErrorException($"No install targets specified.");
+
+                if (!File.Exists(TemplateNuGetConfigPath))
+                {
+                    Log.LogError($"Cannot find TemplateNuGetConfigPath={TemplateNuGetConfigPath}");
+                    return false;
+                }
 
                 InstallWorkloadRequest[] selectedRequests = InstallTargets
                     .SelectMany(workloadToInstall =>
@@ -94,30 +97,34 @@ namespace Microsoft.Workload.Build.Tasks
                                 : throw new LogAsErrorException($"Could not find any workload variant named '{w.variant}'");
                     }).ToArray();
 
-                foreach (InstallWorkloadRequest req in selectedRequests)
+                if (!OnlyUpdate)
                 {
-                    if (Directory.Exists(req.TargetPath))
+                    foreach (InstallWorkloadRequest req in selectedRequests)
                     {
-                        Log.LogMessage(MessageImportance.Low, $"Deleting directory {req.TargetPath}");
-                        Directory.Delete(req.TargetPath, recursive: true);
+                        if (Directory.Exists(req.TargetPath))
+                        {
+                            Log.LogMessage(MessageImportance.Low, $"Deleting directory {req.TargetPath}");
+                            Directory.Delete(req.TargetPath, recursive: true);
+                        }
                     }
                 }
-
-                string lastTargetPath = string.Empty;
-                foreach (InstallWorkloadRequest req in selectedRequests)
                 {
-                    if (req.TargetPath != lastTargetPath)
-                        Log.LogMessage(MessageImportance.High, $"{Environment.NewLine}** Preparing {req.TargetPath} **");
-                    lastTargetPath = req.TargetPath;
+                    string lastTargetPath = string.Empty;
+                    foreach (InstallWorkloadRequest req in selectedRequests)
+                    {
+                        if (req.TargetPath != lastTargetPath)
+                            Log.LogMessage(MessageImportance.High, $"{Environment.NewLine}** Preparing {req.TargetPath} **");
+                        lastTargetPath = req.TargetPath;
 
-                    Log.LogMessage(MessageImportance.High, $"    - {req.WorkloadId}: Installing workload");
-                    if (!req.Validate(Log))
-                        return false;
+                        Log.LogMessage(MessageImportance.High, $"    - {req.WorkloadId}: Installing workload");
+                        if (!req.Validate(Log))
+                            return false;
 
-                    if (!ExecuteInternal(req) && !req.IgnoreErrors)
-                        return false;
+                        if (!ExecuteInternal(req) && !req.IgnoreErrors)
+                            return false;
 
-                    File.WriteAllText(req.StampPath, string.Empty);
+                        File.WriteAllText(req.StampPath, string.Empty);
+                    }
                 }
 
                 return !Log.HasLoggedErrors;
@@ -136,14 +143,11 @@ namespace Microsoft.Workload.Build.Tasks
 
         private bool ExecuteInternal(InstallWorkloadRequest req)
         {
-            if (!File.Exists(TemplateNuGetConfigPath))
+            if (!OnlyUpdate)
             {
-                Log.LogError($"Cannot find TemplateNuGetConfigPath={TemplateNuGetConfigPath}");
-                return false;
+                Log.LogMessage(MessageImportance.Low, $"Duplicating {SdkWithNoWorkloadInstalledPath} into {req.TargetPath}");
+                Utils.DirectoryCopy(SdkWithNoWorkloadInstalledPath, req.TargetPath);
             }
-
-            Log.LogMessage(MessageImportance.Low, $"Duplicating {SdkWithNoWorkloadInstalledPath} into {req.TargetPath}");
-            Utils.DirectoryCopy(SdkWithNoWorkloadInstalledPath, req.TargetPath);
 
             string nugetConfigContents = GetNuGetConfig();
             if (!InstallPacks(req, nugetConfigContents))
