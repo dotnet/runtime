@@ -89,9 +89,9 @@ internal sealed class JSEngineHost
                                     _logger,
                                     msg => { if (msg != null) _logger.LogInformation(msg); },
                                     msg => { if (msg != null) _logger.LogInformation(msg); },
-                                    silent: !_args.CommonConfig.Silent);
+                                    silent: _args.CommonConfig.Silent);
 
-        if (_args.CommonConfig.Silent)
+        if (!_args.CommonConfig.Silent)
             Console.WriteLine($"{_args.Host} exited with {exitCode}");
         return exitCode;
     }
