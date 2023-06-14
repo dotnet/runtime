@@ -137,7 +137,7 @@ steps:
         artifactName:  ${{ parameters.artifactName }}
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
-        rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/bin/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
+        rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/bin/publish/app/HelloiOS/Release-iphoneos/HelloiOS.app
         includeRootFolder: true
         displayName: iOS Sample App Symbols
         artifactName: iOSSampleAppSymbols
@@ -159,7 +159,7 @@ steps:
         artifactName:  ${{ parameters.artifactName }}
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
-        rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/bin/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
+        rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/bin/publish/app/HelloiOS/Release-iphoneos/HelloiOS.app
         includeRootFolder: true
         displayName: iOS Sample App NoSymbols
         artifactName: iOSSampleAppNoSymbols

@@ -3,23 +3,19 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.IO;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
 using Xunit;
-using System.Diagnostics;
-
-using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
 using StringMarshalling = System.Runtime.InteropServices.StringMarshalling;
-using System.Runtime.InteropServices.Marshalling;
-using Microsoft.CodeAnalysis.CSharp;
+using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
@@ -519,6 +515,60 @@ namespace ComInterfaceGenerator.Unit.Tests
                 return additionalProject.WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true)).Solution;
             });
 
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task VerifyDiagnosticIsOnAttributedSyntax()
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                partial interface J
+                {
+                }
+
+                [GeneratedComInterface]
+                partial interface {|#0:J|}
+                {
+                    void Method();
+                }
+
+                partial interface J
+                {
+                }
+                """;
+            DiagnosticResult expectedDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidAttributedInterfaceMissingGuidAttribute)
+                .WithLocation(0).WithArguments("J");
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, expectedDiagnostic);
+        }
+
+        internal class UnsafeBlocksNotAllowedTest : VerifyComInterfaceGenerator.Test
+        {
+            internal UnsafeBlocksNotAllowedTest(bool referenceAncillaryInterop) : base(referenceAncillaryInterop) { }
+            protected override CompilationOptions CreateCompilationOptions()
+                => new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: false);
+        }
+
+        [Fact]
+        public async Task VerifyGeneratedComInterfaceWithoutAllowUnsafeBlocksWarns()
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                partial interface {|#0:J|}
+                {
+                    void Method();
+                }
+                """;
+            DiagnosticResult expectedDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.RequiresAllowUnsafeBlocks)
+                .WithLocation(0);
+            var test = new UnsafeBlocksNotAllowedTest(false);
+            test.TestState.Sources.Add(source);
+            test.ExpectedDiagnostics.Add(expectedDiagnostic);
             await test.RunAsync();
         }
     }
