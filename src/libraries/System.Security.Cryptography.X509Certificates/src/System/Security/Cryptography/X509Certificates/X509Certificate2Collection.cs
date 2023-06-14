@@ -109,12 +109,16 @@ namespace System.Security.Cryptography.X509Certificates
 
         public byte[]? Export(X509ContentType contentType)
         {
-            return Export(contentType, password: null);
+            using (var safePasswordHandle = new SafePasswordHandle((string?)null, passwordProvided: false))
+            using (IExportPal storePal = StorePal.LinkFromCertificateCollection(this))
+            {
+                return storePal.Export(contentType, safePasswordHandle);
+            }
         }
 
         public byte[]? Export(X509ContentType contentType, string? password)
         {
-            using (var safePasswordHandle = new SafePasswordHandle(password))
+            using (var safePasswordHandle = new SafePasswordHandle(password, passwordProvided: true))
             using (IExportPal storePal = StorePal.LinkFromCertificateCollection(this))
             {
                 return storePal.Export(contentType, safePasswordHandle);
@@ -152,7 +156,11 @@ namespace System.Security.Cryptography.X509Certificates
         /// </param>
         public void Import(ReadOnlySpan<byte> rawData)
         {
-            Import(rawData, password: null, keyStorageFlags: X509KeyStorageFlags.DefaultKeySet);
+            using (var safePasswordHandle = new SafePasswordHandle((string?)null, passwordProvided: false))
+            using (ILoaderPal storePal = StorePal.FromBlob(rawData, safePasswordHandle, X509KeyStorageFlags.DefaultKeySet))
+            {
+                storePal.MoveTo(this);
+            }
         }
 
         public void Import(byte[] rawData, string? password, X509KeyStorageFlags keyStorageFlags = 0)
@@ -199,7 +207,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             X509Certificate.ValidateKeyStorageFlags(keyStorageFlags);
 
-            using (var safePasswordHandle = new SafePasswordHandle(password))
+            using (var safePasswordHandle = new SafePasswordHandle(password, passwordProvided: true))
             using (ILoaderPal storePal = StorePal.FromBlob(rawData, safePasswordHandle, keyStorageFlags))
             {
                 storePal.MoveTo(this);
@@ -208,7 +216,14 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void Import(string fileName)
         {
-            Import(fileName, password: null, keyStorageFlags: X509KeyStorageFlags.DefaultKeySet);
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+
+            using (var safePasswordHandle = new SafePasswordHandle((string?)null, passwordProvided: false))
+            using (ILoaderPal storePal = StorePal.FromFile(fileName, safePasswordHandle, X509KeyStorageFlags.DefaultKeySet))
+            {
+                storePal.MoveTo(this);
+            }
         }
 
         public void Import(string fileName, string? password, X509KeyStorageFlags keyStorageFlags = 0)
@@ -218,7 +233,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             X509Certificate.ValidateKeyStorageFlags(keyStorageFlags);
 
-            using (var safePasswordHandle = new SafePasswordHandle(password))
+            using (var safePasswordHandle = new SafePasswordHandle(password, passwordProvided: true))
             using (ILoaderPal storePal = StorePal.FromFile(fileName, safePasswordHandle, keyStorageFlags))
             {
                 storePal.MoveTo(this);
@@ -244,7 +259,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             X509Certificate.ValidateKeyStorageFlags(keyStorageFlags);
 
-            using (var safePasswordHandle = new SafePasswordHandle(password))
+            using (var safePasswordHandle = new SafePasswordHandle(password, passwordProvided: true))
             using (ILoaderPal storePal = StorePal.FromFile(fileName, safePasswordHandle, keyStorageFlags))
             {
                 storePal.MoveTo(this);
