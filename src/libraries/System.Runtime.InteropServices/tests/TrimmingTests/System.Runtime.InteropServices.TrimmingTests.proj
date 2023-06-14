@@ -1,0 +1,11 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <ItemGroup>
+    <TestConsoleAppSourceFiles Include="GeneratedComInterfaceComImportInteropTrimmed.cs">
+      <DisabledFeatureSwitches>System.Runtime.InteropServices.Marshalling.EnableGeneratedComInterfaceComImportInterop</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

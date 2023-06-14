@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices.Marshalling
 {
@@ -20,7 +21,7 @@ namespace System.Runtime.InteropServices.Marshalling
 
         protected virtual IIUnknownInterfaceDetailsStrategy GetOrCreateInterfaceDetailsStrategy()
         {
-            if (ComObject.ComImportInteropEnabled && RuntimeFeature.IsDynamicCodeSupported)
+            if (RuntimeFeature.IsDynamicCodeSupported && OperatingSystem.IsWindows() && ComObject.ComImportInteropEnabled)
             {
 #pragma warning disable IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
                 return ComImportInteropInterfaceDetailsStrategy.Instance;

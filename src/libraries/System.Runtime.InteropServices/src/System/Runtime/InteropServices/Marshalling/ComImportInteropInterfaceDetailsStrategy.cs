@@ -19,8 +19,9 @@ namespace System.Runtime.InteropServices.Marshalling
         // TODO: Support exposing ComImport interfaces through StrategyBasedComWrappers?
         public IComExposedDetails? GetComExposedTypeDetails(RuntimeTypeHandle type) => DefaultIUnknownInterfaceDetailsStrategy.Instance.GetComExposedTypeDetails(type);
 
-        [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "Runtime-based COM interop is not supported with trimming enabled.")]
+        [UnconditionalSuppressMessage("Trimming", "IL2065", Justification = "Runtime-based COM interop is not supported with trimming enabled.")]
         [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "Runtime-based COM interop is not supported with trimming enabled.")]
+        [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "Runtime-based COM interop is not supported with trimming enabled.")]
         [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Runtime-based COM interop is not supported with trimming enabled.")]
         public IIUnknownDerivedDetails? GetIUnknownDerivedDetails(RuntimeTypeHandle type)
         {
