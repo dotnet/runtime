@@ -409,7 +409,7 @@ namespace System.Runtime.InteropServices
 #pragma warning restore CS8500
             }
 
-            private ManagedObjectWrapper* _wrapper;
+            private readonly ManagedObjectWrapper* _wrapper;
             private readonly ManagedObjectWrapperReleaser _releaser;
             private readonly object _wrappedObject;
 
