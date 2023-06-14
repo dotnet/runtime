@@ -3,11 +3,14 @@
 
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Formats.Asn1;
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
+using System.Security.Cryptography.Asn1.Pkcs12;
 using System.Text;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -62,7 +65,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (!data.IsEmpty)
             {
                 // For compat reasons, this constructor treats passing a null or empty data set as the same as calling the nullary constructor.
-                using (var safePasswordHandle = new SafePasswordHandle((string?)null))
+                using (var safePasswordHandle = new SafePasswordHandle((string?)null, passwordProvided: false))
                 {
                     Pal = CertificatePal.FromBlob(data, safePasswordHandle, X509KeyStorageFlags.DefaultKeySet);
                 }
@@ -90,7 +93,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             ValidateKeyStorageFlags(keyStorageFlags);
 
-            using (var safePasswordHandle = new SafePasswordHandle(password))
+            using (var safePasswordHandle = new SafePasswordHandle(password, passwordProvided: true))
             {
                 Pal = CertificatePal.FromBlob(rawData, safePasswordHandle, keyStorageFlags);
             }
@@ -105,7 +108,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             ValidateKeyStorageFlags(keyStorageFlags);
 
-            using (var safePasswordHandle = new SafePasswordHandle(password))
+            using (var safePasswordHandle = new SafePasswordHandle(password, passwordProvided: true))
             {
                 Pal = CertificatePal.FromBlob(rawData, safePasswordHandle, keyStorageFlags);
             }
@@ -118,7 +121,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             ValidateKeyStorageFlags(keyStorageFlags);
 
-            using (var safePasswordHandle = new SafePasswordHandle(password))
+            using (var safePasswordHandle = new SafePasswordHandle(password, passwordProvided: true))
             {
                 Pal = CertificatePal.FromBlob(rawData, safePasswordHandle, keyStorageFlags);
             }
@@ -162,7 +165,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             ValidateKeyStorageFlags(keyStorageFlags);
 
-            using (var safePasswordHandle = new SafePasswordHandle(password))
+            using (var safePasswordHandle = new SafePasswordHandle(password, passwordProvided: true))
             {
                 Pal = CertificatePal.FromFile(fileName, safePasswordHandle, keyStorageFlags);
             }
@@ -174,7 +177,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             ValidateKeyStorageFlags(keyStorageFlags);
 
-            using (var safePasswordHandle = new SafePasswordHandle(password))
+            using (var safePasswordHandle = new SafePasswordHandle(password, passwordProvided: true))
             {
                 Pal = CertificatePal.FromFile(fileName, safePasswordHandle, keyStorageFlags);
             }
@@ -190,7 +193,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             ValidateKeyStorageFlags(keyStorageFlags);
 
-            using (var safePasswordHandle = new SafePasswordHandle(password))
+            using (var safePasswordHandle = new SafePasswordHandle(password, passwordProvided: true))
             {
                 Pal = CertificatePal.FromFile(fileName, safePasswordHandle, keyStorageFlags);
             }
@@ -302,7 +305,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (Pal == null)
                 throw new CryptographicException(ErrorCode.E_POINTER);  // Not the greatest error, but needed for backward compat.
 
-            using (var safePasswordHandle = new SafePasswordHandle(password))
+            using (var safePasswordHandle = new SafePasswordHandle(password, passwordProvided: true))
             {
                 return Pal.Export(contentType, safePasswordHandle);
             }
@@ -316,7 +319,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (Pal == null)
                 throw new CryptographicException(ErrorCode.E_POINTER);  // Not the greatest error, but needed for backward compat.
 
-            using (var safePasswordHandle = new SafePasswordHandle(password))
+            using (var safePasswordHandle = new SafePasswordHandle(password, passwordProvided: true))
             {
                 return Pal.Export(contentType, safePasswordHandle);
             }
@@ -678,6 +681,88 @@ namespace System.Security.Cryptography.X509Certificates
         {
             if (!(contentType == X509ContentType.Cert || contentType == X509ContentType.SerializedCert || contentType == X509ContentType.Pkcs12))
                 throw new CryptographicException(SR.Cryptography_X509_InvalidContentType);
+        }
+
+        internal static void EnforceIterationCountLimit(ReadOnlySpan<byte> pkcs12, bool readingFromFile, bool passwordProvided)
+        {
+            if (readingFromFile || passwordProvided)
+            {
+                return;
+            }
+
+            long pkcs12UnspecifiedPasswordIterationLimit = LocalAppContextSwitches.Pkcs12UnspecifiedPasswordIterationLimit;
+
+            // -1 = no limit
+            if (LocalAppContextSwitches.Pkcs12UnspecifiedPasswordIterationLimit == -1)
+            {
+                return;
+            }
+
+            // any other negative number means use default limits
+            if (pkcs12UnspecifiedPasswordIterationLimit < 0)
+            {
+                pkcs12UnspecifiedPasswordIterationLimit = LocalAppContextSwitches.DefaultPkcs12UnspecifiedPasswordIterationLimit;
+            }
+
+            try
+            {
+                try
+                {
+                    checked
+                    {
+                        KdfWorkLimiter.SetIterationLimit((ulong)pkcs12UnspecifiedPasswordIterationLimit);
+                        ulong observedIterationCount = GetIterationCount(pkcs12);
+
+                        // Check both conditions: we want a KDF-exceeded failure anywhere in the system to produce a failure here.
+                        // There are some places within the GetIterationCount method where we optimistically try processing the
+                        // PFX in one manner, and if we see failures we'll swallow any exceptions and try a different manner
+                        // instead. The problem with this is that when we swallow failures, we don't have the ability to add the
+                        // so-far-observed iteration count back to the running total returned by GetIterationCount. This
+                        // potentially allows a clever adversary a window through which to squeeze in work beyond our configured
+                        // limits. To mitigate this risk, we'll fail now if we observed *any* KDF-exceeded failure while processing
+                        // this PFX.
+                        if (observedIterationCount > (ulong)pkcs12UnspecifiedPasswordIterationLimit || KdfWorkLimiter.WasWorkLimitExceeded())
+                        {
+                            throw new CryptographicException(); // iteration count exceeded
+                        }
+                    }
+                }
+                finally
+                {
+                    KdfWorkLimiter.ResetIterationLimit();
+                }
+            }
+            catch (Exception ex)
+            {
+                // It's important for this catch-all block to be *outside* the inner try/finally
+                // so that we can prevent exception filters from running before we've had a chance
+                // to clean up the threadstatic.
+                throw new CryptographicException(SR.Cryptography_X509_PfxWithoutPassword, ex);
+            }
+        }
+
+        internal static ulong GetIterationCount(ReadOnlySpan<byte> pkcs12)
+        {
+            ulong iterations;
+
+            unsafe
+            {
+                fixed (byte* pin = pkcs12)
+                {
+                    using (var manager = new PointerMemoryManager<byte>(pin, pkcs12.Length))
+                    {
+                        AsnValueReader reader = new AsnValueReader(pkcs12, AsnEncodingRules.BER);
+                        PfxAsn.Decode(ref reader, manager.Memory, out PfxAsn pfx);
+
+                        // Don't throw when trailing data is present.
+                        // Windows doesn't have such enforcement as well.
+
+                        iterations = pfx.CountTotalIterations();
+                    }
+                }
+            }
+
+            return iterations;
         }
 
         internal const X509KeyStorageFlags KeyStorageFlagsAll =

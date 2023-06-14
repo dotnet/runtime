@@ -311,7 +311,7 @@ namespace Microsoft.Interop
 
         public StatefulLinearCollectionBlittableElementsMarshalling(
             ICustomTypeMarshallingStrategy innerMarshaller, MarshallerShape shape, TypeSyntax managedElementType, TypeSyntax unmanagedElementType, ExpressionSyntax numElementsExpression)
-            : base (managedElementType, unmanagedElementType)
+            : base(managedElementType, unmanagedElementType)
         {
             _innerMarshaller = innerMarshaller;
             _shape = shape;
@@ -451,7 +451,7 @@ namespace Microsoft.Interop
             IMarshallingGenerator elementMarshaller,
             TypePositionInfo elementInfo,
             ExpressionSyntax numElementsExpression)
-            : base (unmanagedElementType, elementMarshaller, elementInfo)
+            : base(unmanagedElementType, elementMarshaller, elementInfo)
         {
             _innerMarshaller = innerMarshaller;
             _shape = shape;
@@ -480,6 +480,7 @@ namespace Microsoft.Interop
                         IdentifierName(ShapeMemberNames.Free)),
                     ArgumentList()));
         }
+
         public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
 
         public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context)
@@ -500,6 +501,7 @@ namespace Microsoft.Interop
 
             // ReadOnlySpan<T> <managedSpan> = <marshaller>.GetManagedValuesSource()
             // Span<TUnmanagedElement> <nativeSpan> = <marshaller>.GetUnmanagedValuesDestination()
+            // <if multidimensional collection> <nativeSpan>.Clear()
             // << marshal contents >>
             yield return GenerateMarshalStatement(info, context);
         }
@@ -507,8 +509,8 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateNotifyForSuccessfulInvokeStatements(info, context);
         public IEnumerable<StatementSyntax> GeneratePinnedMarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GeneratePinnedMarshalStatements(info, context);
         public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GeneratePinStatements(info, context);
-        public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateSetupStatements(info, context);
-
+        public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context)
+            => DeclareLastIndexMarshalledIfNeeded(info, context).Concat(_innerMarshaller.GenerateSetupStatements(info, context));
         public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
             string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
