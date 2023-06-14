@@ -756,14 +756,19 @@ namespace System.Tests
             AssertExtensions.SequenceEqual(stackalloc int[] { 2, 1, 4, 3 }, items);
         }
 
-        [Fact]
-        public static void Shuffle_Array_Fairness()
+        [Theory]
+        [InlineData(1000, 50, 2565)]
+        [InlineData(1000, 49, 2465)]
+        public static void Shuffle_Array_Fairness(int runs, int len, double critical)
         {
-            // Test that repeatedly shuffling an array puts each value in each position a roughly equal number of times.
-            // This does not prove that the shuffle is fair but will at least fail if the shuffle is obviously unfair
-            const int runs = 10000;
-            const int len = 50;
-            int[,] counts = new int[len, len];
+          // Test that repeatedly shuffling an array puts each value in each position a roughly equal number of times.
+          // This does not prove that the shuffle is fair but will at least fail if the shuffle is obviously unfair.
+          // This is a "Chi Squared Goodness of fit" problem.
+          // The number of degrees of freedom is (len - 1)*(len - 1).
+          // The significance is 0.01 so this test should naturally fail for 1 in 100 seeds.
+          // To calculate the critical values I used an Excel formula e.g. `=Round(CHISQ.INV.RT(0.01,49 * 49))`
+
+            int[,] buckets = new int[len, len];
             var rng = new Random(123);
             for (int i = 0; i < runs; i++)
             {
@@ -779,16 +784,20 @@ namespace System.Tests
                 for (int j = 0; j < len; j++)
                 {
                     int index = array[j];
-                    counts[j, index]++;
+                    buckets[j, index]++;
                 }
             }
     
-            const int expected = runs / len;
-            foreach (int count in counts)
+            double expectedPerBucket = (double) runs / len;
+            double chiSquare = 0;
+            foreach (var bucket in buckets)
             {
-                Assert.InRange(count, expected / 10 * 7, expected * 13 / 10);
+                chiSquare += Math.Pow(bucket - expectedPerBucket, 2) / expectedPerBucket;
             }
+            Assert.InRange(chiSquare, 0, critical);
         }
+
+
 
         [Fact]
         public static void GetItems_Span_ArgValidation()
