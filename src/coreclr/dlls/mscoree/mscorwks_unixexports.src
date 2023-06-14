@@ -19,6 +19,7 @@ MetaDataGetDispenser
 mono_unity_initialize_host_apis
 coreclr_array_length
 coreclr_class_from_systemtypeinstance
+coreclr_image_get_custom_attribute_data
 mono_add_internal_call
 mono_array_addr_with_size
 mono_array_class_get
@@ -27,6 +28,7 @@ mono_array_new
 mono_assembly_close
 mono_assembly_fill_assembly_name
 mono_assembly_foreach
+mono_assembly_get_assemblyref
 mono_assembly_get_image
 mono_assembly_get_object
 mono_assembly_load_from

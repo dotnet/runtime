@@ -9,29 +9,50 @@ using System.Runtime.Loader;
 using System.Runtime.Serialization;
 using System.Text;
 
-[assembly:DisableRuntimeMarshalling]
+[assembly: DisableRuntimeMarshalling]
 
 namespace Unity.CoreCLRHelpers;
 
 using StringPtr = IntPtr;
 static unsafe partial class CoreCLRHost
 {
-    static ALCWrapper alcWrapper;
+    // Runtime assembly validation field
     static FieldInfo assemblyHandleField;
-    private static HostStructNative* _hostStructNative;
-    private static readonly Dictionary<Assembly, AssemblyInfo> m_assemblies = new ();
 
-    private readonly struct AssemblyInfo
+    // Logging utilities
+    static HostStructNative* _hostStructNative;
+
+    // Bootstrap and system AssemblyLoadContext. The first ALC we create and consider as a root domain, which
+    // should load all "System" assemblies.
+    // Not unloadable!
+    static ALCWrapper s_SystemAlc;
+
+    // Unity AssemblyLoadContext. This is the ALC that loads all engine and user assemblies.
+    // Unloadable
+    static List<ALCWrapper> s_UnityAlcs;
+
+    // Loaded assemblies cache.
+    // Contains data needed for frequent queries from the native code. 
+    static readonly Dictionary<Assembly, AssemblyCachedInfo> k_AssemblyCache = new ();
+    static readonly Dictionary<string, AssemblyCachedInfo> k_AssemblyNameCache = new ();
+
+    class AssemblyCachedInfo
     {
-        public AssemblyInfo(IntPtr handle, IntPtr name, IntPtr filename)
+        public AssemblyCachedInfo(Assembly assembly)
         {
-            this.handle = handle;
-            this.name = name;
-            this.filename = filename;
+            handle = GCHandle.ToIntPtr(GCHandle.Alloc(assembly));
+            name = Marshal.StringToHGlobalAnsi(assembly.GetName().Name);
+            filename = Marshal.StringToHGlobalAnsi(assembly.Location);
+            module = assembly.GetLoadedModules(true)[0];
         }
+
+        // Data for the return to the native code. Don't forget to release handle!
         public readonly IntPtr handle;
         public readonly IntPtr name;
         public readonly IntPtr filename;
+
+        // For acceleration of managed code
+        public readonly Module module;
     }
 
     internal static int InitMethod(HostStruct* functionStruct, int structSize, HostStructNative* functionStructNative, int structSizeNative)
@@ -42,10 +63,9 @@ static unsafe partial class CoreCLRHost
         if (Marshal.SizeOf<HostStructNative>() != structSizeNative)
             throw new Exception($"Invalid struct size for {nameof(HostStructNative)}, Managed was {Marshal.SizeOf<HostStructNative>()} and Native was {structSizeNative}");
 
-        InitState();
-
         _hostStructNative = functionStructNative;
 
+        InitState();
         InitHostStruct(functionStruct);
 
         return 0;
@@ -53,7 +73,10 @@ static unsafe partial class CoreCLRHost
 
     internal static void InitState()
     {
-        alcWrapper = new ALCWrapper();
+        // Initialize ALCs
+        s_SystemAlc = new ALCWrapper("System", null);
+        s_UnityAlcs = new List<ALCWrapper>();
+
         assemblyHandleField = typeof(Assembly).Assembly.GetType("System.Reflection.RuntimeAssembly").GetField("m_assembly", BindingFlags.Instance | BindingFlags.NonPublic);
         if (assemblyHandleField == null)
             throw new Exception("Failed to find RuntimeAssembly.m_assembly field.");
@@ -62,31 +85,43 @@ static unsafe partial class CoreCLRHost
     static partial void InitHostStruct(HostStruct* functionStruct);
 
     [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
-    public static IntPtr /*Assembly*/ load_assembly_from_data(byte* data, long size)
+    public static IntPtr /*Assembly*/ load_assembly_from_data([NativeCallbackType("MonoDomain*")] IntPtr rawAlc, byte* data, long size)
     {
-        var assembly = alcWrapper.CallLoadFromAssemblyData(data, size);
+        ALCWrapper alc = rawAlc != IntPtr.Zero ? rawAlc.ALCWrapperFromGCHandleIntPtr() : s_SystemAlc;
+        var assembly = alc.CallLoadFromAssemblyData(data, size);
         return GetInfoForAssembly(assembly).handle;
     }
 
     [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
-    public static IntPtr /*Assembly*/ load_assembly_from_path(byte* path, int length)
+    public static IntPtr /*Assembly*/ load_assembly_from_path([NativeCallbackType("MonoDomain*")] IntPtr rawAlc, byte* path, int length)
     {
-        var assembly = alcWrapper.CallLoadFromAssemblyPath(Encoding.UTF8.GetString(path, length));
+        ALCWrapper alc = rawAlc != IntPtr.Zero ? rawAlc.ALCWrapperFromGCHandleIntPtr() : s_SystemAlc;
+        var assembly = alc.CallLoadFromAssemblyPath(Encoding.UTF8.GetString(path, length));
         return GetInfoForAssembly(assembly).handle;
     }
 
-    private static AssemblyInfo GetInfoForAssembly(Assembly assembly)
+    static AssemblyCachedInfo GetInfoForAssembly(Assembly assembly)
     {
-        lock (m_assemblies)
+        lock (k_AssemblyCache) // Use only main cache for locks!
         {
-            if (!m_assemblies.TryGetValue(assembly, out var info))
+            if (!k_AssemblyCache.TryGetValue(assembly, out var info))
             {
-                info = new AssemblyInfo(GCHandle.ToIntPtr(GCHandle.Alloc(assembly)),
-                    Marshal.StringToHGlobalAnsi(assembly.GetName().Name),
-                    Marshal.StringToHGlobalAnsi(assembly.Location));
-                m_assemblies[assembly] = info;
+                info = new AssemblyCachedInfo(assembly);
+                // Keep caches in sync
+                k_AssemblyCache[assembly] = info;
+                // Tests load the test assembly into the default assembly load context (e.g. TestCase[typeof(Mammal)]),
+                // so that load_assembly_from_path later does subsequent load into the new "system" ALC.
+                k_AssemblyNameCache.TryAdd(assembly.GetName().Name, info);
             }
             return info;
+        }
+    }
+
+    static AssemblyCachedInfo GetInfoForAssembly(string assemblySimpleName)
+    {
+        lock (k_AssemblyCache) // Use only main cache for locks!
+        {
+            return !k_AssemblyNameCache.TryGetValue(assemblySimpleName, out var info) ? null : info;
         }
     }
 
@@ -107,25 +142,6 @@ static unsafe partial class CoreCLRHost
         return assembly.GetType(assemblyQualified, false, ignoreCase).TypeHandleIntPtr();
     }
 
-    public static int image_get_table_rows([NativeCallbackType("MonoImage*")] IntPtr image, int table_id)
-    {
-        const int MONO_TABLE_TYPEDEF = 2;
-        if (table_id == MONO_TABLE_TYPEDEF)
-        {
-            Assembly assembly = image.AssemblyFromGCHandleIntPtr();
-            return assembly.GetTypes().Length;
-        }
-
-        return 0;
-    }
-
-    [return: NativeCallbackType("MonoClass*")]
-    public static IntPtr unity_class_get([NativeCallbackType("MonoImage*")] IntPtr image, uint type_token)
-    {
-        Assembly assembly = image.AssemblyFromGCHandleIntPtr();
-        return RuntimeTypeHandle.ToIntPtr(assembly.GetLoadedModules(getResourceModules: true)[0].ModuleHandle.GetRuntimeTypeHandleFromMetadataToken((int)type_token));
-    }
-
     [return: NativeCallbackType("MonoImage*")]
     public static IntPtr class_get_image([NativeCallbackType("MonoClass*")] IntPtr klass)
     {
@@ -133,10 +149,82 @@ static unsafe partial class CoreCLRHost
         return GetInfoForAssembly(type.Assembly).handle;
     }
 
+    [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
+    [return: NativeCallbackType("MonoDomain*")]
+    public static IntPtr get_system_assembly_load_context()
+    {
+        return GCHandle.ToIntPtr(GCHandle.Alloc(s_SystemAlc));
+    }
+
+    [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
+    public static int add_system_assembly_search_path([NativeCallbackType("const char*")] sbyte* raw_path)
+    {
+        string path = new(raw_path);
+        s_SystemAlc.AddSearchPath(path);
+        return 0;
+    }
+
+    [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
+    [return: NativeCallbackType("MonoDomain*")]
+    public static IntPtr create_assembly_load_context([NativeCallbackType("const char*")] sbyte* raw_name)
+    {
+        string name = new(raw_name);
+        var context = new ALCWrapper(name, s_SystemAlc);
+        s_UnityAlcs.Add(context);
+
+        return GCHandle.ToIntPtr(GCHandle.Alloc(context));
+    }
+
+    [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
+    [return: NativeCallbackType("MonoObject*")]
+    public static IntPtr unload_assembly_load_context([NativeCallbackType("MonoDomain*")] IntPtr raw_alc)
+    {
+        GCHandle alcHandle = GCHandle.FromIntPtr(raw_alc);
+        ALCWrapper alc = (ALCWrapper)alcHandle.Target;
+
+        Log($"unload_assembly_load_context: {alc.Name}");
+
+        var alcAssemblies = alc.Assemblies;
+
+        // Remove all cached assemblies which belong to the context
+        lock (k_AssemblyCache)
+        {
+            foreach (var assembly in alcAssemblies)
+            {
+                if (k_AssemblyCache.TryGetValue(assembly, out var assemblyInfo))
+                {
+                    GCHandle.FromIntPtr(assemblyInfo.handle).Free();
+
+                    k_AssemblyCache.Remove(assembly);
+                    k_AssemblyNameCache.Remove(assembly.GetName().Name);
+                }
+            }
+        }
+
+        // Take week reference
+        var alcRef = ALCWrapper.InitUnload(alc);
+
+        // And remove own references
+        s_UnityAlcs.Remove(alc);
+        alcHandle.Free();
+        alc = null;
+
+        var exception = ALCWrapper.FinishUnload(alcRef);
+        return exception != null ? exception.ToNativeRepresentation() : IntPtr.Zero;
+    }
+
+
     [return: NativeCallbackType("MonoImage*")]
     public static IntPtr image_loaded([NativeCallbackType("const char*")] sbyte* name)
     {
         string sname = new(name);
+
+        // Quick path for already cached assemblies
+        var assemblyInfo = GetInfoForAssembly(sname);
+        if (assemblyInfo != null)
+            return assemblyInfo.handle;
+
+        // Slow path for assemblies which are not cached yet
         foreach (var context in AssemblyLoadContext.All)
         {
             foreach (var asm in context.Assemblies)
@@ -144,12 +232,6 @@ static unsafe partial class CoreCLRHost
                 if (Path.GetFileNameWithoutExtension(asm.GetLoadedModules(getResourceModules: true)[0].Name).Equals(sname))
                     return GetInfoForAssembly(asm).handle;
             }
-        }
-
-        foreach (var asm in alcWrapper.Assemblies)
-        {
-            if (Path.GetFileNameWithoutExtension(asm.GetLoadedModules(getResourceModules: true)[0].Name).Equals(sname))
-                return GetInfoForAssembly(asm).handle;
         }
 
         return nint.Zero;
@@ -297,6 +379,38 @@ static unsafe partial class CoreCLRHost
         IntPtr domain,
         [NativeCallbackType("MonoType*")] IntPtr type)
         => type.TypeFromHandleIntPtr().ToNativeRepresentation();
+
+    // Keeping for reference for the move to C#
+    // Currently Type is not loaded
+    [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
+    [return: NativeCallbackType("MonoClass*")]
+    public static IntPtr unity_class_get(
+        [NativeCallbackType("MonoImage*")] IntPtr image,
+        uint token)
+    {
+        Assembly assembly = image.AssemblyFromGCHandleIntPtr();
+        // Cache module acquisition to avoid unnecessary allocation of Module[]
+        var assemblyInfo = GetInfoForAssembly(assembly);
+        var typeHandle = assemblyInfo.module.ModuleHandle.GetRuntimeTypeHandleFromMetadataToken((int)token);
+        // Loads type if not already loaded
+        return Type.GetTypeFromHandle(typeHandle).TypeHandleIntPtr();
+    }
+
+    // Keeping for reference for the move to C#
+    [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
+    [return: NativeCallbackType("MonoMethod*")]
+    public static IntPtr get_method(
+        [NativeCallbackType("MonoImage*")] IntPtr image,
+        uint token,
+        [NativeCallbackType("MonoClass*")] IntPtr klass)
+    {
+        Assembly assembly = image.AssemblyFromGCHandleIntPtr();
+        // Cache module acquisition to avoid unnecessary allocation of Module[]
+        var assemblyInfo = GetInfoForAssembly(assembly);
+        var methodHandle = assemblyInfo.module.ModuleHandle.GetRuntimeMethodHandleFromMetadataToken((int)token);
+        // Loads method if not already loaded
+        return MethodBase.GetMethodFromHandle(methodHandle).MethodHandle.MethodHandleIntPtr();
+    }
 
     [return: NativeCallbackType("MonoObject*")]
     public static IntPtr unity_class_get_attribute(
@@ -447,7 +561,7 @@ static unsafe partial class CoreCLRHost
         return IntPtr.Zero;
     }
 
-    static void Log(string message)
+    internal static void Log(string message)
     {
         var bytes = System.Text.Encoding.UTF8.GetBytes(message);
         fixed (byte* p = bytes)

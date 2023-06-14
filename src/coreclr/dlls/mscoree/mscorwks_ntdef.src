@@ -33,6 +33,7 @@ EXPORTS
         mono_unity_initialize_host_apis
         coreclr_array_length
         coreclr_class_from_systemtypeinstance
+        coreclr_image_get_custom_attribute_data
         mono_add_internal_call
         mono_array_addr_with_size
         mono_array_class_get
@@ -41,6 +42,7 @@ EXPORTS
         mono_assembly_close
         mono_assembly_fill_assembly_name
         mono_assembly_foreach
+        mono_assembly_get_assemblyref
         mono_assembly_get_image
         mono_assembly_get_object
         mono_assembly_load_from
@@ -274,6 +276,7 @@ EXPORTS
         mono_unity_class_try_get_vtable
         mono_unity_domain_mempool_chunk_foreach
         mono_unity_domain_set_config
+        mono_unity_domain_unload
         mono_unity_field_from_token_checked
         mono_unity_field_get_attribute
         mono_unity_free_captured_memory_snapshot
@@ -306,6 +309,8 @@ EXPORTS
         mono_unity_start_gc_world
         mono_unity_stop_gc_world
         mono_unity_string_empty_wrapper
+        mono_unity_thread_fast_attach
+        mono_unity_thread_fast_detach
         mono_unity_type_get_name_full_chunked
         mono_unity_type_is_pointer_type
         mono_unity_type_is_static

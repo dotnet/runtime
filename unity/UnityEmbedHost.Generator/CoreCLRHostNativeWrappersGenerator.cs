@@ -189,7 +189,6 @@ namespace Unity.CoreCLRHelpers;
             case "MonoClass*":
             case "MonoType*":
                 return "Type";
-            case "MonoDomain*":
             case "MonoObject*":
                 return "object";
             case "MonoArray*":

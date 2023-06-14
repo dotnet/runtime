@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
@@ -10,13 +11,10 @@ using System.Text;
 
 namespace Unity.CoreCLRHelpers
 {
-    internal class ALCWrapper : AssemblyLoadContext
+    class ALCWrapper : AssemblyLoadContext
     {
-        private static ALCWrapper rootDomain;
-        private List<string> systemPaths;
-        private List<string> userPaths;
-        private static int idCount = 0;
-        private int id;
+        readonly ALCWrapper m_SystemAlc;
+        List<string> m_Paths = new();
 
         static ALCWrapper()
         {
@@ -26,34 +24,50 @@ namespace Unity.CoreCLRHelpers
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         }
 
-        public ALCWrapper() : base(isCollectible: false)
+        public ALCWrapper(string name, ALCWrapper systemAlc) : base(isCollectible: systemAlc != null, name: name)
         {
-            // If this is the first ALC we create, we consider this the root domain, which
-            // should load all "System" assemblies.
-            if (rootDomain == null)
-                rootDomain = this;
-            id = idCount++;
-        #if DEBUG_ALC_WRAPPER
-            Console.WriteLine($"[ALCWrapper:#{id}] Created");
-        #endif
-            systemPaths = new List<string>();
-            userPaths = new List<string>();
+            m_SystemAlc = systemAlc;
+#if DEBUG_ALC_WRAPPER
+            CoreCLRHost.Log($"[ALCWrapper:#{Name}] Created");
+#endif
         }
 
         ~ALCWrapper()
         {
         #if DEBUG_ALC_WRAPPER
-            Console.WriteLine($"[ALCWrapper:#{id}] Finalize");
+            CoreCLRHost.Log($"[ALCWrapper:#{Name}] Finalize");
         #endif
         }
 
-        void AddPath(string inpaths, bool isSystemPath)
+        public void AddSearchPath(string path)
         {
-        #if DEBUG_ALC_WRAPPER
-            Console.WriteLine($"[ALCWrapper:#{id}] AddPath {inpaths} isSystemPath {isSystemPath}");
-        #endif
-            foreach (var p in inpaths.Split(Path.PathSeparator))
-                (isSystemPath ? systemPaths : userPaths).Add(p);
+            string lastPath = path.Split(';').Last(s => !string.IsNullOrEmpty(s));
+#if DEBUG_ALC_WRAPPER
+            CoreCLRHost.Log($"[ALCWrapper:#{Name}] AddSearchPath {lastPath}");
+#endif
+            m_Paths.Add(lastPath);
+        }
+
+        /// <summary>
+        /// Resolve full assembly path if assembly can be found in the lookup paths of the ALC.
+        /// </summary>
+        /// <param name="assemblyName">Assembly name</param>
+        /// <returns>Full path to the assembly or null if not found</returns>
+        string ResolveAssemblyFullPath(string assemblyName)
+        {
+            foreach (string p in m_Paths)
+            {
+                string assemblyPath = Path.Combine(p, $"{assemblyName}.dll");
+                if (File.Exists(assemblyPath))
+                {
+#if DEBUG_ALC_WRAPPER
+                    CoreCLRHost.Log($"[ALCWrapper:#{Name}] resolved {assemblyName}");
+#endif
+                    return assemblyPath;
+                }
+            }
+
+            return null;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -63,7 +77,7 @@ namespace Unity.CoreCLRHelpers
         {
             string pluginPath = InvokeFindPluginCallback(unmanagedDllName);
 #if DEBUG_ALC_WRAPPER
-            Console.WriteLine($"[ALCWrapper:#{id}] LoadUnmanagedDll {unmanagedDllName} -> {pluginPath}");
+            CoreCLRHost.Log($"[ALCWrapper:#{Name}] LoadUnmanagedDll {unmanagedDllName} -> {pluginPath}");
 #endif
             if (!string.IsNullOrEmpty(pluginPath) && Path.IsPathRooted(pluginPath))
                 return LoadUnmanagedDllFromPath(pluginPath);
@@ -71,10 +85,10 @@ namespace Unity.CoreCLRHelpers
             return IntPtr.Zero;
         }
 
-        internal unsafe Assembly CallLoadFromAssemblyData(byte* data, long size)
+        public unsafe Assembly CallLoadFromAssemblyData(byte* data, long size)
         {
 #if DEBUG_ALC_WRAPPER
-            Console.WriteLine($"[ALCWrapper:#{id}] CallLoadFromAssemblyData {(IntPtr)data} {size}");
+            CoreCLRHost.Log($"[ALCWrapper:#{Name}] CallLoadFromAssemblyData {(IntPtr)data} {size}");
 #endif
             using (var mem = new UnmanagedMemoryStream(data, size, size, FileAccess.Read))
             {
@@ -82,18 +96,21 @@ namespace Unity.CoreCLRHelpers
             }
         }
 
-        internal Assembly CallLoadFromAssemblyPath(string path)
+        public Assembly CallLoadFromAssemblyPath(string path)
         {
         #if DEBUG_ALC_WRAPPER
-            Console.WriteLine($"[ALCWrapper:#{id}] CallLoadFromAssemblyPath {path}");
+            CoreCLRHost.Log($"[ALCWrapper:#{Name}] CallLoadFromAssemblyPath {path}");
         #endif
             Assembly asm = LoadFromAssemblyPath(path);
 
             // If the directory containing the assembly we want to load has not been added to user or system paths yet,
             // add it to user paths, so we can resolve any potential dlls next to it, which this assembly might depend on.
-            var parent = Path.GetDirectoryName(path);
-            if (!string.IsNullOrEmpty(parent) && !userPaths.Contains(parent) && !systemPaths.Contains(parent))
-                userPaths.Add(parent);
+            string parent = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(parent) && !m_Paths.Contains(parent))
+            {
+                if (m_SystemAlc == null || !m_SystemAlc.m_Paths.Contains(parent))
+                    m_Paths.Add(parent);
+            }
 
             return asm;
         }
@@ -101,56 +118,47 @@ namespace Unity.CoreCLRHelpers
         protected override Assembly Load(AssemblyName name)
         {
 #if DEBUG_ALC_WRAPPER
-            Console.WriteLine($"[ALCWrapper:#{id}] Load assembly {name}");
+            CoreCLRHost.Log($"[ALCWrapper:#{Name}] Load assembly {name}");
 #endif
-            string assemblyPath = null;
-            foreach (var p in systemPaths)
+            string assemblyPath;
+            if (m_SystemAlc != null)
             {
-                assemblyPath = Path.Combine(p, $"{name.Name}.dll");
-                if (File.Exists(assemblyPath))
+                assemblyPath = m_SystemAlc.ResolveAssemblyFullPath(name.Name);
+                if (assemblyPath != null)
                 {
-#if DEBUG_ALC_WRAPPER
-                    Console.WriteLine($"[ALCWrapper:#{id}] is System assembly {name}");
-#endif
                     // This is a system assembly - those cannot be cleanly unloaded - load it into the root ALC.
-                    if (this != rootDomain)
-                        return rootDomain.Load(name);
-                    break;
+                    return m_SystemAlc.Load(name);
                 }
-                assemblyPath = null;
             }
 
-            if (assemblyPath == null)
+            // Check if the assembly already loaded in this ALC.
+            foreach (var assembly in Assemblies)
             {
-                foreach (var p in userPaths)
-                {
-                    assemblyPath = Path.Combine(p, $"{name.Name}.dll");
-                    if (File.Exists(assemblyPath))
-                        break;
-                    assemblyPath = null;
-                }
+                if (assembly.GetName() == name)
+                    return assembly;
             }
 
+            // Resolve full path and load the assembly.
+            assemblyPath = ResolveAssemblyFullPath(name.Name);
             if (assemblyPath == null)
             {
             #if DEBUG_ALC_WRAPPER
-                Console.WriteLine($"[ALCWrapper:#{id}] assembly {name} not found.");
+                CoreCLRHost.Log($"[ALCWrapper:#{Name}] assembly {name} not found.");
             #endif
                 return null;
             }
 
-
             try
             {
 #if DEBUG_ALC_WRAPPER
-                Console.WriteLine($"[ALCWrapper:#{id}] Load assembly {name} from {assemblyPath}");
+                CoreCLRHost.Log($"[ALCWrapper:#{Name}] Load assembly {name} from {assemblyPath}");
 #endif
                 var result = LoadFromAssemblyPath(assemblyPath);
                 return result;
             }
             catch (Exception e)
             {
-                Console.WriteLine($"[ALCWrapper:#{id}] Failed loading {name} from {assemblyPath}:\n{e}");
+                CoreCLRHost.Log($"[ALCWrapper:#{Name}] Failed loading {name} from {assemblyPath}:\n{e}");
                 return null;
             }
         }
@@ -170,37 +178,35 @@ namespace Unity.CoreCLRHelpers
             }
             catch (System.Exception e)
             {
-                Console.WriteLine($"Caught {e} calling AppDomain.CurrentDomain.DomainUnload.");
+                CoreCLRHost.Log($"Caught {e} calling AppDomain.CurrentDomain.DomainUnload.");
             }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        WeakReference InitUnload()
+        public static WeakReference InitUnload(ALCWrapper alc)
         {
-            systemPaths = null;
-            userPaths = null;
         #if DEBUG_ALC_WRAPPER
-            Console.WriteLine($"[ALCWrapper:#{id}] Unload");
+            CoreCLRHost.Log($"[ALCWrapper:#{alc.Name}] Unload");
         #endif
 
-            var alcWeakRef = new WeakReference(this);
-            Unload();
+            var alcWeakRef = new WeakReference(alc);
+            alc.Unload();
             return alcWeakRef;
         }
 
-        static Exception FinishUnload(WeakReference alcWeakRef)
+        public static Exception FinishUnload(WeakReference alcWeakRef)
         {
             for (int i = 0; alcWeakRef.IsAlive && (i < 10); i++)
             {
             #if DEBUG_ALC_WRAPPER
-                Console.WriteLine($"[ALCWrapper] Unload attempt: {i}");
+                CoreCLRHost.Log($"[ALCWrapper] Unload attempt: {i}");
             #endif
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
             }
 
         #if DEBUG_ALC_WRAPPER
-            Console.WriteLine($"[ALCWrapper] FinishUnload success: {!alcWeakRef.IsAlive}");
+            CoreCLRHost.Log($"[ALCWrapper] FinishUnload result: {!alcWeakRef.IsAlive}");
         #endif
 
             if (alcWeakRef.IsAlive)
