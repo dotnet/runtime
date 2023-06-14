@@ -36,7 +36,6 @@ namespace ILCompiler.DependencyAnalysis
             return objData.ToObjectData();
         }
 
-        // TODO: VS where this should come from?
         public override int ClassCode => -985742028;
     }
 }

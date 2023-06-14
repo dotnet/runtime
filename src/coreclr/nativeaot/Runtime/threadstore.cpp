@@ -431,15 +431,14 @@ C_ASSERT(sizeof(Thread) == sizeof(ThreadBuffer));
 #ifndef _MSC_VER
 __thread ThreadBuffer tls_CurrentThread;
 
+// tls_InlinedThreadStatics should be emitted by ILC and that is already the case for win-x64 and linux-x64
+// the remaining platforms use tls_InlinedThreadStatics defined here until 
+
 #if defined(__APPLE__) || defined(TARGET_ARM64)
-// the root of inlined threadstatics storage
-// eventually this will be emitted by ILC and we may have more than one such variable
 __thread InlinedThreadStaticRoot tls_InlinedThreadStatics;
 #endif
 
 #elif defined(TARGET_ARM64)
-// the root of inlined threadstatics storage for ARM64
-// eventually this will be emitted by ILC and we may have more than one such variable
 EXTERN_C __declspec(thread) InlinedThreadStaticRoot tls_InlinedThreadStatics;
 __declspec(thread) InlinedThreadStaticRoot tls_InlinedThreadStatics;
 #endif
