@@ -39,7 +39,7 @@ internal sealed class CommonConfiguration
             { "host|h=", "Host config name", v => hostArg = v },
             { "runtime-config|r=", "runtimeconfig.json path for the app", v => _runtimeConfigPath = v },
             { "extra-host-arg=", "Extra argument to be passed to the host", hostArgsList.Add },
-            { "no-silent", "Verbose output from WasmAppHost", _ => { Verbose = true; Console.WriteLine ($"got no-silent"); } }
+            { "no-silent", "Verbose output from WasmAppHost", _ => Verbose = true }
         };
 
         RemainingArgs = options.Parse(args);
