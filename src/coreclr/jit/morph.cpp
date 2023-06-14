@@ -3705,7 +3705,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
         //
         if (!argNode->OperIs(GT_LCL_VAR, GT_LCL_FLD))
         {
-            assert(argNode->OperIs(GT_BLK));
+            assert(argNode->OperIs(GT_BLK, GT_CNS_VEC));
 
             unsigned lastElemExactSize = structSize - lastElem.Offset;
 
