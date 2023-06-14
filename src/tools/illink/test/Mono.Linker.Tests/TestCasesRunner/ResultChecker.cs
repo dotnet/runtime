@@ -49,13 +49,45 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			_linkedReaderParameters = linkedReaderParameters;
 		}
 
-		static void VerifyIL (NPath pathToAssembly)
+		static void VerifyIL (NPath pathToAssembly, AssemblyDefinition linked)
 		{
+			ValidateTypeRefsHaveValidAssemblyRefs (linked);
+
 			var verifier = new ILVerifier (pathToAssembly);
-			foreach (var result in verifier.Results) {
-				if (result.Code == ILVerify.VerifierError.None)
-					continue;
+			foreach (var result in verifier.Results)
 				Assert.Fail (ILVerifier.GetErrorMessage (result));
+		}
+
+		static void ValidateTypeRefsHaveValidAssemblyRefs (AssemblyDefinition linked)
+		{
+			Console.WriteLine ("Validating type references have valid assembly references: " + linked.FullName);
+			foreach (var typeRef in linked.MainModule.GetTypeReferences ()) {
+				switch (typeRef.Scope) {
+				case null:
+					// There should be an ExportedType row for this typeref
+					var exportedType = linked.MainModule.ExportedTypes.SingleOrDefault (et => et.FullName == typeRef.FullName);
+					Assert.IsNotNull (exportedType, $"Type reference '{typeRef.FullName}' with null scope has no ExportedType row");
+					// The exported type's Implementation must be an index into the File/ExportedType/AssemblyRef table
+					switch (exportedType.Scope) {
+					case AssemblyNameReference:
+						// There should be an AssemblyRef row for this assembly
+						var assemblyRef = linked.MainModule.AssemblyReferences.Single (ar => ar.Name == exportedType.Scope.Name);
+						Assert.IsNotNull (assemblyRef, $"Exported type '{exportedType.FullName}' has a reference to assembly '{exportedType.Scope.Name}' which is not a reference of '{linked.FullName}'");
+						break;
+					default:
+						throw new NotImplementedException ($"Unexpected scope type '{exportedType.Scope.GetType ()}' for exported type '{exportedType.FullName}'");
+					}
+					continue;
+				case AssemblyNameReference:
+				{
+					// There should be an AssemblyRef row for this assembly
+					var assemblyRef = linked.MainModule.AssemblyReferences.Single (ar => ar.Name == typeRef.Scope.Name);
+					Assert.IsNotNull (assemblyRef, $"Type reference '{typeRef.FullName}' has a reference to assembly '{typeRef.Scope.Name}' which is not a reference of '{linked.FullName}'");
+					continue;
+				}
+				default:
+					throw new NotImplementedException ($"Unexpected scope type '{typeRef.Scope.GetType ()}' for type reference '{typeRef.FullName}'");
+				}
 			}
 		}
 
@@ -87,7 +119,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					var linked = ResolveLinkedAssembly (linkResult.OutputAssemblyPath.FileNameWithoutExtension);
 
 					if (ShouldValidateIL (original))
-						VerifyIL (linkResult.OutputAssemblyPath);
+						VerifyIL (linkResult.OutputAssemblyPath, linked);
 
 					InitialChecking (linkResult, original, linked);
 
@@ -100,6 +132,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				}
 
 				VerifyLinkingOfOtherAssemblies (original);
+				VerifyILOfOtherAssemblies (linkResult);
 				AdditionalChecking (linkResult, original);
 			} finally {
 				_originalsResolver.Dispose ();
@@ -114,6 +147,19 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				}
 
 				return false;
+			}
+		}
+
+		void VerifyILOfOtherAssemblies (LinkedTestCaseResult linkResult)
+		{
+			foreach (var linkedAssemblyPath in linkResult.Sandbox.OutputDirectory.Files ("*.dll")) {
+				if (linkedAssemblyPath == linkResult.OutputAssemblyPath)
+					continue;
+
+				var linked = ResolveLinkedAssembly (linkedAssemblyPath.FileNameWithoutExtension);
+				VerifyIL (linkedAssemblyPath, linked);
+
+				var original = ResolveOriginalsAssembly (linkedAssemblyPath.FileNameWithoutExtension);
 			}
 		}
 
