@@ -7793,10 +7793,10 @@ GenTree* Compiler::gtNewGenericCon(var_types type, uint8_t* cnsVal)
         case TYP_SIMD32:
         case TYP_SIMD64:
 #endif // TARGET_XARCH
-#endif // FEATURE_SIMD
         {
             return gtNewVconNode(type, cnsVal);
         }
+#endif // FEATURE_SIMD
         default:
             unreached();
 
