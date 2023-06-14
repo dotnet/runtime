@@ -5225,9 +5225,14 @@ EnumMethodInstances::Next(ClrDataAccess* dac,
         }
     }
 
-    if (!m_methodIter.Current()->HasNativeCode())
     {
-        goto NextMethod;
+        CodeVersionManager *pCodeVersionManager = m_methodIter.Current()->GetCodeVersionManager();
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+        ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(PTR_MethodDesc(m_methodIter.Current()));
+        if (ilVersion.IsDefaultVersion() && !m_methodIter.Current()->HasNativeCode())
+        {
+            goto NextMethod;
+        }
     }
 
     *instance = new (nothrow)
