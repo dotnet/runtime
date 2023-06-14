@@ -52,12 +52,6 @@ public sealed class QuicListenerOptions
             throw new SocketException((int)SocketError.AddressFamilyNotSupported);
         }
 
-        // MsQuic is using DualMode sockets and that will faill even for IPv4 if AF_INET6 is not available.
-        if (!Socket.OSSupportsIPv6)
-        {
-            throw new SocketException((int)SocketError.AddressFamilyNotSupported);
-        }
-
         if (ApplicationProtocols is null || ApplicationProtocols.Count <= 0)
         {
             throw new ArgumentNullException(SR.Format(SR.net_quic_not_null_not_empty_listener, nameof(QuicListenerOptions.ApplicationProtocols)), argumentName);

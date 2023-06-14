@@ -67,6 +67,15 @@ internal sealed unsafe partial class MsQuicApi
     {
         bool loaded = false;
         IntPtr msQuicHandle;
+
+
+        // MsQuic is using DualMode sockets and that will fail even for IPv4 if AF_INET6 is not available.
+        if (!Socket.OSSupportsIPv6)
+        {
+            NetEventSource.Info(null, "OS does not support dual mode sockets");
+            return;
+        }
+
         if (OperatingSystem.IsWindows())
         {
             // Windows ships msquic in the assembly directory.
