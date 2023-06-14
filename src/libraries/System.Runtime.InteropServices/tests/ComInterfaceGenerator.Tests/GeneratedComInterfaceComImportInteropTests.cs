@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.DotNet.RemoteExecutor;
 using SharedTypes.ComInterfaces;
@@ -24,6 +25,7 @@ namespace ComInterfaceGenerator.Tests
         [ComImport]
         [Guid(_guid)]
         [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        [SuppressMessage("Interoperability", "SYSLIB1096:Convert to 'GeneratedComInterface'", Justification = "This interface is for us to test interop between GeneratedComInterface and ComImport.")]
         internal interface IGetAndSetIntComImport
         {
             int GetInt();
