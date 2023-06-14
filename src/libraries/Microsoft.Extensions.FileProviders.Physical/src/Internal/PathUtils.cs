@@ -30,12 +30,12 @@ namespace Microsoft.Extensions.FileProviders.Physical.Internal
 
         internal static bool HasInvalidPathChars(string path)
         {
-            return path.AsSpan().IndexOfAny(_invalidFileNameChars) >= 0;
+            return path.AsSpan().ContainsAny(_invalidFileNameChars);
         }
 
         internal static bool HasInvalidFilterChars(string path)
         {
-            return path.AsSpan().IndexOfAny(_invalidFilterChars) >= 0;
+            return path.AsSpan().ContainsAny(_invalidFilterChars);
         }
 
         internal static string EnsureTrailingSlash(string path)

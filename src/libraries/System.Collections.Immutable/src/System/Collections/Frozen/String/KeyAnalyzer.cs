@@ -207,7 +207,7 @@ namespace System.Collections.Frozen
             Debug.Assert(IsAllAscii(s));
 
 #if NET8_0_OR_GREATER
-            return s.IndexOfAny(s_asciiLetters) >= 0;
+            return s.ContainsAny(s_asciiLetters);
 #else
             foreach (char c in s)
             {
