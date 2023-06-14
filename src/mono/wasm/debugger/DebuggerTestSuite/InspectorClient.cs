@@ -98,7 +98,6 @@ namespace DebuggerTests
 
             MessageId msgId = new MessageId(sessionId.sessionId, id);
             pending_cmds.AddOrUpdate(msgId, tcs,  (key, oldValue) => tcs);
-            logger.LogTrace($"SendCommand: to: {args}");
 
             var str = o.ToString();
 
