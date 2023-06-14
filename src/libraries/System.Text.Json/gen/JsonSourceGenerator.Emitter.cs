@@ -1213,14 +1213,14 @@ namespace System.Text.Json.SourceGeneration
 
             private static string GetNumberHandlingAsStr(JsonNumberHandling? numberHandling)
                 => numberHandling.HasValue
-                ? EnumFormatter<JsonNumberHandling>.FormatEnumLiteral(JsonNumberHandlingTypeRef, numberHandling.Value)
+                ? SourceGeneratorHelpers.FormatEnumLiteral(JsonNumberHandlingTypeRef, numberHandling.Value)
                 : "null";
 
             private static string GetObjectCreationHandlingAsStr(JsonObjectCreationHandling creationHandling)
-                => EnumFormatter<JsonObjectCreationHandling>.FormatEnumLiteral(JsonObjectCreationHandlingTypeRef, creationHandling);
+                => SourceGeneratorHelpers.FormatEnumLiteral(JsonObjectCreationHandlingTypeRef, creationHandling);
 
             private static string GetUnmappedMemberHandlingAsStr(JsonUnmappedMemberHandling unmappedMemberHandling)
-                => EnumFormatter<JsonUnmappedMemberHandling>.FormatEnumLiteral(JsonUnmappedMemberHandlingTypeRef, unmappedMemberHandling);
+                => SourceGeneratorHelpers.FormatEnumLiteral(JsonUnmappedMemberHandlingTypeRef, unmappedMemberHandling);
 
             private static string GetCreateValueInfoMethodRef(string typeCompilableName) => $"{CreateValueInfoMethodName}<{typeCompilableName}>";
 
