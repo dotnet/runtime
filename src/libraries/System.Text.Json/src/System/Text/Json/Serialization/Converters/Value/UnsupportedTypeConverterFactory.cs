@@ -44,7 +44,10 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
-            => CreateUnsupportedConverterForType(type);
+        {
+            Debug.Assert(CanConvert(type));
+            return CreateUnsupportedConverterForType(type);
+        }
 
         internal static JsonConverter CreateUnsupportedConverterForType(Type type, string? errorMessage = null)
         {

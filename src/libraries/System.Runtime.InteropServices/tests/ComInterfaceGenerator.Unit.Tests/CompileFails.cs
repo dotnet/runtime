@@ -3,23 +3,19 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.IO;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
 using Xunit;
-using System.Diagnostics;
-
-using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
 using StringMarshalling = System.Runtime.InteropServices.StringMarshalling;
-using System.Runtime.InteropServices.Marshalling;
-using Microsoft.CodeAnalysis.CSharp;
+using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
@@ -420,13 +416,159 @@ namespace ComInterfaceGenerator.Unit.Tests
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, expectedDiagnostic);
         }
 
+        public static IEnumerable<object[]> InterfaceVisibilities()
+        {
+            var emptyDiagnostics = new DiagnosticResult[] { };
+            var privateDiagnostic = new DiagnosticResult[]{
+                    new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedInterfaceNotAccessible)
+                    .WithLocation(0)
+                    .WithArguments("Test.IComInterface", "'Test.IComInterface' has accessibility 'private'.")
+            };
+            var protectedDiagnostic = new DiagnosticResult[]{
+                    new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedInterfaceNotAccessible)
+                    .WithLocation(0)
+                    .WithArguments("Test.IComInterface", "'Test.IComInterface' has accessibility 'protected'.")
+            };
+
+            var group = new List<(string, DiagnosticResult[], string)>()
+            {
+                ("public", emptyDiagnostics, ID()),
+                ("internal", emptyDiagnostics, ID()),
+                ("protected", protectedDiagnostic, ID()),
+                ("private", privateDiagnostic, ID()),
+            };
+            foreach (var (interfaceVisibility, diagnostics, id) in group)
+            {
+                var source = $$"""
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                public static unsafe partial class Test {
+                    [GeneratedComInterface]
+                    [Guid("B585EEFE-85B2-45BA-935E-C993C81D038C")]
+                    {{interfaceVisibility}} partial interface {|#{{0}}:IComInterface|}
+                    {
+                        public int Get();
+                        public void Set(int value);
+                    }
+                }
+                """;
+                yield return new object[] { id, source, diagnostics };
+            }
+        }
+
+        public static IEnumerable<object[]> StringMarshallingCustomTypeVisibilities()
+        {
+            var emptyDiagnostics = new DiagnosticResult[] { };
+            var privateDiagnostic = new DiagnosticResult[]{
+                    new DiagnosticResult(GeneratorDiagnostics.StringMarshallingCustomTypeNotAccessibleByGeneratedCode)
+                    .WithLocation(0)
+                    .WithArguments("Test.CustomStringMarshallingType", "'Test.CustomStringMarshallingType' has accessibility 'private'.")
+                };
+            var protectedDiagnostic = new DiagnosticResult[]{
+                    new DiagnosticResult(GeneratorDiagnostics.StringMarshallingCustomTypeNotAccessibleByGeneratedCode)
+                    .WithLocation(0)
+                    .WithArguments("Test.CustomStringMarshallingType", "'Test.CustomStringMarshallingType' has accessibility 'protected'.")
+                };
+
+            var group = new List<(string, string, DiagnosticResult[], string)>()
+            {
+                ("public", "public", emptyDiagnostics, ID()),
+                // Technically we don't support inheriting from a GeneratedComInterface from another assembly, so this should be okay
+                ("public", "internal", emptyDiagnostics, ID()),
+                ("public", "protected", protectedDiagnostic, ID()),
+                ("public", "private", privateDiagnostic, ID()),
+                ("internal", "public", emptyDiagnostics, ID()),
+                ("internal", "internal", emptyDiagnostics, ID()),
+                ("internal", "protected", protectedDiagnostic, ID()),
+                ("internal", "private", privateDiagnostic, ID()),
+            };
+            foreach (var (interfaceVisibility, customTypeVisibility, diagnostics, id) in group)
+            {
+                var source = $$"""
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                public static unsafe partial class Test {
+                    [CustomMarshaller(typeof(string), MarshalMode.Default, typeof(CustomStringMarshallingType))]
+                    {{customTypeVisibility}} static class CustomStringMarshallingType
+                    {
+                        public static string ConvertToManaged(ushort* unmanaged) => throw new NotImplementedException();
+                        public static ushort* ConvertToUnmanaged(string managed) => throw new NotImplementedException();
+                        public static void Free(ushort* unmanaged) => throw new NotImplementedException();
+                        public static ref readonly char GetPinnableReference(string str) => throw new NotImplementedException();
+                    }
+
+                    [GeneratedComInterface(StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(CustomStringMarshallingType))]
+                    [Guid("B585EEFE-85B2-45BA-935E-C993C81D038C")]
+                    {{interfaceVisibility}} partial interface {|#{{0}}:IStringMarshalling|}
+                    {
+                        public string GetString();
+                        public void SetString(string value);
+                    }
+                }
+                """;
+                yield return new object[] { id, source, diagnostics };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(StringMarshallingCustomTypeVisibilities))]
+        public async Task VerifyStringMarshallingCustomTypeWithLessVisibilityThanInterfaceWarns(string id, string source, DiagnosticResult[] diagnostics)
+        {
+            _ = id;
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, diagnostics);
+        }
+
+        [Theory]
+        [MemberData(nameof(InterfaceVisibilities))]
+        public async Task VerifyInterfaceWithLessVisibilityThanInterfaceWarns(string id, string source, DiagnosticResult[] diagnostics)
+        {
+            _ = id;
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, diagnostics);
+        }
+
+        [Fact]
+        public async Task VerifyNonPartialInterfaceWarns()
+        {
+            string basic = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
+                public interface {|#0:I|}
+                {
+                    void Method();
+                }
+                """;
+            string containingTypeIsNotPartial = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                public static class Test
+                {
+                    [GeneratedComInterface]
+                    [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
+                    public partial interface {|#0:I|}
+                    {
+                        void Method();
+                    }
+                }
+                """;
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(basic, new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedInterfaceMissingPartialModifiers).WithLocation(0).WithArguments("I"));
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(containingTypeIsNotPartial, new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedInterfaceMissingPartialModifiers).WithLocation(0).WithArguments("I"));
+        }
+
         [Fact]
         public async Task VerifyComInterfaceInheritingFromComInterfaceInOtherAssemblyReportsDiagnostic()
         {
             string additionalSource = $$"""
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
-       
+
                 [GeneratedComInterface]
                 [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
                 public partial interface I
@@ -487,6 +629,60 @@ namespace ComInterfaceGenerator.Unit.Tests
                 return additionalProject.WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true)).Solution;
             });
 
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task VerifyDiagnosticIsOnAttributedSyntax()
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                partial interface J
+                {
+                }
+
+                [GeneratedComInterface]
+                partial interface {|#0:J|}
+                {
+                    void Method();
+                }
+
+                partial interface J
+                {
+                }
+                """;
+            DiagnosticResult expectedDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidAttributedInterfaceMissingGuidAttribute)
+                .WithLocation(0).WithArguments("J");
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, expectedDiagnostic);
+        }
+
+        internal class UnsafeBlocksNotAllowedTest : VerifyComInterfaceGenerator.Test
+        {
+            internal UnsafeBlocksNotAllowedTest(bool referenceAncillaryInterop) : base(referenceAncillaryInterop) { }
+            protected override CompilationOptions CreateCompilationOptions()
+                => new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: false);
+        }
+
+        [Fact]
+        public async Task VerifyGeneratedComInterfaceWithoutAllowUnsafeBlocksWarns()
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                partial interface {|#0:J|}
+                {
+                    void Method();
+                }
+                """;
+            DiagnosticResult expectedDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.RequiresAllowUnsafeBlocks)
+                .WithLocation(0);
+            var test = new UnsafeBlocksNotAllowedTest(false);
+            test.TestState.Sources.Add(source);
+            test.ExpectedDiagnostics.Add(expectedDiagnostic);
             await test.RunAsync();
         }
     }

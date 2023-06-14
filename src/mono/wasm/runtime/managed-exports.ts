@@ -38,9 +38,10 @@ export function init_managed_exports(): void {
     const get_managed_stack_trace_method = get_method("GetManagedStackTrace");
     mono_assert(get_managed_stack_trace_method, "Can't find GetManagedStackTrace method");
 
-    runtimeHelpers.javaScriptExports.call_entry_point = (entry_point: MonoMethod, program_args?: string[]) => {
+    runtimeHelpers.javaScriptExports.call_entry_point = async (entry_point: MonoMethod, program_args?: string[]): Promise<number> => {
         const sp = Module.stackSave();
         try {
+            Module.runtimeKeepalivePush();
             const args = alloc_stack_frame(4);
             const res = get_arg(args, 1);
             const arg1 = get_arg(args, 2);
@@ -51,12 +52,13 @@ export function init_managed_exports(): void {
             }
             marshal_array_to_cs_impl(arg2, program_args, MarshalerType.String);
             invoke_method_and_handle_exception(call_entry_point, args);
-            const promise = marshal_task_to_js(res, undefined, marshal_int32_to_js);
-            if (!promise) {
-                return Promise.resolve(0);
+            let promise = marshal_task_to_js(res, undefined, marshal_int32_to_js);
+            if (promise === null || promise === undefined) {
+                promise = Promise.resolve(0);
             }
-            return promise;
+            return await promise;
         } finally {
+            Module.runtimeKeepalivePop();// after await promise !
             Module.stackRestore(sp);
         }
     };

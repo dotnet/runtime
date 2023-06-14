@@ -3,7 +3,7 @@
 
   <ItemGroup>
     <Project Include="Microsoft.DotNet.ILCompiler\Microsoft.DotNet.ILCompiler.pkgproj" />
-    <ProjectReference Include="@(Project)" />
+    <ProjectReference Condition="'$(BuildNativeAOTRuntimePack)' != 'true'" Include="@(Project)" />
     <ProjectReference Include="@(Project)" AdditionalProperties="PackageTargetRuntime=$(OutputRID)" />
   </ItemGroup>
 
