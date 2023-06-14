@@ -7,6 +7,7 @@ namespace Microsoft.Interop
     {
         public const string DllImportAttribute = "System.Runtime.InteropServices.DllImportAttribute";
         public const string LibraryImportAttribute = "System.Runtime.InteropServices.LibraryImportAttribute";
+        public const string LibraryImportAttribute_ShortName = "LibraryImportAttribute";
         public const string StringMarshalling = "System.Runtime.InteropServices.StringMarshalling";
 
         public const string NativeMarshallingAttribute = "System.Runtime.InteropServices.Marshalling.NativeMarshallingAttribute";
@@ -35,8 +36,10 @@ namespace Microsoft.Interop
         public const string UnmanagedCallersOnlyAttribute = "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute";
 
         public const string System_Runtime_InteropServices_ComImportAttribute = "System.Runtime.InteropServices.ComImportAttribute";
+        public const string System_Runtime_InteropServices_ComVisibleAttribute = "System.Runtime.InteropServices.ComVisibleAttribute";
 
         public const string VirtualMethodIndexAttribute = "System.Runtime.InteropServices.Marshalling.VirtualMethodIndexAttribute";
+        public const string VirtualMethodIndexAttribute_ShortName = "VirtualMethodIndexAttribute";
 
         public const string IUnmanagedVirtualMethodTableProvider = "System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider";
 
@@ -91,7 +94,9 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_InteropServices_InAttribute = "System.Runtime.InteropServices.InAttribute";
 
-        public const string System_Runtime_CompilerServices_SkipLocalsInitAttribute = "System.Runtime.CompilerServices.SkipLocalsInitAttribute";
+        public const string System_Runtime_CompilerServices_SkipLocalsInitAttribute_WithGlobal = "global::System.Runtime.CompilerServices.SkipLocalsInitAttribute";
+
+        public const string System_Runtime_CompilerServices_SkipLocalsInitAttribute_Metadata = "System.Runtime.CompilerServices.SkipLocalsInitAttribute";
 
         public const string System_Runtime_CompilerServices_Unsafe = "System.Runtime.CompilerServices.Unsafe";
 
@@ -101,7 +106,7 @@ namespace Microsoft.Interop
 
         public const string DllImportSearchPath = "System.Runtime.InteropServices.DllImportSearchPath";
 
-        public const string System_CodeDom_Compiler_GeneratedCodeAttribute = "System.CodeDom.Compiler.GeneratedCodeAttribute";
+        public const string System_CodeDom_Compiler_GeneratedCodeAttribute_WithGlobal = "global::System.CodeDom.Compiler.GeneratedCodeAttribute";
 
         public const string System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute = "System.Runtime.InteropServices.DynamicInterfaceCastableImplementationAttribute";
 
@@ -110,10 +115,11 @@ namespace Microsoft.Interop
         public const string System_Runtime_CompilerServices_RuntimeHelpers = "System.Runtime.CompilerServices.RuntimeHelpers";
 
         public const string GeneratedComInterfaceAttribute = "System.Runtime.InteropServices.Marshalling.GeneratedComInterfaceAttribute";
+        public const string GeneratedComInterfaceAttribute_ShortName = "GeneratedComInterfaceAttribute";
 
         public const string InterfaceTypeAttribute = "System.Runtime.InteropServices.InterfaceTypeAttribute";
 
-        public const string ComInterfaceTypeAttribute = "System.Runtime.InteropServices.ComInterfaceType";
+        public const string ComInterfaceType = "System.Runtime.InteropServices.ComInterfaceType";
 
         public const string System_Runtime_InteropServices_GuidAttribute = "System.Runtime.InteropServices.GuidAttribute";
 
@@ -146,5 +152,7 @@ namespace Microsoft.Interop
         public const string System_Runtime_InteropServices_Marshalling_SafeHandleMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller`1";
 
         public const string System_Runtime_InteropServices_Marshalling_ComInterfaceMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.ComInterfaceMarshaller`1";
+
+        public const string System_Runtime_InteropServices_Marshalling_ComObject = "System.Runtime.InteropServices.Marshalling.ComObject";
     }
 }

@@ -325,8 +325,8 @@ inline BOOL ETW::GCLog::ShouldWalkStaticsAndCOMForEtw() { return FALSE; }
 inline void ETW::GCLog::FireGcStart(ETW_GC_INFO * pGcInfo) { }
 inline void ETW::GCLog::EndHeapDump(ProfilerWalkHeapContext * profilerWalkHeapContext) { }
 inline void ETW::GCLog::BeginMovedReferences(size_t * pProfilingContext) { }
-inline void ETW::GCLog::MovedReference(BYTE * pbMemBlockStart, BYTE * pbMemBlockEnd, ptrdiff_t cbRelocDistance, size_t profilingContext, BOOL fCompacting) { }
-inline void ETW::GCLog::EndMovedReferences(size_t profilingContext) { }
+inline void ETW::GCLog::MovedReference(BYTE * pbMemBlockStart, BYTE * pbMemBlockEnd, ptrdiff_t cbRelocDistance, size_t profilingContext, BOOL fCompacting, BOOL fAllowProfApiNotification) { }
+inline void ETW::GCLog::EndMovedReferences(size_t profilingContext, BOOL fAllowProfApiNotification) { }
 inline void ETW::GCLog::WalkStaticsAndCOMForETW() { }
 inline void ETW::GCLog::RootReference(
     LPVOID pvHandle,

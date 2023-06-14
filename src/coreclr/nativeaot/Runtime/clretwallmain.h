@@ -8,7 +8,7 @@
 #define __CLR_ETW_ALL_MAIN_H__
 
 #include "clreventpipewriteevents.h"
-#include "etwevents.h"
+#include "EtwEvents.h"
 
 inline BOOL EventEnabledDestroyGCHandle(void) {return EventPipeEventEnabledDestroyGCHandle();}
 
@@ -29,8 +29,8 @@ inline ULONG FireEtwDestroyGCHandle(
 inline BOOL EventEnabledExceptionThrown_V1(void) {return EventPipeEventEnabledExceptionThrown_V1();}
 
 inline ULONG FireEtwExceptionThrown_V1(
-    wchar_t* ExceptionType,
-    wchar_t* ExceptionMessage,
+    const WCHAR* ExceptionType,
+    const WCHAR* ExceptionMessage,
     void*  ExceptionEIP,
     const unsigned int  ExceptionHRESULT,
     const unsigned short  ExceptionFlags,
@@ -71,7 +71,7 @@ inline ULONG FireEtwGCAllocationTick_V2(
     const unsigned short  ClrInstanceID,
     const unsigned __int64  AllocationAmount64,
     void*  TypeID,
-    wchar_t*  TypeName,
+    const WCHAR*  TypeName,
     const unsigned int  HeapIndex,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
@@ -92,7 +92,7 @@ inline ULONG FireEtwGCAllocationTick_V3(
     const unsigned short  ClrInstanceID,
     const unsigned __int64  AllocationAmount64,
     void*  TypeID,
-    wchar_t*  TypeName,
+    const WCHAR*  TypeName,
     const unsigned int  HeapIndex,
     void*  Address,
     const GUID * ActivityId = nullptr,
@@ -562,15 +562,15 @@ inline ULONG FireEtwModuleLoad_V2(
     const unsigned __int64  AssemblyID,
     const unsigned int  ModuleFlags,
     const unsigned int  Reserved1,
-    wchar_t*  ModuleILPath,
-    wchar_t*  ModuleNativePath,
+    const WCHAR*  ModuleILPath,
+    const WCHAR*  ModuleNativePath,
     const unsigned short  ClrInstanceID,
     const GUID* ManagedPdbSignature,
     const unsigned int  ManagedPdbAge,
-    wchar_t*  ManagedPdbBuildPath,
+    const WCHAR*  ManagedPdbBuildPath,
     const GUID* NativePdbSignature,
     const unsigned int  NativePdbAge,
-    wchar_t*  NativePdbBuildPath,
+    const WCHAR*  NativePdbBuildPath,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
 )

@@ -15,7 +15,7 @@ namespace Microsoft.Interop
 {
     internal static class VirtualMethodPointerStubGenerator
     {
-        public static (MethodDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateManagedToNativeStub(
+        public static (MethodDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateManagedToNativeStub(
             IncrementalMethodStubGenerationContext methodStub)
         {
             var diagnostics = new GeneratorDiagnostics();
@@ -65,7 +65,7 @@ namespace Microsoft.Interop
 
         private const string ThisParameterIdentifier = "@this";
 
-        public static (MethodDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateNativeToManagedStub(
+        public static (MethodDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateNativeToManagedStub(
             IncrementalMethodStubGenerationContext methodStub)
         {
             var diagnostics = new GeneratorDiagnostics();

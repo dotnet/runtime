@@ -272,8 +272,17 @@ namespace System.Globalization.Tests
                 // these sorts of expansions, since it would cause string lengths to change when cased,
                 // which is non-intuitive. In addition, there are some context sensitive mappings which
                 // we also don't preform.
-                // Greek Capital Letter Sigma (does not to case to U+03C2 with "final sigma" rule).
+                // Greek Capital Letter Sigma (does not case to U+03C2 with "final sigma" rule).
                 yield return new object[] { cultureName, "\u03A3", "\u03C3" };
+                if (PlatformDetection.IsHybridGlobalizationOnBrowser)
+                {
+                    // JS is using "final sigma" rule correctly - it's costly to unify it with ICU's behavior
+                    yield return new object[] { cultureName, "O\u03A3", "o\u03C2" };
+                }
+                else
+                {
+                    yield return new object[] { cultureName, "O\u03A3", "o\u03C3" };
+                }
             }
 
             foreach (string cultureName in GetTestLocales())
@@ -393,7 +402,10 @@ namespace System.Globalization.Tests
                 // which is non-intuitive. In addition, there are some context sensitive mappings which
                 // we also don't preform.
                 // es-zed does not case to SS when uppercased.
-                yield return new object[] { cultureName, "\u00DF", "\u00DF" };
+                yield return new object[] { cultureName, "\u00DF", "\u00DF" };                
+                yield return new object[] { cultureName, "stra\u00DFe", "STRA\u00DFE" };
+                if (!PlatformDetection.IsNlsGlobalization)
+                    yield return new object[] { cultureName, "st\uD801\uDC37ra\u00DFe", "ST\uD801\uDC0FRA\u00DFE" };
 
                 // Ligatures do not expand when cased.
                 yield return new object[] { cultureName, "\uFB00", "\uFB00" };

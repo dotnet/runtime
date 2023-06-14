@@ -11,25 +11,37 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             Name = property.Name;
             IsStatic = property.IsStatic;
-            CanGet = property.GetMethod is IMethodSymbol { DeclaredAccessibility: Accessibility.Public, IsInitOnly: false };
-            CanSet = property.SetMethod is IMethodSymbol { DeclaredAccessibility: Accessibility.Public, IsInitOnly: false };
+
+            bool setterIsPublic = property.SetMethod?.DeclaredAccessibility is Accessibility.Public;
+            IsInitOnly = property.SetMethod?.IsInitOnly == true;
+            IsRequired = property.IsRequired;
+            SetOnInit = setterIsPublic && (IsInitOnly || IsRequired);
+            CanSet = setterIsPublic && !IsInitOnly;
+            CanGet = property.GetMethod?.DeclaredAccessibility is Accessibility.Public;
         }
+
+        public required TypeSpec Type { get; init; }
+
+        public ParameterSpec? MatchingCtorParam { get; set; }
 
         public string Name { get; }
 
         public bool IsStatic { get; }
 
+        public bool IsRequired { get; }
+
+        public bool IsInitOnly { get; }
+
+        public bool SetOnInit { get; }
+
         public bool CanGet { get; }
 
         public bool CanSet { get; }
-
-        public required TypeSpec? Type { get; init; }
 
         public required string ConfigurationKeyName { get; init; }
 
         public bool ShouldBind() =>
             (CanGet || CanSet) &&
-            Type is not null &&
-            !(!CanSet && (Type as CollectionSpec)?.ConstructionStrategy is ConstructionStrategy.ParameterizedConstructor);
+            !(!CanSet && (Type as CollectionSpec)?.InitializationStrategy is InitializationStrategy.ParameterizedConstructor);
     }
 }

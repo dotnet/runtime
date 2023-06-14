@@ -112,24 +112,24 @@ let linked_functions = [
     "mono_wasm_starts_with",
     "mono_wasm_ends_with",
     "mono_wasm_index_of",
-    "mono_wasm_is_normalized",
-    "mono_wasm_normalize_string",
-    "mono_wasm_to_Unicode",
-    "mono_wasm_to_ASCII",
 
     "icudt68_dat",
 ];
 
 #if USE_PTHREADS
 linked_functions = [...linked_functions,
-    /// mono-threads-wasm.c
+    // mono-threads-wasm.c
     "mono_wasm_pthread_on_pthread_attached",
+    "mono_wasm_pthread_on_pthread_detached",
     // threads.c
     "mono_wasm_eventloop_has_unsettled_interop_promises",
     // diagnostics_server.c
     "mono_wasm_diagnostic_server_on_server_thread_created",
     "mono_wasm_diagnostic_server_on_runtime_server_init",
     "mono_wasm_diagnostic_server_stream_signal_work_available",
+    // corebindings.c
+    "mono_wasm_install_js_worker_interop",
+    "mono_wasm_uninstall_js_worker_interop",
 ]
 #endif
 if (!DISABLE_LEGACY_JS_INTEROP) {

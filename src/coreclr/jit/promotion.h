@@ -169,6 +169,10 @@ class Promotion
         return ~min;
     }
 
+    bool HaveCandidateLocals();
+
+    static bool IsCandidateForPhysicalPromotion(LclVarDsc* dsc);
+
 public:
     explicit Promotion(Compiler* compiler) : m_compiler(compiler)
     {
@@ -244,10 +248,15 @@ class DecompositionPlan;
 
 class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
 {
-    Promotion*                      m_prom;
+    friend class DecompositionPlan;
+
     jitstd::vector<AggregateInfo*>& m_aggregates;
     PromotionLiveness*              m_liveness;
-    bool                            m_madeChanges = false;
+    bool                            m_madeChanges         = false;
+    bool                            m_hasPendingReadBacks = false;
+    bool                            m_mayHaveForwardSub   = false;
+    Statement*                      m_currentStmt         = nullptr;
+    BasicBlock*                     m_currentBlock        = nullptr;
 
 public:
     enum
@@ -257,7 +266,7 @@ public:
     };
 
     ReplaceVisitor(Promotion* prom, jitstd::vector<AggregateInfo*>& aggregates, PromotionLiveness* liveness)
-        : GenTreeVisitor(prom->m_compiler), m_prom(prom), m_aggregates(aggregates), m_liveness(liveness)
+        : GenTreeVisitor(prom->m_compiler), m_aggregates(aggregates), m_liveness(liveness)
     {
     }
 
@@ -266,20 +275,37 @@ public:
         return m_madeChanges;
     }
 
-    void Reset()
+    bool MayHaveForwardSubOpportunity()
     {
-        m_madeChanges = false;
+        return m_mayHaveForwardSub;
+    }
+
+    void StartBlock(BasicBlock* block)
+    {
+        m_currentBlock = block;
+    }
+
+    void EndBlock();
+
+    void StartStatement(Statement* stmt)
+    {
+        m_currentStmt       = stmt;
+        m_madeChanges       = false;
+        m_mayHaveForwardSub = false;
     }
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user);
 
 private:
+    GenTree** InsertMidTreeReadBacksIfNecessary(GenTree** use);
     void LoadStoreAroundCall(GenTreeCall* call, GenTree* user);
+    GenTree** EffectiveUse(GenTree** use);
     bool IsPromotedStructLocalDying(GenTreeLclVarCommon* structLcl);
     void ReplaceLocal(GenTree** use, GenTree* user);
+    void CheckForwardSubForLastUse(unsigned lclNum);
     void StoreBeforeReturn(GenTreeUnOp* ret);
     void WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs, unsigned size);
-    void MarkForReadBack(unsigned lcl, unsigned offs, unsigned size);
+    bool MarkForReadBack(unsigned lcl, unsigned offs, unsigned size);
 
     void HandleStore(GenTree** use, GenTree* user);
     bool OverlappingReplacements(GenTreeLclVarCommon* lcl,

@@ -14,12 +14,15 @@ using Microsoft.Extensions.Primitives;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// ConfigurationManager is a mutable configuration object. It is both an <see cref="IConfigurationBuilder"/> and an <see cref="IConfigurationRoot"/>.
-    /// As sources are added, it updates its current view of configuration.
+    /// Represents a mutable configuration object.
     /// </summary>
+    /// <remarks>
+    /// It is both an <see cref="IConfigurationBuilder"/> and an <see cref="IConfigurationRoot"/>.
+    /// As sources are added, it updates its current view of configuration.
+    /// </remarks>
     [DebuggerDisplay("{DebuggerToString(),nq}")]
     [DebuggerTypeProxy(typeof(ConfigurationManagerDebugView))]
-    public sealed class ConfigurationManager : IConfigurationBuilder, IConfigurationRoot, IDisposable
+    public sealed class ConfigurationManager : IConfigurationManager, IConfigurationRoot, IDisposable
     {
         // Concurrently modifying config sources or properties is not thread-safe. However, it is thread-safe to read config while modifying sources or properties.
         private readonly ConfigurationSources _sources;

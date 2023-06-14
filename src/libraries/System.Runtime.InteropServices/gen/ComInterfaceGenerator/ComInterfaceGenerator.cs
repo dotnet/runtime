@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
@@ -43,44 +42,28 @@ namespace Microsoft.Interop
                         : null)
                 .Where(
                     static modelData => modelData is not null);
-
-            var interfaceSymbolAndDiagnostics = attributedInterfaces.Select(static (data, ct) =>
+            var stubEnvironment = context.CreateStubEnvironmentProvider();
+            var interfaceSymbolOrDiagnostics = attributedInterfaces.Combine(stubEnvironment).Select(static (data, ct) =>
             {
-                var (info, diagnostic) = ComInterfaceInfo.From(data.Symbol, data.Syntax);
-                return (InterfaceInfo: info, Diagnostic: diagnostic, Symbol: data.Symbol);
+                return ComInterfaceInfo.From(data.Left.Symbol, data.Left.Syntax, data.Right, ct);
             });
-            context.RegisterDiagnostics(interfaceSymbolAndDiagnostics.Select((data, ct) => data.Diagnostic));
+            var interfaceSymbolsWithoutDiagnostics = context.FilterAndReportDiagnostics(interfaceSymbolOrDiagnostics);
 
-            var interfaceSymbolsWithoutDiagnostics = interfaceSymbolAndDiagnostics
-                .Where(data => data.Diagnostic is null)
-                .Select((data, ct) => (data.InterfaceInfo, data.Symbol));
-
-            var interfaceContextsAndDiagnostics = interfaceSymbolsWithoutDiagnostics
+            var interfaceContextsOrDiagnostics = interfaceSymbolsWithoutDiagnostics
                 .Select((data, ct) => data.InterfaceInfo!)
                 .Collect()
                 .SelectMany(ComInterfaceContext.GetContexts);
-            context.RegisterDiagnostics(interfaceContextsAndDiagnostics.Select((data, ct) => data.Diagnostic));
-            var interfaceContexts = interfaceContextsAndDiagnostics
-                .Where(data => data.Context is not null)
-                .Select((data, ct) => data.Context!);
-            // Filter down interface symbols to remove those with diagnostics from GetContexts
-            interfaceSymbolsWithoutDiagnostics = interfaceSymbolsWithoutDiagnostics
-                .Zip(interfaceContextsAndDiagnostics)
-                .Where(data => data.Right.Diagnostic is null)
-                .Select((data, ct) => data.Left);
 
-            var comMethodsAndSymbolsAndDiagnostics = interfaceSymbolsWithoutDiagnostics.Select(ComMethodInfo.GetMethodsFromInterface);
-            context.RegisterDiagnostics(comMethodsAndSymbolsAndDiagnostics.SelectMany(static (methodList, ct) => methodList.Select(m => m.Diagnostic)));
-            var methodInfoAndSymbolGroupedByInterface = comMethodsAndSymbolsAndDiagnostics
-                .Select(static (methods, ct) =>
-                    methods
-                        .Where(pair => pair.Diagnostic is null)
-                        .Select(pair => (pair.Symbol, pair.ComMethod))
-                        .ToSequenceEqualImmutableArray());
+            // Filter down interface symbols to remove those with diagnostics from GetContexts
+            (var interfaceContexts, interfaceSymbolsWithoutDiagnostics) = context.FilterAndReportDiagnostics(interfaceContextsOrDiagnostics, interfaceSymbolsWithoutDiagnostics);
+
+            var comMethodsAndSymbolsOrDiagnostics = interfaceSymbolsWithoutDiagnostics.Select(ComMethodInfo.GetMethodsFromInterface);
+            var methodInfoAndSymbolGroupedByInterface = context
+                .FilterAndReportDiagnostics<(ComMethodInfo MethodInfo, IMethodSymbol Symbol)>(comMethodsAndSymbolsOrDiagnostics);
 
             var methodInfosGroupedByInterface = methodInfoAndSymbolGroupedByInterface
                 .Select(static (methods, ct) =>
-                    methods.Select(pair => pair.ComMethod).ToSequenceEqualImmutableArray());
+                    methods.Select(pair => pair.MethodInfo).ToSequenceEqualImmutableArray());
             // Create list of methods (inherited and declared) and their owning interface
             var comMethodContextBuilders = interfaceContexts
                 .Zip(methodInfosGroupedByInterface)
@@ -98,10 +81,10 @@ namespace Microsoft.Interop
             var methodInfoToSymbolMap = methodInfoAndSymbolGroupedByInterface
                 .SelectMany((data, ct) => data)
                 .Collect()
-                .Select((data, ct) => data.ToDictionary(static x => x.ComMethod, static x => x.Symbol));
+                .Select((data, ct) => data.ToDictionary(static x => x.MethodInfo, static x => x.Symbol));
             var comMethodContexts = comMethodContextBuilders
                 .Combine(methodInfoToSymbolMap)
-                .Combine(context.CreateStubEnvironmentProvider())
+                .Combine(stubEnvironment)
                 .Select((param, ct) =>
                 {
                     var ((data, symbolMap), env) = param;
@@ -229,9 +212,9 @@ namespace Microsoft.Interop
         private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ManagedTypeInfo owningInterface, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
-            INamedTypeSymbol? lcidConversionAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.LCIDConversionAttribute);
-            INamedTypeSymbol? suppressGCTransitionAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.SuppressGCTransitionAttribute);
-            INamedTypeSymbol? unmanagedCallConvAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.UnmanagedCallConvAttribute);
+            INamedTypeSymbol? lcidConversionAttrType = environment.LcidConversionAttrType;
+            INamedTypeSymbol? suppressGCTransitionAttrType = environment.SuppressGCTransitionAttrType;
+            INamedTypeSymbol? unmanagedCallConvAttrType = environment.UnmanagedCallConvAttrType;
             // Get any attributes of interest on the method
             AttributeData? lcidConversionAttr = null;
             AttributeData? suppressGCTransitionAttribute = null;

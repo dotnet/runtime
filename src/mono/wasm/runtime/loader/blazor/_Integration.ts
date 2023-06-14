@@ -107,13 +107,13 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     for (const name in resources.runtimeAssets) {
         const asset = resources.runtimeAssets[name] as AssetEntry;
         asset.name = name;
-        asset.resolvedUrl = `_framework/${name}`;
+        asset.resolvedUrl = loaderHelpers.locateFile(name);
         assets.push(asset);
     }
     for (const name in resources.assembly) {
         const asset: AssetEntry = {
             name,
-            resolvedUrl: `_framework/${name}`,
+            resolvedUrl: loaderHelpers.locateFile(name),
             hash: resources.assembly[name],
             behavior: "assembly",
         };
@@ -123,7 +123,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
         for (const name in resources.pdb) {
             const asset: AssetEntry = {
                 name,
-                resolvedUrl: `_framework/${name}`,
+                resolvedUrl: loaderHelpers.locateFile(name),
                 hash: resources.pdb[name],
                 behavior: "pdb",
             };
@@ -149,7 +149,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
             continue;
         }
 
-        const resolvedUrl = name.endsWith(".js") ? `./${name}` : `_framework/${name}`;
+        const resolvedUrl = loaderHelpers.locateFile(name);
         const asset: AssetEntry = {
             name,
             resolvedUrl,
@@ -163,7 +163,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
         if (config === "appsettings.json" || config === `appsettings.${applicationEnvironment}.json`) {
             assets.push({
                 name: config,
-                resolvedUrl: config,
+                resolvedUrl: (document ? document.baseURI : "/") + config,
                 behavior: "vfs",
             });
         }
@@ -203,8 +203,14 @@ function getICUResourceName(bootConfig: BootJsonData, culture: string | undefine
         }
     }
 
-    const combinedICUResourceName = "icudt.dat";
+    if (bootConfig.icuDataMode === ICUDataMode.Hybrid)
+    {
+        const reducedICUResourceName = "icudt_hybrid.dat";
+        return reducedICUResourceName;
+    }
+
     if (!culture || bootConfig.icuDataMode === ICUDataMode.All) {
+        const combinedICUResourceName = "icudt.dat";
         return combinedICUResourceName;
     }
 
