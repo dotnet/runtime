@@ -198,7 +198,7 @@ jobs:
     # Zip should always be installed on windows, so set the variable to true.
     - powershell: |
         Write-Host "##vso[task.setvariable variable=IsZipInstalled;]true"
-      displayName: Set installed zip tool (Windows)
+      displayName: Check zip tool (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
 
     # Zip the workitem directory (for xharness based workitems)
