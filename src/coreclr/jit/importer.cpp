@@ -3637,86 +3637,28 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
 //
 GenTree* Compiler::impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueType)
 {
-    GenTree* tree = nullptr;
-    switch (valueType)
+    GenTree* tree;
+    if (valueType == TYP_REF)
     {
-// Use memcpy to read from the buffer and create an Icon/Dcon tree
-#define CreateTreeFromBuffer(type, treeFactory)                                                                        \
-    type v##type;                                                                                                      \
-    memcpy(&v##type, buffer, sizeof(type));                                                                            \
-    tree = treeFactory(v##type);
-
-        case TYP_BOOL:
+        target_ssize_t ptr;
+        memcpy(&ptr, buffer, sizeof(ptr));
+        if (ptr == 0)
         {
-            CreateTreeFromBuffer(bool, gtNewIconNode);
-            break;
+            tree = gtNewNull();
         }
-        case TYP_BYTE:
+        else
         {
-            CreateTreeFromBuffer(int8_t, gtNewIconNode);
-            break;
+            setMethodHasFrozenObjects();
+            tree         = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+            tree->gtType = TYP_REF;
+            INDEBUG(tree->AsIntCon()->gtTargetHandle = ptr);
         }
-        case TYP_UBYTE:
-        {
-            CreateTreeFromBuffer(uint8_t, gtNewIconNode);
-            break;
-        }
-        case TYP_SHORT:
-        {
-            CreateTreeFromBuffer(int16_t, gtNewIconNode);
-            break;
-        }
-        case TYP_USHORT:
-        {
-            CreateTreeFromBuffer(uint16_t, gtNewIconNode);
-            break;
-        }
-        case TYP_UINT:
-        case TYP_INT:
-        {
-            CreateTreeFromBuffer(int32_t, gtNewIconNode);
-            break;
-        }
-        case TYP_LONG:
-        case TYP_ULONG:
-        {
-            CreateTreeFromBuffer(int64_t, gtNewLconNode);
-            break;
-        }
-        case TYP_FLOAT:
-        {
-            CreateTreeFromBuffer(float, gtNewDconNode);
-            break;
-        }
-        case TYP_DOUBLE:
-        {
-            CreateTreeFromBuffer(double, gtNewDconNode);
-            break;
-        }
-        case TYP_REF:
-        {
-            size_t ptr;
-            memcpy(&ptr, buffer, sizeof(ssize_t));
-
-            if (ptr == 0)
-            {
-                tree = gtNewNull();
-            }
-            else
-            {
-                setMethodHasFrozenObjects();
-                tree         = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
-                tree->gtType = TYP_REF;
-                INDEBUG(tree->AsIntCon()->gtTargetHandle = ptr);
-            }
-            break;
-        }
-        default:
-            return nullptr;
+    }
+    else
+    {
+        tree = gtNewGenericCon(valueType, buffer);
     }
 
-    assert(tree != nullptr);
-    tree->gtType = genActualType(valueType);
     return tree;
 }
 
