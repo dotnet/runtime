@@ -2498,6 +2498,8 @@ public:
 
     GenTree* gtNewConWithPattern(var_types type, uint8_t pattern);
 
+    GenTree* gtNewGenericCon(var_types type, uint8_t* cnsVal);
+
     GenTreeLclVar* gtNewStoreLclVarNode(unsigned lclNum, GenTree* data);
 
     GenTreeLclFld* gtNewStoreLclFldNode(

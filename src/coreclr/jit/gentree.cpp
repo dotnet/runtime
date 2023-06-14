@@ -7654,9 +7654,9 @@ GenTree* Compiler::gtNewOneConNode(var_types type, var_types simdBaseType /* = T
 }
 
 //------------------------------------------------------------------------
-// CreateInitValue:
-//   Create an IR node representing a constant value with the specified 8
-//   byte character broadcast into all of its bytes.
+// gtNewConWithPattern:
+//   Create an IR node representing a constant value with the specified byte
+//   broadcast into all of its bytes.
 //
 // Parameters:
 //   type    - The primitive type. For small types the constant will be
@@ -7715,6 +7715,92 @@ GenTree* Compiler::gtNewConWithPattern(var_types type, uint8_t pattern)
         }
         default:
             unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// gtNewGenericCon:
+//   Create an IR node representing a constant value of any type.
+//
+// Parameters:
+//   type   - The primitive type. For small types the constant will be
+//            zero/sign-extended and a TYP_INT node will be returned.
+//   cnsVal - Pointer to data
+//
+// Returns:
+//   An IR node representing the constant.
+//
+GenTree* Compiler::gtNewGenericCon(var_types type, uint8_t* cnsVal)
+{
+    switch (type)
+    {
+#define READ_VALUE(typ)                                                                                                \
+    typ val;                                                                                                           \
+    memcpy(&val, cnsVal, sizeof(typ));
+
+        case TYP_BOOL:
+        case TYP_UBYTE:
+        {
+            READ_VALUE(uint8_t);
+            return gtNewIconNode(val);
+        }
+        case TYP_BYTE:
+        {
+            READ_VALUE(int8_t);
+            return gtNewIconNode(val);
+        }
+        case TYP_SHORT:
+        {
+            READ_VALUE(int16_t);
+            return gtNewIconNode(val);
+        }
+        case TYP_USHORT:
+        {
+            READ_VALUE(uint16_t);
+            return gtNewIconNode(val);
+        }
+        case TYP_INT:
+        {
+            READ_VALUE(int32_t);
+            return gtNewIconNode(val);
+        }
+        case TYP_LONG:
+        {
+            READ_VALUE(int64_t);
+            return gtNewLconNode(val);
+        }
+        case TYP_FLOAT:
+        {
+            READ_VALUE(float);
+            return gtNewDconNode(val, TYP_FLOAT);
+        }
+        case TYP_DOUBLE:
+        {
+            READ_VALUE(double);
+            return gtNewDconNode(val);
+        }
+        case TYP_REF:
+        case TYP_BYREF:
+        {
+            READ_VALUE(target_ssize_t);
+            return gtNewIconNode(val, type);
+        }
+#ifdef FEATURE_SIMD
+        case TYP_SIMD8:
+        case TYP_SIMD12:
+        case TYP_SIMD16:
+#if defined(TARGET_XARCH)
+        case TYP_SIMD32:
+        case TYP_SIMD64:
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
+        {
+            return gtNewVconNode(type, cnsVal);
+        }
+        default:
+            unreached();
+
+#undef READ_VALUE
     }
 }
 

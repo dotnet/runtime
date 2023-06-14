@@ -3844,6 +3844,18 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
         }
+        else if (argNode->IsCnsVec())
+        {
+            GenTreeVecCon* vecCon = argNode->AsVecCon();
+            newArg                = new (this, GT_FIELD_LIST) GenTreeFieldList();
+            for (unsigned inx = 0; inx < elemCount; inx++)
+            {
+                unsigned offset = elems[inx].Offset;
+                assert(offset + genTypeSize(elems[inx].Type) <= sizeof(vecCon->gtSimdVal));
+                GenTree* cns = gtNewGenericCon(elems[inx].Type, (uint8_t*)&vecCon->gtSimdVal + offset);
+                newArg->AddField(this, cns, offset, cns->TypeGet());
+            }
+        }
         else
         {
             assert(argNode->OperIsIndir());
