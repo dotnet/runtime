@@ -45,14 +45,14 @@ void (*clickHandlerApplyUpdatePtr)(void);
     [button addTarget:self action:@selector(buttonClicked:) forControlEvents:UIControlEventTouchUpInside];
     [button setFrame:CGRectMake(50, 250, 200, 50)];
     [button setTitle:@"Click me (wire me up)" forState:UIControlStateNormal];
-    // [button setExclusiveTouch:YES];
+    [button setExclusiveTouch:YES];
     [self.view addSubview:button];
 
     UIButton *apply_button = [UIButton buttonWithType:UIButtonTypeInfoDark];
     [apply_button addTarget:self action:@selector(applyUpdateButtonClicked:) forControlEvents:UIControlEventTouchUpInside];
     [apply_button setFrame:CGRectMake(50, 300, 200, 50)];
     [apply_button setTitle:@"ApplyUpdate" forState:UIControlStateNormal];
-    // [apply_button setExclusiveTouch:YES];
+    [apply_button setExclusiveTouch:YES];
     [self.view addSubview:apply_button];
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
