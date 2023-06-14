@@ -817,7 +817,10 @@ MINI_OP(OP_EXTRACT_R4, "extract_r4", FREG, XREG, NONE)
 MINI_OP(OP_EXTRACT_R8, "extract_r8", FREG, XREG, NONE)
 MINI_OP(OP_EXTRACTX_U2, "extractx_u2", IREG, XREG, NONE)
 
-/* Used by LLVM */
+/*
+ * Insert an element into a vector with a constant lane index.
+ * inst_c0 is the lane index.
+ */
 MINI_OP(OP_INSERT_I1, "insert_i1", XREG, XREG, IREG)
 MINI_OP(OP_INSERT_I2, "insert_i2", XREG, XREG, IREG)
 MINI_OP(OP_INSERT_I4, "insert_i4", XREG, XREG, IREG)
@@ -1142,6 +1145,9 @@ MINI_OP(OP_SSE_CVTII, "sse_cvtii", XREG, XREG, NONE)
 MINI_OP3(OP_SSE41_DPPS, "sse41_dpps", XREG, XREG, XREG, IREG)
 MINI_OP3(OP_SSE41_DPPD, "sse41_dppd", XREG, XREG, XREG, IREG)
 MINI_OP3(OP_SSE41_MPSADBW, "sse41_mpsadbw", XREG, XREG, XREG, IREG)
+/* inst_c0 contains the mask value */
+MINI_OP(OP_SSE41_DPPS_IMM, "sse41_dpps_imm", XREG, XREG, XREG)
+MINI_OP(OP_SSE41_DPPD_IMM, "sse41_dppd_imm", XREG, XREG, XREG)
 
 /* pclmulqdq */
 MINI_OP3(OP_PCLMULQDQ, "pclmulqdq", XREG, XREG, XREG, IREG)
@@ -1502,15 +1508,23 @@ MINI_OP(OP_XCOMPARE_SCALAR, "xcompare_scalar", XREG, XREG, XREG)
 MINI_OP(OP_XCOMPARE_FP, "xcompare_fp", XREG, XREG, XREG)
 MINI_OP(OP_XCOMPARE_FP_SCALAR, "xcompare_fp_scalar", XREG, XREG, XREG)
 
-/* Extract from XREG into IREG.
- *   inst_c0 - specific instruction, one of SIMD_EXTR_... */
+/*
+ * The input reg is the result ofg OP_XCOMPARE, i.e.
+ * every element is either 0 or 0xff.
+ * Compute an integer result based on whenever all or any
+ * bits are non-zero.
+ *   inst_c0 - specific instruction, one of SIMD_EXTR_...
+ *   inst_c1 - vector size in bytes
+ */
 MINI_OP(OP_XEXTRACT, "xextract", IREG, XREG, NONE)
 
 /*
  * Generic SIMD operations, the rest of the JIT doesn't care about the exact operation.
  */
 MINI_OP(OP_XUNOP, "xunop", XREG, XREG, NONE)
+/* inst_c0 is a OP_ constant, inst_c1 is a MONO_TYPE_ constant */
 MINI_OP(OP_XBINOP, "xbinop", XREG, XREG, XREG)
+/* The arguments are treated as vectors of integer types. inst_c0 is a XBINOP_FORCEINT_ constant */
 MINI_OP(OP_XBINOP_FORCEINT, "xbinop_forceint", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP_SCALAR, "xbinop_scalar", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP_BYSCALAR, "xbinop_byscalar", XREG, XREG, XREG)
@@ -1542,7 +1556,9 @@ MINI_OP(OP_XOP_OVR_BYSCALAR_X_X_X, "xop_ovr_byscalar_x_x_x", XREG, XREG, XREG)
 
 MINI_OP(OP_XCONCAT, "xconcat", XREG, XREG, XREG)
 MINI_OP(OP_XCAST, "xcast", XREG, XREG, NONE)
+/* Return a new vector containing the lower half of the source */
 MINI_OP(OP_XLOWER, "xlower", XREG, XREG, NONE)
+/* Return a new vector containing the upper half of the source */
 MINI_OP(OP_XUPPER, "xupper", XREG, XREG, NONE)
 MINI_OP(OP_XWIDEN, "xwiden", XREG, XREG, NONE)
 MINI_OP(OP_XWIDEN_UNSAFE, "xwiden_unsafe", XREG, XREG, NONE)
@@ -1827,8 +1843,10 @@ MINI_OP(OP_CVT_UI_FP,        "convert_ui_to_fp", XREG, XREG, NONE)
 MINI_OP(OP_CVT_SI_FP,        "convert_si_to_fp", XREG, XREG, NONE)
 MINI_OP(OP_CVT_UI_FP_SCALAR, "convert_ui_to_fp_scalar", XREG, XREG, NONE)
 MINI_OP(OP_CVT_SI_FP_SCALAR, "convert_si_to_fp_scalar", XREG, XREG, NONE)
+/* inst_c1 is one of the MONO_TYPE_ constants */
 MINI_OP(OP_NEGATION,        "negate", XREG, XREG, NONE)
 MINI_OP(OP_NEGATION_SCALAR, "negate_scalar", XREG, XREG, NONE)
+/* Select bits from src2/src3 using src1 */
 MINI_OP3(OP_BSL,            "bitwise_select", XREG, XREG, XREG, XREG)
 #endif // TARGET_ARM64 || TARGET_AMD64 || TARGET_WASM
 

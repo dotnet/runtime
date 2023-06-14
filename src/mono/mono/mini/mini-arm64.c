@@ -1541,6 +1541,8 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return)
 	size = mini_type_stack_size_full (t, &align, cinfo->pinvoke);
 	align_size = ALIGN_TO (size, 8);
 
+	/* FIXME: gshared, gsharedvt, dyncalls */
+#if 0
 	if (m_class_is_simd_type (klass) && size <= 16 && !cinfo->pinvoke && !is_return && cinfo->fr < FP_PARAM_REGS) {
 		ainfo->storage = ArgInSIMDReg;
 		ainfo->reg = cinfo->fr;
@@ -1549,6 +1551,7 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return)
 		cinfo->fr ++;
 		return;
 	}
+#endif
 
 	nregs = align_size / 8;
 	if (is_hfa (t, &nfields, &esize, field_offsets)) {
