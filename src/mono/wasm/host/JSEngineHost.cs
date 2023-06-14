@@ -92,7 +92,7 @@ internal sealed class JSEngineHost
                                     silent: !_args.CommonConfig.Silent);
 
         if (_args.CommonConfig.Silent)
-            Console.WriteLine ($"{_args.Host} exited with {exitCode}");
+            Console.WriteLine($"{_args.Host} exited with {exitCode}");
         return exitCode;
     }
 }
