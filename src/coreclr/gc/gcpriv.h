@@ -4197,8 +4197,8 @@ private:
     // in the very next GC done with garbage_collect_pm_full_gc.
     PER_HEAP_ISOLATED_FIELD_MAINTAINED bool pm_trigger_full_gc;
 
-    // This is the smoothed *total* budget, i.e. across *all* heaps. Only used in a join.
-    PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t smoothed_desired_total[total_generation_count];
+    // This is smoothed "desired_per_heap", ie, smoothed budget. Only used in a join.
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t smoothed_desired_per_heap[total_generation_count];
 
     PER_HEAP_ISOLATED_FIELD_MAINTAINED uint64_t gc_last_ephemeral_decommit_time;
 
