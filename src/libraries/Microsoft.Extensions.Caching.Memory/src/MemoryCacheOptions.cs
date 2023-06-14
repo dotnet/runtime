@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Options;
 
@@ -42,7 +43,8 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
-        [System.Obsolete("This property is retained only for compatibility.  Remove use and instead call MemoryCache.Compat as needed.", error: true)]
+        [EditorBrowsableAttribute(EditorBrowsableState.Never)]
+        [Obsolete("This property is retained only for compatibility.  Remove use and instead call MemoryCache.Compact as needed.", error: true)]
         public bool CompactOnMemoryPressure { get; set; }
 
         /// <summary>

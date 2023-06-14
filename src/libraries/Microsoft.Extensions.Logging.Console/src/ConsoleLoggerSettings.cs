@@ -3,10 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Logging.Console
 {
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [Obsolete("This type is retained only for compatibility. The recommended alternative is ConsoleLoggerOptions.", error: true)]
     public class ConsoleLoggerSettings : IConsoleLoggerSettings
     {

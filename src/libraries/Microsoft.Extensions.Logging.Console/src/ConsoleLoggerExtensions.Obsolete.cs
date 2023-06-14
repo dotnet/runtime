@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.Console;
@@ -12,6 +13,7 @@ namespace Microsoft.Extensions.Logging
 {
     public static partial class ConsoleLoggerExtensions
     {
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
         public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory, Extensions.Configuration.IConfiguration configuration)
         {
@@ -19,6 +21,7 @@ namespace Microsoft.Extensions.Logging
             return factory.AddConsole(settings);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
         public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory, Console.IConsoleLoggerSettings settings)
         {
@@ -26,6 +29,7 @@ namespace Microsoft.Extensions.Logging
             return factory;
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
         public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory, Logging.LogLevel minLevel, bool includeScopes)
         {
@@ -33,6 +37,7 @@ namespace Microsoft.Extensions.Logging
             return factory;
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
         public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory, Logging.LogLevel minLevel)
         {
@@ -40,6 +45,7 @@ namespace Microsoft.Extensions.Logging
             return factory;
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
         public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory, bool includeScopes)
         {
@@ -47,6 +53,7 @@ namespace Microsoft.Extensions.Logging
             return factory;
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
         public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory, System.Func<string, Logging.LogLevel, bool> filter, bool includeScopes)
         {
@@ -54,6 +61,7 @@ namespace Microsoft.Extensions.Logging
             return factory;
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
         public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory, System.Func<string, Logging.LogLevel, bool> filter)
         {
@@ -61,6 +69,7 @@ namespace Microsoft.Extensions.Logging
             return factory;
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
         public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory)
         {

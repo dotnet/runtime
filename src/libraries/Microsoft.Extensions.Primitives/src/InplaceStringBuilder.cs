@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Microsoft.Extensions.Primitives
 {
     [DebuggerDisplay("Value = {_value}")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [Obsolete("This type is retained only for compatibility. The recommended alternative is string.Create<TState> (int length, TState state, System.Buffers.SpanAction<char,TState> action).", error: true)]
     public struct InplaceStringBuilder
     {
