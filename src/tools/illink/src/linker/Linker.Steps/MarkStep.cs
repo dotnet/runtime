@@ -36,6 +36,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Runtime.TypeParsing;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
@@ -3183,6 +3184,9 @@ namespace Mono.Linker.Steps
 			using var parentScope = ScopeStack.PushScope (new MarkScopeStack.Scope (origin));
 			using var methodScope = ScopeStack.PushScope (new MessageOrigin (method));
 
+			if (method.ToString ().Contains ("InvokeDefaultConstructor"))
+				Debug.WriteLine ("");
+
 			bool markedForCall =
 				reason.Kind == DependencyKind.DirectCall ||
 				reason.Kind == DependencyKind.VirtualCall ||
@@ -3262,6 +3266,10 @@ namespace Mono.Linker.Steps
 
 			if (method.IsPInvokeImpl || method.IsInternalCall) {
 				ProcessInteropMethod (method);
+			}
+
+			if (!method.HasBody || method.Body.CodeSize == 0) {
+				ProcessUnsafeAccessorMethod (method);
 			}
 
 			if (ShouldParseMethodBody (method))
@@ -3492,6 +3500,54 @@ namespace Mono.Linker.Steps
 				}
 			}
 #pragma warning restore RS0030
+		}
+
+		void ProcessUnsafeAccessorMethod (MethodDefinition method)
+		{
+			if (!method.HasCustomAttributes)
+				return;
+
+			foreach (var customAttribute in method.CustomAttributes) {
+				if (customAttribute.Constructor.DeclaringType.FullName == "System.Runtime.CompilerServices.UnsafeAccessorAttribute") {
+					if (customAttribute.HasConstructorArguments && customAttribute.ConstructorArguments[0].Value is int kindValue) {
+						UnsafeAccessorKind kind = (UnsafeAccessorKind) kindValue;
+						string? name = null;
+						if (customAttribute.HasProperties) {
+							foreach (var prop in customAttribute.Properties) {
+								if (prop.Name == "Name") {
+									name = prop.Argument.Value as string;
+									break;
+								}
+							}
+						}
+
+						ProcessUnsafeAccessorMethod (method, kind, name);
+
+						// Intentionally only process the first such attribute
+						// if there's more than one runtime will fail on it anyway.
+						break;
+					}
+				}
+			}
+		}
+
+		void ProcessUnsafeAccessorMethod (MethodDefinition method, UnsafeAccessorKind kind, string? name)
+		{
+			// Using reflection marker since it has the right helpers - at least for now
+			ReflectionMarker reflectionMarker = new ReflectionMarker (this.Context, this, true);
+			MessageOrigin messageOrigin = new MessageOrigin (method);
+
+			_ = name; // So far unused
+
+			switch (kind) {
+			case UnsafeAccessorKind.Constructor:
+				if (!method.ReturnsVoid() && Context.TryResolve (method.ReturnType) is TypeDefinition returnType) {
+					reflectionMarker.MarkConstructorsOnType (messageOrigin, returnType, filter: null);
+				}
+				break;
+			default:
+				break;
+			}
 		}
 
 		protected virtual bool ShouldParseMethodBody (MethodDefinition method)
