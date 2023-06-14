@@ -448,8 +448,8 @@ namespace System.Runtime.InteropServices
                 if (_exposed && _wrappedObject.Target != null)
                 {
                     // The wrapped object has not been fully collected, so it is still
-                    // potentially reachable via the CWT. Keep ourselves alive in case
-                    // the wrapped object is resurrected.
+                    // potentially reachable via the Conditional Weak Table.
+                    // Keep ourselves alive in case the wrapped object is resurrected.
                     GC.ReRegisterForFinalize(this);
                     return;
                 }
