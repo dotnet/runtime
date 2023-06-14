@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("ComImportForwarder"), AssemblyBuilderAccess.RunAndCollect);
                 ModuleBuilder module = assembly.DefineDynamicModule("ComImportForwarder");
 
-                TypeBuilder implementation = module.DefineType("InterfaceForwarder", TypeAttributes.Interface, parent: typeof(object), interfaces: runtimeType.GetInterfaces());
+                TypeBuilder implementation = module.DefineType("InterfaceForwarder", TypeAttributes.Interface, parent: null, interfaces: runtimeType.GetInterfaces());
                 implementation.AddInterfaceImplementation(runtimeType);
                 implementation.SetCustomAttribute(new CustomAttributeBuilder(typeof(DynamicInterfaceCastableImplementationAttribute).GetConstructor(Array.Empty<Type>())!, Array.Empty<object>()));
 
