@@ -1699,6 +1699,110 @@ namespace System.Runtime.Intrinsics.Wasm
         [Intrinsic]
         public static Vector128<nuint>  CompareGreaterThanOrEqual(Vector128<nuint>  left, Vector128<nuint>  right) => CompareGreaterThanOrEqual(left, right);
 
+        // Load
+
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<sbyte>  LoadVector128(sbyte*  address) => LoadVector128(address);
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<byte>   LoadVector128(byte*   address) => LoadVector128(address);
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<short>  LoadVector128(short*  address) => LoadVector128(address);
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<ushort> LoadVector128(ushort* address) => LoadVector128(address);
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<int>    LoadVector128(int*    address) => LoadVector128(address);
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<uint>   LoadVector128(uint*   address) => LoadVector128(address);
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<long>   LoadVector128(long*   address) => LoadVector128(address);
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<ulong>  LoadVector128(ulong*  address) => LoadVector128(address);
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<float>  LoadVector128(float*  address) => LoadVector128(address);
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<double> LoadVector128(double* address) => LoadVector128(address);
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<nint>   LoadVector128(nint*   address) => LoadVector128(address);
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<nuint>  LoadVector128(nuint*  address) => LoadVector128(address);
+
+        /// <summary>
+        ///   v128.load32.zero
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<int>    LoadScalarVector128(int*    address) => LoadScalarVector128(address);
+        /// <summary>
+        ///   v128.load32.zero
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<uint>   LoadScalarVector128(uint*   address) => LoadScalarVector128(address);
+        /// <summary>
+        ///   v128.load64.zero
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<long>   LoadScalarVector128(long*   address) => LoadScalarVector128(address);
+        /// <summary>
+        ///   v128.load64.zero
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<ulong>  LoadScalarVector128(ulong*  address) => LoadScalarVector128(address);
+        /// <summary>
+        ///   v128.load32.zero
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<float>  LoadScalarVector128(float*  address) => LoadScalarVector128(address);
+        /// <summary>
+        ///   v128.load64.zero
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<double> LoadScalarVector128(double* address) => LoadScalarVector128(address);
+        /// <summary>
+        ///   v128.load32.zero
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<nint>   LoadScalarVector128(nint*   address) => LoadScalarVector128(address);
+        /// <summary>
+        ///   v128.load32.zero
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<nuint>  LoadScalarVector128(nuint*  address) => LoadScalarVector128(address);
+
        // Floating-point sign bit operations
 
         /// <summary>
