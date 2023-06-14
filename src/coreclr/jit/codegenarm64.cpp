@@ -730,7 +730,7 @@ void CodeGen::genBuildRegPairsStack(regMaskTP regsMask, ArrayStack<RegPair>* reg
                     {
                         isPairSave = true;
 
-                        regsMask &= ~genRegMask(reg2);
+                        regsMask ^= genRegMask(reg2);
                         regsCount -= 1;
 
                         regStack->Push(RegPair(reg1, reg2));

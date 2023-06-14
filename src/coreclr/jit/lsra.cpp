@@ -3849,8 +3849,7 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
     INDEBUG(bool killedRegs = false);
     while (candidateRegs != RBM_NONE)
     {
-        regNumber nextReg = genFirstRegNumFromMask(candidateRegs);
-        candidateRegs ^= genRegMask(nextReg);
+        regNumber nextReg = genFirstRegNumFromMaskAndToggle(candidateRegs);
 
         RegRecord* regRecord        = getRegisterRecord(nextReg);
         Interval*  assignedInterval = regRecord->assignedInterval;
@@ -4510,8 +4509,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     // regMaskTP deadCandidateBit = genFindLowestBit(deadCandidates);
     while (deadCandidates != RBM_NONE)
     {
-        regNumber reg = genFirstRegNumFromMask(deadCandidates);
-        deadCandidates ^= genRegMask(reg);
+        regNumber  reg           = genFirstRegNumFromMaskAndToggle(deadCandidates);
         RegRecord* physRegRecord = getRegisterRecord(reg);
 
         makeRegAvailable(reg, physRegRecord->registerType);
@@ -4714,7 +4712,7 @@ void LinearScan::freeRegisters(regMaskTP regsToFree)
         if (regRecord->assignedInterval != nullptr && (regRecord->assignedInterval->registerType == TYP_DOUBLE))
         {
             assert(genIsValidDoubleReg(nextReg));
-            regsToFree &= ~(genRegMask(nextReg) << 1);
+            regsToFree ^= genRegMask(nextReg + 1);
         }
 #endif
         freeRegister(regRecord);
@@ -11198,8 +11196,7 @@ void LinearScan::verifyFinalAllocation()
                     regMaskTP candidateRegs = currentRefPosition.registerAssignment;
                     while (candidateRegs != RBM_NONE)
                     {
-                        regNumber nextReg = genFirstRegNumFromMask(candidateRegs);
-                        candidateRegs ^= genRegMask(nextReg);
+                        regNumber nextReg = genFirstRegNumFromMaskAndToggle(candidateRegs);
 
                         RegRecord* regRecord        = getRegisterRecord(nextReg);
                         Interval*  assignedInterval = regRecord->assignedInterval;
