@@ -48,13 +48,21 @@ namespace System.Collections.Frozen
         /// then uses this index to reference individual entries by indexing into <see cref="HashCodes"/>.
         /// </remarks>
         /// <returns>A frozen hash table.</returns>
+#if NET6_0_OR_GREATER
+        [System.Runtime.CompilerServices.SkipLocalsInitAttribute]
+#endif
         public static FrozenHashTable Create(int entriesLength, Func<int, int> hashAtIndex, Action<int, int> storeDestIndexFromSrcIndex, bool optimizeForReading = true)
         {
             Debug.Assert(entriesLength != 0);
 
             // Calculate the hashcodes for every entry.
-            int[] arrayPoolHashCodes = ArrayPool<int>.Shared.Rent(entriesLength);
-            Span<int> hashCodes = arrayPoolHashCodes.AsSpan(0, entriesLength);
+            int[]? arrayPoolHashCodes = null, arrayPoolBuckets = null;
+
+            Span<int> hashCodes = entriesLength <= 256
+                    ? stackalloc int[256]
+                    : (arrayPoolHashCodes = ArrayPool<int>.Shared.Rent(entriesLength));
+            hashCodes = hashCodes.Slice(0, entriesLength);
+
             for (int i = 0; i < entriesLength; i++)
             {
                 hashCodes[i] = hashAtIndex(i);
@@ -70,9 +78,12 @@ namespace System.Collections.Frozen
             // - bucketStarts: initially filled with all -1s, the ith element stores the index
             //   into hashCodes of the head element of that bucket's chain.
             // - nexts: the ith element stores the index of the next item in the chain.
-            int[] arrayPoolBuckets = ArrayPool<int>.Shared.Rent(numBuckets + hashCodes.Length);
-            Span<int> bucketStarts = arrayPoolBuckets.AsSpan(0, numBuckets);
-            Span<int> nexts = arrayPoolBuckets.AsSpan(numBuckets, hashCodes.Length);
+            Span<int> buckets = numBuckets + hashCodes.Length <= 256
+                ? stackalloc int[256]
+                : (arrayPoolBuckets = ArrayPool<int>.Shared.Rent(numBuckets + hashCodes.Length));
+
+            Span<int> bucketStarts = buckets.Slice(0, numBuckets);
+            Span<int> nexts = buckets.Slice(numBuckets, hashCodes.Length);
             bucketStarts.Fill(-1);
 
             // Populate the bucket entries and starts.  For each hash code, compute its bucket,
@@ -123,8 +134,14 @@ namespace System.Collections.Frozen
             }
             Debug.Assert(count == hashtableHashcodes.Length);
 
-            ArrayPool<int>.Shared.Return(arrayPoolBuckets);
-            ArrayPool<int>.Shared.Return(arrayPoolHashCodes);
+            if (arrayPoolBuckets is not null)
+            {
+                ArrayPool<int>.Shared.Return(arrayPoolBuckets);
+            }
+            if (arrayPoolHashCodes is not null)
+            {
+                ArrayPool<int>.Shared.Return(arrayPoolHashCodes);
+            }
 
             return new FrozenHashTable(hashtableHashcodes, hashtableBuckets, fastModMultiplier);
         }
