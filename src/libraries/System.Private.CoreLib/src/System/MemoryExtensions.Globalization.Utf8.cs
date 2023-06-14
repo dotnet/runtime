@@ -13,17 +13,15 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool EqualsOrdinalIgnoreCaseUtf8(this ReadOnlySpan<byte> span, ReadOnlySpan<byte> value)
         {
-            if (span.Length != value.Length)
-            {
-                return false;
-            }
+            // For UTF-8 ist is possible for two spans of different byte length
+            // to compare as equal under an OrdinalIgnoreCase comparison.
 
-            if (value.Length == 0)  // span.Length == value.Length == 0
+            if ((span.Length | value.Length) == 0)  // span.Length == value.Length == 0
             {
                 return true;
             }
 
-            return Ordinal.EqualsIgnoreCaseUtf8(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(value), span.Length);
+            return Ordinal.EqualsIgnoreCaseUtf8(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(value), value.Length);
         }
 
         /// <summary>
@@ -66,8 +64,15 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool StartsWithOrdinalIgnoreCaseUtf8(this ReadOnlySpan<byte> span, ReadOnlySpan<byte> value)
         {
-            return (value.Length <= span.Length)
-                && Ordinal.EqualsIgnoreCaseUtf8(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(value), value.Length);
+            // For UTF-8 ist is possible for two spans of different byte length
+            // to compare as equal under an OrdinalIgnoreCase comparison.
+
+            if ((span.Length | value.Length) == 0)  // span.Length == value.Length == 0
+            {
+                return true;
+            }
+
+            return Ordinal.StartsWithIgnoreCaseUtf8(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(value), value.Length);
         }
     }
 }

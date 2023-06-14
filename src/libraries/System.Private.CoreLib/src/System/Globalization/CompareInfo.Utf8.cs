@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Text;
+using System.Text.Unicode;
 
 namespace System.Globalization
 {
@@ -92,7 +93,12 @@ namespace System.Globalization
                 sourceUtf16 = sourceUtf16Array.AsSpan(0, sourceMaxCharCount);
             }
 
-            int sourceUtf16Length = Encoding.UTF8.GetChars(source, sourceUtf16);
+            OperationStatus sourceStatus = Utf8.ToUtf16(source, sourceUtf16, out _, out int sourceUtf16Length, replaceInvalidSequences: false);
+
+            if (sourceStatus != OperationStatus.Done)
+            {
+                return false;
+            }
             sourceUtf16 = sourceUtf16.Slice(0, sourceUtf16Length);
 
             // Convert prefix using stackalloc for <= 256 characters and ArrayPool otherwise
@@ -112,7 +118,12 @@ namespace System.Globalization
                 prefixUtf16 = prefixUtf16Array.AsSpan(0, prefixMaxCharCount);
             }
 
-            int prefixUtf16Length = Encoding.UTF8.GetChars(prefix, prefixUtf16);
+            OperationStatus prefixStatus = Utf8.ToUtf16(prefix, prefixUtf16, out _, out int prefixUtf16Length, replaceInvalidSequences: false);
+
+            if (prefixStatus != OperationStatus.Done)
+            {
+                return false;
+            }
             prefixUtf16 = prefixUtf16.Slice(0, prefixUtf16Length);
 
             // Actual operation
