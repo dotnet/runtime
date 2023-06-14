@@ -4,7 +4,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.1</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DisableCheckExtensionsBackwardCompatibility>true</DisableCheckExtensionsBackwardCompatibility>
     <IsPackable>true</IsPackable>
     <PackageDescription>.NET hosting infrastructure for Systemd Services.</PackageDescription>
     <Nullable>annotations</Nullable>
