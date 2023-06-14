@@ -60,6 +60,7 @@ namespace System.Runtime.InteropServices.Marshalling
                         }
                         il.Emit(OpCodes.Call, method);
                         il.Emit(OpCodes.Ret);
+                        implementation.DefineMethodOverride(builder, method);
                     }
                 }
 
