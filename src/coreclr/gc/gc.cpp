@@ -24940,7 +24940,7 @@ void gc_heap::check_heap_count ()
     if (GCConfig::GetGCDynamicAdaptationMode() == 0)
     {
         // don't change the heap count dynamically if the feature isn't explicitly enabled
-        return;        
+        return;
     }
 
     // we should be calling this only on the main GC thread

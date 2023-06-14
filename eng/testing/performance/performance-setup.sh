@@ -146,6 +146,10 @@ while (($# > 0)); do
       nodynamicpgo=true
       shift 1
       ;;
+    --physicalpromotion)
+      physicalpromotion=true
+      shift 1
+      ;;
     --compare)
       compare=true
       shift 1
@@ -231,6 +235,7 @@ while (($# > 0)); do
       echo "  --mauiversion                  Set the maui version for Mono/Maui runs"
       echo "  --uselocalcommittime           Pass local runtime commit time to the setup script"
       echo "  --nodynamicpgo                 Set for No dynamic PGO runs"
+      echo "  --physicalpromotion            Set for runs with physical promotion"
       echo ""
       exit 1
       ;;
@@ -347,6 +352,10 @@ if [[ "$nodynamicpgo" == "true" ]]; then
     configurations="$configurations PGOType=nodynamicpgo"
 fi
 
+if [[ "$physicalpromotion" == "true" ]]; then
+    configurations="$configurations PhysicalPromotionType=physicalpromotion"
+fi
+
 
 
 cleaned_branch_name="main"
@@ -394,7 +403,14 @@ if [[ -n "$wasm_bundle_directory" ]]; then
     wasm_bundle_directory_path=$payload_directory
     mv $wasm_bundle_directory/* $wasm_bundle_directory_path
     find $wasm_bundle_directory_path -type d
-    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --cli \$HELIX_CORRELATION_PAYLOAD/dotnet/dotnet --wasmDataDir \$HELIX_CORRELATION_PAYLOAD/wasm-data"
+    wasm_args="--expose_wasm"
+    if [ "$javascript_engine" == "v8" ]; then
+        # for es6 module support
+        wasm_args="$wasm_args --module"
+    fi
+
+    # Workaround: escaping the quotes around `--wasmArgs=..` so they get retained for the actual command line
+    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine \\\"--wasmArgs=$wasm_args \\\" --cli \$HELIX_CORRELATION_PAYLOAD/dotnet/dotnet --wasmDataDir \$HELIX_CORRELATION_PAYLOAD/wasm-data"
     if [[ "$wasmaot" == "true" ]]; then
         extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --aotcompilermode wasm --buildTimeout 3600"
     fi
@@ -413,6 +429,10 @@ fi
 
 if [[ "$nodynamicpgo" == "true" ]]; then
     setup_arguments="$setup_arguments --no-dynamic-pgo"
+fi
+
+if [[ "$physicalpromotion" == "true" ]]; then
+    setup_arguments="$setup_arguments --physical-promotion"
 fi
 
 if [[ "$monoaot" == "true" ]]; then

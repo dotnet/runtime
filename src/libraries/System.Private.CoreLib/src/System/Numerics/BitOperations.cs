@@ -945,13 +945,17 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Reset specific bit in the given value
+        /// Flip the bit at a specific position in a given value.
+        /// Similar in behavior to the x86 instruction BTC (Bit Test and Complement).
         /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="index">The zero-based index of the bit to flip.
+        /// Any value outside the range [0..31] is treated as congruent mod 32.</param>
+        /// <returns>The new value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static uint ResetBit(uint value, int bitPos)
+        internal static uint FlipBit(uint value, int index)
         {
-            // TODO: Recognize BTR on x86 and LSL+BIC on ARM
-            return value & ~(uint)(1 << bitPos);
+            return value ^ (1u << index);
         }
     }
 }

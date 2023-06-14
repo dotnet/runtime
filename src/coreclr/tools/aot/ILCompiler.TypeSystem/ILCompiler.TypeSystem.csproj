@@ -159,6 +159,9 @@
     <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemException.cs">
       <Link>TypeSystem\Common\TypeSystemException.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\SimpleArrayOfTRuntimeInterfacesAlgorithm.cs">
+      <Link>TypeSystem\Common\SimpleArrayOfTRuntimeInterfacesAlgorithm.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemException.Resources.cs">
       <Link>TypeSystem\Common\TypeSystemException.Resources.cs</Link>
     </Compile>
