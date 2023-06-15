@@ -4,22 +4,22 @@
     <body>
       <trans-unit id="AddGeneratedComClassAddUnsafe">
         <source>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM and allow unsafe code</source>
-        <target state="new">Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM and allow unsafe code</target>
+        <target state="translated">Bu türdeki nesnelerin COM'a geçirilmesini etkinleştirmek ve güvenli olmayan koda izin vermek için 'GeneratedComClassAttribute' ekleyin</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeDescription">
         <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
-        <target state="new">This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</target>
+        <target state="translated">Bu tür, 'GeneratedComInterfaceAttribute' özniteliğine sahip en az bir tür uygular. Bu türü COM'a geçirmeyi ve bu türdeki nesnelerden 'GeneratedComInterfaceAttribute' içeren türler için COM arabirimlerini açığa çıkarmayı etkinleştirmek için 'GeneratedComClassAttribute' ekleyin.</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeMessage">
         <source>Add the 'GeneratedComClassAttribute' to '{0}' to enable passing objects of type '{0}' to COM</source>
-        <target state="new">Add the 'GeneratedComClassAttribute' to '{0}' to enable passing objects of type '{0}' to COM</target>
+        <target state="translated">'{0}' türündeki nesneleri COM'a geçirmeyi etkinleştirmek için 'GeneratedComClassAttribute' öğesini '{0}'a ekleyin</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeTitle">
         <source>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM</source>
-        <target state="new">Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM</target>
+        <target state="translated">Bu türdeki nesneleri COM'a geçirmeyi etkinleştirmek için 'GeneratedComClassAttribute' ekleyin</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedDescription">
@@ -39,7 +39,7 @@
       </trans-unit>
       <trans-unit id="AnalysisFailedTitle">
         <source>Analysis for COM interface generation has failed.</source>
-        <target state="needs-review-translation">Oluşturma analizi başarısız oldu.</target>
+        <target state="new">Analysis for COM interface generation has failed.</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedDescription">
@@ -54,7 +54,7 @@
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedTitle">
         <source>The base COM interface failed to generate source. Code will not be generated for this interface.</source>
-        <target state="needs-review-translation">Temel COM arabirimi kaynak oluşturamadı. ComInterfaceGenerator bu arabirim için kaynak oluşturamaz.</target>
+        <target state="new">The base COM interface failed to generate source. Code will not be generated for this interface.</target>
         <note />
       </trans-unit>
       <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedDescription">
@@ -84,17 +84,17 @@
       </trans-unit>
       <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceDescription">
         <source>.NET COM hosting with 'EnableComHosting' only supports built-in COM interop. It does not support source-generated COM interop with 'GeneratedComInterfaceAttribute'.</source>
-        <target state="new">.NET COM hosting with 'EnableComHosting' only supports built-in COM interop. It does not support source-generated COM interop with 'GeneratedComInterfaceAttribute'.</target>
+        <target state="translated">'EnableComHosting' ile .NET COM barındırma, yalnızca yerleşik COM birlikte çalışmayı destekler. 'GeneratedComInterfaceAttribute' ile kaynak tarafından oluşturulan COM birlikte çalışmasını desteklemez.</target>
         <note />
       </trans-unit>
       <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceMessage">
         <source>.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'. Change any COM exposed interfaces implemented by '{0}' to use the 'System.Runtime.InteropServices.ComVisibleAttribute' instead</source>
-        <target state="new">.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'. Change any COM exposed interfaces implemented by '{0}' to use the 'System.Runtime.InteropServices.ComVisibleAttribute' instead</target>
+        <target state="translated">'EnableComHosting' ile barındırma .NET COM, 'GeneratedComInterfaceAttribute' ile arabirimleri desteklemez. Bunun yerine 'System.Runtime.InteropServices.ComVisibleAttribute' kullanmak için '{0}' tarafından uygulanan COM'a maruz kalan arabirimleri değiştirin</target>
         <note />
       </trans-unit>
       <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceTitle">
         <source>.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'</source>
-        <target state="new">.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'</target>
+        <target state="translated">'EnableComHosting' ile barındırma .NET COM, 'GeneratedComInterfaceAttribute' ile arabirimleri desteklemez</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">
@@ -134,32 +134,32 @@
       </trans-unit>
       <trans-unit id="ConvertComInterfaceMayProduceInvalidCode">
         <source>Converting this interface to use 'GeneratedComInterfaceAttribute' may produce invalid code and may require additional work</source>
-        <target state="new">Converting this interface to use 'GeneratedComInterfaceAttribute' may produce invalid code and may require additional work</target>
+        <target state="translated">Bu arabirimin 'GeneratedComInterfaceAttribute' kullanmak üzere dönüştürülmesi geçersiz kod üretebilir ve ek çalışma gerektirebilir</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceAddUnsafe">
         <source>Convert to 'GeneratedComInterface' and allow unsafe code</source>
-        <target state="new">Convert to 'GeneratedComInterface' and allow unsafe code</target>
+        <target state="translated">'GeneratedComInterface'e dönüştürün ve güvenli olmayan koda izin verin</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceDescription">
         <source>Use 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</source>
-        <target state="new">Use 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</target>
+        <target state="translated">Derleme zamanında COM hazırlayıcı kodunu oluşturmak için 'ComImportAttribute' yerine 'GeneratedComInterfaceAttribute' kullanın</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceMayRequireCustomMarshalling">
         <source>Converting this API to 'GeneratedComInterfaceAttribute' will require additional code to provide custom marshallers for some parameters.</source>
-        <target state="new">Converting this API to 'GeneratedComInterfaceAttribute' will require additional code to provide custom marshallers for some parameters.</target>
+        <target state="translated">Bu API'yi 'GeneratedComInterfaceAttribute'e dönüştürmek, bazı parametreler için özel hazırlayıcılar sağlamak üzere ek kod gerektirecektir.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceMessage">
         <source>Mark the type '{0}' with 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</source>
-        <target state="new">Mark the type '{0}' with 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</target>
+        <target state="translated">Derleme zamanında COM hazırlayıcı kodunu oluşturmak için "ComImportAttribute" yerine "GeneratedComInterfaceAttribute" ile '{0}' türünü işaretleyin</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceTitle">
         <source>Convert to 'GeneratedComInterface'</source>
-        <target state="new">Convert to 'GeneratedComInterface'</target>
+        <target state="translated">'GeneratedComInterface'e Dönüştür</target>
         <note />
       </trans-unit>
       <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
@@ -269,7 +269,7 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
         <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must have 'public' or 'internal' accessibility and be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="needs-review-translation">'GeneratedComInterfaceAttribute' özniteliğine sahip arabirimler kısmi olmalı, genel olmamalı ve 'System.Runtime.InteropServices.GuidAttribute' ile bir GUID belirtmelidir.</target>
+        <target state="new">Interfaces attributed with 'GeneratedComInterfaceAttribute' must have 'public' or 'internal' accessibility and be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceIsGeneric">
@@ -374,17 +374,17 @@
       </trans-unit>
       <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComDescription">
         <source>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime</source>
-        <target state="new">COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime</target>
+        <target state="translated">'System.Runtime.InteropServices.Marshal' üzerindeki COM ile birlikte çalışma API'leri, kaynak tarafından oluşturulan COM'u desteklemez ve çalışma zamanında başarısız olur</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComMessage">
         <source>The method '{0}' only supports runtime-based COM interop and will not work with type '{1}'</source>
-        <target state="new">The method '{0}' only supports runtime-based COM interop and will not work with type '{1}'</target>
+        <target state="translated">'{0}' yöntemi yalnızca çalışma zamanı tabanlı COM birlikte çalışmayı destekler ve '{1}' türüyle çalışmaz</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComTitle">
         <source>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM</source>
-        <target state="new">COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM</target>
+        <target state="translated">'System.Runtime.InteropServices.Marshal' üzerindeki COM ile birlikte çalışma API'leri, kaynak tarafından oluşturulan COM'u desteklemez</target>
         <note />
       </trans-unit>
       <trans-unit id="StringMarshallingCustomTypeNotAccessibleByGeneratedCode">

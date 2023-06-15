@@ -4,22 +4,22 @@
     <body>
       <trans-unit id="AddGeneratedComClassAddUnsafe">
         <source>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM and allow unsafe code</source>
-        <target state="new">Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM and allow unsafe code</target>
+        <target state="translated">添加“GeneratedComClassAttribute”以启用将此类对象传递到 COM，并允许不安全代码</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeDescription">
         <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
-        <target state="new">This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</target>
+        <target state="translated">此类型至少实现一个具有“GeneratedComInterfaceAttribute”属性的类型。添加“GeneratedComClassAttribute”以允许将此类型传递到 COM，并公开具有此类型的对象的“GeneratedComInterfaceAttribute”的类型的 COM 接口。</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeMessage">
         <source>Add the 'GeneratedComClassAttribute' to '{0}' to enable passing objects of type '{0}' to COM</source>
-        <target state="new">Add the 'GeneratedComClassAttribute' to '{0}' to enable passing objects of type '{0}' to COM</target>
+        <target state="translated">将“GeneratedComClassAttribute”添加到“{0}”以启用将“{0}”类型的对象传递到 COM</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeTitle">
         <source>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM</source>
-        <target state="new">Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM</target>
+        <target state="translated">添加“GeneratedComClassAttribute”以启用将此类型的对象传递到 COM</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedDescription">
@@ -39,7 +39,7 @@
       </trans-unit>
       <trans-unit id="AnalysisFailedTitle">
         <source>Analysis for COM interface generation has failed.</source>
-        <target state="needs-review-translation">生成分析失败。</target>
+        <target state="new">Analysis for COM interface generation has failed.</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedDescription">
@@ -54,7 +54,7 @@
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedTitle">
         <source>The base COM interface failed to generate source. Code will not be generated for this interface.</source>
-        <target state="needs-review-translation">基本 COM 接口无法生成源。ComInterfaceGenerator 不会为此接口生成源。</target>
+        <target state="new">The base COM interface failed to generate source. Code will not be generated for this interface.</target>
         <note />
       </trans-unit>
       <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedDescription">
@@ -84,17 +84,17 @@
       </trans-unit>
       <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceDescription">
         <source>.NET COM hosting with 'EnableComHosting' only supports built-in COM interop. It does not support source-generated COM interop with 'GeneratedComInterfaceAttribute'.</source>
-        <target state="new">.NET COM hosting with 'EnableComHosting' only supports built-in COM interop. It does not support source-generated COM interop with 'GeneratedComInterfaceAttribute'.</target>
+        <target state="translated">具有“EnableComHosting”的 .NET COM 托管仅支持内置 COM 互操作。它不支持源生成的 COM 与“GeneratedComInterfaceAttribute”的互操作。</target>
         <note />
       </trans-unit>
       <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceMessage">
         <source>.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'. Change any COM exposed interfaces implemented by '{0}' to use the 'System.Runtime.InteropServices.ComVisibleAttribute' instead</source>
-        <target state="new">.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'. Change any COM exposed interfaces implemented by '{0}' to use the 'System.Runtime.InteropServices.ComVisibleAttribute' instead</target>
+        <target state="translated">具有“EnableComHosting”的 .NET COM 托管不支持具有“GeneratedComInterfaceAttribute”的接口。将“{0}”实现的任何 COM 公开接口更改为改用“System.Runtime.InteropServices.ComVisibleAttribute”</target>
         <note />
       </trans-unit>
       <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceTitle">
         <source>.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'</source>
-        <target state="new">.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'</target>
+        <target state="translated">具有“EnableComHosting”的 .NET COM 托管不支持具有“GeneratedComInterfaceAttribute”的接口</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">
@@ -134,32 +134,32 @@
       </trans-unit>
       <trans-unit id="ConvertComInterfaceMayProduceInvalidCode">
         <source>Converting this interface to use 'GeneratedComInterfaceAttribute' may produce invalid code and may require additional work</source>
-        <target state="new">Converting this interface to use 'GeneratedComInterfaceAttribute' may produce invalid code and may require additional work</target>
+        <target state="translated">将此接口转换为使用“GeneratedComInterfaceAttribute”可能会产生无效代码，并且可能需要执行其他工作</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceAddUnsafe">
         <source>Convert to 'GeneratedComInterface' and allow unsafe code</source>
-        <target state="new">Convert to 'GeneratedComInterface' and allow unsafe code</target>
+        <target state="translated">转换为“GeneratedComInterface”并允许不安全的代码</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceDescription">
         <source>Use 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</source>
-        <target state="new">Use 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</target>
+        <target state="translated">使用“GeneratedComInterfaceAttribute”而不是“ComImportAttribute”以在编译时生成 COM 封送代码</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceMayRequireCustomMarshalling">
         <source>Converting this API to 'GeneratedComInterfaceAttribute' will require additional code to provide custom marshallers for some parameters.</source>
-        <target state="new">Converting this API to 'GeneratedComInterfaceAttribute' will require additional code to provide custom marshallers for some parameters.</target>
+        <target state="translated">将此 API 转换为“GeneratedComInterfaceAttribute”将需要其他代码来为某些参数提供自定义封送程序。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceMessage">
         <source>Mark the type '{0}' with 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</source>
-        <target state="new">Mark the type '{0}' with 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</target>
+        <target state="translated">使用“GeneratedComInterfaceAttribute”而不是“ComImportAttribute”标记类型“{0}”，以便在编译时生成 COM 封送代码</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceTitle">
         <source>Convert to 'GeneratedComInterface'</source>
-        <target state="new">Convert to 'GeneratedComInterface'</target>
+        <target state="translated">转换为“GeneratedComInterface”</target>
         <note />
       </trans-unit>
       <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
@@ -269,7 +269,7 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
         <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must have 'public' or 'internal' accessibility and be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="needs-review-translation">通过 "GeneratedComInterfaceAttribute" 特性化的接口必须是部分的、非泛型的，并且必须使用 "System.Runtime.InteropServices.GuidAttribute" 指定 GUID。</target>
+        <target state="new">Interfaces attributed with 'GeneratedComInterfaceAttribute' must have 'public' or 'internal' accessibility and be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceIsGeneric">
@@ -374,17 +374,17 @@
       </trans-unit>
       <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComDescription">
         <source>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime</source>
-        <target state="new">COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime</target>
+        <target state="translated">“System.Runtime.InteropServices.Marshal”上的 COM 互操作 API 不支持源生成的 COM，并且将在运行时失败</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComMessage">
         <source>The method '{0}' only supports runtime-based COM interop and will not work with type '{1}'</source>
-        <target state="new">The method '{0}' only supports runtime-based COM interop and will not work with type '{1}'</target>
+        <target state="translated">方法“{0}”仅支持基于运行时的 COM 互操作，并且不适用于类型“{1}”</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComTitle">
         <source>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM</source>
-        <target state="new">COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM</target>
+        <target state="translated">“System.Runtime.InteropServices.Marshal”上的 COM 互操作 API 不支持源生成的 COM</target>
         <note />
       </trans-unit>
       <trans-unit id="StringMarshallingCustomTypeNotAccessibleByGeneratedCode">

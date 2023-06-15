@@ -4,22 +4,22 @@
     <body>
       <trans-unit id="AddGeneratedComClassAddUnsafe">
         <source>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM and allow unsafe code</source>
-        <target state="new">Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM and allow unsafe code</target>
+        <target state="translated">이 유형의 개체를 COM에 전달하고 안전하지 않은 코드를 허용하려면 'GeneratedComClassAttribute'를 추가하세요.</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeDescription">
         <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
-        <target state="new">This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</target>
+        <target state="translated">이 유형은 'GeneratedComInterfaceAttribute' 특성이 있는 하나 이상의 유형을 구현합니다. 이 형식을 COM에 전달하고 이 형식의 개체에서 'GeneratedComInterfaceAttribute'가 있는 형식에 대한 COM 인터페이스를 노출하려면 'GeneratedComClassAttribute'를 추가합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeMessage">
         <source>Add the 'GeneratedComClassAttribute' to '{0}' to enable passing objects of type '{0}' to COM</source>
-        <target state="new">Add the 'GeneratedComClassAttribute' to '{0}' to enable passing objects of type '{0}' to COM</target>
+        <target state="translated">'{0}' 유형의 개체를 COM에 전달할 수 있도록 'GeneratedComClassAttribute'를 '{0}'에 추가</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeTitle">
         <source>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM</source>
-        <target state="new">Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM</target>
+        <target state="translated">이 유형의 개체를 COM에 전달할 수 있도록 'GeneratedComClassAttribute' 추가</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedDescription">
@@ -39,7 +39,7 @@
       </trans-unit>
       <trans-unit id="AnalysisFailedTitle">
         <source>Analysis for COM interface generation has failed.</source>
-        <target state="needs-review-translation">생성에 필요한 분석이 실패했습니다.</target>
+        <target state="translated">COM 인터페이스 생성에 대한 분석이 실패했습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedDescription">
@@ -54,22 +54,22 @@
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedTitle">
         <source>The base COM interface failed to generate source. Code will not be generated for this interface.</source>
-        <target state="needs-review-translation">기본 COM 인터페이스에서 원본을 생성하지 못했습니다. ComInterfaceGenerator는 이 인터페이스에 대한 원본을 생성하지 않습니다.</target>
+        <target state="translated">베이스 COM 인터페이스에서 소스를 생성하지 못했습니다. 이 인터페이스에 대한 코드가 생성되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedDescription">
         <source>Casting between a 'ComImport' type and a source-generated COM type is not supported and will fail at runtime</source>
-        <target state="new">Casting between a 'ComImport' type and a source-generated COM type is not supported and will fail at runtime</target>
+        <target state="translated">'ComImport' 형식과 소스 생성 COM 형식 간의 캐스팅은 지원되지 않으며 런타임에 실패합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedMessage">
         <source>Casting between a 'ComImport' type and a source-generated COM type is not supported</source>
-        <target state="new">Casting between a 'ComImport' type and a source-generated COM type is not supported</target>
+        <target state="translated">'ComImport' 형식과 소스 생성 COM 형식 간 캐스팅은 지원되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedTitle">
         <source>Casting between a 'ComImport' type and a source-generated COM type is not supported</source>
-        <target state="new">Casting between a 'ComImport' type and a source-generated COM type is not supported</target>
+        <target state="translated">'ComImport' 형식과 소스 생성 COM 형식 간 캐스팅은 지원되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ClassDoesNotImplementAnyGeneratedComInterfacesDescription">
@@ -84,17 +84,17 @@
       </trans-unit>
       <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceDescription">
         <source>.NET COM hosting with 'EnableComHosting' only supports built-in COM interop. It does not support source-generated COM interop with 'GeneratedComInterfaceAttribute'.</source>
-        <target state="new">.NET COM hosting with 'EnableComHosting' only supports built-in COM interop. It does not support source-generated COM interop with 'GeneratedComInterfaceAttribute'.</target>
+        <target state="translated">'EnableComHosting'을 사용한 .NET COM 호스팅은 기본 제공 COM interop만 지원합니다. 'GeneratedComInterfaceAttribute'와의 소스 생성 COM 상호 운용성을 지원하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceMessage">
         <source>.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'. Change any COM exposed interfaces implemented by '{0}' to use the 'System.Runtime.InteropServices.ComVisibleAttribute' instead</source>
-        <target state="new">.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'. Change any COM exposed interfaces implemented by '{0}' to use the 'System.Runtime.InteropServices.ComVisibleAttribute' instead</target>
+        <target state="translated">'EnableComHosting'을 사용한 .NET COM 호스팅은 'GeneratedComInterfaceAttribute'를 사용한 인터페이스를 지원하지 않습니다. 대신 'System.Runtime.InteropServices.ComVisibleAttribute'를 사용하도록 '{0}'에 의해 구현된 모든 COM 노출 인터페이스를 변경합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceTitle">
         <source>.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'</source>
-        <target state="new">.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'</target>
+        <target state="translated">'EnableComHosting'을 사용한 .NET COM 호스팅은 'GeneratedComInterfaceAttribute'를 사용한 인터페이스를 지원하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">
@@ -134,32 +134,32 @@
       </trans-unit>
       <trans-unit id="ConvertComInterfaceMayProduceInvalidCode">
         <source>Converting this interface to use 'GeneratedComInterfaceAttribute' may produce invalid code and may require additional work</source>
-        <target state="new">Converting this interface to use 'GeneratedComInterfaceAttribute' may produce invalid code and may require additional work</target>
+        <target state="translated">이 인터페이스를 'GeneratedComInterfaceAttribute'를 사용하도록 변환하면 잘못된 코드가 생성될 수 있으며 추가 작업이 필요할 수 있습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceAddUnsafe">
         <source>Convert to 'GeneratedComInterface' and allow unsafe code</source>
-        <target state="new">Convert to 'GeneratedComInterface' and allow unsafe code</target>
+        <target state="translated">'GeneratedComInterface'로 변환하고 안전하지 않은 코드 허용</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceDescription">
         <source>Use 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</source>
-        <target state="new">Use 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</target>
+        <target state="translated">컴파일 시간에 COM 마샬링 코드를 생성하려면 'ComImportAttribute' 대신 'GeneratedComInterfaceAttribute'를 사용하세요.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceMayRequireCustomMarshalling">
         <source>Converting this API to 'GeneratedComInterfaceAttribute' will require additional code to provide custom marshallers for some parameters.</source>
-        <target state="new">Converting this API to 'GeneratedComInterfaceAttribute' will require additional code to provide custom marshallers for some parameters.</target>
+        <target state="translated">이 API를 'GeneratedComInterfaceAttribute'로 변환하려면 일부 매개 변수에 대한 사용자 지정 마샬러를 제공하는 추가 코드가 필요합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceMessage">
         <source>Mark the type '{0}' with 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</source>
-        <target state="new">Mark the type '{0}' with 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</target>
+        <target state="translated">컴파일 시간에 COM 마샬링 코드를 생성하려면 'ComImportAttribute' 대신 'GeneratedComInterfaceAttribute'로 '{0}' 유형을 표시하세요.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceTitle">
         <source>Convert to 'GeneratedComInterface'</source>
-        <target state="new">Convert to 'GeneratedComInterface'</target>
+        <target state="translated">'GeneratedComInterface'로 변환</target>
         <note />
       </trans-unit>
       <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
@@ -254,7 +254,7 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedComClassAttributeUsageDescription">
         <source>Classes with 'GeneratedComClassAttribute' must implement one or more interfaces with 'GeneratedComInterfaceAttribute', be marked partial, and be non-generic.</source>
-        <target state="new">Classes with 'GeneratedComClassAttribute' must implement one or more interfaces with 'GeneratedComInterfaceAttribute', be marked partial, and be non-generic.</target>
+        <target state="translated">'GeneratedComClassAttribute'가 있는 클래스는 'GeneratedComInterfaceAttribute'를 사용하여 인터페이스를 하나 이상 구현하고 'partial'로 표시되어야 하며 제네릭이 아니어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComClassAttributeUsageMissingPartialModifier">
@@ -264,12 +264,12 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedComClassAttributeUsageTitle">
         <source>Invalid 'GeneratedComClassAttribute' usage</source>
-        <target state="new">Invalid 'GeneratedComClassAttribute' usage</target>
+        <target state="translated">'GeneratedComClassAttribute' 사용이 잘못되었습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
         <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must have 'public' or 'internal' accessibility and be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="needs-review-translation">'GeneratedComInterfaceAttribute'로 특성이 지정된 인터페이스는 부분적이고 제네릭이 아니어야 하며 'System.Runtime.InteropServices.GuidAttribute'를 사용하여 GUID를 지정해야 합니다.</target>
+        <target state="new">Interfaces attributed with 'GeneratedComInterfaceAttribute' must have 'public' or 'internal' accessibility and be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceIsGeneric">
@@ -294,7 +294,7 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceUsageMissingPartialModifier">
         <source>The interface '{0}' or one of its containing types is missing the 'partial' keyword. Code will not be generated for '{0}'.</source>
-        <target state="new">The interface '{0}' or one of its containing types is missing the 'partial' keyword. Code will not be generated for '{0}'.</target>
+        <target state="translated">'{0}' 인터페이스 또는 해당 포함된 형식 중 하나에 'partial' 키워드가 없습니다. '{0}'에 대한 코드가 생성되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
@@ -374,17 +374,17 @@
       </trans-unit>
       <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComDescription">
         <source>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime</source>
-        <target state="new">COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime</target>
+        <target state="translated">'System.Runtime.InteropServices.Marshal'의 COM Interop API는 소스 생성 COM을 지원하지 않으며 런타임에 실패합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComMessage">
         <source>The method '{0}' only supports runtime-based COM interop and will not work with type '{1}'</source>
-        <target state="new">The method '{0}' only supports runtime-based COM interop and will not work with type '{1}'</target>
+        <target state="translated">'{0}' 메서드는 런타임 기반 COM 상호 운용성만 지원하며 '{1}' 유형에서는 작동하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComTitle">
         <source>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM</source>
-        <target state="new">COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM</target>
+        <target state="translated">'System.Runtime.InteropServices.Marshal'의 COM Interop API는 소스 생성 COM을 지원하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="StringMarshallingCustomTypeNotAccessibleByGeneratedCode">

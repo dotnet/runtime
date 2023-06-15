@@ -4,22 +4,22 @@
     <body>
       <trans-unit id="AddGeneratedComClassAddUnsafe">
         <source>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM and allow unsafe code</source>
-        <target state="new">Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM and allow unsafe code</target>
+        <target state="translated">Fügen Sie "GeneratedComClassAttribute" hinzu, um die Übergabe von Objekten dieses Typs an COM zu ermöglichen und unsicheren Code zuzulassen.</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeDescription">
         <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
-        <target state="new">This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</target>
+        <target state="translated">Dieser Typ implementiert mindestens einen Typ mit dem GeneratedComInterfaceAttribute-Attribut. Fügen Sie "GeneratedComClassAttribute" hinzu, um die Übergabe dieses Typs an COM zu ermöglichen und die COM-Schnittstellen für die Typen mit dem GeneratedComInterfaceAttribute aus Objekten dieses Typs verfügbar zu machen.</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeMessage">
         <source>Add the 'GeneratedComClassAttribute' to '{0}' to enable passing objects of type '{0}' to COM</source>
-        <target state="new">Add the 'GeneratedComClassAttribute' to '{0}' to enable passing objects of type '{0}' to COM</target>
+        <target state="translated">Fügen Sie "GeneratedComClassAttribute" zu "{0}" hinzu, um die Übergabe von Objekten vom Typ "{0}" an COM zu ermöglichen.</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeTitle">
         <source>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM</source>
-        <target state="new">Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM</target>
+        <target state="translated">Fügen Sie "GeneratedComClassAttribute" hinzu, um die Übergabe von Objekten dieses Typs an COM zu ermöglichen.</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedDescription">
@@ -39,7 +39,7 @@
       </trans-unit>
       <trans-unit id="AnalysisFailedTitle">
         <source>Analysis for COM interface generation has failed.</source>
-        <target state="needs-review-translation">Fehler bei der Analyse für die Generierung.</target>
+        <target state="new">Analysis for COM interface generation has failed.</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedDescription">
@@ -54,7 +54,7 @@
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedTitle">
         <source>The base COM interface failed to generate source. Code will not be generated for this interface.</source>
-        <target state="needs-review-translation">Die Basis-COM-Schnittstelle konnte die Quelle nicht generieren. ComInterfaceGenerator generiert keine Quelle für diese Schnittstelle.</target>
+        <target state="new">The base COM interface failed to generate source. Code will not be generated for this interface.</target>
         <note />
       </trans-unit>
       <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedDescription">
@@ -84,17 +84,17 @@
       </trans-unit>
       <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceDescription">
         <source>.NET COM hosting with 'EnableComHosting' only supports built-in COM interop. It does not support source-generated COM interop with 'GeneratedComInterfaceAttribute'.</source>
-        <target state="new">.NET COM hosting with 'EnableComHosting' only supports built-in COM interop. It does not support source-generated COM interop with 'GeneratedComInterfaceAttribute'.</target>
+        <target state="translated">Das .NET COM-Hosting mit "EnableComHosting" unterstützt nur integrierte COM-Interop. Der vom Quellcode generierte COM-Interop mit "GeneratedComInterfaceAttribute" wird nicht unterstützt.</target>
         <note />
       </trans-unit>
       <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceMessage">
         <source>.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'. Change any COM exposed interfaces implemented by '{0}' to use the 'System.Runtime.InteropServices.ComVisibleAttribute' instead</source>
-        <target state="new">.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'. Change any COM exposed interfaces implemented by '{0}' to use the 'System.Runtime.InteropServices.ComVisibleAttribute' instead</target>
+        <target state="translated">Das .NET COM-Hosting mit "EnableComHosting" unterstützt keine Schnittstellen mit dem "GeneratedComInterfaceAttribute". Ändern Sie alle von "{0}" implementierten COM-verfügbar gemachten Schnittstellen, sodass stattdessen "System.Runtime.InteropServices.ComVisibleAttribute" verwendet wird.</target>
         <note />
       </trans-unit>
       <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceTitle">
         <source>.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'</source>
-        <target state="new">.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'</target>
+        <target state="translated">Das .NET COM-Hosting mit "EnableComHosting" unterstützt keine Schnittstellen mit "GeneratedComInterfaceAttribute".</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">
@@ -134,32 +134,32 @@
       </trans-unit>
       <trans-unit id="ConvertComInterfaceMayProduceInvalidCode">
         <source>Converting this interface to use 'GeneratedComInterfaceAttribute' may produce invalid code and may require additional work</source>
-        <target state="new">Converting this interface to use 'GeneratedComInterfaceAttribute' may produce invalid code and may require additional work</target>
+        <target state="translated">Das Konvertieren dieser Schnittstelle zur Verwendung von "GeneratedComInterfaceAttribute" erzeugt möglicherweise ungültigen Code und erfordert möglicherweise zusätzliche Arbeit.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceAddUnsafe">
         <source>Convert to 'GeneratedComInterface' and allow unsafe code</source>
-        <target state="new">Convert to 'GeneratedComInterface' and allow unsafe code</target>
+        <target state="translated">In "GeneratedComInterface" konvertieren und unsicheren Code zulassen</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceDescription">
         <source>Use 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</source>
-        <target state="new">Use 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</target>
+        <target state="translated">Verwenden Sie "GeneratedComInterfaceAttribute" anstelle von "ComImportAttribute", um COM-Marshallingcode zur Kompilierzeit zu generieren.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceMayRequireCustomMarshalling">
         <source>Converting this API to 'GeneratedComInterfaceAttribute' will require additional code to provide custom marshallers for some parameters.</source>
-        <target state="new">Converting this API to 'GeneratedComInterfaceAttribute' will require additional code to provide custom marshallers for some parameters.</target>
+        <target state="translated">Zum Konvertieren dieser API in "GeneratedComInterfaceAttribute" ist zusätzlicher Code erforderlich, um benutzerdefinierte Marshaller für einige Parameter bereitzustellen.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceMessage">
         <source>Mark the type '{0}' with 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</source>
-        <target state="new">Mark the type '{0}' with 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</target>
+        <target state="translated">Markieren Sie den Typ "{0}" mit "GeneratedComInterfaceAttribute" anstelle von "ComImportAttribute", um COM-Marshallingcode zur Kompilierzeit zu generieren.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceTitle">
         <source>Convert to 'GeneratedComInterface'</source>
-        <target state="new">Convert to 'GeneratedComInterface'</target>
+        <target state="translated">In "GeneratedComInterface" konvertieren</target>
         <note />
       </trans-unit>
       <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
@@ -269,7 +269,7 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
         <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must have 'public' or 'internal' accessibility and be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="needs-review-translation">Schnittstellen, die mit "GeneratedComInterfaceAttribute" attributiert sind, müssen partielle, nicht generische Schnittstellen sein und eine GUID mit "System.Runtime.InteropServices.GuidAttribute" angeben.</target>
+        <target state="new">Interfaces attributed with 'GeneratedComInterfaceAttribute' must have 'public' or 'internal' accessibility and be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceIsGeneric">
@@ -374,17 +374,17 @@
       </trans-unit>
       <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComDescription">
         <source>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime</source>
-        <target state="new">COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime</target>
+        <target state="translated">COM-Interop-APIs auf "System.Runtime.InteropServices.Marshal" unterstützen keine vom Quellcode generierten COM-Dateien und schlagen zur Laufzeit fehl.</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComMessage">
         <source>The method '{0}' only supports runtime-based COM interop and will not work with type '{1}'</source>
-        <target state="new">The method '{0}' only supports runtime-based COM interop and will not work with type '{1}'</target>
+        <target state="translated">Die Methode "{0}" unterstützt nur laufzeitbasierte COM-Interop und funktioniert nicht mit dem Typ "{1}".</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComTitle">
         <source>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM</source>
-        <target state="new">COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM</target>
+        <target state="translated">COM-Interop-APIs auf "System.Runtime.InteropServices.Marshal" unterstützen keine vom Quellcode generierten COM-Dateien.</target>
         <note />
       </trans-unit>
       <trans-unit id="StringMarshallingCustomTypeNotAccessibleByGeneratedCode">
