@@ -13,6 +13,6 @@ namespace System.Diagnostics.Metrics
         /// Record a measurement value.
         /// </summary>
         /// <param name="value">The measurement value.</param>
-        void Record(T value);
+        IHistogramBuilder<T> Record(T value);
     }
 }

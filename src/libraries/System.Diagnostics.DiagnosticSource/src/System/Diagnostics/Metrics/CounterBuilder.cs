@@ -30,10 +30,11 @@ namespace System.Diagnostics.Metrics
         /// Record the increment value of the measurement.
         /// </summary>
         /// <param name="delta">The increment measurement.</param>
-        void ICounterBuilder<T>.Add(T delta)
+        ICounterBuilder<T> ICounterBuilder<T>.Add(T delta)
         {
             TagList tagList = new TagList(_tags.AsSpan());
             _target.Add(delta, in tagList);
+            return this;
         }
 
         /// <summary>

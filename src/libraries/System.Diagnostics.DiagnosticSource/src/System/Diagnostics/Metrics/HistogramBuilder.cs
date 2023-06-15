@@ -30,10 +30,11 @@ namespace System.Diagnostics.Metrics
         /// Record a measurement value.
         /// </summary>
         /// <param name="value">The measurement value.</param>
-        void IHistogramBuilder<T>.Record(T value)
+        IHistogramBuilder<T> IHistogramBuilder<T>.Record(T value)
         {
             TagList tagList = new TagList(_tags.AsSpan());
             _target.Record(value, in tagList);
+            return this;
         }
 
         /// <summary>
