@@ -1302,13 +1302,6 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(ThreadStaticsRegion, "ThreadStaticsRegion is always generated");
             graph.AddRoot(EagerCctorTable, "EagerCctorTable is always generated");
             graph.AddRoot(TypeManagerIndirection, "TypeManagerIndirection is always generated");
-
-            if (_target.Architecture == TargetArchitecture.X64 &&
-                (_target.OperatingSystem == TargetOS.Linux || _target.OperatingSystem == TargetOS.Windows))
-            {
-                graph.AddRoot(TlsRoot, "TlsRoot is always generated");
-            }
-
             graph.AddRoot(FrozenSegmentRegion, "FrozenSegmentRegion is always generated");
             graph.AddRoot(InterfaceDispatchCellSection, "Interface dispatch cell section is always generated");
             graph.AddRoot(ModuleInitializerList, "Module initializer list is always generated");
@@ -1316,6 +1309,7 @@ namespace ILCompiler.DependencyAnalysis
             if (_inlinedThreadStatics.IsComputed())
             {
                 graph.AddRoot(_inlinedThreadStatiscNode, "Inlined threadstatics are used if present");
+                graph.AddRoot(TlsRoot, "nlined threadstatics are used if present");
             }
 
             ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticRegion, GCStaticsRegion);

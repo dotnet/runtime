@@ -312,13 +312,11 @@ namespace ILCompiler.DependencyAnalysis
                 // movq _\Var @TLVP(% rip), % rdi
                 // callq * (% rdi)
 
-                ISymbolNode helper = factory.ExternSymbol("RhpGetInlinedThreadStaticBase");
-                encoder.EmitJMP(helper);
+                throw new NotImplementedException();
             }
             else
             {
-                ISymbolNode helper = factory.ExternSymbol("RhpGetInlinedThreadStaticBase");
-                encoder.EmitJMP(helper);
+                throw new NotImplementedException();
             }
         }
     }

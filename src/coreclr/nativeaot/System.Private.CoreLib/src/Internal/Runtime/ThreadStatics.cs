@@ -32,7 +32,6 @@ namespace Internal.Runtime
             return GetUninlinedThreadStaticBaseForType(pModuleData, typeTlsIndex);
         }
 
-        [RuntimeExport("RhpGetInlinedThreadStaticBaseSlow")]
         internal static unsafe object GetInlinedThreadStaticBaseSlow(ref object? threadStorage)
         {
             Debug.Assert(threadStorage == null);
