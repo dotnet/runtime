@@ -800,16 +800,6 @@ TypeCompareState WrapICorJitInfo::compareTypesForEquality(
     return temp;
 }
 
-CORINFO_CLASS_HANDLE WrapICorJitInfo::mergeClasses(
-          CORINFO_CLASS_HANDLE cls1,
-          CORINFO_CLASS_HANDLE cls2)
-{
-    API_ENTER(mergeClasses);
-    CORINFO_CLASS_HANDLE temp = wrapHnd->mergeClasses(cls1, cls2);
-    API_LEAVE(mergeClasses);
-    return temp;
-}
-
 bool WrapICorJitInfo::isMoreSpecificType(
           CORINFO_CLASS_HANDLE cls1,
           CORINFO_CLASS_HANDLE cls2)
