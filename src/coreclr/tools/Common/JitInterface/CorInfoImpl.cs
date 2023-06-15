@@ -2748,9 +2748,6 @@ namespace Internal.JitInterface
             return result;
         }
 
-        private bool satisfiesClassConstraints(CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException("satisfiesClassConstraints"); }
-
         private bool isSDArray(CORINFO_CLASS_STRUCT_* cls)
         {
             var td = HandleToObject(cls);

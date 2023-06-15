@@ -244,7 +244,6 @@ bool MyICJI::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG
 }
 
 // Check constraints on method type arguments (only).
-// The parent class should be checked separately using satisfiesClassConstraints(parent).
 bool MyICJI::satisfiesMethodConstraints(CORINFO_CLASS_HANDLE  parent, // the exact parent of the method
                                         CORINFO_METHOD_HANDLE method)
 {
@@ -796,13 +795,6 @@ CorInfoType MyICJI::getChildType(CORINFO_CLASS_HANDLE clsHnd, CORINFO_CLASS_HAND
 {
     jitInstance->mc->cr->AddCall("getChildType");
     return jitInstance->mc->repGetChildType(clsHnd, clsRet);
-}
-
-// Check constraints on type arguments of this class and parent classes
-bool MyICJI::satisfiesClassConstraints(CORINFO_CLASS_HANDLE cls)
-{
-    jitInstance->mc->cr->AddCall("satisfiesClassConstraints");
-    return jitInstance->mc->repSatisfiesClassConstraints(cls);
 }
 
 // Check if this is a single dimensional array type

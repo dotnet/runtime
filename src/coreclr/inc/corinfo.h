@@ -2172,7 +2172,6 @@ public:
             ) = 0;
 
     // Check constraints on method type arguments (only).
-    // The parent class should be checked separately using satisfiesClassConstraints(parent).
     virtual bool satisfiesMethodConstraints(
             CORINFO_CLASS_HANDLE        parent, // the exact parent of the method
             CORINFO_METHOD_HANDLE       method
@@ -2644,11 +2643,6 @@ public:
     virtual CorInfoType getChildType (
             CORINFO_CLASS_HANDLE       clsHnd,
             CORINFO_CLASS_HANDLE       *clsRet
-            ) = 0;
-
-    // Check constraints on type arguments of this class and parent classes
-    virtual bool satisfiesClassConstraints(
-            CORINFO_CLASS_HANDLE cls
             ) = 0;
 
     // Check if this is a single dimensional array type
