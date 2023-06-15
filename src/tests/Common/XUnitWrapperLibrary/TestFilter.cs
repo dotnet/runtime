@@ -157,7 +157,7 @@ public class TestFilter
 
         if (filterString is not null)
         {
-            if (filterString.ContainsAny("!()~="))
+            if (filterString.IndexOfAny(new[] { '!', '(', ')', '~', '=' }) != -1)
             {
                 throw new ArgumentException("Complex test filter expressions are not supported today. The only filters supported today are the simple form supported in 'dotnet test --filter' (substrings of the test's fully qualified name). If further filtering options are desired, file an issue on dotnet/runtime for support.", nameof(filterArgs));
             }
