@@ -2767,32 +2767,32 @@ interp_type_as_ptr (MonoType *tp)
 static MintICallSig
 interp_get_icall_sig (MonoMethodSignature *sig)
 {
-	MintICallSig op = MintICallSig_MAX;
+	MintICallSig op = MINT_ICALLSIG_MAX;
 	switch (sig->param_count) {
 	case 0:
 		if (MONO_TYPE_IS_VOID (sig->ret))
-			op = MintICallSig_V_V;
+			op = MINT_ICALLSIG_V_V;
 		else if (INTERP_TYPE_AS_PTR (sig->ret))
-			op = MintICallSig_V_P;
+			op = MINT_ICALLSIG_V_P;
 		break;
 	case 1:
 		if (MONO_TYPE_IS_VOID (sig->ret)) {
 			if (INTERP_TYPE_AS_PTR (sig->params [0]))
-				op = MintICallSig_P_V;
+				op = MINT_ICALLSIG_P_V;
 		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
 			if (INTERP_TYPE_AS_PTR (sig->params [0]))
-				op = MintICallSig_P_P;
+				op = MINT_ICALLSIG_P_P;
 		}
 		break;
 	case 2:
 		if (MONO_TYPE_IS_VOID (sig->ret)) {
 			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
 					INTERP_TYPE_AS_PTR (sig->params [1]))
-				op = MintICallSig_PP_V;
+				op = MINT_ICALLSIG_PP_V;
 		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
 			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
 					INTERP_TYPE_AS_PTR (sig->params [1]))
-				op = MintICallSig_PP_P;
+				op = MINT_ICALLSIG_PP_P;
 		}
 		break;
 	case 3:
@@ -2800,12 +2800,12 @@ interp_get_icall_sig (MonoMethodSignature *sig)
 			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
 					INTERP_TYPE_AS_PTR (sig->params [1]) &&
 					INTERP_TYPE_AS_PTR (sig->params [2]))
-				op = MintICallSig_PPP_V;
+				op = MINT_ICALLSIG_PPP_V;
 		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
 			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
 					INTERP_TYPE_AS_PTR (sig->params [1]) &&
 					INTERP_TYPE_AS_PTR (sig->params [2]))
-				op = MintICallSig_PPP_P;
+				op = MINT_ICALLSIG_PPP_P;
 		}
 		break;
 	case 4:
@@ -2814,13 +2814,13 @@ interp_get_icall_sig (MonoMethodSignature *sig)
 					INTERP_TYPE_AS_PTR (sig->params [1]) &&
 					INTERP_TYPE_AS_PTR (sig->params [2]) &&
 					INTERP_TYPE_AS_PTR (sig->params [3]))
-				op = MintICallSig_PPPP_V;
+				op = MINT_ICALLSIG_PPPP_V;
 		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
 			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
 					INTERP_TYPE_AS_PTR (sig->params [1]) &&
 					INTERP_TYPE_AS_PTR (sig->params [2]) &&
 					INTERP_TYPE_AS_PTR (sig->params [3]))
-				op = MintICallSig_PPPP_P;
+				op = MINT_ICALLSIG_PPPP_P;
 		}
 		break;
 	case 5:
@@ -2830,14 +2830,14 @@ interp_get_icall_sig (MonoMethodSignature *sig)
 					INTERP_TYPE_AS_PTR (sig->params [2]) &&
 					INTERP_TYPE_AS_PTR (sig->params [3]) &&
 					INTERP_TYPE_AS_PTR (sig->params [4]))
-				op = MintICallSig_PPPPP_V;
+				op = MINT_ICALLSIG_PPPPP_V;
 		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
 			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
 					INTERP_TYPE_AS_PTR (sig->params [1]) &&
 					INTERP_TYPE_AS_PTR (sig->params [2]) &&
 					INTERP_TYPE_AS_PTR (sig->params [3]) &&
 					INTERP_TYPE_AS_PTR (sig->params [4]))
-				op = MintICallSig_PPPPP_P;
+				op = MINT_ICALLSIG_PPPPP_P;
 		}
 		break;
 	case 6:
@@ -2848,7 +2848,7 @@ interp_get_icall_sig (MonoMethodSignature *sig)
 					INTERP_TYPE_AS_PTR (sig->params [3]) &&
 					INTERP_TYPE_AS_PTR (sig->params [4]) &&
 					INTERP_TYPE_AS_PTR (sig->params [5]))
-				op = MintICallSig_PPPPPP_V;
+				op = MINT_ICALLSIG_PPPPPP_V;
 		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
 			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
 					INTERP_TYPE_AS_PTR (sig->params [1]) &&
@@ -2856,7 +2856,7 @@ interp_get_icall_sig (MonoMethodSignature *sig)
 					INTERP_TYPE_AS_PTR (sig->params [3]) &&
 					INTERP_TYPE_AS_PTR (sig->params [4]) &&
 					INTERP_TYPE_AS_PTR (sig->params [5]))
-				op = MintICallSig_PPPPPP_P;
+				op = MINT_ICALLSIG_PPPPPP_P;
 		}
 		break;
 	}
@@ -3764,7 +3764,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			td->last_ins->data [0] = GUINT32_TO_UINT16 (params_stack_size);
 			td->last_ins->data [1] = get_data_item_index (td, (void *)csignature);
 		} else if (calli) {
-			MintICallSig icall_sig = MintICallSig_MAX;
+			MintICallSig icall_sig = MINT_ICALLSIG_MAX;
 #ifndef MONO_ARCH_HAS_NO_PROPER_MONOCTX
 			/* Try using fast icall path for simple signatures */
 			if (native && !method->dynamic)
@@ -3773,7 +3773,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			// FIXME calli receives both the args offset and sometimes another arg for the frame pointer,
 			// therefore some args are in the param area, while the fp is not. We should differentiate for
 			// this, probably once we will have an explicit param area where we copy arguments.
-			if (icall_sig != MintICallSig_MAX) {
+			if (icall_sig != MINT_ICALLSIG_MAX) {
 				interp_add_ins (td, MINT_CALLI_NAT_FAST);
 				interp_ins_set_dreg (td->last_ins, dreg);
 				interp_ins_set_sregs2 (td->last_ins, fp_sreg, MINT_CALL_ARGS_SREG);
@@ -7563,7 +7563,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						g_assert (rtm->needs_thread_attach);
 					} else {
 						MintICallSig icall_sig = interp_get_icall_sig (info->sig);
-						g_assert (icall_sig != MintICallSig_MAX);
+						g_assert (icall_sig != MINT_ICALLSIG_MAX);
 
 						interp_add_ins (td, MINT_ICALL);
 						interp_ins_set_dreg (td->last_ins, dreg);

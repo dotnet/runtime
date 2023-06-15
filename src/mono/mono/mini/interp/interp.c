@@ -2220,85 +2220,85 @@ do_icall (MonoMethodSignature *sig, MintICallSig op, stackval *ret_sp, stackval 
 		mono_marshal_clear_last_error ();
 
 	switch (op) {
-	case MintICallSig_V_V: {
+	case MINT_ICALLSIG_V_V: {
 		typedef void (*T)(void);
 		T func = (T)ptr;
         	func ();
 		break;
 	}
-	case MintICallSig_V_P: {
+	case MINT_ICALLSIG_V_P: {
 		typedef gpointer (*T)(void);
 		T func = (T)ptr;
 		ret_sp->data.p = func ();
 		break;
 	}
-	case MintICallSig_P_V: {
+	case MINT_ICALLSIG_P_V: {
 		typedef void (*T)(gpointer);
 		T func = (T)ptr;
 		func (sp [0].data.p);
 		break;
 	}
-	case MintICallSig_P_P: {
+	case MINT_ICALLSIG_P_P: {
 		typedef gpointer (*T)(gpointer);
 		T func = (T)ptr;
 		ret_sp->data.p = func (sp [0].data.p);
 		break;
 	}
-	case MintICallSig_PP_V: {
+	case MINT_ICALLSIG_PP_V: {
 		typedef void (*T)(gpointer,gpointer);
 		T func = (T)ptr;
 		func (sp [0].data.p, sp [1].data.p);
 		break;
 	}
-	case MintICallSig_PP_P: {
+	case MINT_ICALLSIG_PP_P: {
 		typedef gpointer (*T)(gpointer,gpointer);
 		T func = (T)ptr;
 		ret_sp->data.p = func (sp [0].data.p, sp [1].data.p);
 		break;
 	}
-	case MintICallSig_PPP_V: {
+	case MINT_ICALLSIG_PPP_V: {
 		typedef void (*T)(gpointer,gpointer,gpointer);
 		T func = (T)ptr;
 		func (sp [0].data.p, sp [1].data.p, sp [2].data.p);
 		break;
 	}
-	case MintICallSig_PPP_P: {
+	case MINT_ICALLSIG_PPP_P: {
 		typedef gpointer (*T)(gpointer,gpointer,gpointer);
 		T func = (T)ptr;
 		ret_sp->data.p = func (sp [0].data.p, sp [1].data.p, sp [2].data.p);
 		break;
 	}
-	case MintICallSig_PPPP_V: {
+	case MINT_ICALLSIG_PPPP_V: {
 		typedef void (*T)(gpointer,gpointer,gpointer,gpointer);
 		T func = (T)ptr;
 		func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p);
 		break;
 	}
-	case MintICallSig_PPPP_P: {
+	case MINT_ICALLSIG_PPPP_P: {
 		typedef gpointer (*T)(gpointer,gpointer,gpointer,gpointer);
 		T func = (T)ptr;
 		ret_sp->data.p = func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p);
 		break;
 	}
-	case MintICallSig_PPPPP_V: {
+	case MINT_ICALLSIG_PPPPP_V: {
 		typedef void (*T)(gpointer,gpointer,gpointer,gpointer,gpointer);
 		T func = (T)ptr;
 		func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p, sp [4].data.p);
 		break;
 	}
-	case MintICallSig_PPPPP_P: {
+	case MINT_ICALLSIG_PPPPP_P: {
 		typedef gpointer (*T)(gpointer,gpointer,gpointer,gpointer,gpointer);
 		T func = (T)ptr;
 		ret_sp->data.p = func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p, sp [4].data.p);
 		break;
 	}
-	case MintICallSig_PPPPPP_V: {
+	case MINT_ICALLSIG_PPPPPP_V: {
 		typedef void (*T)(gpointer,gpointer,gpointer,gpointer,gpointer,gpointer);
 		T func = (T)ptr;
 		func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p, sp [4].data.p, sp [5].data.p);
 		break;
 	}
-	case MintICallSig_PPPPPP_P: {
+	case MINT_ICALLSIG_PPPPPP_P: {
 		typedef gpointer (*T)(gpointer,gpointer,gpointer,gpointer,gpointer,gpointer);
 		T func = (T)ptr;
 		ret_sp->data.p = func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p, sp [4].data.p, sp [5].data.p);
@@ -3545,7 +3545,7 @@ mono_interp_leave (InterpFrame* parent_frame)
 	 * to check the abort threshold. For this to work we use frame as a
 	 * dummy frame that is stored in the lmf and serves as the transition frame
 	 */
-	do_icall_wrapper (&frame, NULL, MintICallSig_V_P, &tmp_sp, &tmp_sp, (gpointer)mono_thread_get_undeniable_exception, FALSE, &gc_transitions);
+	do_icall_wrapper (&frame, NULL, MINT_ICALLSIG_V_P, &tmp_sp, &tmp_sp, (gpointer)mono_thread_get_undeniable_exception, FALSE, &gc_transitions);
 
 	return (MonoException*)tmp_sp.data.p;
 }
