@@ -280,6 +280,14 @@ namespace Internal.JitInterface
                                 currentType = currentType.BaseType;
                             }
 
+                            foreach (DefType interfaceType in methodTargetOwner.RuntimeInterfaces)
+                            {
+                                if (interfaceType == instantiatedOwningType || interfaceType == canonicalizedOwningType)
+                                {
+                                    return methodTargetOwner;
+                                }
+                            }
+
                             Debug.Assert(false);
                             throw new Exception();
                         }
