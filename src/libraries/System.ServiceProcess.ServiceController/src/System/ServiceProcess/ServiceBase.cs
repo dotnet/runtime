@@ -291,7 +291,7 @@ namespace System.ServiceProcess
         internal static bool ValidServiceName(string serviceName) =>
             !string.IsNullOrEmpty(serviceName) &&
             serviceName.Length <= ServiceBase.MaxNameLength && // not too long
-            !serviceName.AsSpan().ContainsAny('\\', '/'); // no slashes or backslash allowed
+            serviceName.AsSpan().IndexOfAny('\\', '/') < 0; // no slashes or backslash allowed
 
         /// <summary>
         ///    <para>Disposes of the resources (other than memory ) used by
