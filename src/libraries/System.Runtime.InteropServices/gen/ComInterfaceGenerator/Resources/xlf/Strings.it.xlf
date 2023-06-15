@@ -334,7 +334,7 @@
       </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceMessage">
         <source>The method '{0}' is declared on a different partial definition of the interface '{1}' than the definition that has the 'GeneratedComInterface' attribute</source>
-        <target state="needs-review-translation">Il metodo '{0}' è dichiarato in una definizione parziale diversa dell'interfaccia '{1}' rispetto alla definizione con l'attributo 'GeneratedComInterface'</target>
+        <target state="translated">Il metodo '{0}' è dichiarato in una definizione parziale diversa dell'interfaccia '{1}' rispetto alla definizione con l'attributo 'GeneratedComInterface'</target>
         <note />
       </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceTitle">

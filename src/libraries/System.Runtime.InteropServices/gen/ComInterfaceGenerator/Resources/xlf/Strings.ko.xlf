@@ -334,7 +334,7 @@
       </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceMessage">
         <source>The method '{0}' is declared on a different partial definition of the interface '{1}' than the definition that has the 'GeneratedComInterface' attribute</source>
-        <target state="needs-review-translation">메서드 '{0}'은(는) 'GeneratedComInterface' 특성이 있는 정의가 아닌 인터페이스 '{1}'의 다른 부분 정의에서 선언되었습니다.</target>
+        <target state="translated">메서드 '{0}'은(는) 'GeneratedComInterface' 특성이 있는 정의가 아닌 인터페이스 '{1}'의 다른 부분 정의에서 선언되었습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceTitle">
