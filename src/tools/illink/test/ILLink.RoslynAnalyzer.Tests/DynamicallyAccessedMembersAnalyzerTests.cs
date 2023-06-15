@@ -1413,7 +1413,7 @@ namespace System
 		[Fact]
 		public Task MethodParameterWithoutLocationAnalysis ()
 		{
-			// The implicit main method has parametes
+			// The implicit main method has parameters
 			var Source = """
 			using System;
 			foreach (var arg in args)
