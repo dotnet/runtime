@@ -4263,10 +4263,25 @@ void CodeGen::genCodeForLockAdd(GenTreeOp* node)
     {
         int imm = static_cast<int>(data->AsIntCon()->IconValue());
         assert(imm == data->AsIntCon()->IconValue());
-        GetEmitter()->emitIns_I_AR(INS_add, size, imm, addr->GetRegNum(), 0);
+        if (imm == 1)
+        {
+            // inc [addr]
+            GetEmitter()->emitIns_AR(INS_inc, size, addr->GetRegNum(), 0);
+        }
+        else if (imm == -1)
+        {
+            // dec [addr]
+            GetEmitter()->emitIns_AR(INS_dec, size, addr->GetRegNum(), 0);
+        }
+        else
+        {
+            // add [addr], imm
+            GetEmitter()->emitIns_I_AR(INS_add, size, imm, addr->GetRegNum(), 0);
+        }
     }
     else
     {
+        // add [addr], data
         GetEmitter()->emitIns_AR_R(INS_add, size, data->GetRegNum(), addr->GetRegNum(), 0);
     }
 }

@@ -13092,6 +13092,21 @@ namespace System.Runtime.CompilerServices
         [System.CLSCompliantAttribute(false)]
         public unsafe static void Write<T>(void* destination, T value) { }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+    public sealed class UnsafeAccessorAttribute : Attribute
+    {
+        public UnsafeAccessorAttribute(System.Runtime.CompilerServices.UnsafeAccessorKind kind) { }
+        public System.Runtime.CompilerServices.UnsafeAccessorKind Kind { get; }
+        public string? Name { get; set; }
+    }
+    public enum UnsafeAccessorKind
+    {
+        Constructor,
+        Method,
+        StaticMethod,
+        Field,
+        StaticField
+    };
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
     public sealed partial class UnsafeValueTypeAttribute : System.Attribute
     {

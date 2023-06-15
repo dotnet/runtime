@@ -129,7 +129,7 @@
   <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild">
     <ItemGroup>
       <ReferenceCopyLocalPaths Include="@(LibrariesRuntimeFiles)"
-        Condition="'%(LibrariesRuntimeFiles.Extension)' != '.a' or '$(TargetsMobile)' == 'true'">
+        Condition="'%(LibrariesRuntimeFiles.Extension)' != '.a' or '$(TargetsMobile)' == 'true' or '$(BuildNativeAOTRuntimePack)' == 'true'">
         <TargetPath Condition="'%(LibrariesRuntimeFiles.NativeSubDirectory)' != ''">runtimes/$(RuntimeIdentifier)/native/%(LibrariesRuntimeFiles.NativeSubDirectory)%(RecursiveDir)</TargetPath>
       </ReferenceCopyLocalPaths>
     </ItemGroup>
