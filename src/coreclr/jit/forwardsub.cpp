@@ -652,6 +652,14 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     //
     // if the next tree can't change the value of fwdSubNode or be impacted by fwdSubNode effects
     //
+    if ((fsv.GetFlags() & GTF_ASG) != 0)
+    {
+        // We execute an assignment before the substitution local; that
+        // assignment could interfere with some of the locals in the source of
+        // the candidate def.
+        JITDUMP(" cannot reorder with potential interfering assignment\n");
+        return false;
+    }
     if (((fwdSubNode->gtFlags & GTF_CALL) != 0) && ((fsv.GetFlags() & GTF_ALL_EFFECT) != 0))
     {
         JITDUMP(" cannot reorder call with any side effect\n");
