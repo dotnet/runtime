@@ -105,6 +105,7 @@ namespace Microsoft.Interop
         {
             // DeclarationCopiedFromBaseDeclaration(<Arguments>) => throw new UnreachableException("This method should not be reached");
             return MethodInfo.Syntax
+                .WithReturnType(GenerationContext.SignatureContext.StubReturnType)
                 .WithModifiers(TokenList())
                 .WithAttributeLists(List<AttributeListSyntax>())
                 .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(
