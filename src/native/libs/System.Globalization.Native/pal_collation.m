@@ -137,9 +137,9 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
     // check if source contains search string
     rangeOfReceiverToSearch = NSMakeRange(0, sourceStrPrecomposed.length);
     NSRange containsRange = [sourceStrPrecomposed rangeOfString:searchStrPrecomposed
-                                    options:options
-                                    range:rangeOfReceiverToSearch
-                                    locale:currentLocale];
+                                                  options:options
+                                                  range:rangeOfReceiverToSearch
+                                                  locale:currentLocale];
 
     if (containsRange.location == NSNotFound)
     {
@@ -160,9 +160,9 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
     }
    
     NSRange nsRange = [sourceStrComposed rangeOfString:searchStrComposed
-                                        options:options
-                                        range:rangeOfReceiverToSearch
-                                        locale:currentLocale];
+                                         options:options
+                                         range:rangeOfReceiverToSearch
+                                         locale:currentLocale];
 
     if (nsRange.location != NSNotFound)
     {   
@@ -175,9 +175,9 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
     rangeOfReceiverToSearch = NSMakeRange(0, sourceStrComposed.length);
     // Normalize search string with Form C
     NSRange preComposedRange = [sourceStrComposed rangeOfString:searchStrPrecomposed
-                                options:options
-                                range:rangeOfReceiverToSearch
-                                locale:currentLocale];
+                                                  options:options
+                                                  range:rangeOfReceiverToSearch
+                                                  locale:currentLocale];
 
     if (preComposedRange.location != NSNotFound)
     {
@@ -195,9 +195,9 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
         // Normalize search string with Form D
         NSString *searchStrDecomposed = searchStrComposed.decomposedStringWithCanonicalMapping;
         NSRange deComposedRange = [sourceStrComposed rangeOfString:searchStrDecomposed
-                                options:options
-                                range:rangeOfReceiverToSearch
-                                locale:currentLocale];
+                                                     options:options
+                                                     range:rangeOfReceiverToSearch
+                                                     locale:currentLocale];
 
         if (deComposedRange.location != NSNotFound)
         {

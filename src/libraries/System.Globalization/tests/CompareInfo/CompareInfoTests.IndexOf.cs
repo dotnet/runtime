@@ -179,10 +179,10 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, source, "u\u0308", 8, 18, CompareOptions.None, 9, 2 };
             yield return new object[] { s_invariantCompare, source, "\u00DC", 8, 18, CompareOptions.None, 24, 1 };
             yield return new object[] { s_invariantCompare, source, "\u00FC", 8, 18, CompareOptions.None, 9, 2 };
-            yield return new object[] { s_invariantCompare, source, "U\u0308", 8, 18, CompareOptions.Ordinal, -1, 0 };
-            yield return new object[] { s_invariantCompare, source, "u\u0308", 8, 18, CompareOptions.Ordinal, 9, 2 };            
-            yield return new object[] { s_invariantCompare, source, "\u00FC", 8, 18, CompareOptions.Ordinal, -1, 0 };
+            yield return new object[] { s_invariantCompare, source, "u\u0308", 8, 18, CompareOptions.Ordinal, 9, 2 };
             yield return new object[] { s_invariantCompare, source, "\u00DC", 8, 18, CompareOptions.Ordinal, 24, 1 };
+            yield return new object[] { s_invariantCompare, source, "U\u0308", 8, 18, CompareOptions.Ordinal, -1, 0 };
+            yield return new object[] { s_invariantCompare, source, "\u00FC", 8, 18, CompareOptions.Ordinal, -1, 0 };
             yield return new object[] { s_invariantCompare, source, "U\u0308", 8, 18, CompareOptions.IgnoreCase, 9, 2 };
             yield return new object[] { s_invariantCompare, source, "u\u0308", 8, 18, CompareOptions.IgnoreCase, 9, 2 };
             yield return new object[] { s_invariantCompare, source, "\u00DC", 8, 18, CompareOptions.IgnoreCase, 9, 2 };
