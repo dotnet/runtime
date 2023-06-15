@@ -1,5 +1,7 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Diagnostics;
 
 namespace System.Threading
 {
@@ -7,9 +9,8 @@ namespace System.Threading
     /// Represents pre-allocated state for native overlapped I/O operations.
     /// </summary>
     /// <seealso cref="ThreadPoolBoundHandle.AllocateNativeOverlapped(PreAllocatedOverlapped)"/>
-    public sealed class PreAllocatedOverlapped : IDisposable, IDeferredDisposable
+    public sealed partial class PreAllocatedOverlapped : IDisposable, IDeferredDisposable
     {
-        internal readonly ThreadPoolBoundHandleOverlapped _overlapped;
         private DeferredDisposableLifetime<PreAllocatedOverlapped> _lifetime;
 
         /// <summary>
@@ -89,23 +90,38 @@ namespace System.Threading
         /// </exception>
         [CLSCompliant(false)]
         public static PreAllocatedOverlapped UnsafeCreate(IOCompletionCallback callback, object? state, object? pinData) =>
-            new PreAllocatedOverlapped(callback, state, pinData, flowExecutionContext: false);
+            ThreadPool.UseWindowsThreadPool ? UnsafeCreateWindowsThreadPool(callback, state, pinData) : UnsafeCreatePortableCore(callback, state, pinData);
 
-        private PreAllocatedOverlapped(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
+        private unsafe PreAllocatedOverlapped(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
         {
-            ArgumentNullException.ThrowIfNull(callback);
+            if (ThreadPool.UseWindowsThreadPool)
+            {
+                ArgumentNullException.ThrowIfNull(callback);
 
-            _overlapped = new ThreadPoolBoundHandleOverlapped(callback, state, pinData, this, flowExecutionContext);
+                _overlappedWindowsThreadPool = Win32ThreadPoolNativeOverlapped.Allocate(callback, state, pinData, this, flowExecutionContext);
+            }
+            else
+            {
+                // This construction is duplicated in PreAllocatedOverlapped.Unix.cs
+                // It has to either be duplicated or remove the 'readonly' part of _overlappedPortableCore
+                ArgumentNullException.ThrowIfNull(callback);
+
+                _overlappedPortableCore = new ThreadPoolBoundHandleOverlapped(callback, state, pinData, this, flowExecutionContext);
+            }
         }
 
-        internal bool AddRef()
-        {
-            return _lifetime.AddRef();
-        }
+        internal bool AddRef() => ThreadPool.UseWindowsThreadPool ? AddRefWindowsThreadPool() : AddRefPortableCore();
 
         internal void Release()
         {
-            _lifetime.Release(this);
+            if (ThreadPool.UseWindowsThreadPool)
+            {
+                ReleaseWindowsThreadPool();
+            }
+            else
+            {
+                ReleasePortableCore();
+            }
         }
 
         /// <summary>
@@ -113,8 +129,14 @@ namespace System.Threading
         /// </summary>
         public void Dispose()
         {
-            _lifetime.Dispose(this);
-            GC.SuppressFinalize(this);
+            if (ThreadPool.UseWindowsThreadPool)
+            {
+                DisposeWindowsThreadPool();
+            }
+            else
+            {
+                DisposePortableCore();
+            }
         }
 
         ~PreAllocatedOverlapped()
@@ -124,18 +146,13 @@ namespace System.Threading
 
         unsafe void IDeferredDisposable.OnFinalRelease(bool disposed)
         {
-            if (_overlapped != null) // protect against ctor throwing exception and leaving field uninitialized
+            if (ThreadPool.UseWindowsThreadPool)
             {
-                if (disposed)
-                {
-                    Overlapped.Free(_overlapped._nativeOverlapped);
-                }
-                else
-                {
-                    _overlapped._boundHandle = null;
-                    _overlapped._completed = false;
-                    *_overlapped._nativeOverlapped = default;
-                }
+                IDeferredDisposableOnFinalReleaseWindowsThreadPool(disposed);
+            }
+            else
+            {
+                IDeferredDisposableOnFinalReleasePortableCore(disposed);
             }
         }
     }

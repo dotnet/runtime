@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    internal class SafeThreadPoolIOHandle : SafeHandle
+    internal sealed class SafeThreadPoolIOHandle : SafeHandle
     {
         public SafeThreadPoolIOHandle()
             : base(IntPtr.Zero, true)

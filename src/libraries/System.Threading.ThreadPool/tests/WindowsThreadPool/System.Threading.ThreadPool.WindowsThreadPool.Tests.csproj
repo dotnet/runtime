@@ -1,12 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!-- This test project is Windows only as it uses the Windows Threadpool -->
+    <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ThreadPoolTests.cs" />
-    <Compile Include="RegisteredWaitTests.cs" />
+    <Compile Include="..\ThreadPoolTests.cs" />
+    <Compile Include="..\RegisteredWaitTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
@@ -15,6 +16,6 @@
              Link="CommonTest\System\Threading\ThreadTestHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
-    <RuntimeHostConfigurationOption Include="System.Threading.ThreadPool.UseWindowsThreadPool" Value="false" />
+    <RuntimeHostConfigurationOption Include="System.Threading.ThreadPool.UseWindowsThreadPool" Value="true" />
   </ItemGroup>
 </Project>

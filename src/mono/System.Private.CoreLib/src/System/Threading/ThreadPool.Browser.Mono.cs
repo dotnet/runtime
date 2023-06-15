@@ -161,5 +161,11 @@ namespace System.Threading
         {
             throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
         }
+
+        [Conditional("unnecessary")]
+        internal static void ReportThreadStatus(bool isWorking)
+        {
+
+        }
     }
 }
