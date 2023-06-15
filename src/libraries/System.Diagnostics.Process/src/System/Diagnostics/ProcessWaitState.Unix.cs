@@ -278,10 +278,10 @@ namespace System.Diagnostics
                         {
                             // If we haven't exited, we need to spin up an asynchronous operation that
                             // will complete the _exitedEvent when the other process exits. If there's already
-                            // another operation underway, then we'll just tack ours onto the end of it; we can't
-                            // be sure it'll actually monitor the process until it exits, as it may have been
-                            // created with a cancelable token.
-                            _waitInProgress = WaitForExitAsync(_waitInProgress, CancellationToken.None);
+                            // another operation underway, then WaitForExitAsync will just tack ours onto the
+                            // end of it; we can't be sure it'll actually monitor the process until it exits,
+                            // as it may have been created with a cancelable token.
+                            _waitInProgress = WaitForExitAsync(CancellationToken.None);
                         }
                     }
                 }
@@ -463,7 +463,7 @@ namespace System.Diagnostics
                             CancellationToken token = remainingTimeout == Timeout.Infinite ?
                                 CancellationToken.None :
                                 (cts = new CancellationTokenSource(remainingTimeout)).Token;
-                            _waitInProgress = waitTask = WaitForExitAsync(null, token);
+                            _waitInProgress = waitTask = WaitForExitAsync(token);
                         }
                     } // lock(_gate)
 
@@ -492,7 +492,6 @@ namespace System.Diagnostics
         }
 
         /// <summary>Spawns an asynchronous polling loop for process completion.</summary>
-        /// <param name="previousWaitTask">A task previously configured as the waiting task.</param>
         /// <param name="cancellationToken">A token to monitor to exit the polling loop.</param>
         /// <returns>The task representing the loop.</returns>
         /// <remarks>
@@ -501,7 +500,7 @@ namespace System.Diagnostics
         /// token, so if the caller is providing a token and a previous task, it should wait on the
         /// returned task with the token in order to avoid delayed wake-ups.
         /// </remarks>
-        private async Task WaitForExitAsync(Task? previousWaitTask, CancellationToken cancellationToken)
+        private async Task WaitForExitAsync(CancellationToken cancellationToken)
         {
             Debug.Assert(Monitor.IsEntered(_gate));
             Debug.Assert(!_isChild);
@@ -509,7 +508,7 @@ namespace System.Diagnostics
             // Wait for the previous waiting task to complete. We need to ensure that this call completes asynchronously,
             // in order to escape the caller's lock and avoid blocking the caller by any work in the below loop, so
             // we use ForceYielding.
-            await (previousWaitTask ?? Task.CompletedTask).ConfigureAwait(ConfigureAwaitOptions.ForceYielding | ConfigureAwaitOptions.SuppressThrowing);
+            await (_waitInProgress ?? Task.CompletedTask).ConfigureAwait(ConfigureAwaitOptions.ForceYielding | ConfigureAwaitOptions.SuppressThrowing);
 
             // Arbitrary values chosen to balance delays with polling overhead.  Start with fast polling
             // to handle quickly completing processes, but fall back to longer polling to minimize
