@@ -322,12 +322,45 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
             """;
 
+        public string InterfaceWithPropertiesAndEvents => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface INativeAPI
+            {
+                int {|#0:Property|} { get; set; }
+
+                public static int StaticProperty { get; set; }
+
+                event EventHandler {|#1:Event|};
+
+                public static event EventHandler StaticEvent;
+            }
+            
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
+
+            interface IOtherInterface
+            {
+                int Property { get; set; }
+            
+                public static int StaticProperty { get; set; }
+            
+                event EventHandler Event;
+            
+                public static event EventHandler StaticEvent;
+            }
+            """;
+
         public class ManagedToUnmanaged : IVirtualMethodIndexSignatureProvider
         {
             public MarshalDirection Direction => MarshalDirection.ManagedToUnmanaged;
-
             public bool ImplicitThisParameter => true;
-
             public ManagedToUnmanaged(IComInterfaceAttributeProvider attributeProvider)
             {
                 AttributeProvider = attributeProvider;
