@@ -668,7 +668,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 
 #define MONO_EMIT_NEW_VZERO(cfg,dr,kl) do { \
 		MonoInst *__inst; \
-		MONO_INST_NEW ((cfg), (__inst), MONO_CLASS_IS_SIMD (cfg, kl) ? OP_XZERO : OP_VZERO); \
+		MONO_INST_NEW ((cfg), (__inst), mini_class_is_simd (cfg, kl) ? OP_XZERO : OP_VZERO); \
 		__inst->dreg = dr; \
 		(__inst)->type = STACK_VTYPE; \
 		(__inst)->klass = (kl); \
@@ -886,7 +886,7 @@ static int ccount = 0;
 		cfg->flags |= MONO_CFG_HAS_CHECK_THIS; \
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, (reg), 0);	\
 		MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException");		\
-		MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, reg); \
+		if (COMPILE_LLVM (cfg)) MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, reg); \
 	} while (0)
 
 /* Emit an explicit null check which doesn't depend on SIGSEGV signal handling */
@@ -897,7 +897,7 @@ static int ccount = 0;
 		} else { \
 			MONO_EMIT_NEW_IMPLICIT_EXCEPTION_LOAD_STORE (cfg); \
 		} \
-		MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, reg); \
+		if (COMPILE_LLVM (cfg)) MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, reg); \
 	} while (0)
 
 #define MONO_EMIT_NEW_CHECK_THIS(cfg, sreg) do { \
@@ -907,7 +907,7 @@ static int ccount = 0;
 		} else { \
 			MONO_EMIT_NEW_UNALU (cfg, OP_CHECK_THIS, -1, sreg); \
 			MONO_EMIT_NEW_IMPLICIT_EXCEPTION_LOAD_STORE (cfg); \
-			MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, sreg); \
+			if (COMPILE_LLVM (cfg)) MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, sreg); \
 		} \
 	} while (0)
 

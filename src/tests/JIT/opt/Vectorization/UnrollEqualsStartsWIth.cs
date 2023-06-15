@@ -5,10 +5,12 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class UnrollEqualsStartsWIth
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var testTypes = typeof(UnrollEqualsStartsWIth).Assembly
             .GetTypes()

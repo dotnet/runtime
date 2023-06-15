@@ -82,17 +82,13 @@ namespace Internal.Reflection.Core.NonPortable
 
             if (eeType.IsDefType)
             {
-                if (eeType.IsGenericTypeDefinition)
-                {
-                    return callbacks.GetNamedTypeForHandle(runtimeTypeHandle, isGenericTypeDefinition: true);
-                }
-                else if (eeType.IsGeneric)
+                if (eeType.IsGeneric)
                 {
                     return callbacks.GetConstructedGenericTypeForHandle(runtimeTypeHandle);
                 }
                 else
                 {
-                    return callbacks.GetNamedTypeForHandle(runtimeTypeHandle, isGenericTypeDefinition: false);
+                    return callbacks.GetNamedTypeForHandle(runtimeTypeHandle);
                 }
             }
             else if (eeType.IsArray)

@@ -31,8 +31,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       switches can flow to the runtimeconfig.json. Features are disabled
       by default since they may require assemblies, types or members that
       could be removed by the ILLink, causing a trimmed app to crash. -->
-  <PropertyGroup Condition="'$(PublishTrimmed)' == 'true' And
-                            $([MSBuild]::VersionGreaterThanOrEquals($(_TargetFrameworkVersionWithoutV), '6.0'))">
+  <PropertyGroup Condition="'$(PublishTrimmed)' == 'true'">
     <StartupHookSupport Condition="'$(StartupHookSupport)' == ''">false</StartupHookSupport>
     <CustomResourceTypesSupport Condition="'$(CustomResourceTypesSupport)' == ''">false</CustomResourceTypesSupport>
     <EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization Condition="'$(EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization)' == ''">false</EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization>
@@ -49,8 +48,6 @@ Copyright (c) .NET Foundation. All rights reserved.
 
 
   <PropertyGroup Condition="'$(SuppressTrimAnalysisWarnings)' == '' And '$(PublishTrimmed)' == 'true' And '$(EnableTrimAnalyzer)' != 'true'">
-    <!-- Trim analysis warnings are suppressed for .NET < 6. -->
-    <SuppressTrimAnalysisWarnings Condition="$([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '6.0'))">true</SuppressTrimAnalysisWarnings>
     <!-- Suppress for WPF/WinForms -->
     <SuppressTrimAnalysisWarnings Condition="'$(UseWpf)' == 'true' Or '$(UseWindowsForms)' == 'true'">true</SuppressTrimAnalysisWarnings>
     <!-- Otherwise, for .NET 6+, warnings are on by default -->
@@ -80,7 +77,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="ILLink"
           Condition=" '$(PublishTrimmed)' == 'true' And
                       '$(RunILLink)' != 'false' And
-                      '$(_TargetFrameworkVersionWithoutV)' >= '3.0' And '$(TargetFrameworkIdentifier)' == '.NETCoreApp' "
+                      '$(TargetFrameworkIdentifier)' == '.NETCoreApp' "
           DependsOnTargets="_RunILLink">
 
     <NETSdkError Condition="'$(_ILLinkExitCode)' != '' And '$(_ILLinkExitCode)' != '0'" ResourceName="ILLinkFailed" />
@@ -195,6 +192,10 @@ Copyright (c) .NET Foundation. All rights reserved.
          is a NativeAOT app, value of SelfContained doesn't matter. -->
     <NETSdkError Condition="'$(RunILLink)' != 'false' And '$(SelfContained)' != 'true'" ResourceName="ILLinkNotSupportedError" />
 
+    <Warning Condition="'$(SuppressILLinkExplicitPackageReferenceWarning)' != 'true' And
+                        '%(PackageReference.Identity)' == 'Microsoft.NET.ILLink.Tasks' And '%(PackageReference.IsImplicitlyDefined)' != 'true'"
+             Text="Delete explicit 'Microsoft.NET.ILLink.Tasks' package reference in your project file to avoid versioning problems." />
+
     <PropertyGroup Condition=" '$(ILLinkWarningLevel)' == '' ">
       <ILLinkWarningLevel Condition=" '$(EffectiveAnalysisLevel)' != '' And
                                        $([MSBuild]::VersionGreaterThanOrEquals($(EffectiveAnalysisLevel), '5.0')) ">5</ILLinkWarningLevel>
@@ -202,28 +203,16 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
 
     <!-- In .NET 7, TrimmerDefaultAction is deprecated. TrimMode can be used for the supported configurations. -->
-    <Warning Condition="'$(TrimmerDefaultAction)' != '' And $([MSBuild]::VersionGreaterThan('$(TargetFrameworkVersion)', '6.0'))"
-             Text="Property 'TrimmerDefaultAction' is deprecated in .NET 7 and will be ignored. Use TrimMode instead." />
-
-    <!-- Use a sidecar file to suppress warnings when targeting net6.0, for changes that added or changed warnings. -->
-    <ItemGroup Condition="$([MSBuild]::VersionEquals($(TargetFrameworkVersion), '6.0'))">
-      <_ILLinkSuppressions Include="$(MSBuildThisFileDirectory)6.0_suppressions.xml" />
-    </ItemGroup>
+    <Warning Condition="'$(TrimmerDefaultAction)' != ''"
+             Text="Property 'TrimmerDefaultAction' is deprecated in .NET 7 and higher and will be ignored. Use TrimMode instead." />
 
     <PropertyGroup Condition="'@(_ILLinkSuppressions->Count())' != '0'">
       <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --link-attributes "@(_ILLinkSuppressions->'%(Identity)', '" --link-attributes "')"</_ExtraTrimmerArgs>
     </PropertyGroup>
 
-    <!-- Set up TrimMode and TrimmerDefaultAction. -->
+    <!-- Set up TrimMode. -->
     <PropertyGroup>
-      <TrimMode Condition="'$(TrimMode)' == '' And $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '6.0'))">copyused</TrimMode>
-      <TrimMode Condition="'$(TrimMode)' == '' And $([MSBuild]::VersionEquals($(TargetFrameworkVersion), '6.0'))">partial</TrimMode>
       <TrimMode Condition="'$(TrimMode)' == ''">full</TrimMode>
-
-      <!-- Set TrimmerDefaultAction for compat in < 7.0 -->
-      <_TrimmerDefaultAction Condition="$([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '7.0'))">$(TrimmerDefaultAction)</_TrimmerDefaultAction>
-      <_TrimmerDefaultAction Condition="'$(_TrimmerDefaultAction)' == '' And $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '6.0'))">$(TrimMode)</_TrimmerDefaultAction>
-      <_TrimmerDefaultAction Condition="'$(_TrimmerDefaultAction)' == '' And $([MSBuild]::VersionEquals($(TargetFrameworkVersion), '6.0'))">copy</_TrimmerDefaultAction>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -232,33 +221,11 @@ Copyright (c) .NET Foundation. All rights reserved.
       <TrimmerSingleWarn Condition=" '$(TrimmerSingleWarn)' == '' ">true</TrimmerSingleWarn>
     </PropertyGroup>
 
-   <!-- Suppressions to work around issues in previous versions of the framework. See https://github.com/dotnet/runtime/issues/40336 -->
-    <PropertyGroup Condition="'$(SuppressTrimAnalysisWarnings)' == 'true' And $([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '6.0'))">
-      <!-- Framework embedded XML descriptors reference windows-only members. -->
-      <NoWarn Condition=" !$(RuntimeIdentifier.StartsWith('win')) ">$(NoWarn);IL2008</NoWarn> <!-- Unresolved type referenced in XML. -->
-      <NoWarn Condition=" !$(RuntimeIdentifier.StartsWith('win')) ">$(NoWarn);IL2009</NoWarn> <!-- Unresolved member on type referenced in XML. -->
-      <!-- Framework has DynamicDependencyAttributes that reference windows-only members. -->
-      <NoWarn Condition=" !$(RuntimeIdentifier.StartsWith('win')) ">$(NoWarn);IL2037</NoWarn> <!-- Unresolved member for DynamicDependencyAttribute -->
-      <!-- Framework embedded XML descriptors reference 32-bit-only members. -->
-      <NoWarn Condition=" '$(PlatformTarget)' != 'x64' AND '$(PlatformTarget)' != 'arm64'">$(NoWarn);IL2009;IL2012</NoWarn> <!-- Unresolved field referenced in XML -->
-    </PropertyGroup>
-
-    <!-- Enable serialization discovery for compat in < 7.0 -->
-    <PropertyGroup Condition="$([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '7.0'))">
-      <_ExtraTrimmerArgs>--enable-serialization-discovery $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
-    </PropertyGroup>
-
     <!-- Set a default value for TrimmerRemoveSymbols unless set explicitly. -->
     <PropertyGroup Condition=" '$(TrimmerRemoveSymbols)' == '' ">
       <!-- The default is to remove symbols when debugger support is disabled, and keep them otherwise. -->
       <TrimmerRemoveSymbols Condition=" '$(DebuggerSupport)' == 'false' ">true</TrimmerRemoveSymbols>
       <TrimmerRemoveSymbols Condition=" '$(DebuggerSupport)' != 'false' ">false</TrimmerRemoveSymbols>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(_TrimmerUnreachableBodies)' == '' And
-                              '$(PublishTrimmed)' == 'true' And
-                              $([MSBuild]::VersionLessThan($(_TargetFrameworkVersionWithoutV), '6.0'))">
-      <_TrimmerUnreachableBodies>false</_TrimmerUnreachableBodies>
     </PropertyGroup>
 
     <!-- Set IsTrimmable for any assemblies that already have customized TrimMode. -->
@@ -282,14 +249,6 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Root the main assembly entry point. -->
     <ItemGroup>
       <TrimmerRootAssembly Include="@(IntermediateAssembly)" RootMode="EntryPoint" />
-    </ItemGroup>
-
-    <!-- For .NET < 6, root and copy assemblies without IsTrimmable=true MSBuild metadata. -->
-    <ItemGroup Condition=" $([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '6.0')) ">
-      <TrimmerRootAssembly Include="@(ManagedAssemblyToLink)" Condition=" '%(ManagedAssemblyToLink.IsTrimmable)' != 'true' " />
-      <ManagedAssemblyToLink Condition=" '%(ManagedAssemblyToLink.IsTrimmable)' != 'true' ">
-        <TrimMode>copy</TrimMode>
-      </ManagedAssemblyToLink>
     </ItemGroup>
 
     <ItemGroup>

@@ -1646,7 +1646,7 @@ namespace System.Xml.Serialization
                         // find anyElement if present.
                         for (int j = 0; j < mapping.Elements!.Length; j++)
                         {
-                            if (mapping.Elements[j].Any && (mapping.Elements[j].Name == null || mapping.Elements[j].Name.Length == 0))
+                            if (mapping.Elements[j].Any && string.IsNullOrEmpty(mapping.Elements[j].Name))
                             {
                                 anyElement = mapping;
                                 break;

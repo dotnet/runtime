@@ -694,6 +694,15 @@ DLL_EXPORT void* __stdcall GetFunctionPointer()
     return (void*)&SetLastErrorFunc;
 }
 
+DLL_EXPORT int __cdecl NativeFunc(int errorCode)
+{
+    return errorCode + 1322;
+}
+DLL_EXPORT void* __stdcall GetNativeFuncFunctionPointer()
+{
+    return (void*)&NativeFunc;
+}
+
 typedef struct {
     int c;
     char inlineString[260];

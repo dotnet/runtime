@@ -626,8 +626,8 @@ namespace ILCompiler
             {
                 foreach (var node in MarkedNodes)
                 {
-                    if (node is IMethodBodyNode)
-                        yield return ((IMethodBodyNode)node).Method;
+                    if (node is IMethodBodyNode methodBodyNode)
+                        yield return methodBodyNode.Method;
                 }
             }
         }
@@ -639,9 +639,7 @@ namespace ILCompiler
                 foreach (var node in MarkedNodes)
                 {
                     if (node is ConstructedEETypeNode || node is CanonicalEETypeNode)
-                    {
                         yield return ((IEETypeNode)node).Type;
-                    }
                 }
             }
         }
@@ -652,10 +650,20 @@ namespace ILCompiler
             {
                 foreach (var node in MarkedNodes)
                 {
-                    if (node is IEETypeNode)
-                    {
-                        yield return ((IEETypeNode)node).Type;
-                    }
+                    if (node is IEETypeNode typeNode)
+                        yield return typeNode.Type;
+                }
+            }
+        }
+
+        public IEnumerable<MethodDesc> ReflectedMethods
+        {
+            get
+            {
+                foreach (var node in MarkedNodes)
+                {
+                    if (node is ReflectedMethodNode reflectedMethod)
+                        yield return reflectedMethod.Method;
                 }
             }
         }

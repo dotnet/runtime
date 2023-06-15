@@ -320,7 +320,7 @@ class DeadCodeElimination
             Console.WriteLine(s_type == typeof(Never));
 
 #if !DEBUG
-            ThrowIfPresent(typeof(TestTypeEquals), nameof(Never));
+            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Never));
 #endif
         }
     }
@@ -369,7 +369,7 @@ class DeadCodeElimination
 
             // We only expect to be able to get rid of it when optimizing
 #if !DEBUG
-            ThrowIfPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(Unused));
+            ThrowIfPresentWithUsableMethodTable(typeof(TestBranchesInGenericCodeRemoval), nameof(Unused));
 #endif
             ThrowIfNotPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(Used));
 
@@ -388,6 +388,22 @@ class DeadCodeElimination
         {
             throw new Exception(typeName);
         }
+    }
+
+    private static void ThrowIfPresentWithUsableMethodTable(Type testType, string typeName)
+    {
+        Type t = GetTypeSecretly(testType, typeName);
+        if (t == null)
+            return;
+
+        try
+        {
+            RuntimeHelpers.GetUninitializedObject(t);
+
+            // Should have thrown NotSupported above.
+            throw new Exception();
+        }
+        catch (NotSupportedException) { }
     }
 
     private static void ThrowIfNotPresent(Type testType, string typeName)

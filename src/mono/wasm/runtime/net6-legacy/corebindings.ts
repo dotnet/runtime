@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { JSHandle, GCHandle, MonoObjectRef, MonoMethod, MonoObject, WasmRoot } from "../types";
+import { JSHandle, GCHandle, MonoObjectRef, MonoMethod, MonoObject, WasmRoot, PromiseController } from "../types/internal";
 import { mono_bind_method, _create_primitive_converters } from "./method-binding";
 import { mono_wasm_new_root } from "../roots";
 import { Module, runtimeHelpers } from "../globals";
 import cwraps from "../cwraps";
-import { PromiseController } from "../promise-controller";
 import { legacyHelpers, wasm_type_symbol } from "./globals";
 import { find_corlib_class } from "../class-loader";
 type SigLine = [lazy: boolean, jsname: string, csname: string, signature: string/*ArgsMarshalString*/];

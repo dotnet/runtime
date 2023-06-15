@@ -18,6 +18,7 @@ namespace System.Reflection.Emit
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private Type? _typeParent;
         private readonly TypeBuilderImpl? _declaringType;
+        private GenericTypeParameterBuilderImpl[]? _typeParameters;
         private TypeAttributes _attributes;
         private PackingSize _packingSize;
         private int _typeSize;
@@ -65,24 +66,44 @@ namespace System.Reflection.Emit
         internal ModuleBuilderImpl GetModuleBuilder() => _module;
         protected override PackingSize PackingSizeCore => _packingSize;
         protected override int SizeCore => _typeSize;
+
         protected override void AddInterfaceImplementationCore([DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes.All))] Type interfaceType)
         {
             _interfaces ??= new List<Type>();
             _interfaces.Add(interfaceType);
         }
+
         [return: DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))]
         protected override TypeInfo CreateTypeInfoCore() => throw new NotImplementedException();
         protected override ConstructorBuilder DefineConstructorCore(MethodAttributes attributes, CallingConventions callingConvention, Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers) => throw new NotImplementedException();
         protected override ConstructorBuilder DefineDefaultConstructorCore(MethodAttributes attributes) => throw new NotImplementedException();
         protected override EventBuilder DefineEventCore(string name, EventAttributes attributes, Type eventtype) => throw new NotImplementedException();
+
         protected override FieldBuilder DefineFieldCore(string fieldName, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
             var field = new FieldBuilderImpl(this, fieldName, type, attributes);
             _fieldDefinitions.Add(field);
             return field;
         }
-        protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names) => throw new NotImplementedException();
+
+        protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names)
+        {
+            if (_typeParameters != null)
+                throw new InvalidOperationException();
+
+            var typeParameters = new GenericTypeParameterBuilderImpl[names.Length];
+            for (int i = 0; i < names.Length; i++)
+            {
+                string name = names[i];
+                ArgumentNullException.ThrowIfNull(name, nameof(names));
+                typeParameters[i] = new GenericTypeParameterBuilderImpl(name, i, this, _handle);
+            }
+
+            return _typeParameters = typeParameters;
+        }
+
         protected override FieldBuilder DefineInitializedDataCore(string name, byte[] data, FieldAttributes attributes) => throw new NotImplementedException();
+
         protected override MethodBuilder DefineMethodCore(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
             MethodBuilderImpl methodBuilder = new(name, attributes, callingConvention, returnType, parameterTypes, _module, this);
@@ -91,6 +112,7 @@ namespace System.Reflection.Emit
         }
 
         protected override void DefineMethodOverrideCore(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration) => throw new NotImplementedException();
+
         protected override TypeBuilder DefineNestedTypeCore(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packSize, int typeSize)
         {
@@ -102,7 +124,7 @@ namespace System.Reflection.Emit
         protected override PropertyBuilder DefinePropertyCore(string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers) => throw new NotImplementedException();
         protected override ConstructorBuilder DefineTypeInitializerCore() => throw new NotImplementedException();
         protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes) => throw new NotImplementedException();
-        protected override bool IsCreatedCore() => throw new NotImplementedException();
+        protected override bool IsCreatedCore() => false;
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             // Handle pseudo custom attributes
@@ -217,6 +239,11 @@ namespace System.Reflection.Emit
         public override string Name => _name;
         public override Type? DeclaringType => _declaringType;
         public override Type? ReflectedType => _declaringType;
+        public override bool IsGenericTypeDefinition => IsGenericType;
+        public override bool IsGenericType => _typeParameters != null;
+        // Not returning a copy for compat with existing runtime behavior
+        public override Type[] GenericTypeParameters => _typeParameters ?? EmptyTypes;
+        public override Type[] GetGenericArguments() => _typeParameters ?? EmptyTypes;
         public override bool IsDefined(Type attributeType, bool inherit) => throw new NotImplementedException();
         public override object[] GetCustomAttributes(bool inherit) => throw new NotImplementedException();
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotImplementedException();
@@ -292,14 +319,7 @@ namespace System.Reflection.Emit
             => throw new NotSupportedException();
         [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr) => throw new NotSupportedException();
-
         public override bool IsAssignableFrom([NotNullWhen(true)] Type? c) => throw new NotSupportedException();
-        public override Type MakePointerType() => throw new NotSupportedException();
-        public override Type MakeByRefType() => throw new NotSupportedException();
-        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
-        public override Type MakeArrayType() => throw new NotSupportedException();
-        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
-        public override Type MakeArrayType(int rank) => throw new NotSupportedException();
 
         internal const DynamicallyAccessedMemberTypes GetAllMembers = DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
             DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |

@@ -198,7 +198,7 @@ namespace System
         private T? _value;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="System.Lazy{T}"/> class that
+        /// Initializes a new instance of the <see cref="Lazy{T}"/> class that
         /// uses <typeparamref name="T"/>'s default constructor for lazy initialization.
         /// </summary>
         /// <remarks>
@@ -210,7 +210,7 @@ namespace System
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="System.Lazy{T}"/> class that
+        /// Initializes a new instance of the <see cref="Lazy{T}"/> class that
         /// uses a pre-initialized specified value.
         /// </summary>
         /// <remarks>
@@ -223,14 +223,14 @@ namespace System
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="System.Lazy{T}"/> class that uses a
+        /// Initializes a new instance of the <see cref="Lazy{T}"/> class that uses a
         /// specified initialization function.
         /// </summary>
         /// <param name="valueFactory">
-        /// The <see cref="System.Func{T}"/> invoked to produce the lazily-initialized value when it is
+        /// The <see cref="Func{T}"/> invoked to produce the lazily-initialized value when it is
         /// needed.
         /// </param>
-        /// <exception cref="System.ArgumentNullException"><paramref name="valueFactory"/> is a null
+        /// <exception cref="ArgumentNullException"><paramref name="valueFactory"/> is a null
         /// reference (Nothing in Visual Basic).</exception>
         /// <remarks>
         /// An instance created with this constructor may be used concurrently from multiple threads.
@@ -241,7 +241,7 @@ namespace System
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="System.Lazy{T}"/>
+        /// Initializes a new instance of the <see cref="Lazy{T}"/>
         /// class that uses <typeparamref name="T"/>'s default constructor and a specified thread-safety mode.
         /// </summary>
         /// <param name="isThreadSafe">true if this instance should be usable by multiple threads concurrently; false if the instance will only be used by one thread at a time.
@@ -252,26 +252,26 @@ namespace System
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="System.Lazy{T}"/>
+        /// Initializes a new instance of the <see cref="Lazy{T}"/>
         /// class that uses <typeparamref name="T"/>'s default constructor and a specified thread-safety mode.
         /// </summary>
         /// <param name="mode">The lazy thread-safety mode</param>
-        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="mode"/> mode contains an invalid valuee</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> mode contains an invalid valuee</exception>
         public Lazy(LazyThreadSafetyMode mode) :
             this(null, mode, useDefaultConstructor: true)
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="System.Lazy{T}"/> class
+        /// Initializes a new instance of the <see cref="Lazy{T}"/> class
         /// that uses a specified initialization function and a specified thread-safety mode.
         /// </summary>
         /// <param name="valueFactory">
-        /// The <see cref="System.Func{T}"/> invoked to produce the lazily-initialized value when it is needed.
+        /// The <see cref="Func{T}"/> invoked to produce the lazily-initialized value when it is needed.
         /// </param>
         /// <param name="isThreadSafe">true if this instance should be usable by multiple threads concurrently; false if the instance will only be used by one thread at a time.
         /// </param>
-        /// <exception cref="System.ArgumentNullException"><paramref name="valueFactory"/> is
+        /// <exception cref="ArgumentNullException"><paramref name="valueFactory"/> is
         /// a null reference (Nothing in Visual Basic).</exception>
         public Lazy(Func<T> valueFactory, bool isThreadSafe) :
             this(valueFactory, LazyHelper.GetModeFromIsThreadSafe(isThreadSafe), useDefaultConstructor: false)
@@ -279,16 +279,16 @@ namespace System
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="System.Lazy{T}"/> class
+        /// Initializes a new instance of the <see cref="Lazy{T}"/> class
         /// that uses a specified initialization function and a specified thread-safety mode.
         /// </summary>
         /// <param name="valueFactory">
-        /// The <see cref="System.Func{T}"/> invoked to produce the lazily-initialized value when it is needed.
+        /// The <see cref="Func{T}"/> invoked to produce the lazily-initialized value when it is needed.
         /// </param>
         /// <param name="mode">The lazy thread-safety mode.</param>
-        /// <exception cref="System.ArgumentNullException"><paramref name="valueFactory"/> is
+        /// <exception cref="ArgumentNullException"><paramref name="valueFactory"/> is
         /// a null reference (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="mode"/> mode contains an invalid value.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> mode contains an invalid value.</exception>
         public Lazy(Func<T> valueFactory, LazyThreadSafetyMode mode)
             : this(valueFactory, mode, useDefaultConstructor: false)
         {
@@ -438,7 +438,7 @@ namespace System
         /// <summary>Creates and returns a string representation of this instance.</summary>
         /// <returns>The result of calling <see cref="object.ToString"/> on the <see
         /// cref="Value"/>.</returns>
-        /// <exception cref="System.NullReferenceException">
+        /// <exception cref="NullReferenceException">
         /// The <see cref="Value"/> is null.
         /// </exception>
         public override string? ToString()
@@ -471,36 +471,36 @@ namespace System
         /// </summary>
         internal bool IsValueFaulted => LazyHelper.GetIsValueFaulted(_state);
 
-        /// <summary>Gets a value indicating whether the <see cref="System.Lazy{T}"/> has been initialized.
+        /// <summary>Gets a value indicating whether the <see cref="Lazy{T}"/> has been initialized.
         /// </summary>
-        /// <value>true if the <see cref="System.Lazy{T}"/> instance has been initialized;
+        /// <value>true if the <see cref="Lazy{T}"/> instance has been initialized;
         /// otherwise, false.</value>
         /// <remarks>
-        /// The initialization of a <see cref="System.Lazy{T}"/> instance may result in either
+        /// The initialization of a <see cref="Lazy{T}"/> instance may result in either
         /// a value being produced or an exception being thrown.  If an exception goes unhandled during initialization,
         /// <see cref="IsValueCreated"/> will return false.
         /// </remarks>
         public bool IsValueCreated => _state == null;
 
         /// <summary>Gets the lazily initialized value of the current <see
-        /// cref="System.Lazy{T}"/>.</summary>
+        /// cref="Lazy{T}"/>.</summary>
         /// <value>The lazily initialized value of the current <see
-        /// cref="System.Lazy{T}"/>.</value>
-        /// <exception cref="System.MissingMemberException">
-        /// The <see cref="System.Lazy{T}"/> was initialized to use the default constructor
+        /// cref="Lazy{T}"/>.</value>
+        /// <exception cref="MissingMemberException">
+        /// The <see cref="Lazy{T}"/> was initialized to use the default constructor
         /// of the type being lazily initialized, and that type does not have a public, parameterless constructor.
         /// </exception>
-        /// <exception cref="System.MemberAccessException">
-        /// The <see cref="System.Lazy{T}"/> was initialized to use the default constructor
+        /// <exception cref="MemberAccessException">
+        /// The <see cref="Lazy{T}"/> was initialized to use the default constructor
         /// of the type being lazily initialized, and permissions to access the constructor were missing.
         /// </exception>
-        /// <exception cref="System.InvalidOperationException">
-        /// The <see cref="System.Lazy{T}"/> was constructed with the <see cref="System.Threading.LazyThreadSafetyMode.ExecutionAndPublication"/> or
-        /// <see cref="System.Threading.LazyThreadSafetyMode.None"/>  and the initialization function attempted to access <see cref="Value"/> on this instance.
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="Lazy{T}"/> was constructed with the <see cref="LazyThreadSafetyMode.ExecutionAndPublication"/> or
+        /// <see cref="LazyThreadSafetyMode.None"/>  and the initialization function attempted to access <see cref="Value"/> on this instance.
         /// </exception>
         /// <remarks>
         /// If <see cref="IsValueCreated"/> is false, accessing <see cref="Value"/> will force initialization.
-        /// Please <see cref="System.Threading.LazyThreadSafetyMode"/> for more information on how <see cref="System.Lazy{T}"/> will behave if an exception is thrown
+        /// Please <see cref="LazyThreadSafetyMode"/> for more information on how <see cref="Lazy{T}"/> will behave if an exception is thrown
         /// from initialization delegate.
         /// </remarks>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]

@@ -356,13 +356,13 @@ handle_enum:
 			type = mono_class_enum_basetype_internal (type->data.klass);
 			goto handle_enum;
 		}
-		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (type)))
+		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_STOREX_MEMBASE;
 		return OP_STOREV_MEMBASE;
 	case MONO_TYPE_TYPEDBYREF:
 		return OP_STOREV_MEMBASE;
 	case MONO_TYPE_GENERICINST:
-		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (type)))
+		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_STOREX_MEMBASE;
 		type = m_class_get_byval_arg (type->data.generic_class->container_class);
 		goto handle_enum;
@@ -413,12 +413,12 @@ mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
 	case MONO_TYPE_R8:
 		return OP_LOADR8_MEMBASE;
 	case MONO_TYPE_VALUETYPE:
-		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (type)))
+		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_LOADX_MEMBASE;
 	case MONO_TYPE_TYPEDBYREF:
 		return OP_LOADV_MEMBASE;
 	case MONO_TYPE_GENERICINST:
-		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (type)))
+		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_LOADX_MEMBASE;
 		if (mono_type_generic_inst_is_valuetype (type))
 			return OP_LOADV_MEMBASE;
@@ -1042,7 +1042,7 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 			size = mini_type_stack_size (t, &ialign);
 			align = ialign;
 
-			if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (t)))
+			if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (t)))
 				align = 16;
 		}
 
@@ -1350,7 +1350,7 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 			if (mono_class_has_failure (mono_class_from_mono_type_internal (t)))
 				mono_cfg_set_exception (cfg, MONO_EXCEPTION_TYPE_LOAD);
 
-			if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (t)))
+			if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (t)))
 				align = 16;
 		}
 
@@ -4275,6 +4275,51 @@ mini_get_underlying_type (MonoType *type)
 	return mini_type_get_underlying_type (type);
 }
 
+static GENERATE_GET_CLASS_WITH_CACHE (iequatable, "System", "IEquatable`1")
+static GENERATE_GET_CLASS_WITH_CACHE (geqcomparer, "System.Collections.Generic", "GenericEqualityComparer`1");
+
+// Provide more specific type information about the return value of a special
+// call, so that we can devirtualize future calls on this object.
+MonoClass*
+mini_handle_call_res_devirt (MonoMethod *cmethod)
+{
+	if (m_class_get_image (cmethod->klass) == mono_defaults.corlib &&
+			!strcmp (m_class_get_name (cmethod->klass), "EqualityComparer`1") &&
+			!strcmp (cmethod->name, "get_Default")) {
+		MonoType *param_type = mono_class_get_generic_class (cmethod->klass)->context.class_inst->type_argv [0];
+		MonoClass *inst;
+		MonoGenericContext ctx;
+		ERROR_DECL (error);
+
+		memset (&ctx, 0, sizeof (ctx));
+
+		MonoType *args [ ] = { param_type };
+		ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+
+		inst = mono_class_inflate_generic_class_checked (mono_class_get_iequatable_class (), &ctx, error);
+		mono_error_assert_ok (error);
+
+		// EqualityComparer<T>.Default returns specific types depending on T
+		// FIXME: Special case more types: byte, string, nullable, enum ?
+		if (mono_class_is_assignable_from_internal (inst, mono_class_from_mono_type_internal (param_type)) && param_type->type != MONO_TYPE_U1 && param_type->type != MONO_TYPE_STRING) {
+			MonoClass *gcomparer_inst;
+
+			memset (&ctx, 0, sizeof (ctx));
+
+			args [0] = param_type;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+
+			MonoClass *gcomparer = mono_class_get_geqcomparer_class ();
+			g_assert (gcomparer);
+			gcomparer_inst = mono_class_inflate_generic_class_checked (gcomparer, &ctx, error);
+			if (is_ok (error))
+				return gcomparer_inst;
+		}
+	}
+
+	return NULL;
+}
+
 void
 mini_jit_init (void)
 {
@@ -4455,9 +4500,11 @@ mini_get_cpu_features (MonoCompile* cfg)
 #if !defined(MONO_CROSS_COMPILE)
 	if (!cfg->compile_aot || cfg->use_current_cpu) {
 		// detect current CPU features if we are in JIT mode or AOT with use_current_cpu flag.
-#if defined(ENABLE_LLVM)
-		features = mono_llvm_get_cpu_features (); // llvm has a nice built-in API to detect features
-#elif defined(TARGET_AMD64) || defined(TARGET_X86)
+#if defined(ENABLE_LLVM) && !(defined(TARGET_ARM64) && defined(TARGET_OSX))
+		// llvm has a nice built-in API to detect features
+		// it is not implemented on some platforms like apple arm64
+		features = mono_llvm_get_cpu_features ();
+#elif defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64)
 		features = mono_arch_get_cpu_features ();
 #endif
 	}

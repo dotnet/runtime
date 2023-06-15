@@ -1,6 +1,6 @@
 .assembly extern mscorlib {}
 .assembly extern xunit.core {}
-.assembly badendfinally { }
+.assembly ASSEMBLY_NAME { }
 .method public static int32 f() noinlining
 {
 endfinally

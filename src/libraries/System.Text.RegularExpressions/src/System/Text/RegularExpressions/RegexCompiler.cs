@@ -26,7 +26,7 @@ namespace System.Text.RegularExpressions
         private static readonly FieldInfo s_runstackField = RegexRunnerField("runstack");
         private static readonly FieldInfo s_cultureField = typeof(CompiledRegexRunner).GetField("_culture", BindingFlags.Instance | BindingFlags.NonPublic)!;
         private static readonly FieldInfo s_caseBehaviorField = typeof(CompiledRegexRunner).GetField("_caseBehavior", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        private static readonly FieldInfo s_indexOfAnyValuesArrayField = typeof(CompiledRegexRunner).GetField("_indexOfAnyValues", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        private static readonly FieldInfo s_searchValuesArrayField = typeof(CompiledRegexRunner).GetField("_searchValues", BindingFlags.Instance | BindingFlags.NonPublic)!;
 
         private static readonly MethodInfo s_captureMethod = RegexRunnerMethod("Capture");
         private static readonly MethodInfo s_transferCaptureMethod = RegexRunnerMethod("TransferCapture");
@@ -70,25 +70,25 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_spanIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnySpan = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnyIndexOfAnyValues = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(IndexOfAnyValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnySearchValues = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnyExceptChar = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnyExceptCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnyExceptCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnyExceptSpan = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnyExceptIndexOfAnyValues = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(IndexOfAnyValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnyExceptSearchValues = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnyInRange = typeof(MemoryExtensions).GetMethod("IndexOfAnyInRange", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnyExceptInRange = typeof(MemoryExtensions).GetMethod("IndexOfAnyExceptInRange", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfChar = typeof(MemoryExtensions).GetMethod("LastIndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfAnySpan = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnyIndexOfAnyValues = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(IndexOfAnyValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnySearchValues = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfSpan = typeof(MemoryExtensions).GetMethod("LastIndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfAnyExceptChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfAnyExceptCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfAnyExceptCharCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfAnyExceptSpan = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnyExceptIndexOfAnyValues = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(IndexOfAnyValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnyExceptSearchValues = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfAnyInRange = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyInRange", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfAnyExceptInRange = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExceptInRange", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanSliceIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int) })!;
@@ -99,7 +99,8 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_arrayResize = typeof(Array).GetMethod("Resize")!.MakeGenericMethod(typeof(int));
         private static readonly MethodInfo s_mathMinIntInt = typeof(Math).GetMethod("Min", new Type[] { typeof(int), typeof(int) })!;
-        private static readonly MethodInfo s_memoryMarshalGetArrayDataReferenceIndexOfAnyValues = typeof(MemoryMarshal).GetMethod("GetArrayDataReference", new Type[] { Type.MakeGenericMethodParameter(0).MakeArrayType() })!.MakeGenericMethod(typeof(IndexOfAnyValues<char>))!;
+        private static readonly MethodInfo s_memoryMarshalGetArrayDataReferenceSearchValues = typeof(MemoryMarshal).GetMethod("GetArrayDataReference", new Type[] { Type.MakeGenericMethodParameter(0).MakeArrayType() })!.MakeGenericMethod(typeof(SearchValues<char>))!;
+        private static readonly MethodInfo s_unsafeAs = typeof(Unsafe).GetMethod("As", new Type[] { typeof(object) })!;
         // Note:
         // Single-range helpers like IsAsciiLetterLower, IsAsciiLetterUpper, IsAsciiDigit, and IsBetween aren't used here, as the IL generated for those
         // single-range checks is as cheap as the method call, and there's no readability issue as with the source generator.
@@ -113,8 +114,8 @@ namespace System.Text.RegularExpressions
         /// <summary>Whether this expression has a non-infinite timeout.</summary>
         protected bool _hasTimeout;
 
-        /// <summary><see cref="IndexOfAnyValues{T}"/> instances used by the expression. For now these are only ASCII sets.</summary>
-        protected List<IndexOfAnyValues<char>>? _indexOfAnyValues;
+        /// <summary><see cref="SearchValues{T}"/> instances used by the expression. For now these are only ASCII sets.</summary>
+        protected List<SearchValues<char>>? _searchValues;
 
         /// <summary>Pool of Int32 LocalBuilders.</summary>
         private Stack<LocalBuilder>? _int32LocalsPool;
@@ -937,8 +938,8 @@ namespace System.Text.RegularExpressions
                     else if (primarySet.AsciiSet is not null)
                     {
                         Debug.Assert(!primarySet.Negated);
-                        LoadIndexOfAnyValues(primarySet.AsciiSet);
-                        Call(s_spanIndexOfAnyIndexOfAnyValues);
+                        LoadSearchValues(primarySet.AsciiSet);
+                        Call(s_spanIndexOfAnySearchValues);
                     }
                     else if (primarySet.Range is not null)
                     {
@@ -958,7 +959,7 @@ namespace System.Text.RegularExpressions
                     }
                     else
                     {
-                        // In order to optimize the search for ASCII characters, we use IndexOfAnyValues to vectorize a search
+                        // In order to optimize the search for ASCII characters, we use SearchValues to vectorize a search
                         // for those characters plus anything non-ASCII (if we find something non-ASCII, we'll fall back to
                         // a sequential walk).  In order to do that search, we actually build up a set for all of the ASCII
                         // characters _not_ contained in the set, and then do a search for the inverse of that, which will be
@@ -989,9 +990,9 @@ namespace System.Text.RegularExpressions
                             }
                             else
                             {
-                                // IndexOfAnyExcept(indexOfAnyValuesArray[...]);
-                                LoadIndexOfAnyValues(CollectionsMarshal.AsSpan(asciiChars));
-                                Call(s_spanIndexOfAnyExceptIndexOfAnyValues);
+                                // IndexOfAnyExcept(searchValuesArray[...]);
+                                LoadSearchValues(CollectionsMarshal.AsSpan(asciiChars));
+                                Call(s_spanIndexOfAnyExceptSearchValues);
                             }
                             Stloc(i);
 
@@ -3585,8 +3586,8 @@ namespace System.Text.RegularExpressions
                             Array.Resize(ref asciiChars, asciiChars.Length + 1);
                             asciiChars[^1] = node.Ch;
                         }
-                        LoadIndexOfAnyValues(asciiChars);
-                        Call(s_spanIndexOfAnyIndexOfAnyValues);
+                        LoadSearchValues(asciiChars);
+                        Call(s_spanIndexOfAnySearchValues);
                     }
                     else if (literal.Range.LowInclusive == literal.Range.HighInclusive) // single char from a RegexNode.One
                     {
@@ -5200,16 +5201,16 @@ namespace System.Text.RegularExpressions
                         }
                     }
 
-                    // IndexOfAny{Except}(IndexOfAnyValues<char>)
+                    // IndexOfAny{Except}(SearchValues<char>)
                     if (RegexCharClass.TryGetAsciiSetChars(node.Str, out char[]? asciiChars))
                     {
-                        LoadIndexOfAnyValues(asciiChars);
+                        LoadSearchValues(asciiChars);
                         Call((useLast, negated) switch
                         {
-                            (false, false) => s_spanIndexOfAnyIndexOfAnyValues,
-                            (false, true) => s_spanIndexOfAnyExceptIndexOfAnyValues,
-                            (true, false) => s_spanLastIndexOfAnyIndexOfAnyValues,
-                            (true, true) => s_spanLastIndexOfAnyExceptIndexOfAnyValues,
+                            (false, false) => s_spanIndexOfAnySearchValues,
+                            (false, true) => s_spanIndexOfAnyExceptSearchValues,
+                            (true, false) => s_spanLastIndexOfAnySearchValues,
+                            (true, true) => s_spanLastIndexOfAnyExceptSearchValues,
                         });
                         return;
                     }
@@ -6106,27 +6107,32 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Adds an entry in <see cref="CompiledRegexRunner._indexOfAnyValues"/> for the given <paramref name="chars"/> and emits a load of that initialized value.
+        /// Adds an entry in <see cref="CompiledRegexRunner._searchValues"/> for the given <paramref name="chars"/> and emits a load of that initialized value.
         /// </summary>
-        private void LoadIndexOfAnyValues(ReadOnlySpan<char> chars)
+        private void LoadSearchValues(ReadOnlySpan<char> chars)
         {
-            List<IndexOfAnyValues<char>> list = _indexOfAnyValues ??= new();
+            List<SearchValues<char>> list = _searchValues ??= new();
             int index = list.Count;
-            list.Add(IndexOfAnyValues.Create(chars));
+            list.Add(SearchValues.Create(chars));
 
-            // Logically do _indexOfAnyValues[index], but avoid the bounds check on accessing the array,
+            // Logically do _searchValues[index], but avoid the bounds check on accessing the array,
             // and cast to the known derived sealed type to enable devirtualization.
 
-            // DerivedIndexOfAnyValues d = Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(this._indexOfAnyValues), index);
+            // DerivedSearchValues d = Unsafe.As<DerivedSearchValues>(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(this._searchValues), index));
             // ... = d;
-            Ldthisfld(s_indexOfAnyValuesArrayField);
-            Call(s_memoryMarshalGetArrayDataReferenceIndexOfAnyValues);
+            Ldthisfld(s_searchValuesArrayField);
+            Call(s_memoryMarshalGetArrayDataReferenceSearchValues);
             Ldc(index * IntPtr.Size);
             Add();
             _ilg!.Emit(OpCodes.Ldind_Ref);
-            LocalBuilder ioavLocal = _ilg!.DeclareLocal(list[index].GetType());
-            Stloc(ioavLocal);
-            Ldloc(ioavLocal);
+            Call(MakeUnsafeAs(list[index].GetType())); // provide JIT with details necessary to devirtualize calls on this instance
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod", Justification =
+                "Calling Unsafe.As<T> is safe since the T doesn't have trimming annotations.")]
+            static MethodInfo MakeUnsafeAs(Type type)
+            {
+                return s_unsafeAs.MakeGenericMethod(type);
+            }
         }
     }
 }

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Xunit;
 
 
 internal struct Position
@@ -12,9 +13,10 @@ internal struct Position
 }
 
 
-internal class Program
+public class Program
 {
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Console.WriteLine("Main called");
 

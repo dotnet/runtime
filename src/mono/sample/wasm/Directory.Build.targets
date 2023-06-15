@@ -31,7 +31,8 @@
       $(TargetFileName)
       "
       Outputs="
-      bin/$(Configuration)/AppBundle/dotnet.wasm;
+      bin/$(Configuration)/AppBundle/dotnet.native.wasm;
+      bin/$(Configuration)/AppBundle/dotnet.native.js;
       bin/$(Configuration)/AppBundle/$(_WasmMainJSFileName);
       ">
     <PropertyGroup>
@@ -53,7 +54,7 @@
     </PropertyGroup>
   </Target>
   <Target Name="RunSampleWithV8" DependsOnTargets="BuildSampleInTree;_ComputeMainJSFileName">
-    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="v8 --expose_wasm $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args)" IgnoreExitCode="true" />
+    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="v8 --expose_wasm --module $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args)" IgnoreExitCode="true" />
   </Target>
   <Target Name="RunSampleWithNode" DependsOnTargets="BuildSampleInTree;_ComputeMainJSFileName">
     <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="node --expose_wasm $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args)" IgnoreExitCode="true" />

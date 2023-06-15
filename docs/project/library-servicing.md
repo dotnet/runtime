@@ -1,6 +1,6 @@
 # How to service a library
 
-This document provides the steps necessary after modifying a library in a servicing branch.
+This document provides the steps that need to be followed after modifying a library in a servicing branch.
 
 Servicing branches represent shipped versions of .NET, and their name is in the format `release/X.0-staging`. Examples:
 
@@ -39,5 +39,15 @@ All the servicing change must go through an approval process. You have two ways 
 For both cases, you must:
 
 - Fill out the template of the PR description.
-- Add the `servicing-consider` label.
-- Bring it to the attention of the engineering lead responsible for the area, so they consider the fix for servicing.
+- Bring it to the attention of the [engineering lead responsible for the area](~/docs/area-owners.md).
+- If the fix is a product change, the area owner will:
+  - Add the `Servicing-consider` label.
+  - Ask the area owner to champion your PR in the .NET Tactics meeting to request merge approval.
+  - If the change is approved, they will replace the `Servicing-consider` label by `Servicing-approved` and sign-off the PR.
+- If the fix is a test-only or infra-only change, the area owner will:
+  - Review the PR and sign-off if they approve it.
+  - Add the `Servicing-approved` label.
+
+The area owner can then merge the PR once the CI looks good (it's either green or the failures are investigated and determined to be unrelated to the PR).
+
+**Note**: Applying the `Servicing-approved` label ensures the `check-service-labels` CI job passes, which is a mandatory requirement for merging a PR in a servicing branch.

@@ -959,6 +959,27 @@ namespace System.Tests
             }
         }
 
+        public static IEnumerable<object[]> InvalidGenericArgumentTypes()
+        {
+            yield return new object[] { typeof(void) };
+            yield return new object[] { typeof(object).MakeByRefType() };
+            yield return new object[] { typeof(int).MakePointerType() };
+
+            // https://github.com/dotnet/runtime/issues/71095
+            if (!PlatformDetection.IsMonoRuntime)
+            {
+                yield return new object[] { FunctionPointerType() };
+                static unsafe Type FunctionPointerType() => typeof(delegate*<void>);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidGenericArgumentTypes))]
+        public void MakeGenericType_InvalidGenericArgument(Type type)
+        {
+            Assert.Throws<ArgumentException>(() => typeof(List<>).MakeGenericType(type));
+        }
+
 #region GetInterfaceMap tests
         public static IEnumerable<object[]> GetInterfaceMap_TestData()
         {

@@ -13,7 +13,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'i_qsort1'// as "qsort"
+.assembly ASSEMBLY_NAME// as "qsort"
 {
 }
 .assembly extern xunit.core {}

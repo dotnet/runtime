@@ -3,10 +3,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace CodeGenTests
 {
-    static class IntRemainder
+    public static class IntRemainder
     {
         static int _fieldValue = 123;
         static uint _fieldValueUnsigned = 123;
@@ -71,7 +72,8 @@ namespace CodeGenTests
             return (byte)(_fieldValueUnsigned % (Byte.MaxValue + 1));
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             if (Int32_RemainderByOneWithValue(-123) != 0)
                 return 0;

@@ -160,11 +160,11 @@ namespace System.Xml.Serialization
         }
         private void WriteAttribute(string localName, string ns, string? value)
         {
-            if (value == null || value.Length == 0)
+            if (string.IsNullOrEmpty(value))
                 return;
             _w.Append(',');
             _w.Append(ns);
-            if (ns != null && ns.Length != 0)
+            if (!string.IsNullOrEmpty(ns))
                 _w.Append(':');
             _w.Append(localName);
             _w.Append('=');
@@ -304,7 +304,7 @@ namespace System.Xml.Serialization
             WriteAttribute(@"fixed", @"", ((string?)o.@FixedValue));
             if (o.Parent != null && !(o.Parent is XmlSchema))
             {
-                if (o.QualifiedName != null && !o.QualifiedName.IsEmpty && o.QualifiedName.Namespace != null && o.QualifiedName.Namespace.Length != 0)
+                if (o.QualifiedName != null && !o.QualifiedName.IsEmpty && !string.IsNullOrEmpty(o.QualifiedName.Namespace))
                 {
                     WriteAttribute(@"form", @"", "qualified");
                 }
@@ -982,7 +982,7 @@ namespace System.Xml.Serialization
             WriteAttribute(@"fixed", @"", o.FixedValue);
             if (o.Parent != null && !(o.Parent is XmlSchema))
             {
-                if (o.QualifiedName != null && !o.QualifiedName.IsEmpty && o.QualifiedName.Namespace != null && o.QualifiedName.Namespace.Length != 0)
+                if (o.QualifiedName != null && !o.QualifiedName.IsEmpty && !string.IsNullOrEmpty(o.QualifiedName.Namespace))
                 {
                     WriteAttribute(@"form", @"", "qualified");
                 }
@@ -991,7 +991,7 @@ namespace System.Xml.Serialization
                     WriteAttribute(@"form", @"", "unqualified");
                 }
             }
-            if (o.Name != null && o.Name.Length != 0)
+            if (!string.IsNullOrEmpty(o.Name))
             {
                 WriteAttribute(@"name", @"", o.Name);
             }

@@ -21,6 +21,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
+using Xunit;
 
 
 public struct DT 
@@ -549,9 +550,10 @@ class RPInvokeTest
     }     
 }
 
-class Test_Vector3Interop 
+public class Test_Vector3Interop 
 {  
-    public static int Main() 
+    [Fact]
+    public static int TestEntryPoint() 
     {
 
         if (!PInvokeTest.test()) 

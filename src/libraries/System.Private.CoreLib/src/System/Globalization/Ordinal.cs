@@ -327,9 +327,11 @@ namespace System.Globalization
             nint offset = 0;
             bool isLetter = false;
 
-            // If the input is long enough and the value ends with ASCII, we can take a special vectorized
-            // path that compares both the beginning and the end at the same time.
-            if (Vector128.IsHardwareAccelerated && searchSpaceMinusValueTailLength >= Vector128<ushort>.Count)
+            // If the input is long enough and the value ends with ASCII and is at least two characters,
+            // we can take a special vectorized path that compares both the beginning and the end at the same time.
+            if (Vector128.IsHardwareAccelerated &&
+                valueTailLength != 0 &&
+                searchSpaceMinusValueTailLength >= Vector128<ushort>.Count)
             {
                 valueCharU = Unsafe.Add(ref valueRef, valueTailLength);
                 if (char.IsAscii(valueCharU))

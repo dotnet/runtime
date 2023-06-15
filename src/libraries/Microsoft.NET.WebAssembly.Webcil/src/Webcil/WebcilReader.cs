@@ -27,12 +27,18 @@ public sealed partial class WebcilReader : IDisposable
 
     private string? InputPath { get; }
 
+    private readonly long _webcilInWasmOffset;
+
     public WebcilReader(Stream stream)
     {
         this._stream = stream;
         if (!stream.CanRead || !stream.CanSeek)
         {
             throw new ArgumentException("Stream must be readable and seekable", nameof(stream));
+        }
+        if (TryReadWasmWrapper(out var webcilInWasmOffset)) {
+            _webcilInWasmOffset = webcilInWasmOffset;
+            _stream.Seek(_webcilInWasmOffset, SeekOrigin.Begin);
         }
         if (!ReadHeader())
         {
@@ -181,7 +187,7 @@ public sealed partial class WebcilReader : IDisposable
 
     public CodeViewDebugDirectoryData ReadCodeViewDebugDirectoryData(DebugDirectoryEntry entry)
     {
-        var pos = entry.DataPointer;
+        var pos = entry.DataPointer + _webcilInWasmOffset;
         var buffer = new byte[entry.DataSize];
         if (_stream.Seek(pos, SeekOrigin.Begin) != pos)
         {
@@ -214,12 +220,12 @@ public sealed partial class WebcilReader : IDisposable
 
         Guid guid = reader.ReadGuid();
         int age = reader.ReadInt32();
-        string path = ReadUtf8NullTerminated(reader)!;
+        string path = ReadUtf8NullTerminated(ref reader)!;
 
         return MakeCodeViewDebugDirectoryData(guid, age, path);
     }
 
-    private static string? ReadUtf8NullTerminated(BlobReader reader) => Reflection.ReadUtf8NullTerminated(reader);
+    private static string? ReadUtf8NullTerminated(ref BlobReader reader) => Reflection.ReadUtf8NullTerminated(ref reader);
 
     private static CodeViewDebugDirectoryData MakeCodeViewDebugDirectoryData(Guid guid, int age, string path) => Reflection.MakeCodeViewDebugDirectoryData(guid, age, path);
 
@@ -227,7 +233,7 @@ public sealed partial class WebcilReader : IDisposable
 
     public MetadataReaderProvider ReadEmbeddedPortablePdbDebugDirectoryData(DebugDirectoryEntry entry)
     {
-        var pos = entry.DataPointer;
+        var pos = entry.DataPointer + _webcilInWasmOffset;
         var buffer = new byte[entry.DataSize];
         if (_stream.Seek(pos, SeekOrigin.Begin) != pos)
         {
@@ -289,7 +295,7 @@ public sealed partial class WebcilReader : IDisposable
             throw new ArgumentException($"expected debug directory entry type {nameof(DebugDirectoryEntryType.PdbChecksum)}", nameof(entry));
         }
 
-        var pos = entry.DataPointer;
+        var pos = entry.DataPointer + _webcilInWasmOffset;
         var buffer = new byte[entry.DataSize];
         if (_stream.Seek(pos, SeekOrigin.Begin) != pos)
         {
@@ -310,7 +316,7 @@ public sealed partial class WebcilReader : IDisposable
 
     private static PdbChecksumDebugDirectoryData DecodePdbChecksumDebugDirectoryData(BlobReader reader)
     {
-        var algorithmName = ReadUtf8NullTerminated(reader);
+        var algorithmName = ReadUtf8NullTerminated(ref reader);
         byte[]? checksum = reader.ReadBytes(reader.RemainingBytes);
         if (string.IsNullOrEmpty(algorithmName) || checksum == null || checksum.Length == 0)
         {
@@ -330,7 +336,7 @@ public sealed partial class WebcilReader : IDisposable
         {
             if (rva >= section.VirtualAddress && rva < section.VirtualAddress + section.VirtualSize)
             {
-                return section.PointerToRawData + (rva - section.VirtualAddress);
+                return section.PointerToRawData + (rva - section.VirtualAddress) + _webcilInWasmOffset;
             }
         }
         throw new BadImageFormatException("RVA not found in any section", nameof(_stream));
@@ -342,7 +348,7 @@ public sealed partial class WebcilReader : IDisposable
     {
         var sections = ImmutableArray.CreateBuilder<WebcilSectionHeader>(_header.coff_sections);
         var buffer = new byte[Marshal.SizeOf<WebcilSectionHeader>()];
-        _stream.Seek(SectionDirectoryOffset, SeekOrigin.Begin);
+        _stream.Seek(SectionDirectoryOffset + _webcilInWasmOffset, SeekOrigin.Begin);
         for (int i = 0; i < _header.coff_sections; i++)
         {
             if (_stream.Read(buffer, 0, buffer.Length) != buffer.Length)
@@ -361,5 +367,51 @@ public sealed partial class WebcilReader : IDisposable
     public void Dispose()
     {
         _stream.Dispose();
+    }
+
+    private bool TryReadWasmWrapper(out long webcilInWasmOffset)
+    {
+        webcilInWasmOffset = 0;
+        using var reader = new WasmWrapperModuleReader(_stream);
+        if (!reader.IsWasmModule)
+            return false;
+        if (!reader.Visit())
+            return false;
+        if (!reader.HasWebcil)
+            return false;
+        webcilInWasmOffset = reader.WebcilPayloadOffset;
+        return true;
+    }
+
+    private sealed class WasmWrapperModuleReader : WasmModuleReader
+    {
+        internal bool HasWebcil {get; private set;}
+        internal long WebcilPayloadOffset {get; private set; }
+        public WasmWrapperModuleReader(Stream stream) : base (stream)
+        {
+        }
+
+        protected override bool VisitSection (WasmModuleReader.Section sec, out bool shouldStop)
+        {
+            shouldStop = false;
+            if (sec != WasmModuleReader.Section.Data)
+                return true;
+            shouldStop = true;
+
+            uint numSegments = ReadULEB128();
+            if (numSegments != 2)
+                return false;
+
+            // skip the first segment
+            if (!TryReadPassiveDataSegment (out long _, out long _))
+                return false;
+
+            if (!TryReadPassiveDataSegment (out long _, out long segmentStart))
+                return false;
+
+            HasWebcil = true;
+            WebcilPayloadOffset = segmentStart;
+            return true;
+        }
     }
 }

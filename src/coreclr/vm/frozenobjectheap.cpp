@@ -164,6 +164,7 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
 {
     _ASSERT(m_pStart != nullptr && m_Size > 0 && m_SegmentHandle != nullptr); // Expected to be inited
     _ASSERT(IS_ALIGNED(m_pCurrent, DATA_ALIGNMENT));
+    _ASSERT(IS_ALIGNED(objectSize, DATA_ALIGNMENT));
     _ASSERT(objectSize <= FOH_COMMIT_SIZE);
     _ASSERT(m_pCurrent >= m_pStart + sizeof(ObjHeader));
 

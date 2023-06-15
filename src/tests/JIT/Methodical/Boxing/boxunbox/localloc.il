@@ -8,7 +8,7 @@
 }
 
 .assembly extern mscorlib { }
-.assembly 'localloc_boxunbox' { }
+.assembly ASSEMBLY_NAME { }
 .assembly extern xunit.core {}
 .namespace JitTest_localloc_boxunbox
 {

@@ -107,6 +107,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0050`__ | Formatter-based serialization is obsolete and should not be used. |
 |  __`SYSLIB0051`__ | This API supports obsolete formatter-based serialization. It should not be called or extended by application code. |
 |  __`SYSLIB0052`__ | This API supports obsolete mechanisms for Regex extensibility. It is not supported. |
+|  __`SYSLIB0053`__ | AesGcm should indicate the required tag size for encryption and decryption. Use a constructor that accepts the tag size. |
 
 ## Analyzer Warnings
 
@@ -207,19 +208,19 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1089`__ | _`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator._ |
 |  __`SYSLIB1090`__ | Invalid 'GeneratedComInterfaceAttribute' usage |
 |  __`SYSLIB1091`__ | Method is declared in different partial declaration than the 'GeneratedComInterface' attribute. |
-|  __`SYSLIB1092`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
-|  __`SYSLIB1093`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
-|  __`SYSLIB1094`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
-|  __`SYSLIB1095`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
-|  __`SYSLIB1096`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
-|  __`SYSLIB1097`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
-|  __`SYSLIB1098`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
-|  __`SYSLIB1099`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
+|  __`SYSLIB1092`__ | Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces. |
+|  __`SYSLIB1093`__ | Analysis for COM interface generation has failed |
+|  __`SYSLIB1094`__ | The base COM interface failed to generate source. Code will not be generated for this interface. |
+|  __`SYSLIB1095`__ | Invalid 'GeneratedComClassAttribute' usage |
+|  __`SYSLIB1096`__ | Use 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time |
+|  __`SYSLIB1097`__ | This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type. |
+|  __`SYSLIB1098`__ | .NET COM hosting with 'EnableComHosting' only supports built-in COM interop. It does not support source-generated COM interop with 'GeneratedComInterfaceAttribute'. |
+|  __`SYSLIB1099`__ | COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime |
 |  __`SYSLIB1100`__ | Configuration binding generator: type is not supported. |
 |  __`SYSLIB1101`__ | Configuration binding generator: property on type is not supported. |
 |  __`SYSLIB1102`__ | Configuration binding generator: project's language version must be at least C# 11.|
-|  __`SYSLIB1103`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
-|  __`SYSLIB1104`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1103`__ | Configuration binding generator: value types are invalid inputs to configuration 'Bind' methods.* |
+|  __`SYSLIB1104`__ | Configuration binding generator: Generator cannot determine the target configuration type.* |
 |  __`SYSLIB1105`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
 |  __`SYSLIB1106`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
 |  __`SYSLIB1107`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |

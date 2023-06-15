@@ -198,6 +198,13 @@ namespace System.Tests
             yield return new object[] { typeof(int[]) };
             yield return new object[] { typeof(int).MakeByRefType() };
             yield return new object[] { typeof(int).MakePointerType() };
+
+            // https://github.com/dotnet/runtime/issues/71095
+            if (!PlatformDetection.IsMonoRuntime)
+            {
+                yield return new object[] { FunctionPointerType() };
+                static unsafe Type FunctionPointerType() => typeof(delegate*<int, int>);
+            }
         }
 
         [Theory]

@@ -129,9 +129,6 @@
   <data name="InvalidOperation_AModuleRequired" xml:space="preserve">
     <value>Assembly needs at least one module defined.</value>
   </data>
-  <data name="Argument_NullOrEmptyAssemblyName" xml:space="preserve">
-    <value>AssemblyName.Name cannot be null or an empty string.</value>
-  </data>
   <data name="InvalidOperation_NoMultiModuleAssembly" xml:space="preserve">
     <value>You cannot have more than one dynamic module in each dynamic assembly in this version of the runtime.</value>
   </data>
@@ -170,5 +167,8 @@
   </data>
   <data name="Argument_SizeConstMustBeSpecified" xml:space="preserve">
     <value>SizeConst parameter must be specified for UnmanagedType.ByValTStr type.</value>
+  </data>
+  <data name="InvalidOperation_GenericParametersAlreadySet" xml:space="preserve">
+    <value>The generic parameters are already defined on this MethodBuilder.</value>
   </data>
 </root>

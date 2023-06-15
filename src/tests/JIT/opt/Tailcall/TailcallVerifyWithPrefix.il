@@ -4,7 +4,6 @@
 
 
 // Metadata version: v2.0.50727
-.module extern libc
 
 .assembly extern mscorlib { }
 .assembly extern xunit.core {}
@@ -13,11 +12,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly extern System.Runtime
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
-  .ver 4:2:1:0
-}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Runtime.Extensions
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -60,7 +55,6 @@
     .hash algorithm 0x00008004
   .ver 1:0:0:0
 }
-.module TailcallVerifyWithPrefix.exe
 // MVID: {D1242658-CA16-4D11-A740-6635F112F4B5}
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 )
 .imagebase 0x00400000
@@ -1412,7 +1406,7 @@
 
 } // end of class TailcallVerify.MyCompare
 
-.class private auto ansi beforefieldinit TailcallVerify.Program
+.class public auto ansi beforefieldinit TailcallVerify.Program
        extends [mscorlib]System.Object
 {
   .field private static int32 result
@@ -2250,7 +2244,7 @@
     IL_07ab:  ret
   } // end of method Program::Run
 
-  .method private hidebysig static int32
+  .method public hidebysig static int32
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

@@ -21,7 +21,7 @@ namespace System.Text.Json.Nodes
                 WriteTo(writer, options);
             }
 
-            return JsonHelpers.Utf8GetString(output.WrittenMemory.ToArray());
+            return JsonHelpers.Utf8GetString(output.WrittenMemory.Span);
         }
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace System.Text.Json.Nodes
                 WriteTo(writer);
             }
 
-            return JsonHelpers.Utf8GetString(output.WrittenMemory.ToArray());
+            return JsonHelpers.Utf8GetString(output.WrittenMemory.Span);
         }
 
         /// <summary>

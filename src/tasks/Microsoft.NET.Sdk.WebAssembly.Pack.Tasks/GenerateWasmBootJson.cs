@@ -38,6 +38,8 @@ public class GenerateWasmBootJson : Task
 
     public bool LoadAllICUData { get; set; }
 
+    public bool IsHybridGlobalization { get; set; }
+
     public bool LoadCustomIcuData { get; set; }
 
     public string InvariantGlobalization { get; set; }
@@ -82,6 +84,10 @@ public class GenerateWasmBootJson : Task
         if (string.Equals(InvariantGlobalization, "true", StringComparison.OrdinalIgnoreCase))
         {
             icuDataMode = ICUDataMode.Invariant;
+        }
+        else if (IsHybridGlobalization)
+        {
+            icuDataMode = ICUDataMode.Hybrid;
         }
         else if (LoadAllICUData)
         {
@@ -174,7 +180,7 @@ public class GenerateWasmBootJson : Task
                 }
                 else if (string.Equals("symbol", assetTraitValue, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (TryGetLazyLoadedAssembly($"{fileName}.dll", out _) || TryGetLazyLoadedAssembly($"{fileName}.webcil", out _))
+                    if (TryGetLazyLoadedAssembly($"{fileName}.dll", out _) || TryGetLazyLoadedAssembly($"{fileName}{Utils.WebcilInWasmExtension}", out _))
                     {
                         Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a lazy loaded symbols file.", resource.ItemSpec);
                         resourceData.lazyAssembly ??= new ResourceHashesByNameDictionary();
@@ -196,8 +202,7 @@ public class GenerateWasmBootJson : Task
                         string.Equals(assetTraitValue, "native", StringComparison.OrdinalIgnoreCase))
                 {
                     Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a native application resource.", resource.ItemSpec);
-                    if (string.Equals(fileName, "dotnet", StringComparison.OrdinalIgnoreCase) &&
-                        string.Equals(fileExtension, ".wasm", StringComparison.OrdinalIgnoreCase))
+                    if (fileName.StartsWith("dotnet", StringComparison.OrdinalIgnoreCase) && string.Equals(fileExtension, ".wasm", StringComparison.OrdinalIgnoreCase))
                     {
                         behavior = "dotnetwasm";
                     }
@@ -286,7 +291,7 @@ public class GenerateWasmBootJson : Task
                 UseSimpleDictionaryFormat = true
             });
 
-            result.extensions = new Dictionary<string, Dictionary<string, object>> ();
+            result.extensions = new Dictionary<string, Dictionary<string, object>>();
             foreach (var configExtension in Extensions)
             {
                 var key = configExtension.GetMetadata("key");

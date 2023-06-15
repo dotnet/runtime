@@ -1359,7 +1359,7 @@ namespace ILCompiler.DependencyAnalysis
         /// Do not adjust vtable index for generic dictionary slot
         /// The vtable index is only actually valid if whichEntries is set to VTableEntriesToProcess.AllInVTable
         /// </summary>
-        private void ProcessVTableEntriesForCallingConventionSignatureGeneration(NodeFactory factory, VTableEntriesToProcess whichEntries, ref int currentVTableIndex, Action<int, bool, MethodDesc, MethodDesc> operation, TypeDesc implType, TypeDesc declType, TypeDesc templateType)
+        private static void ProcessVTableEntriesForCallingConventionSignatureGeneration(NodeFactory factory, VTableEntriesToProcess whichEntries, ref int currentVTableIndex, Action<int, bool, MethodDesc, MethodDesc> operation, TypeDesc implType, TypeDesc declType, TypeDesc templateType)
         {
             if (implType.IsInterface)
                 return;

@@ -63,6 +63,7 @@ namespace ILCompiler
 
         private readonly HashSet<string> _rootEntireAssembliesModules;
         private readonly HashSet<string> _trimmedAssemblies;
+        private readonly List<string> _satelliteAssemblyFiles;
 
         internal FlowAnnotations FlowAnnotations { get; }
 
@@ -83,7 +84,8 @@ namespace ILCompiler
             IEnumerable<KeyValuePair<string, bool>> featureSwitchValues,
             IEnumerable<string> rootEntireAssembliesModules,
             IEnumerable<string> additionalRootedAssemblies,
-            IEnumerable<string> trimmedAssemblies)
+            IEnumerable<string> trimmedAssemblies,
+            IEnumerable<string> satelliteAssemblyFilePaths)
             : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options)
         {
             _compilationModuleGroup = group;
@@ -98,6 +100,20 @@ namespace ILCompiler
             _rootEntireAssembliesModules = new HashSet<string>(rootEntireAssembliesModules);
             _rootEntireAssembliesModules.UnionWith(additionalRootedAssemblies);
             _trimmedAssemblies = new HashSet<string>(trimmedAssemblies);
+            _satelliteAssemblyFiles = new List<string>(satelliteAssemblyFilePaths);
+        }
+
+        public IEnumerable<EcmaModule> GetSatelliteAssemblies(EcmaAssembly module)
+        {
+            string expectedSimpleName = module.GetName().Name + ".resources";
+            foreach (string filePath in _satelliteAssemblyFiles)
+            {
+                string simpleName = Path.GetFileNameWithoutExtension(filePath);
+                if (simpleName == expectedSimpleName)
+                {
+                    yield return _typeSystemContext.GetMetadataOnlyModuleFromPath(filePath);
+                }
+            }
         }
 
         protected override void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
@@ -494,7 +510,17 @@ namespace ILCompiler
 
         public override void GetDependenciesDueToLdToken(ref DependencyList dependencies, NodeFactory factory, FieldDesc field)
         {
-            if (!IsReflectionBlocked(field))
+            if (!IsReflectionBlocked(field)
+                // Scanning will report many field ldtokens due to InitializeArray/CreateSpan.
+                // We don't consider those reflection because codegen is going to intrinsically
+                // expand them if the pattern match holds. Scanner doesn't replicate the
+                // exact rules that codegen will follow - it will report it all as LDTOKEN
+                // and this can potentially reflection-root things that don't need rooting.
+                // If LDTOKEN with an RVA static field ever becomes an actual user scenario
+                // (outside InitializeArray/CreateSpan) we need to remove this condition, but
+                // we should also replicate the codegen expansion rules in the scanner
+                // so that it doesn't become an unnecessary size regression for the common patterns.
+                && !field.HasRva)
             {
                 dependencies ??= new DependencyList();
                 dependencies.Add(factory.ReflectedField(field), "LDTOKEN field");
@@ -629,19 +655,10 @@ namespace ILCompiler
         private IEnumerable<TypeDesc> GetTypesWithRuntimeMapping()
         {
             // All constructed types that are not blocked get runtime mapping
-            foreach (var constructedType in GetTypesWithConstructedEETypes())
+            foreach (var constructedType in GetTypesWithEETypes())
             {
                 if (!IsReflectionBlocked(constructedType))
                     yield return constructedType;
-            }
-
-            // All necessary types for which this is the highest load level that are not blocked
-            // get runtime mapping.
-            foreach (var necessaryType in GetTypesWithEETypes())
-            {
-                if (!ConstructedEETypeNode.CreationAllowed(necessaryType) &&
-                    !IsReflectionBlocked(necessaryType))
-                    yield return necessaryType;
             }
         }
 

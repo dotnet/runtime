@@ -8,6 +8,7 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="gcarr_d.il" />
     <Compile Include="gcarr.il" />
   </ItemGroup>
 </Project>

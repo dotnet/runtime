@@ -9,7 +9,7 @@
 .assembly extern xunit.core {}
 .assembly extern mscorlib {}
 .assembly extern nativeinthelper {}
-.assembly identity3 {}
+.assembly ASSEMBLY_NAME {}
 .namespace PrimitiveVT
 {
   .class public auto ansi beforefieldinit Identity3

@@ -13,7 +13,6 @@ using Internal.ReadyToRunConstants;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
-using Internal.TypeSystem.Ecma;
 
 #if SUPPORT_JIT
 using MethodCodeNode = Internal.Runtime.JitSupport.JitMethodCodeNode;
@@ -701,9 +700,10 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.CheckInstanceAny;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_CHKCASTCLASS:
-                case CorInfoHelpFunc.CORINFO_HELP_CHKCASTCLASS_SPECIAL:
-                    // TODO: separate helper for the _SPECIAL case
                     id = ReadyToRunHelper.CheckCastClass;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_CHKCASTCLASS_SPECIAL:
+                    id = ReadyToRunHelper.CheckCastClassSpecial;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFCLASS:
                     id = ReadyToRunHelper.CheckInstanceClass;
@@ -1048,9 +1048,15 @@ namespace Internal.JitInterface
                 // This optimizations does not seem to be warranted at the moment.
                 helper = CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY;
             }
+            else if (type.HasVariance
+                // The runtime considers generic interfaces that can be implemented by arrays variant
+                || _compilation.TypeSystemContext.IsGenericArrayInterfaceType(type))
+            {
+                helper = CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY;
+            }
             else if (type.IsInterface)
             {
-                // If it is an interface, use the fast interface helper
+                // If it is a non-variant interface, use the fast interface helper
                 helper = CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFINTERFACE;
             }
             else if (type.IsArray)
@@ -1649,20 +1655,6 @@ namespace Internal.JitInterface
                 pResult->sig.flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_FAT_CALL;
             }
 
-            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_VERIFICATION) != 0)
-            {
-                if (pResult->hMethod != pResolvedToken.hMethod)
-                {
-                    pResult->verMethodFlags = getMethodAttribsInternal(targetMethod);
-                    Get_CORINFO_SIG_INFO(targetMethod, &pResult->verSig, scope: null);
-                }
-                else
-                {
-                    pResult->verMethodFlags = pResult->methodFlags;
-                    pResult->verSig = pResult->sig;
-                }
-            }
-
             pResult->_wrapperDelegateInvoke = 0;
         }
 
@@ -2056,6 +2048,11 @@ namespace Internal.JitInterface
             CORINFO_FIELD_ACCESSOR fieldAccessor;
             CORINFO_FIELD_FLAGS fieldFlags = (CORINFO_FIELD_FLAGS)0;
             uint fieldOffset = (field.IsStatic && field.HasRva ? 0xBAADF00D : (uint)field.Offset.AsInt);
+
+            if (field.IsThreadStatic && field.OwningType is MetadataType mt)
+            {
+                fieldOffset += _compilation.NodeFactory.ThreadStaticBaseOffset(mt);
+            }
 
             if (field.IsStatic)
             {

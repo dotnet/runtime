@@ -70,12 +70,12 @@ private:
             s_lock.InitNoThrow(CrstGcStressControl);
 
             if (g_pRhConfig->GetGcStressSeed())
-                s_lGcStressRNGSeed = g_pRhConfig->GetGcStressSeed();
+                s_lGcStressRNGSeed = (uint32_t)g_pRhConfig->GetGcStressSeed();
             else
                 s_lGcStressRNGSeed = (uint32_t)PalGetTickCount64();
 
             if (g_pRhConfig->GetGcStressFreqDenom())
-                s_lGcStressFreqDenom = g_pRhConfig->GetGcStressFreqDenom();
+                s_lGcStressFreqDenom = (uint32_t)g_pRhConfig->GetGcStressFreqDenom();
             else
                 s_lGcStressFreqDenom = 10000;
 

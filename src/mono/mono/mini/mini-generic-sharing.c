@@ -877,7 +877,7 @@ class_get_rgctx_template_oti (MonoClass *klass, int type_argc, guint32 slot, gbo
 {
 	g_assert ((temporary && do_free) || (!temporary && !do_free));
 
-	DEBUG (printf ("get slot: %s %d\n", mono_type_full_name (m_class_get_byval_arg (class)), slot));
+	DEBUG (printf ("get slot: %s %d\n", mono_type_full_name (m_class_get_byval_arg (klass)), slot));
 
 	if (mono_class_is_ginst (klass) && !shared) {
 		MonoRuntimeGenericContextInfoTemplate oti;
@@ -2814,7 +2814,7 @@ register_info (MonoClass *klass, int type_argc, gpointer data, MonoRgctxInfoType
 			break;
 	}
 
-	DEBUG (printf ("set slot %s, infos [%d] = %s, %s\n", mono_type_get_full_name (class), i, mono_rgctx_info_type_to_str (info_type), rgctx_info_to_str (info_type, data)));
+	DEBUG (printf ("set slot %s, infos [%d] = %s, %s\n", mono_type_get_full_name (klass), i, mono_rgctx_info_type_to_str (info_type), rgctx_info_to_str (info_type, data)));
 
 	/* Mark the slot as used in all parent classes (until we find
 	   a parent class which already has it marked used). */
