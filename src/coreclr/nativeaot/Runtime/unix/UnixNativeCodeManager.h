@@ -20,8 +20,7 @@ class UnixNativeCodeManager : public ICodeManager
 
     libunwind::UnwindInfoSections m_UnwindInfoSections;
 
-    bool VirtualUnwind(REGDISPLAY* pRegisterSet);
-    bool FindProcInfo(uintptr_t controlPC, uintptr_t* startAddress, uintptr_t* endAddress, uintptr_t* lsda);
+    bool VirtualUnwind(MethodInfo* pMethodInfo, REGDISPLAY* pRegisterSet);
 
 public:
     UnixNativeCodeManager(TADDR moduleBase,

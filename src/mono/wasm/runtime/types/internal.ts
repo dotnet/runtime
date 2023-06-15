@@ -159,6 +159,7 @@ export type RuntimeHelpers = {
     subtle: SubtleCrypto | null,
     updateMemoryViews: () => void
     runtimeReady: boolean,
+    cspPolicy: boolean,
 
     runtimeModuleUrl: string
     nativeModuleUrl: string
@@ -416,6 +417,10 @@ export declare interface EmscriptenModuleInternal {
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
     onConfigLoaded?: (config: MonoConfig, api: RuntimeAPI) => void | Promise<void>;
+    safeSetTimeout(func: Function, timeout: number): number;
+    runtimeKeepalivePush(): void;
+    runtimeKeepalivePop(): void;
+    maybeExit(): void;
 }
 
 /// A PromiseController encapsulates a Promise together with easy access to its resolve and reject functions.

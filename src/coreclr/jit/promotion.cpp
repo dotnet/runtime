@@ -49,6 +49,12 @@ struct Access
     unsigned     Offset;
     var_types    AccessType;
 
+    weight_t CountWtd                 = 0;
+    weight_t CountAssignedFromCallWtd = 0;
+    weight_t CountCallArgsWtd         = 0;
+    weight_t CountPassedAsRetbufWtd   = 0;
+
+#ifdef DEBUG
     // Number of times we saw this access.
     unsigned Count = 0;
     // Number of times this access is on the RHS of an assignment.
@@ -59,13 +65,10 @@ struct Access
     unsigned CountReturns               = 0;
     unsigned CountPassedAsRetbuf        = 0;
 
-    weight_t CountWtd                      = 0;
     weight_t CountAssignmentSourceWtd      = 0;
     weight_t CountAssignmentDestinationWtd = 0;
-    weight_t CountAssignedFromCallWtd      = 0;
-    weight_t CountCallArgsWtd              = 0;
     weight_t CountReturnsWtd               = 0;
-    weight_t CountPassedAsRetbufWtd        = 0;
+#endif
 
     Access(unsigned offset, var_types accessType, ClassLayout* layout)
         : Layout(layout), Offset(offset), AccessType(accessType)
@@ -97,13 +100,15 @@ struct Access
 
 enum class AccessKindFlags : uint32_t
 {
-    None                    = 0,
-    IsCallArg               = 1,
-    IsAssignmentSource      = 2,
-    IsAssignmentDestination = 4,
-    IsCallRetBuf            = 8,
-    IsAssignedFromCall      = 16,
+    None               = 0,
+    IsCallArg          = 1,
+    IsAssignedFromCall = 2,
+    IsCallRetBuf       = 4,
+#ifdef DEBUG
+    IsAssignmentSource      = 8,
+    IsAssignmentDestination = 16,
     IsReturned              = 32,
+#endif
 };
 
 inline constexpr AccessKindFlags operator~(AccessKindFlags a)
@@ -252,8 +257,25 @@ public:
             access = &*m_accesses.insert(m_accesses.begin() + index, Access(offs, accessType, accessLayout));
         }
 
-        access->Count++;
         access->CountWtd += weight;
+
+        if ((flags & AccessKindFlags::IsCallArg) != AccessKindFlags::None)
+        {
+            access->CountCallArgsWtd += weight;
+        }
+
+        if ((flags & AccessKindFlags::IsCallRetBuf) != AccessKindFlags::None)
+        {
+            access->CountPassedAsRetbufWtd += weight;
+        }
+
+        if ((flags & AccessKindFlags::IsAssignedFromCall) != AccessKindFlags::None)
+        {
+            access->CountAssignedFromCallWtd += weight;
+        }
+
+#ifdef DEBUG
+        access->Count++;
 
         if ((flags & AccessKindFlags::IsAssignmentSource) != AccessKindFlags::None)
         {
@@ -265,23 +287,16 @@ public:
         {
             access->CountAssignmentDestination++;
             access->CountAssignmentDestinationWtd += weight;
-
-            if ((flags & AccessKindFlags::IsAssignedFromCall) != AccessKindFlags::None)
-            {
-                access->CountAssignedFromCallWtd += weight;
-            }
         }
 
         if ((flags & AccessKindFlags::IsCallArg) != AccessKindFlags::None)
         {
             access->CountCallArgs++;
-            access->CountCallArgsWtd += weight;
         }
 
         if ((flags & AccessKindFlags::IsCallRetBuf) != AccessKindFlags::None)
         {
             access->CountPassedAsRetbuf++;
-            access->CountPassedAsRetbufWtd += weight;
         }
 
         if ((flags & AccessKindFlags::IsReturned) != AccessKindFlags::None)
@@ -289,6 +304,7 @@ public:
             access->CountReturns++;
             access->CountReturnsWtd += weight;
         }
+#endif
     }
 
     //------------------------------------------------------------------------
@@ -363,11 +379,9 @@ public:
     //
     bool EvaluateReplacement(Compiler* comp, unsigned lclNum, const Access& access)
     {
-        weight_t countOverlappedCallArgWtd                = 0;
-        weight_t countOverlappedReturnsWtd                = 0;
-        weight_t countOverlappedRetbufsWtd                = 0;
-        weight_t countOverlappedAssignedFromCallWtd       = 0;
-        weight_t countOverlappedDecomposableAssignmentWtd = 0;
+        weight_t countOverlappedCallArgWtd          = 0;
+        weight_t countOverlappedRetbufsWtd          = 0;
+        weight_t countOverlappedAssignedFromCallWtd = 0;
 
         bool overlap = false;
         for (const Access& otherAccess : m_accesses)
@@ -386,12 +400,8 @@ public:
             }
 
             countOverlappedCallArgWtd += otherAccess.CountCallArgsWtd;
-            countOverlappedReturnsWtd += otherAccess.CountReturnsWtd;
             countOverlappedRetbufsWtd += otherAccess.CountPassedAsRetbufWtd;
             countOverlappedAssignedFromCallWtd += otherAccess.CountAssignedFromCallWtd;
-            countOverlappedDecomposableAssignmentWtd +=
-                (otherAccess.CountAssignmentDestinationWtd + otherAccess.CountAssignmentSourceWtd -
-                 otherAccess.CountAssignedFromCallWtd);
         }
 
         weight_t costWithout = 0;
@@ -436,6 +446,15 @@ public:
         // TODO-CQ: A store-forwarding optimization in lowering could get rid
         // of these copies; however, it requires lowering to be able to prove
         // that not writing the fields into the struct local is ok.
+        //
+        // Note: Technically we also introduce writebacks before returns that
+        // we could account for, however the returns we see during physical
+        // promotion are only for structs returned in registers and in most
+        // cases the writeback introduced means we can eliminate an earlier
+        // "natural" writeback, balancing out the cost.
+        // Thus _not_ accounting for these is a CQ improvements.
+        // (Additionally, if it weren't we could teach the backend some
+        // store-forwarding/forward sub to make the write backs "free".)
         weight_t countWriteBacksWtd = countOverlappedCallArgWtd;
         costWith += countWriteBacksWtd * writeBackCost;
 
@@ -529,7 +548,8 @@ class LocalsUseVisitor : public GenTreeVisitor<LocalsUseVisitor>
 public:
     enum
     {
-        DoPreOrder = true,
+        DoPreOrder   = true,
+        ComputeStack = true,
     };
 
     LocalsUseVisitor(Promotion* prom) : GenTreeVisitor(prom->m_compiler), m_prom(prom)
@@ -590,9 +610,25 @@ public:
                 }
                 else
                 {
+                    int userIndex = 1;
+                    while (userIndex < m_ancestors.Height())
+                    {
+                        GenTree* ancestor = m_ancestors.Top(userIndex);
+                        GenTree* child    = m_ancestors.Top(userIndex - 1);
+
+                        if (!ancestor->OperIs(GT_COMMA) || (ancestor->gtGetOp2() != child))
+                        {
+                            break;
+                        }
+
+                        userIndex++;
+                    }
+
+                    GenTree* effectiveUser = userIndex >= m_ancestors.Height() ? nullptr : m_ancestors.Top(userIndex);
+
                     accessType   = lcl->TypeGet();
                     accessLayout = accessType == TYP_STRUCT ? lcl->GetLayout(m_compiler) : nullptr;
-                    accessFlags  = ClassifyLocalAccess(lcl, user);
+                    accessFlags  = ClassifyLocalAccess(lcl, effectiveUser);
                 }
 
                 LocalUses* uses = GetOrCreateUses(lcl->GetLclNum());
@@ -643,7 +679,7 @@ private:
         AccessKindFlags flags = AccessKindFlags::None;
         if (lcl->OperIsLocalStore())
         {
-            flags |= AccessKindFlags::IsAssignmentDestination;
+            INDEBUG(flags |= AccessKindFlags::IsAssignmentDestination);
 
             if (lcl->AsLclVarCommon()->Data()->gtEffectiveVal()->IsCall())
             {
@@ -660,7 +696,7 @@ private:
         {
             for (CallArg& arg : user->AsCall()->gtArgs.Args())
             {
-                if (arg.GetNode() == lcl)
+                if (arg.GetNode()->gtEffectiveVal() == lcl)
                 {
                     flags |= AccessKindFlags::IsCallArg;
                     break;
@@ -668,16 +704,18 @@ private:
             }
         }
 
-        if (user->OperIsStore() && (user->Data() == lcl))
+#ifdef DEBUG
+        if (user->OperIsStore() && (user->Data()->gtEffectiveVal() == lcl))
         {
             flags |= AccessKindFlags::IsAssignmentSource;
         }
 
         if (user->OperIs(GT_RETURN))
         {
-            assert(user->gtGetOp1() == lcl);
+            assert(user->gtGetOp1()->gtEffectiveVal() == lcl);
             flags |= AccessKindFlags::IsReturned;
         }
+#endif
 
         return flags;
     }
@@ -1343,21 +1381,25 @@ void ReplaceVisitor::LoadStoreAroundCall(GenTreeCall* call, GenTree* user)
             continue;
         }
 
-        if (!arg.GetNode()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+        GenTree** argUse  = EffectiveUse(&arg.EarlyNodeRef());
+        GenTree*  argNode = *argUse;
+
+        if (!argNode->OperIs(GT_LCL_VAR, GT_LCL_FLD))
         {
             continue;
         }
 
-        GenTreeLclVarCommon* argNodeLcl = arg.GetNode()->AsLclVarCommon();
+        GenTreeLclVarCommon* argNodeLcl = argNode->AsLclVarCommon();
 
         if (argNodeLcl->TypeIs(TYP_STRUCT))
         {
             unsigned size = argNodeLcl->GetLayout(m_compiler)->GetSize();
-            WriteBackBefore(&arg.EarlyNodeRef(), argNodeLcl->GetLclNum(), argNodeLcl->GetLclOffs(), size);
+            WriteBackBefore(argUse, argNodeLcl->GetLclNum(), argNodeLcl->GetLclOffs(), size);
 
             if ((m_aggregates[argNodeLcl->GetLclNum()] != nullptr) && IsPromotedStructLocalDying(argNodeLcl))
             {
                 argNodeLcl->gtFlags |= GTF_VAR_DEATH;
+                CheckForwardSubForLastUse(argNodeLcl->GetLclNum());
             }
         }
     }
@@ -1374,6 +1416,26 @@ void ReplaceVisitor::LoadStoreAroundCall(GenTreeCall* call, GenTree* user)
             JITDUMP("Retbuf has replacements that were marked for read back\n");
         }
     }
+}
+
+//------------------------------------------------------------------------
+// EffectiveUse:
+//   Given a use, compute the "effective" use by skipping all uses of commas.
+//
+// Parameters:
+//   use - The use edge.
+//
+// Returns:
+//   A use edge that points to a non GT_COMMA value computed for the use.
+//
+GenTree** ReplaceVisitor::EffectiveUse(GenTree** use)
+{
+    while ((*use)->OperIs(GT_COMMA))
+    {
+        use = &(*use)->AsOp()->gtOp2;
+    }
+
+    return use;
 }
 
 //------------------------------------------------------------------------
@@ -1453,7 +1515,7 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
     {
         if (lcl->OperIsLocalRead())
         {
-            assert((user == nullptr) || user->OperIs(GT_CALL, GT_RETURN) || user->OperIsStore());
+            assert((user == nullptr) || user->OperIs(GT_CALL, GT_RETURN, GT_COMMA) || user->OperIsStore());
         }
     }
     else
@@ -1498,7 +1560,11 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
         *use = m_compiler->gtNewLclvNode(rep.LclNum, accessType);
     }
 
-    (*use)->gtFlags |= lcl->gtFlags & GTF_VAR_DEATH;
+    if ((lcl->gtFlags & GTF_VAR_DEATH) != 0)
+    {
+        (*use)->gtFlags |= GTF_VAR_DEATH;
+        CheckForwardSubForLastUse(rep.LclNum);
+    }
 
     if (isDef)
     {
@@ -1541,6 +1607,30 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
 }
 
 //------------------------------------------------------------------------
+// CheckForwardSubForLastUse:
+//   Indicate that a local has a last use in the current statement and that
+//   there thus may be a forward substitution opportunity.
+//
+// Parameters:
+//   lclNum - The local number with a last use in this statement.
+//
+void ReplaceVisitor::CheckForwardSubForLastUse(unsigned lclNum)
+{
+    if (m_currentBlock->firstStmt() == m_currentStmt)
+    {
+        return;
+    }
+
+    Statement* prevStmt = m_currentStmt->GetPrevStmt();
+    GenTree*   prevNode = prevStmt->GetRootNode();
+
+    if (prevNode->OperIsLocalStore() && (prevNode->AsLclVarCommon()->GetLclNum() == lclNum))
+    {
+        m_mayHaveForwardSub = true;
+    }
+}
+
+//------------------------------------------------------------------------
 // StoreBeforeReturn:
 //   Handle a return of a potential struct local.
 //
@@ -1549,16 +1639,23 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
 //
 void ReplaceVisitor::StoreBeforeReturn(GenTreeUnOp* ret)
 {
-    if (ret->TypeIs(TYP_VOID) || !ret->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+    if (ret->TypeIs(TYP_VOID))
     {
         return;
     }
 
-    GenTreeLclVarCommon* retLcl = ret->gtGetOp1()->AsLclVarCommon();
+    GenTree** retUse  = EffectiveUse(&ret->gtOp1);
+    GenTree*  retNode = *retUse;
+    if (!retNode->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+    {
+        return;
+    }
+
+    GenTreeLclVarCommon* retLcl = retNode->AsLclVarCommon();
     if (retLcl->TypeIs(TYP_STRUCT))
     {
         unsigned size = retLcl->GetLayout(m_compiler)->GetSize();
-        WriteBackBefore(&ret->gtOp1, retLcl->GetLclNum(), retLcl->GetLclOffs(), size);
+        WriteBackBefore(retUse, retLcl->GetLclNum(), retLcl->GetLclOffs(), size);
     }
 }
 
@@ -1780,7 +1877,7 @@ PhaseStatus Promotion::Run()
         for (Statement* stmt : bb->Statements())
         {
             DISPSTMT(stmt);
-            replacer.StartStatement();
+            replacer.StartStatement(stmt);
             replacer.WalkTree(stmt->GetRootNodePointer(), nullptr);
 
             if (replacer.MadeChanges())
@@ -1789,6 +1886,15 @@ PhaseStatus Promotion::Run()
                 m_compiler->gtUpdateStmtSideEffects(stmt);
                 JITDUMP("New statement:\n");
                 DISPSTMT(stmt);
+            }
+
+            if (replacer.MayHaveForwardSubOpportunity())
+            {
+                JITDUMP("Invoking forward sub due to a potential opportunity\n");
+                while ((stmt != bb->firstStmt()) && m_compiler->fgForwardSubStatement(stmt->GetPrevStmt()))
+                {
+                    m_compiler->fgRemoveStmt(bb, stmt->GetPrevStmt());
+                }
             }
         }
 
