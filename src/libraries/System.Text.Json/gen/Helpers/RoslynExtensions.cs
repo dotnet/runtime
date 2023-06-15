@@ -98,8 +98,8 @@ namespace System.Text.Json.SourceGeneration
         public static IEnumerable<IMethodSymbol> GetExplicitlyDeclaredInstanceConstructors(this INamedTypeSymbol type)
             => type.Constructors.Where(ctor => !ctor.IsStatic && !(ctor.IsImplicitlyDeclared && type.IsValueType && ctor.Parameters.Length == 0));
 
-        public static bool ContainsAttribute(this ISymbol memberInfo, string attributeFullName)
-            => memberInfo.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == attributeFullName);
+        public static bool ContainsAttribute(this ISymbol memberInfo, INamedTypeSymbol? attributeType)
+            => attributeType != null && memberInfo.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType));
 
         public static bool IsVirtual(this ISymbol symbol)
             => symbol.IsVirtual || symbol.IsOverride || symbol.IsAbstract;

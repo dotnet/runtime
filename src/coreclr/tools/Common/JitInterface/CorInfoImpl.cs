@@ -552,6 +552,17 @@ namespace Internal.JitInterface
                 {
                     if (computedNodes.Add(fixup))
                     {
+                        if (fixup is IMethodNode methodNode)
+                        {
+                            try
+                            {
+                                _compilation.NodeFactory.DetectGenericCycles(_methodCodeNode.Method, methodNode.Method);
+                            }
+                            catch (TypeLoadException)
+                            {
+                                throw new RequiresRuntimeJitException("Requires runtime JIT - potential generic cycle detected");
+                            }
+                        }
                         _methodCodeNode.Fixups.Add(fixup);
                     }
                 }

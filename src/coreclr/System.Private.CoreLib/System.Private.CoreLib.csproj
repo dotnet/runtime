@@ -288,7 +288,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs">
       <Link>Common\Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
     </Compile>
-    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.CoreCLR.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureObjCMarshal)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ObjectiveCMarshal.CoreCLR.cs" />

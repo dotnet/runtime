@@ -106,6 +106,8 @@ namespace ILCompiler
                 }
             }
 
+            _nodeFactory.DetectGenericCycles(caller, callee);
+
             return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);
         }
 
@@ -409,6 +411,11 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
             }
+            bool automaticTypeValidation = _nodeFactory.OptimizationFlags.TypeValidation == TypeValidationRule.Automatic || _nodeFactory.OptimizationFlags.TypeValidation == TypeValidationRule.AutomaticWithLogging;
+            if (_nodeFactory.OptimizationFlags.TypeValidation == TypeValidationRule.SkipTypeValidation)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
+            }
 
             flags |= _nodeFactory.CompilationModuleGroup.GetReadyToRunFlags() & ReadyToRunFlags.READYTORUN_FLAG_MultiModuleVersionBubble;
 
@@ -426,7 +433,10 @@ namespace ILCompiler
                 win32Resources: new Win32Resources.ResourceData(inputModule),
                 flags,
                 _nodeFactory.OptimizationFlags,
-                _nodeFactory.ImageBase);
+                _nodeFactory.ImageBase,
+                automaticTypeValidation ? inputModule : null,
+                genericCycleDepthCutoff: -1, // We don't need generic cycle detection when rewriting component assemblies
+                genericCycleBreadthCutoff: -1); // as we're not actually compiling anything
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance);
             DependencyAnalyzerBase<NodeFactory> componentGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(componentFactory, comparer);

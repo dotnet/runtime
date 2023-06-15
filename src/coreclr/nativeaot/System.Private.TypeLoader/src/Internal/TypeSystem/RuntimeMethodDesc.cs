@@ -52,7 +52,8 @@ namespace Internal.TypeSystem.NoMetadata
                         TypeDesc[] genericParameters = new TypeDesc[genericArgCount];
                         for (int i = 0; i < genericParameters.Length; i++)
                         {
-                            genericParameters[i] = new RuntimeGenericParameterDesc(GenericParameterKind.Method, i, Context, GenericVariance.None);
+                            var newGenericParameter = new RuntimeGenericParameterDesc(GenericParameterKind.Method, i, this, GenericVariance.None);
+                            genericParameters[i] = newGenericParameter;
                         }
                         _instantiation = new Instantiation(genericParameters);
                     }
