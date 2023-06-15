@@ -36,7 +36,6 @@ namespace System.Collections.Frozen
         }
 
         /// <summary>Initializes a frozen hash table.</summary>
-        /// <param name="entriesLength">The number of entries to track from the hash table.</param>
         /// <param name="hashCodes">Pre-calculated hash codes.</param>
         /// <param name="storeDestIndexFromSrcIndex">A delegate that assigns the index to a specific entry. It's passed the destination and source indices.</param>
         /// <param name="optimizeForReading">true to spend additional effort tuning for subsequent read speed on the table; false to prioritize construction time.</param>
@@ -48,10 +47,8 @@ namespace System.Collections.Frozen
         /// then uses this index to reference individual entries by indexing into <see cref="HashCodes"/>.
         /// </remarks>
         /// <returns>A frozen hash table.</returns>
-        public static FrozenHashTable Create(int entriesLength, ReadOnlySpan<int> hashCodes, Action<int, int> storeDestIndexFromSrcIndex, bool optimizeForReading = true)
+        public static FrozenHashTable Create(ReadOnlySpan<int> hashCodes, Action<int, int> storeDestIndexFromSrcIndex, bool optimizeForReading = true)
         {
-            Debug.Assert(entriesLength != 0);
-
             // Determine how many buckets to use.  This might be fewer than the number of entries
             // if any entries have identical hashcodes (not just different hashcodes that might
             // map to the same bucket).

@@ -26,7 +26,6 @@ namespace System.Collections.Frozen
             source.CopyTo(entries);
 
             _hashTable = FrozenHashTable.Create(
-                count,
                 new ReadOnlySpan<int>(entries, 0, count),
                 static delegate { });
 

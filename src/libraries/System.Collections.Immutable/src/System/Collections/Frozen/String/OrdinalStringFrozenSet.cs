@@ -39,7 +39,6 @@ namespace System.Collections.Frozen
             }
 
             _hashTable = FrozenHashTable.Create(
-                entries.Length,
                 hashCodes,
                 (destIndex, srcIndex) => _items[destIndex] = entries[srcIndex]);
 

@@ -225,7 +225,7 @@ namespace System.Collections.Frozen
         {
             set.Clear();
 
-            // SufficientUniquenessFactor of 95% is good enough.
+            // Sufficient uniqueness factor of 95% is good enough.
             // Instead of ensuring that 95% of data is good, we stop when we know that at least 5% is bad.
             int acceptableNonUniqueCount = uniqueStrings.Length / 20;
 
