@@ -23,18 +23,18 @@ jobs:
 
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
 
-  # build coreclr and libraries
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
-      buildConfig: release
-      platforms:
-      - linux_x64
-      - windows_x64
-      - windows_x86
-      # - linux_musl_x64
-      jobParameters:
-        testGroup: perf
+  # # build coreclr and libraries
+  # - template: /eng/pipelines/common/platform-matrix.yml
+  #   parameters:
+  #     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+  #     buildConfig: release
+  #     platforms:
+  #     - linux_x64
+  #     - windows_x64
+  #     - windows_x86
+  #     # - linux_musl_x64
+  #     jobParameters:
+  #       testGroup: perf
 
   # # build mono for AOT
   # - template: /eng/pipelines/common/platform-matrix.yml
@@ -80,27 +80,27 @@ jobs:
   #         archiveType: tar
   #         tarCompression: gz
 
-  # # build mono iOS scenarios
-  # - template: /eng/pipelines/common/platform-matrix.yml
-  #   parameters:
-  #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-  #     buildConfig: release
-  #     runtimeFlavor: mono
-  #     platforms:
-  #     - ios_arm64
-  #     jobParameters:
-  #       buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-  #       nameSuffix: iOSMono
-  #       isOfficialBuild: false
-  #       extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-sample-apps.yml
-  #       extraStepsParameters:
-  #         rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-  #         includeRootFolder: true
-  #         displayName: iOS Mono Artifacts
-  #         artifactName: iOSMonoarm64
-  #         archiveExtension: '.tar.gz'
-  #         archiveType: tar
-  #         tarCompression: gz
+  # build mono iOS scenarios
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - ios_arm64
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        nameSuffix: iOSMono
+        isOfficialBuild: false
+        extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-sample-apps.yml
+        extraStepsParameters:
+          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+          includeRootFolder: true
+          displayName: iOS Mono Artifacts
+          artifactName: iOSMonoarm64
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz
 
   # # build NativeAOT iOS scenarios
   # - template: /eng/pipelines/common/platform-matrix.yml
@@ -166,22 +166,22 @@ jobs:
   #       iOSLlvmBuild: False
   #       iOSStripSymbols: False
 
-  # - template: /eng/pipelines/common/platform-matrix.yml
-  #   parameters:
-  #     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-  #     buildConfig: release
-  #     runtimeFlavor: mono
-  #     platforms:
-  #       - osx_x64
-  #     jobParameters:
-  #       testGroup: perf
-  #       runtimeType: iOSMono
-  #       projectFile: ios_scenarios.proj
-  #       runKind: ios_scenarios
-  #       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-  #       logicalmachine: 'perfiphone12mini'
-  #       iOSLlvmBuild: False
-  #       iOSStripSymbols: True
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+        - osx_x64
+      jobParameters:
+        testGroup: perf
+        runtimeType: iOSMono
+        projectFile: ios_scenarios.proj
+        runKind: ios_scenarios
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perfiphone12mini'
+        iOSLlvmBuild: False
+        iOSStripSymbols: True
 
   # - template: /eng/pipelines/common/platform-matrix.yml
   #   parameters:
@@ -389,23 +389,23 @@ jobs:
   #       runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
   #       logicalmachine: 'perfowl'
 
-  # run coreclr crossgen perf job
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: coreclr
-      platforms:
-      - linux_x64
-      - windows_x64
-      - windows_x86
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        projectFile: crossgen_perf.proj
-        runKind: crossgen_scenarios
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        logicalmachine: 'perftiger'
+  # # run coreclr crossgen perf job
+  # - template: /eng/pipelines/common/platform-matrix.yml
+  #   parameters:
+  #     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+  #     buildConfig: release
+  #     runtimeFlavor: coreclr
+  #     platforms:
+  #     - linux_x64
+  #     - windows_x64
+  #     - windows_x86
+  #     jobParameters:
+  #       testGroup: perf
+  #       liveLibrariesBuildConfig: Release
+  #       projectFile: crossgen_perf.proj
+  #       runKind: crossgen_scenarios
+  #       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+  #       logicalmachine: 'perftiger'
 
   # # build mono runtime packs
   # - template: /eng/pipelines/common/platform-matrix.yml
