@@ -54,11 +54,11 @@ namespace System.IO
                 try
                 {
                     using SafeFileHandle? dstHandle = SafeFileHandle.Open(destFullPath, FileMode.Open, FileAccess.ReadWrite,
-                        FileShare.None, FileOptions.None, out bool wasSymlink, preallocationSize: 0, createOpenException: CreateOpenExceptionForCopyFile);
+                        FileShare.None, FileOptions.None, preallocationSize: 0, out bool wasSymlink, createOpenException: CreateOpenExceptionForCopyFile);
                     if (wasSymlink)
                     {
                         // Don't try if it's a symlink.
-                        return false;
+                        return;
                     }
                     else
                     {
