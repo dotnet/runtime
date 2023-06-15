@@ -79,7 +79,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 8, 9, CompareOptions.OrdinalIgnoreCase, -1, 0 };
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 8, 9, CompareOptions.Ordinal, -1, 0 };
             yield return new object[] { s_invariantCompare, "FooBar", "Foo\u0400Bar", 5, 6, CompareOptions.Ordinal, -1, 0 };
-            yield return new object[] { s_invariantCompare, "TestFooBA\u0300R", "FooB\u00C0R", 10, 11, supportedIgnoreNonSpaceOption, 4, PlatformDetection.IsHybridGlobalizationOnOSX ? 6 : 7 }; // TODO: check this for OSX
+            yield return new object[] { s_invariantCompare, "TestFooBA\u0300R", "FooB\u00C0R", 10, 11, supportedIgnoreNonSpaceOption, 4, 7 };
             yield return new object[] { s_invariantCompare, "o\u0308", "o", 1, 2, CompareOptions.None, -1, 0 };
 
             if (PlatformDetection.IsHybridGlobalizationOnBrowser)
@@ -160,17 +160,14 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, source, "u\u0308", 25, 18, CompareOptions.Ordinal, 9, 2 };
             yield return new object[] { s_invariantCompare, source, '\u00DC', 25, 18, CompareOptions.Ordinal, 24, 1 };
             yield return new object[] { s_invariantCompare, source, '\u00FC', 25, 18, CompareOptions.Ordinal, -1, 0 };
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
-            {
-                yield return new object[] { s_invariantCompare, source, "U\u0308", 25, 18, CompareOptions.None, PlatformDetection.IsHybridGlobalizationOnOSX ? 23 : 24, 1 };
-                yield return new object[] { s_invariantCompare, source, "u\u0308", 25, 18, CompareOptions.None, 9, 2 };
-                yield return new object[] { s_invariantCompare, source, '\u00DC', 25, 18, CompareOptions.None, 24, 1 };
-                yield return new object[] { s_invariantCompare, source, '\u00FC', 25, 18, CompareOptions.None, 9, 2 };
-                yield return new object[] { s_invariantCompare, source, "U\u0308", 25, 18, CompareOptions.IgnoreCase, 24, 1 };
-                yield return new object[] { s_invariantCompare, source, "u\u0308", 25, 18, CompareOptions.IgnoreCase, 24, 1 };
-                yield return new object[] { s_invariantCompare, source, '\u00DC', 25, 18, CompareOptions.IgnoreCase, 24, 1 };
-                yield return new object[] { s_invariantCompare, source, '\u00FC', 25, 18, CompareOptions.IgnoreCase, 24, 1 };
-            }
+            yield return new object[] { s_invariantCompare, source, "U\u0308", 25, 18, CompareOptions.None, 24, 1 };
+            yield return new object[] { s_invariantCompare, source, "u\u0308", 25, 18, CompareOptions.None, 9, 2 };
+            yield return new object[] { s_invariantCompare, source, '\u00DC', 25, 18, CompareOptions.None, 24, 1 };
+            yield return new object[] { s_invariantCompare, source, '\u00FC', 25, 18, CompareOptions.None, 9, 2 };
+            yield return new object[] { s_invariantCompare, source, "U\u0308", 25, 18, CompareOptions.IgnoreCase, 24, 1 };
+            yield return new object[] { s_invariantCompare, source, "u\u0308", 25, 18, CompareOptions.IgnoreCase, 24, 1 };
+            yield return new object[] { s_invariantCompare, source, '\u00DC', 25, 18, CompareOptions.IgnoreCase, 24, 1 };
+            yield return new object[] { s_invariantCompare, source, '\u00FC', 25, 18, CompareOptions.IgnoreCase, 24, 1 };
         }
 
         [Theory]

@@ -19,6 +19,21 @@ typedef enum
     StringSort = 536870912,
 } CompareOptions;
 
+static NSLocale* GetCurrentLocale(const uint16_t* localeName,int32_t lNameLength)
+{
+    NSLocale *currentLocale;
+    if(localeName == NULL || lNameLength == 0)
+    {
+        currentLocale = [NSLocale systemLocale];
+    }
+    else
+    {
+        NSString *locName = [NSString stringWithCharacters: localeName length: lNameLength];
+        currentLocale = [NSLocale localeWithLocaleIdentifier:locName];
+    }
+    return currentLocale;
+}
+
 static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(int32_t comparisonOptions)
 {
     int32_t supportedOptions = None | IgnoreCase | IgnoreNonSpace | IgnoreWidth | StringSort;
@@ -48,17 +63,7 @@ CompareString
 int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName, int32_t lNameLength, const uint16_t* lpSource, int32_t cwSourceLength, 
                                                 const uint16_t* lpTarget, int32_t cwTargetLength, int32_t comparisonOptions)
 {    
-    NSLocale *currentLocale;
-    if(localeName == NULL || lNameLength == 0)
-    {
-        currentLocale = [NSLocale systemLocale];
-    }
-    else
-    {
-        NSString *locName = [NSString stringWithCharacters: localeName length: lNameLength];
-        currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
-    }
-
+    NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
     NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
     NSString *sourceStrComposed = sourceString.precomposedStringWithCanonicalMapping;
     NSString *targetString = [NSString stringWithCharacters: lpTarget length: cwTargetLength];
@@ -77,47 +82,44 @@ int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName, int3
                               locale:currentLocale];
 }
 
-NSString* ComposeString(NSString* str)
+static NSString* RemoveWeightlessCharacters(NSString* source)
 {
-    NSString* source = str.precomposedStringWithCanonicalMapping;
-    // Below we are removing weightless characters from the string to get ICU behavior.
-    NSString* zarb = @"\u200d";
-    NSString* nullChar = @"\0";
-    // Remove zero width joiner
-    NSString* result = [source stringByReplacingOccurrencesOfString:zarb withString:@""];
-    // Remove null characters
-    result = [result stringByReplacingOccurrencesOfString:nullChar withString:@""];
+    NSError *error = nil;
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"[\u200B-\u200D\uFEFF\0]" options:NSRegularExpressionCaseInsensitive error:&error];
 
-    return result;
+    if (error != nil)
+        return source;
+
+    NSString *modifiedString = [regex stringByReplacingMatchesInString:source options:0 range:NSMakeRange(0, [source length]) withTemplate:@""];
+
+    return modifiedString;
+}
+
+// Remove weightless characters and normalize string with form C
+static NSString* ComposeString(NSString* source)
+{
+    return RemoveWeightlessCharacters(source.precomposedStringWithCanonicalMapping);
 }
 
 /*
-Function:
-IndexOf
+Function: IndexOf
+Find detailed explanation how this function works in https://github.com/dotnet/runtime/blob/main/docs/design/features/globalization-hybrid-mode.md
 */
 Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNameLength, const uint16_t* lpTarget, int32_t cwTargetLength,
                                         const uint16_t* lpSource, int32_t cwSourceLength, int32_t comparisonOptions, int32_t fromBeginning)
 {
     assert(cwTargetLength >= 0);
-    Range result = {-2, 0};
+    Range result = {-1, 0};
 
-    NSLocale *currentLocale;
-    if (localeName == NULL || lNameLength == 0)
-    {
-        currentLocale = [NSLocale systemLocale];
-    }
-    else
-    {
-        NSString *locName = [NSString stringWithCharacters: localeName length: lNameLength];
-        currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
-    }
-
+    NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
     NSString *searchString = [NSString stringWithCharacters: lpTarget length: cwTargetLength];
-    NSString *searchStrComposed = ComposeString(searchString);
+    NSString *searchStrComposed = RemoveWeightlessCharacters(searchString);
+    NSString *searchStrPrecomposed = searchStrComposed.precomposedStringWithCanonicalMapping;
     NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
-    NSString *sourceStrComposed = ComposeString(sourceString);
+    NSString *sourceStrComposed = RemoveWeightlessCharacters(sourceString);
+    NSString *sourceStrPrecomposed = sourceStrComposed.precomposedStringWithCanonicalMapping;
 
-    if (searchStrComposed.length == 0)
+    if (sourceStrComposed.length == 0 || searchStrComposed.length == 0)
     {
        result.location = fromBeginning ? 0 : sourceString.length;
        return result;
@@ -131,20 +133,78 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
     // last index
     if (!fromBeginning)
         options |= NSBackwardsSearch;
-    
+
+    // check if source contains search string
+    rangeOfReceiverToSearch = NSMakeRange(0, sourceStrPrecomposed.length);
+    NSRange containsRange = [sourceStrPrecomposed rangeOfString:searchStrPrecomposed
+                                    options:options
+                                    range:rangeOfReceiverToSearch
+                                    locale:currentLocale];
+
+    if (containsRange.location == NSNotFound)
+    {
+        result.location = -1;
+        return result;
+    }
+
+    // localizedStandardRangeOfString is performing a case and diacritic insensitive, locale-aware search and finding first occurance.
+    if ((comparisonOptions & IgnoreCase) && lNameLength == 0 && fromBeginning)
+    {      
+        NSRange localizedStandartRange = [sourceStrComposed localizedStandardRangeOfString:searchStrComposed];
+        if (localizedStandartRange.location != NSNotFound)
+        {
+            result.location = localizedStandartRange.location;
+            result.length = localizedStandartRange.length;                    
+            return result;
+        }       
+    }
+   
     NSRange nsRange = [sourceStrComposed rangeOfString:searchStrComposed
-                                         options:options
-                                         range:rangeOfReceiverToSearch
-                                         locale:currentLocale];
-    
+                                        options:options
+                                        range:rangeOfReceiverToSearch
+                                        locale:currentLocale];
+
     if (nsRange.location != NSNotFound)
     {   
         result.location = nsRange.location;
         result.length = nsRange.length;
+        if (!(!fromBeginning && (comparisonOptions & IgnoreCase)))
+            return result;
+    }
+    
+    rangeOfReceiverToSearch = NSMakeRange(0, sourceStrComposed.length);
+    // Normalize search string with Form C
+    NSRange preComposedRange = [sourceStrComposed rangeOfString:searchStrPrecomposed
+                                options:options
+                                range:rangeOfReceiverToSearch
+                                locale:currentLocale];
+
+    if (preComposedRange.location != NSNotFound)
+    {
+        int32_t comparisonResult = (int32_t)result.location > (int32_t)preComposedRange.location;
+        int32_t ignoreCase = comparisonOptions & IgnoreCase;
+        if ((int32_t)result.location > (int32_t)preComposedRange.location && !fromBeginning && (comparisonOptions & IgnoreCase))
+        {
+            return result;
+        }
+        result.location = preComposedRange.location;
+        result.length = preComposedRange.length;
     }
     else
     {
-        result.location = -1;
+        // Normalize search string with Form D
+        NSString *searchStrDecomposed = searchStrComposed.decomposedStringWithCanonicalMapping;
+        NSRange deComposedRange = [sourceStrComposed rangeOfString:searchStrDecomposed
+                                options:options
+                                range:rangeOfReceiverToSearch
+                                locale:currentLocale];
+
+        if (deComposedRange.location != NSNotFound)
+        {
+            result.location = deComposedRange.location;
+            result.length = deComposedRange.length;                    
+            return result;
+        }
     }
     
     return result;
@@ -157,17 +217,7 @@ int32_t GlobalizationNative_StartsWithNative(const uint16_t* localeName, int32_t
                                              const uint16_t* lpSource, int32_t cwSourceLength, int32_t comparisonOptions)
                         
 {
-    NSLocale *currentLocale;
-    if(localeName == NULL || lNameLength == 0)
-    {
-        currentLocale = [NSLocale systemLocale];
-    }
-    else
-    {
-        NSString *locName = [NSString stringWithCharacters: localeName length: lNameLength];
-        currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
-    }
-
+    NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
     NSString *prefixString = [NSString stringWithCharacters: lpPrefix length: cwPrefixLength];
     NSString *prefixStrComposed = ComposeString(prefixString);
     NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
@@ -194,17 +244,7 @@ int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t l
                                            const uint16_t* lpSource, int32_t cwSourceLength, int32_t comparisonOptions)
                         
 {
-    NSLocale *currentLocale;
-    if(localeName == NULL || lNameLength == 0)
-    {
-        currentLocale = [NSLocale systemLocale];
-    }
-    else
-    {
-        NSString *locName = [NSString stringWithCharacters: localeName length: lNameLength];
-        currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
-    }
-
+    NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
     NSString *suffixString = [NSString stringWithCharacters: lpSuffix length: cwSuffixLength];
     NSString *suffixStrComposed = ComposeString(suffixString);
     NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];

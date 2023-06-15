@@ -52,7 +52,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\u00C0nimal", "a\u0300", CompareOptions.Ordinal, false, 0 };
             yield return new object[] { s_invariantCompare, "\u00C0nimal", "a\u0300", CompareOptions.OrdinalIgnoreCase, false, 0 };
             yield return new object[] { s_invariantCompare, "FooBar", "Foo\u0400Bar", CompareOptions.Ordinal, false, 0 };
-            yield return new object[] { s_invariantCompare, "FooBA\u0300R", "FooB\u00C0R", supportedIgnoreNonSpaceOption, true, 7 };  
+            yield return new object[] { s_invariantCompare, "FooBA\u0300R", "FooB\u00C0R", supportedIgnoreNonSpaceOption, true, 7 };
             yield return new object[] { s_invariantCompare, "o\u0308", "o", CompareOptions.None, false, 0 };
             yield return new object[] { s_invariantCompare, "o\u0308", "o", CompareOptions.Ordinal, true, 1 };
             yield return new object[] { s_invariantCompare, "o\u0000\u0308", "o", CompareOptions.None, true, 1 };
