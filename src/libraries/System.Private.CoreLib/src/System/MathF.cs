@@ -250,6 +250,7 @@ namespace System
             return Math.Max(x, y);
         }
 
+        [Intrinsic]
         public static float MaxMagnitude(float x, float y)
         {
             // This matches the IEEE 754:2019 `maximumMagnitude` function
@@ -281,6 +282,7 @@ namespace System
             return Math.Min(x, y);
         }
 
+        [Intrinsic]
         public static float MinMagnitude(float x, float y)
         {
             // This matches the IEEE 754:2019 `minimumMagnitude` function

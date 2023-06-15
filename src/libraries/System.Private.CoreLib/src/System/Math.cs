@@ -995,6 +995,7 @@ namespace System
             return (val1 >= val2) ? val1 : val2;
         }
 
+        [Intrinsic]
         public static double MaxMagnitude(double x, double y)
         {
             // This matches the IEEE 754:2019 `maximumMagnitude` function
@@ -1144,6 +1145,7 @@ namespace System
             return (val1 <= val2) ? val1 : val2;
         }
 
+        [Intrinsic]
         public static double MinMagnitude(double x, double y)
         {
             // This matches the IEEE 754:2019 `minimumMagnitude` function

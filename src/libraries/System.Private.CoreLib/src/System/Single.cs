@@ -948,6 +948,7 @@ namespace System
         public static float Max(float x, float y) => MathF.Max(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        [Intrinsic]
         public static float MaxNumber(float x, float y)
         {
             // This matches the IEEE 754:2019 `maximumNumber` function
@@ -974,6 +975,7 @@ namespace System
         public static float Min(float x, float y) => MathF.Min(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        [Intrinsic]
         public static float MinNumber(float x, float y)
         {
             // This matches the IEEE 754:2019 `minimumNumber` function
@@ -1108,9 +1110,11 @@ namespace System
         static bool INumberBase<float>.IsZero(float value) => (value == 0);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        [Intrinsic]
         public static float MaxMagnitude(float x, float y) => MathF.MaxMagnitude(x, y);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        [Intrinsic]
         public static float MaxMagnitudeNumber(float x, float y)
         {
             // This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
@@ -1136,9 +1140,11 @@ namespace System
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        [Intrinsic]
         public static float MinMagnitude(float x, float y) => MathF.MinMagnitude(x, y);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        [Intrinsic]
         public static float MinMagnitudeNumber(float x, float y)
         {
             // This matches the IEEE 754:2019 `minimumMagnitudeNumber` function

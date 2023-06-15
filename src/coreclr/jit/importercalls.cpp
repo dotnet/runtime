@@ -3399,306 +3399,85 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
-#if defined(TARGET_ARM64)
-            // ARM64 has fmax/fmin which are IEEE754:2019 minimum/maximum compatible
             case NI_System_Math_Max:
-            case NI_System_Math_Min:
-#endif
-
-#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-            case NI_System_Math_Max:
-            case NI_System_Math_Min:
             {
-                assert(varTypeIsFloating(callType));
-                assert(sig->numArgs == 2);
+                bool isMax       = true;
+                bool isMagnitude = false;
+                bool isNumber    = false;
 
-                GenTreeDblCon* cnsNode   = nullptr;
-                GenTree*       otherNode = nullptr;
-
-                GenTree* op2 = impStackTop().val;
-                GenTree* op1 = impStackTop(1).val;
-
-                if (op2->IsCnsFltOrDbl())
-                {
-                    cnsNode   = op2->AsDblCon();
-                    otherNode = op1;
-                }
-                else if (op1->IsCnsFltOrDbl())
-                {
-                    cnsNode   = op1->AsDblCon();
-                    otherNode = op2;
-                }
-
-                if (cnsNode == nullptr)
-                {
-                    if (!compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
-                    {
-                        // no constant node and no AVX512DQ.VL support, nothing to do
-                        break;
-                    }
-
-                    // We are constructing a chain of intrinsics similar to:
-                    //    var op1 = Vector128.CreateScalarUnsafe(x);
-                    //    var op2 = Vector128.CreateScalarUnsafe(y);
-                    //
-                    //    var tmp = Avx512DQ.RangeScalar(op1, op2, imm8);
-                    //    var tbl = Vector128.CreateScalarUnsafe(0x00);
-                    //
-                    //    tmp = Avx512F.FixupScalar(tmp, op2, tbl, 0x00);
-                    //    tmp = Avx512F.FixupScalar(tmp, op1, tbl, 0x00);
-                    //
-                    //    return tmp.ToScalar();
-
-                    // RangeScalar operates by default almost as MaxNumber or MinNumber
-                    // but, it propagates sNaN and does not propagate qNaN. So we need
-                    // an additional fixup to ensure we propagate qNaN as well.
-
-                    uint8_t imm8;
-
-                    if (ni == NI_System_Math_Max)
-                    {
-                        // 0b01_00: Sign(CompareResult), MaxValue
-                        imm8 = 0x04;
-                    }
-                    else
-                    {
-                        assert(ni == NI_System_Math_Min);
-
-                        // 0b01_01: Sign(CompareResult), MinValue
-                        imm8 = 0x05;
-                    }
-
-                    GenTree* op3 = gtNewIconNode(imm8);
-                    GenTree* op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, impPopStack().val, callJitType, 16);
-                    GenTree* op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, impPopStack().val, callJitType, 16);
-
-                    GenTree* op2Clone;
-                    op2 =
-                        impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning op2 for Math.Max/Min"));
-
-                    GenTree* op1Clone;
-                    op1 =
-                        impCloneExpr(op1, &op1Clone, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning op1 for Math.Max/Min"));
-
-                    GenTree* tmp =
-                        gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_AVX512DQ_RangeScalar, callJitType, 16);
-
-                    GenTreeVecCon* tbl = gtNewVconNode(TYP_SIMD16);
-
-                    // FixupScalar(left, right, table, control) computes the input type of right
-                    // adjusts it based on the table and then returns
-                    //
-                    // In our case, left is going to be the result of the RangeScalar operation
-                    // and right is going to be op1 or op2. In the case op1/op2 is QNaN or SNaN
-                    // we want to preserve it instead. Otherwise we want to preserve the original
-                    // result computed by RangeScalar.
-                    //
-                    // If both inputs are NaN, then we'll end up taking op1 by virtue of it being
-                    // the latter fixup.
-                    //
-                    // QNAN: 0b0001:  Preserve right
-                    // SNAN: 0b0001
-                    // ZERO: 0b0000:  Preserve left
-                    // +ONE: 0b0000
-                    // -INF: 0b0000
-                    // +INF: 0b0000
-                    // -VAL: 0b0000
-                    // +VAL: 0b0000
-                    tbl->gtSimdVal.i32[0] = 0x11;
-
-                    tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp, op2Clone, tbl, NI_AVX512F_FixupScalar, callJitType,
-                                                   16);
-                    tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp, op1Clone, tbl, NI_AVX512F_FixupScalar, callJitType,
-                                                   16);
-
-                    retNode = gtNewSimdHWIntrinsicNode(callType, tmp, NI_Vector128_ToScalar, callJitType, 16);
-                    break;
-                }
-
-                if (otherNode->IsCnsFltOrDbl())
-                {
-                    // both are constant, we can fold this operation completely. Pop both peeked values
-
-                    if (ni == NI_System_Math_Max)
-                    {
-                        cnsNode->SetDconValue(
-                            FloatingPointUtils::maximum(cnsNode->DconValue(), otherNode->AsDblCon()->DconValue()));
-                    }
-                    else
-                    {
-                        assert(ni == NI_System_Math_Min);
-                        cnsNode->SetDconValue(
-                            FloatingPointUtils::minimum(cnsNode->DconValue(), otherNode->AsDblCon()->DconValue()));
-                    }
-
-                    retNode = cnsNode;
-
-                    impPopStack();
-                    impPopStack();
-                    DEBUG_DESTROY_NODE(otherNode);
-
-                    break;
-                }
-
-                // only one is constant, we can fold in specialized scenarios
-
-                if (cnsNode->IsFloatNaN())
-                {
-                    impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("spill side effects before propagating NaN"));
-
-                    // maxsd, maxss, minsd, and minss all return op2 if either is NaN
-                    // we require NaN to be propagated so ensure the known NaN is op2
-
-                    impPopStack();
-                    impPopStack();
-                    DEBUG_DESTROY_NODE(otherNode);
-
-                    retNode = cnsNode;
-                    break;
-                }
-
-                if (!compOpportunisticallyDependsOn(InstructionSet_SSE2))
-                {
-                    break;
-                }
-
-                bool needsFixup = false;
-
-                if (ni == NI_System_Math_Max)
-                {
-                    // maxsd, maxss return op2 if both inputs are 0 of either sign
-                    // we require +0 to be greater than -0, so we can't handle if
-                    // the known constant is +0. This is because if the unknown value
-                    // is -0, we'd need the cns to be op2. But if the unknown value
-                    // is NaN, we'd need the cns to be op1 instead.
-                    //
-                    // However, if AVX512DQ is supported we have access to vfixupimmsd
-                    // and vfixupimmss. This can be used to account for +0 vs -0.
-
-                    if (cnsNode->IsFloatPositiveZero())
-                    {
-                        if (!compOpportunisticallyDependsOn(InstructionSet_AVX512F))
-                        {
-                            break;
-                        }
-                        needsFixup = true;
-                    }
-
-                    // Given the checks, op1 can safely be the cns and op2 the other node
-
-                    ni = (callType == TYP_DOUBLE) ? NI_SSE2_Max : NI_SSE_Max;
-
-                    // one is constant and we know its something we can handle, so pop both peeked values
-
-                    op1 = cnsNode;
-                    op2 = otherNode;
-                }
-                else
-                {
-                    assert(ni == NI_System_Math_Min);
-
-                    // minsd, minss return op2 if both inputs are 0 of either sign
-                    // we require -0 to be lesser than +0, so we can't handle if
-                    // the known constant is -0. This is because if the unknown value
-                    // is +0, we'd need the cns to be op2. But if the unknown value
-                    // is NaN, we'd need the cns to be op1 instead.
-
-                    if (cnsNode->IsFloatNegativeZero())
-                    {
-                        if (!compOpportunisticallyDependsOn(InstructionSet_AVX512F))
-                        {
-                            break;
-                        }
-                        needsFixup = true;
-                    }
-
-                    // Given the checks, op1 can safely be the cns and op2 the other node
-
-                    ni = (callType == TYP_DOUBLE) ? NI_SSE2_Min : NI_SSE_Min;
-
-                    // one is constant and we know its something we can handle, so pop both peeked values
-
-                    op1 = cnsNode;
-                    op2 = otherNode;
-                }
-
-                assert(op1->IsCnsFltOrDbl() && !op2->IsCnsFltOrDbl());
-
-                impPopStack();
-                impPopStack();
-
-                GenTreeVecCon* vecCon = gtNewVconNode(TYP_SIMD16);
-
-                if (callJitType == CORINFO_TYPE_FLOAT)
-                {
-                    vecCon->gtSimdVal.f32[0] = (float)op1->AsDblCon()->DconValue();
-                }
-                else
-                {
-                    vecCon->gtSimdVal.f64[0] = op1->AsDblCon()->DconValue();
-                }
-
-                op1 = vecCon;
-                op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op2, callJitType, 16);
-
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, ni, callJitType, 16);
-
-                if (needsFixup)
-                {
-                    GenTree* op2Clone;
-                    op2 =
-                        impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning op2 for Math.Max/Min"));
-
-                    retNode->AsHWIntrinsic()->Op(2) = op2;
-
-                    GenTreeVecCon* tbl = gtNewVconNode(TYP_SIMD16);
-
-                    // FixupScalar(left, right, table, control) computes the input type of right
-                    // adjusts it based on the table and then returns
-                    //
-                    // In our case, left is going to be the result of the RangeScalar operation
-                    // and right is going to be op1 or op2. In the case op1/op2 is QNaN or SNaN
-                    // we want to preserve it instead. Otherwise we want to preserve the original
-                    // result computed by RangeScalar.
-                    //
-                    // If both inputs are NaN, then we'll end up taking op1 by virtue of it being
-                    // the latter fixup.
-
-                    if (ni == NI_System_Math_Max)
-                    {
-                        // QNAN: 0b0000:  Preserve left
-                        // SNAN: 0b0000
-                        // ZERO: 0b1000:  +0
-                        // +ONE: 0b0000
-                        // -INF: 0b0000
-                        // +INF: 0b0000
-                        // -VAL: 0b0000
-                        // +VAL: 0b0000
-                        tbl->gtSimdVal.i32[0] = 0x0800;
-                    }
-                    else
-                    {
-                        assert(ni == NI_System_Math_Min);
-
-                        // QNAN: 0b0000:  Preserve left
-                        // SNAN: 0b0000
-                        // ZERO: 0b0111:  -0
-                        // +ONE: 0b0000
-                        // -INF: 0b0000
-                        // +INF: 0b0000
-                        // -VAL: 0b0000
-                        // +VAL: 0b0000
-                        tbl->gtSimdVal.i32[0] = 0x0700;
-                    }
-
-                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, retNode, op2Clone, tbl, NI_AVX512F_FixupScalar,
-                                                       callJitType, 16);
-                }
-
-                retNode = gtNewSimdHWIntrinsicNode(callType, retNode, NI_Vector128_ToScalar, callJitType, 16);
+                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
                 break;
             }
-#endif
+
+            case NI_System_Math_Min:
+            {
+                bool isMax       = false;
+                bool isMagnitude = false;
+                bool isNumber    = false;
+
+                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
+                break;
+            }
+
+            case NI_System_Math_MaxMagnitude:
+            {
+                bool isMax       = true;
+                bool isMagnitude = true;
+                bool isNumber    = false;
+
+                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
+                break;
+            }
+
+            case NI_System_Math_MinMagnitude:
+            {
+                bool isMax       = false;
+                bool isMagnitude = true;
+                bool isNumber    = false;
+
+                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
+                break;
+            }
+
+            case NI_System_Math_MaxMagnitudeNumber:
+            {
+                bool isMax       = true;
+                bool isMagnitude = true;
+                bool isNumber    = true;
+
+                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
+                break;
+            }
+
+            case NI_System_Math_MinMagnitudeNumber:
+            {
+                bool isMax       = false;
+                bool isMagnitude = true;
+                bool isNumber    = true;
+
+                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
+                break;
+            }
+
+            case NI_System_Math_MaxNumber:
+            {
+                bool isMax       = true;
+                bool isMagnitude = false;
+                bool isNumber    = true;
+
+                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
+                break;
+            }
+
+            case NI_System_Math_MinNumber:
+            {
+                bool isMax       = false;
+                bool isMagnitude = false;
+                bool isNumber    = true;
+
+                retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
+                break;
+            }
 
             case NI_System_Math_Pow:
             case NI_System_Math_Round:
@@ -6859,7 +6638,13 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Log2:
         case NI_System_Math_Log10:
         case NI_System_Math_Max:
+        case NI_System_Math_MaxMagnitude:
+        case NI_System_Math_MaxMagnitudeNumber:
+        case NI_System_Math_MaxNumber:
         case NI_System_Math_Min:
+        case NI_System_Math_MinMagnitude:
+        case NI_System_Math_MinMagnitudeNumber:
+        case NI_System_Math_MinNumber:
         case NI_System_Math_Pow:
         case NI_System_Math_Round:
         case NI_System_Math_Sin:
@@ -8133,6 +7918,473 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
 }
 
 //------------------------------------------------------------------------
+// impMinMaxIntrinsic: Imports a min or max intrinsic
+//
+// Arguments:
+//   method        - The handle of the method being imported
+//   callType      - The underlying type for the call
+//   intrinsicName - The intrinsic being imported
+//   tailCall      - true if the method is a tail call; otherwise false
+//   isMax         - true if the intrinsic computes the max; false for the min
+//   isMagnitude   - true if the intrinsic compares using the absolute value of the inputs
+//   isNumber      - true if the intrinsic propagates the number; false for NaN
+//
+GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
+                                      CORINFO_SIG_INFO*     sig,
+                                      CorInfoType           callJitType,
+                                      NamedIntrinsic        intrinsicName,
+                                      bool                  tailCall,
+                                      bool                  isMax,
+                                      bool                  isMagnitude,
+                                      bool                  isNumber)
+{
+    var_types callType = JITtype2varType(callJitType);
+
+    assert(varTypeIsFloating(callType));
+    assert(sig->numArgs == 2);
+
+    GenTreeDblCon* cnsNode   = nullptr;
+    GenTree*       otherNode = nullptr;
+
+    GenTree* op2 = impStackTop().val;
+    GenTree* op1 = impStackTop(1).val;
+
+    if (op2->IsCnsFltOrDbl())
+    {
+        cnsNode   = op2->AsDblCon();
+        otherNode = op1;
+    }
+    else if (op1->IsCnsFltOrDbl())
+    {
+        cnsNode   = op1->AsDblCon();
+        otherNode = op2;
+    }
+
+    if (cnsNode != nullptr)
+    {
+        if (otherNode->IsCnsFltOrDbl())
+        {
+            // both are constant, we can fold this operation completely. Pop both peeked values
+
+            double x = cnsNode->DconValue();
+            double y = otherNode->AsDblCon()->DconValue();
+            double z;
+
+            if (isMax)
+            {
+                if (isMagnitude)
+                {
+                    if (isNumber)
+                    {
+                        z = FloatingPointUtils::maximumMagnitudeNumber(x, y);
+                    }
+                    else
+                    {
+                        z = FloatingPointUtils::maximumMagnitude(x, y);
+                    }
+                }
+                else if (isNumber)
+                {
+                    z = FloatingPointUtils::maximumNumber(x, y);
+                }
+                else
+                {
+                    z = FloatingPointUtils::maximum(x, y);
+                }
+            }
+            else
+            {
+                if (isMagnitude)
+                {
+                    if (isNumber)
+                    {
+                        z = FloatingPointUtils::minimumMagnitudeNumber(x, y);
+                    }
+                    else
+                    {
+                        z = FloatingPointUtils::minimumMagnitude(x, y);
+                    }
+                }
+                else if (isNumber)
+                {
+                    z = FloatingPointUtils::minimumNumber(x, y);
+                }
+                else
+                {
+                    z = FloatingPointUtils::minimum(x, y);
+                }
+            }
+            cnsNode->SetDconValue(z);
+
+            impPopStack();
+            impPopStack();
+
+            DEBUG_DESTROY_NODE(otherNode);
+            return cnsNode;
+        }
+
+        // only one is constant, we can fold in specialized scenarios
+
+        if (cnsNode->IsFloatNaN())
+        {
+            impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("spill side effects before propagating NaN"));
+
+            impPopStack();
+            impPopStack();
+
+            if (isNumber)
+            {
+                DEBUG_DESTROY_NODE(cnsNode);
+                return otherNode;
+            }
+            else
+            {
+                DEBUG_DESTROY_NODE(otherNode);
+                return cnsNode;
+            }
+        }
+
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+        if (!isMagnitude && compOpportunisticallyDependsOn(InstructionSet_SSE2))
+        {
+            bool needsFixup = false;
+            bool canHandle  = false;
+
+            if (isMax)
+            {
+                // maxsd, maxss return op2 if both inputs are 0 of either sign
+                // we require +0 to be greater than -0 we also require NaN to
+                // not be propagated for isNumber and to be propagated otherwise.
+                //
+                // This means for isNumber we want to do `max other, cns` and
+                // can only handle cns being -0 if Avx512F is supported. This is
+                // because if other was NaN, we want to return the non-NaN cns.
+                // But if cns was -0 and other was +0 we'd want to return +0 and
+                // so need to be able to fixup the result.
+                //
+                // For !isNumber we have the inverse and want `max cns, other` and
+                // can only handle cns being +0 if Avx512F is supported. This is
+                // because if other was NaN, we want to return other and if cns
+                // was +0 and other was -0 we'd want to return +0 and so need
+                // so need to be able to fixup the result.
+
+                if (isNumber)
+                {
+                    needsFixup = cnsNode->IsFloatNegativeZero();
+                }
+                else
+                {
+                    needsFixup = cnsNode->IsFloatPositiveZero();
+                }
+
+                if (!needsFixup || compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                {
+                    // Given the checks, op1 can safely be the cns and op2 the other node
+
+                    intrinsicName = (callType == TYP_DOUBLE) ? NI_SSE2_Max : NI_SSE_Max;
+
+                    // one is constant and we know its something we can handle, so pop both peeked values
+
+                    op1 = cnsNode;
+                    op2 = otherNode;
+
+                    canHandle = true;
+                }
+            }
+            else
+            {
+                // minsd, minss return op2 if both inputs are 0 of either sign
+                // we require -0 to be lesser than +0, we also require NaN to
+                // not be propagated for isNumber and to be propagated otherwise.
+                //
+                // This means for isNumber we want to do `min other, cns` and
+                // can only handle cns being +0 if Avx512F is supported. This is
+                // because if other was NaN, we want to return the non-NaN cns.
+                // But if cns was +0 and other was -0 we'd want to return -0 and
+                // so need to be able to fixup the result.
+                //
+                // For !isNumber we have the inverse and want `min cns, other` and
+                // can only handle cns being -0 if Avx512F is supported. This is
+                // because if other was NaN, we want to return other and if cns
+                // was -0 and other was +0 we'd want to return -0 and so need
+                // so need to be able to fixup the result.
+
+                if (isNumber)
+                {
+                    needsFixup = cnsNode->IsFloatNegativeZero();
+                }
+                else
+                {
+                    needsFixup = cnsNode->IsFloatPositiveZero();
+                }
+
+                if (!needsFixup || compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                {
+                    // Given the checks, op1 can safely be the cns and op2 the other node
+
+                    intrinsicName = (callType == TYP_DOUBLE) ? NI_SSE2_Min : NI_SSE_Min;
+
+                    // one is constant and we know its something we can handle, so pop both peeked values
+
+                    op1 = cnsNode;
+                    op2 = otherNode;
+
+                    canHandle = true;
+                }
+            }
+
+            if (canHandle)
+            {
+                assert(op1->IsCnsFltOrDbl() && !op2->IsCnsFltOrDbl());
+
+                impPopStack();
+                impPopStack();
+
+                GenTreeVecCon* vecCon = gtNewVconNode(TYP_SIMD16);
+
+                if (callJitType == CORINFO_TYPE_FLOAT)
+                {
+                    vecCon->gtSimdVal.f32[0] = static_cast<float>(op1->AsDblCon()->DconValue());
+                }
+                else
+                {
+                    vecCon->gtSimdVal.f64[0] = op1->AsDblCon()->DconValue();
+                }
+
+                op1 = vecCon;
+                op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op2, callJitType, 16);
+
+                GenTree* retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsicName, callJitType, 16);
+
+                if (needsFixup)
+                {
+                    GenTree* op2Clone;
+                    op2 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL,
+                                       nullptr DEBUGARG("Cloning non-constant for Math.Max/Min"));
+
+                    retNode->AsHWIntrinsic()->Op(2) = op2;
+
+                    GenTreeVecCon* tbl = gtNewVconNode(TYP_SIMD16);
+
+                    // FixupScalar(left, right, table, control) computes the input type of right
+                    // adjusts it based on the table and then returns
+                    //
+                    // In our case, left is going to be the result of the RangeScalar operation
+                    // and right is going to be op1 or op2. In the case op1/op2 is QNaN or SNaN
+                    // we want to preserve it instead. Otherwise we want to preserve the original
+                    // result computed by RangeScalar.
+                    //
+                    // If both inputs are NaN, then we'll end up taking op1 by virtue of it being
+                    // the latter fixup.
+
+                    if (isMax)
+                    {
+                        // QNAN: 0b0000:  Preserve left
+                        // SNAN: 0b0000
+                        // ZERO: 0b1000:  +0
+                        // +ONE: 0b0000
+                        // -INF: 0b0000
+                        // +INF: 0b0000
+                        // -VAL: 0b0000
+                        // +VAL: 0b0000
+                        tbl->gtSimdVal.i32[0] = 0x0800;
+                    }
+                    else
+                    {
+                        // QNAN: 0b0000:  Preserve left
+                        // SNAN: 0b0000
+                        // ZERO: 0b0111:  -0
+                        // +ONE: 0b0000
+                        // -INF: 0b0000
+                        // +INF: 0b0000
+                        // -VAL: 0b0000
+                        // +VAL: 0b0000
+                        tbl->gtSimdVal.i32[0] = 0x0700;
+                    }
+
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, retNode, op2Clone, tbl, NI_AVX512F_FixupScalar,
+                                                       callJitType, 16);
+                }
+
+                if (isNumber)
+                {
+                    std::swap(op1, op2);
+
+                    retNode->AsHWIntrinsic()->Op(1) = op2;
+                    retNode->AsHWIntrinsic()->Op(2) = op1;
+                }
+
+                return gtNewSimdHWIntrinsicNode(callType, retNode, NI_Vector128_ToScalar, callJitType, 16);
+            }
+        }
+#endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
+    }
+
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+    if (compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+    {
+        // We are constructing a chain of intrinsics similar to:
+        //    var op1 = Vector128.CreateScalarUnsafe(x);
+        //    var op2 = Vector128.CreateScalarUnsafe(y);
+        //
+        //    var tmp = Avx512DQ.RangeScalar(op1, op2, imm8);
+        //    var tbl = Vector128.CreateScalarUnsafe(0x00);
+        //
+        //    tmp = Avx512F.FixupScalar(tmp, op2, tbl, 0x00);
+        //    tmp = Avx512F.FixupScalar(tmp, op1, tbl, 0x00);
+        //
+        //    return tmp.ToScalar();
+
+        // RangeScalar operates by default almost as MaxNumber or MinNumber
+        // but, it propagates sNaN and does not propagate qNaN. So we need
+        // an additional fixup to ensure we propagate qNaN as well.
+
+        uint8_t imm8;
+
+        if (isMax)
+        {
+            if (isMagnitude)
+            {
+                // 0b01_11: Sign(CompareResult), Max-Abs Value
+                imm8 = 0x07;
+            }
+            else
+            {
+                // 0b01_01: Sign(CompareResult), Max Value
+                imm8 = 0x05;
+            }
+        }
+        else if (isMagnitude)
+        {
+            // 0b01_10: Sign(CompareResult), Min-Abs Value
+            imm8 = 0x06;
+        }
+        else
+        {
+            // 0b01_00: Sign(CompareResult), Min Value
+            imm8 = 0x04;
+        }
+
+        GenTree* op3 = gtNewIconNode(imm8);
+        GenTree* op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, impPopStack().val, callJitType, 16);
+        GenTree* op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, impPopStack().val, callJitType, 16);
+
+        GenTree* op2Clone;
+        op2 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning op2 for Math.Max/Min"));
+
+        GenTree* op1Clone;
+        op1 = impCloneExpr(op1, &op1Clone, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning op1 for Math.Max/Min"));
+
+        GenTree* tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_AVX512DQ_RangeScalar, callJitType, 16);
+
+        // FixupScalar(left, right, table, control) computes the input type of right
+        // adjusts it based on the table and then returns
+        //
+        // In our case, left is going to be the result of the RangeScalar operation,
+        // which is either sNaN or a normal value, and right is going to be op1 or op2.
+
+        GenTree* tbl1 = gtNewVconNode(TYP_SIMD16);
+        GenTree* tbl2;
+
+        // We currently have (commutative)
+        // * snan, snan = snan
+        // * snan, qnan = snan
+        // * snan, norm = snan
+        // * qnan, qnan = qnan
+        // * qnan, norm = norm
+        // * norm, norm = norm
+
+        if (isNumber)
+        {
+            // We need to fixup the case of:
+            // * snan, norm = snan
+            //
+            // Instead, it should be:
+            // * snan, norm = norm
+
+            // First look at op1 and op2 using op2 as the classification
+            //
+            // If op2 is norm, we take op2 (norm)
+            // If op2 is  nan, we take op1 ( nan or norm)
+            //
+            // Thus, if one input was norm the fixup is now norm
+
+            // QNAN: 0b0000:  Preserve left
+            // SNAN: 0b0000
+            // ZERO: 0b0001:  Preserve right
+            // +ONE: 0b0001
+            // -INF: 0b0001
+            // +INF: 0b0001
+            // -VAL: 0b0001
+            // +VAL: 0b0001
+            tbl1->AsVecCon()->gtSimdVal.i32[0] = 0x11111100;
+
+            // Next look at result and fixup using result as the classification
+            //
+            // If result is norm, we take the result (norm)
+            // If result is  nan, we take the fixup  ( nan or norm)
+            //
+            // Thus if either input was snan, we now have norm as expected
+            // Otherwise, the result was already correct
+
+            tbl1 = impCloneExpr(tbl1, &tbl2, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning tbl for Math.Max/Min"));
+
+            op1Clone =
+                gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Clone, op2Clone, tbl1, NI_AVX512F_FixupScalar, callJitType, 16);
+
+            tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Clone, tmp, tbl2, NI_AVX512F_FixupScalar, callJitType, 16);
+        }
+        else
+        {
+            // We need to fixup the case of:
+            // * qnan, norm = norm
+            //
+            // Instead, it should be:
+            // * qnan, norm = qnan
+
+            // First look at op1 and op2 using op2 as the classification
+            //
+            // If op2 is norm, we take op1 ( nan or norm)
+            // If op2 is snan, we take op1 ( nan or norm)
+            // If op2 is qnan, we take op2 (qnan)
+            //
+            // Thus, if either input was qnan the fixup is now qnan
+
+            // QNAN: 0b0001:  Preserve right
+            // SNAN: 0b0000:  Preserve left
+            // ZERO: 0b0000
+            // +ONE: 0b0000
+            // -INF: 0b0000
+            // +INF: 0b0000
+            // -VAL: 0b0000
+            // +VAL: 0b0000
+            tbl1->AsVecCon()->gtSimdVal.i32[0] = 0x00000001;
+
+            // Next look at result and fixup using fixup as the classification
+            //
+            // If fixup is norm, we take the result (norm)
+            // If fixup is sNaN, we take the result (sNaN)
+            // If fixup is qNaN, we take the fixup  (qNaN)
+            //
+            // Thus if the fixup was qnan, we now have qnan as expected
+            // Otherwise, the result was already correct
+
+            tbl1 = impCloneExpr(tbl1, &tbl2, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning tbl for Math.Max/Min"));
+
+            op1Clone =
+                gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Clone, op2Clone, tbl1, NI_AVX512F_FixupScalar, callJitType, 16);
+
+            tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp, op1Clone, tbl2, NI_AVX512F_FixupScalar, callJitType, 16);
+        }
+
+        return gtNewSimdHWIntrinsicNode(callType, tmp, NI_Vector128_ToScalar, callJitType, 16);
+    }
+#endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
+
+    return impMathIntrinsic(method, sig, callType, intrinsicName, tailCall);
+}
+
+//------------------------------------------------------------------------
 // lookupNamedIntrinsic: map method to jit named intrinsic value
 //
 // Arguments:
@@ -8944,7 +9196,7 @@ NamedIntrinsic Compiler::lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDL
 {
     NamedIntrinsic result = NI_Illegal;
 
-    switch (className[0])
+    switch (methodName[0])
     {
         case 'A':
         {
@@ -9098,13 +9350,57 @@ NamedIntrinsic Compiler::lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDL
 
         case 'M':
         {
-            if (strcmp(methodName, "Max") == 0)
+            if (strncmp(methodName, "Max", 3) == 0)
             {
-                result = NI_System_Math_Max;
+                methodName += 3;
+
+                if (methodName[0] == '\0')
+                {
+                    result = NI_System_Math_Max;
+                }
+                else if (strncmp(methodName, "Magnitude", 9) == 0)
+                {
+                    methodName += 9;
+
+                    if (methodName[0] == '\0')
+                    {
+                        result = NI_System_Math_MaxMagnitude;
+                    }
+                    else if (strcmp(methodName, "Number") == 0)
+                    {
+                        result = NI_System_Math_MaxMagnitudeNumber;
+                    }
+                }
+                else if (strcmp(methodName, "Number") == 0)
+                {
+                    result = NI_System_Math_MaxNumber;
+                }
             }
-            else if (strcmp(methodName, "Min") == 0)
+            else if (strncmp(methodName, "Min", 3) == 0)
             {
-                result = NI_System_Math_Min;
+                methodName += 3;
+
+                if (methodName[0] == '\0')
+                {
+                    result = NI_System_Math_Min;
+                }
+                else if (strncmp(methodName, "Magnitude", 9) == 0)
+                {
+                    methodName += 9;
+
+                    if (methodName[0] == '\0')
+                    {
+                        result = NI_System_Math_MinMagnitude;
+                    }
+                    else if (strcmp(methodName, "Number") == 0)
+                    {
+                        result = NI_System_Math_MinMagnitudeNumber;
+                    }
+                }
+                else if (strcmp(methodName, "Number") == 0)
+                {
+                    result = NI_System_Math_MinNumber;
+                }
             }
             break;
         }
