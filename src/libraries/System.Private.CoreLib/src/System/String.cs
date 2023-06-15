@@ -513,6 +513,19 @@ namespace System
             return true;
         }
 
+        [Pure]
+        public static bool IsNullEmptyOrWhiteSpace(String value) {
+            if (value == null) return true;
+
+            if(value.Length == 0) return true;
+
+            for(int i = 0; i < value.Length; i++) {
+                if(!Char.IsWhiteSpace(value[i])) return false;
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Returns a reference to the first element of the String. If the string is null, an access will throw a NullReferenceException.
         /// </summary>
