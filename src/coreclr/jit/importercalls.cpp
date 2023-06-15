@@ -3649,7 +3649,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         {
                             impAppendTree(gtNewNullCheck(op1, compCurBB), CHECK_SPILL_ALL, impCurStmtDI);
                         }
-                        else if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+                        else
                         {
                             impAppendTree(gtUnusedValNode(op1), CHECK_SPILL_ALL, impCurStmtDI);
                         }
