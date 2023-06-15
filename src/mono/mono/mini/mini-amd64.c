@@ -6798,6 +6798,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_sse_xorps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
 				break;
 			}
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+				amd64_sse_pxor_reg_reg (code, SIMD_TEMP_REG, SIMD_TEMP_REG);
+				amd64_sse_psubq_reg_reg (code, SIMD_TEMP_REG, ins->sreg1);
+				amd64_sse_movaps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
+#else
+				amd64_sse_pxor_reg_reg (code, SIMD_TEMP_REG, SIMD_TEMP_REG);
+				amd64_sse_psubd_reg_reg (code, SIMD_TEMP_REG, ins->sreg1);
+				amd64_sse_movaps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
+#endif
+				break;
 			default:
 				g_assert_not_reached ();
 				break;
