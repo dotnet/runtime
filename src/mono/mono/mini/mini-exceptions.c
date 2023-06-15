@@ -2076,7 +2076,6 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 	MonoLMF *lmf = mono_get_lmf ();
 	MonoException *mono_ex;
 	gboolean stack_overflow = FALSE;
-	MonoContext initial_ctx;
 	MonoMethod *method;
 	// int frame_count = 0; // used for debugging
 	gint32 filter_idx, first_filter_idx = 0;
@@ -2261,7 +2260,6 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 	if (out_ji)
 		*out_ji = NULL;
 	filter_idx = 0;
-	initial_ctx = *ctx;
 
 	unwinder_init (&unwinder);
 
