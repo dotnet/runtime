@@ -677,7 +677,6 @@ jobs:
         ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
           hostedOs: osx
           hostedArch: x64
-          isHostBuild: true
         ${{ if eq(parameters.runtimeFlavor, '') }}:
           runtimeFlavor: mono
         ${{ else }}:
@@ -703,7 +702,6 @@ jobs:
         ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
           hostedOs: osx
           hostedArch: x64
-          isHostBuild: true
         ${{ if eq(parameters.runtimeFlavor, '') }}:
           runtimeFlavor: mono
         ${{ else }}:
@@ -729,7 +727,6 @@ jobs:
         ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
           hostedOs: osx
           hostedArch: x64
-          isHostBuild: true
         ${{ if eq(parameters.runtimeFlavor, '') }}:
           runtimeFlavor: mono
         ${{ else }}:
@@ -755,7 +752,6 @@ jobs:
         ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
           hostedOs: osx
           hostedArch: x64
-          isHostBuild: true
         ${{ if eq(parameters.runtimeFlavor, '') }}:
           runtimeFlavor: mono
         ${{ else }}:
@@ -781,7 +777,6 @@ jobs:
         ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
           hostedOs: osx
           hostedArch: x64
-          isHostBuild: true
         ${{ if eq(parameters.runtimeFlavor, '') }}:
           runtimeFlavor: mono
         ${{ else }}:
@@ -807,7 +802,6 @@ jobs:
         ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
           hostedOs: osx
           hostedArch: x64
-          isHostBuild: true
         ${{ if eq(parameters.runtimeFlavor, '') }}:
           runtimeFlavor: mono
         ${{ else }}:
@@ -833,7 +827,6 @@ jobs:
         ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
           hostedOs: osx
           hostedArch: x64
-          isHostBuild: true
         ${{ if eq(parameters.runtimeFlavor, '') }}:
           runtimeFlavor: mono
         ${{ else }}:
@@ -859,7 +852,6 @@ jobs:
         ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
           hostedOs: osx
           hostedArch: x64
-          isHostBuild: true
         ${{ if eq(parameters.runtimeFlavor, '') }}:
           runtimeFlavor: mono
         ${{ else }}:

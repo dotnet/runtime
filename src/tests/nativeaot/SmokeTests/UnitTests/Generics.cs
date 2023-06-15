@@ -54,8 +54,8 @@ class Generics
         TestVariantCasting.Run();
         TestMDArrayAddressMethod.Run();
 // SIGSEGV handler missing: https://github.com/dotnet/runtime/issues/87458
-#if !TARGET_IOS && !TARGET_TVOS && !TARGET_MACCATALYST
-        // TestNativeLayoutGeneration.Run();
+#if !TARGET_IOS && !TARGET_TVOS
+        TestNativeLayoutGeneration.Run();
 #endif
         TestByRefLikeVTables.Run();
         TestFunctionPointerLoading.Run();

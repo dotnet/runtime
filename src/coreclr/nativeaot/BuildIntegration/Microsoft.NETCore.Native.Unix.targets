@@ -153,14 +153,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-Wl,--eh-frame-hdr" Condition="'$(_IsApplePlatform)' != 'true'" />
     </ItemGroup>
 
-  <!-- Remove libSystem.Net.Security.Native.a from tvOS when using NativeAOT, it's not shipped on tvOS -->
-		<ItemGroup Condition="$(TargetOS.StartsWith('tvos'))">
-			<DirectPInvoke Remove="libSystem.Net.Security.Native" />
-			<NetCoreAppNativeLibrary Remove="System.Net.Security.Native" />
-			<NativeLibrary Remove="@(NativeLibrary)" Condition="'%(Filename)' == 'libSystem.Net.Security.Native'" />
-			<LinkerArg Remove="@(LinkerArg)" Condition="'%(Filename)' == 'libSystem.Net.Security.Native'" />
-		</ItemGroup>
-
     <Exec Command="command -v &quot;$(CppLinker)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low">
       <Output TaskParameter="ExitCode" PropertyName="_WhereLinker" />
     </Exec>

@@ -52,7 +52,7 @@ public class Delegates
         }
 // Dynamic code generation not supported
 #if !TARGET_IOS && !TARGET_TVOS && !TARGET_MACCATALYST
-        // TestLinqExpressions.Run();
+        TestLinqExpressions.Run();
 #endif
         TestDefaultInterfaceMethods.Run();
 

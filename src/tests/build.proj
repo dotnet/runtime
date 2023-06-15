@@ -9,8 +9,6 @@
     <MSBuildEnableAllPropertyFunctions>1</MSBuildEnableAllPropertyFunctions>
     <Language>C#</Language>
     <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
-    <_IsApplePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsApplePlatform>
-    <_IsiOSLikePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsiOSLikePlatform>
   </PropertyGroup>
 
   <ItemGroup>
@@ -472,8 +470,11 @@
   </Target>
 
 
-  <Target Name="_SetCustomIlcPath">
+  <Target Name="_SetCustomIlcProps">
     <PropertyGroup>
+      <_IsApplePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsApplePlatform>
+      <_IsiOSLikePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsiOSLikePlatform>
+      <_targetOS>$(TargetOS)</_targetOS>
       <UseNativeAOTRuntime>true</UseNativeAOTRuntime>
       <NativeLib>static</NativeLib>
       <CustomNativeMain>true</CustomNativeMain>
@@ -487,7 +488,7 @@
     </PropertyGroup>
   </Target>
 
-  <Target Name="BuildNativeAOTiOSApp" DependsOnTargets="_SetCustomIlcPath;SetupOSSpecificProps">
+  <Target Name="BuildNativeAOTiOSApp" DependsOnTargets="_SetCustomIlcProps;SetupOSSpecificProps">
     <PropertyGroup>
       <CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(_CMDDIR)))))</CMDDIR_Grandparent>
       <TestingGroup>$([System.IO.Path]::GetFileName($(CMDDIR_Grandparent)))</TestingGroup>

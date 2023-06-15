@@ -18,9 +18,9 @@ public class Interfaces
             return Fail;
 
 // SIGSEGV handler missing: https://github.com/dotnet/runtime/issues/87458
-#if !TARGET_IOS && !TARGET_TVOS && !TARGET_MACCATALYST
-        // if (TestAVInInterfaceCache() == Fail)
-        //     return Fail;
+#if !TARGET_IOS && !TARGET_TVOS
+        if (TestAVInInterfaceCache() == Fail)
+            return Fail;
 #endif
 
         if (TestMultipleInterfaces() == Fail)
