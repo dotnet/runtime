@@ -6104,58 +6104,6 @@ TypeCompareState MethodContext::repCompareTypesForEquality(CORINFO_CLASS_HANDLE 
     return result;
 }
 
-void MethodContext::recFindNameOfToken(
-    CORINFO_MODULE_HANDLE module, mdToken metaTOK, char* szFQName, size_t FQNameCapacity, size_t result)
-{
-    if (FindNameOfToken == nullptr)
-        FindNameOfToken = new LightWeightMap<DLD, DLD>();
-
-    DLD key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.A = CastHandle(module);
-    key.B = (DWORD)metaTOK;
-
-    DLD value;
-    value.A = result;
-    value.B = FindNameOfToken->AddBuffer((unsigned char*)szFQName, (unsigned int)result);
-
-    FindNameOfToken->Add(key, value);
-    DEBUG_REC(dmpFindNameOfToken(key, value));
-}
-void MethodContext::dmpFindNameOfToken(DLD key, DLD value)
-{
-    // practically the name of a token wont be bigger than 4gb...
-    unsigned char* buff = new unsigned char[(unsigned int)value.A + 1];
-    ZeroMemory(buff, (unsigned int)value.A + 1);
-    memcpy(buff, FindNameOfToken->GetBuffer(value.B), (unsigned int)value.A);
-    FindNameOfToken->Unlock();
-    printf("FindNameOfToken key mod-%016" PRIX64 " tok-%08X, value '%s'", key.A, key.B, buff);
-    delete[] buff;
-}
-size_t MethodContext::repFindNameOfToken(CORINFO_MODULE_HANDLE module,
-                                         mdToken               metaTOK,
-                                         char*                 szFQName,
-                                         size_t                FQNameCapacity)
-{
-    DLD key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.A = CastHandle(module);
-    key.B = (DWORD)metaTOK;
-
-    DLD value = LookupByKeyOrMiss(FindNameOfToken, key, ": key %016" PRIX64 "", key.A);
-
-    DEBUG_REP(dmpFindNameOfToken(key, value));
-
-    unsigned char* temp = nullptr;
-    if (value.B != (DWORD)-1)
-    {
-        temp = FindNameOfToken->GetBuffer(value.B);
-        memcpy(szFQName, temp, (size_t)value.A);
-    }
-
-    return (size_t)value.A;
-}
-
 void MethodContext::recGetSystemVAmd64PassStructInRegisterDescriptor(
     CORINFO_CLASS_HANDLE                                 structHnd,
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr,

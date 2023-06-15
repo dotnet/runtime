@@ -1174,18 +1174,6 @@ unsigned WrapICorJitInfo::getMethodHash(
     return temp;
 }
 
-size_t WrapICorJitInfo::findNameOfToken(
-          CORINFO_MODULE_HANDLE moduleHandle,
-          mdToken token,
-          char* szFQName,
-          size_t FQNameCapacity)
-{
-    API_ENTER(findNameOfToken);
-    size_t temp = wrapHnd->findNameOfToken(moduleHandle, token, szFQName, FQNameCapacity);
-    API_LEAVE(findNameOfToken);
-    return temp;
-}
-
 bool WrapICorJitInfo::getSystemVAmd64PassStructInRegisterDescriptor(
           CORINFO_CLASS_HANDLE structHnd,
           SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)

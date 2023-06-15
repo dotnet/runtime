@@ -130,7 +130,6 @@ struct JitInterfaceCallbacks
     size_t (* printMethodName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
     const char* (* getMethodNameFromMetadata)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, const char** className, const char** namespaceName, const char** enclosingClassName);
     unsigned (* getMethodHash)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn);
-    size_t (* findNameOfToken)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE moduleHandle, unsigned int token, char* szFQName, size_t FQNameCapacity);
     bool (* getSystemVAmd64PassStructInRegisterDescriptor)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
     uint32_t (* getLoongArch64PassStructInRegisterFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd);
     uint32_t (* getRISCV64PassStructInRegisterFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd);
@@ -1348,18 +1347,6 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     unsigned temp = _callbacks->getMethodHash(_thisHandle, &pException, ftn);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual size_t findNameOfToken(
-          CORINFO_MODULE_HANDLE moduleHandle,
-          unsigned int token,
-          char* szFQName,
-          size_t FQNameCapacity)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    size_t temp = _callbacks->findNameOfToken(_thisHandle, &pException, moduleHandle, token, szFQName, FQNameCapacity);
     if (pException != nullptr) throw pException;
     return temp;
 }

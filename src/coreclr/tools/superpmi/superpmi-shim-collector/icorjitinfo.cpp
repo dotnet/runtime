@@ -1364,19 +1364,6 @@ unsigned interceptor_ICJI::getMethodHash(CORINFO_METHOD_HANDLE ftn /* IN */
     return temp;
 }
 
-// this function is for debugging only.
-size_t interceptor_ICJI::findNameOfToken(CORINFO_MODULE_HANDLE              module,        /* IN  */
-                                         mdToken                            metaTOK,       /* IN  */
-                                         _Out_writes_(FQNameCapacity) char* szFQName,      /* OUT */
-                                         size_t                             FQNameCapacity /* IN */
-                                         )
-{
-    mc->cr->AddCall("findNameOfToken");
-    size_t result = original_ICorJitInfo->findNameOfToken(module, metaTOK, szFQName, FQNameCapacity);
-    mc->recFindNameOfToken(module, metaTOK, szFQName, FQNameCapacity, result);
-    return result;
-}
-
 bool interceptor_ICJI::getSystemVAmd64PassStructInRegisterDescriptor(
     /* IN */ CORINFO_CLASS_HANDLE                                  structHnd,
     /* OUT */ SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)

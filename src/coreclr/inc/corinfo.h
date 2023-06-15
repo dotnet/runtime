@@ -2941,14 +2941,6 @@ public:
             CORINFO_METHOD_HANDLE       ftn         /* IN */
             ) = 0;
 
-    // this function is for debugging only.
-    virtual size_t findNameOfToken (
-            CORINFO_MODULE_HANDLE       module,     /* IN  */
-            mdToken                     metaTOK,     /* IN  */
-            _Out_writes_ (FQNameCapacity) char * szFQName, /* OUT */
-            size_t FQNameCapacity  /* IN */
-            ) = 0;
-
     // returns whether the struct is enregisterable. Only valid on a System V VM. Returns true on success, false on failure.
     virtual bool getSystemVAmd64PassStructInRegisterDescriptor(
         /* IN */    CORINFO_CLASS_HANDLE        structHnd,

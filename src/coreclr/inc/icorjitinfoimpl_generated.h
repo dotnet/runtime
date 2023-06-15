@@ -495,12 +495,6 @@ const char* getMethodNameFromMetadata(
 unsigned getMethodHash(
           CORINFO_METHOD_HANDLE ftn) override;
 
-size_t findNameOfToken(
-          CORINFO_MODULE_HANDLE moduleHandle,
-          mdToken token,
-          char* szFQName,
-          size_t FQNameCapacity) override;
-
 bool getSystemVAmd64PassStructInRegisterDescriptor(
           CORINFO_CLASS_HANDLE structHnd,
           SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr) override;

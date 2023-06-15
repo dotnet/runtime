@@ -749,11 +749,6 @@ public:
     void dmpCompareTypesForEquality(DLDL key, DWORD value);
     TypeCompareState repCompareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
 
-    void recFindNameOfToken(
-        CORINFO_MODULE_HANDLE module, mdToken metaTOK, char* szFQName, size_t FQNameCapacity, size_t result);
-    void dmpFindNameOfToken(DLD key, DLD value);
-    size_t repFindNameOfToken(CORINFO_MODULE_HANDLE module, mdToken metaTOK, char* szFQName, size_t FQNameCapacity);
-
     void recGetSystemVAmd64PassStructInRegisterDescriptor(
         CORINFO_CLASS_HANDLE                                 structHnd,
         SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr,
@@ -1086,7 +1081,7 @@ enum mcPackets
     Packet_CheckMethodModifier = 142,
     Packet_CompileMethod = 143,
     Packet_IsValidToken = 144,
-    Packet_FindNameOfToken = 145,
+    //Packet_FindNameOfToken = 145,
     //PacketCR_RecordCallSite = 146,
     Packet_GetLazyStringLiteralHelper = 147,
     Packet_IsIntrinsicType = 148,
