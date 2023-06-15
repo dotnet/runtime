@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -40,14 +41,23 @@ namespace System.Collections.Frozen
             HashIndex = hashIndex;
             HashCount = hashCount;
 
+            int[] arrayPoolHashCodes = ArrayPool<int>.Shared.Rent(entries.Length);
+            Span<int> hashCodes = arrayPoolHashCodes.AsSpan(0, entries.Length);
+            for (int i = 0; i < entries.Length; i++)
+            {
+                hashCodes[i] = GetHashCode(entries[i].Key);
+            }
+
             _hashTable = FrozenHashTable.Create(
                 entries.Length,
-                index => GetHashCode(entries[index].Key),
+                hashCodes,
                 (destIndex, srcIndex) =>
                 {
                     _keys[destIndex] = entries[srcIndex].Key;
                     _values[destIndex] = entries[srcIndex].Value;
                 });
+
+            ArrayPool<int>.Shared.Return(arrayPoolHashCodes);
         }
 
         private protected int HashIndex { get; }

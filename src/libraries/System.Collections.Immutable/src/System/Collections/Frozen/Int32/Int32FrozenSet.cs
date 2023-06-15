@@ -27,8 +27,8 @@ namespace System.Collections.Frozen
 
             _hashTable = FrozenHashTable.Create(
                 count,
-                index => entries[index],
-                delegate { });
+                new ReadOnlySpan<int>(entries, 0, count),
+                static delegate { });
 
             ArrayPool<int>.Shared.Return(entries);
         }
