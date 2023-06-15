@@ -23,7 +23,6 @@
   <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="$(CopyCoreDisToolsToCoreRoot)" />
 
   <ItemGroup>
-    <FrameworkReference Remove="Microsoft.NETCore.App" Condition="'$(SetTFMForRestore)' == 'true'"/>
     <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
     <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App" />
   </ItemGroup>
