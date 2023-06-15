@@ -87,6 +87,8 @@ namespace ILLink.RoslynAnalyzer
 				// Examine generic instantiations in base types and interface list
 				context.RegisterSymbolAction (context => {
 					var type = (INamedTypeSymbol) context.Symbol;
+					if (type.Locations.Length == 0)
+						return;
 					// RUC on type doesn't silence DAM warnings about generic base/interface types.
 					// This knowledge lives in IsInRequiresUnreferencedCodeAttributeScope,
 					// which we still call for consistency here, but it is expected to return false.
@@ -94,17 +96,13 @@ namespace ILLink.RoslynAnalyzer
 						return;
 
 					if (type.BaseType is INamedTypeSymbol baseType) {
-						if (type.Locations.Length > 0) {
-							foreach (var diagnostic in ProcessGenericParameters (baseType, type.Locations[0]))
-								context.ReportDiagnostic (diagnostic);
-						}
+						foreach (var diagnostic in ProcessGenericParameters (baseType, type.Locations[0]))
+							context.ReportDiagnostic (diagnostic);
 					}
 
 					foreach (var interfaceType in type.Interfaces) {
-						if (type.Locations.Length > 0) {
-							foreach (var diagnostic in ProcessGenericParameters (interfaceType, type.Locations[0]))
-								context.ReportDiagnostic (diagnostic);
-						}
+						foreach (var diagnostic in ProcessGenericParameters (interfaceType, type.Locations[0]))
+							context.ReportDiagnostic (diagnostic);
 					}
 				}, SymbolKind.NamedType);
 				// Examine generic instantiations in method return type and parameters.
@@ -130,13 +128,13 @@ namespace ILLink.RoslynAnalyzer
 				// Examine generic instantiations in field type.
 				context.RegisterSymbolAction (context => {
 					var field = (IFieldSymbol) context.Symbol;
+					if (field.Locations.Length == 0)
+						return;
 					if (field.IsInRequiresUnreferencedCodeAttributeScope (out _))
 						return;
 
-					if (field.Locations.Length > 0) {
-						foreach (var diagnostic in ProcessGenericParameters (field.Type, field.Locations[0]))
-							context.ReportDiagnostic (diagnostic);
-					}
+					foreach (var diagnostic in ProcessGenericParameters (field.Type, field.Locations[0]))
+						context.ReportDiagnostic (diagnostic);
 				}, SymbolKind.Field);
 				// Examine generic instantiations in invocations of generically instantiated methods,
 				// or methods on generically instantiated types.
@@ -254,18 +252,20 @@ namespace ILLink.RoslynAnalyzer
 
 		static void VerifyMemberOnlyApplyToTypesOrStrings (SymbolAnalysisContext context, ISymbol member)
 		{
-			if (member is IFieldSymbol field && field.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !field.Type.IsTypeInterestingForDataflow () && member.Locations.Length > 0)
+			if (member.Locations.Length == 0)
+				return;
+			if (member is IFieldSymbol field && field.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !field.Type.IsTypeInterestingForDataflow ())
 				context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersOnFieldCanOnlyApplyToTypesOrStrings), member.Locations[0], member.GetDisplayName ()));
 			else if (member is IMethodSymbol method) {
-				if (method.GetDynamicallyAccessedMemberTypesOnReturnType () != DynamicallyAccessedMemberTypes.None && !method.ReturnType.IsTypeInterestingForDataflow () && member.Locations.Length > 0)
+				if (method.GetDynamicallyAccessedMemberTypesOnReturnType () != DynamicallyAccessedMemberTypes.None && !method.ReturnType.IsTypeInterestingForDataflow ())
 					context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersOnMethodReturnValueCanOnlyApplyToTypesOrStrings), member.Locations[0], member.GetDisplayName ()));
 				if (method.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !method.ContainingType.IsTypeInterestingForDataflow () && member.Locations.Length > 0)
 					context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnMethods), member.Locations[0]));
 				foreach (var parameter in method.Parameters) {
-					if (parameter.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !parameter.Type.IsTypeInterestingForDataflow () && member.Locations.Length > 0)
+					if (parameter.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !parameter.Type.IsTypeInterestingForDataflow ())
 						context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersOnMethodParameterCanOnlyApplyToTypesOrStrings), member.Locations[0], parameter.GetDisplayName (), member.GetDisplayName ()));
 				}
-			} else if (member is IPropertySymbol property && property.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !property.Type.IsTypeInterestingForDataflow () && member.Locations.Length > 0) {
+			} else if (member is IPropertySymbol property && property.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !property.Type.IsTypeInterestingForDataflow ()) {
 				context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersOnPropertyCanOnlyApplyToTypesOrStrings), member.Locations[0], member.GetDisplayName ()));
 			}
 		}
