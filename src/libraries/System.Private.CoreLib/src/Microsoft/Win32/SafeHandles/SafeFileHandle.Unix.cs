@@ -239,6 +239,7 @@ namespace Microsoft.Win32.SafeHandles
         /// <param name="access">The FileAccess provided to the stream's constructor</param>
         /// <param name="share">The FileShare provided to the stream's constructor</param>
         /// <param name="options">The FileOptions provided to the stream's constructor</param>
+        /// <param name="failForSymlink">Whether to cause ELOOP error when opening a symlink</param>
         /// <returns>The flags value to be passed to the open system call.</returns>
         private static Interop.Sys.OpenFlags PreOpenConfigurationFromOptions(FileMode mode, FileAccess access, FileShare share, FileOptions options, bool failForSymlink)
         {
