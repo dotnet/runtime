@@ -679,10 +679,6 @@ private:
         // This flag applies to assembly, but is also stored here so that it can be cached in ngen image
         COLLECTIBLE_MODULE          = 0x00000080,
 
-        // Caches metadata version
-        COMPUTED_IS_PRE_V4_ASSEMBLY = 0x00000100,
-        IS_PRE_V4_ASSEMBLY          = 0x00000200,
-
         //If attribute value has been cached before
         DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED   = 0x00000400,
 
@@ -1711,20 +1707,10 @@ public:
         return (m_DefaultDllImportSearchPathsAttributeValue & 0x2) != 0;
     }
 
-    //-----------------------------------------------------------------------------------------
-    // True iff metadata version string is 1.* or 2.*.
-    // @TODO (post-Dev10): All places that need this information should call this function
-    // instead of parsing the version themselves.
-    //-----------------------------------------------------------------------------------------
-    BOOL                    IsPreV4Assembly();
-
 protected:
-
 
     // initialize Crst controlling the Dynamic IL hashtables
     void                    InitializeDynamicILCrst();
-
-public:
 
 private:
 
