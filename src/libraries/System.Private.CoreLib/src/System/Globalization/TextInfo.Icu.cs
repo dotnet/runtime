@@ -19,7 +19,7 @@ namespace System.Globalization
         internal unsafe void IcuChangeCase(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-#if (HYBRID_GLOBALIZATION && TARGET_BROWSER)
+#if TARGET_BROWSER
             Debug.Assert(!GlobalizationMode.Hybrid);
 #endif
             Debug.Assert(!GlobalizationMode.UseNls);
