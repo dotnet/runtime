@@ -1309,7 +1309,7 @@ namespace ILCompiler.DependencyAnalysis
             if (_inlinedThreadStatics.IsComputed())
             {
                 graph.AddRoot(_inlinedThreadStatiscNode, "Inlined threadstatics are used if present");
-                graph.AddRoot(TlsRoot, "nlined threadstatics are used if present");
+                graph.AddRoot(TlsRoot, "Inlined threadstatics are used if present");
             }
 
             ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticRegion, GCStaticsRegion);
