@@ -1212,12 +1212,6 @@ uint32_t MyICJI::getThreadTLSIndex(void** ppIndirection)
     return jitInstance->mc->repGetThreadTLSIndex(ppIndirection);
 }
 
-const void* MyICJI::getInlinedCallFrameVptr(void** ppIndirection)
-{
-    jitInstance->mc->cr->AddCall("getInlinedCallFrameVptr");
-    return jitInstance->mc->repGetInlinedCallFrameVptr(ppIndirection);
-}
-
 int32_t* MyICJI::getAddrOfCaptureThreadGlobal(void** ppIndirection)
 {
     jitInstance->mc->cr->AddCall("getAddrOfCaptureThreadGlobal");

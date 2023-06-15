@@ -282,7 +282,6 @@ FUNCTIONS
     uint32_t getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd);
     uint32_t getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd);
     uint32_t getThreadTLSIndex(void                  **ppIndirection);
-    const void * getInlinedCallFrameVptr(void **ppIndirection);
     int32_t * getAddrOfCaptureThreadGlobal(void                  **ppIndirection);
     void* getHelperFtn (CorInfoHelpFunc         ftnNum, void                  **ppIndirection);
     void getFunctionEntryPoint(CORINFO_METHOD_HANDLE   ftn, CORINFO_CONST_LOOKUP *  pResult, CORINFO_ACCESS_FLAGS accessFlags);

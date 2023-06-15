@@ -4583,36 +4583,6 @@ DWORD MethodContext::repGetThreadTLSIndex(void** ppIndirection)
     return (DWORD)value.B;
 }
 
-void MethodContext::recGetInlinedCallFrameVptr(void** ppIndirection, const void* result)
-{
-    if (GetInlinedCallFrameVptr == nullptr)
-        GetInlinedCallFrameVptr = new LightWeightMap<DWORD, DLDL>();
-
-    DLDL value;
-
-    if (ppIndirection != nullptr)
-        value.A = CastPointer(*ppIndirection);
-    else
-        value.A = 0;
-    value.B     = CastPointer(result);
-
-    GetInlinedCallFrameVptr->Add(0, value);
-}
-void MethodContext::dmpGetInlinedCallFrameVptr(DWORD key, DLDL value)
-{
-    printf("GetInlinedCallFrameVptr key 0, value ppIndirection-%016" PRIX64 " result-%016" PRIX64 "", value.A, value.B);
-}
-const void* MethodContext::repGetInlinedCallFrameVptr(void** ppIndirection)
-{
-    DLDL value = LookupByKeyOrMissNoMessage(GetInlinedCallFrameVptr, 0);
-
-	DEBUG_REP(dmpGetInlinedCallFrameVptr(0, value));
-
-    if (ppIndirection != nullptr)
-        *ppIndirection = (void*)value.A;
-    return (const void*)value.B;
-}
-
 void MethodContext::recGetAddrOfCaptureThreadGlobal(void** ppIndirection, int32_t* result)
 {
     if (GetAddrOfCaptureThreadGlobal == nullptr)

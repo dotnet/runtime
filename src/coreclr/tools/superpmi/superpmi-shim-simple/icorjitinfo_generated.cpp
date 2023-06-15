@@ -868,12 +868,6 @@ uint32_t interceptor_ICJI::getThreadTLSIndex(
     return original_ICorJitInfo->getThreadTLSIndex(ppIndirection);
 }
 
-const void* interceptor_ICJI::getInlinedCallFrameVptr(
-          void** ppIndirection)
-{
-    return original_ICorJitInfo->getInlinedCallFrameVptr(ppIndirection);
-}
-
 int32_t* interceptor_ICJI::getAddrOfCaptureThreadGlobal(
           void** ppIndirection)
 {

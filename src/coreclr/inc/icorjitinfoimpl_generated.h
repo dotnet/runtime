@@ -508,9 +508,6 @@ uint32_t getRISCV64PassStructInRegisterFlags(
 uint32_t getThreadTLSIndex(
           void** ppIndirection) override;
 
-const void* getInlinedCallFrameVptr(
-          void** ppIndirection) override;
-
 int32_t* getAddrOfCaptureThreadGlobal(
           void** ppIndirection) override;
 

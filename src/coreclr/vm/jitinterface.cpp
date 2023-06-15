@@ -10188,27 +10188,6 @@ uint32_t CEEInfo::getThreadTLSIndex(void **ppIndirection)
     return result;
 }
 
-const void * CEEInfo::getInlinedCallFrameVptr(void **ppIndirection)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    void * result = NULL;
-
-    if (ppIndirection != NULL)
-        *ppIndirection = NULL;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    result = (void*)InlinedCallFrame::GetMethodFrameVPtr();
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return result;
-}
 
 int32_t * CEEInfo::getAddrOfCaptureThreadGlobal(void **ppIndirection)
 {

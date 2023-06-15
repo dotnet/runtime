@@ -3193,8 +3193,6 @@ namespace Internal.JitInterface
 
         private uint getThreadTLSIndex(ref void* ppIndirection)
         { throw new NotImplementedException("getThreadTLSIndex"); }
-        private void* getInlinedCallFrameVptr(ref void* ppIndirection)
-        { throw new NotImplementedException("getInlinedCallFrameVptr"); }
 
         private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
         private void* getHelperFtn(CorInfoHelpFunc ftnNum, ref void* ppIndirection)

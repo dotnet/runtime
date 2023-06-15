@@ -1211,15 +1211,6 @@ uint32_t WrapICorJitInfo::getThreadTLSIndex(
     return temp;
 }
 
-const void* WrapICorJitInfo::getInlinedCallFrameVptr(
-          void** ppIndirection)
-{
-    API_ENTER(getInlinedCallFrameVptr);
-    const void* temp = wrapHnd->getInlinedCallFrameVptr(ppIndirection);
-    API_LEAVE(getInlinedCallFrameVptr);
-    return temp;
-}
-
 int32_t* WrapICorJitInfo::getAddrOfCaptureThreadGlobal(
           void** ppIndirection)
 {
