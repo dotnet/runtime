@@ -24869,10 +24869,9 @@ void gc_heap::recommission_heap()
         // this is used at the start of the next gc to update setting.gc_index
         dd_collection_count (dd) = dd_collection_count (heap0_dd);
 
-        // these fields are used to estimate the heap size - set them to 0
+        // this field is used to estimate the heap size - set it to 0
         // as the data on this heap are accounted for by other heaps
         // until the next gc, where the fields will be re-initialized
-        dd_desired_allocation              (dd) = 0;
         dd_promoted_size                   (dd) = 0;
 
         // this field is used at the beginning of a GC to decide
@@ -24883,8 +24882,9 @@ void gc_heap::recommission_heap()
         // this value will just be incremented, not re-initialized
         dd_gc_clock                        (dd) = dd_gc_clock (heap0_dd);
 
-        // this is used by the allocator, but will be set later
+        // these are used by the allocator, but will be set later
         dd_new_allocation                  (dd) = UNINITIALIZED_VALUE;
+        dd_desired_allocation              (dd) = UNINITIALIZED_VALUE;
 
         // set the fields that are supposed to be set by the next GC to
         // a special value to help in debugging
@@ -25032,7 +25032,22 @@ void gc_heap::check_heap_count ()
 
             // the middle element is the median overhead percentage
             float median_percent_overhead = percent_overhead[1];
-            dprintf (6666, ("median overhead: %d%%", median_percent_overhead));
+
+            // apply exponential smoothing over 3 median_percent_overhead readings
+            const float smoothing_factor = 0.333f;
+            float smoothed_median_percent_overhead = dynamic_heap_count_data.smoothed_median_percent_overhead;
+            if (smoothed_median_percent_overhead != 0.0f)
+            {
+                // average it with the previous value
+                smoothed_median_percent_overhead = median_percent_overhead*smoothing_factor + smoothed_median_percent_overhead*(1.0f - smoothing_factor);
+            }
+            else
+            {
+                // first time? initialize to the median
+                smoothed_median_percent_overhead = median_percent_overhead;
+            }
+
+            dprintf (6666, ("median overhead: %d%% smoothed median overhead: %d%%", (int)(median_percent_overhead*1000), (int)(smoothed_median_percent_overhead*1000)));
 
             // estimate the space cost of adding a heap as the min gen0 size
             size_t heap_space_cost_per_heap = dd_min_size (hp0_dd0);
@@ -25052,10 +25067,10 @@ void gc_heap::check_heap_count ()
             int step_down = (n_heaps + 1) / 3;
 
             // estimate the potential time benefit of going up a step
-            float overhead_reduction_per_step_up = median_percent_overhead * step_up / (n_heaps + step_up);
+            float overhead_reduction_per_step_up = smoothed_median_percent_overhead * step_up / (n_heaps + step_up);
 
             // estimate the potential time cost of going down a step
-            float overhead_increase_per_step_down = median_percent_overhead * step_down / (n_heaps - step_down);
+            float overhead_increase_per_step_down = smoothed_median_percent_overhead * step_down / (n_heaps - step_down);
 
             // estimate the potential space cost of going up a step
             float space_cost_increase_per_step_up = percent_heap_space_cost_per_heap * step_up;
@@ -25063,7 +25078,7 @@ void gc_heap::check_heap_count ()
             // estimate the potential space saving of going down a step
             float space_cost_decrease_per_step_down = percent_heap_space_cost_per_heap * step_down;
 
-    #ifdef STRESS_DYNAMIC_HEAP_COUNT
+#ifdef STRESS_DYNAMIC_HEAP_COUNT
             // quick hack for initial testing
             int new_n_heaps = (int)gc_rand::get_rand (n_max_heaps - 1) + 1;
 
@@ -25072,21 +25087,19 @@ void gc_heap::check_heap_count ()
             {
                 new_n_heaps = min (dynamic_heap_count_data.lowest_heap_with_msl_uoh, new_n_heaps);
             }
-    #else //STRESS_DYNAMIC_HEAP_COUNT
+#else //STRESS_DYNAMIC_HEAP_COUNT
             int new_n_heaps = n_heaps;
-            if (median_percent_overhead > 5.0f)
+            if (median_percent_overhead > 10.0f)
             {
-                if (median_percent_overhead > 10.0f)
-                {
-                    // ramp up more agressively - use as many heaps as it would take to bring
-                    // the overhead down to 5%
-                    new_n_heaps = (int)(n_heaps * (median_percent_overhead / 5.0));
-                    new_n_heaps = min (new_n_heaps, n_max_heaps - extra_heaps);
-                }
-                else
-                {
-                    new_n_heaps += step_up;
-                }
+                // ramp up more agressively - use as many heaps as it would take to bring
+                // the overhead down to 5%
+                new_n_heaps = (int)(n_heaps * (median_percent_overhead / 5.0));
+                new_n_heaps = min (new_n_heaps, n_max_heaps - extra_heaps);
+            }
+            // if the median overhead is 10% or less, react slower
+            else if (smoothed_median_percent_overhead > 5.0f)
+            {
+                new_n_heaps += step_up;
             }
             // if we can save at least 1% more in time than we spend in space, increase number of heaps
             else if (overhead_reduction_per_step_up - space_cost_increase_per_step_up >= 1.0f)
@@ -25094,7 +25107,7 @@ void gc_heap::check_heap_count ()
                 new_n_heaps += step_up;
             }
             // if we can save at least 1% more in space than we spend in time, decrease number of heaps
-            else if (median_percent_overhead < 1.0f && space_cost_decrease_per_step_down - overhead_increase_per_step_down >= 1.0f)
+            else if (smoothed_median_percent_overhead < 1.0f && space_cost_decrease_per_step_down - overhead_increase_per_step_down >= 1.0f)
             {
                 new_n_heaps -= step_down;
             }
@@ -25109,12 +25122,13 @@ void gc_heap::check_heap_count ()
 
             assert (1 <= new_n_heaps);
             assert (new_n_heaps <= n_max_heaps);
-    #endif //STRESS_DYNAMIC_HEAP_COUNT
+#endif //STRESS_DYNAMIC_HEAP_COUNT
 
             dynamic_heap_count_data.new_n_heaps = new_n_heaps;
 
             // store data used for decision to emit in ETW event
             dynamic_heap_count_data.median_percent_overhead           = median_percent_overhead;
+            dynamic_heap_count_data.smoothed_median_percent_overhead  = smoothed_median_percent_overhead;
             dynamic_heap_count_data.percent_heap_space_cost_per_heap  = percent_heap_space_cost_per_heap;
             dynamic_heap_count_data.overhead_reduction_per_step_up    = overhead_reduction_per_step_up;
             dynamic_heap_count_data.overhead_increase_per_step_down   = overhead_increase_per_step_down;
@@ -25155,8 +25169,16 @@ void gc_heap::check_heap_count ()
     {
         // heap count stays the same, no work to do
         dprintf (6666, ("heap count stays the same, no work to do %d == %d", dynamic_heap_count_data.new_n_heaps, n_heaps));
+
+        if (heap_number == 0)
+        {
+            // come back after 3 GCs to reconsider
+            prev_change_heap_count_gc_index = settings.gc_index;
+        }
         return;
     }
+
+    int old_n_heaps = n_heaps;
 
     change_heap_count (dynamic_heap_count_data.new_n_heaps);
 
@@ -25164,6 +25186,11 @@ void gc_heap::check_heap_count ()
     {
         GCToEEInterface::RestartEE(TRUE);
         prev_change_heap_count_gc_index = settings.gc_index;
+
+        // we made changes to the heap count that will change the overhead,
+        // so change the smoothed overhead to reflect that
+        int new_n_heaps = n_heaps;
+        dynamic_heap_count_data.smoothed_median_percent_overhead  = dynamic_heap_count_data.smoothed_median_percent_overhead/new_n_heaps*old_n_heaps;
     }
 }
 
@@ -25560,6 +25587,7 @@ bool gc_heap::change_heap_count (int new_n_heaps)
                 // distribute the total budget over all heaps, but don't go below the min budget
                 dynamic_data* dd = hp->dynamic_data_of (gen_idx);
                 dd_new_allocation (dd) = max (budget_per_heap[gen_idx], (ptrdiff_t)dd_min_size (dd));
+                dd_desired_allocation (dd) = dd_new_allocation (dd);
 
                 // recompute dd_fragmentation and dd_current_size
                 generation* gen = hp->generation_of (gen_idx);

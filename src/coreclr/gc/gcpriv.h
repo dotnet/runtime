@@ -4256,6 +4256,7 @@ private:
         sample          samples[sample_size];
 
         float median_percent_overhead;          // estimated overhead of allocator + gc
+        float smoothed_median_percent_overhead; // exponentially smoothed version
         float percent_heap_space_cost_per_heap; // percent space cost of adding a heap
         float overhead_reduction_per_step_up;   // percentage effect on overhead of increasing heap count
         float overhead_increase_per_step_down;  // percentage effect on overhead of decreasing heap count
