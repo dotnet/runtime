@@ -268,7 +268,7 @@ namespace System.IO.Tests
             File.WriteAllText(file1, "abc");
             File.WriteAllText(file2, "def");
 
-            File.Copy(file1, link);
+            File.Copy(file1, link, true);
             Assert.Equal("abc", File.ReadAllText(file2));
         }
     }
