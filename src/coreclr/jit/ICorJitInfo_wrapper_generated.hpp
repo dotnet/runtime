@@ -1388,16 +1388,6 @@ void WrapICorJitInfo::getCallInfo(
     API_LEAVE(getCallInfo);
 }
 
-bool WrapICorJitInfo::canAccessFamily(
-          CORINFO_METHOD_HANDLE hCaller,
-          CORINFO_CLASS_HANDLE hInstanceType)
-{
-    API_ENTER(canAccessFamily);
-    bool temp = wrapHnd->canAccessFamily(hCaller, hInstanceType);
-    API_LEAVE(canAccessFamily);
-    return temp;
-}
-
 bool WrapICorJitInfo::isRIDClassDomainID(
           CORINFO_CLASS_HANDLE cls)
 {

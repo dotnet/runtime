@@ -584,10 +584,6 @@ void getCallInfo(
           CORINFO_CALLINFO_FLAGS flags,
           CORINFO_CALL_INFO* pResult) override;
 
-bool canAccessFamily(
-          CORINFO_METHOD_HANDLE hCaller,
-          CORINFO_CLASS_HANDLE hInstanceType) override;
-
 bool isRIDClassDomainID(
           CORINFO_CLASS_HANDLE cls) override;
 

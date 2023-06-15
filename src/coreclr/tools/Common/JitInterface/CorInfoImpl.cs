@@ -3307,8 +3307,6 @@ namespace Internal.JitInterface
             return constLookup;
         }
 
-        private bool canAccessFamily(CORINFO_METHOD_STRUCT_* hCaller, CORINFO_CLASS_STRUCT_* hInstanceType)
-        { throw new NotImplementedException("canAccessFamily"); }
         private bool isRIDClassDomainID(CORINFO_CLASS_STRUCT_* cls)
         { throw new NotImplementedException("isRIDClassDomainID"); }
         private uint getClassDomainID(CORINFO_CLASS_STRUCT_* cls, ref void* ppIndirection)

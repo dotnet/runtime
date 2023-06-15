@@ -722,10 +722,6 @@ public:
     void dmpCanGetCookieForPInvokeCalliSig(const CanGetCookieForPInvokeCalliSigValue& key, DWORD value);
     bool repCanGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig);
 
-    void recCanAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType, bool result);
-    void dmpCanAccessFamily(DLDL key, DWORD value);
-    bool repCanAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType);
-
     void recErrorList(const char* error);
     void dmpErrorList(DWORD key, DWORD value);
 
@@ -940,7 +936,7 @@ enum mcPackets
     //Packet_AreTypesEquivalent = 1,
     Packet_AsCorInfoType = 2,
     Packet_CanAccessClass = 3,
-    Packet_CanAccessFamily = 4,
+    //Packet_CanAccessFamily = 4,
     Packet_CanCast = 5,
     Packet_PrintMethodName = 6,
     Packet_CanGetCookieForPInvokeCalliSig = 7,

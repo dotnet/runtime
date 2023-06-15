@@ -1385,12 +1385,6 @@ void MyICJI::getCallInfo(
         ThrowException(exceptionCode);
 }
 
-bool MyICJI::canAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType)
-
-{
-    jitInstance->mc->cr->AddCall("canAccessFamily");
-    return jitInstance->mc->repCanAccessFamily(hCaller, hInstanceType);
-}
 // Returns TRUE if the Class Domain ID is the RID of the class (currently true for every class
 // except reflection emitted classes and generics)
 bool MyICJI::isRIDClassDomainID(CORINFO_CLASS_HANDLE cls)

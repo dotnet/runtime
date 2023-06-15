@@ -5897,37 +5897,6 @@ bool MethodContext::repCanGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSi
     return value != 0;
 }
 
-void MethodContext::recCanAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType, bool result)
-{
-    if (CanAccessFamily == nullptr)
-        CanAccessFamily = new LightWeightMap<DLDL, DWORD>();
-
-    DLDL key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.A = CastHandle(hCaller);
-    key.B = CastHandle(hInstanceType);
-
-    DWORD value = result ? 1 : 0;
-    CanAccessFamily->Add(key, value);
-    DEBUG_REC(dmpCanAccessFamily(key, value));
-}
-void MethodContext::dmpCanAccessFamily(DLDL key, DWORD value)
-{
-    printf("CanAccessFamily key cal-%016" PRIX64 " inst-%016" PRIX64 ", value %u", key.A, key.B, value);
-}
-bool MethodContext::repCanAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType)
-{
-    DLDL key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.A = CastHandle(hCaller);
-    key.B = CastHandle(hInstanceType);
-
-    DWORD value = LookupByKeyOrMissNoMessage(CanAccessFamily, key);
-
-    DEBUG_REP(dmpCanAccessFamily(key, value));
-    return value != 0;
-}
-
 void MethodContext::recErrorList(const char* error)
 {
     if (ErrorList == nullptr)
