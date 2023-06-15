@@ -1458,6 +1458,12 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 //
 PhaseStatus Compiler::optOptimizeBools()
 {
+
+    if (!ISMETHOD("Test"))
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
 #ifdef DEBUG
     if (verbose)
     {
@@ -1569,4 +1575,439 @@ PhaseStatus Compiler::optOptimizeBools()
 
     const bool modified = stress || ((numCond + numReturn) > 0);
     return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+//-----------------------------------------------------------------------------
+// OptRangePatternDsc:     Descriptor used for `if` range pattern optimization
+//
+class OptRangePatternDsc
+{
+public:
+    OptRangePatternDsc(Compiler* comp)
+    {
+        m_comp = comp;
+    }
+
+    static const int m_sizePatterns             = 64; // The size of the patterns array
+    int              m_patterns[m_sizePatterns] = {}; // Reserved patterns
+    int              m_patternsLength           = 0;  // The number of patterns in the array
+    int              m_numFoundPatterns         = 0;  // The number of patterns found
+
+    int m_minPattern   = 0; // The minimum pattern
+    int m_maxPattern   = 0; // The maximum pattern
+    int m_rangePattern = 0; // The range of values in patterns[]
+
+    unsigned int m_firstPatternBBNum = 0;       // BB that the first pattern is found
+    BasicBlock*  m_optFirstBB        = nullptr; // The first BB of the range pattern
+    BasicBlock*  m_trueJmpBB         = nullptr; // The BB to jump to in case of true condition
+    BasicBlock*  m_falseJmpBB        = nullptr; // The BB to jump to in case of false condition
+
+    unsigned m_bbCodeOffs = 0;
+    unsigned m_bbCodeOffsEnd = 0;
+    BasicBlock* switchBBdesc = nullptr;
+
+private:
+    Compiler* m_comp = nullptr; // The pointer to the Compiler instance
+
+public:
+    bool optMakeSwitchBBdesc();
+    bool optUpdateBlocks();
+};
+
+//-----------------------------------------------------------------------------
+// optUpdateBlocks: Remove pattern blocks and update predecessors of jump target blocks
+//
+bool OptRangePatternDsc::optUpdateBlocks()
+{
+    if (ISMETHOD("Foo"))
+    {
+        printf("optUpdateBlocks()\n");
+    }
+
+    // Special args to fgAddRefPred
+    FlowEdge* const oldEdge = nullptr;
+
+    // Skip the Swithc block and start from the next block
+    BasicBlock* currBb = m_optFirstBB->bbNext;
+
+    for (int idxRng = 1; idxRng < m_rangePattern && currBb != nullptr; idxRng++)
+    {
+        auto condition1 = currBb->lastStmt()->GetRootNode()->gtGetOp1();
+        if ((idxRng + m_minPattern) == (int)condition1->gtGetOp2()->AsIntCon()->IconValue())
+        {
+            // Reference count updates of true block or flase block
+            if (condition1->OperGet() == GT_EQ)
+            {
+                m_comp->fgAddRefPred(m_trueJmpBB, switchBBdesc, oldEdge);
+            }
+            else if (condition1->OperGet() == GT_NE)
+            {
+                m_comp->fgAddRefPred(m_falseJmpBB, switchBBdesc, oldEdge);
+            }
+            else
+            {
+                return false;
+            }
+
+            // Remove the current block
+            BasicBlock* nextBlock  = currBb->bbNext;
+            BasicBlock* prevBlock  = currBb->bbPrev;
+
+            m_comp->fgRemoveRefPred(currBb, prevBlock);
+            m_comp->fgAddRefPred(nextBlock, prevBlock, oldEdge);
+            m_comp->fgRemoveBlock(currBb, /* unreachable */ true);
+
+            prevBlock->bbNext = nextBlock;
+            currBb = nextBlock;
+        }
+        else if ((idxRng + m_minPattern) < (int)condition1->gtGetOp2()->AsIntCon()->IconValue())
+        {
+            // False patterns
+            m_comp->fgAddRefPred(m_falseJmpBB, switchBBdesc, oldEdge);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+// optMakeSwitchBBdesc: Create a switch block descriptor for the range pattern optimization
+//
+bool OptRangePatternDsc::optMakeSwitchBBdesc()
+{
+
+    if (ISMETHOD("Foo"))
+    {
+        printf("\nStart optMakeSwitchBlock()\n");
+    }
+
+    if (m_numFoundPatterns == 0)
+    {
+        return false;
+    }
+
+    ////bool        printed                = false;
+    ////bool        foundPattern           = false;
+    BasicBlock*     prevBb       = nullptr;
+    int             patternIndex = 0;
+    BBswtDesc*      swtDsc       = nullptr;
+    BBjumpKinds     jmpKind      = BBJ_NONE;
+
+    //BasicBlockFlags bbFlags = BBF_EMPTY;
+    unsigned        curBBoffs = 0;
+    unsigned        nxtBBoffs = 0;
+    unsigned jmpCnt = 0; // # of switch cases (excluding default)
+
+    BasicBlock** jmpTab = nullptr;
+    BasicBlock** jmpPtr = nullptr;
+    BasicBlock* currBb = m_optFirstBB;
+    unsigned     sz     = 0;
+    bool         tailCall = false;
+
+    // Special args to fgAddRefPred so it will use the initialization fast path
+    FlowEdge* const oldEdge           = nullptr;
+    bool const      initializingPreds = true;
+
+    // Make a jump table for the range of patterns
+    for (int idxRng = 0; idxRng < m_rangePattern && currBb != nullptr; idxRng++)
+    {
+        assert(m_numFoundPatterns <= m_rangePattern && m_numFoundPatterns <= m_sizePatterns);
+
+        // First pattern
+        if (idxRng == 0)
+        {
+            assert(currBb->bbNum == m_firstPatternBBNum && currBb->lastStmt()->GetRootNode()->gtGetOp1()->OperIs(GT_EQ));
+
+            // Allocate the switch descriptor
+            swtDsc = new (m_comp, CMK_BasicBlock) BBswtDesc;
+
+            // Allocate the jump table
+            jmpCnt = m_rangePattern;
+            jmpPtr = jmpTab = new (m_comp, CMK_BasicBlock) BasicBlock*[jmpCnt + 1];
+
+            // Change if basic block to a Switch basic block
+            // curBBdesc = m_comp->bbNewBasicBlock(jmpKind);
+            switchBBdesc = currBb;
+        }
+
+        // Fill in the jump table with the jump code offset
+        // If the pattern is found, jump to true BB. If not, to false BB.
+        auto condition1 = currBb->lastStmt()->GetRootNode()->gtGetOp1();
+        if ((idxRng + m_minPattern) == (int)condition1->gtGetOp2()->AsIntCon()->IconValue())
+        {
+            *jmpPtr = (BasicBlock*)(size_t)m_trueJmpBB->bbCodeOffs;
+            *(jmpPtr) = m_trueJmpBB;
+            jmpPtr++;
+
+            // Update the code offset range
+            if (currBb->bbCodeOffs <= m_bbCodeOffs)
+                m_bbCodeOffs = currBb->bbCodeOffs;
+            if (currBb->bbCodeOffsEnd >= m_bbCodeOffsEnd)
+                m_bbCodeOffsEnd = currBb->bbCodeOffsEnd;
+
+            currBb = currBb->bbNext;
+        }
+        else if ((idxRng + m_minPattern) < (int)condition1->gtGetOp2()->AsIntCon()->IconValue())
+        {
+            *jmpPtr = (BasicBlock*)(size_t)m_falseJmpBB->bbCodeOffs;
+            *(jmpPtr) = m_falseJmpBB;
+            jmpPtr++;
+        }
+        else
+        {
+            assert(false && "Unexpected pattern");
+        }
+    }
+
+    // Append the default label to the target table
+    *jmpPtr = (BasicBlock*)(size_t)m_falseJmpBB->bbCodeOffs;
+    *(jmpPtr) = m_falseJmpBB;
+    jmpPtr++;
+
+    // Make sure we found the right number of labels
+    noway_assert(jmpPtr == jmpTab + jmpCnt + 1);
+
+    // Compute the size of the switch opcode operands
+    sz       = sizeof(DWORD) + jmpCnt * sizeof(DWORD);
+
+    // Fill in the remaining fields of the switch descriptor
+    swtDsc->bbsCount  = jmpCnt + 1;
+    swtDsc->bbsDstTab = jmpTab;
+    jmpKind           = BBJ_SWITCH;
+
+    m_comp->fgHasSwitch = true;
+
+    if (m_comp->opts.compProcedureSplitting)
+    {
+        // TODO-CQ: We might need to create a switch table; we won't know for sure until much later.
+        // However, switch tables don't work with hot/cold splitting, currently. The switch table data needs
+        // a relocation such that if the base (the first block after the prolog) and target of the switch
+        // branch are put in different sections, the difference stored in the table is updated. However, our
+        // relocation implementation doesn't support three different pointers (relocation address, base, and
+        // target). So, we need to change our switch table implementation to be more like
+        // JIT64: put the table in the code section, in the same hot/cold section as the switch jump itself
+        // (maybe immediately after the switch jump), and make the "base" address be also in that section,
+        // probably the address after the switch jump.
+        m_comp->opts.compProcedureSplitting = false;
+        JITDUMP("Turning off procedure splitting for this method, as it might need switch tables; "
+                "implementation limitation.\n");
+    }
+
+    tailCall = false;
+
+    // Fill in the rest of switch basic block fields
+    switchBBdesc->bbJumpKind = BBJ_SWITCH;
+    //switchBBdesc->bbFlags |= bbFlags;
+    if (m_comp->compRationalIRForm)
+    {
+        switchBBdesc->bbFlags |= BBF_IS_LIR;
+    }
+    // switchBBdesc->bbRefs     = 0;
+    switchBBdesc->bbCodeOffs    = m_bbCodeOffs;
+    switchBBdesc->bbCodeOffsEnd = m_bbCodeOffsEnd;
+    switchBBdesc->bbJumpSwt     = swtDsc;
+
+    // Print bbNum of each jmpTab
+    for (unsigned i = 0; i < swtDsc->bbsCount; i++)
+    {
+        printf("%c\n" FMT_BB, (i == 0) ? ' ' : ',', jmpTab[i]->bbNum);
+    }
+
+    // Change from GT_JTRUE to GT_SWITCH
+    switchBBdesc->lastStmt()->GetRootNode()->SetOper(GT_SWITCH, GenTree::PRESERVE_VN);
+
+    // Change from GT_EQ or GT_NE to SUB
+    //      tree: SUB
+    //      op1: LCL_VAR
+    //      op2: GT_CNS_INT
+    GenTree* tree = switchBBdesc->lastStmt()->GetRootNode()->gtGetOp1(); // GT_EQ or GT_NE node
+    tree->SetOper(GT_SUB, GenTree::PRESERVE_VN); 
+
+    // get LCL_VAR node from GT_EQ or GT_NE node in case of COMMA node
+    if (tree->gtGetOp1()->OperIs(GT_COMMA))
+    {
+        GenTree* op1        = tree->gtGetOp1()->gtGetOp1();     // op1 of COMMA node
+        GenTree* op2        = tree->gtGetOp1()->gtGetOp2();     // LCL_VAR node
+        tree->AsOp()->gtOp1 = op2;                              // Set LCL_VAR node to op1 of tree
+
+        DEBUG_DESTROY_NODE(op1);
+    }
+
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+//  optFindSpecificPattern: Optimize range check for if (A || B || C || D) pattern.
+//
+//  Returns:
+//      MODIFIED_NOTHING if no optimization is performed.
+//      MODIFIED_EVERYTHING otherwise.
+//
+//  Notes:
+//      Detect if (a == val1 || a == val2 || a == val3 || a == val4) pattern and change it to switch tree to reduce
+//      jumps and perform bit operation instead.
+//
+PhaseStatus Compiler::optFindSpecificPattern()
+{
+    if (!ISMETHOD("Foo"))           // TODO clean up code
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    OptRangePatternDsc optRngPattern(this);
+
+    bool        printed                = false;
+    int         patternIndex           = 0; // The index of the pattern in the array
+    bool        foundPattern           = false;
+    BasicBlock* prevBb                 = nullptr;
+
+    for (BasicBlock* currBb = fgFirstBB; currBb != nullptr; currBb = currBb->bbNext)
+    {
+        if ((currBb->KindIs(BBJ_COND) || currBb->KindIs(BBJ_RETURN)) && prevBb != nullptr && prevBb->KindIs(BBJ_COND))
+        {
+            if (!printed)
+            {
+                printf("Display Basic Blocks for optFindSpecificPattern:\n");
+                fgDispBasicBlocks(true);
+                printed = true;
+            }
+
+            if (currBb->lastStmt() == currBb->firstStmt() && prevBb->lastStmt() == prevBb->firstStmt())
+            {
+                auto condition1 = currBb->lastStmt()->GetRootNode()->gtGetOp1();
+                auto condition2 = prevBb->lastStmt()->GetRootNode()->gtGetOp1();
+                if (condition1->OperIsCompare() && condition2->OperIsCompare())
+                {
+                    if (currBb->bbJumpDest == prevBb->bbJumpDest ||
+                        (condition1->OperIs(GT_NE) && condition2->OperIs(GT_EQ) && currBb->bbNext == prevBb->bbJumpDest))
+                    {
+                        // Check both conditions to have constant on the right side
+                        if (condition1->gtGetOp2()->IsIntegralConst() && condition2->gtGetOp2()->IsIntegralConst())
+                        {
+                            auto leftCondition1 = condition1->gtGetOp1(); // op1 of condition1 from currBb
+                            auto leftCondition2 = condition2->gtGetOp1(); // op1 of condition2 from prevBb
+                            if (leftCondition1->IsLocal() &&
+                                ((leftCondition2->IsLocal() && leftCondition1->AsLclVarCommon()->GetLclNum() ==
+                                                                   leftCondition2->AsLclVarCommon()->GetLclNum()) ||
+                                 (leftCondition2->OperIs(GT_COMMA) &&
+                                  leftCondition1->AsLclVarCommon()->GetLclNum() ==
+                                      leftCondition2->gtEffectiveVal(/* commaOnly */ true)
+                                          ->AsLclVarCommon()
+                                          ->GetLclNum())))
+                            {
+                                printf("\nFound pattern (Curr vs Prev):\n");
+                                gtDispTree(condition1);
+                                printf("\n");
+                                gtDispTree(condition2);
+                                printf("\n\n\n");
+
+                                // Store the found pattern to the patterns
+                                if (patternIndex >= optRngPattern.m_sizePatterns)
+                                {
+                                    printf("Too many patterns found (> 64), no optimization done.\n");
+                                    return PhaseStatus::MODIFIED_NOTHING;
+                                }
+
+                                // Previous pattern
+                                if (!foundPattern)  // First pattern found
+                                {
+                                    optRngPattern.m_patterns[patternIndex] =
+                                        (int)condition2->gtGetOp2()->AsIntCon()->IconValue();
+                                    optRngPattern.m_firstPatternBBNum = prevBb->bbNum;
+                                    optRngPattern.m_optFirstBB        = prevBb;
+
+                                    assert(condition2->OperIs(GT_EQ));
+                                    optRngPattern.m_trueJmpBB = prevBb->bbJumpDest;
+
+                                    // min and max patterns
+                                    optRngPattern.m_minPattern = optRngPattern.m_patterns[patternIndex];
+                                    optRngPattern.m_maxPattern = optRngPattern.m_patterns[patternIndex++];
+                                }
+
+                                // Current pattern
+                                optRngPattern.m_patterns[patternIndex] =
+                                    (int)condition1->gtGetOp2()->AsIntCon()->IconValue();
+
+                                // False jump
+                                if (condition1->OperIs(GT_NE))
+                                {
+                                    optRngPattern.m_falseJmpBB = currBb->bbJumpDest;
+                                }
+
+                                // Update min and max patterns
+                                if (optRngPattern.m_patterns[patternIndex] < optRngPattern.m_minPattern)
+                                {
+                                    optRngPattern.m_minPattern = optRngPattern.m_patterns[patternIndex];
+                                }
+                                else if (optRngPattern.m_patterns[patternIndex] > optRngPattern.m_maxPattern)
+                                {
+                                    optRngPattern.m_maxPattern = optRngPattern.m_patterns[patternIndex];
+                                }
+                                patternIndex++;
+
+                                foundPattern = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Stop searching if pattern(s) has been found in previous BBs, but the current BB does not have a pattern
+        if (foundPattern && patternIndex < (int)(currBb->bbNum - optRngPattern.m_firstPatternBBNum + 1))
+        {
+            break;
+        }
+
+        prevBb = currBb;
+    }
+
+    if (foundPattern)
+    {
+        optRngPattern.m_numFoundPatterns = patternIndex;
+
+        printf("Reserved values:\n");
+        for (int idx = 0; idx < optRngPattern.m_numFoundPatterns; idx++)
+        {
+            printf("%d ", optRngPattern.m_patterns[idx]);
+        }
+        printf("\n\n");
+
+        // Find range of pattern values
+        printf("Min pattern value: %d\n", optRngPattern.m_minPattern);
+        printf("Max pattern value: %d\n", optRngPattern.m_maxPattern);
+        optRngPattern.m_rangePattern =
+            optRngPattern.m_maxPattern - optRngPattern.m_minPattern + 1; // min 0 max 2 -> range 3
+        printf("Range of pattern values: %d\n", optRngPattern.m_rangePattern);
+        if (optRngPattern.m_rangePattern > optRngPattern.m_sizePatterns) // TODO: item 0 is 1 and item 1 is 100, rnage
+                                                                         // is 64 but only 2 items
+        {
+            printf("Range of pattern values is too big (> %d): %d\n", optRngPattern.m_sizePatterns,
+                   optRngPattern.m_rangePattern);
+            return PhaseStatus::MODIFIED_NOTHING;
+        }
+
+        //auto bitmapPatterns = 0;
+        //for (int idxPattern = 0; idxPattern < optRngPattern.m_numFoundPatterns; idxPattern++)
+        //{
+        //    bitmapPatterns |= (1 << (optRngPattern.m_patterns[idxPattern] - optRngPattern.m_minPattern));
+        //}
+        //printf("Bitmap of pattern values: %d\n", bitmapPatterns);
+
+        // Replace BBs with a Switch tree
+        if (!optRngPattern.optMakeSwitchBBdesc())
+        {
+            return PhaseStatus::MODIFIED_NOTHING;
+        }
+        if (optRngPattern.optUpdateBlocks())
+        {
+            return PhaseStatus::MODIFIED_EVERYTHING;
+        }
+    }
+
+    return PhaseStatus::MODIFIED_NOTHING;
 }
