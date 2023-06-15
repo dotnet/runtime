@@ -654,10 +654,10 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     //
     if ((fsv.GetFlags() & GTF_ASG) != 0)
     {
-        // We execute an assignment before the substitution local; that
-        // assignment could interfere with some of the locals in the source of
+        // We execute a store before the substitution local; that
+        // store could interfere with some of the locals in the source of
         // the candidate def.
-        JITDUMP(" cannot reorder with potential interfering assignment\n");
+        JITDUMP(" cannot reorder with potential interfering store\n");
         return false;
     }
     if (((fwdSubNode->gtFlags & GTF_CALL) != 0) && ((fsv.GetFlags() & GTF_ALL_EFFECT) != 0))
