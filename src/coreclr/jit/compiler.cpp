@@ -2849,6 +2849,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.disDiffable  = false;
     opts.dspDiffable  = false;
     opts.disAlignment = false;
+    opts.disCodeBytes = false;
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
@@ -3043,6 +3044,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (JitConfig.JitDisasmWithAlignmentBoundaries())
         {
             opts.disAlignment = true;
+        }
+        if (JitConfig.JitDisasmWithCodeBytes())
+        {
+            opts.disCodeBytes = true;
         }
         if (JitConfig.JitDisasmDiffable())
         {
