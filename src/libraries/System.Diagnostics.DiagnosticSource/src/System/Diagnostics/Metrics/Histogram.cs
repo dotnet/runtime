@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace System.Diagnostics.Metrics
 {
@@ -22,6 +23,20 @@ namespace System.Diagnostics.Metrics
         internal Histogram(Meter meter, string name, string? unit, string? description, IEnumerable<KeyValuePair<string, object?>>? tags) : base(meter, name, unit, description, tags)
         {
             Publish();
+        }
+
+        /// <summary>
+        /// using tags builder before record.
+        /// </summary>
+        /// <typeparam name="TTag"></typeparam>
+        /// <param name="key">The key.</param>
+        /// <param name="value">The value.</param>
+        /// <returns></returns>
+        public IHistogramBuilder<T> WithTag<TTag>(string key, TTag value)
+        {
+            var pair = new KeyValuePair<string, object?>(key, value);
+            var list = ImmutableArray.Create(pair);
+            return new HistogramBuilder<T>(this, list);
         }
 
         /// <summary>

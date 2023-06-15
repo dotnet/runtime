@@ -296,6 +296,97 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [OuterLoop("Slow and has lots of console spew")]
+        public void EventSourcePublishesTimeSeriesWithTagsBuilder()
+        {
+            using Meter meter = new Meter("TestMeter5");
+            Counter<int> c = meter.CreateCounter<int>("counter1");
+            int counterState = 3;
+            ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () =>
+            {
+                counterState += 7;
+                return new Measurement<int>[]
+                {
+                    new Measurement<int>(counterState,   new KeyValuePair<string,object?>("Color", "red"),  new KeyValuePair<string,object?>("Size", 19) ),
+                    new Measurement<int>(2*counterState, new KeyValuePair<string,object?>("Color", "blue"), new KeyValuePair<string,object?>("Size", 4 ) )
+                };
+            });
+            int gaugeState = 0;
+            ObservableGauge<int> og = meter.CreateObservableGauge<int>("observableGauge1", () =>
+            {
+                gaugeState += 9;
+                return new Measurement<int>[]
+                {
+                    new Measurement<int>(gaugeState,   new KeyValuePair<string,object?>("Color", "red"),  new KeyValuePair<string,object?>("Size", 19) ),
+                    new Measurement<int>(2*gaugeState, new KeyValuePair<string,object?>("Color", "blue"), new KeyValuePair<string,object?>("Size", 4 ) )
+                };
+            });
+            Histogram<int> h = meter.CreateHistogram<int>("histogram1");
+            UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1");
+            int upDownCounterState = 0;
+            ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () =>
+            {
+                upDownCounterState -= 11;
+                return new Measurement<int>[]
+                {
+                    new Measurement<int>(upDownCounterState,   new KeyValuePair<string,object?>("Color", "red"),  new KeyValuePair<string,object?>("Size", 19) ),
+                    new Measurement<int>(2*upDownCounterState, new KeyValuePair<string,object?>("Color", "blue"), new KeyValuePair<string,object?>("Size", 4 ) )
+                };
+            });
+
+            EventWrittenEventArgs[] events;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter5"))
+            {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+
+                c.WithTag("Color", "red")
+                 .Add(5);
+                c.WithTag("Color", "blue")
+                 .Add(6);
+                h.WithTag("Size", 123)
+                 .Record(19);
+                h.WithTag("Size", 124)
+                 .Record(20);
+                udc.WithTag("Color", "red")
+                    .Add(-33);
+                udc.WithTag("Color", "blue")
+                    .Add(-34);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+
+                c.WithTag("Color", "red")
+                 .Add(12);
+                c.WithTag("Color", "blue")
+                 .Add(13);
+                h.WithTag("Size", 123)
+                 .Record(26);
+                h.WithTag("Size", 124)
+                 .Record(27);
+                udc.WithTag("Color", "red")
+                    .Add(40);
+                udc.WithTag("Color", "blue")
+                    .Add(41);
+
+                events = listener.Events.ToArray();
+            }
+
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
+            AssertInitialEnumerationCompleteEventPresent(events);
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "Color=red", "", ("5", "5"), ("12", "17"));
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "Color=blue", "", ("6", "6"), ("13", "19"));
+            AssertCounterEventsPresent(events, meter.Name, oc.Name, "Color=red,Size=19", "", ("", "10"), ("7", "17"));
+            AssertCounterEventsPresent(events, meter.Name, oc.Name, "Color=blue,Size=4", "", ("", "20"), ("14", "34"));
+            AssertGaugeEventsPresent(events, meter.Name, og.Name, "Color=red,Size=19", "", "9", "18");
+            AssertGaugeEventsPresent(events, meter.Name, og.Name, "Color=blue,Size=4", "", "18", "36");
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "Size=123", "", ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "Size=124", "", ("0.5=20;0.95=20;0.99=20", "1", "20"), ("0.5=27;0.95=27;0.99=27", "1", "27"));
+            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "Color=red", "", ("-33", "-33"), ("40", "7"));
+            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "Color=blue", "", ("-34", "-34"), ("41", "7"));
+            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "Color=red,Size=19", "", ("", "-11"), ("-11", "-22"));
+            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "Color=blue,Size=4", "", ("", "-22"), ("-22", "-44"));
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
+        }
+
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [OuterLoop("Slow and has lots of console spew")]

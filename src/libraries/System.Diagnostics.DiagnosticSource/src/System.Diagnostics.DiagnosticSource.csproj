@@ -41,6 +41,13 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\DiagLinkedList.cs" />
     <Compile Include="System\Diagnostics\DistributedContextPropagator.cs" />
     <Compile Include="System\Diagnostics\LegacyPropagator.cs" />
+    <Compile Include="System\Diagnostics\Metrics\UpDownCounterBuilder.cs" />
+    <Compile Include="System\Diagnostics\Metrics\HistogramBuilder.cs" />
+    <Compile Include="System\Diagnostics\Metrics\CounterBuilder.cs" />
+    <Compile Include="System\Diagnostics\Metrics\IUpDownCounterBuilder.cs" />
+    <Compile Include="System\Diagnostics\Metrics\IHistogramBuilder.cs" />
+    <Compile Include="System\Diagnostics\Metrics\ITagBuilder.cs" />
+    <Compile Include="System\Diagnostics\Metrics\ICounterBuilder.cs" />
     <Compile Include="System\Diagnostics\NoOutputPropagator.cs" />
     <Compile Include="System\Diagnostics\PassThroughPropagator.cs" />
     <Compile Include="System\Diagnostics\RandomNumberGenerator.cs" />
@@ -86,10 +93,8 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\Metrics\ObjectSequence.netcore.cs" />
     <Compile Include="System\Diagnostics\Metrics\StringSequence.netcore.cs" />
     <Compile Include="System\Diagnostics\System.Diagnostics.DiagnosticSource.Typeforwards.netcoreapp.cs" />
-    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
-             Link="Common\System\LocalAppContextSwitches.Common.cs" />
-    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
-             Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs" Link="Common\System\LocalAppContextSwitches.Common.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -108,12 +113,11 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))" >
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' or
-                        '$(TargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' or&#xD;&#xA;                        '$(TargetFramework)' == 'netstandard2.0'">
     <Compile Include="System\Diagnostics\Activity.DateTime.corefx.cs" />
   </ItemGroup>
 
@@ -137,7 +141,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))" >
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
   </ItemGroup>
 </Project>
