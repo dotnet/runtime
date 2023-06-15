@@ -655,14 +655,6 @@ TypeCompareState interceptor_ICJI::compareTypesForEquality(
     return original_ICorJitInfo->compareTypesForEquality(cls1, cls2);
 }
 
-CORINFO_CLASS_HANDLE interceptor_ICJI::mergeClasses(
-          CORINFO_CLASS_HANDLE cls1,
-          CORINFO_CLASS_HANDLE cls2)
-{
-    mcs->AddCall("mergeClasses");
-    return original_ICorJitInfo->mergeClasses(cls1, cls2);
-}
-
 bool interceptor_ICJI::isMoreSpecificType(
           CORINFO_CLASS_HANDLE cls1,
           CORINFO_CLASS_HANDLE cls2)

@@ -714,10 +714,6 @@ public:
     void dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnostic_GetPgoInstrumentationResults& value);
     HRESULT repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE** pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource);
 
-    void recMergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, CORINFO_CLASS_HANDLE result);
-    void dmpMergeClasses(DLDL key, DWORDLONG value);
-    CORINFO_CLASS_HANDLE repMergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
-
     void recIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, bool result);
     void dmpIsMoreSpecificType(DLDL key, DWORD value);
     bool repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
@@ -1056,7 +1052,7 @@ enum mcPackets
     //Retired6 = 104,
     Packet_IsValueClass = 105,
     //Packet_IsWriteBarrierHelperRequired = 106,
-    Packet_MergeClasses = 107,
+    //Packet_MergeClasses = 107,
     Packet_PInvokeMarshalingRequired = 108,
     Packet_ResolveToken = 109,
     Packet_SatisfiesClassConstraints = 110,

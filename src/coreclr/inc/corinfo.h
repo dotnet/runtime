@@ -2610,12 +2610,6 @@ public:
             CORINFO_CLASS_HANDLE        cls2
             ) = 0;
 
-    // Returns the intersection of cls1 and cls2.
-    virtual CORINFO_CLASS_HANDLE mergeClasses(
-            CORINFO_CLASS_HANDLE        cls1,
-            CORINFO_CLASS_HANDLE        cls2
-            ) = 0;
-
     // Returns true if cls2 is known to be a more specific type
     // than cls1 (a subtype or more restrictive shared type)
     // for purposes of jit type tracking. This is a hint to the

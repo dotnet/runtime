@@ -5811,37 +5811,6 @@ HRESULT MethodContext::repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftn
     return result;
 }
 
-void MethodContext::recMergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, CORINFO_CLASS_HANDLE result)
-{
-    if (MergeClasses == nullptr)
-        MergeClasses = new LightWeightMap<DLDL, DWORDLONG>();
-
-    DLDL key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.A = CastHandle(cls1);
-    key.B = CastHandle(cls2);
-
-    DWORDLONG value = CastHandle(result);
-    MergeClasses->Add(key, value);
-    DEBUG_REC(dmpMergeClasses(key, value));
-}
-void MethodContext::dmpMergeClasses(DLDL key, DWORDLONG value)
-{
-    printf("MergeClasses NYI");
-}
-CORINFO_CLASS_HANDLE MethodContext::repMergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
-{
-    DLDL key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.A = CastHandle(cls1);
-    key.B = CastHandle(cls2);
-
-    DWORDLONG value = LookupByKeyOrMiss(MergeClasses, key, ": key %016" PRIX64 " %016" PRIX64 "", key.A, key.B);
-
-    DEBUG_REP(dmpMergeClasses(key, value));
-    return (CORINFO_CLASS_HANDLE)value;
-}
-
 void MethodContext::recIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, bool result)
 {
     if (IsMoreSpecificType == nullptr)
