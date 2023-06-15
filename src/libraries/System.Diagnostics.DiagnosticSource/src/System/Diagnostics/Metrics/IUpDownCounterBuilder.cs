@@ -13,6 +13,6 @@ namespace System.Diagnostics.Metrics
         /// Record the increment value of the measurement.
         /// </summary>
         /// <param name="delta">The increment measurement.</param>
-        IUpDownCounterBuilder<T> void Add(T delta);
+        IUpDownCounterBuilder<T> Add(T delta);
     }
 }
