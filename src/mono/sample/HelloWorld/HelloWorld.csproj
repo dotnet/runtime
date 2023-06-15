@@ -57,5 +57,6 @@
         DestinationFiles="@(TrimmedAssemblies)"
         OverwriteReadOnlyFiles="true"
     />
+    <Delete Files="@(TrimmedAssemblies->Metadata('TrimmedAssemblyFileName'))" />
   </Target>
 </Project>

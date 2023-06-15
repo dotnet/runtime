@@ -7,7 +7,7 @@ MONO_ARCH?=$(shell . $(TOP)eng/native/init-os-and-arch.sh && echo $${arch})
 TARGET_OS?=$(shell . $(TOP)eng/native/init-os-and-arch.sh && echo $${os})
 AOT?=false
 StripILCode?=false
-MethodTokenFilePath?= #<path-to-a-writable-directory>
+CompiledMethodsOutputDirectory?= #<path-to-a-writable-directory>
 
 #NET_TRACE_PATH=<path-to-trace-of-sample>
 #PGO_BINARY_PATH=<path-to-dotnet-pgo-executable>
