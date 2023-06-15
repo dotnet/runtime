@@ -205,10 +205,12 @@ namespace Microsoft.Win32.SafeHandles
             {
                 while (true)
                 {
-                    safeFileHandle = Open(fullPath, openFlags, failForSymlink, out wasSymlink, (int)openPermissions, createOpenException);
+                    safeFileHandle = Open(fullPath, openFlags, (int)openPermissions, failForSymlink, out wasSymlink, createOpenException);
 
                     if (failForSymlink && wasSymlink)
                     {
+                        fileLength = default;
+                        filePermissions = default;
                         return safeFileHandle;
                     }
 
