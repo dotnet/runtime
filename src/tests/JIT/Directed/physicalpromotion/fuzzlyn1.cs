@@ -25,7 +25,7 @@ public struct S0
     }
 }
 
-public class Program
+public class Runtime_87611
 {
     public static IRuntime s_rt;
     public static uint s_1;
