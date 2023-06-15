@@ -172,6 +172,7 @@ class Promotion
     bool HaveCandidateLocals();
 
     static bool IsCandidateForPhysicalPromotion(LclVarDsc* dsc);
+    static GenTree* EffectiveUser(Compiler::GenTreeStack& ancestors);
 
 public:
     explicit Promotion(Compiler* compiler) : m_compiler(compiler)
@@ -263,6 +264,7 @@ public:
     {
         DoPostOrder       = true,
         UseExecutionOrder = true,
+        ComputeStack      = true,
     };
 
     ReplaceVisitor(Promotion* prom, jitstd::vector<AggregateInfo*>& aggregates, PromotionLiveness* liveness)
@@ -298,16 +300,14 @@ public:
 
 private:
     GenTree** InsertMidTreeReadBacksIfNecessary(GenTree** use);
-    void LoadStoreAroundCall(GenTreeCall* call, GenTree* user);
-    GenTree** EffectiveUse(GenTree** use);
+    void ReadBackAfterCall(GenTreeCall* call, GenTree* user);
     bool IsPromotedStructLocalDying(GenTreeLclVarCommon* structLcl);
     void ReplaceLocal(GenTree** use, GenTree* user);
     void CheckForwardSubForLastUse(unsigned lclNum);
-    void StoreBeforeReturn(GenTreeUnOp* ret);
     void WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs, unsigned size);
     bool MarkForReadBack(unsigned lcl, unsigned offs, unsigned size);
 
-    void HandleStore(GenTree** use, GenTree* user);
+    void HandleStructStore(GenTree** use, GenTree* user);
     bool OverlappingReplacements(GenTreeLclVarCommon* lcl,
                                  Replacement**        firstReplacement,
                                  Replacement**        endReplacement = nullptr);
