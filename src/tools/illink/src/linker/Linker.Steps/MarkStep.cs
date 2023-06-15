@@ -3537,12 +3537,17 @@ namespace Mono.Linker.Steps
 			ReflectionMarker reflectionMarker = new ReflectionMarker (this.Context, this, true);
 			MessageOrigin messageOrigin = new MessageOrigin (method);
 
-			_ = name; // So far unused
-
 			switch (kind) {
 			case UnsafeAccessorKind.Constructor:
 				if (!method.ReturnsVoid() && Context.TryResolve (method.ReturnType) is TypeDefinition returnType) {
 					reflectionMarker.MarkConstructorsOnType (messageOrigin, returnType, filter: null);
+				}
+				break;
+			case UnsafeAccessorKind.StaticMethod:
+				if (method.HasMetadataParameters () && Context.TryResolve (method.GetParameter((ParameterIndex)0).ParameterType) is TypeDefinition targetType) {
+					foreach (var targetMethod in targetType.GetMethodsOnTypeHierarchy (Context, m => m.Name == name)) {
+						reflectionMarker.MarkMethod (messageOrigin, targetMethod);
+					}
 				}
 				break;
 			default:
