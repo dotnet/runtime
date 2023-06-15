@@ -188,7 +188,7 @@ jobs:
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Darwin'))
 
     # Zip the workitem directory (for xharness (mobile) based workitems)
-    - ${{ if or(eq(parameters.runKind, "android_scenarios"), eq(parameters.runKind, "ios_scenarios")) }}:
+    - ${{ if or(eq(parameters.runKind, 'android_scenarios'), eq(parameters.runKind, 'ios_scenarios')) }}:
       - task: ArchiveFiles@2
         inputs:
           rootFolderOrFile: '$(WorkItemDirectory)'
