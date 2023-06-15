@@ -79,7 +79,7 @@ namespace System.ComponentModel.Design.Serialization
             {
                 if (_typeId == null)
                 {
-                    ReadOnlySpan<char> baseType = SerializerBaseTypeName ?? string.Empty;
+                    ReadOnlySpan<char> baseType = SerializerBaseTypeName;
                     int comma = baseType.IndexOf(',');
                     if (comma >= 0)
                     {

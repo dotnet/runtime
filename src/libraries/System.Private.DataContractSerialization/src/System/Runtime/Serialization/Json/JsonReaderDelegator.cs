@@ -166,7 +166,7 @@ namespace System.Runtime.Serialization.Json
             if (indexOfTimeZoneOffset >= 0)
             {
                 dateTimeKind = DateTimeKind.Local;
-                ticksvalue = ticksvalue.Slice(0, 1 + indexOfTimeZoneOffset);
+                ticksvalue = ticksvalue.Slice(0, indexOfTimeZoneOffset + 1); // +1 for Slice above
             }
 
             try

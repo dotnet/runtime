@@ -307,9 +307,7 @@ namespace System.Net
         private static ReadOnlySpan<char> RemoveChunkExtension(ReadOnlySpan<char> input)
         {
             int idx = input.IndexOf(';');
-            if (idx == -1)
-                return input;
-            return input.Slice(0, idx);
+            return idx >= 0 ? input.Slice(0, idx) : input;
         }
 
         private State ReadCRLF(byte[] buffer, ref int offset, int size)

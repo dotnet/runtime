@@ -86,7 +86,7 @@ namespace System.Net
                 ReadOnlySpan<char> portString = p.AsSpan(colon + 1, root - colon - 1);
 
                 int port;
-                if (!int.TryParse(portString, out port) || port <= 0 || port >= 65536)
+                if (!int.TryParse(portString, out port) || port is <= 0 or >= 65536)
                 {
                     throw new HttpListenerException((int)HttpStatusCode.BadRequest, SR.net_invalid_port);
                 }
