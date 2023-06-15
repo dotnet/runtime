@@ -430,17 +430,6 @@ C_ASSERT(sizeof(Thread) == sizeof(ThreadBuffer));
 
 #ifndef _MSC_VER
 __thread ThreadBuffer tls_CurrentThread;
-
-// tls_InlinedThreadStatics should be emitted by ILC and that is already the case for win-x64 and linux-x64
-// the remaining platforms use tls_InlinedThreadStatics defined here until 
-
-#if defined(__APPLE__) || defined(TARGET_ARM64)
-__thread InlinedThreadStaticRoot tls_InlinedThreadStatics;
-#endif
-
-#elif defined(TARGET_ARM64)
-EXTERN_C __declspec(thread) InlinedThreadStaticRoot tls_InlinedThreadStatics;
-__declspec(thread) InlinedThreadStaticRoot tls_InlinedThreadStatics;
 #endif
 
 EXTERN_C ThreadBuffer* RhpGetThread()

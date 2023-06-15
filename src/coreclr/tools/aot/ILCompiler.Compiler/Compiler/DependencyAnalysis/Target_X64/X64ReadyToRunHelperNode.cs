@@ -244,7 +244,7 @@ namespace ILCompiler.DependencyAnalysis
                     // mov         rax,qword ptr gs:[58h]
                     encoder.Builder.EmitBytes(new byte[] { 0x65, 0x48, 0x8B, 0x04, 0x25, 0x58, 0x00, 0x00, 0x00 });
 
-                    // mov         ecx,[tls_InlinedThreadStatics]
+                    // mov         ecx, SECTIONREL tlsRoot
                     encoder.Builder.EmitBytes(new byte[] { 0xB9 });
                     encoder.Builder.EmitReloc(tlsRoot, RelocType.IMAGE_REL_SECREL);
 
@@ -263,7 +263,7 @@ namespace ILCompiler.DependencyAnalysis
                     // mov         rax,qword ptr [rax+rcx*8]
                     encoder.Builder.EmitBytes(new byte[] { 0x48, 0x8B, 0x04, 0xC8 });
 
-                    // mov         ecx,[tls_InlinedThreadStatics]
+                    // mov         ecx, SECTIONREL tlsRoot
                     encoder.Builder.EmitBytes(new byte[] { 0xB9 });
                     encoder.Builder.EmitReloc(tlsRoot, RelocType.IMAGE_REL_SECREL);
 
