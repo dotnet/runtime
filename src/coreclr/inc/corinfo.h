@@ -3123,10 +3123,6 @@ public:
                         CORINFO_CALL_INFO       *pResult
                         ) = 0;
 
-    // Returns TRUE if the Class Domain ID is the RID of the class (currently true for every class
-    // except reflection emitted classes and generics)
-    virtual bool isRIDClassDomainID(CORINFO_CLASS_HANDLE cls) = 0;
-
     // returns the class's domain ID for accessing shared statics
     virtual unsigned getClassDomainID (
                     CORINFO_CLASS_HANDLE    cls,

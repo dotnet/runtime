@@ -5574,28 +5574,6 @@ void CEEInfo::getCallInfo(
 }
 
 
-bool CEEInfo::isRIDClassDomainID(CORINFO_CLASS_HANDLE cls)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    bool result = FALSE;
-
-    JIT_TO_EE_TRANSITION();
-
-    TypeHandle  VMClsHnd(cls);
-
-    result = !VMClsHnd.AsMethodTable()->IsDynamicStatics();
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
-
 /***********************************************************************/
 unsigned CEEInfo::getClassDomainID (CORINFO_CLASS_HANDLE clsHnd,
                                     void **ppIndirection)

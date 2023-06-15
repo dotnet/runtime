@@ -1388,15 +1388,6 @@ void WrapICorJitInfo::getCallInfo(
     API_LEAVE(getCallInfo);
 }
 
-bool WrapICorJitInfo::isRIDClassDomainID(
-          CORINFO_CLASS_HANDLE cls)
-{
-    API_ENTER(isRIDClassDomainID);
-    bool temp = wrapHnd->isRIDClassDomainID(cls);
-    API_LEAVE(isRIDClassDomainID);
-    return temp;
-}
-
 unsigned WrapICorJitInfo::getClassDomainID(
           CORINFO_CLASS_HANDLE cls,
           void** ppIndirection)
