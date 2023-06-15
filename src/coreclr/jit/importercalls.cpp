@@ -8289,6 +8289,15 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     break;
                 }
 
+                case 'D':
+                {
+                    if (strcmp(className, "Double") == 0)
+                    {
+                        result = lookupPrimitiveFloatNamedIntrinsic(method, methodName);
+                    }
+                    break;
+                }
+
                 case 'E':
                 {
                     if (strcmp(className, "Enum") == 0)
@@ -8325,7 +8334,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     if ((strcmp(className, "Int32") == 0) || (strcmp(className, "Int64") == 0) ||
                         (strcmp(className, "IntPtr") == 0))
                     {
-                        result = lookupPrimitiveNamedIntrinsic(method, methodName);
+                        result = lookupPrimitiveIntNamedIntrinsic(method, methodName);
                     }
                     break;
                 }
@@ -8334,126 +8343,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 {
                     if ((strcmp(className, "Math") == 0) || (strcmp(className, "MathF") == 0))
                     {
-                        if (strcmp(methodName, "Abs") == 0)
-                        {
-                            result = NI_System_Math_Abs;
-                        }
-                        else if (strcmp(methodName, "Acos") == 0)
-                        {
-                            result = NI_System_Math_Acos;
-                        }
-                        else if (strcmp(methodName, "Acosh") == 0)
-                        {
-                            result = NI_System_Math_Acosh;
-                        }
-                        else if (strcmp(methodName, "Asin") == 0)
-                        {
-                            result = NI_System_Math_Asin;
-                        }
-                        else if (strcmp(methodName, "Asinh") == 0)
-                        {
-                            result = NI_System_Math_Asinh;
-                        }
-                        else if (strcmp(methodName, "Atan") == 0)
-                        {
-                            result = NI_System_Math_Atan;
-                        }
-                        else if (strcmp(methodName, "Atanh") == 0)
-                        {
-                            result = NI_System_Math_Atanh;
-                        }
-                        else if (strcmp(methodName, "Atan2") == 0)
-                        {
-                            result = NI_System_Math_Atan2;
-                        }
-                        else if (strcmp(methodName, "Cbrt") == 0)
-                        {
-                            result = NI_System_Math_Cbrt;
-                        }
-                        else if (strcmp(methodName, "Ceiling") == 0)
-                        {
-                            result = NI_System_Math_Ceiling;
-                        }
-                        else if (strcmp(methodName, "Cos") == 0)
-                        {
-                            result = NI_System_Math_Cos;
-                        }
-                        else if (strcmp(methodName, "Cosh") == 0)
-                        {
-                            result = NI_System_Math_Cosh;
-                        }
-                        else if (strcmp(methodName, "Exp") == 0)
-                        {
-                            result = NI_System_Math_Exp;
-                        }
-                        else if (strcmp(methodName, "Floor") == 0)
-                        {
-                            result = NI_System_Math_Floor;
-                        }
-                        else if (strcmp(methodName, "FMod") == 0)
-                        {
-                            result = NI_System_Math_FMod;
-                        }
-                        else if (strcmp(methodName, "FusedMultiplyAdd") == 0)
-                        {
-                            result = NI_System_Math_FusedMultiplyAdd;
-                        }
-                        else if (strcmp(methodName, "ILogB") == 0)
-                        {
-                            result = NI_System_Math_ILogB;
-                        }
-                        else if (strcmp(methodName, "Log") == 0)
-                        {
-                            result = NI_System_Math_Log;
-                        }
-                        else if (strcmp(methodName, "Log2") == 0)
-                        {
-                            result = NI_System_Math_Log2;
-                        }
-                        else if (strcmp(methodName, "Log10") == 0)
-                        {
-                            result = NI_System_Math_Log10;
-                        }
-                        else if (strcmp(methodName, "Max") == 0)
-                        {
-                            result = NI_System_Math_Max;
-                        }
-                        else if (strcmp(methodName, "Min") == 0)
-                        {
-                            result = NI_System_Math_Min;
-                        }
-                        else if (strcmp(methodName, "Pow") == 0)
-                        {
-                            result = NI_System_Math_Pow;
-                        }
-                        else if (strcmp(methodName, "Round") == 0)
-                        {
-                            result = NI_System_Math_Round;
-                        }
-                        else if (strcmp(methodName, "Sin") == 0)
-                        {
-                            result = NI_System_Math_Sin;
-                        }
-                        else if (strcmp(methodName, "Sinh") == 0)
-                        {
-                            result = NI_System_Math_Sinh;
-                        }
-                        else if (strcmp(methodName, "Sqrt") == 0)
-                        {
-                            result = NI_System_Math_Sqrt;
-                        }
-                        else if (strcmp(methodName, "Tan") == 0)
-                        {
-                            result = NI_System_Math_Tan;
-                        }
-                        else if (strcmp(methodName, "Tanh") == 0)
-                        {
-                            result = NI_System_Math_Tanh;
-                        }
-                        else if (strcmp(methodName, "Truncate") == 0)
-                        {
-                            result = NI_System_Math_Truncate;
-                        }
+                        result = lookupPrimitiveFloatNamedIntrinsic(method, methodName);
                     }
                     else if (strcmp(className, "MemoryExtensions") == 0)
                     {
@@ -8529,7 +8419,11 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
                 case 'S':
                 {
-                    if (strcmp(className, "Span`1") == 0)
+                    if (strcmp(className, "Single") == 0)
+                    {
+                        result = lookupPrimitiveFloatNamedIntrinsic(method, methodName);
+                    }
+                    else if (strcmp(className, "Span`1") == 0)
                     {
                         if (strcmp(methodName, "get_Item") == 0)
                         {
@@ -8626,7 +8520,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     if ((strcmp(className, "UInt32") == 0) || (strcmp(className, "UInt64") == 0) ||
                         (strcmp(className, "UIntPtr") == 0))
                     {
-                        result = lookupPrimitiveNamedIntrinsic(method, methodName);
+                        result = lookupPrimitiveIntNamedIntrinsic(method, methodName);
                     }
                     break;
                 }
@@ -8673,7 +8567,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 if (strcmp(className, "BitOperations") == 0)
                 {
-                    result = lookupPrimitiveNamedIntrinsic(method, methodName);
+                    result = lookupPrimitiveIntNamedIntrinsic(method, methodName);
                 }
                 else
                 {
@@ -9034,7 +8928,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 }
 
 //------------------------------------------------------------------------
-// lookupPrimitiveNamedIntrinsic: map method to jit named intrinsic value
+// lookupPrimitiveFloatNamedIntrinsic: map method to jit named intrinsic value
 //
 // Arguments:
 //    method -- method handle for method
@@ -9046,7 +8940,267 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 //    method should have CORINFO_FLG_INTRINSIC set in its attributes,
 //    otherwise it is not a named jit intrinsic.
 //
-NamedIntrinsic Compiler::lookupPrimitiveNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName)
+NamedIntrinsic Compiler::lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName)
+{
+    NamedIntrinsic result = NI_Illegal;
+
+    switch (className[0])
+    {
+        case 'A':
+        {
+            if (strcmp(methodName, "Abs") == 0)
+            {
+                result = NI_System_Math_Abs;
+            }
+            else if (strncmp(methodName, "Acos", 4) == 0)
+            {
+                methodName += 4;
+
+                if (methodName[0] == '\0')
+                {
+                    result = NI_System_Math_Acos;
+                }
+                else if (methodName[1] == '\0')
+                {
+                    if (methodName[0] == 'h')
+                    {
+                        result = NI_System_Math_Acosh;
+                    }
+                }
+            }
+            else if (strncmp(methodName, "Asin", 4) == 0)
+            {
+                methodName += 4;
+
+                if (methodName[0] == '\0')
+                {
+                    result = NI_System_Math_Asin;
+                }
+                else if (methodName[1] == '\0')
+                {
+                    if (methodName[0] == 'h')
+                    {
+                        result = NI_System_Math_Asinh;
+                    }
+                }
+            }
+            else if (strncmp(methodName, "Atan", 4) == 0)
+            {
+                methodName += 4;
+
+                if (methodName[0] == '\0')
+                {
+                    result = NI_System_Math_Atan;
+                }
+                else if (methodName[1] == '\0')
+                {
+                    if (methodName[0] == 'h')
+                    {
+                        result = NI_System_Math_Atanh;
+                    }
+                    else if (methodName[0] == '2')
+                    {
+                        result = NI_System_Math_Atan2;
+                    }
+                }
+            }
+            break;
+        }
+
+        case 'C':
+        {
+            if (strcmp(methodName, "Cbrt") == 0)
+            {
+                result = NI_System_Math_Cbrt;
+            }
+            else if (strcmp(methodName, "Ceiling") == 0)
+            {
+                result = NI_System_Math_Ceiling;
+            }
+            else if (strncmp(methodName, "Cos", 3) == 0)
+            {
+                methodName += 3;
+
+                if (methodName[0] == '\0')
+                {
+                    result = NI_System_Math_Cos;
+                }
+                else if (methodName[1] == '\0')
+                {
+                    if (methodName[0] == 'h')
+                    {
+                        result = NI_System_Math_Cosh;
+                    }
+                }
+            }
+            break;
+        }
+
+        case 'E':
+        {
+            if (strcmp(methodName, "Exp") == 0)
+            {
+                result = NI_System_Math_Exp;
+            }
+            break;
+        }
+
+        case 'F':
+        {
+            if (strcmp(methodName, "Floor") == 0)
+            {
+                result = NI_System_Math_Floor;
+            }
+            else if (strcmp(methodName, "FMod") == 0)
+            {
+                result = NI_System_Math_FMod;
+            }
+            else if (strcmp(methodName, "FusedMultiplyAdd") == 0)
+            {
+                result = NI_System_Math_FusedMultiplyAdd;
+            }
+            break;
+        }
+
+        case 'I':
+        {
+            if (strcmp(methodName, "ILogB") == 0)
+            {
+                result = NI_System_Math_ILogB;
+            }
+            break;
+        }
+
+        case 'L':
+        {
+            if (strncmp(methodName, "Log", 3) == 0)
+            {
+                methodName += 3;
+
+                if (methodName[0] == '\0')
+                {
+                    result = NI_System_Math_Log;
+                }
+                else if (methodName[1] == '\0')
+                {
+                    if (methodName[0] == '2')
+                    {
+                        result = NI_System_Math_Log2;
+                    }
+                }
+                else if (strcmp(methodName, "10") == 0)
+                {
+                    result = NI_System_Math_Log10;
+                }
+            }
+            break;
+        }
+
+        case 'M':
+        {
+            if (strcmp(methodName, "Max") == 0)
+            {
+                result = NI_System_Math_Max;
+            }
+            else if (strcmp(methodName, "Min") == 0)
+            {
+                result = NI_System_Math_Min;
+            }
+            break;
+        }
+
+        case 'P':
+        {
+            if (strcmp(methodName, "Pow") == 0)
+            {
+                result = NI_System_Math_Pow;
+            }
+            break;
+        }
+
+        case 'R':
+        {
+            if (strcmp(methodName, "Round") == 0)
+            {
+                result = NI_System_Math_Round;
+            }
+            break;
+        }
+
+        case 'S':
+        {
+            if (strncmp(methodName, "Sin", 3) == 0)
+            {
+                methodName += 3;
+
+                if (methodName[0] == '\0')
+                {
+                    result = NI_System_Math_Sin;
+                }
+                else if (methodName[1] == '\0')
+                {
+                    if (methodName[0] == 'h')
+                    {
+                        result = NI_System_Math_Sinh;
+                    }
+                }
+            }
+            else if (strcmp(methodName, "Sqrt") == 0)
+            {
+                result = NI_System_Math_Sqrt;
+            }
+            break;
+        }
+
+        case 'T':
+        {
+            if (strncmp(methodName, "Tan", 3) == 0)
+            {
+                methodName += 3;
+
+                if (methodName[0] == '\0')
+                {
+                    result = NI_System_Math_Tan;
+                }
+                else if (methodName[1] == '\0')
+                {
+                    if (methodName[0] == 'h')
+                    {
+                        result = NI_System_Math_Tanh;
+                    }
+                }
+                result = NI_System_Math_Tan;
+            }
+            else if (strcmp(methodName, "Truncate") == 0)
+            {
+                result = NI_System_Math_Truncate;
+            }
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    return result;
+}
+
+//------------------------------------------------------------------------
+// lookupPrimitiveIntNamedIntrinsic: map method to jit named intrinsic value
+//
+// Arguments:
+//    method -- method handle for method
+//
+// Return Value:
+//    Id for the named intrinsic, or Illegal if none.
+//
+// Notes:
+//    method should have CORINFO_FLG_INTRINSIC set in its attributes,
+//    otherwise it is not a named jit intrinsic.
+//
+NamedIntrinsic Compiler::lookupPrimitiveIntNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName)
 {
     NamedIntrinsic result = NI_Illegal;
 

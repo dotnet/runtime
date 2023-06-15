@@ -47,6 +47,7 @@ namespace System
 
         private const int ILogB_Zero = (-1 - 0x7fffffff);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Abs(float x)
         {
@@ -184,6 +185,7 @@ namespace System
             }
         }
 
+        [Intrinsic]
         public static int ILogB(float x)
         {
             // Implementation based on https://git.musl-libc.org/cgit/musl/tree/src/math/ilogbf.c
@@ -241,6 +243,7 @@ namespace System
             return Log(x) / Log(y);
         }
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Max(float x, float y)
         {
@@ -271,6 +274,7 @@ namespace System
             return y;
         }
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Min(float x, float y)
         {
