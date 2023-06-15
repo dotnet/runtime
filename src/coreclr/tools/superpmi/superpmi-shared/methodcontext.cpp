@@ -1181,14 +1181,6 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
         return "CORJIT_FLAG_MIN_OPT";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_ENABLE_CFG:
         return "CORJIT_FLAG_ENABLE_CFG";
-    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_MCJIT_BACKGROUND:
-        return "CORJIT_FLAG_MCJIT_BACKGROUND";
-
-#if defined(TARGET_X86)
-    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PINVOKE_RESTORE_ESP:
-        return "CORJIT_FLAG_PINVOKE_RESTORE_ESP";
-#endif // defined(TARGET_X86)
-
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_OSR:
         return "CORJIT_FLAG_OSR";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_ALT_JIT:
@@ -1213,12 +1205,12 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
         return "CORJIT_FLAG_PROCSPLIT";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_BBINSTR:
         return "CORJIT_FLAG_BBINSTR";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_BBINSTR_IF_LOOPS:
+        return "CORJIT_FLAG_BBINSTR_IF_LOOPS";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_BBOPT:
         return "CORJIT_FLAG_BBOPT";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_FRAMED:
         return "CORJIT_FLAG_FRAMED";
-    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_BBINSTR_IF_LOOPS:
-        return "CORJIT_FLAG_BBINSTR_IF_LOOPS";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PUBLISH_SECRET_PARAM:
         return "CORJIT_FLAG_PUBLISH_SECRET_PARAM";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_USE_PINVOKE_HELPERS:
@@ -1231,19 +1223,20 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
         return "CORJIT_FLAG_TIER0";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_TIER1:
         return "CORJIT_FLAG_TIER1";
-
-#if defined(TARGET_ARM)
-    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_RELATIVE_CODE_RELOCS:
-        return "CORJIT_FLAG_RELATIVE_CODE_RELOCS";
-#endif // defined(TARGET_ARM)
-
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_NO_INLINING:
         return "CORJIT_FLAG_NO_INLINING";
 
 #if defined(TARGET_ARM)
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_RELATIVE_CODE_RELOCS:
+        return "CORJIT_FLAG_RELATIVE_CODE_RELOCS";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_SOFTFP_ABI:
         return "CORJIT_FLAG_SOFTFP_ABI";
 #endif // defined(TARGET_ARM)
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_VECTOR512_THROTTLING:
+        return "CORJIT_FLAG_VECTOR512_THROTTLING";
+#endif // defined(TARGET_XARCH)
 
     default:
         return "<unknown>";

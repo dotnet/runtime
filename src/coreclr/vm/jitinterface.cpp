@@ -12771,10 +12771,6 @@ CorJitResult invokeCompileMethod(EEJitManager *jitMgr,
     CORJIT_FLAGS flags;
     if (g_pConfig->JitFramed())
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_FRAMED);
-#ifdef TARGET_X86
-    if (g_pConfig->PInvokeRestoreEsp(ftn->GetModule()->IsPreV4Assembly()))
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PINVOKE_RESTORE_ESP);
-#endif // TARGET_X86
 
     // Set flags based on method's ImplFlags.
     if (!ftn->IsNoMetadata())
@@ -13237,17 +13233,14 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         {
             jitInfo.WriteCode(jitMgr);
 #if defined(DEBUGGING_SUPPORTED)
-            if (!pJitFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND))
+            //
+            // Notify the debugger that we have successfully jitted the function
+            //
+            if (g_pDebugInterface)
             {
-                //
-                // Notify the debugger that we have successfully jitted the function
-                //
-                if (g_pDebugInterface)
+                if (!jitInfo.JitAgain())
                 {
-                    if (!jitInfo.JitAgain())
-                    {
-                        g_pDebugInterface->JITComplete(nativeCodeVersion, (TADDR)nativeEntry);
-                    }
+                    g_pDebugInterface->JITComplete(nativeCodeVersion, (TADDR)nativeEntry);
                 }
             }
 #endif // DEBUGGING_SUPPORTED

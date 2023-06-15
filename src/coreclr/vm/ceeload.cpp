@@ -1537,37 +1537,6 @@ BOOL Module::IsRuntimeMarshallingEnabled()
     return hr != S_OK;
 }
 
-BOOL Module::IsPreV4Assembly()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END
-
-    if (!(m_dwPersistedFlags & COMPUTED_IS_PRE_V4_ASSEMBLY))
-    {
-        IMDInternalImport *pImport = GetAssembly()->GetMDImport();
-        _ASSERTE(pImport);
-
-        BOOL fIsPreV4Assembly = FALSE;
-        LPCSTR szVersion = NULL;
-        if (SUCCEEDED(pImport->GetVersionString(&szVersion)))
-        {
-            if (szVersion != NULL && strlen(szVersion) > 2)
-            {
-                fIsPreV4Assembly = (szVersion[0] == 'v' || szVersion[0] == 'V') &&
-                                   (szVersion[1] == '1' || szVersion[1] == '2');
-            }
-        }
-
-        InterlockedOr((LONG*)&m_dwPersistedFlags, COMPUTED_IS_PRE_V4_ASSEMBLY |
-            (fIsPreV4Assembly ? IS_PRE_V4_ASSEMBLY : 0));
-    }
-
-    return !!(m_dwPersistedFlags & IS_PRE_V4_ASSEMBLY);
-}
 
 DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
 {
