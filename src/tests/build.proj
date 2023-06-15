@@ -57,7 +57,7 @@
       <LegacyRunnableTestPaths SecondSeparator="$([System.String]::Copy('%(LegacyRunnableTestPaths.Identity)').IndexOfAny('\\/', $([MSBuild]::Add(%(LegacyRunnableTestPaths.Separator), 1))))" />
       <LegacyRunnableTestPaths ThirdSeparator="$([System.String]::Copy('%(LegacyRunnableTestPaths.Identity)').IndexOfAny('\\/', $([MSBuild]::Add(%(LegacyRunnableTestPaths.SecondSeparator), 1))))" />
       <LegacyRunnableTestPaths Separator="%(LegacyRunnableTestPaths.SecondSeparator)" Condition="'%(LegacyRunnableTestPaths.SecondSeparator)' != '-1'" />
-      <LegacyRunnableTestPaths Separator="%(LegacyRunnableTestPaths.ThirdSeparator)" Condition="'%(LegacyRunnableTestPaths.ThirdSeparator)' != '-1' and '$(TestBuildMode)' == 'nativeaot' and '$(_IsApplePlatform)' == 'true'" />
+      <LegacyRunnableTestPaths Separator="%(LegacyRunnableTestPaths.ThirdSeparator)" Condition="'%(LegacyRunnableTestPaths.ThirdSeparator)' != '-1' and '$(TestBuildMode)' == 'nativeaot' and '$(TargetsAppleMobile)' == 'true'" />
       <TestDirectoriesWithDup Include="$([System.String]::Copy('%(LegacyRunnableTestPaths.Identity)').Substring(0, %(LegacyRunnableTestPaths.Separator)))" />
     </ItemGroup>
 
@@ -472,8 +472,8 @@
 
   <Target Name="_SetCustomIlcProps">
     <PropertyGroup>
-      <_IsApplePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsApplePlatform>
-      <_IsiOSLikePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsiOSLikePlatform>
+      <_IsApplePlatform>true</_IsApplePlatform>
+      <_IsiOSLikePlatform>true</_IsiOSLikePlatform>
       <_targetOS>$(TargetOS)</_targetOS>
       <UseNativeAOTRuntime>true</UseNativeAOTRuntime>
       <NativeLib>static</NativeLib>
