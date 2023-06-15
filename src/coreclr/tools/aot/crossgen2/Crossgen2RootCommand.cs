@@ -8,7 +8,7 @@ using System.CommandLine.Help;
 using System.CommandLine.Parsing;
 using System.IO;
 using System.Runtime.InteropServices;
-
+using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
 
 namespace ILCompiler
@@ -39,6 +39,8 @@ namespace ILCompiler
             new(new[] { "--optimize-space", "--Os" }, SR.OptimizeSpaceOption);
         public Option<bool> OptimizeTime { get; } =
             new(new[] { "--optimize-time", "--Ot" }, SR.OptimizeSpeedOption);
+        public Option<TypeValidationRule> TypeValidation { get; } =
+            new(new[] { "--type-validation"}, () => TypeValidationRule.Automatic, SR.TypeValidation);
         public Option<bool> InputBubble { get; } =
             new(new[] { "--inputbubble" }, SR.InputBubbleOption);
         public Option<Dictionary<string, string>> InputBubbleReferenceFilePaths { get; } =
@@ -77,6 +79,12 @@ namespace ILCompiler
             new(new[] { "--resilient" }, SR.ResilientOption);
         public Option<string> ImageBase { get; } =
             new(new[] { "--imagebase" }, SR.ImageBase);
+        public Option<bool> EnableGenericCycleDetection { get; } =
+            new(new[] { "--enable-generic-cycle-detection" }, SR.EnableGenericCycleDetection);
+        public Option<int> GenericCycleDepthCutoff { get; } =
+            new(new[] { "--maxgenericcycle" }, () => ReadyToRunCompilerContext.DefaultGenericCycleDepthCutoff, SR.GenericCycleDepthCutoff);
+        public Option<int> GenericCycleBreadthCutoff { get; } =
+            new(new[] { "--maxgenericcyclebreadth" }, () => ReadyToRunCompilerContext.DefaultGenericCycleBreadthCutoff, SR.GenericCycleBreadthCutoff);
         public Option<TargetArchitecture> TargetArchitecture { get; } =
             new(new[] { "--targetarch" }, result =>
             {
@@ -206,6 +214,7 @@ namespace ILCompiler
             AddOption(OptimizeDisabled);
             AddOption(OptimizeSpace);
             AddOption(OptimizeTime);
+            AddOption(TypeValidation);
             AddOption(InputBubble);
             AddOption(InputBubbleReferenceFilePaths);
             AddOption(Composite);
@@ -225,6 +234,9 @@ namespace ILCompiler
             AddOption(SupportIbc);
             AddOption(Resilient);
             AddOption(ImageBase);
+            AddOption(EnableGenericCycleDetection);
+            AddOption(GenericCycleDepthCutoff);
+            AddOption(GenericCycleBreadthCutoff);
             AddOption(TargetArchitecture);
             AddOption(TargetOS);
             AddOption(JitPath);
