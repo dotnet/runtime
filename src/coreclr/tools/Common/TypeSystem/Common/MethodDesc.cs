@@ -201,9 +201,14 @@ namespace Internal.TypeSystem
             return Equals(otherSignature, allowCovariantReturn: true, allowEquivalence: false);
         }
 
-        public bool EquivalentTo(MethodSignature otherSignature, StackOverflowProtect visited = null)
+        public bool EquivalentTo(MethodSignature otherSignature)
         {
-            return Equals(otherSignature, allowCovariantReturn: false, allowEquivalence: true);
+            return Equals(otherSignature, allowCovariantReturn: false, allowEquivalence: true, visited: null);
+        }
+
+        internal bool EquivalentTo(MethodSignature otherSignature, StackOverflowProtect visited)
+        {
+            return Equals(otherSignature, allowCovariantReturn: false, allowEquivalence: true, visited: visited);
         }
 
         private bool Equals(MethodSignature otherSignature, bool allowCovariantReturn, bool allowEquivalence, StackOverflowProtect visited = null)

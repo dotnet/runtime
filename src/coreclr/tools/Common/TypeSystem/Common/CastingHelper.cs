@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Debug = System.Diagnostics.Debug;
+using System.Collections.Generic;
 
 namespace Internal.TypeSystem
 {
@@ -96,7 +97,12 @@ namespace Internal.TypeSystem
         /// Checks if two types are compatible according to compatible-with as described in ECMA 335 I.8.7.1
         /// Most of the checks are performed by the CanCastTo, but some cases are pre-filtered out.
         /// </summary>
-        public static bool IsCompatibleWith(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect visited)
+        public static bool IsCompatibleWith(this TypeDesc thisType, TypeDesc otherType)
+        {
+            return thisType.IsCompatibleWith(otherType, null);
+        }
+
+        internal  static bool IsCompatibleWith(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect visited)
         {
             // Structs can be cast to the interfaces they implement, but they are not compatible according to ECMA I.8.7.1
             bool isCastFromValueTypeToReferenceType = otherType.IsValueType && !thisType.IsValueType;
@@ -142,314 +148,25 @@ namespace Internal.TypeSystem
             return otherType.CanCastTo(thisType);
         }
 
-        public static bool HasTypeEquivalence(this TypeDesc thisType)
+        public static bool IsEquivalentTo(this TypeDesc thisType, TypeDesc otherType)
         {
-            // Type Equivalence is only enabled on Windows platforms
-            if (thisType.Context.Target.OperatingSystem != TargetOS.Windows)
-                return false;
+            bool isEquivalentTo = thisType == otherType;
+            if (!isEquivalentTo)
+                thisType.IsEquivalentTo(otherType, (StackOverflowProtect)null, ref isEquivalentTo);
 
-            // TODO determine type equivalent types
-            return false;
+            return isEquivalentTo;
         }
 
-        public struct TypeIdentifierData : IEquatable<TypeIdentifierData>
+        internal static bool IsEquivalentTo(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect visited)
         {
+            bool isEquivalentTo = thisType == otherType;
+            if (!isEquivalentTo)
+                thisType.IsEquivalentTo(otherType, visited, ref isEquivalentTo);
 
+            return isEquivalentTo;
         }
 
-        public static TypeIdentifierData GetTypeIdentifierData(this TypeDesc thisType)
-        {
-            return null;
-        }
-
-        public static bool IsTypeDefinitionEquivalent(this TypeDesc thisType)
-        {
-            return false;
-        }
-
-        public static bool IsEquivalentTo(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect visited = null)
-        {
-            if (thisType == otherType)
-                return true;
-
-            if (!this.HasTypeEquivalence() || !otherType.HasTypeEquivalence())
-                return false;
-
-            if (thisType.Category != otherType.Category)
-                return false;
-
-            switch (thisType.Category)
-            {
-                case TypeFlags.SignatureTypeVariable:
-                case TypeFlags.SignatureMethodVariable:
-                case TypeFlags.GenericParameter:
-                    return false;
-
-                case TypeFlags.Array:
-                case TypeFlags.SzArray:
-                case TypeFlags.ByRef:
-                case TypeFlags.Pointer:
-                    return ((ParameterizedType)thisType).ParameterType.IsEquivalentTo(((ParameterizedType)otherType).ParameterType, visited);
-
-                case TypeFlags.FunctionPointer:
-                    return false;
-
-                default:
-                    Debug.Assert(thisType.IsDefType);
-                    // Check if type is generic
-                    return ((DefType)thisType).IsEquivalentToDefType((DefType)otherType, visited);
-            }
-
-            return thisType == otherType;
-        }
-
-        private static bool IsEquivalentToDefType(this DefType thisType, DefType otherType, StackOverflowProtect visited)
-        {
-            if (thisType.HasInstantiation)
-            {
-                // Limit equivalence on generics only to interfaces
-                if (!thisType.IsInterface || !otherType.IsInterface)
-                {
-                    return false;
-                }
-
-                if (thisType.Instantiation.Length != other.Instantiation.Length)
-                {
-                    return false;
-                }
-
-                for (int i = 0; i < thisType.Instantiation.Length; i++)
-                {
-                    if (!thisType.Instantiation[i].IsEquivalentTo(otherType.Instantiation[i], visited))
-                    {
-                        return false;
-                    }
-                }
-
-                // Generic equivalence only allows the instantiation to be non-equal
-                return thisType.HasSameTypeDefinition(otherType);
-            }
-
-            return IsEquivalentTo_TypeDefinition((MetadataType)thisType.GetTypeDefinition(), (MetadataType)otherType.GetTypeDefinition(), visited);
-
-            static bool IsEquivalentTo_TypeDefinition(MetadataType type1, MetadataType type2, StackOverflowProtect visited)
-            {
-                Debug.Assert(type1.GetTypeDefinition() == type1);
-                Debug.Assert(type2.GetTypeDefinition() == type2);
-
-                var stackOverflowProtectKey = new CastingPair(type1, type2);
-                if (protectInput != null)
-                {
-                    if (protectInput.InTypeEquivalenceForbiddenScope)
-                    {
-                        // we limit variance on generics only to interfaces
-                        return FALSE;
-                    }
-                    if (protectInput.Contains(stackOverflowProtectKey))
-                    {
-                        // we are in the process of comparing these tokens already. Assume success
-                        return true;
-                    }
-                }
-
-                StackOverflowProtect protect = new StackOverflowProtect(stackOverflowProtectKey, visited);
-
-                TypeIdentifierData data1 = type1.GetTypeIdentifierData();
-                TypeIdentifierData data2 = type2.GetTypeIdentifierData();
-                if (data1 == null || data2 == null)
-                {
-                    return false;
-                }
-
-                // Check to ensure that the types are actually opted into equivalence
-                if (!type1.IsTypeDefinitionEquivalent() || !type2.IsTypeDefinitionEquivalent())
-                    return false;
-
-                if (!data1.Equals(data2))
-                    return false;
-
-                if (type1.Name != type2.Name)
-                    return false;
-
-                if (type1.Namespace != type2.Namespace)
-                    return false;
-
-                DefType containingType1 = type1.ContainingType;
-                DefType containingType2 = type2.ContainingType;
-
-                // Types must be either not nested, or nested in equivalent types
-                if ((containingType1 == null) != (containingType2 == null))
-                {
-                    return false;
-                }
-
-                if ((containingType1 != null) && !IsEquivalentTo_TypeDefinition(containingType1, containingType2, visited))
-                {
-                    return false;
-                }
-
-                if (type1.IsInterface != type2.IsInterface)
-                    return false;
-                if (type1.IsInterface)
-                {
-                    if (!type2.IsInterface)
-                        return false;
-
-                    return true;
-                }
-                else if ((type1.IsEnum != type2.IsEnum) ||  (type1.IsValueType != type2.IsValueType))
-                {
-                    return false;
-                }
-                else if (type1.IsEnum)
-                {
-                    return CompareStructuresForEquivalence(type1, type2, visited, enumMode: true);
-                }
-                else if (type1.IsValueType)
-                {
-                    return CompareStructuresForEquivalence(type1, type2, visited, enumMode: false);
-                }
-                else if ((type1.IsDelegate() == type2.IsDelegate()) && type1.IsDelegate())
-                {
-                    return CompareDelegatesForEquivalence(type1, type2, visited);
-                }
-            }
-
-            static bool CompareDelegatesForEquivalence(MetadataType type1, MetadataType type2, StackOverflowProtect visited)
-            {
-                var invoke1 = type1.GetMethod("Invoke");
-                var invoke2 = type2.GetMethod("Invoke");
-
-                if (invoke1 == null)
-                    return false;
-
-                if (invoke2 == null)
-                    return false;
-
-                return invoke1.Signature.EquivalentTo(invoke2.Signature, visited);
-            }
-
-            static bool CompareStructuresForEquivalence(MetadataType type1, MetadataType type2, StackOverflowProtect visited, bool enumMode)
-            {
-                if ((type1.GetMethods().Count() != 0) || (type2.GetMethods().Count() != 0))
-                    return false;
-
-                // Compare field types for equivalence
-                IEnumerator<FieldDesc> fields1 = type1.GetFields().GetEnumerator();
-                IEnumerator<FieldDesc> fields2 = type2.GetFields().GetEnumerator();
-
-                while (true)
-                {
-                    FieldDesc field1 = GetNextTypeEquivalentField(fields1);
-                    FieldDesc field2 = GetNextTypeEquivalentField(fields2);
-
-                    if ((field1 == null) && (field2 == null))
-                    {
-                        // We ran out of fields on both types before finding a failure
-                        break;
-                    }
-
-                    if ((field1 == null) || (field2 == null))
-                    {
-                        // we ran out of fields on 1 type. 
-                        return false;
-                    }
-
-                    // Compare the field signatures for equivalence
-                    // TODO: Technically this comparison should include custom modifiers on the field signatures
-                    if (!field1.FieldType.IsEquivalentTo(field2.FieldType, visited))
-                    {
-                        return false;
-                    }
-
-                    // Compare the field marshal details
-                    if (!field1.GetMarshalAsDescriptor().Equals(field2.GetMarshalAsDescriptor()))
-                    {
-                        return false;
-                    }
-                }
-
-                // At this point we know that the set of fields is the same, and have the same types
-                if (!enumMode)
-                {
-                    if (!CompareTypeLayout(type1, type2))
-                    {
-                        return false;
-                    }
-                }
-                return true;
-
-                static bool CompareTypeLayout(MetadataType type1, MetadataType type2)
-                {
-                    // Types must either be Sequential or Explicit layout
-                    if (type1.IsSequentialLayout != type2.IsSequentialLayout)
-                    {
-                        return false;
-                    }
-
-                    if (type1.IsExplicitLayout != type2.IsExplicitLayout)
-                    {
-                        return false;
-                    }
-
-                    if (!(type1.IsSequentialLayout || type1.IsExplicitLayout))
-                    {
-                        return false;
-                    }
-
-                    bool explicitLayout = type1.IsExplicitLayout;
-
-                    // they must have the same charset
-                    if (type1.PInvokeStringFormat != type2.PInvokeStringFormat)
-                    {
-                        return false;
-                    }
-
-                    var layoutMetadata1 = type1.GetClassLayout();
-                    var layoutMetadata2 = type2.GetClassLayout();
-                    if ((layoutMetadata1.PackingSize != layoutMetadata2.PackingSize) || 
-                        (layoutMetadata1.Size != layoutMetadata2.Size))
-                        return false;
-
-                    if ((explicitLayout) && !(layoutMetadata1.Offsets == null && layoutMetadata2.Offsets == null))
-                    {
-                        if (layoutMetadata1.Offsets == null)
-                            return false;
-
-                        if (layoutMetadata2.Offsets == null)
-                            return false;
-
-                        for (int index = 0; index < layoutMetadata1.Offsets.Length; index++)
-                        {
-                            if (layoutMetadata1.Offsets[index].Offset != layoutMetadata2.Offsets[index].Offset)
-                                return false;
-                        }
-                    }
-
-                    return true;
-                }
-
-                static FieldDesc GetNextTypeEquivalentField(IEnumerator<FieldDesc> fieldEnum, out bool fieldNotValidInEquivalentTypeFound)
-                {
-                    while (fieldInType1Exists = fieldEnum.MoveNext())
-                    {
-                        var field = fieldEnum.Current;
-                        if (field.IsPublic && !field.IsStatic)
-                            return field;
-
-                        // Only public instance fields, and literal fields on enums are permitted in type equivalent structures
-                        if (!enumMode || field.IsLiteral)
-                        {
-                            fieldNotValidInEquivalentTypeFound = true;
-                            return null;
-                        }
-                    }
-                    return null;
-                }
-            }
-        }
-
-
+        static partial void IsEquivalentTo(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect visited, ref bool isEquivalentTo);
         private static bool CanCastToInternal(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect protect)
         {
             if (thisType == otherType)
@@ -736,7 +453,7 @@ namespace Internal.TypeSystem
             {
                 TypeDesc arg = instantiationThis[i];
                 TypeDesc targetArg = instantiationTarget[i];
-                
+
                 if (!arg.IsEquivalentTo(targetArg))
                 {
                     GenericParameterDesc openArgType = (GenericParameterDesc)instantiationOpen[i];
@@ -839,39 +556,53 @@ namespace Internal.TypeSystem
 
             return false;
         }
+    }
 
-        private sealed class StackOverflowProtect
+    internal sealed class StackOverflowProtect
+    {
+        private CastingPair _value;
+        private bool _typeEquivalenceForbiddenScope;
+        private StackOverflowProtect _previous;
+
+        public StackOverflowProtect(CastingPair value, StackOverflowProtect previous)
         {
-            private CastingPair _value;
-            private StackOverflowProtect _previous;
-
-            public StackOverflowProtect(CastingPair value, StackOverflowProtect previous)
-            {
-                _value = value;
-                _previous = previous;
-            }
-
-            public bool Contains(CastingPair value)
-            {
-                for (var current = this; current != null; current = current._previous)
-                    if (current._value.Equals(value))
-                        return true;
-                return false;
-            }
+            _value = value;
+            _previous = previous;
+            if (_previous != null)
+                _typeEquivalenceForbiddenScope = previous._typeEquivalenceForbiddenScope;
         }
 
-        private struct CastingPair
+        public static StackOverflowProtect GetTypeEquivalentForbiddenScope(StackOverflowProtect previous)
         {
-            public readonly TypeDesc FromType;
-            public readonly TypeDesc ToType;
-
-            public CastingPair(TypeDesc fromType, TypeDesc toType)
-            {
-                FromType = fromType;
-                ToType = toType;
-            }
-
-            public bool Equals(CastingPair other) => FromType == other.FromType && ToType == other.ToType;
+            var protect = new StackOverflowProtect(default(CastingPair), previous);
+            protect._typeEquivalenceForbiddenScope = true;
+            return protect;
         }
+
+        public bool Contains(CastingPair value)
+        {
+            for (var current = this; current != null; current = current._previous)
+            {
+                if (current._value.Equals(value))
+                    return true;
+            }
+            return false;
+        }
+
+        public bool InTypeEquivalenceForbiddenScope => _typeEquivalenceForbiddenScope;
+    }
+
+    internal struct CastingPair
+    {
+        public readonly TypeDesc FromType;
+        public readonly TypeDesc ToType;
+
+        public CastingPair(TypeDesc fromType, TypeDesc toType)
+        {
+            FromType = fromType;
+            ToType = toType;
+        }
+
+        public bool Equals(CastingPair other) => FromType == other.FromType && ToType == other.ToType;
     }
 }
