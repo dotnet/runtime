@@ -16,13 +16,9 @@ namespace System.Threading
         private IntPtr _nativeTimer;
         private readonly int _id;
 
-        private TimerQueue(int id)
-        {
-            _id = id;
-        }
-
+#pragma warning disable IDE0060 // Remove unused parameter
         [UnmanagedCallersOnly]
-        private static unsafe void TimerCallback(void* instance, void* context, void* timer)
+        private static unsafe void TimerCallbackWindowsThreadPool(void* instance, void* context, void* timer)
         {
             int id = (int)context;
             var wrapper = ThreadPoolCallbackWrapper.Enter();
@@ -30,12 +26,13 @@ namespace System.Threading
             ThreadPool.IncrementCompletedWorkItemCount();
             wrapper.Exit();
         }
+#pragma warning restore IDE0060
 
-        private unsafe bool SetTimer(uint actualDuration)
+        private unsafe bool SetTimerWindowsThreadPool(uint actualDuration)
         {
             if (_nativeTimer == IntPtr.Zero)
             {
-                _nativeTimer = Interop.Kernel32.CreateThreadpoolTimer(&TimerCallback, (IntPtr)_id, IntPtr.Zero);
+                _nativeTimer = Interop.Kernel32.CreateThreadpoolTimer(&TimerCallbackWindowsThreadPool, (IntPtr)_id, IntPtr.Zero);
                 if (_nativeTimer == IntPtr.Zero)
                     throw new OutOfMemoryException();
             }

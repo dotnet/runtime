@@ -548,7 +548,8 @@ class LocalsUseVisitor : public GenTreeVisitor<LocalsUseVisitor>
 public:
     enum
     {
-        DoPreOrder = true,
+        DoPreOrder   = true,
+        ComputeStack = true,
     };
 
     LocalsUseVisitor(Promotion* prom) : GenTreeVisitor(prom->m_compiler), m_prom(prom)
@@ -609,9 +610,25 @@ public:
                 }
                 else
                 {
+                    int userIndex = 1;
+                    while (userIndex < m_ancestors.Height())
+                    {
+                        GenTree* ancestor = m_ancestors.Top(userIndex);
+                        GenTree* child    = m_ancestors.Top(userIndex - 1);
+
+                        if (!ancestor->OperIs(GT_COMMA) || (ancestor->gtGetOp2() != child))
+                        {
+                            break;
+                        }
+
+                        userIndex++;
+                    }
+
+                    GenTree* effectiveUser = userIndex >= m_ancestors.Height() ? nullptr : m_ancestors.Top(userIndex);
+
                     accessType   = lcl->TypeGet();
                     accessLayout = accessType == TYP_STRUCT ? lcl->GetLayout(m_compiler) : nullptr;
-                    accessFlags  = ClassifyLocalAccess(lcl, user);
+                    accessFlags  = ClassifyLocalAccess(lcl, effectiveUser);
                 }
 
                 LocalUses* uses = GetOrCreateUses(lcl->GetLclNum());
@@ -679,7 +696,7 @@ private:
         {
             for (CallArg& arg : user->AsCall()->gtArgs.Args())
             {
-                if (arg.GetNode() == lcl)
+                if (arg.GetNode()->gtEffectiveVal() == lcl)
                 {
                     flags |= AccessKindFlags::IsCallArg;
                     break;
@@ -688,14 +705,14 @@ private:
         }
 
 #ifdef DEBUG
-        if (user->OperIsStore() && (user->Data() == lcl))
+        if (user->OperIsStore() && (user->Data()->gtEffectiveVal() == lcl))
         {
             flags |= AccessKindFlags::IsAssignmentSource;
         }
 
         if (user->OperIs(GT_RETURN))
         {
-            assert(user->gtGetOp1() == lcl);
+            assert(user->gtGetOp1()->gtEffectiveVal() == lcl);
             flags |= AccessKindFlags::IsReturned;
         }
 #endif
@@ -1364,17 +1381,20 @@ void ReplaceVisitor::LoadStoreAroundCall(GenTreeCall* call, GenTree* user)
             continue;
         }
 
-        if (!arg.GetNode()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+        GenTree** argUse  = EffectiveUse(&arg.EarlyNodeRef());
+        GenTree*  argNode = *argUse;
+
+        if (!argNode->OperIs(GT_LCL_VAR, GT_LCL_FLD))
         {
             continue;
         }
 
-        GenTreeLclVarCommon* argNodeLcl = arg.GetNode()->AsLclVarCommon();
+        GenTreeLclVarCommon* argNodeLcl = argNode->AsLclVarCommon();
 
         if (argNodeLcl->TypeIs(TYP_STRUCT))
         {
             unsigned size = argNodeLcl->GetLayout(m_compiler)->GetSize();
-            WriteBackBefore(&arg.EarlyNodeRef(), argNodeLcl->GetLclNum(), argNodeLcl->GetLclOffs(), size);
+            WriteBackBefore(argUse, argNodeLcl->GetLclNum(), argNodeLcl->GetLclOffs(), size);
 
             if ((m_aggregates[argNodeLcl->GetLclNum()] != nullptr) && IsPromotedStructLocalDying(argNodeLcl))
             {
@@ -1396,6 +1416,26 @@ void ReplaceVisitor::LoadStoreAroundCall(GenTreeCall* call, GenTree* user)
             JITDUMP("Retbuf has replacements that were marked for read back\n");
         }
     }
+}
+
+//------------------------------------------------------------------------
+// EffectiveUse:
+//   Given a use, compute the "effective" use by skipping all uses of commas.
+//
+// Parameters:
+//   use - The use edge.
+//
+// Returns:
+//   A use edge that points to a non GT_COMMA value computed for the use.
+//
+GenTree** ReplaceVisitor::EffectiveUse(GenTree** use)
+{
+    while ((*use)->OperIs(GT_COMMA))
+    {
+        use = &(*use)->AsOp()->gtOp2;
+    }
+
+    return use;
 }
 
 //------------------------------------------------------------------------
@@ -1475,7 +1515,7 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
     {
         if (lcl->OperIsLocalRead())
         {
-            assert((user == nullptr) || user->OperIs(GT_CALL, GT_RETURN) || user->OperIsStore());
+            assert((user == nullptr) || user->OperIs(GT_CALL, GT_RETURN, GT_COMMA) || user->OperIsStore());
         }
     }
     else
@@ -1599,16 +1639,23 @@ void ReplaceVisitor::CheckForwardSubForLastUse(unsigned lclNum)
 //
 void ReplaceVisitor::StoreBeforeReturn(GenTreeUnOp* ret)
 {
-    if (ret->TypeIs(TYP_VOID) || !ret->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+    if (ret->TypeIs(TYP_VOID))
     {
         return;
     }
 
-    GenTreeLclVarCommon* retLcl = ret->gtGetOp1()->AsLclVarCommon();
+    GenTree** retUse  = EffectiveUse(&ret->gtOp1);
+    GenTree*  retNode = *retUse;
+    if (!retNode->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+    {
+        return;
+    }
+
+    GenTreeLclVarCommon* retLcl = retNode->AsLclVarCommon();
     if (retLcl->TypeIs(TYP_STRUCT))
     {
         unsigned size = retLcl->GetLayout(m_compiler)->GetSize();
-        WriteBackBefore(&ret->gtOp1, retLcl->GetLclNum(), retLcl->GetLclOffs(), size);
+        WriteBackBefore(retUse, retLcl->GetLclNum(), retLcl->GetLclOffs(), size);
     }
 }
 

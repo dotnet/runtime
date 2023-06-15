@@ -135,12 +135,19 @@ namespace Microsoft.Interop.Analyzers
                 context.RegisterOperationAction(context =>
                 {
                     var operation = (IConversionOperation)context.Operation;
+
                     if (operation.Type is INamedTypeSymbol { IsComImport: true })
                     {
                         IOperation operand = operation.Operand;
                         if (operand is IConversionOperation { Type.SpecialType: SpecialType.System_Object } objConversion)
                         {
                             operand = objConversion.Operand;
+                        }
+                        if (operand.Type is null)
+                        {
+                            // Some operations like the "null" literal expression don't have a type.
+                            // These expressions definitely aren't a source-generated COM type, so we can skip them.
+                            return;
                         }
                         foreach (var recognizer in sourceGeneratedComRecognizers)
                         {

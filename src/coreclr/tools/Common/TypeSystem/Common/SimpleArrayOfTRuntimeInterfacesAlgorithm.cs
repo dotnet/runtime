@@ -3,18 +3,16 @@
 
 using System;
 using System.Diagnostics;
-using Internal.IL;
-using Internal.TypeSystem;
 
-namespace ILVerify
+namespace Internal.TypeSystem
 {
-    internal class SimpleArrayOfTRuntimeInterfacesAlgorithm : RuntimeInterfacesAlgorithm
+    public class SimpleArrayOfTRuntimeInterfacesAlgorithm : RuntimeInterfacesAlgorithm
     {
         private DefType[] _arrayRuntimeInterfaces;
         private MetadataType[] _genericRuntimeInterfaces;
         private ModuleDesc _systemModule;
 
-        private static readonly string[] s_genericRuntimeInterfacesNames = 
+        private static readonly string[] s_genericRuntimeInterfacesNames =
         {
             "IEnumerable`1",
             "ICollection`1",
@@ -28,7 +26,7 @@ namespace ILVerify
             _systemModule = systemModule;
 
             // initialize interfaces
-            _arrayRuntimeInterfaces = _systemModule.GetType("System", "Array")?.RuntimeInterfaces 
+            _arrayRuntimeInterfaces = _systemModule.GetType("System", "Array")?.RuntimeInterfaces
                 ?? Array.Empty<DefType>();
 
             _genericRuntimeInterfaces = new MetadataType[s_genericRuntimeInterfacesNames.Length];

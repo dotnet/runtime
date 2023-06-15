@@ -12,10 +12,10 @@ namespace System.Threading
     {
         // Per-thread cache of the args object, so we don't have to allocate a new one each time.
         [ThreadStatic]
-        private static ExecutionContextCallbackArgs t_executionContextCallbackArgs;
+        private static ExecutionContextCallbackArgs? t_executionContextCallbackArgs;
 
-        private static ContextCallback s_executionContextCallback;
-        private static OverlappedData[] s_dataArray;
+        private static ContextCallback? s_executionContextCallback;
+        private static OverlappedData[]? s_dataArray;
         private static int s_dataCount;   // Current number of valid entries in _dataArray
         private static IntPtr s_freeList; // Lock-free linked stack of free ThreadPoolNativeOverlapped instances.
 
@@ -25,10 +25,10 @@ namespace System.Threading
 
         internal OverlappedData Data
         {
-            get { return s_dataArray[_dataIndex]; }
+            get { return s_dataArray![_dataIndex]; }
         }
 
-        internal static unsafe Win32ThreadPoolNativeOverlapped* Allocate(IOCompletionCallback callback, object state, object pinData, PreAllocatedOverlapped preAllocated, bool flowExecutionControl)
+        internal static unsafe Win32ThreadPoolNativeOverlapped* Allocate(IOCompletionCallback callback, object? state, object? pinData, PreAllocatedOverlapped? preAllocated, bool flowExecutionControl)
         {
             Win32ThreadPoolNativeOverlapped* overlapped = AllocateNew();
             try
@@ -98,7 +98,7 @@ namespace System.Threading
 
                 // If we haven't stored this object in the array yet, do so now.  Then we need to make another pass through
                 // the loop, in case another thread resized the array before we made this update.
-                if (s_dataArray[dataIndex] == null)
+                if (s_dataArray![dataIndex] == null)
                 {
                     // Full fence so this write can't move past subsequent reads.
                     Interlocked.Exchange(ref dataArray![dataIndex], data);
@@ -112,7 +112,7 @@ namespace System.Threading
             }
         }
 
-        private void SetData(IOCompletionCallback callback, object state, object pinData, PreAllocatedOverlapped preAllocated, bool flowExecutionContext)
+        private void SetData(IOCompletionCallback callback, object? state, object? pinData, PreAllocatedOverlapped? preAllocated, bool flowExecutionContext)
         {
             Debug.Assert(callback != null);
 
@@ -196,12 +196,12 @@ namespace System.Threading
                 return;
             }
 
-            ContextCallback callback = s_executionContextCallback;
+            ContextCallback? callback = s_executionContextCallback;
             if (callback == null)
                 s_executionContextCallback = callback = OnExecutionContextCallback;
 
             // Get an args object from the per-thread cache.
-            ExecutionContextCallbackArgs args = t_executionContextCallbackArgs;
+            ExecutionContextCallbackArgs? args = t_executionContextCallbackArgs;
             args ??= new ExecutionContextCallbackArgs();
 
             t_executionContextCallbackArgs = null;
@@ -217,12 +217,12 @@ namespace System.Threading
         private static unsafe void OnExecutionContextCallback(object? state)
         {
             Debug.Assert(state != null);
-            ExecutionContextCallbackArgs args = (ExecutionContextCallbackArgs)state;
+            ExecutionContextCallbackArgs args = (ExecutionContextCallbackArgs)state!;
 
             uint errorCode = args._errorCode;
             uint bytesWritten = args._bytesWritten;
             Win32ThreadPoolNativeOverlapped* overlapped = args._overlapped;
-            OverlappedData data = args._data;
+            OverlappedData data = args._data!;
 
             // Put the args object back in the per-thread cache, now that we're done with it.
             args._data = null;
