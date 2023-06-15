@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
@@ -14,17 +15,22 @@ namespace Microsoft.Extensions.Options.Generators
     [Generator]
     public class Generator : IIncrementalGenerator
     {
-        private static readonly HashSet<string> _attributeNames = new()
-        {
-            SymbolLoader.OptionsValidatorAttribute,
-        };
-
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            GeneratorUtilities.Initialize(context, _attributeNames, HandleAnnotatedTypes);
+            IncrementalValuesProvider<TypeDeclarationSyntax> typeDeclarations = context.SyntaxProvider
+                .ForAttributeWithMetadataName(
+                    SymbolLoader.OptionsValidatorAttribute,
+                    (node, _) => node is TypeDeclarationSyntax,
+                    (context, _) => context.TargetNode as TypeDeclarationSyntax)
+                .Where(static m => m is not null);
+
+            IncrementalValueProvider<(Compilation, ImmutableArray<TypeDeclarationSyntax>)> compilationAndTypes =
+                context.CompilationProvider.Combine(typeDeclarations.Collect());
+
+            context.RegisterSourceOutput(compilationAndTypes, static (spc, source) => HandleAnnotatedTypes(source.Item1, source.Item2, spc));
         }
 
-        private static void HandleAnnotatedTypes(Compilation compilation, IEnumerable<SyntaxNode> nodes, SourceProductionContext context)
+        private static void HandleAnnotatedTypes(Compilation compilation, ImmutableArray<TypeDeclarationSyntax> types, SourceProductionContext context)
         {
             if (!SymbolLoader.TryLoad(compilation, out var symbolHolder))
             {
@@ -34,7 +40,7 @@ namespace Microsoft.Extensions.Options.Generators
 
             var parser = new Parser(compilation, context.ReportDiagnostic, symbolHolder!, context.CancellationToken);
 
-            var validatorTypes = parser.GetValidatorTypes(nodes.OfType<TypeDeclarationSyntax>());
+            var validatorTypes = parser.GetValidatorTypes(types);
             if (validatorTypes.Count > 0)
             {
                 var emitter = new Emitter();

@@ -21,7 +21,6 @@
     <Compile Include="Emitter.cs" />
     <Compile Include="EmitterBase.cs" />
     <Compile Include="Generator.cs" />
-    <Compile Include="GeneratorUtilities.cs" />
     <Compile Include="Model\ValidatedMember.cs" />
     <Compile Include="Model\ValidatedModel.cs" />
     <Compile Include="Model\ValidationAttributeInfo.cs" />
