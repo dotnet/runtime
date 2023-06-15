@@ -18,8 +18,8 @@ namespace System.Collections.Frozen
         private readonly int _maximumLengthDiff;
 
         internal OrdinalStringFrozenDictionary(
-            Dictionary<string, TValue> source,
             string[] keys,
+            TValue[] values,
             IEqualityComparer<string> comparer,
             int minimumLength,
             int maximumLengthDiff,
@@ -27,34 +27,33 @@ namespace System.Collections.Frozen
             int hashCount = -1) :
             base(comparer)
         {
-            Debug.Assert(source.Count != 0);
+            Debug.Assert(keys.Length != 0 && keys.Length == values.Length);
             Debug.Assert(comparer == EqualityComparer<string>.Default || comparer == StringComparer.Ordinal || comparer == StringComparer.OrdinalIgnoreCase);
 
-            var entries = new KeyValuePair<string, TValue>[source.Count];
-            ((ICollection<KeyValuePair<string, TValue>>)source).CopyTo(entries, 0);
+            // we need an extra copy, as the order of items will change
+            _keys = new string[keys.Length];
+            _values = new TValue[values.Length];
 
-            _keys = keys;
-            _values = new TValue[entries.Length];
             _minimumLength = minimumLength;
             _maximumLengthDiff = maximumLengthDiff;
 
             HashIndex = hashIndex;
             HashCount = hashCount;
 
-            int[] arrayPoolHashCodes = ArrayPool<int>.Shared.Rent(entries.Length);
-            Span<int> hashCodes = arrayPoolHashCodes.AsSpan(0, entries.Length);
-            for (int i = 0; i < entries.Length; i++)
+            int[] arrayPoolHashCodes = ArrayPool<int>.Shared.Rent(keys.Length);
+            Span<int> hashCodes = arrayPoolHashCodes.AsSpan(0, keys.Length);
+            for (int i = 0; i < keys.Length; i++)
             {
-                hashCodes[i] = GetHashCode(entries[i].Key);
+                hashCodes[i] = GetHashCode(keys[i]);
             }
 
             _hashTable = FrozenHashTable.Create(
-                entries.Length,
+                keys.Length,
                 hashCodes,
                 (destIndex, srcIndex) =>
                 {
-                    _keys[destIndex] = entries[srcIndex].Key;
-                    _values[destIndex] = entries[srcIndex].Value;
+                    _keys[destIndex] = keys[srcIndex];
+                    _values[destIndex] = values[srcIndex];
                 });
 
             ArrayPool<int>.Shared.Return(arrayPoolHashCodes);
