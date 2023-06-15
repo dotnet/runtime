@@ -3641,7 +3641,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     bool                 isExact = false;
                     bool                 notNull = false;
                     CORINFO_CLASS_HANDLE typeHnd = gtGetClassHandle(op1, &isExact, &notNull);
-                    if ((typeHnd != NO_CLASS_HANDLE) && isExact)
+                    if ((typeHnd != NO_CLASS_HANDLE) && isExact && ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_SHAREDINST) != 0))
                     {
                         JITDUMP("Optimizing object.GetType() with known type to typeof\n");
                         op1 = impPopStack().val;
@@ -3649,7 +3649,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         {
                             impAppendTree(gtNewNullCheck(op1, compCurBB), CHECK_SPILL_ALL, impCurStmtDI);
                         }
-                        else
+                        else ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
                         {
                             impAppendTree(gtUnusedValNode(op1), CHECK_SPILL_ALL, impCurStmtDI);
                         }
