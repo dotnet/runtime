@@ -4051,8 +4051,8 @@ main_loop:
 			goto call;
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT_FAST) {
-			MonoMethodSignature *csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [4]];
-			MintICallSig icall_sig = (MintICallSig)ip [5];
+			MintICallSig icall_sig = (MintICallSig)ip [4];
+			MonoMethodSignature *csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [5]];
 			gboolean save_last_error = ip [6];
 
 			stackval *ret = (stackval*)(locals + ip [1]);
