@@ -74,26 +74,25 @@ namespace ILCompiler.DependencyAnalysis
                         ISortableSymbolNode index = factory.TypeThreadStaticIndex(target);
                         if (index is TypeThreadStaticIndexNode ti && ti.Type == null)
                         {
-                            ISymbolNode helper = factory.ExternSymbol("RhpGetInlinedThreadStaticBase");
-
                             if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
                             {
-                                encoder.EmitJMP(helper);
+                                EmitInlineTLSAccess(factory, ref encoder);
                             }
                             else
                             {
-                                encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target));
-                                encoder.EmitSUB(encoder.TargetRegister.Arg2, NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
-
-                                encoder.EmitLDR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2);
-                                encoder.EmitCMP(encoder.TargetRegister.Arg3, 0);
-                                encoder.EmitJE(helper);
-
                                 // First arg: unused address of the TypeManager
-                                encoder.EmitMOV(encoder.TargetRegister.Arg0, (ushort)0);
+                                // encoder.EmitMOV(encoder.TargetRegister.Arg0, (ushort)0);
+
                                 // Second arg: ~0 (index of inlined storage)
                                 encoder.EmitMVN(encoder.TargetRegister.Arg1, 0);
-                                encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
+
+                                encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target));
+                                encoder.EmitSUB(encoder.TargetRegister.Arg2, NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
+                                encoder.EmitLDR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2);
+                                encoder.EmitCMP(encoder.TargetRegister.Arg3, 0);
+
+                                encoder.EmitJNE(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
+                                EmitInlineTLSAccess(factory, ref encoder);
                             }
                         }
                         else
@@ -226,6 +225,13 @@ namespace ILCompiler.DependencyAnalysis
                 default:
                     throw new NotImplementedException();
             }
+        }
+
+        // emits code that results in ThreadStaticBase referenced in X0.
+        // may trash volatile registers. (there are calls to the slow helper and possibly to the platform's TLS support)
+        private static void EmitInlineTLSAccess(NodeFactory factory, ref ARM64Emitter encoder)
+        {
+            throw new NotImplementedException();
         }
     }
 }

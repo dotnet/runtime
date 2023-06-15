@@ -189,6 +189,15 @@ namespace ILCompiler.DependencyAnalysis.ARM64
             EmitJMP(symbol);
         }
 
+        public void EmitJNE(ISymbolNode symbol)
+        {
+            uint offset = symbol.RepresentsIndirectionCell ? 6u : 2u;
+
+            Builder.EmitUInt(0b01010100_0000000000000000000_0_0000u | offset << 5);
+
+            EmitJMP(symbol);
+        }
+
         private static bool InSignedByteRange(int i)
         {
             return i == (int)(sbyte)i;
