@@ -1400,14 +1400,6 @@ uint32_t interceptor_ICJI::getThreadTLSIndex(void** ppIndirection)
     return temp;
 }
 
-const void* interceptor_ICJI::getInlinedCallFrameVptr(void** ppIndirection)
-{
-    mc->cr->AddCall("getInlinedCallFrameVptr");
-    const void* temp = original_ICorJitInfo->getInlinedCallFrameVptr(ppIndirection);
-    mc->recGetInlinedCallFrameVptr(ppIndirection, temp);
-    return temp;
-}
-
 int32_t* interceptor_ICJI::getAddrOfCaptureThreadGlobal(void** ppIndirection)
 {
     mc->cr->AddCall("getAddrOfCaptureThreadGlobal");

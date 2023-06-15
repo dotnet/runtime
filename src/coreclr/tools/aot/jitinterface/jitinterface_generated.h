@@ -134,7 +134,6 @@ struct JitInterfaceCallbacks
     uint32_t (* getLoongArch64PassStructInRegisterFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd);
     uint32_t (* getRISCV64PassStructInRegisterFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd);
     uint32_t (* getThreadTLSIndex)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
-    const void* (* getInlinedCallFrameVptr)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     int32_t* (* getAddrOfCaptureThreadGlobal)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     void* (* getHelperFtn)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoHelpFunc ftnNum, void** ppIndirection);
     void (* getFunctionEntryPoint)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult, CORINFO_ACCESS_FLAGS accessFlags);
@@ -1384,15 +1383,6 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     uint32_t temp = _callbacks->getThreadTLSIndex(_thisHandle, &pException, ppIndirection);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual const void* getInlinedCallFrameVptr(
-          void** ppIndirection)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    const void* temp = _callbacks->getInlinedCallFrameVptr(_thisHandle, &pException, ppIndirection);
     if (pException != nullptr) throw pException;
     return temp;
 }

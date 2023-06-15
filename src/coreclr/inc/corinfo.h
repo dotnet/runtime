@@ -2987,10 +2987,6 @@ public:
                     void                  **ppIndirection = NULL
                     ) = 0;
 
-    virtual const void * getInlinedCallFrameVptr(
-                    void                  **ppIndirection = NULL
-                    ) = 0;
-
     virtual int32_t * getAddrOfCaptureThreadGlobal(
                     void                  **ppIndirection = NULL
                     ) = 0;

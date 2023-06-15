@@ -578,10 +578,6 @@ public:
     void dmpGetThreadTLSIndex(DWORD key, DLD value);
     DWORD repGetThreadTLSIndex(void** ppIndirection);
 
-    void recGetInlinedCallFrameVptr(void** ppIndirection, const void* result);
-    void dmpGetInlinedCallFrameVptr(DWORD key, DLDL value);
-    const void* repGetInlinedCallFrameVptr(void** ppIndirection);
-
     void recGetAddrOfCaptureThreadGlobal(void** ppIndirection, int32_t* result);
     void dmpGetAddrOfCaptureThreadGlobal(DWORD key, DLDL value);
     int32_t* repGetAddrOfCaptureThreadGlobal(void** ppIndirection);
@@ -1003,7 +999,7 @@ enum mcPackets
     Packet_GetFunctionFixedEntryPoint = 61,
     Packet_GetGSCookie = 62,
     Packet_GetHelperFtn = 63,
-    Packet_GetInlinedCallFrameVptr = 65,
+    //Packet_GetInlinedCallFrameVptr = 65,
     Packet_GetArrayIntrinsicID = 66,
     Packet_GetJitTimeLogFilename = 67,
     Packet_GetJustMyCodeHandle = 68,
