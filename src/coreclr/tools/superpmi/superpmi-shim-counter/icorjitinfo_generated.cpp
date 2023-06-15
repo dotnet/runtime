@@ -1139,14 +1139,6 @@ void interceptor_ICJI::getCallInfo(
     original_ICorJitInfo->getCallInfo(pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult);
 }
 
-bool interceptor_ICJI::canAccessFamily(
-          CORINFO_METHOD_HANDLE hCaller,
-          CORINFO_CLASS_HANDLE hInstanceType)
-{
-    mcs->AddCall("canAccessFamily");
-    return original_ICorJitInfo->canAccessFamily(hCaller, hInstanceType);
-}
-
 bool interceptor_ICJI::isRIDClassDomainID(
           CORINFO_CLASS_HANDLE cls)
 {

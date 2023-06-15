@@ -5573,52 +5573,6 @@ void CEEInfo::getCallInfo(
     EE_TO_JIT_TRANSITION();
 }
 
-bool CEEInfo::canAccessFamily(CORINFO_METHOD_HANDLE hCaller,
-                              CORINFO_CLASS_HANDLE hInstanceType)
-{
-    WRAPPER_NO_CONTRACT;
-
-    bool ret = false;
-
-    //Since this is only for verification, I don't need to do the demand.
-    JIT_TO_EE_TRANSITION();
-
-    TypeHandle targetType = TypeHandle(hInstanceType);
-    TypeHandle accessingType = TypeHandle(GetMethod(hCaller)->GetMethodTable());
-    AccessCheckOptions::AccessCheckType accessCheckOptions = AccessCheckOptions::kNormalAccessibilityChecks;
-    DynamicResolver* pIgnored;
-    BOOL doCheck = TRUE;
-    if (GetMethod(hCaller)->IsDynamicMethod())
-    {
-        //If this is a DynamicMethod, perform the check from the type to which the DynamicMethod was
-        //attached.
-        //
-        //If this is a dynamic method, don't do this check.  If they specified SkipVisibilityChecks
-        //(ModifyCheckForDynamicMethod returned false), we should obviously skip the check for the C++
-        //protected rule (since we skipped all the other visibility checks).  If they specified
-        //RestrictedSkipVisibilityChecks, then they're a "free" DynamicMethod.  This check is meaningless
-        //(i.e.  it would always fail).  We've already done a demand for access to the member.  Let that be
-        //enough.
-        doCheck = ModifyCheckForDynamicMethod(GetMethod(hCaller)->AsDynamicMethodDesc()->GetResolver(),
-                                              &accessingType, &accessCheckOptions, &pIgnored);
-        if (accessCheckOptions == AccessCheckOptions::kRestrictedMemberAccess
-            || accessCheckOptions == AccessCheckOptions::kRestrictedMemberAccessNoTransparency
-            )
-            doCheck = FALSE;
-    }
-
-    if (doCheck)
-    {
-        ret = !!ClassLoader::CanAccessFamilyVerification(accessingType, targetType);
-    }
-    else
-    {
-        ret = true;
-    }
-
-    EE_TO_JIT_TRANSITION();
-    return ret;
-}
 
 bool CEEInfo::isRIDClassDomainID(CORINFO_CLASS_HANDLE cls)
 {

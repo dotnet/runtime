@@ -1604,14 +1604,6 @@ void interceptor_ICJI::getCallInfo(
     });
 }
 
-bool interceptor_ICJI::canAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType)
-{
-    mc->cr->AddCall("canAccessFamily");
-    bool temp = original_ICorJitInfo->canAccessFamily(hCaller, hInstanceType);
-    mc->recCanAccessFamily(hCaller, hInstanceType, temp);
-    return temp;
-}
-
 // Returns TRUE if the Class Domain ID is the RID of the class (currently true for every class
 // except reflection emitted classes and generics)
 bool interceptor_ICJI::isRIDClassDomainID(CORINFO_CLASS_HANDLE cls)

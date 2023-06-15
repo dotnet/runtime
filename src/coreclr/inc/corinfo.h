@@ -3123,9 +3123,6 @@ public:
                         CORINFO_CALL_INFO       *pResult
                         ) = 0;
 
-    virtual bool canAccessFamily(CORINFO_METHOD_HANDLE hCaller,
-                                           CORINFO_CLASS_HANDLE hInstanceType) = 0;
-
     // Returns TRUE if the Class Domain ID is the RID of the class (currently true for every class
     // except reflection emitted classes and generics)
     virtual bool isRIDClassDomainID(CORINFO_CLASS_HANDLE cls) = 0;
