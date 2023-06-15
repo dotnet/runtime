@@ -7,9 +7,6 @@
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
     <!--Remove once this is fixed, https://github.com/dotnet/runtime/issues/71506 -->
     <IlcTrimMetadata>false</IlcTrimMetadata>
-
-    <!-- this test project is too slow with extra start of another runtime -->
-    <WasmXHarnessMonoArgs>$(WasmXHarnessMonoArgs) --no-memory-snapshot</WasmXHarnessMonoArgs>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
@@ -18,6 +15,10 @@
     <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
+    <WasmXHarnessMonoArgs>--setenv=XHARNESS_LOG_TEST_START=true --no-memory-snapshot</WasmXHarnessMonoArgs>
+
+    <!-- This WASM test is problematic and slow right now. This sets the xharness timeout but there is also override in sendtohelix-wasm.targets -->
+    <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1453,7 +1453,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
             {
                 LclVarDsc* returnSpillVarDsc = lvaGetDesc(lvaInlineeReturnSpillTemp);
 
-                if (returnSpillVarDsc->lvSingleDef)
+                if ((returnSpillVarDsc->lvType == TYP_REF) && returnSpillVarDsc->lvSingleDef)
                 {
                     lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd, impInlineInfo->retExprClassHndIsExact);
                 }
@@ -1753,12 +1753,12 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
                 // Zero the entry state at method entry.
                 //
-                GenTree* const initEntryState = gtNewTempAssign(entryStateVar, gtNewZeroConNode(TYP_INT));
+                GenTree* const initEntryState = gtNewTempStore(entryStateVar, gtNewZeroConNode(TYP_INT));
                 fgNewStmtAtBeg(fgFirstBB, initEntryState);
 
                 // Set the state variable once control flow reaches the OSR entry.
                 //
-                GenTree* const setEntryState = gtNewTempAssign(entryStateVar, gtNewOneConNode(TYP_INT));
+                GenTree* const setEntryState = gtNewTempStore(entryStateVar, gtNewOneConNode(TYP_INT));
                 fgNewStmtAtBeg(osrEntry, setEntryState);
 
                 // Helper method to add flow
@@ -3446,23 +3446,12 @@ bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block, unsigned lclNu
     {
         count++;
         GenTree* const tree = stmt->GetRootNode();
-        if (tree->OperIs(GT_ASG) && !tree->OperIsBlkOp())
+        if (tree->OperIsLocalStore() && !tree->OperIsBlkOp() && (tree->AsLclVarCommon()->GetLclNum() == lclNum))
         {
-            GenTree* const op1 = tree->AsOp()->gtOp1;
-
-            if (op1->IsLocal())
+            GenTree* const data = tree->Data();
+            if (data->OperIsArrLength() || data->OperIsConst() || data->OperIsCompare())
             {
-                const unsigned op1LclNum = op1->AsLclVarCommon()->GetLclNum();
-
-                if (op1LclNum == lclNum)
-                {
-                    GenTree* const op2 = tree->AsOp()->gtOp2;
-
-                    if (op2->OperIsArrLength() || op2->OperIsConst() || op2->OperIsCompare())
-                    {
-                        return true;
-                    }
-                }
+                return true;
             }
         }
 
@@ -3617,35 +3606,29 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
     // Verify the branch is just a simple local compare.
     //
     GenTree* const firstTree = firstStmt->GetRootNode();
-
-    if (firstTree->gtOper != GT_ASG)
+    if (!firstTree->OperIs(GT_STORE_LCL_VAR))
     {
         return false;
     }
 
-    GenTree* const lhs = firstTree->AsOp()->gtOp1;
-    if (!lhs->OperIs(GT_LCL_VAR))
-    {
-        return false;
-    }
+    unsigned storeLclNum = firstTree->AsLclVar()->GetLclNum();
 
-    const unsigned lhsLcl = lhs->AsLclVarCommon()->GetLclNum();
-    if (lhsLcl != *lclNum)
+    if (storeLclNum != *lclNum)
     {
         return false;
     }
 
     // Could allow unary here too...
     //
-    GenTree* const rhs = firstTree->AsOp()->gtOp2;
-    if (!rhs->OperIsBinary())
+    GenTree* const data = firstTree->AsLclVar()->Data();
+    if (!data->OperIsBinary())
     {
         return false;
     }
 
     // op1 must be some combinations of casts of local or constant
     // (or unary)
-    op1 = rhs->AsOp()->gtOp1;
+    op1 = data->AsOp()->gtOp1;
     while (op1->gtOper == GT_CAST)
     {
         op1 = op1->AsOp()->gtOp1;
@@ -3658,7 +3641,7 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
 
     // op2 must be some combinations of casts of local or constant
     // (or unary)
-    op2 = rhs->AsOp()->gtOp2;
+    op2 = data->AsOp()->gtOp2;
 
     // A binop may not actually have an op2.
     //

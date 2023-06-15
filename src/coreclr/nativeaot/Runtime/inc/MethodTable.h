@@ -18,27 +18,6 @@ struct EETypeRef;
 #endif
 
 //-------------------------------------------------------------------------------------------------
-// Array of these represents the interfaces implemented by a type
-
-class EEInterfaceInfo
-{
-  public:
-    MethodTable * GetInterfaceEEType()
-    {
-        return ((UIntTarget)m_pInterfaceEEType & ((UIntTarget)1)) ?
-               *(MethodTable**)((UIntTarget)m_ppInterfaceEETypeViaIAT & ~((UIntTarget)1)) :
-               m_pInterfaceEEType;
-    }
-
-  private:
-    union
-    {
-        MethodTable *    m_pInterfaceEEType;         // m_uFlags == InterfaceFlagNormal
-        MethodTable **   m_ppInterfaceEETypeViaIAT;  // m_uFlags == InterfaceViaIATFlag
-    };
-};
-
-//-------------------------------------------------------------------------------------------------
 // The subset of TypeFlags that Redhawk knows about at runtime
 // This should match the TypeFlags enum in the managed type system.
 enum EETypeElementType : uint8_t
@@ -75,6 +54,7 @@ enum EETypeElementType : uint8_t
     ElementType_SzArray = 0x18,
     ElementType_ByRef = 0x19,
     ElementType_Pointer = 0x1A,
+    ElementType_FunctionPointer = 0x1B,
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -85,7 +65,6 @@ enum EETypeElementType : uint8_t
 // GetFieldOffset() APIs.
 enum EETypeField
 {
-    ETF_InterfaceMap,
     ETF_TypeManagerIndirection,
     ETF_WritableData,
     ETF_Finalizer,
@@ -118,15 +97,9 @@ private:
         {
             // Kinds.CanonicalEEType
             MethodTable*     m_pBaseType;
-            MethodTable**    m_ppBaseTypeViaIAT;
-
-            // Kinds.ClonedEEType
-            MethodTable** m_pCanonicalType;
-            MethodTable** m_ppCanonicalTypeViaIAT;
 
             // Kinds.ParameterizedEEType
             MethodTable*  m_pRelatedParameterType;
-            MethodTable** m_ppRelatedParameterTypeViaIAT;
         };
     };
 
@@ -147,7 +120,7 @@ private:
     TgtPTR_Void         m_VTable[];  // make this explicit so the binder gets the right alignment
 
     // after the m_usNumVtableSlots vtable slots, we have m_usNumInterfaces slots of
-    // EEInterfaceInfo, and after that a couple of additional pointers based on whether the type is
+    // MethodTable*, and after that a couple of additional pointers based on whether the type is
     // finalizable (the address of the finalizer code) or has optional fields (pointer to the compacted
     // fields).
 
@@ -158,11 +131,7 @@ private:
         // simplified version of MethodTable. See LimitedEEType definition below.
         EETypeKindMask = 0x00030000,
 
-        // This flag is set when m_pRelatedType is in a different module.  In that case, m_pRelatedType
-        // actually points to a 'fake' MethodTable whose m_pRelatedType field lines up with an IAT slot in this
-        // module, which then points to the desired MethodTable.  In other words, there is an extra indirection
-        // through m_pRelatedType to get to the related type in the other module.
-        RelatedTypeViaIATFlag   = 0x00040000,
+        // Unused = 0x00040000,
 
         IsDynamicTypeFlag       = 0x00080000,
 
@@ -215,9 +184,6 @@ public:
     PTR_PTR_Code get_SlotPtr(uint16_t slotNumber);
 
     Kinds get_Kind();
-
-    bool IsRelatedTypeViaIAT()
-        { return (m_uFlags & RelatedTypeViaIATFlag) != 0; }
 
     bool IsArray()
     {

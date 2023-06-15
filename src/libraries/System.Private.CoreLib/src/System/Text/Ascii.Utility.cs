@@ -42,6 +42,18 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool AllCharsInUInt64AreAscii<T>(ulong value)
+            where T : unmanaged
+        {
+            Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(ushort));
+
+            return typeof(T) == typeof(byte)
+                ? AllBytesInUInt64AreAscii(value)
+                : AllCharsInUInt64AreAscii(value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         private static int GetIndexOfFirstNonAsciiByteInLane_AdvSimd(Vector128<byte> value, Vector128<byte> bitmask)
         {
             if (!AdvSimd.Arm64.IsSupported || !BitConverter.IsLittleEndian)
@@ -1088,7 +1100,7 @@ namespace System.Text
 
                 Vector128<short> vecWide = Sse2.X64.ConvertScalarToVector128UInt64(value).AsInt16();
                 Vector128<uint> vecNarrow = Sse2.PackUnsignedSaturate(vecWide, vecWide).AsUInt32();
-                Unsafe.WriteUnaligned<uint>(ref outputBuffer, Sse2.ConvertToUInt32(vecNarrow));
+                Unsafe.WriteUnaligned(ref outputBuffer, Sse2.ConvertToUInt32(vecNarrow));
             }
             else if (AdvSimd.IsSupported)
             {
@@ -1097,7 +1109,7 @@ namespace System.Text
 
                 Vector128<short> vecWide = Vector128.CreateScalarUnsafe(value).AsInt16();
                 Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(vecWide);
-                Unsafe.WriteUnaligned<uint>(ref outputBuffer, lower.AsUInt32().ToScalar());
+                Unsafe.WriteUnaligned(ref outputBuffer, lower.AsUInt32().ToScalar());
             }
 
             else
@@ -1233,7 +1245,7 @@ namespace System.Text
 
                         // TODO: Is the below logic also valid for big-endian platforms?
                         Vector<byte> asciiVector = Vector.Narrow(utf16VectorHigh, utf16VectorLow);
-                        Unsafe.WriteUnaligned<Vector<byte>>(pAsciiBuffer + currentOffset, asciiVector);
+                        Unsafe.WriteUnaligned(pAsciiBuffer + currentOffset, asciiVector);
 
                         currentOffset += SizeOfVector;
                     } while (currentOffset <= finalOffsetWhereCanLoop);
@@ -1433,6 +1445,61 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool VectorContainsNonAsciiChar<T>(Vector128<T> vector)
+            where T : unmanaged
+        {
+            Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(ushort));
+
+            return typeof(T) == typeof(byte)
+                ? VectorContainsNonAsciiChar(vector.AsByte())
+                : VectorContainsNonAsciiChar(vector.AsUInt16());
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool AllCharsInVectorAreAscii<T>(Vector128<T> vector)
+            where T : unmanaged
+        {
+            Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(ushort));
+
+            // This is a copy of VectorContainsNonAsciiChar with an inverted condition.
+            if (typeof(T) == typeof(byte))
+            {
+                return
+                    Sse41.IsSupported ? Sse41.TestZ(vector.AsByte(), Vector128.Create((byte)0x80)) :
+                    AdvSimd.Arm64.IsSupported ? AllBytesInUInt64AreAscii(AdvSimd.Arm64.MaxPairwise(vector.AsByte(), vector.AsByte()).AsUInt64().ToScalar()) :
+                    vector.AsByte().ExtractMostSignificantBits() == 0;
+            }
+            else
+            {
+                return
+                    Sse41.IsSupported ? Sse41.TestZ(vector.AsUInt16(), Vector128.Create((ushort)0xFF80)) :
+                    AdvSimd.Arm64.IsSupported ? AllCharsInUInt64AreAscii(AdvSimd.Arm64.MaxPairwise(vector.AsUInt16(), vector.AsUInt16()).AsUInt64().ToScalar()) :
+                    (vector.AsUInt16() & Vector128.Create((ushort)0xFF80)) == Vector128<ushort>.Zero;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx))]
+        private static bool AllCharsInVectorAreAscii<T>(Vector256<T> vector)
+            where T : unmanaged
+        {
+            Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(ushort));
+
+            if (typeof(T) == typeof(byte))
+            {
+                return
+                    Avx.IsSupported ? Avx.TestZ(vector.AsByte(), Vector256.Create((byte)0x80)) :
+                    vector.AsByte().ExtractMostSignificantBits() == 0;
+            }
+            else
+            {
+                return
+                    Avx.IsSupported ? Avx.TestZ(vector.AsUInt16(), Vector256.Create((ushort)0xFF80)) :
+                    (vector.AsUInt16() & Vector256.Create((ushort)0xFF80)) == Vector256<ushort>.Zero;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<byte> ExtractAsciiVector(Vector128<ushort> vectorFirst, Vector128<ushort> vectorSecond)
         {
             // Narrows two vectors of words [ w7 w6 w5 w4 w3 w2 w1 w0 ] and [ w7' w6' w5' w4' w3' w2' w1' w0' ]
@@ -1453,6 +1520,7 @@ namespace System.Text
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe nuint NarrowUtf16ToAscii_Intrinsified(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
         {
             // This method contains logic optimized using vector instructions for both x64 and Arm64.
@@ -1485,7 +1553,7 @@ namespace System.Text
 
             ref byte asciiBuffer = ref *pAsciiBuffer;
             Vector128<byte> asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
-            asciiVector.GetLower().StoreUnsafe(ref asciiBuffer);
+            asciiVector.StoreLowerUnsafe(ref asciiBuffer, 0);
             nuint currentOffsetInElements = SizeOfVector128 / 2; // we processed 8 elements so far
 
             // We're going to get the best performance when we have aligned writes, so we'll take the
@@ -1512,7 +1580,7 @@ namespace System.Text
 
                 // Turn the 8 ASCII chars we just read into 8 ASCII bytes, then copy it to the destination.
                 asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
-                asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
+                asciiVector.StoreLowerUnsafe(ref asciiBuffer, currentOffsetInElements);
             }
 
             // Calculate how many elements we wrote in order to get pAsciiBuffer to its next alignment
@@ -1565,7 +1633,7 @@ namespace System.Text
 
             Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % sizeof(ulong) == 0, "Destination should be ulong-aligned.");
             asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
-            asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
+            asciiVector.StoreLowerUnsafe(ref asciiBuffer, currentOffsetInElements);
             currentOffsetInElements += SizeOfVector128 / 2;
 
             goto Finish;
@@ -1659,8 +1727,8 @@ namespace System.Text
                         Vector.Widen(Vector.AsVectorByte(asciiVector), out Vector<ushort> utf16LowVector, out Vector<ushort> utf16HighVector);
 
                         // TODO: Is the below logic also valid for big-endian platforms?
-                        Unsafe.WriteUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset, utf16LowVector);
-                        Unsafe.WriteUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset + Vector<ushort>.Count, utf16HighVector);
+                        Unsafe.WriteUnaligned(pUtf16Buffer + currentOffset, utf16LowVector);
+                        Unsafe.WriteUnaligned(pUtf16Buffer + currentOffset + Vector<ushort>.Count, utf16HighVector);
 
                         currentOffset += SizeOfVector;
                     } while (currentOffset <= finalOffsetWhereCanLoop);
@@ -1778,13 +1846,13 @@ namespace System.Text
             {
                 Vector128<byte> vecNarrow = AdvSimd.DuplicateToVector128(value).AsByte();
                 Vector128<ulong> vecWide = AdvSimd.Arm64.ZipLow(vecNarrow, Vector128<byte>.Zero).AsUInt64();
-                Unsafe.WriteUnaligned<ulong>(ref Unsafe.As<char, byte>(ref outputBuffer), vecWide.ToScalar());
+                Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref outputBuffer), vecWide.ToScalar());
             }
             else if (Vector128.IsHardwareAccelerated)
             {
                 Vector128<byte> vecNarrow = Vector128.CreateScalar(value).AsByte();
                 Vector128<ulong> vecWide = Vector128.WidenLower(vecNarrow).AsUInt64();
-                Unsafe.WriteUnaligned<ulong>(ref Unsafe.As<char, byte>(ref outputBuffer), vecWide.ToScalar());
+                Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref outputBuffer), vecWide.ToScalar());
             }
             else
             {

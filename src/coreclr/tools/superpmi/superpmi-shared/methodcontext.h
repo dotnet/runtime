@@ -485,21 +485,25 @@ public:
                          CORINFO_ACCESS_FLAGS    flags,
                          CORINFO_FIELD_INFO*     pResult);
 
-    void recGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, uint32_t result);
-    void     dmpGetThreadLocalFieldInfo(DWORDLONG key, DWORD value);
-    uint32_t repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field);
+    void     recGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCType, uint32_t result);
+    void     dmpGetThreadLocalFieldInfo(DLD key, DWORD value);
+    uint32_t repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCType);
 
-    void recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
+    void recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
     void dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value);
-    void repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
+    void repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
 
     void recEmbedMethodHandle(CORINFO_METHOD_HANDLE handle, void** ppIndirection, CORINFO_METHOD_HANDLE result);
     void dmpEmbedMethodHandle(DWORDLONG key, DLDL value);
     CORINFO_METHOD_HANDLE repEmbedMethodHandle(CORINFO_METHOD_HANDLE handle, void** ppIndirection);
 
-    void recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects, bool result);
-    void dmpGetReadonlyStaticFieldValue(DLDDD key, DD value);
-    bool repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects);
+    void recGetStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects, bool result);
+    void dmpGetStaticFieldContent(DLDDD key, DD value);
+    bool repGetStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects);
+
+    void recGetObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset, bool result);
+    void dmpGetObjectContent(DLDD key, DD value);
+    bool repGetObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset);
 
     void recGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative, CORINFO_CLASS_HANDLE result);
     void dmpGetStaticFieldCurrentClass(DLD key, const Agnostic_GetStaticFieldCurrentClass& value);
@@ -659,10 +663,6 @@ public:
     void dmpGetArrayInitializationData(DLD key, DWORDLONG value);
     void* repGetArrayInitializationData(CORINFO_FIELD_HANDLE field, DWORD size);
 
-    void recFilterException(struct _EXCEPTION_POINTERS* pExceptionPointers, int result);
-    void dmpFilterException(DWORD key, DWORD value);
-    int repFilterException(struct _EXCEPTION_POINTERS* pExceptionPointers);
-
     void recGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
     void dmpGetAddressOfPInvokeTarget(DWORDLONG key, DLD value);
     void repGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
@@ -772,10 +772,6 @@ public:
     void recEmbedFieldHandle(CORINFO_FIELD_HANDLE handle, void** ppIndirection, CORINFO_FIELD_HANDLE result);
     void dmpEmbedFieldHandle(DWORDLONG key, DLDL value);
     CORINFO_FIELD_HANDLE repEmbedFieldHandle(CORINFO_FIELD_HANDLE handle, void** ppIndirection);
-
-    void recAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, bool result);
-    void dmpAreTypesEquivalent(DLDL key, DWORD value);
-    bool repAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
 
     void recCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass, TypeCompareState result);
     void dmpCompareTypesForCast(DLDL key, DWORD value);
@@ -982,7 +978,7 @@ private:
 
 enum mcPackets
 {
-    Packet_AreTypesEquivalent = 1,
+    //Packet_AreTypesEquivalent = 1,
     Packet_AsCorInfoType = 2,
     Packet_CanAccessClass = 3,
     Packet_CanAccessFamily = 4,
@@ -1111,7 +1107,7 @@ enum mcPackets
     //Packet_AllocMethodBlockCounts = 131,
     PacketCR_AllocUnwindInfo = 132,
     PacketCR_ReserveUnwindInfo = 133,
-    Packet_FilterException = 134,
+    //Packet_FilterException = 134,
     //Packet_HandleException = 135,
     //Retired9 = 136,
     Packet_IsFieldStatic = 137,
@@ -1175,7 +1171,7 @@ enum mcPackets
     Packet_GetExactClasses = 195,
     Packet_GetRuntimeTypePointer = 196,
     Packet_PrintObjectDescription = 197,
-    Packet_GetReadonlyStaticFieldValue = 198,
+    Packet_GetStaticFieldContent = 198,
     Packet_GetObjectType = 199,
     Packet_IsObjectImmutable = 200,
     Packet_ExpandRawHandleIntrinsic = 201,
@@ -1187,6 +1183,7 @@ enum mcPackets
     Packet_GetThreadLocalFieldInfo = 207,
     Packet_GetThreadLocalStaticBlocksInfo = 208,
     Packet_GetRISCV64PassStructInRegisterFlags = 209,
+    Packet_GetObjectContent = 210,
 };
 
 void SetDebugDumpVariables();

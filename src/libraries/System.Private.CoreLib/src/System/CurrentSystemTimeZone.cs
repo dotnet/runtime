@@ -164,7 +164,7 @@ namespace System
             }
             else
             {
-                return new TimeSpan(TimeZone.CalculateUtcOffset(time, GetDaylightChanges(time.Year)).Ticks + m_ticksOffset);
+                return new TimeSpan(CalculateUtcOffset(time, GetDaylightChanges(time.Year)).Ticks + m_ticksOffset);
             }
         }
 

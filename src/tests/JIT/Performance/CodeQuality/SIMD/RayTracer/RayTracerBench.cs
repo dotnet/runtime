@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using Xunit;
 
 namespace SIMD
 {
@@ -113,7 +114,8 @@ public class RayTracerBench
         return true;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var r = new RayTracerBench();
         bool result = r.Run();

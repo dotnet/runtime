@@ -5,6 +5,7 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="vtret_d.il" />
     <Compile Include="vtret.il" />
   </ItemGroup>
 </Project>

@@ -41,18 +41,20 @@ namespace System.Net.Http
             {
                 HttpTelemetry.Log.RequestStart(request);
 
+                HttpResponseMessage? response = null;
                 try
                 {
-                    return _handler.Send(request, cancellationToken);
+                    response = _handler.Send(request, cancellationToken);
+                    return response;
                 }
-                catch when (LogRequestFailed(telemetryStarted: true))
+                catch (Exception ex) when (LogRequestFailed(ex, telemetryStarted: true))
                 {
                     // Unreachable as LogRequestFailed will return false
                     throw;
                 }
                 finally
                 {
-                    HttpTelemetry.Log.RequestStop();
+                    HttpTelemetry.Log.RequestStop(response);
                 }
             }
             else
@@ -78,18 +80,20 @@ namespace System.Net.Http
             {
                 HttpTelemetry.Log.RequestStart(request);
 
+                HttpResponseMessage? response = null;
                 try
                 {
-                    return await handler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                    response = await handler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                    return response;
                 }
-                catch when (LogRequestFailed(telemetryStarted: true))
+                catch (Exception ex) when (LogRequestFailed(ex, telemetryStarted: true))
                 {
                     // Unreachable as LogRequestFailed will return false
                     throw;
                 }
                 finally
                 {
-                    HttpTelemetry.Log.RequestStop();
+                    HttpTelemetry.Log.RequestStop(response);
                 }
             }
         }
@@ -100,11 +104,11 @@ namespace System.Net.Http
             request.RequestUri is Uri requestUri &&
             requestUri.IsAbsoluteUri;
 
-        internal static bool LogRequestFailed(bool telemetryStarted)
+        internal static bool LogRequestFailed(Exception exception, bool telemetryStarted)
         {
             if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
             {
-                HttpTelemetry.Log.RequestFailed();
+                HttpTelemetry.Log.RequestFailed(exception);
             }
             return false;
         }

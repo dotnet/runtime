@@ -18,7 +18,6 @@ public class MiscTests : BuildTestBase
     }
 
     [Theory]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/84722")]
     [InlineData("Debug", true)]
     [InlineData("Debug", false)]
     [InlineData("Release", true)]

@@ -80,7 +80,7 @@ namespace System.IO.Pipes
                 PipeTransmissionMode transmissionMode, PipeOptions options, int inBufferSize, int outBufferSize,
                 PipeSecurity? pipeSecurity, HandleInheritability inheritability, PipeAccessRights additionalAccessRights)
         {
-            Debug.Assert(pipeName != null && pipeName.Length != 0, "fullPipeName is null or empty");
+            Debug.Assert(!string.IsNullOrEmpty(pipeName), "fullPipeName is null or empty");
             Debug.Assert(direction >= PipeDirection.In && direction <= PipeDirection.InOut, "invalid pipe direction");
             Debug.Assert(inBufferSize >= 0, "inBufferSize is negative");
             Debug.Assert(outBufferSize >= 0, "outBufferSize is negative");

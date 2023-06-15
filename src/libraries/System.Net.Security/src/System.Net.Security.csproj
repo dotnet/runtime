@@ -92,6 +92,8 @@
              Link="Common\System\NotImplemented.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\TlsAlertMessage.cs"
              Link="Common\System\Net\Security\TlsAlertMessage.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\TargetHostNameHelper.cs"
+             Link="Common\System\Net\Security\TargetHostNameHelper.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SafeCredentialReference.cs"
              Link="Common\System\Net\Security\SafeCredentialReference.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SSPIHandleCache.cs"

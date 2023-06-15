@@ -66,9 +66,6 @@
   <data name="Arg_EmptyOrNullString" xml:space="preserve">
     <value>String cannot be empty or null.</value>
   </data>
-  <data name="Arg_EmptyOrNullString_Named" xml:space="preserve">
-    <value>The '{0}' string cannot be empty or null.</value>
-  </data>
   <data name="Arg_EmptySpan" xml:space="preserve">
     <value>Span may not be empty.</value>
   </data>
@@ -182,9 +179,6 @@
   </data>
   <data name="CryptoConfigNotSupported" xml:space="preserve">
     <value>Accessing a hash algorithm by manipulating the HashName property is not supported on this platform. Instead, you must instantiate one of the supplied subtypes (such as HMACSHA1.)</value>
-  </data>
-  <data name="Cryptography_AddNullOrEmptyName" xml:space="preserve">
-    <value>CryptoConfig cannot add a mapping for a null or empty name.</value>
   </data>
   <data name="Cryptography_AlgKdfRequiresChars" xml:space="preserve">
     <value>The KDF for algorithm '{0}' requires a char-based password input.</value>
@@ -353,6 +347,9 @@
   </data>
   <data name="Cryptography_HashNotYetFinalized" xml:space="preserve">
     <value>Hash must be finalized before the hash value is retrieved.</value>
+  </data>
+  <data name="Cryptography_IncorrectTagLength" xml:space="preserve">
+    <value>The size of the specified tag does not match the expected size of {0}.</value>
   </data>
   <data name="Cryptography_InvalidBlockSize" xml:space="preserve">
     <value>Specified block size is not valid for this algorithm.</value>

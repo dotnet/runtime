@@ -739,7 +739,7 @@ namespace System
         /// <returns>A string representation of value of the current DateOnly object as specified by format and provider.</returns>
         public string ToString([StringSyntax(StringSyntaxAttribute.DateOnlyFormat)] string? format, IFormatProvider? provider)
         {
-            if (format == null || format.Length == 0)
+            if (string.IsNullOrEmpty(format))
             {
                 format = "d";
             }
@@ -772,7 +772,7 @@ namespace System
                 }
             }
 
-            DateTimeFormat.IsValidCustomDateFormat(format.AsSpan(), throwOnError: true);
+            DateTimeFormat.IsValidCustomDateOnlyFormat(format.AsSpan(), throwOnError: true);
             return DateTimeFormat.Format(GetEquivalentDateTime(), format, provider);
         }
 
@@ -820,7 +820,7 @@ namespace System
                 }
             }
 
-            if (!DateTimeFormat.IsValidCustomDateFormat(format, throwOnError: false))
+            if (!DateTimeFormat.IsValidCustomDateOnlyFormat(format, throwOnError: false))
             {
                 throw new FormatException(SR.Format(SR.Format_DateTimeOnlyContainsNoneDateParts, format.ToString(), nameof(DateOnly)));
             }

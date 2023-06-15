@@ -77,13 +77,12 @@ namespace System.Reflection.Emit
             return result;
         }
 
-        internal CustomAttributeBuilder(ConstructorInfo con, byte[] binaryAttribute)
+        internal CustomAttributeBuilder(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             ArgumentNullException.ThrowIfNull(con);
-            ArgumentNullException.ThrowIfNull(binaryAttribute);
 
             ctor = con;
-            data = (byte[])binaryAttribute.Clone();
+            data = binaryAttribute.ToArray();
             /* should we check that the user supplied data is correct? */
         }
 
@@ -268,7 +267,7 @@ namespace System.Reflection.Emit
         }
 
         /* helper methods */
-        internal static int decode_len(byte[] data, int pos, out int rpos)
+        internal static int decode_len(ReadOnlySpan<byte> data, int pos, out int rpos)
         {
             int len;
             if ((data[pos] & 0x80) == 0)
@@ -289,9 +288,9 @@ namespace System.Reflection.Emit
             return len;
         }
 
-        internal static string string_from_bytes(byte[] data, int pos, int len)
+        internal static string string_from_bytes(ReadOnlySpan<byte> data, int pos, int len)
         {
-            return Text.Encoding.UTF8.GetString(data, pos, len);
+            return Text.Encoding.UTF8.GetString(data.Slice(pos, len));
         }
 
         internal static string? decode_string(byte[] data, int pos, out int rpos)
@@ -454,7 +453,7 @@ namespace System.Reflection.Emit
                 _ => throw new Exception(SR.Format(SR.ArgumentException_InvalidTypeArgument, elementType)),
             };
 
-        private static object? decode_cattr_value(Type t, byte[] data, int pos, out int rpos)
+        private static object? decode_cattr_value(Type t, ReadOnlySpan<byte> data, int pos, out int rpos)
         {
             switch (Type.GetTypeCode(t))
             {
@@ -494,14 +493,19 @@ namespace System.Reflection.Emit
             public object?[] namedParamValues;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:UnrecognizedReflectionPattern",
-            Justification = "Types referenced from custom attributes are preserved")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "Types referenced from custom attributes are preserved")]
         internal static CustomAttributeInfo decode_cattr(CustomAttributeBuilder customBuilder)
         {
             byte[] data = customBuilder.Data;
             ConstructorInfo ctor = customBuilder.Ctor;
+            return decode_cattr(ctor, data);
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:UnrecognizedReflectionPattern",
+            Justification = "Types referenced from custom attributes are preserved")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "Types referenced from custom attributes are preserved")]
+        internal static CustomAttributeInfo decode_cattr(ConstructorInfo ctor, ReadOnlySpan<byte> data)
+        {
             int pos;
 
             CustomAttributeInfo info = default;

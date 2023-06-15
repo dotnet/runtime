@@ -693,7 +693,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 
 #ifdef FEATURE_ICASTABLE
     // In case of ICastable, instead of trying to find method implementation in the real object type
-    // we call pObj.GetValueInternal() and call GetMethodDescForInterfaceMethod() again with whatever type it returns.
+    // we call GetMethodDescForInterfaceMethod() again with whatever type it returns.
     // It allows objects that implement ICastable to mimic behavior of other types.
     if (pServerMT->IsICastable() &&
         !pItfMD->HasMethodInstantiation() &&
@@ -1754,13 +1754,6 @@ MethodTable::IsExternallyVisible()
     return bIsVisible;
 } // MethodTable::IsExternallyVisible
 
-BOOL MethodTable::CanShareVtableChunksFrom(MethodTable *pTargetMT, Module *pCurrentLoaderModule)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return pTargetMT->GetLoaderModule() == pCurrentLoaderModule;
-}
-
 BOOL MethodTable::IsAllGCPointers()
 {
     if (this->ContainsPointers())
@@ -2081,10 +2074,39 @@ MethodDesc *MethodTable::GetMethodDescForInterfaceMethod(TypeHandle ownerType, M
 }
 #endif // DACCESS_COMPILE
 
+const DWORD EnCFieldIndex = 0x10000000;
+
 //==========================================================================================
 PTR_FieldDesc MethodTable::GetFieldDescByIndex(DWORD fieldIndex)
 {
     LIMITED_METHOD_CONTRACT;
+
+    // Check if the field index is for an EnC field lookup.
+    // See GetIndexForFieldDesc() for when this is applied and why.
+    if ((fieldIndex & EnCFieldIndex) == EnCFieldIndex)
+    {
+        DWORD rid = fieldIndex & ~EnCFieldIndex;
+        LOG((LF_ENC, LL_INFO100, "MT:GFDBI: rid:0x%08x\n", rid));
+
+        mdFieldDef tokenToFind = TokenFromRid(rid, mdtFieldDef);
+        EncApproxFieldDescIterator fdIterator(
+            this,
+            ApproxFieldDescIterator::ALL_FIELDS,
+            (EncApproxFieldDescIterator::FixUpEncFields | EncApproxFieldDescIterator::OnlyEncFields));
+        PTR_FieldDesc pField;
+        while ((pField = fdIterator.Next()) != NULL)
+        {
+            mdFieldDef token = pField->GetMemberDef();
+            if (tokenToFind == token)
+            {
+                LOG((LF_ENC, LL_INFO100, "MT:GFDBI: Found pField:%p\n", pField));
+                return pField;
+            }
+        }
+
+        LOG((LF_ENC, LL_INFO100, "MT:GFDBI: Failed to find rid:0x%08x\n", rid));
+        return NULL;
+    }
 
     if (HasGenericsStaticsInfo() &&
         fieldIndex >= GetNumIntroducedInstanceFields())
@@ -2101,6 +2123,19 @@ PTR_FieldDesc MethodTable::GetFieldDescByIndex(DWORD fieldIndex)
 DWORD MethodTable::GetIndexForFieldDesc(FieldDesc *pField)
 {
     LIMITED_METHOD_CONTRACT;
+
+    // EnC methods are not in a location where computing an index through
+    // pointer arithmetic is possible. Instead we use the RID and a high
+    // bit that is ECMA encodable (that is, < 0x1fffffff) and also doesn't
+    // conflict with any other RID (that is, > 0x00ffffff).
+    // See FieldDescSlot usage in the JIT interface.
+    if (pField->IsEnCNew())
+    {
+        mdFieldDef tok = pField->GetMemberDef();
+        DWORD rid = RidFromToken(tok);
+        LOG((LF_ENC, LL_INFO100, "MT:GIFFD: pField:%p rid:0x%08x\n", pField, rid));
+        return rid | EnCFieldIndex;
+    }
 
     if (pField->IsStatic() && HasGenericsStaticsInfo())
     {
@@ -3401,6 +3436,11 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                         size = STRUCT_FIRST_FIELD_SIZE_IS8;
                     }
                 }
+                else if (fieldType == ELEMENT_TYPE_CLASS)
+                {
+                    size = STRUCT_NO_FLOAT_FIELD;
+                    goto _End_arg;
+                }
                 else if (pFieldStart[0].GetSize() == 8)
                 {
                     size = STRUCT_FIRST_FIELD_SIZE_IS8;
@@ -3491,6 +3531,11 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                     {
                         size |= STRUCT_SECOND_FIELD_SIZE_IS8;
                     }
+                }
+                else if (fieldType == ELEMENT_TYPE_CLASS)
+                {
+                    size = STRUCT_NO_FLOAT_FIELD;
+                    goto _End_arg;
                 }
                 else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
                 {
@@ -5116,7 +5161,6 @@ struct DoFullyLoadLocals
 #ifdef FEATURE_TYPEEQUIVALENCE
         , fHasEquivalentStructParameter(FALSE)
 #endif
-        , fDependsOnEquivalentOrForwardedStructs(FALSE)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -5128,7 +5172,6 @@ struct DoFullyLoadLocals
 #ifdef FEATURE_TYPEEQUIVALENCE
     BOOL fHasEquivalentStructParameter;
 #endif
-    BOOL fDependsOnEquivalentOrForwardedStructs;
 };
 
 #if defined(FEATURE_TYPEEQUIVALENCE) && !defined(DACCESS_COMPILE)
@@ -5151,7 +5194,6 @@ static void CheckForEquivalenceAndFullyLoadType(Module *pModule, mdToken token, 
         CONSISTENCY_CHECK(!th.IsNull());
 
         th.DoFullyLoad(&pLocals->newVisited, pLocals->level, pLocals->pPending, &pLocals->fBailed, NULL);
-        pLocals->fDependsOnEquivalentOrForwardedStructs = TRUE;
         pLocals->fHasEquivalentStructParameter = TRUE;
     }
 }
@@ -5404,13 +5446,6 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
         }
     }
 #endif //FEATURE_TYPEEQUIVALENCE
-
-    if (locals.fDependsOnEquivalentOrForwardedStructs)
-    {
-        // if this type declares a method that has an equivalent or type forwarded structure as a parameter type,
-        // make sure we come here and pre-load these structure types in NGENed cases as well
-        SetDependsOnEquivalentOrForwardedStructs();
-    }
 
     // The rules for constraint cycles are same as rules for access checks
     if (fNeedAccessChecks)
@@ -7061,7 +7096,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
             szName = GetFullyQualifiedNameForClassNestedAwareW(this);
             if (szName == NULL)
                 return;
-            cchName = wcslen(szName);
+            cchName = u16_strlen(szName);
 
             // Enlarge buffer for class name.
             cbCur = cchName * sizeof(WCHAR);
@@ -8301,7 +8336,7 @@ void MethodTable::MethodIterator::Init(MethodTable *pMTDecl, MethodTable *pMTImp
         PRECONDITION(CheckPointer(pMTImpl));
     } CONTRACTL_END;
 
-    LOG((LF_LOADER, LL_INFO10000, "SD: MT::MethodIterator created for %s.\n", pMTDecl->GetDebugClassName()));
+    LOG((LF_LOADER, LL_INFO10000, "MT::MethodIterator created for %s.\n", pMTDecl->GetDebugClassName()));
 
     m_pMethodData = MethodTable::GetMethodData(pMTDecl, pMTImpl);
     CONSISTENCY_CHECK(CheckPointer(m_pMethodData));
@@ -8660,24 +8695,9 @@ PCODE MethodTable::GetRestoredSlot(DWORD slotNumber)
     // Keep in sync with code:MethodTable::GetRestoredSlotMT
     //
 
-    MethodTable * pMT = this;
-    while (true)
-    {
-        pMT = pMT->GetCanonicalMethodTable();
-
-        _ASSERTE(pMT != NULL);
-
-        PCODE slot = pMT->GetSlot(slotNumber);
-
-        if (slot != NULL)
-        {
-            return slot;
-        }
-
-        // This is inherited slot that has not been fixed up yet. Find
-        // the value by walking up the inheritance chain
-        pMT = pMT->GetParentMethodTable();
-    }
+    PCODE slot = GetCanonicalMethodTable()->GetSlot(slotNumber);
+    _ASSERTE(slot != NULL);
+    return slot;
 }
 
 //==========================================================================================
@@ -8694,28 +8714,50 @@ MethodTable * MethodTable::GetRestoredSlotMT(DWORD slotNumber)
     // Keep in sync with code:MethodTable::GetRestoredSlot
     //
 
-    MethodTable * pMT = this;
-    while (true)
-    {
-        pMT = pMT->GetCanonicalMethodTable();
-
-        _ASSERTE(pMT != NULL);
-
-        PCODE slot = pMT->GetSlot(slotNumber);
-
-        if (slot != NULL)
-        {
-            return pMT;
-        }
-
-        // This is inherited slot that has not been fixed up yet. Find
-        // the value by walking up the inheritance chain
-        pMT = pMT->GetParentMethodTable();
-    }
+    return GetCanonicalMethodTable();
 }
 
 //==========================================================================================
-MethodDesc * MethodTable::GetParallelMethodDesc(MethodDesc * pDefMD)
+namespace
+{
+    // Methods added by EnC cannot be looked up by slot since
+    // they have none, see EEClass::AddMethodDesc(). We must perform
+    // a slow lookup instead of using the fast slot lookup path.
+    MethodDesc* GetParallelMethodDescForEnC(MethodTable* pMT, MethodDesc* pDefMD)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+            PRECONDITION(pMT != NULL);
+            PRECONDITION(pMT->IsCanonicalMethodTable());
+            PRECONDITION(pDefMD != NULL);
+            PRECONDITION(pDefMD->IsEnCAddedMethod());
+            PRECONDITION(pDefMD->GetSlot() == MethodTable::NO_SLOT);
+        }
+        CONTRACTL_END;
+
+        mdMethodDef tkMethod = pDefMD->GetMemberDef();
+        Module* mod = pDefMD->GetModule();
+        LOG((LF_ENC, LL_INFO100, "GPMDENC: pMT:%p tok:0x%08x mod:%p\n", pMT, tkMethod, mod));
+
+        MethodTable::IntroducedMethodIterator it(pMT);
+        for (; it.IsValid(); it.Next())
+        {
+            MethodDesc* pMD = it.GetMethodDesc();
+            if (pMD->GetMemberDef() == tkMethod
+                && pMD->GetModule() == mod)
+            {
+                return pMD;
+            }
+        }
+        LOG((LF_ENC, LL_INFO10000, "GPMDENC: Not found\n"));
+        return NULL;
+    }
+}
+
+MethodDesc* MethodTable::GetParallelMethodDesc(MethodDesc* pDefMD)
 {
     CONTRACTL
     {
@@ -8724,6 +8766,12 @@ MethodDesc * MethodTable::GetParallelMethodDesc(MethodDesc * pDefMD)
         MODE_ANY;
     }
     CONTRACTL_END;
+
+#ifdef EnC_SUPPORTED
+    if (pDefMD->IsEnCAddedMethod())
+        return GetParallelMethodDescForEnC(this, pDefMD);
+#endif // EnC_SUPPORTED
+
     return GetMethodDescForSlot(pDefMD->GetSlot());
 }
 

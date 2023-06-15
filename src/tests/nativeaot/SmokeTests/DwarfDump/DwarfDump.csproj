@@ -6,6 +6,7 @@
     <CLRTestPriority>0</CLRTestPriority>
     <!-- Currently only tracking DWARF info on Linux -->
     <CLRTestTargetUnsupported Condition="'$(TargetOS)' != 'linux'">true</CLRTestTargetUnsupported>
+    <StripSymbols>false</StripSymbols>
   </PropertyGroup>
 
   <ItemGroup>

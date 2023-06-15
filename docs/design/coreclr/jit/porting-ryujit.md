@@ -59,10 +59,13 @@ There are several steps to follow to port the JIT (some of which can be be done 
 * Implement the basic instruction encodings. Test them using a method like `CodeGen::genArm64EmitterUnitTests()`.
 * Implement the bare minimum to get the compiler building and generating code for very simple operations, like addition.
 * Focus on the CodeGenBringUpTests (src\tests\JIT\CodeGenBringUpTests), starting with the simple ones.
-  These are designed such that for a test `XXX.cs`, there is a single interesting function named `XXX` to compile
-  (that is, the name of the source file is the same as the name of the interesting function. This was done to make
-  the scripts to invoke these tests very simple.). Set `DOTNET_AltJit=XXX` so the new JIT only attempts to
-  compile that one function.
+  * These are designed such that for a test `XXX.cs`, there is a single interesting function named `XXX` to compile
+    (that is, the name of the source file is the same as the name of the interesting function. This was done to make
+    the scripts to invoke these tests very simple.). Set `DOTNET_AltJit=XXX` so the new JIT only attempts to
+    compile that one function.
+  * Merged test groups interfere with the simplicity of these tests by removing the entry point from each individual
+    test and creating a single wrapper that calls all of the tests in a single process. To restore the
+    old behavior, build the tests with the environment variable `BuildAsStandalone` set to `true`.
 * Use `DOTNET_JitDisasm` to see the generated code for functions, even if the code isn't run.
 
 ## Expand test coverage

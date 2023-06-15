@@ -87,6 +87,23 @@ PTR_Module TypeDesc::GetLoaderModule()
     }
 }
 
+BOOL TypeDesc::IsSharedByGenericInstantiations()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (HasTypeParam())
+    {
+        return GetRootTypeParam().IsCanonicalSubtype();
+    }
+
+    if (IsFnPtr())
+    {
+        return dac_cast<PTR_FnPtrTypeDesc>(this)->IsSharedByGenericInstantiations();
+    }
+
+    return FALSE;
+}
+
 PTR_BaseDomain TypeDesc::GetDomain()
 {
     CONTRACTL
@@ -824,6 +841,14 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level /* = CLASS_LOADED */)
         else
         {
             _ASSERTE(TypeFromToken(defToken) == mdtTypeDef);
+
+            bool foundResult = false;
+            if (!GetModule()->m_pTypeGenericInfoMap->HasConstraints(defToken, &foundResult) && foundResult)
+            {
+                m_numConstraints = 0;
+                return;
+            }
+
             TypeHandle genericType = LoadOwnerType();
             _ASSERTE(genericType.IsGenericTypeDefinition());
 
@@ -1634,17 +1659,25 @@ OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
 TypeHandle *
 FnPtrTypeDesc::GetRetAndArgTypes()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
+    LIMITED_METHOD_CONTRACT;
 
     return m_RetAndArgTypes;
 } // FnPtrTypeDesc::GetRetAndArgTypes
+
+BOOL
+FnPtrTypeDesc::IsSharedByGenericInstantiations()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    for (DWORD i = 0; i <= m_NumArgs; i++)
+    {
+        if (m_RetAndArgTypes[i].IsCanonicalSubtype())
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
+} // FnPtrTypeDesc::IsSharedByGenericInstantiations
 
 #ifndef DACCESS_COMPILE
 
@@ -1660,10 +1693,9 @@ FnPtrTypeDesc::IsExternallyVisible() const
     }
     CONTRACTL_END;
 
-    const TypeHandle * rgRetAndArgTypes = GetRetAndArgTypes();
     for (DWORD i = 0; i <= m_NumArgs; i++)
     {
-        if (!rgRetAndArgTypes[i].IsExternallyVisible())
+        if (!m_RetAndArgTypes[i].IsExternallyVisible())
         {
             return FALSE;
         }

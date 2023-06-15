@@ -793,16 +793,6 @@ bool WrapICorJitInfo::canCast(
     return temp;
 }
 
-bool WrapICorJitInfo::areTypesEquivalent(
-          CORINFO_CLASS_HANDLE cls1,
-          CORINFO_CLASS_HANDLE cls2)
-{
-    API_ENTER(areTypesEquivalent);
-    bool temp = wrapHnd->areTypesEquivalent(cls1, cls2);
-    API_LEAVE(areTypesEquivalent);
-    return temp;
-}
-
 TypeCompareState WrapICorJitInfo::compareTypesForCast(
           CORINFO_CLASS_HANDLE fromClass,
           CORINFO_CLASS_HANDLE toClass)
@@ -982,19 +972,21 @@ void WrapICorJitInfo::getFieldInfo(
 }
 
 uint32_t WrapICorJitInfo::getThreadLocalFieldInfo(
-          CORINFO_FIELD_HANDLE field)
+          CORINFO_FIELD_HANDLE field,
+          bool isGCtype)
 {
     API_ENTER(getThreadLocalFieldInfo);
-    uint32_t temp = wrapHnd->getThreadLocalFieldInfo(field);
+    uint32_t temp = wrapHnd->getThreadLocalFieldInfo(field, isGCtype);
     API_LEAVE(getThreadLocalFieldInfo);
     return temp;
 }
 
 void WrapICorJitInfo::getThreadLocalStaticBlocksInfo(
-          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo,
+          bool isGCType)
 {
     API_ENTER(getThreadLocalStaticBlocksInfo);
-    wrapHnd->getThreadLocalStaticBlocksInfo(pInfo);
+    wrapHnd->getThreadLocalStaticBlocksInfo(pInfo, isGCType);
     API_LEAVE(getThreadLocalStaticBlocksInfo);
 }
 
@@ -1134,50 +1126,6 @@ CorInfoHFAElemType WrapICorJitInfo::getHFAType(
     CorInfoHFAElemType temp = wrapHnd->getHFAType(hClass);
     API_LEAVE(getHFAType);
     return temp;
-}
-
-JITINTERFACE_HRESULT WrapICorJitInfo::GetErrorHRESULT(
-          struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    API_ENTER(GetErrorHRESULT);
-    JITINTERFACE_HRESULT temp = wrapHnd->GetErrorHRESULT(pExceptionPointers);
-    API_LEAVE(GetErrorHRESULT);
-    return temp;
-}
-
-uint32_t WrapICorJitInfo::GetErrorMessage(
-          char16_t* buffer,
-          uint32_t bufferLength)
-{
-    API_ENTER(GetErrorMessage);
-    uint32_t temp = wrapHnd->GetErrorMessage(buffer, bufferLength);
-    API_LEAVE(GetErrorMessage);
-    return temp;
-}
-
-int WrapICorJitInfo::FilterException(
-          struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    API_ENTER(FilterException);
-    int temp = wrapHnd->FilterException(pExceptionPointers);
-    API_LEAVE(FilterException);
-    return temp;
-}
-
-void WrapICorJitInfo::ThrowExceptionForJitResult(
-          JITINTERFACE_HRESULT result)
-{
-    API_ENTER(ThrowExceptionForJitResult);
-    wrapHnd->ThrowExceptionForJitResult(result);
-    API_LEAVE(ThrowExceptionForJitResult);
-}
-
-void WrapICorJitInfo::ThrowExceptionForHelper(
-          const CORINFO_HELPER_DESC* throwHelper)
-{
-    API_ENTER(ThrowExceptionForHelper);
-    wrapHnd->ThrowExceptionForHelper(throwHelper);
-    API_LEAVE(ThrowExceptionForHelper);
 }
 
 bool WrapICorJitInfo::runWithErrorTrap(
@@ -1522,16 +1470,28 @@ unsigned WrapICorJitInfo::getClassDomainID(
     return temp;
 }
 
-bool WrapICorJitInfo::getReadonlyStaticFieldValue(
+bool WrapICorJitInfo::getStaticFieldContent(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
           int bufferSize,
           int valueOffset,
           bool ignoreMovableObjects)
 {
-    API_ENTER(getReadonlyStaticFieldValue);
-    bool temp = wrapHnd->getReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
-    API_LEAVE(getReadonlyStaticFieldValue);
+    API_ENTER(getStaticFieldContent);
+    bool temp = wrapHnd->getStaticFieldContent(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+    API_LEAVE(getStaticFieldContent);
+    return temp;
+}
+
+bool WrapICorJitInfo::getObjectContent(
+          CORINFO_OBJECT_HANDLE obj,
+          uint8_t* buffer,
+          int bufferSize,
+          int valueOffset)
+{
+    API_ENTER(getObjectContent);
+    bool temp = wrapHnd->getObjectContent(obj, buffer, bufferSize, valueOffset);
+    API_LEAVE(getObjectContent);
     return temp;
 }
 

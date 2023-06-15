@@ -21,6 +21,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("/test ", "/test")]
         [InlineData("/test%20?a=1", "/test%20?a=1")]
         [InlineData("/test ?a=1", "/test%20?a=1")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task TrimmingTrailingWhiteSpace(string requestPath, string expectedServerPath)
         {
             string serverPath = null;

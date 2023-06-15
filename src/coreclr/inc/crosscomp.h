@@ -540,7 +540,6 @@ typedef struct DECLSPEC_ALIGN(16) _T_CONTEXT {
     //
 
     /* +0x000 */ DWORD ContextFlags;
-    /* +0x004 */ DWORD Fcsr;
 
     //
     // Integer registers
@@ -584,6 +583,7 @@ typedef struct DECLSPEC_ALIGN(16) _T_CONTEXT {
     //
     //TODO-RISCV64: support the SIMD.
     ULONGLONG F[32];
+    DWORD Fcsr;
 } T_CONTEXT, *PT_CONTEXT;
 
 // _IMAGE_RISCV64_RUNTIME_FUNCTION_ENTRY (see ExternalAPIs\Win9CoreSystem\inc\winnt.h)

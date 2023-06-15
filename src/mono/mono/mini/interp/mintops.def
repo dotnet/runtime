@@ -26,6 +26,7 @@
 #define IROPDEF(opsymbol, opstring, oplength, num_dregs, num_sregs, optype) OPDEF(opsymbol, opstring, oplength, num_dregs, num_sregs, optype)
 #endif // IROPDEF
 
+OPDEF(MINT_NIY, "niy", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_BREAK, "break", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_BREAKPOINT, "breakpoint", 1, 0, 0, MintOpNoArgs)
 
@@ -352,7 +353,8 @@ OPDEF(MINT_JMP, "jmp", 2, 0, 0, MintOpMethodToken)
 
 OPDEF(MINT_ENDFILTER, "endfilter", 2, 0, 1, MintOpNoArgs)
 
-OPDEF(MINT_NEWOBJ_SLOW_UNOPT, "newobj_slow_unopt", 7, 1, 1, MintOpMethodToken)
+OPDEF(MINT_MOV_STACK_UNOPT, "mov_stack_unopt", 4, 0, 0, MintOpTwoShorts)
+
 OPDEF(MINT_NEWOBJ_STRING_UNOPT, "newobj_string_unopt", 4, 1, 0, MintOpMethodToken)
 OPDEF(MINT_NEWOBJ_SLOW, "newobj_slow", 4, 1, 1, MintOpMethodToken)
 OPDEF(MINT_NEWOBJ_ARRAY, "newobj_array", 5, 1, 1, MintOpMethodToken)
@@ -681,8 +683,6 @@ OPDEF(MINT_STRLEN, "strlen", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_ARRAY_RANK, "array_rank", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_ARRAY_ELEMENT_SIZE, "array_element_size", 3, 1, 1, MintOpNoArgs)
 
-OPDEF(MINT_CALL_ALIGN_STACK, "call_align_stack", 3, 0, 0, MintOpTwoShorts)
-
 /* Calls */
 OPDEF(MINT_CALL, "call", 4, 1, 1, MintOpMethodToken)
 OPDEF(MINT_CALLVIRT_FAST, "callvirt.fast", 5, 1, 1, MintOpMethodToken)
@@ -844,7 +844,6 @@ OPDEF(MINT_TIER_MONITOR_JITERPRETER, "tier_monitor_jiterpreter", 3, 0, 0, MintOp
 #endif // HOST_BROWSER
 
 IROPDEF(MINT_NOP, "nop", 1, 0, 0, MintOpNoArgs)
-IROPDEF(MINT_NIY, "niy", 1, 0, 0, MintOpNoArgs)
 IROPDEF(MINT_DEF, "def", 2, 1, 0, MintOpNoArgs)
 IROPDEF(MINT_IL_SEQ_POINT, "il_seq_point", 1, 0, 0, MintOpNoArgs)
 IROPDEF(MINT_DUMMY_USE, "dummy_use", 2, 0, 1, MintOpNoArgs)

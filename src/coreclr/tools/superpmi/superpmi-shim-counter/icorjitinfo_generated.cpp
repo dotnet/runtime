@@ -650,14 +650,6 @@ bool interceptor_ICJI::canCast(
     return original_ICorJitInfo->canCast(child, parent);
 }
 
-bool interceptor_ICJI::areTypesEquivalent(
-          CORINFO_CLASS_HANDLE cls1,
-          CORINFO_CLASS_HANDLE cls2)
-{
-    mcs->AddCall("areTypesEquivalent");
-    return original_ICorJitInfo->areTypesEquivalent(cls1, cls2);
-}
-
 TypeCompareState interceptor_ICJI::compareTypesForCast(
           CORINFO_CLASS_HANDLE fromClass,
           CORINFO_CLASS_HANDLE toClass)
@@ -802,17 +794,19 @@ void interceptor_ICJI::getFieldInfo(
 }
 
 uint32_t interceptor_ICJI::getThreadLocalFieldInfo(
-          CORINFO_FIELD_HANDLE field)
+          CORINFO_FIELD_HANDLE field,
+          bool isGCtype)
 {
     mcs->AddCall("getThreadLocalFieldInfo");
-    return original_ICorJitInfo->getThreadLocalFieldInfo(field);
+    return original_ICorJitInfo->getThreadLocalFieldInfo(field, isGCtype);
 }
 
 void interceptor_ICJI::getThreadLocalStaticBlocksInfo(
-          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo,
+          bool isGCType)
 {
     mcs->AddCall("getThreadLocalStaticBlocksInfo");
-    original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo);
+    original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo, isGCType);
 }
 
 bool interceptor_ICJI::isFieldStatic(
@@ -929,42 +923,6 @@ CorInfoHFAElemType interceptor_ICJI::getHFAType(
 {
     mcs->AddCall("getHFAType");
     return original_ICorJitInfo->getHFAType(hClass);
-}
-
-JITINTERFACE_HRESULT interceptor_ICJI::GetErrorHRESULT(
-          struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    mcs->AddCall("GetErrorHRESULT");
-    return original_ICorJitInfo->GetErrorHRESULT(pExceptionPointers);
-}
-
-uint32_t interceptor_ICJI::GetErrorMessage(
-          char16_t* buffer,
-          uint32_t bufferLength)
-{
-    mcs->AddCall("GetErrorMessage");
-    return original_ICorJitInfo->GetErrorMessage(buffer, bufferLength);
-}
-
-int interceptor_ICJI::FilterException(
-          struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    mcs->AddCall("FilterException");
-    return original_ICorJitInfo->FilterException(pExceptionPointers);
-}
-
-void interceptor_ICJI::ThrowExceptionForJitResult(
-          JITINTERFACE_HRESULT result)
-{
-    mcs->AddCall("ThrowExceptionForJitResult");
-    original_ICorJitInfo->ThrowExceptionForJitResult(result);
-}
-
-void interceptor_ICJI::ThrowExceptionForHelper(
-          const CORINFO_HELPER_DESC* throwHelper)
-{
-    mcs->AddCall("ThrowExceptionForHelper");
-    original_ICorJitInfo->ThrowExceptionForHelper(throwHelper);
 }
 
 bool interceptor_ICJI::runWithErrorTrap(
@@ -1247,15 +1205,25 @@ unsigned interceptor_ICJI::getClassDomainID(
     return original_ICorJitInfo->getClassDomainID(cls, ppIndirection);
 }
 
-bool interceptor_ICJI::getReadonlyStaticFieldValue(
+bool interceptor_ICJI::getStaticFieldContent(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
           int bufferSize,
           int valueOffset,
           bool ignoreMovableObjects)
 {
-    mcs->AddCall("getReadonlyStaticFieldValue");
-    return original_ICorJitInfo->getReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+    mcs->AddCall("getStaticFieldContent");
+    return original_ICorJitInfo->getStaticFieldContent(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+}
+
+bool interceptor_ICJI::getObjectContent(
+          CORINFO_OBJECT_HANDLE obj,
+          uint8_t* buffer,
+          int bufferSize,
+          int valueOffset)
+{
+    mcs->AddCall("getObjectContent");
+    return original_ICorJitInfo->getObjectContent(obj, buffer, bufferSize, valueOffset);
 }
 
 CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(

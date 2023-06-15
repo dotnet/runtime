@@ -44,11 +44,11 @@ namespace Internal.StackTraceMetadata
         {
             IntPtr moduleStartAddress = RuntimeAugments.GetOSModuleFromPointer(methodStartAddress);
             int rva = (int)((byte*)methodStartAddress - (byte*)moduleStartAddress);
-            foreach (TypeManagerHandle handle in ModuleList.Enumerate())
+            foreach (NativeFormatModuleInfo moduleInfo in ModuleList.EnumerateModules())
             {
-                if (handle.OsModuleBase == moduleStartAddress)
+                if (moduleInfo.Handle.OsModuleBase == moduleStartAddress)
                 {
-                    string name = _perModuleMethodNameResolverHashtable.GetOrCreateValue(handle.GetIntPtrUNSAFE()).GetMethodNameFromRvaIfAvailable(rva);
+                    string name = _perModuleMethodNameResolverHashtable.GetOrCreateValue(moduleInfo.Handle.GetIntPtrUNSAFE()).GetMethodNameFromRvaIfAvailable(rva);
                     if (name != null)
                         return name;
                 }

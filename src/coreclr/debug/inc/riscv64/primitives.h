@@ -87,31 +87,31 @@ constexpr CorDebugRegister g_JITToCorDbgReg[] =
 inline void CORDbgSetIP(DT_CONTEXT *context, LPVOID ip) {
     LIMITED_METHOD_CONTRACT;
 
-    context->PC = (DWORD64)ip;
+    context->Pc = (DWORD64)ip;
 }
 
 inline LPVOID CORDbgGetSP(const DT_CONTEXT * context) {
     LIMITED_METHOD_CONTRACT;
 
-    return (LPVOID)(size_t)(context->SP);
+    return (LPVOID)(size_t)(context->Sp);
 }
 
 inline void CORDbgSetSP(DT_CONTEXT *context, LPVOID esp) {
     LIMITED_METHOD_CONTRACT;
 
-    context->SP = (DWORD64)esp;
+    context->Sp = (DWORD64)esp;
 }
 
 inline LPVOID CORDbgGetFP(const DT_CONTEXT * context) {
     LIMITED_METHOD_CONTRACT;
 
-    return (LPVOID)(size_t)(context->FP);
+    return (LPVOID)(size_t)(context->Fp);
 }
 
 inline void CORDbgSetFP(DT_CONTEXT *context, LPVOID fp) {
     LIMITED_METHOD_CONTRACT;
 
-    context->FP = (DWORD64)fp;
+    context->Fp = (DWORD64)fp;
 }
 
 
@@ -121,9 +121,9 @@ inline BOOL CompareControlRegisters(const DT_CONTEXT * pCtx1, const DT_CONTEXT *
 
     // TODO-RISCV64: Sort out frame registers
 
-    if ((pCtx1->PC == pCtx2->PC) &&
-        (pCtx1->SP == pCtx2->SP) &&
-        (pCtx1->FP == pCtx2->FP))
+    if ((pCtx1->Pc == pCtx2->Pc) &&
+        (pCtx1->Sp == pCtx2->Sp) &&
+        (pCtx1->Fp == pCtx2->Fp))
     {
         return TRUE;
     }
@@ -168,7 +168,7 @@ inline LPVOID CORDbgGetIP(DT_CONTEXT *context)
 {
     LIMITED_METHOD_CONTRACT;
 
-    return (LPVOID)(size_t)(context->PC);
+    return (LPVOID)(size_t)(context->Pc);
 }
 
 inline void CORDbgSetInstructionExImpl(CORDB_ADDRESS_TYPE* address,

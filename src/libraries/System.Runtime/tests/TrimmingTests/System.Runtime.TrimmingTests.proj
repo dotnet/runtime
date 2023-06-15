@@ -14,8 +14,13 @@
     <TestConsoleAppSourceFiles Include="InterfacesOnArrays.cs" />
     <TestConsoleAppSourceFiles Include="InvariantGlobalizationFalse.cs">
       <DisabledFeatureSwitches>System.Globalization.Invariant</DisabledFeatureSwitches>
+      <EnabledFeatureSwitches>System.Globalization.Hybrid</EnabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="InvariantGlobalizationFalse.cs">
+      <DisabledFeatureSwitches>System.Globalization.Invariant</DisabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="InvariantGlobalizationTrue.cs">
+      <DisabledFeatureSwitches>System.Globalization.Hybrid</DisabledFeatureSwitches>
       <EnabledFeatureSwitches>System.Globalization.Invariant;System.Globalization.PredefinedCulturesOnly</EnabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="StackFrameHelperTest.cs">
@@ -44,6 +49,14 @@
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="NullabilityInfoContextSupportTrue.cs">
       <EnabledFeatureSwitches>System.Reflection.NullabilityInfoContext.IsSupported</EnabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <TestConsoleAppSourceFiles Include="UseWindowsThreadPoolFalse.cs">
+      <DisabledFeatureSwitches>System.Threading.ThreadPool.UseWindowsThreadPool</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="UseWindowsThreadPoolTrue.cs">
+      <EnabledFeatureSwitches>System.Threading.ThreadPool.UseWindowsThreadPool</EnabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 

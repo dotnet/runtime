@@ -144,7 +144,6 @@
       <_WasiCompileFlags Include="-D_WASI_EMULATED_PROCESS_CLOCKS"/>
       <_WasiCompileFlags Include="-D_WASI_EMULATED_SIGNAL"/>
       <_WasiCompileFlags Include="-D_WASI_EMULATED_MMAN"/>
-      <_WasiCompileFlags Include="-D_WASI_DEFAULT_MAIN"/>
       <!-- keep in sync with src\mono\wasi\build\WasiApp.Native.targets -->
       <!-- keep stack-size in sync with wasm_get_stack_size until after https://github.com/llvm/llvm-project/commit/1532be98f99384990544bd5289ba339bca61e15b in WASI SDK -->
       <_WasiLinkFlags Include="-Wl,-z,stack-size=8388608,--initial-memory=52428800,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman"/>

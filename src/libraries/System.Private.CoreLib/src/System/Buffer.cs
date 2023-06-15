@@ -85,7 +85,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            return Unsafe.Add<byte>(ref MemoryMarshal.GetArrayDataReference(array), index);
+            return Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
         }
 
         public static void SetByte(Array array, int index, byte value)
@@ -96,7 +96,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            Unsafe.Add<byte>(ref MemoryMarshal.GetArrayDataReference(array), index) = value;
+            Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index) = value;
         }
 
         // The attributes on this method are chosen for best JIT performance.
@@ -345,6 +345,7 @@ namespace System
 
 #if !MONO // Mono BulkMoveWithWriteBarrier is in terms of elements (not bytes) and takes a type handle.
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void Memmove<T>(ref T destination, ref T source, nuint elementCount)
         {

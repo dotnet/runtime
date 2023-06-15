@@ -85,6 +85,30 @@ namespace ComWrappersTests.Common
         }
     }
 
+    public class ITestObjectWrapper : ITest
+    {
+        private readonly ITestVtbl._SetValue _setValue;
+        private readonly IntPtr _ptr;
+
+        public ITestObjectWrapper(IntPtr ptr)
+        {
+            _ptr = ptr;
+            VtblPtr inst = Marshal.PtrToStructure<VtblPtr>(ptr);
+            ITestVtbl _vtbl = Marshal.PtrToStructure<ITestVtbl>(inst.Vtbl);
+            _setValue = Marshal.GetDelegateForFunctionPointer<ITestVtbl._SetValue>(_vtbl.SetValue);
+        }
+
+        ~ITestObjectWrapper()
+        {
+            if (_ptr != IntPtr.Zero)
+            {
+                Marshal.Release(_ptr);
+            }
+        }
+
+        public void SetValue(int i) => _setValue(_ptr, i);
+    }
+
     //
     // Native interface definition with managed wrapper for tracker object
     //

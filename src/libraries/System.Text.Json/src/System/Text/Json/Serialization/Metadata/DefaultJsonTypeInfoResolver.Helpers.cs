@@ -39,6 +39,8 @@ namespace System.Text.Json.Serialization.Metadata
         {
             JsonTypeInfo typeInfo = JsonTypeInfo.CreateJsonTypeInfo(type, converter, options);
             typeInfo.NumberHandling = GetNumberHandlingForType(typeInfo.Type);
+            typeInfo.PreferredPropertyObjectCreationHandling = GetObjectCreationHandlingForType(typeInfo.Type);
+
             if (typeInfo.Kind == JsonTypeInfoKind.Object)
             {
                 typeInfo.UnmappedMemberHandling = GetUnmappedMemberHandling(typeInfo.Type);
@@ -100,7 +102,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (state.IsPropertyOrderSpecified)
             {
-                typeInfo.SortProperties();
+                typeInfo.PropertyList.SortProperties();
             }
         }
 
@@ -121,15 +123,11 @@ namespace System.Text.Json.Serialization.Metadata
                 BindingFlags.NonPublic |
                 BindingFlags.DeclaredOnly;
 
-            PropertyInfo[] properties = currentType.GetProperties(BindingFlags);
-
-            foreach (PropertyInfo propertyInfo in properties)
+            foreach (PropertyInfo propertyInfo in currentType.GetProperties(BindingFlags))
             {
-                string propertyName = propertyInfo.Name;
-
                 // Ignore indexers and virtual properties that have overrides that were [JsonIgnore]d.
                 if (propertyInfo.GetIndexParameters().Length > 0 ||
-                    PropertyIsOverriddenAndIgnored(propertyName, propertyInfo.PropertyType, propertyInfo.IsVirtual(), state.IgnoredProperties))
+                    PropertyIsOverriddenAndIgnored(propertyInfo, state.IgnoredProperties))
                 {
                     continue;
                 }
@@ -149,7 +147,7 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     if (propertyInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null)
                     {
-                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(propertyName, currentType);
+                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(propertyInfo.Name, currentType);
                     }
 
                     // Non-public properties should not be included for (de)serialization.
@@ -158,13 +156,6 @@ namespace System.Text.Json.Serialization.Metadata
 
             foreach (FieldInfo fieldInfo in currentType.GetFields(BindingFlags))
             {
-                string fieldName = fieldInfo.Name;
-
-                if (PropertyIsOverriddenAndIgnored(fieldName, fieldInfo.FieldType, currentMemberIsVirtual: false, state.IgnoredProperties))
-                {
-                    continue;
-                }
-
                 bool hasJsonInclude = fieldInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null;
 
                 if (fieldInfo.IsPublic)
@@ -183,7 +174,7 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     if (hasJsonInclude)
                     {
-                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(fieldName, currentType);
+                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(fieldInfo.Name, currentType);
                     }
 
                     // Non-public fields should not be included for (de)serialization.
@@ -208,7 +199,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             Debug.Assert(jsonPropertyInfo.Name != null);
-            typeInfo.AddProperty(jsonPropertyInfo, ref state);
+            typeInfo.PropertyList.AddPropertyWithConflictResolution(jsonPropertyInfo, ref state);
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
@@ -253,26 +244,24 @@ namespace System.Text.Json.Serialization.Metadata
             return numberHandlingAttribute?.Handling;
         }
 
+        private static JsonObjectCreationHandling? GetObjectCreationHandlingForType(Type type)
+        {
+            JsonObjectCreationHandlingAttribute? creationHandlingAttribute = type.GetUniqueCustomAttribute<JsonObjectCreationHandlingAttribute>(inherit: false);
+            return creationHandlingAttribute?.Handling;
+        }
+
         private static JsonUnmappedMemberHandling? GetUnmappedMemberHandling(Type type)
         {
             JsonUnmappedMemberHandlingAttribute? numberHandlingAttribute = type.GetUniqueCustomAttribute<JsonUnmappedMemberHandlingAttribute>(inherit: false);
             return numberHandlingAttribute?.UnmappedMemberHandling;
         }
 
-        private static bool PropertyIsOverriddenAndIgnored(
-            string currentMemberName,
-            Type currentMemberType,
-            bool currentMemberIsVirtual,
-            Dictionary<string, JsonPropertyInfo>? ignoredMembers)
+        private static bool PropertyIsOverriddenAndIgnored(PropertyInfo propertyInfo, Dictionary<string, JsonPropertyInfo>? ignoredMembers)
         {
-            if (ignoredMembers == null || !ignoredMembers.TryGetValue(currentMemberName, out JsonPropertyInfo? ignoredMember))
-            {
-                return false;
-            }
-
-            return currentMemberType == ignoredMember.PropertyType &&
-                currentMemberIsVirtual &&
-                ignoredMember.IsVirtual;
+            return propertyInfo.IsVirtual() &&
+                ignoredMembers?.TryGetValue(propertyInfo.Name, out JsonPropertyInfo? ignoredMember) == true &&
+                ignoredMember.IsVirtual &&
+                propertyInfo.PropertyType == ignoredMember.PropertyType;
         }
 
         private static void PopulateParameterInfoValues(JsonTypeInfo typeInfo)
@@ -351,6 +340,9 @@ namespace System.Text.Json.Serialization.Metadata
 
             JsonNumberHandlingAttribute? numberHandlingAttr = memberInfo.GetCustomAttribute<JsonNumberHandlingAttribute>(inherit: false);
             propertyInfo.NumberHandling = numberHandlingAttr?.Handling;
+
+            JsonObjectCreationHandlingAttribute? objectCreationHandlingAttr = memberInfo.GetCustomAttribute<JsonObjectCreationHandlingAttribute>(inherit: false);
+            propertyInfo.ObjectCreationHandling = objectCreationHandlingAttr?.Handling;
         }
 
         private static void DeterminePropertyName(JsonPropertyInfo propertyInfo, MemberInfo memberInfo)

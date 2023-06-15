@@ -16,6 +16,7 @@
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="IcuTests.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.cs" />
+    <Compile Include="CompareInfo\CompareInfoTestsBase.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.IndexOf.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.IsPrefix.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.Compare.cs" />

@@ -167,6 +167,8 @@ namespace System.Reflection
             if (fullName is null)
                 return null;
 
+            fullName = ApplyLeadingDotCompatQuirk(fullName);
+
             if (Peek == TokenType.Plus)
             {
                 string[] nestedNames = new string[1];
@@ -180,6 +182,8 @@ namespace System.Reflection
                     if (nestedName is null)
                         return null;
 
+                    nestedName = ApplyLeadingDotCompatQuirk(nestedName);
+
                     if (nestedNamesCount >= nestedNames.Length)
                         Array.Resize(ref nestedNames, 2 * nestedNamesCount);
                     nestedNames[nestedNamesCount++] = nestedName;
@@ -191,6 +195,19 @@ namespace System.Reflection
             else
             {
                 return new NamespaceTypeName(fullName);
+            }
+
+            // Compat: Ignore leading '.' for type names without namespace. .NET Framework historically ignored leading '.' here. It is likely
+            // that code out there depends on this behavior. For example, type names formed by concatenating namespace and name, without checking for
+            // empty namespace (bug), are going to have superfluous leading '.'.
+            // This behavior means that types that start with '.' are not round-trippable via type name.
+            static string ApplyLeadingDotCompatQuirk(string typeName)
+            {
+#if NETCOREAPP
+                return (typeName.StartsWith('.') && !typeName.AsSpan(1).Contains('.')) ? typeName.Substring(1) : typeName;
+#else
+                return ((typeName.Length > 0) && (typeName[0] == '.') && typeName.LastIndexOf('.') == 0) ? typeName.Substring(1) : typeName;
+#endif
             }
         }
 

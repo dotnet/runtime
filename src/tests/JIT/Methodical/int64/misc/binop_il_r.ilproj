@@ -6,6 +6,7 @@
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="binop_r.il" />
     <Compile Include="binop.il" />
   </ItemGroup>
 </Project>

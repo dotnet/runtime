@@ -80,6 +80,9 @@
     <RunWithAndroid>false</RunWithAndroid>
     <RunWithAndroid Condition="'$(TargetOS)' == 'android'">true</RunWithAndroid>
 
+    <RunWithiOS>false</RunWithiOS>
+    <RunWithiOS Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'">true</RunWithiOS>
+
     <MonoAot>false</MonoAot>
     <MonoAot Condition="'$(__MonoAot)' == '1'">true</MonoAot>
     <RuntimeVariant Condition="'$(__MonoAot)' == '1'">llvmaot</RuntimeVariant>
@@ -200,6 +203,12 @@
     <!-- Prevent project-specific NuGet props/targets from clashing with the ones we manually import below. -->
     <ImportProjectExtensionProps>false</ImportProjectExtensionProps>
     <ImportProjectExtensionTargets>false</ImportProjectExtensionTargets>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'ios' Or '$(TargetOS)' == 'tvos'">
+    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
+    <PublishTrimmed>true</PublishTrimmed>
+    <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props"  Condition="'$(IsTestsCommonProject)' != 'true'" />

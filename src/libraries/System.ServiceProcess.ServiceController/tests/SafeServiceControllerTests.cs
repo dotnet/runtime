@@ -59,12 +59,11 @@ namespace System.ServiceProcess.Tests
             Assert.True(foundOtherSvc, "foundOtherSvc");
         }
 
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        public static void ConstructWithBadServiceName(string value)
+        [Fact]
+        public static void ConstructWithBadServiceName()
         {
-            Assert.Throws<ArgumentException>(() => new ServiceController(value));
+            Assert.ThrowsAny<ArgumentException>(() => new ServiceController(null));
+            Assert.Throws<ArgumentException>(() => new ServiceController(""));
         }
 
         [Fact]

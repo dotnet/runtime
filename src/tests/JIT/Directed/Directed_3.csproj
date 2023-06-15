@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="*/**/*.??proj" />
+
+    <!-- Directed_1 -->
+    <MergedWrapperProjectReference Remove="coverage/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="nullabletypes/**/*.??proj" />
+
+    <!-- Directed_2 -->
+    <MergedWrapperProjectReference Remove="cmov/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="perffix/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="PREFIX/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="shift/**/*.??proj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

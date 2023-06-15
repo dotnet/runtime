@@ -91,6 +91,14 @@ namespace ILCompiler.DependencyAnalysis
                 );
             });
 
+            _rvaFieldAddressCache = new NodeCache<FieldWithToken, ISymbolNode>(key =>
+            {
+                return new PrecodeHelperImport(
+                    _codegenNodeFactory,
+                    new FieldFixupSignature(ReadyToRunFixupKind.FieldAddress, key, _codegenNodeFactory)
+                );
+            });
+
             _checkFieldOffsetCache = new NodeCache<FieldWithToken, ISymbolNode>(key =>
             {
                 return new PrecodeHelperImport(
@@ -421,6 +429,13 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode FieldBaseOffset(TypeDesc typeDesc)
         {
             return _fieldBaseOffsetCache.GetOrAdd(typeDesc);
+        }
+
+        private NodeCache<FieldWithToken, ISymbolNode> _rvaFieldAddressCache;
+
+        public ISymbolNode RvaFieldAddress(FieldWithToken fieldWithToken)
+        {
+            return _rvaFieldAddressCache.GetOrAdd(fieldWithToken);
         }
 
         private NodeCache<MethodAndCallSite, ISymbolNode> _interfaceDispatchCells = new NodeCache<MethodAndCallSite, ISymbolNode>();

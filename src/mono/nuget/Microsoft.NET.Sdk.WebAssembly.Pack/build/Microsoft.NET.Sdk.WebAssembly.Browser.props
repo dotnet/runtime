@@ -31,7 +31,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Static web assets defaults -->
     <StaticWebAssetBasePath Condition="'$(StaticWebAssetBasePath)' == ''">/</StaticWebAssetBasePath>
     <StaticWebAssetProjectMode Condition="'$(StaticWebAssetProjectMode)' == ''">Root</StaticWebAssetProjectMode>
-    <StaticWebAssetsAdditionalBuildPropertiesToRemove>$(StaticWebAssetsAdditionalBuildPropertiesToRemove);RuntimeIdentifier;SelfContained</StaticWebAssetsAdditionalBuildPropertiesToRemove>
+    <StaticWebAssetsAdditionalBuildPropertiesToRemove>$(StaticWebAssetsAdditionalBuildPropertiesToRemove);RuntimeIdentifier;SelfContained</StaticWebAssetsAdditionalBuildPropertiesToRemove><!-- The 'SelfContained' is set in Wasm SDK in SDK repo -->
     <StaticWebAssetsGetPublishAssetsTargets>ComputeFilesToPublish;GetCurrentProjectPublishStaticWebAssetItems</StaticWebAssetsGetPublishAssetsTargets>
     <StaticWebAssetsAdditionalPublishProperties>$(StaticWebAssetsAdditionalPublishProperties);BuildProjectReferences=false;ResolveAssemblyReferencesFindRelatedSatellites=true</StaticWebAssetsAdditionalPublishProperties>
     <StaticWebAssetsAdditionalPublishPropertiesToRemove>$(StaticWebAssetsAdditionalPublishPropertiesToRemove);NoBuild;RuntimeIdentifier</StaticWebAssetsAdditionalPublishPropertiesToRemove>

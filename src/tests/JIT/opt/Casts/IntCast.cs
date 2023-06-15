@@ -3,10 +3,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace CodeGenTests
 {
-    class IntCast
+    public class IntCast
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         static long Cast_Short_To_Long(short value)
@@ -26,7 +27,8 @@ namespace CodeGenTests
             return (long)value1 + (long)value2;
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             if (Cast_Short_To_Long(Int16.MaxValue) != 32767)
                 return 0;

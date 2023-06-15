@@ -18,15 +18,13 @@ namespace System.Text.Json.Serialization.Converters
 
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
-            Debug.Assert(typeToConvert.GetGenericArguments().Length > 0);
+            Debug.Assert(typeToConvert.IsNullableOfT());
 
             Type valueTypeToConvert = typeToConvert.GetGenericArguments()[0];
-
             JsonConverter valueConverter = options.GetConverterInternal(valueTypeToConvert);
-            Debug.Assert(valueConverter != null);
 
             // If the value type has an interface or object converter, just return that converter directly.
-            if (!valueConverter.TypeToConvert.IsValueType && valueTypeToConvert.IsValueType)
+            if (!valueConverter.Type!.IsValueType && valueTypeToConvert.IsValueType)
             {
                 return valueConverter;
             }
@@ -36,6 +34,7 @@ namespace System.Text.Json.Serialization.Converters
 
         public static JsonConverter CreateValueConverter(Type valueTypeToConvert, JsonConverter valueConverter)
         {
+            Debug.Assert(valueTypeToConvert.IsValueType && !valueTypeToConvert.IsNullableOfT());
             return (JsonConverter)Activator.CreateInstance(
                 GetNullableConverterType(valueTypeToConvert),
                 BindingFlags.Instance | BindingFlags.Public,

@@ -13,7 +13,6 @@ using Internal.Reflection.Core.Execution;
 
 namespace Internal.Reflection.Core.Execution
 {
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public static class ReflectionCoreExecution
     {

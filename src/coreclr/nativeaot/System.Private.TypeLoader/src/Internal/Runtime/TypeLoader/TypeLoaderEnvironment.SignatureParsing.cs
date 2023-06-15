@@ -30,11 +30,11 @@ namespace Internal.Runtime.TypeLoader
                 if (signature1.StructuralEquals(signature2))
                     return true;
 
-                NativeFormatModuleInfo module1 = ModuleList.GetModuleInfoByHandle(new TypeManagerHandle(signature1.ModuleHandle));
+                NativeFormatModuleInfo module1 = ModuleList.Instance.GetModuleInfoByHandle(new TypeManagerHandle(signature1.ModuleHandle));
                 NativeReader reader1 = GetNativeLayoutInfoReader(signature1);
                 NativeParser parser1 = new NativeParser(reader1, signature1.NativeLayoutOffset);
 
-                NativeFormatModuleInfo module2 = ModuleList.GetModuleInfoByHandle(new TypeManagerHandle(signature2.ModuleHandle));
+                NativeFormatModuleInfo module2 = ModuleList.Instance.GetModuleInfoByHandle(new TypeManagerHandle(signature2.ModuleHandle));
                 NativeReader reader2 = GetNativeLayoutInfoReader(signature2);
                 NativeParser parser2 = new NativeParser(reader2, signature2.NativeLayoutOffset);
 
@@ -161,7 +161,7 @@ namespace Internal.Runtime.TypeLoader
 
         #region Private Helpers
 
-        private bool TryGetTypeFromSimpleTypeSignature(ref NativeParser parser, NativeFormatModuleInfo moduleHandle, out RuntimeTypeHandle typeHandle)
+        private static bool TryGetTypeFromSimpleTypeSignature(ref NativeParser parser, NativeFormatModuleInfo moduleHandle, out RuntimeTypeHandle typeHandle)
         {
             uint data;
             TypeSignatureKind kind = parser.GetTypeSignatureKind(out data);
@@ -222,7 +222,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private bool CompareMethodSigs(NativeParser parser1, NativeFormatModuleInfo moduleHandle1, NativeParser parser2, NativeFormatModuleInfo moduleHandle2)
+        private static bool CompareMethodSigs(NativeParser parser1, NativeFormatModuleInfo moduleHandle1, NativeParser parser2, NativeFormatModuleInfo moduleHandle2)
         {
             MethodCallingConvention callingConvention1 = (MethodCallingConvention)parser1.GetUnsigned();
             MethodCallingConvention callingConvention2 = (MethodCallingConvention)parser2.GetUnsigned();
@@ -251,7 +251,7 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        private bool CompareTypeSigs(ref NativeParser parser1, NativeFormatModuleInfo moduleHandle1, ref NativeParser parser2, NativeFormatModuleInfo moduleHandle2)
+        private static bool CompareTypeSigs(ref NativeParser parser1, NativeFormatModuleInfo moduleHandle1, ref NativeParser parser2, NativeFormatModuleInfo moduleHandle2)
         {
             // startOffset lets us backtrack to the TypeSignatureKind for external types since the TypeLoader
             // expects to read it in.

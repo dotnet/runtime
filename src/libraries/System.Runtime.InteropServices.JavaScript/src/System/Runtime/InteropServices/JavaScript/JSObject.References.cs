@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -10,7 +11,11 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         internal nint JSHandle;
 
-#if ENABLE_LEGACY_JS_INTEROP
+#if FEATURE_WASM_THREADS
+        // the JavaScript object could only exist on the single web worker and can't migrate to other workers
+        internal int OwnerThreadId;
+#endif
+#if !DISABLE_LEGACY_JS_INTEROP
         internal GCHandle? InFlight;
         internal int InFlightCounter;
 #endif
@@ -19,9 +24,12 @@ namespace System.Runtime.InteropServices.JavaScript
         internal JSObject(IntPtr jsHandle)
         {
             JSHandle = jsHandle;
+#if FEATURE_WASM_THREADS
+            OwnerThreadId = Thread.CurrentThread.ManagedThreadId;
+#endif
         }
 
-#if ENABLE_LEGACY_JS_INTEROP
+#if !DISABLE_LEGACY_JS_INTEROP
         internal void AddInFlight()
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
@@ -51,6 +59,30 @@ namespace System.Runtime.InteropServices.JavaScript
                     Debug.Assert(InFlight.HasValue, "InFlight.HasValue");
                     InFlight.Value.Free();
                     InFlight = null;
+                }
+            }
+        }
+#endif
+
+#if FEATURE_WASM_THREADS
+        internal static void AssertThreadAffinity(object value)
+        {
+            if (value == null)
+            {
+                return;
+            }
+            if (value is JSObject jsObject)
+            {
+                if (jsObject.OwnerThreadId != Thread.CurrentThread.ManagedThreadId)
+                {
+                    throw new InvalidOperationException("The JavaScript object can be used only on the thread where it was created.");
+                }
+            }
+            if (value is JSException jsException)
+            {
+                if(jsException.jsException!=null && jsException.jsException.OwnerThreadId != Thread.CurrentThread.ManagedThreadId)
+                {
+                    throw new InvalidOperationException("The JavaScript object can be used only on the thread where it was created.");
                 }
             }
         }

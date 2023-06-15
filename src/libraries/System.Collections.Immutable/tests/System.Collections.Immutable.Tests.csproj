@@ -4,6 +4,13 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and ('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi')">true</DebuggerSupport>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <WasmXHarnessMonoArgs>--setenv=XHARNESS_LOG_TEST_START=true --no-memory-snapshot</WasmXHarnessMonoArgs>
+    <!-- This WASM test is problematic and slow right now. This sets the xharness timeout but there is also override in sendtohelix-wasm.targets -->
+    <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
+  </PropertyGroup>
+
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
   </ItemGroup>
@@ -14,6 +21,7 @@
     <Compile Include="Frozen\FrozenFromKnownValuesTests.cs" />
     <Compile Include="Frozen\KeyAnalyzerTests.cs" />
     <Compile Include="ImmutableArrayExtensionsTest.cs" />
+    <Compile Include="ImmutableCollectionsMarshal.cs" />
     <Compile Include="ImmutableArrayTest.cs" />
     <Compile Include="ImmutableArrayTest.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
     <Compile Include="ImmutableArrayTestBase.cs" />

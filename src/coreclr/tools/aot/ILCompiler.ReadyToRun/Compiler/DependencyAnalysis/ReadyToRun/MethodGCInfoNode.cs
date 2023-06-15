@@ -187,7 +187,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     yield return new GCInfoComponent(_methodNode, 0);
                     yield return new GCInfoComponent(_methodNode, _methodNode.Size);
                     // TODO: Is this correct? 
-                    yield return new GCInfoComponent(factory.RuntimeFunctionsGCInfo.StartSymbol, this.OffsetFromBeginningOfArray);
+                    yield return new GCInfoComponent(factory.RuntimeFunctionsGCInfo, this.OffsetFromBeginningOfArray);
                 }
                 else
                 {

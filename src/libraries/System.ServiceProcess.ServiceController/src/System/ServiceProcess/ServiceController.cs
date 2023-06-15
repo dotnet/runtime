@@ -65,8 +65,14 @@ namespace System.ServiceProcess
             if (!CheckMachineName(machineName))
                 throw new ArgumentException(SR.Format(SR.BadMachineName, machineName));
 
-            if (string.IsNullOrEmpty(name))
-                throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(name), name));
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+            if (name.Length == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(name), name), nameof(name));
+            }
 
             _machineName = machineName;
             _eitherName = name;

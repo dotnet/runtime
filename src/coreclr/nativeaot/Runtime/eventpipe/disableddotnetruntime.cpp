@@ -12,10 +12,6 @@ This file is generated using the logic from <root>/src/scripts/genEventPipe.py
 #include "eventpipeadapter.h"
 #include "gcheaputilities.h"
 
-#if defined(TARGET_UNIX)
-#define wcslen PAL_wcslen
-#endif
-
 #ifndef ERROR_WRITE_FAULT
 #define ERROR_WRITE_FAULT 29L
 #endif
@@ -30,8 +26,8 @@ ULONG EventPipeWriteEventDestroyGCHandle(
 }
 
 ULONG EventPipeWriteEventExceptionThrown_V1(
-    const wchar_t* ExceptionType,
-    const wchar_t* ExceptionMessage,
+    const WCHAR* ExceptionType,
+    const WCHAR* ExceptionMessage,
     const void*  ExceptionEIP,
     const unsigned int  ExceptionHRESULT,
     const unsigned short  ExceptionFlags,
@@ -39,8 +35,8 @@ ULONG EventPipeWriteEventExceptionThrown_V1(
     const GUID * ActivityId,
     const GUID * RelatedActivityId
 )
-{ 
-    return 0; 
+{
+    return 0;
 }
 
 ULONG EventPipeWriteEventGCAllocationTick_V1(
@@ -61,7 +57,7 @@ ULONG EventPipeWriteEventGCAllocationTick_V2(
     const unsigned short  ClrInstanceID,
     const unsigned __int64  AllocationAmount64,
     const void*  TypeID,
-    wchar_t*  TypeName,
+    const WCHAR*  TypeName,
     const unsigned int  HeapIndex,
     const GUID * ActivityId,
     const GUID * RelatedActivityId
@@ -76,7 +72,7 @@ ULONG EventPipeWriteEventGCAllocationTick_V3(
     const unsigned short  ClrInstanceID,
     const unsigned __int64  AllocationAmount64,
     const void*  TypeID,
-    const wchar_t*  TypeName,
+    const WCHAR*  TypeName,
     const unsigned int  HeapIndex,
     const void*  Address,
     const GUID * ActivityId,
@@ -396,15 +392,15 @@ ULONG EventPipeWriteEventModuleLoad_V2(
     const unsigned __int64  AssemblyID,
     const unsigned int  ModuleFlags,
     const unsigned int  Reserved1,
-    const wchar_t*  ModuleILPath,
-    const wchar_t*  ModuleNativePath,
+    const WCHAR*  ModuleILPath,
+    const WCHAR*  ModuleNativePath,
     const unsigned short  ClrInstanceID,
     const GUID* ManagedPdbSignature,
     const unsigned int  ManagedPdbAge,
-    const wchar_t*  ManagedPdbBuildPath,
+    const WCHAR*  ManagedPdbBuildPath,
     const GUID* NativePdbSignature,
     const unsigned int  NativePdbAge,
-    const wchar_t*  NativePdbBuildPath,
+    const WCHAR*  NativePdbBuildPath,
     const GUID * ActivityId,
     const GUID * RelatedActivityId
 )

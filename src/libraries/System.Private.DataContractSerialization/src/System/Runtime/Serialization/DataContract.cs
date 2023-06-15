@@ -1313,7 +1313,7 @@ namespace System.Runtime.Serialization.DataContracts
             if (dataContractAttribute.IsNameSetExplicitly)
             {
                 name = dataContractAttribute.Name;
-                if (name == null || name.Length == 0)
+                if (string.IsNullOrEmpty(name))
                     throw new InvalidDataContractException(SR.Format(SR.InvalidDataContractName, DataContract.GetClrTypeFullName(type)));
                 if (type.IsGenericType && !type.IsGenericTypeDefinition)
                     name = ExpandGenericParameters(name, type);
@@ -1425,7 +1425,7 @@ namespace System.Runtime.Serialization.DataContracts
                 if (collectionContractAttribute.IsNameSetExplicitly)
                 {
                     name = collectionContractAttribute.Name;
-                    if (name == null || name.Length == 0)
+                    if (string.IsNullOrEmpty(name))
                         throw new InvalidDataContractException(SR.Format(SR.InvalidCollectionContractName, DataContract.GetClrTypeFullName(type)));
                     if (type.IsGenericType && !type.IsGenericTypeDefinition)
                         name = ExpandGenericParameters(name, type);

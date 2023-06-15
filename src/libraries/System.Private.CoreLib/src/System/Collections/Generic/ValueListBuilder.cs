@@ -166,6 +166,11 @@ namespace System.Collections.Generic
             }
         }
 
+        // Note that consuming implementations depend on the list only growing if it's absolutely
+        // required.  If the list is already large enough to hold the additional items be added,
+        // it must not grow. The list is used in a number of places where the reference is checked
+        // and it's expected to match the initial reference provided to the constructor if that
+        // span was sufficiently large.
         private void Grow(int additionalCapacityRequired = 1)
         {
             const int ArrayMaxLength = 0x7FFFFFC7; // same as Array.MaxLength

@@ -281,6 +281,20 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
+        /// Determines whether the specified item exists in the array.
+        /// </summary>
+        /// <param name="item">The item to search for.</param>
+        /// <param name="equalityComparer">
+        /// The equality comparer to use in the search.
+        /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
+        /// </param>
+        /// <returns><c>true</c> if an equal value was found in the array; <c>false</c> otherwise.</returns>
+        public bool Contains(T item, IEqualityComparer<T>? equalityComparer)
+        {
+            return this.IndexOf(item, equalityComparer) >= 0;
+        }
+
+        /// <summary>
         /// Returns a new array with the specified value inserted at the specified position.
         /// </summary>
         /// <param name="index">The 0-based index into the array at which the new item should be added.</param>
@@ -1183,6 +1197,13 @@ namespace System.Collections.Immutable
             throw new NotSupportedException();
         }
 
+        private static bool IsCompatibleObject(object? value)
+        {
+            // Non-null values are fine.  Only accept nulls if T is a class or Nullable<U>.
+            // Note that default(T) is not equal to null for value types except when T is Nullable<U>.
+            return (value is T) || (default(T) == null && value == null);
+        }
+
         /// <summary>
         /// Determines whether the <see cref="IList"/> contains a specific value.
         /// </summary>
@@ -1192,9 +1213,13 @@ namespace System.Collections.Immutable
         /// </returns>
         bool IList.Contains(object? value)
         {
-            ImmutableArray<T> self = this;
-            self.ThrowInvalidOperationIfNotInitialized();
-            return self.Contains((T)value!);
+            if (IsCompatibleObject(value))
+            {
+                ImmutableArray<T> self = this;
+                self.ThrowInvalidOperationIfNotInitialized();
+                return self.Contains((T)value!);
+            }
+            return false;
         }
 
         /// <summary>
@@ -1206,9 +1231,13 @@ namespace System.Collections.Immutable
         /// </returns>
         int IList.IndexOf(object? value)
         {
-            ImmutableArray<T> self = this;
-            self.ThrowInvalidOperationIfNotInitialized();
-            return self.IndexOf((T)value!);
+            if (IsCompatibleObject(value))
+            {
+                ImmutableArray<T> self = this;
+                self.ThrowInvalidOperationIfNotInitialized();
+                return self.IndexOf((T)value!);
+            }
+            return -1;
         }
 
         /// <summary>

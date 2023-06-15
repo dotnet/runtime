@@ -306,14 +306,14 @@ type, they have the typical instantiation in mind. Example:
 public class A<S, T, U> {}
 ```
 
-The C# `typeof(A<,,>)` compiles to ldtoken A\'3 which makes the
+The C# `typeof(A<,,>)` compiles to ``ldtoken A`3`` which makes the
 runtime load ``A`3`` instantiated at `S` , `T` , `U`.
 
 **Canonical Instantiation**
 
 An instantiation where all generic arguments are
 `System.__Canon`. `System.__Canon` is an internal type defined
-in **mscorlib** and its task is just to be well-known and different
+in **corlib** and its task is just to be well-known and different
 from any other type which may be used as a generic
 argument. Types/methods with canonical instantiation are used as
 representatives of all instantiations and carry information shared by
@@ -343,8 +343,7 @@ of all these types is the same. The figure illustrates this for
 `List<object>` and `List<string>`. The canonical `MethodTable`
 was created automatically before the first reference type
 instantiation was loaded and contains data which is hot but not
-instantiation specific like non-virtual slots or
-`RemotableMethodInfo`. Instantiations containing only value types
+instantiation specific like non-virtual slots. Instantiations containing only value types
 are not shared and every such instantiated type gets its own unshared
 `EEClass`.
 

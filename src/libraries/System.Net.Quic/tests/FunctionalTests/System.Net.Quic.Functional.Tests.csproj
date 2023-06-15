@@ -16,6 +16,7 @@
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="ProductionCode\Common\System\Net\ArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\TlsAlertMessage.cs" Link="Common\System\Net\Security\TlsAlertMessage.cs" />
     <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs" Link="Common\System\IO\ConnectedStreams.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.cs" Link="Common\System\Net\Capability.Security.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs" Link="Common\System\Net\Configuration.cs" />
@@ -31,18 +32,8 @@
   </ItemGroup>
   <!-- Shared production code -->
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs" Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
-    <Compile Include="..\..\src\System\Net\Quic\Internal\MsQuicApi.cs" Link="ProductionCode\System\Net\Quic\Internal\MsQuicApi.cs" />
-    <Compile Include="..\..\src\System\Net\Quic\Internal\MsQuicApi.NativeMethods.cs" Link="ProductionCode\System\Net\Quic\Internal\MsQuicApi.NativeMethods.cs" />
-    <Compile Include="..\..\src\System\Net\Quic\Internal\MsQuicSafeHandle.cs" Link="ProductionCode\System\Net\Quic\Internal\MsQuicSafeHandle.cs" />
-    <Compile Include="..\..\src\System\Net\Quic\Internal\ThrowHelper.cs" Link="ProductionCode\System\Net\Quic\Internal\ThrowHelper.cs" />
-    <Compile Include="..\..\src\System\Net\Quic\Interop\*.cs" Link="ProductionCode\System\Net\Quic\Interop\*.cs" />
-    <Compile Include="..\..\src\System\Net\Quic\NetEventSource.Quic.cs" Link="ProductionCode\System\Net\Quic\NetEventSource.Quic.cs" />
     <Compile Include="..\..\src\System\Net\Quic\QuicDefaults.cs" Link="ProductionCode\System\Net\Quic\QuicDefaults.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
-    <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs" Link="Common\Interop\Linux\Interop.Libraries.cs" Condition="'$(TargetPlatformIdentifier)' == 'linux'" />
-    <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs" Link="Common\Interop\OSX\Interop.Libraries.cs" Condition="'$(TargetPlatformIdentifier)' == 'osx'" />
-    <Compile Include="$(CommonPath)System\Net\Security\TlsAlertMessage.cs" Link="Common\System\Net\Security\TlsAlertMessage.cs" />
+    <Compile Include="..\..\src\System\Net\Quic\Interop\*.cs" LinkBase="ProductionCode\System\Net\Quic\Interop" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />

@@ -479,7 +479,7 @@ typename vector<T, Allocator>::iterator
     assert(last.m_pElem >= m_pArray);
     assert(first.m_pElem <= m_pArray + m_nSize);
     assert(last.m_pElem <= m_pArray + m_nSize);
-    assert(last.m_pElem > first.m_pElem);
+    assert(last.m_pElem >= first.m_pElem);
 
     pointer fptr = first.m_pElem;
     pointer lptr = last.m_pElem;

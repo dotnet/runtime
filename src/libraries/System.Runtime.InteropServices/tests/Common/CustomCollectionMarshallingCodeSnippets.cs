@@ -278,7 +278,7 @@ class TestCollection<T> {{}}
 
             public string GenericCollectionMarshallingArityMismatch => _provider.BasicParameterByValue("TestCollection<int>", DisableRuntimeMarshalling)
                 + """
-                [NativeMarshalling(typeof(Marshaller<,,>))]
+                [{|#10:NativeMarshalling(typeof(Marshaller<,,>))|}]
                 class TestCollection<T> {}
 
                 [CustomMarshaller(typeof(TestCollection<>), MarshalMode.Default, typeof(Marshaller<,,>))]

@@ -135,9 +135,9 @@ namespace System.Net
             }
 
             Dictionary<int, HttpEndPointListener>? p;
-            if (s_ipEndPoints.ContainsKey(addr))
+            if (s_ipEndPoints.TryGetValue(addr, out Dictionary<int, HttpEndPointListener>? value))
             {
-                p = s_ipEndPoints[addr];
+                p = value;
             }
             else
             {
@@ -146,9 +146,9 @@ namespace System.Net
             }
 
             HttpEndPointListener? epl;
-            if (p.ContainsKey(port))
+            if (p.TryGetValue(port, out HttpEndPointListener? epListener))
             {
-                epl = p[port];
+                epl = epListener;
             }
             else
             {

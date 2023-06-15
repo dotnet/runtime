@@ -5,6 +5,7 @@ using System;
 using System.Reflection;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace ObjectStackAllocation
 {
@@ -87,7 +88,7 @@ namespace ObjectStackAllocation
         Undefined
     }
 
-    class Tests
+    public class Tests
     {
         static volatile int f1 = 5;
         static volatile int f2 = 7;
@@ -103,7 +104,8 @@ namespace ObjectStackAllocation
 
         static int methodResult = 100;
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             AllocationKind expectedAllocationKind = AllocationKind.Stack;
             if (GCStressEnabled()) {

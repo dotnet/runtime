@@ -141,7 +141,7 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__GSCookie == sizeof(GSCookie));
 #define SIZEOF__Frame                 0x10
 ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));
 
-#define SIZEOF__CONTEXT               0x210
+#define SIZEOF__CONTEXT               0x220
 ASMCONSTANTS_C_ASSERT(SIZEOF__CONTEXT == sizeof(T_CONTEXT));
 
 
@@ -188,9 +188,10 @@ ASMCONSTANTS_C_ASSERT(CONTEXT_Pc == offsetof(T_CONTEXT,Pc))
 ASMCONSTANTS_C_ASSERT(SIZEOF__FaultingExceptionFrame        == sizeof(FaultingExceptionFrame));
 ASMCONSTANTS_C_ASSERT(FaultingExceptionFrame__m_fFilterExecuted == offsetof(FaultingExceptionFrame, m_fFilterExecuted));
 
-#define SIZEOF__FixupPrecode                 40
+#define SIZEOF__FixupPrecode                 32
 #define MethodDesc_ALIGNMENT_SHIFT           3
 
+ASMCONSTANTS_C_ASSERT(SIZEOF__FixupPrecode == sizeof(FixupPrecode));
 ASMCONSTANTS_C_ASSERT(MethodDesc_ALIGNMENT_SHIFT == MethodDesc::ALIGNMENT_SHIFT);
 
 #define ResolveCacheElem__pMT         0x00

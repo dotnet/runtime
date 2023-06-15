@@ -905,10 +905,7 @@ namespace System.Net
             }
             set
             {
-                if (string.IsNullOrEmpty(value))
-                {
-                    throw new ArgumentException(SR.net_badmethod, nameof(value));
-                }
+                ArgumentException.ThrowIfNullOrEmpty(value);
 
                 if (HttpValidationHelpers.IsInvalidMethodOrHeaderString(value))
                 {

@@ -16,8 +16,8 @@
 
 WCHAR* EqualOrColon(_In_ __nullterminated WCHAR* szArg)
 {
-    WCHAR* pchE = wcschr(szArg,W('='));
-    WCHAR* pchC = wcschr(szArg,W(':'));
+    WCHAR* pchE = (WCHAR*)u16_strchr(szArg,W('='));
+    WCHAR* pchC = (WCHAR*)u16_strchr(szArg,W(':'));
     WCHAR* ret;
     if(pchE == NULL) ret = pchC;
     else if(pchC == NULL) ret = pchE;
@@ -34,7 +34,7 @@ class NarrowForNumberParsing final
 public:
     NarrowForNumberParsing(const WCHAR* str)
     {
-        size_t len = wcslen(str);
+        size_t len = u16_strlen(str);
         _buffer = (char*)malloc(len + 1);
         for (size_t i = 0; i < len; ++i)
             _buffer[i] = (char)str[i];
@@ -83,7 +83,7 @@ void MakeProperSourceFileName(_In_ __nullterminated WCHAR* wzOrigName,
                               _Out_writes_(MAX_FILENAME_LENGTH*3) char* szProperName)
 {
     wcscpy_s(wzProperName,MAX_FILENAME_LENGTH, wzOrigName);
-    size_t j = wcslen(wzProperName);
+    size_t j = u16_strlen(wzProperName);
     do
     {
         j--;
@@ -161,7 +161,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
 #pragma warning(push)
 #pragma warning(disable:26000) // "Suppress prefast warning about index overflow"
 #endif
-    if (! wcscmp(argv[1], W("/?")) || ! wcscmp(argv[1],W("-?")))
+    if (! u16_strcmp(argv[1], W("/?")) || ! u16_strcmp(argv[1],W("-?")))
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
@@ -267,7 +267,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                       if(pStr != NULL)
                       {
                           for(pStr++; *pStr == W(' '); pStr++); //skip the blanks
-                          if(wcslen(pStr)==0) goto InvalidOption; //if no suboption
+                          if(u16_strlen(pStr)==0) goto InvalidOption; //if no suboption
                           else
                           {
                               WCHAR wzSubOpt[8];
@@ -381,7 +381,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                             WCHAR *pStr = EqualOrColon(argv[i]);
                             if(pStr == NULL) goto ErrorExit;
                             for(pStr++; *pStr == W(' '); pStr++); //skip the blanks
-                            if(wcslen(pStr)==0) goto InvalidOption; //if no file name
+                            if(u16_strlen(pStr)==0) goto InvalidOption; //if no file name
                             pAsm->m_wzResourceFile = pStr;
                         }
                         else
@@ -392,7 +392,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
                         for(pStr++; *pStr == W(' '); pStr++); //skip the blanks
-                        if(wcslen(pStr)==0) goto InvalidOption; //if no file name
+                        if(u16_strlen(pStr)==0) goto InvalidOption; //if no file name
                         pAsm->m_wzKeySourceName = pStr;
                     }
                     else if (!_stricmp(szOpt, "INC"))
@@ -400,7 +400,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
                         for(pStr++; *pStr == W(' '); pStr++); //skip the blanks
-                        if(wcslen(pStr)==0) goto InvalidOption; //if no file name
+                        if(u16_strlen(pStr)==0) goto InvalidOption; //if no file name
                         wzIncludePath = pStr;
                     }
                     else if (!_stricmp(szOpt, "OUT"))
@@ -408,8 +408,8 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
                         for(pStr++; *pStr == W(' '); pStr++); //skip the blanks
-                        if(wcslen(pStr)==0) goto InvalidOption; //if no file name
-                        if(wcslen(pStr) >= MAX_FILENAME_LENGTH)
+                        if(u16_strlen(pStr)==0) goto InvalidOption; //if no file name
+                        if(u16_strlen(pStr) >= MAX_FILENAME_LENGTH)
                         {
                             fprintf(stderr,"\nError: Output file name exceeds %d characters\n",MAX_FILENAME_LENGTH-1);
                             goto ErrorExit;
@@ -421,7 +421,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
                         for(pStr++; *pStr == W(' '); pStr++); //skip the blanks
-                        if(wcslen(pStr)==0) goto InvalidOption; //if no version string
+                        if(u16_strlen(pStr)==0) goto InvalidOption; //if no version string
                         pAsm->m_wzMetadataVersion = pStr;
                     }
                     else if (!_stricmp(szOpt, "MSV"))
@@ -429,7 +429,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
                         for(pStr++; *pStr == W(' '); pStr++); //skip the blanks
-                        if(wcslen(pStr)==0) goto InvalidOption; //if no version
+                        if(u16_strlen(pStr)==0) goto InvalidOption; //if no version
                         {
                             int major=-1,minor=-1;
                             NarrowForNumberParsing str{pStr};
@@ -456,7 +456,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
                         for(pStr++; *pStr == W(' '); pStr++); //skip the blanks
-                        if(wcslen(pStr)==0) goto InvalidOption; //if no version
+                        if(u16_strlen(pStr)==0) goto InvalidOption; //if no version
                         {
                             int major=-1,minor=-1;
                             NarrowForNumberParsing str{pStr};
@@ -537,7 +537,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                 }
                 else
                 {
-                    if(wcslen(argv[i]) >= MAX_FILENAME_LENGTH)
+                    if(u16_strlen(argv[i]) >= MAX_FILENAME_LENGTH)
                     {
                         printf("\nError: Input file name exceeds %d characters\n",MAX_FILENAME_LENGTH-1);
                         goto ErrorExit;
@@ -616,7 +616,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
             if(wzOutputFilename[0] == 0)
             {
                 wcscpy_s(wzOutputFilename,MAX_FILENAME_LENGTH,pwzInputFiles[0]);
-                size_t j = wcslen(wzOutputFilename);
+                size_t j = u16_strlen(wzOutputFilename);
                 do
                 {
                     j--;
@@ -632,7 +632,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
             if (pAsm->m_fGeneratePDB)
             {
                 wcscpy_s(wzPdbFilename, MAX_FILENAME_LENGTH, wzOutputFilename);
-                WCHAR* extPos = wcsrchr(wzPdbFilename, W('.'));
+                WCHAR* extPos = (WCHAR*)u16_strrchr(wzPdbFilename, W('.'));
                 if (extPos != NULL)
                     *extPos = 0;
                 wcscat_s(wzPdbFilename, MAX_FILENAME_LENGTH, W(".pdb"));
@@ -774,7 +774,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                                     for(iFile = 0; iFile < NumDeltaFiles; iFile++)
                                     {
                                         wcscpy_s(wzNewOutputFilename,MAX_FILENAME_LENGTH+16,wzOutputFilename);
-                                        size_t len = wcslen(wzNewOutputFilename);
+                                        size_t len = u16_strlen(wzNewOutputFilename);
                                         wzNewOutputFilename[len] = W('.');
                                         FormatInteger(&wzNewOutputFilename[len + 1], MaxSigned32BitDecString + 1, "%d", iFile+1);
                                         MakeProperSourceFileName(pwzDeltaFiles[iFile], uCodePage, wzInputFilename, szInputFilename);
@@ -834,10 +834,10 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
     if (exitval || !bGeneratePdb)
     {
         // PE file was not created, or no debug info required. Kill PDB if any
-        WCHAR* pc = wcsrchr(wzOutputFilename,W('.'));
+        WCHAR* pc = (WCHAR*)u16_strrchr(wzOutputFilename,W('.'));
         if(pc==NULL)
         {
-            pc = &wzOutputFilename[wcslen(wzOutputFilename)];
+            pc = &wzOutputFilename[u16_strlen(wzOutputFilename)];
             *pc = W('.');
         }
         wcscpy_s(pc+1,4,W("PDB"));

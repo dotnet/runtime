@@ -303,11 +303,13 @@ namespace Mono.Linker.Dataflow
 						if (staticType is null) {
 							// We don't know anything about the type GetType was called on. Track this as a usual result of a method call without any annotations
 							AddReturnValue (context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethodDefinition));
-						} else if (staticType.IsSealed || staticType.IsTypeOf ("System", "Delegate")) {
+						} else if (staticType.IsSealed || staticType.IsTypeOf ("System", "Delegate") || staticType.IsTypeOf ("System", "Array")) {
 							// We can treat this one the same as if it was a typeof() expression
 
 							// We can allow Object.GetType to be modeled as System.Delegate because we keep all methods
 							// on delegates anyway so reflection on something this approximation would miss is actually safe.
+
+							// We can also treat all arrays as "sealed" since it's not legal to derive from Array type (even though it is not sealed itself)
 
 							// We ignore the fact that the type can be annotated (see below for handling of annotated types)
 							// This means the annotations (if any) won't be applied - instead we rely on the exact knowledge

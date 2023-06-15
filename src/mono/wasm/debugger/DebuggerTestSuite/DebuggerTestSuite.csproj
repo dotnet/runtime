@@ -23,6 +23,10 @@
 
     <Compile Include="..\BrowserDebugProxy\Common\*.cs" />
 
+    <!-- TODO [ActiveIssue("https://github.com/dotnet/runtime/issues/85168")] 
+    <Compile Remove="EvaluateOnCallFrameTests.cs" />
+    -->
+
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\XunitLoggerFactoryExtensions.cs" />
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\XunitLoggerProvider.cs" />
   </ItemGroup>

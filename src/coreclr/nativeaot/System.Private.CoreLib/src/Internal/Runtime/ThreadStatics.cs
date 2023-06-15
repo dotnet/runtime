@@ -4,7 +4,7 @@
 using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
-
+using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerHelpers;
 
 using Debug = System.Diagnostics.Debug;
@@ -22,6 +22,34 @@ namespace Internal.Runtime
         /// static storage for the given type.
         /// </summary>
         internal static unsafe object GetThreadStaticBaseForType(TypeManagerSlot* pModuleData, int typeTlsIndex)
+        {
+            if (typeTlsIndex >= 0)
+                return GetUninlinedThreadStaticBaseForType(pModuleData, typeTlsIndex);
+
+            ref object? threadStorage = ref RuntimeImports.RhGetInlinedThreadStaticStorage();
+            if (threadStorage != null)
+                return threadStorage;
+
+            return GetInlinedThreadStaticBaseSlow(ref threadStorage);
+        }
+
+        [RuntimeExport("RhpGetInlinedThreadStaticBaseSlow")]
+        internal static unsafe object GetInlinedThreadStaticBaseSlow(ref object? threadStorage)
+        {
+            Debug.Assert(threadStorage == null);
+            // Allocate an object that will represent a memory block for all thread static fields
+            TypeManagerHandle typeManager = RuntimeImports.RhGetSingleTypeManager();
+            object threadStaticBase = AllocateThreadStaticStorageForType(typeManager, 0);
+
+            // register the storage location with the thread for GC reporting.
+            RuntimeImports.RhRegisterInlinedThreadStaticRoot(ref threadStorage);
+
+            // assign the storage block to the storage variable and return
+            threadStorage = threadStaticBase;
+            return threadStaticBase;
+        }
+
+        internal static unsafe object GetUninlinedThreadStaticBaseForType(TypeManagerSlot* pModuleData, int typeTlsIndex)
         {
             Debug.Assert(typeTlsIndex >= 0);
             int moduleIndex = pModuleData->ModuleIndex;
@@ -41,16 +69,15 @@ namespace Internal.Runtime
                 }
             }
 
-            return GetThreadStaticBaseForTypeSlow(pModuleData, typeTlsIndex);
+            return GetUninlinedThreadStaticBaseForTypeSlow(pModuleData, typeTlsIndex);
         }
 
-        [RuntimeExport("RhpGetThreadStaticBaseForTypeSlow")]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static unsafe object GetThreadStaticBaseForTypeSlow(TypeManagerSlot* pModuleData, int typeTlsIndex)
+        internal static unsafe object GetUninlinedThreadStaticBaseForTypeSlow(TypeManagerSlot* pModuleData, int typeTlsIndex)
         {
             Debug.Assert(typeTlsIndex >= 0);
             int moduleIndex = pModuleData->ModuleIndex;
-            Debug.Assert(typeTlsIndex >= 0);
+            Debug.Assert(moduleIndex >= 0);
 
             // Get the array that holds thread statics for the current thread, if none present
             // allocate a new one big enough to hold the current module data

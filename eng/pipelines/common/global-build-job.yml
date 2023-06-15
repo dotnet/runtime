@@ -73,7 +73,7 @@ jobs:
 
       - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubGroup, '_bionic')) }}:
         - name: _osParameter
-          value: /p:RuntimeOS=linux-bionic
+          value: -os linux-bionic
 
       - name: crossArg
         value: ''
@@ -162,6 +162,7 @@ jobs:
       - template: /eng/common/templates/steps/source-build.yml
         parameters:
           platform:
+            baseOS: ${{ parameters.baseOS }}
             buildScript: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
             nonPortable: ${{ parameters.isNonPortableSourceBuild }}
             targetRID: ${{ parameters.targetRid }}
