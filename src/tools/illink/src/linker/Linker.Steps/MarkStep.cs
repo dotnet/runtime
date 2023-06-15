@@ -3504,55 +3504,7 @@ namespace Mono.Linker.Steps
 
 		void ProcessUnsafeAccessorMethod (MethodDefinition method)
 		{
-			if (!method.HasCustomAttributes)
-				return;
-
-			foreach (var customAttribute in method.CustomAttributes) {
-				if (customAttribute.Constructor.DeclaringType.FullName == "System.Runtime.CompilerServices.UnsafeAccessorAttribute") {
-					if (customAttribute.HasConstructorArguments && customAttribute.ConstructorArguments[0].Value is int kindValue) {
-						UnsafeAccessorKind kind = (UnsafeAccessorKind) kindValue;
-						string? name = null;
-						if (customAttribute.HasProperties) {
-							foreach (var prop in customAttribute.Properties) {
-								if (prop.Name == "Name") {
-									name = prop.Argument.Value as string;
-									break;
-								}
-							}
-						}
-
-						ProcessUnsafeAccessorMethod (method, kind, name);
-
-						// Intentionally only process the first such attribute
-						// if there's more than one runtime will fail on it anyway.
-						break;
-					}
-				}
-			}
-		}
-
-		void ProcessUnsafeAccessorMethod (MethodDefinition method, UnsafeAccessorKind kind, string? name)
-		{
-			// Using reflection marker since it has the right helpers - at least for now
-			ReflectionMarker reflectionMarker = new ReflectionMarker (this.Context, this, true);
-			MessageOrigin messageOrigin = new MessageOrigin (method);
-
-			switch (kind) {
-			case UnsafeAccessorKind.Constructor:
-				if (!method.ReturnsVoid() && Context.TryResolve (method.ReturnType) is TypeDefinition returnType) {
-					reflectionMarker.MarkConstructorsOnType (messageOrigin, returnType, filter: null);
-				}
-				break;
-			case UnsafeAccessorKind.StaticMethod:
-				if (method.HasMetadataParameters () && Context.TryResolve (method.GetParameter((ParameterIndex)0).ParameterType) is TypeDefinition targetType) {
-					foreach (var targetMethod in targetType.GetMethodsOnTypeHierarchy (Context, m => m.Name == name)) {
-						reflectionMarker.MarkMethod (messageOrigin, targetMethod);
-					}
-				}
-				break;
-			default:
-				break;
-			}
+			(new UnsafeAccessorMarker (Context, this)).ProcessUnsafeAccessorMethod (method);
 		}
 
 		protected virtual bool ShouldParseMethodBody (MethodDefinition method)

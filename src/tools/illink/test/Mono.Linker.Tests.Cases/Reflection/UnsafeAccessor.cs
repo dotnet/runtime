@@ -30,6 +30,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				{
 					[Kept]
 					private DefaultConstructorTarget () { }
+
+					private DefaultConstructorTarget (int i) { }
 				}
 
 				[Kept]
@@ -45,12 +47,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
+			[KeptMember (".ctor()")]
 			class ConstructorWithParameter
 			{
 				[Kept]
 				class ConstructorWithParameterTarget
 				{
-					[Kept] // BUG - method overload resolution doesn't work yet
 					private ConstructorWithParameterTarget () { }
 
 					[Kept]
@@ -62,10 +64,17 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[UnsafeAccessor (UnsafeAccessorKind.Constructor)]
 				extern static ConstructorWithParameterTarget InvokeConstructorWithParameter (int i);
 
+				// Validate that static methods are ignored
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.Constructor)]
+				extern ConstructorWithParameterTarget InvokeDefaultConstructor ();
+
 				[Kept]
 				public static void Test ()
 				{
 					InvokeConstructorWithParameter (42);
+					(new ConstructorWithParameter ()).InvokeDefaultConstructor ();
 				}
 			}
 
@@ -86,18 +95,18 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				class MethodWithoutParametersTarget
 				{
 					[Kept]
-					private MethodWithoutParametersTarget () { }
+					private static void TargetMethod () { }
 				}
 
 				[Kept]
 				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
 				[UnsafeAccessor (UnsafeAccessorKind.StaticMethod)]
-				extern static void InvokeMethodWithoutParameters (MethodWithoutParametersTarget target);
+				extern static void TargetMethod (MethodWithoutParametersTarget target);
 
 				[Kept]
 				public static void Test ()
 				{
-					InvokeMethodWithoutParameters (null);
+					TargetMethod (null);
 				}
 			}
 
