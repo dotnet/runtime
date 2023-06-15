@@ -94,13 +94,17 @@ namespace ILLink.RoslynAnalyzer
 						return;
 
 					if (type.BaseType is INamedTypeSymbol baseType) {
-						foreach (var diagnostic in ProcessGenericParameters (baseType, type.Locations[0]))
-							context.ReportDiagnostic (diagnostic);
+						if (type.Locations.Length > 0) {
+							foreach (var diagnostic in ProcessGenericParameters (baseType, type.Locations[0]))
+								context.ReportDiagnostic (diagnostic);
+						}
 					}
 
 					foreach (var interfaceType in type.Interfaces) {
-						foreach (var diagnostic in ProcessGenericParameters (interfaceType, type.Locations[0]))
-							context.ReportDiagnostic (diagnostic);
+						if (type.Locations.Length > 0) {
+							foreach (var diagnostic in ProcessGenericParameters (interfaceType, type.Locations[0]))
+								context.ReportDiagnostic (diagnostic);
+						}
 					}
 				}, SymbolKind.NamedType);
 				// Examine generic instantiations in method return type and parameters.
@@ -111,12 +115,16 @@ namespace ILLink.RoslynAnalyzer
 						return;
 
 					var returnType = method.ReturnType;
-					foreach (var diagnostic in ProcessGenericParameters (returnType, method.Locations[0]))
-						context.ReportDiagnostic (diagnostic);
+					if (method.Locations.Length > 0) {
+						foreach (var diagnostic in ProcessGenericParameters (returnType, method.Locations[0]))
+							context.ReportDiagnostic (diagnostic);
+					}
 
 					foreach (var parameter in method.Parameters) {
-						foreach (var diagnostic in ProcessGenericParameters (parameter.Type, parameter.Locations[0]))
-							context.ReportDiagnostic (diagnostic);
+						if (parameter.Locations.Length > 0) {
+							foreach (var diagnostic in ProcessGenericParameters (parameter.Type, parameter.Locations[0]))
+								context.ReportDiagnostic (diagnostic);
+						}
 					}
 				}, SymbolKind.Method);
 				// Examine generic instantiations in field type.
@@ -125,8 +133,10 @@ namespace ILLink.RoslynAnalyzer
 					if (field.IsInRequiresUnreferencedCodeAttributeScope (out _))
 						return;
 
-					foreach (var diagnostic in ProcessGenericParameters (field.Type, field.Locations[0]))
-						context.ReportDiagnostic (diagnostic);
+					if (field.Locations.Length > 0) {
+						foreach (var diagnostic in ProcessGenericParameters (field.Type, field.Locations[0]))
+							context.ReportDiagnostic (diagnostic);
+					}
 				}, SymbolKind.Field);
 				// Examine generic instantiations in invocations of generically instantiated methods,
 				// or methods on generically instantiated types.
@@ -244,18 +254,18 @@ namespace ILLink.RoslynAnalyzer
 
 		static void VerifyMemberOnlyApplyToTypesOrStrings (SymbolAnalysisContext context, ISymbol member)
 		{
-			if (member is IFieldSymbol field && field.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !field.Type.IsTypeInterestingForDataflow ())
+			if (member is IFieldSymbol field && field.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !field.Type.IsTypeInterestingForDataflow () && member.Locations.Length > 0)
 				context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersOnFieldCanOnlyApplyToTypesOrStrings), member.Locations[0], member.GetDisplayName ()));
 			else if (member is IMethodSymbol method) {
-				if (method.GetDynamicallyAccessedMemberTypesOnReturnType () != DynamicallyAccessedMemberTypes.None && !method.ReturnType.IsTypeInterestingForDataflow ())
+				if (method.GetDynamicallyAccessedMemberTypesOnReturnType () != DynamicallyAccessedMemberTypes.None && !method.ReturnType.IsTypeInterestingForDataflow () && member.Locations.Length > 0)
 					context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersOnMethodReturnValueCanOnlyApplyToTypesOrStrings), member.Locations[0], member.GetDisplayName ()));
-				if (method.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !method.ContainingType.IsTypeInterestingForDataflow ())
+				if (method.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !method.ContainingType.IsTypeInterestingForDataflow () && member.Locations.Length > 0)
 					context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnMethods), member.Locations[0]));
 				foreach (var parameter in method.Parameters) {
-					if (parameter.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !parameter.Type.IsTypeInterestingForDataflow ())
+					if (parameter.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !parameter.Type.IsTypeInterestingForDataflow () && member.Locations.Length > 0)
 						context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersOnMethodParameterCanOnlyApplyToTypesOrStrings), member.Locations[0], parameter.GetDisplayName (), member.GetDisplayName ()));
 				}
-			} else if (member is IPropertySymbol property && property.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !property.Type.IsTypeInterestingForDataflow ()) {
+			} else if (member is IPropertySymbol property && property.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !property.Type.IsTypeInterestingForDataflow () && member.Locations.Length > 0) {
 				context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersOnPropertyCanOnlyApplyToTypesOrStrings), member.Locations[0], member.GetDisplayName ()));
 			}
 		}
@@ -277,17 +287,19 @@ namespace ILLink.RoslynAnalyzer
 				(IMethodSymbol attributableMethod, DynamicallyAccessedMemberTypes missingAttribute) = GetTargetAndRequirements (overrideMethod,
 					baseMethod, overrideMethodReturnAnnotation, baseMethodReturnAnnotation);
 
-				Location attributableSymbolLocation = attributableMethod.Locations[0];
+				if (attributableMethod.Locations.Length > 0) {
+					Location attributableSymbolLocation = attributableMethod.Locations[0];
 
-				// code fix does not support merging multiple attributes. If an attribute is present or the method is not in source, do not provide args for code fix.
-				(Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!attributableSymbolLocation.IsInSource
-					|| (overrideMethod.TryGetReturnAttribute (DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _)
-						&& baseMethod.TryGetReturnAttribute (DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
-						) ? (null, null) : CreateArguments (attributableSymbolLocation, missingAttribute);
+					// code fix does not support merging multiple attributes. If an attribute is present or the method is not in source, do not provide args for code fix.
+					(Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!attributableSymbolLocation.IsInSource
+						|| (overrideMethod.TryGetReturnAttribute (DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _)
+							&& baseMethod.TryGetReturnAttribute (DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
+							) ? (null, null) : CreateArguments (attributableSymbolLocation, missingAttribute);
 
-				context.ReportDiagnostic (Diagnostic.Create (
-					DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodReturnValueBetweenOverrides),
-					overrideMethod.Locations[0], sourceLocation, DAMArgs?.ToImmutableDictionary (), overrideMethod.GetDisplayName (), baseMethod.GetDisplayName ()));
+					context.ReportDiagnostic (Diagnostic.Create (
+						DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodReturnValueBetweenOverrides),
+						overrideMethod.Locations[0], sourceLocation, DAMArgs?.ToImmutableDictionary (), overrideMethod.GetDisplayName (), baseMethod.GetDisplayName ()));
+				}
 			}
 
 			foreach (var overrideParam in overrideMethod.GetMetadataParameters ()) {
@@ -320,23 +332,26 @@ namespace ILLink.RoslynAnalyzer
 
 					(IMethodSymbol attributableMethod, DynamicallyAccessedMemberTypes missingAttribute) = GetTargetAndRequirements (overrideMethod, baseMethod, methodTypeParameterAnnotation, overriddenMethodTypeParameterAnnotation);
 
-					Location attributableSymbolLocation = attributableMethod.TypeParameters[i].Locations[0];
+					var attributableSymbol = attributableMethod.TypeParameters[i];
+					if (attributableSymbol.Locations.Length > 0) {
+						Location attributableSymbolLocation = attributableSymbol.Locations[0];
 
-					// code fix does not support merging multiple attributes. If an attribute is present or the method is not in source, do not provide args for code fix.
-					(Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!attributableSymbolLocation.IsInSource
-						|| (overrideMethod.TypeParameters[i].TryGetAttribute (DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _)
-							&& baseMethod.TypeParameters[i].TryGetAttribute (DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
-							) ? (null, null) : CreateArguments (attributableSymbolLocation, missingAttribute);
+						// code fix does not support merging multiple attributes. If an attribute is present or the method is not in source, do not provide args for code fix.
+						(Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!attributableSymbolLocation.IsInSource
+							|| (overrideMethod.TypeParameters[i].TryGetAttribute (DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _)
+								&& baseMethod.TypeParameters[i].TryGetAttribute (DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
+								) ? (null, null) : CreateArguments (attributableSymbolLocation, missingAttribute);
 
-					context.ReportDiagnostic (Diagnostic.Create (
-						DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchOnGenericParameterBetweenOverrides),
-						overrideMethod.TypeParameters[i].Locations[0], sourceLocation, DAMArgs?.ToImmutableDictionary (),
-						overrideMethod.TypeParameters[i].GetDisplayName (), overrideMethod.GetDisplayName (),
-						baseMethod.TypeParameters[i].GetDisplayName (), baseMethod.GetDisplayName ()));
+						context.ReportDiagnostic (Diagnostic.Create (
+							DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchOnGenericParameterBetweenOverrides),
+							overrideMethod.TypeParameters[i].Locations[0], sourceLocation, DAMArgs?.ToImmutableDictionary (),
+							overrideMethod.TypeParameters[i].GetDisplayName (), overrideMethod.GetDisplayName (),
+							baseMethod.TypeParameters[i].GetDisplayName (), baseMethod.GetDisplayName ()));
+					}
 				}
 			}
 
-			if (!overrideMethod.IsStatic && overrideMethod.GetDynamicallyAccessedMemberTypes () != baseMethod.GetDynamicallyAccessedMemberTypes ())
+			if (!overrideMethod.IsStatic && overrideMethod.GetDynamicallyAccessedMemberTypes () != baseMethod.GetDynamicallyAccessedMemberTypes () && overrideMethod.Locations.Length > 0)
 				context.ReportDiagnostic (Diagnostic.Create (
 					DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchOnImplicitThisBetweenOverrides),
 					overrideMethod.Locations[0],
@@ -364,12 +379,15 @@ namespace ILLink.RoslynAnalyzer
 				// None on parameter of 'set' matches unannotated
 				|| methodSymbol.MethodKind == MethodKind.PropertySet
 				&& methodSymbol.Parameters[methodSymbol.Parameters.Length - 1].GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None) {
-				context.ReportDiagnostic (Diagnostic.Create (
-					DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessor),
-					methodSymbol.AssociatedSymbol!.Locations[0],
-					methodSymbol.AssociatedSymbol!.GetDisplayName (),
-					methodSymbol.GetDisplayName ()
-				));
+				var associatedSymbol = methodSymbol.AssociatedSymbol!;
+				if (associatedSymbol.Locations.Length > 0) {
+					context.ReportDiagnostic (Diagnostic.Create (
+						DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessor),
+						associatedSymbol.Locations[0],
+						associatedSymbol.GetDisplayName (),
+						methodSymbol.GetDisplayName ()
+					));
+				}
 				return;
 			}
 		}
