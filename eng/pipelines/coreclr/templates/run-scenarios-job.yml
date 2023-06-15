@@ -187,39 +187,15 @@ jobs:
         PERFLAB_TARGET_FRAMEWORKS: net7.0
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Darwin'))
 
-    # Check if zip installed
-    - script: |
-        if [ -x "$(command -v zip)" ]; then echo "##vso[task.setvariable variable=IsZipInstalled;]true"
-        else echo "##vso[task.setvariable variable=IsZipInstalled;]false";
-        fi
-      displayName: Check zip tool (Linux/Darwin)
-      condition: and(succeeded(), or(eq(variables['Agent.Os'], 'Linux'), eq(variables['Agent.Os'], 'Darwin')))
-
-    # Zip should always be installed on windows, so set the variable to true.
-    - powershell: |
-        Write-Host "##vso[task.setvariable variable=IsZipInstalled;]true"
-      displayName: Check zip tool (Windows)
-      condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
-
-    # Zip the workitem directory (for xharness based workitems)
-    - task: ArchiveFiles@2
-      inputs:
-        rootFolderOrFile: '$(WorkItemDirectory)'
-        includeRootFolder: false
-        archiveFile: '$(WorkItemDirectory).zip'
-        verbose: True
-      condition: and(succeeded(), eq(variables['IsZipInstalled'], 'true'))
-
-    # tar the workitem directory (for xharness based workitems)
-    - task: ArchiveFiles@2
-      inputs:
-        archiveType: tar
-        tarCompression: gz
-        rootFolderOrFile: '$(WorkItemDirectory)'
-        includeRootFolder: false
-        archiveFile: '$(WorkItemDirectory).tar.gz'
-        verbose: True
-      condition: and(succeeded(), eq(variables['IsZipInstalled'], 'false'))
+    # Zip the workitem directory (for xharness (mobile) based workitems)
+    - ${{ if or(eq(parameters.runKind, "android_scenarios"), eq(parameters.runKind, "ios_scenarios")) }}:
+      - task: ArchiveFiles@2
+        inputs:
+          rootFolderOrFile: '$(WorkItemDirectory)'
+          includeRootFolder: false
+          archiveFile: '$(WorkItemDirectory).zip'
+          verbose: True
+        condition: and(succeeded(), eq(variables['IsZipInstalled'], 'true'))
 
     # run perf testing in helix
     - template: /eng/pipelines/coreclr/templates/perf-send-to-helix.yml
