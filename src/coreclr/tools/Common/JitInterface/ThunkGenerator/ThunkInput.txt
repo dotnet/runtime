@@ -182,7 +182,6 @@ FUNCTIONS
     CorInfoCallConvExtension getUnmanagedCallConv(            CORINFO_METHOD_HANDLE       method,            CORINFO_SIG_INFO*           callSiteSig, bool* pSuppressGCTransition);
     bool pInvokeMarshalingRequired(        CORINFO_METHOD_HANDLE       method,        CORINFO_SIG_INFO*           callSiteSig        );
     bool satisfiesMethodConstraints(        CORINFO_CLASS_HANDLE        parent,        CORINFO_METHOD_HANDLE       method        );
-    bool isCompatibleDelegate(        CORINFO_CLASS_HANDLE        objCls,        CORINFO_CLASS_HANDLE        methodParentCls,        CORINFO_METHOD_HANDLE       method,        CORINFO_CLASS_HANDLE        delegateCls,        bool                        *pfIsOpenDelegate        );
     void methodMustBeLoadedBeforeCodeIsRun(        CORINFO_METHOD_HANDLE       method        );
     CORINFO_METHOD_HANDLE mapMethodDeclToMethodImpl(        CORINFO_METHOD_HANDLE       method        );
     void getGSCookie(        GSCookie * pCookieVal,        GSCookie ** ppCookieVal        );

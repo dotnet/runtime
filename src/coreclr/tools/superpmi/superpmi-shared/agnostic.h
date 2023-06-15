@@ -474,14 +474,6 @@ struct Agnostic_GetStaticBaseAddress
     DWORD                         result;
 };
 
-struct Agnostic_IsCompatibleDelegate
-{
-    DWORDLONG objCls;
-    DWORDLONG methodParentCls;
-    DWORDLONG method;
-    DWORDLONG delegateCls;
-};
-
 struct Agnostic_PgoInstrumentationSchema
 {
     DWORDLONG Offset;          // size_t

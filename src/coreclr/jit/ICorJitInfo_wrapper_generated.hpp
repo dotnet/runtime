@@ -238,19 +238,6 @@ bool WrapICorJitInfo::satisfiesMethodConstraints(
     return temp;
 }
 
-bool WrapICorJitInfo::isCompatibleDelegate(
-          CORINFO_CLASS_HANDLE objCls,
-          CORINFO_CLASS_HANDLE methodParentCls,
-          CORINFO_METHOD_HANDLE method,
-          CORINFO_CLASS_HANDLE delegateCls,
-          bool* pfIsOpenDelegate)
-{
-    API_ENTER(isCompatibleDelegate);
-    bool temp = wrapHnd->isCompatibleDelegate(objCls, methodParentCls, method, delegateCls, pfIsOpenDelegate);
-    API_LEAVE(isCompatibleDelegate);
-    return temp;
-}
-
 void WrapICorJitInfo::methodMustBeLoadedBeforeCodeIsRun(
           CORINFO_METHOD_HANDLE method)
 {

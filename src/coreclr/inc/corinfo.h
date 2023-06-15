@@ -2178,17 +2178,6 @@ public:
             CORINFO_METHOD_HANDLE       method
             ) = 0;
 
-    // Given a delegate target class, a target method parent class,  a  target method,
-    // a delegate class, check if the method signature is compatible with the Invoke method of the delegate
-    // (under the typical instantiation of any free type variables in the memberref signatures).
-    virtual bool isCompatibleDelegate(
-            CORINFO_CLASS_HANDLE        objCls,           /* type of the delegate target, if any */
-            CORINFO_CLASS_HANDLE        methodParentCls,  /* exact parent of the target method, if any */
-            CORINFO_METHOD_HANDLE       method,           /* (representative) target method, if any */
-            CORINFO_CLASS_HANDLE        delegateCls,      /* exact type of the delegate */
-            bool                        *pfIsOpenDelegate /* is the delegate open */
-            ) = 0;
-
     // load and restore the method
     virtual void methodMustBeLoadedBeforeCodeIsRun(
             CORINFO_METHOD_HANDLE       method

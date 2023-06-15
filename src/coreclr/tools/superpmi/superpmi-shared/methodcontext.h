@@ -675,19 +675,6 @@ public:
                         CORINFO_METHOD_HANDLE exactCalleeHnd,
                         bool                  fIsTailPrefix);
 
-    void recIsCompatibleDelegate(CORINFO_CLASS_HANDLE  objCls,
-                                 CORINFO_CLASS_HANDLE  methodParentCls,
-                                 CORINFO_METHOD_HANDLE method,
-                                 CORINFO_CLASS_HANDLE  delegateCls,
-                                 bool*                 pfIsOpenDelegate,
-                                 bool                  result);
-    void dmpIsCompatibleDelegate(const Agnostic_IsCompatibleDelegate& key, DD value);
-    bool repIsCompatibleDelegate(CORINFO_CLASS_HANDLE  objCls,
-                                 CORINFO_CLASS_HANDLE  methodParentCls,
-                                 CORINFO_METHOD_HANDLE method,
-                                 CORINFO_CLASS_HANDLE  delegateCls,
-                                 bool*                 pfIsOpenDelegate);
-
     void recIsDelegateCreationAllowed(CORINFO_CLASS_HANDLE delegateHnd, CORINFO_METHOD_HANDLE calleeHnd, bool result);
     void dmpIsDelegateCreationAllowed(DLDL key, DWORD value);
     bool repIsDelegateCreationAllowed(CORINFO_CLASS_HANDLE delegateHnd, CORINFO_METHOD_HANDLE calleeHnd);
@@ -1061,7 +1048,7 @@ enum mcPackets
     Packet_GetVars = 96,
     Packet_InitClass = 97,
     //Packet_InitConstraintsForVerification = 98,
-    Packet_IsCompatibleDelegate = 99,
+    //Packet_IsCompatibleDelegate = 99,
     //Packet_IsInstantiationOfVerifiedGeneric = 100,
     Packet_IsSDArray = 101,
     //Packet_IsStructRequiringStackAllocRetBuf = 102,
