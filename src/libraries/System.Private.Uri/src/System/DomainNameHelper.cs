@@ -82,15 +82,13 @@ namespace System
                 });
             }
 
-            string res = str.Substring(start, end - start);
-
-            if (res is Localhost or Loopback)
+            if (str.AsSpan(start, end - start) is Localhost or Loopback)
             {
                 loopback = true;
                 return Localhost;
             }
 
-            return res;
+            return str.Substring(start, end - start);
         }
 
         public static bool IsValid(ReadOnlySpan<char> hostname, bool iri, bool notImplicitFile, out int length)

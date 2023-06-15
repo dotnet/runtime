@@ -176,7 +176,7 @@
 
       <_DriverGenCNeeded Condition="'$(_DriverGenCNeeded)' == '' and '$(_WasmShouldAOT)' == 'true'">true</_DriverGenCNeeded>
 
-      <_WasmDevel Condition="'$(_WasmDevel)' == '' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">true</_WasmDevel>
+      <_WasmDevel Condition="'$(_WasmDevel)' == '' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug' and '$(WasmBuildingForNestedPublish)' != 'true'">true</_WasmDevel>
 
       <_EmccOptimizationFlagDefault Condition="'$(_WasmDevel)' == 'true'">-O0</_EmccOptimizationFlagDefault>
       <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == '' and '$(Configuration)' == 'Debug' and '$(WasmBuildingForNestedPublish)' != 'true'">-O1</_EmccOptimizationFlagDefault>

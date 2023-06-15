@@ -22,7 +22,7 @@ namespace Microsoft.Interop
             public const string ConfigurationNotSupported = Prefix + "1052";
             public const string RequiresAllowUnsafeBlocks = Prefix + "1062";
             public const string InvalidGeneratedComInterfaceAttributeUsage = Prefix + "1090";
-            public const string MethodNotDeclaredInAttributedInterface = Prefix + "1091";
+            public const string MemberWillNotBeSourceGenerated = Prefix + "1091";
             public const string MultipleComInterfaceBaseTypes = Prefix + "1092";
             public const string AnalysisFailed = Prefix + "1093";
             public const string BaseInterfaceFailedGeneration = Prefix + "1094";
@@ -242,13 +242,35 @@ namespace Microsoft.Interop
         /// <inheritdoc cref="SR.MethodNotDeclaredInAttributedInterfaceMessage"/>
         public static readonly DiagnosticDescriptor MethodNotDeclaredInAttributedInterface =
             new DiagnosticDescriptor(
-                Ids.MethodNotDeclaredInAttributedInterface,
+                Ids.MemberWillNotBeSourceGenerated,
                 GetResourceString(nameof(SR.MethodNotDeclaredInAttributedInterfaceTitle)),
                 GetResourceString(nameof(SR.MethodNotDeclaredInAttributedInterfaceMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.MethodNotDeclaredInAttributedInterfaceDescription)));
+
+        /// <inheritdoc cref="SR.InstancePropertyDeclaredInInterfaceMessage"/>
+        public static readonly DiagnosticDescriptor InstancePropertyDeclaredInInterface =
+            new DiagnosticDescriptor(
+                Ids.MemberWillNotBeSourceGenerated,
+                GetResourceString(nameof(SR.InstancePropertyDeclaredInInterfaceTitle)),
+                GetResourceString(nameof(SR.InstancePropertyDeclaredInInterfaceMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.InstancePropertyDeclaredInInterfaceDescription)));
+
+        /// <inheritdoc cref="SR.InstanceEventDeclaredInInterfaceMessage"/>
+        public static readonly DiagnosticDescriptor InstanceEventDeclaredInInterface =
+            new DiagnosticDescriptor(
+                Ids.MemberWillNotBeSourceGenerated,
+                GetResourceString(nameof(SR.InstanceEventDeclaredInInterfaceTitle)),
+                GetResourceString(nameof(SR.InstanceEventDeclaredInInterfaceMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.InstanceEventDeclaredInInterfaceDescription)));
 
         /// <inheritdoc cref="SR.InvalidGeneratedComInterfaceAttributeUsageInterfaceNotAccessible"/>
         public static readonly DiagnosticDescriptor InvalidAttributedInterfaceNotAccessible =
