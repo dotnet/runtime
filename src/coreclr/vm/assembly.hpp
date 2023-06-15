@@ -380,6 +380,8 @@ public:
     }
 #endif
 
+    static void AddDiagnosticStartupHookPath(LPCWSTR wszPath);
+
 
 protected:
 #ifdef FEATURE_COMINTEROP
