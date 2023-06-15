@@ -11,7 +11,7 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
-#if (HYBRID_GLOBALIZATION && TARGET_BROWSER)
+#if TARGET_BROWSER
             Debug.Assert(GlobalizationMode.Hybrid);
 #endif
 

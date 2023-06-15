@@ -48,14 +48,12 @@ extern void mono_wasm_install_js_worker_interop (int install_js_synchronization_
 extern void mono_wasm_uninstall_js_worker_interop (int uninstall_js_synchronization_context);
 #endif /* DISABLE_THREADS */
 
-#ifdef HYBRID_GLOBALIZATION
 extern void mono_wasm_change_case_invariant(const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper, int *is_exception, MonoObject** ex_result);
 extern void mono_wasm_change_case(MonoString **culture, const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper, int *is_exception, MonoObject** ex_result);
 extern int mono_wasm_compare_string(MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *is_exception, MonoObject** ex_result);
 extern mono_bool mono_wasm_starts_with(MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *is_exception, MonoObject** ex_result);
 extern mono_bool mono_wasm_ends_with(MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *is_exception, MonoObject** ex_result);
 extern int mono_wasm_index_of(MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool fromBeginning, int *is_exception, MonoObject** ex_result);
-#endif /* HYBRID_GLOBALIZATION */
 
 void bindings_initialize_internals (void)
 {
@@ -89,12 +87,10 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
 #endif /* DISABLE_LEGACY_JS_INTEROP */
 
-#ifdef HYBRID_GLOBALIZATION
 	mono_add_internal_call ("Interop/JsGlobalization::ChangeCaseInvariant", mono_wasm_change_case_invariant);
 	mono_add_internal_call ("Interop/JsGlobalization::ChangeCase", mono_wasm_change_case);
 	mono_add_internal_call ("Interop/JsGlobalization::CompareString", mono_wasm_compare_string);
 	mono_add_internal_call ("Interop/JsGlobalization::StartsWith", mono_wasm_starts_with);
 	mono_add_internal_call ("Interop/JsGlobalization::EndsWith", mono_wasm_ends_with);
 	mono_add_internal_call ("Interop/JsGlobalization::IndexOf", mono_wasm_index_of);
-#endif /* HYBRID_GLOBALIZATION */
 }

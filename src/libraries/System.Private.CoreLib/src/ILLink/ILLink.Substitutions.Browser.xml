@@ -1,7 +1,31 @@
 <linker>
   <assembly fullname="System.Private.CoreLib">
-    <type fullname="System.Globalization.GlobalizationMode">
-      <method signature="System.Boolean get_Hybrid()" body="stub" value="true" feature="System.Globalization.Hybrid" featurevalue="false" />
+    <!-- Hybrid mode -->
+    <type fullname="System.Globalization.GlobalizationMode" feature="System.Globalization.Hybrid" featurevalue="true" >
+      <method signature="System.Boolean get_Hybrid()" body="stub" value="true" />
+    </type>
+    <!-- non-Hybrid mode -->
+    <type fullname="System.Globalization.GlobalizationMode" feature="System.Globalization.Hybrid" featurevalue="false">
+      <method signature="System.Boolean get_Hybrid()" body="stub" value="false" />
+    </type>
+    <type fullname="System.Globalization.CompareInfo" feature="System.Globalization.Hybrid" featurevalue="false">
+      <method signature="System.Void JsInit()" body="stub" />
+      <method signature="System.Int32 JsCompareString()" body="stub" />
+      <method signature="System.Boolean JsStartsWith()" body="stub" />
+      <method signature="System.Boolean JsEndsWith()" body="stub" />
+      <method signature="System.Int32 JsIndexOfCore()" body="stub" />
+      
+      <method signature="System.Void AssertHybridOnWasm()" body="stub" />
+      <method signature="System.Void AssertComparisonSupported()" body="stub" />
+      <method signature="System.Void AssertIndexingSupported()" body="stub" />
+      <method signature="System.Boolean IndexingOptionsNotSupported()" body="stub" />
+      <method signature="System.Boolean CompareOptionsNotSupported()" body="stub" />
+      <method signature="System.String GetPNSE()" body="stub" />
+      <method signature="System.Boolean CompareOptionsNotSupportedForCulture()" body="stub" />
+      <method signature="System.String GetPNSEForCulture()" body="stub" />
+    </type>
+    <type fullname="System.Globalization.TextInfo" feature="System.Globalization.Hybrid" featurevalue="false">
+      <method signature="System.Void JsChangeCase()" body="stub" />
     </type>
   </assembly>
 </linker>
