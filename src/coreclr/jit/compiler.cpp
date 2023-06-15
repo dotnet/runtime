@@ -2305,8 +2305,14 @@ void Compiler::compSetProcessor()
             // default preferred vector width to 256-bits in some scenarios. Power
             // users can override this with `DOTNET_PreferredVectorBitWidth=512` to
             // allow using such instructions where hardware support is available.
+            //
+            // Under stress, sometimes leave the preferred vector width at 512, even if that means
+            // throttling. This helps with test coverage on test machines that might be older.
 
-            preferredVectorByteLength = 256 / 8;
+            if (!compStressCompile(STRESS_GENERIC_VARN, 20))
+            {
+                preferredVectorByteLength = 256 / 8;
+            }
         }
     }
 
