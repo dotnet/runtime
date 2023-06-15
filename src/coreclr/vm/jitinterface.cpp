@@ -4667,28 +4667,6 @@ CorInfoType CEEInfo::getChildType (
 }
 
 /*********************************************************************/
-// Check any constraints on class type arguments
-bool CEEInfo::satisfiesClassConstraints(CORINFO_CLASS_HANDLE cls)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    bool result = false;
-
-    JIT_TO_EE_TRANSITION();
-
-    _ASSERTE(cls != NULL);
-    result = TypeHandle(cls).SatisfiesClassConstraints();
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
-/*********************************************************************/
 // Check if this is a single dimensional array type
 bool CEEInfo::isSDArray(CORINFO_CLASS_HANDLE  cls)
 {

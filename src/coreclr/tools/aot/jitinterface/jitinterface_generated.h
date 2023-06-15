@@ -96,7 +96,6 @@ struct JitInterfaceCallbacks
     TypeCompareState (* isEnum)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType);
     CORINFO_CLASS_HANDLE (* getParentType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CorInfoType (* getChildType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE clsHnd, CORINFO_CLASS_HANDLE* clsRet);
-    bool (* satisfiesClassConstraints)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     bool (* isSDArray)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     unsigned (* getArrayRank)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CorInfoArrayIntrinsic (* getArrayIntrinsicID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn);
@@ -1026,15 +1025,6 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     CorInfoType temp = _callbacks->getChildType(_thisHandle, &pException, clsHnd, clsRet);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual bool satisfiesClassConstraints(
-          CORINFO_CLASS_HANDLE cls)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    bool temp = _callbacks->satisfiesClassConstraints(_thisHandle, &pException, cls);
     if (pException != nullptr) throw pException;
     return temp;
 }

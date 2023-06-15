@@ -244,7 +244,6 @@ FUNCTIONS
     TypeCompareState isEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType)
     CORINFO_CLASS_HANDLE getParentType(CORINFO_CLASS_HANDLE cls)
     CorInfoType getChildType(CORINFO_CLASS_HANDLE clsHnd, CORINFO_CLASS_HANDLE* clsRet)
-    bool satisfiesClassConstraints(CORINFO_CLASS_HANDLE cls)
     bool isSDArray(CORINFO_CLASS_HANDLE cls)
     unsigned getArrayRank(CORINFO_CLASS_HANDLE cls)
     CorInfoArrayIntrinsic getArrayIntrinsicID(CORINFO_METHOD_HANDLE ftn)

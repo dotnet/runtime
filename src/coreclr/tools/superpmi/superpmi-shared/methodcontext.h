@@ -656,10 +656,6 @@ public:
     void dmpGetAddressOfPInvokeTarget(DWORDLONG key, DLD value);
     void repGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
 
-    void recSatisfiesClassConstraints(CORINFO_CLASS_HANDLE cls, bool result);
-    void dmpSatisfiesClassConstraints(DWORDLONG key, DWORD value);
-    bool repSatisfiesClassConstraints(CORINFO_CLASS_HANDLE cls);
-
     void recGetMethodHash(CORINFO_METHOD_HANDLE ftn, unsigned result);
     void dmpGetMethodHash(DWORDLONG key, DWORD value);
     unsigned repGetMethodHash(CORINFO_METHOD_HANDLE ftn);
@@ -1055,7 +1051,7 @@ enum mcPackets
     //Packet_MergeClasses = 107,
     Packet_PInvokeMarshalingRequired = 108,
     Packet_ResolveToken = 109,
-    Packet_SatisfiesClassConstraints = 110,
+    //Packet_SatisfiesClassConstraints = 110,
     Packet_SatisfiesMethodConstraints = 111,
     Packet_DoesFieldBelongToClass = 112,
     PacketCR_AddressMap = 113,

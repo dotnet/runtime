@@ -839,15 +839,6 @@ CorInfoType WrapICorJitInfo::getChildType(
     return temp;
 }
 
-bool WrapICorJitInfo::satisfiesClassConstraints(
-          CORINFO_CLASS_HANDLE cls)
-{
-    API_ENTER(satisfiesClassConstraints);
-    bool temp = wrapHnd->satisfiesClassConstraints(cls);
-    API_LEAVE(satisfiesClassConstraints);
-    return temp;
-}
-
 bool WrapICorJitInfo::isSDArray(
           CORINFO_CLASS_HANDLE cls)
 {

@@ -686,13 +686,6 @@ CorInfoType interceptor_ICJI::getChildType(
     return original_ICorJitInfo->getChildType(clsHnd, clsRet);
 }
 
-bool interceptor_ICJI::satisfiesClassConstraints(
-          CORINFO_CLASS_HANDLE cls)
-{
-    mcs->AddCall("satisfiesClassConstraints");
-    return original_ICorJitInfo->satisfiesClassConstraints(cls);
-}
-
 bool interceptor_ICJI::isSDArray(
           CORINFO_CLASS_HANDLE cls)
 {

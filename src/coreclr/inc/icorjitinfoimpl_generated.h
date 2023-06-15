@@ -355,9 +355,6 @@ CorInfoType getChildType(
           CORINFO_CLASS_HANDLE clsHnd,
           CORINFO_CLASS_HANDLE* clsRet) override;
 
-bool satisfiesClassConstraints(
-          CORINFO_CLASS_HANDLE cls) override;
-
 bool isSDArray(
           CORINFO_CLASS_HANDLE cls) override;
 

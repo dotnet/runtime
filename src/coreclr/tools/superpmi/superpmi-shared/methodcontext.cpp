@@ -5158,28 +5158,6 @@ void MethodContext::repGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, C
     pLookup->accessType = (InfoAccessType)value.B;
 }
 
-void MethodContext::recSatisfiesClassConstraints(CORINFO_CLASS_HANDLE cls, bool result)
-{
-    if (SatisfiesClassConstraints == nullptr)
-        SatisfiesClassConstraints = new LightWeightMap<DWORDLONG, DWORD>();
-
-    DWORDLONG key = CastHandle(cls);
-    DWORD value = result ? 1 : 0;
-    SatisfiesClassConstraints->Add(key, value);
-    DEBUG_REC(dmpSatisfiesClassConstraints(key, value));
-}
-void MethodContext::dmpSatisfiesClassConstraints(DWORDLONG key, DWORD value)
-{
-    printf("SatisfiesClassConstraints key cls-%016" PRIX64 ", value res-%u", key, value);
-}
-bool MethodContext::repSatisfiesClassConstraints(CORINFO_CLASS_HANDLE cls)
-{
-    DWORDLONG key = CastHandle(cls);
-    DWORD value = LookupByKeyOrMiss(SatisfiesClassConstraints, key, ": key %016" PRIX64 "", key);
-    DEBUG_REP(dmpSatisfiesClassConstraints(key, value));
-    return value != 0;
-}
-
 void MethodContext::recGetMethodHash(CORINFO_METHOD_HANDLE ftn, unsigned result)
 {
     if (GetMethodHash == nullptr)

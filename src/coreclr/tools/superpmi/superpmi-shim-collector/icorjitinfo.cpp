@@ -288,7 +288,6 @@ bool interceptor_ICJI::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, C
 }
 
 // Check constraints on method type arguments (only).
-// The parent class should be checked separately using satisfiesClassConstraints(parent).
 bool interceptor_ICJI::satisfiesMethodConstraints(CORINFO_CLASS_HANDLE  parent, // the exact parent of the method
                                                   CORINFO_METHOD_HANDLE method)
 {
@@ -947,15 +946,6 @@ CorInfoType interceptor_ICJI::getChildType(CORINFO_CLASS_HANDLE clsHnd, CORINFO_
     mc->cr->AddCall("getChildType");
     CorInfoType temp = original_ICorJitInfo->getChildType(clsHnd, clsRet);
     mc->recGetChildType(clsHnd, clsRet, temp);
-    return temp;
-}
-
-// Check constraints on type arguments of this class and parent classes
-bool interceptor_ICJI::satisfiesClassConstraints(CORINFO_CLASS_HANDLE cls)
-{
-    mc->cr->AddCall("satisfiesClassConstraints");
-    bool temp = original_ICorJitInfo->satisfiesClassConstraints(cls);
-    mc->recSatisfiesClassConstraints(cls, temp);
     return temp;
 }
 
