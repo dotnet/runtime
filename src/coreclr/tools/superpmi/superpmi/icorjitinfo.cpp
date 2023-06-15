@@ -252,20 +252,6 @@ bool MyICJI::satisfiesMethodConstraints(CORINFO_CLASS_HANDLE  parent, // the exa
     return jitInstance->mc->repSatisfiesMethodConstraints(parent, method);
 }
 
-// Given a delegate target class, a target method parent class,  a  target method,
-// a delegate class, check if the method signature is compatible with the Invoke method of the delegate
-// (under the typical instantiation of any free type variables in the memberref signatures).
-bool MyICJI::isCompatibleDelegate(CORINFO_CLASS_HANDLE  objCls,          /* type of the delegate target, if any */
-                                  CORINFO_CLASS_HANDLE  methodParentCls, /* exact parent of the target method, if any */
-                                  CORINFO_METHOD_HANDLE method,          /* (representative) target method, if any */
-                                  CORINFO_CLASS_HANDLE  delegateCls,     /* exact type of the delegate */
-                                  bool*                 pfIsOpenDelegate /* is the delegate open */
-                                  )
-{
-    jitInstance->mc->cr->AddCall("isCompatibleDelegate");
-    return jitInstance->mc->repIsCompatibleDelegate(objCls, methodParentCls, method, delegateCls, pfIsOpenDelegate);
-}
-
 // load and restore the method
 void MyICJI::methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method)
 {

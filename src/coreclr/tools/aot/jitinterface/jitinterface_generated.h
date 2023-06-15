@@ -34,7 +34,6 @@ struct JitInterfaceCallbacks
     CorInfoCallConvExtension (* getUnmanagedCallConv)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, bool* pSuppressGCTransition);
     bool (* pInvokeMarshalingRequired)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig);
     bool (* satisfiesMethodConstraints)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method);
-    bool (* isCompatibleDelegate)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE objCls, CORINFO_CLASS_HANDLE methodParentCls, CORINFO_METHOD_HANDLE method, CORINFO_CLASS_HANDLE delegateCls, bool* pfIsOpenDelegate);
     void (* methodMustBeLoadedBeforeCodeIsRun)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method);
     CORINFO_METHOD_HANDLE (* mapMethodDeclToMethodImpl)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method);
     void (* getGSCookie)(void * thisHandle, CorInfoExceptionClass** ppException, GSCookie* pCookieVal, GSCookie** ppCookieVal);
@@ -427,19 +426,6 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->satisfiesMethodConstraints(_thisHandle, &pException, parent, method);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual bool isCompatibleDelegate(
-          CORINFO_CLASS_HANDLE objCls,
-          CORINFO_CLASS_HANDLE methodParentCls,
-          CORINFO_METHOD_HANDLE method,
-          CORINFO_CLASS_HANDLE delegateCls,
-          bool* pfIsOpenDelegate)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    bool temp = _callbacks->isCompatibleDelegate(_thisHandle, &pException, objCls, methodParentCls, method, delegateCls, pfIsOpenDelegate);
     if (pException != nullptr) throw pException;
     return temp;
 }

@@ -298,24 +298,6 @@ bool interceptor_ICJI::satisfiesMethodConstraints(CORINFO_CLASS_HANDLE  parent, 
     return temp;
 }
 
-// Given a delegate target class, a target method parent class,  a  target method,
-// a delegate class, check if the method signature is compatible with the Invoke method of the delegate
-// (under the typical instantiation of any free type variables in the memberref signatures).
-bool interceptor_ICJI::isCompatibleDelegate(
-    CORINFO_CLASS_HANDLE  objCls,          /* type of the delegate target, if any */
-    CORINFO_CLASS_HANDLE  methodParentCls, /* exact parent of the target method, if any */
-    CORINFO_METHOD_HANDLE method,          /* (representative) target method, if any */
-    CORINFO_CLASS_HANDLE  delegateCls,     /* exact type of the delegate */
-    bool*                 pfIsOpenDelegate /* is the delegate open */
-    )
-{
-    mc->cr->AddCall("isCompatibleDelegate");
-    bool temp =
-        original_ICorJitInfo->isCompatibleDelegate(objCls, methodParentCls, method, delegateCls, pfIsOpenDelegate);
-    mc->recIsCompatibleDelegate(objCls, methodParentCls, method, delegateCls, pfIsOpenDelegate, temp);
-    return temp;
-}
-
 // load and restore the method
 void interceptor_ICJI::methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method)
 {

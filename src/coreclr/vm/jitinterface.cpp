@@ -10127,56 +10127,6 @@ bool CEEInfo::satisfiesMethodConstraints(
 }
 
 
-
-/*********************************************************************/
-// Given a delegate target class, a target method parent class,  a  target method,
-// a delegate class, check if the method signature is compatible with the Invoke method of the delegate
-// (under the typical instantiation of any free type variables in the memberref signatures).
-//
-// objCls should be NULL if the target object is NULL
-//@GENERICSVER: new (suitable for generics)
-bool CEEInfo::isCompatibleDelegate(
-            CORINFO_CLASS_HANDLE        objCls,
-            CORINFO_CLASS_HANDLE        methodParentCls,
-            CORINFO_METHOD_HANDLE       method,
-            CORINFO_CLASS_HANDLE        delegateCls,
-            bool*                       pfIsOpenDelegate)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    bool result = false;
-
-    JIT_TO_EE_TRANSITION();
-
-    _ASSERTE(method != NULL);
-    _ASSERTE(delegateCls != NULL);
-
-    TypeHandle delegateClsHnd = (TypeHandle) delegateCls;
-
-    _ASSERTE(delegateClsHnd.GetMethodTable()->IsDelegate());
-
-    TypeHandle methodParentHnd = (TypeHandle) (methodParentCls);
-    MethodDesc* pMDFtn = GetMethod(method);
-    TypeHandle objClsHnd(objCls);
-
-    EX_TRY
-    {
-      result = COMDelegate::ValidateCtor(objClsHnd, methodParentHnd, pMDFtn, delegateClsHnd, pfIsOpenDelegate);
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions)
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
 /*********************************************************************/
 // return address of fixup area for late-bound N/Direct calls.
 void CEEInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,

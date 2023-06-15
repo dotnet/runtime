@@ -200,17 +200,6 @@ bool interceptor_ICJI::satisfiesMethodConstraints(
     return original_ICorJitInfo->satisfiesMethodConstraints(parent, method);
 }
 
-bool interceptor_ICJI::isCompatibleDelegate(
-          CORINFO_CLASS_HANDLE objCls,
-          CORINFO_CLASS_HANDLE methodParentCls,
-          CORINFO_METHOD_HANDLE method,
-          CORINFO_CLASS_HANDLE delegateCls,
-          bool* pfIsOpenDelegate)
-{
-    mcs->AddCall("isCompatibleDelegate");
-    return original_ICorJitInfo->isCompatibleDelegate(objCls, methodParentCls, method, delegateCls, pfIsOpenDelegate);
-}
-
 void interceptor_ICJI::methodMustBeLoadedBeforeCodeIsRun(
           CORINFO_METHOD_HANDLE method)
 {

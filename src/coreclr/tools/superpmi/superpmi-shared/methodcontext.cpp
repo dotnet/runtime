@@ -5248,57 +5248,6 @@ bool MethodContext::repCanTailCall(CORINFO_METHOD_HANDLE callerHnd,
     return value != 0;
 }
 
-void MethodContext::recIsCompatibleDelegate(CORINFO_CLASS_HANDLE  objCls,
-                                            CORINFO_CLASS_HANDLE  methodParentCls,
-                                            CORINFO_METHOD_HANDLE method,
-                                            CORINFO_CLASS_HANDLE  delegateCls,
-                                            bool*                 pfIsOpenDelegate,
-                                            bool                  result)
-{
-    if (IsCompatibleDelegate == nullptr)
-        IsCompatibleDelegate = new LightWeightMap<Agnostic_IsCompatibleDelegate, DD>();
-
-    Agnostic_IsCompatibleDelegate key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.objCls          = CastHandle(objCls);
-    key.methodParentCls = CastHandle(methodParentCls);
-    key.method          = CastHandle(method);
-    key.delegateCls     = CastHandle(delegateCls);
-
-    DD value;
-    value.A = (DWORD)*pfIsOpenDelegate;
-    value.B = (DWORD)result;
-
-    IsCompatibleDelegate->Add(key, value);
-    DEBUG_REC(dmpIsCompatibleDelegate(key, value));
-}
-void MethodContext::dmpIsCompatibleDelegate(const Agnostic_IsCompatibleDelegate& key, DD value)
-{
-    printf("IsCompatibleDelegate key objCls-%016" PRIX64 " methodParentCls-%016" PRIX64 " method-%016" PRIX64 " delegateCls-%016" PRIX64 ", value  "
-           "pfIsOpenDelegate-%08X result-%08X",
-           key.objCls, key.methodParentCls, key.method, key.delegateCls, value.A, value.B);
-}
-bool MethodContext::repIsCompatibleDelegate(CORINFO_CLASS_HANDLE  objCls,
-                                            CORINFO_CLASS_HANDLE  methodParentCls,
-                                            CORINFO_METHOD_HANDLE method,
-                                            CORINFO_CLASS_HANDLE  delegateCls,
-                                            bool*                 pfIsOpenDelegate)
-{
-    Agnostic_IsCompatibleDelegate key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.objCls          = CastHandle(objCls);
-    key.methodParentCls = CastHandle(methodParentCls);
-    key.method          = CastHandle(method);
-    key.delegateCls     = CastHandle(delegateCls);
-
-    DD value = LookupByKeyOrMissNoMessage(IsCompatibleDelegate, key);
-
-    DEBUG_REP(dmpIsCompatibleDelegate(key, value));
-
-    *pfIsOpenDelegate = value.A != 0;
-    return value.B != 0;
-}
-
 void MethodContext::recIsDelegateCreationAllowed(CORINFO_CLASS_HANDLE  delegateHnd,
                                                  CORINFO_METHOD_HANDLE calleeHnd,
                                                  bool                  result)
