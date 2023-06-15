@@ -222,7 +222,9 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
             {
+#pragma warning disable CA1416 // 'RegisteredWaitHandle.Repeating' is unsupported on: 'browser'
                 ThreadPoolIOEnqueue((IntPtr)registeredWaitHandle.GetHashCode(), IntPtr.Zero, registeredWaitHandle.Repeating);
+#pragma warning restore CA1416
             }
         }
 
