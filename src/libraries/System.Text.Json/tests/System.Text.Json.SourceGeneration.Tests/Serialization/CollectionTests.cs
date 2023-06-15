@@ -453,6 +453,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(KeyValuePair<int, int>))]
         [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<string, int>>))]
         [JsonSerializable(typeof(StackWrapper))]
+        [JsonSerializable(typeof(ClassWithRecursiveCollectionTypes))]
         internal sealed partial class CollectionTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -855,6 +856,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(KeyValuePair<int, int>))]
         [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<string, int>>))]
         [JsonSerializable(typeof(StackWrapper))]
+        [JsonSerializable(typeof(ClassWithRecursiveCollectionTypes))]
         internal sealed partial class CollectionTestsContext_Default : JsonSerializerContext
         {
         }
