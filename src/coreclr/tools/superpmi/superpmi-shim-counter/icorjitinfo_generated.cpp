@@ -1139,13 +1139,6 @@ void interceptor_ICJI::getCallInfo(
     original_ICorJitInfo->getCallInfo(pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult);
 }
 
-bool interceptor_ICJI::isRIDClassDomainID(
-          CORINFO_CLASS_HANDLE cls)
-{
-    mcs->AddCall("isRIDClassDomainID");
-    return original_ICorJitInfo->isRIDClassDomainID(cls);
-}
-
 unsigned interceptor_ICJI::getClassDomainID(
           CORINFO_CLASS_HANDLE cls,
           void** ppIndirection)

@@ -1604,14 +1604,6 @@ void interceptor_ICJI::getCallInfo(
     });
 }
 
-// Returns TRUE if the Class Domain ID is the RID of the class (currently true for every class
-// except reflection emitted classes and generics)
-bool interceptor_ICJI::isRIDClassDomainID(CORINFO_CLASS_HANDLE cls)
-{
-    mc->cr->AddCall("isRIDClassDomainID");
-    return original_ICorJitInfo->isRIDClassDomainID(cls);
-}
-
 // returns the class's domain ID for accessing shared statics
 unsigned interceptor_ICJI::getClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection)
 {
