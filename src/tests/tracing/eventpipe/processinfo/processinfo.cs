@@ -149,7 +149,7 @@ namespace Tracing.Tests.ProcessInfoValidation
                 // /path/to/corerun /path/to/processinfo.dll
                 // or
                 // "C:\path\to\CoreRun.exe" C:\path\to\processinfo.dll
-                string currentProcessCommandLine = TestLibrary.Utilities.IsNativeAot
+                string currentProcessCommandLine = TestLibrary.Utilities.IsSingleFile
                     ? currentProcess.MainModule.FileName
                     : $"{currentProcess.MainModule.FileName} {System.Reflection.Assembly.GetExecutingAssembly().Location}";
                 string receivedCommandLine = NormalizeCommandLine(commandLine);

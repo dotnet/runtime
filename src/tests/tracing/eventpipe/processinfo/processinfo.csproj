@@ -11,7 +11,6 @@
          Issue: https://github.com/dotnet/runtime/issues/39935
     -->
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
-    <EventSourceSupport Condition="'$(TestBuildMode)' == 'nativeaot'">true</EventSourceSupport>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
