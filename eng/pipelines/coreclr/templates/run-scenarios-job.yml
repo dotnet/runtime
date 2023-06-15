@@ -195,7 +195,6 @@ jobs:
           includeRootFolder: false
           archiveFile: '$(WorkItemDirectory).zip'
           verbose: True
-        condition: and(succeeded(), eq(variables['IsZipInstalled'], 'true'))
 
     # run perf testing in helix
     - template: /eng/pipelines/coreclr/templates/perf-send-to-helix.yml
