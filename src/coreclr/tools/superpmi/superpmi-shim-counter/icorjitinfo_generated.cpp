@@ -962,16 +962,6 @@ unsigned interceptor_ICJI::getMethodHash(
     return original_ICorJitInfo->getMethodHash(ftn);
 }
 
-size_t interceptor_ICJI::findNameOfToken(
-          CORINFO_MODULE_HANDLE moduleHandle,
-          mdToken token,
-          char* szFQName,
-          size_t FQNameCapacity)
-{
-    mcs->AddCall("findNameOfToken");
-    return original_ICorJitInfo->findNameOfToken(moduleHandle, token, szFQName, FQNameCapacity);
-}
-
 bool interceptor_ICJI::getSystemVAmd64PassStructInRegisterDescriptor(
           CORINFO_CLASS_HANDLE structHnd,
           SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)

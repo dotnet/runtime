@@ -611,38 +611,6 @@ CORINFO_CLASS_HANDLE CEEInfo::getTokenTypeAsHandle (CORINFO_RESOLVED_TOKEN * pRe
     return tokenType;
 }
 
-/*********************************************************************/
-size_t CEEInfo::findNameOfToken (
-            CORINFO_MODULE_HANDLE       scopeHnd,
-            mdToken                     metaTOK,
-            _Out_writes_ (FQNameCapacity)  char * szFQName,
-            size_t FQNameCapacity)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    size_t NameLen = 0;
-
-    JIT_TO_EE_TRANSITION();
-
-    if (IsDynamicScope(scopeHnd))
-    {
-        strncpy_s (szFQName, FQNameCapacity, "DynamicToken", FQNameCapacity - 1);
-        NameLen = strlen (szFQName);
-    }
-    else
-    {
-        Module* module = (Module *)scopeHnd;
-        NameLen = findNameOfToken(module, metaTOK, szFQName, FQNameCapacity);
-    }
-
-    EE_TO_JIT_TRANSITION();
-
-    return NameLen;
-}
 
 /*********************************************************************/
 // Checks if the given metadata token is valid

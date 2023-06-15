@@ -43,7 +43,6 @@ LWM(GetThreadLocalStaticBlocksInfo, DWORD, Agnostic_GetThreadLocalStaticBlocksIn
 DENSELWM(EmptyStringLiteral, DLD)
 DENSELWM(ErrorList, DWORD)
 LWM(FindCallSiteSig, Agnostic_FindCallSiteSig, Agnostic_CORINFO_SIG_INFO)
-LWM(FindNameOfToken, DLD, DLD)
 LWM(FindSig, Agnostic_FindSig, Agnostic_CORINFO_SIG_INFO)
 LWM(GetAddressOfPInvokeTarget, DWORDLONG, DLD)
 LWM(GetAddrOfCaptureThreadGlobal, DWORD, DLDL)

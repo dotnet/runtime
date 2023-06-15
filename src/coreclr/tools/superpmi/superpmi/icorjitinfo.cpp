@@ -1185,17 +1185,6 @@ unsigned MyICJI::getMethodHash(CORINFO_METHOD_HANDLE ftn /* IN */
     return jitInstance->mc->repGetMethodHash(ftn);
 }
 
-// this function is for debugging only.
-size_t MyICJI::findNameOfToken(CORINFO_MODULE_HANDLE              module,        /* IN  */
-                               mdToken                            metaTOK,       /* IN  */
-                               _Out_writes_(FQNameCapacity) char* szFQName,      /* OUT */
-                               size_t                             FQNameCapacity /* IN */
-                               )
-{
-    jitInstance->mc->cr->AddCall("findNameOfToken");
-    return jitInstance->mc->repFindNameOfToken(module, metaTOK, szFQName, FQNameCapacity);
-}
-
 bool MyICJI::getSystemVAmd64PassStructInRegisterDescriptor(
     /* IN */ CORINFO_CLASS_HANDLE                                  structHnd,
     /* OUT */ SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
