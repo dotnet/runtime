@@ -760,13 +760,14 @@ namespace System.Security.Cryptography.X509Certificates
                     using (var manager = new PointerMemoryManager<byte>(pin, pkcs12.Length))
                     {
                         AsnValueReader reader = new AsnValueReader(pkcs12, AsnEncodingRules.BER);
+                        int encodedLength = reader.PeekEncodedValue().Length;
                         PfxAsn.Decode(ref reader, manager.Memory, out PfxAsn pfx);
 
                         // Don't throw when trailing data is present.
                         // Windows doesn't have such enforcement as well.
 
                         iterations = pfx.CountTotalIterations();
-                        bytesConsumed = pkcs12.Length - reader.GetRemainingLength();
+                        bytesConsumed = encodedLength;
                     }
                 }
             }

@@ -479,7 +479,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             if (usesPbes2 && !Pkcs12PBES2Supported)
             {
-                throw new SkipTestException(name + " uses PBES2 which is not supported on this version.");
+                throw new SkipTestException(name + " uses PBES2, which is not supported on this version.");
             }
 
             try
@@ -513,7 +513,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         // This is a horrible way to produce SecureString. SecureString is deprecated and should not be used.
         // This is only reasonable because it is a test driver.
-        internal static SecureString? GetSecureString(string password)
+        internal static SecureString GetSecureString(string password)
         {
             if (password == null)
                 return null;

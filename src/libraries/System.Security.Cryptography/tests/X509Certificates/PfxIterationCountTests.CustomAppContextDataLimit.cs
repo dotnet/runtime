@@ -5,28 +5,29 @@ using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
-    // AppContext and AppDomain are the same in this context.
-    public class PfxIterationCountTests_CustomAppDomainDataLimit
+    public class PfxIterationCountTests_CustomAppContextDataLimit
     {
+        private static readonly Dictionary<string, PfxInfo> s_certificatesDictionary
+            = PfxIterationCountTests.s_certificates.ToDictionary((c) => c.Name);
+
         // We need to use virtual in a non-abstract class because RemoteExecutor can't work on abstract classes.
         internal virtual X509Certificate Import(byte[] blob) => new X509Certificate(blob);
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(memberName: nameof(PfxIterationCountTests.GetCertsWith_IterationCountNotExceedingDefaultLimit_AndNullOrEmptyPassword_MemberData), MemberType = typeof(PfxIterationCountTests))]
-        public void Import_AppDomainDataWithValueTwo_ActsAsDefaultLimit_IterationCountNotExceedingDefaultLimit(string name, bool usesPbes2, byte[] blob, long iterationCount)
+        public void Import_AppContextDataWithValueMinusTwo_ActsAsDefaultLimit_IterationCountNotExceedingDefaultLimit(string name, bool usesPbes2, byte[] blob, long iterationCount)
         {
             _ = iterationCount;
             _ = blob;
 
             if (usesPbes2 && !PfxTests.Pkcs12PBES2Supported)
             {
-                throw new SkipTestException(name + " uses PBES2 which is not supported on this version.");
+                throw new SkipTestException(name + " uses PBES2, which is not supported on this version.");
             }
 
             RemoteExecutor.Invoke((certName) =>
@@ -42,7 +43,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(memberName: nameof(PfxIterationCountTests.GetCertsWith_IterationCountExceedingDefaultLimit_MemberData), MemberType = typeof(PfxIterationCountTests))]
-        public void Import_AppDomainDataWithValueTwo_ActsAsDefaultLimit_IterationCountLimitExceeded_Throws(string name, string password, bool usesPbes2, byte[] blob, long iterationCount)
+        public void Import_AppContextDataWithValueMinusTwo_ActsAsDefaultLimit_IterationCountLimitExceeded_Throws(string name, string password, bool usesPbes2, byte[] blob, long iterationCount)
         {
             _ = password;
             _ = iterationCount;
@@ -50,46 +51,46 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             if (usesPbes2 && !PfxTests.Pkcs12PBES2Supported)
             {
-                throw new SkipTestException(name + " uses PBES2 which is not supported on this version.");
+                throw new SkipTestException(name + " uses PBES2, which is not supported on this version.");
             }
 
             RemoteExecutor.Invoke((certName) =>
             {
-                AppDomain.CurrentDomain.SetData("System.Security.Cryptography.Pkcs12UnspecifiedPasswordIterationLimit", -2);
+                AppContext.SetData("System.Security.Cryptography.Pkcs12UnspecifiedPasswordIterationLimit", -2);
 
                 PfxInfo pfxInfo = s_certificatesDictionary[certName];
 
                 CryptographicException ce = Assert.Throws<CryptographicException>(() => Import(pfxInfo.Blob));
-                Assert.Contains("2233907", ce.Message);
+                Assert.Contains(PfxIterationCountTests.FwlinkId, ce.Message);
             }, name).Dispose();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(memberName: nameof(PfxIterationCountTests.GetCertsWith_IterationCountNotExceedingDefaultLimit_AndNullOrEmptyPassword_MemberData), MemberType = typeof(PfxIterationCountTests))]
-        public void Import_AppDomainDataWithValueZero_IterationCountNotExceedingDefaultLimit_Throws(string name, bool usesPbes2, byte[] blob, long iterationCount)
+        public void Import_AppContextDataWithValueZero_IterationCountNotExceedingDefaultLimit_Throws(string name, bool usesPbes2, byte[] blob, long iterationCount)
         {
             _ = iterationCount;
             _ = blob;
 
             if (usesPbes2 && !PfxTests.Pkcs12PBES2Supported)
             {
-                throw new SkipTestException(name + " uses PBES2 which is not supported on this version.");
+                throw new SkipTestException(name + " uses PBES2, which is not supported on this version.");
             }
 
             RemoteExecutor.Invoke((certName) =>
             {
-                AppDomain.CurrentDomain.SetData("System.Security.Cryptography.Pkcs12UnspecifiedPasswordIterationLimit", 0);
+                AppContext.SetData("System.Security.Cryptography.Pkcs12UnspecifiedPasswordIterationLimit", 0);
 
                 PfxInfo pfxInfo = s_certificatesDictionary[certName];
 
                 CryptographicException ce = Assert.Throws<CryptographicException>(() => Import(pfxInfo.Blob));
-                Assert.Contains("2233907", ce.Message);
+                Assert.Contains(PfxIterationCountTests.FwlinkId, ce.Message);
             }, name).Dispose();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(memberName: nameof(PfxIterationCountTests.GetCertsWith_IterationCountExceedingDefaultLimit_MemberData), MemberType = typeof(PfxIterationCountTests))]
-        public void Import_AppDomainDataWithValueMinusOne_IterationCountExceedingDefaultLimit(string name, string password, bool usesPbes2, byte[] blob, long iterationCount)
+        public void Import_AppContextDataWithValueMinusOne_IterationCountExceedingDefaultLimit(string name, string password, bool usesPbes2, byte[] blob, long iterationCount)
         {
             _ = password;
             _ = blob;
@@ -97,18 +98,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             if (usesPbes2 && !PfxTests.Pkcs12PBES2Supported)
             {
-                throw new SkipTestException(name + " uses PBES2 which is not supported on this version.");
+                throw new SkipTestException(name + " uses PBES2, which is not supported on this version.");
             }
 
             RemoteExecutor.Invoke((certName) =>
             {
-                AppDomain.CurrentDomain.SetData("System.Security.Cryptography.Pkcs12UnspecifiedPasswordIterationLimit", -1);
+                AppContext.SetData("System.Security.Cryptography.Pkcs12UnspecifiedPasswordIterationLimit", -1);
 
                 PfxInfo pfxInfo = s_certificatesDictionary[certName];
 
                 if (OperatingSystem.IsWindows())
                 {
-                    // Opting-out with AppDomain data value -1 will still give us error because cert is beyond Windows limit.
+                    // Opting-out with AppContext data value -1 will still give us error because cert is beyond Windows limit.
                     // But we will get the CryptoThrowHelper+WindowsCryptographicException.
                     PfxIterationCountTests.VerifyThrowsCryptoExButDoesNotThrowPfxWithoutPassword(() => Import(pfxInfo.Blob));
                 }
@@ -118,17 +119,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }, name).Dispose();
         }
-
-        public static readonly Dictionary<string, PfxInfo> s_certificatesDictionary
-            = PfxIterationCountTests.s_Certificates.ToDictionary((c) => c.Name);
     }
 
-    public class PfxIterationCountTests_CustomLimit_X509Certificate2 : PfxIterationCountTests_CustomAppDomainDataLimit
+    public class PfxIterationCountTests_CustomLimit_X509Certificate2 : PfxIterationCountTests_CustomAppContextDataLimit
     {
         internal override X509Certificate Import(byte[] blob) => new X509Certificate2(blob);
     }
 
-    public class PfxIterationCountTests_CustomLimit_X509Certificate2Collection : PfxIterationCountTests_CustomAppDomainDataLimit
+    public class PfxIterationCountTests_CustomLimit_X509Certificate2Collection : PfxIterationCountTests_CustomAppContextDataLimit
     {
         internal override X509Certificate Import(byte[] blob)
         {
