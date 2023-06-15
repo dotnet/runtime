@@ -364,7 +364,7 @@ Here are covered these cases with diaeresis:
      a. search string `normalizing to form C` is substring of source string. example: search string: `U\u0308` source string:  `Source is \u00DC` => matchLength is 1
      b. search string `normalizing to form D` is substring of source string. example: search string: `\u00FC` source string: `Source is \u0075\u0308` => matchLength is 2
 Not covered case:
-   Search string contains diaeresis but with source string they have same letters with different char lengths but substring is not 
+   Search string contains diaeresis but with source string they have same letters with different char lengths but substring is not
    normalized in source. example: search string: `U\u0308 and \u00FC` source string: `Source is a\u0308\u0308a and \u0075\u0308`
    as it is visible from example normalizaing search strin to form C or D will not help to find substring in source string.
 
