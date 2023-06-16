@@ -26,11 +26,15 @@ namespace System.Threading
 
         private static long s_contentionCount;
 
+        // The field's type is not ThreadId to try to retain the relative order of fields of intrinsic types. The type system
+        // appears to place struct fields after fields of other types, in which case there can be a greater chance that
+        // _owningThreadId is not in the same cache line as _state.
 #if TARGET_OSX && !NATIVEAOT
         private ulong _owningThreadId;
 #else
         private uint _owningThreadId;
 #endif
+
         private uint _state; // see State for layout
         private uint _recursionCount;
         private int _spinCount;
@@ -623,6 +627,7 @@ namespace System.Threading
 
         private static int DetermineMinSpinCount()
         {
+            // The config var can be set to -1 to disable adaptive spin
             int adaptiveSpinPeriod =
                 AppContextConfigHelper.GetInt32Config(
                     "System.Threading.Lock.AdaptiveSpinPeriod",
@@ -639,7 +644,7 @@ namespace System.Threading
 
         private struct State : IEquatable<State>
         {
-            // Layout constants for _state
+            // Layout constants for Lock._state
             private const uint IsLockedMask = (uint)1 << 0; // bit 0
             private const uint ShouldNotPreemptWaitersMask = (uint)1 << 1; // bit 1
             private const uint SpinnerCountIncrement = (uint)1 << 2; // bits 2-4
