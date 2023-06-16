@@ -1937,7 +1937,7 @@ uint64_t getThreadStaticsBaseOffset()
     __asm__ (
     "adrp x0, _t_ThreadStatics@TLVPPAGE\n"
     "ldr x0, [x0, _t_ThreadStatics@TLVPPAGEOFF]\n"
-    "ldr %[result], x0\n"
+    "mov %[result], x0\n"
     : [result] "=r" (tlvGetAddr)
     :
     : "x0", "x1"
@@ -2030,7 +2030,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     threadStaticBaseOffset = getThreadStaticsBaseOffset();
 #endif // TARGET_OSX
 #else
-    _ASSERTE_MSG(false, "Unsupported scenario of optimizing TLS access on Linux Arm32/x86")
+    _ASSERTE_MSG(false, "Unsupported scenario of optimizing TLS access on Linux Arm32/x86");
 #endif // TARGET_AMD64
     if (isGCType)
     {
