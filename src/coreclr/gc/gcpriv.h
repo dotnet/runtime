@@ -3048,7 +3048,7 @@ private:
 
     PER_HEAP_METHOD void trim_youngest_desired_low_memory();
 
-    PER_HEAP_METHOD ptrdiff_t estimate_gen_growth (int gen);
+    PER_HEAP_METHOD ptrdiff_t estimate_gen_growth (int gen, bool for_bgc = false);
 
     PER_HEAP_METHOD void decommit_ephemeral_segment_pages();
 
@@ -4295,6 +4295,11 @@ private:
     // See comments for heap_hard_limit.
     PER_HEAP_ISOLATED_FIELD_MAINTAINED_ALLOC size_t current_total_committed;
     PER_HEAP_ISOLATED_FIELD_MAINTAINED_ALLOC size_t committed_by_oh[recorded_committed_bucket_counts];
+
+    // Thess are the numerator and the denominator of our estimate on how likely an existing UOH region 
+    // can fit new allocation.
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED_ALLOC uint32_t uoh_try_fit_segment_end_fail_count;
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED_ALLOC uint32_t uoh_try_fit_segment_end_count;
 
     /********************************************/
     // PER_HEAP_ISOLATED_FIELD_INIT_ONLY fields //

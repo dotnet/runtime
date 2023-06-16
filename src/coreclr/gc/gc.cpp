@@ -2332,6 +2332,10 @@ size_t      gc_heap::current_total_committed_bookkeeping = 0;
 
 BOOL        gc_heap::reset_mm_p = TRUE;
 
+uint32_t    gc_heap::uoh_try_fit_segment_end_fail_count = 0;
+
+uint32_t    gc_heap::uoh_try_fit_segment_end_count = 0;
+
 #ifdef FEATURE_EVENT_TRACE
 bool gc_heap::informational_event_enabled_p = false;
 
@@ -13311,7 +13315,12 @@ void gc_heap::distribute_free_regions()
             const int i = 0;
             const int n_heaps = 1;
 #endif //MULTIPLE_HEAPS
-            ptrdiff_t budget_gen = max (hp->estimate_gen_growth (gen), 0);
+#ifdef BACKGROUND_GC
+            bool bgc_running_p = background_running_p();
+#else
+            bool bgc_running_p = false;
+#endif
+            ptrdiff_t budget_gen = max (hp->estimate_gen_growth (gen, bgc_running_p), 0);
             int kind = gen >= loh_generation;
             size_t budget_gen_in_region_units = (budget_gen + (region_size[kind] - 1)) / region_size[kind];
             dprintf (REGIONS_LOG, ("h%2d gen %d has an estimated growth of %zd bytes (%zd regions)", i, gen, budget_gen, budget_gen_in_region_units));
@@ -13361,11 +13370,7 @@ void gc_heap::distribute_free_regions()
 
         ptrdiff_t balance = total_num_free_regions[kind] + num_huge_region_units_to_consider[kind] - total_budget_in_region_units[kind];
 
-        if (
-#ifdef BACKGROUND_GC
-            background_running_p() ||
-#endif
-            (balance < 0))
+        if (balance < 0)
         {
             dprintf (REGIONS_LOG, ("distributing the %zd %s regions deficit", -balance, kind_name[kind]));
 
@@ -17499,6 +17504,18 @@ BOOL gc_heap::a_fit_segment_end_p (int gen_number,
                                    int align_const,
                                    BOOL* commit_failed_p)
 {
+    if ((gen_number >= loh_generation) && (heap_segment_allocated(seg) != heap_segment_mem(seg)))
+    {
+        // Here we wanted to estimate the probability of the end of a region can fit allocation.
+        // We knew that it always do for new regions, so we only want to count the cases where
+        // we are extending an existing region
+        Interlocked::Increment(&uoh_try_fit_segment_end_count);
+        if (uoh_try_fit_segment_end_count == 0)
+        {
+            uoh_try_fit_segment_end_count = 1;
+            uoh_try_fit_segment_end_fail_count = 0;
+        }
+    }
     *commit_failed_p = FALSE;
     size_t limit = 0;
     bool hard_limit_short_seg_end_p = false;
@@ -17643,7 +17660,10 @@ found_fit:
     return TRUE;
 
 found_no_fit:
-
+    if (gen_number >= loh_generation)
+    {
+        Interlocked::Increment(&uoh_try_fit_segment_end_fail_count);
+    }
     return FALSE;
 }
 
@@ -37751,6 +37771,7 @@ void gc_heap::background_mark_phase ()
     if (bgc_t_join.joined())
 #endif //MULTIPLE_HEAPS
     {
+        distribute_free_regions ();
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         // Resetting write watch for software write watch is pretty fast, much faster than for hardware write watch. Reset
         // can be done while the runtime is suspended or after the runtime is restarted, the preference was to reset while
@@ -43634,11 +43655,11 @@ void gc_heap::trim_youngest_desired_low_memory()
     }
 }
 
-ptrdiff_t gc_heap::estimate_gen_growth (int gen_number)
+ptrdiff_t gc_heap::estimate_gen_growth (int gen_number, bool for_bgc)
 {
     dynamic_data* dd_gen = dynamic_data_of (gen_number);
     generation *gen = generation_of (gen_number);
-    ptrdiff_t new_allocation_gen = dd_new_allocation (dd_gen);
+    ptrdiff_t new_allocation_gen = for_bgc ? dd_desired_allocation (dd_gen) : dd_new_allocation (dd_gen);
     ptrdiff_t free_list_space_gen = generation_free_list_space (gen);
 
 #ifdef USE_REGIONS
@@ -43652,6 +43673,16 @@ ptrdiff_t gc_heap::estimate_gen_growth (int gen_number)
         reserved_not_in_use += heap_segment_reserved (region) - heap_segment_allocated (region);
     }
 
+    ptrdiff_t usable_reserved_not_in_use = reserved_not_in_use;
+    
+    if (gen_number >= loh_generation)
+    {
+        // In case we were repeatedly unable to use the reserved space for partially used regions, we should 
+        // discount the region end space as unusable. This happens rarely in SOH, but could be signficant for
+        // pathological LOH/POH usage (e.g. always allocates slightly more than 16M).
+        usable_reserved_not_in_use = (ptrdiff_t)((double)reserved_not_in_use * min((1.0 - (double)uoh_try_fit_segment_end_fail_count/(double)uoh_try_fit_segment_end_count), 0));
+    }
+
     // compute how much of the allocated space is on the free list
     double free_list_fraction_gen = (allocated_gen == 0) ? 0.0 : (double)(free_list_space_gen) / (double)allocated_gen;
 
@@ -43660,7 +43691,7 @@ ptrdiff_t gc_heap::estimate_gen_growth (int gen_number)
     // e.g. if 10% of the allocated space is free, assume 10% of these 10% can get used
     ptrdiff_t usable_free_space = (ptrdiff_t)(free_list_fraction_gen * free_list_space_gen);
 
-    ptrdiff_t budget_gen = new_allocation_gen - usable_free_space - reserved_not_in_use;
+    ptrdiff_t budget_gen = new_allocation_gen - usable_free_space - usable_reserved_not_in_use;
 
     dprintf (REGIONS_LOG, ("h%2d gen %d budget %zd allocated: %zd, FL: %zd, reserved_not_in_use %zd budget_gen %zd",
         heap_number, gen_number, new_allocation_gen, allocated_gen, free_list_space_gen, reserved_not_in_use, budget_gen));
