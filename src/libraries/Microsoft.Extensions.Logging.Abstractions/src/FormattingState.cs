@@ -32,7 +32,8 @@ namespace Microsoft.Extensions.Logging
     ///
     /// Usage:
     /// 1. Construct with a CompositeFormat and an IBufferWriter that receives the formatted data
-    /// 2. Call Init() to get an initial Span. A ref to this span will need to passed into each subsequent call.
+    /// 2. Call Init() to get an initial Span. A ref to this span will need to passed into each subsequent call. If the
+    /// span is ever too small a new Span will automatically be created from the IBufferWriter.
     /// 3. In order from left to right for each hole in the format string call AppendPropertyUtf16 or AppendSpanPropertyUtf16
     /// to provide the value that fills that hole.
     /// 4. Call Finish() to flush
@@ -42,10 +43,11 @@ namespace Microsoft.Extensions.Logging
     /// </summary>
     internal struct FormattingState
     {
-        private InternalCompositeFormat _format;
+        private readonly InternalCompositeFormat _format;
+        private readonly IBufferWriter<byte> _writer;
         private int _index;
         private int _allocated;
-        private IBufferWriter<byte> _writer;
+
 
         private const string NullValue = "(null)";
         private const int GuessedLengthPerHole = 11;

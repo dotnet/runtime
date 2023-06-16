@@ -46,21 +46,23 @@ namespace Microsoft.Extensions.Logging
 
             string FormatMessage(TState state, Exception? exception)
             {
-                Slot? tstate = t_slot.Value;
-                if (tstate == null)
+                Slot? slot = t_slot.Value;
+                if (slot == null)
                 {
-                    tstate = new Slot();
-                    t_slot.Value = tstate;
+                    slot = new Slot();
+                    t_slot.Value = slot;
                 }
-                PooledByteBufferWriter buffer = tstate.Buffer ?? new PooledByteBufferWriter(256);
-                tstate.Buffer = null;
+                PooledByteBufferWriter buffer = slot.Buffer ?? new PooledByteBufferWriter(256);
+                //Setting this to null ensures that if there is a re-entrant call on the same thread or
+                //code throws an exception we will not reuse a partially written buffer.
+                slot.Buffer = null;
                 FormattingState formattingState = new FormattingState(format, buffer);
                 formattingState.Init(out Span<byte> span);
                 visitProperties(ref state, ref span, ref formattingState);
                 formattingState.Finish(ref span);
                 string ret = MemoryMarshal.Cast<byte, char>(buffer.WrittenMemory.Span).ToString();
                 buffer.Clear();
-                tstate.Buffer = buffer;
+                slot.Buffer = buffer;
                 return ret;
             }
         }

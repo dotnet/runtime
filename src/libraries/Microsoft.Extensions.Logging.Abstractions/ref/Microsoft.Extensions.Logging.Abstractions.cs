@@ -195,7 +195,7 @@ namespace Microsoft.Extensions.Logging
         private object _dummy;
         private int _dummyPrimitive;
         public LogPropertyInfo(string name, object[]? metadata) { throw null; }
-        public readonly object[]? Metadata { get { throw null; } }
+        public readonly System.Collections.Generic.IReadOnlyList<object>? Metadata { get { throw null; } }
         public readonly string Name { get { throw null; } }
     }
     public readonly partial struct ProcessorContext

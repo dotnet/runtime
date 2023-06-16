@@ -118,9 +118,9 @@ namespace Microsoft.Extensions.Logging
         }
     }
 
-    internal class FormattedLogValuesMetadata : ILogMetadata<FormattedLogValues>
+    internal sealed class FormattedLogValuesMetadata : ILogMetadata<FormattedLogValues>
     {
-        private LogPropertyInfo[] _propertyInfo;
+        private readonly LogPropertyInfo[] _propertyInfo;
         private Func<FormattedLogValues, Exception?, string>? _formatter;
         public FormattedLogValuesMetadata(string originalFormat)
         {
@@ -130,7 +130,7 @@ namespace Microsoft.Extensions.Logging
 
         public LogLevel LogLevel => throw new NotImplementedException();
         public EventId EventId => throw new NotImplementedException();
-        public string OriginalFormat { get; private set; }
+        public string OriginalFormat { get; }
         public int PropertyCount => _propertyInfo != null ? _propertyInfo.Length : 0;
         public LogPropertyInfo GetPropertyInfo(int index) => _propertyInfo[index];
         public VisitPropertyListAction<FormattedLogValues, TCookie> CreatePropertyListVisitor<TCookie>(IPropertyVisitorFactory<TCookie> propertyVisitorFactory)

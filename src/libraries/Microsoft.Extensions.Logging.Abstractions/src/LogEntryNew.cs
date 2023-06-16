@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -70,7 +71,7 @@ namespace Microsoft.Extensions.Logging
             Metadata = metadata;
         }
         public string Name { get; }
-        public object[]? Metadata { get; internal set; }
+        public IReadOnlyList<object>? Metadata { get; internal set; }
     }
 
     public interface ILogMetadata<TState>
