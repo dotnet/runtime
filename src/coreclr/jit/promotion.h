@@ -12,7 +12,7 @@ struct Replacement
 {
     unsigned  Offset;
     var_types AccessType;
-    unsigned  LclNum;
+    unsigned  LclNum = BAD_VAR_NUM;
     // Is the replacement local (given by LclNum) fresher than the value in the struct local?
     bool NeedsWriteBack = true;
     // Is the value in the struct local fresher than the replacement local?
@@ -21,16 +21,10 @@ struct Replacement
     // back before transferring control if necessary.
     bool NeedsReadBack = false;
 #ifdef DEBUG
-    const char* Description;
+    const char* Description = "";
 #endif
 
-    Replacement(unsigned offset, var_types accessType, unsigned lclNum DEBUGARG(const char* description))
-        : Offset(offset)
-        , AccessType(accessType)
-        , LclNum(lclNum)
-#ifdef DEBUG
-        , Description(description)
-#endif
+    Replacement(unsigned offset, var_types accessType) : Offset(offset), AccessType(accessType)
     {
     }
 
