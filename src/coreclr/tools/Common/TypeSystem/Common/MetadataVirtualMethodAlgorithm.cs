@@ -330,19 +330,23 @@ namespace Internal.TypeSystem
             MethodSignature sig = targetMethod.Signature;
 
             MethodDesc implMethod = null;
+            MethodDesc implMethodEquivalent = null;
             foreach (MethodDesc candidate in currentType.GetAllVirtualMethods())
             {
                 if (candidate.Name == name)
                 {
-                    if (candidate.Signature.Equals(sig))
+                    if (candidate.Signature.EquivalentTo(sig))
                     {
                         if (nameSigMatchMethodIsValidCandidate == null || nameSigMatchMethodIsValidCandidate(targetMethod, candidate))
                         {
-                            implMethod = candidate;
+                            implMethodEquivalent = candidate;
+
+                            if (candidate.Signature.Equals(sig))
+                                implMethod = candidate;
 
                             // If reverseMethodSearch is enabled, we want to find the last match on this type, not the first
                             // (reverseMethodSearch is used for most matches except for searches for name/sig method matches for interface methods on the most derived type)
-                            if (!reverseMethodSearch)
+                            if (!reverseMethodSearch && implMethod != null)
                                 return implMethod;
                         }
                     }
@@ -503,7 +507,7 @@ namespace Internal.TypeSystem
 
                     if (unificationGroup.RequiresSlotUnification(declSlot) || implSlot.RequiresSlotUnification())
                     {
-                        if (implSlot.Signature.EqualsWithCovariantReturnType(unificationGroup.DefiningMethod.Signature))
+                        if (implSlot.Signature.EquivalentWithCovariantReturnType(unificationGroup.DefiningMethod.Signature))
                         {
                             unificationGroup.AddMethodRequiringSlotUnification(declSlot);
                             unificationGroup.AddMethodRequiringSlotUnification(implSlot);
@@ -524,7 +528,7 @@ namespace Internal.TypeSystem
                         FindBaseUnificationGroup(baseType, addDeclGroup);
                         Debug.Assert(
                             addDeclGroup.IsInGroupOrIsDefiningSlot(declSlot) ||
-                            (addDeclGroup.RequiresSlotUnification(declSlot) && addDeclGroup.DefiningMethod.Signature.EqualsWithCovariantReturnType(declSlot.Signature)));
+                            (addDeclGroup.RequiresSlotUnification(declSlot) && addDeclGroup.DefiningMethod.Signature.EquivalentWithCovariantReturnType(declSlot.Signature)));
 
                         foreach (MethodDesc methodImplRequiredToRemainInEffect in addDeclGroup.MethodsRequiringSlotUnification)
                         {
@@ -558,7 +562,7 @@ namespace Internal.TypeSystem
                     }
                     else if (unificationGroup.RequiresSlotUnification(declSlot))
                     {
-                        if (implSlot.Signature.EqualsWithCovariantReturnType(unificationGroup.DefiningMethod.Signature))
+                        if (implSlot.Signature.EquivalentWithCovariantReturnType(unificationGroup.DefiningMethod.Signature))
                         {
                             unificationGroup.AddMethodRequiringSlotUnification(implSlot);
                             unificationGroup.SetDefiningMethod(implSlot);

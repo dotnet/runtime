@@ -196,9 +196,9 @@ namespace Internal.TypeSystem
             return Equals(otherSignature, allowCovariantReturn: false, allowEquivalence: false);
         }
 
-        public bool EqualsWithCovariantReturnType(MethodSignature otherSignature)
+        public bool EquivalentWithCovariantReturnType(MethodSignature otherSignature)
         {
-            return Equals(otherSignature, allowCovariantReturn: true, allowEquivalence: false);
+            return Equals(otherSignature, allowCovariantReturn: true, allowEquivalence: true);
         }
 
         public bool EquivalentTo(MethodSignature otherSignature)
