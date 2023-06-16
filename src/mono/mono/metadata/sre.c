@@ -1188,13 +1188,13 @@ leave:
 static gpointer
 register_assembly (MonoReflectionAssembly *res, MonoAssembly *assembly)
 {
-	return CACHE_OBJECT (MonoReflectionAssembly *, mono_mem_manager_get_ambient (), assembly, &res->object, NULL);
+	return CACHE_OBJECT (MonoReflectionAssembly *, mono_mem_manager_get_ambient (), MONO_REFL_CACHE_NO_HOT_RELOAD_INVALIDATE, assembly, &res->object, NULL);
 }
 
 static MonoReflectionModuleBuilderHandle
 register_module (MonoReflectionModuleBuilderHandle res, MonoDynamicImage *module)
 {
-	return CACHE_OBJECT_HANDLE (MonoReflectionModuleBuilder, mono_mem_manager_get_ambient (), module, MONO_HANDLE_CAST (MonoObject, res), NULL);
+	return CACHE_OBJECT_HANDLE (MonoReflectionModuleBuilder, mono_mem_manager_get_ambient (), MONO_REFL_CACHE_NO_HOT_RELOAD_INVALIDATE, module, MONO_HANDLE_CAST (MonoObject, res), NULL);
 }
 
 /*

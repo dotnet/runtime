@@ -33,7 +33,7 @@ namespace System.Xml
     /// </devdoc>
     public partial class XmlConvert
     {
-        internal static char[] crt = new char[] { '\n', '\r', '\t' };
+        private const string Crt = "\t\n\r";
 
         /// <devdoc>
         ///    <para>
@@ -408,7 +408,7 @@ namespace System.Xml
 
             if (token.StartsWith(' ') ||
                 token.EndsWith(' ') ||
-                token.IndexOfAny(crt) >= 0 ||
+                token.AsSpan().ContainsAny(Crt) ||
                 token.Contains("  "))
             {
                 throw new XmlException(SR.Sch_NotTokenString, token);
@@ -425,7 +425,7 @@ namespace System.Xml
 
             if (token.StartsWith(' ') ||
                 token.EndsWith(' ') ||
-                token.IndexOfAny(crt) >= 0 ||
+                token.AsSpan().ContainsAny(Crt) ||
                 token.Contains("  "))
             {
                 return new XmlException(SR.Sch_NotTokenString, token);
@@ -480,7 +480,7 @@ namespace System.Xml
 
         internal static Exception? TryVerifyNormalizedString(string str)
         {
-            if (str.IndexOfAny(crt) != -1)
+            if (str.AsSpan().ContainsAny(Crt))
             {
                 return new XmlSchemaException(SR.Sch_NotNormalizedString, str);
             }

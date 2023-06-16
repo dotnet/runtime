@@ -35,9 +35,6 @@
   <ItemGroup Condition="'$(Configuration)' == 'Debug' and '@(_MonoComponent->Count())' == 0">
     <_MonoComponent Include="hot_reload;debugger" />
   </ItemGroup>
-  <ItemGroup Condition="'@(MonoLightweightMarshallerIncompatibleAssemblies->Count())' > 0">
-    <_MonoComponent Include="marshal-ilgen" />
-  </ItemGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(WasmUseEMSDK_PATH)' == 'true'" />
 
@@ -684,12 +681,16 @@
 
   <Target Name="_ScanAssembliesDecideLightweightMarshaler">
      <ItemGroup>
-      <AssembliesToScan Include="@(_WasmAssembliesInternal)" />
+      <_AssembliesToScan Include="@(_WasmAssembliesInternal)" />
     </ItemGroup>
     
-    <MarshalingPInvokeScanner Assemblies ="@(AssembliesToScan)">
+    <MarshalingPInvokeScanner Assemblies ="@(_AssembliesToScan)">
       <Output TaskParameter="IncompatibleAssemblies" ItemName="MonoLightweightMarshallerIncompatibleAssemblies" />
     </MarshalingPInvokeScanner>
+
+    <ItemGroup Condition="@(MonoLightweightMarshallerIncompatibleAssemblies->Count()) > 0">
+      <_MonoComponent Include="marshal-ilgen" />
+    </ItemGroup>
   </Target>
 
   <!-- '$(ArchiveTests)' != 'true' is to skip on CI for now -->

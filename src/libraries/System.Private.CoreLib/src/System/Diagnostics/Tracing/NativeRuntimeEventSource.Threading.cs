@@ -1,32 +1,29 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Tracing;
+using System.Threading;
 using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Tracing
 {
     // This is part of the NativeRuntimeEventsource, which is the managed version of the Microsoft-Windows-DotNETRuntime provider.
-    // Contains the implementation of ThreadPool events. This implementation is used by runtime not supporting NativeRuntimeEventSource.PortableThreadPool.NativeSinks.cs.
+    // Contains the implementation of threading events. This implementation is used by runtime not supporting NativeRuntimeEventSource.Threading.NativeSinks.cs.
     internal sealed partial class NativeRuntimeEventSource : EventSource
     {
         // We don't have these keywords defined from the genRuntimeEventSources.py, so we need to manually define them here.
-        public static class Keywords
+        public static partial class Keywords
         {
+            public const EventKeywords ContentionKeyword = (EventKeywords)0x4000;
             public const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
             public const EventKeywords ThreadTransferKeyword = (EventKeywords)0x80000000;
         }
 
-        private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
-        // This value does not seem to be used, leaving it as zero for now. It may be useful for a scenario that may involve
-        // multiple instances of the runtime within the same process, but then it seems unlikely that both instances' thread
-        // pools would be in moderate use.
-        private const ushort DefaultClrInstanceId = 0;
-
-        private static class Messages
+        private static partial class Messages
         {
+            public const string ContentionLockCreated = "LockID={0};\nAssociatedObjectID={1};\nClrInstanceID={2}";
+            public const string ContentionStart = "ContentionFlags={0};\nClrInstanceID={1};\nLockID={2};\nAssociatedObjectID={3}\nLockOwnerThreadID={4}";
+            public const string ContentionStop = "ContentionFlags={0};\nClrInstanceID={1};\nDurationNs={2}";
             public const string WorkerThread = "ActiveWorkerThreadCount={0};\nRetiredWorkerThreadCount={1};\nClrInstanceID={2}";
             public const string MinMaxThreads = "MinWorkerThreads={0};\nMaxWorkerThreads={1};\nMinIOCompletionThreads={2};\nMaxIOCompletionThreads={3};\nClrInstanceID={4}";
             public const string WorkerThreadAdjustmentSample = "Throughput={0};\nClrInstanceID={1}";
@@ -38,8 +35,9 @@ namespace System.Diagnostics.Tracing
         }
 
         // The task definitions for the ETW manifest
-        public static class Tasks // this name and visibility is important for EventSource
+        public static partial class Tasks // this name and visibility is important for EventSource
         {
+            public const EventTask Contention = (EventTask)8;
             public const EventTask ThreadPoolWorkerThread = (EventTask)16;
             public const EventTask ThreadPoolWorkerThreadAdjustment = (EventTask)18;
             public const EventTask ThreadPool = (EventTask)23;
@@ -47,8 +45,9 @@ namespace System.Diagnostics.Tracing
             public const EventTask ThreadPoolMinMaxThreads = (EventTask)38;
         }
 
-        public static class Opcodes // this name and visibility is important for EventSource
+        public static partial class Opcodes // this name and visibility is important for EventSource
         {
+            public const EventOpcode LockCreated = (EventOpcode)11;
             public const EventOpcode IOEnqueue = (EventOpcode)13;
             public const EventOpcode IODequeue = (EventOpcode)14;
             public const EventOpcode IOPack = (EventOpcode)15;
@@ -56,6 +55,12 @@ namespace System.Diagnostics.Tracing
             public const EventOpcode Sample = (EventOpcode)100;
             public const EventOpcode Adjustment = (EventOpcode)101;
             public const EventOpcode Stats = (EventOpcode)102;
+        }
+
+        public enum ContentionFlagsMap : byte
+        {
+            Managed,
+            Native,
         }
 
         public enum ThreadAdjustmentReasonMap : uint
@@ -71,8 +76,80 @@ namespace System.Diagnostics.Tracing
             CooperativeBlocking,
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = EventSourceSuppressMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
+        [Event(90, Level = EventLevel.Informational, Message = Messages.ContentionLockCreated, Task = Tasks.Contention, Opcode = EventOpcode.Info, Version = 0, Keywords = Keywords.ContentionKeyword)]
+        private unsafe void ContentionLockCreated(nint LockID, nint AssociatedObjectID, ushort ClrInstanceID = DefaultClrInstanceId)
+        {
+            Debug.Assert(IsEnabled(EventLevel.Informational, Keywords.ContentionKeyword));
+
+            EventData* data = stackalloc EventData[3];
+            data[0].DataPointer = (nint)(&LockID);
+            data[0].Size = nint.Size;
+            data[0].Reserved = 0;
+            data[1].DataPointer = (nint)(&AssociatedObjectID);
+            data[1].Size = nint.Size;
+            data[1].Reserved = 0;
+            data[2].DataPointer = (nint)(&ClrInstanceID);
+            data[2].Size = sizeof(ushort);
+            data[2].Reserved = 0;
+            WriteEventCore(90, 3, data);
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
+        [Event(81, Level = EventLevel.Informational, Message = Messages.ContentionStart, Task = Tasks.Contention, Opcode = EventOpcode.Start, Version = 2, Keywords = Keywords.ContentionKeyword)]
+        private unsafe void ContentionStart(
+            ContentionFlagsMap ContentionFlags,
+            ushort ClrInstanceID,
+            nint LockID,
+            nint AssociatedObjectID,
+            ulong LockOwnerThreadID)
+        {
+            Debug.Assert(IsEnabled(EventLevel.Informational, Keywords.ContentionKeyword));
+
+            EventData* data = stackalloc EventData[5];
+            data[0].DataPointer = (nint)(&ContentionFlags);
+            data[0].Size = sizeof(ContentionFlagsMap);
+            data[0].Reserved = 0;
+            data[1].DataPointer = (nint)(&ClrInstanceID);
+            data[1].Size = sizeof(ushort);
+            data[1].Reserved = 0;
+            data[2].DataPointer = (nint)(&LockID);
+            data[2].Size = nint.Size;
+            data[2].Reserved = 0;
+            data[3].DataPointer = (nint)(&AssociatedObjectID);
+            data[3].Size = nint.Size;
+            data[3].Reserved = 0;
+            data[4].DataPointer = (nint)(&LockOwnerThreadID);
+            data[4].Size = sizeof(ulong);
+            data[4].Reserved = 0;
+            WriteEventCore(81, 3, data);
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
+        [Event(91, Level = EventLevel.Informational, Message = Messages.ContentionStop, Task = Tasks.Contention, Opcode = EventOpcode.Stop, Version = 1, Keywords = Keywords.ContentionKeyword)]
+        private unsafe void ContentionStop(ContentionFlagsMap ContentionFlags, ushort ClrInstanceID, double DurationNs)
+        {
+            Debug.Assert(IsEnabled(EventLevel.Informational, Keywords.ContentionKeyword));
+
+            EventData* data = stackalloc EventData[3];
+            data[0].DataPointer = (nint)(&ContentionFlags);
+            data[0].Size = sizeof(ContentionFlagsMap);
+            data[0].Reserved = 0;
+            data[1].DataPointer = (nint)(&ClrInstanceID);
+            data[1].Size = sizeof(ushort);
+            data[1].Reserved = 0;
+            data[2].DataPointer = (nint)(&DurationNs);
+            data[2].Size = sizeof(double);
+            data[2].Reserved = 0;
+            WriteEventCore(91, 3, data);
+        }
+
+        [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void ContentionStop(double durationNs) =>
+            ContentionStop(ContentionFlagsMap.Managed, DefaultClrInstanceId, durationNs);
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
         [NonEvent]
         private unsafe void WriteThreadEvent(int eventId, uint numExistingThreads)
         {
@@ -131,8 +208,7 @@ namespace System.Diagnostics.Tracing
         }
 #pragma warning restore IDE0060
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = EventSourceSuppressMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
         [Event(54, Level = EventLevel.Informational, Message = Messages.WorkerThreadAdjustmentSample, Task = Tasks.ThreadPoolWorkerThreadAdjustment, Opcode = Opcodes.Sample, Version = 0, Keywords = Keywords.ThreadingKeyword)]
         public unsafe void ThreadPoolWorkerThreadAdjustmentSample(
             double Throughput,
@@ -152,8 +228,7 @@ namespace System.Diagnostics.Tracing
             WriteEventCore(54, 2, data);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = EventSourceSuppressMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
         [Event(55, Level = EventLevel.Informational, Message = Messages.WorkerThreadAdjustmentAdjustment, Task = Tasks.ThreadPoolWorkerThreadAdjustment, Opcode = Opcodes.Adjustment, Version = 0, Keywords = Keywords.ThreadingKeyword)]
         public unsafe void ThreadPoolWorkerThreadAdjustmentAdjustment(
             double AverageThroughput,
@@ -181,8 +256,7 @@ namespace System.Diagnostics.Tracing
             WriteEventCore(55, 4, data);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = EventSourceSuppressMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
         [Event(56, Level = EventLevel.Verbose, Message = Messages.WorkerThreadAdjustmentStats, Task = Tasks.ThreadPoolWorkerThreadAdjustment, Opcode = Opcodes.Stats, Version = 0, Keywords = Keywords.ThreadingKeyword)]
         public unsafe void ThreadPoolWorkerThreadAdjustmentStats(
             double Duration,
@@ -238,8 +312,7 @@ namespace System.Diagnostics.Tracing
             WriteEventCore(56, 11, data);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = EventSourceSuppressMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
         [Event(63, Level = EventLevel.Verbose, Message = Messages.IOEnqueue, Task = Tasks.ThreadPool, Opcode = Opcodes.IOEnqueue, Version = 0, Keywords = Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword)]
         private unsafe void ThreadPoolIOEnqueue(
             IntPtr NativeOverlapped,
@@ -285,12 +358,13 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
             {
+#pragma warning disable CA1416 // 'RegisteredWaitHandle.Repeating' is unsupported on: 'browser'
                 ThreadPoolIOEnqueue((IntPtr)registeredWaitHandle.GetHashCode(), IntPtr.Zero, registeredWaitHandle.Repeating);
+#pragma warning restore CA1416
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = EventSourceSuppressMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
         [Event(64, Level = EventLevel.Verbose, Message = Messages.IO, Task = Tasks.ThreadPool, Opcode = Opcodes.IODequeue, Version = 0, Keywords = Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword)]
         private unsafe void ThreadPoolIODequeue(
             IntPtr NativeOverlapped,
@@ -334,8 +408,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = EventSourceSuppressMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
         [Event(60, Level = EventLevel.Verbose, Message = Messages.WorkingThreadCount, Task = Tasks.ThreadPoolWorkingThreadCount, Opcode = EventOpcode.Start, Version = 0, Keywords = Keywords.ThreadingKeyword)]
         public unsafe void ThreadPoolWorkingThreadCount(uint Count, ushort ClrInstanceID = DefaultClrInstanceId)
         {
@@ -365,8 +438,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = EventSourceSuppressMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
         [Event(65, Level = EventLevel.Verbose, Message = Messages.IO, Task = Tasks.ThreadPool, Opcode = Opcodes.IOPack, Version = 0, Keywords = Keywords.ThreadingKeyword)]
         private unsafe void ThreadPoolIOPack(
             IntPtr NativeOverlapped,
@@ -387,8 +459,7 @@ namespace System.Diagnostics.Tracing
         }
 
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = EventSourceSuppressMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
         [Event(59, Level = EventLevel.Informational, Message = Messages.MinMaxThreads, Task = Tasks.ThreadPoolMinMaxThreads, Opcode = EventOpcode.Info, Version = 0, Keywords = Keywords.ThreadingKeyword)]
         public unsafe void ThreadPoolMinMaxThreads(
             ushort MinWorkerThreads,
@@ -419,6 +490,5 @@ namespace System.Diagnostics.Tracing
             data[4].Reserved = 0;
             WriteEventCore(59, 5, data);
         }
-
     }
 }

@@ -84,7 +84,7 @@ namespace System.Net
             }
 
             _method = req[parts[0]];
-            if (_method.AsSpan().IndexOfAnyExcept(s_validMethodChars) >= 0)
+            if (_method.AsSpan().ContainsAnyExcept(s_validMethodChars))
             {
                 _context.ErrorMessage = "(Invalid verb)";
                 return;
