@@ -32,64 +32,28 @@ namespace System.Globalization
             return result;
         }
 
-        private unsafe int IndexOfCoreNative(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning)
+        private unsafe int IndexOfCoreNative(char* target, int cwTargetLength, char* pSource, int cwSourceLength, CompareOptions options, bool fromBeginning, int* matchLengthPtr)
         {
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!target.IsEmpty);
-            Debug.Assert(!GlobalizationMode.UseNls);
-            Debug.Assert(target.Length != 0);
+            AssertComparisonSupported(options);
 
-            if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options))
-            {
-                if ((options & CompareOptions.IgnoreCase) != 0)
-                    return IndexOfOrdinalIgnoreCaseHelper(source, target, options, matchLengthPtr, fromBeginning);
-                else
-                    return IndexOfOrdinalHelper(source, target, options, matchLengthPtr, fromBeginning);
-            }
-            else
-            {
-                // GetReference may return nullptr if the input span is defaulted. The native layer handles
-                // this appropriately; no workaround is needed on the managed side.
-
-                fixed (char* pSource = &MemoryMarshal.GetReference(source))
-                fixed (char* pTarget = &MemoryMarshal.GetReference(target))
-                {
-                    NSRange result = Interop.Globalization.IndexOfNative(m_name, m_name.Length, pTarget, target.Length, pSource, source.Length, options, fromBeginning);
-                    if (matchLengthPtr != null)
-                       *matchLengthPtr = result.Length;
-                    return result.Location;
-                }
-            }
+            NSRange result = Interop.Globalization.IndexOfNative(m_name, m_name.Length, target, cwTargetLength, pSource, cwSourceLength, options, fromBeginning);
+            if (matchLengthPtr != null)
+                *matchLengthPtr = result.Length;
+            return result.Location;
         }
 
-        private unsafe bool NativeStartsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
+        private unsafe bool NativeStartsWith(char* pPrefix, int cwPrefixLength, char* pSource, int cwSourceLength, CompareOptions options)
         {
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseNls);
+            AssertComparisonSupported(options);
 
-            Debug.Assert(!prefix.IsEmpty);
-            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
-
-            fixed (char* pSource = &MemoryMarshal.GetReference(source)) // could be null (or otherwise unable to be dereferenced)
-            fixed (char* pPrefix = &MemoryMarshal.GetReference(prefix))
-            {
-                return Interop.Globalization.StartsWithNative(m_name, m_name.Length, pPrefix, prefix.Length, pSource, source.Length, options);
-            }
+            return Interop.Globalization.StartsWithNative(m_name, m_name.Length, pPrefix, cwPrefixLength, pSource, cwSourceLength, options);
         }
 
-        private unsafe bool NativeEndsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options)
+        private unsafe bool NativeEndsWith(char* pSuffix, int cwSuffixLength, char* pSource, int cwSourceLength, CompareOptions options)
         {
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseNls);
+            AssertComparisonSupported(options);
 
-            Debug.Assert(!suffix.IsEmpty);
-            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
-
-            fixed (char* pSource = &MemoryMarshal.GetReference(source)) // could be null (or otherwise unable to be dereferenced)
-            fixed (char* pSuffix = &MemoryMarshal.GetReference(suffix))
-            {
-                return Interop.Globalization.EndsWithNative(m_name, m_name.Length, pSuffix, suffix.Length, pSource, source.Length, options);
-            }
+            return Interop.Globalization.EndsWithNative(m_name, m_name.Length, pSuffix, cwSuffixLength, pSource, cwSourceLength, options);
         }
 
         private static void AssertComparisonSupported(CompareOptions options)
