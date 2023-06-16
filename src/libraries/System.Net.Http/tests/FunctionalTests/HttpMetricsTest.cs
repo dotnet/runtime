@@ -18,6 +18,7 @@ namespace System.Net.Http.Functional.Tests
 {
     public abstract class HttpMetricsTest : HttpClientHandlerTestBase
     {
+        public static readonly bool SupportsSeparateHttpSpansForRedirects = PlatformDetection.IsNotMobile && PlatformDetection.IsNotBrowser;
         protected HttpClientHandler Handler { get; }
         protected virtual bool TestHttpMessageInvoker => false;
         public HttpMetricsTest(ITestOutputHelper output) : base(output)
@@ -242,7 +243,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(SupportsSeparateHttpSpansForRedirects))]
         public Task CurrentRequests_Redirect_RecordedForEachHttpSpan()
         {
             return LoopbackServerFactory.CreateServerAsync((originalServer, originalUri) =>
@@ -558,7 +559,7 @@ namespace System.Net.Http.Functional.Tests
         {
         }
 
-        [Fact]
+        [ConditionalFact(nameof(SupportsSeparateHttpSpansForRedirects))]
         public Task RequestDuration_Redirect_RecordedForEachHttpSpan()
         {
             return GetFactoryForVersion(HttpVersion.Version11).CreateServerAsync((originalServer, originalUri) =>
