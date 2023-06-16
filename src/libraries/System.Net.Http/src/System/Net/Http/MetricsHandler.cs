@@ -4,13 +4,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http;
 
-internal sealed class MetricsHandler : HttpMessageHandlerStage
+internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogger
 {
     private readonly HttpMessageHandler _innerHandler;
     private readonly Meter _meter;
@@ -65,7 +64,7 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage
             {
                 // No exception has been thrown to the point of reading headers, but errors can still occur while buffering the response content in HttpClient.
                 // We need to report http-client-failed-requests if it happens.
-                response.RequestFailedMetricsLogger = LogRequestFailed;
+                response.HttpMetricsLogger = this;
             }
             return response;
         }
@@ -178,7 +177,7 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage
         return tags;
     }
 
-    private void LogRequestFailed(HttpResponseMessage response)
+    void IHttpMetricsLogger.LogRequestFailed(HttpResponseMessage response)
     {
         Debug.Assert(response.RequestMessage is not null);
         TagList tags = InitializeCommonTags(response.RequestMessage);
