@@ -4712,7 +4712,7 @@ void LinearScan::freeRegisters(regMaskTP regsToFree)
         if (regRecord->assignedInterval != nullptr && (regRecord->assignedInterval->registerType == TYP_DOUBLE))
         {
             assert(genIsValidDoubleReg(nextReg));
-            regsToFree ^= genRegMask(nextReg + 1);
+            regsToFree ^= genRegMask(regNumber(nextReg + 1));
         }
 #endif
         freeRegister(regRecord);
