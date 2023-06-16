@@ -222,15 +222,7 @@ namespace System.Text.Json.Reflection
         }
 
         public static bool IsKeyValuePair(this Type type)
-        {
-            if (!type.IsGenericType)
-            {
-                return false;
-            }
-
-            Type generic = type.GetGenericTypeDefinition();
-            return generic == typeof(KeyValuePair<,>);
-        }
+            => type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>);
 
         public static bool TryGetDeserializationConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
