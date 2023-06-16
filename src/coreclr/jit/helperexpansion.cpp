@@ -587,43 +587,47 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         // Base of coreclr's thread local storage
         tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
     }
-    else
+    else if (TargetOS::IsMacOS)
     {
-#if defined(TARGET_ARM64)
-        if (TargetOS::IsMacOS)
-        {
-            // mov x0, descrAddrOfMaxThreadStaticBlock
-            // mov x1, [x0]
-            // blr x1
-            //
-            GenTree* tls_get_addr_val =
-                gtNewIconHandleNode(threadStaticBlocksInfo.descrAddrOfMaxThreadStaticBlock, GTF_ICON_FTN_ADDR);
+        // Code sequence to access thread local variable on osx/x64:
+        //
+        //      mov rdi, descrAddrOfMaxThreadStaticBlock
+        //      call     [rdi]
+        //
+        // Code sequence to access thread local variable on osx/arm64:
+        //
+        //      mov x0, descrAddrOfMaxThreadStaticBlock
+        //      mov x1, [x0]
+        //      blr x1
+        //
+        GenTree* tls_get_addr_val =
+            gtNewIconHandleNode(threadStaticBlocksInfo.descrAddrOfMaxThreadStaticBlock, GTF_ICON_FTN_ADDR);
 
-            tls_get_addr_val = gtNewIndir(TYP_I_IMPL, tls_get_addr_val, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+        tls_get_addr_val = gtNewIndir(TYP_I_IMPL, tls_get_addr_val, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
-            tlsValue                = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
-            GenTreeCall* tlsRefCall = tlsValue->AsCall();
+        tlsValue                = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
+        GenTreeCall* tlsRefCall = tlsValue->AsCall();
 
-            // This is a syscall indirect call which takes an argument.
-            // Populate and set the ABI apporpriately.
-            GenTree* tlsArg = gtNewIconNode(threadStaticBlocksInfo.descrAddrOfMaxThreadStaticBlock, TYP_I_IMPL);
-            tlsRefCall->gtArgs.InsertAfterThisOrFirst(this, NewCallArg::Primitive(tlsArg));
+        // This is a syscall indirect call which takes an argument.
+        // Populate and set the ABI apporpriately.
+        GenTree* tlsArg = gtNewIconNode(threadStaticBlocksInfo.descrAddrOfMaxThreadStaticBlock, TYP_I_IMPL);
+        tlsRefCall->gtArgs.InsertAfterThisOrFirst(this, NewCallArg::Primitive(tlsArg));
 
-            CallArg* arg0 = tlsRefCall->gtArgs.GetArgByIndex(0);
-            arg0->AbiInfo = CallArgABIInformation();
-            arg0->AbiInfo.SetRegNum(0, REG_ARG_0);
+        CallArg* arg0 = tlsRefCall->gtArgs.GetArgByIndex(0);
+        arg0->AbiInfo = CallArgABIInformation();
+        arg0->AbiInfo.SetRegNum(0, REG_ARG_0);
 
-            tlsRefCall->gtFlags |= GTF_EXCEPT | (tls_get_addr_val->gtFlags & GTF_GLOB_EFFECT);
-        }
-        else
-        {
-            // Mark this ICON as a TLS_HDL, codegen will do:
-            // mrs xt, tpidr_elf0
-            // mov xd, [xt+cns]
-            tlsValue = gtNewIconHandleNode(0, GTF_ICON_TLS_HDL);
-        }
-#elif defined(TARGET_AMD64)
-
+        tlsRefCall->gtFlags |= GTF_EXCEPT | (tls_get_addr_val->gtFlags & GTF_GLOB_EFFECT);
+    }
+    else if (TargetOS::IsUnix)
+    {
+#if defined(TARGET_AMD64)
+        // Code sequence to access thread local variable on linux/x64:
+        //
+        //      mov      rdi, 0x7FE5C418CD28  ; descrAddrOfMaxThreadStaticBlock
+        //      mov      rax, 0x7FE5C47AFDB0  ; _tls_get_addr
+        //      call     rax
+        //
         GenTree* tls_get_addr_val = gtNewIconHandleNode(threadStaticBlocksInfo.tlsGetAddrFtnPtr, GTF_ICON_FTN_ADDR);
         tlsValue                  = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
         GenTreeCall* tlsRefCall   = tlsValue->AsCall();
@@ -641,7 +645,15 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 #ifdef UNIX_X86_ABI
         tlsRefCall->gtFlags &= ~GTF_CALL_POP_ARGS;
 #endif // UNIX_X86_ABI
-#endif // TARGET_ARM64
+#elif defined(TARGET_ARM64)
+        // Code sequence to access thread local variable on linux/arm64:
+        //
+        //      mrs xt, tpidr_elf0
+        //      mov xd, [xt+cns]
+        tlsValue = gtNewIconHandleNode(0, GTF_ICON_TLS_HDL);
+#else
+        assert(!"Unsupported scenario of optimizing TLS access on Linux Arm32/x86");
+#endif
     }
 
     // Cache the tls value

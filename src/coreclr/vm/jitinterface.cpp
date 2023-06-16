@@ -1860,6 +1860,39 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isG
 #ifndef _MSC_VER
 
 #ifdef HOST_AMD64
+
+#ifdef TARGET_OSX
+void* getThreadStaticDescriptor(uint8_t* p)
+{
+    _ASSERTE_MSG((p[0] == 0x48 && p[1] == 0x8d && p[2] == 0x3d),
+        "Unexpected instruction - this can happen when this is not compiled in .so (e.g. for single file)");
+
+    // At this point, `p` contains the instruction pointer and is pointing to the above opcodes.
+    // These opcodes are patched by the dynamic linker.
+    // Move beyond the opcodes that we have already checked above.
+    p += 3;
+
+    // The descriptor address is located at *p at this point. Read that and add
+    // it to the instruction pointer to locate the address of `ti` that will be used
+    // to pass to __tls_get_addr during execution.
+    // (p + 4) below skips the descriptor address bytes embedded in the instruction and
+    // add it to the `instruction pointer` to find out the address.
+    return *(uint32_t*)p + (p + 4);
+}
+
+void* getThreadStaticsBaseOffset()
+{
+    uint8_t* p;
+    __asm__ (
+        "leaq  0(%%rip), %%rdx\n"
+        "movq  _t_ThreadStatics@TLVP(%%rip), %%rdi\n"
+        : "=d"(p)
+        );
+
+    return getThreadStaticDescriptor(p);
+}
+
+#else
 void* getThreadStaticDescriptor(uint8_t* p)
 {
     _ASSERTE_MSG((p[0] == 0x66 && p[1] == 0x48 && p[2] == 0x8d && p[3] == 0x3d),
@@ -1870,15 +1903,14 @@ void* getThreadStaticDescriptor(uint8_t* p)
     // Move beyond the opcodes that we have already checked above.
     p += 4;
 
-    // The descriptor address is located at *p at this point. Ready that and add
+    // The descriptor address is located at *p at this point. Read that and add
     // it to the instruction pointer to locate the address of `ti` that will be used
     // to pass to __tls_get_addr during execution.
+    // (p + 4) below skips the descriptor address bytes embedded in the instruction and
+    // add it to the `instruction pointer` to find out the address.
     return *(uint32_t*)p + (p + 4);
 }
 
-#ifdef TARGET_OSX
-
-#else
 void* getThreadStaticsBaseOffset()
 {
     uint8_t* p;
@@ -1973,10 +2005,18 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
 #else
     uint64_t threadStaticBaseOffset = 0;
 #if defined(TARGET_AMD64)
+
+#ifdef TARGET_OSX
+    // For OSX/x64, need to get the address of relevant tlv_get_addr of thread static
+    // variable that will be invoked during runtime to get the right address of corresponding
+    // thread.
+    pInfo->descrAddrOfMaxThreadStaticBlock = (size_t)getThreadStaticsBaseOffset();
+#else
     // For Linux/x64, get the address of tls_get_addr system method and the base address
     // of struct that we will pass to it.
     pInfo->tlsGetAddrFtnPtr = (size_t)&__tls_get_addr;
     pInfo->descrAddrOfMaxThreadStaticBlock = (size_t)getThreadStaticsBaseOffset();
+#endif // TARGET_OSX
 
 #elif defined(TARGET_ARM64)
 #ifdef TARGET_OSX
@@ -1989,7 +2029,9 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     // this offset, taken from trpid_elp0 system register gives back the thread variable address.
     threadStaticBaseOffset = getThreadStaticsBaseOffset();
 #endif // TARGET_OSX
-#endif
+#else
+    _ASSERTE_MSG(false, "Unsupported scenario of optimizing TLS access on Linux Arm32/x86")
+#endif // TARGET_AMD64
     if (isGCType)
     {
         pInfo->offsetOfMaxThreadStaticBlocks = threadStaticBaseOffset + offsetof(ThreadStaticBlockInfo, GCMaxThreadStaticBlocks);
