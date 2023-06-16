@@ -341,6 +341,10 @@ Affected public APIs:
 - String.EndsWith
 
 Mapped to Apple Native API `compare:options:range:locale:`(https://developer.apple.com/documentation/foundation/nsstring/1414561-compare?language=objc)
+Apple Native API does not expose locale-sensitive endsWith/startsWith function. As a workaround, both strings get normalized and weightless characters are removed. Resulting strings are cut to the same length and comparison is performed. As we are normalizing strings to be able to cut them, we cannot calculate the match length on the original strings. Methods that calculate this information throw PlatformNotSupported exception:
+
+- [CompareInfo.IsPrefix](https://learn.microsoft.com/en-us/dotnet/api/system.globalization.compareinfo.isprefix?view=net-8.0#system-globalization-compareinfo-isprefix(system-readonlyspan((system-char))-system-readonlyspan((system-char))-system-globalization-compareoptions-system-int32@))
+- [CompareInfo.IsSuffix](https://learn.microsoft.com/en-us/dotnet/api/system.globalization.compareinfo.issuffix?view=net-8.0#system-globalization-compareinfo-issuffix(system-readonlyspan((system-char))-system-readonlyspan((system-char))-system-globalization-compareoptions-system-int32@))
 
 - `IgnoreSymbols`
 
@@ -371,6 +375,23 @@ Not covered case:
 - `IgnoreSymbols`
 
 As there is no IgnoreSymbols equivalent in NSStringCompareOptions all `CompareOptions` combinations that include `IgnoreSymbols` throw `PlatformNotSupportedException`
+
+- Some letters consist of more than one grapheme.
+
+Apple Native Api does not guarantee that string will be segmented by letters but by graphemes. E.g. in `cs-CZ` and `sk-SK` "ch" is 1 letter, 2 graphemes. The following code with `HybridGlobalization` switched off returns -1 (not found) while with `HybridGlobalization` switched on, it returns 1.
+
+``` C#
+new CultureInfo("sk-SK").CompareInfo.IndexOf("ch", "h"); // -1 or 1
+```
+
+- Some graphemes have multi-grapheme equivalents.
+E.g. in `de-DE` ß (%u00DF) is one letter and one grapheme and "ss" is one letter and is recognized as two graphemes. Apple Native API's equivalent of `IgnoreNonSpace` treats them as the same letter when comparing. Similar case: ǳ (%u01F3) and dz.
+
+Using `IgnoreNonSpace` for these two with `HybridGlobalization` off, also returns 0 (they are equal). However, the workaround used in `HybridGlobalization` will compare them grapheme-by-grapheme and will return -1.
+
+``` C#
+new CultureInfo("de-DE").CompareInfo.IndexOf("strasse", "stra\u00DFe", 0, CompareOptions.IgnoreNonSpace); // 0 or -1
+
 
 **SortKey**
 

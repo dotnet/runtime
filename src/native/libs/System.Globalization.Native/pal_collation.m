@@ -168,7 +168,12 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
     {   
         result.location = nsRange.location;
         result.length = nsRange.length;
-        if (!(!fromBeginning && (comparisonOptions & IgnoreCase)))
+        // in case of last index and CompareOptions.IgnoreCase 
+        // if letters have different representations in source and search strings
+        // and case insensitive search appears more than one time in source string take last index
+        // e.g. new CultureInfo().CompareInfo.LastIndexOf("Is \u0055\u0308 or \u0075\u0308 the same as \u00DC or \u00FC?", "U\u0308", 25,18, CompareOptions.IgnoreCase);
+        // should return 24 but here it will be 9
+        if(fromBeginning || !(comparisonOptions & IgnoreCase))
             return result;
     }
     
@@ -181,12 +186,13 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
 
     if (preComposedRange.location != NSNotFound)
     {
-        int32_t comparisonResult = (int32_t)result.location > (int32_t)preComposedRange.location;
-        int32_t ignoreCase = comparisonOptions & IgnoreCase;
+        // in case of last index and CompareOptions.IgnoreCase 
+        // if letters have different representations in source and search strings
+        // and search appears more than one time in source string take last index
+        // e.g. new CultureInfo().CompareInfo.LastIndexOf("Is \u0055\u0308 or \u0075\u0308 the same as \u00DC or \u00FC?", "U\u0308", 25,18, CompareOptions.IgnoreCase);
+        // this will return 24 
         if ((int32_t)result.location > (int32_t)preComposedRange.location && !fromBeginning && (comparisonOptions & IgnoreCase))
-        {
             return result;
-        }
         result.location = preComposedRange.location;
         result.length = preComposedRange.length;
     }

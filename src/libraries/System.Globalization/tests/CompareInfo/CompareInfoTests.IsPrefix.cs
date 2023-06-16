@@ -99,7 +99,7 @@ namespace System.Globalization.Tests
                 if (!PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsHybridGlobalizationOnOSX)
                     yield return new object[] { s_invariantCompare, "''Tests", "Tests", CompareOptions.IgnoreSymbols, false, 0 };
                 yield return new object[] { s_frenchCompare, "\u0153", "oe", CompareOptions.None, false, 0 };
-                if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
+                if (!PlatformDetection.IsHybridGlobalizationOnOSX)
                 {
                     yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.None, false, 0 };
                     yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.IgnoreCase, false, 0 };
