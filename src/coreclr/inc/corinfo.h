@@ -2026,7 +2026,7 @@ public:
     virtual void getMethodSig (
              CORINFO_METHOD_HANDLE      ftn,        /* IN  */
              CORINFO_SIG_INFO          *sig,        /* OUT */
-             CORINFO_CLASS_HANDLE      memberParent = NULL /* IN */
+             CORINFO_CLASS_HANDLE       memberParent = NULL /* IN */
              ) = 0;
 
     /*********************************************************************
@@ -2062,9 +2062,9 @@ public:
     // inlining results when it returns INLINE_FAIL and INLINE_NEVER.  All other results are reported by the
     // JIT.
     virtual void reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
-                                                   CORINFO_METHOD_HANDLE inlineeHnd,
-                                                   CorInfoInline inlineResult,
-                                                   const char * reason) = 0;
+                                         CORINFO_METHOD_HANDLE inlineeHnd,
+                                         CorInfoInline inlineResult,
+                                         const char * reason) = 0;
 
 
     // Returns false if the call is across security boundaries thus we cannot tailcall
@@ -2074,23 +2074,23 @@ public:
             CORINFO_METHOD_HANDLE   callerHnd,          /* IN */
             CORINFO_METHOD_HANDLE   declaredCalleeHnd,  /* IN */
             CORINFO_METHOD_HANDLE   exactCalleeHnd,     /* IN */
-            bool fIsTailPrefix                          /* IN */
+            bool                    fIsTailPrefix       /* IN */
             ) = 0;
 
     // Reports whether or not a method can be tail called, and why.
     // canTailCall is responsible for reporting all results when it returns
     // false.  All other results are reported by the JIT.
     virtual void reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
-                                                   CORINFO_METHOD_HANDLE calleeHnd,
-                                                   bool fIsTailPrefix,
-                                                   CorInfoTailCall tailCallResult,
-                                                   const char * reason) = 0;
+                                         CORINFO_METHOD_HANDLE calleeHnd,
+                                         bool fIsTailPrefix,
+                                         CorInfoTailCall tailCallResult,
+                                         const char * reason) = 0;
 
     // get individual exception handler
     virtual void getEHinfo(
             CORINFO_METHOD_HANDLE ftn,              /* IN  */
-            unsigned          EHnumber,             /* IN */
-            CORINFO_EH_CLAUSE* clause               /* OUT */
+            unsigned              EHnumber,         /* IN */
+            CORINFO_EH_CLAUSE*    clause            /* OUT */
             ) = 0;
 
     // return class it belongs to
@@ -2117,7 +2117,7 @@ public:
     // Get the unboxed entry point for a method, if possible.
     virtual CORINFO_METHOD_HANDLE getUnboxedEntry(
         CORINFO_METHOD_HANDLE ftn,
-        bool* requiresInstMethodTableArg
+        bool*                 requiresInstMethodTableArg
         ) = 0;
 
     // Given T, return the type of the default Comparer<T>.
@@ -2183,7 +2183,7 @@ public:
     // Returns the global cookie for the /GS unsafe buffer checks
     // The cookie might be a constant value (JIT), or a handle to memory location (Ngen)
     virtual void getGSCookie(
-            GSCookie * pCookieVal,                     // OUT
+            GSCookie *  pCookieVal,                    // OUT
             GSCookie ** ppCookieVal                    // OUT
             ) = 0;
 
@@ -2344,8 +2344,8 @@ public:
 
     virtual size_t getClassModuleIdForStatics (
             CORINFO_CLASS_HANDLE    cls,
-            CORINFO_MODULE_HANDLE *pModule,
-            void **ppIndirection
+            CORINFO_MODULE_HANDLE * pModule,
+            void **                 ppIndirection
             ) = 0;
 
     virtual bool getIsClassInitedFlagAddress(
@@ -2362,17 +2362,17 @@ public:
 
     // return the number of bytes needed by an instance of the class
     virtual unsigned getClassSize (
-            CORINFO_CLASS_HANDLE        cls
+            CORINFO_CLASS_HANDLE    cls
             ) = 0;
 
     // return the number of bytes needed by an instance of the class allocated on the heap
     virtual unsigned getHeapClassSize(
-        CORINFO_CLASS_HANDLE        cls
-    ) = 0;
+            CORINFO_CLASS_HANDLE     cls
+            ) = 0;
 
     virtual bool canAllocateOnStack(
-        CORINFO_CLASS_HANDLE cls
-    ) = 0;
+            CORINFO_CLASS_HANDLE cls
+            ) = 0;
 
     virtual unsigned getClassAlignmentRequirement (
             CORINFO_CLASS_HANDLE        cls,
@@ -2399,21 +2399,21 @@ public:
             ) = 0;
 
     virtual CORINFO_FIELD_HANDLE getFieldInClass(
-            CORINFO_CLASS_HANDLE clsHnd,
-            int32_t num
+            CORINFO_CLASS_HANDLE        clsHnd,
+            int32_t                     num
             ) = 0;
 
     virtual bool checkMethodModifier(
-            CORINFO_METHOD_HANDLE hMethod,
-            const char * modifier,
-            bool fOptional
+            CORINFO_METHOD_HANDLE       hMethod,
+            const char *                modifier,
+            bool                        fOptional
             ) = 0;
 
     // returns the "NEW" helper optimized for "newCls."
     virtual CorInfoHelpFunc getNewHelper(
-            CORINFO_RESOLVED_TOKEN * pResolvedToken,
-            CORINFO_METHOD_HANDLE    callerHandle,
-            bool *                   pHasSideEffects
+            CORINFO_RESOLVED_TOKEN *    pResolvedToken,
+            CORINFO_METHOD_HANDLE       callerHandle,
+            bool *                      pHasSideEffects
             ) = 0;
 
     // returns the newArr (1-Dim array) helper optimized for "arrayCls."
@@ -2423,17 +2423,17 @@ public:
 
     // returns the optimized "IsInstanceOf" or "ChkCast" helper
     virtual CorInfoHelpFunc getCastingHelper(
-            CORINFO_RESOLVED_TOKEN * pResolvedToken,
-            bool fThrowing
+            CORINFO_RESOLVED_TOKEN *    pResolvedToken,
+            bool                        fThrowing
             ) = 0;
 
     // returns helper to trigger static constructor
     virtual CorInfoHelpFunc getSharedCCtorHelper(
-            CORINFO_CLASS_HANDLE clsHnd
+            CORINFO_CLASS_HANDLE        clsHnd
             ) = 0;
 
     // Boxing nullable<T> actually returns a boxed<T> not a boxed Nullable<T>.
-    virtual CORINFO_CLASS_HANDLE  getTypeForBox(
+    virtual CORINFO_CLASS_HANDLE getTypeForBox(
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
@@ -2492,7 +2492,8 @@ public:
     virtual bool getStringChar(
             CORINFO_OBJECT_HANDLE strObj,
             int                   index,
-            uint16_t*             value) = 0;
+            uint16_t*             value
+            ) = 0;
 
     //------------------------------------------------------------------------------
     // getObjectType: obtains type handle for given object
@@ -2515,10 +2516,10 @@ public:
             ) = 0;
 
     virtual void getReadyToRunDelegateCtorHelper(
-            CORINFO_RESOLVED_TOKEN * pTargetMethod,
-            mdToken                  targetConstraint,
-            CORINFO_CLASS_HANDLE     delegateType,
-            CORINFO_LOOKUP *   pLookup
+            CORINFO_RESOLVED_TOKEN *    pTargetMethod,
+            mdToken                     targetConstraint,
+            CORINFO_CLASS_HANDLE        delegateType,
+            CORINFO_LOOKUP *            pLookup
             ) = 0;
 
     // This function tries to initialize the class (run the class constructor).
@@ -2564,7 +2565,7 @@ public:
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
-    // TRUE if child is a subtype of parent
+    // `true` if child is a subtype of parent
     // if parent is an interface, then does child implement / extend parent
     virtual bool canCast(
             CORINFO_CLASS_HANDLE        child,  // subtype (extends parent)
@@ -2617,8 +2618,8 @@ public:
     // Given an Array of Type Foo, returns Foo.
     // Given BYREF Foo, returns Foo
     virtual CorInfoType getChildType (
-            CORINFO_CLASS_HANDLE       clsHnd,
-            CORINFO_CLASS_HANDLE       *clsRet
+            CORINFO_CLASS_HANDLE        clsHnd,
+            CORINFO_CLASS_HANDLE*       clsRet
             ) = 0;
 
     // Check if this is a single dimensional array type
@@ -2626,14 +2627,14 @@ public:
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
-    // Get the numbmer of dimensions in an array
+    // Get the number of dimensions in an array
     virtual unsigned getArrayRank(
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
     // Get the index of runtime provided array method
     virtual CorInfoArrayIntrinsic getArrayIntrinsicID(
-            CORINFO_METHOD_HANDLE        ftn
+            CORINFO_METHOD_HANDLE       ftn
             ) = 0;
 
     // Get static field data for an array
@@ -2644,11 +2645,11 @@ public:
 
     // Check Visibility rules.
     virtual CorInfoIsAccessAllowedResult canAccessClass(
-                        CORINFO_RESOLVED_TOKEN * pResolvedToken,
-                        CORINFO_METHOD_HANDLE   callerHandle,
-                        CORINFO_HELPER_DESC    *pAccessHelper /* If canAccessMethod returns something other
-                                                                 than ALLOWED, then this is filled in. */
-                        ) = 0;
+            CORINFO_RESOLVED_TOKEN * pResolvedToken,
+            CORINFO_METHOD_HANDLE    callerHandle,
+            CORINFO_HELPER_DESC *    pAccessHelper /* If canAccessMethod returns something other
+                                                      than ALLOWED, then this is filled in. */
+            ) = 0;
 
     /**********************************************************************************/
     //
@@ -2676,29 +2677,34 @@ public:
     // 'memberParent' is typically only set when verifying.  It should be the
     // result of calling getMemberParent.
     virtual CorInfoType getFieldType(
-                        CORINFO_FIELD_HANDLE    field,
-                        CORINFO_CLASS_HANDLE   *structType = NULL,
-                        CORINFO_CLASS_HANDLE    memberParent = NULL /* IN */
-                        ) = 0;
+            CORINFO_FIELD_HANDLE        field,
+            CORINFO_CLASS_HANDLE *      structType = NULL,
+            CORINFO_CLASS_HANDLE        memberParent = NULL /* IN */
+            ) = 0;
 
     // return the data member's instance offset
     virtual unsigned getFieldOffset(
-                        CORINFO_FIELD_HANDLE    field
-                        ) = 0;
+            CORINFO_FIELD_HANDLE        field
+            ) = 0;
 
-    virtual void getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
-                               CORINFO_METHOD_HANDLE  callerHandle,
-                               CORINFO_ACCESS_FLAGS   flags,
-                               CORINFO_FIELD_INFO    *pResult
-                              ) = 0;
+    virtual void getFieldInfo(
+            CORINFO_RESOLVED_TOKEN *    pResolvedToken,
+            CORINFO_METHOD_HANDLE       callerHandle,
+            CORINFO_ACCESS_FLAGS        flags,
+            CORINFO_FIELD_INFO *        pResult
+            ) = 0;
 
     // Returns the index against which the field's thread static block in stored in TLS.
     virtual uint32_t getThreadLocalFieldInfo (
-                        CORINFO_FIELD_HANDLE  field, bool isGCType) = 0;
+            CORINFO_FIELD_HANDLE        field,
+            bool                        isGCType
+            ) = 0;
 
     // Returns the thread static block information like offsets, etc. from current TLS.
     virtual void getThreadLocalStaticBlocksInfo (
-                        CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType) = 0;
+            CORINFO_THREAD_STATIC_BLOCKS_INFO*  pInfo,
+            bool                                isGCType
+            ) = 0;
 
     // Returns true iff "fldHnd" represents a static field.
     virtual bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd) = 0;
@@ -2721,12 +2727,12 @@ public:
     // be used only as a hint and the native compiler should not change its
     // code generation.
     virtual void getBoundaries(
-                CORINFO_METHOD_HANDLE   ftn,                // [IN] method of interest
-                unsigned int           *cILOffsets,         // [OUT] size of pILOffsets
-                uint32_t              **pILOffsets,         // [OUT] IL offsets of interest
-                                                            //       jit MUST free with freeArray!
-                ICorDebugInfo::BoundaryTypes *implicitBoundaries // [OUT] tell jit, all boundaries of this type
-                ) = 0;
+            CORINFO_METHOD_HANDLE   ftn,                // [IN] method of interest
+            unsigned int           *cILOffsets,         // [OUT] size of pILOffsets
+            uint32_t              **pILOffsets,         // [OUT] IL offsets of interest
+                                                        //       jit MUST free with freeArray!
+            ICorDebugInfo::BoundaryTypes *implicitBoundaries // [OUT] tell jit, all boundaries of this type
+            ) = 0;
 
     // Report back the mapping from IL to native code,
     // this map should include all boundaries that 'getBoundaries'
@@ -2736,11 +2742,11 @@ public:
     // offsets form a contiguous block of memory, and that the
     // OffsetMapping is sorted in order of increasing native offset.
     virtual void setBoundaries(
-                CORINFO_METHOD_HANDLE         ftn,      // [IN] method of interest
-                uint32_t                      cMap,     // [IN] size of pMap
-                ICorDebugInfo::OffsetMapping *pMap      // [IN] map including all points of interest.
-                                                        //      jit allocated with allocateArray, EE frees
-                ) = 0;
+            CORINFO_METHOD_HANDLE         ftn,      // [IN] method of interest
+            uint32_t                      cMap,     // [IN] size of pMap
+            ICorDebugInfo::OffsetMapping *pMap      // [IN] map including all points of interest.
+                                                    //      jit allocated with allocateArray, EE frees
+            ) = 0;
 
     // Query the EE to find out the scope of local variables.
     // normally the JIT would trash variables after last use, but
@@ -2753,16 +2759,15 @@ public:
     virtual void getVars(
             CORINFO_METHOD_HANDLE           ftn,            // [IN]  method of interest
             uint32_t                       *cVars,          // [OUT] size of 'vars'
-            ICorDebugInfo::ILVarInfo      **vars,          // [OUT] scopes of variables of interest
+            ICorDebugInfo::ILVarInfo      **vars,           // [OUT] scopes of variables of interest
                                                             //       jit MUST free with freeArray!
-            bool                           *extendOthers    // [OUT] it TRUE, then assume the scope
+            bool                           *extendOthers    // [OUT] if `true`, then assume the scope
                                                             //       of unmentioned vars is entire method
             ) = 0;
 
     // Report back to the EE the location of every variable.
     // note that the JIT might split lifetimes into different
     // locations etc.
-
     virtual void setVars(
             CORINFO_METHOD_HANDLE           ftn,            // [IN] method of interest
             uint32_t                        cVars,          // [IN] size of 'vars'
@@ -2786,15 +2791,15 @@ public:
     // For eg, use this to allocated memory for reporting debug info,
     // which will be handed to the EE by setVars() and setBoundaries()
     virtual void * allocateArray(
-                        size_t              cBytes
-                        ) = 0;
+            size_t              cBytes
+            ) = 0;
 
     // JitCompiler will free arrays passed by the EE using this
     // For eg, The EE returns memory in getVars() and getBoundaries()
     // to the JitCompiler, which the JitCompiler should release using
     // freeArray()
     virtual void freeArray(
-            void               *array
+            void *              array
             ) = 0;
 
     /*********************************************************************************/
@@ -2821,17 +2826,17 @@ public:
     virtual CorInfoTypeWithMod getArgType (
             CORINFO_SIG_INFO*           sig,            /* IN */
             CORINFO_ARG_LIST_HANDLE     args,           /* IN */
-            CORINFO_CLASS_HANDLE       *vcTypeRet       /* OUT */
+            CORINFO_CLASS_HANDLE*       vcTypeRet       /* OUT */
             ) = 0;
 
     // Obtains a list of exact classes for a given base type. Returns 0 if the number of
     // the exact classes is greater than maxExactClasses or if more types might be loaded
     // in future.
     virtual int getExactClasses(
-                CORINFO_CLASS_HANDLE  baseType,            /* IN */
-                int                   maxExactClasses,     /* IN */
-                CORINFO_CLASS_HANDLE* exactClsRet          /* OUT */
-                ) = 0;
+            CORINFO_CLASS_HANDLE        baseType,            /* IN */
+            int                         maxExactClasses,     /* IN */
+            CORINFO_CLASS_HANDLE*       exactClsRet          /* OUT */
+            ) = 0;
 
     // If the Arg is a CORINFO_TYPE_CLASS fetch the class handle associated with it
     virtual CORINFO_CLASS_HANDLE getArgClass (
@@ -2841,7 +2846,7 @@ public:
 
     // Returns type of HFA for valuetype
     virtual CorInfoHFAElemType getHFAType (
-            CORINFO_CLASS_HANDLE hClass
+            CORINFO_CLASS_HANDLE        hClass
             ) = 0;
 
     // Runs the given function under an error trap. This allows the JIT to make calls
@@ -2850,18 +2855,18 @@ public:
     // successfully and false otherwise.
     typedef void (*errorTrapFunction)(void*);
     virtual bool runWithErrorTrap(
-        errorTrapFunction function, // The function to run
-        void* parameter          // The context parameter that will be passed to the function and the handler
-        ) = 0;
+            errorTrapFunction           function, // The function to run
+            void*                       parameter // The context parameter that will be passed to the function and the handler
+            ) = 0;
 
     // Runs the given function under an error trap. This allows the JIT to make calls
     // to interface functions that may throw exceptions without needing to be aware of
     // the EH ABI, exception types, etc. Returns true if the given function completed
     // successfully and false otherwise. This error trap checks for SuperPMI exceptions
     virtual bool runWithSPMIErrorTrap(
-        errorTrapFunction function, // The function to run
-        void* parameter          // The context parameter that will be passed to the function and the handler
-        ) = 0;
+            errorTrapFunction           function, // The function to run
+            void*                       parameter // The context parameter that will be passed to the function and the handler
+            ) = 0;
 
 /*****************************************************************************
  * ICorStaticInfo contains EE interface methods which return values that are
@@ -2872,8 +2877,8 @@ public:
 
     // Return details about EE internal data structures
     virtual void getEEInfo(
-                CORINFO_EE_INFO            *pEEInfoOut
-                ) = 0;
+            CORINFO_EE_INFO            *pEEInfoOut
+            ) = 0;
 
     // Returns name of the JIT timer log
     virtual const char16_t *getJitTimeLogFilename() = 0;
@@ -2897,7 +2902,8 @@ public:
             CORINFO_METHOD_HANDLE ftn,
             char*                 buffer,
             size_t                bufferSize,
-            size_t*               pRequiredBufferSize = nullptr) = 0;
+            size_t*               pRequiredBufferSize = nullptr
+            ) = 0;
 
     // Return method name as in metadata, or nullptr if there is none,
     // and optionally return the class, enclosing class, and namespace names
@@ -2907,7 +2913,7 @@ public:
             CORINFO_METHOD_HANDLE       ftn,                  /* IN */
             const char                **className,            /* OUT */
             const char                **namespaceName,        /* OUT */
-            const char                **enclosingClassName   /* OUT */
+            const char                **enclosingClassName    /* OUT */
             ) = 0;
 
     // this function is for debugging only.  It returns a value that
@@ -2919,9 +2925,9 @@ public:
 
     // returns whether the struct is enregisterable. Only valid on a System V VM. Returns true on success, false on failure.
     virtual bool getSystemVAmd64PassStructInRegisterDescriptor(
-        /* IN */    CORINFO_CLASS_HANDLE        structHnd,
-        /* OUT */   SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr
-        ) = 0;
+            CORINFO_CLASS_HANDLE                                    structHnd,              /* IN */
+            SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*    structPassInRegDescPtr  /* OUT */
+            ) = 0;
 
     virtual uint32_t getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls) = 0;
     virtual uint32_t getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls) = 0;
@@ -2960,66 +2966,68 @@ public:
     // Return details about EE internal data structures
 
     virtual uint32_t getThreadTLSIndex(
-                    void                  **ppIndirection = NULL
-                    ) = 0;
+            void                  **ppIndirection = NULL
+            ) = 0;
 
     virtual int32_t * getAddrOfCaptureThreadGlobal(
-                    void                  **ppIndirection = NULL
-                    ) = 0;
+            void                  **ppIndirection = NULL
+            ) = 0;
 
     // return the native entry point to an EE helper (see CorInfoHelpFunc)
     virtual void* getHelperFtn (
-                    CorInfoHelpFunc         ftnNum,
-                    void                  **ppIndirection = NULL
-                    ) = 0;
+            CorInfoHelpFunc         ftnNum,
+            void                  **ppIndirection = NULL
+            ) = 0;
 
     // return a callable address of the function (native code). This function
     // may return a different value (depending on whether the method has
     // been JITed or not.
     virtual void getFunctionEntryPoint(
-                              CORINFO_METHOD_HANDLE   ftn,                 /* IN  */
-                              CORINFO_CONST_LOOKUP *  pResult,             /* OUT */
-                              CORINFO_ACCESS_FLAGS    accessFlags = CORINFO_ACCESS_ANY) = 0;
+            CORINFO_METHOD_HANDLE   ftn,                 /* IN  */
+            CORINFO_CONST_LOOKUP *  pResult,             /* OUT */
+            CORINFO_ACCESS_FLAGS    accessFlags = CORINFO_ACCESS_ANY
+            ) = 0;
 
     // return a directly callable address. This can be used similarly to the
     // value returned by getFunctionEntryPoint() except that it is
     // guaranteed to be multi callable entrypoint.
     virtual void getFunctionFixedEntryPoint(
-                              CORINFO_METHOD_HANDLE   ftn,
-                              bool                    isUnsafeFunctionPointer,
-                              CORINFO_CONST_LOOKUP *  pResult) = 0;
+            CORINFO_METHOD_HANDLE   ftn,
+            bool                    isUnsafeFunctionPointer,
+            CORINFO_CONST_LOOKUP *  pResult
+            ) = 0;
 
     // get the synchronization handle that is passed to monXstatic function
     virtual void* getMethodSync(
-                    CORINFO_METHOD_HANDLE               ftn,
-                    void                  **ppIndirection = NULL
-                    ) = 0;
+            CORINFO_METHOD_HANDLE   ftn,
+            void**                  ppIndirection = NULL
+            ) = 0;
 
     // get slow lazy string literal helper to use (CORINFO_HELP_STRCNS*).
     // Returns CORINFO_HELP_UNDEF if lazy string literal helper cannot be used.
     virtual CorInfoHelpFunc getLazyStringLiteralHelper(
-                    CORINFO_MODULE_HANDLE   handle
-                    ) = 0;
+            CORINFO_MODULE_HANDLE   handle
+            ) = 0;
 
     virtual CORINFO_MODULE_HANDLE embedModuleHandle(
-                    CORINFO_MODULE_HANDLE   handle,
-                    void                  **ppIndirection = NULL
-                    ) = 0;
+            CORINFO_MODULE_HANDLE   handle,
+            void                  **ppIndirection = NULL
+            ) = 0;
 
     virtual CORINFO_CLASS_HANDLE embedClassHandle(
-                    CORINFO_CLASS_HANDLE    handle,
-                    void                  **ppIndirection = NULL
-                    ) = 0;
+            CORINFO_CLASS_HANDLE    handle,
+            void                  **ppIndirection = NULL
+            ) = 0;
 
     virtual CORINFO_METHOD_HANDLE embedMethodHandle(
-                    CORINFO_METHOD_HANDLE   handle,
-                    void                  **ppIndirection = NULL
-                    ) = 0;
+            CORINFO_METHOD_HANDLE   handle,
+            void                  **ppIndirection = NULL
+            ) = 0;
 
     virtual CORINFO_FIELD_HANDLE embedFieldHandle(
-                    CORINFO_FIELD_HANDLE    handle,
-                    void                  **ppIndirection = NULL
-                    ) = 0;
+            CORINFO_FIELD_HANDLE    handle,
+            void                  **ppIndirection = NULL
+            ) = 0;
 
     // Given a module scope (module), a method handle (context) and
     // a metadata token (metaTOK), fetch the handle
@@ -3029,9 +3037,10 @@ public:
     // then indicate how the handle should be looked up at run-time.
     //
     virtual void embedGenericHandle(
-                        CORINFO_RESOLVED_TOKEN *        pResolvedToken,
-                        bool                            fEmbedParent, // TRUE - embeds parent type handle of the field/method handle
-                        CORINFO_GENERICHANDLE_RESULT *  pResult) = 0;
+            CORINFO_RESOLVED_TOKEN *        pResolvedToken,
+            bool                            fEmbedParent, // `true` - embeds parent type handle of the field/method handle
+            CORINFO_GENERICHANDLE_RESULT *  pResult
+            ) = 0;
 
     // Return information used to locate the exact enclosing type of the current method.
     // Used only to invoke .cctor method from code shared across generic instantiations
@@ -3041,69 +3050,69 @@ public:
     //      CORINFO_LOOKUP_CLASSPARAM  use vtable hidden param
     //      CORINFO_LOOKUP_METHODPARAM use enclosing type of method-desc hidden param
     virtual void getLocationOfThisType(
-                    CORINFO_METHOD_HANDLE context,
-                    CORINFO_LOOKUP_KIND* pLookupKind
-                    ) = 0;
+            CORINFO_METHOD_HANDLE   context,
+            CORINFO_LOOKUP_KIND*    pLookupKind
+            ) = 0;
 
     // return the address of the PInvoke target. May be a fixup area in the
     // case of late-bound PInvoke calls.
     virtual void getAddressOfPInvokeTarget(
-                    CORINFO_METHOD_HANDLE  method,
-                    CORINFO_CONST_LOOKUP  *pLookup
-                    ) = 0;
+            CORINFO_METHOD_HANDLE   method,
+            CORINFO_CONST_LOOKUP *  pLookup
+            ) = 0;
 
     // Generate a cookie based on the signature that would needs to be passed
     // to CORINFO_HELP_PINVOKE_CALLI
     virtual void* GetCookieForPInvokeCalliSig(
-            CORINFO_SIG_INFO* szMetaSig,
-            void           ** ppIndirection = NULL
+            CORINFO_SIG_INFO*   szMetaSig,
+            void**              ppIndirection = NULL
             ) = 0;
 
     // returns true if a VM cookie can be generated for it (might be false due to cross-module
     // inlining, in which case the inlining should be aborted)
     virtual bool canGetCookieForPInvokeCalliSig(
-                    CORINFO_SIG_INFO* szMetaSig
-                    ) = 0;
+            CORINFO_SIG_INFO*   szMetaSig
+            ) = 0;
 
     // Gets a handle that is checked to see if the current method is
     // included in "JustMyCode"
     virtual CORINFO_JUST_MY_CODE_HANDLE getJustMyCodeHandle(
-                    CORINFO_METHOD_HANDLE       method,
-                    CORINFO_JUST_MY_CODE_HANDLE**ppIndirection = NULL
-                    ) = 0;
+            CORINFO_METHOD_HANDLE           method,
+            CORINFO_JUST_MY_CODE_HANDLE**   ppIndirection = NULL
+            ) = 0;
 
     // Gets a method handle that can be used to correlate profiling data.
     // This is the IP of a native method, or the address of the descriptor struct
     // for IL.  Always guaranteed to be unique per process, and not to move. */
     virtual void GetProfilingHandle(
-                    bool                      *pbHookFunction,
-                    void                     **pProfilerHandle,
-                    bool                      *pbIndirectedHandles
-                    ) = 0;
+            bool                      *pbHookFunction,
+            void                     **pProfilerHandle,
+            bool                      *pbIndirectedHandles
+            ) = 0;
 
     // Returns instructions on how to make the call. See code:CORINFO_CALL_INFO for possible return values.
     virtual void getCallInfo(
-                        // Token info
-                        CORINFO_RESOLVED_TOKEN * pResolvedToken,
+            // Token info
+            CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
-                        //Generics info
-                        CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken,
+            // Generics info
+            CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken,
 
-                        //Security info
-                        CORINFO_METHOD_HANDLE   callerHandle,
+            // Security info
+            CORINFO_METHOD_HANDLE   callerHandle,
 
-                        //Jit info
-                        CORINFO_CALLINFO_FLAGS  flags,
+            // Jit info
+            CORINFO_CALLINFO_FLAGS  flags,
 
-                        //out params
-                        CORINFO_CALL_INFO       *pResult
-                        ) = 0;
+            // out params
+            CORINFO_CALL_INFO       *pResult
+            ) = 0;
 
-    // returns the class's domain ID for accessing shared statics
+    // Returns the class's domain ID for accessing shared statics
     virtual unsigned getClassDomainID (
-                    CORINFO_CLASS_HANDLE    cls,
-                    void                  **ppIndirection = NULL
-                    ) = 0;
+            CORINFO_CLASS_HANDLE    cls,
+            void                  **ppIndirection = NULL
+            ) = 0;
 
     //------------------------------------------------------------------------------
     // getStaticFieldContent: returns true and the actual field's value if the given
@@ -3119,19 +3128,19 @@ public:
     //    Returns true if field's constant value was available and successfully copied to buffer
     //
     virtual bool getStaticFieldContent(
-                    CORINFO_FIELD_HANDLE    field,
-                    uint8_t                *buffer,
-                    int                     bufferSize,
-                    int                     valueOffset = 0,
-                    bool                    ignoreMovableObjects = true
-                    ) = 0;
+            CORINFO_FIELD_HANDLE    field,
+            uint8_t                *buffer,
+            int                     bufferSize,
+            int                     valueOffset = 0,
+            bool                    ignoreMovableObjects = true
+            ) = 0;
 
     virtual bool getObjectContent(
-                    CORINFO_OBJECT_HANDLE   obj,
-                    uint8_t*                buffer,
-                    int                     bufferSize,
-                    int                     valueOffset
-                    ) = 0;
+            CORINFO_OBJECT_HANDLE   obj,
+            uint8_t*                buffer,
+            int                     bufferSize,
+            int                     valueOffset
+            ) = 0;
 
     // If pIsSpeculative is NULL, return the class handle for the value of ref-class typed
     // static readonly fields, if there is a unique location for the static and the class
@@ -3145,40 +3154,40 @@ public:
     // is readonly but class has not yet finished initialization). Set *pIsSpeculative false
     // if this type will not change.
     virtual CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(
-                    CORINFO_FIELD_HANDLE    field,
-                    bool                   *pIsSpeculative = NULL
-                    ) = 0;
+            CORINFO_FIELD_HANDLE    field,
+            bool                   *pIsSpeculative = NULL
+            ) = 0;
 
     // registers a vararg sig & returns a VM cookie for it (which can contain other stuff)
     virtual CORINFO_VARARGS_HANDLE getVarArgsHandle(
-                    CORINFO_SIG_INFO       *pSig,
-                    void                  **ppIndirection = NULL
-                    ) = 0;
+            CORINFO_SIG_INFO       *pSig,
+            void                  **ppIndirection = NULL
+            ) = 0;
 
     // returns true if a VM cookie can be generated for it (might be false due to cross-module
     // inlining, in which case the inlining should be aborted)
     virtual bool canGetVarArgsHandle(
-                    CORINFO_SIG_INFO       *pSig
-                    ) = 0;
+            CORINFO_SIG_INFO       *pSig
+            ) = 0;
 
     // Allocate a string literal on the heap and return a handle to it
     virtual InfoAccessType constructStringLiteral(
-                    CORINFO_MODULE_HANDLE   module,
-                    mdToken                 metaTok,
-                    void                  **ppValue
-                    ) = 0;
+            CORINFO_MODULE_HANDLE   module,
+            mdToken                 metaTok,
+            void                  **ppValue
+            ) = 0;
 
     virtual InfoAccessType emptyStringLiteral(
-                    void                  **ppValue
-                    ) = 0;
+            void                  **ppValue
+            ) = 0;
 
     // (static fields only) given that 'field' refers to thread local store,
     // return the ID (TLS index), which is used to find the beginning of the
     // TLS data area for the particular DLL 'field' is associated with.
     virtual uint32_t getFieldThreadLocalStoreID (
-                    CORINFO_FIELD_HANDLE    field,
-                    void                  **ppIndirection = NULL
-                    ) = 0;
+            CORINFO_FIELD_HANDLE    field,
+            void                  **ppIndirection = NULL
+            ) = 0;
 
     virtual CORINFO_METHOD_HANDLE GetDelegateCtor(
             CORINFO_METHOD_HANDLE  methHnd,
@@ -3188,34 +3197,34 @@ public:
             ) = 0;
 
     virtual void MethodCompileComplete(
-                CORINFO_METHOD_HANDLE methHnd
-                ) = 0;
+            CORINFO_METHOD_HANDLE methHnd
+            ) = 0;
 
     // Obtain tailcall help for the specified call site.
     virtual bool getTailCallHelpers(
+            // The resolved token for the call. Can be null for calli.
+            CORINFO_RESOLVED_TOKEN* callToken,
 
-        // The resolved token for the call. Can be null for calli.
-        CORINFO_RESOLVED_TOKEN* callToken,
+            // The signature at the callsite.
+            CORINFO_SIG_INFO* sig,
 
-        // The signature at the callsite.
-        CORINFO_SIG_INFO* sig,
+            // Flags for the tailcall site.
+            CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
 
-        // Flags for the tailcall site.
-        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
-
-        // The resulting help.
-        CORINFO_TAILCALL_HELPERS* pResult) = 0;
+            // The resulting help.
+            CORINFO_TAILCALL_HELPERS* pResult
+            ) = 0;
 
     // Optionally, convert calli to regular method call. This is for PInvoke argument marshalling.
     virtual bool convertPInvokeCalliToCall(
-                    CORINFO_RESOLVED_TOKEN * pResolvedToken,
-                    bool fMustConvert
-                    ) = 0;
+            CORINFO_RESOLVED_TOKEN *    pResolvedToken,
+            bool                        fMustConvert
+            ) = 0;
 
     // Notify EE about intent to use or not to use instruction set in the method. Returns true if the instruction set is supported unconditionally.
     virtual bool notifyInstructionSetUsage(
-                CORINFO_InstructionSet instructionSet,
-                bool supportEnabled
+            CORINFO_InstructionSet      instructionSet,
+            bool                        supportEnabled
             ) = 0;
 
     // Notify EE that JIT needs an entry-point that is tail-callable.
