@@ -12,9 +12,11 @@ namespace Microsoft.Interop
     {
         public DiagnosticDescriptor InvalidMarshallingAttributeInfo => GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported;
 
-        public DiagnosticDescriptor GetConfigurationNotSupportedDescriptor(bool withValue) => withValue ? GeneratorDiagnostics.ConfigurationValueNotSupported : GeneratorDiagnostics.ConfigurationNotSupported;
+        public DiagnosticDescriptor ConfigurationNotSupported => GeneratorDiagnostics.ConfigurationNotSupported;
 
-        public DiagnosticDescriptor GetDescriptor(GeneratorDiagnostic diagnostic)
+        public DiagnosticDescriptor ConfigurationValueNotSupported => GeneratorDiagnostics.ConfigurationValueNotSupported;
+
+        public DiagnosticDescriptor? GetDescriptor(GeneratorDiagnostic diagnostic)
         {
             return diagnostic switch
             {
@@ -22,6 +24,7 @@ namespace Microsoft.Interop
                 GeneratorDiagnostic.NotSupported { NotSupportedDetails: null, TypePositionInfo: { IsManagedReturnPosition: false, MarshallingAttributeInfo: MarshalAsInfo } } => GeneratorDiagnostics.MarshalAsParameterConfigurationNotSupported,
                 GeneratorDiagnostic.NotSupported { NotSupportedDetails: not null, TypePositionInfo.IsManagedReturnPosition: true } => GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails,
                 GeneratorDiagnostic.NotSupported { NotSupportedDetails: not null, TypePositionInfo.IsManagedReturnPosition: false } => GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails,
+                { IsFatal: false } => null,
                 { TypePositionInfo.IsManagedReturnPosition: true } => GeneratorDiagnostics.ReturnTypeNotSupported,
                 { TypePositionInfo.IsManagedReturnPosition: false } => GeneratorDiagnostics.ParameterTypeNotSupported,
             };

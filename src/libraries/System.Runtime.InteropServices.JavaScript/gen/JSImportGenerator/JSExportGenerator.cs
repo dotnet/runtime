@@ -189,20 +189,20 @@ namespace Microsoft.Interop.JavaScript
 
             Debug.Assert(jsExportAttr is not null);
 
-            var generatorDiagnostics = new GeneratorDiagnosticBag();
-            var descriptorProvider = new DescriptorProvider();
+            var locations = new MethodSignatureDiagnosticLocations(originalSyntax);
+            var generatorDiagnostics = new GeneratorDiagnosticsBag(new DescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
 
             // Process the JSExport attribute
             JSExportData? jsExportData = ProcessJSExportAttribute(jsExportAttr!);
 
             if (jsExportData is null)
             {
-                generatorDiagnostics.ReportConfigurationNotSupported(descriptorProvider, jsExportAttr!, "Invalid syntax");
+                generatorDiagnostics.ReportConfigurationNotSupported(jsExportAttr!, "Invalid syntax");
                 jsExportData = new JSExportData();
             }
 
             // Create the stub.
-            var marshallingInfoParserDiagnosticBag = new MarshallingInfoParserDiagnosticsBag(descriptorProvider, generatorDiagnostics, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
+            var marshallingInfoParserDiagnosticBag =
             var signatureContext = JSSignatureContext.Create(symbol, environment, marshallingInfoParserDiagnosticBag, ct);
 
             var containingTypeContext = new ContainingSyntaxContext(originalSyntax);
@@ -213,7 +213,7 @@ namespace Microsoft.Interop.JavaScript
                 signatureContext,
                 containingTypeContext,
                 methodSyntaxTemplate,
-                new MethodSignatureDiagnosticLocations(originalSyntax),
+                locations,
                 jsExportData,
                 CreateGeneratorFactory(environment, options),
                 new SequenceEqualImmutableArray<DiagnosticInfo>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
@@ -291,9 +291,7 @@ namespace Microsoft.Interop.JavaScript
         private static (MemberDeclarationSyntax, StatementSyntax, AttributeListSyntax, ImmutableArray<DiagnosticInfo>) GenerateSource(
             IncrementalStubGenerationContext incrementalContext)
         {
-            var diagnostics = new GeneratorDiagnosticBag();
-
-            var descriptorProvider = new DescriptorProvider();
+            var diagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), incrementalContext.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
 
             // Generate stub code
             var stubGenerator = new JSExportCodeGenerator(
@@ -302,10 +300,7 @@ namespace Microsoft.Interop.JavaScript
             incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
             incrementalContext.JSExportData,
             incrementalContext.SignatureContext,
-            ex =>
-            {
-                diagnostics.ReportGeneratorDiagnostic(descriptorProvider, incrementalContext.DiagnosticLocation, ex);
-            },
+            diagnostics.ReportGeneratorDiagnostic,
             incrementalContext.GeneratorFactoryKey.GeneratorFactory);
 
             var wrapperName = "__Wrapper_" + incrementalContext.StubMethodSyntaxTemplate.Identifier + "_" + incrementalContext.SignatureContext.TypesHash;

@@ -235,25 +235,24 @@ namespace Microsoft.Interop
                 }
             }
 
-            var generatorDiagnostics = new GeneratorDiagnosticBag();
-            var diagnosticDescriptors = new DiagnosticDescriptorProvider();
+            var locations = new MethodSignatureDiagnosticLocations(syntax);
+            var generatorDiagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
 
             if (lcidConversionAttr is not null)
             {
                 // Using LCIDConversion with source-generated interop is not supported
-                generatorDiagnostics.ReportConfigurationNotSupported(diagnosticDescriptors, lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
+                generatorDiagnostics.ReportConfigurationNotSupported(lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
             }
 
             GeneratedComInterfaceCompilationData.TryGetGeneratedComInterfaceAttributeFromInterface(symbol.ContainingType, out var generatedComAttribute);
             var generatedComInterfaceAttributeData = GeneratedComInterfaceCompilationData.GetDataFromAttribute(generatedComAttribute);
             // Create the stub.
 
-            var marshallingInfoParserDiagnosticBag = new MarshallingInfoParserDiagnosticsBag(new DiagnosticDescriptorProvider(), generatorDiagnostics, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
             var signatureContext = SignatureContext.Create(
                 symbol,
                 DefaultMarshallingInfoParser.Create(
                     environment,
-                    marshallingInfoParserDiagnosticBag,
+                    generatorDiagnostics,
                     symbol,
                     generatedComInterfaceAttributeData,
                     generatedComAttribute),
@@ -321,7 +320,7 @@ namespace Microsoft.Interop
                 signatureContext,
                 containingSyntaxContext,
                 methodSyntaxTemplate,
-                new MethodSignatureDiagnosticLocations(syntax),
+                locations,
                 callConv.ToSequenceEqualImmutableArray(SyntaxEquivalentComparer.Instance),
                 virtualMethodIndexData,
                 new ComExceptionMarshalling(),

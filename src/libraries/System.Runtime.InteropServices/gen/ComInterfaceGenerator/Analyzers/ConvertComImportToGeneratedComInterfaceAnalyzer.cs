@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using static Microsoft.Interop.Analyzers.AnalyzerDiagnostics;
@@ -74,12 +75,11 @@ namespace Microsoft.Interop.Analyzers
                         // Use  the method signature to do some of the work the generator will do after conversion.
                         // If any diagnostics or failures to marshal are reported, then mark this diagnostic with a property signifying that it may require
                         // later user work.
-                        GeneratorDiagnosticBag diagnostics = new();
-                        MarshallingInfoParserDiagnosticsBag parserDiagnostics = new(new DiagnosticDescriptorProvider(), diagnostics, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
+                        GeneratorDiagnosticsBag diagnostics = new(new DiagnosticDescriptorProvider(), new MethodSignatureDiagnosticLocations((MethodDeclarationSyntax)method.DeclaringSyntaxReferences[0].GetSyntax()), SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
                         AttributeData comImportAttribute = type.GetAttributes().First(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_InteropServices_ComImportAttribute);
                         SignatureContext targetSignatureContext = SignatureContext.Create(
                             method,
-                            CreateComImportMarshallingInfoParser(env, parserDiagnostics, method, comImportAttribute),
+                            CreateComImportMarshallingInfoParser(env, diagnostics, method, comImportAttribute),
                             env,
                             typeof(ConvertComImportToGeneratedComInterfaceAnalyzer).Assembly);
 
@@ -148,7 +148,7 @@ namespace Microsoft.Interop.Analyzers
             });
         }
 
-        private static MarshallingInfoParser CreateComImportMarshallingInfoParser(StubEnvironment env, MarshallingInfoParserDiagnosticsBag diagnostics, IMethodSymbol method, AttributeData unparsedAttributeData)
+        private static MarshallingInfoParser CreateComImportMarshallingInfoParser(StubEnvironment env, GeneratorDiagnosticsBag diagnostics, IMethodSymbol method, AttributeData unparsedAttributeData)
         {
             var defaultInfo = new DefaultMarshallingInfo(CharEncoding.Utf16, null);
 

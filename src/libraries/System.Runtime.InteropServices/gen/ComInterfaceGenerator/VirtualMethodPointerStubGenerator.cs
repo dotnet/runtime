@@ -18,8 +18,7 @@ namespace Microsoft.Interop
         public static (MethodDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateManagedToNativeStub(
             IncrementalMethodStubGenerationContext methodStub)
         {
-            var diagnosticDescriptors = new DiagnosticDescriptorProvider();
-            var diagnostics = new GeneratorDiagnosticBag();
+            var diagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), methodStub.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
 
             // Generate stub code
             var stubGenerator = new ManagedToNativeVTableMethodGenerator(
@@ -28,10 +27,7 @@ namespace Microsoft.Interop
                 methodStub.SignatureContext.ElementTypeInformation,
                 methodStub.VtableIndexData.SetLastError,
                 methodStub.VtableIndexData.ImplicitThisParameter,
-                ex =>
-                {
-                    diagnostics.ReportGeneratorDiagnostic(diagnosticDescriptors, methodStub.DiagnosticLocation, ex);
-                },
+                diagnostics.ReportGeneratorDiagnostic,
                 methodStub.ManagedToUnmanagedGeneratorFactory.GeneratorFactory);
 
             BlockSyntax code = stubGenerator.GenerateStubBody(
@@ -69,8 +65,8 @@ namespace Microsoft.Interop
         public static (MethodDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateNativeToManagedStub(
             IncrementalMethodStubGenerationContext methodStub)
         {
-            var diagnosticDescriptors = new DiagnosticDescriptorProvider();
-            var diagnostics = new GeneratorDiagnosticBag();
+            var diagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), methodStub.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
+
             ImmutableArray<TypePositionInfo> elements = AddImplicitElementInfos(methodStub);
 
             // Generate stub code
@@ -78,10 +74,7 @@ namespace Microsoft.Interop
                 methodStub.UnmanagedToManagedGeneratorFactory.Key.TargetFramework,
                 methodStub.UnmanagedToManagedGeneratorFactory.Key.TargetFrameworkVersion,
                 elements,
-                ex =>
-                {
-                    diagnostics.ReportGeneratorDiagnostic(diagnosticDescriptors, methodStub.DiagnosticLocation, ex);
-                },
+                diagnostics.ReportGeneratorDiagnostic,
                 methodStub.UnmanagedToManagedGeneratorFactory.GeneratorFactory);
 
             BlockSyntax code = stubGenerator.GenerateStubBody(

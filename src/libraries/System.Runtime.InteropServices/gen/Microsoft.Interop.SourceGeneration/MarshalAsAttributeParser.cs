@@ -27,10 +27,10 @@ namespace Microsoft.Interop
     public sealed class MarshalAsAttributeParser : IMarshallingInfoAttributeParser, IUseSiteAttributeParser
     {
         private readonly Compilation _compilation;
-        private readonly MarshallingInfoParserDiagnosticsBag _diagnostics;
+        private readonly GeneratorDiagnosticsBag _diagnostics;
         private readonly DefaultMarshallingInfo _defaultInfo;
 
-        public MarshalAsAttributeParser(Compilation compilation, MarshallingInfoParserDiagnosticsBag diagnostics, DefaultMarshallingInfo defaultInfo)
+        public MarshalAsAttributeParser(Compilation compilation, GeneratorDiagnosticsBag diagnostics, DefaultMarshallingInfo defaultInfo)
         {
             _compilation = compilation;
             _diagnostics = diagnostics;

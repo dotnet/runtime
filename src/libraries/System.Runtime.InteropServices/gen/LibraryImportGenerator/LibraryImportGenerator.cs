@@ -252,8 +252,8 @@ namespace Microsoft.Interop
 
             Debug.Assert(generatedDllImportAttr is not null);
 
-            var generatorDiagnostics = new GeneratorDiagnosticBag();
-            DiagnosticDescriptorProvider descriptorProvider = new();
+            var locations = new MethodSignatureDiagnosticLocations(originalSyntax);
+            var generatorDiagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.LibraryImportGenerator.SR));
 
             // Process the LibraryImport attribute
             LibraryImportCompilationData libraryImportData =
@@ -280,12 +280,11 @@ namespace Microsoft.Interop
             if (lcidConversionAttr is not null)
             {
                 // Using LCIDConversion with LibraryImport is not supported
-                generatorDiagnostics.ReportConfigurationNotSupported(descriptorProvider, lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
+                generatorDiagnostics.ReportConfigurationNotSupported(lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
             }
 
             // Create the stub.
-            var marshallingInfoParserDiagnosticsBag = new MarshallingInfoParserDiagnosticsBag(descriptorProvider, generatorDiagnostics, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.LibraryImportGenerator.SR));
-            var signatureContext = SignatureContext.Create(symbol, DefaultMarshallingInfoParser.Create(environment, marshallingInfoParserDiagnosticsBag, symbol, libraryImportData, generatedDllImportAttr), environment, typeof(LibraryImportGenerator).Assembly);
+            var signatureContext = SignatureContext.Create(symbol, DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, libraryImportData, generatedDllImportAttr), environment, typeof(LibraryImportGenerator).Assembly);
 
             var containingTypeContext = new ContainingSyntaxContext(originalSyntax);
 
@@ -296,7 +295,7 @@ namespace Microsoft.Interop
                 signatureContext,
                 containingTypeContext,
                 methodSyntaxTemplate,
-                new MethodSignatureDiagnosticLocations(originalSyntax),
+                locations,
                 new SequenceEqualImmutableArray<AttributeSyntax>(additionalAttributes.ToImmutableArray(), SyntaxEquivalentComparer.Instance),
                 LibraryImportData.From(libraryImportData),
                 LibraryImportGeneratorHelpers.CreateGeneratorFactory(environment, options),
@@ -308,8 +307,7 @@ namespace Microsoft.Interop
             IncrementalStubGenerationContext pinvokeStub,
             LibraryImportGeneratorOptions options)
         {
-            DiagnosticDescriptorProvider descriptorProvider = new();
-            var diagnostics = new GeneratorDiagnosticBag();
+            var diagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), pinvokeStub.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.LibraryImportGenerator.SR));
             if (options.GenerateForwarders)
             {
                 return (PrintForwarderStub(pinvokeStub.StubMethodSyntaxTemplate, explicitForwarding: true, pinvokeStub, diagnostics), pinvokeStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
@@ -321,7 +319,7 @@ namespace Microsoft.Interop
                 pinvokeStub.GeneratorFactoryKey.Key.Version,
                 pinvokeStub.SignatureContext.ElementTypeInformation,
                 pinvokeStub.LibraryImportData.SetLastError && !options.GenerateForwarders,
-                ex => diagnostics.ReportGeneratorDiagnostic(descriptorProvider, pinvokeStub.DiagnosticLocation, ex),
+                diagnostics.ReportGeneratorDiagnostic,
                 pinvokeStub.GeneratorFactoryKey.GeneratorFactory);
 
             // Check if the generator should produce a forwarder stub - regular DllImport.
@@ -356,7 +354,7 @@ namespace Microsoft.Interop
             return (pinvokeStub.ContainingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(PrintGeneratedSource(pinvokeStub.StubMethodSyntaxTemplate, pinvokeStub.SignatureContext, code)), pinvokeStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
         }
 
-        private static MemberDeclarationSyntax PrintForwarderStub(ContainingSyntax userDeclaredMethod, bool explicitForwarding, IncrementalStubGenerationContext stub, GeneratorDiagnosticBag diagnostics)
+        private static MemberDeclarationSyntax PrintForwarderStub(ContainingSyntax userDeclaredMethod, bool explicitForwarding, IncrementalStubGenerationContext stub, GeneratorDiagnosticsBag diagnostics)
         {
             LibraryImportData pinvokeData = stub.LibraryImportData with { EntryPoint = stub.LibraryImportData.EntryPoint ?? userDeclaredMethod.Identifier.ValueText };
 

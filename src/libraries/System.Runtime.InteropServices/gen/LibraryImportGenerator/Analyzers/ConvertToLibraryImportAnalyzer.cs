@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using static Microsoft.Interop.Analyzers.AnalyzerDiagnostics;
@@ -93,10 +94,9 @@ namespace Microsoft.Interop.Analyzers
             // Use the DllImport attribute data and the method signature to do some of the work the generator will do after conversion.
             // If any diagnostics or failures to marshal are reported, then mark this diagnostic with a property signifying that it may require
             // later user work.
-            GeneratorDiagnosticBag diagnostics = new();
-            MarshallingInfoParserDiagnosticsBag parserDiagnostics = new(new DiagnosticDescriptorProvider(), diagnostics, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.LibraryImportGenerator.SR));
+            GeneratorDiagnosticsBag diagnostics = new(new DiagnosticDescriptorProvider(), new MethodSignatureDiagnosticLocations((MethodDeclarationSyntax)method.DeclaringSyntaxReferences[0].GetSyntax()), SR.ResourceManager, typeof(FxResources.Microsoft.Interop.LibraryImportGenerator.SR));
             AttributeData dllImportAttribute = method.GetAttributes().First(attr => attr.AttributeClass.ToDisplayString() == TypeNames.DllImportAttribute);
-            SignatureContext targetSignatureContext = SignatureContext.Create(method, DefaultMarshallingInfoParser.Create(env, parserDiagnostics, method, CreateInteropAttributeDataFromDllImport(dllImportData), dllImportAttribute), env, typeof(ConvertToLibraryImportAnalyzer).Assembly);
+            SignatureContext targetSignatureContext = SignatureContext.Create(method, DefaultMarshallingInfoParser.Create(env, diagnostics, method, CreateInteropAttributeDataFromDllImport(dllImportData), dllImportAttribute), env, typeof(ConvertToLibraryImportAnalyzer).Assembly);
 
             var generatorFactoryKey = LibraryImportGeneratorHelpers.CreateGeneratorFactory(env, new LibraryImportGeneratorOptions(context.Options.AnalyzerConfigOptionsProvider.GlobalOptions));
 

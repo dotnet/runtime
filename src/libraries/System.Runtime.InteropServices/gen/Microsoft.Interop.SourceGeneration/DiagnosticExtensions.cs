@@ -1,10 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Resources;
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
@@ -218,93 +216,5 @@ namespace Microsoft.Interop
                 properties: properties,
                 messageArgs: args);
         }
-    }
-
-
-    public class MarshallingInfoParserDiagnosticsBag
-    {
-        private readonly IDiagnosticDescriptorProvider _descriptorProvider;
-        private readonly GeneratorDiagnosticBag _diagnostics;
-        private readonly ResourceManager _resourceManager;
-        private readonly Type _resourceSource;
-
-        public MarshallingInfoParserDiagnosticsBag(IDiagnosticDescriptorProvider descriptorProvider, GeneratorDiagnosticBag diagnostics, ResourceManager resourceManager, Type resourceSource)
-        {
-            _descriptorProvider = descriptorProvider;
-            _diagnostics = diagnostics;
-            _resourceManager = resourceManager;
-            _resourceSource = resourceSource;
-        }
-
-        /// <summary>
-        /// Report diagnostic for configuration that is not supported by the DLL import source generator
-        /// </summary>
-        /// <param name="attributeData">Attribute specifying the unsupported configuration</param>
-        /// <param name="configurationName">Name of the configuration</param>
-        /// <param name="unsupportedValue">[Optiona] Unsupported configuration value</param>
-        public void ReportConfigurationNotSupported(
-            AttributeData attributeData,
-            string configurationName,
-            string? unsupportedValue)
-        {
-            _diagnostics.ReportConfigurationNotSupported(_descriptorProvider, attributeData, configurationName, unsupportedValue);
-        }
-
-        public void ReportInvalidMarshallingAttributeInfo(
-            AttributeData attributeData,
-            string reasonResourceName,
-            params string[] reasonArgs)
-        {
-            _diagnostics.ReportInvalidMarshallingAttributeInfo(_descriptorProvider, attributeData, _resourceManager, _resourceSource, reasonResourceName, reasonArgs);
-        }
-    }
-
-    public class GeneratorDiagnosticBag
-    {
-        private readonly List<DiagnosticInfo> _diagnostics = new List<DiagnosticInfo>();
-        public IEnumerable<DiagnosticInfo> Diagnostics => _diagnostics;
-
-        public void ReportDiagnostic(DiagnosticInfo diagnostic)
-        {
-            _diagnostics.Add(diagnostic);
-        }
-
-        public void ReportConfigurationNotSupported(IDiagnosticDescriptorProvider descriptorProvider, AttributeData attributeData, string configurationName, string? unsupportedValue)
-        {
-            if (unsupportedValue is null)
-            {
-                ReportDiagnostic(attributeData.CreateDiagnosticInfo(descriptorProvider.GetConfigurationNotSupportedDescriptor(withValue: false), configurationName));
-            }
-            else
-            {
-                ReportDiagnostic(attributeData.CreateDiagnosticInfo(descriptorProvider.GetConfigurationNotSupportedDescriptor(withValue: true), unsupportedValue, configurationName));
-            }
-        }
-
-        public void ReportInvalidMarshallingAttributeInfo(IDiagnosticDescriptorProvider descriptorProvider, AttributeData attributeData, ResourceManager resourceManager, Type resourceSource, string reasonResourceName, params string[] reasonArgs)
-        {
-            ReportDiagnostic(attributeData.CreateDiagnosticInfo(descriptorProvider.InvalidMarshallingAttributeInfo, new LocalizableResourceString(reasonResourceName, resourceManager, resourceSource, reasonArgs)));
-        }
-
-        public void ReportGeneratorDiagnostic(IDiagnosticDescriptorProvider descriptorProvider, ISignatureDiagnosticLocations locations, GeneratorDiagnostic diagnostic)
-        {
-            _diagnostics.Add(locations.CreateDiagnosticInfo(descriptorProvider, diagnostic));
-        }
-
-        public void ReportConfigurationNotSupported(IDiagnosticDescriptorProvider descriptorProvider, AttributeData attributeData, string configurationName)
-        {
-            ReportDiagnostic(attributeData.CreateDiagnosticInfo(descriptorProvider.GetConfigurationNotSupportedDescriptor(withValue: false), configurationName));
-        }
-    }
-
-    public static class IGeneratorDiagnosticsExtensions
-    {
-        public static void ReportConfigurationNotSupported(this MarshallingInfoParserDiagnosticsBag diagnostics, AttributeData attributeData, string configurationName)
-            => diagnostics.ReportConfigurationNotSupported(attributeData, configurationName, null);
-    }
-
-    public class GeneratorDiagnosticProperties
-    {
-        public const string AddDisableRuntimeMarshallingAttribute = nameof(AddDisableRuntimeMarshallingAttribute);
     }
 }

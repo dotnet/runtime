@@ -411,7 +411,7 @@ namespace Microsoft.Interop
         /// <param name="methodName">Name of the method</param>
         /// <param name="detailsMessage">Specific reason the configuration is invalid</param>
         public static void ReportInvalidStringMarshallingConfiguration(
-            this GeneratorDiagnosticBag diagnostics,
+            this GeneratorDiagnosticsBag diagnostics,
             AttributeData attributeData,
             string methodName,
             string detailsMessage)
@@ -429,7 +429,7 @@ namespace Microsoft.Interop
         /// <param name="methodName">Name of the method</param>
         /// <param name="detailsMessage">Specific reason the configuration is invalid</param>
         public static void ReportInvalidExceptionMarshallingConfiguration(
-            this GeneratorDiagnosticBag diagnostics,
+            this GeneratorDiagnosticsBag diagnostics,
             AttributeData attributeData,
             string methodName,
             string detailsMessage)

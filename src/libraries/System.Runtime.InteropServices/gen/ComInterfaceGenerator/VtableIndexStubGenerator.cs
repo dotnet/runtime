@@ -230,8 +230,8 @@ namespace Microsoft.Interop
 
             Debug.Assert(virtualMethodIndexAttr is not null);
 
-            var generatorDiagnostics = new GeneratorDiagnosticBag();
-            var descriptorProvider = new DiagnosticDescriptorProvider();
+            var locations = new MethodSignatureDiagnosticLocations(syntax);
+            var generatorDiagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
 
             // Process the LibraryImport attribute
             VirtualMethodIndexCompilationData? virtualMethodIndexData = ProcessVirtualMethodIndexAttribute(virtualMethodIndexAttr!);
@@ -270,12 +270,11 @@ namespace Microsoft.Interop
             if (lcidConversionAttr is not null)
             {
                 // Using LCIDConversion with source-generated interop is not supported
-                generatorDiagnostics.ReportConfigurationNotSupported(descriptorProvider, lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
+                generatorDiagnostics.ReportConfigurationNotSupported(lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
             }
 
             // Create the stub.
-            var marshallingInfoParserDiagnosticBag = new MarshallingInfoParserDiagnosticsBag(descriptorProvider, generatorDiagnostics, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
-            var signatureContext = SignatureContext.Create(symbol, DefaultMarshallingInfoParser.Create(environment, marshallingInfoParserDiagnosticBag, symbol, virtualMethodIndexData, virtualMethodIndexAttr), environment, typeof(VtableIndexStubGenerator).Assembly);
+            var signatureContext = SignatureContext.Create(symbol, DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, virtualMethodIndexData, virtualMethodIndexAttr), environment, typeof(VtableIndexStubGenerator).Assembly);
 
             var containingSyntaxContext = new ContainingSyntaxContext(syntax);
 
@@ -306,7 +305,7 @@ namespace Microsoft.Interop
                 signatureContext,
                 containingSyntaxContext,
                 methodSyntaxTemplate,
-                new MethodSignatureDiagnosticLocations(syntax),
+                locations,
                 new SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax>(callConv, SyntaxEquivalentComparer.Instance),
                 VirtualMethodIndexData.From(virtualMethodIndexData),
                 exceptionMarshallingInfo,
@@ -318,7 +317,7 @@ namespace Microsoft.Interop
                 new ObjectUnwrapperInfo(unwrapperSyntax));
         }
 
-        private static MarshallingInfo CreateExceptionMarshallingInfo(AttributeData virtualMethodIndexAttr, ISymbol symbol, Compilation compilation, GeneratorDiagnosticBag diagnostics, VirtualMethodIndexCompilationData virtualMethodIndexData)
+        private static MarshallingInfo CreateExceptionMarshallingInfo(AttributeData virtualMethodIndexAttr, ISymbol symbol, Compilation compilation, GeneratorDiagnosticsBag diagnostics, VirtualMethodIndexCompilationData virtualMethodIndexData)
         {
             if (virtualMethodIndexData.ExceptionMarshallingDefined)
             {
@@ -344,7 +343,6 @@ namespace Microsoft.Interop
             }
             if (virtualMethodIndexData.ExceptionMarshalling == ExceptionMarshalling.Custom)
             {
-                var marshallingInfoParserDiagnosticBag = new MarshallingInfoParserDiagnosticsBag(new DiagnosticDescriptorProvider(), diagnostics, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
                 return virtualMethodIndexData.ExceptionMarshallingCustomType is null
                     ? NoMarshallingInfo.Instance
                     : CustomMarshallingInfoHelper.CreateNativeMarshallingInfoForNonSignatureElement(
@@ -352,7 +350,7 @@ namespace Microsoft.Interop
                         virtualMethodIndexData.ExceptionMarshallingCustomType!,
                         virtualMethodIndexAttr,
                         compilation,
-                        marshallingInfoParserDiagnosticBag);
+                        diagnostics);
             }
             // This should not be reached in normal usage, but a developer can cast any int to the ExceptionMarshalling enum, so we should handle this case without crashing the generator.
             diagnostics.ReportInvalidExceptionMarshallingConfiguration(

@@ -47,7 +47,7 @@ namespace Microsoft.Interop
             ImmutableArray<TypePositionInfo> argTypes,
             bool setLastError,
             bool implicitThis,
-            Action<TypePositionInfo, MarshallingNotSupportedException> marshallingNotSupportedCallback,
+            Action<GeneratorDiagnostic> marshallingNotSupportedCallback,
             IMarshallingGeneratorFactory generatorFactory)
         {
             _setLastError = setLastError;
@@ -78,7 +78,7 @@ namespace Microsoft.Interop
 
             foreach (var failure in bindingFailures)
             {
-                marshallingNotSupportedCallback(failure.Info, failure.Exception);
+                marshallingNotSupportedCallback(failure);
             }
 
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, _context))

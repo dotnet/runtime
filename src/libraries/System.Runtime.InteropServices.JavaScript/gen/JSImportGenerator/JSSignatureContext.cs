@@ -29,7 +29,7 @@ namespace Microsoft.Interop.JavaScript
         public static JSSignatureContext Create(
             IMethodSymbol method,
             StubEnvironment env,
-            MarshallingInfoParserDiagnosticsBag diagnostics,
+            GeneratorDiagnosticsBag diagnostics,
             CancellationToken token)
         {
             // Cancel early if requested

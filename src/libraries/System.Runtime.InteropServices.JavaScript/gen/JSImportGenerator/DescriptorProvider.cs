@@ -9,14 +9,17 @@ namespace Microsoft.Interop.JavaScript
     {
         public DiagnosticDescriptor InvalidMarshallingAttributeInfo => GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported;
 
-        public DiagnosticDescriptor GetConfigurationNotSupportedDescriptor(bool withValue) => withValue ? GeneratorDiagnostics.ConfigurationValueNotSupported : GeneratorDiagnostics.ConfigurationNotSupported;
+        public DiagnosticDescriptor ConfigurationNotSupported => GeneratorDiagnostics.ConfigurationNotSupported;
 
-        public DiagnosticDescriptor GetDescriptor(GeneratorDiagnostic diagnostic)
+        public DiagnosticDescriptor ConfigurationValueNotSupported => GeneratorDiagnostics.ConfigurationValueNotSupported;
+
+        public DiagnosticDescriptor? GetDescriptor(GeneratorDiagnostic diagnostic)
         {
             return diagnostic switch
             {
                 GeneratorDiagnostic.NotSupported { NotSupportedDetails: not null, TypePositionInfo.IsManagedReturnPosition: true } => GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails,
                 GeneratorDiagnostic.NotSupported { NotSupportedDetails: not null, TypePositionInfo.IsManagedReturnPosition: false } => GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails,
+                { IsFatal: false } => null, // The JSImport and JSExport generators don't report any non-fatal diagnostics.
                 { TypePositionInfo.IsManagedReturnPosition: true } => GeneratorDiagnostics.ReturnTypeNotSupported,
                 { TypePositionInfo.IsManagedReturnPosition: false } => GeneratorDiagnostics.ParameterTypeNotSupported,
             };

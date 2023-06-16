@@ -195,7 +195,7 @@ namespace Microsoft.Interop
         /// <param name="methodName">Name of the method</param>
         /// <param name="detailsMessage">Specific reason the configuration is invalid</param>
         public static void ReportInvalidStringMarshallingConfiguration(
-            this GeneratorDiagnosticBag diagnostics,
+            this GeneratorDiagnosticsBag diagnostics,
             AttributeData attributeData,
             string methodName,
             string detailsMessage)
@@ -213,7 +213,7 @@ namespace Microsoft.Interop
         /// <param name="method">Method with the configuration that cannot be forwarded</param>
         /// <param name="name">Configuration name</param>
         /// <param name="value">Configuration value</param>
-        public static void ReportCannotForwardToDllImport(this GeneratorDiagnosticBag diagnostics, MethodSignatureDiagnosticLocations method, string name, string? value = null)
+        public static void ReportCannotForwardToDllImport(this GeneratorDiagnosticsBag diagnostics, MethodSignatureDiagnosticLocations method, string name, string? value = null)
         {
             diagnostics.ReportDiagnostic(
                 DiagnosticInfo.Create(

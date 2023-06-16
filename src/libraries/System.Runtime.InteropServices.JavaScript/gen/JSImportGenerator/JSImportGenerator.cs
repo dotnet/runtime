@@ -177,22 +177,20 @@ namespace Microsoft.Interop.JavaScript
 
             Debug.Assert(jsImportAttr is not null);
 
-            var generatorDiagnostics = new GeneratorDiagnosticBag();
-            var descriptorProvider = new DescriptorProvider();
+            var locations = new MethodSignatureDiagnosticLocations(originalSyntax);
+            var diagnosticsBag = new GeneratorDiagnosticsBag(new DescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
 
             // Process the JSImport attribute
             JSImportData? jsImportData = ProcessJSImportAttribute(jsImportAttr!);
 
             if (jsImportData is null)
             {
-                generatorDiagnostics.ReportConfigurationNotSupported(descriptorProvider, jsImportAttr!, "Invalid syntax");
+                generatorDiagnostics.ReportConfigurationNotSupported(jsImportAttr!, "Invalid syntax");
                 jsImportData = new JSImportData("INVALID_CSHARP_SYNTAX", null);
             }
 
             // Create the stub.
-
-            var marshallingInfoParserDiagnosticBag = new MarshallingInfoParserDiagnosticsBag(descriptorProvider, generatorDiagnostics, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
-            var signatureContext = JSSignatureContext.Create(symbol, environment, marshallingInfoParserDiagnosticBag, ct);
+            var signatureContext = JSSignatureContext.Create(symbol, environment, diagnosticsBag, ct);
 
             var containingTypeContext = new ContainingSyntaxContext(originalSyntax);
 
@@ -201,7 +199,7 @@ namespace Microsoft.Interop.JavaScript
                 signatureContext,
                 containingTypeContext,
                 methodSyntaxTemplate,
-                new MethodSignatureDiagnosticLocations(originalSyntax),
+                ,
                 jsImportData,
                 CreateGeneratorFactory(environment, options),
                 new SequenceEqualImmutableArray<DiagnosticInfo>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
@@ -217,8 +215,7 @@ namespace Microsoft.Interop.JavaScript
         private static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateSource(
             IncrementalStubGenerationContext incrementalContext)
         {
-            var diagnostics = new GeneratorDiagnosticBag();
-            var descriptorProvider = new DescriptorProvider();
+            var diagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), incrementalContext.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
 
             // Generate stub code
             var stubGenerator = new JSImportCodeGenerator(

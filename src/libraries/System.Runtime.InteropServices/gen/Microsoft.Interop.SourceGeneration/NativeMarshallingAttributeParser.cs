@@ -9,9 +9,9 @@ namespace Microsoft.Interop
     public sealed class NativeMarshallingAttributeParser : IMarshallingInfoAttributeParser
     {
         private readonly Compilation _compilation;
-        private readonly MarshallingInfoParserDiagnosticsBag _diagnostics;
+        private readonly GeneratorDiagnosticsBag _diagnostics;
 
-        public NativeMarshallingAttributeParser(Compilation compilation, MarshallingInfoParserDiagnosticsBag diagnostics)
+        public NativeMarshallingAttributeParser(Compilation compilation, GeneratorDiagnosticsBag diagnostics)
         {
             _compilation = compilation;
             _diagnostics = diagnostics;
