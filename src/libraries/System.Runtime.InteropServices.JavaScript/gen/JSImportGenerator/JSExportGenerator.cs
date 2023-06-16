@@ -202,8 +202,7 @@ namespace Microsoft.Interop.JavaScript
             }
 
             // Create the stub.
-            var marshallingInfoParserDiagnosticBag =
-            var signatureContext = JSSignatureContext.Create(symbol, environment, marshallingInfoParserDiagnosticBag, ct);
+            var signatureContext = JSSignatureContext.Create(symbol, environment, generatorDiagnostics, ct);
 
             var containingTypeContext = new ContainingSyntaxContext(originalSyntax);
 
@@ -291,17 +290,17 @@ namespace Microsoft.Interop.JavaScript
         private static (MemberDeclarationSyntax, StatementSyntax, AttributeListSyntax, ImmutableArray<DiagnosticInfo>) GenerateSource(
             IncrementalStubGenerationContext incrementalContext)
         {
-            var diagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), incrementalContext.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
+            var diagnostics = new GeneratorDiagnosticsBag(new DescriptorProvider(), incrementalContext.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
 
             // Generate stub code
             var stubGenerator = new JSExportCodeGenerator(
-            incrementalContext.GeneratorFactoryKey.Key.TargetFramework,
-            incrementalContext.GeneratorFactoryKey.Key.TargetFrameworkVersion,
-            incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
-            incrementalContext.JSExportData,
-            incrementalContext.SignatureContext,
-            diagnostics.ReportGeneratorDiagnostic,
-            incrementalContext.GeneratorFactoryKey.GeneratorFactory);
+                incrementalContext.GeneratorFactoryKey.Key.TargetFramework,
+                incrementalContext.GeneratorFactoryKey.Key.TargetFrameworkVersion,
+                incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
+                incrementalContext.JSExportData,
+                incrementalContext.SignatureContext,
+                diagnostics.ReportGeneratorDiagnostic,
+                incrementalContext.GeneratorFactoryKey.GeneratorFactory);
 
             var wrapperName = "__Wrapper_" + incrementalContext.StubMethodSyntaxTemplate.Identifier + "_" + incrementalContext.SignatureContext.TypesHash;
 

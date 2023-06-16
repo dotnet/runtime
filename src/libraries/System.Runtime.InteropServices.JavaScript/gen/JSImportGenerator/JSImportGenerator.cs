@@ -178,7 +178,7 @@ namespace Microsoft.Interop.JavaScript
             Debug.Assert(jsImportAttr is not null);
 
             var locations = new MethodSignatureDiagnosticLocations(originalSyntax);
-            var diagnosticsBag = new GeneratorDiagnosticsBag(new DescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
+            var generatorDiagnostics = new GeneratorDiagnosticsBag(new DescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
 
             // Process the JSImport attribute
             JSImportData? jsImportData = ProcessJSImportAttribute(jsImportAttr!);
@@ -190,7 +190,7 @@ namespace Microsoft.Interop.JavaScript
             }
 
             // Create the stub.
-            var signatureContext = JSSignatureContext.Create(symbol, environment, diagnosticsBag, ct);
+            var signatureContext = JSSignatureContext.Create(symbol, environment, generatorDiagnostics, ct);
 
             var containingTypeContext = new ContainingSyntaxContext(originalSyntax);
 
@@ -199,7 +199,7 @@ namespace Microsoft.Interop.JavaScript
                 signatureContext,
                 containingTypeContext,
                 methodSyntaxTemplate,
-                ,
+                locations,
                 jsImportData,
                 CreateGeneratorFactory(environment, options),
                 new SequenceEqualImmutableArray<DiagnosticInfo>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
@@ -215,20 +215,17 @@ namespace Microsoft.Interop.JavaScript
         private static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateSource(
             IncrementalStubGenerationContext incrementalContext)
         {
-            var diagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), incrementalContext.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
+            var diagnostics = new GeneratorDiagnosticsBag(new DescriptorProvider(), incrementalContext.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
 
             // Generate stub code
             var stubGenerator = new JSImportCodeGenerator(
-            incrementalContext.GeneratorFactoryKey.Key.TargetFramework,
-            incrementalContext.GeneratorFactoryKey.Key.TargetFrameworkVersion,
-            incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
-            incrementalContext.JSImportData,
-            incrementalContext.SignatureContext,
-            ex =>
-            {
-                diagnostics.ReportGeneratorDiagnostic(descriptorProvider, incrementalContext.DiagnosticLocation, ex);
-            },
-            incrementalContext.GeneratorFactoryKey.GeneratorFactory);
+                incrementalContext.GeneratorFactoryKey.Key.TargetFramework,
+                incrementalContext.GeneratorFactoryKey.Key.TargetFrameworkVersion,
+                incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
+                incrementalContext.JSImportData,
+                incrementalContext.SignatureContext,
+                diagnostics.ReportGeneratorDiagnostic,
+                incrementalContext.GeneratorFactoryKey.GeneratorFactory);
 
             BlockSyntax code = stubGenerator.GenerateJSImportBody();
 
