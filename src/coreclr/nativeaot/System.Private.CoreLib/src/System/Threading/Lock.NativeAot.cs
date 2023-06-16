@@ -14,7 +14,7 @@ namespace System.Threading
         // NOTE: Lock must not have a static (class) constructor, as Lock itself is used to synchronize
         // class construction.  If Lock has its own class constructor, this can lead to infinite recursion.
         // All static data in Lock must be lazy-initialized.
-        private static int s_staticsInitializationStage;
+        private static StaticsInitializationStage s_staticsInitializationStage;
         private static bool s_isSingleProcessor;
         private static int s_maxSpinCount;
         private static int s_minSpinCount;
@@ -91,17 +91,17 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private TryLockResult LazyInitializeOrEnter()
         {
-            int stage = Volatile.Read(ref s_staticsInitializationStage);
+            StaticsInitializationStage stage = Volatile.Read(ref s_staticsInitializationStage);
             switch (stage)
             {
-                case 2:
+                case StaticsInitializationStage.Complete:
                     if (_spinCount == SpinCountNotInitialized)
                     {
                         _spinCount = s_maxSpinCount;
                     }
                     return TryLockResult.Spin;
 
-                case 1:
+                case StaticsInitializationStage.Started:
                     // Spin-wait until initialization is complete or the lock is acquired to prevent class construction cycles
                     // later during a full wait
                     bool sleep = true;
@@ -116,9 +116,9 @@ namespace System.Threading
                             Thread.SpinWait(1);
                         }
 
-                        if (Volatile.Read(ref s_staticsInitializationStage) == 2)
+                        if (Volatile.Read(ref s_staticsInitializationStage) == StaticsInitializationStage.Complete)
                         {
-                            goto case 2;
+                            goto case StaticsInitializationStage.Complete;
                         }
 
                         if (State.TryLock(this))
@@ -130,12 +130,12 @@ namespace System.Threading
                     }
 
                 default:
-                    Debug.Assert(stage == 0);
+                    Debug.Assert(stage == StaticsInitializationStage.NotStarted);
                     if (TryInitializeStatics())
                     {
-                        goto case 2;
+                        goto case StaticsInitializationStage.Complete;
                     }
-                    goto case 1;
+                    goto case StaticsInitializationStage.Started;
             }
         }
 
@@ -144,11 +144,15 @@ namespace System.Threading
         {
             // Since Lock is used to synchronize class construction, and some of the statics initialization may involve class
             // construction, update the stage first to avoid infinite recursion
-            switch (Interlocked.CompareExchange(ref s_staticsInitializationStage, 1, 0))
+            switch (
+                Interlocked.CompareExchange(
+                    ref s_staticsInitializationStage,
+                    StaticsInitializationStage.Started,
+                    StaticsInitializationStage.NotStarted))
             {
-                case 1:
+                case StaticsInitializationStage.Started:
                     return false;
-                case 2:
+                case StaticsInitializationStage.Complete:
                     return true;
             }
 
@@ -188,6 +192,13 @@ namespace System.Threading
                 _id = (uint)ManagedThreadId.Current;
                 Debug.Assert(IsInitialized);
             }
+        }
+
+        private enum StaticsInitializationStage
+        {
+            NotStarted,
+            Started,
+            Complete
         }
     }
 }
