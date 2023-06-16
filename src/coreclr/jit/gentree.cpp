@@ -3896,41 +3896,107 @@ unsigned Compiler::gtSetCallArgsOrder(CallArgs* args, bool lateArgs, int* callCo
 //
 unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
 {
-    // Most HWI nodes are simple arithmetic operations.
-    //
-    int      costEx = 1;
-    int      costSz = 1;
+    int costEx = 1;
+    int costSz = 1;
+
     unsigned level  = 0;
 
 #if defined(FEATURE_HW_INTRINSICS)
     if (multiOp->OperIs(GT_HWINTRINSIC))
     {
         GenTreeHWIntrinsic* hwTree = multiOp->AsHWIntrinsic();
-#if defined(TARGET_XARCH)
-        if ((hwTree->GetOperandCount() == 1) && hwTree->OperIsMemoryLoadOrStore())
+
+        bool isMemoryLoad = hwTree->OperIsMemoryLoad();
+
+        if (isMemoryLoad || hwTree->OperIsMemoryStore())
         {
+#if defined(TARGET_XARCH)
+            // SIMD memory accesses have a base size of 3 bytes and a
+            // 2 cycle higher execution cost than regular indirections
+
+            costEx = IND_COST_EX + 2;
+            costSz = 3;
+
+            if (!isMemoryLoad)
+            {
+                // SIMD memory stores have a 2 cycle higher latency range
+                costEx += 2;
+            }
+            else if (multiOp->TypeIs(TYP_SIMD32, TYP_SIMD64))
+            {
+                // 32/64-byte loads have a 1 cycle higher execution cost
+                costEx += 1;
+            }
+
+            if (canUseVexEncoding())
+            {
+                // VEX encoding takes at least 1 additional byte to encode
+                costSz += 1;
+
+                if (hwTree->TypeIs(TYP_SIMD64) || (hwTree->GetSimdSize() == 64))
+                {
+                    // EVEX encoding takes at least 2 more bytes to encode
+                    costSz += 2;
+                }
+            }
+#elif defined(TARGET_ARM64)
             costEx = IND_COST_EX;
             costSz = 2;
-
-            GenTree* const addrNode = hwTree->Op(1);
-            level                   = gtSetEvalOrder(addrNode);
-            GenTree* const addr     = addrNode->gtEffectiveVal();
-
-            // See if we can form a complex addressing mode.
-            if (addr->OperIs(GT_ADD) && gtMarkAddrMode(addr, &costEx, &costSz, hwTree->TypeGet()))
-            {
-                // Nothing to do, costs have been set.
-            }
-            else
-            {
-                costEx += addr->GetCostEx();
-                costSz += addr->GetCostSz();
-            }
-
-            hwTree->SetCosts(costEx, costSz);
-            return level;
-        }
+#else
+            unreached();
 #endif
+
+            if (hwTree->GetOperandCount() == 1)
+            {
+                // Special case the simple loads/stores to account for addressing modes
+
+                GenTree* const addrNode = hwTree->Op(1);
+                level                   = gtSetEvalOrder(addrNode);
+                GenTree* const addr     = addrNode->gtEffectiveVal();
+
+                // See if we can form a complex addressing mode.
+                if (addr->OperIs(GT_ADD) && gtMarkAddrMode(addr, &costEx, &costSz, hwTree->TypeGet()))
+                {
+                    // Nothing to do, costs have been set.
+                }
+                else
+                {
+                    costEx += addr->GetCostEx();
+                    costSz += addr->GetCostSz();
+                }
+
+                hwTree->SetCosts(costEx, costSz);
+                return level;
+            }
+        }
+        else
+        {
+            // Most encountered HWI nodes are simple arithmetic operations
+            // so default to the same cost as something like add/subtract
+
+#if defined(TARGET_XARCH)
+            costEx = 1;
+            costSz = 3;
+
+            if (canUseVexEncoding())
+            {
+                // VEX encoding takes at least 1 additional byte to encode
+                costSz += 1;
+
+                if (hwTree->TypeIs(TYP_SIMD64) || (hwTree->GetSimdSize() == 64))
+                {
+                    // EVEX encoding takes at least 2 more bytes to encode
+                    costSz += 2;
+                }
+            }
+#elif defined(TARGET_ARM64)
+            costEx = 1;
+            costSz = 2;
+#else
+            unreached();
+#endif
+        }
+
         switch (hwTree->GetHWIntrinsicId())
         {
             case NI_Vector128_Create:
@@ -3949,19 +4015,31 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
             case NI_Vector64_CreateScalarUnsafe:
 #endif
             {
-                if ((hwTree->GetOperandCount() == 1) && hwTree->Op(1)->OperIsConst())
+                GenTreeVecCon vecCon = GenTreeVecCon(hwTree->TypeGet());
+
+                if (GenTreeVecCon::IsHWIntrinsicCreateConstant<simd_t>(hwTree, vecCon.gtSimdVal))
                 {
-                    // Vector.Create(cns) is cheap but not that cheap to be (1,1)
-                    costEx = IND_COST_EX;
-                    costSz = 2;
-                    level  = gtSetEvalOrder(hwTree->Op(1));
-                    hwTree->SetCosts(costEx, costSz);
-                    return level;
+                    gtSetEvalOrder(&vecCon);
+
+                    costEx = vecCon.GetCostEx();
+                    costSz = vecCon.GetCostSz();
+
+                    for (size_t i = multiOp->GetOperandCount(); i >= 1; i--)
+                    {
+                        GenTree* op  = multiOp->Op(i);
+                        unsigned lvl = gtSetEvalOrder(op);
+
+                        // Compute the level, ignoring costs
+                        level = max(lvl, level + 1);
+                    }
                 }
                 break;
             }
+
             default:
+            {
                 break;
+            }
         }
     }
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
@@ -3971,39 +4049,80 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
     {
         unsigned lvl2 = 0;
 
-        // This way we have "level" be the complexity of the
-        // first tree to be evaluated, and "lvl2" - the second.
-        if (multiOp->IsReverseOp())
+        bool includeOp1Cost = true;
+        bool includeOp2Cost = true;
+        bool allowReversal  = true;
+
+        GenTree* op1 = multiOp->Op(1);
+        GenTree* op2 = multiOp->Op(2);
+
+        level = gtSetEvalOrder(op1);
+        lvl2  = gtSetEvalOrder(op2);
+
+        if (includeOp1Cost)
         {
-            level = gtSetEvalOrder(multiOp->Op(2));
-            lvl2  = gtSetEvalOrder(multiOp->Op(1));
-        }
-        else
-        {
-            level = gtSetEvalOrder(multiOp->Op(1));
-            lvl2  = gtSetEvalOrder(multiOp->Op(2));
+            costEx += op1->GetCostEx();
+            costSz += op1->GetCostSz();
         }
 
-        // We want the more complex tree to be evaluated first.
-        if (level < lvl2)
+        if (includeOp2Cost)
         {
-            bool canSwap = multiOp->IsReverseOp() ? gtCanSwapOrder(multiOp->Op(2), multiOp->Op(1))
-                                                  : gtCanSwapOrder(multiOp->Op(1), multiOp->Op(2));
+            costEx += op2->GetCostEx();
+            costSz += op2->GetCostSz();
+        }
+
+        /* We need to evaluate constants later as many places in codegen
+           can't handle op1 being a constant. This is normally naturally
+           enforced as constants have the least level of 0. However,
+           sometimes we end up with a tree like "cns1 < nop(cns2)". In
+           such cases, both sides have a level of 0. So encourage constants
+           to be evaluated last in such cases */
+
+        if ((level == 0) && (level == lvl2) && op1->OperIsConst() &&
+            (multiOp->OperIsCommutative() || multiOp->OperIsCompare()))
+        {
+            lvl2++;
+        }
+
+        // We try to swap operands if the second one is more expensive.
+        // Don't swap anything if we're in linear order; we're really just interested in the costs.
+        bool tryToSwap = false;
+        if (allowReversal && (fgOrder != FGOrderLinear))
+        {
+            if (multiOp->IsReverseOp())
+            {
+                tryToSwap = (level > lvl2);
+            }
+            else
+            {
+                tryToSwap = (level < lvl2);
+            }
+
+            // Try to force extra swapping when in the stress mode:
+            if (compStressCompile(STRESS_REVERSE_FLAG, 60) && !multiOp->IsReverseOp() && !op2->OperIsConst())
+            {
+                tryToSwap = true;
+            }
+        }
+
+        if (tryToSwap)
+        {
+            bool canSwap = multiOp->IsReverseOp() ? gtCanSwapOrder(op2, op1) : gtCanSwapOrder(op1, op2);
 
             if (canSwap)
             {
-                if (multiOp->IsReverseOp())
-                {
-                    multiOp->ClearReverseOp();
-                }
-                else
-                {
-                    multiOp->SetReverseOp();
-                }
-
-                std::swap(level, lvl2);
+                // Mark the operand's evaluation order to be swapped.
+                multiOp->gtFlags ^= GTF_REVERSE_OPS;
             }
         }
+
+        /* Swap the level counts */
+        if (multiOp->IsReverseOp())
+        {
+            std::swap(level, lvl2);
+        }
+
+        /* Compute the sethi number for this binary operator */
 
         if (level < 1)
         {
@@ -4013,9 +4132,6 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
         {
             level += 1;
         }
-
-        costEx += (multiOp->Op(1)->GetCostEx() + multiOp->Op(2)->GetCostEx());
-        costSz += (multiOp->Op(1)->GetCostSz() + multiOp->Op(2)->GetCostSz());
     }
     else
     {
@@ -5209,23 +5325,32 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             case GT_CNS_DBL:
             {
                 level = 0;
+
 #if defined(TARGET_XARCH)
                 if (tree->IsFloatPositiveZero() || tree->IsFloatAllBitsSet())
                 {
                     // We generate `xorp* tgtReg, tgtReg` for PositiveZero and
-                    // `pcmpeqd tgtReg, tgtReg` for AllBitsSet which is 3-5 bytes
-                    // but which can be elided by the instruction decoder.
+                    // `pcmpeqd tgtReg, tgtReg` for AllBitsSet which is a base
+                    // of 3 bytes to encode but which can be elided by the
+                    // instruction decoder and have zero cost.
 
                     costEx = 1;
-                    costSz = 2;
+                    costSz = 3;
                 }
                 else
                 {
-                    // We generate `movs* tgtReg, [mem]` which is 4-6 bytes
-                    // and which has the same cost as an indirection.
+                    // We generate `movs* tgtReg, [rip]` which is a base of
+                    // 7-bytes and has a 2 cycle higher execution cost than
+                    // indirections for primitive integer types.
 
-                    costEx = IND_COST_EX;
-                    costSz = 2;
+                    costEx = IND_COST_EX + 2;
+                    costSz = 7;
+                }
+
+                if (canUseVexEncoding())
+                {
+                    // VEX encoding takes at least 1 additional byte to encode
+                    costSz += 1;
                 }
 #elif defined(TARGET_ARM)
                 var_types targetType = tree->TypeGet();
@@ -5274,23 +5399,81 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             {
                 level = 0;
 
-                if (tree->AsVecCon()->IsAllBitsSet() || tree->AsVecCon()->IsZero())
+                GenTreeVecCon* vecCon = tree->AsVecCon();
+
+#if defined(TARGET_XARCH)
+                if (vecCon->IsZero())
                 {
-                    // We generate `cmpeq* tgtReg, tgtReg`, which is 4-5 bytes, for AllBitsSet
-                    // and generate `xorp* tgtReg, tgtReg`, which is 3-5 bytes, for Zero
-                    // both of which can be elided by the instruction decoder.
+                    // We generate `xorp* tgtReg, tgtReg` for PositiveZero which
+                    // is a base of of 3 bytes to encode but which can be elided
+                    // by the instruction decoder and have zero cost.
+
+                    costEx = 1;
+                    costSz = 3;
+                }
+                else if (vecCon->IsAllBitsSet())
+                {
+                    // We generate `pcmpeqd tgtReg, tgtReg` for AllBitsSet which
+                    // is a base of of 3 bytes to encode but which can be elided
+                    // by the instruction decoder and have zero cost.
+
+                    costEx = 1;
+                    costSz = 3;
+
+                    if (tree->TypeIs(TYP_SIMD64))
+                    {
+                        // We have to generate vpternlogd which is 3 extra bytes
+                        costSz += 3;
+                    }
+                }
+                else
+                {
+                    // We generate `movs* tgtReg, [rip]` which is a base of
+                    // 7-bytes and has a 2 cycle higher execution cost than
+                    // indirections for primitive integer types.
+
+                    costEx = IND_COST_EX + 2;
+                    costSz = 7;
+
+                    if (tree->TypeIs(TYP_SIMD32))
+                    {
+                        // 32-byte reads have a 1 cycle higher execution cost
+                        costEx += 1;
+                    }
+                    else if (tree->TypeIs(TYP_SIMD64))
+                    {
+                        // 64-byte reads have a 1 cycle higher execution cost
+                        costEx += 1;
+
+                        // 64-byte reads have a 2-byte larger size cost
+                        costSz += 2;
+                    }
+                }
+
+                if (canUseVexEncoding())
+                {
+                    // VEX encoding takes at least 1 additional byte to encode
+                    costSz += 1;
+                }
+#elif defined(TARGET_ARM64)
+                if (vecCon->IsZero() || vecCon->IsAllBitsSet())
+                {
+                    // Zero and AllBitsSet can be specially created with a single instruction
+                    // These can be cheaply reconstituted but still take up 4-bytes of native codegen
 
                     costEx = 1;
                     costSz = 2;
                 }
                 else
                 {
-                    // We generate `movup* tgtReg, [mem]` which is 4-6 bytes
-                    // and which has the same cost as an indirection.
+                    // We load the constant from memory and so will take the same cost as GT_IND
 
                     costEx = IND_COST_EX;
                     costSz = 2;
                 }
+#else
+                unreached();
+#endif
                 break;
             }
 
