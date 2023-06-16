@@ -210,9 +210,12 @@ namespace System.Numerics.Tests
         [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/11980", TestPlatforms.Linux, ~RuntimeConfiguration.Release)]
         public static void RunRegionSpecificStandardFormatToStringTests()
         {
-            CultureInfo[] cultures = new CultureInfo[] { new CultureInfo("en-US"), new CultureInfo("en-GB"), new CultureInfo("fr-CA"),
+            List<CultureInfo> cultures = new () { new CultureInfo("en-US"), new CultureInfo("en-GB"), new CultureInfo("fr-CA"),
                                                             new CultureInfo("ar-SA"), new CultureInfo("de-DE"), new CultureInfo("he-IL"),
-                                                            new CultureInfo("ru-RU"), new CultureInfo("zh-CN") };
+                                                            new CultureInfo("ru-RU"), new CultureInfo("zh-CN"), };
+            if (PlatformDetection.IsNotUsingLimitedCultures)
+                cultures.AddRange(new[] { new CultureInfo("as"), new CultureInfo("es-BO"), new CultureInfo("luy-KE") });
+
             long intMaxPlus1 = ((long)int.MaxValue + 1);
             string intMaxPlus1String = intMaxPlus1.ToString();
             foreach (CultureInfo culture in cultures)
@@ -717,6 +720,9 @@ namespace System.Numerics.Tests
                     case 15:
                         pre = "(";
                         post = " " + nfi.CurrencySymbol + ")";
+                        break;
+                    case 16:
+                        pre = nfi.NegativeSign + nfi.CurrencySymbol + " ";
                         break;
                 }
             }

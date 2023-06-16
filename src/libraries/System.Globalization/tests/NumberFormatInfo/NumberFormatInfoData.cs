@@ -73,6 +73,9 @@ namespace System.Globalization.Tests
 
                 case "fr-CA":
                     return PlatformDetection.IsNlsGlobalization ? new int[] { 15 } : new int[] { 8, 15 };
+
+                case "luy-KE":
+                    return new int[] { 16 };
             }
 
             throw DateTimeFormatInfoData.GetCultureNotSupportedException(CultureInfo.GetCultureInfo(localeName));

@@ -441,12 +441,12 @@ namespace System.Globalization
             get => _currencyNegativePattern;
             set
             {
-                if (value < 0 || value > 15)
+                if (value < 0 || value > 16)
                 {
                     throw new ArgumentOutOfRangeException(
                         nameof(value),
                         value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 15));
+                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 16));
                 }
 
                 VerifyWritable();
