@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -39,11 +40,18 @@ namespace System.Text.Json.Serialization.Converters
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
+            ConstructorInfo? constructor;
             JsonConverter converter;
             Type converterType;
 
-            bool useDefaultCtorInUnannotatedStructs = _useDefaultConstructorInUnannotatedStructs && !typeToConvert.IsKeyValuePair();
-            if (!typeToConvert.TryGetDeserializationConstructor(useDefaultCtorInUnannotatedStructs, out ConstructorInfo? constructor))
+            if (typeToConvert.IsKeyValuePair())
+            {
+                // browser-wasm compat -- ensure the linker doesn't trim away constructor parameter names from KVP.
+                Type[] genericArguments = typeToConvert.GetGenericArguments();
+                Type keyValuePairType = typeof(KeyValuePair<,>).MakeGenericType(genericArguments);
+                constructor = keyValuePairType.GetConstructor(genericArguments);
+            }
+            else if (!typeToConvert.TryGetDeserializationConstructor(_useDefaultConstructorInUnannotatedStructs, out constructor))
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateTypeAttribute<JsonConstructorAttribute>(typeToConvert);
             }
