@@ -7020,8 +7020,9 @@ void gc_heap::gc_thread_function ()
             else
             {
                 settings.init_mechanisms();
-                // make sure the other gc threads cannot see this as a request to change heap count
 #ifdef DYNAMIC_HEAP_COUNT
+                // make sure the other gc threads cannot see this as a request to change heap count
+                // see explanation below about the cases when we return from gc_start_event.Wait
                 assert (dynamic_heap_count_data.new_n_heaps == n_heaps);
 #endif //DYNAMIC_HEAP_COUNT
                 gc_start_event.Set();
@@ -7032,6 +7033,15 @@ void gc_heap::gc_thread_function ()
         {
             gc_start_event.Wait(INFINITE, FALSE);
 #ifdef DYNAMIC_HEAP_COUNT
+            // we have a couple different cases to handle here when we come back from the wait:
+            //   1. We are starting a GC. Signaled by dynamic_heap_count_data.new_n_heaps == n_heaps
+            //     a) We are starting a GC, but this thread is idle. Signaled by n_heaps <= heap_number
+            //     b) We are starting a GC, and this thread is participating. Signaled by heap_number < n_heaps
+            //   2. We are changing heap count. Signaled by dynamic_heap_count_data.new_n_heaps != n_heaps
+            //     a) We are changing heap count, but this thread is idle. Signaled by n_heaps <= heap_number.
+            //     b) We are changing heap count, and this thread is participating. Signaled by heap_number < n_heaps.
+
+            // check for 1.a) and 2.a) cases above
             if (n_heaps <= heap_number)
             {
                 dprintf (2, ("GC thread %d idle", heap_number));
@@ -7044,12 +7054,13 @@ void gc_heap::gc_thread_function ()
                 dprintf (2, ("GC thread %d waking from idle", heap_number));
                 continue;
             }
-            // is this a request to change heap count?
+            // case 2.b) above: is this a request to change heap count?
             if (dynamic_heap_count_data.new_n_heaps != n_heaps)
             {
                 change_heap_count (dynamic_heap_count_data.new_n_heaps);
                 continue;
             }
+            // case 1.b) above: we're starting a GC.
 #endif //DYNAMIC_HEAP_COUNT
             dprintf (3, (ThreadStressLog::gcServerThreadNStartMsg(), heap_number));
         }
@@ -25007,7 +25018,6 @@ void gc_heap::check_heap_count ()
     {
         // can't have background gc running while we change the number of heaps
         // so it's useless to compute a new number of heaps here
-        dynamic_heap_count_data.new_n_heaps = n_heaps;
     }
     else
     {
@@ -25157,7 +25167,8 @@ void gc_heap::check_heap_count ()
 
     if (GCScan::GetGcRuntimeStructuresValid())
     {
-        // start the other gc threads to share the work changing heap count
+        // make sure the other gc threads cannot see this as a request to GC
+        assert (dynamic_heap_count_data.new_n_heaps != n_heaps);
         gc_start_event.Set();
     }
 
@@ -48943,7 +48954,12 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
         {
             // the heap may have changed due to heap balancing or heaps going out of service
             // to register the object for finalization on the heap it was allocated on
+#ifdef DYNAMIC_HEAP_COUNT
             hp = (newAlloc == nullptr) ? acontext->get_alloc_heap()->pGenGCHeap : gc_heap::heap_of ((uint8_t*)newAlloc);
+#else //DYNAMIC_HEAP_COUNT
+            hp = acontext->get_alloc_heap()->pGenGCHeap;
+            assert ((newAlloc == nullptr) || (hp == gc_heap::heap_of ((uint8_t*)newAlloc)));
+#endif //DYNAMIC_HEAP_COUNT
         }
 #endif //MULTIPLE_HEAPS
 
