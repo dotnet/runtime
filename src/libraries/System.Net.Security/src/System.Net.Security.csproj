@@ -111,6 +111,8 @@
              Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs"
+             Link="Common\Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs" />
   </ItemGroup>
   <!-- This file depends on IANA registry. We do not want anyone's build to break after the update -->
   <!-- or if they don't have internet connection - explicit opt-in required -->
@@ -221,8 +223,6 @@
              Link="Common\Interop\Windows\SChannel\Interop.Alerts.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SchProtocols.cs"
              Link="Common\Interop\Windows\SChannel\Interop.SchProtocols.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs"
-             Link="Common\Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs"
              Link="Common\Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\SecPkgContext_CipherInfo.cs"
@@ -312,7 +312,7 @@
     <Compile Include="System\Net\Security\NegotiateStreamPal.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseManagedNtlm)' == 'true'">
-    <Compile Include="System\Net\Security\NegotiateStreamPal.PlatformNotSupported.cs" />
+    <Compile Include="System\Net\Security\NegotiateStreamPal.Managed.cs" />
     <Compile Include="$(CommonPath)System\Net\NTAuthentication.Managed.cs"
              Link="Common\System\Net\NTAuthentication.Managed.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\MD4.cs"
