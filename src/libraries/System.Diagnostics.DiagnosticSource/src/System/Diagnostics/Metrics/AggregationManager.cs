@@ -25,7 +25,7 @@ namespace System.Diagnostics.Metrics
 
         public int MaxTimeSeries { get; }
         public int MaxHistograms { get; }
-        private List<Instrument> _instrumentList = new();
+        private Dictionary<Instrument, bool> _instruments = new();
         private readonly ConcurrentDictionary<Instrument, InstrumentState> _instrumentStates = new();
         private readonly CancellationTokenSource _cts = new();
         private Thread? _collectThread;
@@ -117,6 +117,7 @@ namespace System.Diagnostics.Metrics
 
         private void CompletedMeasurements(Instrument instrument, object? cookie)
         {
+            _instruments.Remove(instrument);
             _endInstrumentMeasurements(instrument);
             RemoveInstrumentState(instrument);
         }
@@ -129,15 +130,14 @@ namespace System.Diagnostics.Metrics
             {
                 _beginInstrumentMeasurements(instrument);
 
-                if (!_instrumentList.Contains(instrument))
+                if (!_instruments.ContainsKey(instrument))
                 {
                     // This has side effects that prompt MeasurementsCompleted
                     // to be called if this is called multiple times on an
                     // instrument in a shared MetricsEventSource.
                     _listener.EnableMeasurementEvents(instrument, state);
+                    _instruments.Add(instrument, true);
                 }
-
-                _instrumentList.Add(instrument);
             }
         }
 
@@ -162,6 +162,8 @@ namespace System.Diagnostics.Metrics
 
         public void Update()
         {
+            // Creating (and destroying) a MeterListener to leverage the existing
+            // mechanisms for enumerating and publishing instruments.
             using (MeterListener tempListener = new MeterListener())
             {
                 tempListener.InstrumentPublished += PublishedInstrument;
