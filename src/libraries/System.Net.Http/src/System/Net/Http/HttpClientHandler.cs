@@ -94,7 +94,6 @@ namespace System.Net.Http
 #endif
         }
 
-
         [UnsupportedOSPlatform("browser")]
         public bool UseCookies
         {
