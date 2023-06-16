@@ -228,7 +228,7 @@ namespace System.Text.Json
             if (_propertyDictionary != null)
             {
                 // Fast path if item doesn't exist in dictionary.
-                if (JsonHelpers.TryAdd(_propertyDictionary, propertyName, value))
+                if (_propertyDictionary.TryAdd(propertyName, value))
                 {
                     assignParent?.Invoke();
                     _propertyList.Add(new KeyValuePair<string, T>(propertyName, value));
@@ -303,7 +303,7 @@ namespace System.Text.Json
             }
             else
             {
-                if (!JsonHelpers.TryAdd(_propertyDictionary, propertyName, value))
+                if (!_propertyDictionary.TryAdd(propertyName, value))
                 {
                     return false;
                 }

@@ -2446,7 +2446,7 @@ public:
     GenTreeCC* gtNewCC(genTreeOps oper, var_types type, GenCondition cond);
     GenTreeOpCC* gtNewOperCC(genTreeOps oper, var_types type, GenCondition cond, GenTree* op1, GenTree* op2);
 
-    GenTreeColon* gtNewColonNode(var_types type, GenTree* elseNode, GenTree* thenNode);
+    GenTreeColon* gtNewColonNode(var_types type, GenTree* thenNode, GenTree* elseNode);
     GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon);
 
     GenTree* gtNewLargeOperNode(genTreeOps oper,
@@ -8662,17 +8662,31 @@ private:
         CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_XARCH)
-        if (compExactlyDependsOn(InstructionSet_AVX2))
+        // TODO-XArch: Add support for 512-bit Vector<T>
+        assert(!compIsaSupportedDebugOnly(InstructionSet_VectorT512));
+
+        if (compExactlyDependsOn(InstructionSet_VectorT256))
         {
-            // TODO-XArch-AVX512 : Return ZMM_REGSIZE_BYTES once Vector<T> supports AVX512.
+            assert(!compIsaSupportedDebugOnly(InstructionSet_VectorT128));
             return YMM_REGSIZE_BYTES;
         }
-        else
+        else if (compExactlyDependsOn(InstructionSet_VectorT128))
         {
             return XMM_REGSIZE_BYTES;
         }
+        else
+        {
+            return 0;
+        }
 #elif defined(TARGET_ARM64)
-        return FP_REGSIZE_BYTES;
+        if (compExactlyDependsOn(InstructionSet_VectorT128))
+        {
+            return FP_REGSIZE_BYTES;
+        }
+        else
+        {
+            return 0;
+        }
 #else
         assert(!"getVectorTByteLength() unimplemented on target arch");
         unreached();
@@ -8691,23 +8705,37 @@ private:
     uint32_t getMaxVectorByteLength() const
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
         {
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
-            {
-                return ZMM_REGSIZE_BYTES;
-            }
-            else
-            {
-                return YMM_REGSIZE_BYTES;
-            }
+            return ZMM_REGSIZE_BYTES;
         }
-        else
+        else if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+        {
+            return YMM_REGSIZE_BYTES;
+        }
+        else if (compOpportunisticallyDependsOn(InstructionSet_SSE))
         {
             return XMM_REGSIZE_BYTES;
         }
+        else
+        {
+            // TODO: We should be returning 0 here, but there are a number of
+            // places that don't quite get handled correctly in that scenario
+
+            return XMM_REGSIZE_BYTES;
+        }
 #elif defined(TARGET_ARM64)
-        return FP_REGSIZE_BYTES;
+        if (compOpportunisticallyDependsOn(InstructionSet_AdvSimd))
+        {
+            return FP_REGSIZE_BYTES;
+        }
+        else
+        {
+            // TODO: We should be returning 0 here, but there are a number of
+            // places that don't quite get handled correctly in that scenario
+
+            return FP_REGSIZE_BYTES;
+        }
 #else
         assert(!"getMaxVectorByteLength() unimplemented on target arch");
         unreached();
@@ -9081,15 +9109,15 @@ private:
 
 #ifdef DEBUG
     //------------------------------------------------------------------------
-    // IsBaselineVector512IsaSupportedDebugOnly - Does the target have isa support required for Vector512.
+    // IsBaselineVector512IsaSupportedDebugOnly - Does isa support exist for Vector512.
     //
     // Returns:
-    //    `true` if AVX512F, AVX512BW and AVX512DQ are supported.
+    //    `true` if AVX512F, AVX512BW, AVX512CD, AVX512DQ, and AVX512VL are supported.
     //
     bool IsBaselineVector512IsaSupportedDebugOnly() const
     {
 #ifdef TARGET_XARCH
-        return (compIsaSupportedDebugOnly(InstructionSet_Vector512));
+        return compIsaSupportedDebugOnly(InstructionSet_AVX512F);
 #else
         return false;
 #endif
@@ -9097,15 +9125,15 @@ private:
 #endif // DEBUG
 
     //------------------------------------------------------------------------
-    // IsBaselineVector512IsaSupported - Does the target have isa support required for Vector512.
+    // IsBaselineVector512IsaSupportedOpportunistically - Does opportunistic isa support exist for Vector512.
     //
     // Returns:
-    //    `true` if AVX512F, AVX512BW and AVX512DQ are supported.
+    //    `true` if AVX512F, AVX512BW, AVX512CD, AVX512DQ, and AVX512VL are supported.
     //
-    bool IsBaselineVector512IsaSupported() const
+    bool IsBaselineVector512IsaSupportedOpportunistically() const
     {
 #ifdef TARGET_XARCH
-        return (compExactlyDependsOn(InstructionSet_Vector512));
+        return compOpportunisticallyDependsOn(InstructionSet_AVX512F);
 #else
         return false;
 #endif
@@ -9141,7 +9169,7 @@ private:
         // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
         // This requires AVX512F, AVX512BW, AVX512CD, AVX512DQ, and AVX512VL support
 
-        if (JitConfig.JitStressEvexEncoding() && IsBaselineVector512IsaSupported())
+        if (JitConfig.JitStressEvexEncoding() && IsBaselineVector512IsaSupportedOpportunistically())
         {
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
@@ -9509,6 +9537,7 @@ public:
         bool dspDiffable;  // Makes the Jit Dump 'diff-able' (currently uses same DOTNET_* flag as disDiffable)
         bool disDiffable;  // Makes the Disassembly code 'diff-able'
         bool disAlignment; // Display alignment boundaries in disassembly code
+        bool disCodeBytes; // Display instruction code bytes in disassembly code
 #ifdef DEBUG
         bool compProcedureSplittingEH; // Separate cold code from hot code for functions with EH
         bool dspCode;                  // Display native code generated

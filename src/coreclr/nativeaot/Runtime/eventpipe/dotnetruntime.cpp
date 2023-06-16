@@ -91,7 +91,7 @@ bool ResizeBuffer(BYTE *&buffer, size_t& size, size_t currLen, size_t newSize, b
 
 // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
 // @TODO - Events need to be audited
-const WCHAR* DotNETRuntimeName = L"Microsoft-Windows-DotNETRuntime";
+const WCHAR* DotNETRuntimeName = W("Microsoft-Windows-DotNETRuntime");
 EventPipeProvider *EventPipeProviderDotNETRuntime = nullptr;
 EventPipeEvent *EventPipeEventDestroyGCHandle = nullptr;
 EventPipeEvent *EventPipeEventExceptionThrown_V1 = nullptr;
@@ -177,8 +177,8 @@ BOOL EventPipeEventEnabledExceptionThrown_V1(void)
 }
 
 ULONG EventPipeWriteEventExceptionThrown_V1(
-    const wchar_t* ExceptionType,
-    const wchar_t* ExceptionMessage,
+    const WCHAR* ExceptionType,
+    const WCHAR* ExceptionMessage,
     const void* ExceptionEIP,
     const unsigned int ExceptionHRESULT,
     const unsigned short ExceptionFlags,
@@ -196,8 +196,8 @@ ULONG EventPipeWriteEventExceptionThrown_V1(
     bool fixedBuffer = true;
     bool success = true;
 
-    if (!ExceptionType) { ExceptionType = L"NULL"; }
-    if (!ExceptionMessage) { ExceptionMessage = L"NULL"; }
+    if (!ExceptionType) { ExceptionType = W("NULL"); }
+    if (!ExceptionMessage) { ExceptionMessage = W("NULL"); }
     success &= WriteToBuffer(ExceptionType, buffer, offset, size, fixedBuffer);
     success &= WriteToBuffer(ExceptionMessage, buffer, offset, size, fixedBuffer);
     success &= WriteToBuffer(ExceptionEIP, buffer, offset, size, fixedBuffer);
@@ -274,7 +274,7 @@ ULONG EventPipeWriteEventGCAllocationTick_V2(
     const unsigned short ClrInstanceID,
     const unsigned __int64 AllocationAmount64,
     const void* TypeID,
-    const wchar_t* TypeName,
+    const WCHAR* TypeName,
     const unsigned int HeapIndex,
     const GUID * ActivityId,
     const GUID * RelatedActivityId)
@@ -289,7 +289,7 @@ ULONG EventPipeWriteEventGCAllocationTick_V2(
     bool fixedBuffer = true;
     bool success = true;
 
-    if (!TypeName) { TypeName = L"NULL"; }
+    if (!TypeName) { TypeName = W("NULL"); }
     success &= WriteToBuffer(AllocationAmount, buffer, offset, size, fixedBuffer);
     success &= WriteToBuffer(AllocationKind, buffer, offset, size, fixedBuffer);
     success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
@@ -325,7 +325,7 @@ ULONG EventPipeWriteEventGCAllocationTick_V3(
     const unsigned short ClrInstanceID,
     const unsigned __int64 AllocationAmount64,
     const void* TypeID,
-    const wchar_t* TypeName,
+    const WCHAR* TypeName,
     const unsigned int HeapIndex,
     const void* Address,
     const GUID * ActivityId,
@@ -341,7 +341,7 @@ ULONG EventPipeWriteEventGCAllocationTick_V3(
     bool fixedBuffer = true;
     bool success = true;
 
-    if (!TypeName) { TypeName = L"NULL"; }
+    if (!TypeName) { TypeName = W("NULL"); }
     success &= WriteToBuffer(AllocationAmount, buffer, offset, size, fixedBuffer);
     success &= WriteToBuffer(AllocationKind, buffer, offset, size, fixedBuffer);
     success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
@@ -1458,15 +1458,15 @@ ULONG EventPipeWriteEventModuleLoad_V2(
     const unsigned __int64 AssemblyID,
     const unsigned int ModuleFlags,
     const unsigned int Reserved1,
-    const wchar_t* ModuleILPath,
-    const wchar_t* ModuleNativePath,
+    const WCHAR* ModuleILPath,
+    const WCHAR* ModuleNativePath,
     const unsigned short ClrInstanceID,
     const GUID* ManagedPdbSignature,
     const unsigned int ManagedPdbAge,
-    const wchar_t* ManagedPdbBuildPath,
+    const WCHAR* ManagedPdbBuildPath,
     const GUID* NativePdbSignature,
     const unsigned int NativePdbAge,
-    const wchar_t* NativePdbBuildPath,
+    const WCHAR* NativePdbBuildPath,
     const GUID * ActivityId,
     const GUID * RelatedActivityId)
 {
@@ -1480,10 +1480,10 @@ ULONG EventPipeWriteEventModuleLoad_V2(
     bool fixedBuffer = true;
     bool success = true;
 
-    if (!ModuleILPath) { ModuleILPath = L"NULL"; }
-    if (!ModuleNativePath) { ModuleNativePath = L"NULL"; }
-    if (!ManagedPdbBuildPath) { ManagedPdbBuildPath = L"NULL"; }
-    if (!NativePdbBuildPath) { NativePdbBuildPath = L"NULL"; }
+    if (!ModuleILPath) { ModuleILPath = W("NULL"); }
+    if (!ModuleNativePath) { ModuleNativePath = W("NULL"); }
+    if (!ManagedPdbBuildPath) { ManagedPdbBuildPath = W("NULL"); }
+    if (!NativePdbBuildPath) { NativePdbBuildPath = W("NULL"); }
     success &= WriteToBuffer(ModuleID, buffer, offset, size, fixedBuffer);
     success &= WriteToBuffer(AssemblyID, buffer, offset, size, fixedBuffer);
     success &= WriteToBuffer(ModuleFlags, buffer, offset, size, fixedBuffer);

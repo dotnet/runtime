@@ -51,7 +51,7 @@ GVAL_DECL(TADDR, g_MiniMetaDataBuffAddress);
 
 EXTERN_C VOID STDCALL NDirectImportThunk();
 
-#define METHOD_TOKEN_REMAINDER_BIT_COUNT 13
+#define METHOD_TOKEN_REMAINDER_BIT_COUNT 12
 #define METHOD_TOKEN_REMAINDER_MASK ((1 << METHOD_TOKEN_REMAINDER_BIT_COUNT) - 1)
 #define METHOD_TOKEN_RANGE_BIT_COUNT (24 - METHOD_TOKEN_REMAINDER_BIT_COUNT)
 #define METHOD_TOKEN_RANGE_MASK ((1 << METHOD_TOKEN_RANGE_BIT_COUNT) - 1)
@@ -144,19 +144,20 @@ enum MethodDescClassification
     // Method is static
     mdcStatic                           = 0x0080,
 
-    // unused                           = 0x0100,
-    // unused                           = 0x0200,
+    mdcValueTypeParametersWalked        = 0x0100, // Indicates that all typeref's in the signature of the method have been resolved
+                                                  // to typedefs (or that process failed).
+
+    mdcValueTypeParametersLoaded        = 0x0200, // Indicates if the valuetype parameter types have been loaded.
 
     // Duplicate method. When a method needs to be placed in multiple slots in the
     // method table, because it could not be packed into one slot. For eg, a method
     // providing implementation for two interfaces, MethodImpl, etc
     mdcDuplicate                        = 0x0400,
 
-    // Has this method been verified?
-    mdcVerifiedState                    = 0x0800,
+    mdcDoesNotHaveEquivalentValuetypeParameters = 0x0800, // Indicates that we have verified that there are no equivalent valuetype parameters
+                                                          // for this method.
 
-    // Is the method verifiable? It needs to be verified first to determine this
-    mdcVerifiable                       = 0x1000,
+    mdcRequiresCovariantReturnTypeChecking = 0x1000,
 
     // Is this method ineligible for inlining?
     mdcNotInline                        = 0x2000,
@@ -164,7 +165,7 @@ enum MethodDescClassification
     // Is the method synchronized
     mdcSynchronized                     = 0x4000,
 
-    // unused                           = 0x8000
+    mdcIsIntrinsic                      = 0x8000  // Jit may expand method as an intrinsic
 };
 
 #define METHOD_MAX_RVA                          0x7FFFFFFF
@@ -228,7 +229,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (m_bFlags2 & enum_flag2_HasStableEntryPoint) != 0;
+        return (m_wFlags3AndTokenRemainder & enum_flag3_HasStableEntryPoint) != 0;
     }
 
     inline PCODE GetStableEntryPoint()
@@ -262,7 +263,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (m_bFlags2 & enum_flag2_HasPrecode) != 0;
+        return (m_wFlags3AndTokenRemainder & enum_flag3_HasPrecode) != 0;
     }
 
     inline Precode* GetPrecode()
@@ -297,8 +298,6 @@ public:
         _ASSERTE(!result || !IsVersionableWithVtableSlotBackpatch());
         return result;
     }
-
-    void InterlockedUpdateFlags2(BYTE bMask, BOOL fSet);
 
     Precode* GetOrCreatePrecode();
 
@@ -760,13 +759,13 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (m_bFlags2 & enum_flag2_IsUnboxingStub) != 0;
+        return (m_wFlags3AndTokenRemainder & enum_flag3_IsUnboxingStub) != 0;
     }
 
     void SetIsUnboxingStub()
     {
         LIMITED_METHOD_CONTRACT;
-        m_bFlags2 |= enum_flag2_IsUnboxingStub;
+        m_wFlags3AndTokenRemainder |= enum_flag3_IsUnboxingStub;
     }
 
 
@@ -994,7 +993,7 @@ public:
 
   public:
     inline MethodDescChunk* GetMethodDescChunk() const;
-    inline int GetMethodDescIndex() const;
+    inline int GetMethodDescChunkIndex() const;
     // If this is an method desc. (whether non-generic shared-instantiated or exact-instantiated)
     // inside a shared class then get the method table for the representative
     // class.
@@ -1123,17 +1122,23 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
 #ifdef FEATURE_TIERED_COMPILATION
-        return (m_bFlags2 & enum_flag2_IsEligibleForTieredCompilation) != 0;
+        return (m_wFlags3AndTokenRemainder & enum_flag3_IsEligibleForTieredCompilation) != 0;
 #else
         return false;
 #endif
     }
 
+    // This method must return the same value for all methods in one MethodDescChunk
+    bool DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk();
+
     // Is this method allowed to be recompiled and the entrypoint redirected so that we
     // can optimize its performance? Eligibility is invariant for the lifetime of a method.
+
     bool DetermineAndSetIsEligibleForTieredCompilation();
 
     bool IsJitOptimizationDisabled();
+    bool IsJitOptimizationDisabledForAllMethodsInChunk();
+    bool IsJitOptimizationDisabledForSpecificMethod();
 
 private:
     // This function is not intended to be called in most places, and is named as such to discourage calling it accidentally
@@ -1616,36 +1621,21 @@ private:
 
 protected:
     enum {
-        // There are flags available for use here (currently 5 flags bits are available); however, new bits are hard to come by, so any new flags bits should
+        // There are flags available for use here (currently 4 flags bits are available); however, new bits are hard to come by, so any new flags bits should
         // have a fairly strong justification for existence.
-        enum_flag3_TokenRemainderMask                       = 0x1FFF, // This must equal METHOD_TOKEN_REMAINDER_MASK calculated higher in this file.
-        enum_flag3_ValueTypeParametersWalked                = 0x2000, // Indicates that all typeref's in the signature of the method have been resolved
-                                                                      // to typedefs (or that process failed).
-        enum_flag3_ValueTypeParametersLoaded                = 0x4000, // Indicates if the valuetype parameter types have been loaded.
-        enum_flag3_DoesNotHaveEquivalentValuetypeParameters = 0x8000, // Indicates that we have verified that there are no equivalent valuetype parameters
+        enum_flag3_TokenRemainderMask                       = 0x0FFF, // This must equal METHOD_TOKEN_REMAINDER_MASK calculated higher in this file.
                                                                       // for this method.
+        // enum_flag3_HasPrecode implies that enum_flag3_HasStableEntryPoint is set.
+        enum_flag3_HasStableEntryPoint                      = 0x1000,   // The method entrypoint is stable (either precode or actual code)
+        enum_flag3_HasPrecode                               = 0x2000,   // Precode has been allocated for this method
+
+        enum_flag3_IsUnboxingStub                           = 0x4000,
+        enum_flag3_IsEligibleForTieredCompilation           = 0x8000,
     };
     UINT16      m_wFlags3AndTokenRemainder;
 
     BYTE        m_chunkIndex;
-
-    enum {
-        // enum_flag2_HasPrecode implies that enum_flag2_HasStableEntryPoint is set.
-        enum_flag2_HasStableEntryPoint                  = 0x01,   // The method entrypoint is stable (either precode or actual code)
-        enum_flag2_HasPrecode                           = 0x02,   // Precode has been allocated for this method
-
-        enum_flag2_IsUnboxingStub                       = 0x04,
-        // unused                                       = 0x08,
-
-        enum_flag2_IsIntrinsic                          = 0x10,   // Jit may expand method as an intrinsic
-
-        enum_flag2_IsEligibleForTieredCompilation       = 0x20,
-
-        enum_flag2_RequiresCovariantReturnTypeChecking  = 0x40
-
-        // unused                           = 0x80,
-    };
-    BYTE        m_bFlags2;
+    BYTE        m_methodIndex; // Used to hold the index into the chunk of this MethodDesc. Currently all 8 bits are used, but we could likely work with only 7 bits
 
     // The slot number of this MethodDesc in the vtable array.
     WORD m_wSlotNumber;
@@ -1655,6 +1645,17 @@ public:
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
+
+    BYTE GetMethodDescIndex()
+    {
+        return m_methodIndex;
+    }
+
+    void SetMethodDescIndex(COUNT_T index)
+    {
+        _ASSERTE(index <= 255);
+        m_methodIndex = (BYTE)index;
+    }
 
 public:
     inline DWORD GetClassification() const
@@ -1706,26 +1707,26 @@ public:
     inline BOOL IsIntrinsic()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_bFlags2 & enum_flag2_IsIntrinsic) != 0;
+        return (m_wFlags & mdcIsIntrinsic) != 0;
     }
 
     inline void SetIsIntrinsic()
     {
         LIMITED_METHOD_CONTRACT;
-        m_bFlags2 |= enum_flag2_IsIntrinsic;
+        m_wFlags |= mdcIsIntrinsic;
     }
 
     BOOL RequiresCovariantReturnTypeChecking()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (m_bFlags2 & enum_flag2_RequiresCovariantReturnTypeChecking) != 0;
+        return (m_wFlags & mdcRequiresCovariantReturnTypeChecking) != 0;
     }
 
     void SetRequiresCovariantReturnTypeChecking()
     {
         LIMITED_METHOD_CONTRACT;
-        m_bFlags2 |= enum_flag2_RequiresCovariantReturnTypeChecking;
+        m_wFlags |= mdcRequiresCovariantReturnTypeChecking;
     }
 
     static const BYTE s_ClassificationSizeTable[];
@@ -1750,38 +1751,38 @@ public:
     inline BOOL HaveValueTypeParametersBeenWalked()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags3AndTokenRemainder & enum_flag3_ValueTypeParametersWalked) != 0;
+        return (m_wFlags & mdcValueTypeParametersWalked) != 0;
     }
 
     inline void SetValueTypeParametersWalked()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedUpdateFlags3(enum_flag3_ValueTypeParametersWalked, TRUE);
+        InterlockedUpdateFlags(mdcValueTypeParametersWalked, TRUE);
     }
 
     inline BOOL HaveValueTypeParametersBeenLoaded()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags3AndTokenRemainder & enum_flag3_ValueTypeParametersLoaded) != 0;
+        return (m_wFlags & mdcValueTypeParametersLoaded) != 0;
     }
 
     inline void SetValueTypeParametersLoaded()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedUpdateFlags3(enum_flag3_ValueTypeParametersLoaded, TRUE);
+        InterlockedUpdateFlags(mdcValueTypeParametersLoaded, TRUE);
     }
 
 #ifdef FEATURE_TYPEEQUIVALENCE
     inline BOOL DoesNotHaveEquivalentValuetypeParameters()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags3AndTokenRemainder & enum_flag3_DoesNotHaveEquivalentValuetypeParameters) != 0;
+        return (m_wFlags & mdcDoesNotHaveEquivalentValuetypeParameters) != 0;
     }
 
     inline void SetDoesNotHaveEquivalentValuetypeParameters()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedUpdateFlags3(enum_flag3_DoesNotHaveEquivalentValuetypeParameters, TRUE);
+        InterlockedUpdateFlags(mdcDoesNotHaveEquivalentValuetypeParameters, TRUE);
     }
 #endif // FEATURE_TYPEEQUIVALENCE
 
@@ -1818,12 +1819,12 @@ private:
     PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier);
     PCODE GetPrecompiledR2RCode(PrepareCodeConfig* pConfig);
     PCODE GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0);
-    COR_ILMETHOD_DECODER* GetAndVerifyILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
-    COR_ILMETHOD_DECODER* GetAndVerifyMetadataILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
-    COR_ILMETHOD_DECODER* GetAndVerifyNoMetadataILHeader();
     PCODE JitCompileCode(PrepareCodeConfig* pConfig);
     PCODE JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry);
-    PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode, CORJIT_FLAGS* pFlags);
+    PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode);
+
+public:
+    bool TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
 #endif // DACCESS_COMPILE
 
 #ifdef HAVE_GCCOVER
@@ -2126,7 +2127,7 @@ class MethodDescChunk
     friend class CheckAsmOffsets;
 
     enum {
-        enum_flag_TokenRangeMask                           = 0x07FF, // This must equal METHOD_TOKEN_RANGE_MASK calculated higher in this file
+        enum_flag_TokenRangeMask                           = 0x0FFF, // This must equal METHOD_TOKEN_RANGE_MASK calculated higher in this file
                                                                      // These are separate to allow the flags space available and used to be obvious here
                                                                      // and for the logic that splits the token to be algorithmically generated based on the
                                                                      // #define
@@ -2311,7 +2312,7 @@ private:
     // Followed by array of method descs...
 };
 
-inline int MethodDesc::GetMethodDescIndex() const
+inline int MethodDesc::GetMethodDescChunkIndex() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -2324,7 +2325,7 @@ inline MethodDescChunk *MethodDesc::GetMethodDescChunk() const
 
     return
         PTR_MethodDescChunk(dac_cast<TADDR>(this) -
-                            (sizeof(MethodDescChunk) + (GetMethodDescIndex() * MethodDesc::ALIGNMENT)));
+                            (sizeof(MethodDescChunk) + (GetMethodDescChunkIndex() * MethodDesc::ALIGNMENT)));
 }
 
 MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint);
@@ -3491,7 +3492,7 @@ inline void MethodDesc::SetMemberDef(mdMethodDef mb)
     _ASSERTE((tokremainder & ~enum_flag3_TokenRemainderMask) == 0);
     m_wFlags3AndTokenRemainder = (m_wFlags3AndTokenRemainder & ~enum_flag3_TokenRemainderMask) | tokremainder;
 
-    if (GetMethodDescIndex() == 0)
+    if (GetMethodDescChunkIndex() == 0)
     {
         GetMethodDescChunk()->SetTokenRange(tokrange);
     }

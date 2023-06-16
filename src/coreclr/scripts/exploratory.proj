@@ -12,8 +12,6 @@
     <OutputDirectory>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputDirectory>
     <CoreRoot>%HELIX_CORRELATION_PAYLOAD%\CoreRoot</CoreRoot>
     <ToolPath>%HELIX_CORRELATION_PAYLOAD%\exploratory</ToolPath>
-    <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
-    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
@@ -21,8 +19,6 @@
     <OutputDirectory>$HELIX_WORKITEM_UPLOAD_ROOT</OutputDirectory>
     <CoreRoot>$HELIX_CORRELATION_PAYLOAD/CoreRoot</CoreRoot>
     <ToolPath>$HELIX_CORRELATION_PAYLOAD/exploratory</ToolPath>
-    <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
-    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)/artifacts/helixresults</HelixResultsDestinationDir>
   </PropertyGroup>
 
   <PropertyGroup>

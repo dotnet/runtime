@@ -5126,12 +5126,17 @@ mono_metadata_custom_attrs_from_index (MonoImage *meta, guint32 index)
 	/* FIXME: Index translation */
 
 	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) != NULL;
-	if (!found && !meta->has_updates)
-		return 0;
-
-	if (G_UNLIKELY (meta->has_updates)) {
-		if (!found && !mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator))
+	if (!found) {
+		if (G_LIKELY (!meta->has_updates)) {
 			return 0;
+		} else {
+			if ((mono_metadata_table_num_rows (meta, MONO_TABLE_CUSTOMATTRIBUTE) > table_info_get_rows (tdef))) {
+				if (!mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator))
+					return 0;
+			} else {
+				return 0;
+			}
+		}
 	}
 
 	/* Find the first entry by searching backwards */

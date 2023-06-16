@@ -1651,6 +1651,8 @@ public:
         return OperIsHWIntrinsic(gtOper);
     }
 
+    bool OperIsHWIntrinsic(NamedIntrinsic intrinsicId) const;
+
     // This is here for cleaner GT_LONG #ifdefs.
     static bool OperIsLong(genTreeOps gtOper)
     {
@@ -6245,6 +6247,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsMemoryStoreOrBarrier() const;
     bool OperIsEmbBroadcastCompatible() const;
     bool OperIsBroadcastScalar() const;
+    bool OperIsCreateScalarUnsafe() const;
 
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;
@@ -6709,6 +6712,10 @@ struct GenTreeVecCon : public GenTree
     GenTreeVecCon(var_types type) : GenTree(GT_CNS_VEC, type)
     {
         assert(varTypeIsSIMD(type));
+
+        // Some uses of GenTreeVecCon do not specify all bits in the vector they are using but failing to zero out the
+        // buffer will cause determinism issues with the compiler.
+        memset(&gtSimdVal, 0, sizeof(gtSimdVal));
 
 #if defined(TARGET_XARCH)
         assert(sizeof(simd_t) == sizeof(simd64_t));

@@ -430,36 +430,34 @@ static BasicBlockVisit VisitSuccessorEHSuccessors(Compiler* comp, BasicBlock* bl
 }
 
 //------------------------------------------------------------------------------
-// VisitAllSuccsInternal: Internal helper function to visit all successors
-// (including EH successors) of a block.
+// VisitAllSuccs: Visit all successors (including EH successors) of this block.
 //
 // Arguments:
 //   comp  - Compiler instance
-//   block - The block
 //   func  - Callback
 //
 // Returns:
 //   Whether or not the visiting was aborted.
 //
 template <typename TFunc>
-static BasicBlockVisit VisitAllSuccsInternal(Compiler* comp, BasicBlock* block, TFunc func)
+BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 {
-    switch (block->bbJumpKind)
+    switch (bbJumpKind)
     {
         case BBJ_EHFILTERRET:
-            RETURN_ON_ABORT(func(block->bbJumpDest));
-            RETURN_ON_ABORT(VisitEHSuccessors(comp, block, func));
-            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, block, block->bbJumpDest, func));
+            RETURN_ON_ABORT(func(bbJumpDest));
+            RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
+            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bbJumpDest, func));
             break;
 
         case BBJ_EHFINALLYRET:
         {
-            EHblkDsc* ehDsc = comp->ehGetDsc(block->getHndIndex());
+            EHblkDsc* ehDsc = comp->ehGetDsc(getHndIndex());
             assert(ehDsc->HasFinallyHandler());
 
             BasicBlock* begBlk;
             BasicBlock* endBlk;
-            comp->ehGetCallFinallyBlockRange(block->getHndIndex(), &begBlk, &endBlk);
+            comp->ehGetCallFinallyBlockRange(getHndIndex(), &begBlk, &endBlk);
 
             BasicBlock* finBeg = ehDsc->ebdHndBeg;
 
@@ -475,7 +473,7 @@ static BasicBlockVisit VisitAllSuccsInternal(Compiler* comp, BasicBlock* block, 
                 RETURN_ON_ABORT(func(bcall->bbNext));
             }
 
-            RETURN_ON_ABORT(VisitEHSuccessors(comp, block, func));
+            RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
 
             for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
             {
@@ -485,7 +483,7 @@ static BasicBlockVisit VisitAllSuccsInternal(Compiler* comp, BasicBlock* block, 
                 }
 
                 assert(bcall->isBBCallAlwaysPair());
-                RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, block, bcall->bbNext, func));
+                RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bcall->bbNext, func));
             }
 
             break;
@@ -494,61 +492,61 @@ static BasicBlockVisit VisitAllSuccsInternal(Compiler* comp, BasicBlock* block, 
         case BBJ_CALLFINALLY:
         case BBJ_EHCATCHRET:
         case BBJ_LEAVE:
-            RETURN_ON_ABORT(func(block->bbJumpDest));
-            RETURN_ON_ABORT(VisitEHSuccessors(comp, block, func));
-            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, block, block->bbJumpDest, func));
+            RETURN_ON_ABORT(func(bbJumpDest));
+            RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
+            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bbJumpDest, func));
             break;
 
         case BBJ_ALWAYS:
-            RETURN_ON_ABORT(func(block->bbJumpDest));
+            RETURN_ON_ABORT(func(bbJumpDest));
 
-            // If "block" is a "leave helper" block (the empty BBJ_ALWAYS block
+            // If this is a "leave helper" block (the empty BBJ_ALWAYS block
             // that pairs with a preceding BBJ_CALLFINALLY block to implement a
             // "leave" IL instruction), then no exceptions can occur within it
             // and we skip its normal EH successors.
-            if (!block->isBBCallAlwaysPairTail())
+            if (!isBBCallAlwaysPairTail())
             {
-                RETURN_ON_ABORT(VisitEHSuccessors(comp, block, func));
+                RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
             }
-            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, block, block->bbJumpDest, func));
+            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bbJumpDest, func));
             break;
 
         case BBJ_NONE:
-            RETURN_ON_ABORT(func(block->bbNext));
-            RETURN_ON_ABORT(VisitEHSuccessors(comp, block, func));
-            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, block, block->bbNext, func));
+            RETURN_ON_ABORT(func(bbNext));
+            RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
+            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bbNext, func));
             break;
 
         case BBJ_COND:
-            RETURN_ON_ABORT(func(block->bbNext));
+            RETURN_ON_ABORT(func(bbNext));
 
-            if (block->bbJumpDest != block->bbNext)
+            if (bbJumpDest != bbNext)
             {
-                RETURN_ON_ABORT(func(block->bbJumpDest));
+                RETURN_ON_ABORT(func(bbJumpDest));
             }
 
-            RETURN_ON_ABORT(VisitEHSuccessors(comp, block, func));
-            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, block, block->bbNext, func));
+            RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
+            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bbNext, func));
 
-            if (block->bbJumpDest != block->bbNext)
+            if (bbJumpDest != bbNext)
             {
-                RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, block, block->bbJumpDest, func));
+                RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bbJumpDest, func));
             }
             break;
 
         case BBJ_SWITCH:
         {
-            Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(block);
+            Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
             for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
             {
                 RETURN_ON_ABORT(func(sd.nonDuplicates[i]));
             }
 
-            RETURN_ON_ABORT(VisitEHSuccessors(comp, block, func));
+            RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
 
             for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
             {
-                RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, block, sd.nonDuplicates[i], func));
+                RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, sd.nonDuplicates[i], func));
             }
 
             break;
@@ -557,7 +555,7 @@ static BasicBlockVisit VisitAllSuccsInternal(Compiler* comp, BasicBlock* block, 
         case BBJ_THROW:
         case BBJ_RETURN:
         case BBJ_EHFAULTRET:
-            RETURN_ON_ABORT(VisitEHSuccessors(comp, block, func));
+            RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
             break;
 
         default:
@@ -565,51 +563,6 @@ static BasicBlockVisit VisitAllSuccsInternal(Compiler* comp, BasicBlock* block, 
     }
 
     return BasicBlockVisit::Continue;
-}
-
-//------------------------------------------------------------------------------
-// VisitAllSuccs: Visit all successors (including EH successors) of this block.
-//
-// Arguments:
-//   comp  - Compiler instance
-//   func  - Callback
-//
-// Returns:
-//   Whether or not the visiting was aborted.
-//
-template <typename TFunc>
-BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
-{
-#ifdef DEBUG
-    // Compare callback-based successors with old iterator based successors.
-    BasicBlock* succs[64];
-    unsigned    index = 0;
-
-    VisitAllSuccsInternal(comp, this, [&succs, &index](BasicBlock* succ) {
-        if (index < ArrLen(succs))
-        {
-            succs[index] = succ;
-        }
-
-        index++;
-        return BasicBlockVisit::Continue;
-    });
-
-    unsigned index2 = 0;
-    for (BasicBlock* succ : GetAllSuccs(comp))
-    {
-        if (index2 < ArrLen(succs))
-        {
-            assert(succs[index2] == succ);
-        }
-
-        index2++;
-    }
-
-    assert(index == index2);
-#endif
-
-    return VisitAllSuccsInternal(comp, this, func);
 }
 
 #undef RETURN_ON_ABORT

@@ -553,7 +553,8 @@ namespace Wasm.Build.Tests
             AssertBlazorBundle(options.Config,
                                isPublish: false,
                                dotnetWasmFromRuntimePack: options.ExpectedFileType == NativeFilesType.FromRuntimePack,
-                               targetFramework: options.TargetFramework);
+                               targetFramework: options.TargetFramework,
+                               expectFingerprintOnDotnetJs: options.ExpectFingerprintOnDotnetJs);
 
             return res;
         }
@@ -565,7 +566,8 @@ namespace Wasm.Build.Tests
             AssertBlazorBundle(options.Config,
                                isPublish: true,
                                dotnetWasmFromRuntimePack: options.ExpectedFileType == NativeFilesType.FromRuntimePack,
-                               targetFramework: options.TargetFramework);
+                               targetFramework: options.TargetFramework,
+                               expectFingerprintOnDotnetJs: options.ExpectFingerprintOnDotnetJs);
 
             if (options.ExpectedFileType == NativeFilesType.AOT)
             {
@@ -581,7 +583,7 @@ namespace Wasm.Build.Tests
             string objBuildDir = Path.Combine(_projectDir!, "obj", options.Config, options.TargetFramework, "wasm", "for-build");
             // Check that we linked only for publish
             if (options.ExpectRelinkDirWhenPublishing)
-                Assert.True(Directory.Exists(objBuildDir), $"Could not find expected {objBuildDir}, which gets created when relinking during Build. This is liokely a test authoring error");
+                Assert.True(Directory.Exists(objBuildDir), $"Could not find expected {objBuildDir}, which gets created when relinking during Build. This is likely a test authoring error");
             else
                 Assert.False(Directory.Exists(objBuildDir), $"Found unexpected {objBuildDir}, which gets created when relinking during Build");
 
@@ -829,7 +831,7 @@ namespace Wasm.Build.Tests
             return result;
         }
 
-        protected void AssertBlazorBundle(string config, bool isPublish, bool dotnetWasmFromRuntimePack, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir = null, bool expectFingerprinting = false)
+        protected void AssertBlazorBundle(string config, bool isPublish, bool dotnetWasmFromRuntimePack, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir = null, bool expectFingerprintOnDotnetJs = false)
         {
             binFrameworkDir ??= FindBlazorBinFrameworkDir(config, isPublish, targetFramework);
 
@@ -861,12 +863,21 @@ namespace Wasm.Build.Tests
                     Assert.True(File.Exists(absolutePath), $"Expected to find '{absolutePath}'");
                 }
 
-                string versionHashRegex = @"\d.0.\d?(-[a-z]+(\.\d\.\d+\.\d)?)?\.([a-zA-Z0-9])+";
+                string versionHashRegex = @"\.(?<version>.+)\.(?<hash>[a-zA-Z0-9]+)\.";
+
                 Assert.Collection(
                     dotnetJsEntries.OrderBy(f => f),
-                    item => { Assert.Equal(expectFingerprinting ? $"dotnet\\.{versionHashRegex}\\.js" : "dotnet.js", item); AssertFileExists(item); },
-                    item => { Assert.Matches($"dotnet\\.native\\.{versionHashRegex}\\.js", item); AssertFileExists(item); },
-                    item => { Assert.Matches($"dotnet\\.runtime\\.{versionHashRegex}\\.js", item); AssertFileExists(item); }
+                    item =>
+                    {
+                        if (expectFingerprintOnDotnetJs)
+                            Assert.Matches($"dotnet{versionHashRegex}js", item);
+                        else
+                            Assert.Equal("dotnet.js", item);
+
+                        AssertFileExists(item);
+                    },
+                    item => { Assert.Matches($"dotnet\\.native{versionHashRegex}js", item); AssertFileExists(item); },
+                    item => { Assert.Matches($"dotnet\\.runtime{versionHashRegex}js", item); AssertFileExists(item); }
                 );
             }
         }
@@ -1295,7 +1306,8 @@ namespace Wasm.Build.Tests
         NativeFilesType ExpectedFileType,
         string TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor,
         bool WarnAsError = true,
-        bool ExpectRelinkDirWhenPublishing = false
+        bool ExpectRelinkDirWhenPublishing = false,
+        bool ExpectFingerprintOnDotnetJs = false
     );
 
     public enum GlobalizationMode
