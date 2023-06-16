@@ -23,7 +23,6 @@ struct JitInterfaceCallbacks
     void (* reportTailCallDecision)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE calleeHnd, bool fIsTailPrefix, CorInfoTailCall tailCallResult, const char* reason);
     void (* getEHinfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, unsigned EHnumber, CORINFO_EH_CLAUSE* clause);
     CORINFO_CLASS_HANDLE (* getMethodClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method);
-    CORINFO_MODULE_HANDLE (* getMethodModule)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method);
     void (* getMethodVTableOffset)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection, bool* isRelative);
     bool (* resolveVirtualMethod)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_DEVIRTUALIZATION_INFO* info);
     CORINFO_METHOD_HANDLE (* getUnboxedEntry)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
@@ -311,15 +310,6 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     CORINFO_CLASS_HANDLE temp = _callbacks->getMethodClass(_thisHandle, &pException, method);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual CORINFO_MODULE_HANDLE getMethodModule(
-          CORINFO_METHOD_HANDLE method)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    CORINFO_MODULE_HANDLE temp = _callbacks->getMethodModule(_thisHandle, &pException, method);
     if (pException != nullptr) throw pException;
     return temp;
 }

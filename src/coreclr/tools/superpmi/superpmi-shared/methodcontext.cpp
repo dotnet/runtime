@@ -726,29 +726,6 @@ CORINFO_CLASS_HANDLE MethodContext::repGetMethodClass(CORINFO_METHOD_HANDLE meth
     return result;
 }
 
-void MethodContext::recGetMethodModule(CORINFO_METHOD_HANDLE methodHandle, CORINFO_MODULE_HANDLE moduleHandle)
-{
-    if (GetMethodModule == nullptr)
-        GetMethodModule = new LightWeightMap<DWORDLONG, DWORDLONG>();
-
-    DWORDLONG key = CastHandle(methodHandle);
-    DWORDLONG value = CastHandle(moduleHandle);
-    GetMethodModule->Add(key, value);
-    DEBUG_REC(dmpGetMethodModule(key, value));
-}
-void MethodContext::dmpGetMethodModule(DWORDLONG key, DWORDLONG value)
-{
-    printf("GetMethodModule key %016" PRIX64 ", value %016" PRIX64 "", key, value);
-}
-CORINFO_MODULE_HANDLE MethodContext::repGetMethodModule(CORINFO_METHOD_HANDLE methodHandle)
-{
-    DWORDLONG key = CastHandle(methodHandle);
-    DWORDLONG value = LookupByKeyOrMiss(GetMethodModule, key, ": key %016" PRIX64 "", key);
-    DEBUG_REP(dmpGetMethodModule(key, value));
-    CORINFO_MODULE_HANDLE result = (CORINFO_MODULE_HANDLE)value;
-    return result;
-}
-
 void MethodContext::recGetClassAttribs(CORINFO_CLASS_HANDLE classHandle, DWORD attribs)
 {
     if (GetClassAttribs == nullptr)

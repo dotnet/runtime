@@ -184,15 +184,6 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getMethodClass(CORINFO_METHOD_HANDLE meth
     return temp;
 }
 
-// return module it belongs to
-CORINFO_MODULE_HANDLE interceptor_ICJI::getMethodModule(CORINFO_METHOD_HANDLE method)
-{
-    mc->cr->AddCall("getMethodModule");
-    CORINFO_MODULE_HANDLE temp = original_ICorJitInfo->getMethodModule(method);
-    mc->recGetMethodModule(method, temp);
-    return temp;
-}
-
 // This function returns the offset of the specified method in the
 // vtable of it's owning class or interface.
 void interceptor_ICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                 /* IN */

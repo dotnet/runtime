@@ -75,9 +75,6 @@ void getEHinfo(
 CORINFO_CLASS_HANDLE getMethodClass(
           CORINFO_METHOD_HANDLE method) override;
 
-CORINFO_MODULE_HANDLE getMethodModule(
-          CORINFO_METHOD_HANDLE method) override;
-
 void getMethodVTableOffset(
           CORINFO_METHOD_HANDLE method,
           unsigned* offsetOfIndirection,

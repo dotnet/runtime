@@ -102,12 +102,6 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getMethodClass(
     return original_ICorJitInfo->getMethodClass(method);
 }
 
-CORINFO_MODULE_HANDLE interceptor_ICJI::getMethodModule(
-          CORINFO_METHOD_HANDLE method)
-{
-    return original_ICorJitInfo->getMethodModule(method);
-}
-
 void interceptor_ICJI::getMethodVTableOffset(
           CORINFO_METHOD_HANDLE method,
           unsigned* offsetOfIndirection,

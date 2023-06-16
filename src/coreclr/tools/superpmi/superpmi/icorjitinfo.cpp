@@ -160,13 +160,6 @@ CORINFO_CLASS_HANDLE MyICJI::getMethodClass(CORINFO_METHOD_HANDLE method)
     return jitInstance->mc->repGetMethodClass(method);
 }
 
-// return module it belongs to
-CORINFO_MODULE_HANDLE MyICJI::getMethodModule(CORINFO_METHOD_HANDLE method)
-{
-    jitInstance->mc->cr->AddCall("getMethodModule");
-    return jitInstance->mc->repGetMethodModule(method);
-}
-
 // This function returns the offset of the specified method in the
 // vtable of it's owning class or interface.
 void MyICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                 /* IN */

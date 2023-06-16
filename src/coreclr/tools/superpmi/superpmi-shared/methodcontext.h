@@ -114,10 +114,6 @@ public:
     void dmpGetMethodClass(DWORDLONG key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetMethodClass(CORINFO_METHOD_HANDLE methodHandle);
 
-    void recGetMethodModule(CORINFO_METHOD_HANDLE methodHandle, CORINFO_MODULE_HANDLE moduleHandle);
-    void dmpGetMethodModule(DWORDLONG key, DWORDLONG value);
-    CORINFO_MODULE_HANDLE repGetMethodModule(CORINFO_METHOD_HANDLE methodHandle);
-
     void recGetClassAttribs(CORINFO_CLASS_HANDLE classHandle, DWORD attribs);
     void dmpGetClassAttribs(DWORDLONG key, DWORD value);
     DWORD repGetClassAttribs(CORINFO_CLASS_HANDLE classHandle);
@@ -1101,7 +1097,7 @@ enum mcPackets
     Packet_GetTailCallHelpers = 178,
     PacketCR_RecordCallSiteWithSignature = 179,
     PacketCR_RecordCallSiteWithoutSignature = 180,
-    Packet_GetMethodModule = 181,
+    //Packet_GetMethodModule = 181,
     //Retired10 = 182,
     Packet_GetExpectedTargetArchitecture = 183,
     Packet_SigInstHandleMap = 184,

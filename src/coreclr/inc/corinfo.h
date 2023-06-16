@@ -2099,11 +2099,6 @@ public:
             CORINFO_METHOD_HANDLE       method
             ) = 0;
 
-    // return module it belongs to
-    virtual CORINFO_MODULE_HANDLE getMethodModule (
-            CORINFO_METHOD_HANDLE       method
-            ) = 0;
-
     // This function returns the offset of the specified method in the
     // vtable of it's owning class or interface.
     virtual void getMethodVTableOffset (
