@@ -8202,8 +8202,8 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
                         tbl->gtSimdVal.i32[0] = 0x0700;
                     }
 
-                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, retNode, op2Clone, tbl, NI_AVX512F_FixupScalar,
-                                                       callJitType, 16);
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, retNode, op2Clone, tbl, gtNewIconNode(0),
+                                                       NI_AVX512F_FixupScalar, callJitType, 16);
                 }
 
                 if (isNumber)
@@ -8329,10 +8329,11 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
 
             tbl1 = impCloneExpr(tbl1, &tbl2, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning tbl for Math.Max/Min"));
 
-            op1Clone =
-                gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Clone, op2Clone, tbl1, NI_AVX512F_FixupScalar, callJitType, 16);
+            op1Clone = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Clone, op2Clone, tbl1, gtNewIconNode(0),
+                                                NI_AVX512F_FixupScalar, callJitType, 16);
 
-            tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Clone, tmp, tbl2, NI_AVX512F_FixupScalar, callJitType, 16);
+            tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Clone, tmp, tbl2, gtNewIconNode(0), NI_AVX512F_FixupScalar,
+                                           callJitType, 16);
         }
         else
         {
@@ -8371,10 +8372,11 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
 
             tbl1 = impCloneExpr(tbl1, &tbl2, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning tbl for Math.Max/Min"));
 
-            op1Clone =
-                gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Clone, op2Clone, tbl1, NI_AVX512F_FixupScalar, callJitType, 16);
+            op1Clone = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Clone, op2Clone, tbl1, gtNewIconNode(0),
+                                                NI_AVX512F_FixupScalar, callJitType, 16);
 
-            tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp, op1Clone, tbl2, NI_AVX512F_FixupScalar, callJitType, 16);
+            tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp, op1Clone, tbl2, gtNewIconNode(0), NI_AVX512F_FixupScalar,
+                                           callJitType, 16);
         }
 
         return gtNewSimdHWIntrinsicNode(callType, tmp, NI_Vector128_ToScalar, callJitType, 16);
