@@ -471,12 +471,11 @@ public:
     // A relocation is recorded if we are pre-jitting.
     // A jump thunk may be inserted if we are jitting
     virtual void recordRelocation(
-            void *                 location,   /* IN  */
-            void *                 locationRW, /* IN  */
-            void *                 target,     /* IN  */
-            uint16_t                   fRelocType, /* IN  */
-            uint16_t                   slotNum = 0,  /* IN  */
-            int32_t                  addlDelta = 0 /* IN  */
+            void *                 location,     /* IN  */
+            void *                 locationRW,   /* IN  */
+            void *                 target,       /* IN  */
+            uint16_t               fRelocType,   /* IN  */
+            int32_t                addlDelta = 0 /* IN  */
             ) = 0;
 
     virtual uint16_t getRelocTypeHint(void * target) = 0;

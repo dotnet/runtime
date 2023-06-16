@@ -699,7 +699,6 @@ void recordRelocation(
           void* locationRW,
           void* target,
           uint16_t fRelocType,
-          uint16_t slotNum,
           int32_t addlDelta) override;
 
 uint16_t getRelocTypeHint(
