@@ -175,6 +175,10 @@ namespace ILCompiler
                 return _asyncStateMachineBox;
             }
         }
+
+        public virtual bool SupportsTypeEquivalence => Target.IsWindows;
+        public virtual bool SupportsCOMInterop => Target.IsWindows;
+
     }
 
     internal class VectorOfTFieldLayoutAlgorithm : FieldLayoutAlgorithm
