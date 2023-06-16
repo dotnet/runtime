@@ -2,11 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Reflection
@@ -40,9 +36,16 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				extern static DefaultConstructorTarget InvokeDefaultConstructor ();
 
 				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				// This should not resolve since Name is not allowed for Constructor
+				[UnsafeAccessor (UnsafeAccessorKind.Constructor, Name = ".ctor")]
+				extern static DefaultConstructorTarget InvokeWithName (int i);
+
+				[Kept]
 				public static void Test ()
 				{
 					InvokeDefaultConstructor ();
+					InvokeWithName (0);
 				}
 			}
 
@@ -57,6 +60,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 					[Kept]
 					private ConstructorWithParameterTarget (int i) { }
+
+					[Kept]
+					protected ConstructorWithParameterTarget (string s) { }
 				}
 
 				[Kept]
@@ -64,17 +70,38 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[UnsafeAccessor (UnsafeAccessorKind.Constructor)]
 				extern static ConstructorWithParameterTarget InvokeConstructorWithParameter (int i);
 
-				// Validate that static methods are ignored
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				// ??? Should this resolve?
+				[UnsafeAccessor (UnsafeAccessorKind.Constructor, Name = "")]
+				extern static ConstructorWithParameterTarget InvokeWithEmptyName (string s);
+
+				// Validate that instance methods are ignored
 				[Kept]
 				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
 				[UnsafeAccessor (UnsafeAccessorKind.Constructor)]
-				extern ConstructorWithParameterTarget InvokeDefaultConstructor ();
+				extern ConstructorWithParameterTarget InvokeOnInstance ();
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				// Test that invoking non-existent constructor doesn't break anything
+				[UnsafeAccessor (UnsafeAccessorKind.Constructor)]
+				extern static ConstructorWithParameterTarget InvokeNonExistent (double d);
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				// Test that invoke without a return type is ignored
+				[UnsafeAccessor (UnsafeAccessorKind.Constructor)]
+				extern static void InvokeWithoutReturnType ();
 
 				[Kept]
 				public static void Test ()
 				{
 					InvokeConstructorWithParameter (42);
-					(new ConstructorWithParameter ()).InvokeDefaultConstructor ();
+					InvokeWithEmptyName (null);
+					(new ConstructorWithParameter ()).InvokeOnInstance ();
+					InvokeNonExistent (0);
+					InvokeWithoutReturnType ();
 				}
 			}
 
@@ -96,6 +123,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				{
 					[Kept]
 					private static void TargetMethod () { }
+
+					[Kept]
+					internal static void SecondTarget () { }
+
+					private void InstanceTarget () { }
 				}
 
 				[Kept]
@@ -104,9 +136,22 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				extern static void TargetMethod (MethodWithoutParametersTarget target);
 
 				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.StaticMethod, Name = nameof(MethodWithoutParametersTarget.SecondTarget))]
+				extern static void SpecifyNameParameter (MethodWithoutParametersTarget target);
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				// StaticMethod kind doesn't work on instance methods
+				[UnsafeAccessor (UnsafeAccessorKind.StaticMethod)]
+				extern static void InstanceTarget (MethodWithoutParametersTarget target);
+
+				[Kept]
 				public static void Test ()
 				{
 					TargetMethod (null);
+					SpecifyNameParameter (null);
+					InstanceTarget (null);
 				}
 			}
 
@@ -116,22 +161,21 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				class MethodWithParameterTarget
 				{
-					[Kept] // BUG - method overload resolution doesn't work yet
-					private MethodWithParameterTarget () { }
+					private static void MethodWithOverloads () { }
 
 					[Kept]
-					private MethodWithParameterTarget (int i) { }
+					private static void MethodWithOverloads (int i) { }
 				}
 
 				[Kept]
 				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
-				[UnsafeAccessor (UnsafeAccessorKind.Constructor)]
-				extern static void InvokeMethodWithParameter (MethodWithParameterTarget target, int i);
+				[UnsafeAccessor (UnsafeAccessorKind.StaticMethod)]
+				extern static void MethodWithOverloads (MethodWithParameterTarget target, int i);
 
 				[Kept]
 				public static void Test ()
 				{
-					InvokeMethodWithParameter (null, 42);
+					MethodWithOverloads (null, 0);
 				}
 			}
 
