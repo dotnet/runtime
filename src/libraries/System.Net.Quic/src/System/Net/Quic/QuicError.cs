@@ -77,5 +77,10 @@ namespace System.Net.Quic
         /// Another QUIC listener is already listening on one of the requested application protocols on the same port.
         /// </summary>
         AlpnInUse,
+
+        /// <summary>
+        /// Quic operation failed because of Quic transport error.
+        /// </summary>
+        TransportError,
     }
 }

@@ -481,7 +481,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
     {
         // TODO: we should propagate transport error code.
         // https://github.com/dotnet/runtime/issues/72666
-        Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetExceptionForMsQuicStatus(data.Status));
+
+        Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetExceptionForMsQuicStatus(data.Status, null, (long)data.ErrorCode));
         _connectedTcs.TrySetException(exception);
         _acceptQueue.Writer.TryComplete(exception);
         return QUIC_STATUS_SUCCESS;

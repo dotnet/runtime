@@ -34,6 +34,14 @@ namespace System.Net.Quic
             ApplicationErrorCode = applicationErrorCode;
         }
 
+        internal QuicException(QuicError error, long? applicationErrorCode, long? transportErrorCode, string message, Exception? innerException)
+            : base(message, innerException)
+        {
+            QuicError = error;
+            ApplicationErrorCode = applicationErrorCode;
+            TransportErrorCode = transportErrorCode;
+        }
+
         /// <summary>
         /// Gets the error which is associated with this exception.
         /// </summary>
@@ -46,5 +54,10 @@ namespace System.Net.Quic
         /// This property contains the error code set by the application layer when closing the connection (<see cref="QuicError.ConnectionAborted"/>) or closing a read/write direction of a QUIC stream (<see cref="QuicError.StreamAborted"/>). Contains null for all other errors.
         /// </remarks>
         public long? ApplicationErrorCode { get; }
+
+        /// <summary>
+        /// The transport error code as described in Quic RFC.
+        /// </summary>
+        public long? TransportErrorCode { get; }
     }
 }

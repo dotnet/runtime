@@ -49,9 +49,9 @@ internal static class ThrowHelper
         return false;
     }
 
-    internal static Exception GetExceptionForMsQuicStatus(int status, string? message = null)
+    internal static Exception GetExceptionForMsQuicStatus(int status, string? message = null, long? transportErrorCode = null)
     {
-        Exception ex = GetExceptionInternal(status, message);
+        Exception ex = GetExceptionInternal(status, message, transportErrorCode);
         if (status != 0)
         {
             // Include the raw MsQuic status in the HResult property for better diagnostics
@@ -60,7 +60,7 @@ internal static class ThrowHelper
 
         return ex;
 
-        static Exception GetExceptionInternal(int status, string? message)
+        static Exception GetExceptionInternal(int status, string? message, long? transportErrorCode)
         {
             //
             // Start by checking for statuses mapped to QuicError enum
@@ -87,6 +87,8 @@ internal static class ThrowHelper
             // Some TLS Alerts are mapped to dedicated QUIC_STATUS codes so we need to handle them individually.
             //
             if (status == QUIC_STATUS_ALPN_NEG_FAILURE) return new AuthenticationException(SR.net_quic_alpn_neg_error);
+
+            // should we remove this and surface as TransportError ????
             if (status == QUIC_STATUS_USER_CANCELED) return new AuthenticationException(SR.Format(SR.net_auth_tls_alert, TlsAlertMessage.UserCanceled));
 
             //
@@ -108,6 +110,11 @@ internal static class ThrowHelper
             {
                 TlsAlertMessage alert = (TlsAlertMessage)(status - QUIC_STATUS_CLOSE_NOTIFY);
                 return new AuthenticationException(SR.Format(SR.net_auth_tls_alert, alert));
+            }
+
+            if (transportErrorCode != null)
+            {
+                return new QuicException(QuicError.TransportError, null, transportErrorCode, SR.Format(SR.net_quic_transport_error, transportErrorCode), null);
             }
 
             //
