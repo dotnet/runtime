@@ -6722,7 +6722,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		cfg->gsharedvt_info = info;
 
 		var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
-		/* prevent it from being register allocated */
+		/*
+		 * Decomposing ldaddr creates uses for this and gsharedvt_locals_var, so
+		 * when we emit an ldaddr, we emit dummy uses for these in handle_gsharedvt_ldaddr ().
+		 */
 		//var->flags |= MONO_INST_VOLATILE;
 		cfg->gsharedvt_info_var = var;
 
