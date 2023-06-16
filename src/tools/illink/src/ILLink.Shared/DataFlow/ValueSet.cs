@@ -15,7 +15,7 @@ namespace ILLink.Shared.DataFlow
 	public readonly struct ValueSet<TValue> : IEquatable<ValueSet<TValue>>, IEnumerable<TValue>, IDeepCopyValue<ValueSet<TValue>>
 		where TValue : notnull
 	{
-		const int MaxValuesInSet = 1024;
+		const int MaxValuesInSet = 256;
 
 		// Since we're going to do lot of type checks for this class a lot, it is much more efficient
 		// if the class is sealed (as then the runtime can do a simple method table pointer comparison)
