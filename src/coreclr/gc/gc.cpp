@@ -25033,13 +25033,13 @@ void gc_heap::check_heap_count ()
             // the middle element is the median overhead percentage
             float median_percent_overhead = percent_overhead[1];
 
-            // apply exponential smoothing over 3 median_percent_overhead readings
-            const float smoothing_factor = 0.333f;
+            // apply exponential smoothing and use 1/3 for the smoothing factor
+            const float smoothing = 3;
             float smoothed_median_percent_overhead = dynamic_heap_count_data.smoothed_median_percent_overhead;
             if (smoothed_median_percent_overhead != 0.0f)
             {
                 // average it with the previous value
-                smoothed_median_percent_overhead = median_percent_overhead*smoothing_factor + smoothed_median_percent_overhead*(1.0f - smoothing_factor);
+                smoothed_median_percent_overhead = median_percent_overhead / smoothing + (smoothed_median_percent_overhead / smoothing) * (smoothing - 1);
             }
             else
             {
