@@ -1,9 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -433,6 +431,7 @@ namespace Microsoft.Interop
                     PredefinedType(Token(SyntaxKind.IntKeyword)),
                     SingletonSeparatedList(
                         VariableDeclarator(numElementsIdentifier))));
+            yield return _elementsMarshalling.GenerateSetupStatement(info, context);
             // Use the numElements local to ensure the compiler doesn't give errors for using an uninitialized variable.
             // The value will never be used unless it has been initialized, so this is safe.
             yield return MarshallerHelpers.SkipInitOrDefaultInit(

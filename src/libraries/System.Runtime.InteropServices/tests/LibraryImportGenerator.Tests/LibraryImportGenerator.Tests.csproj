@@ -5,6 +5,8 @@
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <IncludeLibraryImportGeneratorSources>false</IncludeLibraryImportGeneratorSources>
     <ReferencesNativeExports>true</ReferencesNativeExports>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(OutputPath)\GeneratedSource</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
   <ItemGroup>

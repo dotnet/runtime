@@ -86,20 +86,20 @@ namespace Microsoft.Interop
                 case ConstSizeCountInfo(int size):
                     return GetConstSizeExpression(size);
                 case SizeAndParamIndexInfo(SizeAndParamIndexInfo.UnspecifiedConstSize, TypePositionInfo param):
-                {
-                    ExpressionSyntax expr = GetExpressionForParam(param, out bool isIntType);
-                    return isIntType ? expr : CheckedExpression(SyntaxKind.CheckedExpression, expr);
-                }
+                    {
+                        ExpressionSyntax expr = GetExpressionForParam(param, out bool isIntType);
+                        return isIntType ? expr : CheckedExpression(SyntaxKind.CheckedExpression, expr);
+                    }
                 case SizeAndParamIndexInfo(int size, TypePositionInfo param):
                     return CheckedExpression(SyntaxKind.CheckedExpression,
                         BinaryExpression(SyntaxKind.AddExpression,
                             GetConstSizeExpression(size),
                             GetExpressionForParam(param, out _)));
                 case CountElementCountInfo(TypePositionInfo elementInfo):
-                {
-                    ExpressionSyntax expr = GetExpressionForParam(elementInfo, out bool isIntType);
-                    return isIntType ? expr : CheckedExpression(SyntaxKind.CheckedExpression, expr);
-                }
+                    {
+                        ExpressionSyntax expr = GetExpressionForParam(elementInfo, out bool isIntType);
+                        return isIntType ? expr : CheckedExpression(SyntaxKind.CheckedExpression, expr);
+                    }
                 default:
                     throw new MarshallingNotSupportedException(info, context)
                     {
@@ -327,7 +327,7 @@ namespace Microsoft.Interop
 
                 FreeStrategy freeStrategy = GetFreeStrategy(info, context);
                 IElementsMarshallingCollectionSource collectionSource = new StatefulLinearCollectionSource();
-                ElementsMarshalling elementsMarshalling = CreateElementsMarshalling(marshallerData, elementInfo, elementMarshaller, unmanagedElementType, collectionSource);
+                ElementsMarshalling elementsMarshalling = CreateElementsMarshalling(marshallerData, elementInfo, elementMarshaller, unmanagedElementType, collectionSource, freeStrategy);
 
                 if (freeStrategy == FreeStrategy.FreeOriginal)
                 {
@@ -358,7 +358,7 @@ namespace Microsoft.Interop
                     marshallingStrategy = new UnmanagedToManagedOwnershipTrackingStrategy(marshallingStrategy);
                 }
 
-                ElementsMarshalling elementsMarshalling = CreateElementsMarshalling(marshallerData, elementInfo, elementMarshaller, unmanagedElementType, collectionSource);
+                ElementsMarshalling elementsMarshalling = CreateElementsMarshalling(marshallerData, elementInfo, elementMarshaller, unmanagedElementType, collectionSource, freeStrategy);
 
                 marshallingStrategy = new StatelessLinearCollectionMarshalling(marshallingStrategy, elementsMarshalling, nativeType, marshallerData.Shape, freeStrategy != FreeStrategy.NoFree);
 
@@ -437,7 +437,7 @@ namespace Microsoft.Interop
             return FreeStrategy.NoFree;
         }
 
-        private static ElementsMarshalling CreateElementsMarshalling(CustomTypeMarshallerData marshallerData, TypePositionInfo elementInfo, IMarshallingGenerator elementMarshaller, TypeSyntax unmanagedElementType, IElementsMarshallingCollectionSource collectionSource)
+        private static ElementsMarshalling CreateElementsMarshalling(CustomTypeMarshallerData marshallerData, TypePositionInfo elementInfo, IMarshallingGenerator elementMarshaller, TypeSyntax unmanagedElementType, IElementsMarshallingCollectionSource collectionSource, FreeStrategy freeStrategy)
         {
             ElementsMarshalling elementsMarshalling;
 
@@ -448,7 +448,7 @@ namespace Microsoft.Interop
             }
             else
             {
-                elementsMarshalling = new NonBlittableElementsMarshalling(unmanagedElementType, elementMarshaller, elementInfo, collectionSource);
+                elementsMarshalling = new NonBlittableElementsMarshalling(unmanagedElementType, elementMarshaller, elementInfo, collectionSource, freeStrategy == FreeStrategy.FreeOriginal);
             }
 
             return elementsMarshalling;
