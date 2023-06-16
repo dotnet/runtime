@@ -229,15 +229,15 @@ namespace System.Collections.Frozen
             if (typeof(TKey) == typeof(string) &&
                 (ReferenceEquals(comparer, EqualityComparer<TKey>.Default) || ReferenceEquals(comparer, StringComparer.Ordinal) || ReferenceEquals(comparer, StringComparer.OrdinalIgnoreCase)))
             {
-                Dictionary<string, TValue> stringEntries = (Dictionary<string, TValue>)(object)source;
                 IEqualityComparer<string> stringComparer = (IEqualityComparer<string>)(object)comparer;
 
-                // this array is needed for every strategy
-                string[] entries = (string[])(object)source.Keys.ToArray();
+                // keys and values are needed for every strategy
+                string[] keys = (string[])(object)source.Keys.ToArray();
+                TValue[] values = source.Values.ToArray();
 
                 // Calculate the minimum and maximum lengths of the strings in the dictionary. Several of the analyses need this.
                 int minLength = int.MaxValue, maxLength = 0;
-                foreach (string key in entries)
+                foreach (string key in keys)
                 {
                     if (key.Length < minLength) minLength = key.Length;
                     if (key.Length > maxLength) maxLength = key.Length;
@@ -245,14 +245,14 @@ namespace System.Collections.Frozen
                 Debug.Assert(minLength >= 0 && maxLength >= minLength);
 
                 // Try to create an implementation that uses length buckets, where each bucket contains up to only a few strings of the same length.
-                FrozenDictionary<string, TValue>? frozenDictionary = LengthBucketsFrozenDictionary<TValue>.CreateLengthBucketsFrozenDictionaryIfAppropriate(stringEntries, stringComparer, minLength, maxLength, entries);
+                FrozenDictionary<string, TValue>? frozenDictionary = LengthBucketsFrozenDictionary<TValue>.CreateLengthBucketsFrozenDictionaryIfAppropriate(keys, values, stringComparer, minLength, maxLength);
                 if (frozenDictionary is not null)
                 {
                     return (FrozenDictionary<TKey, TValue>)(object)frozenDictionary;
                 }
 
                 // Analyze the keys for unique substrings and create an implementation that minimizes the cost of hashing keys.
-                KeyAnalyzer.AnalysisResults analysis = KeyAnalyzer.Analyze(entries, ReferenceEquals(stringComparer, StringComparer.OrdinalIgnoreCase), minLength, maxLength);
+                KeyAnalyzer.AnalysisResults analysis = KeyAnalyzer.Analyze(keys, ReferenceEquals(stringComparer, StringComparer.OrdinalIgnoreCase), minLength, maxLength);
                 if (analysis.SubstringHashing)
                 {
                     if (analysis.RightJustifiedSubstring)
@@ -260,14 +260,14 @@ namespace System.Collections.Frozen
                         if (analysis.IgnoreCase)
                         {
                             frozenDictionary = analysis.AllAsciiIfIgnoreCase
-                                ? new OrdinalStringFrozenDictionary_RightJustifiedCaseInsensitiveAsciiSubstring<TValue>(stringEntries, entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount)
-                                : new OrdinalStringFrozenDictionary_RightJustifiedCaseInsensitiveSubstring<TValue>(stringEntries, entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
+                                ? new OrdinalStringFrozenDictionary_RightJustifiedCaseInsensitiveAsciiSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount)
+                                : new OrdinalStringFrozenDictionary_RightJustifiedCaseInsensitiveSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
                         }
                         else
                         {
                             frozenDictionary = analysis.HashCount == 1
-                                ? new OrdinalStringFrozenDictionary_RightJustifiedSingleChar<TValue>(stringEntries, entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex)
-                                : new OrdinalStringFrozenDictionary_RightJustifiedSubstring<TValue>(stringEntries, entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
+                                ? new OrdinalStringFrozenDictionary_RightJustifiedSingleChar<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex)
+                                : new OrdinalStringFrozenDictionary_RightJustifiedSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
                         }
                     }
                     else
@@ -275,14 +275,14 @@ namespace System.Collections.Frozen
                         if (analysis.IgnoreCase)
                         {
                             frozenDictionary = analysis.AllAsciiIfIgnoreCase
-                                ? new OrdinalStringFrozenDictionary_LeftJustifiedCaseInsensitiveAsciiSubstring<TValue>(stringEntries, entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount)
-                                : new OrdinalStringFrozenDictionary_LeftJustifiedCaseInsensitiveSubstring<TValue>(stringEntries, entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
+                                ? new OrdinalStringFrozenDictionary_LeftJustifiedCaseInsensitiveAsciiSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount)
+                                : new OrdinalStringFrozenDictionary_LeftJustifiedCaseInsensitiveSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
                         }
                         else
                         {
                             frozenDictionary = analysis.HashCount == 1
-                                ? new OrdinalStringFrozenDictionary_LeftJustifiedSingleChar<TValue>(stringEntries, entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex)
-                                : new OrdinalStringFrozenDictionary_LeftJustifiedSubstring<TValue>(stringEntries, entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
+                                ? new OrdinalStringFrozenDictionary_LeftJustifiedSingleChar<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex)
+                                : new OrdinalStringFrozenDictionary_LeftJustifiedSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
                         }
                     }
                 }
@@ -291,12 +291,12 @@ namespace System.Collections.Frozen
                     if (analysis.IgnoreCase)
                     {
                         frozenDictionary = analysis.AllAsciiIfIgnoreCase
-                            ? new OrdinalStringFrozenDictionary_FullCaseInsensitiveAscii<TValue>(stringEntries, entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff)
-                            : new OrdinalStringFrozenDictionary_FullCaseInsensitive<TValue>(stringEntries, entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
+                            ? new OrdinalStringFrozenDictionary_FullCaseInsensitiveAscii<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff)
+                            : new OrdinalStringFrozenDictionary_FullCaseInsensitive<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
                     }
                     else
                     {
-                        frozenDictionary = new OrdinalStringFrozenDictionary_Full<TValue>(stringEntries, entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
+                        frozenDictionary = new OrdinalStringFrozenDictionary_Full<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
                     }
                 }
 

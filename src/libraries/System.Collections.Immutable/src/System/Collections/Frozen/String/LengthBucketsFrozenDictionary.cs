@@ -36,25 +36,25 @@ namespace System.Collections.Frozen
         }
 
         internal static LengthBucketsFrozenDictionary<TValue>? CreateLengthBucketsFrozenDictionaryIfAppropriate(
-            Dictionary<string, TValue> source, IEqualityComparer<string> comparer, int minLength, int maxLength, string[] keys)
+            string[] keys, TValue[] values, IEqualityComparer<string> comparer, int minLength, int maxLength)
         {
-            Debug.Assert(source.Count != 0);
+            Debug.Assert(keys.Length != 0 && keys.Length == values.Length);
             Debug.Assert(comparer == EqualityComparer<string>.Default || comparer == StringComparer.Ordinal || comparer == StringComparer.OrdinalIgnoreCase);
             Debug.Assert(minLength >= 0 && maxLength >= minLength);
 
             // If without even looking at the keys we know that some bucket will exceed the max per-bucket
             // limit (pigeon hole principle), we can early-exit out without doing any further work.
             int spread = maxLength - minLength + 1;
-            if (source.Count / spread > MaxPerLength)
+            if (keys.Length / spread > MaxPerLength)
             {
                 return null;
             }
 
             // Iterate through all of the inputs, bucketing them based on the length of the string.
             var groupedByLength = new Dictionary<int, List<KeyValuePair<string, TValue>>>();
-            foreach (KeyValuePair<string, TValue> pair in source)
+            for (int i = 0; i < keys.Length; i++)
             {
-                string s = pair.Key;
+                string s = keys[i];
                 Debug.Assert(s.Length >= minLength && s.Length <= maxLength);
 
 #if NET6_0_OR_GREATER
@@ -72,7 +72,7 @@ namespace System.Collections.Frozen
                     return null;
                 }
 
-                list.Add(pair);
+                list.Add(new KeyValuePair<string, TValue>(s, values[i]));
             }
 
             // If there would be too much empty space in the lookup array, bail.
@@ -81,7 +81,6 @@ namespace System.Collections.Frozen
                 return null;
             }
 
-            var values = new TValue[keys.Length];
             var lengthBuckets = new KeyValuePair<string, int>[spread][];
 
             // Iterate through each bucket, filling the keys/values arrays, and creating a lookup array such that
