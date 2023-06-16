@@ -3184,9 +3184,6 @@ namespace Mono.Linker.Steps
 			using var parentScope = ScopeStack.PushScope (new MarkScopeStack.Scope (origin));
 			using var methodScope = ScopeStack.PushScope (new MessageOrigin (method));
 
-			if (method.ToString ().Contains ("InvokeDefaultConstructor"))
-				Debug.WriteLine ("");
-
 			bool markedForCall =
 				reason.Kind == DependencyKind.DirectCall ||
 				reason.Kind == DependencyKind.VirtualCall ||
